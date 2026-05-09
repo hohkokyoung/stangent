@@ -1,0 +1,52 @@
+{
+  "_comment": "Reference template — do not copy manually. Run: python path/to/stangent/init.py to generate .stangent/config.json",
+  "_stangent_version": "1.0.0",
+
+  "stangent_path": "{{STANGENT_PATH}}",
+
+  "profile": "{{AUTO_DETECTED}}",
+
+  "profiles": ["python"],
+  "profile_roots": {
+    "python": "src/"
+  },
+
+  "paths": {
+    "src_root": "{{AUTO_DETECTED}}",
+    "feature_dir": ".stangent/features/",
+    "archive_dir": ".stangent/archive/",
+    "log_dir": ".stangent/logs/",
+    "srs_path": ".stangent/SRS.md",
+    "decisions_path": ".stangent/decisions.md",
+    "registry_path": ".stangent/features_registry.json",
+    "context_cache": ".stangent/context_cache.md",
+    "env_example": ".env.example"
+  },
+
+  "pipeline": {
+    "max_retries": 3,
+    "ask_developer_timeout_minutes": 30,
+    "auto_branch": true,
+    "branch_prefix": "stangent/",
+    "remind_pr_on_complete": false,
+    "pr_target_branch": "dev",
+    "archive_completed_after_days": 7
+  },
+
+  "models": {
+    "orchestrator": "claude-sonnet-4-6",
+    "planner": "claude-sonnet-4-6",
+    "implementer": "claude-sonnet-4-6",
+    "reviewer": "claude-sonnet-4-6",
+    "srs_agent": "claude-sonnet-4-6",
+    "linter": "claude-haiku-4-5-20251001",
+    "unit_tester": "claude-haiku-4-5-20251001",
+    "query_analyzer": "claude-haiku-4-5-20251001",
+    "security_scanner": "claude-sonnet-4-6"
+  },
+
+  "feature_id": {
+    "prefix": "FEAT",
+    "padding": 3
+  }
+}
