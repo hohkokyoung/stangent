@@ -1,5 +1,10 @@
 Record an architectural decision as a properly formatted ADR in decisions.md.
 
+> **Note:** ADRs are bootstrapped automatically on the first `/feature` call —
+> the planner scans your codebase and asks which patterns become binding decisions.
+> Use `/adr` to add explicit decisions any time, or when you want to record a
+> decision that wasn't captured during bootstrap.
+
 Usage:
   /adr <title>         — start a guided ADR session
   /adr list            — show all existing ADRs with status

@@ -261,8 +261,16 @@ For each feature to document:
 ### Phase 8 — Decisions Log Update
 
 8a. Read `## Architectural Decisions Applied` from the feature file.
-    For each ADR listed: ensure it appears in the `## 10. Decisions Log` table.
-    Add any missing ADRs.
+    For each entry:
+
+    - Normal entry (`ADR-NNN — Title`): ensure it appears in `## 10. Decisions Log`.
+      Add any missing ADRs.
+
+    - Overridden entry (`ADR-NNN — OVERRIDDEN — Reason: ...`):
+      Ensure the ADR appears in `## 10. Decisions Log`.
+      Add a note alongside it: `[Overridden in {{feature_id}} — Reason: {{reason}}]`
+      Do not mark the ADR as Superseded — the ADR itself still stands for all
+      other features. Only this feature was granted an exception.
 
 ---
 

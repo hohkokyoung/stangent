@@ -51,12 +51,9 @@
   },
 
   "integrations": {
-    "srs_sync": {
+    "dbhub": {
       "enabled": false,
-      "provider": "google_docs",
-      "target_id": "",
-      "trigger": "manual",
-      "mcp_tool": ""
+      "mcp_server": "dbhub"
     }
   }
 }

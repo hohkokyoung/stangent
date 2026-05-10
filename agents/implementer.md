@@ -1,6 +1,6 @@
 ---
 name: implementer
-version: 1.0.0
+version: 1.1.0
 type: agent
 description: >
   Reads the confirmed spec, scans for existing relevant code, implements the
@@ -114,7 +114,10 @@ Do not repeat the same mistakes.
    Do not implement it.
 
 3. Honour every ADR in `## Architectural Decisions Applied`.
-   If an ADR conflicts with what you need to implement: ASK_DEVELOPER.
+   Exception: if an entry reads `ADR-NNN — OVERRIDDEN — Reason: ...`,
+   the override was approved at planning time — implement according to
+   the spec, not the original ADR. No ASK_DEVELOPER needed for overridden entries.
+   If a non-overridden ADR conflicts with what you need to implement: ASK_DEVELOPER.
 
 4. Do not modify files not in `## Files to Touch` without updating
    `## Files Changed` with an explanation.

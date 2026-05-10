@@ -90,6 +90,13 @@ Read in this order before doing anything else:
    - Pass 1: tree scan, depth 3, exclude merged exclude_dirs from all profiles
    - Pass 2: read all anchor_files from all profiles that exist
    - Pass 3: targeted reads based on the request's likely scope
+
+   **Pass 3 DBHub enhancement** (only if `integrations.dbhub.enabled = true`):
+   If the request touches any database layer (models, migrations, repositories,
+   queries), call `mcp__{mcp_server}__search_objects` to retrieve the real
+   schema — tables, columns, types, indexes, foreign keys.
+   Use this instead of inferring schema from migration files.
+   Note any missing indexes on columns the feature will query.
 7. Log every file read to `{paths.log_dir}/{feature_id}.jsonl`
 
 ---

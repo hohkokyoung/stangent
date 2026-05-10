@@ -13,9 +13,15 @@ Every feature goes through a fixed pipeline:
 ```
 /feature add login screen
     │
+    ▼ (first feature only)
+ADR BOOTSTRAP  — Scans codebase for established patterns (frameworks,
+                 ORMs, state management). You confirm which become binding
+                 architectural decisions. Skipped on subsequent features.
+    │
     ▼
-PLANNING       — Planner reads your codebase, asks ≤5 targeted questions,
-                 writes a precise spec with acceptance criteria
+PLANNING       — Planner reads your codebase and all ADRs. Flags any
+                 conflicts between your request and existing decisions
+                 before writing a single line of spec. Asks ≤5 questions.
     │
     ▼ (you confirm the spec)
     │
@@ -350,6 +356,13 @@ Key settings:
     "unit_tester":  "claude-haiku-4-5-20251001",
     "query_analyzer": "claude-haiku-4-5-20251001",
     "security_scanner": "claude-sonnet-4-6"
+  },
+
+  "integrations": {
+    "dbhub": {
+      "enabled": false,
+      "mcp_server": "dbhub"
+    }
   }
 }
 ```
@@ -383,12 +396,53 @@ Stangent creates a branch per feature (`stangent/FEAT-001-slug`). Everything in 
 
 ADRs live in `.stangent/decisions.md`. Every agent reads this file before doing anything. Once an ADR is `Accepted`, all agents automatically apply it.
 
-Example — if you record:
+### Auto-bootstrap on first feature
+
+When you run `/feature` for the first time, Stangent scans your codebase before planning and detects patterns already in use — frameworks, ORMs, HTTP clients, state management libraries. It presents candidates and you pick which ones become binding decisions:
+
 ```
-/adr use SQLAlchemy ORM, never raw SQL
+I scanned your codebase before starting the first feature.
+These architectural patterns are already established in your code.
+Which should become binding decisions?
+
+1. State Management: Riverpod
+   Detected in: pubspec.yaml (flutter_riverpod: ^2.4.0)
+   Would enforce: All new screens must use ConsumerWidget, not StatefulWidget
+
+2. HTTP Client: Dio
+   Detected in: pubspec.yaml, lib/api/client.dart
+   Would enforce: All HTTP calls must go through the Dio client
+
+Reply with numbers to accept (e.g. "1, 2"), "all", or "none".
 ```
 
-...then every future implementer will use SQLAlchemy without you having to say so. The reviewer will flag any raw SQL as a violation.
+Confirmed ones are written as ADRs immediately. From that point forward, every feature automatically follows them.
+
+### Contradiction detection
+
+Before writing any spec, the planner checks your request against existing ADRs. If something conflicts, it surfaces it before a single line of code is planned:
+
+```
+⚠️ Before writing the spec, I found conflicts with existing decisions:
+
+ADR-001 — State Management: Riverpod
+Rule: All new screens must use ConsumerWidget, not StatefulWidget
+Conflict: Your request describes a login screen using StatefulWidget
+
+Options:
+  A — Adjust the feature approach to comply with ADR-001
+  B — Override ADR-001 for this feature (reason required)
+  C — Cancel this feature
+```
+
+### Manual ADRs
+
+Record explicit decisions any time with `/adr`:
+
+```
+/adr use SQLAlchemy ORM, never raw SQL
+/adr store sessions in Redis, not in-memory
+```
 
 This is the highest-leverage thing you can do: record decisions once, enforce them forever.
 
@@ -429,6 +483,55 @@ Stangent will detect both apps and generate the correct roots automatically:
 Agents use `profile_roots` to decide which rules apply to which file — Flutter lint rules for `.dart` files under `mobile/`, Python rules for `.py` files under `backend/`. You never have to think about it.
 
 If auto-detection gets the roots wrong (unusual structure), just edit `profile_roots` in `.stangent/config.json` directly.
+
+---
+
+## Integrations
+
+### DBHub (database schema queries)
+
+[DBHub](https://github.com/bytebase/dbhub) is an MCP server by Bytebase that connects agents to your actual database. When enabled, Stangent uses it in two places:
+
+- **Planner** — queries the real schema via `search_objects` instead of inferring it from migration files. Gets accurate column names, types, indexes, and foreign keys before writing the spec.
+- **Query Analyzer** — verifies that indexes exist on every column being filtered or joined, and runs `EXPLAIN` on flagged queries to confirm if a full table scan actually occurs.
+
+**Setup:**
+
+```bash
+# 1. Install
+npm install -g @bytebase/dbhub
+
+# 2. Register with Claude Code (use the CLI — edits ~/.claude.json correctly)
+claude mcp add --scope user dbhub -- npx @bytebase/dbhub --transport stdio --dsn "YOUR_DSN"
+```
+
+DSN format by database:
+| Database | DSN |
+|----------|-----|
+| PostgreSQL | `postgres://user:pass@host:5432/dbname` |
+| MySQL | `mysql://user:pass@host:3306/dbname` |
+| SQLite | `sqlite:///absolute/path/to/db.sqlite` |
+| SQL Server | `sqlserver://user:pass@host:1433?database=dbname` |
+
+**Then enable in `.stangent/config.json`** (or let `init.py` do it for you):
+```json
+"integrations": {
+  "dbhub": {
+    "enabled": true,
+    "mcp_server": "dbhub"
+  }
+}
+```
+
+Restart Claude Code after registering the MCP.
+
+> **Common gotchas**
+> - **Don't edit `settings.json` manually** — Claude Code reads MCPs from `~/.claude.json`. Use `claude mcp add` above.
+> - **Special chars in password** must be URL-encoded: `!→%21` `@→%40` `#→%23` `$→%24` `%→%25`
+> - **Supabase** — direct connections are IPv6-only and fail in Node. Use the Session Pooler URL instead:
+>   `postgres://postgres.[ref]:[pass]@aws-0-[region].pooler.supabase.com:5432/postgres?sslmode=require`
+> - **ESM/CJS crash** on Windows (`SyntaxError: Cannot use import statement outside a module` in `ssh-config.js`):
+>   Add `"type": "module"` to `<npm-global>/node_modules/@bytebase/dbhub/node_modules/ssh-config/package.json`
 
 ---
 

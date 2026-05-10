@@ -334,37 +334,6 @@ Before doing anything:
 
 ---
 
-### STEP 7.5 — SRS Sync (if configured)
-
-7.5a. Read `config.integrations.srs_sync`.
-      If not present, or `enabled = false`, or `trigger != "on_complete"`:
-      Skip to STEP 8.
-
-7.5b. Spawn the srs_sync_agent using the Agent tool:
-
-      INPUTS:
-      {
-        "config_path":  "{{absolute .stangent/config.json path}}",
-        "triggered_by": "on_complete"
-      }
-
-      INSTRUCTIONS:
-      Read the full contents of: {stangent_path}/agents/srs_sync_agent.md
-      Then execute those instructions using the inputs above.
-
-7.5c. srs_sync_agent returns: SYNCED | SKIPPED | FAILED
-
-      SYNCED:  append to Pipeline History: "SRS synced → {provider}"
-      SKIPPED: append to Pipeline History: "SRS sync skipped"
-      FAILED:  append to Pipeline History: "SRS sync failed — run /sync-srs to retry"
-               Output a non-blocking warning to the developer:
-               "⚠ SRS sync failed. The feature is still COMPLETE.
-                Run /sync-srs to retry after fixing the MCP connection."
-
-      Either way: proceed to STEP 8.
-
----
-
 ### STEP 8 — Completion
 
 8a. Output completion summary:

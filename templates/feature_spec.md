@@ -47,7 +47,9 @@ srs_agent_version:
 
 ## Architectural Decisions Applied
 <!-- ADR IDs from .stangent/decisions.md relevant to this feature. -->
-<!-- Implementer must honour all decisions listed here. -->
+<!-- Format: "ADR-NNN — Title" (applied normally) -->
+<!--         "ADR-NNN — OVERRIDDEN — Reason: ..." (developer-approved override) -->
+<!-- Implementer must honour applied entries. OVERRIDDEN entries: follow the spec instead. -->
 -
 
 ## New Environment Variables

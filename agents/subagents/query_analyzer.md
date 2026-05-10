@@ -1,6 +1,6 @@
 ---
 name: query_analyzer
-version: 1.0.0
+version: 1.1.0
 type: subagent
 description: >
   Scans changed files for unsafe query construction patterns, N+1 risks,
@@ -47,10 +47,16 @@ you read source code and apply pattern matching with judgment.
 
 ## CONTEXT INPUTS
 
-1. `.stangent/config.json` → profile, src_root
+1. `.stangent/config.json` → profile, src_root, and:
+   - `integrations.dbhub.enabled`    — whether DBHub MCP is available
+   - `integrations.dbhub.mcp_server` — MCP server name (default: "dbhub")
 2. `{{stangent_path}}/profiles/{{profile}}.md` → query_patterns (danger + warn)
 3. `{{feature_file_path}}` → read `## Files Changed`
 4. Read each file in `## Files Changed` that is NOT a test file
+
+If `integrations.dbhub.enabled = true`, the MCP tools
+`mcp__{mcp_server}__execute_sql` and `mcp__{mcp_server}__search_objects`
+are available for real schema queries. Use them in Step 4.5.
 
 ---
 
@@ -125,6 +131,41 @@ Then: write `## Query Analysis Report` with `Status: SKIPPED` and return SKIPPED
     (e.g., collecting IDs then doing `WHERE id IN (...)`)
     If yes: not an N+1. Mark as acceptable.
     If no: WARN finding.
+
+### Step 4.5 — Schema Verification (DBHub only — skip if not configured)
+
+*Only execute if `integrations.dbhub.enabled = true`.*
+
+4.5a. From Steps 2–4, collect all table names and filtered columns found
+      in the changed files (e.g. `WHERE user_id = ?`, `JOIN orders ON ...`).
+
+4.5b. For each table: call `mcp__{mcp_server}__search_objects` to retrieve
+      its columns and indexes.
+
+      Check: does each filtered/joined column have an index?
+      - Column has index: no finding
+      - Column has no index: WARN finding:
+        `table.column queried without index — verify table size is acceptable`
+
+4.5c. For any FAIL-severity query found in Step 2 (danger pattern confirmed):
+      call `mcp__{mcp_server}__execute_sql` with:
+      ```sql
+      EXPLAIN <the query with placeholder values substituted>
+      ```
+      If the plan shows a full table scan on a large table: upgrade finding
+      to include: `Full table scan confirmed via EXPLAIN — FAIL`
+      If the plan shows index usage: downgrade to WARN (pattern exists but
+      optimizer handles it — still worth reviewing).
+
+4.5d. Add schema verification findings to the report under a separate section:
+      ```
+      **Schema verification (DBHub):**
+      - table.column — no index found — WARN
+      - table.column — index found — OK
+      [or: SKIPPED — DBHub not configured]
+      ```
+
+---
 
 ### Step 5 — Input Flow Check
 
