@@ -48,5 +48,15 @@
   "feature_id": {
     "prefix": "FEAT",
     "padding": 3
+  },
+
+  "integrations": {
+    "srs_sync": {
+      "enabled": false,
+      "provider": "google_docs",
+      "target_id": "",
+      "trigger": "manual",
+      "mcp_tool": ""
+    }
   }
 }

@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-version: 1.0.0
+version: 1.1.0
 type: agent
 description: >
   Coordinates the full Stangent pipeline for a single feature: manages state,
@@ -139,6 +139,45 @@ Before doing anything:
       STOP.
 
 2c. All dependencies satisfied. Proceed to STEP 3.
+
+---
+
+### STEP 2.5 — ADR Bootstrap (first feature only)
+
+2.5a. Skip this step entirely if:
+      - `feature_id` input was provided (this is a resume, not a fresh start), OR
+      - `resume_from` is set to any value
+      In either case: skip to STEP 3.
+
+      Read `.stangent/decisions.md`.
+      Grep for lines matching `^## ADR-`.
+      If any found: ADRs already exist — skip to STEP 3.
+
+2.5b. No ADRs found — this is the first feature in this project.
+      Spawn adr_agent in bootstrap mode:
+
+      INPUTS:
+      {
+        "mode":           "bootstrap",
+        "title":          "",
+        "decisions_path": "{{absolute path to .stangent/decisions.md}}",
+        "stangent_path":  "{{stangent_path from config}}",
+        "config_path":    "{{absolute path to .stangent/config.json}}"
+      }
+
+      INSTRUCTIONS:
+      Read the full contents of: {stangent_path}/agents/adr_agent.md
+      Then execute Bootstrap Mode using the inputs above.
+
+2.5c. adr_agent returns: BOOTSTRAPPED | SKIPPED
+
+      BOOTSTRAPPED: read decisions.md, count `^## ADR-` lines — that is the total.
+        Append to Pipeline History:
+        "ADR bootstrap — {total_adr_count} decisions now in decisions.md"
+      SKIPPED: append to Pipeline History:
+        "ADR bootstrap — skipped (no patterns accepted or found)"
+
+      Either way: proceed to STEP 3.
 
 ---
 
@@ -290,7 +329,39 @@ Before doing anything:
 7c. SRS agent returns: UPDATED | SKIPPED | FAILED
 
 7d. If FAILED: log warning but do not block. SRS can be re-run with /srs.
+
 7e. Set status = COMPLETE. Append to Pipeline History.
+
+---
+
+### STEP 7.5 — SRS Sync (if configured)
+
+7.5a. Read `config.integrations.srs_sync`.
+      If not present, or `enabled = false`, or `trigger != "on_complete"`:
+      Skip to STEP 8.
+
+7.5b. Spawn the srs_sync_agent using the Agent tool:
+
+      INPUTS:
+      {
+        "config_path":  "{{absolute .stangent/config.json path}}",
+        "triggered_by": "on_complete"
+      }
+
+      INSTRUCTIONS:
+      Read the full contents of: {stangent_path}/agents/srs_sync_agent.md
+      Then execute those instructions using the inputs above.
+
+7.5c. srs_sync_agent returns: SYNCED | SKIPPED | FAILED
+
+      SYNCED:  append to Pipeline History: "SRS synced → {provider}"
+      SKIPPED: append to Pipeline History: "SRS sync skipped"
+      FAILED:  append to Pipeline History: "SRS sync failed — run /sync-srs to retry"
+               Output a non-blocking warning to the developer:
+               "⚠ SRS sync failed. The feature is still COMPLETE.
+                Run /sync-srs to retry after fixing the MCP connection."
+
+      Either way: proceed to STEP 8.
 
 ---
 

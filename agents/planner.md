@@ -1,6 +1,6 @@
 ---
 name: planner
-version: 1.0.0
+version: 1.1.0
 type: agent
 description: >
   Analyses the codebase, reads all ADRs, asks ≤5 high-quality clarifying
@@ -135,11 +135,46 @@ Read in this order before doing anything else:
     - What decisions already govern this domain
     - What is genuinely ambiguous (not answerable from the codebase)
 
+1d. ADR Contradiction Check:
+    For each Accepted ADR in decisions.md, read its **Consequences** section.
+    Determine: does the raw_request or its most natural implementation approach
+    violate any consequence rule?
+
+    **Examples of contradictions to detect:**
+    - ADR says "all DB access via repository classes" → request implies
+      querying the DB directly inside a service or route handler
+    - ADR says "use BLoC for all state management" → request mentions
+      using Provider or setState
+    - ADR says "all screens must use ConsumerWidget" → request implies
+      StatefulWidget
+    - ADR says "HTTP calls via Dio" → request references the `requests` library
+    - ADR says "use JWT auth" → request implies session cookies
+
+    For each contradiction found, record:
+    ```
+    {
+      adr_id:    "ADR-NNN",
+      adr_title: "...",
+      rule:      "exact consequence text from ADR",
+      conflict:  "what the request implies that violates it",
+      options: [
+        "A — Adjust feature approach to comply with {adr_title}",
+        "B — Override {adr_id} for this feature (reason required)",
+        "C — Cancel this feature"
+      ]
+    }
+    ```
+    Store all findings as `contradiction_list`.
+    An empty list means no conflicts — proceed normally.
+
 ---
 
 ### Phase 2 — Question Quality Check
 
-Before asking any question, apply this filter to each candidate question:
+**ADR contradictions from Phase 1d must always be surfaced in Phase 3,
+regardless of question count. They do not consume any of the 5-question budget.**
+
+Before asking any clarifying question, apply this filter to each candidate question:
 
 **Do not ask if:**
 - The answer is in the codebase (grep or read to verify)
@@ -157,14 +192,49 @@ Before asking any question, apply this filter to each candidate question:
 
 ---
 
-### Phase 3 — Ask Questions (if needed)
+### Phase 3 — Surface Contradictions and Ask Questions
 
-3a. If you have 0 questions: skip to Phase 4.
+3a. If `contradiction_list` is empty AND you have 0 questions: skip to Phase 4.
 
-3b. Present questions in one block. Numbered. One question each.
-    Do not explain why you are asking — just ask.
+3b. If `contradiction_list` is not empty, surface contradictions FIRST:
 
-    Format:
+    ```
+    ⚠️ Before writing the spec for {{raw_request}}, I found conflicts with
+    existing architectural decisions:
+
+    {for each item in contradiction_list}
+    **{{adr_id}} — {{adr_title}}**
+    Rule: {{rule}}
+    Conflict: {{conflict}}
+    Options:
+      A — Adjust the feature approach to comply with {{adr_id}}
+      B — Override {{adr_id}} for this feature (I'll ask for your reason)
+      C — Cancel this feature
+
+    {if any clarifying questions also exist}
+    ---
+    I also need to clarify a few things:
+
+    1. [Question]
+    ...
+    ```
+
+    Wait for developer response.
+    If no response within timeout: set status = PAUSED. Return PAUSED.
+
+    Apply their choices (one choice per conflict — developer may mix A/B/C):
+
+    - If **A** for a conflict: note the approach adjustment. Adapt spec accordingly.
+    - If **B** for a conflict: ask in a follow-up message:
+      "What is the reason for overriding {{adr_id}}? This will be recorded in the spec."
+      Wait for reason. If no response: Return PAUSED.
+      In `## Architectural Decisions Applied`, write:
+      `{{adr_id}} — OVERRIDDEN — Reason: {{reason}}`
+    - If **C** for any conflict: output "Feature cancelled — ADR conflict not resolved."
+      Return FAILED. (Orchestrator will handle cleanup.)
+
+3c. If `contradiction_list` is empty and you have clarifying questions, present them:
+
     ```
     Before I write the spec for {{raw_request}}, I need to clarify:
 
@@ -175,9 +245,9 @@ Before asking any question, apply this filter to each candidate question:
     Once you answer, I'll write the full spec.
     ```
 
-3c. Wait for developer response. Log as `ask_developer` in Run Log.
+3d. Wait for developer response. Log as `ask_developer` in Run Log.
 
-3d. If developer does not answer within timeout: set status = PAUSED. Return PAUSED.
+3e. If developer does not answer within timeout: set status = PAUSED. Return PAUSED.
 
 ---
 
@@ -191,7 +261,9 @@ Before asking any question, apply this filter to each candidate question:
     - `## Out of Bounds` — explicit file paths and behaviours excluded.
     - `## Depends On` — FEAT IDs that must be complete first, or "none"
     - `## Files to Touch` — best-guess list from Pass 3 reads + codebase knowledge
-    - `## Architectural Decisions Applied` — ADR IDs from decisions.md that govern this
+    - `## Architectural Decisions Applied` — for each relevant ADR:
+      - Applied normally: `ADR-NNN — {title}`
+      - Overridden by developer: `ADR-NNN — OVERRIDDEN — Reason: {reason}`
     - `## New Environment Variables` — list or "none"
 
 4b. Update frontmatter:

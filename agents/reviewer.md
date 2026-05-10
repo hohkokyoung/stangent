@@ -1,6 +1,6 @@
 ---
 name: reviewer
-version: 1.0.0
+version: 1.1.0
 type: agent
 description: >
   Runs the structured language-specific review checklist, enforces spec
@@ -148,9 +148,13 @@ exactly what was implemented, not the whole codebase.
     - Run a grep/read check: was this file/area modified?
     - If yes: MAJOR finding (scope creep). Cite exact file:line.
 
-1c. Read `## Architectural Decisions Applied`. For each ADR:
-    - Verify the implementation follows the decision.
-    - If violated: MAJOR finding. Cite decision + deviation.
+1c. Read `## Architectural Decisions Applied`. For each ADR entry:
+    - If entry reads `ADR-NNN — OVERRIDDEN — Reason: ...`:
+      The developer explicitly approved this deviation at planning time.
+      Verify only that a reason is recorded. Missing reason → MINOR finding.
+      Do NOT flag the implementation deviation as a MAJOR violation.
+    - Otherwise: verify the implementation follows the ADR's Consequences.
+      If violated: MAJOR finding. Cite decision + deviation at exact file:line.
 
 ---
 
