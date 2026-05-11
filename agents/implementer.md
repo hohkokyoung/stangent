@@ -181,11 +181,36 @@ Do not repeat the same mistakes.
     - Add new env vars to `.env.example` immediately when introduced
 
 2c. Test requirements:
-    - Every AC must have at least one test
-    - Test file location: profile.conventions.test_dir
-    - Test file naming: profile.conventions.test_file_pattern
-    - Tests must be independent (no test depends on another's state)
-    - Test names must map to their AC (name them descriptively)
+    For each AC, ask: "Am I testing logic I own, or am I testing the platform/SDK?"
+    Three valid outcomes:
+
+    1. **Test written** — AC has pure logic (parsing, mapping, validation, derivation).
+       Write a test directly against it.
+
+    2. **Logic extracted + tested** — AC behaviour is platform-bound (MethodChannel,
+       native UI, background isolate, device sensor, OS rendering) but contains
+       extractable pure logic. Extract that logic to a util/helper, test it there,
+       reference it in the AC coverage table.
+
+    3. **Not applicable** — AC is purely platform/device behaviour with no extractable
+       logic (e.g. "icon appears circular on screen", "banner slides in",
+       "shortcut renders on left side"). Document it explicitly:
+       `| AC text | n/a — [reason why untestable in unit context] | SKIPPED |`
+
+    If ALL ACs fall under outcome 3: write zero tests. The unit_tester will mark
+    the Test Report as `SKIPPED — platform-bound feature`.
+
+    **Do not write:**
+    - Tests for SDK/platform behaviour you don't own (`Set` deduplication,
+      `json.decode` correctness, framework lifecycle methods)
+    - Tautologies (`final x = y; expect(x, y)`)
+    - A local copy of production logic written just to have something to test —
+      if logic is worth testing, extract it from the real file and test that
+
+    Test file location: profile.conventions.test_dir
+    Test file naming: profile.conventions.test_file_pattern
+    Tests must be independent (no test depends on another's state)
+    Test names must map to their AC (name them descriptively)
 
 2d. Write to `## Implementation Log`:
     - What was implemented
@@ -225,8 +250,10 @@ Spawn using the Agent tool with:
     INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-unit-tester.md and execute.
 
 Wait for result. Read `## Test Report`.
-- If FAIL: fix failing tests. Do not add new tests — fix existing ones first.
-  Re-run. Do not proceed until PASS.
+- If FAIL: fix failing tests or bad tests as reported. Do not add new tests —
+  fix existing ones first. Re-run. Do not proceed until PASS.
+- If SKIPPED: all ACs were platform-bound with valid n/a justifications.
+  Proceed to 3c.
 - If PASS: proceed to 3c.
 
 **3c. Query analyzer sub-agent**
