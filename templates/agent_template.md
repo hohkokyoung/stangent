@@ -281,8 +281,9 @@ INPUTS:
 }
 
 INSTRUCTIONS:
-Read the full contents of: {stangent_path}/agents/subagents/{name}.md
-(or agents/{name}.md for main agents)
+Derive project_root = Path(config_path).parent.parent
+Read the full contents of: {project_root}/.claude/agents/subagents/stangent-{name}.md
+(or {project_root}/.claude/agents/stangent-{slug}.md for main agents)
 Then execute those instructions exactly using the inputs above.
 ```
 
@@ -290,8 +291,9 @@ Then execute those instructions exactly using the inputs above.
 
 - `feature_id` — so the sub-agent can locate the feature file and log dir
 - `feature_file_path` — absolute path avoids working-directory ambiguity
-- `stangent_path` — sub-agent can load its own profiles, templates, other agents
-- `config_path` — sub-agent reads config without assuming project root
+- `stangent_path` — sub-agent can load its own profiles and templates
+- `config_path` — sub-agent reads config without assuming project root;
+  also used to derive project_root for locating other agent files
 - `extra` — open-ended bag for caller-specific context (e.g. `previous_verdict`,
   `files_changed`) without requiring a schema change for each new agent
 

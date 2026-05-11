@@ -86,6 +86,10 @@ Read in this order before doing anything else:
 4. `.stangent/features/` → scan all existing feature files. Understand what
    has already been built and what is in progress.
 5. `.stangent/SRS.md` → if it exists, read it for system context
+5a. `.stangent/meta.md` → if it exists, load cascade rules.
+    Optional file. Each rule maps a file pattern to dependent doc files
+    that must be reviewed when that pattern is touched.
+    Store as `meta_rules`. Use in Pass 3 and Phase 4 (Files to Touch).
 6. Run the 3-pass codebase reading strategy:
    - Pass 1: tree scan, depth 3, exclude merged exclude_dirs from all profiles
    - Pass 2: read all anchor_files from all profiles that exist
@@ -267,7 +271,11 @@ Before asking any clarifying question, apply this filter to each candidate quest
       "User with valid email+password reaches home screen" is good.
     - `## Out of Bounds` — explicit file paths and behaviours excluded.
     - `## Depends On` — FEAT IDs that must be complete first, or "none"
-    - `## Files to Touch` — best-guess list from Pass 3 reads + codebase knowledge
+    - `## Files to Touch` — best-guess list from Pass 3 reads + codebase knowledge.
+      If `meta_rules` is loaded: for each file already in this list, check every
+      rule in meta_rules. If the file matches a rule's pattern, append the rule's
+      dependent doc files to this list (mark them with `[doc]` prefix so the
+      implementer knows to review and update, not just touch).
     - `## Architectural Decisions Applied` — for each relevant ADR:
       - Applied normally: `ADR-NNN — {title}`
       - Overridden by developer: `ADR-NNN — OVERRIDDEN — Reason: {reason}`

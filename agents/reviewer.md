@@ -182,7 +182,8 @@ exactly what was implemented, not the whole codebase.
       "config_path":       "{{absolute .stangent/config.json path}}",
       "files_changed":     "{{contents of ## Files Changed section}}"
     }
-    INSTRUCTIONS: Read {{stangent_path}}/agents/subagents/security_scanner.md and execute.
+    INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-security-scanner.md and execute.
+    (where project_root = Path(config_path).parent.parent)
 
 3b. Wait for result. Read `## Security Report`.
 

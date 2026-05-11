@@ -208,10 +208,11 @@ Run sub-agents in fixed order. Pass feature_id, feature_file_path, stangent_path
 and config_path to each.
 
 **3a. Linter sub-agent**
+Derive project_root = Path(config_path).parent.parent
 Spawn using the Agent tool with:
 
     INPUTS: { "feature_id": "...", "feature_file_path": "...", "stangent_path": "...", "config_path": "...", "extra": {} }
-    INSTRUCTIONS: Read {{stangent_path}}/agents/subagents/linter.md and execute.
+    INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-linter.md and execute.
 
 Wait for result. Read `## Linter Report`.
 - If FAIL: fix all reported issues. Re-run linter sub-agent. Do not proceed until PASS.
@@ -221,7 +222,7 @@ Wait for result. Read `## Linter Report`.
 Spawn using the Agent tool with:
 
     INPUTS: { "feature_id": "...", "feature_file_path": "...", "stangent_path": "...", "config_path": "...", "extra": {} }
-    INSTRUCTIONS: Read {{stangent_path}}/agents/subagents/unit_tester.md and execute.
+    INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-unit-tester.md and execute.
 
 Wait for result. Read `## Test Report`.
 - If FAIL: fix failing tests. Do not add new tests — fix existing ones first.
@@ -235,7 +236,7 @@ Check: does this feature touch any DB layer (models, repositories, raw queries)?
 - DB layer touched: spawn using the Agent tool with:
 
     INPUTS: { "feature_id": "...", "feature_file_path": "...", "stangent_path": "...", "config_path": "...", "extra": {} }
-    INSTRUCTIONS: Read {{stangent_path}}/agents/subagents/query_analyzer.md and execute.
+    INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-query-analyzer.md and execute.
 
   Wait for result. Read `## Query Analysis Report`.
   - If FAIL: fix all danger findings. Re-run. Do not proceed until PASS.

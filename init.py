@@ -170,8 +170,9 @@ STANGENT_DIRS = [
 ]
 
 # Project-level (scoped to one repo)
-CLAUDE_COMMANDS_DIR = ".claude/commands/"
-CLAUDE_AGENTS_DIR   = ".claude/agents/"
+CLAUDE_COMMANDS_DIR  = ".claude/commands/"
+CLAUDE_AGENTS_DIR    = ".claude/agents/"
+CLAUDE_SUBAGENTS_DIR = ".claude/agents/subagents/"
 
 # User-level (available in every project, no init needed)
 GLOBAL_CLAUDE_DIR       = Path.home() / ".claude"
@@ -214,6 +215,17 @@ DROPDOWN_AGENTS: dict[str, dict] = {
         "color":        "yellow",
         "filename":     "stangent-adr.md",
     },
+}
+
+# Sub-agents: deployed to .claude/agents/ but without display_name/color so
+# they are invisible in the Claude Code dropdown. Referenced at runtime by the
+# main agents using the local path — no dependency on the stangent repo at runtime.
+# Maps source path (relative to stangent/agents/) → output filename in .claude/agents/
+SUBAGENTS: dict[str, str] = {
+    "subagents/linter":           "stangent-linter.md",
+    "subagents/unit_tester":      "stangent-unit-tester.md",
+    "subagents/query_analyzer":   "stangent-query-analyzer.md",
+    "subagents/security_scanner": "stangent-security-scanner.md",
 }
 
 
@@ -825,7 +837,10 @@ def copy_claude_agents(project_root: Path, dry_run: bool):
             agents_dst.mkdir(parents=True, exist_ok=True)
         info(f"Created {CLAUDE_AGENTS_DIR}")
 
-    current_agent_files = {cfg["filename"] for cfg in DROPDOWN_AGENTS.values()}
+    current_agent_files = (
+        {cfg["filename"] for cfg in DROPDOWN_AGENTS.values()} |
+        set(SUBAGENTS.values())
+    )
 
     # Remove stale agent files from previous stangent versions
     for dst_file in sorted(agents_dst.glob("stangent*.md")):
@@ -834,6 +849,7 @@ def copy_claude_agents(project_root: Path, dry_run: bool):
                 dst_file.unlink()
             warn(f"agents/{dst_file.name} — removed (no longer in stangent)")
 
+    # ── Dropdown agents (user-visible) ────────────────────────────────────
     for agent_key, agent_cfg in DROPDOWN_AGENTS.items():
         src_file = STANGENT_PATH / "agents" / f"{agent_key}.md"
         if not src_file.exists():
@@ -852,6 +868,36 @@ def copy_claude_agents(project_root: Path, dry_run: bool):
             warn(f"agents/{agent_cfg['filename']} — updated (stangent version changed)")
         else:
             info(f"agents/{agent_cfg['filename']} — installed")
+
+        if not dry_run:
+            dst_file.write_text(content, encoding="utf-8")
+
+    # ── Sub-agents (hidden — deployed to a subfolder, never shown in dropdown)
+    subagents_dst = project_root / CLAUDE_SUBAGENTS_DIR
+    if not subagents_dst.exists():
+        if not dry_run:
+            subagents_dst.mkdir(parents=True, exist_ok=True)
+        info(f"Created {CLAUDE_SUBAGENTS_DIR}")
+
+    for src_rel, dst_name in SUBAGENTS.items():
+        src_file = STANGENT_PATH / "agents" / f"{src_rel}.md"
+        if not src_file.exists():
+            warn(f"agents/{src_rel}.md — not found, skipping")
+            continue
+
+        # Strip internal frontmatter, deploy body only.
+        _, body = parse_frontmatter(src_file.read_text(encoding="utf-8"))
+        content  = body.lstrip("\n")
+        dst_file = subagents_dst / dst_name
+
+        if dst_file.exists():
+            existing = dst_file.read_text(encoding="utf-8")
+            if existing == content:
+                ok(f"agents/subagents/{dst_name} — up to date")
+                continue
+            warn(f"agents/subagents/{dst_name} — updated (stangent version changed)")
+        else:
+            info(f"agents/subagents/{dst_name} — installed")
 
         if not dry_run:
             dst_file.write_text(content, encoding="utf-8")
@@ -1027,6 +1073,20 @@ before writing the spec.
 ## Decisions Log
 
 Architectural decisions are stored in `.stangent/decisions.md`.
+
+## Meta Files (optional)
+
+If your project has documentation that cascades from code changes, create
+`.stangent/meta.md`. The planner reads it automatically and adds dependent
+doc files to `## Files to Touch` in every feature spec.
+
+Example — if changing a model also means updating API docs:
+```
+| When you touch      | Also review         |
+|---------------------|---------------------|
+| src/models/*.py     | docs/api.md         |
+| src/routes/*.py     | README.md           |
+```
 
 - **Auto-bootstrap:** On the first `/feature`, Stangent scans your codebase and
   proposes candidate ADRs (detected frameworks, patterns, conventions). Confirm
