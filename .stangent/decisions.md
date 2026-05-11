@@ -53,3 +53,24 @@ Why this over alternatives. What tipped the balance.
 -->
 
 <!-- Add ADRs below this line, newest at the bottom -->
+
+## ADR-001: Always bump agent version on any change
+**Date:** 2026-05-12
+**Status:** Accepted
+**Feature:** Manual
+**Raised by:** developer
+
+**Context:**
+Agent files have a `version` field in their frontmatter. When changes are made
+without bumping the version, it becomes impossible to tell which deployed copy
+matches which source, and the Run Log version fields become meaningless.
+
+**Decision:** Every change to any agent or sub-agent file must increment its
+`version` field using semver. Patch bump (x.x.N) for fixes and small additions.
+Minor bump (x.N.0) for new behaviour or sections. Major bump (N.0.0) for
+breaking changes to inputs/outputs/contract.
+
+**Consequences:**
+- Any edit to an agent .md file — no matter how small — must include a version bump
+- PRs that modify agent files without a version bump should be rejected
+- The version in the Run Log tells you exactly which agent behaviour was active
