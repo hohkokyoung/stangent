@@ -47,10 +47,10 @@ you read source code and apply pattern matching with judgment.
 
 ## CONTEXT INPUTS
 
-1. `.stangent/config.json` → profile, src_root, and:
+1. `.stangent/config.json` → profiles[0], src_root, and:
    - `integrations.dbhub.enabled`    — whether DBHub MCP is available
    - `integrations.dbhub.mcp_server` — MCP server name (default: "dbhub")
-2. `{{stangent_path}}/profiles/{{profile}}.md` → query_patterns (danger + warn)
+2. `{{stangent_path}}/profiles/{{profiles[0]}}.md` → query_patterns (danger + warn)
 3. `{{feature_file_path}}` → read `## Files Changed`
 4. Read each file in `## Files Changed` that is NOT a test file
 

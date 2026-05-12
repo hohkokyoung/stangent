@@ -4,8 +4,6 @@
 
   "stangent_path": "{{STANGENT_PATH}}",
 
-  "profile": "{{AUTO_DETECTED}}",
-
   "profiles": ["python"],
   "profile_roots": {
     "python": "src/"

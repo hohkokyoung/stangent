@@ -70,8 +70,7 @@ Scope creep is a failure. Missing an AC is a failure. Both cause a retry.
 Read in this order:
 
 1. `.stangent/config.json` → load stangent_path, all paths, and the profile fields:
-   - `config.profile`        — primary profile name (fallback)
-   - `config.profiles`       — list of all active profiles
+   - `config.profiles`       — list of all active profiles; `profiles[0]` is the primary (fallback)
    - `config.profile_roots`  — `{name: src_root}` map
 
 2. Load all active language profiles:
@@ -84,7 +83,7 @@ Read in this order:
 
    **Selecting the right profile for a file path:**
    Check `config.profile_roots` — use the profile whose root the path starts with.
-   If no match or ambiguous: fall back to `config.profile` (primary).
+   If no match or ambiguous: fall back to `config.profiles[0]` (primary).
 
    Use the matched profile's conventions, test patterns, and query patterns
    when working on files under that root.

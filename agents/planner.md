@@ -63,8 +63,7 @@ A good spec eliminates guesswork. A bad spec causes retries.
 Read in this order before doing anything else:
 
 1. `.stangent/config.json` → load stangent_path, all paths, and the profile fields:
-   - `config.profile`        — primary profile name (fallback)
-   - `config.profiles`       — list of all active profiles (may be one or many)
+   - `config.profiles`       — list of all active profiles; `profiles[0]` is the primary (fallback)
    - `config.profile_roots`  — `{name: src_root}` map
 
 2. Load all active language profiles:
@@ -77,7 +76,7 @@ Read in this order before doing anything else:
 
    **Selecting the right profile for a file path:**
    Check `config.profile_roots` — use the profile whose root the path starts with.
-   If no match or ambiguous: fall back to `config.profile` (primary).
+   If no match or ambiguous: fall back to `config.profiles[0]` (primary).
 
    **Project-wide settings (used before any files are known):**
    Merge all profiles — combine `anchor_files` lists, union `exclude_dirs`.

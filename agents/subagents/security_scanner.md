@@ -61,8 +61,8 @@ Security is not optional. All four passes run regardless of feature scope.
 
 ## CONTEXT INPUTS
 
-1. `.stangent/config.json` → profile, src_root
-2. `{{stangent_path}}/profiles/{{profile}}.md` → all security-related commands
+1. `.stangent/config.json` → profiles[0], src_root
+2. `{{stangent_path}}/profiles/{{profiles[0]}}.md` → all security-related commands
 3. `files_changed` input → list of changed files
 4. `{{feature_file_path}}` → read ## New Environment Variables section
 

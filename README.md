@@ -335,7 +335,6 @@ Key settings:
 ```json
 {
   "stangent_path": "/path/to/stangent",
-  "profile": "python",
   "profiles": ["python"],
   "profile_roots": { "python": "src/" },
 

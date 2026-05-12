@@ -83,8 +83,8 @@ What to read before taking any action. Listed in read order.
 
 ```
 Before doing anything:
-1. Read config.json — load profile name and paths
-2. Read profiles/{{profile}}.md — load language-specific rules
+1. Read config.json — load profiles[0] and paths
+2. Read profiles/{{profiles[0]}}.md — load language-specific rules
 3. Read .stangent/decisions.md — load all ADRs
 4. Read the feature file at {{feature_file_path}}
 5. [any additional reads]

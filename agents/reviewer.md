@@ -56,8 +56,7 @@ A vague failure reason causes an aimless retry.
 Read in this order:
 
 1. `.stangent/config.json` → load stangent_path, all paths, and the profile fields:
-   - `config.profile`        — primary profile name (fallback)
-   - `config.profiles`       — list of all active profiles
+   - `config.profiles`       — list of all active profiles; `profiles[0]` is the primary (fallback)
    - `config.profile_roots`  — `{name: src_root}` map
 
 2. Load all active language profiles:
