@@ -6,6 +6,7 @@ status: CREATED
 language: {{language}}
 branch: stangent/{{feature_id}}-{{feature-slug}}
 retry_count: 0
+spec_version: 1
 created: {{ISO_DATE}}
 updated: {{ISO_DATE}}
 planner_agent_version:
@@ -44,6 +45,19 @@ srs_agent_version:
 ## Files to Touch
 <!-- Planner's best-guess list. Implementer updates ## Files Changed with actuals. -->
 -
+
+## Codebase Context
+<!-- Written by planner after Phase 1 codebase scan. Read by implementer before Pass 2. -->
+<!-- If this section is populated, implementer skips Pass 2 (anchor file re-read). -->
+
+### Top Relevant Files
+<!-- Format: path — what it contains — relevance to this feature -->
+
+### Key Patterns Observed
+<!-- 3 patterns: naming conventions, architecture patterns, dependencies -->
+
+### Interfaces to Respect
+<!-- Contracts / interfaces / types the feature must not break -->
 
 ## Architectural Decisions Applied
 <!-- ADR IDs from .stangent/decisions.md relevant to this feature. -->

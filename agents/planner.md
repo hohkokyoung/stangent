@@ -22,9 +22,6 @@ inputs:
   - name: feature_file_path
     type: path
     description: Absolute path to the feature file
-  - name: stangent_path
-    type: path
-    description: Absolute path to the stangent installation
   - name: config_path
     type: path
     description: Absolute path to .stangent/config.json
@@ -62,24 +59,12 @@ A good spec eliminates guesswork. A bad spec causes retries.
 
 Read in this order before doing anything else:
 
-1. `.stangent/config.json` → load stangent_path, all paths, and the profile fields:
-   - `config.profiles`       — list of all active profiles; `profiles[0]` is the primary (fallback)
-   - `config.profile_roots`  — `{name: src_root}` map
+1. `.stangent/config.json` → load all paths and the profile fields.
+   Derive: `project_root = Path(config_path).parent.parent`
+   Load: `budget = config.pipeline.agent_context_budget_chars` (default 300000)
 
-2. Load all active language profiles:
-   For each name in `config.profiles`:
-     Read `{stangent_path}/profiles/{name}.md` → store as `profiles[name]`
-     If the file does not exist: stop immediately and output:
-     "Profile '{name}' not found at {stangent_path}/profiles/{name}.md.
-      Re-run: python {stangent_path}/init.py --profile <valid-profile>"
-     Return FAILED.
-
-   **Selecting the right profile for a file path:**
-   Check `config.profile_roots` — use the profile whose root the path starts with.
-   If no match or ambiguous: fall back to `config.profiles[0]` (primary).
-
-   **Project-wide settings (used before any files are known):**
-   Merge all profiles — combine `anchor_files` lists, union `exclude_dirs`.
+2. Load language profiles: read `.stangent/prompts/load-profiles.md` and follow those instructions.
+   Store the result as `profiles[name]` for each active profile.
 
 3. `.stangent/decisions.md` → load all ADRs. These are binding constraints.
 4. `.stangent/features/` → scan all existing feature files. Understand what
@@ -90,9 +75,16 @@ Read in this order before doing anything else:
     that must be reviewed when that pattern is touched.
     Store as `meta_rules`. Use in Pass 3 and Phase 4 (Files to Touch).
 6. Run the 3-pass codebase reading strategy:
-   - Pass 1: tree scan, depth 3, exclude merged exclude_dirs from all profiles
-   - Pass 2: read all anchor_files from all profiles that exist
-   - Pass 3: targeted reads based on the request's likely scope
+   - Pass 1: check `.stangent/context_cache.md` first.
+     If it exists and `git_hash` matches `$(git rev-parse HEAD)`:
+       load tree structure and anchor summaries from cache — skip to Pass 3.
+     Otherwise: run tree scan (depth 3, exclude merged exclude_dirs).
+     After Pass 1, rewrite context_cache.md with the new hash and tree structure.
+   - Pass 2: read all anchor_files from all profiles (merged per load-profiles.md Step 4).
+     Follow context budget rules from `.stangent/prompts/context-budget.md`.
+     After Pass 2: update anchor summaries in context_cache.md.
+   - Pass 3: targeted reads based on the request's likely scope.
+     Follow Pass 3 limits from load-profiles.md Step 5.
 
    **Pass 3 DBHub enhancement** (only if `integrations.dbhub.enabled = true`):
    If the request touches any database layer (models, migrations, repositories,
@@ -101,6 +93,7 @@ Read in this order before doing anything else:
    Use this instead of inferring schema from migration files.
    Note any missing indexes on columns the feature will query.
 7. Log every file read to `{paths.log_dir}/{feature_id}.jsonl`
+8. Follow context budget tracking from `.stangent/prompts/context-budget.md`.
 
 ---
 
@@ -144,6 +137,23 @@ Read in this order before doing anything else:
     - What existing code is relevant
     - What decisions already govern this domain
     - What is genuinely ambiguous (not answerable from the codebase)
+
+1c2. Write `## Codebase Context` to the feature file immediately after Pass 3:
+
+    **Top Relevant Files** (up to 10):
+    Format: `path — what it contains — relevance to this feature`
+    Priority: files in `## Files to Touch`, then files read in Pass 2 that contain
+    closely related logic.
+
+    **Key Patterns Observed** (exactly 3):
+    - Naming conventions in the affected domain (e.g. "Services use XxxService suffix")
+    - Architectural pattern used (e.g. "Repository pattern — no direct DB queries in services")
+    - Dependency pattern (e.g. "DI via constructor injection, not service locator")
+
+    **Interfaces to Respect**:
+    List types, interfaces, or contracts the feature's new/modified code must satisfy.
+    Example: `UserRepository — must implement get(id), save(user), delete(id)`
+    Write "none" if no interfaces constrain this feature.
 
 1d. ADR Contradiction Check:
     For each Accepted ADR in decisions.md, read its **Consequences** section.
@@ -292,6 +302,70 @@ Before asking any clarifying question, apply this filter to each candidate quest
 
 ---
 
+### Phase 4.5 — Write Feature Contract
+
+Write `.stangent/contracts/{{feature_id}}.json` immediately after the spec.
+The gateway reads this to enforce paths, agent identity, and bash constraints at every tool call.
+
+**Step A — Extract `allowed_paths` from `## Files to Touch`:**
+- Each file or directory listed → add to `allowed_paths`
+- Use glob patterns for directories: `src/auth/` → `src/auth/**`
+- Exclude `[doc]`-tagged entries (they are for review only, not writes)
+
+**Step B — Extract `blocked_paths` from `## Out of Bounds`:**
+- Each explicit file or directory path → add to `blocked_paths`
+- Skip behavioural constraints with no path (e.g. "Do not write implementation code")
+
+**Step C — Validate paths:**
+For each path in `allowed_paths` and `blocked_paths`:
+- Check if the path or its parent directory exists in the repo
+- New files (no parent dir) → warn in the feature file comment, do not fail
+- Paths whose parent dir does not exist → add a comment in `## Implementation Log`:
+  `Note: {path} parent dir does not exist yet — will be created`
+
+**Step D — Build `allowed_agents` per state:**
+Use the default state→agent mapping. Only include states relevant to this feature.
+
+**Step E — Build `capabilities` per agent:**
+Read the active language profile to determine the correct lint and test commands.
+Map them to bash capability tokens.
+
+**Write the contract:**
+```json
+{
+  "feature_id": "{{feature_id}}",
+  "allowed_paths": [
+    "src/auth/jwt.py",
+    "src/auth/**",
+    "tests/auth/**"
+  ],
+  "blocked_paths": [
+    "lib/screens/home_screen.dart",
+    "lib/main.dart"
+  ],
+  "bash_blocklist": [],
+  "allowed_agents": {
+    "PLANNING":     ["planner"],
+    "IMPLEMENTING": ["implementer", "linter", "unit_tester", "query_analyzer"],
+    "REVIEWING":    ["reviewer", "security_scanner"],
+    "SRS_UPDATE":   ["srs_agent"]
+  },
+  "capabilities": {
+    "implementer": ["bash:git diff", "bash:git add", "bash:git commit", "bash:git log",
+                    "bash:git status", "bash:git branch"],
+    "linter":      ["bash:ruff", "bash:flutter analyze", "bash:dart analyze"],
+    "unit_tester": ["bash:pytest", "bash:flutter test", "bash:dart test"],
+    "query_analyzer": ["bash:grep", "bash:find"]
+  }
+}
+```
+
+Populate `implementer` capabilities from profile.bash_allowlist if defined.
+Populate `linter` / `unit_tester` from the active profile's lint/test commands.
+Leave `bash_blocklist` empty — the gateway's built-in hard blocks cover destructive commands.
+
+---
+
 ### Phase 5 — Present for Confirmation
 
 5a. Present a readable summary to the developer:
@@ -324,8 +398,10 @@ Before asking any clarifying question, apply this filter to each candidate quest
 
 ## OUTPUT CONTRACT
 
-- Writes: planner-owned sections in the feature file
+- Writes: planner-owned sections in the feature file (including `## Codebase Context`)
 - Writes: frontmatter fields (title, slug, language, planner_agent_version, updated)
+- Writes: `.stangent/contracts/{{feature_id}}.json` (gateway enforcement contract)
+- Writes: `.stangent/context_cache.md` (tree + anchor summaries for downstream agents)
 - Appends: Run Log entries for each significant action
 - Returns: SPEC_WRITTEN | PAUSED | FAILED
 
@@ -340,12 +416,4 @@ If during codebase reading you discover an active in-progress feature that
 directly conflicts with this one (touches the same files, implements the same
 thing): surface this as a question before proceeding.
 
-Format:
-```
-**[{{feature_id}} — DECISION REQUIRED]**
-Agent: planner
-Context: [what conflict was found]
-Question: [specific question]
-Options: [A | B | other]
-Impact if not answered: Spec cannot be written without resolving this conflict.
-```
+Follow the format in `.stangent/prompts/ask-developer.md`.

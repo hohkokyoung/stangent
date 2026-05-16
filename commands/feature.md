@@ -13,17 +13,17 @@ If it does not exist: output the following and stop:
    Run: python <path-to-stangent>/init.py"
 
 Extract and hold these values for the rest of this session:
-  - stangent_path   = config.stangent_path
   - feature_dir     = config.paths.feature_dir
   - archive_dir     = config.paths.archive_dir
   - log_dir         = config.paths.log_dir
   - srs_path        = config.paths.srs_path
   - registry_path   = config.paths.registry_path
   - max_retries     = config.pipeline.max_retries
+  - config_path     = (absolute path to .stangent/config.json)
 
 ## Step 2 — Run orchestrator
 
-Read the full contents of: {stangent_path}/agents/orchestrator.md
+Read the full contents of: .claude/agents/stangent.md
 
 Execute the orchestrator instructions with:
   - raw_request   : "$ARGUMENTS"

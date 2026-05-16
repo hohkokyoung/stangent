@@ -18,9 +18,6 @@ inputs:
   - name: feature_file_path
     type: path
     description: Absolute path to the feature file
-  - name: stangent_path
-    type: path
-    description: Absolute path to the stangent installation
   - name: config_path
     type: path
     description: Absolute path to .stangent/config.json
@@ -52,8 +49,9 @@ You do not fix anything — you report. The implementer fixes and re-runs you.
 
 ## CONTEXT INPUTS
 
-1. `.stangent/config.json` → profiles[0], src_root
-2. `{{stangent_path}}/profiles/{{profiles[0]}}.md` → lint command, lint_config_files
+1. `.stangent/config.json` → profiles[0], src_root.
+   Derive: `project_root = Path(config_path).parent.parent`
+2. `.stangent/profiles/{config.profiles[0]}.md` → lint command, lint_config_files
 3. `{{feature_file_path}}` → read `## Files Changed` (only lint these files)
 4. Check for existing lint config files listed in `profile.lint_config_files`
 

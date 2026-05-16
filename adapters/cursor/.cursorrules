@@ -1,0 +1,41 @@
+# Stangent Gateway — Cursor Rules
+
+# This file enforces Stangent gateway rules in Cursor / Windsurf via
+# cursor rules (soft enforcement — instruction level).
+# For hard enforcement, use the Claude Code adapter (PreToolUse hooks).
+
+## Gateway check required
+
+Before writing or editing any file outside .stangent/:
+  Run: echo '{"tool_name":"Write","tool_input":{"file_path":"<PATH>"}}' | python .stangent/gateway/gateway.py
+  If exit code is non-zero: do NOT write. Report the block to the developer.
+
+Before running any bash command:
+  Run: echo '{"tool_name":"Bash","tool_input":{"command":"<CMD>"}}' | python .stangent/gateway/gateway.py
+  If exit code is non-zero: do NOT run the command.
+
+## Hard bash blocks (always enforced, no gateway call needed)
+
+Never run:
+  - git push --force
+  - git push -f
+  - git reset --hard
+  - git clean -f
+  - rm -rf
+  - DROP TABLE
+  - DELETE FROM
+
+## Active feature
+
+The current feature context is in .stangent/gateway/active.json.
+The feature contract (allowed paths, blocked paths, capabilities) is in
+.stangent/contracts/{feature_id}.json.
+
+Read these files to understand what you are and are not allowed to touch.
+
+## Override
+
+If the gateway blocks a write you believe is needed:
+  Tell the developer: "[Gateway blocked: <path> — not in allowed_paths]"
+  They will run /gateway unblock <path> to add it to the contract.
+  Do NOT write the file until the contract is updated.

@@ -19,9 +19,6 @@ inputs:
   - name: feature_file_path
     type: path
     description: Absolute path to the feature file
-  - name: stangent_path
-    type: path
-    description: Absolute path to the stangent installation
   - name: config_path
     type: path
     description: Absolute path to .stangent/config.json
@@ -61,8 +58,9 @@ Security is not optional. All four passes run regardless of feature scope.
 
 ## CONTEXT INPUTS
 
-1. `.stangent/config.json` → profiles[0], src_root
-2. `{{stangent_path}}/profiles/{{profiles[0]}}.md` → all security-related commands
+1. `.stangent/config.json` → profiles[0], src_root.
+   Derive: `project_root = Path(config_path).parent.parent`
+2. `.stangent/profiles/{config.profiles[0]}.md` → all security-related commands
 3. `files_changed` input → list of changed files
 4. `{{feature_file_path}}` → read ## New Environment Variables section
 

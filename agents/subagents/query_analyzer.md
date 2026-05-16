@@ -18,9 +18,6 @@ inputs:
   - name: feature_file_path
     type: path
     description: Absolute path to the feature file
-  - name: stangent_path
-    type: path
-    description: Absolute path to the stangent installation
   - name: config_path
     type: path
     description: Absolute path to .stangent/config.json
@@ -50,7 +47,8 @@ you read source code and apply pattern matching with judgment.
 1. `.stangent/config.json` → profiles[0], src_root, and:
    - `integrations.dbhub.enabled`    — whether DBHub MCP is available
    - `integrations.dbhub.mcp_server` — MCP server name (default: "dbhub")
-2. `{{stangent_path}}/profiles/{{profiles[0]}}.md` → query_patterns (danger + warn)
+   Derive: `project_root = Path(config_path).parent.parent`
+2. `.stangent/profiles/{config.profiles[0]}.md` → query_patterns (danger + warn)
 3. `{{feature_file_path}}` → read `## Files Changed`
 4. Read each file in `## Files Changed` that is NOT a test file
 

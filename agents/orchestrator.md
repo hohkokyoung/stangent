@@ -26,6 +26,9 @@ inputs:
     description: >
       Pipeline stage to resume from. Valid values: PLANNING, CONFIRMED,
       IMPLEMENTING, REVIEWING, SRS_UPDATE. Empty = auto-detect from feature file.
+  - name: config_path
+    type: path
+    description: Absolute path to .stangent/config.json
 outputs:
   - name: pipeline_result
     type: string
@@ -58,7 +61,9 @@ you delegate to specialist agents and manage the flow between them.
 
 Before doing anything:
 
-1. Read `.stangent/config.json` at project root — load stangent_path, profile, paths, pipeline settings
+1. Read `.stangent/config.json` at project root — load paths and pipeline settings.
+   Derive: `project_root = Path(config_path).parent.parent`
+   Note: `stangent_path` is no longer in config. All resources are self-contained in the project.
 2. Read `{{paths.registry_path}}` — load features registry and current FEAT counter
 3. If feature_id is provided: glob `{{paths.feature_dir}}/{{feature_id}}-*.md` to find the feature file
    (feature files include a slug in the name: FEAT-XXX-slug.md)
@@ -77,6 +82,7 @@ Before doing anything:
 6. If a dependency feature is not COMPLETE: halt with status BLOCKED
 7. If the pipeline is already COMPLETE or ESCALATED: refuse to re-run without
    explicit `resume_from` instruction
+8. After every status change: run the Registry Update procedure (see OUTPUT CONTRACT section)
 
 ---
 
@@ -91,6 +97,30 @@ Before doing anything:
 ---
 
 ## PROCESS
+
+### STEP 0 — Pre-flight Check (always runs first)
+
+0a. Validate config: check that all required fields exist in `.stangent/config.json`.
+    Required: `profiles`, `paths.feature_dir`, `paths.log_dir`, `paths.decisions_path`,
+    `paths.registry_path`, `pipeline.max_retries`, `pipeline.ask_developer_timeout_minutes`.
+    If any field is missing: output the missing fields and stop.
+    "Config is incomplete — re-run init.py to repair."
+
+0b. Check git availability: run `git rev-parse --git-dir`.
+    If it fails: output "git not found or not a git repository. The pipeline requires git." and stop.
+
+0c. Check for stale gateway state: if `.stangent/gateway/active.json` exists:
+    Read it and check the feature_id and state.
+    If the active feature's status in its feature file is COMPLETE, ABANDONED, ESCALATED, or FAILED:
+      Delete the stale active.json and log a warning.
+      "Cleaned up stale gateway state from a previous run."
+    If the active feature is genuinely in progress and this is a different feature request:
+      Output: "Another feature is currently active: {feature_id} ({state}).
+      Finish or /abandon it before starting a new one." and stop.
+
+0d. Proceed to STEP 1.
+
+---
 
 ### STEP 1 — Initialise Feature (only when starting fresh)
 
@@ -114,16 +144,29 @@ Before doing anything:
 1b. Generate slug from raw_request: lowercase, spaces to hyphens, max 5 words.
     Example: "add login screen with email" → "login-screen-email"
 
-1c. Copy `{{stangent_path}}/templates/feature_spec.md` to
+1c. Copy `.stangent/templates/feature_spec.md` to
     `{{paths.feature_dir}}/{{feature_id}}-{{slug}}.md`.
     Substitute all `{{...}}` placeholders. Set status = CREATED.
+    Run Registry Update procedure (status: CREATED, title: raw_request[:60]).
 
-1d. Create git branch: `git checkout -b {{pipeline.branch_prefix}}{{feature_id}}-{{slug}}`
+1d. Create git branch:
+    First check: `git branch --list {{pipeline.branch_prefix}}{{feature_id}}-{{slug}}`
+    - If output is non-empty: branch already exists (prior run or resume).
+      Log "branch already exists — reusing" and skip `git checkout -b`.
+      Run `git checkout {{pipeline.branch_prefix}}{{feature_id}}-{{slug}}` to switch to it.
+    - If output is empty: `git checkout -b {{pipeline.branch_prefix}}{{feature_id}}-{{slug}}`
     Log the branch name in the feature file frontmatter.
 
-1e. Append to Pipeline History: `CREATED | orchestrator | branch created`
+1e. Write `.stangent/gateway/active.json`:
+    ```json
+    { "feature_id": "{{feature_id}}", "state": "CREATED",
+      "agent": "orchestrator", "activated_at": "{{ISO timestamp}}" }
+    ```
+    This activates gateway enforcement. Update this file on every state transition.
 
-1f. Proceed to STEP 2.
+1f. Append to Pipeline History: `CREATED | orchestrator | branch created`
+
+1g. Proceed to STEP 2.
 
 ---
 
@@ -161,12 +204,11 @@ Before doing anything:
         "mode":           "bootstrap",
         "title":          "",
         "decisions_path": "{{absolute path to .stangent/decisions.md}}",
-        "stangent_path":  "{{stangent_path from config}}",
         "config_path":    "{{absolute path to .stangent/config.json}}"
       }
 
       INSTRUCTIONS:
-      Read the full contents of: {stangent_path}/agents/adr_agent.md
+      Read the full contents of: .claude/agents/stangent-adr.md
       Then execute Bootstrap Mode using the inputs above.
 
 2.5c. adr_agent returns: BOOTSTRAPPED | SKIPPED
@@ -184,6 +226,7 @@ Before doing anything:
 ### STEP 3 — PLANNING Stage
 
 3a. Set status = PLANNING. Append to Pipeline History.
+    Update active.json: `{ ..., "state": "PLANNING", "agent": "planner" }`
 
 3b. Spawn the planner agent using the Agent tool with this prompt structure:
 
@@ -191,20 +234,23 @@ Before doing anything:
     {
       "feature_id":        "{{feature_id}}",
       "feature_file_path": "{{absolute feature file path}}",
-      "stangent_path":     "{{stangent_path from config}}",
       "config_path":       "{{absolute path to .stangent/config.json}}",
       "extra": { "raw_request": "{{raw_request}}" }
     }
 
     INSTRUCTIONS:
-    Read the full contents of: {stangent_path}/agents/planner.md
+    Read the full contents of: .claude/agents/stangent-planner.md
     Then execute those instructions using the inputs above.
 
 3c. Planner returns: SPEC_WRITTEN | PAUSED | FAILED
 
-3d. If PAUSED: set status = PAUSED. Output resume instruction. STOP.
+3d. If PAUSED: set status = PAUSED.
+    Update active.json: `{ ..., "state": "PAUSED", "agent": "orchestrator" }`
+    Output resume instruction. STOP.
 3e. If FAILED: set status = FAILED. Append failure to Pipeline History. STOP.
-3f. If SPEC_WRITTEN: set status = AWAITING_CONFIRMATION. Proceed to STEP 4.
+3f. If SPEC_WRITTEN: set status = AWAITING_CONFIRMATION.
+    Update active.json: `{ ..., "state": "AWAITING_CONFIRMATION", "agent": "orchestrator" }`
+    Proceed to STEP 4.
 
 ---
 
@@ -220,7 +266,9 @@ Before doing anything:
 4b. Ask: "Confirm this spec and start implementation? (yes / edit / abort)"
 
 4c. If "yes" or "confirm" or "proceed":
-    Set status = CONFIRMED. Proceed to STEP 5.
+    Set status = CONFIRMED.
+    Update active.json: `{ ..., "state": "CONFIRMED", "agent": "orchestrator" }`
+    Proceed to STEP 5.
 
 4d. If "edit" or developer provides corrections:
     Capture the developer's full message as the corrections string.
@@ -236,7 +284,8 @@ Before doing anything:
     Return to 4a.
 
 4e. If "abort":
-    Set status = ABANDONED. Clean up branch if no commits exist. STOP.
+    Set status = ABANDONED. Clean up branch if no commits exist.
+    Delete `.stangent/gateway/active.json`. STOP.
 
 ---
 
@@ -244,6 +293,7 @@ Before doing anything:
 
 5a. Set status = IMPLEMENTING. Append to Pipeline History.
     Record implementer_agent_version from agent frontmatter.
+    Update active.json: `{ ..., "state": "IMPLEMENTING", "agent": "implementer" }`
 
 5b. Spawn the implementer agent using the Agent tool:
 
@@ -251,18 +301,22 @@ Before doing anything:
     {
       "feature_id":        "{{feature_id}}",
       "feature_file_path": "{{absolute feature file path}}",
-      "stangent_path":     "{{stangent_path}}",
       "config_path":       "{{absolute .stangent/config.json path}}",
-      "extra": { "previous_verdict": "{{## Review Verdict content if retry_count > 0, else empty}}" }
+      "extra": {
+        "previous_verdict": "{{## Review Verdict content if retry_count > 0, else empty}}",
+        "failure_type":     "{{LINT | TEST | QUERY | SECURITY | REVIEW_CRITICAL | REVIEW_MAJOR | empty on first run}}"
+      }
     }
 
     INSTRUCTIONS:
-    Read the full contents of: {stangent_path}/agents/implementer.md
+    Read the full contents of: .claude/agents/stangent-implementer.md
     Then execute those instructions using the inputs above.
 
 5c. Implementer returns: IMPLEMENTED | PAUSED | FAILED
 
-5d. If PAUSED: set status = PAUSED. Output resume instruction. STOP.
+5d. If PAUSED: set status = PAUSED.
+    Update active.json: `{ ..., "state": "PAUSED", "agent": "orchestrator" }`
+    Output resume instruction. STOP.
 5e. If FAILED: increment retry_count.
     If retry_count >= max_retries: go to ESCALATE.
     Else: go to 5a (retry with previous verdict).
@@ -274,6 +328,7 @@ Before doing anything:
 
 6a. Set status = REVIEWING. Append to Pipeline History.
     Record reviewer_agent_version.
+    Update active.json: `{ ..., "state": "REVIEWING", "agent": "reviewer" }`
 
 6b. Spawn the reviewer agent using the Agent tool:
 
@@ -281,18 +336,19 @@ Before doing anything:
     {
       "feature_id":        "{{feature_id}}",
       "feature_file_path": "{{absolute feature file path}}",
-      "stangent_path":     "{{stangent_path}}",
       "config_path":       "{{absolute .stangent/config.json path}}",
       "extra": {}
     }
 
     INSTRUCTIONS:
-    Read the full contents of: {stangent_path}/agents/reviewer.md
+    Read the full contents of: .claude/agents/stangent-reviewer.md
     Then execute those instructions using the inputs above.
 
 6c. Reviewer returns: PASS | FAIL | PAUSED | FAILED
 
-6d. If PAUSED: set status = PAUSED. Output resume instruction. STOP.
+6d. If PAUSED: set status = PAUSED.
+    Update active.json: `{ ..., "state": "PAUSED", "agent": "orchestrator" }`
+    Output resume instruction. STOP.
 6e. If FAILED (agent error): set status = FAILED. STOP.
 6f. If FAIL (review verdict):
     Read ## Review Verdict for severity.
@@ -300,8 +356,21 @@ Before doing anything:
     If CRITICAL or MAJOR issues:
       Increment retry_count.
       If retry_count >= max_retries: go to ESCALATE.
-      Append verdict summary to Pipeline History.
-      Go to STEP 5 (re-implement with verdict context).
+
+      **Failure classification — determine `failure_type` before retry:**
+      Read the full ## Linter Report, ## Test Report, ## Query Analysis Report, ## Review Verdict:
+      - `LINT`           — Linter Report status = FAIL
+      - `TEST`           — Test Report status = FAIL
+      - `QUERY`          — Query Analysis Report status = FAIL (any DANGER findings)
+      - `SECURITY`       — Security Report has CRITICAL finding
+      - `REVIEW_CRITICAL` — Review Verdict has CRITICAL issues
+      - `REVIEW_MAJOR`   — Review Verdict has MAJOR issues (and no CRITICAL)
+      Priority: SECURITY > LINT > TEST > QUERY > REVIEW_CRITICAL > REVIEW_MAJOR
+      A single failure_type is enough — pick the highest priority match.
+
+      Append verdict summary + failure_type to Pipeline History.
+      Update active.json: `{ ..., "state": "IMPLEMENTING", "agent": "implementer" }`
+      Go to STEP 5 (re-implement with verdict context and failure_type).
 6g. If PASS: set status = REVIEW_PASS. Proceed to STEP 7.
 
 ---
@@ -310,6 +379,7 @@ Before doing anything:
 
 7a. Set status = SRS_UPDATE. Append to Pipeline History.
     Record srs_agent_version.
+    Update active.json: `{ ..., "state": "SRS_UPDATE", "agent": "srs_agent" }`
 
 7b. Spawn the srs_agent using the Agent tool:
 
@@ -317,13 +387,12 @@ Before doing anything:
     {
       "feature_id":        "{{feature_id}}",
       "feature_file_path": "{{absolute feature file path}}",
-      "stangent_path":     "{{stangent_path}}",
       "config_path":       "{{absolute .stangent/config.json path}}",
       "extra": {}
     }
 
     INSTRUCTIONS:
-    Read the full contents of: {stangent_path}/agents/srs_agent.md
+    Read the full contents of: .claude/agents/stangent-srs.md
     Then execute those instructions using the inputs above.
 
 7c. SRS agent returns: UPDATED | SKIPPED | FAILED
@@ -331,6 +400,7 @@ Before doing anything:
 7d. If FAILED: log warning but do not block. SRS can be re-run with /srs.
 
 7e. Set status = COMPLETE. Append to Pipeline History.
+    Delete `.stangent/gateway/active.json` (gateway enforcement no longer needed).
 
 ---
 
@@ -356,20 +426,80 @@ Before doing anything:
 ### ESCALATE
 
 E1. Set status = ESCALATED. Append to Pipeline History with reason.
+    Delete `.stangent/gateway/active.json`.
 
 E2. Output:
     ```
-    ⚠ {{feature_id}} ESCALATED after {{retry_count}} retries.
+    ⚠ {{feature_id}} — ESCALATED after {{retry_count}} retries.
 
     Last Review Verdict:
     [paste ## Review Verdict content]
 
-    The pipeline cannot auto-resolve these issues.
-    Review the feature file at: {{feature_file_path}}
-    Then restart the relevant stage: /implement {{feature_id}}
+    What failed: [specific reason — not "review failed", but the actual issue]
+
+    Recovery options:
+      A — Fix the issues manually, then resume:
+            /implement {{feature_id}}
+      B — Edit the spec to narrow scope, then re-plan:
+            /plan {{feature_id}}
+      C — Abandon this feature:
+            /abandon {{feature_id}}
+
+    Feature file: {{feature_file_path}}
+    Audit log:    {{paths.log_dir}}/{{feature_id}}.jsonl
     ```
 
 E3. STOP.
+
+---
+
+### FAILED recovery note
+
+When status = FAILED (agent error, not review FAIL):
+  Output:
+  ```
+  ✗ {{feature_id}} — FAILED (agent error).
+
+  Error: [specific error from agent output]
+
+  Recovery:
+    Check the Run Log for context: {{paths.log_dir}}/{{feature_id}}.jsonl
+    Then retry the failed stage:
+      /implement {{feature_id}}   ← if implementer failed
+      /review {{feature_id}}      ← if reviewer failed
+      /srs {{feature_id}}         ← if SRS agent failed
+
+  If the error repeats, check gateway audit log for blocked tool calls:
+    .stangent/logs/gateway_audit.jsonl
+  ```
+
+---
+
+## REGISTRY UPDATE PROCEDURE
+
+After every status change (`set status = X`) and after feature creation (Step 1c),
+update the `features` map in `{{paths.registry_path}}`:
+
+```json
+"features": {
+  "{{feature_id}}": {
+    "title":   "{{title from frontmatter, or raw_request if title not yet set}}",
+    "status":  "{{current status}}",
+    "branch":  "{{branch from frontmatter, or '' if not yet created}}",
+    "created": "{{created from frontmatter}}",
+    "updated": "{{current ISO date}}"
+  }
+}
+```
+
+To update atomically:
+1. Acquire the registry lock (same protocol as Step 1a).
+2. Read `{{paths.registry_path}}` — parse JSON.
+3. Set `registry.features["{{feature_id}}"]` to the entry above.
+4. Write registry back.
+5. Release lock.
+
+If the registry file is missing or malformed: log a warning and skip (do not block the pipeline).
 
 ---
 
@@ -377,6 +507,7 @@ E3. STOP.
 
 - Feature file frontmatter: `status`, `retry_count`, `*_agent_version` fields
 - Feature file `## Pipeline History`: append one row per significant event
+- Registry `features` map: updated on every status transition
 - Run Log `{{paths.log_dir}}/{{feature_id}}.jsonl`: one JSON line per action
 - Terminal: human-readable progress updates at each stage transition
 

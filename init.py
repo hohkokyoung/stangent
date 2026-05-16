@@ -17,1190 +17,43 @@ TWO MODES:
       python init.py --global           # installs globally
       cd your-project && python init.py # then scaffold the project
 
+  Remove from a project:
+      python init.py --uninit           # remove tooling, keep .stangent/ data
+      python init.py --uninit --hard    # remove everything including .stangent/
+
 Options:
     --global    Install agents/commands to ~/.claude/ (user-level, all projects)
+    --uninit    Remove Stangent from the current project (keeps feature data)
+    --hard      Used with --uninit: also deletes .stangent/ and all feature history
     --profile   Override auto-detected profile (python | flutter)
     --dry-run   Show what would be done without writing anything
     --verify    Only run environment validation, no scaffolding
 """
 
 import argparse
-import hashlib
 import json
-import os
-import platform
-import re
-import shutil
-import subprocess
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
+from init_constants import (
+    STANGENT_PATH, VERSION, PROFILES, PROVIDERS,
+    GLOBAL_AGENTS_DIR,
+    C, ok, fail, warn, info, header,
+)
+from init_env import (
+    check_python_version, check_git, check_credentials,
+    detect_provider, detect_profiles, check_tools,
+)
+from init_config import build_config, validate_config
+from init_scaffold import (
+    create_stangent_dirs, init_registry,
+    install_global, uninit_project,
+    copy_profiles, copy_templates, copy_prompts, copy_gateway,
+    write_settings_json, copy_commands, copy_claude_agents,
+    create_srs, create_decisions, create_env_example,
+    update_gitignore, create_onboarding_doc, configure_dbhub,
+)
 
-STANGENT_PATH = Path(__file__).parent.resolve()
-REQUIRED_PYTHON = (3, 10)
-VERSION = "1.0.0"
-
-PROFILES = {
-    "flutter": {
-        "detect_files": ["pubspec.yaml"],
-        "required_tools": ["flutter", "dart"],
-        "optional_tools": ["detect-secrets"],
-        "src_root": "lib/",
-    },
-    "python": {
-        "detect_files": ["pyproject.toml", "requirements.txt", "setup.py"],
-        "required_tools": ["ruff", "pytest", "bandit", "pip-audit", "detect-secrets"],
-        "optional_tools": ["pytest-cov", "pytest-json-report"],
-        "src_root": "src/",
-    },
-}
-
-# Supported LLM providers.
-#
-# required_env  — ALL must be set for the provider to work
-# optional_env  — nice-to-have (e.g. region, base URL override)
-# detect_env    — ANY of these present → auto-detect this provider
-# sdk           — which SDK to use: "anthropic" or "openai"
-# api_key_env   — env var name for the API key (openai-sdk providers)
-# base_url      — hardcoded base URL for openai-sdk providers (None = default)
-# default_models — used when building a fresh config.json
-PROVIDERS: dict[str, dict] = {
-    # ── Anthropic family ──────────────────────────────────────────────────
-    "anthropic": {
-        "display":        "Anthropic (direct API)",
-        "required_env":   ["ANTHROPIC_API_KEY"],
-        "optional_env":   [],
-        "detect_env":     ["ANTHROPIC_API_KEY"],
-        "sdk":            "anthropic",
-        "api_key_env":    "ANTHROPIC_API_KEY",
-        "base_url":       None,
-        "default_models": {
-            "strong": "claude-sonnet-4-6",
-            "fast":   "claude-haiku-4-5-20251001",
-        },
-    },
-    "bedrock": {
-        "display":        "AWS Bedrock",
-        "required_env":   ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"],
-        "optional_env":   ["AWS_DEFAULT_REGION"],
-        "detect_env":     ["AWS_ACCESS_KEY_ID"],
-        "sdk":            "anthropic-bedrock",
-        "api_key_env":    None,
-        "base_url":       None,
-        "default_models": {
-            "strong": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-            "fast":   "us.anthropic.claude-3-haiku-20240307-v1:0",
-        },
-    },
-    "vertex": {
-        "display":        "Google Vertex AI",
-        "required_env":   ["GOOGLE_CLOUD_PROJECT"],
-        "optional_env":   ["GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_CLOUD_REGION"],
-        "detect_env":     ["GOOGLE_CLOUD_PROJECT", "GOOGLE_APPLICATION_CREDENTIALS"],
-        "sdk":            "anthropic-vertex",
-        "api_key_env":    None,
-        "base_url":       None,
-        "default_models": {
-            "strong": "claude-3-5-sonnet-v2@20241022",
-            "fast":   "claude-3-haiku@20240307",
-        },
-    },
-    # ── OpenAI-compatible family (all use the openai SDK) ─────────────────
-    "openai": {
-        "display":        "OpenAI",
-        "required_env":   ["OPENAI_API_KEY"],
-        "optional_env":   ["OPENAI_BASE_URL"],
-        "detect_env":     ["OPENAI_API_KEY"],
-        "sdk":            "openai",
-        "api_key_env":    "OPENAI_API_KEY",
-        "base_url":       None,   # set OPENAI_BASE_URL in .env for custom endpoints
-        "default_models": {
-            "strong": "gpt-4o",
-            "fast":   "gpt-4o-mini",
-        },
-    },
-    "groq": {
-        "display":        "Groq (free tier — very fast)",
-        "required_env":   ["GROQ_API_KEY"],
-        "optional_env":   [],
-        "detect_env":     ["GROQ_API_KEY"],
-        "sdk":            "openai",
-        "api_key_env":    "GROQ_API_KEY",
-        "base_url":       "https://api.groq.com/openai/v1",
-        "default_models": {
-            "strong": "llama-3.3-70b-versatile",
-            "fast":   "llama-3.1-8b-instant",
-        },
-    },
-    "openrouter": {
-        "display":        "OpenRouter (has free models)",
-        "required_env":   ["OPENROUTER_API_KEY"],
-        "optional_env":   [],
-        "detect_env":     ["OPENROUTER_API_KEY"],
-        "sdk":            "openai",
-        "api_key_env":    "OPENROUTER_API_KEY",
-        "base_url":       "https://openrouter.ai/api/v1",
-        "default_models": {
-            # :free suffix = free tier on OpenRouter
-            "strong": "meta-llama/llama-3.3-70b-instruct:free",
-            "fast":   "meta-llama/llama-3.1-8b-instruct:free",
-        },
-    },
-    "ollama": {
-        "display":        "Ollama (local, fully free)",
-        "required_env":   [],   # no key needed — it's local
-        "optional_env":   ["OLLAMA_HOST"],
-        "detect_env":     [],   # can't auto-detect, use --provider ollama
-        "sdk":            "openai",
-        "api_key_env":    None,
-        "base_url":       "http://localhost:11434/v1",
-        "default_models": {
-            # change to whatever model you have pulled locally
-            "strong": "qwen2.5-coder:7b",
-            "fast":   "qwen2.5-coder:1.5b",
-        },
-    },
-}
-
-STANGENT_DIRS = [
-    ".stangent/features/",
-    ".stangent/archive/",
-    ".stangent/logs/",
-]
-
-# Project-level (scoped to one repo)
-CLAUDE_COMMANDS_DIR  = ".claude/commands/"
-CLAUDE_AGENTS_DIR    = ".claude/agents/"
-CLAUDE_SUBAGENTS_DIR = ".claude/agents/subagents/"
-
-# User-level (available in every project, no init needed)
-GLOBAL_CLAUDE_DIR       = Path.home() / ".claude"
-GLOBAL_COMMANDS_DIR     = GLOBAL_CLAUDE_DIR / "commands"
-GLOBAL_AGENTS_DIR       = GLOBAL_CLAUDE_DIR / "agents"
-
-# Agents to expose in the Claude Code mode-selector dropdown.
-# Each entry maps an agents/<key>.md source file to a Claude Code agent file.
-# display_name → shown in the VS Code dropdown
-# color        → accent colour in the UI (purple/blue/cyan/orange/green/yellow/red/gray)
-# filename     → output filename in .claude/agents/
-DROPDOWN_AGENTS: dict[str, dict] = {
-    "orchestrator": {
-        "display_name": "Stangent",
-        "color":        "purple",
-        "filename":     "stangent.md",
-    },
-    "planner": {
-        "display_name": "Stangent Planner",
-        "color":        "blue",
-        "filename":     "stangent-planner.md",
-    },
-    "implementer": {
-        "display_name": "Stangent Implementer",
-        "color":        "cyan",
-        "filename":     "stangent-implementer.md",
-    },
-    "reviewer": {
-        "display_name": "Stangent Reviewer",
-        "color":        "orange",
-        "filename":     "stangent-reviewer.md",
-    },
-    "srs_agent": {
-        "display_name": "Stangent SRS",
-        "color":        "green",
-        "filename":     "stangent-srs.md",
-    },
-    "adr_agent": {
-        "display_name": "Stangent ADR",
-        "color":        "yellow",
-        "filename":     "stangent-adr.md",
-    },
-}
-
-# Sub-agents: deployed to .claude/agents/ but without display_name/color so
-# they are invisible in the Claude Code dropdown. Referenced at runtime by the
-# main agents using the local path — no dependency on the stangent repo at runtime.
-# Maps source path (relative to stangent/agents/) → output filename in .claude/agents/
-SUBAGENTS: dict[str, str] = {
-    "subagents/linter":           "stangent-linter.md",
-    "subagents/unit_tester":      "stangent-unit-tester.md",
-    "subagents/query_analyzer":   "stangent-query-analyzer.md",
-    "subagents/security_scanner": "stangent-security-scanner.md",
-}
-
-
-# ─── Formatting helpers ───────────────────────────────────────────────────────
-
-class C:
-    OK   = "\033[92m✓\033[0m"
-    FAIL = "\033[91m✗\033[0m"
-    WARN = "\033[93m⚠\033[0m"
-    INFO = "\033[94m•\033[0m"
-    BOLD = "\033[1m"
-    END  = "\033[0m"
-
-
-def ok(msg):   print(f"  {C.OK}  {msg}")
-def fail(msg): print(f"  {C.FAIL}  {msg}")
-def warn(msg): print(f"  {C.WARN}  {msg}")
-def info(msg): print(f"  {C.INFO}  {msg}")
-def header(msg): print(f"\n{C.BOLD}{msg}{C.END}")
-
-
-# Install hints shown inline when a tool is missing.
-# pip tools are grouped at the end into a single install command.
-TOOL_INSTALL_HINTS: dict[str, str] = {
-    # pip
-    "ruff":               "pip install ruff",
-    "pytest":             "pip install pytest",
-    "bandit":             "pip install bandit",
-    "pip-audit":          "pip install pip-audit",
-    "detect-secrets":     "pip install detect-secrets",
-    "pytest-cov":         "pip install pytest-cov",
-    "pytest-json-report": "pip install pytest-json-report",
-    # Flutter / Dart
-    "flutter":            "https://flutter.dev/docs/get-started/install",
-    "dart":               "Included with Flutter — install Flutter first",
-}
-
-
-# ─── Agent frontmatter conversion ────────────────────────────────────────────
-
-def parse_frontmatter(content: str) -> tuple[dict, str]:
-    """
-    Parse YAML-ish frontmatter from a stangent agent .md file.
-    Returns (frontmatter_dict, body_text).
-
-    Handles:
-      - string fields:   key: value
-      - list fields:     key:\n  - item\n  - item
-      - block scalars:   key: >\n  line1\n  line2  (joined to single string)
-
-    No external dependencies — pure stdlib regex.
-    """
-    if not content.startswith("---\n"):
-        return {}, content
-
-    end = content.find("\n---\n", 4)
-    if end == -1:
-        return {}, content
-
-    fm_text = content[4:end]
-    body    = content[end + 5:]   # skip the closing "\n---\n"
-
-    result: dict = {}
-    lines = fm_text.splitlines()
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        if not line or line.startswith("#"):
-            i += 1
-            continue
-
-        m = re.match(r"^(\w+):\s*(.*)", line)
-        if not m:
-            i += 1
-            continue
-
-        key   = m.group(1)
-        value = m.group(2).strip()
-
-        if value in ("", ">"):
-            # Peek ahead for indented sub-lines (list items or block scalar)
-            sub: list[str] = []
-            j = i + 1
-            while j < len(lines) and (lines[j].startswith("  ") or lines[j].startswith("\t")):
-                sub.append(lines[j].strip())
-                j += 1
-
-            if sub and sub[0].startswith("- "):
-                result[key] = [s[2:] for s in sub if s.startswith("- ")]
-            elif sub:
-                result[key] = " ".join(sub) if value == ">" else "\n".join(sub)
-            else:
-                result[key] = value
-            i = j
-        else:
-            result[key] = value
-            i += 1
-
-    return result, body
-
-
-def convert_for_claude_code(content: str, display_name: str, color: str) -> str:
-    """
-    Convert a stangent agent .md to Claude Code dropdown-compatible format.
-
-    Differences between our format and Claude Code's expected format:
-      - tools: YAML list  →  tools: comma-separated string
-      - name:  internal   →  name: display_name (human-readable)
-      - color: not present → color: <color>
-      - Internal fields (version, type, inputs, outputs, profile_aware,
-        allows_ask_developer, bash_allowlist, bash_blocklist) are stripped
-        from the frontmatter Claude Code sees, but the agent body is
-        preserved verbatim — the constraints in the body still apply.
-
-    The returned string is ready to write to .claude/agents/<filename>.md.
-    """
-    fm, body = parse_frontmatter(content)
-
-    # tools: list → "Tool1, Tool2, ..."
-    tools = fm.get("tools", [])
-    tools_str = ", ".join(tools) if isinstance(tools, list) else str(tools)
-
-    # description: collapse block scalar to one line
-    description = fm.get("description", "")
-    if isinstance(description, str) and "\n" in description:
-        description = description.split("\n")[0].strip()
-
-    new_fm_lines = ["---", f"name: {display_name}", f"color: {color}"]
-    if description:
-        new_fm_lines.append(f"description: {description}")
-    if tools_str:
-        new_fm_lines.append(f"tools: {tools_str}")
-    new_fm_lines.append("---")
-
-    return "\n".join(new_fm_lines) + "\n" + body
-
-
-# ─── Environment validation ───────────────────────────────────────────────────
-
-def check_python_version() -> bool:
-    if sys.version_info < REQUIRED_PYTHON:
-        fail(f"Python {REQUIRED_PYTHON[0]}.{REQUIRED_PYTHON[1]}+ required. "
-             f"Found {sys.version_info.major}.{sys.version_info.minor}")
-        return False
-    ok(f"Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
-    return True
-
-
-def _load_dotenv() -> dict[str, str]:
-    """Read .env file and return {KEY: value} without modifying os.environ."""
-    env_file = Path(".env")
-    if not env_file.exists():
-        return {}
-    result = {}
-    for line in env_file.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        k, v = line.split("=", 1)
-        result[k.strip()] = v.strip().strip("\"'")
-    return result
-
-
-def _get_env(key: str, dotenv: dict[str, str]) -> str:
-    """Return env var from os.environ, falling back to .env file."""
-    return os.environ.get(key, dotenv.get(key, ""))
-
-
-def detect_provider() -> str | None:
-    """
-    Auto-detect provider from environment variables.
-    Checks ALL providers in priority order: anthropic, groq, openrouter,
-    openai, bedrock, vertex. ollama is excluded (no env var to detect).
-    Returns provider name or None if nothing is set.
-    """
-    PRIORITY = ["anthropic", "groq", "openrouter", "openai", "bedrock", "vertex"]
-    dotenv = _load_dotenv()
-    for name in PRIORITY:
-        prov = PROVIDERS.get(name, {})
-        if prov.get("detect_env") and any(_get_env(e, dotenv) for e in prov["detect_env"]):
-            return name
-    return None
-
-
-def check_credentials(provider_name: str) -> bool:
-    """
-    Verify that all required env vars for the given provider are present.
-    Reads from os.environ and .env file.
-    Providers with no required_env (e.g. Ollama) always pass.
-    """
-    dotenv  = _load_dotenv()
-    prov    = PROVIDERS[provider_name]
-    all_ok  = True
-
-    if not prov["required_env"]:
-        ok(f"{prov['display']} — no API key required")
-        return True
-
-    for key in prov["required_env"]:
-        val = _get_env(key, dotenv)
-        if not val:
-            fail(f"{key} not set (required for {prov['display']})")
-            all_ok = False
-        else:
-            masked = val[:6] + "..." + val[-3:] if len(val) > 9 else "***"
-            ok(f"{key} ({masked})")
-
-    for key in prov["optional_env"]:
-        val = _get_env(key, dotenv)
-        if val:
-            ok(f"{key} (optional, set)")
-        # silently skip missing optionals
-
-    return all_ok
-
-
-def check_git() -> bool:
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--git-dir"],
-            capture_output=True, text=True, cwd=Path.cwd()
-        )
-        if result.returncode == 0:
-            ok("git repository detected")
-            return True
-        fail("Not a git repository.  git init")
-        print("  The pipeline agents (implement, review) require git to create")
-        print("  branches and commits. Scaffolding will continue but the pipeline")
-        print("  will fail until you initialise git.")
-        return False
-    except FileNotFoundError:
-        fail("git not found in PATH.  https://git-scm.com/downloads")
-        return False
-
-
-def tool_in_path(tool: str) -> bool:
-    return shutil.which(tool) is not None
-
-
-def check_tools(
-    profile_name: str,
-    already_checked: set[str] | None = None,
-) -> tuple[bool, list[str]]:
-    """
-    Check required and optional tools for a profile.
-    already_checked: shared set across multiple profile calls — tools already
-    verified (pass or fail) are silently skipped so they aren't reported twice.
-    Prints install hints inline for any missing tool.
-    Returns (all_required_found, list_of_missing_required_tools).
-    """
-    if already_checked is None:
-        already_checked = set()
-
-    profile   = PROFILES[profile_name]
-    all_ok    = True
-    missing_required: list[str] = []
-    missing_pip: list[str] = []       # pip tools missing — for combined one-liner
-
-    for tool in profile["required_tools"]:
-        if tool in already_checked:
-            continue
-        already_checked.add(tool)
-        if tool_in_path(tool):
-            ok(f"{tool}")
-        else:
-            hint = TOOL_INSTALL_HINTS.get(tool, "")
-            fail(f"{tool} — not found (required).  {hint}")
-            if hint.startswith("pip install"):
-                missing_pip.append(tool)
-            all_ok = False
-            missing_required.append(tool)
-
-    for tool in profile.get("optional_tools", []):
-        if tool in already_checked:
-            continue
-        already_checked.add(tool)
-        if tool_in_path(tool):
-            ok(f"{tool} (optional)")
-        else:
-            hint = TOOL_INSTALL_HINTS.get(tool, "")
-            warn(f"{tool} — not found (optional).  {hint}")
-
-    # If multiple pip tools are missing, show a single combined install command
-    if len(missing_pip) > 1:
-        combined = "pip install " + " ".join(missing_pip)
-        print(f"\n  Install all missing {profile_name} tools at once:")
-        print(f"    {combined}\n")
-
-    return all_ok, missing_required
-
-
-# ─── Profile detection ────────────────────────────────────────────────────────
-
-def detect_profiles(project_root: Path) -> list[str]:
-    """
-    Return all profiles whose detection files are present.
-    Checks project root first, then one level of subdirectories (monorepo support).
-    """
-    found = []
-    # Collect all candidate directories: root + immediate subdirs
-    candidates = [project_root] + [
-        d for d in sorted(project_root.iterdir())
-        if d.is_dir() and not d.name.startswith(".")
-    ]
-    for profile_name, profile in PROFILES.items():
-        for detect_file in profile["detect_files"]:
-            if any((d / detect_file).exists() for d in candidates):
-                found.append(profile_name)
-                break
-    return found
-
-
-def detect_src_root(project_root: Path, profile_name: str) -> str:
-    """
-    Best-guess src root for a single profile.
-
-    Strategy:
-    1. Find where the profile's detection file lives (root or one level deep).
-       This handles monorepos where e.g. pubspec.yaml is in mobile/ not root.
-    2. Inside that directory, look for the profile's standard src_root.
-    3. Fall back to the raw default if nothing else matches.
-
-    Returns a path string relative to project_root (e.g. "mobile/lib/").
-    """
-    profile   = PROFILES[profile_name]
-    default   = profile["src_root"]          # e.g. "lib/" or "src/"
-    det_files = profile["detect_files"]
-
-    # Step 1 — find the directory that contains the profile's detection file
-    anchor_dir: Path | None = None
-
-    # Check project root first
-    for det in det_files:
-        if (project_root / det).exists():
-            anchor_dir = project_root
-            break
-
-    # If not at root, search one level of subdirectories (monorepo support)
-    if anchor_dir is None:
-        for subdir in sorted(project_root.iterdir()):
-            if not subdir.is_dir() or subdir.name.startswith("."):
-                continue
-            for det in det_files:
-                if (subdir / det).exists():
-                    anchor_dir = subdir
-                    break
-            if anchor_dir:
-                break
-
-    if anchor_dir is None:
-        # Nothing found — return default unchanged
-        return default
-
-    # Step 2 — inside anchor_dir, find the src root
-    if (anchor_dir / default).exists():
-        src = anchor_dir / default
-    else:
-        src = None
-        for guess in ["src/", "lib/", "app/"]:
-            candidate = anchor_dir / guess
-            if candidate.exists():
-                src = candidate
-                break
-        if src is None:
-            src = anchor_dir  # use the anchor dir itself as the src root
-
-    # Step 3 — return relative to project_root, always with trailing slash
-    rel = src.relative_to(project_root).as_posix()
-    return rel.rstrip("/") + "/"
-
-
-def detect_src_roots(project_root: Path, profile_names: list[str]) -> dict[str, str]:
-    """Return {profile_name: src_root} for every profile in the list."""
-    return {name: detect_src_root(project_root, name) for name in profile_names}
-
-
-# ─── Config generation ────────────────────────────────────────────────────────
-
-def build_config(
-    project_root: Path,
-    profile_names: list[str],
-    provider_name: str = "anthropic",
-) -> dict:
-    primary       = profile_names[0]
-    profile_roots = detect_src_roots(project_root, profile_names)
-    prov          = PROVIDERS[provider_name]
-    strong        = prov["default_models"]["strong"]
-    fast          = prov["default_models"]["fast"]
-
-    return {
-        "_stangent_version": VERSION,
-        "stangent_path": str(STANGENT_PATH),
-        "provider": {
-            "name":     provider_name,
-            # base_url: set this to use any OpenAI-compatible endpoint
-            # (Groq, Together, Ollama, Azure, local LM Studio, etc.)
-            # Leave null to use the provider's default API endpoint.
-            "base_url": None,
-        },
-        "profiles":      profile_names,
-        "profile_roots": profile_roots,
-        "paths": {
-            "src_root": profile_roots[primary],
-            "feature_dir": ".stangent/features/",
-            "archive_dir": ".stangent/archive/",
-            "log_dir": ".stangent/logs/",
-            "srs_path": ".stangent/SRS.md",
-            "decisions_path": ".stangent/decisions.md",
-            "registry_path": ".stangent/features_registry.json",
-            "context_cache": ".stangent/context_cache.md",
-            "env_example": ".env.example",
-        },
-        "pipeline": {
-            "max_retries": 3,
-            "ask_developer_timeout_minutes": 30,
-            "auto_branch": True,
-            "branch_prefix": "stangent/",
-            "remind_pr_on_complete": False,
-            "pr_target_branch": "dev",
-            "archive_completed_after_days": 7,
-        },
-        "models": {
-            "orchestrator":     strong,
-            "planner":          strong,
-            "implementer":      strong,
-            "reviewer":         strong,
-            "srs_agent":        strong,
-            "linter":           fast,
-            "unit_tester":      fast,
-            "query_analyzer":   fast,
-            "security_scanner": strong,
-        },
-        "feature_id": {
-            "prefix": "FEAT",
-            "padding": 3,
-        },
-        "integrations": {
-            "dbhub": {
-                "enabled":    False,
-                "mcp_server": "dbhub",
-            },
-        },
-    }
-
-
-# ─── Scaffolding ──────────────────────────────────────────────────────────────
-
-def create_stangent_dirs(project_root: Path, dry_run: bool):
-    for d in STANGENT_DIRS:
-        target = project_root / d
-        if not target.exists():
-            if not dry_run:
-                target.mkdir(parents=True, exist_ok=True)
-            info(f"Created {d}")
-        else:
-            ok(f"{d} already exists")
-
-
-def init_registry(project_root: Path, config: dict, dry_run: bool):
-    registry_path = project_root / config["paths"]["registry_path"]
-    if not registry_path.exists():
-        registry = {
-            "next_id": 1,
-            "prefix": config["feature_id"]["prefix"],
-            "padding": config["feature_id"]["padding"],
-            "features": {},
-        }
-        if not dry_run:
-            registry_path.write_text(json.dumps(registry, indent=2))
-        info("Created features_registry.json")
-    else:
-        ok("features_registry.json already exists")
-
-
-def install_global(dry_run: bool) -> bool:
-    """
-    Install agents and commands to ~/.claude/ so they appear in every project.
-    This is a one-time setup — re-run to update when stangent is upgraded.
-    Returns True if successful.
-    """
-    header("Global Install → ~/.claude/")
-
-    all_ok = True
-
-    # ── agents ────────────────────────────────────────────────────────────
-    if not GLOBAL_AGENTS_DIR.exists():
-        if not dry_run:
-            GLOBAL_AGENTS_DIR.mkdir(parents=True, exist_ok=True)
-        info(f"Created {GLOBAL_AGENTS_DIR}")
-
-    for agent_key, agent_cfg in DROPDOWN_AGENTS.items():
-        src_file = STANGENT_PATH / "agents" / f"{agent_key}.md"
-        if not src_file.exists():
-            warn(f"agents/{agent_key}.md — not found, skipping")
-            all_ok = False
-            continue
-
-        raw     = src_file.read_text(encoding="utf-8")
-        content = convert_for_claude_code(raw, agent_cfg["display_name"], agent_cfg["color"])
-        dst_file = GLOBAL_AGENTS_DIR / agent_cfg["filename"]
-
-        if dst_file.exists() and dst_file.read_text(encoding="utf-8") == content:
-            ok(f"~/.claude/agents/{agent_cfg['filename']} — up to date")
-        else:
-            label = "updated" if dst_file.exists() else "installed"
-            if not dry_run:
-                dst_file.write_text(content, encoding="utf-8")
-            info(f"~/.claude/agents/{agent_cfg['filename']} — {label}")
-
-    # ── commands ──────────────────────────────────────────────────────────
-    commands_src = STANGENT_PATH / "commands"
-    if not GLOBAL_COMMANDS_DIR.exists():
-        if not dry_run:
-            GLOBAL_COMMANDS_DIR.mkdir(parents=True, exist_ok=True)
-        info(f"Created {GLOBAL_COMMANDS_DIR}")
-
-    for src_file in sorted(commands_src.glob("*.md")):
-        dst_file = GLOBAL_COMMANDS_DIR / src_file.name
-        content = src_file.read_text(encoding="utf-8")
-        if dst_file.exists() and dst_file.read_text(encoding="utf-8") == content:
-            ok(f"~/.claude/commands/{src_file.name} — up to date")
-        else:
-            label = "updated" if dst_file.exists() else "installed"
-            if not dry_run:
-                dst_file.write_text(content, encoding="utf-8")
-            info(f"~/.claude/commands/{src_file.name} — {label}")
-
-    print(f"""
-  ✓ Global install complete.
-
-  Agents now appear in the Claude Code mode selector in EVERY project:
-    • Stangent
-    • Stangent Planner
-    • Stangent Implementer
-    • Stangent Reviewer
-    • Stangent SRS
-    • Stangent ADR
-
-  Slash commands now available in EVERY project:
-    /feature  /plan  /implement  /review  /srs  /status  /abandon  /adr
-
-  Next: scaffold each project with:
-    cd your-project && python {STANGENT_PATH}/init.py --profile <name>
-  (creates .stangent/config.json + .stangent/ scaffolding)
-""")
-    return all_ok
-
-
-def copy_commands(project_root: Path, config: dict, dry_run: bool):
-    """
-    Copy command files verbatim — no path substitution.
-    Commands read config.json at runtime to resolve all paths dynamically.
-    This makes command files portable across machines and team members.
-    Re-running init is only needed to pick up new commands added to stangent.
-    """
-    commands_src = STANGENT_PATH / "commands"
-    commands_dst = project_root / CLAUDE_COMMANDS_DIR
-
-    if not commands_dst.exists():
-        if not dry_run:
-            commands_dst.mkdir(parents=True, exist_ok=True)
-        info(f"Created {CLAUDE_COMMANDS_DIR}")
-
-    current_names = {f.name for f in commands_src.glob("*.md")}
-
-    # Remove stale files from previous stangent versions
-    for dst_file in sorted(commands_dst.glob("*.md")):
-        if dst_file.name not in current_names:
-            if not dry_run:
-                dst_file.unlink()
-            warn(f"commands/{dst_file.name} — removed (no longer in stangent)")
-
-    for src_file in sorted(commands_src.glob("*.md")):
-        dst_file = commands_dst / src_file.name
-        content = src_file.read_text(encoding="utf-8")
-
-        if dst_file.exists():
-            existing = dst_file.read_text(encoding="utf-8")
-            if existing == content:
-                ok(f"commands/{src_file.name} — up to date")
-                continue
-            warn(f"commands/{src_file.name} — updated (stangent version changed)")
-        else:
-            info(f"commands/{src_file.name} — installed")
-
-        if not dry_run:
-            dst_file.write_text(content, encoding="utf-8")
-
-
-def copy_claude_agents(project_root: Path, dry_run: bool):
-    """
-    Convert agents/*.md → .claude/agents/ in Claude Code dropdown format.
-
-    Only agents listed in DROPDOWN_AGENTS are installed (sub-agents and
-    internal agents are intentionally excluded — they are spawned by the
-    main agents, not selected directly by the user).
-
-    Conversion applied per file:
-      - tools YAML list → comma-separated string (Claude Code requirement)
-      - Internal frontmatter fields stripped (version, type, inputs, etc.)
-      - display_name and color injected
-      - Agent body preserved verbatim (constraints remain in effect)
-    """
-    agents_dst = project_root / CLAUDE_AGENTS_DIR
-
-    if not agents_dst.exists():
-        if not dry_run:
-            agents_dst.mkdir(parents=True, exist_ok=True)
-        info(f"Created {CLAUDE_AGENTS_DIR}")
-
-    current_agent_files = (
-        {cfg["filename"] for cfg in DROPDOWN_AGENTS.values()} |
-        set(SUBAGENTS.values())
-    )
-
-    # Remove stale agent files from previous stangent versions
-    for dst_file in sorted(agents_dst.glob("stangent*.md")):
-        if dst_file.name not in current_agent_files:
-            if not dry_run:
-                dst_file.unlink()
-            warn(f"agents/{dst_file.name} — removed (no longer in stangent)")
-
-    # ── Dropdown agents (user-visible) ────────────────────────────────────
-    for agent_key, agent_cfg in DROPDOWN_AGENTS.items():
-        src_file = STANGENT_PATH / "agents" / f"{agent_key}.md"
-        if not src_file.exists():
-            warn(f"agents/{agent_key}.md — not found, skipping")
-            continue
-
-        raw     = src_file.read_text(encoding="utf-8")
-        content = convert_for_claude_code(raw, agent_cfg["display_name"], agent_cfg["color"])
-        dst_file = agents_dst / agent_cfg["filename"]
-
-        if dst_file.exists():
-            existing = dst_file.read_text(encoding="utf-8")
-            if existing == content:
-                ok(f"agents/{agent_cfg['filename']} — up to date")
-                continue
-            warn(f"agents/{agent_cfg['filename']} — updated (stangent version changed)")
-        else:
-            info(f"agents/{agent_cfg['filename']} — installed")
-
-        if not dry_run:
-            dst_file.write_text(content, encoding="utf-8")
-
-    # ── Sub-agents (hidden — deployed to a subfolder, never shown in dropdown)
-    subagents_dst = project_root / CLAUDE_SUBAGENTS_DIR
-    if not subagents_dst.exists():
-        if not dry_run:
-            subagents_dst.mkdir(parents=True, exist_ok=True)
-        info(f"Created {CLAUDE_SUBAGENTS_DIR}")
-
-    for src_rel, dst_name in SUBAGENTS.items():
-        src_file = STANGENT_PATH / "agents" / f"{src_rel}.md"
-        if not src_file.exists():
-            warn(f"agents/{src_rel}.md — not found, skipping")
-            continue
-
-        # Strip internal frontmatter, deploy body only.
-        _, body = parse_frontmatter(src_file.read_text(encoding="utf-8"))
-        content  = body.lstrip("\n")
-        dst_file = subagents_dst / dst_name
-
-        if dst_file.exists():
-            existing = dst_file.read_text(encoding="utf-8")
-            if existing == content:
-                ok(f"agents/subagents/{dst_name} — up to date")
-                continue
-            warn(f"agents/subagents/{dst_name} — updated (stangent version changed)")
-        else:
-            info(f"agents/subagents/{dst_name} — installed")
-
-        if not dry_run:
-            dst_file.write_text(content, encoding="utf-8")
-
-
-def create_srs(project_root: Path, config: dict, dry_run: bool):
-    srs_path = project_root / config["paths"]["srs_path"]
-    if srs_path.exists():
-        ok("SRS.md already exists")
-        return
-
-    template = (STANGENT_PATH / "templates" / "srs.md").read_text(encoding="utf-8")
-    project_name = project_root.name
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    template = template.replace("{{PROJECT_NAME}}", project_name)
-    template = template.replace("{{PROFILE}}", config["profiles"][0])
-    template = template.replace("{{VERSION}}", VERSION)
-    template = template.replace("{{ISO_DATE}}", now)
-
-    if not dry_run:
-        srs_path.write_text(template, encoding="utf-8")
-    info("Created .stangent/SRS.md")
-
-
-def create_decisions(project_root: Path, config: dict, dry_run: bool):
-    decisions_path = project_root / config["paths"]["decisions_path"]
-    if decisions_path.exists():
-        ok("decisions.md already exists")
-        return
-
-    template = (STANGENT_PATH / "templates" / "decisions.md").read_text(encoding="utf-8")
-    if not dry_run:
-        decisions_path.write_text(template, encoding="utf-8")
-    info("Created .stangent/decisions.md")
-
-
-def create_env_example(project_root: Path, dry_run: bool):
-    env_example = project_root / ".env.example"
-    if not env_example.exists():
-        content = (
-            "# Environment variables for this project\n"
-            "# Copy to .env and fill in your values\n"
-            "# This file is committed to git. .env is gitignored.\n\n"
-            "ANTHROPIC_API_KEY=your-key-here\n"
-        )
-        if not dry_run:
-            env_example.write_text(content)
-        info("Created .env.example")
-    else:
-        ok(".env.example already exists")
-
-
-def update_gitignore(project_root: Path, dry_run: bool):
-    gitignore = project_root / ".gitignore"
-    entries_to_add = [
-        ".env",
-        ".claude/settings.local.json",
-        ".stangent/logs/",
-        ".stangent/context_cache.md",
-        ".stangent/features_registry.json",
-        ".stangent/coverage_baseline.json",
-    ]
-    entries_to_keep = [
-        "# Keep these stangent files in git:",
-        "!.stangent/config.json",
-        "!.stangent/features/",
-        "!.stangent/archive/",
-        "!.stangent/SRS.md",
-        "!.stangent/decisions.md",
-    ]
-
-    existing = gitignore.read_text(encoding="utf-8") if gitignore.exists() else ""
-    additions = []
-    for entry in entries_to_add + entries_to_keep:
-        if entry not in existing:
-            additions.append(entry)
-
-    if additions:
-        block = "\n# Stangent\n" + "\n".join(additions) + "\n"
-        if not dry_run:
-            with open(gitignore, "a", encoding="utf-8") as f:
-                f.write(block)
-        info(f"Updated .gitignore ({len(additions)} entries added)")
-    else:
-        ok(".gitignore already has stangent entries")
-
-
-def create_onboarding_doc(project_root: Path, config: dict, dry_run: bool):
-    doc_path      = project_root / ".stangent" / "HOW_THIS_WORKS.md"
-    provider_name = config.get("provider", {}).get("name", "anthropic") \
-                    if isinstance(config.get("provider"), dict) \
-                    else config.get("provider", "anthropic")
-
-    content = f"""# Stangent — How This Works
-
-This project uses **Stangent** for AI-assisted feature development.
-Stangent runs as a set of agents inside your Claude Code chat panel.
-
-## Quick Start
-
-Open Claude Code in VS Code. Type in the chat panel:
-
-```
-/feature add a login screen with email and password
-```
-
-That's it. The agent will ask a few questions, write a spec, confirm with you,
-then implement, test, review, and document the feature.
-
-## Using Stangent
-
-### Dropdown agents (mode selector — click the agent picker)
-
-| Agent | What it does |
-|-------|--------------|
-| **Stangent** | General-purpose — describe any request conversationally |
-| **Stangent Planner** | Planning only — write a spec, stop before implementing |
-| **Stangent Implementer** | Implementation only — code a planned feature |
-| **Stangent Reviewer** | Review only — review an implemented feature |
-| **Stangent SRS** | Update the living system requirements document |
-| **Stangent ADR** | Record an architectural decision |
-
-### Slash commands (type `/` in chat)
-
-| Command | What it does |
-|---------|--------------|
-| `/feature <description>` | Full pipeline: plan → implement → review → SRS |
-| `/plan <description>` | Plan only, get a spec, confirm before implementing |
-| `/implement FEAT-XXX` | Implement a planned feature |
-| `/review FEAT-XXX` | Review an implemented feature |
-| `/srs` | Update the SRS for all completed features |
-| `/srs FEAT-XXX` | Update SRS for one feature |
-| `/status` | Show all features and their states |
-| `/status FEAT-XXX` | Show detailed status for one feature |
-| `/abandon FEAT-XXX` | Cleanly abandon a feature |
-| `/adr <title>` | Record an architectural decision |
-
-## Where Files Live
-
-```
-.stangent/
-├── features/        ← one file per feature (the source of truth)
-├── archive/         ← completed and abandoned features
-├── logs/            ← JSON Lines run logs per feature
-├── SRS.md           ← auto-maintained System Requirements Specification
-└── decisions.md     ← Architecture Decision Records (add yours here)
-```
-
-## Pipeline
-
-```
-/feature → [ADR BOOTSTRAP — first feature only]
-         → PLANNING → AWAITING_CONFIRMATION → IMPLEMENTING
-         → REVIEWING → SRS_UPDATE → COMPLETE
-```
-
-The pipeline pauses at AWAITING_CONFIRMATION. You must confirm the spec
-before implementation begins. Review the spec at:
-`.stangent/features/FEAT-XXX-<slug>.md`
-
-On the very first `/feature` call the planner scans your codebase and
-asks which detected patterns become binding ADRs. On every subsequent
-feature, it checks the request against existing ADRs and flags conflicts
-before writing the spec.
-
-## Setup
-
-| Setting | Value |
-|---------|-------|
-| Profiles | {", ".join(config.get("profiles", []))} |
-| Provider | {provider_name} |
-| Stangent | `{config["stangent_path"]}` |
-
-## Decisions Log
-
-Architectural decisions are stored in `.stangent/decisions.md`.
-
-## Meta Files (optional)
-
-If your project has documentation that cascades from code changes, create
-`.stangent/meta.md`. The planner reads it automatically and adds dependent
-doc files to `## Files to Touch` in every feature spec.
-
-Example — if changing a model also means updating API docs:
-```
-| When you touch      | Also review         |
-|---------------------|---------------------|
-| src/models/*.py     | docs/api.md         |
-| src/routes/*.py     | README.md           |
-```
-
-- **Auto-bootstrap:** On the first `/feature`, Stangent scans your codebase and
-  proposes candidate ADRs (detected frameworks, patterns, conventions). Confirm
-  which ones become binding — done automatically, no manual writing needed.
-- **Manual ADRs:** Use `/adr <title>` at any time to record an explicit decision.
-- **Contradiction detection:** Before every spec, the planner checks whether the
-  feature conflicts with existing ADRs and asks you to comply, override (with
-  reason), or cancel. Overrides are recorded per-feature — the ADR stays active
-  for all other features.
-- **Enforcement:** All agents read decisions.md and apply every Accepted ADR
-  automatically. No need to remind them.
-
-## Customising Agents
-
-Agent files live in `.claude/agents/` and `.claude/agents/subagents/`.
-You can edit them to adjust behaviour for your project.
-
-> **Always bump the `version` field in the frontmatter when you edit an agent.**
-> Use semver: patch (x.x.N) for small fixes, minor (x.N.0) for new behaviour.
-> The version is recorded in every Run Log entry — it's how you know which
-> behaviour was active when a feature was built.
-
-Re-run `python {config["stangent_path"]}/init.py` after a Stangent update to
-sync the latest agent files. Your edits will be shown as conflicts so you can
-merge them manually.
-
----
-Generated by stangent v{VERSION} on {datetime.now(timezone.utc).strftime("%Y-%m-%d")}
-"""
-
-    action = "Updated" if doc_path.exists() else "Created"
-    if not dry_run:
-        doc_path.write_text(content, encoding="utf-8")
-    info(f"{action} .stangent/HOW_THIS_WORKS.md")
-
-
-# ─── Integrations setup ──────────────────────────────────────────────────────
-
-def configure_dbhub(config: dict, config_path: Path, project_root: Path, dry_run: bool):
-    """
-    Optionally configure DBHub MCP integration for real schema queries.
-    Only prompts if not already enabled. Skipped silently on dry-run.
-    """
-    dbhub = config.get("integrations", {}).get("dbhub", {})
-    if dbhub.get("enabled"):
-        server = dbhub.get("mcp_server", "dbhub")
-        settings_local = project_root / ".claude" / "settings.local.json"
-        if settings_local.exists():
-            ok(f"DBHub — already configured (mcp_server: {server})")
-        else:
-            warn(f"DBHub — enabled in config but .claude/settings.local.json is missing")
-            info("Re-run init and choose 'reconfigure' to recreate it, or add it manually.")
-        return
-
-    if dry_run:
-        info("DBHub — skipped (dry-run)")
-        return
-
-    header("DBHub Integration (optional)")
-    print("  Connect Stangent to your database via DBHub MCP.")
-    print("  Enables real schema queries in the planner and index verification")
-    print("  in the query analyzer — instead of guessing from migration files.")
-    print("  Supports: PostgreSQL, MySQL, MariaDB, SQL Server, SQLite")
-    print()
-    raw = input("  Enable DBHub integration? (yes / skip) [skip]: ").strip().lower()
-    if raw != "yes":
-        info("DBHub — skipped (enable later by re-running init)")
-        return
-
-    print()
-    print("  DSN examples:")
-    print("    PostgreSQL:  postgres://user:pass@host:5432/dbname")
-    print("    MySQL:       mysql://user:pass@host:3306/dbname")
-    print("    SQLite:      sqlite:///absolute/path/to/db.sqlite")
-    print("    Supabase:    postgres://postgres.[ref]:[pass]@aws-0-[region].pooler.supabase.com:5432/postgres?sslmode=require")
-    print()
-    dsn = input("  DSN (leave blank to add later): ").strip()
-    server_name = input("  MCP server name [dbhub]: ").strip() or "dbhub"
-
-    if "integrations" not in config:
-        config["integrations"] = {}
-    config["integrations"]["dbhub"] = {
-        "enabled":    True,
-        "mcp_server": server_name,
-    }
-    config_path.write_text(json.dumps(config, indent=2))
-
-    if dsn:
-        settings_local_path = project_root / ".claude" / "settings.local.json"
-        settings_local_path.parent.mkdir(exist_ok=True)
-        existing = {}
-        if settings_local_path.exists():
-            existing = json.loads(settings_local_path.read_text(encoding="utf-8"))
-        if "mcpServers" not in existing:
-            existing["mcpServers"] = {}
-        existing["mcpServers"][server_name] = {
-            "command": "npx",
-            "args": ["@bytebase/dbhub", "--transport", "stdio", "--dsn", dsn],
-        }
-        settings_local_path.write_text(json.dumps(existing, indent=2))
-        ok(f"DBHub — configured and written to .claude/settings.local.json")
-    else:
-        ok(f"DBHub — enabled in config (add DSN to .claude/settings.local.json when ready)")
-    print()
-    print("  ⚠  DSN gotchas:")
-    print("     - Special chars in password must be URL-encoded: !→%21  @→%40  #→%23  $→%24")
-    print("     - If you see an ESM/CJS crash on startup, apply this fix once:")
-    print('         node -e "const p=require(\'path\').join(require(\'os\').homedir(),\'AppData\',\'Roaming\',\'npm\',\'node_modules\',\'@bytebase\',\'dbhub\',\'node_modules\',\'ssh-config\',\'package.json\'); const f=require(\'fs\'); const j=JSON.parse(f.readFileSync(p)); j.type=\'module\'; f.writeFileSync(p,JSON.stringify(j,null,2));"')
-    print("       (Linux/Mac: adjust path to your global npm prefix)")
-    print()
-    print("  Restart Claude Code to activate DBHub.")
-
-
-# ─── Main ─────────────────────────────────────────────────────────────────────
 
 def run(args):
     project_root = Path.cwd()
@@ -1213,6 +66,26 @@ def run(args):
     # ── Global install (short-circuits everything else) ────────────────────
     if getattr(args, "global_install", False):
         install_global(dry_run)
+        return
+
+    # ── Uninit (short-circuits everything else) ────────────────────────────
+    if getattr(args, "uninit", False):
+        hard = getattr(args, "hard", False)
+        if not dry_run and not hard:
+            print(f"\n{C.WARN} This will remove Stangent tooling from {project_root.name}.")
+            print("  Your .stangent/ directory (features, SRS, decisions) will be kept.")
+            print("  Use --hard to also delete .stangent/ and all feature history.\n")
+            confirm = input("  Proceed? (yes/no): ").strip().lower()
+            if confirm != "yes":
+                print("  Uninit cancelled.")
+                return
+        elif not dry_run and hard:
+            print(f"\n{C.WARN} WARNING — this will delete .stangent/ and ALL feature history in {project_root.name}.")
+            confirm = input("  Type 'yes, delete everything' to confirm: ").strip().lower()
+            if confirm != "yes, delete everything":
+                print("  Uninit cancelled.")
+                return
+        uninit_project(project_root, hard=hard, dry_run=dry_run)
         return
 
     # ── 1. Environment checks ──────────────────────────────────────────────
@@ -1343,9 +216,9 @@ def run(args):
         if profile_md.exists():
             ok(f"profiles/{pname}.md — found")
         else:
-            fail(f"profiles/{pname}.md — NOT FOUND in stangent installation")
+            fail(f"profiles/{pname}.md — NOT FOUND in stangent source")
             print(f"  Expected: {profile_md}")
-            print(f"  The '{pname}' profile is referenced but its definition file is missing.")
+            print(f"  This profile is missing from the stangent installation.")
             print(f"  Agents will fail at runtime when they try to read it.")
             profiles_ok = False
     if not profiles_ok:
@@ -1367,12 +240,11 @@ def run(args):
 
     if config_path.exists():
         existing = json.loads(config_path.read_text(encoding="utf-8"))
-        stangent_path_changed = existing.get("stangent_path") != str(STANGENT_PATH)
         old_version = existing.get("_stangent_version", "0.0.0")
 
         # ── Always overwrite: structural fields the user never edits ─────────
-        existing.pop("profile", None)  # removed in favour of profiles[0]
-        existing["stangent_path"]     = str(STANGENT_PATH)
+        existing.pop("profile", None)       # removed in favour of profiles[0]
+        existing.pop("stangent_path", None) # removed — projects are self-contained
         existing["_stangent_version"] = VERSION
         existing["profiles"]          = config["profiles"]
         existing["profile_roots"]     = config["profile_roots"]
@@ -1421,9 +293,7 @@ def run(args):
         if not dry_run:
             config_path.write_text(json.dumps(config, indent=2))
 
-        if stangent_path_changed:
-            ok(".stangent/config.json — updated stangent_path (installation moved)")
-        elif provider_changed and old_provider_name:
+        if provider_changed and old_provider_name:
             ok(f".stangent/config.json — provider switched "
                f"({old_provider_name} → {provider_name}), models reset to defaults")
         elif new_keys or renamed or old_version != VERSION:
@@ -1440,8 +310,20 @@ def run(args):
         if not dry_run:
             config_path.write_text(json.dumps(config, indent=2))
         info(f".stangent/config.json — created ({provider_name}, {', '.join(profile_names)})")
+
+    missing_fields = validate_config(config)
+    if missing_fields:
+        for f in missing_fields:
+            warn(f"config.json — missing required field: {f}")
+        warn("Config is incomplete. Some agents may fail. Re-run init to repair.")
+
     configure_dbhub(config, config_path, project_root, dry_run)
     init_registry(project_root, config, dry_run)
+    copy_profiles(project_root, dry_run)
+    copy_templates(project_root, dry_run)
+    copy_prompts(project_root, dry_run)
+    copy_gateway(project_root, dry_run)
+    write_settings_json(project_root, dry_run)
     copy_commands(project_root, config, dry_run)
     copy_claude_agents(project_root, dry_run)
     create_srs(project_root, config, dry_run)
@@ -1468,7 +350,6 @@ def run(args):
   Project:   {project_root.name}
   Profiles:  {', '.join(config['profiles'])}
   Roots:     {roots_display}
-  Stangent:  {STANGENT_PATH}
 {global_hint}
   Open Claude Code and use the Stangent agent from the mode selector,
   or type /feature <describe what you want to build>
@@ -1492,6 +373,18 @@ def main():
             "Install agents and commands to ~/.claude/ so they appear in "
             "every project without per-project init. Run once, ever."
         ),
+    )
+    parser.add_argument(
+        "--uninit", action="store_true",
+        help=(
+            "Remove Stangent tooling from the current project. "
+            "Keeps .stangent/ data (features, SRS, decisions) intact. "
+            "Add --hard to also delete .stangent/ and all feature history."
+        ),
+    )
+    parser.add_argument(
+        "--hard", action="store_true",
+        help="Used with --uninit: also deletes .stangent/ directory and all feature history.",
     )
     parser.add_argument(
         "--provider",

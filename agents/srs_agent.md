@@ -22,9 +22,6 @@ inputs:
   - name: feature_file_path
     type: path
     description: Absolute path to the feature file. Empty in standalone mode.
-  - name: stangent_path
-    type: path
-    description: Absolute path to the stangent installation
   - name: config_path
     type: path
     description: Absolute path to .stangent/config.json
@@ -62,18 +59,17 @@ env var documentation from implemented features automatically.
 ## CONTEXT INPUTS
 
 ### Pipeline mode (feature_id provided):
-1. `.stangent/config.json` → load stangent_path, all paths, and the profile fields:
-   - `config.profiles`       — list of all active profiles; `profiles[0]` is the primary (fallback)
-   - `config.profile_roots`  — `{name: src_root}` map
+1. `.stangent/config.json` → load all paths and profile fields.
+   Derive: `project_root = Path(config_path).parent.parent`
 
-2. Load all active language profiles:
-   For each name in `config.profiles`:
-     Read `{stangent_path}/profiles/{name}.md` → store as `profiles[name]`
-     If the file does not exist: stop immediately and output:
-     "Profile '{name}' not found at {stangent_path}/profiles/{name}.md."
-     Return FAILED.
+2. Load language profiles: read `.stangent/prompts/load-profiles.md` and follow those instructions.
+   Store the result as `profiles[name]` for each active profile.
 
-3. `{{feature_file_path}}` → complete feature file (all sections)
+3. `.stangent/context_cache.md` → check `git_hash` against `$(git rev-parse HEAD)`.
+   If hash matches: use for orientation. If stale or missing: proceed without it.
+   Do NOT rewrite context_cache.md (planner owns it).
+
+4. `{{feature_file_path}}` → complete feature file (all sections)
 
    **Parsing feature file status:**
    The feature file begins with YAML frontmatter (between `---` lines).
@@ -82,12 +78,12 @@ env var documentation from implemented features automatically.
    Example: `status: COMPLETE` → status = "COMPLETE"
    Do not rely on Markdown headings to find status — it is in the frontmatter only.
 
-4. `{{paths.srs_path}}` → current SRS (if exists)
-5. Files listed in `## Files Changed` that are relevant to API/model extraction
-6. `.stangent/decisions.md` → for updating ## Decisions Log in SRS
+5. `{{paths.srs_path}}` → current SRS (if exists)
+6. Files listed in `## Files Changed` that are relevant to API/model extraction
+7. `.stangent/decisions.md` → for updating ## Decisions Log in SRS
 
 ### Standalone mode (no feature_id):
-Steps 1–2 as above (load config + profiles), then:
+Steps 1–2 as above (load config + profiles via load-profiles.md), then:
 3. Run: `git log --oneline .stangent/SRS.md` to find last SRS commit timestamp
 4. Find all feature files in `{{paths.feature_dir}}` with status = COMPLETE
    that were updated after the last SRS commit timestamp
@@ -109,7 +105,7 @@ Steps 1–2 as above (load config + profiles), then:
    Source of truth: `## Files Changed` + the actual source files.
 5. After every update: commit the SRS before returning.
 6. If `{{paths.srs_path}}` does not exist: create it from
-   `{{stangent_path}}/templates/srs.md`, then proceed.
+   `.stangent/templates/srs.md`, then proceed.
 
 ---
 
@@ -134,6 +130,26 @@ Steps 1–2 as above (load config + profiles), then:
     - Check status = COMPLETE. Skip any that are not.
     - Check if already in SRS (grep for the FEAT-ID in SRS). If found: update mode.
     - If not found: append mode.
+
+1c. **PRESERVE marker extraction** — before writing anything to the SRS, scan the
+    existing SRS content for `<!-- PRESERVE BEGIN` markers.
+
+    A preserve block looks like:
+    ```
+    <!-- PRESERVE BEGIN: <reason> -->
+    ... developer-written content ...
+    <!-- PRESERVE END -->
+    ```
+
+    For each block found:
+    - Extract and store: `{ location: "section heading text", reason: "...", content: "..." }`
+    - These blocks must survive any update you make to the surrounding section.
+
+    After writing or replacing a section: re-insert any preserve blocks that were
+    in that section. Insert them at the same relative position (start of block
+    if it was at the top, end if it was at the bottom, in-line if it was inline).
+    If position cannot be determined exactly: append the block at the end of the section
+    with a comment: `<!-- PRESERVE (re-inserted, original position lost) -->`
 
 ---
 

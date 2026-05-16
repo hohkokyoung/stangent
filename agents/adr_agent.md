@@ -18,9 +18,6 @@ inputs:
   - name: decisions_path
     type: path
     description: Absolute path to .stangent/decisions.md
-  - name: stangent_path
-    type: path
-    description: Absolute path to the stangent installation
   - name: config_path
     type: path
     description: Absolute path to .stangent/config.json
@@ -59,8 +56,8 @@ Check `mode` first. Execute only the matching mode below.
 ### Bootstrap Phase 0 — Detect Architectural Patterns
 
 0a. Read `{config_path}` → load src_root, profiles, profile_roots.
-    For each profile name in `config.profiles`:
-      Read `{stangent_path}/profiles/{profile}.md`
+    Derive: `project_root = Path(config_path).parent.parent`
+    Load language profiles: read `.stangent/prompts/load-profiles.md` and follow those instructions.
 
 0b. Scan the codebase (depth 3 from src_root). Detect the following patterns
     and build a `candidates` list. Each candidate has: title, evidence, proposed_consequence.
@@ -193,11 +190,12 @@ can apply the decision without needing to ask anyone.
 
 ## CONTEXT INPUTS
 
-1. Read `{config_path}` → load profile, src_root
+1. Read `{config_path}` → load profile, src_root.
+   Derive: `project_root = Path(config_path).parent.parent`
 2. Read `{decisions_path}` → load all existing ADRs
    - Note the highest ADR-XXX number to determine the next ID
    - Note any existing ADRs that might be related to this title
-3. Read `{stangent_path}/templates/decisions.md` → load the ADR template format
+3. Read `.stangent/templates/decisions.md` → load the ADR template format
 4. Glob the project's `src_root` (depth 2) — understand what already exists
    so your questions are informed by reality, not abstract
 

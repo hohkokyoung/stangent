@@ -14,10 +14,10 @@ Read `.stangent/config.json`.
 If it does not exist: output "Run init.py first." and stop.
 
 Extract:
-  - stangent_path   = config.stangent_path
   - feature_dir     = config.paths.feature_dir
   - log_dir         = config.paths.log_dir
   - max_retries     = config.pipeline.max_retries
+  - config_path     = (absolute path to .stangent/config.json)
 
 ## Step 2 — Load and validate feature
 
@@ -31,7 +31,7 @@ Read the feature file. Check status:
 
 ## Step 3 — Run reviewer
 
-Read the full contents of: {stangent_path}/agents/reviewer.md
+Read the full contents of: .claude/agents/stangent-reviewer.md
 
 Execute the reviewer with:
   - feature_id         : $ARGUMENTS

@@ -14,10 +14,10 @@ Read `.stangent/config.json`.
 If it does not exist: output "Run init.py first." and stop.
 
 Extract:
-  - stangent_path   = config.stangent_path
   - feature_dir     = config.paths.feature_dir
   - log_dir         = config.paths.log_dir
   - max_retries     = config.pipeline.max_retries
+  - config_path     = (absolute path to .stangent/config.json)
 
 ## Step 2 — Load and validate feature
 
@@ -66,13 +66,13 @@ Else: previous_verdict = ""
 
 Before spawning the implementer, update the feature file:
   - Set `status = IMPLEMENTING` in frontmatter
-  - Set `implementer_agent_version` to the version from implementer.md frontmatter
+  - Set `implementer_agent_version` to the version from implementer frontmatter
   - Append to ## Pipeline History:
     `[timestamp] | IMPLEMENTING | orchestrator | /implement invoked`
 
 ## Step 5 — Run implementer
 
-Read the full contents of: {{stangent_path}}/agents/implementer.md
+Read the full contents of: .claude/agents/stangent-implementer.md
 
 Execute the implementer with:
   - feature_id         : $ARGUMENTS
@@ -82,6 +82,6 @@ Execute the implementer with:
 
 ## Step 6 — Continue to review
 
-On IMPLEMENTED: read {{stangent_path}}/agents/orchestrator.md, execute from STEP 6 (REVIEWING).
+On IMPLEMENTED: read .claude/agents/stangent.md, execute from STEP 6 (REVIEWING).
 On PAUSED:      output resume instructions. Stop.
 On FAILED:      output failure details. Stop.

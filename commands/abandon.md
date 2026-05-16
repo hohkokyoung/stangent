@@ -68,6 +68,9 @@ Update feature file:
   - updated      = current ISO date
   Append to ## Pipeline History: "[timestamp] | ABANDONED | orchestrator | developer request"
 
+Delete `.stangent/gateway/active.json` if it exists (disarm gateway for this feature).
+Delete `.stangent/gateway/active.json.paused` if it exists.
+
 Write updated file to: {archive_dir}/{feature_id}-{slug}.md
 Verify write succeeded.
 

@@ -18,9 +18,6 @@ inputs:
   - name: feature_file_path
     type: path
     description: Absolute path to the feature file
-  - name: stangent_path
-    type: path
-    description: Absolute path to the stangent installation
   - name: config_path
     type: path
     description: Absolute path to .stangent/config.json
@@ -55,28 +52,28 @@ A vague failure reason causes an aimless retry.
 
 Read in this order:
 
-1. `.stangent/config.json` → load stangent_path, all paths, and the profile fields:
-   - `config.profiles`       — list of all active profiles; `profiles[0]` is the primary (fallback)
-   - `config.profile_roots`  — `{name: src_root}` map
+1. `.stangent/config.json` → load all paths and profile fields.
+   Derive: `project_root = Path(config_path).parent.parent`
 
-2. Load all active language profiles:
-   For each name in `config.profiles`:
-     Read `{stangent_path}/profiles/{name}.md` → store as `profiles[name]`
-     If the file does not exist: stop immediately and output:
-     "Profile '{name}' not found at {stangent_path}/profiles/{name}.md.
-      Re-run: python {stangent_path}/init.py --profile <valid-profile>"
-     Return FAILED.
+2. Load language profiles: read `.stangent/prompts/load-profiles.md` and follow those instructions.
+   Store the result as `profiles[name]` for each active profile.
 
    **Building the review checklist:**
    For each file in `## Files Changed`, determine its profile via `config.profile_roots`.
    Apply that profile's `review_checklist`. If files span multiple profiles,
    union the checklists — run each item against files of the matching profile only.
 
-3. `{feature_file_path}` → entire feature file
-4. All files listed in `## Files Changed` — read every one
-5. All test files that were added (from ## Files Changed [C] entries in test_dir)
-6. `.stangent/decisions.md` → verify implementation honours all ADRs listed
-   in `## Architectural Decisions Applied`
+3. `{feature_file_path}` → entire feature file. Read `## Codebase Context` for
+   architectural context about the domain before reviewing.
+
+4. `.stangent/context_cache.md` → check `git_hash` against `$(git rev-parse HEAD)`.
+   If hash matches: use the tree structure for codebase orientation.
+   If stale or missing: proceed without it. Do NOT rewrite it (planner owns it).
+
+5. All files listed in `## Files Changed` — read every one.
+6. All test files that were added (from ## Files Changed [C] entries in test_dir).
+7. `.stangent/decisions.md` → verify implementation honours all ADRs listed
+   in `## Architectural Decisions Applied`.
 
 Do not read files outside of `## Files Changed`. Your review scope is
 exactly what was implemented, not the whole codebase.
@@ -177,7 +174,6 @@ exactly what was implemented, not the whole codebase.
     {
       "feature_id":        "{{feature_id}}",
       "feature_file_path": "{{absolute feature file path}}",
-      "stangent_path":     "{{stangent_path}}",
       "config_path":       "{{absolute .stangent/config.json path}}",
       "files_changed":     "{{contents of ## Files Changed section}}"
     }
@@ -280,15 +276,7 @@ Use ASK_DEVELOPER only when:
 - A finding is ambiguous — you cannot determine if it is a bug or intentional
 - A checklist item requires project knowledge not available in the spec or codebase
 
-Format:
-```
-**[{{feature_id}} — REVIEWER QUESTION]**
-Agent: reviewer
-Context: [what was found]
-Question: [is this intentional or a bug?]
-Options: [intentional — I'll mark MINOR | bug — I'll mark MAJOR]
-Impact: Cannot issue verdict until this is resolved.
-```
+Follow the format in `.stangent/prompts/ask-developer.md`.
 
 Do not ask about style. Do not ask about enhancements.
 Only ask when a verdict cannot be issued without the answer.

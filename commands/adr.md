@@ -23,8 +23,8 @@ Read `.stangent/config.json`.
 If it does not exist: output "Run init.py first." and stop.
 
 Extract:
-  - stangent_path    = config.stangent_path
   - decisions_path   = config.paths.decisions_path
+  - config_path      = (absolute path to .stangent/config.json)
 
 ## Step 2 — Determine mode
 
@@ -63,7 +63,7 @@ Output the full ADR block.
 
 ## WRITE MODE
 
-Read the full contents of: {stangent_path}/agents/adr_agent.md
+Read the full contents of: .claude/agents/stangent-adr.md
 
 Execute the ADR agent with:
 
@@ -71,10 +71,9 @@ Execute the ADR agent with:
     {
       "title":          "$ARGUMENTS",
       "decisions_path": "{decisions_path}",
-      "stangent_path":  "{stangent_path}",
       "config_path":    "{absolute path to .stangent/config.json}"
     }
 
     INSTRUCTIONS:
-    Read the full contents of: {stangent_path}/agents/adr_agent.md
+    Read the full contents of: .claude/agents/stangent-adr.md
     Then execute those instructions using the inputs above.

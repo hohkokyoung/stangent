@@ -21,9 +21,6 @@ inputs:
   - name: feature_file_path
     type: path
     description: Absolute path to the feature file
-  - name: stangent_path
-    type: path
-    description: Absolute path to the stangent installation
   - name: config_path
     type: path
     description: Absolute path to .stangent/config.json
@@ -32,6 +29,12 @@ inputs:
     description: >
       Optional. ## Review Verdict content from the previous failed review.
       Present on retry runs. Empty on first run.
+  - name: failure_type
+    type: string
+    description: >
+      Optional. Failure classification from the orchestrator:
+      LINT | TEST | QUERY | SECURITY | REVIEW_CRITICAL | REVIEW_MAJOR.
+      Empty on first run.
 outputs:
   - name: result
     type: string
@@ -69,36 +72,55 @@ Scope creep is a failure. Missing an AC is a failure. Both cause a retry.
 
 Read in this order:
 
-1. `.stangent/config.json` → load stangent_path, all paths, and the profile fields:
-   - `config.profiles`       — list of all active profiles; `profiles[0]` is the primary (fallback)
-   - `config.profile_roots`  — `{name: src_root}` map
+1. `.stangent/config.json` → load all paths and profile fields.
+   Derive: `project_root = Path(config_path).parent.parent`
+   Load: `budget = config.pipeline.agent_context_budget_chars` (default 300000)
 
-2. Load all active language profiles:
-   For each name in `config.profiles`:
-     Read `{stangent_path}/profiles/{name}.md` → store as `profiles[name]`
-     If the file does not exist: stop immediately and output:
-     "Profile '{name}' not found at {stangent_path}/profiles/{name}.md.
-      Re-run: python {stangent_path}/init.py --profile <valid-profile>"
-     Return FAILED.
-
-   **Selecting the right profile for a file path:**
-   Check `config.profile_roots` — use the profile whose root the path starts with.
-   If no match or ambiguous: fall back to `config.profiles[0]` (primary).
-
+2. Load language profiles: read `.stangent/prompts/load-profiles.md` and follow those instructions.
+   Store the result as `profiles[name]` for each active profile.
    Use the matched profile's conventions, test patterns, and query patterns
    when working on files under that root.
 
 3. `{feature_file_path}` → the full feature spec. Read every section.
 4. `.stangent/decisions.md` → all ADRs. These govern how you write code.
-5. `.stangent/context_cache.md` → if fresh (hash matches current tree): use it.
-   If stale: run Pass 1 again.
-6. Pass 2: read anchor_files from all profiles that exist
-7. Pass 3: read ## Files to Touch from spec + any files discovered in Pass 2
-   that are directly relevant
+
+5. Check `## Codebase Context` in the feature spec:
+   - If populated (has content under Top Relevant Files): use it as your anchor.
+     Read the listed files directly — skip Pass 2 (anchor file re-read).
+     These files were already selected by the planner for this feature's scope.
+   - If empty or missing: fall through to step 6.
+
+6. `.stangent/context_cache.md` → check `git_hash` against `$(git rev-parse HEAD)`.
+   - If hash matches: tree structure and anchor summaries are fresh. Skip Pass 1.
+     Use the cached anchor summaries instead of re-reading anchor files (Pass 2).
+   - If stale or missing: run Pass 1 (tree scan), then Pass 2 (anchor files).
+     Do NOT rewrite context_cache.md — only the planner writes it.
+
+7. Pass 3: read `## Files to Touch` from spec + any files from Pass 2 / context cache
+   that are directly relevant.
+   Follow Pass 3 limits from `.stangent/prompts/load-profiles.md` Step 5.
+
+8. Follow context budget tracking from `.stangent/prompts/context-budget.md`.
 
 **If previous_verdict is provided (retry run):**
 Read it first, before anything else. Understand exactly what failed and why.
 Do not repeat the same mistakes.
+
+**If failure_type is set, use targeted fix mode:**
+Only touch the files directly relevant to fixing the classified failure.
+Do not re-implement the entire feature — fix the specific problem:
+
+| failure_type | Targeted action |
+|---|---|
+| `LINT` | Fix linter issues only. Do not change logic or add features. |
+| `TEST` | Fix failing tests only. Do not change implementation unless tests reveal a real bug. |
+| `QUERY` | Fix the specific query patterns flagged in ## Query Analysis Report. |
+| `SECURITY` | Fix CRITICAL security findings before anything else. |
+| `REVIEW_CRITICAL` | Address only the file:line items listed as CRITICAL in ## Review Verdict. |
+| `REVIEW_MAJOR` | Address only the file:line items listed as MAJOR in ## Review Verdict. |
+
+Targeted mode: after fixing, re-run only the sub-agents relevant to the failure_type
+(e.g. LINT → linter only; TEST → unit_tester only; REVIEW_* → all sub-agents).
 
 ---
 
@@ -228,14 +250,13 @@ Do not repeat the same mistakes.
 
 ### Phase 3 — Sub-Agent Pipeline
 
-Run sub-agents in fixed order. Pass feature_id, feature_file_path, stangent_path,
-and config_path to each.
+Run sub-agents in fixed order. Pass feature_id, feature_file_path, and config_path to each.
 
 **3a. Linter sub-agent**
 Derive project_root = Path(config_path).parent.parent
 Spawn using the Agent tool with:
 
-    INPUTS: { "feature_id": "...", "feature_file_path": "...", "stangent_path": "...", "config_path": "...", "extra": {} }
+    INPUTS: { "feature_id": "...", "feature_file_path": "...", "config_path": "...", "extra": {} }
     INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-linter.md and execute.
 
 Wait for result. Read `## Linter Report`.
@@ -245,7 +266,7 @@ Wait for result. Read `## Linter Report`.
 **3b. Unit tester sub-agent**
 Spawn using the Agent tool with:
 
-    INPUTS: { "feature_id": "...", "feature_file_path": "...", "stangent_path": "...", "config_path": "...", "extra": {} }
+    INPUTS: { "feature_id": "...", "feature_file_path": "...", "config_path": "...", "extra": {} }
     INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-unit-tester.md and execute.
 
 Wait for result. Read `## Test Report`.
@@ -261,7 +282,7 @@ Check: does this feature touch any DB layer (models, repositories, raw queries)?
   Proceed to Phase 4.
 - DB layer touched: spawn using the Agent tool with:
 
-    INPUTS: { "feature_id": "...", "feature_file_path": "...", "stangent_path": "...", "config_path": "...", "extra": {} }
+    INPUTS: { "feature_id": "...", "feature_file_path": "...", "config_path": "...", "extra": {} }
     INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-query-analyzer.md and execute.
 
   Wait for result. Read `## Query Analysis Report`.
@@ -347,16 +368,4 @@ Do not use ASK_DEVELOPER for:
 - Which test framework to use (follow the profile)
 - How to name things (follow conventions in existing code)
 
-Format:
-```
-**[{{feature_id}} — DECISION REQUIRED]**
-Agent: implementer
-Context: [what was found / what the conflict is]
-Question: [single specific answerable question]
-Options: [A | B | other]
-Impact if not answered: [what cannot proceed]
-```
-
-After asking: write question + timestamp to Run Log as `ask_developer`.
-Set status = PAUSED. Wait up to 30 minutes. If no response: write status = PAUSED
-and return PAUSED.
+Follow the format in `.stangent/prompts/ask-developer.md`.

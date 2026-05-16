@@ -26,8 +26,19 @@ Otherwise → DASHBOARD MODE
 
 ## DASHBOARD MODE
 
+**Fast path — registry index:**
+Read `config.paths.registry_path` (features_registry.json).
+If `registry.features` is populated:
+  Use it as the primary source: it contains title, status, branch, created, updated per feature.
+  Skip reading individual feature files for the summary table.
+  For features with status COMPLETE: only include those updated within the last `config.pipeline.archive_completed_after_days` days (default 7).
+
+**Fallback — file scan (used when registry is empty or entry is missing):**
 Read all files matching {feature_dir}/FEAT-*.md
 Read all files matching {archive_dir}/FEAT-*.md modified in the last 7 days.
+Parse frontmatter of each file to get status, title, branch, retry_count.
+
+**Merge:** if a feature is in the file scan but not in the registry, include it from the file scan. Registry entries are authoritative when present.
 
 Group by status. Output:
 

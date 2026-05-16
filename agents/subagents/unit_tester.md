@@ -18,9 +18,6 @@ inputs:
   - name: feature_file_path
     type: path
     description: Absolute path to the feature file
-  - name: stangent_path
-    type: path
-    description: Absolute path to the stangent installation
   - name: config_path
     type: path
     description: Absolute path to .stangent/config.json
@@ -51,8 +48,9 @@ Test Report. You do not write tests — the implementer does. You run and report
 
 ## CONTEXT INPUTS
 
-1. `.stangent/config.json` → profiles[0], src_root, paths
-2. `{{stangent_path}}/profiles/{{profiles[0]}}.md` → test command, test_coverage command,
+1. `.stangent/config.json` → profiles[0], src_root, paths.
+   Derive: `project_root = Path(config_path).parent.parent`
+2. `.stangent/profiles/{config.profiles[0]}.md` → test command, test_coverage command,
    test_file_pattern, test_dir
 3. `{{feature_file_path}}` → read `## Acceptance Criteria` and `## Files Changed`
 4. All test files added (from ## Files Changed [C] entries matching test_file_pattern)

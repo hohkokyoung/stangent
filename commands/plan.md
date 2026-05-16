@@ -14,14 +14,14 @@ Read `.stangent/config.json`.
 If it does not exist: output "Run init.py first." and stop.
 
 Extract:
-  - stangent_path   = config.stangent_path
   - feature_dir     = config.paths.feature_dir
   - registry_path   = config.paths.registry_path
   - log_dir         = config.paths.log_dir
+  - config_path     = (absolute path to .stangent/config.json)
 
 ## Step 2 — Initialise feature record
 
-Read {stangent_path}/agents/orchestrator.md.
+Read .claude/agents/stangent.md.
 Execute orchestrator STEP 1 (feature initialisation) only.
 
 Note: STEP 2 (dependency check) is skipped here. The planner writes ## Depends On
@@ -30,13 +30,13 @@ runs automatically when /implement is invoked.
 
 ## Step 3 — Run planner
 
-Read the full contents of: {stangent_path}/agents/planner.md
+Read the full contents of: .claude/agents/stangent-planner.md
 
 Execute the planner with:
   - raw_request   : "$ARGUMENTS"
   - feature_id    : (assigned in Step 2)
   - corrections   : ""
-  - config        : (full .stangent/config.json contents)
+  - config_path   : (absolute path to .stangent/config.json)
 
 ## Step 4 — Stop after spec
 
