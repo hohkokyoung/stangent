@@ -373,6 +373,17 @@ def write_settings_json(project_root: Path, dry_run: bool):
     info(f".claude/settings.json — {label} (PreToolUse gateway hook added)")
 
 
+def create_memory(project_root: Path, config: dict, dry_run: bool):
+    memory_path = project_root / config["paths"].get("memory_path", ".stangent/memory.md")
+    if memory_path.exists():
+        ok("memory.md already exists")
+        return
+    template = (STANGENT_PATH / "templates" / "memory.md").read_text(encoding="utf-8")
+    if not dry_run:
+        memory_path.write_text(template, encoding="utf-8")
+    info("Created .stangent/memory.md")
+
+
 def create_srs(project_root: Path, config: dict, dry_run: bool):
     srs_path = project_root / config["paths"]["srs_path"]
     if srs_path.exists():

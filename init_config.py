@@ -175,6 +175,7 @@ def build_config(
             "prompts_dir":    ".stangent/prompts/",
             "contracts_dir":  ".stangent/contracts/",
             "gateway_path":   ".stangent/gateway/gateway.py",
+            "memory_path":    ".stangent/memory.md",
         },
         "pipeline": {
             "max_retries":                   3,

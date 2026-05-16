@@ -69,6 +69,13 @@ Read in this order before doing anything else:
 3. `.stangent/decisions.md` → load all ADRs. These are binding constraints.
 4. `.stangent/features/` → scan all existing feature files. Understand what
    has already been built and what is in progress.
+4a. `.stangent/memory.md` → if it exists, read it now. Apply immediately:
+    - Check ## Failure Patterns: if any match files likely to be in this feature's scope,
+      proactively flag them in ## Scope as known risk areas. Do not ask the developer
+      about them unless you need a decision — just note the risk.
+    - Check ## Developer Preferences: apply them silently. Do not ask again about
+      anything already captured as a preference.
+    - Check ## Project Insights: use them to inform which areas need closer attention.
 5. `.stangent/SRS.md` → if it exists, read it for system context
 5a. `.stangent/meta.md` → if it exists, load cascade rules.
     Optional file. Each rule maps a file pattern to dependent doc files

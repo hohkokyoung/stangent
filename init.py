@@ -50,7 +50,7 @@ from init_scaffold import (
     install_global, uninit_project,
     copy_profiles, copy_templates, copy_prompts, copy_gateway,
     write_settings_json, copy_commands, copy_claude_agents,
-    create_srs, create_decisions, create_env_example,
+    create_srs, create_decisions, create_memory, create_env_example,
     update_gitignore, create_onboarding_doc, configure_dbhub,
 )
 
@@ -328,6 +328,7 @@ def run(args):
     copy_claude_agents(project_root, dry_run)
     create_srs(project_root, config, dry_run)
     create_decisions(project_root, config, dry_run)
+    create_memory(project_root, config, dry_run)
     create_env_example(project_root, dry_run)
     update_gitignore(project_root, dry_run)
     create_onboarding_doc(project_root, config, dry_run)

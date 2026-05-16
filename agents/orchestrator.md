@@ -118,7 +118,30 @@ Before doing anything:
       Output: "Another feature is currently active: {feature_id} ({state}).
       Finish or /abandon it before starting a new one." and stop.
 
-0d. Proceed to STEP 1.
+0d. Multi-developer check: scan all feature files in `{paths.feature_dir}`.
+    Collect features whose status is PLANNING, IMPLEMENTING, or REVIEWING
+    and whose branch does not match the current git branch (`git rev-parse --abbrev-ref HEAD`).
+
+    If any such features exist:
+      Output a warning (do NOT stop — this is advisory only):
+      ```
+      ⚠ Multi-developer notice:
+      The following features are active on other branches:
+        {feature_id} — {title} ({status}) on {branch}
+        ...
+      Gateway contracts are per-feature and do not conflict, but merging
+      multiple feature branches simultaneously may cause git conflicts.
+      Coordinate with your team before merging.
+      ```
+
+    If `.stangent/features_registry.lock` exists:
+      Read it. Check `locked_at` timestamp — if less than 60 seconds ago:
+        Output: "Registry is locked by another process (locked_at: {locked_at}).
+        Wait a moment and retry, or delete .stangent/features_registry.lock if stale."
+        and stop.
+      If 60+ seconds old: delete the lock file and continue.
+
+0e. Proceed to STEP 1.
 
 ---
 
@@ -128,11 +151,14 @@ Before doing anything:
 
     LOCK PROTOCOL:
     1. Check for `.stangent/features_registry.lock`
-       - If it exists and is < 10 seconds old: wait 2 seconds, retry
-       - If it exists and is ≥ 10 seconds old: stale lock — delete and continue
-       - Retry up to 5 times total. If still locked: output
-         "Registry locked by another process. Wait a moment and try again." and stop.
-    2. Create `.stangent/features_registry.lock` (write current timestamp as content)
+       - If it exists: read it. Parse `locked_at` ISO timestamp.
+         If age < 60 seconds: wait 3 seconds, retry. Up to 5 retries.
+         If age ≥ 60 seconds: stale lock — delete and continue.
+         If still locked after 5 retries: output
+         "Registry locked by another process (locked_at: {locked_at}).
+          Delete .stangent/features_registry.lock if stale." and stop.
+    2. Write `.stangent/features_registry.lock` with content:
+       `{"locked_at": "{ISO timestamp}", "branch": "{current git branch}"}`
     3. Read `{{paths.registry_path}}`
     4. Assign feature_id = "{prefix}-{next_id:0{padding}d}"
     5. Increment next_id. Write registry back.
@@ -402,6 +428,23 @@ Before doing anything:
 7e. Set status = COMPLETE. Append to Pipeline History.
     Delete `.stangent/gateway/active.json` (gateway enforcement no longer needed).
 
+7f. Write to project memory:
+
+    Read `.stangent/memory.md` (skip gracefully if not found).
+    Follow the write protocol in `.stangent/prompts/memory.md`.
+
+    Always append to ## Feature History:
+    `| {{feature_id}} | {{title}} | {{retry_count}} | {{key files from ## Files Changed}} | COMPLETE |`
+
+    If retry_count > 0:
+      Read ## Review Verdict for the failure reason and which files were involved.
+      Check ## Failure Patterns — if the same area appears, increment Count.
+      Otherwise append a new row to ## Failure Patterns.
+
+    If the developer rejected or changed anything during AWAITING_CONFIRMATION
+    or during diff review, infer the preference and append to ## Developer Preferences
+    (only if it is likely to apply to future features).
+
 ---
 
 ### STEP 8 — Completion
@@ -427,6 +470,10 @@ Before doing anything:
 
 E1. Set status = ESCALATED. Append to Pipeline History with reason.
     Delete `.stangent/gateway/active.json`.
+
+    Write to project memory (follow `.stangent/prompts/memory.md`):
+    - Append to ## Feature History: `| {{feature_id}} | {{title}} | {{retry_count}} | {{key files}} | ESCALATED |`
+    - Append to ## Failure Patterns: record the stage and area that caused escalation.
 
 E2. Output:
     ```

@@ -141,6 +141,7 @@ STANGENT_DIRS = [
     ".stangent/prompts/",
     ".stangent/contracts/",
     ".stangent/gateway/",
+    ".stangent/memory/",
 ]
 
 # Project-level (scoped to one repo)
