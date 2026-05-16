@@ -158,6 +158,18 @@ python ~/stangent/init.py --profile flutter,python
 
 # Dry run — see what would be created without writing anything
 python ~/stangent/init.py --dry-run
+
+# Validate the environment without scaffolding
+python ~/stangent/init.py --verify
+```
+
+**Remove Stangent from a project:**
+```bash
+# Keep .stangent/ data (features, SRS, decisions) — safe to re-init later
+python ~/stangent/init.py --uninit
+
+# Delete everything including all feature history (irreversible)
+python ~/stangent/init.py --uninit --hard
 ```
 
 > Replace `~/stangent` with wherever you cloned the repo (e.g. `C:/tools/stangent` on Windows).
@@ -292,6 +304,22 @@ All future agents automatically read and honour every ADR in `decisions.md`.
 
 ---
 
+### `/resume <FEAT-ID>`
+Resume a paused or interrupted feature from where it left off.
+
+```
+/resume FEAT-003
+```
+
+Reads the feature's status and Pipeline History, then automatically routes to the correct re-entry point — no need to remember which stage it was at. Handles all PAUSED states:
+
+- Paused during planning → re-runs planner (shows any pending decision first)
+- Paused during implementation → re-runs implementer from where it left off
+- Paused during review → re-runs reviewer
+- `AWAITING_CONFIRMATION` → shows the spec again and waits for confirmation
+
+---
+
 ### `/abandon <FEAT-ID>`
 Cleanly abandon a feature.
 
@@ -307,6 +335,80 @@ This:
 
 ---
 
+### `/doctor`
+Validate that Stangent is correctly wired up in the current project.
+
+```
+/doctor
+```
+
+Runs 10 checks and reports PASS / WARN / FAIL for each:
+
+- `.stangent/config.json` — exists, valid JSON, required fields present
+- All required directories exist
+- Profile `.md` files exist
+- Prompt fragments installed
+- Agent files installed in `.claude/agents/`
+- `gateway.py` present
+- PreToolUse hook in `.claude/settings.json`
+- `features_registry.json` valid
+- Gateway `active.json` state is consistent with the feature file
+
+Run this first when something seems broken, or after a fresh install.
+
+---
+
+### `/cleanup`
+Remove stale Stangent artefacts.
+
+```
+/cleanup           ← interactive
+/cleanup --dry-run ← see what would be removed without deleting
+```
+
+Finds and removes:
+- Feature branches for COMPLETE or ABANDONED features
+- Orphaned contract files (no matching feature file)
+- Stale `active.json` (active feature is already done)
+
+---
+
+### `/gateway`
+Inspect or control the gateway enforcement engine.
+
+```
+/gateway status              ← show active feature + allowed/blocked paths
+/gateway unblock <path>      ← add a path to the active feature's allowed list
+/gateway pause               ← temporarily disable enforcement (reason required)
+/gateway resume              ← re-enable enforcement
+```
+
+Use `/gateway unblock` when the implementer is blocked from writing a file that should be in scope. This adds the path to the contract without restarting the pipeline.
+
+---
+
+### `/uninit`
+Remove Stangent from the current project.
+
+```
+/uninit            ← remove tooling, keep .stangent/ data
+/uninit --soft     ← same as above (explicit)
+/uninit --hard     ← remove everything including all feature history
+```
+
+**Soft (default):** removes agents, commands, gateway hook, and `gateway.py`. Keeps `.stangent/` intact — your features, SRS, and decisions are preserved. Re-init later with `init.py`.
+
+**Hard:** removes everything above plus the entire `.stangent/` directory and gitignore entries. Permanent — use with caution.
+
+You can also uninit from the CLI (without opening Claude Code):
+
+```bash
+python ~/stangent/init.py --uninit           # soft — keep .stangent/
+python ~/stangent/init.py --uninit --hard    # hard — delete everything
+```
+
+---
+
 ## Feature pipeline states
 
 | State | Meaning | Next action |
@@ -319,7 +421,7 @@ This:
 | `REVIEWING` | Reviewer is running | Wait |
 | `REVIEW_PASS` | Passed review | Run `/srs` or done |
 | `COMPLETE` | SRS updated, all done | Create PR |
-| `PAUSED` | Pipeline paused waiting for input | Resume with the relevant command |
+| `PAUSED` | Pipeline paused waiting for input | Run `/resume FEAT-XXX` |
 | `ESCALATED` | Hit max retries (default 3) | Fix manually, then run `/implement` |
 | `BLOCKED` | A dependency feature isn't complete | Complete the blocking feature first |
 | `ABANDONED` | Abandoned by developer | — |
@@ -334,7 +436,6 @@ Key settings:
 
 ```json
 {
-  "stangent_path": "/path/to/stangent",
   "profiles": ["python"],
   "profile_roots": { "python": "src/" },
 
@@ -486,6 +587,20 @@ If auto-detection gets the roots wrong (unusual structure), just edit `profile_r
 ---
 
 ## Integrations
+
+### Cursor AI
+
+Stangent runs natively in Claude Code. If your team also uses Cursor AI, you can wire in soft gateway enforcement so the Cursor agent calls `gateway.py` before writing files.
+
+**Setup:**
+
+1. Copy [`adapters/cursor/AGENT_INSTRUCTIONS.md`](adapters/cursor/AGENT_INSTRUCTIONS.md) and open it.
+2. Paste the rules block into your project's `.cursorrules` file (all Cursor versions), **or** create `.cursor/rules/stangent.mdc` with `alwaysApply: true` (Cursor v0.40+).
+3. That's it — Cursor will call `gateway.py` before edits and bash commands.
+
+> Cursor enforcement is **instruction-based** (the agent is told to check, but can't be hard-blocked at the tool level). For hard enforcement, use Claude Code where the `PreToolUse` hook blocks calls at the platform level.
+
+---
 
 ### DBHub (database schema queries)
 
@@ -655,13 +770,23 @@ Run `python init.py --profile <valid-profile>` — valid options: `python`, `flu
 Set the explicit flag: `python init.py --provider groq`
 
 **Pipeline ESCALATED after 3 retries**
-The reviewer found issues the implementer couldn't fix automatically. Read the `## Review Verdict` in the feature file. Fix the issues manually, set `status = CONFIRMED` in the frontmatter, then run `/implement FEAT-XXX`.
+The reviewer found issues the implementer couldn't fix automatically. Read the `## Review Verdict` in the feature file. Fix the issues manually, set `status = CONFIRMED` in the frontmatter, then run `/resume FEAT-XXX`.
+
+**Feature paused / interrupted**
+Run `/resume FEAT-XXX`. It reads the Pipeline History and routes to the right stage automatically — planning, implementing, or reviewing — without you needing to know which stage it was at.
+
+**Something seems misconfigured**
+Run `/doctor`. It checks config, dirs, agents, gateway hook, registry, and active state, and tells you exactly what's wrong and how to fix it.
 
 **Branch already exists**
 Stangent creates one branch per feature. If the branch already exists from a previous run, it will reuse it.
 
 **`/implement` says "Already in progress"**
-The feature is stuck in `IMPLEMENTING` state. Check the feature file — if the implementer is genuinely done, set `status = CONFIRMED` manually and re-run `/implement`.
+The feature is stuck in `IMPLEMENTING` state. Check the feature file — if the implementer is genuinely done, set `status = CONFIRMED` manually and re-run `/resume FEAT-XXX`.
+
+**Want to remove Stangent from a project**
+Run `/uninit` inside Claude Code, or from the CLI: `python ~/stangent/init.py --uninit`.
+Add `--hard` to also delete `.stangent/` and all feature history.
 
 ---
 
@@ -669,7 +794,11 @@ The feature is stuck in `IMPLEMENTING` state. Check the feature file — if the 
 
 ```
 stangent/
-├── init.py                    ← run this to set up / re-run to upgrade
+├── init.py                    ← entry point: set up, upgrade, or uninit
+├── init_config.py             ← config building and YAML frontmatter parsing
+├── init_constants.py          ← providers, profiles, agent names, print helpers
+├── init_env.py                ← environment and credential validation
+├── init_scaffold.py           ← file copying, settings.json, uninit logic
 ├── config.template.json       ← reference for config.json structure
 │
 ├── agents/                    ← agent instruction files (markdown)
@@ -686,14 +815,36 @@ stangent/
 │       └── security_scanner.md
 │
 ├── commands/                  ← slash command definitions
-│   ├── feature.md             ← /feature
-│   ├── plan.md                ← /plan
+│   ├── feature.md             ← /feature  — full pipeline
+│   ├── plan.md                ← /plan     — spec only
 │   ├── implement.md           ← /implement
+│   ├── resume.md              ← /resume   — resume paused feature
 │   ├── review.md              ← /review
 │   ├── status.md              ← /status
 │   ├── srs.md                 ← /srs
 │   ├── adr.md                 ← /adr
-│   └── abandon.md             ← /abandon
+│   ├── abandon.md             ← /abandon
+│   ├── cleanup.md             ← /cleanup  — remove stale artefacts
+│   ├── gateway.md             ← /gateway  — enforcement control
+│   ├── doctor.md              ← /doctor   — health check
+│   └── uninit.md              ← /uninit   — remove stangent
+│
+├── prompts/                   ← shared prompt fragments (copied to .stangent/prompts/)
+│   ├── ask-developer.md       ← escalation format
+│   ├── context-budget.md      ← character budget rules
+│   ├── load-profiles.md       ← how agents load language profiles
+│   ├── pipeline-states.md     ← valid status transitions
+│   ├── run-log-format.md      ← Pipeline History format
+│   └── section-ownership.md   ← which agent owns which section
+│
+├── gateway/
+│   └── gateway.py             ← PreToolUse enforcement engine
+│
+├── adapters/                  ← instructions for non-Claude-Code tools
+│   ├── cursor/
+│   │   └── AGENT_INSTRUCTIONS.md  ← Cursor AI (.cursorrules / .mdc)
+│   └── generic/
+│       └── AGENT_INSTRUCTIONS.md  ← any tool without hook support
 │
 ├── profiles/
 │   ├── _base.md               ← profile contract (all required fields)
