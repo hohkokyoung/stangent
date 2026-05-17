@@ -62,6 +62,7 @@ Check that each of the following exists:
   - `.stangent/prompts/ask-developer.md`
   - `.stangent/prompts/context-budget.md`
   - `.stangent/prompts/load-profiles.md`
+  - `.stangent/prompts/memory.md`
   - `.stangent/prompts/pipeline-states.md`
   - `.stangent/prompts/run-log-format.md`
   - `.stangent/prompts/section-ownership.md`
@@ -127,7 +128,17 @@ If exists:
 
 ---
 
-## Step 9 — Gateway state consistency
+## Step 9 — Memory file
+
+Check `config.paths.memory_path` (default: `.stangent/memory.md`):
+  - Exists → [PASS] .stangent/memory.md
+  - Missing → [WARN] .stangent/memory.md — not found. Fix: re-run init.py
+    (memory.md is created on init — agents degrade gracefully without it
+    but cross-feature learning will not accumulate)
+
+---
+
+## Step 10 — Gateway state consistency
 
 Check `.stangent/gateway/active.json`:
   - Not found → [PASS] gateway state — no active feature (permissive mode)
@@ -152,7 +163,7 @@ Check `.stangent/gateway/active.json.paused`:
 
 ---
 
-## Step 10 — Report summary
+## Step 11 — Report summary
 
 Count PASS, WARN, FAIL totals.
 
