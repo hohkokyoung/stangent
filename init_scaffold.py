@@ -812,6 +812,7 @@ def _remove_agent_files(project_root: Path, dry_run: bool) -> int:
             count += 1
 
     _remove_dir_if_empty(subagents_dir, dry_run)
+    _remove_dir_if_empty(agents_dir, dry_run)
     return count
 
 
@@ -825,6 +826,7 @@ def _remove_command_files(project_root: Path, dry_run: bool) -> int:
         if f.exists():
             _remove_file(f, f".claude/commands/{name}", dry_run)
             count += 1
+    _remove_dir_if_empty(commands_dir, dry_run)
     return count
 
 
