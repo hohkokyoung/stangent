@@ -228,6 +228,7 @@ def run(args):
             sys.exit(1)
 
     config      = build_config(project_root, profile_names, provider_name)
+    config["stangent_source_path"] = str(STANGENT_PATH)
     config_path = project_root / ".stangent" / "config.json"
 
     # Migration: old stangent used config.json at project root
@@ -246,9 +247,10 @@ def run(args):
         # ── Always overwrite: structural fields the user never edits ─────────
         existing.pop("profile", None)       # removed in favour of profiles[0]
         existing.pop("stangent_path", None) # removed — projects are self-contained
-        existing["_stangent_version"] = VERSION
-        existing["profiles"]          = config["profiles"]
-        existing["profile_roots"]     = config["profile_roots"]
+        existing["_stangent_version"]    = VERSION
+        existing["stangent_source_path"] = str(STANGENT_PATH)
+        existing["profiles"]             = config["profiles"]
+        existing["profile_roots"]        = config["profile_roots"]
 
         # Detect provider change — if provider switched, reset models to the
         # new provider's defaults (old model IDs are incompatible).

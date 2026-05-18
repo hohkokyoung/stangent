@@ -19,7 +19,8 @@ Check `.stangent/config.json`:
 If config is missing or invalid:
   Output:
     "[FAIL] .stangent/config.json — not found or invalid JSON
-     Fix: run python <stangent>/init.py to create it."
+     Fix: run python <your-stangent-path>/init.py to create it.
+     (If you don't have the stangent source: git clone https://github.com/hohkokyoung/stangent.git ~/stangent)"
   Stop — remaining checks depend on config.
 
 If config is valid:
@@ -217,11 +218,11 @@ Stangent Doctor — {project_root.name}
 Summary: {PASS} passed  {WARN} warnings  {FAIL} failures
 
 {If any FAIL}
-Run: python <path-to-stangent>/init.py
+Run: python {config.stangent_source_path}/init.py
 to repair all failures.
 
 {If WARN only, no FAIL}
-Run: python <path-to-stangent>/init.py
+Run: python {config.stangent_source_path}/init.py
 to repair warnings (safe to run on an existing project — it only adds missing files).
 
 {If all PASS}

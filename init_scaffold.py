@@ -599,7 +599,7 @@ You can edit them to adjust behaviour for your project.
 > The version is recorded in every Run Log entry — it's how you know which
 > behaviour was active when a feature was built.
 
-Re-run `python <path-to-stangent>/init.py` after a Stangent update to
+Re-run `python {STANGENT_PATH}/init.py` after a Stangent update to
 sync the latest agent files. Your edits will be shown as conflicts so you can
 merge them manually.
 

@@ -91,7 +91,7 @@ If neither flag:
        • .stangent/gateway/gateway.py
 
      Your feature files, SRS.md, decisions.md, and config.json are kept.
-     Re-init later with: python <path-to-stangent>/init.py
+     Re-init later with: python {config.stangent_source_path}/init.py
 
      Type 'yes' to confirm, anything else to cancel:"
 
@@ -193,7 +193,7 @@ Remove the stangent block from `.gitignore`:
     .stangent/SRS.md
     .stangent/decisions.md
 
-  To re-install: python <path-to-stangent>/init.py
+  To re-install: python {config.stangent_source_path}/init.py
   ```
 
 **HARD:**
@@ -202,5 +202,5 @@ Remove the stangent block from `.gitignore`:
 
   All agent files, commands, gateway hooks, and .stangent/ data have been deleted.
 
-  To start fresh: python <path-to-stangent>/init.py
+  To start fresh: python {config.stangent_source_path}/init.py
   ```

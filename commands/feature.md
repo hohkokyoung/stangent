@@ -10,7 +10,8 @@ Example: /feature add a login screen with email and password
 Read `.stangent/config.json`.
 If it does not exist: output the following and stop:
   "Stangent is not initialised in this project.
-   Run: python <path-to-stangent>/init.py"
+   Run init.py from your stangent installation, or see:
+   https://github.com/hohkokyoung/stangent"
 
 Extract and hold these values for the rest of this session:
   - feature_dir     = config.paths.feature_dir
