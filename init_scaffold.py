@@ -936,6 +936,7 @@ def uninit_project(project_root: Path, hard: bool, dry_run: bool) -> bool:
     command_count = _remove_command_files(project_root, dry_run)
     _remove_gateway_hook(project_root, dry_run)
     _remove_gateway_files(project_root, dry_run)
+    _remove_dir_if_empty(project_root / ".claude", dry_run)
 
     if hard:
         _remove_stangent_dir(project_root, dry_run)
