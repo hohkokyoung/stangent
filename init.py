@@ -51,7 +51,8 @@ from init_scaffold import (
     copy_profiles, copy_templates, copy_prompts, copy_gateway,
     write_settings_json, copy_commands, copy_claude_agents,
     create_srs, create_decisions, create_memory, create_env_example,
-    update_gitignore, create_onboarding_doc, configure_dbhub,
+    update_gitignore, create_onboarding_doc,
+    configure_dbhub, configure_supabase, setup_cross_stack_meta,
 )
 
 
@@ -318,6 +319,8 @@ def run(args):
         warn("Config is incomplete. Some agents may fail. Re-run init to repair.")
 
     configure_dbhub(config, config_path, project_root, dry_run)
+    configure_supabase(config, config_path, profile_names, dry_run)
+    setup_cross_stack_meta(project_root, profile_names, dry_run)
     init_registry(project_root, config, dry_run)
     copy_profiles(project_root, dry_run)
     copy_templates(project_root, dry_run)

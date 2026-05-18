@@ -688,6 +688,93 @@ def configure_dbhub(config: dict, config_path: Path, project_root: Path, dry_run
     print("  Restart Claude Code to activate DBHub.")
 
 
+# ── Cross-stack meta setup ────────────────────────────────────────────────────
+
+def setup_cross_stack_meta(project_root: Path, profile_names: list, dry_run: bool):
+    """
+    If both a backend profile (fastapi or python) and flutter are active,
+    copy meta_flutter_fastapi.md to .stangent/meta.md — unless it already exists.
+    """
+    backend_profiles = {"fastapi", "python"}
+    has_backend = any(p in backend_profiles for p in profile_names)
+    has_flutter = "flutter" in profile_names
+
+    if not (has_backend and has_flutter):
+        return
+
+    dst = project_root / ".stangent" / "meta.md"
+    if dst.exists():
+        ok(".stangent/meta.md — already present, skipping")
+        return
+
+    src = STANGENT_PATH / "templates" / "meta_flutter_fastapi.md"
+    if not src.exists():
+        warn(".stangent/meta.md — template not found in stangent source, skipping")
+        return
+
+    if not dry_run:
+        dst.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    ok(".stangent/meta.md — created from meta_flutter_fastapi.md starter")
+    info("Edit .stangent/meta.md to fill in your actual route-to-service mappings.")
+
+
+# ── Supabase setup ────────────────────────────────────────────────────────────
+
+def configure_supabase(config: dict, config_path: Path, profile_names: list, dry_run: bool):
+    """
+    Optionally configure Supabase integration.
+    Only prompts if not already enabled. Skipped silently on dry-run.
+    """
+    supabase = config.get("integrations", {}).get("supabase", {})
+    if supabase.get("enabled"):
+        ok(f"Supabase — already configured ({supabase.get('project_url', 'url not set')})")
+        return
+
+    # Only prompt when Supabase is plausibly in use
+    has_flutter  = "flutter" in profile_names
+    has_backend  = any(p in {"fastapi", "python"} for p in profile_names)
+    if not (has_flutter or has_backend):
+        return
+
+    if dry_run:
+        info("Supabase — skipped (dry-run)")
+        return
+
+    header("Supabase Integration (optional)")
+    print("  Enable Supabase-aware security rules: RLS enforcement on migrations,")
+    print("  service_role key leak detection, JWT middleware verification,")
+    print("  realtime subscription cleanup, and architecture detection.")
+    print()
+    raw = input("  Enable Supabase integration? (yes / skip) [skip]: ").strip().lower()
+    if raw != "yes":
+        info("Supabase — skipped (enable later by re-running init)")
+        return
+
+    print()
+    project_url = input("  Supabase project URL (e.g. https://xxx.supabase.co) [leave blank to add later]: ").strip()
+    direct_conn = input("  Direct PG connection string [leave blank to add later]: ").strip()
+
+    if "integrations" not in config:
+        config["integrations"] = {}
+    config["integrations"]["supabase"] = {
+        "enabled":           True,
+        "project_url":       project_url or None,
+        "direct_connection": direct_conn or None,
+    }
+    config_path.write_text(json.dumps(config, indent=2))
+    ok("Supabase — enabled in config")
+    if not project_url or not direct_conn:
+        info("Add missing values to .stangent/config.json when ready.")
+    print()
+    print("  Next steps:")
+    print("  1. Copy the meta template if you haven't already:")
+    print("       cp .stangent/templates/meta_flutter_fastapi.md .stangent/meta.md")
+    print("     (or re-run init — it will copy it automatically for double-stack projects)")
+    print("  2. If using DBHub for live schema queries, set direct_connection to your")
+    print("     Supabase direct PG connection string (port 5432, not the pooler).")
+    print()
+
+
 # ── Uninit ────────────────────────────────────────────────────────────────────
 
 _STANGENT_COMMAND_FILES = [
