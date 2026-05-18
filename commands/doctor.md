@@ -138,7 +138,42 @@ Check `config.paths.memory_path` (default: `.stangent/memory.md`):
 
 ---
 
-## Step 10 — Gateway state consistency
+## Step 10 — Cross-stack coordination (double-stack projects only)
+
+Read `config.profiles`. If it contains both a backend profile (`fastapi` or `python`)
+AND `flutter`, run these checks. Otherwise: skip this step entirely.
+
+**10a. meta.md cascade rules**
+Check `.stangent/meta.md`:
+  - Exists → [PASS] .stangent/meta.md — cascade rules present
+  - Missing → [WARN] .stangent/meta.md — not found.
+    Fix: copy templates/meta_flutter_fastapi.md to .stangent/meta.md and fill
+    in your route-to-service mappings. Without it, the planner will not
+    automatically pull Flutter service files into spec scope when FastAPI
+    routes are touched.
+
+**10b. Cross-stack type reference**
+Check `.stangent/prompts/cross-stack-types.md`:
+  - Exists → [PASS] prompts/cross-stack-types.md — type mapping available
+  - Missing → [FAIL] prompts/cross-stack-types.md — not found.
+    Fix: re-run init.py (this file is installed by default).
+
+**10c. FastAPI profile active**
+If `flutter` is in `config.profiles` and a backend profile is `python`
+(not `fastapi`):
+  - [WARN] Backend profile is `python` but FastAPI-specific checks (async I/O,
+    Pydantic v2 patterns, response_model enforcement) require the `fastapi` profile.
+    Fix: re-run init.py --profile fastapi,flutter
+
+**10d. Supabase prompt (only if `config.integrations.supabase.enabled = true`)**
+Check `.stangent/prompts/supabase.md`:
+  - Exists → [PASS] prompts/supabase.md — Supabase security rules available
+  - Missing → [FAIL] prompts/supabase.md — not found.
+    Fix: re-run init.py (this file is required when Supabase integration is enabled)
+
+---
+
+## Step 11 — Gateway state consistency
 
 Check `.stangent/gateway/active.json`:
   - Not found → [PASS] gateway state — no active feature (permissive mode)
@@ -163,7 +198,7 @@ Check `.stangent/gateway/active.json.paused`:
 
 ---
 
-## Step 11 — Report summary
+## Step 12 — Report summary
 
 Count PASS, WARN, FAIL totals.
 

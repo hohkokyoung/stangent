@@ -168,22 +168,52 @@ def check_tools(
     return all_ok, missing_required
 
 
+def _file_contains_any(path: Path, terms: list[str]) -> bool:
+    """Return True if any term appears in the file (case-insensitive)."""
+    try:
+        text = path.read_text(encoding="utf-8", errors="ignore").lower()
+        return any(t.lower() in text for t in terms)
+    except Exception:
+        return False
+
+
 def detect_profiles(project_root: Path) -> list[str]:
     """
-    Return all profiles whose detection files are present.
+    Return all profiles whose detection criteria are met.
     Checks project root first, then one level of subdirectories (monorepo support).
+
+    Profiles with `detect_content` require at least one detect_file to exist AND
+    contain one of the listed terms (e.g. fastapi in requirements.txt). This
+    prevents the fastapi profile from matching a generic Python project.
+    Profiles without `detect_content` match on file presence alone.
+
+    When both `python` and `fastapi` match, `fastapi` takes precedence and
+    `python` is dropped — they share the same file extensions and src_root.
     """
     found = []
-    # Collect all candidate directories: root + immediate subdirs
     candidates = [project_root] + [
         d for d in sorted(project_root.iterdir())
         if d.is_dir() and not d.name.startswith(".")
     ]
     for profile_name, profile in PROFILES.items():
+        detect_content = profile.get("detect_content", [])
         for detect_file in profile["detect_files"]:
-            if any((d / detect_file).exists() for d in candidates):
+            matching_paths = [d / detect_file for d in candidates if (d / detect_file).exists()]
+            if not matching_paths:
+                continue
+            # No content check required — file presence is enough
+            if not detect_content:
                 found.append(profile_name)
                 break
+            # Content check required — at least one matching file must contain a term
+            if any(_file_contains_any(p, detect_content) for p in matching_paths):
+                found.append(profile_name)
+                break
+
+    # fastapi is a specialisation of python — drop python when fastapi is detected
+    if "fastapi" in found and "python" in found:
+        found.remove("python")
+
     return found
 
 

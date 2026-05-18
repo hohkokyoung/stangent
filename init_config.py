@@ -179,6 +179,7 @@ def build_config(
         },
         "pipeline": {
             "max_retries":                   3,
+            "sub_agent_max_retries":         3,
             "ask_developer_timeout_minutes": 30,
             "agent_context_budget_chars":    300000,
             "auto_branch":                   True,
@@ -206,6 +207,11 @@ def build_config(
             "dbhub": {
                 "enabled":    False,
                 "mcp_server": "dbhub",
+            },
+            "supabase": {
+                "enabled":          False,
+                "project_url":      None,
+                "direct_connection": None,
             },
         },
     }

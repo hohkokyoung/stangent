@@ -150,8 +150,38 @@ Targeted mode: after fixing, re-run only the sub-agents relevant to the failure_
    FAIL status in any sub-agent report.
 
 7. Sub-agent run order is fixed: linter → unit_tester → query_analyzer.
-   Each must PASS before the next runs.
-   Exception: if query_analyzer is SKIPPED (no DB layer), proceed without it.
+
+8. **Cross-stack rule** — only if `config.profiles` contains both a backend
+   profile (`fastapi` or `python`) AND `flutter`:
+
+   Read `.stangent/prompts/cross-stack-types.md` for type mapping and naming conventions.
+
+   - Creating or modifying a Pydantic schema (`src/schemas/`) → you MUST also
+     create or update the corresponding Dart model (`lib/models/`) in the same commit.
+     Both files must appear in `## Files Changed`.
+   - Adding a new FastAPI endpoint → you MUST also add or update the corresponding
+     Flutter service method in `lib/services/`. If the Dart side is out of scope
+     for this feature, add a note in `## Future Considerations` and use ASK_DEVELOPER.
+   - Use cross-stack-types.md to map every Pydantic field type to its correct Dart type.
+     Pay special attention to `Optional[X]` → `X?` — nullable mismatch is the most
+     common cross-stack runtime crash.
+   - JSON key casing: check whether the FastAPI project uses snake_case or camelCase
+     aliases (look for `alias_generator` in `src/core/config.py` or schema `model_config`).
+     The Dart `fromJson` key strings must match exactly.
+
+9. **Supabase rule** — only if `config.integrations.supabase.enabled = true`:
+
+   Read `.stangent/prompts/supabase.md` for the full security rules before writing any code.
+
+   - NEVER write `SUPABASE_SERVICE_ROLE_KEY` into any Dart file, asset, or Flutter config.
+   - NEVER return the service role key in any FastAPI response body or header.
+   - Any new database table introduced by a migration MUST have `ENABLE ROW LEVEL SECURITY`
+     and at least one `CREATE POLICY` in the same migration file.
+   - Auth tokens in Flutter MUST use Supabase's built-in session management —
+     not manually persisted to SharedPreferences.
+   - Any Realtime channel opened in `initState` MUST have a corresponding
+     `removeChannel()` call in `dispose()`.
+   - Add `supabase/migrations/` to `## Files Changed` if a migration was created or modified.
 
 ---
 
@@ -252,6 +282,13 @@ Targeted mode: after fixing, re-run only the sub-agents relevant to the failure_
 
 Run sub-agents in fixed order. Pass feature_id, feature_file_path, and config_path to each.
 
+**Sub-agent retry limit:**
+Read `config.pipeline.sub_agent_max_retries` (default: 3).
+Each sub-agent below tracks its own retry count. If retries are exhausted:
+set status = PAUSED, write a note to `## Implementation Log`:
+`Sub-agent {name} exceeded sub_agent_max_retries ({N}) — paused for developer review.`
+Return PAUSED to the orchestrator. Do not proceed to the next sub-agent.
+
 **3a. Linter sub-agent**
 Derive project_root = Path(config_path).parent.parent
 Spawn using the Agent tool with:
@@ -260,7 +297,9 @@ Spawn using the Agent tool with:
     INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-linter.md and execute.
 
 Wait for result. Read `## Linter Report`.
-- If FAIL: fix all reported issues. Re-run linter sub-agent. Do not proceed until PASS.
+- If FAIL: fix all reported issues. Increment linter retry count.
+  If retry count < sub_agent_max_retries: re-run linter sub-agent.
+  If retry count >= sub_agent_max_retries: PAUSED (see limit above).
 - If PASS: proceed to 3b.
 
 **3b. Unit tester sub-agent**
@@ -271,7 +310,9 @@ Spawn using the Agent tool with:
 
 Wait for result. Read `## Test Report`.
 - If FAIL: fix failing tests or bad tests as reported. Do not add new tests —
-  fix existing ones first. Re-run. Do not proceed until PASS.
+  fix existing ones first. Increment unit_tester retry count.
+  If retry count < sub_agent_max_retries: re-run.
+  If retry count >= sub_agent_max_retries: PAUSED (see limit above).
 - If SKIPPED: all ACs were platform-bound with valid n/a justifications.
   Proceed to 3c.
 - If PASS: proceed to 3c.
@@ -286,7 +327,9 @@ Check: does this feature touch any DB layer (models, repositories, raw queries)?
     INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-query-analyzer.md and execute.
 
   Wait for result. Read `## Query Analysis Report`.
-  - If FAIL: fix all danger findings. Re-run. Do not proceed until PASS.
+  - If FAIL: fix all danger findings. Increment query_analyzer retry count.
+    If retry count < sub_agent_max_retries: re-run.
+    If retry count >= sub_agent_max_retries: PAUSED (see limit above).
   - If WARN: review each warning. Fix or document why it is acceptable.
     Proceed once all WARN items are addressed.
   - If PASS: proceed to Phase 4.
@@ -295,8 +338,15 @@ Check: does this feature touch any DB layer (models, repositories, raw queries)?
 
 ### Phase 4 — Diff Review and Commit
 
-4a. Run: `git diff --stat`
+4a. Run: `git status` (to catch untracked new files not yet staged)
+    Then: `git diff --stat`
     Then: `git diff` (full diff)
+
+    Cross-check: every file marked [C] (created) in `## Files Changed` must
+    appear in `git status` untracked or already staged. If a [C] file is
+    absent from both: add it to `## Files Changed` and stage it.
+    If any untracked file appears in `git status` that is NOT in `## Files Changed`:
+    add it to `## Files Changed` with an explanation before staging.
 
 4b. Present a summary to the developer:
     ```

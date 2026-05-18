@@ -12,16 +12,26 @@ VERSION = "1.0.0"
 
 PROFILES = {
     "flutter": {
-        "detect_files": ["pubspec.yaml"],
+        "detect_files":   ["pubspec.yaml"],
         "required_tools": ["flutter", "dart"],
         "optional_tools": ["detect-secrets"],
-        "src_root": "lib/",
+        "src_root":       "lib/",
     },
     "python": {
-        "detect_files": ["pyproject.toml", "requirements.txt", "setup.py"],
+        "detect_files":   ["pyproject.toml", "requirements.txt", "setup.py"],
         "required_tools": ["ruff", "pytest", "bandit", "pip-audit", "detect-secrets"],
         "optional_tools": ["pytest-cov", "pytest-json-report"],
-        "src_root": "src/",
+        "src_root":       "src/",
+    },
+    "fastapi": {
+        # Content-based detection: checks for 'fastapi' inside requirements.txt
+        # or pyproject.toml. Falls back to --profile fastapi if auto-detect fails.
+        "detect_files":    ["pyproject.toml", "requirements.txt"],
+        "detect_content":  ["fastapi"],   # init.py checks file content for this string
+        "required_tools":  ["ruff", "pytest", "pytest-asyncio", "httpx",
+                            "bandit", "pip-audit", "detect-secrets"],
+        "optional_tools":  ["pytest-cov", "pytest-json-report", "asgi-lifespan"],
+        "src_root":        "src/",
     },
 }
 
@@ -228,6 +238,9 @@ TOOL_INSTALL_HINTS: dict[str, str] = {
     # pip
     "ruff":               "pip install ruff",
     "pytest":             "pip install pytest",
+    "pytest-asyncio":     "pip install pytest-asyncio",
+    "httpx":              "pip install httpx",
+    "asgi-lifespan":      "pip install asgi-lifespan",
     "bandit":             "pip install bandit",
     "pip-audit":          "pip install pip-audit",
     "detect-secrets":     "pip install detect-secrets",

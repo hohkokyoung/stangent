@@ -200,7 +200,11 @@ conventions:
 
 ## API Extraction
 
-When `api_extraction: true` in config.json, the SRS agent looks for:
+```
+api_extraction: true
+```
+
+When `api_extraction: true`, the SRS agent looks for:
 
 - **FastAPI**: `@app.get`, `@app.post`, `@router.get`, etc. — extracts path, method,
   Pydantic request/response models

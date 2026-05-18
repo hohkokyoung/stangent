@@ -11,6 +11,7 @@ tools:
   - Edit
   - Glob
   - Grep
+  - Bash
 inputs:
   - name: title
     type: string
@@ -30,11 +31,14 @@ outputs:
     description: "manual mode: WRITTEN | CANCELLED — bootstrap mode: BOOTSTRAPPED | SKIPPED"
 profile_aware: false
 allows_ask_developer: true
-bash_allowlist: []
+bash_allowlist:
+  - "git add"
+  - "git commit"
 bash_blocklist:
   - "git reset"
   - "git push"
   - "rm -rf"
+  - "git clean"
 ---
 
 ## ROLE
@@ -323,9 +327,17 @@ Using the answers, draft the full ADR:
     Append the ADR to `{decisions_path}` after the last existing ADR.
     Ensure there is a blank line before and after the new ADR block.
 
-4e. Output:
+4e. Commit the decision:
     ```
-    ✓ ADR-{id} recorded: {title}
+    git add {decisions_path}
+    git commit -m "docs(ADR): add ADR-{id} — {title}"
+    ```
+    If the commit fails: output a warning but do not fail — the ADR is written
+    and will be picked up by the next commit in the project.
+
+4f. Output:
+    ```
+    ✓ ADR-{id} recorded and committed: {title}
 
     All Planner and Implementer agents will now apply this decision automatically.
     File: {decisions_path}

@@ -91,8 +91,17 @@ Security is not optional. All four passes run regardless of feature scope.
 ### Pass 1 — Secrets Detection (always first, blocks all other work if CRITICAL)
 
 1a. Run: `{{profile.commands.secrets_scan}}`
+    Capture stdout + stderr. Note exit code.
 
-1b. Read `.stangent/secrets_report.json`.
+1b. Locate results using this priority order:
+    1. If `.stangent/secrets_report.json` exists and is non-empty after the command: read it.
+    2. Otherwise: parse the command's stdout directly.
+    3. If both are empty and exit code = 0: treat as no findings (PASS for this pass).
+    4. If both are empty and exit code ≠ 0: mark Pass 1 as SKIPPED with a note:
+       "secrets_scan command failed or produced no output — install
+       detect-secrets (pip install detect-secrets) for full coverage."
+       Do NOT fail the pipeline. Proceed to Pass 2.
+
     Filter results to files in `files_changed` only.
 
 1c. For each finding: classify as CRITICAL.
@@ -117,9 +126,14 @@ Security is not optional. All four passes run regardless of feature scope.
       - Do not fail the pipeline. Proceed to Pass 3.
 
 2b. Run: `{{profile.commands.security_sast}}`
+    Capture stdout + stderr. Note exit code.
     If the command fails with a tool error (not a finding): mark SKIPPED (see 2a).
 
-2c. Read `.stangent/sast_report.json`.
+2c. Locate results using this priority order:
+    1. If `.stangent/sast_report.json` exists and is non-empty: read it.
+    2. Otherwise: parse stdout directly.
+    3. If both empty and exit code = 0: no findings for this pass.
+    4. If both empty and exit code ≠ 0: already handled by 2a (SKIPPED).
     Filter to files in `files_changed` only.
 
 2d. **Python (bandit):**
@@ -141,8 +155,15 @@ Security is not optional. All four passes run regardless of feature scope.
 ### Pass 3 — Dependency Audit
 
 3a. Run: `{{profile.commands.dep_audit}}`
+    Capture stdout + stderr. Note exit code.
 
-3b. Read `.stangent/dep_audit.json`.
+3b. Locate results using this priority order:
+    1. If `.stangent/dep_audit.json` exists and is non-empty: read it.
+    2. Otherwise: parse stdout directly.
+    3. If both empty and exit code = 0: no findings.
+    4. If both empty and exit code ≠ 0: mark Pass 3 as SKIPPED with note:
+       "dep_audit command failed — install pip-audit (pip install pip-audit)."
+       Proceed to Pass 4.
 
 3c. **Python (pip audit):**
     - Filter to packages present in the project's requirements/pyproject.

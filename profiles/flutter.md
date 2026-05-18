@@ -216,7 +216,11 @@ i18n mechanism. Detect the mechanism from pubspec.yaml:
 
 ## API Extraction
 
-`api_extraction: false` — Flutter is a client. Document the service layer
+```
+api_extraction: false
+```
+
+Flutter is a client. Document the service layer
 method signatures instead (the contracts with the backend).
 
 SRS agent documents:
@@ -244,6 +248,41 @@ bloc:       look for flutter_bloc in pubspec.yaml
 ```
 
 If none detected and no ADR exists: ASK_DEVELOPER before implementing any state.
+
+---
+
+## Supabase Checklist (only when `integrations.supabase.enabled = true`)
+
+Read `.stangent/prompts/supabase.md` for full security rules and patterns.
+
+```
+supabase_review_checklist:
+  1.  SUPABASE_SERVICE_ROLE_KEY NEVER present in any Dart file or asset
+        — CRITICAL: it grants full DB access bypassing all RLS
+  2.  Supabase URL and anon key loaded from config/flavors, not hardcoded
+        — MAJOR if hardcoded in Dart source
+  3.  Supabase client initialized once (singleton in main.dart or app init)
+        — MINOR if multiple Supabase.initialize() calls found
+  4.  Auth session NOT manually copied to SharedPreferences
+        The Supabase Flutter SDK manages secure session storage automatically
+        — MAJOR if token manually written to SharedPreferences
+  5.  All Realtime channel subscriptions have a corresponding removeChannel()
+        call in dispose() — MAJOR if channel opened in a StatefulWidget
+        without cleanup (memory leak + ghost listener)
+  6.  Private Supabase storage objects accessed via signed URLs, not direct
+        bucket URLs — WARN if direct URL constructed for a private bucket
+  7.  onAuthStateChange stream listened to for token refresh — WARN if app
+        uses currentSession directly without subscribing to state changes
+        (session can expire mid-use without refresh)
+  8.  No service_role key in .env files checked into version control
+        — CRITICAL if found (check .gitignore excludes .env)
+  9.  Supabase error responses handled — PostgREST errors have a different
+        shape than FastAPI errors; app must not crash on {"code": "...", "message": "..."}
+        — MAJOR if Supabase errors are unhandled in service methods
+  10. No direct SQL or RLS bypass patterns in Dart (supabase-flutter client
+        only uses the REST API; this is informational — flag if supabase_dart_unsafe
+        or similar unusual pattern detected)
+```
 
 ---
 

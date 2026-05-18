@@ -195,6 +195,10 @@ def main() -> None:
     if not active:
         allow(tool_name, target, None)
 
+    # ── Warn when active feature has no contract (path enforcement will be skipped) ──
+    if active and feature_id and contract is None:
+        log_decision("warn", tool_name, target, "no contract found for active feature — path enforcement disabled", active)
+
     # ── Layer 2: Agent/state check ────────────────────────────────────────────
     if agent and state and tool_name in ("Write", "Edit", "Bash"):
         contract_agents = (contract or {}).get("allowed_agents", {})

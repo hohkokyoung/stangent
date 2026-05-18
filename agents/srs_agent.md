@@ -84,11 +84,16 @@ env var documentation from implemented features automatically.
 
 ### Standalone mode (no feature_id):
 Steps 1–2 as above (load config + profiles via load-profiles.md), then:
-3. Run: `git log --oneline .stangent/SRS.md` to find last SRS commit timestamp
-4. Find all feature files in `{{paths.feature_dir}}` with status = COMPLETE
-   that were updated after the last SRS commit timestamp
-   (use the frontmatter parsing method from pipeline step 3 above)
-5. Process each one in creation-date order
+3. Run: `git log --format="%aI" -1 -- .stangent/SRS.md`
+   This returns the ISO 8601 timestamp of the last commit that touched SRS.md.
+   If the command returns empty (SRS.md has never been committed): use
+   `1970-01-01T00:00:00Z` as the fallback — all COMPLETE features will be included.
+   Store as `last_srs_commit_ts`.
+4. Find all feature files in `{{paths.feature_dir}}` with status = COMPLETE.
+   For each: read the `updated` field from frontmatter (ISO date).
+   Include only those where `updated > last_srs_commit_ts`.
+   (use the frontmatter parsing method from pipeline step 4 above)
+5. Process each one in creation-date order (ascending by feature_id number)
 
 ---
 
@@ -96,10 +101,14 @@ Steps 1–2 as above (load config + profiles via load-profiles.md), then:
 
 1. Only write to AGENT ZONEs in SRS.md. Never overwrite DEVELOPER ZONEs.
 2. Only append to existing sections — never renumber or restructure them.
-3. **Idempotency rule:** Before writing anything, grep the SRS for `{{feature_id}}`.
-   - If found: this is an update run. Replace the existing content for this feature.
-     Do not add new subsections — find and replace each existing one in-place.
-   - If not found: this is a first run. Append new subsections.
+3. **Idempotency rule:** Before writing anything, grep the SRS for the
+   exact section heading pattern `### .*\[{{feature_id}}\]`.
+   This matches only agent-written subsection headings (e.g. `### 3.2 [FEAT-003] Title`)
+   and avoids false positives from developer-written mentions of the feature ID
+   elsewhere in the document (e.g. "see FEAT-003 for context" in a DEVELOPER ZONE).
+   - Pattern found: this is an update run. Find and replace each matching subsection in-place.
+     Do not add new subsections.
+   - Pattern not found: this is a first run. Append new subsections.
    This rule prevents duplicates when the agent is re-run after a partial failure.
 4. Extract only what is actually implemented — not what is in the spec.
    Source of truth: `## Files Changed` + the actual source files.

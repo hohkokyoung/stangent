@@ -66,6 +66,14 @@ If "$ARGUMENTS" starts with "unblock ":
   Check if path_to_add is already in allowed_paths:
   - If yes: output "Already in allowed_paths: {path_to_add}" and stop.
 
+  Ask for confirmation before writing:
+  ```
+  ⚠ Unblock {path_to_add} for {feature_id}?
+  This path is not in ## Files to Touch — adding it bypasses the spec you confirmed.
+  Type "yes" to proceed, anything else to cancel.
+  ```
+  Wait for response. If not "yes": output "Unblock cancelled." and stop.
+
   Add path_to_add to contract.allowed_paths.
   Write the updated contract back to `.stangent/contracts/{feature_id}.json`.
 
