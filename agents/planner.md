@@ -63,6 +63,16 @@ Read in this order before doing anything else:
    Derive: `project_root = Path(config_path).parent.parent`
    Load: `budget = config.pipeline.agent_context_budget_chars` (default 300000)
 
+1.5. Ensure the symbol index is fresh:
+   ```
+   python .stangent/scripts/build_index.py --check {project_root} {config_path}
+   ```
+   If exit code ≠ 0 (stale or missing): rebuild it:
+   ```
+   python .stangent/scripts/build_index.py {project_root} {config_path}
+   ```
+   Track `symbol_index_misses = 0` for the confidence score.
+
 2. Load language profiles: read `.stangent/prompts/load-profiles.md` and follow those instructions.
    Store the result as `profiles[name]` for each active profile.
 
@@ -99,6 +109,12 @@ Read in this order before doing anything else:
      Follow context budget rules from `.stangent/prompts/context-budget.md`.
      After Pass 2: update anchor summaries in context_cache.md.
    - Pass 3: targeted reads based on the request's likely scope.
+     For each key symbol or class name relevant to the feature, query the index first:
+     ```
+     python .stangent/scripts/build_index.py --query {SymbolName} {project_root} {config_path}
+     ```
+     Read exactly the returned files. This replaces broad directory globbing.
+     If no results returned: increment `symbol_index_misses`. Fall back to glob.
      Follow Pass 3 limits from load-profiles.md Step 5.
 
    **Pass 3 DBHub enhancement** (only if `integrations.dbhub.enabled = true`):
@@ -173,65 +189,12 @@ Read in this order before doing anything else:
 1c3. Cross-stack scan — only if `config.profiles` contains both a backend
      profile (`fastapi` or `python`) AND `flutter`:
 
-     Read `.stangent/prompts/cross-stack-types.md` for naming conventions.
-
-     **A — Route-to-service mapping:**
-     For each FastAPI route file the feature will touch (from Pass 3 or meta.md):
-     - Identify the HTTP endpoints being created or modified
-     - Grep `lib/services/` for existing calls to those endpoints
-     - Add any matching Flutter service file to `## Files to Touch` if not already listed
-     - If no Flutter service method exists for a new endpoint: add a note in `## Scope`:
-       "New Flutter service method required: {ServiceClass}.{methodName}()"
-
-     **B — Schema-to-model mapping:**
-     For each Pydantic schema file the feature will touch (files in `src/schemas/`
-     or files containing `class.*BaseModel`):
-     - Derive the expected Dart model filename using cross-stack-types.md conventions
-     - Glob `lib/models/` for the file
-     - If it exists: add it to `## Files to Touch` (implementer must keep it in sync)
-     - If it does not exist yet: add a note in `## Scope`:
-       "New Dart model required: {ModelName} in lib/models/{model_file}.dart"
-       Add the new file path to `## Files to Touch`
-
-     **C — Breaking change flag:**
-     Check SRS.md `## 4. API Contracts` for any endpoint the feature changes.
-     If the endpoint is already documented and this feature modifies its
-     request or response schema:
-     - Add to `## Scope`: "⚠ Breaking change to existing API contract:
-       {METHOD} {path} — both FastAPI schema and Flutter model must be updated."
-     - Add the Flutter model file to `## Files to Touch` if not already there
+     Read `.stangent/prompts/cross-stack-planner.md` and follow those instructions.
+     Result: `## Files to Touch` and `## Scope` updated with cross-stack findings.
 
 1d. ADR Contradiction Check:
-    For each Accepted ADR in decisions.md, read its **Consequences** section.
-    Determine: does the raw_request or its most natural implementation approach
-    violate any consequence rule?
-
-    **Examples of contradictions to detect:**
-    - ADR says "all DB access via repository classes" → request implies
-      querying the DB directly inside a service or route handler
-    - ADR says "use BLoC for all state management" → request mentions
-      using Provider or setState
-    - ADR says "all screens must use ConsumerWidget" → request implies
-      StatefulWidget
-    - ADR says "HTTP calls via Dio" → request references the `requests` library
-    - ADR says "use JWT auth" → request implies session cookies
-
-    For each contradiction found, record:
-    ```
-    {
-      adr_id:    "ADR-NNN",
-      adr_title: "...",
-      rule:      "exact consequence text from ADR",
-      conflict:  "what the request implies that violates it",
-      options: [
-        "A — Adjust feature approach to comply with {adr_title}",
-        "B — Override {adr_id} for this feature (reason required)",
-        "C — Cancel this feature"
-      ]
-    }
-    ```
-    Store all findings as `contradiction_list`.
-    An empty list means no conflicts — proceed normally.
+    Read `.stangent/prompts/adr-contradiction.md` and follow those instructions.
+    Result: `contradiction_list` populated (empty list = no conflicts).
 
 ---
 
@@ -350,65 +313,30 @@ Before asking any clarifying question, apply this filter to each candidate quest
 
 ### Phase 4.5 — Write Feature Contract
 
-Write `.stangent/contracts/{{feature_id}}.json` immediately after the spec.
-The gateway reads this to enforce paths, agent identity, and bash constraints at every tool call.
+Read `.stangent/prompts/write-contract.md` and follow those instructions.
+Result: `.stangent/contracts/{{feature_id}}.json` written.
 
-**Step A — Extract `allowed_paths` from `## Files to Touch`:**
-- Each file or directory listed → add to `allowed_paths`
-- Use glob patterns for directories: `src/auth/` → `src/auth/**`
-- Exclude `[doc]`-tagged entries (they are for review only, not writes)
+---
 
-**Step B — Extract `blocked_paths` from `## Out of Bounds`:**
-- Each explicit file or directory path → add to `blocked_paths`
-- Skip behavioural constraints with no path (e.g. "Do not write implementation code")
+### Phase 4.6 — Write Planner Confidence
 
-**Step C — Validate paths:**
-For each path in `allowed_paths` and `blocked_paths`:
-- Check if the path or its parent directory exists in the repo
-- New files (no parent dir) → warn in the feature file comment, do not fail
-- Paths whose parent dir does not exist → add a comment in `## Implementation Log`:
-  `Note: {path} parent dir does not exist yet — will be created`
+Calculate a confidence score (start at 100, apply deductions):
+- `context_budget_hit` (true/false): did you exhaust the context budget before finishing Pass 3? → **-20**
+- `unanswered_questions` (count): questions you wanted to ask but couldn't due to the 5-question limit → **-10 each**
+- `adr_conflicts_overridden` (count): ADR conflicts resolved with developer override (option B) → **-10 each**
+- `files_not_found` (list): files listed in ## Files to Touch that don't exist in the repo → **-5 each**
+- `symbol_index_misses` (count): symbols queried via build_index.py that returned no results → **-5 each**
 
-**Step D — Build `allowed_agents` per state:**
-Use the default state→agent mapping. Only include states relevant to this feature.
-
-**Step E — Build `capabilities` per agent:**
-Read the active language profile to determine the correct lint and test commands.
-Map them to bash capability tokens.
-
-**Write the contract:**
-```json
-{
-  "feature_id": "{{feature_id}}",
-  "allowed_paths": [
-    "src/auth/jwt.py",
-    "src/auth/**",
-    "tests/auth/**"
-  ],
-  "blocked_paths": [
-    "lib/screens/home_screen.dart",
-    "lib/main.dart"
-  ],
-  "bash_blocklist": [],
-  "allowed_agents": {
-    "PLANNING":     ["planner"],
-    "IMPLEMENTING": ["implementer", "linter", "unit_tester", "query_analyzer"],
-    "REVIEWING":    ["reviewer", "security_scanner"],
-    "SRS_UPDATE":   ["srs_agent"]
-  },
-  "capabilities": {
-    "implementer": ["bash:git diff", "bash:git add", "bash:git commit", "bash:git log",
-                    "bash:git status", "bash:git branch"],
-    "linter":      ["bash:ruff", "bash:flutter analyze", "bash:dart analyze"],
-    "unit_tester": ["bash:pytest", "bash:flutter test", "bash:dart test"],
-    "query_analyzer": ["bash:grep", "bash:find"]
-  }
-}
+Write `## Planner Confidence` to the feature file:
 ```
-
-Populate `implementer` capabilities from profile.bash_allowlist if defined.
-Populate `linter` / `unit_tester` from the active profile's lint/test commands.
-Leave `bash_blocklist` empty — the gateway's built-in hard blocks cover destructive commands.
+score: {calculated_score}
+flags:
+  - context_budget_hit: {true|false}
+  - unanswered_questions: {N}
+  - adr_conflicts_overridden: {N}
+  - files_not_found: [{path1}, {path2}]
+  - symbol_index_misses: {N}
+```
 
 ---
 

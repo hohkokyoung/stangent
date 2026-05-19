@@ -261,23 +261,10 @@ performance_checklist:
 
 ---
 
-## Tool Installation Check (run by init.py)
+## i18n
 
-```
-required_tools:
-  - ruff              # pip install ruff
-  - pytest            # pip install pytest
-  - pytest-asyncio    # pip install pytest-asyncio
-  - httpx             # pip install httpx  (async test client for FastAPI)
-  - bandit            # pip install bandit
-  - pip-audit         # pip install pip-audit
-  - detect-secrets    # pip install detect-secrets
-
-optional_tools:
-  - pytest-cov              # pip install pytest-cov
-  - pytest-json-report      # pip install pytest-json-report
-  - asgi-lifespan           # pip install asgi-lifespan (async lifespan in tests)
-```
+`i18n_aware: false` — FastAPI projects in this framework are API/backend focused.
+Enable and add checklist items if a frontend is added.
 
 ---
 
@@ -345,4 +332,24 @@ supabase_review_checklist:
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+```
+
+---
+
+## Tool Installation Check (run by init.py)
+
+```
+required_tools:
+  - ruff              # pip install ruff
+  - pytest            # pip install pytest
+  - pytest-asyncio    # pip install pytest-asyncio
+  - httpx             # pip install httpx  (async test client for FastAPI)
+  - bandit            # pip install bandit
+  - pip-audit         # pip install pip-audit
+  - detect-secrets    # pip install detect-secrets
+
+optional_tools:
+  - pytest-cov              # pip install pytest-cov
+  - pytest-json-report      # pip install pytest-json-report
+  - asgi-lifespan           # pip install asgi-lifespan (async lifespan in tests)
 ```

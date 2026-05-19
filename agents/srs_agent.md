@@ -188,60 +188,10 @@ For each feature to document:
 
 ---
 
-### Phase 3 — API Contract Extraction
+### Phase 3 — API Contract Extraction + Phase 4 — Data Model Extraction
 
-3a. Check profile: `api_extraction` field.
-    Flutter: api_extraction = false. Skip to Phase 4.
-    Python: api_extraction = true. Proceed.
-
-3b. For each file in `## Files Changed` that is in a routes/api/views directory:
-    Read the file. Extract:
-
-    **FastAPI:**
-    - Decorator: `@router.get("/path")`, `@app.post("/path")`, etc.
-    - Function signature: parameter names + types
-    - Pydantic models referenced as request/response body
-    - Response model if specified
-
-    **Flask:**
-    - `@app.route("/path", methods=[...])`, `@blueprint.route(...)`
-    - Parameters from function signature and `request.get_json()` usage
-
-    **Django:**
-    - URL patterns from `urls.py`
-    - View function/class parameters
-
-3c. Format each contract:
-    ```
-    ### {{METHOD}} {{path}}
-    **Feature:** {{feature_id}}
-    **Request:** { field: type, ... } | _none_
-    **Response:** { field: type, ... } | _see model below_
-    **Errors:** code — description | _standard HTTP_
-    ```
-
-3d. Append under `## 4. API Contracts`.
-
----
-
-### Phase 4 — Data Model Extraction
-
-4a. For each file in `## Files Changed` tagged [C] (created) that contains
-    a class, model, schema, or entity definition:
-
-    **Python:** look for Pydantic `BaseModel`, SQLAlchemy `Base`, dataclasses
-    **Flutter:** look for `class.*{`, `@freezed`, `@JsonSerializable`
-
-4b. Extract field names, types, and any constraints/annotations.
-
-4c. Format:
-    ```
-    ### {{ModelName}} ({{feature_id}})
-    | Field | Type | Constraints | Description |
-    |-------|------|-------------|-------------|
-    ```
-
-4d. Append under `## 5. Data Models`.
+Read `.stangent/prompts/srs-extraction.md` and follow those instructions.
+Result: new entries appended under `## 4. API Contracts` and `## 5. Data Models`.
 
 ---
 

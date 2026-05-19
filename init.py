@@ -48,7 +48,7 @@ from init_config import build_config, validate_config
 from init_scaffold import (
     create_stangent_dirs, init_registry,
     install_global, uninit_project,
-    copy_profiles, copy_templates, copy_prompts, copy_gateway,
+    copy_profiles, copy_templates, copy_prompts, copy_gateway, copy_scripts,
     write_settings_json, copy_commands, copy_claude_agents,
     create_srs, create_decisions, create_memory, create_env_example,
     update_gitignore, create_onboarding_doc,
@@ -328,6 +328,7 @@ def run(args):
     copy_templates(project_root, dry_run)
     copy_prompts(project_root, dry_run)
     copy_gateway(project_root, dry_run)
+    copy_scripts(project_root, dry_run)
     write_settings_json(project_root, dry_run)
     copy_commands(project_root, config, dry_run)
     copy_claude_agents(project_root, dry_run)

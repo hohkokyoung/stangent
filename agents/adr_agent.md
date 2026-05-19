@@ -63,38 +63,10 @@ Check `mode` first. Execute only the matching mode below.
     Derive: `project_root = Path(config_path).parent.parent`
     Load language profiles: read `.stangent/prompts/load-profiles.md` and follow those instructions.
 
-0b. Scan the codebase (depth 3 from src_root). Detect the following patterns
-    and build a `candidates` list. Each candidate has: title, evidence, proposed_consequence.
-
-    **Python patterns:**
-    | What to grep/find                                | Candidate title                  |
-    |--------------------------------------------------|----------------------------------|
-    | `import fastapi` / `from fastapi`                | API Framework: FastAPI           |
-    | `import flask` / `from flask`                    | API Framework: Flask             |
-    | `import django` / `DJANGO_SETTINGS_MODULE`       | API Framework: Django            |
-    | `from sqlalchemy` / `import sqlalchemy`          | Database Access: SQLAlchemy ORM  |
-    | `import psycopg2` / `import asyncpg` (no ORM)   | Database Access: Raw SQL         |
-    | `import httpx` / `import requests` / `aiohttp`   | HTTP Client Library              |
-    | `conftest.py` / `pytest.ini` / `pyproject` pytest| Test Framework: pytest           |
-    | `import unittest` (no pytest config found)       | Test Framework: unittest         |
-    | dirs named `repositories/` or `repos/`           | Repository Pattern for DB Access |
-    | `jwt` / `passlib` / `bcrypt` / `oauth`           | Authentication Approach          |
-
-    **Flutter/Dart patterns:**
-    | What to grep/find                                | Candidate title                       |
-    |--------------------------------------------------|---------------------------------------|
-    | `flutter_bloc:` or `bloc:` in pubspec.yaml       | State Management: BLoC                |
-    | `riverpod:` / `flutter_riverpod:` in pubspec     | State Management: Riverpod            |
-    | `provider:` in pubspec.yaml                      | State Management: Provider            |
-    | `get:` in pubspec.yaml                           | State Management: GetX                |
-    | `go_router:` in pubspec.yaml                     | Navigation: GoRouter                  |
-    | `auto_route:` in pubspec.yaml                    | Navigation: AutoRoute                 |
-    | `Navigator.push` / `Navigator.pushNamed`         | Navigation: Manual Navigator          |
-    | `dio:` in pubspec.yaml                           | HTTP Client: Dio                      |
-    | `http:` in pubspec.yaml (no dio)                 | HTTP Client: dart:http package        |
-    | `hive:` / `isar:` / `sqflite:` in pubspec.yaml  | Local Storage Strategy                |
-    | dirs named `/domain/` `/data/` `/presentation/`  | Clean Architecture Layer Structure    |
-    | `ConsumerWidget` / `ConsumerStatefulWidget`       | All screens must use ConsumerWidget   |
+0b. Scan the codebase (depth 3 from src_root) using the detection patterns in
+    `.stangent/prompts/adr-bootstrap-patterns.md`.
+    Read that file now and follow its instructions to build the `candidates` list.
+    Each candidate has: title, evidence, proposed_consequence.
 
 0c. Filter candidates to those with clear evidence (at least 2 matching files
     or a pubspec.yaml entry). Discard candidates with only 1 ambiguous match.

@@ -1,4 +1,4 @@
-## Pipeline States
+# Pipeline States
 
 Every feature has a `status` field in its frontmatter. Valid states and transitions:
 

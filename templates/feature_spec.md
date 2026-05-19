@@ -70,6 +70,17 @@ srs_agent_version:
 <!-- Variables this feature introduces. Added to .env.example by implementer. -->
 - none
 
+## Planner Confidence
+<!-- Written by planner in Phase 4.6. Read by orchestrator before AWAITING_CONFIRMATION. -->
+<!-- validate_handoff.py checks score against config.confidence_thresholds.planner -->
+score:
+flags:
+  - context_budget_hit:
+  - unanswered_questions:
+  - adr_conflicts_overridden:
+  - files_not_found:
+  - symbol_index_misses:
+
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
      IMPLEMENTER OWNED
@@ -94,6 +105,17 @@ srs_agent_version:
 ## Future Considerations
 <!-- Ideas that are OUT OF BOUNDS for this feature. Captured here, not implemented. -->
 <!-- These may become future FEAT entries. -->
+
+## Implementer Confidence
+<!-- Written by implementer at end of Phase 4. Read by orchestrator before REVIEWING. -->
+<!-- validate_handoff.py checks score against config.confidence_thresholds.implementer -->
+score:
+flags:
+  - context_budget_hit:
+  - ask_developer_used:
+  - out_of_bounds_conflicts:
+  - files_outside_touch_list:
+  - test_coverage_dropped:
 
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
@@ -190,6 +212,16 @@ srs_agent_version:
 <!-- If FAIL: provide exact, actionable instructions for the implementer retry. -->
 <!-- Be specific: "Fix line 42 in auth_service.dart — raw SQL string must use parameters" -->
 <!-- NOT: "improve security" -->
+
+## Reviewer Confidence
+<!-- Written by reviewer at end of Phase 7. Read by orchestrator before SRS_UPDATE. -->
+<!-- validate_handoff.py checks score against config.confidence_thresholds.reviewer -->
+score:
+flags:
+  - ambiguous_findings:
+  - ask_developer_used:
+  - cross_stack_drift_found:
+  - files_changed_unreadable:
 
 
 <!-- ═══════════════════════════════════════════════════════════════════════════

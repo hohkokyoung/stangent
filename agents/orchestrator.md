@@ -270,6 +270,16 @@ Before doing anything:
 
 3c. Planner returns: SPEC_WRITTEN | PAUSED | FAILED
 
+3c-v. If SPEC_WRITTEN: run handoff validation before advancing:
+    ```
+    python .stangent/scripts/validate_handoff.py {feature_file_path} post_planning {config_path}
+    ```
+    Capture stdout. If exit code ≠ 0: treat as FAILED — append validator output to
+    Pipeline History. Do not advance to AWAITING_CONFIRMATION.
+    If exit code = 0 but stdout contains `[Handoff] WARN`: surface the warnings to
+    the developer and ask: "Proceed despite low confidence, or retry planning?"
+    Wait for response. If retry: go to 3a. If proceed: continue to 3d.
+
 3d. If PAUSED: set status = PAUSED.
     Update active.json: `{ ..., "state": "PAUSED", "agent": "orchestrator" }`
     Output resume instruction. STOP.
@@ -340,6 +350,16 @@ Before doing anything:
 
 5c. Implementer returns: IMPLEMENTED | PAUSED | FAILED
 
+5c-v. If IMPLEMENTED: run handoff validation before advancing:
+    ```
+    python .stangent/scripts/validate_handoff.py {feature_file_path} post_implementing {config_path}
+    ```
+    Capture stdout. If exit code ≠ 0: treat as FAILED — append validator output to
+    Pipeline History. Increment retry_count. If retry_count < max_retries: go to 5a.
+    Else: go to ESCALATE.
+    If exit code = 0 but stdout contains `[Handoff] WARN`: surface confidence warnings
+    in the Pipeline History log and continue to STEP 6 without blocking.
+
 5d. If PAUSED: set status = PAUSED.
     Update active.json: `{ ..., "state": "PAUSED", "agent": "orchestrator" }`
     Output resume instruction. STOP.
@@ -371,6 +391,14 @@ Before doing anything:
     Then execute those instructions using the inputs above.
 
 6c. Reviewer returns: PASS | FAIL | PAUSED | FAILED
+
+6c-v. Run handoff validation regardless of verdict:
+    ```
+    python .stangent/scripts/validate_handoff.py {feature_file_path} post_reviewing {config_path}
+    ```
+    If exit code ≠ 0: treat as FAILED (malformed verdict — not a review FAIL).
+    Append validator output to Pipeline History. Set status = FAILED. STOP.
+    If exit code = 0 with WARN: log warnings to Pipeline History and continue.
 
 6d. If PAUSED: set status = PAUSED.
     Update active.json: `{ ..., "state": "PAUSED", "agent": "orchestrator" }`
@@ -524,29 +552,8 @@ When status = FAILED (agent error, not review FAIL):
 
 ## REGISTRY UPDATE PROCEDURE
 
-After every status change (`set status = X`) and after feature creation (Step 1c),
-update the `features` map in `{{paths.registry_path}}`:
-
-```json
-"features": {
-  "{{feature_id}}": {
-    "title":   "{{title from frontmatter, or raw_request if title not yet set}}",
-    "status":  "{{current status}}",
-    "branch":  "{{branch from frontmatter, or '' if not yet created}}",
-    "created": "{{created from frontmatter}}",
-    "updated": "{{current ISO date}}"
-  }
-}
-```
-
-To update atomically:
-1. Acquire the registry lock (same protocol as Step 1a).
-2. Read `{{paths.registry_path}}` — parse JSON.
-3. Set `registry.features["{{feature_id}}"]` to the entry above.
-4. Write registry back.
-5. Release lock.
-
-If the registry file is missing or malformed: log a warning and skip (do not block the pipeline).
+After every status change and after feature creation (Step 1c):
+read `.stangent/prompts/registry-update.md` and follow those instructions.
 
 ---
 

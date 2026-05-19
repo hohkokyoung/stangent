@@ -1,4 +1,4 @@
-## When and How to Escalate to the Developer
+# When and How to Escalate to the Developer
 
 Use `ASK_DEVELOPER` only when you have reached a decision point that:
 - Cannot be resolved by reading the codebase

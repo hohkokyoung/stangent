@@ -154,34 +154,17 @@ Targeted mode: after fixing, re-run only the sub-agents relevant to the failure_
 8. **Cross-stack rule** — only if `config.profiles` contains both a backend
    profile (`fastapi` or `python`) AND `flutter`:
 
-   Read `.stangent/prompts/cross-stack-types.md` for type mapping and naming conventions.
-
-   - Creating or modifying a Pydantic schema (`src/schemas/`) → you MUST also
-     create or update the corresponding Dart model (`lib/models/`) in the same commit.
-     Both files must appear in `## Files Changed`.
-   - Adding a new FastAPI endpoint → you MUST also add or update the corresponding
-     Flutter service method in `lib/services/`. If the Dart side is out of scope
-     for this feature, add a note in `## Future Considerations` and use ASK_DEVELOPER.
-   - Use cross-stack-types.md to map every Pydantic field type to its correct Dart type.
-     Pay special attention to `Optional[X]` → `X?` — nullable mismatch is the most
-     common cross-stack runtime crash.
-   - JSON key casing: check whether the FastAPI project uses snake_case or camelCase
-     aliases (look for `alias_generator` in `src/core/config.py` or schema `model_config`).
-     The Dart `fromJson` key strings must match exactly.
+   Read `.stangent/prompts/cross-stack-types.md` for the full type mapping and naming
+   conventions before writing any cross-stack code. Key rules:
+   - Pydantic schema change → matching Dart model change in same commit
+   - New FastAPI endpoint → matching Flutter service method (or ASK_DEVELOPER if out of scope)
+   - `Optional[X]` → `X?` in Dart — nullable mismatch is the most common runtime crash
+   - JSON key casing must match exactly (`alias_generator` in FastAPI → check it)
 
 9. **Supabase rule** — only if `config.integrations.supabase.enabled = true`:
 
    Read `.stangent/prompts/supabase.md` for the full security rules before writing any code.
-
-   - NEVER write `SUPABASE_SERVICE_ROLE_KEY` into any Dart file, asset, or Flutter config.
-   - NEVER return the service role key in any FastAPI response body or header.
-   - Any new database table introduced by a migration MUST have `ENABLE ROW LEVEL SECURITY`
-     and at least one `CREATE POLICY` in the same migration file.
-   - Auth tokens in Flutter MUST use Supabase's built-in session management —
-     not manually persisted to SharedPreferences.
-   - Any Realtime channel opened in `initState` MUST have a corresponding
-     `removeChannel()` call in `dispose()`.
-   - Add `supabase/migrations/` to `## Files Changed` if a migration was created or modified.
+   All rules in that file are binding constraints for this implementation.
 
 ---
 
@@ -280,59 +263,8 @@ Targeted mode: after fixing, re-run only the sub-agents relevant to the failure_
 
 ### Phase 3 — Sub-Agent Pipeline
 
-Run sub-agents in fixed order. Pass feature_id, feature_file_path, and config_path to each.
-
-**Sub-agent retry limit:**
-Read `config.pipeline.sub_agent_max_retries` (default: 3).
-Each sub-agent below tracks its own retry count. If retries are exhausted:
-set status = PAUSED, write a note to `## Implementation Log`:
-`Sub-agent {name} exceeded sub_agent_max_retries ({N}) — paused for developer review.`
-Return PAUSED to the orchestrator. Do not proceed to the next sub-agent.
-
-**3a. Linter sub-agent**
-Derive project_root = Path(config_path).parent.parent
-Spawn using the Agent tool with:
-
-    INPUTS: { "feature_id": "...", "feature_file_path": "...", "config_path": "...", "extra": {} }
-    INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-linter.md and execute.
-
-Wait for result. Read `## Linter Report`.
-- If FAIL: fix all reported issues. Increment linter retry count.
-  If retry count < sub_agent_max_retries: re-run linter sub-agent.
-  If retry count >= sub_agent_max_retries: PAUSED (see limit above).
-- If PASS: proceed to 3b.
-
-**3b. Unit tester sub-agent**
-Spawn using the Agent tool with:
-
-    INPUTS: { "feature_id": "...", "feature_file_path": "...", "config_path": "...", "extra": {} }
-    INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-unit-tester.md and execute.
-
-Wait for result. Read `## Test Report`.
-- If FAIL: fix failing tests or bad tests as reported. Do not add new tests —
-  fix existing ones first. Increment unit_tester retry count.
-  If retry count < sub_agent_max_retries: re-run.
-  If retry count >= sub_agent_max_retries: PAUSED (see limit above).
-- If SKIPPED: all ACs were platform-bound with valid n/a justifications.
-  Proceed to 3c.
-- If PASS: proceed to 3c.
-
-**3c. Query analyzer sub-agent**
-Check: does this feature touch any DB layer (models, repositories, raw queries)?
-- No DB layer touched: write `## Query Analysis Report` status as SKIPPED.
-  Proceed to Phase 4.
-- DB layer touched: spawn using the Agent tool with:
-
-    INPUTS: { "feature_id": "...", "feature_file_path": "...", "config_path": "...", "extra": {} }
-    INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-query-analyzer.md and execute.
-
-  Wait for result. Read `## Query Analysis Report`.
-  - If FAIL: fix all danger findings. Increment query_analyzer retry count.
-    If retry count < sub_agent_max_retries: re-run.
-    If retry count >= sub_agent_max_retries: PAUSED (see limit above).
-  - If WARN: review each warning. Fix or document why it is acceptable.
-    Proceed once all WARN items are addressed.
-  - If PASS: proceed to Phase 4.
+Read `.stangent/prompts/sub-agent-pipeline.md` and follow those instructions.
+Result: `## Linter Report`, `## Test Report`, `## Query Analysis Report` all written with PASS or SKIPPED status.
 
 ---
 
@@ -387,6 +319,27 @@ Check: does this feature touch any DB layer (models, repositories, raw queries)?
 
 4e. Update `implementer_agent_version` in feature file frontmatter.
     Log `stage_complete` to Run Log.
+
+4f. Write Implementer Confidence.
+
+    Calculate score (start at 100, apply deductions):
+    - `context_budget_hit`: exhausted budget before reading all relevant files → **-15**
+    - `ask_developer_used` (count): each unexpected ASK_DEVELOPER call (expected = Out of Bounds conflict, ADR conflict, new dependency) → **-10 each**
+    - `out_of_bounds_conflicts` (count): files you had to ASK_DEVELOPER about because they appeared in Out of Bounds → **-15 each**
+    - `files_outside_touch_list` (count): files you modified that were not in ## Files to Touch and had no explanation in ## Files Changed → **-10 each**
+    - `test_coverage_dropped` (true/false): coverage after < coverage before → **-20**
+
+    Write `## Implementer Confidence` to the feature file:
+    ```
+    score: {calculated_score}
+    flags:
+      - context_budget_hit: {true|false}
+      - ask_developer_used: {N}
+      - out_of_bounds_conflicts: {N}
+      - files_outside_touch_list: {N}
+      - test_coverage_dropped: {true|false}
+    ```
+
     Return IMPLEMENTED to orchestrator.
 
 ---

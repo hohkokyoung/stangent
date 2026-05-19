@@ -113,24 +113,8 @@ exactly what was implemented, not the whole codebase.
 
 ## SEVERITY DEFINITIONS
 
-**CRITICAL** — blocks merge, must fix before PASS
-- Security vulnerabilities (injection, hardcoded secrets, unsafe query construction)
-- Failing tests
-- Acceptance criteria not implemented
-- Data loss risk
-
-**MAJOR** — blocks merge, must fix before PASS
-- Scope creep: code outside ## Out of Bounds was modified
-- ADR violation: decision from decisions.md was not honoured
-- Missing error/loading state where spec implies one is needed
-- Uncaught exception path that breaks user flow
-
-**MINOR** — logged, does not block
-- Code style issues not caught by linter
-- Missing type hints/annotations on non-public functions
-- Test coverage below project target (but all ACs have tests)
-- Dead code introduced but not harmful
-- Missing inline comment on a non-obvious pattern
+Read `.stangent/prompts/review-severity.md` for the full definitions.
+Summary: CRITICAL and MAJOR block (must fix before PASS). MINOR logs only.
 
 ---
 
@@ -222,96 +206,16 @@ Add findings to `## Review Checklist` under "Performance" section.
 
 ### Phase 6 — Cross-Stack Drift Check (double-stack projects only)
 
-*Only execute if `config.profiles` contains both a backend profile
-(`fastapi` or `python`) AND `flutter`. Skip entirely for single-stack projects.*
-
-Read `.stangent/prompts/cross-stack-types.md` for type mapping and naming conventions.
-
-**6a. Schema → Model field parity**
-
-For each file in `## Files Changed` that is a Pydantic schema
-(path contains `schemas/` OR file contains `class.*BaseModel`):
-
-  i.  Derive the expected Dart model file using naming conventions in cross-stack-types.md.
-  ii. Glob `lib/models/` for the file.
-      - Not found → MAJOR: `{SchemaClass} has no corresponding Dart model —
-        create lib/models/{model_file}.dart`
-
-  iii. For each field in the Pydantic class:
-       - Map the Python type to its Dart equivalent using the type table.
-       - Check the Dart class has a field with the same name.
-         Missing field → MAJOR: `{DartModel}.{fieldName} missing — Pydantic has {fieldName}: {type}`
-       - Check the Dart field type matches the mapped type.
-         Type mismatch → MAJOR: `{DartModel}.{fieldName} is {dartType},
-         expected {mappedType} (from Pydantic {pythonType})`
-       - Check nullability: `Optional[X]` or `X | None` in Pydantic → `X?` in Dart.
-         Non-nullable Dart field for nullable Pydantic field → MAJOR:
-         `{DartModel}.{fieldName} is non-nullable but API may return null —
-         runtime crash when backend returns null`
-
-  iv. Extra fields in Dart not present in Pydantic → WARN:
-      `{DartModel}.{fieldName} has no Pydantic counterpart — UI-only field or stale`
-
-**6b. JSON key casing**
-
-Check the FastAPI project for `alias_generator` in `src/core/config.py` or
-the schema's `model_config = ConfigDict(alias_generator=...)`.
-
-  - `to_camel` alias → JSON keys are camelCase → Dart `fromJson` must use camelCase.
-    If Dart uses snake_case keys → MAJOR: `JSON key casing mismatch —
-    FastAPI returns camelCase but Dart model uses snake_case keys`
-  - No alias → JSON keys are snake_case → Dart `fromJson` must use snake_case.
-    If Dart uses camelCase keys → MAJOR: same as above, reversed.
-
-**6c. New endpoint → Flutter service method**
-
-For each [C] file in `## Files Changed` that contains a new FastAPI route
-(`@router.get`, `@router.post`, etc.):
-
-  - Derive the expected Flutter service method using conventions in cross-stack-types.md.
-  - Grep `lib/services/` for the method.
-    - Not found → WARN: `New endpoint {METHOD} {path} has no Flutter service method —
-      add to lib/services/{domain}_service.dart or create a follow-up feature`
-    - Found → check return type matches the endpoint's `response_model` (type table).
-      Mismatch → MAJOR: `{ServiceClass}.{method}() returns {dartType},
-      expected {mappedType} based on response_model={PydanticModel}`
-
-**6d. Error response contract**
-
-Check that `lib/models/error_model.dart` (or equivalent) handles both FastAPI
-error shapes (`{"detail": "string"}` and `{"detail": [...]}` for validation errors).
-If `detail` is typed as non-nullable `String` in Dart → WARN: potential crash on
-Pydantic validation error responses.
-
-Add all cross-stack findings to `## Review Checklist` under a
-"Cross-Stack Consistency" section. Promote any CRITICAL security findings
-(e.g. hardcoded credentials exposed via new endpoint) to `## Review Verdict`.
+Read `.stangent/prompts/cross-stack-reviewer.md` and follow those instructions.
+Result: findings added to `## Review Checklist` under "Cross-Stack Consistency".
 
 ---
 
 ### Phase 6b — Supabase Security Check (only when `config.integrations.supabase.enabled = true`)
 
-Read `.stangent/prompts/supabase.md` for the full security rules table.
-
-Run each rule in the "Security Rules for All Agents" table against `## Files Changed`.
-
-**Always check (both Flutter and FastAPI files):**
-- Grep Dart files for `SERVICE_ROLE` or `service_role_key` → CRITICAL if found
-- Grep Python files for any API response that serialises a variable named after the service role key → CRITICAL
-- Grep migration files (`supabase/migrations/`) for new `CREATE TABLE` without `ENABLE ROW LEVEL SECURITY` → MAJOR
-- Grep migration files for `ENABLE ROW LEVEL SECURITY` without any accompanying `CREATE POLICY` → MAJOR
-
-**Flutter-only checks:**
-- Grep for `SharedPreferences` storing anything named `token`, `access_token`, `jwt` → MAJOR
-- Grep for realtime channel opened in `initState` — verify corresponding `removeChannel` in `dispose()` → MAJOR if missing
-- Grep for Supabase storage `download()` or direct URL on a private bucket without `createSignedUrl()` → WARN
-
-**FastAPI-only checks:**
-- Grep routes for absence of JWT dependency on any route under `/api/` that is not explicitly public → MAJOR
-- Grep for `SUPABASE_JWT_SECRET` in any log call or response body → CRITICAL
-
-Add Supabase findings to `## Review Checklist` under a "Supabase Security" section.
-Promote all CRITICAL findings to `## Review Verdict`.
+Read `.stangent/prompts/supabase.md` and run every rule in its security rules table
+against `## Files Changed`.
+Result: findings added to `## Review Checklist` under "Supabase Security". CRITICAL findings promoted to `## Review Verdict`.
 
 ---
 
@@ -357,7 +261,25 @@ Promote all CRITICAL findings to `## Review Verdict`.
 
 7e. Log `stage_complete` to Run Log with verdict summary.
 
-7f. Return PASS or FAIL to orchestrator.
+7f. Write Reviewer Confidence.
+
+    Calculate score (start at 100, apply deductions):
+    - `ambiguous_findings` (count): findings you could not definitively classify without developer input → **-10 each**
+    - `ask_developer_used` (count): ASK_DEVELOPER calls made during review → **-5 each**
+    - `cross_stack_drift_found` (true/false): Phase 6 found schema/model mismatches → **-10**
+    - `files_changed_unreadable` (count): [C] or [M] files in ## Files Changed that could not be read → **-15 each**
+
+    Write `## Reviewer Confidence` to the feature file:
+    ```
+    score: {calculated_score}
+    flags:
+      - ambiguous_findings: {N}
+      - ask_developer_used: {N}
+      - cross_stack_drift_found: {true|false}
+      - files_changed_unreadable: {N}
+    ```
+
+    Return PASS or FAIL to orchestrator.
 
 ---
 

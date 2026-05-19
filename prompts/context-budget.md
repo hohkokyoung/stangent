@@ -1,4 +1,4 @@
-## Context Budget
+# Context Budget
 
 All pipeline agents must track how much of the codebase they have read and degrade gracefully when approaching limits.
 
@@ -30,7 +30,7 @@ Maintain a running total `chars_read` as you read files. Approximate: `chars_rea
 
 ---
 
-## context_cache.md Format
+# context_cache.md Format
 
 `.stangent/context_cache.md` is a shared codebase snapshot. The planner writes it; all other agents read it to avoid redundant scanning.
 

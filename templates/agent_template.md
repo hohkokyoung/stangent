@@ -159,19 +159,22 @@ and output: "Pipeline paused. Resume with /implement {{feature_id}}"
 
 ## Run Log Entry Format
 
+Read `.stangent/prompts/run-log-format.md` for the canonical schema, action table,
+and required-field rules. Summary below for reference only.
+
 One JSON line per significant action. Written to `.stangent/logs/FEAT-XXX.jsonl`.
 Never pretty-print — one line per entry.
 
 ```json
-{"ts":"2026-05-09T10:00:00Z","feat":"FEAT-001","agent":"planner","version":"1.0.0","action":"started","detail":"raw request received","tokens_in":0,"tokens_out":0,"result":"ok"}
-{"ts":"2026-05-09T10:00:05Z","feat":"FEAT-001","agent":"planner","version":"1.0.0","action":"read_file","detail":"lib/main.dart","tokens_in":450,"tokens_out":0,"result":"ok"}
-{"ts":"2026-05-09T10:01:00Z","feat":"FEAT-001","agent":"planner","version":"1.0.0","action":"ask_developer","detail":"JWT vs session auth?","tokens_in":0,"tokens_out":0,"result":"blocked"}
+{"ts":"2026-05-09T10:00:00Z","feature_id":"FEAT-001","agent":"planner","agent_version":"1.1.0","action":"stage_start","detail":"planning started"}
+{"ts":"2026-05-09T10:00:05Z","feature_id":"FEAT-001","agent":"planner","agent_version":"1.1.0","action":"file_read","detail":"lib/main.dart"}
+{"ts":"2026-05-09T10:01:00Z","feature_id":"FEAT-001","agent":"planner","agent_version":"1.1.0","action":"ask_developer","detail":"JWT vs session auth?"}
+{"ts":"2026-05-09T10:02:00Z","feature_id":"FEAT-001","agent":"planner","agent_version":"1.1.0","action":"stage_complete","result":"PASS"}
 ```
 
-**Required action names:**
-`started` | `read_file` | `write_file` | `bash_run` | `spawn_subagent` |
-`ask_developer` | `developer_responded` | `stage_complete` | `retry` |
-`escalated` | `paused` | `completed` | `failed`
+**Action names** (authoritative list in `run-log-format.md`):
+`stage_start` | `stage_complete` | `file_read` | `bash_run` |
+`ask_developer` | `agent_spawn` | `state_transition` | `registry_update`
 
 ---
 
@@ -187,6 +190,9 @@ Never pretty-print — one line per entry.
 | Scope Verdict, Review Checklist, Review Verdict | reviewer | read |
 | Security Report | security_scanner subagent | read |
 | SRS Reference | srs_agent | read |
+| Planner Confidence | planner | read |
+| Implementer Confidence | implementer | read |
+| Reviewer Confidence | reviewer | read |
 | status, branch, retry_count, agent versions | pipeline (orchestrator) | read |
 
 **Rule:** If you did not create a section, you may not overwrite it.
@@ -210,6 +216,10 @@ Pass 2 — Anchor files (always)
   These give the project's structure, conventions, and entry points.
 
 Pass 3 — Targeted reads (per feature, guided by spec)
+  For each symbol or type name in ## Files to Touch or the spec:
+    Run: python .stangent/scripts/build_index.py --query {SymbolName}
+    Use the returned file paths as your read list.
+    Fall back to Glob only if the symbol is not in the index.
   Read only files listed in ## Files to Touch + files discovered in Pass 2
   that are directly relevant to the feature scope.
   Log every file read in Run Log.
@@ -273,8 +283,7 @@ INPUTS:
 {
   "feature_id":        "FEAT-001",
   "feature_file_path": "/absolute/path/to/.stangent/features/FEAT-001-login.md",
-  "stangent_path":     "/absolute/path/to/stangent",
-  "config_path":       "/absolute/path/to/project/config.json",
+  "config_path":       "/absolute/path/to/project/.stangent/config.json",
   "extra": {
     "key": "value"     (any additional context the sub-agent needs)
   }
@@ -291,7 +300,6 @@ Then execute those instructions exactly using the inputs above.
 
 - `feature_id` — so the sub-agent can locate the feature file and log dir
 - `feature_file_path` — absolute path avoids working-directory ambiguity
-- `stangent_path` — sub-agent can load its own profiles and templates
 - `config_path` — sub-agent reads config without assuming project root;
   also used to derive project_root for locating other agent files
 - `extra` — open-ended bag for caller-specific context (e.g. `previous_verdict`,
@@ -305,7 +313,7 @@ Then execute those instructions exactly using the inputs above.
 
 ### What callers must never do
 
-- Pass a relative path for `feature_file_path` or `stangent_path`
+- Pass a relative path for `feature_file_path` or `config_path`
 - Omit `feature_id` (sub-agents write to logs keyed on this)
 - Inline large file contents into the spawn prompt — pass a path, let
   the sub-agent read it (avoids double context load)
@@ -317,10 +325,8 @@ Then execute those instructions exactly using the inputs above.
 If `profile_aware: true`, the agent must:
 
 1. Read `config.json` at `config_path` → get `profile` field
-2. If `profiles` is an array (monorepo): identify which profile applies to
-   the files being touched based on path prefix matching
-3. Load `{stangent_path}/profiles/{profile}.md`
-4. Use profile values for all tool commands, checklist items, and patterns
+2. Read `.stangent/prompts/load-profiles.md` and follow those instructions
+3. Use profile values for all tool commands, checklist items, and patterns
 
 ---
 

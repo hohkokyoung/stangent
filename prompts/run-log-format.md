@@ -1,4 +1,4 @@
-## Run Log Format
+# Run Log Format
 
 Every agent appends JSON Lines to `{paths.log_dir}/{feature_id}.jsonl`.
 One line per significant action. Do not write intermediate progress lines.

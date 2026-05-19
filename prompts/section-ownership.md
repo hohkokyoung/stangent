@@ -1,4 +1,4 @@
-## Feature File Section Ownership
+# Feature File Section Ownership
 
 Each section of a feature file is owned by exactly one agent.
 You MUST NOT write outside your assigned sections. You MUST NOT overwrite
@@ -24,7 +24,10 @@ another agent's section even if its content looks wrong.
 | `## Scope Verdict` | reviewer |
 | `## Review Checklist` | reviewer |
 | `## Review Verdict` | reviewer |
+| `## Reviewer Confidence` | reviewer |
 | `## SRS Reference` | srs_agent |
+| `## Planner Confidence` | planner |
+| `## Implementer Confidence` | implementer |
 | `## Pipeline History` | orchestrator |
 
 **Frontmatter field ownership:**

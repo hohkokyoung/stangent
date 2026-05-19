@@ -323,6 +323,30 @@ def copy_gateway(project_root: Path, dry_run: bool):
         info(f".stangent/gateway/gateway.py — {label}")
 
 
+def copy_scripts(project_root: Path, dry_run: bool):
+    """Copy scripts/ to .stangent/scripts/ so the project is self-contained."""
+    src_dir = STANGENT_PATH / "scripts"
+    if not src_dir.exists():
+        warn("scripts/ — not found in stangent source, skipping")
+        return
+
+    dst_dir = project_root / ".stangent" / "scripts"
+    if not dst_dir.exists():
+        if not dry_run:
+            dst_dir.mkdir(parents=True, exist_ok=True)
+
+    for src in sorted(src_dir.glob("*.py")):
+        dst     = dst_dir / src.name
+        content = src.read_text(encoding="utf-8")
+        if dst.exists() and dst.read_text(encoding="utf-8") == content:
+            ok(f".stangent/scripts/{src.name} — up to date")
+        else:
+            label = "updated" if dst.exists() else "installed"
+            if not dry_run:
+                dst.write_text(content, encoding="utf-8")
+            info(f".stangent/scripts/{src.name} — {label}")
+
+
 def write_settings_json(project_root: Path, dry_run: bool):
     """
     Deploy .claude/settings.json with a PreToolUse hook that runs gateway.py.

@@ -1,4 +1,4 @@
-## Loading Language Profiles
+# Loading Language Profiles
 
 This procedure is used by all pipeline agents. Follow these steps exactly.
 
