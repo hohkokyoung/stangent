@@ -53,6 +53,7 @@ from init_scaffold import (
     create_srs, create_decisions, create_memory, create_env_example,
     update_gitignore, create_onboarding_doc,
     configure_dbhub, configure_supabase, setup_cross_stack_meta,
+    offer_requirements_txt,
 )
 
 
@@ -323,6 +324,7 @@ def run(args):
     configure_dbhub(config, config_path, project_root, dry_run)
     configure_supabase(config, config_path, profile_names, dry_run)
     setup_cross_stack_meta(project_root, profile_names, dry_run)
+    offer_requirements_txt(project_root, profile_names, dry_run)
     init_registry(project_root, config, dry_run)
     copy_profiles(project_root, dry_run)
     copy_templates(project_root, dry_run)
@@ -350,6 +352,14 @@ def run(args):
         "  agents available in ALL projects without per-project init.\n"
     )
 
+    supabase_enabled = config.get("integrations", {}).get("supabase", {}).get("enabled", False)
+    supabase_hint = (
+        "" if supabase_enabled else
+        "\n  Supabase not enabled. To activate RLS enforcement, service_role leak\n"
+        "  detection, and JWT verification, re-run init:\n"
+        f"    python {STANGENT_PATH}/init.py --update\n"
+    )
+
     roots_display = "  ".join(
         f"{n}: {r}" for n, r in config["profile_roots"].items()
     )
@@ -357,7 +367,7 @@ def run(args):
   Project:   {project_root.name}
   Profiles:  {', '.join(config['profiles'])}
   Roots:     {roots_display}
-{global_hint}
+{global_hint}{supabase_hint}
   Open Claude Code and use the Stangent agent from the mode selector,
   or type /feature <describe what you want to build>
 

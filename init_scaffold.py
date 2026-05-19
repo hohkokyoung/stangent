@@ -771,7 +771,9 @@ def configure_supabase(config: dict, config_path: Path, profile_names: list, dry
     print()
     raw = input("  Enable Supabase integration? (yes / skip) [skip]: ").strip().lower()
     if raw != "yes":
-        info("Supabase — skipped (enable later by re-running init)")
+        info("Supabase — skipped")
+        info("  To enable later: re-run init in your project directory")
+        info("  python path/to/stangent/init.py --update")
         return
 
     print()
@@ -797,6 +799,85 @@ def configure_supabase(config: dict, config_path: Path, profile_names: list, dry
     print("  2. If using DBHub for live schema queries, set direct_connection to your")
     print("     Supabase direct PG connection string (port 5432, not the pooler).")
     print()
+
+
+_PROFILE_TOOL_PACKAGES: dict[str, list[str]] = {
+    "python": [
+        "ruff",
+        "pytest",
+        "pytest-cov",
+        "pytest-json-report",
+        "bandit",
+        "pip-audit",
+        "detect-secrets",
+    ],
+    "fastapi": [
+        "ruff",
+        "pytest",
+        "pytest-asyncio",
+        "httpx",
+        "pytest-cov",
+        "pytest-json-report",
+        "bandit",
+        "pip-audit",
+        "detect-secrets",
+        "asgi-lifespan",
+    ],
+}
+
+
+def offer_requirements_txt(project_root: Path, profile_names: list, dry_run: bool) -> None:
+    """
+    Offer to write Stangent pipeline tool dependencies to requirements-dev.txt.
+    Only applies to Python-based profiles. Skipped if all packages already present.
+    """
+    python_profiles = [p for p in profile_names if p in _PROFILE_TOOL_PACKAGES]
+    if not python_profiles:
+        return
+
+    # Union packages across all active Python profiles, preserving order
+    seen: set[str] = set()
+    packages: list[str] = []
+    for profile in python_profiles:
+        for pkg in _PROFILE_TOOL_PACKAGES[profile]:
+            if pkg not in seen:
+                seen.add(pkg)
+                packages.append(pkg)
+
+    if dry_run:
+        info("requirements-dev.txt — skipped (dry-run)")
+        return
+
+    req_path = project_root / "requirements-dev.txt"
+    exists = req_path.exists()
+
+    if exists:
+        existing = req_path.read_text(encoding="utf-8")
+        if all(pkg in existing for pkg in packages):
+            ok("requirements-dev.txt — Stangent tools already present")
+            return
+
+    header("Python Tool Dependencies")
+    print("  These packages are required to run the Stangent pipeline:")
+    for pkg in packages:
+        print(f"    {pkg}")
+    print()
+
+    verb = "Append to existing" if exists else "Write"
+    raw = input(f"  {verb} requirements-dev.txt? (yes / skip) [yes]: ").strip().lower()
+    if raw not in ("", "yes", "y"):
+        info("requirements-dev.txt — skipped")
+        info("  Install manually: pip install " + " ".join(packages))
+        return
+
+    content = "# Stangent pipeline tools\n" + "\n".join(packages) + "\n"
+    if exists:
+        base = existing if existing.endswith("\n") else existing + "\n"
+        req_path.write_text(base + "\n" + content, encoding="utf-8")
+        ok("requirements-dev.txt — Stangent tools appended")
+    else:
+        req_path.write_text(content, encoding="utf-8")
+        ok("requirements-dev.txt — created")
 
 
 # ── Uninit ────────────────────────────────────────────────────────────────────
