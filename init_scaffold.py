@@ -889,16 +889,26 @@ def offer_requirements_txt(project_root: Path, profile_names: list, dry_run: boo
                 packages.append(pkg)
 
     if dry_run:
-        info("requirements-dev.txt — skipped (dry-run)")
+        info("requirements — skipped (dry-run)")
         return
 
-    req_path = project_root / "requirements-dev.txt"
+    # Find existing requirements file in priority order
+    candidates = [
+        "requirements.txt",
+        "requirements-dev.txt",
+        "requirements/base.txt",
+        "requirements/dev.txt",
+    ]
+    req_path = next(
+        (project_root / c for c in candidates if (project_root / c).exists()),
+        project_root / "requirements-dev.txt",  # fallback: create this
+    )
     exists = req_path.exists()
 
     if exists:
         existing = req_path.read_text(encoding="utf-8")
         if all(pkg in existing for pkg in packages):
-            ok("requirements-dev.txt — Stangent tools already present")
+            ok(f"{req_path.name} — Stangent tools already present")
             return
 
     header("Python Tool Dependencies")
@@ -908,9 +918,9 @@ def offer_requirements_txt(project_root: Path, profile_names: list, dry_run: boo
     print()
 
     verb = "Append to existing" if exists else "Write"
-    raw = input(f"  {verb} requirements-dev.txt? (yes / skip) [yes]: ").strip().lower()
+    raw = input(f"  {verb} {req_path.relative_to(project_root)}? (yes / skip) [yes]: ").strip().lower()
     if raw not in ("", "yes", "y"):
-        info("requirements-dev.txt — skipped")
+        info(f"{req_path.name} — skipped")
         info("  Install manually: pip install " + " ".join(packages))
         return
 
@@ -918,10 +928,11 @@ def offer_requirements_txt(project_root: Path, profile_names: list, dry_run: boo
     if exists:
         base = existing if existing.endswith("\n") else existing + "\n"
         req_path.write_text(base + "\n" + content, encoding="utf-8")
-        ok("requirements-dev.txt — Stangent tools appended")
+        ok(f"{req_path.name} — Stangent tools appended")
     else:
+        req_path.parent.mkdir(parents=True, exist_ok=True)
         req_path.write_text(content, encoding="utf-8")
-        ok("requirements-dev.txt — created")
+        ok(f"{req_path.name} — created")
 
 
 # ── Uninit ────────────────────────────────────────────────────────────────────

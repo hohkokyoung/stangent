@@ -194,17 +194,6 @@ conventions:
   commit_prefix:      feat | fix | test | refactor | docs | chore
   import_style:       absolute
   docstring_style:    google
-  dependency_management:
-    order:
-      - requirements.txt
-      - requirements-dev.txt
-      - requirements/base.txt
-      - requirements/dev.txt
-      - pyproject.toml
-    rule: >
-      Always search for an existing requirements file before creating a new one.
-      If found, append the new dependency there. Never create requirements.txt
-      if one already exists elsewhere in the project tree.
 ```
 
 ---
