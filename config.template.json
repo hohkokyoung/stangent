@@ -75,7 +75,8 @@
     "supabase": {
       "enabled":           false,
       "project_url":       null,
-      "direct_connection": null
+      "direct_connection": null,
+      "mcp_server":        null
     }
   }
 }

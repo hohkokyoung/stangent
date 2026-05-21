@@ -216,9 +216,10 @@ def build_config(
                 "mcp_server": "dbhub",
             },
             "supabase": {
-                "enabled":          False,
-                "project_url":      None,
+                "enabled":           False,
+                "project_url":       None,
                 "direct_connection": None,
+                "mcp_server":        None,
             },
         },
     }

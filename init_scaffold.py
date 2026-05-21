@@ -4,6 +4,7 @@ write settings.json, create SRS/decisions/gitignore, configure DBHub.
 """
 
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -788,6 +789,63 @@ def setup_cross_stack_meta(project_root: Path, profile_names: list, dry_run: boo
 
 # ── Supabase setup ────────────────────────────────────────────────────────────
 
+def _configure_supabase_mcp(
+    project_root: Path,
+    config: dict,
+    config_path: Path,
+    project_url: str | None,
+    server_name: str = "supabase",
+) -> None:
+    """
+    Write Supabase MCP entry to .claude/settings.local.json.
+    Extracts project ref from the project URL if available.
+    Called from configure_supabase — not meant to be invoked directly.
+    """
+    print("  Supabase MCP — connects Claude directly to your Supabase project.")
+    print("  Enables live schema queries, migration management, and type generation.")
+    print()
+    raw = input("  Set up Supabase MCP? (yes / skip) [yes]: ").strip().lower()
+    if raw not in ("", "yes", "y"):
+        info("Supabase MCP — skipped (re-run init to set up later)")
+        return
+
+    # Extract project ref from URL: https://xxx.supabase.co → xxx
+    project_ref = None
+    if project_url:
+        match = re.search(r"https://([^.]+)\.supabase\.co", project_url)
+        if match:
+            project_ref = match.group(1)
+
+    if not project_ref:
+        project_ref = input("  Project ref (from your Supabase URL — the xxx in xxx.supabase.co): ").strip() or None
+
+    settings_local_path = project_root / ".claude" / "settings.local.json"
+    settings_local_path.parent.mkdir(exist_ok=True)
+    existing = {}
+    if settings_local_path.exists():
+        existing = json.loads(settings_local_path.read_text(encoding="utf-8"))
+    if "mcpServers" not in existing:
+        existing["mcpServers"] = {}
+
+    args = ["-y", "@supabase/mcp-server-supabase@latest"]
+    if project_ref:
+        args += ["--project-ref", project_ref]
+
+    existing["mcpServers"][server_name] = {
+        "command": "npx",
+        "args":    args,
+    }
+    settings_local_path.write_text(json.dumps(existing, indent=2))
+
+    # Store mcp_server name in config
+    config["integrations"]["supabase"]["mcp_server"] = server_name
+    config_path.write_text(json.dumps(config, indent=2))
+
+    ok(f"Supabase MCP — configured in .claude/settings.local.json (server: {server_name})")
+    info("Restart Claude Code to activate Supabase MCP.")
+    print()
+
+
 def configure_supabase(config: dict, config_path: Path, profile_names: list, dry_run: bool):
     """
     Optionally configure Supabase integration.
@@ -796,6 +854,12 @@ def configure_supabase(config: dict, config_path: Path, profile_names: list, dry
     supabase = config.get("integrations", {}).get("supabase", {})
     if supabase.get("enabled"):
         ok(f"Supabase — already configured ({supabase.get('project_url', 'url not set')})")
+        # Offer MCP setup if not yet configured
+        if not supabase.get("mcp_server") and not dry_run:
+            _configure_supabase_mcp(
+                project_root, config, config_path,
+                supabase.get("project_url"), server_name="supabase",
+            )
         return
 
     # Only prompt when Supabase is plausibly in use
@@ -830,18 +894,24 @@ def configure_supabase(config: dict, config_path: Path, profile_names: list, dry
         "enabled":           True,
         "project_url":       project_url or None,
         "direct_connection": direct_conn or None,
+        "mcp_server":        None,
     }
     config_path.write_text(json.dumps(config, indent=2))
     ok("Supabase — enabled in config")
     if not project_url or not direct_conn:
         info("Add missing values to .stangent/config.json when ready.")
     print()
+
+    # Offer Supabase MCP setup
+    _configure_supabase_mcp(
+        project_root, config, config_path,
+        project_url, server_name="supabase",
+    )
+
     print("  Next steps:")
     print("  1. Copy the meta template if you haven't already:")
     print("       cp .stangent/templates/meta_flutter_fastapi.md .stangent/meta.md")
     print("     (or re-run init — it will copy it automatically for double-stack projects)")
-    print("  2. If using DBHub for live schema queries, set direct_connection to your")
-    print("     Supabase direct PG connection string (port 5432, not the pooler).")
     print()
 
 
