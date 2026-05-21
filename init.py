@@ -49,7 +49,7 @@ from init_scaffold import (
     create_stangent_dirs, init_registry,
     install_global, uninit_project,
     copy_profiles, copy_templates, copy_prompts, copy_gateway, copy_scripts,
-    write_settings_json, copy_commands, copy_claude_agents,
+    write_settings_json, copy_commands, copy_skills, copy_claude_agents,
     create_srs, create_decisions, create_memory, create_env_example,
     update_gitignore, create_onboarding_doc,
     configure_dbhub, configure_supabase, setup_cross_stack_meta,
@@ -333,6 +333,7 @@ def run(args):
     copy_scripts(project_root, dry_run)
     write_settings_json(project_root, dry_run)
     copy_commands(project_root, config, dry_run)
+    copy_skills(project_root, dry_run)
     copy_claude_agents(project_root, dry_run)
     create_srs(project_root, config, dry_run)
     create_decisions(project_root, config, dry_run)

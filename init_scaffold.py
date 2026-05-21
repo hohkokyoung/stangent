@@ -9,7 +9,7 @@ from pathlib import Path
 
 from init_constants import (
     STANGENT_PATH, VERSION, STANGENT_DIRS,
-    CLAUDE_COMMANDS_DIR, CLAUDE_AGENTS_DIR, CLAUDE_SUBAGENTS_DIR,
+    CLAUDE_COMMANDS_DIR, CLAUDE_AGENTS_DIR, CLAUDE_SUBAGENTS_DIR, CLAUDE_SKILLS_DIR,
     GLOBAL_COMMANDS_DIR, GLOBAL_AGENTS_DIR,
     DROPDOWN_AGENTS, SUBAGENTS,
     ok, fail, warn, info, header,
@@ -155,6 +155,50 @@ def copy_commands(project_root: Path, config: dict, dry_run: bool):
             warn(f"commands/{src_file.name} — updated (stangent version changed)")
         else:
             info(f"commands/{src_file.name} — installed")
+
+        if not dry_run:
+            dst_file.write_text(content, encoding="utf-8")
+
+
+def copy_skills(project_root: Path, dry_run: bool):
+    """
+    Copy skill files verbatim from skills/ → .claude/skills/.
+    Skills are invoked by Claude directly (not slash commands) and require
+    no path substitution — they read config.json at runtime.
+    Re-running init picks up new skills added to stangent.
+    """
+    skills_src = STANGENT_PATH / "skills"
+    skills_dst = project_root / CLAUDE_SKILLS_DIR
+
+    if not skills_src.exists():
+        return  # No skills defined yet — silently skip
+
+    if not skills_dst.exists():
+        if not dry_run:
+            skills_dst.mkdir(parents=True, exist_ok=True)
+        info(f"Created {CLAUDE_SKILLS_DIR}")
+
+    current_names = {f.name for f in skills_src.glob("*.md")}
+
+    # Remove stale files from previous stangent versions
+    for dst_file in sorted(skills_dst.glob("*.md")):
+        if dst_file.name not in current_names:
+            if not dry_run:
+                dst_file.unlink()
+            warn(f"skills/{dst_file.name} — removed (no longer in stangent)")
+
+    for src_file in sorted(skills_src.glob("*.md")):
+        dst_file = skills_dst / src_file.name
+        content = src_file.read_text(encoding="utf-8")
+
+        if dst_file.exists():
+            existing = dst_file.read_text(encoding="utf-8")
+            if existing == content:
+                ok(f"skills/{src_file.name} — up to date")
+                continue
+            warn(f"skills/{src_file.name} — updated (stangent version changed)")
+        else:
+            info(f"skills/{src_file.name} — installed")
 
         if not dry_run:
             dst_file.write_text(content, encoding="utf-8")

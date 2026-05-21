@@ -159,6 +159,7 @@ STANGENT_DIRS = [
 CLAUDE_COMMANDS_DIR  = ".claude/commands/"
 CLAUDE_AGENTS_DIR    = ".claude/agents/"
 CLAUDE_SUBAGENTS_DIR = ".claude/agents/subagents/"
+CLAUDE_SKILLS_DIR    = ".claude/skills/"
 
 # User-level (available in every project, no init needed)
 GLOBAL_CLAUDE_DIR       = Path.home() / ".claude"
