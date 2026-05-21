@@ -963,17 +963,25 @@ def offer_requirements_txt(project_root: Path, profile_names: list, dry_run: boo
         info("requirements — skipped (dry-run)")
         return
 
-    # Find existing requirements file in priority order
-    candidates = [
+    # Find existing requirements file — check root first, then subdirectories
+    root_candidates = [
         "requirements.txt",
         "requirements-dev.txt",
         "requirements/base.txt",
         "requirements/dev.txt",
     ]
     req_path = next(
-        (project_root / c for c in candidates if (project_root / c).exists()),
-        project_root / "requirements-dev.txt",  # fallback: create this
+        (project_root / c for c in root_candidates if (project_root / c).exists()),
+        None,
     )
+    if req_path is None:
+        # Search one level deep for requirements.txt in subdirectories
+        # (e.g. backend/requirements.txt in a monorepo)
+        found = sorted(project_root.glob("*/requirements*.txt"))
+        if found:
+            req_path = found[0]
+    if req_path is None:
+        req_path = project_root / "requirements-dev.txt"  # fallback: create this
     exists = req_path.exists()
 
     if exists:
