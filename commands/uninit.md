@@ -36,6 +36,8 @@ Scan for everything Stangent installed:
     `feature.md`, `gateway.md`, `implement.md`, `plan.md`, `resume.md`,
     `review.md`, `srs.md`, `status.md`, `uninit.md`
     (only count those that exist)
+  - `.claude/skills/pipeline-debug.md`, `gateway-audit.md`
+    (only count those that exist)
   - `.stangent/gateway/gateway.py`
   - PreToolUse hook entry in `.claude/settings.json`
 
@@ -129,7 +131,17 @@ If the `.claude/agents/subagents/` directory is now empty: remove it.
 
 ---
 
-## Step 6 — Remove command files
+## Step 6 — Remove skill files
+
+For each of `pipeline-debug.md`, `gateway-audit.md` that exists in `.claude/skills/`:
+  Delete it.
+  Output: "  Deleted .claude/skills/{filename}"
+
+If the `.claude/skills/` directory is now empty: remove it.
+
+---
+
+## Step 7 — Remove command files
 
 The following command filenames are installed by Stangent:
   abandon.md, adr.md, cleanup.md, doctor.md, feature.md, gateway.md,
@@ -141,7 +153,7 @@ For each that exists in `.claude/commands/`:
 
 ---
 
-## Step 7 — Remove gateway hook from settings.json
+## Step 8 — Remove gateway hook from settings.json
 
 Read `.claude/settings.json`.
 If not found: skip.

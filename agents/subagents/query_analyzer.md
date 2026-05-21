@@ -45,16 +45,20 @@ you read source code and apply pattern matching with judgment.
 ## CONTEXT INPUTS
 
 1. `.stangent/config.json` → profiles[0], src_root, and:
-   - `integrations.dbhub.enabled`    — whether DBHub MCP is available
-   - `integrations.dbhub.mcp_server` — MCP server name (default: "dbhub")
+   - `integrations.dbhub.enabled`      — whether DBHub MCP is available
+   - `integrations.dbhub.mcp_server`   — DBHub MCP server name (default: "dbhub")
+   - `integrations.supabase.mcp_server` — Supabase MCP server name if configured (may be null)
    Derive: `project_root = Path(config_path).parent.parent`
 2. `.stangent/profiles/{config.profiles[0]}.md` → query_patterns (danger + warn)
 3. `{{feature_file_path}}` → read `## Files Changed`
 4. Read each file in `## Files Changed` that is NOT a test file
 
-If `integrations.dbhub.enabled = true`, the MCP tools
-`mcp__{mcp_server}__execute_sql` and `mcp__{mcp_server}__search_objects`
-are available for real schema queries. Use them in Step 4.5.
+MCP availability for real schema queries (use in Step 4.5):
+- If `integrations.dbhub.enabled = true`: use `mcp__{integrations.dbhub.mcp_server}__execute_sql`
+  and `mcp__{integrations.dbhub.mcp_server}__search_objects`
+- Else if `integrations.supabase.mcp_server` is not null: use
+  `mcp__{integrations.supabase.mcp_server}__execute_sql` for live queries
+- If neither: static analysis only (no live schema access)
 
 ---
 

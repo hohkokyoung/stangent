@@ -851,6 +851,7 @@ def configure_supabase(config: dict, config_path: Path, profile_names: list, dry
     Optionally configure Supabase integration.
     Only prompts if not already enabled. Skipped silently on dry-run.
     """
+    project_root = config_path.parent.parent  # .stangent/config.json → project root
     supabase = config.get("integrations", {}).get("supabase", {})
     if supabase.get("enabled"):
         ok(f"Supabase — already configured ({supabase.get('project_url', 'url not set')})")
@@ -1060,6 +1061,21 @@ def _remove_command_files(project_root: Path, dry_run: bool) -> int:
     return count
 
 
+def _remove_skill_files(project_root: Path, dry_run: bool) -> int:
+    count = 0
+    skills_dir = project_root / CLAUDE_SKILLS_DIR
+    if not skills_dir.exists():
+        return 0
+    # Remove all skill files sourced from stangent/skills/
+    stangent_skills = {f.name for f in (STANGENT_PATH / "skills").glob("*.md")} if (STANGENT_PATH / "skills").exists() else set()
+    for f in sorted(skills_dir.glob("*.md")):
+        if f.name in stangent_skills:
+            _remove_file(f, f".claude/skills/{f.name}", dry_run)
+            count += 1
+    _remove_dir_if_empty(skills_dir, dry_run)
+    return count
+
+
 def _remove_gateway_hook(project_root: Path, dry_run: bool):
     settings_path = project_root / ".claude" / "settings.json"
     if not settings_path.exists():
@@ -1164,6 +1180,7 @@ def uninit_project(project_root: Path, hard: bool, dry_run: bool) -> bool:
 
     agent_count   = _remove_agent_files(project_root, dry_run)
     command_count = _remove_command_files(project_root, dry_run)
+    skill_count   = _remove_skill_files(project_root, dry_run)
     _remove_gateway_hook(project_root, dry_run)
     _remove_gateway_files(project_root, dry_run)
     _remove_dir_if_empty(project_root / ".claude", dry_run)
@@ -1179,7 +1196,8 @@ def uninit_project(project_root: Path, hard: bool, dry_run: bool) -> bool:
   Stangent fully removed from {project_root.name}.
 
   Deleted: {agent_count} agent file(s), {command_count} command file(s),
-           gateway hook, gateway.py, and .stangent/ directory.
+           {skill_count} skill file(s), gateway hook, gateway.py,
+           and .stangent/ directory.
 
   To start fresh: python {STANGENT_PATH}/init.py
 """)
@@ -1188,11 +1206,11 @@ def uninit_project(project_root: Path, hard: bool, dry_run: bool) -> bool:
   Stangent tooling removed from {project_root.name}.
 
   Deleted: {agent_count} agent file(s), {command_count} command file(s),
-           gateway hook, and gateway.py.
+           {skill_count} skill file(s), gateway hook, and gateway.py.
 
   Kept:    .stangent/ (config, features, SRS, decisions)
 
   To re-install: python {STANGENT_PATH}/init.py
 """)
 
-    return (agent_count + command_count) > 0
+    return (agent_count + command_count + skill_count) > 0

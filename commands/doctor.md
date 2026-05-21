@@ -172,6 +172,12 @@ Check `.stangent/prompts/supabase.md`:
   - Missing → [FAIL] prompts/supabase.md — not found.
     Fix: re-run init.py (this file is required when Supabase integration is enabled)
 
+**10e. Supabase MCP (only if `config.integrations.supabase.mcp_server` is not null)**
+Read `.claude/settings.local.json`. Check `mcpServers[{config.integrations.supabase.mcp_server}]` exists:
+  - Exists → [PASS] Supabase MCP — configured in settings.local.json
+  - Missing → [WARN] Supabase MCP — mcp_server set in config but not found in .claude/settings.local.json.
+    Fix: re-run init.py to set up Supabase MCP, or add the entry manually.
+
 ---
 
 ## Step 11 — Gateway state consistency
