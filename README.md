@@ -12,13 +12,22 @@ No servers. No accounts. Just markdown files and Claude Code.
 /feature add login screen
     │
     ▼  ADR BOOTSTRAP (first feature only — detects existing patterns)
-    ▼  PLANNING      — reads codebase, checks ADRs, writes spec
+    ▼  PLANNING      — reads codebase, checks ADRs, surfaces risks, writes spec
     ▼  (you confirm)
     ▼  IMPLEMENTING  — writes code → linter → tests → query analysis
     ▼  REVIEWING     — spec compliance + 4-pass security scan
     ▼  SRS UPDATE    — extracts requirements into SRS.md
     ▼
   COMPLETE
+    │
+    └─ tested it and something's wrong?
+         /refine FEAT-XXX <what's wrong>
+              ▼  REFINING — planner revises spec from test feedback
+              ▼  (you confirm revised spec)
+              ▼  IMPLEMENTING  (clean retry, spec_version bumped)
+              ▼  REVIEWING
+              ▼
+            COMPLETE
 ```
 
 Everything is tracked in `.stangent/features/FEAT-XXX-slug.md`. Each agent owns its own sections — they never overwrite each other.
@@ -37,6 +46,8 @@ Everything is tracked in `.stangent/features/FEAT-XXX-slug.md`. Each agent owns 
 - **4-pass security scan** — secrets detection, SAST (bandit / dart_code_metrics), dependency CVE audit, and hardcoded config detection. Any CRITICAL finding blocks the commit.
 - **Surgical retries** — when a feature fails review, the implementer receives the exact findings and enters targeted fix mode. It touches only the flagged lines, not the whole feature.
 - **Sub-agent pipeline** — linter → unit tester → query analyzer must each pass before the implementer can commit. Each has a configurable retry ceiling before escalating to the developer.
+- **Impact & risk analysis** — before writing a spec, the planner reasons across six dimensions: breaking changes, state/data migration, backward compatibility, fallback/degradation, feature flag need, and rollback complexity. Risks that need a decision are surfaced to the developer outside the clarifying-question budget — they are never silently skipped.
+- **Spec-first refinement** — if you test a completed feature and it's not right, `/refine FEAT-XXX <what's wrong>` triggers a lightweight planner revision pass. The planner reads the test feedback, identifies which spec sections caused the gap, revises only those sections, and reimplements from the updated spec. Avoids the drift that comes from ad-hoc conversational corrections on a stale plan.
 
 **Architectural decisions that stick**
 - `/adr` bootstraps existing patterns automatically on first run (detects your ORM, state manager, HTTP client, test framework from the codebase).
@@ -114,6 +125,7 @@ python ~/stangent/init.py --uninit --hard  # delete everything
 | `/feature <desc>` | Full pipeline — plan → implement → review → SRS |
 | `/plan <desc>` | Write spec only, stop before implementation |
 | `/implement FEAT-XXX` | Implement a confirmed spec |
+| `/refine FEAT-XXX <feedback>` | Revise spec from test feedback and reimplement |
 | `/resume FEAT-XXX` | Resume a paused or interrupted feature |
 | `/review FEAT-XXX` | Re-run review independently |
 | `/srs [FEAT-XXX]` | Update SRS.md for completed features |
@@ -153,6 +165,7 @@ Add a new language: see [`templates/profile_guide.md`](templates/profile_guide.m
 {
   "pipeline": {
     "max_retries": 3,
+    "max_replans": 2,
     "sub_agent_max_retries": 3,
     "branch_prefix": "stangent/",
     "pr_target_branch": "dev"
@@ -192,6 +205,8 @@ cd your-project && python ~/stangent/init.py
 **Feature paused or stuck?** Run `/resume FEAT-XXX` — it reads Pipeline History and routes to the right stage automatically.
 
 **ESCALATED after 3 retries?** Read `## Review Verdict` in the feature file, fix manually, set `status = CONFIRMED`, then `/resume FEAT-XXX`.
+
+**Implemented but not what you wanted?** Use `/refine FEAT-XXX <description of what's wrong>`. Don't try to correct it through conversation — that produces drift. `/refine` updates the spec first, then reimplements cleanly.
 
 **Wrong provider detected?** `python init.py --provider <name>`
 
