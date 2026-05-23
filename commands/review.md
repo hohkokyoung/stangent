@@ -29,14 +29,20 @@ Read the feature file. Check status:
   - REVIEW_PASS or COMPLETE: output "Already reviewed and passed." and stop.
   - Anything else: proceed.
 
-## Step 3 — Run reviewer
+## Step 3 — Spawn reviewer
 
-Read the full contents of: .claude/agents/stangent-reviewer.md
+Spawn the reviewer using the Agent tool:
 
-Execute the reviewer with:
-  - feature_id         : $ARGUMENTS
-  - feature_file_path  : (resolved path)
-  - config_path        : (absolute path to .stangent/config.json)
+  INPUTS:
+  {
+    "feature_id":        "$ARGUMENTS",
+    "feature_file_path": "(resolved path from Step 2)",
+    "config_path":       "(absolute path to .stangent/config.json)",
+    "extra": {}
+  }
+  INSTRUCTIONS:
+  Read the full contents of: .claude/agents/stangent-reviewer.md
+  Then execute those instructions using the inputs above.
 
 ## Step 4 — Handle verdict
 

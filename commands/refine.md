@@ -153,17 +153,22 @@ Wait for the developer's response:
     `[timestamp] | CONFIRMED | orchestrator | spec v{spec_version} confirmed — reimplementing`
   - Output:
     "Spec confirmed (v{spec_version}). Starting implementation..."
-  - Read .claude/agents/stangent-implementer.md.
-  - Execute implementer with:
-      feature_id        : {feature_id}
-      feature_file_path : (resolved path)
-      config_path       : (absolute path)
-      previous_verdict  : ""
-      failure_type      : ""
-  - On IMPLEMENTED: continue to REVIEWING.
-    Read .claude/agents/stangent.md, execute orchestrator from STEP 6.
-  - On PAUSED: output resume instructions. Stop.
-  - On FAILED: output failure details. Stop.
+  - Spawn the orchestrator using the Agent tool to run the full remaining
+    pipeline (implement → review → retry loop → SRS → complete) in a
+    fresh context:
+
+    INPUTS:
+    {
+      "feature_id":  "{feature_id}",
+      "config_path": "(absolute path to .stangent/config.json)"
+    }
+    INSTRUCTIONS:
+    Read the full contents of: .claude/agents/stangent.md
+    The spec has been revised and confirmed (spec_version {spec_version}).
+    Begin from STEP 5 (IMPLEMENTING stage). Skip steps 1–4.
+    feature_id is {feature_id}. config_path is (absolute path).
+
+  - Wait for orchestrator result and output the final status.
 
 **corrections (developer provides changes to the revised spec):**
   - Re-run planner with the same `revision_context` plus a new `corrections` field

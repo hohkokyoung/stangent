@@ -76,18 +76,42 @@ Before spawning the implementer, update the feature file:
   - Append to ## Pipeline History:
     `[timestamp] | IMPLEMENTING | orchestrator | /implement invoked`
 
-## Step 5 — Run implementer
+## Step 5 — Spawn implementer
 
-Read the full contents of: .claude/agents/stangent-implementer.md
+Spawn the implementer using the Agent tool:
 
-Execute the implementer with:
-  - feature_id         : $ARGUMENTS
-  - feature_file_path  : (resolved path from Step 2)
-  - previous_verdict   : (from Step 3)
-  - config_path        : (absolute path to .stangent/config.json)
+  INPUTS:
+  {
+    "feature_id":        "$ARGUMENTS",
+    "feature_file_path": "(resolved path from Step 2)",
+    "config_path":       "(absolute path to .stangent/config.json)",
+    "extra": {
+      "previous_verdict": "(## Review Verdict content if retry_count > 0, else '')",
+      "failure_type":     ""
+    }
+  }
+  INSTRUCTIONS:
+  Read the full contents of: .claude/agents/stangent-implementer.md
+  Then execute those instructions using the inputs above.
 
-## Step 6 — Continue to review
+## Step 6 — Continue pipeline
 
-On IMPLEMENTED: read .claude/agents/stangent.md, execute from STEP 6 (REVIEWING).
-On PAUSED:      output resume instructions. Stop.
-On FAILED:      output failure details. Stop.
+On PAUSED: output resume instructions. Stop.
+On FAILED: output failure details. Stop.
+
+On IMPLEMENTED:
+  Spawn the orchestrator using the Agent tool to handle review, retry loop,
+  SRS update, and completion — all in a fresh context:
+
+  INPUTS:
+  {
+    "feature_id":  "$ARGUMENTS",
+    "config_path": "(absolute path to .stangent/config.json)"
+  }
+  INSTRUCTIONS:
+  Read the full contents of: .claude/agents/stangent.md
+  The feature has just been implemented successfully.
+  Begin from STEP 6 (REVIEWING stage). Skip steps 1–5.
+  feature_id is $ARGUMENTS. config_path is (absolute path).
+
+  Wait for the orchestrator result and output the final status.

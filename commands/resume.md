@@ -60,11 +60,17 @@ Route as follows:
 
   Set status = PLANNING.
   Append to ## Pipeline History: `[timestamp] | PLANNING | orchestrator | /resume — replanning`
-  Read .claude/agents/stangent-planner.md.
-  Execute planner with:
-    - feature_id       : $ARGUMENTS
-    - feature_file_path: (resolved path)
-    - config_path      : (absolute path)
+  Spawn the planner using the Agent tool:
+    INPUTS:
+    {
+      "feature_id":        "$ARGUMENTS",
+      "feature_file_path": "(resolved path)",
+      "config_path":       "(absolute path to .stangent/config.json)",
+      "extra": { "raw_request": "(title from feature file frontmatter)" }
+    }
+    INSTRUCTIONS:
+    Read the full contents of: .claude/agents/stangent-planner.md
+    Then execute those instructions using the inputs above.
   On SPEC_WRITTEN: set status = AWAITING_CONFIRMATION, present spec summary, stop.
   On PAUSED: output new resume instructions. Stop.
   On FAILED: output failure. Stop.
@@ -78,16 +84,19 @@ Route as follows:
 
   Set status = IMPLEMENTING.
   Append to ## Pipeline History: `[timestamp] | IMPLEMENTING | orchestrator | /resume`
-  Read .claude/agents/stangent-implementer.md.
   Read retry_count from frontmatter. If > 0: read ## Review Verdict for previous_verdict.
-  Execute implementer with:
-    - feature_id        : $ARGUMENTS
-    - feature_file_path : (resolved path)
-    - previous_verdict  : (from Review Verdict if retry, else "")
-    - config_path       : (absolute path)
-  On IMPLEMENTED: continue to REVIEWING (read orchestrator, execute from STEP 6).
-  On PAUSED:      output resume instructions. Stop.
-  On FAILED:      output failure. Stop.
+  Spawn the orchestrator using the Agent tool to run implement → review → SRS
+  in a fresh context:
+    INPUTS:
+    {
+      "feature_id":  "$ARGUMENTS",
+      "config_path": "(absolute path to .stangent/config.json)"
+    }
+    INSTRUCTIONS:
+    Read the full contents of: .claude/agents/stangent.md
+    The feature was paused during IMPLEMENTING. Resume from STEP 5.
+    feature_id is $ARGUMENTS. config_path is (absolute path).
+  Wait for result and output final status.
 
 **Paused during REVIEWING:**
   Output:
@@ -96,11 +105,17 @@ Route as follows:
 
   Set status = REVIEWING.
   Append to ## Pipeline History: `[timestamp] | REVIEWING | orchestrator | /resume`
-  Read .claude/agents/stangent.md.
-  Execute orchestrator from STEP 6 (REVIEWING).
-  On REVIEW_PASS: continue to SRS_UPDATE.
-  On PAUSED:      output resume instructions. Stop.
-  On FAILED:      output failure. Stop.
+  Spawn the orchestrator using the Agent tool to run review → SRS → complete:
+    INPUTS:
+    {
+      "feature_id":  "$ARGUMENTS",
+      "config_path": "(absolute path to .stangent/config.json)"
+    }
+    INSTRUCTIONS:
+    Read the full contents of: .claude/agents/stangent.md
+    The feature was paused during REVIEWING. Resume from STEP 6.
+    feature_id is $ARGUMENTS. config_path is (absolute path).
+  Wait for result and output final status.
 
 **Paused during SRS_UPDATE:**
   Output:
@@ -190,12 +205,18 @@ Set status = REFINING.
 Update active.json: `{ ..., "state": "REFINING", "agent": "planner" }`
 Append to Pipeline History: `[timestamp] | REFINING | orchestrator | /resume — re-entering revision`
 
-Read .claude/agents/stangent-planner.md.
-Execute planner in Revision Mode with:
-  - feature_id        : {feature_id}
-  - feature_file_path : (resolved path)
-  - config_path       : (absolute path)
-  - revision_context  : (feedback from Pipeline History entry)
+Spawn the planner using the Agent tool in Revision Mode:
+  INPUTS:
+  {
+    "feature_id":        "{feature_id}",
+    "feature_file_path": "(resolved path)",
+    "config_path":       "(absolute path to .stangent/config.json)",
+    "extra": { "revision_context": "(feedback from Pipeline History entry)" }
+  }
+  INSTRUCTIONS:
+  Read the full contents of: .claude/agents/stangent-planner.md
+  Then execute those instructions using the inputs above.
+  revision_context is set — enter Revision Mode (Phase 0).
 
 On SPEC_REVISED:  follow /refine Step 7 (SPEC_REVISED) logic.
 On SPEC_UNCHANGED: follow /refine Step 7 (SPEC_UNCHANGED) logic.
