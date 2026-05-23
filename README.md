@@ -131,7 +131,7 @@ python ~/stangent/init.py --uninit --hard  # delete everything
 | `/srs [FEAT-XXX]` | Update SRS.md for completed features |
 | `/adr <title>` | Record an architectural decision |
 | `/status [FEAT-XXX]` | Feature dashboard |
-| `/abandon FEAT-XXX` | Cleanly cancel a feature |
+| `/abandon FEAT-XXX` | Cancel a feature — reverts code, archives spec, deletes branch |
 | `/doctor` | Validate config, agents, gateway wiring |
 | `/cleanup` | Remove stale branches and contracts |
 | `/gateway <status\|unblock\|pause\|resume>` | Manage enforcement |
