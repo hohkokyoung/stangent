@@ -1,0 +1,79 @@
+Show token/context usage breakdown for a feature run.
+
+Usage:
+  /stats             — stats for the current active feature
+  /stats FEAT-XXX    — stats for a specific feature
+
+Reads the observer run log and prints a breakdown of what burned context:
+which files were read, how many chars each, grouped by agent/state.
+
+---
+
+## Step 1 — Resolve feature ID
+
+If `$ARGUMENTS` is empty:
+  Read `.stangent/gateway/active.json`.
+  If it does not exist: output "No active feature. Pass a feature ID." and stop.
+  Use `feature_id` from active.json.
+Else:
+  Use `$ARGUMENTS` as feature_id (normalise: uppercase, add FEAT- prefix if missing).
+
+## Step 2 — Load config
+
+Read `.stangent/config.json`.
+Extract `log_dir = config.paths.log_dir`.
+
+## Step 3 — Read run log
+
+Read `{log_dir}/{feature_id}.jsonl`.
+If it does not exist: output "No run log found for {feature_id}. Has the feature been planned yet?" and stop.
+
+Parse each line as JSON. Collect all entries.
+
+## Step 4 — Compute breakdown
+
+Group entries by `agent`:
+
+For each group:
+  - Count `file_read` actions → `reads`
+  - Sum `chars` across all `file_read` entries → `total_chars`
+  - Collect the top 5 largest reads (by `chars`), sorted descending
+  - Count `bash_run` actions → `bash_count`
+  - Count `glob` + `grep` actions → `search_count`
+  - Count `file_write` actions → `writes`
+
+Grand totals:
+  - `total_reads`  = sum of all reads across agents
+  - `grand_chars`  = sum of all chars across agents
+  - `total_writes` = sum of all writes across agents
+
+## Step 5 — Output
+
+Print:
+
+```
+Stats for {feature_id}
+══════════════════════════════════════════════
+
+{for each agent group, sorted by total_chars descending}
+Agent: {agent}  ({state at last entry})
+  Reads:       {reads}   ({total_chars} chars read)
+  Top files:
+    {path}  —  {chars} chars
+    ...
+  Bash runs:   {bash_count}
+  Searches:    {search_count}
+  Writes:      {writes}
+
+──────────────────────────────────────────────
+TOTAL  reads={total_reads}  chars={grand_chars}  writes={total_writes}
+
+Rough context estimate: {grand_chars} chars ≈ {grand_chars // 4} tokens
+(actual tokens higher — includes agent prompts, orchestration, and thinking)
+```
+
+If grand_chars > 200000:
+  Append:
+  "⚠️  High context load. Run /plan again to see if context_cache.md can reduce Pass 2 reads."
+
+STOP.

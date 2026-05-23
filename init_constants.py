@@ -151,6 +151,7 @@ STANGENT_DIRS = [
     ".stangent/prompts/",
     ".stangent/contracts/",
     ".stangent/gateway/",
+    ".stangent/observer/",
     ".stangent/memory/",
     ".stangent/scripts/",
 ]

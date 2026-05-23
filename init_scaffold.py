@@ -345,27 +345,37 @@ def copy_prompts(project_root: Path, dry_run: bool):
     )
 
 
-def copy_gateway(project_root: Path, dry_run: bool):
-    """Copy gateway.py to .stangent/gateway/ so the project is self-contained."""
-    src = STANGENT_PATH / "gateway" / "gateway.py"
+def _copy_file(src: Path, dst: Path, label: str, dry_run: bool) -> None:
+    """Copy src to dst, creating parent dirs. Skips if content is identical."""
     if not src.exists():
-        warn("gateway/gateway.py — not found in stangent source, skipping")
+        warn(f"{label} — not found in stangent source, skipping")
         return
-
-    dst_dir = project_root / ".stangent" / "gateway"
-    if not dst_dir.exists():
-        if not dry_run:
-            dst_dir.mkdir(parents=True, exist_ok=True)
-
-    dst = dst_dir / "gateway.py"
+    if not dry_run:
+        dst.parent.mkdir(parents=True, exist_ok=True)
     content = src.read_text(encoding="utf-8")
     if dst.exists() and dst.read_text(encoding="utf-8") == content:
-        ok(".stangent/gateway/gateway.py — up to date")
+        ok(f"{label} — up to date")
     else:
-        label = "updated" if dst.exists() else "installed"
+        action = "updated" if dst.exists() else "installed"
         if not dry_run:
             dst.write_text(content, encoding="utf-8")
-        info(f".stangent/gateway/gateway.py — {label}")
+        info(f"{label} — {action}")
+
+
+def copy_gateway(project_root: Path, dry_run: bool):
+    """Copy gateway.py and observer.py to .stangent/ so the project is self-contained."""
+    _copy_file(
+        STANGENT_PATH / "gateway" / "gateway.py",
+        project_root / ".stangent" / "gateway" / "gateway.py",
+        ".stangent/gateway/gateway.py",
+        dry_run,
+    )
+    _copy_file(
+        STANGENT_PATH / "observer" / "observer.py",
+        project_root / ".stangent" / "observer" / "observer.py",
+        ".stangent/observer/observer.py",
+        dry_run,
+    )
 
 
 def copy_scripts(project_root: Path, dry_run: bool):
@@ -392,10 +402,17 @@ def copy_scripts(project_root: Path, dry_run: bool):
             info(f".stangent/scripts/{src.name} — {label}")
 
 
+def _hook_present(entries: list, command: str) -> bool:
+    return any(
+        any(h.get("command") == command for h in entry.get("hooks", []))
+        for entry in entries
+    )
+
+
 def write_settings_json(project_root: Path, dry_run: bool):
     """
-    Deploy .claude/settings.json with a PreToolUse hook that runs gateway.py.
-    Merges with any existing settings rather than overwriting.
+    Deploy .claude/settings.json with PreToolUse (gateway) and PostToolUse
+    (observer) hooks. Merges with any existing settings rather than overwriting.
     """
     settings_path = project_root / ".claude" / "settings.json"
 
@@ -407,39 +424,41 @@ def write_settings_json(project_root: Path, dry_run: bool):
             warn(".claude/settings.json — could not parse existing file, skipping")
             return
 
-    gateway_hook = {
-        "matcher": "Write|Edit|Bash",
-        "hooks": [
-            {
-                "type": "command",
-                "command": "python .stangent/gateway/gateway.py",
-            }
-        ],
-    }
-
     hooks = existing.setdefault("hooks", {})
+    changed = False
+
+    # ── PreToolUse: gateway enforcement ──────────────────────────────────────
+    gateway_cmd  = "python .stangent/gateway/gateway.py"
     pre_tool_use: list = hooks.setdefault("PreToolUse", [])
-
-    # Check if our hook is already present (match by command string)
-    already_present = any(
-        any(
-            h.get("command") == gateway_hook["hooks"][0]["command"]
-            for h in entry.get("hooks", [])
-        )
-        for entry in pre_tool_use
-    )
-
-    if already_present:
+    if not _hook_present(pre_tool_use, gateway_cmd):
+        pre_tool_use.append({
+            "matcher": "Write|Edit|Bash",
+            "hooks": [{"type": "command", "command": gateway_cmd}],
+        })
+        changed = True
+        info(".claude/settings.json — PreToolUse gateway hook added")
+    else:
         ok(".claude/settings.json — gateway hook already present")
-        return
 
-    pre_tool_use.append(gateway_hook)
+    # ── PostToolUse: observer logging ─────────────────────────────────────────
+    observer_cmd   = "python .stangent/observer/observer.py"
+    post_tool_use: list = hooks.setdefault("PostToolUse", [])
+    if not _hook_present(post_tool_use, observer_cmd):
+        post_tool_use.append({
+            "matcher": "Read|Write|Edit|Glob|Grep|Bash",
+            "hooks": [{"type": "command", "command": observer_cmd}],
+        })
+        changed = True
+        info(".claude/settings.json — PostToolUse observer hook added")
+    else:
+        ok(".claude/settings.json — observer hook already present")
 
-    label = "updated" if settings_path.exists() else "created"
-    if not dry_run:
-        settings_path.parent.mkdir(parents=True, exist_ok=True)
-        settings_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
-    info(f".claude/settings.json — {label} (PreToolUse gateway hook added)")
+    if changed:
+        label = "updated" if settings_path.exists() else "created"
+        if not dry_run:
+            settings_path.parent.mkdir(parents=True, exist_ok=True)
+            settings_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+        info(f".claude/settings.json — {label}")
 
 
 def create_memory(project_root: Path, config: dict, dry_run: bool):
@@ -1091,7 +1110,7 @@ def _remove_skill_files(project_root: Path, dry_run: bool) -> int:
     return count
 
 
-def _remove_gateway_hook(project_root: Path, dry_run: bool):
+def _remove_stangent_hooks(project_root: Path, dry_run: bool):
     settings_path = project_root / ".claude" / "settings.json"
     if not settings_path.exists():
         return
@@ -1102,30 +1121,50 @@ def _remove_gateway_hook(project_root: Path, dry_run: bool):
         warn(".claude/settings.json — could not parse, skipping hook removal")
         return
 
-    hooks = data.get("hooks", {})
+    hooks   = data.get("hooks", {})
+    changed = False
+
     pre = hooks.get("PreToolUse", [])
     new_pre = [
         entry for entry in pre
         if not any("gateway.py" in h.get("command", "") for h in entry.get("hooks", []))
     ]
-
-    if len(new_pre) == len(pre):
-        ok(".claude/settings.json — no gateway hook found (already clean)")
-        return
-
-    if not new_pre:
-        hooks.pop("PreToolUse", None)
+    if len(new_pre) != len(pre):
+        hooks["PreToolUse"] = new_pre if new_pre else None
+        if not new_pre:
+            hooks.pop("PreToolUse", None)
+        info(".claude/settings.json — gateway hook removed")
+        changed = True
     else:
-        hooks["PreToolUse"] = new_pre
+        ok(".claude/settings.json — no gateway hook found (already clean)")
+
+    post = hooks.get("PostToolUse", [])
+    new_post = [
+        entry for entry in post
+        if not any("observer.py" in h.get("command", "") for h in entry.get("hooks", []))
+    ]
+    if len(new_post) != len(post):
+        if not new_post:
+            hooks.pop("PostToolUse", None)
+        else:
+            hooks["PostToolUse"] = new_post
+        info(".claude/settings.json — observer hook removed")
+        changed = True
+    else:
+        ok(".claude/settings.json — no observer hook found (already clean)")
 
     if not hooks:
         data.pop("hooks", None)
 
-    if not dry_run:
-        settings_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    info(".claude/settings.json — gateway hook removed")
-    if data:
-        ok(".claude/settings.json — other settings preserved")
+    if changed:
+        if not dry_run:
+            settings_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        if data:
+            ok(".claude/settings.json — other settings preserved")
+
+
+# Keep old name as alias for call sites not yet updated.
+_remove_gateway_hook = _remove_stangent_hooks
 
 
 def _remove_gateway_files(project_root: Path, dry_run: bool):
@@ -1133,6 +1172,10 @@ def _remove_gateway_files(project_root: Path, dry_run: bool):
     for name in ("gateway.py", "active.json", "active.json.paused"):
         _remove_file(gateway_dir / name, f".stangent/gateway/{name}", dry_run)
     _remove_dir_if_empty(gateway_dir, dry_run)
+
+    observer_dir = project_root / ".stangent" / "observer"
+    _remove_file(observer_dir / "observer.py", ".stangent/observer/observer.py", dry_run)
+    _remove_dir_if_empty(observer_dir, dry_run)
 
 
 def _remove_stangent_gitignore_block(project_root: Path, dry_run: bool):
