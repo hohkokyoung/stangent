@@ -161,10 +161,14 @@ Targeted mode: after fixing, re-run only the sub-agents relevant to the failure_
    - `Optional[X]` → `X?` in Dart — nullable mismatch is the most common runtime crash
    - JSON key casing must match exactly (`alias_generator` in FastAPI → check it)
 
-9. **Supabase rule** — only if `config.integrations.supabase.enabled = true`:
+9. **Supabase rule** — only if BOTH:
+   - `config.integrations.supabase.enabled = true`
+   - `## Files to Touch` or `## Scope` references `supabase/`, `migrations/`,
+     RLS, storage, or realtime (i.e. this feature actually touches Supabase)
 
-   Read `.stangent/prompts/supabase.md` for the full security rules before writing any code.
-   All rules in that file are binding constraints for this implementation.
+   If both conditions met: read `.stangent/prompts/supabase.md` once before
+   writing any code. All rules in that file are binding constraints.
+   If the feature does not touch Supabase paths: skip this read entirely.
 
 ---
 

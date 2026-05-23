@@ -81,6 +81,12 @@ Read in this order:
 7. `.stangent/decisions.md` → verify implementation honours all ADRs listed
    in `## Architectural Decisions Applied`.
 
+**Single-read rule:** Files loaded in step 5 are now in context. In all
+subsequent phases (1–6b), reason from the content already loaded — do NOT
+issue additional Read calls for files already read here. Only read a file
+again if a specific grep result points to a line outside what was loaded
+(e.g. a referenced file not in ## Files Changed).
+
 Do not read files outside of `## Files Changed`. Your review scope is
 exactly what was implemented, not the whole codebase.
 
@@ -211,11 +217,18 @@ Result: findings added to `## Review Checklist` under "Cross-Stack Consistency".
 
 ---
 
-### Phase 6b — Supabase Security Check (only when `config.integrations.supabase.enabled = true`)
+### Phase 6b — Supabase Security Check
 
-Read `.stangent/prompts/supabase.md` and run every rule in its security rules table
-against `## Files Changed`.
-Result: findings added to `## Review Checklist` under "Supabase Security". CRITICAL findings promoted to `## Review Verdict`.
+Skip this phase entirely unless BOTH conditions are true:
+- `config.integrations.supabase.enabled = true`
+- `## Files Changed` contains at least one path matching: `supabase/`, `migrations/`,
+  `_rls`, `storage.`, `realtime.`, or any file whose content references `supabase`
+  (check via grep on already-loaded file content — no extra reads needed)
+
+If both conditions met: read `.stangent/prompts/supabase.md` once and run every
+rule in its security rules table against the already-loaded ## Files Changed content.
+Result: findings added to `## Review Checklist` under "Supabase Security".
+CRITICAL findings promoted to `## Review Verdict`.
 
 ---
 

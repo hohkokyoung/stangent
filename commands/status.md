@@ -29,7 +29,8 @@ Otherwise → DASHBOARD MODE
 **Fast path — registry index:**
 Read `config.paths.registry_path` (features_registry.json).
 If `registry.features` is populated:
-  Use it as the primary source: it contains title, status, branch, created, updated per feature.
+  Use it as the primary source: it contains title, status, branch, retry_count,
+  replan_count, spec_version, created, updated per feature.
   Skip reading individual feature files for the summary table.
   For features with status COMPLETE: only include those updated within the last `config.pipeline.archive_completed_after_days` days (default 7).
 

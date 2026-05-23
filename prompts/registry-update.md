@@ -8,11 +8,14 @@ in `{{paths.registry_path}}`.
 ```json
 "features": {
   "{{feature_id}}": {
-    "title":   "{{title from frontmatter, or raw_request if title not yet set}}",
-    "status":  "{{current status}}",
-    "branch":  "{{branch from frontmatter, or '' if not yet created}}",
-    "created": "{{created from frontmatter}}",
-    "updated": "{{current ISO date}}"
+    "title":        "{{title from frontmatter, or raw_request if title not yet set}}",
+    "status":       "{{current status}}",
+    "branch":       "{{branch from frontmatter, or '' if not yet created}}",
+    "retry_count":  "{{retry_count from frontmatter, or 0}}",
+    "replan_count": "{{replan_count from frontmatter, or 0}}",
+    "spec_version": "{{spec_version from frontmatter, or 1}}",
+    "created":      "{{created from frontmatter}}",
+    "updated":      "{{current ISO date}}"
   }
 }
 ```
