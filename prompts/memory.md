@@ -31,9 +31,9 @@ Write to it only when you have new, concrete information to record.
 
 ## When to write
 
-Only the orchestrator writes to memory, and only after a feature resolves
-(COMPLETE or ESCALATED). Individual agents do not write — they surface
-observations in the feature file and the orchestrator consolidates.
+Memory is written by the orchestrator (on COMPLETE or ESCALATED) and by the
+`/abandon` command (on ABANDONED). Individual agents do not write — they surface
+observations in the feature file and the orchestrator or command consolidates.
 
 **Write a Failure Pattern entry if:**
 - The feature needed > 0 retries AND the failure was in a specific file or area

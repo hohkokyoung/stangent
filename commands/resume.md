@@ -121,8 +121,17 @@ Route as follows:
   Output:
     "Resuming SRS update for {feature_id} — {title}"
 
-  Read .claude/agents/stangent.md.
-  Execute orchestrator from STEP 7 (SRS_UPDATE).
+  Spawn the orchestrator using the Agent tool to run SRS → complete:
+    INPUTS:
+    {
+      "feature_id":  "$ARGUMENTS",
+      "config_path": "(absolute path to .stangent/config.json)"
+    }
+    INSTRUCTIONS:
+    Read the full contents of: .claude/agents/stangent.md
+    The feature was paused during SRS_UPDATE. Resume from STEP 7.
+    feature_id is $ARGUMENTS. config_path is (absolute path).
+  Wait for result and output final status.
 
 ---
 

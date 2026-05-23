@@ -21,22 +21,41 @@ Extract:
 
 ## Step 2 — Initialise feature record
 
-Read .claude/agents/stangent.md.
-Execute orchestrator STEP 1 (feature initialisation) only.
+Spawn the orchestrator using the Agent tool to run feature initialisation only:
 
-Note: STEP 2 (dependency check) is skipped here. The planner writes ## Depends On
-as part of the spec — it does not exist yet when /plan starts. Dependency check
-runs automatically when /implement is invoked.
+  INPUTS:
+  {
+    "raw_request": "$ARGUMENTS",
+    "feature_id":  "",
+    "config_path": "(absolute path to .stangent/config.json)"
+  }
+  INSTRUCTIONS:
+  Read the full contents of: .claude/agents/stangent.md
+  Execute STEP 0 (pre-flight) and STEP 1 (feature initialisation) only.
+  After STEP 1 completes (feature file created, branch created, active.json written),
+  output the assigned feature_id and feature_file_path, then STOP.
+  Do NOT proceed to STEP 2 or beyond.
 
-## Step 3 — Run planner
+Wait for the orchestrator to output the assigned feature_id and feature_file_path.
+Store both for use in Step 3.
 
-Read the full contents of: .claude/agents/stangent-planner.md
+Note: STEP 2 (dependency check) is skipped — the planner writes ## Depends On
+as part of the spec. Dependency check runs automatically when /implement is invoked.
 
-Execute the planner with:
-  - raw_request   : "$ARGUMENTS"
-  - feature_id    : (assigned in Step 2)
-  - corrections   : ""
-  - config_path   : (absolute path to .stangent/config.json)
+## Step 3 — Spawn planner
+
+Spawn the planner using the Agent tool:
+
+  INPUTS:
+  {
+    "feature_id":        "(assigned in Step 2)",
+    "feature_file_path": "(assigned in Step 2)",
+    "config_path":       "(absolute path to .stangent/config.json)",
+    "extra": { "raw_request": "$ARGUMENTS" }
+  }
+  INSTRUCTIONS:
+  Read the full contents of: .claude/agents/stangent-planner.md
+  Then execute those instructions using the inputs above.
 
 ## Step 4 — Stop after spec
 
