@@ -462,7 +462,7 @@ Before doing anything:
     Follow the write protocol in `.stangent/prompts/memory.md`.
 
     Always append to ## Feature History:
-    `| {{feature_id}} | {{title}} | {{retry_count}} | {{key files from ## Files Changed}} | COMPLETE |`
+    `| {{feature_id}} | {{title}} | {{retry_count}} | {{replan_count}} | {{key files from ## Files Changed}} | COMPLETE |`
 
     If retry_count > 0:
       Read ## Review Verdict for the failure reason and which files were involved.
@@ -500,7 +500,7 @@ E1. Set status = ESCALATED. Append to Pipeline History with reason.
     Delete `.stangent/gateway/active.json`.
 
     Write to project memory (follow `.stangent/prompts/memory.md`):
-    - Append to ## Feature History: `| {{feature_id}} | {{title}} | {{retry_count}} | {{key files}} | ESCALATED |`
+    - Append to ## Feature History: `| {{feature_id}} | {{title}} | {{retry_count}} | {{replan_count}} | {{key files}} | ESCALATED |`
     - Append to ## Failure Patterns: record the stage and area that caused escalation.
 
 E2. Output:

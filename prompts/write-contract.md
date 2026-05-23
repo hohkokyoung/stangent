@@ -50,6 +50,7 @@ Map them to bash capability tokens.
     "PLANNING":     ["planner"],
     "IMPLEMENTING": ["implementer", "linter", "unit_tester", "query_analyzer"],
     "REVIEWING":    ["reviewer", "security_scanner"],
+    "REFINING":     ["planner"],
     "SRS_UPDATE":   ["srs_agent"]
   },
   "capabilities": {

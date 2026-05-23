@@ -1018,8 +1018,8 @@ def offer_requirements_txt(project_root: Path, profile_names: list, dry_run: boo
 
 _STANGENT_COMMAND_FILES = [
     "abandon.md", "adr.md", "cleanup.md", "doctor.md", "feature.md",
-    "gateway.md", "implement.md", "plan.md", "resume.md", "review.md",
-    "srs.md", "status.md", "uninit.md",
+    "gateway.md", "implement.md", "plan.md", "pr.md", "refine.md",
+    "resume.md", "review.md", "srs.md", "status.md", "uninit.md",
 ]
 
 _GITIGNORE_MARKER = "# Stangent"

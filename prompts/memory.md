@@ -83,5 +83,5 @@ during feature initialisation via the init scaffold.
 
 ### Feature History entry
 ```
-| {feature_id} | {title} | {retry_count} | {comma-separated key files touched} | {COMPLETE/ESCALATED} |
+| {feature_id} | {title} | {retry_count} | {replan_count} | {comma-separated key files touched} | {COMPLETE/ESCALATED/ABANDONED} |
 ```

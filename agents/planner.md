@@ -37,7 +37,9 @@ inputs:
 outputs:
   - name: result
     type: string
-    description: SPEC_WRITTEN | PAUSED | FAILED
+    description: >
+      Normal mode:   SPEC_WRITTEN | PAUSED | FAILED
+      Revision mode: SPEC_REVISED | SPEC_UNCHANGED | PAUSED | FAILED
 profile_aware: true
 allows_ask_developer: true
 bash_allowlist:
@@ -61,9 +63,23 @@ A good spec eliminates guesswork. A bad spec causes retries.
 
 ---
 
+## REVISION MODE EARLY EXIT
+
+**Check this before loading any other context.**
+
+If `revision_context` is set (non-empty string):
+  - Read only `.stangent/config.json` (for paths) and the feature file (for current spec).
+  - Skip the entire CONTEXT INPUTS section below.
+  - Jump directly to Phase 0 in the PROCESS section.
+
+This prevents a full 3-pass codebase scan from running when only targeted
+spec revision is needed. Phase 0 does its own targeted reads.
+
+---
+
 ## CONTEXT INPUTS
 
-Read in this order before doing anything else:
+Read in this order before doing anything else (normal planning mode only):
 
 1. `.stangent/config.json` → load all paths and the profile fields.
    Derive: `project_root = Path(config_path).parent.parent`

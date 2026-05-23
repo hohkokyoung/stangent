@@ -71,6 +71,12 @@ srs_agent_version:
 <!-- Variables this feature introduces. Added to .env.example by implementer. -->
 - none
 
+## Risks & Mitigations
+<!-- Written by planner (Phase 1e + Phase 4a). Read by implementer before touching any file. -->
+<!-- Format: **Risk:** {description}  **Mitigation:** {approach} -->
+<!-- or:      **Risk:** {description}  **Approach:** {developer-chosen option} -->
+<!-- Write "none identified." if risk_list is empty. -->
+
 ## Planner Confidence
 <!-- Written by planner in Phase 4.6. Read by orchestrator before AWAITING_CONFIRMATION. -->
 <!-- validate_handoff.py checks score against config.confidence_thresholds.planner -->
