@@ -854,13 +854,8 @@ def configure_supabase(config: dict, config_path: Path, profile_names: list, dry
     project_root = config_path.parent.parent  # .stangent/config.json → project root
     supabase = config.get("integrations", {}).get("supabase", {})
     if supabase.get("enabled"):
-        ok(f"Supabase — already configured ({supabase.get('project_url', 'url not set')})")
-        # Offer MCP setup if not yet configured
-        if not supabase.get("mcp_server") and not dry_run:
-            _configure_supabase_mcp(
-                project_root, config, config_path,
-                supabase.get("project_url"), server_name="supabase",
-            )
+        mcp = supabase.get("mcp_server") or "not set"
+        ok(f"Supabase — already configured (url: {supabase.get('project_url', 'not set')}, mcp: {mcp})")
         return
 
     # Only prompt when Supabase is plausibly in use
@@ -990,28 +985,34 @@ def offer_requirements_txt(project_root: Path, profile_names: list, dry_run: boo
             ok(f"{req_path.name} — Stangent tools already present")
             return
 
+    # On reinit (file already exists), don't re-prompt — just append silently.
+    # Only prompt on first-time init when the file does not exist yet.
+    if exists:
+        missing = [pkg for pkg in packages if pkg not in existing]
+        if missing:
+            content = "# Stangent pipeline tools\n" + "\n".join(missing) + "\n"
+            base = existing if existing.endswith("\n") else existing + "\n"
+            req_path.write_text(base + "\n" + content, encoding="utf-8")
+            ok(f"{req_path.name} — added missing Stangent tools: {', '.join(missing)}")
+        return
+
     header("Python Tool Dependencies")
     print("  These packages are required to run the Stangent pipeline:")
     for pkg in packages:
         print(f"    {pkg}")
     print()
 
-    verb = "Append to existing" if exists else "Write"
-    raw = input(f"  {verb} {req_path.relative_to(project_root)}? (yes / skip) [yes]: ").strip().lower()
+    raw = input(f"  Write {req_path.relative_to(project_root)}? (yes / skip) [yes]: ").strip().lower()
     if raw not in ("", "yes", "y"):
         info(f"{req_path.name} — skipped")
         info("  Install manually: pip install " + " ".join(packages))
         return
 
+    # First-time create (exists=False path only — exists=True is handled above)
     content = "# Stangent pipeline tools\n" + "\n".join(packages) + "\n"
-    if exists:
-        base = existing if existing.endswith("\n") else existing + "\n"
-        req_path.write_text(base + "\n" + content, encoding="utf-8")
-        ok(f"{req_path.name} — Stangent tools appended")
-    else:
-        req_path.parent.mkdir(parents=True, exist_ok=True)
-        req_path.write_text(content, encoding="utf-8")
-        ok(f"{req_path.name} — created")
+    req_path.parent.mkdir(parents=True, exist_ok=True)
+    req_path.write_text(content, encoding="utf-8")
+    ok(f"{req_path.name} — created")
 
 
 # ── Uninit ────────────────────────────────────────────────────────────────────
