@@ -241,7 +241,9 @@ def run(args):
             old_config_path.unlink()
         info("Migrated — you can delete config.json from your project root")
 
-    if config_path.exists():
+    is_reinit = config_path.exists()
+
+    if is_reinit:
         existing = json.loads(config_path.read_text(encoding="utf-8"))
         old_version = existing.get("_stangent_version", "0.0.0")
 
@@ -321,8 +323,8 @@ def run(args):
             warn(f"config.json — missing required field: {f}")
         warn("Config is incomplete. Some agents may fail. Re-run init to repair.")
 
-    configure_dbhub(config, config_path, project_root, dry_run)
-    configure_supabase(config, config_path, profile_names, dry_run)
+    configure_dbhub(config, config_path, project_root, dry_run, is_reinit=is_reinit)
+    configure_supabase(config, config_path, profile_names, dry_run, is_reinit=is_reinit)
     setup_cross_stack_meta(project_root, profile_names, dry_run)
     offer_requirements_txt(project_root, profile_names, dry_run)
     init_registry(project_root, config, dry_run)
