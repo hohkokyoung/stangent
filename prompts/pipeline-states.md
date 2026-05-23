@@ -10,9 +10,10 @@ Every feature has a `status` field in its frontmatter. Valid states and transiti
 | `CONFIRMED` | Developer approved spec | IMPLEMENTING |
 | `IMPLEMENTING` | Implementer writing code | REVIEWING, PAUSED, ESCALATED |
 | `REVIEWING` | Reviewer checking implementation | REVIEW_PASS, IMPLEMENTING (retry), PAUSED |
-| `REVIEW_PASS` | Review passed | SRS_UPDATE |
+| `REVIEW_PASS` | Review passed | SRS_UPDATE, REFINING |
+| `REFINING` | Planner revising spec from developer test feedback | AWAITING_CONFIRMATION, PAUSED, FAILED |
 | `SRS_UPDATE` | SRS agent documenting | COMPLETE |
-| `COMPLETE` | Done, branch ready for PR | — terminal |
+| `COMPLETE` | Done, branch ready for PR | REFINING |
 | `PAUSED` | Waiting for developer input | resumes to prior active state |
 | `BLOCKED` | A dependency is not COMPLETE | PLANNING (after deps complete) |
 | `ESCALATED` | Max retries exceeded | — terminal, developer must intervene |

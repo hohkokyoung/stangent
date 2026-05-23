@@ -28,6 +28,12 @@ inputs:
   - name: corrections
     type: string
     description: Optional. Developer's corrections from a previous spec review.
+  - name: revision_context
+    type: string
+    description: >
+      Optional. Set by /refine only. Contains the developer's description of
+      what is wrong after testing, plus a summary of what was implemented.
+      When set, the planner runs in Revision Mode instead of normal planning.
 outputs:
   - name: result
     type: string
@@ -154,6 +160,82 @@ Read in this order before doing anything else:
 
 ## PROCESS
 
+### Phase 0 — Revision Mode (only when `revision_context` is set)
+
+If `revision_context` is provided, skip Phases 1–5 entirely and run this
+lightweight path instead. Do not do a full codebase scan.
+
+**R1 — Read current state:**
+- Read all planner-owned sections of the feature file (Scope, Acceptance
+  Criteria, Out of Bounds, Files to Touch, Risks & Mitigations).
+- Read `## Implementation Log` and `## Files Changed` — understand what was
+  actually built and what decisions were made during implementation.
+- Read `## Review Verdict` if present — note any flagged issues.
+
+**R2 — Understand the feedback:**
+Parse `revision_context`:
+- What the developer observed when testing (the symptom)
+- What they expected instead (the gap)
+- Any specific files, flows, or behaviours they called out
+
+**R3 — Targeted reads:**
+For each file or area mentioned in the feedback (or inferred from it):
+- Read exactly those files from the repo. No broader glob.
+- Identify the mismatch between the current spec and the observed behaviour.
+
+**R4 — Identify spec changes:**
+Produce a `revision_plan`: list of `{ section, change, reason }` — one entry
+per spec section that needs updating. Common cases:
+- `## Acceptance Criteria` — criterion was wrong, missing, or too vague
+- `## Scope` — scope was broader or narrower than what was needed
+- `## Files to Touch` — additional files the implementer must now touch
+- `## Out of Bounds` — a new constraint the developer implied
+- `## Risks & Mitigations` — a new risk that materialised during testing
+
+If nothing in the spec needs to change (the spec was correct but the
+implementation was wrong), set `revision_plan = []`.
+
+**R5 — Ask if needed (max 3 questions):**
+If any item in `revision_plan` requires a developer decision before the spec
+can be written (not just a clarification you can infer), ask now.
+Use the same `⚠️` format from Phase 3. Wait for response.
+If no response within timeout: set status = PAUSED. Return PAUSED.
+
+**R6 — Rewrite changed sections:**
+Apply every item in `revision_plan` to the feature file.
+Do NOT touch sections owned by other agents (implementer, reviewer, srs_agent).
+Do NOT reset the implementer-owned sections — they stay as-is for reference.
+
+**R7 — Bump spec_version:**
+Increment `spec_version` in the feature file frontmatter by 1.
+Update `updated` to today's ISO date.
+
+**R8 — Regenerate contract:**
+Read `.stangent/prompts/write-contract.md` and regenerate the contract.
+This updates `allowed_paths` to reflect any new files in `## Files to Touch`.
+
+**R9 — Present revision summary:**
+```
+Spec revised for {{feature_id}} (v{{spec_version}}):
+
+Changes made:
+{for each item in revision_plan}
+  • {{section}} — {{change}}
+
+{if revision_plan is empty}
+  No spec changes needed — the spec was correct.
+  The issue is likely in the implementation, not the plan.
+
+Confirm and reimplement? (yes / edit / abort)
+```
+
+**R10 — Return:**
+- If `revision_plan` is non-empty: return `SPEC_REVISED`
+- If `revision_plan` is empty: return `SPEC_UNCHANGED`
+- On any unrecoverable error: return `FAILED`
+
+---
+
 ### Phase 1 — Understand
 
 1a. Review everything from CONTEXT INPUTS.
@@ -196,12 +278,42 @@ Read in this order before doing anything else:
     Read `.stangent/prompts/adr-contradiction.md` and follow those instructions.
     Result: `contradiction_list` populated (empty list = no conflicts).
 
+1e. Impact & Risk Analysis:
+    For each area the feature touches (from Pass 3 reads and the candidate
+    Files to Touch list), reason explicitly about:
+
+    1. **Breaking changes** — does this alter existing behavior observable by
+       users or callers? (changed API shape, removed field, renamed route, etc.)
+    2. **State / data migration** — are there existing DB records, files, or
+       cached state that become invalid or need backfilling?
+    3. **Backward compatibility** — do existing API clients, mobile builds, or
+       event consumers depend on the current contract?
+    4. **Fallback / degradation** — if this feature throws at runtime, does the
+       surrounding system degrade gracefully or hard-fail? Is a fallback path
+       needed?
+    5. **Feature flag need** — does this change the experience for existing
+       users without an opt-in mechanism?
+    6. **Rollback complexity** — if deployed and immediately reverted, does
+       rollback leave orphaned state (DB columns, S3 objects, queue messages)?
+
+    For each concern found, classify it:
+    - `needs_decision: false` — you can determine the safe mitigation from the
+      codebase alone (e.g. "null-check is sufficient", "migration is additive").
+      Record the mitigation.
+    - `needs_decision: true` — a developer choice is required (e.g. "add a
+      feature flag vs. migrate all users at deploy time"). Record the risk and
+      two or more concrete options.
+
+    Produce `risk_list`: array of `{ risk, mitigation_or_options, needs_decision }`.
+    Empty list = no risks found.
+
 ---
 
 ### Phase 2 — Question Quality Check
 
-**ADR contradictions from Phase 1d must always be surfaced in Phase 3,
-regardless of question count. They do not consume any of the 5-question budget.**
+**ADR contradictions (Phase 1d) and risk decisions (Phase 1e where
+`needs_decision: true`) must always be surfaced in Phase 3, regardless of
+question count. Neither consumes any of the 5-question budget.**
 
 Before asking any clarifying question, apply this filter to each candidate question:
 
@@ -221,9 +333,10 @@ Before asking any clarifying question, apply this filter to each candidate quest
 
 ---
 
-### Phase 3 — Surface Contradictions and Ask Questions
+### Phase 3 — Surface Contradictions, Risks, and Ask Questions
 
-3a. If `contradiction_list` is empty AND you have 0 questions: skip to Phase 4.
+3a. If `contradiction_list` is empty AND `risk_list` has no `needs_decision: true`
+    items AND you have 0 questions: skip to Phase 4.
 
 3b. If `contradiction_list` is not empty, surface contradictions FIRST:
 
@@ -262,7 +375,34 @@ Before asking any clarifying question, apply this filter to each candidate quest
     - If **C** for any conflict: output "Feature cancelled — ADR conflict not resolved."
       Return FAILED. (Orchestrator will handle cleanup.)
 
-3c. If `contradiction_list` is empty and you have clarifying questions, present them:
+3b2. If `risk_list` contains any `needs_decision: true` items, surface them
+     AFTER contradictions (or as the first block if `contradiction_list` is empty).
+     Present in a dedicated section so the developer sees them as systemic concerns,
+     not just clarifying questions:
+
+    ```
+    ⚠️ I also found design risks that need your decision before I write the spec:
+
+    {for each item in risk_list where needs_decision = true}
+    **Risk: {{risk}}**
+    Options:
+      {for each option}
+      {{letter}} — {{option}}
+
+    {if clarifying questions also exist}
+    ---
+    I also need to clarify:
+    1. [Question]
+    ...
+    ```
+
+    Wait for developer response. Apply their choices to the spec:
+    - Record each chosen option in `risk_list[i].chosen_option`.
+    - If developer proposes a different approach: record it verbatim as `chosen_option`.
+    - If no response within timeout: set status = PAUSED. Return PAUSED.
+
+3c. If `contradiction_list` is empty AND no `needs_decision: true` risks exist
+    AND you have clarifying questions, present them:
 
     ```
     Before I write the spec for {{raw_request}}, I need to clarify:
@@ -298,6 +438,12 @@ Before asking any clarifying question, apply this filter to each candidate quest
       - Applied normally: `ADR-NNN — {title}`
       - Overridden by developer: `ADR-NNN — OVERRIDDEN — Reason: {reason}`
     - `## New Environment Variables` — list or "none"
+    - `## Risks & Mitigations` — one entry per item in `risk_list`:
+      - Format: `**Risk:** {risk}` followed by `**Mitigation:** {mitigation}` (for
+        `needs_decision: false` items) or `**Approach:** {chosen_option}` (for
+        `needs_decision: true` items where developer has chosen).
+      - If `risk_list` is empty: write "none identified."
+      - Implementer must read this section before touching any file in ## Files to Touch.
 
 4b. Update frontmatter:
     - `title`: concise 3–6 word title derived from the request
@@ -359,6 +505,9 @@ flags:
     **Depends On:** [list or none]
     **ADRs Applied:** [list or none]
 
+    **Risks & Mitigations:**
+    [one line per risk — omit section if none identified]
+
     Type "yes" to confirm and start implementation.
     Type corrections directly to update the spec.
     Type "abort" to cancel.
@@ -372,7 +521,8 @@ flags:
 
 ## OUTPUT CONTRACT
 
-- Writes: planner-owned sections in the feature file (including `## Codebase Context`)
+- Writes: planner-owned sections in the feature file (including `## Codebase Context`,
+  `## Risks & Mitigations`)
 - Writes: frontmatter fields (title, slug, language, planner_agent_version, updated)
 - Writes: `.stangent/contracts/{{feature_id}}.json` (gateway enforcement contract)
 - Writes: `.stangent/context_cache.md` (tree + anchor summaries for downstream agents)

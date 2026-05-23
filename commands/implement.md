@@ -45,8 +45,14 @@ Read the feature file. Check status:
   - IMPLEMENTING
       Output: "Already in progress. Check for a PAUSED state in the feature file." and stop.
 
-  - REVIEW_PASS or COMPLETE
-      Output: "Feature already complete." and stop.
+  - REVIEW_PASS
+      Output: "Feature has already passed review.
+               If you tested it and something is wrong, use: /refine {feature_id} <description>
+               If you want to reimplement without changing the spec, set status = CONFIRMED and re-run /implement." and stop.
+
+  - COMPLETE
+      Output: "Feature is already complete.
+               If you tested it and something is wrong, use: /refine {feature_id} <description>" and stop.
 
   - ESCALATED
       Output: "Feature escalated — manual intervention required.

@@ -180,6 +180,7 @@ def build_config(
         },
         "pipeline": {
             "max_retries":                   3,
+            "max_replans":                   2,
             "sub_agent_max_retries":         3,
             "ask_developer_timeout_minutes": 30,
             "agent_context_budget_chars":    300000,

@@ -176,6 +176,34 @@ Stop.
 
 ---
 
+### REFINING
+
+The feature is mid-refinement — a /refine was in progress and paused.
+
+Check the last Pipeline History entry for the feedback that was being processed.
+
+Output:
+  "Resuming refinement for {feature_id} — {title}
+   Original feedback: {feedback from /refine Pipeline History entry}"
+
+Set status = REFINING.
+Update active.json: `{ ..., "state": "REFINING", "agent": "planner" }`
+Append to Pipeline History: `[timestamp] | REFINING | orchestrator | /resume — re-entering revision`
+
+Read .claude/agents/stangent-planner.md.
+Execute planner in Revision Mode with:
+  - feature_id        : {feature_id}
+  - feature_file_path : (resolved path)
+  - config_path       : (absolute path)
+  - revision_context  : (feedback from Pipeline History entry)
+
+On SPEC_REVISED:  follow /refine Step 7 (SPEC_REVISED) logic.
+On SPEC_UNCHANGED: follow /refine Step 7 (SPEC_UNCHANGED) logic.
+On PAUSED:        output new resume instructions. Stop.
+On FAILED:        output failure. Stop.
+
+---
+
 ### PLANNING (without PAUSED)
 
 The planner may have been interrupted mid-run. Output:
@@ -215,6 +243,6 @@ Stop.
 Output:
   "Feature {feature_id} has an unrecognised status: {status}
    Valid states: CREATED PLANNING AWAITING_CONFIRMATION CONFIRMED IMPLEMENTING
-                 REVIEWING REVIEW_PASS SRS_UPDATE COMPLETE PAUSED ESCALATED BLOCKED ABANDONED
+                 REVIEWING REVIEW_PASS REFINING SRS_UPDATE COMPLETE PAUSED ESCALATED BLOCKED ABANDONED
    Correct the frontmatter manually and re-run /resume {feature_id}."
 Stop.

@@ -62,6 +62,7 @@ DEFAULT_ALLOWED_AGENTS: dict[str, list[str]] = {
     "IMPLEMENTING":          ["implementer", "linter", "unit_tester", "query_analyzer"],
     "REVIEWING":             ["reviewer", "security_scanner"],
     "REVIEW_PASS":           ["orchestrator"],
+    "REFINING":              ["planner"],
     "SRS_UPDATE":            ["srs_agent"],
     "COMPLETE":              ["orchestrator"],
     "PAUSED":                ["orchestrator"],

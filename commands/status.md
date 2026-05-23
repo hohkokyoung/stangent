@@ -47,6 +47,7 @@ Group by status. Output:
 
 ACTIVE
   FEAT-XXX  Title                       IMPLEMENTING    retry N/M
+  FEAT-XXX  Title                       REFINING        replan N/M
   ...
 
 AWAITING YOUR INPUT

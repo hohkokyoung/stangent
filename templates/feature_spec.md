@@ -6,6 +6,7 @@ status: CREATED
 language: {{language}}
 branch: stangent/{{feature_id}}-{{feature-slug}}
 retry_count: 0
+replan_count: 0
 spec_version: 1
 created: {{ISO_DATE}}
 updated: {{ISO_DATE}}
