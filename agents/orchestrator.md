@@ -145,6 +145,20 @@ Before doing anything:
 
 ---
 
+### STEP 0.5 — Tier Classification (runs after STEP 1, before STEP 3)
+
+Run this step once per fresh feature start (skip on resume).
+
+0.5a. Read `.stangent/prompts/classifier.md` and apply its rules to `raw_request`.
+      Result: `tier = "direct" | "standard"`
+
+0.5b. Write `tier` to the feature file frontmatter.
+      Append to Pipeline History: `tier: {tier} — {one-line classification reason}`
+
+0.5c. Continue to STEP 2.
+
+---
+
 ### STEP 1 — Initialise Feature (only when starting fresh)
 
 1a. Claim a feature ID atomically using a lock file:
@@ -261,7 +275,7 @@ Before doing anything:
       "feature_id":        "{{feature_id}}",
       "feature_file_path": "{{absolute feature file path}}",
       "config_path":       "{{absolute path to .stangent/config.json}}",
-      "extra": { "raw_request": "{{raw_request}}" }
+      "extra": { "raw_request": "{{raw_request}}", "tier": "{{tier}}" }
     }
 
     INSTRUCTIONS:
@@ -383,7 +397,7 @@ Before doing anything:
       "feature_id":        "{{feature_id}}",
       "feature_file_path": "{{absolute feature file path}}",
       "config_path":       "{{absolute .stangent/config.json path}}",
-      "extra": {}
+      "extra": { "tier": "{{tier from feature file frontmatter}}" }
     }
 
     INSTRUCTIONS:

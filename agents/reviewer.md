@@ -21,6 +21,11 @@ inputs:
   - name: config_path
     type: path
     description: Absolute path to .stangent/config.json
+  - name: tier
+    type: string
+    description: >
+      Optional. "direct" or "standard". Direct tier skips performance,
+      dead code, and cross-stack phases. Defaults to "standard" if absent.
 outputs:
   - name: result
     type: string
@@ -162,10 +167,14 @@ Summary: CRITICAL and MAJOR block (must fix before PASS). MINOR logs only.
 
 ---
 
-### Phase 3 — Security Scan
+### Phase 3 — Parallel Specialist Reviews
 
-3a. Spawn using the Agent tool:
+Spawn the following sub-agents in parallel using multiple Agent tool calls in a
+single response. Do NOT wait for one before spawning the next.
 
+**Always spawn (both tiers):**
+
+  Agent A — Security Scanner:
     INPUTS:
     {
       "feature_id":        "{{feature_id}}",
@@ -174,50 +183,58 @@ Summary: CRITICAL and MAJOR block (must fix before PASS). MINOR logs only.
       "files_changed":     "{{contents of ## Files Changed section}}"
     }
     INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-security-scanner.md and execute.
-    (where project_root = Path(config_path).parent.parent)
 
-3b. Wait for result. Read `## Security Report`.
+**Only spawn for `tier == "standard"` (skip for Direct tier):**
 
-3c. Promote any security findings to CRITICAL in ## Review Verdict.
+  Agent B — Performance Reviewer:
+    INPUTS:
+    {
+      "feature_file_path": "{{absolute feature file path}}",
+      "config_path":       "{{absolute .stangent/config.json path}}",
+      "files_changed":     "{{contents of ## Files Changed section}}"
+    }
+    INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-performance-reviewer.md and execute.
+    Return the findings text block.
+
+  Agent C — Quality Reviewer:
+    INPUTS:
+    {
+      "feature_file_path": "{{absolute feature file path}}",
+      "config_path":       "{{absolute .stangent/config.json path}}",
+      "files_changed":     "{{contents of ## Files Changed section}}"
+    }
+    INSTRUCTIONS: Read {project_root}/.claude/agents/subagents/stangent-quality-reviewer.md and execute.
+    Return the findings text block.
+
+Wait for all spawned agents to complete.
+
+3b. Collect results:
+    - Security Scanner: read `## Security Report` from feature file.
+    - Performance Reviewer: capture returned findings text (standard tier only).
+    - Quality Reviewer: capture returned findings text (standard tier only).
+
+3c. Promote findings to the verdict pool:
+    - Any CRITICAL security finding → CRITICAL in verdict.
+    - Any MAJOR performance finding → MAJOR in verdict.
+    - Any MAJOR quality finding (security/auth TODO) → MAJOR in verdict.
+    - All MINOR findings → logged in ## Review Checklist.
+
+3d. Write specialist findings to `## Review Checklist`:
+    - Append "## Performance Review" block (standard tier only).
+    - Append "## Quality Review" block (standard tier only).
 
 ---
 
-### Phase 4 — Performance Check (Profile-Specific)
+### Phase 4 — Cross-Stack Drift Check (standard tier, double-stack only)
 
-**Flutter:**
-- Scan `## Files Changed` for build() methods containing logic, DB calls, HTTP calls
-- Scan for ListView/GridView without .builder() on large collections
-- Scan for setState() calls that rebuild more than necessary
-
-**Python:**
-- Scan for blocking I/O calls inside async def functions
-- Scan for large data loads without pagination
-- Scan for missing indexes on queried fields (if new models were added)
-
-Add findings to `## Review Checklist` under "Performance" section.
-
----
-
-### Phase 5 — Dead Code Check
-
-5a. For each file in `## Files Changed`:
-    - Scan for commented-out code blocks (3+ commented lines in sequence)
-    - Scan for imports that are not used in the file
-    - Scan for functions/methods defined but never called within the changed scope
-
-5b. Add findings to ## Review Checklist under "Code Quality" section.
-    Dead code is MINOR severity.
-
----
-
-### Phase 6 — Cross-Stack Drift Check (double-stack projects only)
+Skip if `tier == "direct"`.
 
 Read `.stangent/prompts/cross-stack-reviewer.md` and follow those instructions.
 Result: findings added to `## Review Checklist` under "Cross-Stack Consistency".
 
 ---
 
-### Phase 6b — Supabase Security Check
+### Phase 5 — Supabase Security Check
 
 Skip this phase entirely unless BOTH conditions are true:
 - `config.integrations.supabase.enabled = true`
@@ -232,15 +249,15 @@ CRITICAL findings promoted to `## Review Verdict`.
 
 ---
 
-### Phase 7 — Issue Verdict
+### Phase 6 — Issue Verdict
 
-7a. Collect all findings by severity.
+6a. Collect all findings by severity.
 
-7b. Write `## Scope Verdict`:
+6b. Write `## Scope Verdict`:
     - In bounds: yes | no
     - List any scope creep found
 
-7c. Write `## Review Verdict`:
+6c. Write `## Review Verdict`:
 
     If CRITICAL or MAJOR findings exist:
     ```
@@ -270,11 +287,11 @@ CRITICAL findings promoted to `## Review Verdict`.
     - [list or "none"]
     ```
 
-7d. Update `reviewer_agent_version` in feature file frontmatter.
+6d. Update `reviewer_agent_version` in feature file frontmatter.
 
-7e. Log `stage_complete` to Run Log with verdict summary.
+6e. Log `stage_complete` to Run Log with verdict summary.
 
-7f. Write Reviewer Confidence.
+6f. Write Reviewer Confidence.
 
     Calculate score (start at 100, apply deductions):
     - `ambiguous_findings` (count): findings you could not definitively classify without developer input → **-10 each**

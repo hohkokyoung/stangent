@@ -25,6 +25,12 @@ inputs:
   - name: config_path
     type: path
     description: Absolute path to .stangent/config.json
+  - name: tier
+    type: string
+    description: >
+      Optional. "direct" or "standard". Set by orchestrator after classification.
+      Defaults to "standard" if absent. Direct tier runs a lightweight planning
+      path — Pass 3 only, no ADR scan, no risk analysis, no cross-stack scan.
   - name: corrections
     type: string
     description: Optional. Developer's corrections from a previous spec review.
@@ -74,6 +80,51 @@ If `revision_context` is set (non-empty string):
 
 This prevents a full 3-pass codebase scan from running when only targeted
 spec revision is needed. Phase 0 does its own targeted reads.
+
+---
+
+## DIRECT MODE
+
+**Check this after Revision Mode, before loading any context.**
+
+If `tier == "direct"` (and `revision_context` is NOT set):
+  Run the lightweight planning path below instead of CONTEXT INPUTS + Phases 1–5.
+
+### Direct Mode Process
+
+**D1 — Minimal context load:**
+- Read `.stangent/config.json` → paths, profiles.
+- Read `{feature_file_path}` frontmatter (already created by orchestrator).
+- Read `.stangent/decisions.md` → ONLY check if any ADR title directly
+  matches the request's domain (substring match). Do not do full analysis.
+  If a direct match found: note it in spec as "ADR-NNN may apply — review before implementing."
+- Skip: symbol index, load-profiles Pass 1/2, memory.md, SRS.md, meta.md, supabase.md.
+
+**D2 — Targeted reads (Pass 3 only, max 5 files):**
+- From `raw_request`, identify the 1–3 most likely files to change.
+- Read those files directly. Do not glob broadly.
+- If a file is not found: note it in ## Files to Touch with `[not found]` tag.
+
+**D3 — Write minimal spec:**
+Write only these planner-owned sections:
+- `## Scope` — 1–2 sentences.
+- `## Acceptance Criteria` — 1–3 testable items. Keep them tight.
+- `## Out of Bounds` — specific files NOT to touch.
+- `## Files to Touch` — from D2 reads.
+- `## Depends On` — "none" unless obviously blocked.
+- Omit: ## Architectural Decisions Applied, ## New Environment Variables,
+  ## Risks & Mitigations, ## Codebase Context (not needed for Direct tier).
+
+**D4 — Update frontmatter:**
+- `title`, `slug`, `planner_agent_version`, `updated` — same as standard mode.
+
+**D5 — Write contract:**
+Read `.stangent/prompts/write-contract.md` and follow those instructions.
+
+**D6 — Present for confirmation (same as Phase 5):**
+Show the spec summary. Ask: "Confirm and implement? (yes / edit / abort)"
+
+**D7 — Return SPEC_WRITTEN.**
 
 ---
 
