@@ -35,7 +35,7 @@ its frontmatter (semver: `MAJOR.MINOR.PATCH`).
 
 | Agent | Version | Last bumped because |
 |---|---|---|
-| orchestrator | 1.2.0 | Efficiency rules + shared spawn template (token-trim) |
+| orchestrator | 1.3.0 | Inline Direct-tier planning (STEP 3a.1 — skips planner spawn) |
 | planner | 1.3.0 | Efficiency rules + mode/phase compression (token-trim) |
 | implementer | 1.2.0 | Efficiency rules + Edit-not-Write for spec sections |
 | reviewer | 1.3.0 | Efficiency rules + Phase 3 spawn-template compression |

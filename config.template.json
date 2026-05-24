@@ -41,8 +41,10 @@
     "branch_prefix":                 "stangent/",
     "remind_pr_on_complete":         false,
     "pr_target_branch":              "dev",
-    "archive_completed_after_days":  7
+    "archive_completed_after_days":  7,
+    "inline_direct_planning":        true
   },
+  "_inline_direct_planning_doc": "When true and tier=='direct', the orchestrator runs the lightweight Direct Mode planning inline (without spawning the planner subagent). Saves ~30-40k tokens per Direct-tier feature by avoiding the subagent cold-start. Set to false to always spawn the planner.",
 
   "confidence_thresholds": {
     "planner":     70,
@@ -51,7 +53,7 @@
   },
 
   "models": {
-    "orchestrator":     "claude-sonnet-4-6",
+    "orchestrator":     "claude-haiku-4-5-20251001",
     "planner":          "claude-sonnet-4-6",
     "planner_direct":   "claude-haiku-4-5-20251001",
     "implementer":      "claude-sonnet-4-6",
@@ -67,7 +69,7 @@
     "performance_reviewer": "claude-haiku-4-5-20251001",
     "quality_reviewer":     "claude-haiku-4-5-20251001"
   },
-  "_models_doc": "Per-agent model assignment. '*_direct' variants apply only when feature tier=direct; if absent, falls back to the unprefixed entry. Use cheaper models for Direct tier to amplify the token savings.",
+  "_models_doc": "Per-agent model assignment. '*_direct' variants apply only when feature tier=direct; if absent, falls back to the unprefixed entry. Orchestrator defaults to Haiku because it does file-shuffling, registry/active.json edits, and routing — not reasoning. Reserve Sonnet for the agents that actually think (planner/implementer/reviewer/security_scanner). Use cheaper models for Direct tier to amplify the token savings.",
 
   "feature_id": {
     "prefix":  "FEAT",

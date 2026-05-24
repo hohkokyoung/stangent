@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-version: 1.2.0
+version: 1.3.0
 type: agent
 description: >
   Coordinates the Stangent pipeline for a single feature: manages state,
@@ -92,7 +92,9 @@ Before doing anything:
 ## CONSTRAINTS
 
 1. Never write to any section of the feature file except `## Pipeline
-   History` and frontmatter status/retry fields.
+   History` and frontmatter status/retry fields. **Exception:** when STEP
+   3a.1 (inline Direct-tier planning) is active, you write the planner-
+   owned sections per Direct Mode D3.
 2. Never spawn more than one agent at a time.
 3. Never retry more than `pipeline.max_retries` times (default 3).
 4. Always update status before spawning the next agent.
@@ -253,6 +255,26 @@ Proceed to STEP 3.
 
 3a. status = PLANNING. Append Pipeline History. Update active.json
 (`state: "PLANNING", agent: "planner"`).
+
+**3a.1 — Inline shortcut (Direct tier only).** If
+`pipeline.inline_direct_planning == true` (default) AND `tier == "direct"`:
+do NOT spawn the planner subagent. Instead, run the planner's Direct Mode
+(D1–D6 in `agents/planner.md`) **inline** using your own tools:
+- Apply Rule 1 (efficiency-rules.md) — read each input once.
+- Follow D1 → D5 exactly as documented for the planner.
+- Skip D6's "Return SPEC_WRITTEN" — that's the planner's return signal.
+  Instead, treat the result as if the planner had returned `SPEC_WRITTEN`
+  and proceed to 3d (handoff validation).
+- Record in Pipeline History: `planner — inline (direct tier, no spawn)`.
+- For handoff validation and Confidence: skip Planner Confidence (no
+  spawn happened). Validator may emit a WARN about missing Confidence on
+  Direct tier — log and continue.
+
+Rationale: skips ~30–40k tokens of subagent cold-start. The Direct path
+reads ≤5 files and writes ≤6 spec sections; the orchestrator can do it
+without a subagent.
+
+If the knob is false OR `tier != "direct"`: fall through to 3b.
 
 3b. Spawn `planner` per Sub-Agent Spawn Template with
 `extra: {"raw_request": "{raw_request}", "tier": "{tier}"}` and

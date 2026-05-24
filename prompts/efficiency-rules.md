@@ -107,3 +107,37 @@ confirm:
    double-checking something already in context?
 
 If any answer is "no" or "I'm not sure", reconsider before issuing the call.
+
+---
+
+## Prompt-Caching Invariants
+
+Stangent itself does not call the Anthropic API directly — every agent run
+happens inside the Claude Code harness, which auto-caches the stable
+prefix of each prompt (system prompt + tool schemas + agent definition)
+for ~5 minutes. To keep cache hit rates high across consecutive runs,
+preserve the following invariants when editing agents or prompts:
+
+1. **Stable prefix, variable suffix.** Inputs that change per run
+   (`feature_id`, `raw_request`, `corrections`, `revision_context`,
+   `previous_verdict`, `failure_type`, `tier`) belong in the spawn
+   template's `INPUTS` block — at the **end** of the prompt, never inlined
+   into the agent definition or the role/constraints sections.
+
+2. **Don't rewrite frontmatter or role text casually.** Any edit to the
+   first ~80% of an agent file (frontmatter through PROCESS) invalidates
+   the cache for every subsequent spawn until the next 5-minute window.
+   Save trivial wording cleanups for batched releases.
+
+3. **Don't add per-feature data to shared prompt files.** Files under
+   `.stangent/prompts/` (this file, `load-profiles.md`, `write-contract.md`,
+   etc.) are loaded as part of the stable prefix. They must contain rules,
+   not feature-specific content.
+
+4. **Read prompts files once per run** (Rule 1). The harness caches the
+   first read; a second Read in the same run will hit fresh tokens
+   anyway because the surrounding context has shifted.
+
+5. **Spawn template fields are ordered.** Do not reorder the
+   `INPUTS / INSTRUCTIONS` block in `orchestrator.md`'s
+   `## SUB-AGENT SPAWN TEMPLATE`. The ordering is part of the cache key.
