@@ -17,70 +17,47 @@ reviewer_agent_version:
 srs_agent_version:
 ---
 
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     PLANNER OWNED
-     Written by: planner agent
-     Read by: all agents
-     Locked after: status passes AWAITING_CONFIRMATION
-     ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PLANNER OWNED — locked after AWAITING_CONFIRMATION -->
 
 ## Scope
-<!-- 2–5 sentences. What this feature does. No implementation detail. -->
+<!-- 2–5 sentences, no implementation detail -->
 
 
 ## Acceptance Criteria
-<!-- Each item must map to at least one unit test. -->
-<!-- Implementer checks these off. Reviewer verifies each box. -->
+<!-- Each item maps to at least one unit test. Implementer ticks, reviewer verifies. -->
 - [ ]
 - [ ]
 
 ## Out of Bounds
-<!-- HARD CONSTRAINT. Implementer reads this before writing a single line. -->
-<!-- If implementation would touch any item here: ASK_DEVELOPER first. -->
+<!-- Hard constraint. Implementer ASKs before touching anything listed here. -->
 -
 
 ## Depends On
-<!-- Feature IDs that must be COMPLETE before this feature can start. -->
-<!-- Orchestrator enforces this. Use "none" if no dependencies. -->
+<!-- FEAT IDs that must be COMPLETE first, or "none". -->
 - none
 
 ## Files to Touch
-<!-- Planner's best-guess list. Implementer updates ## Files Changed with actuals. -->
+<!-- Best-guess list; implementer writes actuals to ## Files Changed. -->
 -
 
 ## Codebase Context
-<!-- Written by planner after Phase 1 codebase scan. Read by implementer before Pass 2. -->
-<!-- If this section is populated, implementer skips Pass 2 (anchor file re-read). -->
-
+<!-- Populated by planner Phase 1c2; lets implementer skip Pass 2. -->
 ### Top Relevant Files
-<!-- Format: path — what it contains — relevance to this feature -->
-
 ### Key Patterns Observed
-<!-- 3 patterns: naming conventions, architecture patterns, dependencies -->
-
 ### Interfaces to Respect
-<!-- Contracts / interfaces / types the feature must not break -->
 
 ## Architectural Decisions Applied
-<!-- ADR IDs from .stangent/decisions.md relevant to this feature. -->
-<!-- Format: "ADR-NNN — Title" (applied normally) -->
-<!--         "ADR-NNN — OVERRIDDEN — Reason: ..." (developer-approved override) -->
-<!-- Implementer must honour applied entries. OVERRIDDEN entries: follow the spec instead. -->
+<!-- "ADR-NNN — Title" | "ADR-NNN — OVERRIDDEN — Reason: ..." -->
 -
 
 ## New Environment Variables
-<!-- Variables this feature introduces. Added to .env.example by implementer. -->
 - none
 
 ## Risks & Mitigations
-<!-- Written by planner (Phase 1e + Phase 4a). Read by implementer before touching any file. -->
-<!-- Format: **Risk:** {description}  **Mitigation:** {approach} -->
-<!-- or:      **Risk:** {description}  **Approach:** {developer-chosen option} -->
-<!-- Write "none identified." if risk_list is empty. -->
+<!-- **Risk:** {description}  **Mitigation:** {approach} | **Approach:** {chosen option} -->
+<!-- "none identified." if empty. -->
 
 ## Planner Confidence
-<!-- Written by planner in Phase 4.6. Read by orchestrator before AWAITING_CONFIRMATION. -->
-<!-- validate_handoff.py checks score against config.confidence_thresholds.planner -->
 score:
 flags:
   - context_budget_hit:
@@ -90,33 +67,24 @@ flags:
   - symbol_index_misses:
 
 
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     IMPLEMENTER OWNED
-     Written by: implementer agent
-     Read by: reviewer, srs_agent
-     ═══════════════════════════════════════════════════════════════════════ -->
+<!-- IMPLEMENTER OWNED -->
 
 ## Pre-Implementation Scan
-<!-- Existing code found that is relevant. Prevents duplication. -->
-<!-- Format: file:line — what was found — reuse / adapt / ignore -->
+<!-- file:line — what was found — reuse / adapt / ignore -->
 
 
 ## Implementation Log
-<!-- Narrative of what was done. Key decisions made. Why alternatives were rejected. -->
 
 
 ## Files Changed
-<!-- Actual files created / modified / deleted. Replaces planner's estimate. -->
-<!-- Format: [C] created | [M] modified | [D] deleted -->
+<!-- [C] created | [M] modified | [D] deleted -->
 
 
 ## Future Considerations
-<!-- Ideas that are OUT OF BOUNDS for this feature. Captured here, not implemented. -->
-<!-- These may become future FEAT entries. -->
+<!-- Out-of-scope ideas tracked here, not implemented. -->
+
 
 ## Implementer Confidence
-<!-- Written by implementer at end of Phase 4. Read by orchestrator before REVIEWING. -->
-<!-- validate_handoff.py checks score against config.confidence_thresholds.implementer -->
 score:
 flags:
   - context_budget_hit:
@@ -126,20 +94,15 @@ flags:
   - test_coverage_dropped:
 
 
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     SUB-AGENT OWNED
-     Each section written exclusively by its named sub-agent.
-     ═══════════════════════════════════════════════════════════════════════ -->
+<!-- SUB-AGENT OWNED -->
 
 ## Linter Report
 **Status:** PENDING
 **Agent version:**
-**Config used:** _(project config | stangent default)_
+**Config used:**
 **Command run:**
 **Exit code:**
 **Findings:**
-<!-- PASS — no issues -->
-<!-- or list: file:line — rule — description -->
 
 
 ## Test Report
@@ -157,36 +120,27 @@ flags:
 |                      |           |        |
 
 **Failing tests:**
-<!-- none | or list -->
 
 
 ## Query Analysis Report
 **Status:** PENDING
 **Agent version:**
-**Skipped:** _(yes — no DB layer touched | no)_
+**Skipped:**
 **Danger findings (FAIL):**
-<!-- none | or list: file:line — pattern — description -->
 **Warning findings (WARN):**
-<!-- none | or list -->
 
 
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     REVIEWER OWNED
-     Written by: reviewer agent
-     Read by: orchestrator (for retry/pass decision), srs_agent
-     ═══════════════════════════════════════════════════════════════════════ -->
+<!-- REVIEWER OWNED -->
 
 ## Scope Verdict
 **Status:** PENDING
 **Agent version:**
-**In bounds:** _(yes | no)_
+**In bounds:**
 **Scope creep found:**
-<!-- none | or list: file:line — what was added — why it is out of bounds -->
 
 
 ## Review Checklist
-<!-- Populated from language profile. Reviewer checks each item. -->
-<!-- Format: [x] passed | [ ] failed: reason -->
+<!-- Populated from profile.review_checklist. [x] passed | [ ] failed: reason -->
 
 
 ## Security Report
@@ -197,9 +151,6 @@ flags:
 **Dependency audit:** PENDING
 **Hardcoded config scan:** PENDING
 **Findings:**
-<!-- CRITICAL: must fix before merge -->
-<!-- MAJOR: must fix before merge -->
-<!-- MINOR: log and continue -->
 
 
 ## Review Verdict
@@ -207,23 +158,12 @@ flags:
 **Agent version:**
 
 **CRITICAL issues:** none
-<!-- List with file:line references if any -->
-
 **MAJOR issues:** none
-<!-- List with file:line references if any -->
-
 **MINOR issues:** none
-<!-- Log only — does not block -->
-
 **Overall:** PENDING
-<!-- PASS | FAIL -->
-<!-- If FAIL: provide exact, actionable instructions for the implementer retry. -->
-<!-- Be specific: "Fix line 42 in auth_service.dart — raw SQL string must use parameters" -->
-<!-- NOT: "improve security" -->
+<!-- On FAIL: actionable per file:line, not "improve security". -->
 
 ## Reviewer Confidence
-<!-- Written by reviewer at end of Phase 7. Read by orchestrator before SRS_UPDATE. -->
-<!-- validate_handoff.py checks score against config.confidence_thresholds.reviewer -->
 score:
 flags:
   - ambiguous_findings:
@@ -232,24 +172,17 @@ flags:
   - files_changed_unreadable:
 
 
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     SRS AGENT OWNED
-     Written by: srs_agent
-     ═══════════════════════════════════════════════════════════════════════ -->
+<!-- SRS AGENT OWNED -->
 
 ## SRS Reference
 **Agent version:**
-**SRS section:** _(e.g. 3.2)_
-**API contracts documented:** _(yes | no | n/a)_
-**Env vars documented:** _(yes | no | n/a)_
+**SRS section:**
+**API contracts documented:**
+**Env vars documented:**
 **SRS commit:**
 
 
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     PIPELINE OWNED
-     Written exclusively by the orchestrator.
-     Never edited by any other agent.
-     ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PIPELINE OWNED (orchestrator only) -->
 
 ## Pipeline History
 | Timestamp | Event | Agent | Detail |

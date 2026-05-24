@@ -42,9 +42,11 @@
     "remind_pr_on_complete":         false,
     "pr_target_branch":              "dev",
     "archive_completed_after_days":  7,
-    "inline_direct_planning":        true
+    "inline_direct_planning":        true,
+    "memory_row_cap":                100
   },
   "_inline_direct_planning_doc": "When true and tier=='direct', the orchestrator runs the lightweight Direct Mode planning inline (without spawning the planner subagent). Saves ~30-40k tokens per Direct-tier feature by avoiding the subagent cold-start. Set to false to always spawn the planner.",
+  "_memory_row_cap_doc": "Rolling-window cap for ## Feature History and ## Failure Patterns in .stangent/memory.md. Older rows are dropped after each feature completes (Failure Patterns with count>1 are sticky). Prevents unbounded growth that would inflate every agent's read cost. Developer Preferences and Project Insights are not capped.",
 
   "confidence_thresholds": {
     "planner":     70,

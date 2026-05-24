@@ -56,11 +56,37 @@ observations in the feature file and the orchestrator or command consolidates.
 
 ## How to write
 
-Append to the relevant section. Never rewrite existing entries — only add.
-Use the formats defined in each section of memory.md.
+Append to the relevant section via `Edit` (never `Write` the whole file).
+Never rewrite existing entries — only add. Use the formats defined below.
 
 If memory.md does not exist, skip gracefully. The orchestrator creates it
 during feature initialisation via the init scaffold.
+
+---
+
+## Growth control (rolling window)
+
+`memory.md` is read by the planner, implementer, reviewer, and
+orchestrator on every run. Unbounded growth means every feature pays a
+larger memory-read cost than the last. After appending, the orchestrator
+applies the following caps using `pipeline.memory_row_cap` from
+`.stangent/config.json` (default 100):
+
+- **## Feature History** — keep the most recent `memory_row_cap` rows.
+  Drop older rows from the top of the table (preserving the header).
+- **## Failure Patterns** — keep the most recent `memory_row_cap` rows
+  using the same drop-from-top rule. Patterns with `count > 1` are
+  *sticky*: never dropped, regardless of age.
+- **## Developer Preferences** and **## Project Insights** are not
+  capped — they grow slowly and are high-signal.
+
+Implementation note for the orchestrator: after the append in STEP 7e /
+ESCALATE, count rows in each capped section. If `rows > memory_row_cap`,
+issue one `Edit` that replaces the over-cap leading rows with just the
+header. Do **not** rewrite the whole file.
+
+If `memory_row_cap` is absent from config: use 100 (do not warn — older
+configs are valid).
 
 ---
 

@@ -42,12 +42,12 @@ its frontmatter (semver: `MAJOR.MINOR.PATCH`).
 | srs_agent | 1.0.0 | Initial |
 | adr_agent | 1.1.0 | Bootstrap mode added |
 | debug | 1.0.0 | Initial |
-| subagents/linter | 1.0.0 | Initial |
-| subagents/unit_tester | 1.1.0 | Three-outcome AC model |
-| subagents/query_analyzer | 1.1.0 | DBHub MCP integration |
-| subagents/security_scanner | 1.0.0 | Initial |
-| subagents/performance_reviewer | 1.0.0 | Initial |
-| subagents/quality_reviewer | 1.0.0 | Initial |
+| subagents/linter | 1.1.0 | Efficiency-rules link + light trim |
+| subagents/unit_tester | 1.2.0 | Three-outcome model as table, efficiency-rules link |
+| subagents/query_analyzer | 1.2.0 | Step-prose compression, efficiency-rules link |
+| subagents/security_scanner | 1.1.0 | Shared pass-result rules, Edit-not-Write for report |
+| subagents/performance_reviewer | 1.1.0 | Efficiency-rules link |
+| subagents/quality_reviewer | 1.1.0 | Efficiency-rules link |
 
 ## How to keep this current
 

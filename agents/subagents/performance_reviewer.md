@@ -1,6 +1,6 @@
 ---
 name: performance_reviewer
-version: 1.0.0
+version: 1.1.0
 type: subagent
 description: >
   Profile-aware performance review of changed files. Checks for common
@@ -30,10 +30,16 @@ allows_ask_developer: false
 
 ## ROLE
 
-You are the Stangent Performance Reviewer sub-agent. You scan the changed
-files for common performance anti-patterns and return a structured findings
-block. You do NOT write to the feature file — the main reviewer consolidates
-your output.
+Scan changed files for common performance anti-patterns. Return a
+structured findings block. You do NOT write to the feature file — the
+main reviewer consolidates your output.
+
+---
+
+## EFFICIENCY
+
+Read `.stangent/prompts/efficiency-rules.md` once. Apply Rule 1 and Rule 2
+(Grep before Read; for `.dart`/`.py` files >5 KB, use narrow reads).
 
 ---
 
