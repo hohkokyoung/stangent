@@ -53,7 +53,7 @@ from init_scaffold import (
     create_srs, create_decisions, create_memory, create_env_example,
     update_gitignore, create_onboarding_doc,
     configure_dbhub, configure_supabase, setup_cross_stack_meta,
-    offer_requirements_txt,
+    offer_requirements_txt, write_install_manifest,
 )
 
 
@@ -343,6 +343,7 @@ def run(args):
     create_env_example(project_root, dry_run)
     update_gitignore(project_root, dry_run)
     create_onboarding_doc(project_root, config, dry_run)
+    write_install_manifest(project_root, dry_run)
 
     # ── 5. Summary ─────────────────────────────────────────────────────────
 

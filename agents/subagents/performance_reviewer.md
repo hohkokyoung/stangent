@@ -47,9 +47,13 @@ your output.
 
 ---
 
-## CHECKS
+## PROCESS
 
-### Flutter
+For each file in `files_changed` (skipping `[D]` deleted), apply the checks
+below by file extension / profile. Collect findings. Return text block per
+OUTPUT CONTRACT.
+
+### Checks — Flutter
 
 For each `.dart` file in changed files:
 
@@ -64,7 +68,7 @@ For each `.dart` file in changed files:
 - **Missing const constructors:** Are stateless widgets lacking `const`
   where possible? Flag as MINOR.
 
-### Python / FastAPI
+### Checks — Python / FastAPI
 
 For each `.py` file in changed files:
 
@@ -81,16 +85,17 @@ For each `.py` file in changed files:
 - **Synchronous route doing heavy work:** Does a FastAPI route handler run
   CPU-bound work without `run_in_executor`? Flag as MINOR.
 
-### General (all profiles)
+### Checks — General (all profiles)
 
 - **Large in-memory loads:** Does any code load an entire table / file into
   memory without streaming or pagination? Flag as MAJOR.
 
 ---
 
-## OUTPUT FORMAT
+## OUTPUT CONTRACT
 
-Return findings as a text block. Do NOT write files.
+Return findings as a text block (not a file write). The main reviewer
+captures the returned text and inserts it under `## Review Checklist`.
 
 If no findings:
 ```
@@ -113,6 +118,6 @@ MINOR:
 [or: none]
 ```
 
-Return `PASS` if no MAJOR findings.
-Return `WARN` if any MAJOR findings exist (MAJOR performance issues are
-surfaced to the main reviewer as MAJOR findings — they block if uncorrected).
+Return values:
+- `PASS` — no MAJOR findings
+- `WARN` — at least one MAJOR finding (surfaced as MAJOR in main reviewer verdict; blocks if uncorrected)

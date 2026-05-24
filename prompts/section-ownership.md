@@ -13,22 +13,27 @@ another agent's section even if its content looks wrong.
 | `## Files to Touch` | planner |
 | `## Architectural Decisions Applied` | planner |
 | `## New Environment Variables` | planner |
+| `## Risks & Mitigations` | planner |
+| `## Codebase Context` | planner |
+| `## Planner Confidence` | planner |
 | `## Pre-Implementation Scan` | implementer |
 | `## Implementation Log` | implementer |
 | `## Files Changed` | implementer |
 | `## Future Considerations` | implementer |
+| `## Implementer Confidence` | implementer |
 | `## Linter Report` | linter |
 | `## Test Report` | unit_tester |
 | `## Query Analysis Report` | query_analyzer |
 | `## Security Report` | security_scanner |
+| `## Performance Review` | performance_reviewer (returned text, written by reviewer into ## Review Checklist) |
+| `## Quality Review` | quality_reviewer (returned text, written by reviewer into ## Review Checklist) |
 | `## Scope Verdict` | reviewer |
 | `## Review Checklist` | reviewer |
 | `## Review Verdict` | reviewer |
 | `## Reviewer Confidence` | reviewer |
 | `## SRS Reference` | srs_agent |
-| `## Planner Confidence` | planner |
-| `## Implementer Confidence` | implementer |
 | `## Pipeline History` | orchestrator |
+| `## Context Checkpoint` | any agent (only on context budget exhaustion) |
 
 **Frontmatter field ownership:**
 

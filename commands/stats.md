@@ -11,12 +11,15 @@ which files were read, how many chars each, grouped by agent/state.
 
 ## Step 1 — Resolve feature ID
 
-If `$ARGUMENTS` is empty:
-  Read `.stangent/gateway/active.json`.
-  If it does not exist: output "No active feature. Pass a feature ID." and stop.
-  Use `feature_id` from active.json.
-Else:
+If `$ARGUMENTS` is non-empty:
   Use `$ARGUMENTS` as feature_id (normalise: uppercase, add FEAT- prefix if missing).
+Else:
+  Try in this order:
+    1. Read `.stangent/gateway/active.json` — use its `feature_id` if present.
+    2. Read `config.paths.registry_path` — pick the most recently `updated`
+       feature whose status is not COMPLETE/ABANDONED. If none, pick the
+       most recently `updated` feature regardless of status.
+    3. If still nothing: output "No active or recent feature. Pass a feature ID." and stop.
 
 ## Step 2 — Load config
 

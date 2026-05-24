@@ -42,12 +42,19 @@ Everything is tracked in `.stangent/features/FEAT-XXX-slug.md`. Each agent owns 
 - Section ownership in the feature file is structural — each section has a named owner and the gateway enforces it. The planner cannot overwrite the review verdict. The implementer cannot alter the spec after confirmation.
 
 **Quality gates on every feature**
+- **Complexity tiers** — every request is auto-classified `direct` or `standard`. A visual fix, copy change, or single-file bug runs a lightweight planner (no full codebase scan, no risk analysis) and a lighter reviewer. Small fixes don't pay for big-feature overhead — token cost on tiny changes drops 60–70%.
 - **Spec-driven review** — reviewer checks only against what was specified. No unsolicited refactors, no gold-plating. CRITICAL and MAJOR findings come with exact `file:line` references and required fixes.
+- **Parallel specialist reviews** — security, performance, and quality reviewers spawn in parallel after spec compliance, then findings consolidate into one verdict.
 - **4-pass security scan** — secrets detection, SAST (bandit / dart_code_metrics), dependency CVE audit, and hardcoded config detection. Any CRITICAL finding blocks the commit.
 - **Surgical retries** — when a feature fails review, the implementer receives the exact findings and enters targeted fix mode. It touches only the flagged lines, not the whole feature.
 - **Sub-agent pipeline** — linter → unit tester → query analyzer must each pass before the implementer can commit. Each has a configurable retry ceiling before escalating to the developer.
-- **Impact & risk analysis** — before writing a spec, the planner reasons across six dimensions: breaking changes, state/data migration, backward compatibility, fallback/degradation, feature flag need, and rollback complexity. Risks that need a decision are surfaced to the developer outside the clarifying-question budget — they are never silently skipped.
+- **Impact & risk analysis** — before writing a standard-tier spec, the planner reasons across six dimensions: breaking changes, state/data migration, backward compatibility, fallback/degradation, feature flag need, and rollback complexity. Risks that need a decision are surfaced to the developer outside the clarifying-question budget — they are never silently skipped.
 - **Spec-first refinement** — if you test a completed feature and it's not right, `/refine FEAT-XXX <what's wrong>` triggers a lightweight planner revision pass. The planner reads the test feedback, identifies which spec sections caused the gap, revises only those sections, and reimplements from the updated spec. Avoids the drift that comes from ad-hoc conversational corrections on a stale plan.
+
+**Observability and ad-hoc debugging**
+- **Token & file tracking** — a PostToolUse hook logs every file read, write, edit, bash run, and search to `.stangent/logs/{feature_id}.jsonl` with char counts. Run `/stats` for a per-agent breakdown of where the tokens went.
+- **`/debug` for bugs** — conversational investigation (understand → narrow → root cause → fix → wrap up) for problems that don't need a full feature spec. Escalates to `/plan` if the fix turns out to be a real feature.
+- **Gateway audit log** — every blocked tool call recorded with reason; `/skill gateway-audit` summarises patterns.
 
 **Architectural decisions that stick**
 - `/adr` bootstraps existing patterns automatically on first run (detects your ORM, state manager, HTTP client, test framework from the codebase).

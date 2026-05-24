@@ -47,8 +47,8 @@ Group by status. Output:
 ━━━ STANGENT STATUS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ACTIVE
-  FEAT-XXX  Title                       IMPLEMENTING    retry N/M
-  FEAT-XXX  Title                       REFINING        replan N/M
+  FEAT-XXX  Title  [tier]                IMPLEMENTING    retry N/M  (last fail: REVIEW_CRITICAL)
+  FEAT-XXX  Title  [tier]                REFINING        replan N/M
   ...
 
 AWAITING YOUR INPUT
@@ -61,7 +61,7 @@ BLOCKED
   ...
 
 ESCALATED
-  FEAT-XXX  Title                       ESCALATED       retry M/M
+  FEAT-XXX  Title                       ESCALATED       retry M/M  (last fail: TEST)
   ...
 
 COMPLETE (last 7 days)
@@ -76,6 +76,10 @@ ABANDONED
   Active: N  |  Blocked: N  |  Escalated: N  |  Complete (7d): N
   SRS: version X.Y.Z — last updated [date]
 ```
+
+For each ACTIVE / ESCALATED row, also read the last `## Pipeline History` entry
+that contains `failure_type:` (if any) and display it as `(last fail: TYPE)`.
+For each row, prepend the `tier` from frontmatter (default `[standard]`).
 
 If no features exist:
   Output: "No features yet. Start one with: /feature <description>"

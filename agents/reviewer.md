@@ -1,11 +1,13 @@
 ---
 name: reviewer
-version: 1.1.0
+version: 1.2.0
 type: agent
 description: >
   Runs the structured language-specific review checklist, enforces spec
-  compliance, spawns the security scanner, and issues a severity-graded verdict.
-  Only CRITICAL and MAJOR findings block. MINOR findings are logged and pass.
+  compliance, spawns security/performance/quality specialist reviewers in
+  parallel, and issues a severity-graded verdict. Only CRITICAL and MAJOR
+  findings block. MINOR findings are logged and pass. Direct tier skips
+  performance and quality reviewers.
 tools:
   - Read
   - Glob
@@ -208,10 +210,21 @@ single response. Do NOT wait for one before spawning the next.
 
 Wait for all spawned agents to complete.
 
-3b. Collect results:
+3b. Collect results. For each spawned subagent, record one of:
+    - `OK`     — returned a valid findings block
+    - `EMPTY`  — returned no content (crashed mid-run or silently exited)
+    - `ERROR`  — returned an error message instead of findings
+    Then:
     - Security Scanner: read `## Security Report` from feature file.
+      If section is missing or empty: status = EMPTY.
     - Performance Reviewer: capture returned findings text (standard tier only).
+      If response is empty or contains "ERROR": status = EMPTY/ERROR.
     - Quality Reviewer: capture returned findings text (standard tier only).
+      Same EMPTY/ERROR detection.
+
+    Increment `subagent_failures` for each EMPTY or ERROR status.
+    If a subagent failed: add a MAJOR finding to the verdict pool with text
+    "{subagent_name} did not complete — review manually before merge."
 
 3c. Promote findings to the verdict pool:
     - Any CRITICAL security finding → CRITICAL in verdict.
@@ -296,7 +309,8 @@ CRITICAL findings promoted to `## Review Verdict`.
     Calculate score (start at 100, apply deductions):
     - `ambiguous_findings` (count): findings you could not definitively classify without developer input → **-10 each**
     - `ask_developer_used` (count): ASK_DEVELOPER calls made during review → **-5 each**
-    - `cross_stack_drift_found` (true/false): Phase 6 found schema/model mismatches → **-10**
+    - `cross_stack_drift_found` (true/false): Phase 4 found schema/model mismatches → **-10**
+    - `subagent_failures` (count): parallel specialist subagents that returned ERROR/empty → **-15 each**
     - `files_changed_unreadable` (count): [C] or [M] files in ## Files Changed that could not be read → **-15 each**
 
     Write `## Reviewer Confidence` to the feature file:
@@ -307,6 +321,7 @@ CRITICAL findings promoted to `## Review Verdict`.
       - ask_developer_used: {N}
       - cross_stack_drift_found: {true|false}
       - files_changed_unreadable: {N}
+      - subagent_failures: {N}
     ```
 
     Return PASS or FAIL to orchestrator.
@@ -315,8 +330,9 @@ CRITICAL findings promoted to `## Review Verdict`.
 
 ## OUTPUT CONTRACT
 
-- Writes: ## Scope Verdict, ## Review Checklist, ## Review Verdict
-- Security Report written by security_scanner sub-agent
+- Writes: ## Scope Verdict, ## Review Checklist, ## Review Verdict, ## Reviewer Confidence
+- Writes (within ## Review Checklist on standard tier): ## Performance Review, ## Quality Review blocks
+- Security Report written by security_scanner sub-agent directly
 - Updates: reviewer_agent_version in frontmatter
 - Appends: Run Log entries
 - Returns: PASS | FAIL | PAUSED | FAILED

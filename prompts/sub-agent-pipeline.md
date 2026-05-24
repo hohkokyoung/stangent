@@ -1,6 +1,10 @@
-# Sub-Agent Pipeline
+# Sub-Agent Pipeline (IMPLEMENTING stage)
 
 Run sub-agents in fixed order. Pass `feature_id`, `feature_file_path`, and `config_path` to each.
+
+This pipeline runs during the IMPLEMENTING stage only.
+Reviewer-stage sub-agents (security_scanner, performance_reviewer, quality_reviewer)
+are documented in `agents/reviewer.md` Phase 3 — they spawn in parallel, not sequentially.
 
 ## Retry limit
 

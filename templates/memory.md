@@ -35,5 +35,5 @@ Codebase-level patterns that are not covered by ADRs but are consistently true.
 
 One entry per resolved feature.
 
-| Feature | Title | Retries | Key Files Touched | Outcome |
-|---------|-------|---------|-------------------|---------|
+| Feature | Title | Retries | Replans | Key Files Touched | Outcome |
+|---------|-------|---------|---------|-------------------|---------|

@@ -1,8 +1,9 @@
-Clean up stale stangent artefacts: dead feature branches, orphaned contracts, and stale active.json.
+Clean up stale stangent artefacts: dead feature branches, orphaned contracts, stale active.json, and oversized log files.
 
 Usage:
-  /cleanup          — interactive: list stale items and ask before removing each
+  /cleanup            — interactive: list stale items and ask before removing each
   /cleanup --dry-run  — list stale items without removing anything
+  /cleanup --logs     — only rotate log files; skip branches/contracts/active.json
 
 ---
 
@@ -121,6 +122,20 @@ If confirmed:
 
 ---
 
+## Step 8.5 — Rotate large logs
+
+For each file in `{log_dir}/*.jsonl` AND `{log_dir}/gateway_audit.jsonl`:
+  Check file size.
+  If size > 10MB:
+    Rotate:
+      mv {file} {file}.{ISO_DATE}.gz   (gzip if available, else just rename)
+    Keep up to 3 rotated copies per file (delete older ones, oldest first).
+    Output: "Rotated {file} ({size_mb} MB)"
+
+If --logs flag was passed: skip directly here from Step 1. After rotation, stop.
+
+---
+
 ## Step 9 — Summary
 
 ```
@@ -128,4 +143,5 @@ Cleanup complete.
   Branches removed:  {N}
   Contracts removed: {N}
   Gateway cleared:   {yes | no}
+  Logs rotated:      {N}
 ```

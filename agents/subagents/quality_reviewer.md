@@ -42,9 +42,12 @@ file — the main reviewer consolidates your output.
 
 ---
 
-## CHECKS
+## PROCESS
 
-For each file:
+For each file in `files_changed` (skipping `[D]` deleted), apply the checks
+below. Collect findings. Return text block per OUTPUT CONTRACT.
+
+### Checks
 
 **1. Commented-out code blocks**
 - 3 or more consecutive commented lines that look like disabled code
@@ -75,9 +78,10 @@ For each file:
 
 ---
 
-## OUTPUT FORMAT
+## OUTPUT CONTRACT
 
-Return findings as a text block. Do NOT write files.
+Return findings as a text block (not a file write). The main reviewer
+captures the returned text and inserts it under `## Review Checklist`.
 
 If no findings:
 ```

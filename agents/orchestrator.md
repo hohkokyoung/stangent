@@ -26,6 +26,11 @@ inputs:
     description: >
       Pipeline stage to resume from. Valid values: PLANNING, CONFIRMED,
       IMPLEMENTING, REVIEWING, SRS_UPDATE. Empty = auto-detect from feature file.
+  - name: auto_confirm
+    type: boolean
+    description: >
+      Optional. When true, STEP 4 (Developer Confirmation) auto-proceeds with
+      "yes" instead of prompting. Use for automated/CI runs. Default false.
   - name: config_path
     type: path
     description: Absolute path to .stangent/config.json
@@ -305,9 +310,10 @@ Before doing anything:
     - Files to Touch (bulleted)
     - Depends On
 
-4b. Ask: "Confirm this spec and start implementation? (yes / edit / abort)"
+4b. If `auto_confirm == true`: treat as "yes" and skip to 4c.
+    Otherwise: ask "Confirm this spec and start implementation? (yes / edit / abort)"
 
-4c. If "yes" or "confirm" or "proceed":
+4c. If "yes" or "confirm" or "proceed" (or auto_confirm):
     Set status = CONFIRMED.
     Update active.json: `{ ..., "state": "CONFIRMED", "agent": "orchestrator" }`
     Proceed to STEP 5.

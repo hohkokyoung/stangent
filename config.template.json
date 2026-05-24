@@ -53,14 +53,21 @@
   "models": {
     "orchestrator":     "claude-sonnet-4-6",
     "planner":          "claude-sonnet-4-6",
+    "planner_direct":   "claude-haiku-4-5-20251001",
     "implementer":      "claude-sonnet-4-6",
+    "implementer_direct": "claude-haiku-4-5-20251001",
     "reviewer":         "claude-sonnet-4-6",
+    "reviewer_direct":  "claude-haiku-4-5-20251001",
     "srs_agent":        "claude-sonnet-4-6",
+    "debug":            "claude-sonnet-4-6",
     "linter":           "claude-haiku-4-5-20251001",
     "unit_tester":      "claude-haiku-4-5-20251001",
     "query_analyzer":   "claude-haiku-4-5-20251001",
-    "security_scanner": "claude-sonnet-4-6"
+    "security_scanner": "claude-sonnet-4-6",
+    "performance_reviewer": "claude-haiku-4-5-20251001",
+    "quality_reviewer":     "claude-haiku-4-5-20251001"
   },
+  "_models_doc": "Per-agent model assignment. '*_direct' variants apply only when feature tier=direct; if absent, falls back to the unprefixed entry. Use cheaper models for Direct tier to amplify the token savings.",
 
   "feature_id": {
     "prefix":  "FEAT",

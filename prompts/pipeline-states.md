@@ -30,3 +30,10 @@ Every feature has a `status` field in its frontmatter. Valid states and transiti
 The `status` field is in YAML frontmatter (between the first two `---` lines).
 Parse it by finding the line starting with `status:` in that block.
 Do not rely on Markdown headings to find status.
+
+**Adjacent attribute — `tier`:**
+Set by the orchestrator at STEP 1g via `prompts/classifier.md`. Values: `direct | standard`.
+- `direct`: lightweight planning (Pass 3 only, no ADR full analysis, no risk analysis)
+  and lightweight review (skip performance + quality specialists).
+- `standard`: full pipeline.
+The planner and reviewer both branch on `tier`. Defaults to `standard` if absent.

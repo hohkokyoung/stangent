@@ -27,19 +27,27 @@ Extract (if config exists):
 
 ## Step 2 — Inventory
 
-Scan for everything Stangent installed:
+Stangent writes `.stangent/.installed.json` at init time listing every file
+it installed. Read it first — it is the source of truth.
 
-**Tooling (always removable):**
-  - `.claude/agents/stangent*.md`     (list all matching files)
-  - `.claude/agents/subagents/stangent*.md`
-  - `.claude/commands/abandon.md`, `adr.md`, `cleanup.md`, `doctor.md`,
-    `feature.md`, `gateway.md`, `implement.md`, `plan.md`, `resume.md`,
-    `review.md`, `srs.md`, `status.md`, `uninit.md`
-    (only count those that exist)
-  - `.claude/skills/pipeline-debug.md`, `gateway-audit.md`
-    (only count those that exist)
-  - `.stangent/gateway/gateway.py`
-  - PreToolUse hook entry in `.claude/settings.json`
+If `.stangent/.installed.json` exists:
+  Read it. Use the `files.commands`, `files.agents`, `files.subagents`,
+  `files.skills`, `files.stangent_internal` lists as the inventory.
+
+If `.stangent/.installed.json` does NOT exist (old install or corruption):
+  Fall back to globs:
+    - `.claude/agents/stangent*.md`
+    - `.claude/agents/subagents/stangent*.md`
+    - `.claude/commands/*.md` — for each, check if a same-named file
+      exists in the stangent source `commands/` dir. If yes: it's ours.
+    - `.claude/skills/*.md` — same check against stangent source `skills/`.
+    - `.stangent/gateway/gateway.py`
+    - `.stangent/observer/observer.py`
+    - `.stangent/scripts/build_index.py`
+    - `.stangent/scripts/validate_handoff.py`
+
+Always include:
+  - PreToolUse and PostToolUse hook entries in `.claude/settings.json`
 
 **Project data (only removed in --hard mode):**
   - `.stangent/` directory (entire tree)
@@ -133,9 +141,12 @@ If the `.claude/agents/subagents/` directory is now empty: remove it.
 
 ## Step 6 — Remove skill files
 
-For each of `pipeline-debug.md`, `gateway-audit.md` that exists in `.claude/skills/`:
+Use the `files.skills` list from `.stangent/.installed.json` (or fallback
+glob from Step 2).
+
+For each path:
   Delete it.
-  Output: "  Deleted .claude/skills/{filename}"
+  Output: "  Deleted {path}"
 
 If the `.claude/skills/` directory is now empty: remove it.
 
@@ -143,13 +154,12 @@ If the `.claude/skills/` directory is now empty: remove it.
 
 ## Step 7 — Remove command files
 
-The following command filenames are installed by Stangent:
-  abandon.md, adr.md, cleanup.md, doctor.md, feature.md, gateway.md,
-  implement.md, plan.md, resume.md, review.md, srs.md, status.md, uninit.md
+Use the `files.commands` list from `.stangent/.installed.json` (or fallback
+glob from Step 2 if manifest absent).
 
-For each that exists in `.claude/commands/`:
+For each path in the inventory:
   Delete it.
-  Output: "  Deleted .claude/commands/{filename}"
+  Output: "  Deleted {path}"
 
 ---
 
@@ -169,15 +179,17 @@ If other settings remain in settings.json: output "  (other settings preserved)"
 
 ---
 
-## Step 8 — Remove gateway.py (both modes)
+## Step 8b — Remove stangent_internal files (both modes)
 
-If `.stangent/gateway/gateway.py` exists: delete it.
-Output: "  Deleted .stangent/gateway/gateway.py"
+Use the `files.stangent_internal` list from `.stangent/.installed.json`.
+For each path: delete it. Output: "  Deleted {path}"
 
-If `.stangent/gateway/active.json` exists: delete it.
-If `.stangent/gateway/active.json.paused` exists: delete it.
+Always also remove these (whether or not in manifest):
+  - `.stangent/gateway/active.json`
+  - `.stangent/gateway/active.json.paused`
+  - `.stangent/.installed.json` (the manifest itself)
 
-If `.stangent/gateway/` directory is now empty: remove it.
+For each removed file's parent directory: if now empty, remove the directory.
 
 ---
 

@@ -146,7 +146,9 @@ def validate_post_planning(
     errors: list[str] = []
     warnings: list[str] = []
 
-    # Required spec sections must be populated
+    tier = (fm.get("tier") or "standard").strip().lower()
+
+    # Required spec sections (both tiers)
     for section in ["Scope", "Out of Bounds", "Files to Touch"]:
         if not section_has_content(content, section):
             errors.append(f"## {section} is empty — planner must populate this section")
@@ -157,14 +159,23 @@ def validate_post_planning(
     if not ac_items:
         errors.append("## Acceptance Criteria has no items — add at least one testable criterion")
 
-    # Contract file must exist and be valid
+    # Standard-tier-only sections — Direct tier intentionally omits these
+    if tier == "standard":
+        # ## Codebase Context should be populated for standard features
+        if not section_has_content(content, "Codebase Context"):
+            warnings.append(
+                "## Codebase Context is empty for a standard-tier feature — "
+                "implementer will fall back to Pass 1/2 scan (more tokens)"
+            )
+
+    # Contract file must exist and be valid (both tiers)
     feature_id = fm.get("id", "")
     if feature_id:
         contract_path = feature_file_path.parent.parent / "contracts" / f"{feature_id}.json"
         if not contract_path.exists():
             errors.append(
                 f"Contract file missing: {contract_path} "
-                f"— planner must write this in Phase 4.5"
+                f"— planner must write this in Phase 4.5 (D5 in Direct Mode)"
             )
         else:
             try:
@@ -181,14 +192,15 @@ def validate_post_planning(
     else:
         errors.append("Feature frontmatter missing 'id' field")
 
-    # Confidence check
-    threshold = config.get("confidence_thresholds", {}).get("planner", 70)
-    score = get_confidence_score(content, "Planner Confidence")
-    if score is not None and score < threshold:
-        warnings.append(
-            f"Planner confidence score {score} is below threshold {threshold} — "
-            f"review flags in ## Planner Confidence before proceeding"
-        )
+    # Confidence check (skipped for direct tier — no Planner Confidence section written)
+    if tier == "standard":
+        threshold = config.get("confidence_thresholds", {}).get("planner", 70)
+        score = get_confidence_score(content, "Planner Confidence")
+        if score is not None and score < threshold:
+            warnings.append(
+                f"Planner confidence score {score} is below threshold {threshold} — "
+                f"review flags in ## Planner Confidence before proceeding"
+            )
 
     return errors, warnings
 

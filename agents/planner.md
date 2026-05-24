@@ -1,6 +1,6 @@
 ---
 name: planner
-version: 1.1.0
+version: 1.2.0
 type: agent
 description: >
   Analyses the codebase, reads all ADRs, asks ≤5 high-quality clarifying
