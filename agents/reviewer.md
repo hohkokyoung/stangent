@@ -235,10 +235,10 @@ findings promote to `## Review Verdict`.
 
 6a. Collect all findings by severity.
 
-6b. Write `## Scope Verdict`: `in bounds: yes | no`; list scope creep
+6b. `Edit` `## Scope Verdict`: `in bounds: yes | no`; list scope creep
 found.
 
-6c. Write `## Review Verdict`. One template with two branches:
+6c. `Edit` `## Review Verdict`. One template with two branches:
 
 If CRITICAL or MAJOR findings exist (FAIL):
 ```
@@ -279,7 +279,7 @@ Else (PASS):
 - `files_changed_unreadable` (count, `[C]` or `[M]` files unreadable) →
   −15 each
 
-Write `## Reviewer Confidence`:
+`Edit` `## Reviewer Confidence`:
 ```
 score: {calculated_score}
 flags:

@@ -88,11 +88,11 @@ Read `.stangent/prompts/efficiency-rules.md` once. `Edit` the
    - Categorise: ERROR | WARNING | INFO per linter output
    - Map to file:line references
 
-4. Write `## Linter Report` in the feature file:
+4. `Edit` `## Linter Report` in the feature file (anchor on next header):
    ```
    ## Linter Report
    **Status:** PASS | FAIL
-   **Agent version:** 1.0.0
+   **Agent version:** {version}
    **Config used:** [filename | stangent default — generated]
    **Command run:** [exact command]
    **Exit code:** [N]

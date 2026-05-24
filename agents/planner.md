@@ -114,9 +114,9 @@ Decide the mode in this order, before loading any other context:
 
 ---
 
-## CONTEXT INPUTS (Normal Mode only)
+## CONTEXT INPUTS
 
-Read in this order, **once each** (Rule 1):
+Normal Mode only. Read in this order, **once each** (Rule 1):
 
 1. `.stangent/config.json` → paths, profiles, `budget =
    pipeline.agent_context_budget_chars` (default 300000). Derive

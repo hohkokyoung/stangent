@@ -91,7 +91,10 @@ TIER CLASSIFICATION → PLANNING → AWAITING_CONFIRMATION → IMPLEMENTING → 
 Tier classification (STEP 1g of the orchestrator) sets `tier = direct | standard`
 in the feature frontmatter. Direct tier runs a lighter planner (no full codebase
 scan, no risk analysis) and a lighter reviewer (skips performance + quality
-specialists). Standard tier runs the full pipeline.
+specialists). When `pipeline.inline_direct_planning = true` (default), the
+orchestrator runs Direct-tier planning inline instead of spawning the planner
+subagent (STEP 3a.1) — saves ~30-40k tokens of cold-start. Standard tier always
+runs the full pipeline with all subagent spawns.
 
 Do not skip stages. Do not proceed past AWAITING_CONFIRMATION without explicit
 developer confirmation.
