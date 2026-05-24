@@ -203,6 +203,17 @@ Before doing anything:
     Write `tier` to the feature file frontmatter.
     Append to Pipeline History: `tier: {tier} — {one-line classification reason}`
 
+1g.5. Tier-aware model resolution:
+    When spawning agents in subsequent steps, resolve the model as:
+      - If `tier == "direct"`:
+          model = config.models["{agent}_direct"] or config.models["{agent}"]
+      - Else:
+          model = config.models["{agent}"]
+    This lets Direct tier use cheaper models (e.g. Haiku planner) while
+    Standard tier uses the strong default. Falls back gracefully if no
+    _direct variant exists. Note: Claude Code SDK respects model overrides
+    via the Agent tool's `model` parameter when supported.
+
 1h. Proceed to STEP 2.
 
 ---

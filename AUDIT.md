@@ -396,3 +396,74 @@ Defer indefinitely: G7 (CI), G10 (partial AC), G18 (notifications), C2 (multi-de
 | D1 | README.md | Stale capability list | 15 min |
 | D4 | commands/feature.md | Diagram doesn't show tier | 5 min |
 | D8 | agents/*.md | Version policy missing | 30 min (write policy) |
+
+---
+
+## Resolution log (2026-05-24 follow-up session)
+
+Below is what was fixed in the session after the audit, in commit `9d2ccef` and follow-ups.
+
+### Resolved bugs
+- ✅ **B1** — section-ownership.md now lists all 7 missing sections including new Performance/Quality Review and Context Checkpoint
+- ✅ **B2** — memory.md template includes the Replans column
+- ✅ **B3** — reviewer confidence references corrected (Phase 4 for cross-stack)
+- ✅ **B4** — reviewer OUTPUT CONTRACT lists Performance/Quality Review blocks
+- ✅ **B5** — reviewer frontmatter description rewritten for parallel specialists
+- ✅ **B6** — uninit + init_scaffold.py replaced hardcoded command list with `.stangent/.installed.json` manifest
+- ✅ **B8** — validate_handoff.py reads `tier` from frontmatter, skips Codebase Context + Planner Confidence checks for Direct tier
+- ✅ **B9** — skill removal also uses the manifest
+- ✅ **B10** — /stats falls back to registry's most-recently-updated feature when no active.json
+- ✅ **B7** — already fixed in `ee0b209`
+
+### Resolved drift
+- ✅ **D1** — README adds Complexity tiers, Parallel specialist reviews, Observability sections
+- ✅ **D4** — /feature pipeline diagram now shows TIER CLASSIFICATION step
+- ✅ **D5** — pipeline-states.md documents `tier` attribute
+- ✅ **D6** — sub-agent-pipeline.md cross-references the reviewer's parallel subagents
+- ✅ **D8** — agents/VERSIONING.md written; planner bumped to 1.2.0, reviewer to 1.2.0
+
+### Resolved concepts / gaps
+- ✅ **C4** — parallel reviewer subagent failures now tracked (EMPTY/ERROR statuses, subagent_failures flag in Reviewer Confidence, MAJOR finding emitted on failure)
+- ✅ **G1** — `/test [FEAT-XXX|--all]` command added
+- ✅ **G3** — /stats now prints per-agent token estimate and $ cost (Anthropic pricing) with disclaimer
+- ✅ **G4** — config.template.json has `*_direct` model overrides; orchestrator STEP 1g.5 resolves them
+- ✅ **G14** — /status shows tier and last failure_type per active feature
+- ✅ **G15** — scripts/prompt_lint.py validates required sections + frontmatter; passes against all 13 agents
+- ✅ **G16** — `--yes` flag on /feature (auto-confirm) propagates to orchestrator STEP 4
+- ✅ **G18** — `/inbox` command for actionable features only
+- ✅ **G5** — `/preview <FEAT-ID> --diff` shows spec rendering with optional git-based diff against prior spec_version
+- ✅ **G9** — `/feature --shadow <description>` runs planner only, prints spec, writes nothing
+- ✅ **C8** — `/cleanup --logs` rotates files >10MB, keeps 3 rotated copies
+
+### Skipped (deliberate)
+These were considered and deferred because the effort/value ratio is wrong for the current stangent maturity:
+
+- **B12** (eval coverage expansion) — needs G6 fixture codebase first
+- **G6** (fixture codebase) — full day of work; not blocking anything urgent
+- **G7** (CI integration) — deserves its own design discussion
+- **G2** (`/refactor`) — can already be done via `/plan` + `/implement`; thin wrapper is low-value
+- **G8** (changelog per agent) — VERSIONING.md serves this for now
+- **G10** (partial AC) — significant model change
+- **G11** (post-merge drift detection) — needs decision on storage of "merged at" state
+- **G12** (ADR staleness) — needs decision on how `last_referenced` is tracked
+- **G13** (cross-project memory) — architectural decision, may be future scope
+- **G17** (section ownership enforcement by gateway) — significant gateway rewrite; current honor system works
+- **G19** (failure pattern → model selection) — architectural, premature
+- **G20** (clone feature) — wait for demand
+- **C1** (3 tiers) — wait for demand
+- **C2** (multi-dev) — out of scope
+- **C5** (Direct tier ADR safety) — needs design thought
+- **C6** (confidence scores → actions) — needs design thought
+- **C7** (context_cache gitignore) — already gitignored
+- **C9** (Direct auto-confirm) — `--yes` flag covers the automation case
+- **C10** (spec viewer) — addressed via `/preview`
+- **C11** (third uninit mode) — wait for demand
+- **C12** (fork feature) — wait for demand
+
+### Session count
+- **23 files changed** across consistency fixes
+- **5 new files** added (VERSIONING.md, prompt_lint.py, test.md, inbox.md, preview.md)
+- All audited bugs that didn't require major architectural decisions are now fixed
+- All audited drift items are now fixed
+- All audited capability gaps that are < 1 day of work and don't require new architectural decisions are now fixed
+
