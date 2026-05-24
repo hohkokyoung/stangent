@@ -61,6 +61,7 @@ For each profile in config.profiles:
 Check that each of the following exists:
 
   - `.stangent/prompts/ask-developer.md`
+  - `.stangent/prompts/classifier.md`
   - `.stangent/prompts/context-budget.md`
   - `.stangent/prompts/load-profiles.md`
   - `.stangent/prompts/memory.md`
@@ -84,10 +85,13 @@ Check that each of the following exists:
   - `.claude/agents/stangent-reviewer.md`
   - `.claude/agents/stangent-srs.md`
   - `.claude/agents/stangent-adr.md`
+  - `.claude/agents/stangent-debug.md`
   - `.claude/agents/subagents/stangent-linter.md`
   - `.claude/agents/subagents/stangent-unit-tester.md`
   - `.claude/agents/subagents/stangent-query-analyzer.md`
   - `.claude/agents/subagents/stangent-security-scanner.md`
+  - `.claude/agents/subagents/stangent-performance-reviewer.md`
+  - `.claude/agents/subagents/stangent-quality-reviewer.md`
 
 For each:
   - Exists → [PASS] {path}
@@ -95,23 +99,34 @@ For each:
 
 ---
 
-## Step 6 — Gateway script
+## Step 6 — Gateway and observer scripts
 
 Check `.stangent/gateway/gateway.py` exists.
   - Exists → [PASS] .stangent/gateway/gateway.py
   - Missing → [FAIL] gateway.py — not found. Fix: re-run init.py
 
+Check `.stangent/observer/observer.py` exists.
+  - Exists → [PASS] .stangent/observer/observer.py
+  - Missing → [WARN] observer.py — not found. Fix: re-run init.py
+    (observer is required for /stats token breakdown)
+
 ---
 
-## Step 7 — PreToolUse hook
+## Step 7 — Hook registration
 
 Read `.claude/settings.json`.
   - If not found: [FAIL] .claude/settings.json — missing. Fix: re-run init.py. Skip to Step 8.
   - Parse JSON.
+
   - Check hooks.PreToolUse contains an entry whose hooks[].command includes "gateway.py".
-  - Found → [PASS] .claude/settings.json — PreToolUse gateway hook present
-  - Not found → [FAIL] .claude/settings.json — gateway hook missing.
-    Fix: re-run init.py (it will add the hook without touching your other settings)
+    Found → [PASS] .claude/settings.json — PreToolUse gateway hook present
+    Not found → [FAIL] .claude/settings.json — gateway hook missing.
+    Fix: re-run init.py
+
+  - Check hooks.PostToolUse contains an entry whose hooks[].command includes "observer.py".
+    Found → [PASS] .claude/settings.json — PostToolUse observer hook present
+    Not found → [WARN] .claude/settings.json — observer hook missing.
+    Fix: re-run init.py (required for /stats)
 
 ---
 

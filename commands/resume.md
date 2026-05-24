@@ -32,7 +32,7 @@ Also check {archive_dir}/$ARGUMENTS*.md.
 
 If not found: output "Feature $ARGUMENTS not found in features/ or archive/." and stop.
 
-Read frontmatter: title, status, branch, retry_count.
+Read frontmatter: title, status, branch, retry_count, tier (default "standard" if absent).
 Read ## Pipeline History — find the most recent entry to understand
 where the feature was when it paused.
 
@@ -66,7 +66,7 @@ Route as follows:
       "feature_id":        "$ARGUMENTS",
       "feature_file_path": "(resolved path)",
       "config_path":       "(absolute path to .stangent/config.json)",
-      "extra": { "raw_request": "(title from feature file frontmatter)" }
+      "extra": { "raw_request": "(title from feature file frontmatter)", "tier": "(tier from frontmatter)" }
     }
     INSTRUCTIONS:
     Read the full contents of: .claude/agents/stangent-planner.md
