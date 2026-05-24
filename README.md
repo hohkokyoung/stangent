@@ -12,10 +12,11 @@ No servers. No accounts. Just markdown files and Claude Code.
 /feature add login screen
     │
     ▼  ADR BOOTSTRAP (first feature only — detects existing patterns)
-    ▼  PLANNING      — reads codebase, checks ADRs, surfaces risks, writes spec
-    ▼  (you confirm)
+    ▼  TIER CLASSIFY — direct (small fix) or standard (full feature)
+    ▼  PLANNING      — direct: targeted reads only / standard: full scan + risk analysis
+    ▼  (you confirm — or --yes to skip)
     ▼  IMPLEMENTING  — writes code → linter → tests → query analysis
-    ▼  REVIEWING     — spec compliance + 4-pass security scan
+    ▼  REVIEWING     — spec compliance + parallel security/performance/quality scans
     ▼  SRS UPDATE    — extracts requirements into SRS.md
     ▼
   COMPLETE
@@ -28,6 +29,13 @@ No servers. No accounts. Just markdown files and Claude Code.
               ▼  REVIEWING
               ▼
             COMPLETE
+
+Side paths (no pipeline):
+  /debug <symptom>   — conversational investigation, 5 phases, evidence-only
+  /test [FEAT-XXX]   — re-run tests without re-implementing
+  /preview FEAT-XXX  — clean spec view, optional --diff against prior version
+  /stats [FEAT-XXX]  — token + $ breakdown per agent
+  /inbox             — features waiting on you
 ```
 
 Everything is tracked in `.stangent/features/FEAT-XXX-slug.md`. Each agent owns its own sections — they never overwrite each other.
@@ -127,9 +135,11 @@ python ~/stangent/init.py --uninit --hard  # delete everything
 
 ## Commands
 
+**Pipeline commands** — drive features through stages:
+
 | Command | What it does |
 |---------|-------------|
-| `/feature <desc>` | Full pipeline — plan → implement → review → SRS |
+| `/feature <desc>` | Full pipeline — classify → plan → implement → review → SRS. `--yes` to auto-confirm. `--shadow` for dry run. |
 | `/plan <desc>` | Write spec only, stop before implementation |
 | `/implement FEAT-XXX` | Implement a confirmed spec |
 | `/refine FEAT-XXX <feedback>` | Revise spec from test feedback and reimplement |
@@ -137,12 +147,33 @@ python ~/stangent/init.py --uninit --hard  # delete everything
 | `/review FEAT-XXX` | Re-run review independently |
 | `/srs [FEAT-XXX]` | Update SRS.md for completed features |
 | `/adr <title>` | Record an architectural decision |
-| `/status [FEAT-XXX]` | Feature dashboard |
 | `/abandon FEAT-XXX` | Cancel a feature — reverts code, archives spec, deletes branch |
-| `/doctor` | Validate config, agents, gateway wiring |
-| `/cleanup` | Remove stale branches and contracts |
+| `/pr FEAT-XXX` | Create GitHub PR for a COMPLETE feature |
+
+**Ad-hoc commands** — don't touch the pipeline:
+
+| Command | What it does |
+|---------|-------------|
+| `/debug <symptom>` | Conversational investigation (5 phases). No spec, no branch. |
+| `/test [FEAT-XXX\|--all]` | Re-run tests via unit_tester without re-implementing |
+| `/preview FEAT-XXX [--diff]` | Clean spec view, optional diff vs prior spec_version |
+
+**Visibility commands:**
+
+| Command | What it does |
+|---------|-------------|
+| `/status [FEAT-XXX]` | Feature dashboard with tier and last failure |
+| `/inbox` | Just features needing your action (AWAITING_CONFIRMATION / PAUSED / BLOCKED / ESCALATED) |
+| `/stats [FEAT-XXX]` | Token + $ cost breakdown per agent from observer log |
+| `/doctor` | Validate config, agents, gateway and observer wiring |
+
+**Maintenance commands:**
+
+| Command | What it does |
+|---------|-------------|
+| `/cleanup [--logs\|--dry-run]` | Remove stale branches/contracts; rotate large logs |
 | `/gateway <status\|unblock\|pause\|resume>` | Manage enforcement |
-| `/uninit [--hard]` | Remove Stangent from this project |
+| `/uninit [--hard]` | Remove Stangent from this project (uses install manifest) |
 
 Full docs for each command: `.stangent/HOW_THIS_WORKS.md` (generated in your project after init).
 
@@ -178,12 +209,15 @@ Add a new language: see [`templates/profile_guide.md`](templates/profile_guide.m
     "pr_target_branch": "dev"
   },
   "models": {
-    "orchestrator": "claude-sonnet-4-6",
-    "planner":      "claude-sonnet-4-6",
-    "implementer":  "claude-sonnet-4-6",
-    "reviewer":     "claude-sonnet-4-6",
-    "linter":       "claude-haiku-4-5-20251001",
-    "unit_tester":  "claude-haiku-4-5-20251001"
+    "orchestrator":         "claude-sonnet-4-6",
+    "planner":              "claude-sonnet-4-6",
+    "planner_direct":       "claude-haiku-4-5-20251001",
+    "implementer":          "claude-sonnet-4-6",
+    "implementer_direct":   "claude-haiku-4-5-20251001",
+    "reviewer":             "claude-sonnet-4-6",
+    "reviewer_direct":      "claude-haiku-4-5-20251001",
+    "linter":               "claude-haiku-4-5-20251001",
+    "unit_tester":          "claude-haiku-4-5-20251001"
   },
   "integrations": {
     "dbhub":     { "enabled": false, "mcp_server": "dbhub" },
@@ -191,6 +225,8 @@ Add a new language: see [`templates/profile_guide.md`](templates/profile_guide.m
   }
 }
 ```
+
+`*_direct` model variants apply only when the feature is classified Direct tier (small fixes, bug repairs, copy changes). Falls back to the unprefixed entry if absent. Use cheaper models for Direct to amplify the token savings on top of the lighter planning/review.
 
 Smart merge on re-run — your edits are preserved, new fields are added automatically.
 
@@ -244,10 +280,25 @@ cd your-project && python ~/stangent/init.py
 - [ ] Slack / Teams MCP — notify a channel when a feature needs confirmation, escalates, or completes
 
 **Pipeline improvements**
+- [x] Parallel reviewer specialists — security + performance + quality spawn in parallel after spec compliance check
+- [x] Complexity tiers — direct/standard auto-classification with per-tier lighter agents and per-tier model overrides
+- [x] Prompt linter (`scripts/prompt_lint.py`) — enforces required sections + frontmatter fields on every agent edit
+- [x] Install manifest (`.stangent/.installed.json`) — uninit auto-discovers what to remove; no hardcoded lists
 - [ ] Automated profile validation in `init.py` — check that every field in `_base.md` is present in a new profile before installing it, not just at authoring time
 - [ ] SRS and ADR eval coverage — both agents currently have zero eval cases; adding them would let you catch regressions when changing those agents
 - [ ] Dependency change guard — if the implementer touches `pyproject.toml`, `pubspec.yaml`, or `package.json`, require explicit developer confirmation before the commit (currently a WARN, not a gate)
-- [ ] Parallel sub-agents — linter and query analyzer have no ordering dependency; running them in parallel would cut implementing stage time on large features
+- [ ] Parallel implementer sub-agents — linter and query analyzer have no ordering dependency; running them in parallel would cut implementing stage time on large features
+- [ ] Cost ceiling (`pipeline.max_dollars_per_feature`) — orchestrator tracks observer chars × model rate and halts feature at threshold
+
+**Observability & ad-hoc**
+- [x] PostToolUse observer hook — logs every file read with char count to `.stangent/logs/{feature_id}.jsonl`
+- [x] `/stats` command — per-agent token + $ breakdown using config'd model pricing
+- [x] `/debug` command — conversational investigation for bugs not worth a full spec
+- [x] `/test` command — re-run unit_tester without re-implementing
+- [x] `/inbox` command — filter to features needing developer action only
+- [x] `/preview` command — clean spec render with optional diff against prior spec_version
+- [x] `/feature --shadow` and `--yes` flags — dry-run planning and CI/automation use
+- [ ] Telemetry export — optional opt-in upload of anonymised observer logs to track tier accuracy across users
 
 **Memory & retrieval**
 - [ ] SQLite memory store — move `memory.md` entries into `.stangent/memory.db`; planner queries by file path overlap with `## Files to Touch` instead of loading the entire history; queryable via DBHub MCP if enabled
@@ -258,6 +309,15 @@ cd your-project && python ~/stangent/init.py
 - [ ] `/pr` CI status check — after creating the PR, poll GitHub Actions once and surface pass/fail inline rather than requiring the developer to check GitHub separately
 - [ ] `init.py --upgrade` — diff installed agent files against the latest stangent source and show what changed before overwriting, so developers know what a re-init will affect
 - [ ] VS Code extension — wrap `/feature`, `/status`, and `/doctor` as sidebar buttons rather than slash commands typed in the Claude Code chat
+- [ ] Local web dashboard (`stangent serve`) — visual feature list, live pipeline state, spec/diff viewer, observer log explorer. Built on existing registry + log files.
+
+**Strategic / bigger bets**
+- [ ] Multi-feature parallelism — gateway is per-feature so contracts don't conflict, but `active.json` is single-slot. Move to N parallel features per project for team use.
+- [ ] Real eval coverage — build `evals/fixtures/sample_app/` (small FastAPI / Flutter / dual-stack projects) so every agent can be evaluated against real codebases. Then gate prompt changes on eval pass.
+- [ ] Self-improving prompts — when a feature ESCALATES, classify the failure mode, propose a prompt addendum, present to developer. Or A/B test prompts on the same input.
+- [ ] Cross-project memory — `~/.stangent/global_memory.md` overlay so a developer's preferences persist across projects.
+- [ ] Drift detection (`/audit FEAT-XXX`) — re-run reviewer against current main weeks after a feature merged; surface where the merged code diverged from the spec.
+- [ ] Agent inheritance — `extends: stangent-security-scanner` syntax so orgs can extend stangent agents without forking the repo.
 
 ---
 
