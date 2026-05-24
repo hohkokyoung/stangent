@@ -144,6 +144,30 @@ If exists:
 
 ---
 
+## Step 8.5 — Registry consistency (quick compact audit)
+
+(Only if registry is valid from Step 8.)
+
+Glob `{feature_dir}/FEAT-*.md` and `{archive_dir}/FEAT-*.md`.
+Extract all feature_ids from filenames (leading FEAT-NNN portion).
+Cross-reference with registry.features keys.
+
+  - Ghost entries (in registry, no file): count them
+  - Orphan files (file exists, not in registry): count them
+  - ID gaps: parse numeric parts of all known IDs; count missing numbers between min and max
+
+If ghost_count > 0 OR orphan_count > 0 OR gap_count > 0:
+  Output: "[WARN] Registry consistency — {ghost_count} ghost(s), {orphan_count} orphan(s), {gap_count} gap(s)
+           Fix: /compact --fix  (add --renumber to fill gaps)"
+Else:
+  Output: "[PASS] Registry consistency — no ghosts, orphans, or gaps"
+
+Check registry.next_id > max known numeric ID:
+  If next_id <= max_id:
+    Output: "[WARN] Registry next_id ({registry.next_id}) <= max known ID ({max_id}). Fix: /compact --fix"
+
+---
+
 ## Step 9 — Memory file
 
 Check `config.paths.memory_path` (default: `.stangent/memory.md`):

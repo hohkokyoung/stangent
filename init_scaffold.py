@@ -111,7 +111,7 @@ def install_global(dry_run: bool) -> bool:
 
   Slash commands now available in EVERY project:
     /feature  /plan  /implement  /resume  /review  /srs
-    /status   /abandon  /adr  /doctor  /uninit  /gateway  /cleanup
+    /status   /abandon  /adr  /doctor  /uninit  /gateway  /cleanup  /compact
 
   Next: scaffold each project with:
     cd your-project && python <path-to-stangent>/init.py --profile <name>
