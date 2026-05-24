@@ -35,10 +35,10 @@ its frontmatter (semver: `MAJOR.MINOR.PATCH`).
 
 | Agent | Version | Last bumped because |
 |---|---|---|
-| orchestrator | 1.1.0 | STEP 1g tier classification (additive) |
-| planner | 1.2.0 | Direct Mode added (additive) |
-| implementer | 1.1.0 | Targeted fix mode + Codebase Context reading |
-| reviewer | 1.2.0 | Parallel specialist subagents (additive) |
+| orchestrator | 1.2.0 | Efficiency rules + shared spawn template (token-trim) |
+| planner | 1.3.0 | Efficiency rules + mode/phase compression (token-trim) |
+| implementer | 1.2.0 | Efficiency rules + Edit-not-Write for spec sections |
+| reviewer | 1.3.0 | Efficiency rules + Phase 3 spawn-template compression |
 | srs_agent | 1.0.0 | Initial |
 | adr_agent | 1.1.0 | Bootstrap mode added |
 | debug | 1.0.0 | Initial |
