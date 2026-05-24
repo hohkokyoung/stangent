@@ -121,10 +121,8 @@ Write only these planner-owned sections:
 **D5 — Write contract:**
 Read `.stangent/prompts/write-contract.md` and follow those instructions.
 
-**D6 — Present for confirmation (same as Phase 5):**
-Show the spec summary. Ask: "Confirm and implement? (yes / edit / abort)"
-
-**D7 — Return SPEC_WRITTEN.**
+**D6 — Return SPEC_WRITTEN.**
+The orchestrator handles developer confirmation (STEP 4). Do not ask here.
 
 ---
 

@@ -145,20 +145,6 @@ Before doing anything:
 
 ---
 
-### STEP 0.5 — Tier Classification (runs after STEP 1, before STEP 3)
-
-Run this step once per fresh feature start (skip on resume).
-
-0.5a. Read `.stangent/prompts/classifier.md` and apply its rules to `raw_request`.
-      Result: `tier = "direct" | "standard"`
-
-0.5b. Write `tier` to the feature file frontmatter.
-      Append to Pipeline History: `tier: {tier} — {one-line classification reason}`
-
-0.5c. Continue to STEP 2.
-
----
-
 ### STEP 1 — Initialise Feature (only when starting fresh)
 
 1a. Claim a feature ID atomically using a lock file:
@@ -206,7 +192,13 @@ Run this step once per fresh feature start (skip on resume).
 
 1f. Append to Pipeline History: `CREATED | orchestrator | branch created`
 
-1g. Proceed to STEP 2.
+1g. Tier Classification (fresh starts only — skip on resume):
+    Read `.stangent/prompts/classifier.md` and apply its rules to `raw_request`.
+    Result: `tier = "direct" | "standard"`
+    Write `tier` to the feature file frontmatter.
+    Append to Pipeline History: `tier: {tier} — {one-line classification reason}`
+
+1h. Proceed to STEP 2.
 
 ---
 
