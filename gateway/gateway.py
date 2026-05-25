@@ -2,11 +2,13 @@
 """
 Stangent Gateway v2 — PreToolUse hook for Claude Code.
 
-Reads tool call JSON from stdin, enforces four layers in order:
+Reads tool call JSON from stdin, enforces six layers in order:
   1. Hard bash blocks    — always, no feature context needed
-  2. Agent/state check  — is this agent allowed in the current pipeline state?
-  3. blocked_paths      — path explicitly Out of Bounds for this feature
-  4. allowed_paths      — path not in Files to Touch (system paths exempt)
+  2. Write guard         — block Write on existing stangent-managed files (use Edit)
+  3. Agent/state check  — is this agent allowed in the current pipeline state?
+  4. blocked_paths      — path explicitly Out of Bounds for this feature
+  5. allowed_paths      — path not in Files to Touch (system paths exempt)
+  6. Contract bash blocklist + capability check
 
 active.json format:
   { "feature_id": "FEAT-001", "state": "IMPLEMENTING",
@@ -52,6 +54,15 @@ HARD_BLOCKED_BASH: list[str] = [
     "DROP TABLE",
     "DELETE FROM",
 ]
+
+# Stangent-managed files that must be updated via Edit (not Write) after initial
+# creation. Writing them resends the full file on every call — a major token waste.
+WRITE_GUARDED_PATTERNS: tuple[str, ...] = (
+    ".stangent/features/FEAT-*.md",
+    ".stangent/SRS.md",
+    ".stangent/features_registry.json",
+    ".stangent/memory.md",
+)
 
 # Default allowed agents per state — used when contract has no allowed_agents.
 DEFAULT_ALLOWED_AGENTS: dict[str, list[str]] = {
@@ -100,6 +111,15 @@ def load_contract(feature_id: str) -> dict | None:
 def is_system_path(file_path: str) -> bool:
     p = Path(file_path).as_posix()
     return any(p.startswith(prefix) for prefix in SYSTEM_PATH_PREFIXES)
+
+
+def is_write_guarded(file_path: str) -> bool:
+    """Return True if this stangent-managed file must use Edit (not Write) after creation."""
+    p = Path(file_path).as_posix()
+    for pattern in WRITE_GUARDED_PATTERNS:
+        if fnmatch.fnmatch(p, f"*/{pattern}") or fnmatch.fnmatch(p, pattern):
+            return True
+    return False
 
 
 def path_matches(file_path: str, patterns: list[str]) -> str | None:
@@ -193,6 +213,23 @@ def main() -> None:
     agent      = (active or {}).get("agent", "")
     contract   = load_contract(feature_id) if feature_id else None
 
+    # ── Layer 2: Write-on-existing stangent-file guard ───────────────────────
+    # Fires regardless of feature state. Write on an existing managed file
+    # resends full contents every call — force Edit for incremental updates.
+    if tool_name == "Write" and file_path and is_write_guarded(file_path):
+        target_path = Path(file_path)
+        if target_path.exists():
+            size_kb = target_path.stat().st_size // 1024
+            block(
+                f"[Gateway] BLOCKED — use Edit not Write.\n"
+                f"{file_path!r} already exists ({size_kb} KB).\n"
+                f"Write resends the full file on every call — use Edit instead.\n"
+                f"Anchor on the section header you want to update, e.g.:\n"
+                f"  old_string: '## Review Verdict\\n**Overall:** ...'  (unique prefix)\n"
+                f"  new_string: '## Review Verdict\\n**Overall:** PASS\\n...'",
+                tool_name, file_path, active,
+            )
+
     if not active:
         allow(tool_name, target, None)
 
@@ -200,7 +237,7 @@ def main() -> None:
     if active and feature_id and contract is None:
         log_decision("warn", tool_name, target, "no contract found for active feature — path enforcement disabled", active)
 
-    # ── Layer 2: Agent/state check ────────────────────────────────────────────
+    # ── Layer 3: Agent/state check ────────────────────────────────────────────
     if agent and state and tool_name in ("Write", "Edit", "Bash"):
         contract_agents = (contract or {}).get("allowed_agents", {})
         allowed = (
