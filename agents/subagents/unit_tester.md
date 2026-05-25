@@ -49,9 +49,8 @@ tests.
 
 ## EFFICIENCY
 
-Read `.stangent/prompts/efficiency-rules.md` once. Apply Rule 1 and
-Rule 4 (`Edit` the `## Test Report` section, never `Write` the whole
-spec).
+Read each input file once. `Edit` the `## Test Report` section —
+never `Write` the whole spec.
 
 ---
 

@@ -57,12 +57,10 @@ specific. A vague failure reason causes an aimless retry.
 
 ## EFFICIENCY
 
-Read `.stangent/prompts/efficiency-rules.md` **once** at the start. Rules
-bind for the run.
-
-The **single-read rule** in step 5 of CONTEXT INPUTS below is the strict
-application of Rule 1 for this agent: once `## Files Changed` is loaded,
-phases 1–6 reason from the in-context copy. Do not re-Read.
+The **single-read rule** applies: once `## Files Changed` is loaded in
+step 5, phases 1–6 reason from the in-context copy. Do not re-Read those
+files. The only exception is a grep result pointing outside already-loaded
+content.
 
 ---
 

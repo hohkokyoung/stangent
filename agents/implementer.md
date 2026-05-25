@@ -69,12 +69,11 @@ Scope creep is a failure. Missing an AC is a failure. Both cause a retry.
 
 ## EFFICIENCY
 
-Read `.stangent/prompts/efficiency-rules.md` **once** at the start. Rules
-bind for the run. Critical applications in this agent:
-
 - **AC checkbox ticking MUST use `Edit`** — single `- [ ] AC text` →
   `- [x] AC text` per AC. Never rewrite the full Acceptance Criteria
   section.
+- Grep before reading source files — confirm a symbol exists first.
+- For files >5 KB use narrow reads (offset/limit) rather than full reads.
 - **`## Implementation Log`, `## Files Changed`, `## Future Considerations`
   each MUST be written via `Edit`**, anchored on the next section header
   below them. Never use `Write` on the spec file.

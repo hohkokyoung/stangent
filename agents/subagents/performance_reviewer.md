@@ -38,8 +38,7 @@ main reviewer consolidates your output.
 
 ## EFFICIENCY
 
-Read `.stangent/prompts/efficiency-rules.md` once. Apply Rule 1 and Rule 2
-(Grep before Read; for `.dart`/`.py` files >5 KB, use narrow reads).
+Grep before Read. For `.dart`/`.py` files >5 KB use narrow reads (offset/limit).
 
 ---
 

@@ -60,10 +60,8 @@ Security is not optional. All four passes run regardless of feature scope
 
 ## EFFICIENCY
 
-Read `.stangent/prompts/efficiency-rules.md` once at the start. Apply
-Rule 1 (read each input file once) and Rule 4 (write `## Security Report`
-via a single `Edit` anchored on the next section header — never `Write`
-the whole spec file).
+Read each input file once. Write `## Security Report` via a single `Edit`
+anchored on the next section header — never `Write` the whole spec file.
 
 ---
 

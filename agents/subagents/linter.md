@@ -49,8 +49,7 @@ fixes and re-runs you.
 
 ## EFFICIENCY
 
-Read `.stangent/prompts/efficiency-rules.md` once. `Edit` the
-`## Linter Report` section, never `Write` the whole spec.
+`Edit` the `## Linter Report` section — never `Write` the whole spec.
 
 ---
 

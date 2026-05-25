@@ -63,7 +63,6 @@ Check that each of the following exists:
   - `.stangent/prompts/ask-developer.md`
   - `.stangent/prompts/classifier.md`
   - `.stangent/prompts/context-budget.md`
-  - `.stangent/prompts/efficiency-rules.md`
   - `.stangent/prompts/load-profiles.md`
   - `.stangent/prompts/memory.md`
   - `.stangent/prompts/pipeline-states.md`

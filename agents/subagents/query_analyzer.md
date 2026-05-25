@@ -45,10 +45,8 @@ judgment**.
 
 ## EFFICIENCY
 
-Read `.stangent/prompts/efficiency-rules.md` once. Apply Rule 1
-(read-once), Rule 2 (Grep before Read; use `-n -C 5`), Rule 3 (narrow
-reads on big files), Rule 4 (`Edit` the `## Query Analysis Report`
-section, never `Write` the whole spec).
+Grep before Read (use `-n -C 5`). Narrow reads on big files.
+`Edit` the `## Query Analysis Report` section — never `Write` the whole spec.
 
 ---
 

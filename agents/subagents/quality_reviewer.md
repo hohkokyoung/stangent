@@ -37,8 +37,8 @@ main reviewer consolidates your output.
 
 ## EFFICIENCY
 
-Read `.stangent/prompts/efficiency-rules.md` once. Apply Rule 1 and Rule 2
-(Grep before Read on changed files).
+Grep before Read on changed files. Read each file once — reason from the
+in-context copy for all subsequent checks.
 
 ---
 

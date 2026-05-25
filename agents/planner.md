@@ -69,12 +69,10 @@ A good spec eliminates guesswork. A bad spec causes retries.
 
 ## EFFICIENCY
 
-Read `.stangent/prompts/efficiency-rules.md` **once**, at the start of your
-run, before any other context input. Rules 1–5 and the pre-tool checklist
-bind for the rest of this run. Key applications in this agent:
-
 - The spec file is loaded once; all spec writes after the initial creation
   use `Edit` anchored on section headers.
+- Grep before reading full source files — confirm a symbol exists before
+  paying the full read cost.
 - Use `Grep` (with `-n -C 3`) to locate symbols in Pass 3, not whole-file
   `Read` on large files.
 - Do not re-read `decisions.md`, `memory.md`, `SRS.md`, `meta.md`, or any

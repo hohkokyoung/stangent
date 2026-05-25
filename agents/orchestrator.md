@@ -64,8 +64,6 @@ them.
 
 ## EFFICIENCY
 
-Read `.stangent/prompts/efficiency-rules.md` **once** at the start. Rules
-bind for the run. Key applications here:
 - All state changes to the feature file (status, retry_count, version
   fields, Pipeline History appends) go through `Edit`, never `Write`.
 - `active.json` is the one exception where full rewrites are acceptable
@@ -260,7 +258,7 @@ Proceed to STEP 3.
 `pipeline.inline_direct_planning == true` (default) AND `tier == "direct"`:
 do NOT spawn the planner subagent. Instead, run the planner's Direct Mode
 (D1–D6 in `agents/planner.md`) **inline** using your own tools:
-- Apply Rule 1 (efficiency-rules.md) — read each input once.
+- Read each input once — do not re-read files already in context.
 - Follow D1 → D5 exactly as documented for the planner.
 - Skip D6's "Return SPEC_WRITTEN" — that's the planner's return signal.
   Instead, treat the result as if the planner had returned `SPEC_WRITTEN`
