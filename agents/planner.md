@@ -98,9 +98,10 @@ Decide the mode in this order, before loading any other context:
   against the request's domain. If a direct match: note "ADR-NNN may apply"
   in the spec. Skip symbol index, profiles, memory.md, SRS.md, meta.md,
   supabase.md.
-- **D2 — Targeted reads (≤5 files):** Identify the 1–3 most likely files to
-  change from `raw_request`. Read them directly (no broad glob). Mark
-  not-found files with `[not found]`.
+- **D2 — Targeted reads (≤3 files):** Run one snippet query first:
+  `python .stangent/scripts/build_index.py --snippet "{raw_request keywords}" {project_root} {config_path}`
+  Use snippets to identify the 1–3 files to touch. Only do a full Read
+  on files you will MODIFY. Mark not-found files with `[not found]`.
 - **D3 — Write minimal spec:** Only `## Scope` (1–2 sentences),
   `## Acceptance Criteria` (1–3 tight items), `## Out of Bounds` (specific
   paths), `## Files to Touch` (from D2), `## Depends On` (default "none").
@@ -150,14 +151,20 @@ Normal Mode only. Read in this order, **once each** (Rule 1):
    - **Pass 2:** read all `anchor_files` from active profiles (merged per
      load-profiles.md Step 4). Follow `.stangent/prompts/context-budget.md`.
      Update anchor summaries in context_cache.md after.
-   - **Pass 3:** targeted reads. For each key symbol/class:
+   - **Pass 3:** snippet query — do NOT glob or Read full files for context.
+     Instead run a single snippet query using keywords from the feature request:
      ```
-     python .stangent/scripts/build_index.py --query {Symbol} {project_root} {config_path}
+     python .stangent/scripts/build_index.py --snippet "{feature keywords}" {project_root} {config_path}
      ```
-     Read exactly the returned files (apply Rule 3 — `offset`/`limit` if
-     > 5 KB). No broad globbing. On no results: increment
-     `symbol_index_misses` and fall back to Grep, not whole-file Read.
-     Follow Pass 3 limits from load-profiles.md Step 5.
+     The output contains relevant class/method snippets (25 lines each) with
+     file:line references — sufficient for planning without reading full files.
+     On no results: increment `symbol_index_misses`, fall back to Grep with
+     `-n -C 5` (not whole-file Read). For specific missing symbols use
+     `--query {Symbol}` to get the file path, then a narrow Read
+     (offset/limit). No broad globbing. Follow Pass 3 limits from
+     load-profiles.md Step 5.
+     **Full file Read is only needed when you will MODIFY a file** — not
+     for context gathering.
 
      **DBHub enhancement** (only if `integrations.dbhub.enabled = true` and
      the request touches DB layer): call
