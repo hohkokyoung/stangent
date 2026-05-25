@@ -5,6 +5,7 @@ Stangent Gateway v2 — PreToolUse hook for Claude Code.
 Reads tool call JSON from stdin, enforces six layers in order:
   1. Hard bash blocks    — always, no feature context needed
   2. Write guard         — block Write on existing stangent-managed files (use Edit)
+  2b. Bash bypass guard  — block python -c / shell writes targeting same guarded files
   3. Agent/state check  — is this agent allowed in the current pipeline state?
   4. blocked_paths      — path explicitly Out of Bounds for this feature
   5. allowed_paths      — path not in Files to Touch (system paths exempt)
@@ -221,14 +222,38 @@ def main() -> None:
         if target_path.exists():
             size_kb = target_path.stat().st_size // 1024
             block(
-                f"[Gateway] BLOCKED — use Edit not Write.\n"
+                f"[Gateway] BLOCKED — use the Edit tool, not Write.\n"
                 f"{file_path!r} already exists ({size_kb} KB).\n"
-                f"Write resends the full file on every call — use Edit instead.\n"
-                f"Anchor on the section header you want to update, e.g.:\n"
-                f"  old_string: '## Review Verdict\\n**Overall:** ...'  (unique prefix)\n"
-                f"  new_string: '## Review Verdict\\n**Overall:** PASS\\n...'",
+                f"Do NOT investigate this block, read gateway.py, or use python -c as a workaround.\n"
+                f"Simply switch to the Edit tool with old_string/new_string:\n"
+                f"  tool:       Edit\n"
+                f"  file_path:  (same path)\n"
+                f"  old_string: first unique line(s) of the section to replace\n"
+                f"  new_string: replacement content",
                 tool_name, file_path, active,
             )
+
+    # ── Layer 2b: Bash-based write bypass guard ───────────────────────────────
+    # Catches agents using python -c or shell redirection to bypass Layer 2.
+    if tool_name == "Bash" and command:
+        WRITE_VERBS = ("write_text", ".write(", "json.dump", "open(")
+        cmd_has_write = any(v in command for v in WRITE_VERBS)
+        if cmd_has_write:
+            for pattern in WRITE_GUARDED_PATTERNS:
+                # Check for guarded path segment in the command string
+                segment = pattern.replace("*", "").replace(".stangent/", ".stangent/")
+                hints = [
+                    segment,
+                    segment.replace("/", "\\"),
+                    Path(segment).name,  # e.g. "SRS.md", "features_registry.json"
+                ]
+                if any(h and h in command for h in hints):
+                    block(
+                        f"[Gateway] BLOCKED — do not write guarded stangent files via Bash.\n"
+                        f"Detected write verb in command targeting a guarded path ({segment!r}).\n"
+                        f"Use the Edit tool instead — do not attempt Python or shell workarounds.",
+                        tool_name, command, active,
+                    )
 
     if not active:
         allow(tool_name, target, None)
