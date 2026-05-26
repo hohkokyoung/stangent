@@ -14,7 +14,6 @@ If it does not exist: output "Run init.py first." and stop.
 Extract:
   - feature_dir   = config.paths.feature_dir
   - archive_dir   = config.paths.archive_dir
-  - srs_path      = config.paths.srs_path
   - max_retries   = config.pipeline.max_retries
 
 ## Step 2 — Determine mode
@@ -74,12 +73,11 @@ ABANDONED
 
 ━━━ SUMMARY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Active: N  |  Blocked: N  |  Escalated: N  |  Complete (7d): N
-  SRS: version X.Y.Z — last updated [date]
 ```
 
-For each ACTIVE / ESCALATED row, also read the last `## Pipeline History` entry
-that contains `failure_type:` (if any) and display it as `(last fail: TYPE)`.
-For each row, prepend the `tier` from frontmatter (default `[standard]`).
+For each ACTIVE / ESCALATED row, check active.json `state` (if any) and display
+it as `(stage: STATE)`. For each row, prepend the `tier` from frontmatter
+(default `[standard]`).
 
 If no features exist:
   Output: "No features yet. Start one with: /feature <description>"
@@ -106,16 +104,10 @@ Acceptance Criteria:
   [x] Done item
   [ ] Pending item
 
-Sub-agent Results:
-  Linter:          {status}
-  Tests:           {status}    coverage: X% → Y%
-  Query analysis:  {status}
-  Security:        {status}
+QA:
+  {## QA line, or "PENDING"}
 
-Review:            {status}
-
-Last pipeline event:
-  {most recent ## Pipeline History row}
+Review:            {## Review verdict line, or "PENDING"}
 
 Run log: {log_dir}/{feature_id}.jsonl
 ```

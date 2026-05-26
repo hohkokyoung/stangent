@@ -18,7 +18,7 @@ inputs:
     description: The ADR title as provided by the developer. Empty string when mode = bootstrap.
   - name: decisions_path
     type: path
-    description: Absolute path to .stangent/decisions.md
+    description: Absolute path to .stangent/decisions.json
   - name: config_path
     type: path
     description: Absolute path to .stangent/config.json
@@ -61,7 +61,8 @@ Check `mode` first. Execute only the matching mode below.
 
 0a. Read `{config_path}` → load src_root, profiles, profile_roots.
     Derive: `project_root = Path(config_path).parent.parent`
-    Load language profiles: read `.stangent/prompts/load-profiles.md` and follow those instructions.
+    Load language profiles: from `config.profiles`, read each
+    `.stangent/profiles/{name}.md` → store as `profiles[name]`.
 
 0b. Scan the codebase (depth 3 from src_root) using the detection patterns in
     `.stangent/prompts/adr-bootstrap-patterns.md`.
@@ -127,8 +128,22 @@ Check `mode` first. Execute only the matching mode below.
     - New code must not introduce an alternative without first superseding this ADR via /adr
     ```
 
-    Append each accepted ADR to `{decisions_path}` after the last existing entry.
-    Increment next_id for each.
+    Append each accepted ADR to `{decisions_path}` as a JSON object in the
+    array. Use `Edit` — insert before the closing `]`. Increment next_id for each.
+    JSON format per entry:
+    ```json
+    {
+      "id": "ADR-{next_id}",
+      "title": "{title}",
+      "status": "accepted",
+      "decision": "Continue using {title} as the project standard.",
+      "rationale": "Consistency with existing code.",
+      "consequences": ["{proposed_consequence}",
+                       "New code must not introduce an alternative without superseding this ADR."],
+      "applies_to": ["{inferred from language keywords in evidence: *.py / *.dart / *}"],
+      "created": "{ISO_DATE}"
+    }
+    ```
 
 0h. Output:
     ```
@@ -168,19 +183,18 @@ can apply the decision without needing to ask anyone.
 
 1. Read `{config_path}` → load profile, src_root.
    Derive: `project_root = Path(config_path).parent.parent`
-2. Read `{decisions_path}` → load all existing ADRs
-   - Note the highest ADR-XXX number to determine the next ID
-   - Note any existing ADRs that might be related to this title
-3. Read `.stangent/templates/decisions.md` → load the ADR template format
-4. Glob the project's `src_root` (depth 2) — understand what already exists
-   so your questions are informed by reality, not abstract
+2. Read `{decisions_path}` → parse JSON array of existing ADRs.
+   - Note the highest `id` number to determine the next ADR ID.
+   - Note any existing ADRs that might be related to this title.
+3. Glob the project's `src_root` (depth 2) — understand what already exists
+   so your questions are informed by reality, not abstract.
 
 ---
 
 ## CONSTRAINTS
 
 1. Ask at most 5 questions. Each question must target something not answerable
-   by reading the existing codebase or decisions.md.
+   by reading the existing codebase or decisions.json.
 2. Never write an ADR that contradicts an existing Accepted ADR without first
    flagging the conflict and asking the developer to confirm the supersession.
 3. The Consequences section must be specific enough for an agent to act on.
@@ -194,7 +208,7 @@ can apply the decision without needing to ask anyone.
 ## OUT OF BOUNDS
 
 - Do not implement or suggest code changes
-- Do not modify any file except decisions.md
+- Do not modify any file except decisions.json
 - Do not change the status of existing ADRs without explicit developer instruction
 
 ---
@@ -203,7 +217,7 @@ can apply the decision without needing to ask anyone.
 
 ### Phase 1 — Research
 
-1a. Search existing ADRs for any that are related to the title topic.
+1a. Search existing ADRs in `{decisions_path}` for any related to the title.
     If found: surface them before asking questions.
     "ADR-001 already covers state management. Does this supersede it, or is it
     a separate decision?"
@@ -212,7 +226,7 @@ can apply the decision without needing to ask anyone.
     Example: if title is "auth library", grep for existing auth imports.
     This informs your questions — don't ask what's already answered by the code.
 
-1c. Determine the next ADR ID: highest existing ADR number + 1.
+1c. Determine the next ADR ID: highest `id` in decisions.json array + 1.
 
 ---
 
@@ -248,34 +262,28 @@ Once you answer, I'll draft the ADR for your review.
 
 ### Phase 3 — Draft ADR
 
-Using the answers, draft the full ADR:
+Using the answers, draft the ADR as a JSON object:
 
-```markdown
-## ADR-{next_id}: {title}
-**Date:** {ISO_DATE}
-**Status:** Accepted
-**Feature:** {FEAT-ID if triggered by a feature | Manual}
-**Raised by:** developer
-
-**Context:**
-{2-4 sentences: what problem, what constraints, why a decision was needed now}
-
-**Options Considered:**
-- {Option A}: {description} — {key pro} / {key con}
-- {Option B}: {description} — {key pro} / {key con}
-- {Option C if applicable}
-
-**Decision:** {What was chosen — one sentence}
-
-**Rationale:**
-{Why this over alternatives. What tipped the balance. Be specific.}
-
-**Consequences:**
-- {Specific rule for future agents/developers — what must always be done}
-- {Specific rule — what is now prohibited}
-- {Specific rule — what is the new default approach}
-- {Any migration needed for existing code}
+```json
+{
+  "id": "ADR-{next_id}",
+  "title": "{title}",
+  "status": "accepted",
+  "decision": "{What was chosen — one sentence}",
+  "rationale": "{Why this over alternatives. What tipped the balance. Be specific.}",
+  "consequences": [
+    "{Specific rule — what must always be done}",
+    "{Specific rule — what is now prohibited}",
+    "{Specific rule — what is the new default}"
+  ],
+  "applies_to": ["{*.py | *.dart | * — inferred from context}"],
+  "created": "{ISO_DATE}"
+}
 ```
+
+Present the full context alongside the JSON so the developer can review:
+context: {2–4 sentences on the problem and constraints}
+options considered: {A vs B and why A won}
 
 ---
 
@@ -296,8 +304,11 @@ Using the answers, draft the full ADR:
 4c. If "cancel": output "ADR discarded." Return CANCELLED.
 
 4d. If "yes":
-    Append the ADR to `{decisions_path}` after the last existing ADR.
-    Ensure there is a blank line before and after the new ADR block.
+    Use `Edit` to append the ADR JSON object to `{decisions_path}`.
+    Find the closing `]` and insert before it:
+    - If the array is empty (`[]`): replace with `[\n  {...}\n]`
+    - If the array has entries: find the last `}` before `]`, replace with
+      `},\n  {...new entry...}\n]`
 
 4e. Commit the decision:
     ```
@@ -322,11 +333,11 @@ Return WRITTEN.
 ## OUTPUT CONTRACT
 
 **Bootstrap mode:**
-- Appends: zero or more ADR blocks to {decisions_path}
+- Appends: zero or more ADR JSON objects to {decisions_path} array
 - Returns: BOOTSTRAPPED (≥1 ADR written) | SKIPPED (none accepted or found)
 
 **Manual mode:**
-- Appends: one ADR block to {decisions_path}
+- Appends: one ADR JSON object to {decisions_path} array
 - Returns: WRITTEN | CANCELLED
 
 ---

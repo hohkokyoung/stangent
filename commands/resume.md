@@ -3,9 +3,8 @@ Resume a paused or interrupted feature from where it left off.
 Usage: /resume <FEAT-ID>
 Example: /resume FEAT-003
 
-Reads the feature file status and Pipeline History, then routes to the
-correct pipeline stage automatically. You never need to remember which
-stage to re-enter.
+Reads the feature file status and active.json, then routes to the correct
+pipeline stage automatically. You never need to remember which stage to re-enter.
 
 ---
 
@@ -33,8 +32,8 @@ Also check {archive_dir}/$ARGUMENTS*.md.
 If not found: output "Feature $ARGUMENTS not found in features/ or archive/." and stop.
 
 Read frontmatter: title, status, branch, retry_count, tier (default "standard" if absent).
-Read ## Pipeline History — find the most recent entry to understand
-where the feature was when it paused.
+Read `.stangent/gateway/active.json` if it exists — use `state` field to
+identify which stage was active when the feature paused.
 
 ---
 
@@ -42,24 +41,20 @@ where the feature was when it paused.
 
 ### PAUSED
 
-Read the last `## Pipeline History` entry to identify which stage was
-active when PAUSED.
+Use `active.json` `state` field to identify which stage was active when PAUSED.
+If active.json is absent, infer from retry_count and review findings.
 
 Also check whether a DECISION REQUIRED block exists in the feature file.
 If yes, display it and ask the developer to answer before resuming.
-Once answered, append the answer to ## Pipeline History:
-  `[timestamp] | DECISION_ANSWERED | developer | {answer summary}`
 
 Route as follows:
 
 **Paused during PLANNING:**
   Output:
     "Resuming planning for {feature_id} — {title}
-     Last pause: {timestamp from Pipeline History}
      {DECISION REQUIRED block if present, or 'No pending decisions.'}"
 
   Set status = PLANNING.
-  Append to ## Pipeline History: `[timestamp] | PLANNING | orchestrator | /resume — replanning`
   Spawn the planner using the Agent tool:
     INPUTS:
     {
@@ -79,13 +74,11 @@ Route as follows:
   Output:
     "Resuming implementation for {feature_id} — {title}
      Retry: {retry_count}/{max_retries}
-     Last pause: {timestamp from Pipeline History}
      {DECISION REQUIRED block if present, or 'No pending decisions.'}"
 
   Set status = IMPLEMENTING.
-  Append to ## Pipeline History: `[timestamp] | IMPLEMENTING | orchestrator | /resume`
-  Read retry_count from frontmatter. If > 0: read ## Review Verdict for previous_verdict.
-  Spawn the orchestrator using the Agent tool to run implement → review → SRS
+  Read retry_count from frontmatter. If > 0: read `## Review` findings for previous_verdict.
+  Spawn the orchestrator using the Agent tool to run implement → review → complete
   in a fresh context:
     INPUTS:
     {
@@ -99,13 +92,10 @@ Route as follows:
   Wait for result and output final status.
 
 **Paused during REVIEWING:**
-  Output:
-    "Resuming review for {feature_id} — {title}
-     Last pause: {timestamp from Pipeline History}"
+  Output: "Resuming review for {feature_id} — {title}"
 
   Set status = REVIEWING.
-  Append to ## Pipeline History: `[timestamp] | REVIEWING | orchestrator | /resume`
-  Spawn the orchestrator using the Agent tool to run review → SRS → complete:
+  Spawn the orchestrator using the Agent tool to run review → complete:
     INPUTS:
     {
       "feature_id":  "$ARGUMENTS",
@@ -114,22 +104,6 @@ Route as follows:
     INSTRUCTIONS:
     Read the full contents of: .claude/agents/stangent.md
     The feature was paused during REVIEWING. Resume from STEP 6.
-    feature_id is $ARGUMENTS. config_path is (absolute path).
-  Wait for result and output final status.
-
-**Paused during SRS_UPDATE:**
-  Output:
-    "Resuming SRS update for {feature_id} — {title}"
-
-  Spawn the orchestrator using the Agent tool to run SRS → complete:
-    INPUTS:
-    {
-      "feature_id":  "$ARGUMENTS",
-      "config_path": "(absolute path to .stangent/config.json)"
-    }
-    INSTRUCTIONS:
-    Read the full contents of: .claude/agents/stangent.md
-    The feature was paused during SRS_UPDATE. Resume from STEP 7.
     feature_id is $ARGUMENTS. config_path is (absolute path).
   Wait for result and output final status.
 
@@ -176,7 +150,7 @@ Output:
 
    Feature file: {feature_file_path}
 
-   Read the ## Review Verdict or ## Pipeline History to see what failed.
+   Read the `## Review` section to see what failed.
    Fix the issue, then:
      - Set status = CONFIRMED in the frontmatter
      - Re-run /resume {feature_id}"
@@ -204,15 +178,13 @@ Stop.
 
 The feature is mid-refinement — a /refine was in progress and paused.
 
-Check the last Pipeline History entry for the feedback that was being processed.
+Check `## Implementation Log` for the feedback note that was being processed.
 
 Output:
-  "Resuming refinement for {feature_id} — {title}
-   Original feedback: {feedback from /refine Pipeline History entry}"
+  "Resuming refinement for {feature_id} — {title}"
 
 Set status = REFINING.
 Update active.json: `{ ..., "state": "REFINING", "agent": "planner" }`
-Append to Pipeline History: `[timestamp] | REFINING | orchestrator | /resume — re-entering revision`
 
 Spawn the planner using the Agent tool in Revision Mode:
   INPUTS:
@@ -273,6 +245,6 @@ Stop.
 Output:
   "Feature {feature_id} has an unrecognised status: {status}
    Valid states: CREATED PLANNING AWAITING_CONFIRMATION CONFIRMED IMPLEMENTING
-                 REVIEWING REVIEW_PASS REFINING SRS_UPDATE COMPLETE PAUSED ESCALATED BLOCKED ABANDONED
+                 REVIEWING REVIEW_PASS REFINING COMPLETE PAUSED ESCALATED BLOCKED ABANDONED
    Correct the frontmatter manually and re-run /resume {feature_id}."
 Stop.

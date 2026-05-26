@@ -65,7 +65,7 @@ FILES CHANGED
 If status is past REVIEWING, also show:
 ```
 REVIEW VERDICT
-{## Review Verdict — first 800 chars}
+{## Review — first 800 chars}
 ```
 
 ## Step 3 — Diff mode (only if --diff in $ARGUMENTS)

@@ -16,24 +16,11 @@ another agent's section even if its content looks wrong.
 | `## Risks & Mitigations` | planner |
 | `## Codebase Context` | planner |
 | `## Planner Confidence` | planner |
-| `## Pre-Implementation Scan` | implementer |
 | `## Implementation Log` | implementer |
 | `## Files Changed` | implementer |
-| `## Future Considerations` | implementer |
-| `## Implementer Confidence` | implementer |
-| `## Linter Report` | linter |
-| `## Test Report` | unit_tester |
-| `## Query Analysis Report` | query_analyzer |
+| `## QA` | implementer |
 | `## Security Report` | security_scanner |
-| `## Performance Review` | performance_reviewer (returned text, written by reviewer into ## Review Checklist) |
-| `## Quality Review` | quality_reviewer (returned text, written by reviewer into ## Review Checklist) |
-| `## Scope Verdict` | reviewer |
-| `## Review Checklist` | reviewer |
-| `## Review Verdict` | reviewer |
-| `## Reviewer Confidence` | reviewer |
-| `## SRS Reference` | srs_agent |
-| `## Pipeline History` | orchestrator |
-| `## Context Checkpoint` | any agent (only on context budget exhaustion) |
+| `## Review` | reviewer |
 
 **Frontmatter field ownership:**
 
@@ -43,4 +30,3 @@ another agent's section even if its content looks wrong.
 | `title`, `slug`, `language`, `planner_agent_version`, `updated` | planner |
 | `implementer_agent_version` | implementer (set on commit) |
 | `reviewer_agent_version` | reviewer (set on verdict) |
-| `srs_agent_version` | srs_agent (set on SRS update) |

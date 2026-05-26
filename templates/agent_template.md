@@ -85,7 +85,7 @@ What to read before taking any action. Listed in read order.
 Before doing anything:
 1. Read config.json — load profiles[0] and paths
 2. Read profiles/{{profiles[0]}}.md — load language-specific rules
-3. Read .stangent/decisions.md — load all ADRs
+3. Read .stangent/decisions.json — load all ADRs (filter by applies_to)
 4. Read the feature file at {{feature_file_path}}
 5. [any additional reads]
 ```
@@ -159,8 +159,10 @@ and output: "Pipeline paused. Resume with /implement {{feature_id}}"
 
 ## Run Log Entry Format
 
-Read `.stangent/prompts/run-log-format.md` for the canonical schema, action table,
-and required-field rules. Summary below for reference only.
+One JSON line per action. Schema: `{ts, feature_id, agent, agent_version,
+action, detail, result, tokens_in, tokens_out}`. Action values: `stage_start`,
+`stage_complete`, `file_read`, `bash_run`, `ask_developer`, `agent_spawn`,
+`state_transition`, `registry_update`. Written to `.stangent/logs/FEAT-XXX.jsonl`.
 
 One JSON line per significant action. Written to `.stangent/logs/FEAT-XXX.jsonl`.
 Never pretty-print — one line per entry.
@@ -208,8 +210,7 @@ everything at once.
 ```
 Pass 1 — Tree scan (always, ≤10 tokens per file entry)
   Glob the src_root to depth 3. Exclude dirs from profile exclude_dirs list.
-  Write/update .stangent/context_cache.md with: tree hash + timestamp + tree.
-  Cache is valid if current tree hash matches cached hash.
+  Write `## Codebase Context` in the feature spec: tree hash + timestamp + tree.
 
 Pass 2 — Anchor files (always)
   Read every file listed in profile anchor_files that exists.
@@ -250,7 +251,7 @@ Use it. Do not assume. The cost of asking is low; the cost of a wrong assumption
 
 **Never ask for:**
 - Things answerable by reading the codebase
-- Things already decided in decisions.md
+- Things already decided in decisions.json
 - Style preferences (follow the profile conventions)
 - Whether to add tests (always yes)
 
@@ -325,7 +326,8 @@ Then execute those instructions exactly using the inputs above.
 If `profile_aware: true`, the agent must:
 
 1. Read `config.json` at `config_path` → get `profile` field
-2. Read `.stangent/prompts/load-profiles.md` and follow those instructions
+2. From `config.profiles`, read each `.stangent/profiles/{name}.md` → store
+   as `profiles[name]`
 3. Use profile values for all tool commands, checklist items, and patterns
 
 ---

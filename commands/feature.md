@@ -21,7 +21,6 @@ Extract and hold these values for the rest of this session:
   - feature_dir     = config.paths.feature_dir
   - archive_dir     = config.paths.archive_dir
   - log_dir         = config.paths.log_dir
-  - srs_path        = config.paths.srs_path
   - registry_path   = config.paths.registry_path
   - max_retries     = config.pipeline.max_retries
   - config_path     = (absolute path to .stangent/config.json)
@@ -86,7 +85,7 @@ Execute the orchestrator instructions with:
   - config_path   : (absolute path to .stangent/config.json)
 
 The orchestrator guides every stage:
-TIER CLASSIFICATION → PLANNING → AWAITING_CONFIRMATION → IMPLEMENTING → REVIEWING → SRS_UPDATE → COMPLETE
+TIER CLASSIFICATION → PLANNING → AWAITING_CONFIRMATION → IMPLEMENTING → REVIEWING → COMPLETE
 
 Tier classification (STEP 1g of the orchestrator) sets `tier = direct | standard`
 in the feature frontmatter. Direct tier runs a lighter planner (no full codebase

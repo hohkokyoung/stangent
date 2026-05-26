@@ -50,7 +50,7 @@ Spawn the unit_tester sub-agent using the Agent tool:
 
 ## Step 4 — Output
 
-The unit_tester writes `## Test Report` to the feature file (or stdout for --all).
+Tests run inline within the implementer; for --all mode, results go to stdout.
 
 Display the Test Report to the developer. Highlight:
   - Status (PASS / FAIL / SKIPPED)

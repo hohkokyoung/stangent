@@ -25,7 +25,7 @@ inputs:
     type: string
     description: >
       Pipeline stage to resume from: PLANNING | CONFIRMED | IMPLEMENTING |
-      REVIEWING | SRS_UPDATE. Empty = auto-detect from feature file.
+      REVIEWING. Empty = auto-detect from feature file.
   - name: auto_confirm
     type: boolean
     description: >
@@ -65,7 +65,7 @@ them.
 ## EFFICIENCY
 
 - All state changes to the feature file (status, retry_count, version
-  fields, Pipeline History appends) go through `Edit`, never `Write`.
+  fields) go through `Edit`, never `Write`.
 - `active.json` is the one exception where full rewrites are acceptable
   (small JSON, fewer than 10 lines).
 - Do not re-read `config.json`, the registry, or feature files between
@@ -89,10 +89,9 @@ Before doing anything:
 
 ## CONSTRAINTS
 
-1. Never write to any section of the feature file except `## Pipeline
-   History` and frontmatter status/retry fields. **Exception:** when STEP
-   3a.1 (inline Direct-tier planning) is active, you write the planner-
-   owned sections per Direct Mode D3.
+1. Never write to any section of the feature file except frontmatter
+   status/retry fields. **Exception:** when STEP 3a.1 (inline Direct-tier
+   planning) is active, you write the planner-owned sections per Direct Mode D3.
 2. Never spawn more than one agent at a time.
 3. Never retry more than `pipeline.max_retries` times (default 3).
 4. Always update status before spawning the next agent.
@@ -116,7 +115,7 @@ Before doing anything:
 
 ## SUB-AGENT SPAWN TEMPLATE
 
-Every agent spawn (STEPS 2.5, 3, 5, 6, 7) uses this skeleton. Each STEP
+Every agent spawn (STEPS 2.5, 3, 5, 6) uses this skeleton. Each STEP
 below only specifies the differences:
 
 ```
@@ -203,18 +202,19 @@ title: `raw_request[:60]`).
 - empty: `git checkout -b {branch}`.
 Record the branch in feature frontmatter.
 
-1e. Write `.stangent/gateway/active.json`:
+1e. **MANDATORY — Write `active.json` immediately after branch creation.**
+This step must never be skipped, including when using inline direct planning.
+The observer and gateway both require this file to be present; without it,
+nothing gets logged for this feature.
 ```json
 { "feature_id": "{feature_id}", "state": "CREATED",
   "agent": "orchestrator", "activated_at": "{ISO}" }
 ```
+Write this now, before any planning steps begin.
 
-1f. Append to Pipeline History: `CREATED | orchestrator | branch created`.
-
-1g. **Tier Classification** (fresh only — skip on resume):
+1f. **Tier Classification** (fresh only — skip on resume):
 read `.stangent/prompts/classifier.md`, apply rules to `raw_request`. Set
-`tier = "direct" | "standard"`. Write `tier` to frontmatter. Append:
-`tier: {tier} — {one-line reason}`.
+`tier = "direct" | "standard"`. Write `tier` to frontmatter.
 
 Proceed to STEP 2.
 
@@ -233,17 +233,14 @@ All satisfied → STEP 2.5.
 ### STEP 2.5 — ADR Bootstrap (first feature only)
 
 Skip entirely if `feature_id` was provided OR `resume_from` is set OR
-`.stangent/decisions.md` already contains any `^## ADR-` line.
+`.stangent/decisions.json` already contains any ADR entries.
 
 Otherwise spawn `adr_agent` per Sub-Agent Spawn Template with
 `extra: {"mode": "bootstrap", "title": "", "decisions_path": "{absolute}"}`
 and `INSTRUCTIONS: Read .claude/agents/stangent-adr.md and execute Bootstrap
 Mode`.
 
-Returns `BOOTSTRAPPED | SKIPPED`.
-- BOOTSTRAPPED → grep `^## ADR-` count, append:
-  `ADR bootstrap — {N} decisions now in decisions.md`.
-- SKIPPED → append: `ADR bootstrap — skipped (no patterns accepted or found)`.
+Returns `BOOTSTRAPPED | SKIPPED`. Log result to Run Log.
 
 Proceed to STEP 3.
 
@@ -251,8 +248,12 @@ Proceed to STEP 3.
 
 ### STEP 3 — PLANNING
 
-3a. status = PLANNING. Append Pipeline History. Update active.json
-(`state: "PLANNING", agent: "planner"`).
+3a. status = PLANNING. **Write active.json now** (required before any planning
+begins — both inline and spawned paths):
+```json
+{ "feature_id": "{feature_id}", "state": "PLANNING",
+  "agent": "planner", "activated_at": "{ISO}" }
+```
 
 **3a.1 — Inline shortcut (Direct tier only).** If
 `pipeline.inline_direct_planning == true` (default) AND `tier == "direct"`:
@@ -263,7 +264,7 @@ do NOT spawn the planner subagent. Instead, run the planner's Direct Mode
 - Skip D6's "Return SPEC_WRITTEN" — that's the planner's return signal.
   Instead, treat the result as if the planner had returned `SPEC_WRITTEN`
   and proceed to 3d (handoff validation).
-- Record in Pipeline History: `planner — inline (direct tier, no spawn)`.
+- Log to Run Log: `planner — inline (direct tier, no spawn)`.
 - For handoff validation and Confidence: skip Planner Confidence (no
   spawn happened). Validator may emit a WARN about missing Confidence on
   Direct tier — log and continue.
@@ -284,7 +285,7 @@ If the knob is false OR `tier != "direct"`: fall through to 3b.
 ```
 python .stangent/scripts/validate_handoff.py {feature_file_path} post_planning {config_path}
 ```
-- Exit ≠ 0 → treat as FAILED. Append validator output to Pipeline History.
+- Exit ≠ 0 → treat as FAILED. Log validator output to Run Log.
 - Exit = 0 with `[Handoff] WARN` → surface to developer, ask "Proceed
   despite low confidence, or retry planning?" Retry → 3a; proceed → 3e.
 
@@ -324,7 +325,7 @@ active.json, STOP.
 active.json (`state: "IMPLEMENTING", agent: "implementer"`).
 
 5b. Spawn `implementer` per Sub-Agent Spawn Template with
-`extra: {"previous_verdict": "{## Review Verdict if retry_count > 0 else
+`extra: {"previous_verdict": "{## Review findings if retry_count > 0 else
 empty}", "failure_type": "{LINT|TEST|QUERY|SECURITY|REVIEW_CRITICAL|
 REVIEW_MAJOR | empty}"}` and `INSTRUCTIONS: Read
 .claude/agents/stangent-implementer.md`.
@@ -337,7 +338,7 @@ python .stangent/scripts/validate_handoff.py {feature_file_path} post_implementi
 ```
 - Exit ≠ 0 → FAILED path: increment retry_count, retry (5a) if <
   max_retries, else ESCALATE.
-- WARN → log to Pipeline History and continue.
+- WARN → log to Run Log and continue.
 
 5e. Dispatch:
 - PAUSED → status = PAUSED, update active.json, STOP.
@@ -362,59 +363,30 @@ python .stangent/scripts/validate_handoff.py {feature_file_path} post_implementi
 python .stangent/scripts/validate_handoff.py {feature_file_path} post_reviewing {config_path}
 ```
 - Exit ≠ 0 → status = FAILED (malformed verdict, not a review FAIL),
-  append output, STOP.
-- WARN → log and continue.
+  log output to Run Log, STOP.
+- WARN → log to Run Log and continue.
 
 6e. Dispatch:
 - PAUSED → status = PAUSED, update active.json, STOP.
 - FAILED (agent error) → status = FAILED, STOP.
-- FAIL (verdict): read ## Review Verdict severity. MINOR only → treat as
+- FAIL (verdict): read `## Review` findings severity. MINOR only → treat as
   PASS. CRITICAL/MAJOR → increment retry_count; ≥ max_retries → ESCALATE.
-  Otherwise classify `failure_type` by reading ## Linter Report, ## Test
-  Report, ## Query Analysis Report, ## Review Verdict:
-  - `SECURITY` — Security Report CRITICAL
-  - `LINT` — Linter Report FAIL
-  - `TEST` — Test Report FAIL
-  - `QUERY` — Query Analysis Report FAIL (DANGER)
-  - `REVIEW_CRITICAL` — verdict has CRITICAL items
-  - `REVIEW_MAJOR` — verdict has MAJOR items (no CRITICAL)
+  Otherwise classify `failure_type` by reading `## QA` and `## Review`:
+  - `SECURITY` — `## Review` security: FAIL
+  - `LINT` — `## QA` lint: FAIL
+  - `TEST` — `## QA` test: FAIL
+  - `QUERY` — `## QA` query: FAIL (DANGER)
+  - `REVIEW_CRITICAL` — `## Review` findings has CRITICAL items
+  - `REVIEW_MAJOR` — `## Review` findings has MAJOR items (no CRITICAL)
 
   Priority: SECURITY > LINT > TEST > QUERY > REVIEW_CRITICAL > REVIEW_MAJOR.
-  Pick the highest match. Append verdict summary + failure_type to Pipeline
-  History. Update active.json to IMPLEMENTING/implementer. Return to STEP 5.
-- PASS → status = REVIEW_PASS, STEP 7.
+  Pick the highest match. Log verdict summary + failure_type to Run Log.
+  Update active.json to IMPLEMENTING/implementer. Return to STEP 5.
+- PASS → status = COMPLETE. Delete active.json. STEP 7 (Completion).
 
 ---
 
-### STEP 7 — SRS Update
-
-7a. status = SRS_UPDATE. Record `srs_agent_version`. Update active.json
-(`state: "SRS_UPDATE", agent: "srs_agent"`).
-
-7b. Spawn `srs_agent` per Sub-Agent Spawn Template with `extra: {}` and
-`INSTRUCTIONS: Read .claude/agents/stangent-srs.md`.
-
-7c. Returns `UPDATED | SKIPPED | FAILED`. FAILED is logged but non-blocking
-(re-runnable via `/srs`).
-
-7d. status = COMPLETE. Append Pipeline History. Delete
-`.stangent/gateway/active.json`.
-
-7e. **Project memory write** (follow `.stangent/prompts/memory.md`, skip if
-file missing):
-- Always append to ## Feature History:
-  `| {feature_id} | {title} | {retry_count} | {replan_count} | {key files
-  from ## Files Changed} | COMPLETE |`.
-- If retry_count > 0: read ## Review Verdict for the failure reason and
-  files. If the area already appears in ## Failure Patterns, increment
-  Count; else append a new row.
-- If the developer rejected or corrected anything during
-  AWAITING_CONFIRMATION or diff review and the preference will plausibly
-  apply to future features: append to ## Developer Preferences.
-
----
-
-### STEP 8 — Completion
+### STEP 7 — Completion
 
 Output:
 ```
@@ -422,8 +394,8 @@ Output:
 Branch: {branch}
 Retries: {retry_count}
 Files changed: [list from ## Files Changed]
-Tests: [pass/fail count from ## Test Report]
-Security: [PASS/findings summary]
+Tests: [from ## QA test line]
+Security: [from ## Review security line]
 Run log: {paths.log_dir}/{feature_id}.jsonl
 ```
 
@@ -439,14 +411,9 @@ Both paths share this template. Substitute the variables for the active
 case. Always delete `.stangent/gateway/active.json` first.
 
 **ESCALATED**:
-- status = ESCALATED. Append Pipeline History with reason.
-- Project memory: append to ## Feature History
-  `| {feature_id} | {title} | {retry_count} | {replan_count} | {key files}
-  | ESCALATED |`; append a row to ## Failure Patterns recording the stage
-  and area.
+- status = ESCALATED. Log reason to Run Log.
 - `header = "⚠ {feature_id} — ESCALATED after {retry_count} retries."`
-- `detail_block = "Last Review Verdict:\n[## Review Verdict content]\n\n
-  What failed: [specific reason]"`
+- `detail_block = "Last Review:\n[## Review content]\n\nWhat failed: [specific reason]"`
 - `recovery_options`:
   - A — Fix manually, then `/implement {feature_id}`
   - B — Narrow scope, then `/plan {feature_id}`
@@ -480,15 +447,27 @@ STOP.
 
 ## REGISTRY UPDATE PROCEDURE
 
-After every status change and after feature creation (Step 1c): read
-`.stangent/prompts/registry-update.md` and follow.
+After every status change and after feature creation (Step 1c):
+
+1. Acquire registry lock: write `.stangent/features_registry.lock` with
+   `{"locked_at": "{ISO}", "branch": "{current branch}"}`. Check first —
+   if exists and `locked_at` < 60 s: retry up to 5×, then stop. If ≥ 60 s
+   old: stale, delete it.
+2. Read `{paths.registry_path}` — parse JSON.
+3. Set `registry.features["{feature_id}"]` = `{"title": "...", "status":
+   "...", "branch": "...", "retry_count": N, "replan_count": N,
+   "spec_version": N, "created": "...", "updated": "{ISO now}"}`.
+4. Write registry back.
+5. Release lock: delete `.stangent/features_registry.lock`.
+
+If registry is missing/malformed: log warning, skip (do not block).
+Always delete the lock before stopping on any failure after step 1.
 
 ---
 
 ## OUTPUT CONTRACT
 
 - Feature frontmatter: `status`, `retry_count`, `*_agent_version` fields.
-- Feature `## Pipeline History`: one row per significant event.
 - Registry `features` map: updated on every status transition.
 - Run Log `{paths.log_dir}/{feature_id}.jsonl`: one JSON line per action.
 - Terminal: human-readable progress at each stage transition.

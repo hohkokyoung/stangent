@@ -13,15 +13,19 @@ Usage:
     # Query: return file paths for a symbol (backward compat)
     python build_index.py --query <symbol> <project_root> <config_path>
 
-    # Snippet query: return code snippets matching keywords (use this for planning)
+    # Snippet query: return code snippets matching keywords (Pass 3 planning)
     python build_index.py --snippet <keywords> <project_root> <config_path>
+
+    # Summary: compact architectural map — file path + symbol names, no code
+    python build_index.py --summary [<keyword_filter>] <project_root> <config_path>
 
     # Check if index is fresh (exit 0 = fresh, exit 1 = stale/missing)
     python build_index.py --check <project_root> <config_path>
 
-The --snippet mode is the primary interface for agents. Instead of globbing
-and reading full files, agents query the index and get relevant snippets
-directly — typically 3-5k tokens vs 30-50k for full file reads.
+Planning token budget:
+  --summary  : ~1-3k tokens for the full project (replaces anchor file reads)
+  --snippet  : ~3-5k tokens for targeted symbols (replaces full file reads)
+  full Read  : 10-50k tokens per file — NEVER during planning stage
 """
 import sys
 import re
@@ -336,6 +340,49 @@ def format_snippets(snippets: list[dict]) -> str:
     return "\n\n".join(parts)
 
 
+# ── Summary — compact architectural map (no code content) ────────────────────
+
+def format_summary(index: dict, keyword_filter: str | None = None) -> str:
+    """
+    Return a compact file map: path, exported symbols, line count.
+    No snippet content — safe for planning stage at ~2-3k tokens for large projects.
+
+    If keyword_filter is given, only include files whose path or exported symbols
+    contain at least one of the filter terms.
+    """
+    files = index.get("files", {})
+    if not files:
+        return "[Index] No files in index."
+
+    terms = [t.lower() for t in keyword_filter.split() if len(t) > 2] if keyword_filter else []
+
+    lines_out: list[str] = []
+    for rel, entry in sorted(files.items()):
+        exports = entry.get("exports", [])
+        symbols = entry.get("symbols", [])
+        all_names = list(dict.fromkeys(exports + [s for s in symbols if s not in exports]))
+
+        if terms:
+            rel_lower = rel.lower()
+            names_lower = " ".join(all_names).lower()
+            if not any(t in rel_lower or t in names_lower for t in terms):
+                continue
+
+        # Estimate line count from snippet data (not stored directly)
+        snippets = entry.get("snippets", [])
+        last_line = max((s["line"] for s in snippets), default=0)
+
+        name_str = ", ".join(all_names[:12])
+        if len(all_names) > 12:
+            name_str += f" (+{len(all_names) - 12} more)"
+        suffix = f"  [~{last_line}+ lines]" if last_line else ""
+        lines_out.append(f"{rel}: {name_str}{suffix}")
+
+    if not lines_out:
+        return f"[Index] No files match filter {keyword_filter!r}."
+    return "\n".join(lines_out)
+
+
 # ── Index I/O ─────────────────────────────────────────────────────────────────
 
 def load_index(index_path: Path) -> dict:
@@ -376,7 +423,7 @@ def main() -> None:
     args = list(sys.argv[1:])
 
     if not args:
-        print("Usage: build_index.py [--query <symbol> | --snippet <keywords> | --check] <project_root> <config_path>")
+        print("Usage: build_index.py [--query <symbol> | --snippet <keywords> | --summary [<filter>] | --check] <project_root> <config_path>")
         sys.exit(1)
 
     mode   = "build"
@@ -396,12 +443,21 @@ def main() -> None:
         mode   = "snippet"
         symbol = args[1]
         args   = args[2:]
+    elif args[0] == "--summary":
+        mode = "summary"
+        # Optional keyword filter (next arg before project_root)
+        if len(args) >= 2 and not Path(args[1]).exists():
+            symbol = args[1]
+            args   = args[2:]
+        else:
+            symbol = None
+            args   = args[1:]
     elif args[0] == "--check":
         mode = "check"
         args = args[1:]
 
     if len(args) < 2:
-        print("Usage: build_index.py [--query <symbol> | --snippet <keywords> | --check] <project_root> <config_path>")
+        print("Usage: build_index.py [--query <symbol> | --snippet <keywords> | --summary [<filter>] | --check] <project_root> <config_path>")
         sys.exit(1)
 
     project_root = Path(args[0])
@@ -442,6 +498,10 @@ def main() -> None:
             print(format_snippets(snippets))
         else:
             print(f"[Index] No snippets for {symbol!r}", file=sys.stderr)
+        sys.exit(0)
+
+    if mode == "summary":
+        print(format_summary(index, symbol))
         sys.exit(0)
 
     # build mode

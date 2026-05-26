@@ -83,9 +83,6 @@ If "$ARGUMENTS" starts with "unblock ":
    "reason": "developer unblock via /gateway", "agent": "developer"}
   ```
 
-  Also append to the feature file's `## Pipeline History`:
-  `[timestamp] | GATEWAY_OVERRIDE | developer | unblocked: {path_to_add}`
-
   Output:
   ```
   ✓ Unblocked: {path_to_add}

@@ -1,6 +1,6 @@
 """
 Assertions for planner case_03 — memory-informed planning.
-Planner must use failure patterns and developer preferences from memory.md.
+Planner must use failure patterns and developer preferences from srs.jsonl security_summary / decisions.json.
 """
 
 import re
@@ -12,7 +12,7 @@ def assert_sql_risk_flagged(response: str):
     signals = ["sql injection", "parameterized", "parameterised", "raw query", "injection risk"]
     if not any(s in text for s in signals):
         return (
-            "Planner did not flag the SQL injection risk from memory.md ## Failure Patterns. "
+            "Planner did not flag the SQL injection risk from srs.jsonl security_summary / decisions.json ## Failure Patterns. "
             "This pattern was in src/models/ which is in scope for this feature."
         )
     return None
@@ -30,7 +30,7 @@ def assert_test_location_applied_silently(response: str):
     if asked_about_tests:
         return (
             "Planner asked about test file location, but developer preference "
-            "was already recorded in memory.md. Should apply silently."
+            "was already recorded in srs.jsonl security_summary / decisions.json. Should apply silently."
         )
     return None
 
@@ -47,7 +47,7 @@ def assert_parameterized_query_in_spec(response: str):
     if has_spec and not has_safe_query:
         return (
             "Spec was written without addressing SQL injection risk. "
-            "Given the failure pattern in memory.md, an AC or constraint about "
+            "Given the failure pattern in srs.jsonl security_summary / decisions.json, an AC or constraint about "
             "parameterized queries is expected."
         )
     return None

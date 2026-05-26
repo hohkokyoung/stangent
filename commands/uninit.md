@@ -100,7 +100,7 @@ If neither flag:
        • Gateway hook from .claude/settings.json
        • .stangent/gateway/gateway.py
 
-     Your feature files, SRS.md, decisions.md, and config.json are kept.
+     Your feature files, decisions.json, srs.jsonl, and config.json are kept.
      Re-init later with: python {config.stangent_source_path}/init.py
 
      Type 'yes' to confirm, anything else to cancel:"
@@ -214,8 +214,8 @@ Remove the stangent block from `.gitignore`:
   Kept:
     .stangent/config.json
     .stangent/features/     ({N} feature files)
-    .stangent/SRS.md
-    .stangent/decisions.md
+    .stangent/decisions.json
+    .stangent/srs.jsonl
 
   To re-install: python {config.stangent_source_path}/init.py
   ```

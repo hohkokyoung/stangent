@@ -202,6 +202,68 @@ def validate_post_planning(
                 f"review flags in ## Planner Confidence before proceeding"
             )
 
+    # ── Scope drift check ──────────────────────────────────────────────────────
+    # Detects AC items that introduce persistence, backend, or navigation
+    # concerns that may not have been in the original request.  These are
+    # surfaced as WARNs so the developer can confirm they were intentional.
+    # Uses raw_request from frontmatter when available (exact), otherwise
+    # falls back to ## Scope (planner's summary of the request).
+    raw_request   = fm.get("raw_request", "").strip().strip('"').lower()
+    scope_text    = get_section(content, "Scope").lower()
+    intent_text   = raw_request if raw_request else scope_text
+    ac_text       = get_section(content, "Acceptance Criteria").lower()
+    files_text    = get_section(content, "Files to Touch").lower()
+    combined_plan = ac_text + " " + files_text
+
+    DRIFT_SIGNALS: list[tuple[str, list[str], str]] = [
+        (
+            "persistence",
+            ["save", "persist", "store", "shared_preferences", "hive", "sqflite",
+             "localstorage", "user preference", "user setting", "remember"],
+            "ACs include save/persist behaviour — was persistence explicitly requested "
+            "or is this an assumption? Consider whether ephemeral state is enough.",
+        ),
+        (
+            "database migration",
+            ["migration", "supabase/migrations", "alter table", "create table",
+             "add column", "new column"],
+            "ACs or Files to Touch include a database migration — was a schema change "
+            "explicitly in scope, or did the planner infer it?",
+        ),
+        (
+            "new API endpoint",
+            ["new endpoint", "new route", "@router.", "new api", "post /", "get /",
+             "patch /", "delete /", "router.get", "router.post"],
+            "ACs or Files to Touch include a new API endpoint — was backend work "
+            "explicitly requested, or assumed from a UI change?",
+        ),
+        (
+            "new screen / navigation",
+            ["new screen", "navigate to", "push route", "go_router", "pushnamed",
+             "new page", "new modal", "bottom sheet"],
+            "ACs include new navigation — was a new screen explicitly requested?",
+        ),
+        (
+            "auth / permissions",
+            ["permission", "role check", "admin only", "rls", "row level security"],
+            "ACs include auth/permission logic — was this explicitly in scope?",
+        ),
+        (
+            "notifications",
+            ["push notification", "fcm", "notify user", "send notification",
+             "firebase messaging"],
+            "ACs include push notifications — was this explicitly in scope?",
+        ),
+    ]
+
+    for category, keywords, message in DRIFT_SIGNALS:
+        # Warn if the AC/files mention it but the original intent (raw_request
+        # or Scope) doesn't — i.e. the planner added it without being asked.
+        found_in_plan   = any(kw in combined_plan for kw in keywords)
+        found_in_intent = any(kw in intent_text   for kw in keywords)
+        if found_in_plan and not found_in_intent:
+            warnings.append(f"[Scope drift — {category}] {message}")
+
     return errors, warnings
 
 

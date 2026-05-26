@@ -17,18 +17,15 @@
     "feature_dir":    ".stangent/features/",
     "archive_dir":    ".stangent/archive/",
     "log_dir":        ".stangent/logs/",
-    "srs_path":       ".stangent/SRS.md",
-    "decisions_path": ".stangent/decisions.md",
+    "decisions_path": ".stangent/decisions.json",
     "registry_path":  ".stangent/features_registry.json",
-    "context_cache":  ".stangent/context_cache.md",
     "symbol_index":   ".stangent/symbol_index.json",
     "env_example":    ".env.example",
     "profiles_dir":   ".stangent/profiles/",
     "templates_dir":  ".stangent/templates/",
     "prompts_dir":    ".stangent/prompts/",
     "contracts_dir":  ".stangent/contracts/",
-    "gateway_path":   ".stangent/gateway/gateway.py",
-    "memory_path":    ".stangent/memory.md"
+    "gateway_path":   ".stangent/gateway/gateway.py"
   },
 
   "pipeline": {
@@ -42,11 +39,9 @@
     "remind_pr_on_complete":         false,
     "pr_target_branch":              "dev",
     "archive_completed_after_days":  7,
-    "inline_direct_planning":        true,
-    "memory_row_cap":                100
+    "inline_direct_planning":        true
   },
   "_inline_direct_planning_doc": "When true and tier=='direct', the orchestrator runs the lightweight Direct Mode planning inline (without spawning the planner subagent). Saves ~30-40k tokens per Direct-tier feature by avoiding the subagent cold-start. Set to false to always spawn the planner.",
-  "_memory_row_cap_doc": "Rolling-window cap for ## Feature History and ## Failure Patterns in .stangent/memory.md. Older rows are dropped after each feature completes (Failure Patterns with count>1 are sticky). Prevents unbounded growth that would inflate every agent's read cost. Developer Preferences and Project Insights are not capped.",
 
   "confidence_thresholds": {
     "planner":     70,
@@ -55,23 +50,17 @@
   },
 
   "models": {
-    "orchestrator":     "claude-haiku-4-5-20251001",
-    "planner":          "claude-sonnet-4-6",
-    "planner_direct":   "claude-haiku-4-5-20251001",
-    "implementer":      "claude-sonnet-4-6",
+    "orchestrator":       "claude-haiku-4-5-20251001",
+    "planner":            "claude-sonnet-4-6",
+    "planner_direct":     "claude-haiku-4-5-20251001",
+    "implementer":        "claude-sonnet-4-6",
     "implementer_direct": "claude-haiku-4-5-20251001",
-    "reviewer":         "claude-sonnet-4-6",
-    "reviewer_direct":  "claude-haiku-4-5-20251001",
-    "srs_agent":        "claude-sonnet-4-6",
-    "debug":            "claude-sonnet-4-6",
-    "linter":           "claude-haiku-4-5-20251001",
-    "unit_tester":      "claude-haiku-4-5-20251001",
-    "query_analyzer":   "claude-haiku-4-5-20251001",
-    "security_scanner": "claude-sonnet-4-6",
-    "performance_reviewer": "claude-haiku-4-5-20251001",
-    "quality_reviewer":     "claude-haiku-4-5-20251001"
+    "reviewer":           "claude-sonnet-4-6",
+    "reviewer_direct":    "claude-haiku-4-5-20251001",
+    "security_scanner":   "claude-sonnet-4-6",
+    "debug":              "claude-sonnet-4-6"
   },
-  "_models_doc": "Per-agent model assignment. '*_direct' variants apply only when feature tier=direct; if absent, falls back to the unprefixed entry. Orchestrator defaults to Haiku because it does file-shuffling, registry/active.json edits, and routing — not reasoning. Reserve Sonnet for the agents that actually think (planner/implementer/reviewer/security_scanner). Use cheaper models for Direct tier to amplify the token savings.",
+  "_models_doc": "Per-agent model assignment. '*_direct' variants apply only when feature tier=direct; if absent, falls back to the unprefixed entry. Orchestrator defaults to Haiku (routing, registry edits). Reserve Sonnet for agents that reason (planner/implementer/reviewer/security_scanner).",
 
   "feature_id": {
     "prefix":  "FEAT",

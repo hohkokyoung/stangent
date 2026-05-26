@@ -22,18 +22,23 @@ TWO MODES:
       python init.py --uninit --hard    # remove everything including .stangent/
 
 Options:
-    --global    Install agents/commands to ~/.claude/ (user-level, all projects)
-    --uninit    Remove Stangent from the current project (keeps feature data)
-    --hard      Used with --uninit: also deletes .stangent/ and all feature history
-    --profile   Override auto-detected profile (python | flutter)
-    --dry-run   Show what would be done without writing anything
-    --verify    Only run environment validation, no scaffolding
+    --global      Install agents/commands to ~/.claude/ (user-level, all projects)
+    --update-all  Push updated agents/prompts/scripts to every registered project
+    --uninit      Remove Stangent from the current project (keeps feature data)
+    --hard        Used with --uninit: also deletes .stangent/ and all feature history
+    --profile     Override auto-detected profile (python | flutter)
+    --dry-run     Show what would be done without writing anything
+    --verify      Only run environment validation, no scaffolding
 """
 
 import argparse
 import json
 import sys
 from pathlib import Path
+
+# Ensure UTF-8 output on Windows (cp1252 can't encode ✓ ⚠ • etc.)
+if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from init_constants import (
     STANGENT_PATH, VERSION, PROFILES, PROVIDERS,
@@ -54,6 +59,7 @@ from init_scaffold import (
     update_gitignore, create_onboarding_doc,
     configure_dbhub, configure_supabase, setup_cross_stack_meta,
     offer_requirements_txt, write_install_manifest,
+    register_project, unregister_project, scaffold_only, _load_registry,
 )
 
 
@@ -88,6 +94,7 @@ def run(args):
                 print("  Uninit cancelled.")
                 return
         uninit_project(project_root, hard=hard, dry_run=dry_run)
+        unregister_project(project_root, dry_run)
         return
 
     # ── 1. Environment checks ──────────────────────────────────────────────
@@ -344,6 +351,7 @@ def run(args):
     update_gitignore(project_root, dry_run)
     create_onboarding_doc(project_root, config, dry_run)
     write_install_manifest(project_root, dry_run)
+    register_project(project_root, dry_run)
 
     # ── 5. Summary ─────────────────────────────────────────────────────────
 
@@ -380,6 +388,51 @@ def run(args):
 
     if not env_ok or not all_tools_ok:
         warn("Some environment checks failed. Fix them before running the pipeline.")
+
+
+def _run_update_all(dry_run: bool) -> None:
+    """Push latest stangent files to every registered project."""
+    from init_constants import STANGENT_REGISTRY
+
+    registry = _load_registry()
+
+    if not registry:
+        print(f"\n  No registered projects found in {STANGENT_REGISTRY}")
+        print("  Projects are registered automatically when you run `python init.py`.")
+        print("  Run it once in each project to register it, then --update-all will work.\n")
+        return
+
+    if dry_run:
+        print("\n[DRY RUN] No files will be written\n")
+
+    header(f"Update All -- {len(registry)} registered project(s)")
+
+    passed, failed, skipped = [], [], []
+
+    for entry in registry:
+        project_root = Path(entry["root"])
+        name = entry["name"]
+
+        print(f"\n  -- {name} ({project_root}) --")
+
+        if not project_root.exists():
+            warn(f"{name} — directory no longer exists, skipping")
+            skipped.append(name)
+            continue
+
+        success = scaffold_only(project_root, dry_run)
+        if success:
+            passed.append(name)
+        else:
+            failed.append(name)
+
+    header("Summary")
+    print(f"  Updated:  {len(passed)}  ({', '.join(passed) if passed else 'none'})")
+    if skipped:
+        print(f"  Skipped:  {len(skipped)}  ({', '.join(skipped)}) — directories missing")
+    if failed:
+        print(f"  Failed:   {len(failed)}  ({', '.join(failed)}) — see warnings above")
+    print()
 
 
 def main():
@@ -419,11 +472,22 @@ def main():
         "--profile",
         help="Override auto-detected profile(s). Single: python  Multiple: python,flutter",
     )
+    parser.add_argument("--update-all", action="store_true",
+                        help=(
+                            "Push updated agents, prompts, scripts, and commands to every "
+                            "registered project. No interactive prompts — reads each project's "
+                            "existing config.json and replays the file-copy steps only."
+                        ))
     parser.add_argument("--dry-run", action="store_true",
                         help="Show what would be done without writing anything")
     parser.add_argument("--verify", action="store_true",
                         help="Only run environment validation, no scaffolding")
     args = parser.parse_args()
+
+    if getattr(args, "update_all", False):
+        _run_update_all(args.dry_run)
+        return
+
     run(args)
 
 

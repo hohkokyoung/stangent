@@ -2,6 +2,7 @@
 id: {{feature_id}}
 title: {{FEATURE_TITLE}}
 slug: {{feature-slug}}
+raw_request: "{{raw_request}}"
 status: CREATED
 language: {{language}}
 branch: stangent/{{feature_id}}-{{feature-slug}}
@@ -14,7 +15,6 @@ updated: {{ISO_DATE}}
 planner_agent_version:
 implementer_agent_version:
 reviewer_agent_version:
-srs_agent_version:
 ---
 
 <!-- PLANNER OWNED — locked after AWAITING_CONFIRMATION -->
@@ -54,8 +54,7 @@ srs_agent_version:
 - none
 
 ## Risks & Mitigations
-<!-- **Risk:** {description}  **Mitigation:** {approach} | **Approach:** {chosen option} -->
-<!-- "none identified." if empty. -->
+<!-- **Risk:** {description}  **Mitigation:** {approach} — or "none identified." -->
 
 ## Planner Confidence
 score:
@@ -69,10 +68,6 @@ flags:
 
 <!-- IMPLEMENTER OWNED -->
 
-## Pre-Implementation Scan
-<!-- file:line — what was found — reuse / adapt / ignore -->
-
-
 ## Implementation Log
 
 
@@ -80,111 +75,21 @@ flags:
 <!-- [C] created | [M] modified | [D] deleted -->
 
 
-## Future Considerations
-<!-- Out-of-scope ideas tracked here, not implemented. -->
-
-
-## Implementer Confidence
-score:
-flags:
-  - context_budget_hit:
-  - ask_developer_used:
-  - out_of_bounds_conflicts:
-  - files_outside_touch_list:
-  - test_coverage_dropped:
-
-
-<!-- SUB-AGENT OWNED -->
-
-## Linter Report
-**Status:** PENDING
-**Agent version:**
-**Config used:**
-**Command run:**
-**Exit code:**
-**Findings:**
-
-
-## Test Report
-**Status:** PENDING
-**Agent version:**
-**Command run:**
-**Exit code:**
-**Coverage before:**
-**Coverage after:**
-**Delta:**
-
-**AC Coverage:**
-| Acceptance Criterion | Test Name | Status |
-|----------------------|-----------|--------|
-|                      |           |        |
-
-**Failing tests:**
-
-
-## Query Analysis Report
-**Status:** PENDING
-**Agent version:**
-**Skipped:**
-**Danger findings (FAIL):**
-**Warning findings (WARN):**
+## QA
+<!-- Written by implementer after all Phase 3 steps pass. -->
+lint: PENDING | test: PENDING | query: PENDING
 
 
 <!-- REVIEWER OWNED -->
 
-## Scope Verdict
-**Status:** PENDING
-**Agent version:**
-**In bounds:**
-**Scope creep found:**
-
-
-## Review Checklist
-<!-- Populated from profile.review_checklist. [x] passed | [ ] failed: reason -->
-
-
 ## Security Report
 **Status:** PENDING
-**Agent version:**
-**Secrets scan:** PENDING
-**SAST scan:** PENDING
-**Dependency audit:** PENDING
-**Hardcoded config scan:** PENDING
 **Findings:**
 
 
-## Review Verdict
-**Status:** PENDING
-**Agent version:**
-
-**CRITICAL issues:** none
-**MAJOR issues:** none
-**MINOR issues:** none
-**Overall:** PENDING
-<!-- On FAIL: actionable per file:line, not "improve security". -->
-
-## Reviewer Confidence
-score:
-flags:
-  - ambiguous_findings:
-  - ask_developer_used:
-  - cross_stack_drift_found:
-  - files_changed_unreadable:
-
-
-<!-- SRS AGENT OWNED -->
-
-## SRS Reference
-**Agent version:**
-**SRS section:**
-**API contracts documented:**
-**Env vars documented:**
-**SRS commit:**
-
-
-<!-- PIPELINE OWNED (orchestrator only) -->
-
-## Pipeline History
-| Timestamp | Event | Agent | Detail |
-|-----------|-------|-------|--------|
-|           | CREATED | orchestrator | |
+## Review
+**verdict:** PENDING
+**in_bounds:** PENDING
+**security:** PENDING
+**findings:**
+- none

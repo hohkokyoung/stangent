@@ -56,7 +56,7 @@ cross-stack bug. Always flag type-optional/non-optional mismatches as MAJOR.
 - `PaginatedResponse[X]` → generic wrapper `PaginatedResponse<XModel>`
 
 If the project doesn't follow these conventions, check `lib/models/` glob and
-SRS.md `## 5. Data Models` for the actual class names. Do not invent a mapping
+`.stangent/srs.jsonl` data model entries for the actual class names. Do not invent a mapping
 that isn't confirmed by the codebase.
 
 ---

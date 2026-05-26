@@ -49,12 +49,11 @@ Spawn the reviewer using the Agent tool:
 On PASS:
   Set status = REVIEW_PASS.
   Output:
-    "✓ $ARGUMENTS passed review.
-     Run /srs $ARGUMENTS to update the SRS, or /feature for a new feature."
+    "✓ $ARGUMENTS passed review. Run /feature for a new feature."
 
 On FAIL:
   Read retry_count from frontmatter. Increment it. Write back.
-  Output the ## Review Verdict clearly.
+  Output the `## Review` findings clearly.
   If retry_count >= max_retries:
     Set status = ESCALATED.
     Output: "Max retries reached. Feature escalated. Manual intervention required."

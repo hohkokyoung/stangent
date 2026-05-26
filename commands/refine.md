@@ -104,9 +104,6 @@ Write `.stangent/gateway/active.json`:
   "agent": "planner", "activated_at": "{ISO timestamp}" }
 ```
 
-Append to `## Pipeline History`:
-`[timestamp] | REFINING | orchestrator | /refine invoked — {feedback[:80]}`
-
 ---
 
 ## Step 6 — Run planner in Revision Mode
@@ -131,31 +128,18 @@ Wait for the developer's response:
 **"yes" / "confirm" / "proceed":**
   - Increment `replan_count` by 1 in frontmatter
   - Reset `retry_count = 0` in frontmatter
-  - Clear implementer-owned sections by overwriting them with blank placeholders:
-    - `## Pre-Implementation Scan` → blank
-    - `## Implementation Log`      → blank
-    - `## Files Changed`           → blank
-    - `## Future Considerations`   → blank
-    - `## Implementer Confidence`  → reset score/flags to blank
-  - Clear sub-agent and reviewer sections back to PENDING:
-    - `## Linter Report`           → Status: PENDING (reset all fields)
-    - `## Test Report`             → Status: PENDING (reset all fields)
-    - `## Query Analysis Report`   → Status: PENDING (reset all fields)
-    - `## Scope Verdict`           → Status: PENDING
-    - `## Review Checklist`        → blank
-    - `## Security Report`         → Status: PENDING (reset all fields)
-    - `## Review Verdict`          → Status: PENDING
-    - `## Reviewer Confidence`     → reset score/flags to blank
-    - `## SRS Reference`           → reset all fields
+  - Clear implementer-owned sections back to blank:
+    - `## Implementation Log` → blank
+    - `## Files Changed`      → blank
+    - `## QA`                 → `lint: PENDING | test: PENDING | query: PENDING`
+  - Clear reviewer sections back to PENDING:
+    - `## Security Report`    → Status: PENDING, Findings: blank
+    - `## Review`             → all fields back to PENDING
   - Set `status = CONFIRMED`
   - Update active.json: `{ ..., "state": "CONFIRMED", "agent": "orchestrator" }`
-  - Append to Pipeline History:
-    `[timestamp] | CONFIRMED | orchestrator | spec v{spec_version} confirmed — reimplementing`
-  - Output:
-    "Spec confirmed (v{spec_version}). Starting implementation..."
+  - Output: "Spec confirmed (v{spec_version}). Starting implementation..."
   - Spawn the orchestrator using the Agent tool to run the full remaining
-    pipeline (implement → review → retry loop → SRS → complete) in a
-    fresh context:
+    pipeline (implement → review → retry loop → complete) in a fresh context:
 
     INPUTS:
     {
@@ -175,12 +159,9 @@ Wait for the developer's response:
     set to the developer's message. Return to Step 6.
 
 **"abort":**
-  - Restore the previous status (read last Pipeline History entry before REFINING
-    to determine the prior state — either REVIEW_PASS or COMPLETE).
+  - Restore status to COMPLETE (refinement is only available on COMPLETE features).
   - Update active.json to reflect restored state.
-  - Append to Pipeline History:
-    `[timestamp] | {restored_status} | orchestrator | /refine aborted — spec unchanged`
-  - Output: "Refinement cancelled. Feature {feature_id} remains {restored_status}."
+  - Output: "Refinement cancelled. Feature {feature_id} remains COMPLETE."
   - Stop.
 
 ### SPEC_UNCHANGED
@@ -188,10 +169,7 @@ Wait for the developer's response:
 The planner found no spec changes needed — the spec was correct, the issue is
 in the implementation.
 
-  - Restore status to the previous state (REVIEW_PASS or COMPLETE).
-  - Update active.json to reflect restored state.
-  - Append to Pipeline History:
-    `[timestamp] | {restored_status} | orchestrator | /refine — SPEC_UNCHANGED`
+  - Restore status to COMPLETE. Update active.json to reflect restored state.
   - Output:
     "The planner found no spec changes needed for your feedback.
      The spec already covers the expected behaviour — the issue is in the

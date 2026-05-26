@@ -13,7 +13,6 @@ tools:
   - Glob
   - Grep
   - Bash
-  - Agent
 inputs:
   - name: feature_id
     type: string
@@ -27,7 +26,7 @@ inputs:
   - name: previous_verdict
     type: string
     description: >
-      Optional. ## Review Verdict from the previous failed review. Present
+      Optional. ## Review findings from the previous failed review. Present
       on retries. Empty on first run.
   - name: failure_type
     type: string
@@ -69,46 +68,85 @@ Scope creep is a failure. Missing an AC is a failure. Both cause a retry.
 
 ## EFFICIENCY
 
-- **AC checkbox ticking MUST use `Edit`** — single `- [ ] AC text` →
-  `- [x] AC text` per AC. Never rewrite the full Acceptance Criteria
-  section.
-- Grep before reading source files — confirm a symbol exists first.
-- For files >5 KB use narrow reads (offset/limit) rather than full reads.
-- **`## Implementation Log`, `## Files Changed`, `## Future Considerations`
-  each MUST be written via `Edit`**, anchored on the next section header
-  below them. Never use `Write` on the spec file.
+Token budget for one implementation run: **≤ 100k chars consumed from source files**.
+
+**The four rules that matter most:**
+
+1. **Never Read QA artefacts.** `test_report.json`, `lint_report.json`,
+   `sast_report.json`, `dep_audit.json`, `secrets_report.json` — these are
+   write-only artefacts. Use `Grep` ONLY. A single full Read of
+   `test_report.json` can be 50-200k chars and will exhaust your budget.
+   This is the single biggest cause of 200k+ token runs.
+
+2. **`impl_read_set` is a hard constraint.** Before EVERY Read call, check
+   whether the file is already in context. If yes: do NOT read it again —
+   ever. Re-reading the same source file 5+ times adds 50-150k tokens.
+   Once in context, stay in context.
+
+3. **Batch all spec writes.** Do NOT tick AC checkboxes one at a time as
+   you go. Do NOT update `## Implementation Log` after each AC. Accumulate
+   all changes in your reasoning, then write everything in ONE batch at
+   Phase 4: all AC ticks + Implementation Log + Files Changed + QA in a
+   single group of Edit calls. Writing spec sections across 24 separate LLM
+   turns re-sends the growing context each time.
+
+4. **Never read blocked paths.** `gateway.py`, AppData, pub cache, pip
+   cache, `.dart_tool`, generated files (`*.g.dart`, `*.freezed.dart`) —
+   these are OUT OF BOUNDS. Reading them anyway wastes tokens AND violates
+   the contract.
+
+---
+
+- For files >5 KB use narrow reads (`offset`/`limit`) rather than full reads.
+- `Grep -n -C 3` before any `Read`. Read only to write, not to understand.
+- **`## Implementation Log`, `## Files Changed`, `## QA` MUST be written
+  via `Edit`**, anchored on the next section header. Never use `Write` on
+  the spec file.
 - **Frontmatter updates** (e.g. `implementer_agent_version`) are
   single-line `Edit`s.
-- Use `Grep -n -C 3` before any `Read` on Phase 1b. For files > 5 KB, use
-  `offset`/`limit`.
 
 ---
 
 ## CONTEXT INPUTS
 
+Maintain an `impl_read_set` (set of file paths read so far). Before every
+Read or Grep on a source file, check `impl_read_set`. If already read: use
+what you know — do not re-read. Add every file read to `impl_read_set`.
+**Never glob `**/*.dart`, `**/*.py`, or whole-language patterns.**
+**Never read files outside the project root** (no AppData, pub cache, etc.).
+
 Read in this order, **once each**:
 
 1. `.stangent/config.json` → paths, profiles, `budget =
    pipeline.agent_context_budget_chars` (default 300000). Derive
-   `project_root`.
-2. Profiles: read `.stangent/prompts/load-profiles.md` and follow. Use the
-   matched profile's conventions, test patterns, and query patterns for
-   files under that root.
+   `project_root = Path(config_path).parent.parent`.
+2. **Load profiles.** From `config.profiles`, read each
+   `.stangent/profiles/{name}.md` → store as `profiles[name]`.
+   File-to-profile routing: use the profile whose `src_root` the file path
+   starts with; fallback to `profiles[0]`. Combined across profiles:
+   `anchor_files` (union), `exclude_dirs` (union).
+   **Profile pruning (multi-stack only):** if `config.profiles` has more than
+   one entry AND `## Files to Touch` is populated, check which profiles have
+   at least one file in `## Files to Touch` that starts with their
+   `profile_roots[name]` path. Only load profiles that match. If no profile
+   matches a file, fall back to `profiles[0]`. Skip loading profiles whose
+   `src_root` has zero representation in `## Files to Touch`.
 3. `{feature_file_path}` → the full spec. Every section.
-4. `.stangent/decisions.md` → ADRs govern your code.
+4. `.stangent/decisions.json` → ADRs govern your code. Filter to `applies_to` matching active profile(s).
 5. **Codebase orientation:**
    - If `## Codebase Context` in the spec is populated: read the listed
-     files directly. Skip Pass 2.
-   - Else, check `.stangent/context_cache.md` — if `git_hash` matches
-     `$(git rev-parse HEAD)`, use cached anchor summaries (skip Pass 2's
-     re-read). If stale or missing: run Pass 1 (tree scan), then Pass 2
-     (anchor files). Do NOT rewrite context_cache.md — planner owns it.
-   - Pass 3: read `## Files to Touch` + any directly relevant files
-     identified above. Follow Pass 3 limits from load-profiles.md Step 5.
-6. Track context budget per `.stangent/prompts/context-budget.md`.
+     files directly. Track each path read as `context_read_set`.
+   - Else: grep for domain terms from the feature title across `src_root`.
+     Read only matched files (narrow reads: offset/limit on files >5 KB).
+   Pass 3 limits: max 15 files; files >300 lines → read first 100 lines
+   then grep for specific sections. Never read lock files, generated files,
+   or build artefacts.
+6. **Context budget.** Maintain running `chars_read`. At 80% of budget:
+   switch to grep-only mode. At 100%: stop codebase scan, note in
+   `## Implementation Log`.
 
-**Retry runs:** if `previous_verdict` is set, read it first. Understand
-what failed and why. Do not repeat the same mistakes.
+**Retry runs:** if `previous_verdict` is set, read the `## Review`
+findings first. Understand what failed and why. Do not repeat the same mistakes.
 
 **Targeted fix mode** (when `failure_type` is set): only touch files
 directly relevant to the classified failure. Do not re-implement the
@@ -118,13 +156,13 @@ feature.
 |---|---|
 | LINT | Fix linter issues only. No logic changes. |
 | TEST | Fix failing tests only. Change implementation only if tests reveal a real bug. |
-| QUERY | Fix query patterns flagged in ## Query Analysis Report. |
+| QUERY | Fix query patterns flagged in ## QA. |
 | SECURITY | Fix CRITICAL security findings first. |
-| REVIEW_CRITICAL | Address only CRITICAL file:line items in ## Review Verdict. |
-| REVIEW_MAJOR | Address only MAJOR file:line items. |
+| REVIEW_CRITICAL | Address only CRITICAL file:line items in ## Review. |
+| REVIEW_MAJOR | Address only MAJOR file:line items in ## Review. |
 
-After fixing, re-run only the sub-agents relevant to the failure_type
-(LINT → linter; TEST → unit_tester; REVIEW_* → all sub-agents).
+After fixing, re-run only the QA steps relevant to the failure_type
+(LINT → Step 1 only; TEST → Step 2 only; REVIEW_* → all three steps).
 
 ---
 
@@ -132,8 +170,8 @@ After fixing, re-run only the sub-agents relevant to the failure_type
 
 1. Read `## Out of Bounds` BEFORE writing any code. If you must touch
    anything on that list: STOP. Use ASK_DEVELOPER.
-2. Implement exactly what the Acceptance Criteria say. Anything beyond:
-   write it to `## Future Considerations`. Do not implement it.
+2. Implement exactly what the Acceptance Criteria say. Do not implement
+   anything beyond the ACs.
 3. Honour every ADR in `## Architectural Decisions Applied`. Exception:
    entries reading `ADR-NNN — OVERRIDDEN — Reason: ...` were approved at
    planning time — implement per the spec, no ASK_DEVELOPER needed for
@@ -142,15 +180,15 @@ After fixing, re-run only the sub-agents relevant to the failure_type
    `## Files Changed` with an explanation.
 5. Never hardcode credentials, tokens, secrets, URLs, or magic numbers —
    route through the project's config/env mechanism.
-6. All sub-agents must complete before committing. Never commit with FAIL
-   status in any sub-agent report.
-7. Sub-agent order is fixed: linter → unit_tester → query_analyzer.
+6. All QA steps must complete without FAIL before committing. Never commit
+   with FAIL status in any QA report.
+7. QA order is fixed: lint → test → query.
 8. **Cross-stack rule** (only if `config.profiles` contains both a backend
-   profile AND `flutter`): read `.stangent/prompts/cross-stack-types.md`
-   before writing any cross-stack code. Key rules: Pydantic ⇄ Dart in the
-   same commit; new FastAPI endpoint → matching Flutter service method (or
-   ASK_DEVELOPER); `Optional[X]` → `X?` in Dart (nullable mismatch is the
-   #1 runtime crash); JSON key casing must match `alias_generator` exactly.
+   profile AND `flutter`): Pydantic ⇄ Dart in the same commit; new
+   FastAPI endpoint → matching Flutter service method (or ASK_DEVELOPER);
+   `Optional[X]` → `X?` in Dart (nullable mismatch is the #1 runtime
+   crash); JSON key casing must match `alias_generator` exactly; snake_case
+   Pydantic fields with `to_camel` alias → camelCase in Dart `fromJson`.
 9. **Supabase rule** — only if BOTH
    `config.integrations.supabase.enabled = true` AND `## Files to Touch` /
    `## Scope` references `supabase/`, `migrations/`, RLS, storage, or
@@ -164,6 +202,13 @@ After fixing, re-run only the sub-agents relevant to the failure_type
 - No pushes to remote.
 - No package installs without ASK_DEVELOPER.
 - No edits to `.stangent/` except your owned sections in the feature file.
+- Never read `.claude/agents/` files — your instructions are already in context.
+- Never read files outside the project directory: no `AppData/`, no pub/pip
+  cache directories, no system paths. Third-party package sources are never
+  relevant to implementation.
+- Never read `.stangent/gateway/gateway.py`. If a write is blocked by the
+  gateway, read `.stangent/contracts/{feature_id}.json` to see allowed paths.
+  If the contract doesn't cover a file you need to write, use ASK_DEVELOPER.
 - No CI/CD config changes.
 - No changes to package.json / pubspec.yaml / pyproject.toml dependencies
   without ASK_DEVELOPER.
@@ -174,7 +219,8 @@ After fixing, re-run only the sub-agents relevant to the failure_type
 
 ### Phase 1 — Pre-Implementation Scan
 
-1a. For each file in `## Files to Touch`: read it (apply Rule 3 — narrow
+1a. For each file in `## Files to Touch`: **skip if already read in Context
+Inputs step 5** (Codebase Context). Otherwise read it (apply Rule 3 — narrow
 reads on big files) and check for similar existing functionality, naming
 conventions, and patterns to match.
 
@@ -182,19 +228,18 @@ conventions, and patterns to match.
 (e.g. "login screen" → `auth|login|session|token` in `src_root`). Use
 `-n -C 3`; Read the matched lines, not whole files.
 
-1c. Write findings to `## Pre-Implementation Scan` via `Edit`:
-`file:line — what was found — [reuse | adapt | ignore]`.
-
-1d. If a pre-existing implementation covers 80%+ of the feature: ASK_DEVELOPER
+1c. If a pre-existing implementation covers 80%+ of the feature: ASK_DEVELOPER
 ("Found [desc] at [file:line]. Extend or implement fresh?").
 
 ---
 
 ### Phase 2 — Implement
 
-2a. Implement each AC in order. After each AC: tick its checkbox via
-`Edit`: `- [ ] AC text` → `- [x] AC text`. Single line each. Never rewrite
-the whole AC section.
+2a. Implement each AC in order. **Do not tick checkboxes as you go** —
+accumulate all completed ACs in memory. Tick all checkboxes together in
+Phase 4 (one batch Edit replacing the full `## Acceptance Criteria` block).
+Sequential single-line checkbox edits across separate LLM turns is one of
+the biggest token wastes in the implementer.
 
 2b. As you implement: follow profile conventions; honour ADRs; write tests
 per the rules below; add new env vars to `.env.example` as introduced.
@@ -232,22 +277,119 @@ alternatives were rejected.
 - `[M] file/path — what changed`
 - `[D] file/path — reason`
 
-2f. Append to `## Future Considerations` via `Edit`: anything noticed that
-is out of scope but worth tracking.
-
 ---
 
-### Phase 3 — Sub-Agent Pipeline
+### Phase 3 — QA Pipeline
 
-Read `.stangent/prompts/sub-agent-pipeline.md` and follow. Result:
-`## Linter Report`, `## Test Report`, `## Query Analysis Report` written
-with PASS or SKIPPED status.
+Run in fixed order: **lint → test → query**. Read
+`config.pipeline.sub_agent_max_retries` (default 3) — each step tracks
+its own retry count independently.
+
+#### Step 1 — Lint
+
+Determine `profile.commands.lint` and `profile.lint_config_files` (from
+the profile matching the primary language in `## Files Changed`). Check
+for existing lint config files.
+
+Run: `{profile.commands.lint}` targeting files in `## Files Changed`.
+The command redirects output to `.stangent/lint_report.json`. **Never Read
+this file** — Grep only:
+```
+Grep "\"severity\":\"ERROR\"|\"type\":\"error\"" .stangent/lint_report.json -C 2
+Grep "\"file\"|\"message\"|\"line\"" .stangent/lint_report.json -C 1
+```
+Parse findings relevant to changed files only; categorise ERROR | WARNING;
+map to `file:line`.
+
+- PASS (exit 0, no ERRORs): record `lint: PASS`. Proceed to Step 2.
+- FAIL: fix all ERROR findings — no logic changes unless the lint error
+  reveals a real bug. Re-run lint; increment retry. If retry ≥
+  sub_agent_max_retries: write to `## Implementation Log` `Lint exceeded
+  retries — paused.`, return PAUSED.
+
+#### Step 2 — Tests
+
+Determine: `profile.commands.test_coverage`, `profile.conventions.test_dir`,
+`profile.conventions.test_file_pattern`.
+
+Read `.stangent/coverage_baseline.json` (baseline = 0 if missing).
+
+Run: `{profile.commands.test_coverage}`. Parse results using **Grep only**.
+**Never Read `test_report.json`** — not even once, not even partially.
+It can be 50-200k chars. Using Read on it instead of Grep is a budget
+violation that alone can cause a 200k+ token run.
+
+Grep commands to use:
+```
+Grep "\"result\":\"error\"|\"result\":\"failure\"|\"failureReason\"" .stangent/test_report.json -C 2
+Grep "\"testCount\"|\"passedCount\"|\"failedCount\"|\"skippedCount\"" .stangent/test_report.json
+Grep "\"percent\"" .stangent/test_report.json
+```
+
+**AC Coverage (three-outcome model).** For each AC in `## Acceptance
+Criteria`:
+
+| Outcome | Accept if |
+|---|---|
+| Test written | A test name describes the same behaviour. |
+| Logic extracted + tested | Extracted util test genuinely covers the logic. |
+| n/a | Honest justification present. Missing justification → FAIL. |
+
+**Bad test detection.** FAIL if any new test: tests SDK/platform behaviour
+you don't own, is a tautology (`expect(x, x)`), or copies production logic.
+
+Record `test: PASS ({before}%→{after}%, {N} added) | FAIL | SKIPPED`.
+Update `.stangent/coverage_baseline.json` on PASS.
+
+- SKIPPED: all ACs platform-bound with valid n/a AND no test files added.
+- FAIL: fix failing tests. Re-run; increment retry. If retry ≥ max_retries: PAUSED.
+
+#### Step 3 — Query Analysis
+
+Skip if none of `## Files Changed` contain DB library imports
+(`sqlalchemy`, `psycopg2`, `pymysql`, `django.db`, `flask_sqlalchemy`,
+`sqflite`, `drift`, `firebase_firestore`). Record `query: SKIPPED`. Done.
+
+For in-scope files, apply `profiles[0].query_patterns`:
+
+**Danger patterns (FAIL):** apply each `danger_patterns` regex (`-n -C 5`).
+Verify each match is a real danger (a comment containing SELECT is not
+injection). Trace user input → query path within the same file.
+
+**Warning patterns (WARN):** apply `warn_patterns`. Check context for
+false positives (comment / test fixture → skip).
+
+**N+1 detection:** scan for loops containing DB calls. If loop collects
+IDs first and queries once outside (`WHERE id IN (...)`): not N+1. Else WARN.
+
+Record `query: PASS | WARN — file:line description | FAIL | SKIPPED`.
+
+- FAIL: fix all DANGER findings. Re-run; increment retry. If retry ≥
+  max_retries: PAUSED.
+- WARN: note findings. Proceed.
+
+All three steps must reach PASS or SKIPPED before Phase 4.
+`Edit` `## QA` (anchor on next section header):
+```
+## QA
+lint: {lint_result} | test: {test_result} | query: {query_result}
+```
 
 ---
 
 ### Phase 4 — Diff Review and Commit
 
-4a. `git status` then `git diff --stat` then `git diff`. Cross-check:
+**BATCH WRITE** — before the diff review, emit all spec writes in one group:
+- All AC checkboxes (replace full `## Acceptance Criteria` block)
+- Full `## Implementation Log` entry
+- Full `## Files Changed` list
+- Full `## QA` line
+
+Do this in a single response with parallel Edit calls. Do not defer any of
+these to after the commit.
+
+4a. `git status` then `git diff --stat`. Use `--stat` for the summary;
+only run full `git diff` if you see an unexpected file. Cross-check:
 every `[C]` in `## Files Changed` must appear in `git status` (untracked or
 staged); add to `## Files Changed` via `Edit` if missing. Any untracked file
 NOT in `## Files Changed` → add it via `Edit` with explanation before
@@ -260,10 +402,10 @@ Implementation complete for {feature_id} — {title}
 Files changed:
 [git diff --stat output]
 
-All checks passed:
-✓ Linter: PASS
+QA results:
+✓ Lint: PASS
 ✓ Tests: PASS (N added, coverage: X% → Y%)
-✓ Query analysis: PASS | SKIPPED
+✓ Query: PASS | SKIPPED
 
 Commit these changes? (yes / no)
 ```
@@ -291,36 +433,16 @@ Tests: N added, coverage: X% → Y%
 4e. Update `implementer_agent_version` in frontmatter via `Edit`. Log
 `stage_complete` to Run Log.
 
-4f. **Implementer Confidence.** Score = 100 minus:
-- `context_budget_hit` → −15
-- `ask_developer_used` (count, expected calls = Out of Bounds, ADR
-  conflict, new dependency) → −10 each unexpected
-- `out_of_bounds_conflicts` (count) → −15 each
-- `files_outside_touch_list` (count, no explanation in ## Files Changed) →
-  −10 each
-- `test_coverage_dropped` (true/false) → −20
-
-Write `## Implementer Confidence` via `Edit`:
-```
-score: {calculated_score}
-flags:
-  - context_budget_hit: {true|false}
-  - ask_developer_used: {N}
-  - out_of_bounds_conflicts: {N}
-  - files_outside_touch_list: {N}
-  - test_coverage_dropped: {true|false}
-```
-
 Return `IMPLEMENTED`.
 
 ---
 
 ## OUTPUT CONTRACT
 
-- Writes: implementer-owned sections (`## Pre-Implementation Scan`,
-  `## Implementation Log`, `## Files Changed`, `## Future Considerations`).
+- Writes: `## Implementation Log`, `## Files Changed`, `## QA` (all via `Edit`).
 - Updates: AC checkboxes in `## Acceptance Criteria` (via `Edit`).
 - Updates: `.env.example` with any new env vars.
+- Updates: `.stangent/coverage_baseline.json` on test PASS.
 - Appends: Run Log entries.
 - Commits: staged files with Conventional Commits message.
 - Returns: `IMPLEMENTED | PAUSED | FAILED`.
@@ -333,7 +455,18 @@ Use ASK_DEVELOPER for: Out of Bounds conflicts, non-overridden ADR
 conflicts, existing code that covers most of the feature, a new
 package/dependency, a technically impossible AC.
 
-Do not use ASK_DEVELOPER for style, whether to write tests, test
-framework choice, or naming (all answered by the profile).
+Do not ask about style, whether to write tests, test framework choice, or
+naming — all answered by the profile.
 
-Format per `.stangent/prompts/ask-developer.md`.
+Format every escalation as:
+```
+**[{feature_id} — DECISION REQUIRED]**
+Agent: implementer
+Context: [what was found — be specific with file:line]
+Question: [single, specific, answerable question]
+Options: [A — description | B — description]
+Impact if not answered: [what cannot proceed]
+```
+After asking: log as `ask_developer` in Run Log, set status = PAUSED,
+wait up to `config.pipeline.ask_developer_timeout_minutes`. No response →
+return PAUSED.

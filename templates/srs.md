@@ -117,9 +117,9 @@ _None yet._
 ---
 
 ## 10. Decisions Log
-<!-- AGENT ZONE — reference only, full records in .stangent/decisions.md -->
+<!-- AGENT ZONE — reference only, full records in .stangent/decisions.json -->
 
-See [`.stangent/decisions.md`](.stangent/decisions.md) for all Architecture Decision Records.
+See [`.stangent/decisions.json`](.stangent/decisions.json) for all Architecture Decision Records.
 
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|

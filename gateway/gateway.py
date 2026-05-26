@@ -60,9 +60,30 @@ HARD_BLOCKED_BASH: list[str] = [
 # creation. Writing them resends the full file on every call — a major token waste.
 WRITE_GUARDED_PATTERNS: tuple[str, ...] = (
     ".stangent/features/FEAT-*.md",
-    ".stangent/SRS.md",
     ".stangent/features_registry.json",
-    ".stangent/memory.md",
+    ".stangent/decisions.json",
+)
+
+# QA artefact files that must never be Read in full — only Grep.
+# A single full Read of test_report.json can be 50-200k chars and alone
+# causes 200k+ token implementation runs. Use Grep patterns instead.
+READ_BLOCKED_NAMES: frozenset[str] = frozenset({
+    "test_report.json",
+    "lint_report.json",
+    "sast_report.json",
+    "dep_audit.json",
+    "secrets_report.json",
+})
+
+# Path fragments that should never be read — third-party sources, caches.
+READ_BLOCKED_PATH_FRAGMENTS: tuple[str, ...] = (
+    "AppData/Local/Pub/Cache",
+    "AppData\\Local\\Pub\\Cache",
+    ".pub-cache",
+    "site-packages",
+    ".dart_tool",
+    "__pycache__",
+    "gateway.py",          # agents must not read their own guard
 )
 
 # Default allowed agents per state — used when contract has no allowed_agents.
@@ -71,11 +92,10 @@ DEFAULT_ALLOWED_AGENTS: dict[str, list[str]] = {
     "PLANNING":              ["planner"],
     "AWAITING_CONFIRMATION": ["orchestrator"],
     "CONFIRMED":             ["orchestrator"],
-    "IMPLEMENTING":          ["implementer", "linter", "unit_tester", "query_analyzer"],
+    "IMPLEMENTING":          ["implementer"],
     "REVIEWING":             ["reviewer", "security_scanner"],
     "REVIEW_PASS":           ["orchestrator"],
     "REFINING":              ["planner"],
-    "SRS_UPDATE":            ["srs_agent"],
     "COMPLETE":              ["orchestrator"],
     "PAUSED":                ["orchestrator"],
     "BLOCKED":               ["orchestrator"],
@@ -110,8 +130,21 @@ def load_contract(feature_id: str) -> dict | None:
 # ── Matchers ─────────────────────────────────────────────────────────────────
 
 def is_system_path(file_path: str) -> bool:
+    """
+    Return True if the path refers to a stangent/claude system file.
+    Handles both relative paths (".stangent/config.json") and absolute
+    paths ("C:/Users/.../snuggle/.stangent/config.json") — Claude Code
+    passes absolute paths in tool_input.file_path.
+    """
     p = Path(file_path).as_posix()
-    return any(p.startswith(prefix) for prefix in SYSTEM_PATH_PREFIXES)
+    for prefix in SYSTEM_PATH_PREFIXES:
+        # Relative path: starts directly with prefix
+        if p.startswith(prefix):
+            return True
+        # Absolute path: prefix appears after a directory separator
+        if ("/" + prefix) in p:
+            return True
+    return False
 
 
 def is_write_guarded(file_path: str) -> bool:
@@ -254,6 +287,48 @@ def main() -> None:
                         f"Use the Edit tool instead — do not attempt Python or shell workarounds.",
                         tool_name, command, active,
                     )
+
+    # ── Layer 2c: Read-blocked files ─────────────────────────────────────────
+    # Block full reads of QA artefacts and third-party caches.
+    # These must only be accessed via Grep — full reads exhaust the context budget.
+    if tool_name == "Read" and file_path:
+        fname = Path(file_path).name
+        fpath_posix = Path(file_path).as_posix()
+        if fname in READ_BLOCKED_NAMES:
+            block(
+                f"[Gateway] BLOCKED — do not Read QA artefacts directly.\n"
+                f"{fname!r} can be 50-200k chars. Use Grep instead:\n"
+                f"  Grep \"<pattern>\" {file_path}\n"
+                f"A full Read here is the #1 cause of 200k+ token runs.",
+                tool_name, file_path, active,
+            )
+        for fragment in READ_BLOCKED_PATH_FRAGMENTS:
+            if fragment in fpath_posix or fragment in file_path:
+                block(
+                    f"[Gateway] BLOCKED — reading this path is out of bounds.\n"
+                    f"Path contains blocked fragment: {fragment!r}\n"
+                    f"File: {file_path!r}",
+                    tool_name, file_path, active,
+                )
+
+    # ── Layer 2d: Block source file reads during PLANNING ────────────────────
+    # Planners must use build_index --summary/--snippet, not direct file reads.
+    # Full reads during planning are the single biggest source of 70k+ token
+    # planning runs. Allow only narrow reads (limit ≤ 50 lines) as a last resort.
+    if tool_name == "Read" and file_path and state == "PLANNING":
+        if not is_system_path(file_path):
+            limit = tool_input.get("limit")
+            if limit is None or int(limit) > 50:
+                block(
+                    f"[Gateway] BLOCKED — planners must not Read source files.\n"
+                    f"File: {file_path!r}\n"
+                    f"Use the symbol index instead:\n"
+                    f"  python .stangent/scripts/build_index.py --summary \"<keywords>\" {{project_root}} {{config_path}}\n"
+                    f"  python .stangent/scripts/build_index.py --snippet \"<keywords>\" {{project_root}} {{config_path}}\n"
+                    f"Full reads during PLANNING are the #1 cause of 70k+ token planning runs.\n"
+                    f"If you genuinely need a narrow type lookup: use offset + limit (≤ 50 lines).",
+                    tool_name, file_path, active,
+                )
 
     if not active:
         allow(tool_name, target, None)

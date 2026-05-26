@@ -9,6 +9,7 @@ Exit code is ignored by Claude Code for PostToolUse — never raises.
 """
 import sys
 import json
+import subprocess
 import datetime
 from pathlib import Path
 
@@ -17,15 +18,42 @@ CONFIG_PATH = Path(".stangent/config.json")
 
 TRACKED_TOOLS = {"Read", "Write", "Edit", "Glob", "Grep", "Bash"}
 
+# Branch prefix used by all stangent feature branches.
+BRANCH_PREFIX = "stangent/FEAT-"
+
+
+def _infer_from_branch() -> dict | None:
+    """
+    Fallback: infer feature_id from the current git branch name.
+    Returns a minimal active dict with agent/state as 'unknown'.
+    Used when active.json is missing (e.g. orchestrator forgot to write it
+    during inline direct planning).
+    """
+    try:
+        result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            capture_output=True, text=True, timeout=2,
+        )
+        branch = result.stdout.strip()
+        if branch.startswith(BRANCH_PREFIX):
+            # e.g. "stangent/FEAT-014-discover-filter-state-provider"
+            slug = branch[len("stangent/"):]          # "FEAT-014-discover-..."
+            feature_id = slug.split("-")[0] + "-" + slug.split("-")[1]  # "FEAT-014"
+            return {"feature_id": feature_id, "state": "unknown", "agent": "unknown"}
+    except Exception:
+        pass
+    return None
+
 
 def load_active() -> dict | None:
     p = GATEWAY_DIR / "active.json"
-    if not p.exists():
-        return None
-    try:
-        return json.loads(p.read_text(encoding="utf-8"))
-    except Exception:
-        return None
+    if p.exists():
+        try:
+            return json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    # active.json missing — try to infer from git branch
+    return _infer_from_branch()
 
 
 def load_log_dir() -> Path | None:
@@ -39,7 +67,13 @@ def load_log_dir() -> Path | None:
 
 
 def extract_chars(tool_response: object) -> int:
-    """Best-effort char count from tool response."""
+    """
+    Best-effort char count from tool response.
+    Claude Code PostToolUse passes content in several shapes:
+      - str  (legacy / simple text)
+      - {"content": "str"}
+      - {"content": [{"type": "text", "text": "str"}, ...]}  (content blocks)
+    """
     if isinstance(tool_response, str):
         return len(tool_response)
     if isinstance(tool_response, dict):
@@ -47,7 +81,14 @@ def extract_chars(tool_response: object) -> int:
         if isinstance(content, str):
             return len(content)
         if isinstance(content, list):
-            return sum(len(str(c)) for c in content)
+            total = 0
+            for block in content:
+                if isinstance(block, dict):
+                    # content block: {"type": "text", "text": "..."}
+                    total += len(block.get("text", ""))
+                else:
+                    total += len(str(block))
+            return total
     return 0
 
 
@@ -74,7 +115,8 @@ def main() -> None:
         sys.exit(0)
 
     tool_input    = call.get("tool_input", {})
-    tool_response = call.get("tool_response", "")
+    # Claude Code may use "tool_response" or "output" depending on version
+    tool_response = call.get("tool_response") or call.get("output", "")
 
     entry: dict = {
         "ts":         datetime.datetime.now(datetime.timezone.utc).isoformat(),

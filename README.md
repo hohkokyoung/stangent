@@ -17,7 +17,6 @@ No servers. No accounts. Just markdown files and Claude Code.
     ▼  (you confirm — or --yes to skip)
     ▼  IMPLEMENTING  — writes code → linter → tests → query analysis
     ▼  REVIEWING     — spec compliance + parallel security/performance/quality scans
-    ▼  SRS UPDATE    — extracts requirements into SRS.md
     ▼
   COMPLETE
     │
@@ -68,9 +67,9 @@ Everything is tracked in `.stangent/features/FEAT-XXX-slug.md`. Each agent owns 
 - `/adr` bootstraps existing patterns automatically on first run (detects your ORM, state manager, HTTP client, test framework from the codebase).
 - Every ADR is binding — planner flags contradictions before writing a spec, reviewer blocks any implementation that violates a decision, SRS logs every override with its reason.
 
-**Cross-feature memory**
-- After each completed feature the orchestrator writes to `.stangent/memory.md`: failure patterns (which files keep breaking), developer preferences (things you've corrected agents on), and project insights.
-- The planner reads memory before asking questions — it silently applies known preferences and proactively flags known risk areas. You don't get asked the same thing twice.
+**Living SRS and decisions log**
+- After each completed feature the reviewer appends to `.stangent/srs.jsonl`: scope, ACs, env vars, and security summary — one JSON line per feature.
+- Architectural decisions live in `.stangent/decisions.json` (JSON array of ADR objects). The planner reads them before writing every spec and flags conflicts.
 - DBHub MCP integration: if enabled, the query analyzer runs real `EXPLAIN` queries and checks for missing indexes rather than just reading code.
 
 **Cross-stack coordination (Flutter + FastAPI + Supabase)**
@@ -145,7 +144,7 @@ python ~/stangent/init.py --uninit --hard  # delete everything
 | `/refine FEAT-XXX <feedback>` | Revise spec from test feedback and reimplement |
 | `/resume FEAT-XXX` | Resume a paused or interrupted feature |
 | `/review FEAT-XXX` | Re-run review independently |
-| `/srs [FEAT-XXX]` | Update SRS.md for completed features |
+| `/srs [FEAT-XXX]` | Show SRS summary; `--rebuild` to regenerate from feature files |
 | `/adr <title>` | Record an architectural decision |
 | `/abandon FEAT-XXX` | Cancel a feature — reverts code, archives spec, deletes branch |
 | `/pr FEAT-XXX` | Create GitHub PR for a COMPLETE feature |
@@ -245,9 +244,9 @@ cd your-project && python ~/stangent/init.py
 
 **Something broken?** Run `/doctor` — it checks config, agents, gateway hook, and registry.
 
-**Feature paused or stuck?** Run `/resume FEAT-XXX` — it reads Pipeline History and routes to the right stage automatically.
+**Feature paused or stuck?** Run `/resume FEAT-XXX` — it reads the feature status and routes to the right stage automatically.
 
-**ESCALATED after 3 retries?** Read `## Review Verdict` in the feature file, fix manually, set `status = CONFIRMED`, then `/resume FEAT-XXX`.
+**ESCALATED after 3 retries?** Read `## Review` in the feature file, fix manually, set `status = CONFIRMED`, then `/resume FEAT-XXX`.
 
 **Implemented but not what you wanted?** Use `/refine FEAT-XXX <description of what's wrong>`. Don't try to correct it through conversation — that produces drift. `/refine` updates the spec first, then reimplements cleanly.
 
@@ -301,9 +300,9 @@ cd your-project && python ~/stangent/init.py
 - [ ] Telemetry export — optional opt-in upload of anonymised observer logs to track tier accuracy across users
 
 **Memory & retrieval**
-- [ ] SQLite memory store — move `memory.md` entries into `.stangent/memory.db`; planner queries by file path overlap with `## Files to Touch` instead of loading the entire history; queryable via DBHub MCP if enabled
-- [ ] Hot memory layer — keep a condensed `memory_hot.md` (≤30 lines: last 5 features + top recurring preferences) as the always-loaded layer; full history goes to SQLite
-- [ ] Vector RAG memory — optional embedding-based retrieval via memory MCP for semantic search across failure patterns and project insights; falls back to SQLite if not configured
+- [ ] SQLite learning store — persist planner risk patterns and developer preferences in `.stangent/memory.db`; planner queries by file path overlap with `## Files to Touch` instead of scanning all feature files; queryable via DBHub MCP if enabled
+- [ ] Hot context layer — keep a condensed in-memory summary (≤30 lines: last 5 features + top recurring preferences) as the always-loaded context layer; full history stays in the DB
+- [ ] Vector RAG retrieval — optional embedding-based retrieval via memory MCP for semantic search across failure patterns and project insights; falls back to DB query if not configured
 
 **Developer experience**
 - [ ] `/pr` CI status check — after creating the PR, poll GitHub Actions once and surface pass/fail inline rather than requiring the developer to check GitHub separately
@@ -315,7 +314,7 @@ cd your-project && python ~/stangent/init.py
 - [ ] Multi-feature parallelism — gateway is per-feature so contracts don't conflict, but `active.json` is single-slot. Move to N parallel features per project for team use.
 - [ ] Real eval coverage — build `evals/fixtures/sample_app/` (small FastAPI / Flutter / dual-stack projects) so every agent can be evaluated against real codebases. Then gate prompt changes on eval pass.
 - [ ] Self-improving prompts — when a feature ESCALATES, classify the failure mode, propose a prompt addendum, present to developer. Or A/B test prompts on the same input.
-- [ ] Cross-project memory — `~/.stangent/global_memory.md` overlay so a developer's preferences persist across projects.
+- [ ] Cross-project memory — `~/.stangent/global_preferences.json` overlay so a developer's preferences persist across projects.
 - [ ] Drift detection (`/audit FEAT-XXX`) — re-run reviewer against current main weeks after a feature merged; surface where the merged code diverged from the spec.
 - [ ] Agent inheritance — `extends: stangent-security-scanner` syntax so orgs can extend stangent agents without forking the repo.
 

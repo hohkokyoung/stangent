@@ -65,7 +65,7 @@ Read the feature file. Check status:
 ## Step 3 — Load retry context
 
 Read retry_count from feature file frontmatter.
-If retry_count > 0: read ## Review Verdict — pass as previous_verdict.
+If retry_count > 0: read `## Review` findings — pass as previous_verdict.
 Else: previous_verdict = ""
 
 ## Step 4 — Set IMPLEMENTING state
@@ -73,8 +73,6 @@ Else: previous_verdict = ""
 Before spawning the implementer, update the feature file:
   - Set `status = IMPLEMENTING` in frontmatter
   - Set `implementer_agent_version` to the version from implementer frontmatter
-  - Append to ## Pipeline History:
-    `[timestamp] | IMPLEMENTING | orchestrator | /implement invoked`
 
 ## Step 5 — Spawn implementer
 
@@ -86,7 +84,7 @@ Spawn the implementer using the Agent tool:
     "feature_file_path": "(resolved path from Step 2)",
     "config_path":       "(absolute path to .stangent/config.json)",
     "extra": {
-      "previous_verdict": "(## Review Verdict content if retry_count > 0, else '')",
+      "previous_verdict": "(## Review findings content if retry_count > 0, else '')",
       "failure_type":     ""
     }
   }

@@ -60,14 +60,10 @@ For each profile in config.profiles:
 
 Check that each of the following exists:
 
-  - `.stangent/prompts/ask-developer.md`
   - `.stangent/prompts/classifier.md`
-  - `.stangent/prompts/context-budget.md`
-  - `.stangent/prompts/load-profiles.md`
-  - `.stangent/prompts/memory.md`
-  - `.stangent/prompts/pipeline-states.md`
-  - `.stangent/prompts/run-log-format.md`
   - `.stangent/prompts/section-ownership.md`
+  - `.stangent/prompts/supabase.md` (only if supabase integration enabled)
+  - `.stangent/prompts/cross-stack-types.md` (only if flutter + backend profiles active)
 
 For each:
   - Exists → [PASS] prompts/{filename}
@@ -168,13 +164,12 @@ Check registry.next_id > max known numeric ID:
 
 ---
 
-## Step 9 — Memory file
+## Step 9 — SRS data
 
-Check `config.paths.memory_path` (default: `.stangent/memory.md`):
-  - Exists → [PASS] .stangent/memory.md
-  - Missing → [WARN] .stangent/memory.md — not found. Fix: re-run init.py
-    (memory.md is created on init — agents degrade gracefully without it
-    but cross-feature learning will not accumulate)
+Check `.stangent/srs.jsonl`:
+  - Exists → [PASS] .stangent/srs.jsonl — {N} features logged
+  - Missing → [INFO] .stangent/srs.jsonl not found. It is created automatically
+    when the first feature passes review.
 
 ---
 

@@ -123,9 +123,6 @@ Update feature file frontmatter:
   - status       = ABANDONED
   - updated      = current ISO date
 
-Append to ## Pipeline History:
-  "[timestamp] | ABANDONED | orchestrator | developer request — spec v{spec_version}, {replan_count} refinement(s), {retry_count} retry/retries, {commit_count} commit(s) reverted"
-
 Delete `.stangent/contracts/{feature_id}.json` if it exists.
 
 Write updated file to: {archive_dir}/{feature_id}-{slug}.md
@@ -135,17 +132,6 @@ Replace original file at {feature_dir}/{feature_id}-{slug}.md with:
   "# Archived — see {archive_dir}/{feature_id}-{slug}.md"
 
 Run Registry Update procedure (status: ABANDONED).
-
-Write to project memory (read `.stangent/prompts/memory.md` and follow the
-write protocol — skip gracefully if memory.md prompt not found):
-
-  Always append to ## Feature History:
-  `| {feature_id} | {title} | {retry_count} | {replan_count} | {key files from ## Files to Touch} | ABANDONED |`
-
-  If retry_count > 0 or replan_count > 0:
-    Read ## Files to Touch for the affected area.
-    Append to ## Failure Patterns:
-    `| {area from Files to Touch} | {title} | ABANDONED after {retry_count} retries, {replan_count} refinements | 1 |`
 
 ## Step 7 — Output
 

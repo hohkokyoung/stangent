@@ -27,7 +27,7 @@ Read the registry. Collect features whose status is one of:
 For each, also read the feature file to get:
   - title
   - tier
-  - last Pipeline History entry (for context — what stage paused, why escalated)
+  - active.json `state` (for context — which stage is active)
   - any DECISION REQUIRED block
 
 ## Step 3 — Output
@@ -49,13 +49,13 @@ NEEDS DECISION ({n})
 PAUSED ({n})
   FEAT-XXX  Title  [tier]
     Paused at: {state} ({timestamp})
-    Why:       {last Pipeline History entry, truncated to 80 chars}
+    Why:       {active.json state, or 'unknown'}
     Resume:    /resume FEAT-XXX
 
 ESCALATED ({n})
   FEAT-XXX  Title
     Retries:  {retry_count}
-    Reason:   {short reason from Pipeline History}
+    Reason:   {short reason from ## Review findings}
     Recover:  see {feature_file_path}
 
 BLOCKED ({n})

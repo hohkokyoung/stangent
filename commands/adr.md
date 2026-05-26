@@ -1,4 +1,4 @@
-Record an architectural decision as a properly formatted ADR in decisions.md.
+Record an architectural decision as a JSON entry in decisions.json.
 
 > **Note:** ADRs are bootstrapped automatically on the first `/feature` call —
 > the planner scans your codebase and asks which patterns become binding decisions.

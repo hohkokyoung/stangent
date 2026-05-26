@@ -1,10 +1,9 @@
-Update the System Requirements Specification.
+Display or rebuild the feature requirements log (srs.jsonl).
 
 Usage:
-  /srs                      — process all completed features since last SRS update
-  /srs <FEAT-ID>            — update SRS for one specific completed feature
-  /srs --dry-run            — show what would change without writing
-  /srs --dry-run <FEAT-ID>  — dry-run for one specific feature
+  /srs                 — display all entries in srs.jsonl as a readable summary
+  /srs <FEAT-ID>       — display the srs.jsonl entry for one specific feature
+  /srs rebuild         — rebuild srs.jsonl from all COMPLETE feature files
 
 ---
 
@@ -14,68 +13,66 @@ Read `.stangent/config.json`.
 If it does not exist: output "Run init.py first." and stop.
 
 Extract:
-  - feature_dir     = config.paths.feature_dir
-  - srs_path        = config.paths.srs_path
-  - log_dir         = config.paths.log_dir
-  - config_path     = (absolute path to .stangent/config.json)
+  - feature_dir = config.paths.feature_dir
+  - config_path = (absolute path to .stangent/config.json)
+
+SRS data lives at: `.stangent/srs.jsonl` (one JSON line per completed feature).
+It is written automatically by the reviewer agent on PASS.
 
 ## Step 2 — Determine mode
 
 Parse "$ARGUMENTS":
-- `--dry-run` alone → standalone dry-run mode
-- `--dry-run <FEAT-ID>` → single-feature dry-run mode
-- `<FEAT-ID>` alone → single-feature mode
-- empty → standalone mode (process all pending features)
+- empty → display mode (all features)
+- `<FEAT-ID>` alone → display mode (single feature)
+- `rebuild` → rebuild mode
 
-Set `dry_run = true` if `--dry-run` flag is present.
+## Step 3 — Execute
 
-In single-feature mode (with or without --dry-run): find {feature_dir}/$FEAT-ID*.md
-If not found: output "Feature $FEAT-ID not found." and stop.
-If status ≠ COMPLETE: output "Feature must be COMPLETE before SRS update." and stop.
+**Display mode (all features):**
 
-## Step 3 — Run SRS agent (or dry-run)
+Read `.stangent/srs.jsonl`. If missing or empty: output
+"No features in srs.jsonl yet. Features are added automatically when
+the reviewer passes them." and stop.
 
-**If dry_run = false:**
-Read the full contents of: .claude/agents/stangent-srs.md
+Format as a readable summary:
+```
+# System Requirements Log  ({N} features)
 
-Execute the SRS agent with:
-  - feature_id         : (resolved FEAT-ID, empty in standalone mode)
-  - feature_file_path  : (resolved path, empty in standalone mode)
-  - config_path        : (absolute path to .stangent/config.json)
+| FEAT-ID | Title | Security | Updated |
+|---------|-------|----------|---------|
+| FEAT-001 | ... | PASS | 2026-05-12 |
 
-**If dry_run = true:**
-Do NOT execute the SRS agent. Instead, simulate what it would do:
+## FEAT-001 — {title}
+**Scope:** {scope}
+**ACs:** {ac count} accepted
+**Env vars:** {list | none}
+**Security:** {security_summary}
+```
 
-1. Read the current SRS (or note it doesn't exist).
-2. For each feature to process: generate the SRS subsection content that would be written.
-3. For each existing SRS section that would be updated: show a diff block:
-   ```diff
-   --- current
-   +++ proposed
-   @@ section heading @@
-   -old line
-   +new line
-   ```
-4. List any PRESERVE blocks that would be retained.
-5. Do NOT write to any file. Do NOT commit. Do NOT update frontmatter.
+**Display mode (single feature):**
 
-Output the diff and a summary: "X sections would be added, Y sections would be updated."
-Then: "Run /srs (without --dry-run) to apply."
+Read `.stangent/srs.jsonl`, find entry where `feat_id == <FEAT-ID>`.
+If not found: output "No srs.jsonl entry for {FEAT-ID}. Either the
+feature is not COMPLETE, or run /srs rebuild." and stop.
+Display the full entry in readable format.
 
-## Step 4 — Output result
+**Rebuild mode:**
 
-**If dry_run = false:**
-On UPDATED:
-  Output:
-    "✓ SRS updated — version {new_version}
-     Sections updated: {list}
-     Committed: docs(SRS): {commit_message}"
+1. Glob `{feature_dir}/*.md` for all feature files.
+2. For each feature file whose frontmatter `status == COMPLETE`:
+   - Read the feature file.
+   - Extract: `feat_id`, `title` (from frontmatter), scope from
+     `## Scope`, ACs from checked `- [x]` items in `## Acceptance
+     Criteria`, env vars from `## New Environment Variables`,
+     security verdict from `## Review` security line.
+   - Build srs.jsonl entry:
+     ```json
+     {"feat_id":"FEAT-NNN","title":"...","scope":"...","acs":["..."],"env_vars":["KEY"],"security_summary":"PASS|...","updated":"ISO"}
+     ```
+3. Write all entries to `.stangent/srs.jsonl` (overwrite).
+4. Output: "Rebuilt srs.jsonl with {N} features."
 
-On SKIPPED:
-  Output: "SRS is already up to date. No completed features since last update."
+## Step 4 — Output
 
-On FAILED:
-  Output the error with: "Re-run /srs to retry."
-
-**If dry_run = true:**
-Output the diff from Step 3 dry-run. No further action.
+Display mode: render the formatted summary.
+Rebuild mode: confirm write with count.

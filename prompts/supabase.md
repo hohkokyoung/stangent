@@ -145,7 +145,7 @@ supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_K
 # service_role only on server — never returned to clients
 ```
 
-Which pattern to use is an ADR decision. Check `decisions.md` before implementing.
+Which pattern to use is an ADR decision. Check `decisions.json` before implementing.
 
 ### Environment Variables (FastAPI)
 

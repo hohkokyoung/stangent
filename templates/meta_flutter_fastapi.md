@@ -30,7 +30,7 @@
 | `src/core/config.py` | `.env.example`, `lib/core/config.dart` |
 | `src/core/security.py` | `lib/services/auth_service.dart` |
 | `src/db/session.py` | `src/dependencies.py` |
-| `src/models/**` | `src/schemas/**`, `[doc] .stangent/SRS.md` |
+| `src/models/**` | `src/schemas/**`, `[doc] .stangent/srs.jsonl` |
 | `pubspec.yaml` | `src/requirements.txt` |
 | `lib/services/**` | `src/routes/` |
 
@@ -43,7 +43,7 @@
 
 | When you touch | Also review |
 |---|---|
-| `supabase/migrations/**` | `[doc] .stangent/SRS.md` (schema section), `src/models/**`, `lib/models/` |
+| `supabase/migrations/**` | `[doc] .stangent/srs.jsonl` (schema section), `src/models/**`, `lib/models/` |
 | `supabase/migrations/**` | RLS policy file if separate — verify every new table has RLS enabled |
 | `src/core/security.py` | `supabase/migrations/` (check JWT algorithm or expiry hasn't drifted) |
 | `supabase/seed.sql` | `tests/conftest.py` (test fixtures must match seed data shape) |

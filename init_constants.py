@@ -10,6 +10,11 @@ STANGENT_PATH = Path(__file__).parent.resolve()
 REQUIRED_PYTHON = (3, 10)
 VERSION = "1.0.0"
 
+# Global projects registry — tracks every project where stangent has been init'd.
+# Used by `python init.py --update-all` to push updated agents/scripts/prompts
+# to all registered projects without manual per-project reinit.
+STANGENT_REGISTRY = Path.home() / ".stangent" / "projects.json"
+
 PROFILES = {
     "flutter": {
         "detect_files":   ["pubspec.yaml"],
@@ -214,12 +219,7 @@ DROPDOWN_AGENTS: dict[str, dict] = {
 # main agents using the local path — no dependency on the stangent repo at runtime.
 # Maps source path (relative to stangent/agents/) → output filename in .claude/agents/
 SUBAGENTS: dict[str, str] = {
-    "subagents/linter":               "stangent-linter.md",
-    "subagents/unit_tester":          "stangent-unit-tester.md",
-    "subagents/query_analyzer":       "stangent-query-analyzer.md",
-    "subagents/security_scanner":     "stangent-security-scanner.md",
-    "subagents/performance_reviewer": "stangent-performance-reviewer.md",
-    "subagents/quality_reviewer":     "stangent-quality-reviewer.md",
+    "subagents/security_scanner": "stangent-security-scanner.md",
 }
 
 

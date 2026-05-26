@@ -23,8 +23,8 @@ Glob `{feature_dir}/{feature_id}-*.md` to find the feature file.
 
 Read from the feature file:
 - Frontmatter: `status`, `retry_count`, `title`
-- `## Pipeline History` — last 5 entries only
-- `## Review Verdict` — only if status is REVIEWING, FAILED, or ESCALATED
+- `.stangent/gateway/active.json` — current agent and stage
+- `## Review` — only if status is REVIEWING, FAILED, or ESCALATED
 
 ## Step 3 — Map state to plain English
 
@@ -35,16 +35,15 @@ Read from the feature file:
 | CONFIRMED           | Spec approved. Preparing to implement.                                 |
 | IMPLEMENTING        | Implementer is writing code.                                           |
 | REVIEWING           | Reviewer is checking the implementation.                               |
-| SRS_UPDATE          | SRS agent is updating the requirements doc.                            |
 | PAUSED              | Pipeline is paused. Use /resume {feature_id} to continue.             |
 | FAILED              | Agent hit an unexpected error (not a review failure).                  |
 | ESCALATED           | Max retries reached. Manual intervention required.                     |
 | BLOCKED             | A dependency feature is not COMPLETE yet.                              |
 
-For FAILED or ESCALATED: read the last Pipeline History entry for the specific reason.
+For FAILED or ESCALATED: read `## Review` findings for the specific reason.
 
 Determine intervention:
-- No action needed: PLANNING, CONFIRMED, IMPLEMENTING, REVIEWING, SRS_UPDATE
+- No action needed: PLANNING, CONFIRMED, IMPLEMENTING, REVIEWING
 - Action required: PAUSED, FAILED, ESCALATED, BLOCKED, AWAITING_CONFIRMATION
 
 ## Step 4 — Output
@@ -58,9 +57,9 @@ Retries:  {retry_count}
 What's happening:
 {plain English explanation — 1-2 sentences max}
 
-{if failure_type known from Pipeline History}
+{if failure_type determinable from ## Review and ## QA}
 Failure type: {LINT | TEST | QUERY | SECURITY | REVIEW_CRITICAL | REVIEW_MAJOR}
-Reason: {specific reason from Review Verdict or Pipeline History — one line}
+Reason: {specific reason from ## Review findings — one line}
 
 {if no intervention needed}
 → No action needed. Pipeline will continue automatically.

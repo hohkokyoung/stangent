@@ -69,7 +69,7 @@ Read from the feature file:
   - ## Scope         → summary paragraph
   - ## Acceptance Criteria → checkbox list
   - ## Files Changed → list of changed files
-  - ## Test Report   → coverage and status
+  - ## QA            → lint/test/query status
   - ## Security Report → status line
 
 Build PR body:
@@ -89,7 +89,7 @@ Build PR body:
 
 ## Test & Security
 
-- Tests: {## Test Report status and coverage delta}
+- QA: {## QA line}
 - Security: {## Security Report status}
 
 ---
@@ -130,12 +130,7 @@ If it fails: output the error from gh and stop.
 
 ---
 
-## Step 8 — Update feature file
-
-Append to ## Pipeline History:
-  `[timestamp] | PR_CREATED | developer | {pr_url}`
-
-Output:
+## Step 8 — Output
   ```
   ✓ PR created: {pr_url}
   Branch: {branch} → {pr_target}

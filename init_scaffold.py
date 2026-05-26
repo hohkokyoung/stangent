@@ -409,10 +409,31 @@ def _hook_present(entries: list, command: str) -> bool:
     )
 
 
+def _upsert_hook(entries: list, command: str, desired_matcher: str) -> bool:
+    """
+    Ensure `command` is present in `entries` with `desired_matcher`.
+    Updates the matcher in-place if the hook exists with a stale matcher.
+    Returns True if any change was made.
+    """
+    for entry in entries:
+        if any(h.get("command") == command for h in entry.get("hooks", [])):
+            if entry.get("matcher") != desired_matcher:
+                entry["matcher"] = desired_matcher
+                return True   # matcher corrected
+            return False      # already correct, no change
+    # not found — append new entry
+    entries.append({
+        "matcher": desired_matcher,
+        "hooks": [{"type": "command", "command": command}],
+    })
+    return True
+
+
 def write_settings_json(project_root: Path, dry_run: bool):
     """
     Deploy .claude/settings.json with PreToolUse (gateway) and PostToolUse
     (observer) hooks. Merges with any existing settings rather than overwriting.
+    Uses upsert logic so the matcher is always kept up to date on re-runs.
     """
     settings_path = project_root / ".claude" / "settings.json"
 
@@ -428,28 +449,25 @@ def write_settings_json(project_root: Path, dry_run: bool):
     changed = False
 
     # ── PreToolUse: gateway enforcement ──────────────────────────────────────
-    gateway_cmd  = "python .stangent/gateway/gateway.py"
+    # Include Read so the gateway can enforce planning-time read blocks and
+    # QA artefact read blocks (layers 2c/2d). Without Read, those layers
+    # never fire even though the code is there.
+    gateway_cmd      = "python .stangent/gateway/gateway.py"
+    gateway_matcher  = "Write|Edit|Bash|Read"
     pre_tool_use: list = hooks.setdefault("PreToolUse", [])
-    if not _hook_present(pre_tool_use, gateway_cmd):
-        pre_tool_use.append({
-            "matcher": "Write|Edit|Bash",
-            "hooks": [{"type": "command", "command": gateway_cmd}],
-        })
+    if _upsert_hook(pre_tool_use, gateway_cmd, gateway_matcher):
         changed = True
-        info(".claude/settings.json — PreToolUse gateway hook added")
+        info(".claude/settings.json — PreToolUse gateway hook added/updated")
     else:
         ok(".claude/settings.json — gateway hook already present")
 
     # ── PostToolUse: observer logging ─────────────────────────────────────────
-    observer_cmd   = "python .stangent/observer/observer.py"
+    observer_cmd     = "python .stangent/observer/observer.py"
+    observer_matcher = "Read|Write|Edit|Glob|Grep|Bash"
     post_tool_use: list = hooks.setdefault("PostToolUse", [])
-    if not _hook_present(post_tool_use, observer_cmd):
-        post_tool_use.append({
-            "matcher": "Read|Write|Edit|Glob|Grep|Bash",
-            "hooks": [{"type": "command", "command": observer_cmd}],
-        })
+    if _upsert_hook(post_tool_use, observer_cmd, observer_matcher):
         changed = True
-        info(".claude/settings.json — PostToolUse observer hook added")
+        info(".claude/settings.json — PostToolUse observer hook added/updated")
     else:
         ok(".claude/settings.json — observer hook already present")
 
@@ -462,45 +480,29 @@ def write_settings_json(project_root: Path, dry_run: bool):
 
 
 def create_memory(project_root: Path, config: dict, dry_run: bool):
-    memory_path = project_root / config["paths"].get("memory_path", ".stangent/memory.md")
-    if memory_path.exists():
-        ok("memory.md already exists")
-        return
-    template = (STANGENT_PATH / "templates" / "memory.md").read_text(encoding="utf-8")
-    if not dry_run:
-        memory_path.write_text(template, encoding="utf-8")
-    info("Created .stangent/memory.md")
+    # memory.md removed in v1.3 — no-op kept for call-site compatibility
+    pass
 
 
 def create_srs(project_root: Path, config: dict, dry_run: bool):
-    srs_path = project_root / config["paths"]["srs_path"]
+    # srs.jsonl is auto-created by the reviewer on first PASS; scaffold an empty file
+    srs_path = project_root / ".stangent" / "srs.jsonl"
     if srs_path.exists():
-        ok("SRS.md already exists")
+        ok("srs.jsonl already exists")
         return
-
-    template = (STANGENT_PATH / "templates" / "srs.md").read_text(encoding="utf-8")
-    project_name = project_root.name
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    template = template.replace("{{PROJECT_NAME}}", project_name)
-    template = template.replace("{{PROFILE}}", config["profiles"][0])
-    template = template.replace("{{VERSION}}", VERSION)
-    template = template.replace("{{ISO_DATE}}", now)
-
     if not dry_run:
-        srs_path.write_text(template, encoding="utf-8")
-    info("Created .stangent/SRS.md")
+        srs_path.write_text("", encoding="utf-8")
+    info("Created .stangent/srs.jsonl")
 
 
 def create_decisions(project_root: Path, config: dict, dry_run: bool):
     decisions_path = project_root / config["paths"]["decisions_path"]
     if decisions_path.exists():
-        ok("decisions.md already exists")
+        ok("decisions.json already exists")
         return
-
-    template = (STANGENT_PATH / "templates" / "decisions.md").read_text(encoding="utf-8")
     if not dry_run:
-        decisions_path.write_text(template, encoding="utf-8")
-    info("Created .stangent/decisions.md")
+        decisions_path.write_text("[]", encoding="utf-8")
+    info("Created .stangent/decisions.json")
 
 
 def create_env_example(project_root: Path, dry_run: bool):
@@ -525,7 +527,6 @@ def update_gitignore(project_root: Path, dry_run: bool):
         ".env",
         ".claude/settings.local.json",
         ".stangent/logs/",
-        ".stangent/context_cache.md",
         ".stangent/features_registry.json",
         ".stangent/features_registry.lock",
         ".stangent/coverage_baseline.json",
@@ -539,8 +540,8 @@ def update_gitignore(project_root: Path, dry_run: bool):
         "!.stangent/config.json",
         "!.stangent/features/",
         "!.stangent/archive/",
-        "!.stangent/SRS.md",
-        "!.stangent/decisions.md",
+        "!.stangent/srs.jsonl",
+        "!.stangent/decisions.json",
         "!.stangent/profiles/",
         "!.stangent/templates/",
         "!.stangent/prompts/",
@@ -596,19 +597,19 @@ then implement, test, review, and document the feature.
 | **Stangent Planner** | Planning only — write a spec, stop before implementing |
 | **Stangent Implementer** | Implementation only — code a planned feature |
 | **Stangent Reviewer** | Review only — review an implemented feature |
-| **Stangent SRS** | Update the living system requirements document |
 | **Stangent ADR** | Record an architectural decision |
 
 ### Slash commands (type `/` in chat)
 
 | Command | What it does |
 |---------|--------------|
-| `/feature <description>` | Full pipeline: plan → implement → review → SRS |
+| `/feature <description>` | Full pipeline: plan → implement → review |
 | `/plan <description>` | Plan only, get a spec, confirm before implementing |
 | `/implement FEAT-XXX` | Implement a planned feature |
 | `/review FEAT-XXX` | Review an implemented feature |
-| `/srs` | Update the SRS for all completed features |
-| `/srs FEAT-XXX` | Update SRS for one feature |
+| `/srs` | Show the SRS summary for all completed features |
+| `/srs FEAT-XXX` | Show SRS entry for one feature |
+| `/srs --rebuild` | Regenerate srs.jsonl from all COMPLETE feature files |
 | `/status` | Show all features and their states |
 | `/status FEAT-XXX` | Show detailed status for one feature |
 | `/resume FEAT-XXX` | Resume a paused or interrupted feature |
@@ -624,8 +625,8 @@ then implement, test, review, and document the feature.
 ├── features/        ← one file per feature (the source of truth)
 ├── archive/         ← completed and abandoned features
 ├── logs/            ← JSON Lines run logs per feature
-├── SRS.md           ← auto-maintained System Requirements Specification
-└── decisions.md     ← Architecture Decision Records (add yours here)
+├── srs.jsonl        ← auto-maintained SRS (one JSON line per completed feature)
+└── decisions.json   ← Architecture Decision Records (add yours here)
 ```
 
 ## Pipeline
@@ -633,7 +634,7 @@ then implement, test, review, and document the feature.
 ```
 /feature → [ADR BOOTSTRAP — first feature only]
          → PLANNING → AWAITING_CONFIRMATION → IMPLEMENTING
-         → REVIEWING → SRS_UPDATE → COMPLETE
+         → REVIEWING → COMPLETE
 ```
 
 The pipeline pauses at AWAITING_CONFIRMATION. You must confirm the spec
@@ -654,7 +655,7 @@ before writing the spec.
 
 ## Decisions Log
 
-Architectural decisions are stored in `.stangent/decisions.md`.
+Architectural decisions are stored in `.stangent/decisions.json`.
 
 ## Meta Files (optional)
 
@@ -678,7 +679,7 @@ Example — if changing a model also means updating API docs:
   feature conflicts with existing ADRs and asks you to comply, override (with
   reason), or cancel. Overrides are recorded per-feature — the ADR stays active
   for all other features.
-- **Enforcement:** All agents read decisions.md and apply every Accepted ADR
+- **Enforcement:** All agents read decisions.json and apply every Accepted ADR
   automatically. No need to remind them.
 
 ## Customising Agents
@@ -747,6 +748,84 @@ def write_install_manifest(project_root: Path, dry_run: bool) -> None:
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     ok(".stangent/.installed.json — manifest written")
+
+
+def register_project(project_root: Path, dry_run: bool = False) -> None:
+    """Add this project to ~/.stangent/projects.json."""
+    from init_constants import STANGENT_REGISTRY
+    from datetime import datetime, timezone
+
+    entry = {
+        "config_path": str((project_root / ".stangent" / "config.json").resolve()),
+        "name":        project_root.resolve().name,
+        "root":        str(project_root.resolve()),
+        "registered_at": datetime.now(timezone.utc).date().isoformat(),
+    }
+
+    registry = _load_registry()
+    existing = {p["config_path"] for p in registry}
+    if entry["config_path"] not in existing:
+        registry.append(entry)
+        if not dry_run:
+            _save_registry(registry)
+        info(f"Registered {entry['name']} in global projects registry")
+
+
+def unregister_project(project_root: Path, dry_run: bool = False) -> None:
+    """Remove this project from ~/.stangent/projects.json."""
+    config_path = str((project_root / ".stangent" / "config.json").resolve())
+    registry = _load_registry()
+    before = len(registry)
+    registry = [p for p in registry if p["config_path"] != config_path]
+    if len(registry) < before:
+        if not dry_run:
+            _save_registry(registry)
+        info(f"Unregistered {project_root.name} from global projects registry")
+
+
+def _load_registry() -> list[dict]:
+    from init_constants import STANGENT_REGISTRY
+    if not STANGENT_REGISTRY.exists():
+        return []
+    try:
+        return json.loads(STANGENT_REGISTRY.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+
+def _save_registry(registry: list[dict]) -> None:
+    from init_constants import STANGENT_REGISTRY
+    STANGENT_REGISTRY.parent.mkdir(parents=True, exist_ok=True)
+    STANGENT_REGISTRY.write_text(json.dumps(registry, indent=2), encoding="utf-8")
+
+
+def scaffold_only(project_root: Path, dry_run: bool = False) -> bool:
+    """
+    Re-run only the file-copying steps for an already-initialised project.
+    Skips all interactive prompts, env checks, and config modifications.
+    Returns True if successful, False if the project config is missing/invalid.
+    """
+    config_path = project_root / ".stangent" / "config.json"
+    if not config_path.exists():
+        warn(f"{project_root.name} — .stangent/config.json not found, skipping")
+        return False
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except Exception:
+        warn(f"{project_root.name} — config.json is invalid JSON, skipping")
+        return False
+
+    copy_profiles(project_root, dry_run)
+    copy_templates(project_root, dry_run)
+    copy_prompts(project_root, dry_run)
+    copy_gateway(project_root, dry_run)
+    copy_scripts(project_root, dry_run)
+    copy_commands(project_root, config, dry_run)
+    copy_skills(project_root, dry_run)
+    copy_claude_agents(project_root, dry_run)
+    write_settings_json(project_root, dry_run)
+    write_install_manifest(project_root, dry_run)
+    return True
 
 
 def configure_dbhub(config: dict, config_path: Path, project_root: Path, dry_run: bool, is_reinit: bool = False):

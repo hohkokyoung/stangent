@@ -16,8 +16,12 @@ Run this inline — do not spawn a sub-agent.
    - A config value or flag change
    - A small behavioural tweak on an existing screen/endpoint
    - Removing or disabling something
+   - **Adding field sections or options to an existing form/dialog/overlay widget** (even
+     if the widget is large and AC count is high — the change is still contained)
+   - **Adding or fixing a loading, error, or empty state in an existing widget**
 
-2. Likely touches **≤ 3 existing files** — no new files expected.
+2. Likely touches **≤ 4 existing files** — no new files expected (a primary widget file +
+   its test file + one provider/constants file still qualifies).
 
 3. No database changes (no new migrations, no schema changes, no model additions).
 
@@ -27,7 +31,7 @@ Run this inline — do not spawn a sub-agent.
 
 6. No new environment variables.
 
-7. No architectural decision required (nothing in decisions.md would be affected).
+7. No architectural decision required (nothing in decisions.json would be affected).
 
 ---
 
@@ -39,9 +43,10 @@ Run this inline — do not spawn a sub-agent.
 - Database migration or model change
 - New package/dependency added
 - Feature spans more than one domain (e.g. auth + profile + analytics)
-- Multiple acceptance criteria across different system layers
+- Multiple acceptance criteria **across different stacks** (e.g. mobile UI + backend +
+  database) — note: many AC items within a single stack does NOT trigger standard
 - Unclear scope — requires developer clarification
-- Estimated files to touch > 3, or new files expected
+- Estimated files to touch > 4, or new files expected
 
 ---
 
@@ -54,9 +59,11 @@ tier = "direct"   ← all direct conditions met
 tier = "standard" ← any standard condition met, or ambiguous
 ```
 
-When in doubt, classify as `standard`. The cost of a wrong `direct` is a
-missing spec section. The cost of a wrong `standard` is extra tokens.
-Prefer safety.
+When in doubt: ask yourself "does this feature add new architectural structure
+(new file, new class, new API shape, new dependency) or does it extend/fix
+something that already exists?" Extending existing structure → `direct`.
+Creating new structure → `standard`. A wrong `direct` misses one spec section
+(low cost, caught in review). A wrong `standard` burns 40–60 k extra tokens
+every run (high cost, invisible). Default to `direct` for pure UI work.
 
 Write `tier` to the feature file frontmatter.
-Append to Pipeline History: `tier classified: {tier} — {one-line reason}`

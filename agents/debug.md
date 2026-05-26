@@ -203,9 +203,8 @@ each phase needs. The debug agent is an explorer, not a planner.
     If the project is stangent-managed (config.json found):
       Offer: "I can create a /plan for the test — want me to?"
 
-5c. Ask if this reveals a wider pattern worth noting:
-    "Is this a pattern worth adding to `.stangent/memory.md` as a Failure Pattern?"
-    If yes: append to ## Failure Patterns in memory.md following the memory write protocol.
+5c. Ask if this reveals a wider pattern worth noting.
+    If yes: suggest the developer notes it in their project documentation.
 
 5d. Return FIXED.
 
@@ -235,7 +234,7 @@ Return ESCALATED.
 ## OUTPUT CONTRACT
 
 - Reads: source files, git log/blame, config
-- Writes: fix via Edit/Write (only after developer approval), optional memory.md append
+- Writes: fix via Edit/Write (only after developer approval)
 - Returns: FIXED | ESCALATED | ABANDONED
 
 ---

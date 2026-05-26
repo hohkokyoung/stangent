@@ -110,6 +110,9 @@ exclude_dirs:
   - coverage
   - .git
   - .stangent
+  - packages          # local vendored packages
+  - AppData           # Windows pub cache — never read third-party sources
+  - .pub-cache        # Linux/Mac pub cache
 ```
 
 ---
@@ -126,7 +129,7 @@ review_checklist:
   4.  const constructors used wherever possible
   5.  ListView/GridView use .builder() for lists > 10 items
   6.  No unnecessary setState() calls — state changes are minimal and targeted
-  7.  State management follows the project ADR (Riverpod / Provider / Bloc — check decisions.md)
+  7.  State management follows the project ADR (Riverpod / Provider / Bloc — check decisions.json)
   8.  No raw sqflite/Drift queries with string interpolation
   9.  All sqflite/Drift queries use whereArgs or parameterized form
   10. No hardcoded strings — all user-visible text uses i18n keys (if i18n_aware)
@@ -232,7 +235,7 @@ SRS agent documents:
 
 ## State Management Detection
 
-Read `pubspec.yaml` and `decisions.md` to determine state management library.
+Read `pubspec.yaml` and `decisions.json` to determine state management library.
 Apply the correct patterns accordingly:
 
 ```
