@@ -29,3 +29,9 @@ plan_id:
   prefix: FEAT       # plans become FEAT-001, FEAT-002, ...
   pad: 3             # digit count; 3 → 001..999, 4 → 0001..9999
   start: 1           # first number when no existing plans
+
+git:
+  auto_branch: true                    # /agentic-plan creates a feature branch
+  branch_template: "feat/{run_id}"     # {run_id} → e.g. FEAT-001 → feat/FEAT-001
+  base_branch: ""                      # empty = branch from current HEAD; else e.g. "main"
+  fail_on_wip: true                    # refuse if working tree has uncommitted changes

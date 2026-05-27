@@ -60,3 +60,4 @@ Every `/agentic-update-plan` invocation appends a block to `_overview.md` under 
 - Single planner call (no MCP, no `retrieve`).
 - All write-scope rules from `agents/planner.md` still apply, plus the frozen-set rule.
 - `/agentic-build` afterward will only dispatch tasks whose deps are `done` — so newly added tasks may sit `pending` until their (also new) dependencies finish.
+- **Does NOT touch git.** The feature branch was created by `/agentic-plan` at run start; update-plan operates on whatever branch the user is currently on. If you've left the feature branch, switch back yourself before running `/agentic-build`.
