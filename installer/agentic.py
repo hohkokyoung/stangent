@@ -37,7 +37,10 @@ GITIGNORE_BLOCK = """# >>> agentic
 """
 GITIGNORE_RE = re.compile(r"# >>> agentic.*?# <<< agentic\r?\n?", re.DOTALL)
 
-SYSTEM_OWNED = ["agents", "commands", "skills", "hooks", "mcp", "state", ".agentic.yml"]
+SYSTEM_OWNED = ["agents", "commands", "skills", "hooks", "mcp", "evals", "state", ".agentic.yml"]
+# Note: adrs/ is intentionally NOT in SYSTEM_OWNED. ADRs are user-authored
+# project decisions; uninstall preserves them. Delete the dir manually if you
+# really want them gone.
 
 
 def info(msg: str) -> None:
@@ -63,8 +66,9 @@ def copy_templates(target: Path) -> None:
     dst = target / ".claude"
     dst.mkdir(parents=True, exist_ok=True)
 
-    mirror_dirs = {"agents", "commands", "skills", "hooks", "mcp"}
+    mirror_dirs = {"agents", "commands", "skills", "hooks", "mcp", "evals"}
     overwrite_files = {".agentic.yml", "settings.json"}
+    seed_dirs = {"adrs"}  # copied only on first install; user-managed thereafter
 
     for name in mirror_dirs:
         src_d = src / name
@@ -79,6 +83,16 @@ def copy_templates(target: Path) -> None:
         src_f = src / name
         if src_f.exists():
             shutil.copy2(src_f, dst / name)
+
+    for name in seed_dirs:
+        src_d = src / name
+        dst_d = dst / name
+        if not src_d.exists():
+            continue
+        if dst_d.exists():
+            info(f"seed dir {name}/ already present — leaving as-is")
+            continue
+        shutil.copytree(src_d, dst_d)
 
     info(f"copied templates to {dst}")
 

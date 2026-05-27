@@ -88,19 +88,21 @@ Those belong to the implementer. If you find yourself writing them, stop.
 2. Read the user goal carefully. Extract explicit and inferred requirements.
 3. **Walk the AskUserQuestion coverage checklist** (see section above). For every dimension where a blocking ambiguity remains after re-reading the user's message, batch related questions into a round and ask. Repeat up to 4 rounds. If gaps remain after 4 rounds → write `_overview.md` with `status: blocked` and stop (do NOT emit task files).
 4. List constraints and edge cases (now informed by the answers).
-5. Decide on skills involved (from `enabled_skills`).
-6. Decompose into 3–8 tasks. For each task, decide:
+5. Read all **accepted ADRs**: `.claude/adrs/ADR-*.md` where frontmatter `status: accepted`. These are project-level rules that bind every task. Make a short mental index: id → title → one-line decision.
+6. Decide on skills involved (from `enabled_skills`).
+7. Decompose into 3–8 tasks. For each task, decide:
    - `role`: implementer / reviewer / tester
    - `intent`: one-line statement
    - `acceptance`: testable criteria
    - `edge_cases`: list
    - `skills_to_load`: list of skill names (verify non-overlap). This is BOTH the list of `SKILL.md` files to inject AND the retrieval scope — `retrieve()` only sees chunks from `skills/<name>/references/` for these names.
+   - `adrs`: list of accepted ADR ids that are **relevant to this task only**. Be parsimonious — list an ADR only if its rule could plausibly affect the implementer's choices. Do NOT list every accepted ADR on every task.
    - `depends_on`: justified edges only
-7. Allocate the `run_id` by running `python .claude/hooks/lib/plan_id.py next` (default format: `FEAT-001`, `FEAT-002`, ... configurable via `.agentic.yml: plan_id`).
-8. Create `.claude/state/plans/<run-id>/` and write:
-   - `_overview.md` with goal, requirements, constraints, edge cases, **assumptions**, **resolved questions** (Q→A from the rounds), and task index.
+8. Allocate the `run_id` by running `python .claude/hooks/lib/plan_id.py next` (default format: `FEAT-001`, `FEAT-002`, ... configurable via `.agentic.yml: plan_id`).
+9. Create `.claude/state/plans/<run-id>/` and write:
+   - `_overview.md` with goal, requirements, constraints, edge cases, **assumptions**, **resolved questions** (Q→A from the rounds), **adrs in scope** (union of every task's `adrs:`), and task index.
    - One `<task-id>.md` per task. All `status: pending`. Frontmatter exactly per the schema in the spec.
-9. Print the dashboard (task ids + intents) and stop.
+10. Print the dashboard (task ids + intents) and stop.
 
 ## Task file template
 
@@ -110,6 +112,7 @@ id: t1
 run_id: <run-id>
 role: implementer
 intent: "<one-line>"
+adrs: []                # list of accepted ADR ids relevant to THIS task only
 acceptance: "<testable>"
 edge_cases: ["<e1>", "<e2>"]
 skills_to_load: [<skill_names>]
