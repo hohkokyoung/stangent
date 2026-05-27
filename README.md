@@ -2,8 +2,6 @@
 
 A Claude Code–native agentic development workflow. Installs per-project under `.claude/`. Agents are organized by **role** (planner / implementer / reviewer / tester), not by stack. Stack expertise lives in skill prompt blocks plus a retrievable references corpus.
 
-> v1 — correctness of the loop. v2 / v3 are symptom-driven; nothing built without a named failure mode.
-
 ---
 
 ## Install into a project
