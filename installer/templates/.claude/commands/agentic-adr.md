@@ -12,7 +12,7 @@ Manage project-level architectural decisions. ADRs override skill defaults and b
 ### `new <title>`
 
 1. Allocate id: `python .claude/hooks/lib/adr_id.py next` (e.g. `ADR-003`).
-2. Create `.claude/adrs/<id>-<slug>.md` by copying `.claude/adrs/_template.md`.
+2. Create `.claude/adrs/<id>-<slug>.md` by copying `.claude/templates/adr.md`.
 3. Set frontmatter: `id`, `title`, `status: proposed`, `date` (UTC YYYY-MM-DD), `supersedes: null`.
 4. Print the path and tell the user: *"Edit it, then re-run `/agentic-adr accept <id>` to make it binding."*
 

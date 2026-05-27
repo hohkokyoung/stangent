@@ -99,65 +99,20 @@ Those belong to the implementer. If you find yourself writing them, stop.
    - `adrs`: list of accepted ADR ids that are **relevant to this task only**. Be parsimonious — list an ADR only if its rule could plausibly affect the implementer's choices. Do NOT list every accepted ADR on every task.
    - `depends_on`: justified edges only
 8. Allocate the `run_id` by running `python .claude/hooks/lib/plan_id.py next` (default format: `FEAT-001`, `FEAT-002`, ... configurable via `.agentic.yml: plan_id`).
-9. Create `.claude/state/plans/<run-id>/` and write:
-   - `_overview.md` with goal, requirements, constraints, edge cases, **assumptions**, **resolved questions** (Q→A from the rounds), **adrs in scope** (union of every task's `adrs:`), and task index.
-   - One `<task-id>.md` per task. All `status: pending`. Frontmatter exactly per the schema in the spec.
-10. Print the dashboard (task ids + intents) and stop.
+9. **Read the templates**: `.claude/templates/task.md` and `.claude/templates/overview.md`. These define the exact structure of what you're about to write.
+10. Create `.claude/state/plans/<run-id>/` and write:
+    - `_overview.md` matching `templates/overview.md` (goal, requirements, constraints, edge cases, assumptions, resolved questions, ADRs in scope, amendments log placeholder, task index).
+    - One `<task-id>.md` per task matching `templates/task.md`. All `status: pending`.
+11. Print the dashboard (task ids + intents) and stop.
 
-## Task file template
+## Templates
 
-```markdown
----
-id: t1
-run_id: <run-id>
-role: implementer
-intent: "<one-line>"
-adrs: []                # list of accepted ADR ids relevant to THIS task only
-acceptance: "<testable>"
-edge_cases: ["<e1>", "<e2>"]
-skills_to_load: [<skill_names>]
-depends_on: []
-status: pending
-blocker: null
-definition_of_done: |
-  - acceptance criteria met
-  - no known unresolved blockers
-  - code compiles / runs
-  - reviewer/tester has no blocking failures (if applicable to this task)
----
+You DO NOT inline the task or overview structure in your output planning. Instead, read these two files once at the start of step 8 and emit content that matches their structure exactly:
 
-## Goal
-<one paragraph>
+- `.claude/templates/task.md` — the per-task file shape (frontmatter + sections + write-scope hints).
+- `.claude/templates/overview.md` — the `_overview.md` shape.
 
-## Requirements
-- [ ] ...
-
-## Constraints
-- ...
-
-## Edge cases
-- ...
-
-## Design
-
-<!-- filled by implementer -->
-
-## Test outline
-
-- Happy path:
-- Boundary:
-- Failure:
-
-## Decisions log
-
-## Review
-
-<!-- appended by reviewer -->
-
-## Test results
-
-<!-- appended by tester -->
-```
+Treat the templates as the contract. If you find yourself wanting to add a field or section that's not in the template, stop — either the template needs updating (out of your scope; tell the user) or you're going beyond what the template authorizes.
 
 ## Update mode (invoked by `/agentic-update-plan`)
 

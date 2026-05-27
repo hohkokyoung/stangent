@@ -21,27 +21,7 @@ proposed  →  accepted  →  superseded
 
 ## File format
 
-```markdown
----
-id: ADR-001
-title: All timestamps are UTC
-status: accepted        # proposed | accepted | superseded
-date: 2026-05-27
-supersedes: null        # ADR-XXX if this replaces an earlier one
----
-
-## Context
-Why this decision is needed. Forces in play, what was tried before.
-
-## Decision
-What we decided, stated as a rule.
-
-## Consequences
-What follows from this rule — both desirable and undesirable.
-
-## Anti-patterns
-Concrete things this rule forbids. The implementer/reviewer use these to detect violations.
-```
+See `.claude/templates/adr.md` for the canonical structure. New ADRs are created with `/agentic-adr new <title>`, which copies that template, allocates the next id, and sets `status: proposed`.
 
 ## Allocating an id
 

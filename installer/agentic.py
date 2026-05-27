@@ -37,7 +37,7 @@ GITIGNORE_BLOCK = """# >>> agentic
 """
 GITIGNORE_RE = re.compile(r"# >>> agentic.*?# <<< agentic\r?\n?", re.DOTALL)
 
-SYSTEM_OWNED = ["agents", "commands", "skills", "hooks", "mcp", "evals", "state", ".agentic.yml"]
+SYSTEM_OWNED = ["agents", "commands", "skills", "hooks", "mcp", "evals", "templates", "state", ".agentic.yml"]
 # Note: adrs/ is intentionally NOT in SYSTEM_OWNED. ADRs are user-authored
 # project decisions; uninstall preserves them. Delete the dir manually if you
 # really want them gone.
@@ -66,7 +66,7 @@ def copy_templates(target: Path) -> None:
     dst = target / ".claude"
     dst.mkdir(parents=True, exist_ok=True)
 
-    mirror_dirs = {"agents", "commands", "skills", "hooks", "mcp", "evals"}
+    mirror_dirs = {"agents", "commands", "skills", "hooks", "mcp", "evals", "templates"}
     overwrite_files = {".agentic.yml", "settings.json"}
     seed_dirs = {"adrs"}  # copied only on first install; user-managed thereafter
 
