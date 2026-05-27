@@ -33,6 +33,7 @@ TEMPLATES_DIR = SCRIPT_DIR / "templates"
 GITIGNORE_BLOCK = """# >>> agentic
 .claude/state/vectors.db
 .claude/state/logs/
+.mcp.json
 # <<< agentic
 """
 GITIGNORE_RE = re.compile(r"# >>> agentic.*?# <<< agentic\r?\n?", re.DOTALL)
@@ -93,6 +94,17 @@ def copy_templates(target: Path) -> None:
             info(f"seed dir {name}/ already present — leaving as-is")
             continue
         shutil.copytree(src_d, dst_d)
+
+    # .mcp.json — Claude Desktop reads this at project root (not under .claude/).
+    # Seeded only on first install so user-added credentials survive re-install.
+    mcp_src = TEMPLATES_DIR / ".mcp.json"
+    mcp_dst = target / ".mcp.json"
+    if mcp_src.exists():
+        if mcp_dst.exists():
+            info(".mcp.json already present at project root — leaving as-is")
+        else:
+            shutil.copy2(mcp_src, mcp_dst)
+            info("seeded .mcp.json at project root — fill in DSN + PAT to enable dbhub/supabase")
 
     info(f"copied templates to {dst}")
 
@@ -162,6 +174,21 @@ def strip_managed_settings(target: Path) -> None:
         info("stripped managed entries from settings.json")
 
 
+def remove_mcp_json_if_template(target: Path) -> None:
+    """Remove .mcp.json only if it still looks like the unedited template
+    (contains the REPLACE_WITH_... placeholders). If the user has filled
+    in real credentials, we leave it alone."""
+    p = target / ".mcp.json"
+    if not p.exists():
+        return
+    content = p.read_text(encoding="utf-8")
+    if "REPLACE_WITH_" in content:
+        p.unlink()
+        info("removed .mcp.json (was unedited template)")
+    else:
+        info(".mcp.json kept — contains real credentials. Delete manually if you want it gone.")
+
+
 def remove_system_dirs(target: Path) -> None:
     claude = target / ".claude"
     if not claude.exists():
@@ -195,6 +222,7 @@ def remove_gitignore_block(target: Path) -> None:
 def uninstall(target: Path) -> None:
     strip_managed_settings(target)
     remove_system_dirs(target)
+    remove_mcp_json_if_template(target)
     remove_gitignore_block(target)
     info(f"uninstall complete at {target}")
 

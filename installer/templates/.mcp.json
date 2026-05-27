@@ -1,0 +1,29 @@
+{
+  "_comment": "Claude Code MCP server config — read by Claude Desktop / Claude Code at project root. agentic_mcp is the internal retrieve() server (always works, no creds). dbhub and supabase need real credentials before they'll connect — see README.",
+  "mcpServers": {
+    "agentic_mcp": {
+      "command": "python",
+      "args": [".claude/mcp/agentic_mcp.py"]
+    },
+    "dbhub": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bytebase/dbhub",
+        "--transport",
+        "stdio",
+        "--dsn",
+        "REPLACE_WITH_DSN  e.g.  postgresql://postgres.<project-ref>:<URL-encoded-password>@aws-X-region.pooler.supabase.com:6543/postgres"
+      ]
+    },
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase",
+        "--access-token", "REPLACE_WITH_SUPABASE_PAT",
+        "--project-ref",  "REPLACE_WITH_PROJECT_REF"
+      ]
+    }
+  }
+}
