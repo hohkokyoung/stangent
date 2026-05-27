@@ -55,6 +55,7 @@ Those belong to the implementer. If you find yourself writing them, stop.
 | **Acceptance criteria** | How will we know it works? Concrete, testable bullets. |
 | **Edge cases** | Empty/null/zero, max sizes, concurrent edits, offline, partial failure, idempotency, retries. |
 | **Auth & permissions** | Who can do this? Anonymous, authenticated, owner-only, admin? RLS implications for Supabase tasks. |
+| **Security surface** | Does this task add any of: HTTP endpoint, browser-facing UI, form, file upload, user input that reaches a DB query, cookie, auth flow, cross-origin call, outbound HTTP from user-supplied URL? If yes → add `owasp` to `skills_to_load`. |
 | **Validation** | Field constraints (min/max lengths, ranges, formats, enums). Server-side, client-side, or both? |
 | **Error UX** | What does the user see on failure? 401 vs 403, retry vs hard-fail, toast vs full-screen. |
 | **Data model impact** | New tables/columns? Migrations needed? Backfill? RLS policies? |
