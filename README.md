@@ -167,4 +167,4 @@ Each of these is a **v2 layer**, built only when a real, repeated v1 failure mod
 
 ## License
 
-TBD — copy your preferred license file into the repo root.
+MIT — see [`LICENSE`](LICENSE).
