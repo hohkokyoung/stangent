@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/pre_tool_use.py",
+            "_agentic_managed": true
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/post_tool_use.py",
+            "_agentic_managed": true
+          }
+        ]
+      }
+    ]
+  },
+  "mcpServers": {
+    "agentic_mcp": {
+      "_agentic_managed": true,
+      "command": "python",
+      "args": [".claude/mcp/agentic_mcp.py"]
+    },
+    "dbhub": {
+      "_agentic_managed": true,
+      "command": "npx",
+      "args": ["-y", "@bytebase/dbhub"]
+    },
+    "supabase": {
+      "_agentic_managed": true,
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server-supabase"]
+    }
+  }
+}

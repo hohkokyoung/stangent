@@ -1,18 +1,4 @@
-# Environment
-.env
-.env.local
-
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-.pytest_cache/
-.ruff_cache/
-dist/
-build/
-*.egg-info/
-
-# Editor
-.vscode/
-.idea/
-*.swp
+# >>> agentic
+.claude/state/vectors.db
+.claude/state/logs/
+# <<< agentic

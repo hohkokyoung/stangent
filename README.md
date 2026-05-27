@@ -1,328 +1,170 @@
-# Stangent
+# Agentic Development Workflow System
 
-AI-assisted feature development inside Claude Code. Describe a feature — Stangent plans it, implements it, reviews it, and documents it. You confirm each step.
+A Claude Code–native agentic development workflow. Installs per-project under `.claude/`. Agents are organized by **role** (planner / implementer / reviewer / tester), not by stack. Stack expertise lives in skill prompt blocks plus a retrievable references corpus.
 
-No servers. No accounts. Just markdown files and Claude Code.
-
----
-
-## How it works
-
-```
-/feature add login screen
-    │
-    ▼  ADR BOOTSTRAP (first feature only — detects existing patterns)
-    ▼  TIER CLASSIFY — direct (small fix) or standard (full feature)
-    ▼  PLANNING      — direct: targeted reads only / standard: full scan + risk analysis
-    ▼  (you confirm — or --yes to skip)
-    ▼  IMPLEMENTING  — writes code → linter → tests → query analysis
-    ▼  REVIEWING     — spec compliance + parallel security/performance/quality scans
-    ▼
-  COMPLETE
-    │
-    └─ tested it and something's wrong?
-         /refine FEAT-XXX <what's wrong>
-              ▼  REFINING — planner revises spec from test feedback
-              ▼  (you confirm revised spec)
-              ▼  IMPLEMENTING  (clean retry, spec_version bumped)
-              ▼  REVIEWING
-              ▼
-            COMPLETE
-
-Side paths (no pipeline):
-  /debug <symptom>   — conversational investigation, 5 phases, evidence-only
-  /test [FEAT-XXX]   — re-run tests without re-implementing
-  /preview FEAT-XXX  — clean spec view, optional --diff against prior version
-  /stats [FEAT-XXX]  — token + $ breakdown per agent
-  /inbox             — features waiting on you
-```
-
-Everything is tracked in `.stangent/features/FEAT-XXX-slug.md`. Each agent owns its own sections — they never overwrite each other.
+> v1 — correctness of the loop. v2 / v3 are symptom-driven; nothing built without a named failure mode.
 
 ---
 
-## Features
-
-**Hard enforcement — not just instructions**
-- A `PreToolUse` gateway hook intercepts every file write and bash command. Agents physically cannot write outside the spec's `## Files to Touch` list or run destructive commands (`git push --force`, `rm -rf`, `DROP TABLE`). This runs at the OS hook level, not as a prompt suggestion.
-- Six enforcement layers: hard bash blocks → agent/state check → blocked paths → allowed paths whitelist → feature bash blocklist → per-agent capability caps.
-- Section ownership in the feature file is structural — each section has a named owner and the gateway enforces it. The planner cannot overwrite the review verdict. The implementer cannot alter the spec after confirmation.
-
-**Quality gates on every feature**
-- **Complexity tiers** — every request is auto-classified `direct` or `standard`. A visual fix, copy change, or single-file bug runs a lightweight planner (no full codebase scan, no risk analysis) and a lighter reviewer. Small fixes don't pay for big-feature overhead — token cost on tiny changes drops 60–70%.
-- **Spec-driven review** — reviewer checks only against what was specified. No unsolicited refactors, no gold-plating. CRITICAL and MAJOR findings come with exact `file:line` references and required fixes.
-- **Parallel specialist reviews** — security, performance, and quality reviewers spawn in parallel after spec compliance, then findings consolidate into one verdict.
-- **4-pass security scan** — secrets detection, SAST (bandit / dart_code_metrics), dependency CVE audit, and hardcoded config detection. Any CRITICAL finding blocks the commit.
-- **Surgical retries** — when a feature fails review, the implementer receives the exact findings and enters targeted fix mode. It touches only the flagged lines, not the whole feature.
-- **Sub-agent pipeline** — linter → unit tester → query analyzer must each pass before the implementer can commit. Each has a configurable retry ceiling before escalating to the developer.
-- **Impact & risk analysis** — before writing a standard-tier spec, the planner reasons across six dimensions: breaking changes, state/data migration, backward compatibility, fallback/degradation, feature flag need, and rollback complexity. Risks that need a decision are surfaced to the developer outside the clarifying-question budget — they are never silently skipped.
-- **Spec-first refinement** — if you test a completed feature and it's not right, `/refine FEAT-XXX <what's wrong>` triggers a lightweight planner revision pass. The planner reads the test feedback, identifies which spec sections caused the gap, revises only those sections, and reimplements from the updated spec. Avoids the drift that comes from ad-hoc conversational corrections on a stale plan.
-
-**Observability and ad-hoc debugging**
-- **Token & file tracking** — a PostToolUse hook logs every file read, write, edit, bash run, and search to `.stangent/logs/{feature_id}.jsonl` with char counts. Run `/stats` for a per-agent breakdown of where the tokens went.
-- **`/debug` for bugs** — conversational investigation (understand → narrow → root cause → fix → wrap up) for problems that don't need a full feature spec. Escalates to `/plan` if the fix turns out to be a real feature.
-- **Gateway audit log** — every blocked tool call recorded with reason; `/skill gateway-audit` summarises patterns.
-
-**Architectural decisions that stick**
-- `/adr` bootstraps existing patterns automatically on first run (detects your ORM, state manager, HTTP client, test framework from the codebase).
-- Every ADR is binding — planner flags contradictions before writing a spec, reviewer blocks any implementation that violates a decision, SRS logs every override with its reason.
-
-**Living SRS and decisions log**
-- After each completed feature the reviewer appends to `.stangent/srs.jsonl`: scope, ACs, env vars, and security summary — one JSON line per feature.
-- Architectural decisions live in `.stangent/decisions.json` (JSON array of ADR objects). The planner reads them before writing every spec and flags conflicts.
-- DBHub MCP integration: if enabled, the query analyzer runs real `EXPLAIN` queries and checks for missing indexes rather than just reading code.
-
-**Cross-stack coordination (Flutter + FastAPI + Supabase)**
-- The planner detects double-stack projects and automatically cascades spec scope: touching a FastAPI schema pulls the Flutter Dart model into scope; touching a route pulls the Flutter service method. Defined in `.stangent/meta.md`.
-- The reviewer runs a cross-stack drift check — field-by-field Pydantic→Dart type parity, nullable mismatch detection, JSON key casing verification, and new-endpoint→service method coverage. A missing Dart field for an `Optional[X]` Pydantic field is a MAJOR finding (runtime crash).
-- Supabase integration: architecture detection, RLS enforcement (new table without `ENABLE ROW LEVEL SECURITY` = MAJOR), service_role key in Flutter code = CRITICAL, JWT middleware verification in FastAPI, realtime subscription cleanup. Rules are enforced by both the implementer (as hard constraints) and the reviewer (as a dedicated security phase).
-
-**Flexible by default**
-- 7 providers out of the box: Anthropic, OpenAI, Groq, OpenRouter, Bedrock, Vertex, Ollama. Per-agent model assignment — use a fast model for linting, strong model for planning.
-- Python, FastAPI, and Flutter profiles included. Each profile defines its own lint commands, test patterns, security toolchain, review checklist, and query danger patterns. Adding a new language is one markdown file.
-- No servers, no accounts, no cloud state. Everything lives in your repo as plain markdown and JSON.
-
----
-
-## Requirements
-
-- **Claude Code** (desktop or CLI)
-- **Python 3.10+** (for `init.py` only)
-- **Git**
-
----
-
-## Install
-
-**1. Clone somewhere permanent:**
-```bash
-git clone https://github.com/yourname/stangent.git ~/stangent
-```
-
-**2. Set your API key** (Stangent auto-detects from env):
-
-| Provider | Env var |
-|----------|---------|
-| Anthropic | `ANTHROPIC_API_KEY` |
-| Groq | `GROQ_API_KEY` |
-| OpenRouter | `OPENROUTER_API_KEY` |
-| OpenAI | `OPENAI_API_KEY` |
-| Bedrock | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` |
-| Vertex | `GOOGLE_CLOUD_PROJECT` |
-| Ollama | *(none — use `--provider ollama`)* |
-
-**3. Global install** (once per machine — puts agents + commands in every project):
-```bash
-python ~/stangent/init.py --global
-```
-
-**4. Init each project:**
-```bash
-cd your-project
-python ~/stangent/init.py
-```
-
-Flags: `--provider <name>` · `--profile python,flutter` · `--dry-run` · `--verify`
-
-To remove Stangent from a project:
-```bash
-python ~/stangent/init.py --uninit         # keep .stangent/ data
-python ~/stangent/init.py --uninit --hard  # delete everything
-```
-
----
-
-## Commands
-
-**Pipeline commands** — drive features through stages:
-
-| Command | What it does |
-|---------|-------------|
-| `/feature <desc>` | Full pipeline — classify → plan → implement → review → SRS. `--yes` to auto-confirm. `--shadow` for dry run. |
-| `/plan <desc>` | Write spec only, stop before implementation |
-| `/implement FEAT-XXX` | Implement a confirmed spec |
-| `/refine FEAT-XXX <feedback>` | Revise spec from test feedback and reimplement |
-| `/resume FEAT-XXX` | Resume a paused or interrupted feature |
-| `/review FEAT-XXX` | Re-run review independently |
-| `/srs [FEAT-XXX]` | Show SRS summary; `--rebuild` to regenerate from feature files |
-| `/adr <title>` | Record an architectural decision |
-| `/abandon FEAT-XXX` | Cancel a feature — reverts code, archives spec, deletes branch |
-| `/pr FEAT-XXX` | Create GitHub PR for a COMPLETE feature |
-
-**Ad-hoc commands** — don't touch the pipeline:
-
-| Command | What it does |
-|---------|-------------|
-| `/debug <symptom>` | Conversational investigation (5 phases). No spec, no branch. |
-| `/test [FEAT-XXX\|--all]` | Re-run tests via unit_tester without re-implementing |
-| `/preview FEAT-XXX [--diff]` | Clean spec view, optional diff vs prior spec_version |
-
-**Visibility commands:**
-
-| Command | What it does |
-|---------|-------------|
-| `/status [FEAT-XXX]` | Feature dashboard with tier and last failure |
-| `/inbox` | Just features needing your action (AWAITING_CONFIRMATION / PAUSED / BLOCKED / ESCALATED) |
-| `/stats [FEAT-XXX]` | Token + $ cost breakdown per agent from observer log |
-| `/doctor` | Validate config, agents, gateway and observer wiring |
-
-**Maintenance commands:**
-
-| Command | What it does |
-|---------|-------------|
-| `/cleanup [--logs\|--dry-run]` | Remove stale branches/contracts; rotate large logs |
-| `/gateway <status\|unblock\|pause\|resume>` | Manage enforcement |
-| `/uninit [--hard]` | Remove Stangent from this project (uses install manifest) |
-
-Full docs for each command: `.stangent/HOW_THIS_WORKS.md` (generated in your project after init).
-
----
-
-## Profiles (supported languages)
-
-| Profile | Detects | Linter | Tests |
-|---------|---------|--------|-------|
-| `python` | `pyproject.toml`, `requirements.txt` | ruff | pytest + bandit + pip-audit |
-| `fastapi` | `fastapi` in requirements / pyproject | ruff + ASYNC rules | pytest-asyncio + httpx + bandit + pip-audit |
-| `flutter` | `pubspec.yaml` | dart analyze | flutter test |
-
-`fastapi` auto-detects and takes precedence over `python` when FastAPI is found as a dependency. Use `--profile fastapi` to select explicitly.
-
-**Flutter + FastAPI projects:** copy [`templates/meta_flutter_fastapi.md`](templates/meta_flutter_fastapi.md) to `.stangent/meta.md` and fill in your route-to-service mappings. The planner will automatically cascade spec scope across both stacks. Type mappings live in [`prompts/cross-stack-types.md`](prompts/cross-stack-types.md).
-
-**Supabase projects:** set `integrations.supabase.enabled = true` in config and add your project URL. Agents load [`prompts/supabase.md`](prompts/supabase.md) automatically — security rules, RLS enforcement, and architecture detection are applied to every feature.
-
-Add a new language: see [`templates/profile_guide.md`](templates/profile_guide.md).
-
----
-
-## Key config (`stangent/config.json`)
-
-```json
-{
-  "pipeline": {
-    "max_retries": 3,
-    "max_replans": 2,
-    "sub_agent_max_retries": 3,
-    "branch_prefix": "stangent/",
-    "pr_target_branch": "dev"
-  },
-  "models": {
-    "orchestrator":         "claude-sonnet-4-6",
-    "planner":              "claude-sonnet-4-6",
-    "planner_direct":       "claude-haiku-4-5-20251001",
-    "implementer":          "claude-sonnet-4-6",
-    "implementer_direct":   "claude-haiku-4-5-20251001",
-    "reviewer":             "claude-sonnet-4-6",
-    "reviewer_direct":      "claude-haiku-4-5-20251001",
-    "linter":               "claude-haiku-4-5-20251001",
-    "unit_tester":          "claude-haiku-4-5-20251001"
-  },
-  "integrations": {
-    "dbhub":     { "enabled": false, "mcp_server": "dbhub" },
-    "supabase":  { "enabled": false, "project_url": null, "direct_connection": null }
-  }
-}
-```
-
-`*_direct` model variants apply only when the feature is classified Direct tier (small fixes, bug repairs, copy changes). Falls back to the unprefixed entry if absent. Use cheaper models for Direct to amplify the token savings on top of the lighter planning/review.
-
-Smart merge on re-run — your edits are preserved, new fields are added automatically.
-
----
-
-## Upgrading
+## Install into a project
 
 ```bash
-cd ~/stangent && git pull
-cd your-project && python ~/stangent/init.py
+python <repo>/installer/agentic.py --target /path/to/project
+```
+
+Or from inside the target:
+```bash
+cd /path/to/project
+python <repo>/installer/agentic.py
+```
+
+Cross-platform (Windows / macOS / Linux). Idempotent — re-run anytime to refresh templates; user-added files are preserved.
+
+Runtime dependencies in the target project:
+```bash
+pip install pyyaml fastembed sqlite-vec
+# optional: pip install voyageai && export VOYAGE_API_KEY=...   (better embeddings)
+```
+
+## Uninstall
+
+```bash
+python <repo>/installer/agentic.py --target /path/to/project --uninstall
+```
+Removes only `_agentic_managed` hooks/MCP entries from `settings.json`, system-owned directories, and the `# >>> agentic` block from `.gitignore`. Anything you added is left alone.
+
+---
+
+## Per-feature workflow
+
+In the installed project, in Claude Code:
+
+```
+/agentic-index                              # one-time (or when references change)
+/agentic-plan <natural-language goal>       # planner emits FEAT-### with task files
+/agentic-build all                          # dispatcher runs in dep order
+/agentic-status                             # dashboard
+/agentic-update-plan <run-id> <amendment>   # amend without touching done tasks
+```
+
+The planner is strict — it walks an 11-dimension coverage checklist (scope, functional, acceptance, edges, auth, validation, error UX, data model, API, NFRs, out-of-scope) and asks via `AskUserQuestion` on blocking gaps, up to 4 rounds.
+
+---
+
+## Layout in an installed project
+
+```
+.claude/
+├── .agentic.yml                # enabled_skills, embedding, deny patterns, plan_id format
+├── settings.json               # hooks + MCP servers (all _agentic_managed: true)
+├── agents/
+│   ├── planner.md              # decomposition only — no file names, no classes
+│   ├── implementer.md          # one task; loads skills verbatim; one retrieve() call
+│   ├── reviewer.md             # append-only ## Review; never finalizes done
+│   └── tester.md               # finalizes done / blocked
+├── commands/
+│   ├── agentic-plan.md
+│   ├── agentic-build.md        # fixed topo-sort dispatcher contract
+│   ├── agentic-status.md
+│   ├── agentic-index.md
+│   └── agentic-update-plan.md
+├── skills/
+│   ├── fastapi/   SKILL.md + references/*.md
+│   ├── flutter/   SKILL.md + references/*.md   # Riverpod 3.x
+│   └── supabase/  SKILL.md + references/*.md
+├── hooks/
+│   ├── pre_tool_use.py         # hard safety only (rm -rf, force push, DROP, TRUNCATE, ...)
+│   ├── post_tool_use.py        # JSONL logger, one file per run_id
+│   └── lib/
+│       ├── retriever.py        # sqlite-vec + voyage/fastembed
+│       └── plan_id.py          # FEAT-### allocator
+├── mcp/
+│   └── agentic_mcp.py          # exposes retrieve(query, k, skills) over stdio MCP
+└── state/                      # gitignored
+    ├── plans/<FEAT-###>/
+    │   ├── _overview.md
+    │   └── t1.md, t2.md, ...
+    ├── vectors.db
+    └── logs/<FEAT-###>.jsonl
 ```
 
 ---
 
-## Troubleshooting
+## Core invariants (v1)
 
-**Something broken?** Run `/doctor` — it checks config, agents, gateway hook, and registry.
-
-**Feature paused or stuck?** Run `/resume FEAT-XXX` — it reads the feature status and routes to the right stage automatically.
-
-**ESCALATED after 3 retries?** Read `## Review` in the feature file, fix manually, set `status = CONFIRMED`, then `/resume FEAT-XXX`.
-
-**Implemented but not what you wanted?** Use `/refine FEAT-XXX <description of what's wrong>`. Don't try to correct it through conversation — that produces drift. `/refine` updates the spec first, then reimplements cleanly.
-
-**Wrong provider detected?** `python init.py --provider <name>`
-
-**Using Cursor?** Gateway hook enforcement requires Claude Code. In Cursor, copy the agent instructions to `.cursorrules` or your system prompt — the gateway will operate in advisory mode (logs violations, does not block).
+- **1 task = 1 file.** The task file is the single source of truth.
+- **State machine:** `pending → running → done | blocked`. Terminal states are terminal; no auto-recovery.
+- **Strict injection order:** system > role > skills (verbatim) > retrieved chunks > task file. Skills win on conflict.
+- **`retrieve()` = one call per agent per task.** Scoped to the task's `skills_to_load`.
+- **MCP rules:** `agentic_mcp.retrieve` is the internal knowledge plane; `dbhub` / `supabase` are external runtime tools usable only by implementer/tester. Planner/reviewer never touch external MCP.
+- **Hooks = safety + logging.** No tool filtering, no context-aware gating.
+- **State ownership:** every section of every task file has exactly one writing role. No agent overwrites another's section.
 
 ---
 
-## Roadmap
+## Configuration (`.agentic.yml`)
 
-**Language profiles**
-- [x] FastAPI — async route handler checklist, Pydantic v2 patterns, SQLAlchemy 2.x async query patterns, pytest-asyncio, auto-detects from dependencies
-- [ ] TypeScript / Node.js — the most-requested missing profile (ESLint, Jest, npm audit, Semgrep)
-- [ ] Go — golangci-lint, go test, govulncheck
-- [ ] Ruby — RuboCop, RSpec, bundler-audit
-- [ ] Flutter web / desktop — current profile targets mobile only; web and desktop have different test patterns and no platform channel concerns to skip
+```yaml
+system_version: 1.0.0
 
-**Cross-stack (Flutter + FastAPI + Supabase)**
-- [x] `meta_flutter_fastapi.md` starter template — copy to `.stangent/meta.md` to get cascade rules: changing a FastAPI schema automatically pulls the Flutter model into spec scope
-- [x] API contract drift check — reviewer Phase 6 checks field-by-field Pydantic→Dart type parity, nullable mismatch, JSON key casing, and new-endpoint→service method coverage; field mismatch or nullable divergence = MAJOR finding
-- [x] Cross-stack type mapping table — [`prompts/cross-stack-types.md`](prompts/cross-stack-types.md) maps every Pydantic type to its Dart equivalent; used by planner, implementer, and reviewer
-- [x] Supabase integration — architecture detection, RLS/policy enforcement on migrations, service_role security rules, JWT middleware verification, realtime subscription cleanup; cascade rules in `meta_flutter_fastapi.md`
-- [ ] Cross-stack feature mode — `/feature --stack flutter+fastapi` runs both profiles' sub-agents and gates the commit on both passing; single spec covers both codebases
+enabled_skills:
+  - fastapi
+  - flutter
+  - supabase
 
-**Integrations**
-- [ ] GitHub MCP — `/ci` command: after `/pr`, monitor CI run status and auto-fix failures (targeted implementer retry using the failed step log), then re-push. Loops until CI passes or `ci_fix_max_retries` is reached.
-- [ ] Linear MCP — `/feature` accepts a Linear ticket ID and imports title + ACs directly; marks the ticket Done when the feature reaches COMPLETE
-- [ ] Jira MCP — same as Linear for teams on Atlassian
-- [ ] Slack / Teams MCP — notify a channel when a feature needs confirmation, escalates, or completes
+embedding:
+  provider: voyage-3-lite       # falls back to fastembed if unavailable
+  fallback: fastembed
 
-**Pipeline improvements**
-- [x] Parallel reviewer specialists — security + performance + quality spawn in parallel after spec compliance check
-- [x] Complexity tiers — direct/standard auto-classification with per-tier lighter agents and per-tier model overrides
-- [x] Prompt linter (`scripts/prompt_lint.py`) — enforces required sections + frontmatter fields on every agent edit
-- [x] Install manifest (`.stangent/.installed.json`) — uninit auto-discovers what to remove; no hardcoded lists
-- [ ] Automated profile validation in `init.py` — check that every field in `_base.md` is present in a new profile before installing it, not just at authoring time
-- [ ] SRS and ADR eval coverage — both agents currently have zero eval cases; adding them would let you catch regressions when changing those agents
-- [ ] Dependency change guard — if the implementer touches `pyproject.toml`, `pubspec.yaml`, or `package.json`, require explicit developer confirmation before the commit (currently a WARN, not a gate)
-- [ ] Parallel implementer sub-agents — linter and query analyzer have no ordering dependency; running them in parallel would cut implementing stage time on large features
-- [ ] Cost ceiling (`pipeline.max_dollars_per_feature`) — orchestrator tracks observer chars × model rate and halts feature at threshold
+gateway:
+  deny:
+    - "rm -rf"
+    - "git push --force"
+    - "DROP TABLE"
+    # ...
 
-**Observability & ad-hoc**
-- [x] PostToolUse observer hook — logs every file read with char count to `.stangent/logs/{feature_id}.jsonl`
-- [x] `/stats` command — per-agent token + $ breakdown using config'd model pricing
-- [x] `/debug` command — conversational investigation for bugs not worth a full spec
-- [x] `/test` command — re-run unit_tester without re-implementing
-- [x] `/inbox` command — filter to features needing developer action only
-- [x] `/preview` command — clean spec render with optional diff against prior spec_version
-- [x] `/feature --shadow` and `--yes` flags — dry-run planning and CI/automation use
-- [ ] Telemetry export — optional opt-in upload of anonymised observer logs to track tier accuracy across users
+retrieval:
+  default_k: 6
+  chunk_tokens: 400
 
-**Memory & retrieval**
-- [ ] SQLite learning store — persist planner risk patterns and developer preferences in `.stangent/memory.db`; planner queries by file path overlap with `## Files to Touch` instead of scanning all feature files; queryable via DBHub MCP if enabled
-- [ ] Hot context layer — keep a condensed in-memory summary (≤30 lines: last 5 features + top recurring preferences) as the always-loaded context layer; full history stays in the DB
-- [ ] Vector RAG retrieval — optional embedding-based retrieval via memory MCP for semantic search across failure patterns and project insights; falls back to DB query if not configured
-
-**Developer experience**
-- [ ] `/pr` CI status check — after creating the PR, poll GitHub Actions once and surface pass/fail inline rather than requiring the developer to check GitHub separately
-- [ ] `init.py --upgrade` — diff installed agent files against the latest stangent source and show what changed before overwriting, so developers know what a re-init will affect
-- [ ] VS Code extension — wrap `/feature`, `/status`, and `/doctor` as sidebar buttons rather than slash commands typed in the Claude Code chat
-- [ ] Local web dashboard (`stangent serve`) — visual feature list, live pipeline state, spec/diff viewer, observer log explorer. Built on existing registry + log files.
-
-**Strategic / bigger bets**
-- [ ] Multi-feature parallelism — gateway is per-feature so contracts don't conflict, but `active.json` is single-slot. Move to N parallel features per project for team use.
-- [ ] Real eval coverage — build `evals/fixtures/sample_app/` (small FastAPI / Flutter / dual-stack projects) so every agent can be evaluated against real codebases. Then gate prompt changes on eval pass.
-- [ ] Self-improving prompts — when a feature ESCALATES, classify the failure mode, propose a prompt addendum, present to developer. Or A/B test prompts on the same input.
-- [ ] Cross-project memory — `~/.stangent/global_preferences.json` overlay so a developer's preferences persist across projects.
-- [ ] Drift detection (`/audit FEAT-XXX`) — re-run reviewer against current main weeks after a feature merged; surface where the merged code diverged from the spec.
-- [ ] Agent inheritance — `extends: stangent-security-scanner` syntax so orgs can extend stangent agents without forking the repo.
+plan_id:
+  prefix: FEAT                  # FEAT-001, FEAT-002, ...
+  pad: 3
+  start: 1
+```
 
 ---
 
-## Design principles
+## Adding a new skill
 
-- **Agents own sections, not files** — conflicts are structurally impossible
-- **The spec is the contract** — reviewer checks against spec only, no gold-plating
-- **ADRs are binding** — record a decision once, every agent enforces it forever
-- **Retries are surgical** — failures come with exact `file:line` fix instructions
+```
+.claude/skills/<name>/
+├── SKILL.md                    # Purpose / Rules / Patterns / Anti-patterns (≤ 3000 tokens)
+└── references/
+    ├── topic-a.md
+    └── topic-b.md
+```
+
+Then add `<name>` to `enabled_skills` in `.agentic.yml`, run `/agentic-index`, and the planner can include it in any future task's `skills_to_load`. No agent or command edits needed.
+
+---
+
+## What's deliberately NOT built (v1)
+
+- Tool catalog / routing / risk scoring
+- Multi-retriever split (skills vs context vs patterns)
+- Reranker
+- `/agentic-recover` and automated retry/revert flows
+- Parallel task dispatch
+- Two-pass planner / architect review
+- Security-analyzer role agent
+- Advanced observability (`/agentic-stats`, run summaries)
+- Stale-run detection, embedding cache, hash invalidation
+
+Each of these is a **v2 layer**, built only when a real, repeated v1 failure mode points at it. The spec for the v2 trigger criteria lives in the original implementation plan.
+
+---
+
+## License
+
+TBD — copy your preferred license file into the repo root.

@@ -1,0 +1,31 @@
+system_version: 1.0.0
+
+enabled_skills:
+  - fastapi
+  - flutter
+  - supabase
+
+embedding:
+  provider: voyage-3-lite
+  fallback: fastembed
+
+gateway:
+  deny:
+    - "rm -rf"
+    - "git clean -fdx"
+    - "git push --force"
+    - "git push -f"
+    - "git reset --hard"
+    - "DROP TABLE"
+    - "DROP DATABASE"
+    - "TRUNCATE"
+    - "supabase db reset"
+
+retrieval:
+  default_k: 6
+  chunk_tokens: 400
+
+plan_id:
+  prefix: FEAT       # plans become FEAT-001, FEAT-002, ...
+  pad: 3             # digit count; 3 → 001..999, 4 → 0001..9999
+  start: 1           # first number when no existing plans
