@@ -157,6 +157,16 @@ def unpack_f32(buf: bytes) -> list[float]:
     return list(struct.unpack(f"{n}f", buf))
 
 
+# sqlite3.Connection is a C extension type and (on some Python builds, incl.
+# 3.13) refuses arbitrary attribute assignment. Track vec-loaded state in a
+# module-level dict keyed by id(conn) instead.
+_VEC_LOADED: dict[int, bool] = {}
+
+
+def _vec_loaded(conn: sqlite3.Connection) -> bool:
+    return _VEC_LOADED.get(id(conn), False)
+
+
 def open_db() -> sqlite3.Connection:
     VECTORS_DB.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(VECTORS_DB)
@@ -165,10 +175,10 @@ def open_db() -> sqlite3.Connection:
         import sqlite_vec  # type: ignore
         sqlite_vec.load(conn)
         conn.enable_load_extension(False)
-        conn._vec_loaded = True  # type: ignore[attr-defined]
+        _VEC_LOADED[id(conn)] = True
     except Exception:
         # vec extension not available — we'll fall back to pure-python cosine
-        conn._vec_loaded = False  # type: ignore[attr-defined]
+        _VEC_LOADED[id(conn)] = False
     return conn
 
 
@@ -183,7 +193,7 @@ def ensure_schema(conn: sqlite3.Connection, dim: int) -> None:
             embedding BLOB NOT NULL
         )"""
     )
-    if getattr(conn, "_vec_loaded", False):
+    if _vec_loaded(conn):
         # virtual table; recreate to match dim
         conn.execute("DROP TABLE IF EXISTS vec_chunks")
         conn.execute(
@@ -251,7 +261,7 @@ def cmd_reindex() -> None:
             "INSERT INTO chunks(id, skill, file, anchor, text, embedding) VALUES (?, ?, ?, ?, ?, ?)",
             (i, skill, file, anchor, text, pack_f32(emb)),
         )
-        if getattr(conn, "_vec_loaded", False):
+        if _vec_loaded(conn):
             cur.execute("INSERT INTO vec_chunks(rowid, embedding) VALUES (?, ?)", (i, pack_f32(emb)))
     conn.commit()
     print(f"[retriever] wrote {VECTORS_DB} (dim={dim})")
