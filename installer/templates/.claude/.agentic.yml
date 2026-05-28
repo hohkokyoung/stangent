@@ -5,6 +5,15 @@ enabled_skills:
   - flutter
   - owasp
   - supabase
+  - playwright
+  - maestro
+  - html-css
+  - react
+
+# Test framework — set automatically by /agentic-index, or override manually.
+# Values: auto | playwright | maestro
+# auto = /agentic-index detects from project structure and writes to .claude/state/project.yml
+test_framework: auto
 
 embedding:
   provider: voyage-3-lite

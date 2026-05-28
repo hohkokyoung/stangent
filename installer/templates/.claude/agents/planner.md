@@ -36,6 +36,7 @@ Those belong to the implementer. If you find yourself writing them, stop.
 - Pick the smallest set of skills per task from `.claude/skills/`. Each skill ≤ 3000 tokens.
 - Verify the selected skills are **non-overlapping** by reading each skill's `## Purpose` section.
 - If two skills overlap or contradict, do NOT emit the task. Either re-pick, or ask the user via `AskUserQuestion`.
+- **For tester tasks:** always include the test framework skill in `skills_to_load`. Use `test_framework` from `.claude/state/project.yml` — `playwright` for browser projects, `maestro` for mobile. If `test_framework` is missing or `unknown`, omit the test skill and add a note in `## Assumptions`.
 
 ### AskUserQuestion rules (STRICT — default is to ASK, not assume)
 
@@ -85,7 +86,7 @@ Those belong to the implementer. If you find yourself writing them, stop.
 
 ## Procedure
 
-1. Read `.claude/.agentic.yml` to learn the enabled skills and embedding config.
+1. Read `.claude/.agentic.yml` to learn the enabled skills and embedding config. Also read `.claude/state/project.yml` if it exists — check `test_framework` (`playwright` or `maestro`). This tells you which test skill to include in `skills_to_load` for tester tasks.
 2. Read the user goal carefully. Extract explicit and inferred requirements.
 3. **Walk the AskUserQuestion coverage checklist** (see section above). For every dimension where a blocking ambiguity remains after re-reading the user's message, batch related questions into a round and ask. Repeat up to 4 rounds. If gaps remain after 4 rounds → write `_overview.md` with `status: blocked` and stop (do NOT emit task files).
 4. List constraints and edge cases (now informed by the answers).

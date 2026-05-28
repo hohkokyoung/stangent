@@ -1,9 +1,17 @@
 {
-  "_comment": "Claude Code MCP server config — read by Claude Desktop / Claude Code at project root. agentic_mcp is the internal retrieve() server (always works, no creds). dbhub and supabase need real credentials before they'll connect — see README.",
+  "_comment": "Claude Code MCP server config — read by Claude Desktop / Claude Code at project root. agentic_mcp, playwright, and maestro work out of the box. dbhub and supabase need real credentials — see README.",
   "mcpServers": {
     "agentic_mcp": {
       "command": "python",
       "args": [".claude/mcp/agentic_mcp.py"]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    },
+    "maestro": {
+      "command": "maestro",
+      "args": ["mcp"]
     },
     "dbhub": {
       "command": "npx",
