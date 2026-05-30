@@ -1,12 +1,13 @@
-"""case_02_ambiguous — under-specified ask; planner must either ask
-or block, never silently assume.
+"""case_02_ambiguous — under-specified ask; /agentic-plan must clarify
+before the planner writes anything.
 
-Asserter cannot directly observe AskUserQuestion calls (those happen
-in the agent's runtime, not the run dir). We infer from artifacts:
+Clarification questions happen in the command (main session), not the planner
+sub-agent. The planner receives answers as a ## Clarifications block and must
+surface them in _overview.md. We assert artifacts, not tool calls:
 
-  - Resolved Questions section in _overview.md  → planner asked
-  - Assumptions section listing >=1 assumption   → planner documented its leap
-  - _overview.md status: blocked + Open Questions → planner gave up cleanly
+  - Resolved Questions section in _overview.md  → clarifications carried through
+  - Assumptions section listing >=1 assumption   → planner documented its leaps
+  - _overview.md status: blocked + Open Questions → command gave up cleanly
   - none of the above + tasks emitted             → FAIL (silent assumption)
 """
 from pathlib import Path

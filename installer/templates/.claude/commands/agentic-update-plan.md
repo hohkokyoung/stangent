@@ -17,16 +17,18 @@ Re-invoke the planner in **update mode** against an existing run. Use this when:
 - First arg (optional): `<run-id>` (e.g. `FEAT-003`). Defaults to the latest run.
 - Remaining args: free-text amendment describing what should change.
 
-If no amendment text is given, the planner uses `AskUserQuestion` to elicit it (still under the strict 4-round budget).
+If no amendment text is given, use `AskUserQuestion` (YOU, not the planner) to elicit it before proceeding.
 
 ## Procedure
 
 1. Resolve `<run-id>`. If not given, use `python .claude/hooks/lib/plan_id.py peek`.
 2. Read every task file in `.claude/state/plans/<run-id>/` plus `_overview.md`.
 3. Compute the **frozen set** = tasks with `status: done`. These are immutable — the planner may NOT modify their frontmatter, sections, or status.
-4. Invoke the **planner** subagent in update mode with:
+4. **Clarification phase (YOU do this — do NOT delegate to the planner).** Using the amendment text as the starting point, walk only the dimensions from the coverage checklist (see `/agentic-plan`) that the amendment touches. Ask up to **4 rounds**, up to **3 questions per round**. Collect answers into a `## Clarifications` block (same format as `/agentic-plan`) to pass to the planner. If the amendment is unambiguous, skip this step.
+5. Invoke the **planner** subagent in update mode with:
    - The existing `_overview.md`, all task files, and the amendment text.
    - The frozen set list.
+   - The `## Clarifications` block from step 4 (if any).
    - An explicit "update mode" flag in the prompt.
 5. Planner's allowed actions in update mode:
    - **Add new task files** (`<next-id>.md`), all `status: pending`. New ids use the smallest free `t<N>` in the run.

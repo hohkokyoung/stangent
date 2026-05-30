@@ -25,14 +25,48 @@ Run the planner on the given goal.
 
 3. Create `.claude/state/plans/<run-id>/`.
 
-4. Invoke the **planner** agent with:
+4. **Clarification phase (YOU do this — do NOT delegate to the planner).**
+
+   Walk the coverage checklist below. For every dimension where a blocking ambiguity remains after re-reading the user's goal, batch related questions into one `AskUserQuestion` round. Repeat up to **4 rounds**, up to **3 questions per round**.
+
+   | Dimension | What to confirm |
+   |---|---|
+   | **Scope** | New feature, extension, or refactor? Touches existing screens/endpoints/tables? |
+   | **Functional requirements** | Exact user-visible behavior — inputs, outputs, state transitions. |
+   | **Acceptance criteria** | Concrete, testable bullets for "done." |
+   | **Edge cases** | Empty/null/zero, max sizes, concurrent edits, offline, partial failure, idempotency. |
+   | **Auth & permissions** | Who can do this? Anonymous, authenticated, owner-only, admin? RLS implications? |
+   | **Security surface** | Does the goal add an HTTP endpoint, browser-facing UI, form, file upload, user input reaching a DB query, auth flow, or outbound HTTP from user-supplied URL? |
+   | **Validation** | Field constraints (lengths, ranges, formats, enums). Server-side, client-side, or both? |
+   | **Error UX** | What does the user see on failure? 401 vs 403, retry vs hard-fail, toast vs full-screen. |
+   | **Data model impact** | New tables/columns? Migrations? Backfill? RLS policies? |
+   | **API surface** | New endpoints? Breaking changes? Versioning? Idempotency keys? |
+   | **Non-functional** | Perf budgets, payload sizes, rate limits, observability, audit log. |
+
+   Rules:
+   - Provide a default suggestion per question so the user can answer with one word or "default fine."
+   - Never ask about file names, class names, or implementation choices — those belong to the implementer.
+   - Never ask questions the goal already answers.
+   - If the user says "skip" or "use your judgment" for a question, record an assumption and move on.
+   - After 4 rounds with unresolved blocking gaps: tell the user which gaps remain and STOP. Do NOT create `.claude/state/plans/<run-id>/` or invoke the planner.
+
+   Collect all answers into a `## Clarifications` block (format below) to pass to the planner.
+
+   ```markdown
+   ## Clarifications
+   - Q: <question> → A: <answer>
+   - ASSUMPTION: <statement> (user declined / judgment call)
+   ```
+
+5. Invoke the **planner** agent with:
    - The user goal: `$ARGUMENTS`
    - The generated `run_id`
    - The contents of `.claude/.agentic.yml`
+   - The `## Clarifications` block from step 4
 
-5. The planner writes `_overview.md` + per-task files (all `status: pending`).
+6. The planner writes `_overview.md` + per-task files (all `status: pending`).
 
-6. After planner finishes, print:
+7. After planner finishes, print:
    - `run_id`
    - feature branch name (or "no branch — not a git repo / auto_branch disabled")
    - task index (id → intent → role → status)
