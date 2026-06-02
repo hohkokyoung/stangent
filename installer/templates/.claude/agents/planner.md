@@ -63,6 +63,12 @@ Carry every entry into `_overview.md` under `## Resolved Questions` (for Q→A p
 2. Read the user goal carefully. Extract explicit and inferred requirements.
 3. Read the `## Clarifications` block in your prompt. All Q→A pairs and ASSUMPTION lines are resolved scope — treat them as authoritative. Do not re-derive or second-guess them.
 4. List constraints and edge cases (informed by the goal and the Clarifications block).
+   **If `mobile` is in `enabled_skills`:** before finalising, check for cross-screen scope gaps and surface any you find as explicit requirements or edge cases:
+   - Does a state change from this feature need to be visible on screens other than where the action occurs?
+   - Can any screen in this feature be reached from outside the app's normal flow (deep link, notification tap)?
+   - Do any existing list or collection screens need to reflect this feature's state changes?
+   - Are there in-place content actions (long-press, swipe, action sheet) involved?
+   Any yes answer is an in-scope requirement to carry forward — do not resolve how, just surface what.
 5. Read all **accepted ADRs**: `.claude/adrs/ADR-*.md` where frontmatter `status: accepted`. These are project-level rules that bind every task. Make a short mental index: id → title → one-line decision.
 6. Decide on skills involved (from `enabled_skills`).
 7. Decompose into 3–8 tasks. For each task, decide:
