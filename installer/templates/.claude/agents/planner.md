@@ -70,8 +70,8 @@ Carry every entry into `_overview.md` under `## Resolved Questions`. Do NOT add 
 5. Read all **accepted ADRs**: `.claude/adrs/ADR-*.md` where frontmatter `status: accepted`. These are project-level rules that bind every task. Make a short mental index: id → title → one-line decision.
 6. Decide on skills involved (from `enabled_skills`).
 7. Decompose into 3–8 tasks. For each task, decide:
-   - `role`: implementer / reviewer / tester / sketcher
-     — **Sketcher rule:** if `flutter` or `mobile` is in `enabled_skills` AND a task introduces or changes a visible UI component (new widget, new screen, new component, restyled component), you MUST create a `role: sketcher` task immediately before that implementer task, with the implementer's `depends_on` pointing to the sketcher. No exception for small components — if the user will see it, sketch it first. Never assign `sketcher` to logic, data, migration, or call-site refactor tasks.
+   - `role`: implementer / reviewer / tester
+     — Do NOT assign `role: sketcher`. Sketch tasks are injected by `/agentic-plan` after you finish, based on the developer's answer during clarification. Your job is decomposition only.
    - `intent`: one-line statement
    - `acceptance`: testable criteria
    - `edge_cases`: list

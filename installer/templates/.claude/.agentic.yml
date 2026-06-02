@@ -3,6 +3,7 @@ system_version: 1.0.0
 enabled_skills:
   - fastapi
   - flutter
+  - mobile
   - owasp
   - supabase
   - playwright

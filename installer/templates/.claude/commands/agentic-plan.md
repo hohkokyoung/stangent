@@ -50,6 +50,7 @@ Run the planner on the given goal.
    - Never ask about file names, class names, or implementation choices — those belong to the implementer.
    - If a dimension is clearly not applicable to the goal (e.g. no backend touched → skip auth/data model questions), skip it silently. Do not ask irrelevant questions.
    - After 4 rounds with unanswered blocking gaps: list the remaining gaps and STOP. Do NOT invoke the planner.
+   - **If `flutter` or `mobile` is in `enabled_skills`:** always include this question in the first clarification round: "Do you want a visual sketch of the UI rendered before implementation starts?" (suggested: yes). Record the answer as `sketch: yes` or `sketch: no` in the Clarifications block.
 
    Collect all answers into a `## Clarifications` block (format below) to pass to the planner.
 
@@ -66,7 +67,10 @@ Run the planner on the given goal.
 
 6. The planner writes `_overview.md` + per-task files (all `status: pending`).
 
-7. **Sketch phase.** After the planner finishes, scan all task files in the run dir. For each task where `role: sketcher` and `status: pending`, invoke the **sketcher** agent sequentially (in `depends_on` order). Wait for each to flip `status: done` before continuing. This runs during planning so the user sees the drawing before deciding whether to build.
+7. **Sketch injection + render.** If the Clarifications block contains `sketch: yes`:
+   a. For each `role: implementer` task file in the run dir, create a corresponding `role: sketcher` task file (`t<N>.md`) with `intent: "Sketch the UI for <original task intent>"`, `skills_to_load: []`, and `depends_on: []`. Update the original implementer task's `depends_on` to include the new sketcher task id.
+   b. Invoke the **sketcher** agent for each new sketcher task sequentially. Wait for each to flip `status: done`.
+   If `sketch: no`, skip this step entirely.
 
 8. After the sketch phase, print:
    - `run_id`
