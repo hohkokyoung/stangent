@@ -85,20 +85,12 @@ def cmd_create(run_id: str) -> int:
     name = cfg["branch_template"].format(run_id=run_id)
 
     if branch_exists(name):
-        cur = current_branch()
-        if cur == name:
-            print(f"[git_branch] already on '{name}'; no change")
-            return 0
-        if cfg["fail_on_wip"] and working_tree_dirty():
-            print(f"[git_branch] working tree has uncommitted changes; "
-                  f"commit or stash before switching to '{name}'")
-            return 1
-        r = run(["git", "switch", name], check=False)
-        if r.returncode != 0:
-            print(f"[git_branch] git switch failed: {r.stderr.strip()}")
-            return r.returncode
-        print(f"[git_branch] switched to existing branch '{name}'")
-        return 0
+        # Branch already exists — find the next available versioned name
+        v = 2
+        while branch_exists(f"{name}-v{v}"):
+            v += 1
+        name = f"{name}-v{v}"
+        print(f"[git_branch] base branch already exists; using '{name}'")
 
     if cfg["fail_on_wip"] and working_tree_dirty():
         print(f"[git_branch] working tree has uncommitted changes; "
