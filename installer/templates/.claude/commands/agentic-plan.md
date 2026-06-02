@@ -66,7 +66,9 @@ Run the planner on the given goal.
 
 6. The planner writes `_overview.md` + per-task files (all `status: pending`).
 
-7. After planner finishes, print:
+7. **Sketch phase.** After the planner finishes, scan all task files in the run dir. For each task where `role: sketcher` and `status: pending`, invoke the **sketcher** agent sequentially (in `depends_on` order). Wait for each to flip `status: done` before continuing. This runs during planning so the user sees the drawing before deciding whether to build.
+
+8. After the sketch phase, print:
    - `run_id`
    - feature branch name (or "no branch — not a git repo / auto_branch disabled")
    - task index (id → intent → role → status)
@@ -76,5 +78,5 @@ Run the planner on the given goal.
 
 - Do NOT call any MCP tool yourself. The planner has its own constraints.
 - Do NOT modify task files outside the planner.
-- Do NOT dispatch tasks; that's `/agentic-build`.
+- Do NOT dispatch tasks; that's `/agentic-build`. Exception: `role: sketcher` tasks run during plan (step 7) so the user sees the drawing before deciding to build.
 - Do NOT commit or push anything yourself. Branch creation is the only git operation. Commits and merges are user-driven.
