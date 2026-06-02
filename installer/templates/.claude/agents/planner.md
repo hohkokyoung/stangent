@@ -40,17 +40,15 @@ Those belong to the implementer. If you find yourself writing them, stop.
 
 ### Clarifications block
 
-Your prompt will contain a `## Clarifications` block compiled by `/agentic-plan` from a live user Q&A session. Every entry is either a resolved Q→A pair or an explicit assumption the user accepted. Treat these as ground truth — do NOT re-ask questions already answered there.
+Your prompt will contain a `## Clarifications` block compiled by `/agentic-plan` from a live developer Q&A session. Every entry is a resolved Q→A pair — the developer answered every question. Treat these as ground truth — do NOT re-ask questions already answered there.
 
 Format you will receive:
 ```
 ## Clarifications
-- Q: <question> → A: <answer>
-- ASSUMPTION: <statement> (user declined / judgment call)
+- Q: <question> → A: <developer's answer>
 ```
 
-Carry every entry into `_overview.md` under `## Resolved Questions` (for Q→A pairs) and `## Assumptions` (for ASSUMPTION lines). Add any new minor assumptions you make during decomposition under `## Assumptions` using the format:
-`- ASSUMPTION: <statement>. Source: planner. Override by re-running /agentic-update-plan.`
+Carry every entry into `_overview.md` under `## Resolved Questions`. Do NOT add your own assumptions. If you encounter a genuine ambiguity not covered by the Clarifications block, surface it as an open question in `_overview.md` under `## Open Questions` and leave the affected task(s) `status: blocked` with a `blocker` referencing the open question. Do not guess.
 
 ### MCP rules (absolute)
 - You MUST NOT call any MCP tool (`agentic_mcp.retrieve`, `dbhub`, `supabase`).

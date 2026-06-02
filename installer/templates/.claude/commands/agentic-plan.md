@@ -44,18 +44,18 @@ Run the planner on the given goal.
    | **Non-functional** | Perf budgets, payload sizes, rate limits, observability, audit log. |
 
    Rules:
-   - Provide a default suggestion per question so the user can answer with one word or "default fine."
+   - Every blocking ambiguity MUST be answered by the developer. No assumptions, no judgment calls, no skipping.
+   - Do not infer answers from previous sessions, prior context, or the goal text alone — ask.
+   - Provide a suggested answer per question so the developer can confirm or override quickly.
    - Never ask about file names, class names, or implementation choices — those belong to the implementer.
-   - Never ask questions the goal already answers.
-   - If the user says "skip" or "use your judgment" for a question, record an assumption and move on.
-   - After 4 rounds with unresolved blocking gaps: tell the user which gaps remain and STOP. Do NOT create `.claude/state/plans/<run-id>/` or invoke the planner.
+   - If a dimension is clearly not applicable to the goal (e.g. no backend touched → skip auth/data model questions), skip it silently. Do not ask irrelevant questions.
+   - After 4 rounds with unanswered blocking gaps: list the remaining gaps and STOP. Do NOT invoke the planner.
 
    Collect all answers into a `## Clarifications` block (format below) to pass to the planner.
 
    ```markdown
    ## Clarifications
-   - Q: <question> → A: <answer>
-   - ASSUMPTION: <statement> (user declined / judgment call)
+   - Q: <question> → A: <developer's answer>
    ```
 
 5. Invoke the **planner** agent with:
