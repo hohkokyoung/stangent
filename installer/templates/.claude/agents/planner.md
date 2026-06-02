@@ -73,7 +73,7 @@ Carry every entry into `_overview.md` under `## Resolved Questions` (for Q→A p
 6. Decide on skills involved (from `enabled_skills`).
 7. Decompose into 3–8 tasks. For each task, decide:
    - `role`: implementer / reviewer / tester / sketcher
-     — Use `sketcher` when a task is purely UI and the user needs to see it before committing to implementation. A sketcher task must always be immediately followed by an implementer task with `depends_on` the sketcher. Never assign `sketcher` to logic, data, or integration tasks.
+     — **Sketcher rule:** if `flutter` or `mobile` is in `enabled_skills` AND a task introduces or changes a visible UI component (new widget, new screen, new component, restyled component), you MUST create a `role: sketcher` task immediately before that implementer task, with the implementer's `depends_on` pointing to the sketcher. No exception for small components — if the user will see it, sketch it first. Never assign `sketcher` to logic, data, migration, or call-site refactor tasks.
    - `intent`: one-line statement
    - `acceptance`: testable criteria
    - `edge_cases`: list
