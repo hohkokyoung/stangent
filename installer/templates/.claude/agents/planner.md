@@ -72,7 +72,8 @@ Carry every entry into `_overview.md` under `## Resolved Questions` (for Q→A p
 5. Read all **accepted ADRs**: `.claude/adrs/ADR-*.md` where frontmatter `status: accepted`. These are project-level rules that bind every task. Make a short mental index: id → title → one-line decision.
 6. Decide on skills involved (from `enabled_skills`).
 7. Decompose into 3–8 tasks. For each task, decide:
-   - `role`: implementer / reviewer / tester
+   - `role`: implementer / reviewer / tester / sketcher
+     — Use `sketcher` when a task is purely UI and the user needs to see it before committing to implementation. A sketcher task must always be immediately followed by an implementer task with `depends_on` the sketcher. Never assign `sketcher` to logic, data, or integration tasks.
    - `intent`: one-line statement
    - `acceptance`: testable criteria
    - `edge_cases`: list

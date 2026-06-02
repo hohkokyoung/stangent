@@ -1,7 +1,7 @@
 ---
 id: <t-id>                       # t1, t2, ... unique within the run
 run_id: <run-id>                 # e.g. FEAT-007
-role: implementer                # implementer | reviewer | tester
+role: implementer                # implementer | reviewer | tester | sketcher
 intent: "<one-line statement of what this task achieves>"
 acceptance: "<single-sentence testable criteria>"
 edge_cases: ["<e1>", "<e2>"]
@@ -29,6 +29,10 @@ definition_of_done: |
 
 ## Edge cases
 - <edge case>
+
+## Sketch
+
+<!-- filled by sketcher at runtime; implementer uses this as visual reference -->
 
 ## Design
 

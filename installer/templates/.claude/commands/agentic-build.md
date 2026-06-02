@@ -22,7 +22,7 @@ Dispatcher. The only orchestrator. Algorithm is fixed; do not invent your own.
 5. If single `<task-id>` was given, restrict the runnable set to that one (or refuse if its deps aren't done).
 6. **Execute sequentially.** For each runnable task in topo order:
    a. Read the task file's `role` field.
-   b. Invoke the matching subagent (`planner` is never invoked here — only `implementer` / `reviewer` / `tester`) with:
+   b. Invoke the matching subagent (`planner` is never invoked here — only `implementer` / `reviewer` / `tester` / `sketcher`) with:
       - The absolute path to the task file
       - The `run_id`
       - The list of skill files (resolved from `skills_to_load` → `.claude/skills/<name>/SKILL.md`)
