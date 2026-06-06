@@ -25,7 +25,8 @@ Dispatcher. The only orchestrator. Algorithm is fixed; do not invent your own.
    b. Invoke the matching subagent (`planner` is never invoked here — only `implementer` / `reviewer` / `tester` / `sketcher`) with:
       - The absolute path to the task file
       - The `run_id`
-      - The list of skill files (resolved from `skills_to_load` → `.claude/skills/<name>/SKILL.md`)
+      - The list of skill files (resolved from `skills_to_load` → `.claude/skills/<name>/SKILL.md`). If a skill name is `"project"`, skip SKILL.md injection — it is a retrieve-only pseudo-skill with no corresponding SKILL.md file. The agent receives project file chunks exclusively through `retrieve()`.
+      - The task's `k` frontmatter value (default `6` if unset), passed to the agent as the retrieve k parameter
    c. Wait for the subagent to flip `status` (`done` | `blocked`) or for failure.
 7. If a dependency ends up `blocked`, do NOT dispatch its dependents. They stay `pending`; `/agentic-status` will show them as transitively waiting.
 8. After each task, re-evaluate step 4.

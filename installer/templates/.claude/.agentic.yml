@@ -32,6 +32,23 @@ gateway:
     - "TRUNCATE"
     - "supabase db reset"
 
+project_index:
+  include: []        # leave empty to use auto-detected globs from /agentic-index;
+                     # set explicitly to override, e.g. ["src/**/*.ts", "lib/**/*.dart"]
+  exclude:
+    - "node_modules/**"
+    - ".git/**"
+    - "dist/**"
+    - "build/**"
+    - "__pycache__/**"
+    - ".claude/**"
+    - "*.lock"
+    - "*.min.js"
+    - "tests/**"
+    - "__tests__/**"
+    - "*.test.*"
+    - "*.spec.*"
+
 retrieval:
   default_k: 6
   chunk_tokens: 400

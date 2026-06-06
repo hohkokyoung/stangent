@@ -5,7 +5,8 @@ role: implementer                # implementer | reviewer | tester | sketcher
 intent: "<one-line statement of what this task achieves>"
 acceptance: "<single-sentence testable criteria>"
 edge_cases: ["<e1>", "<e2>"]
-skills_to_load: [<skill_names>]  # SKILL.md files injected verbatim + retrieval scope
+skills_to_load: [<skill_names>]  # SKILL.md files injected verbatim + retrieval scope; "project" is a valid pseudo-skill
+k: null                          # retrieve() chunk count; null = default 6; set 10 when "project" + multiple skill patterns
 adrs: []                         # accepted ADR ids relevant to THIS task only
 depends_on: []                   # justified edges only (no over-serialization)
 status: pending                  # pending | running | done | blocked

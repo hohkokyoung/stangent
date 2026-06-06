@@ -75,7 +75,8 @@ Carry every entry into `_overview.md` under `## Resolved Questions`. Do NOT add 
    - `intent`: one-line statement
    - `acceptance`: testable criteria
    - `edge_cases`: list
-   - `skills_to_load`: list of skill names (verify non-overlap). This is BOTH the list of `SKILL.md` files to inject AND the retrieval scope — `retrieve()` only sees chunks from `skills/<name>/references/` for these names.
+   - `skills_to_load`: list of skill names (verify non-overlap). This is BOTH the list of `SKILL.md` files to inject AND the retrieval scope — `retrieve()` only sees chunks from `skills/<name>/references/` for these names. **`"project"` is a valid pseudo-skill**: include it when the task requires reading or modifying *existing* project source files (not net-new files only). It has no SKILL.md — it surfaces project file chunks through `retrieve()` only. Omit for purely additive tasks.
+  - `k`: (optional, default `6`) number of chunks to retrieve. Set to `10` for tasks where `"project"` is in `skills_to_load` AND the task also spans multiple skill patterns — the extra slots accommodate both project code and skill references.
    - `adrs`: list of accepted ADR ids that are **relevant to this task only**. Be parsimonious — list an ADR only if its rule could plausibly affect the implementer's choices. Do NOT list every accepted ADR on every task.
    - `depends_on`: justified edges only
 8. Allocate the `run_id` by running `python .claude/hooks/lib/plan_id.py next` (default format: `FEAT-001`, `FEAT-002`, ... configurable via `.agentic.yml: plan_id`).

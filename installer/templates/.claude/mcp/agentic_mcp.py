@@ -73,7 +73,7 @@ def _serve():
                 "tools": [
                     {
                         "name": "retrieve",
-                        "description": "Retrieve top-k reference chunks for the given query. Internal knowledge only (sqlite-vec over .claude/skills/*/references). v1 contract: one call per agent per task.",
+                        "description": "Retrieve top-k reference chunks for the given query. Searches skill references (.claude/skills/*/references/) and, when 'project' is in the skills filter, indexed project source files. v1 contract: one call per agent per task.",
                         "inputSchema": {
                             "type": "object",
                             "properties": {

@@ -3,18 +3,21 @@
 
 CLI:
   python retriever.py reindex
-      Walk .claude/skills/<skill>/references/*.md for each enabled_skills,
-      chunk, embed, and (re)write .claude/state/vectors.db.
+      (Re)index skill references and project source files into .claude/state/vectors.db.
+      Skills: full rebuild each run. Project files: incremental hash-cached.
 
   python retriever.py query "<text>" [k] [--skill <name> ...]
       Return JSON list of top-k chunks. Used by agentic_mcp.
 
 Embedding provider: from .agentic.yml. Default voyage-3-lite. Offline
-fallback: fastembed. v1: full re-embed each `reindex`; no hash cache.
+fallback: fastembed.
 """
 from __future__ import annotations
 
 import argparse
+import datetime
+import fnmatch
+import hashlib
 import json
 import os
 import re
@@ -34,6 +37,13 @@ CLAUDE_DIR = REPO_ROOT / ".claude"
 AGENTIC_YML = CLAUDE_DIR / ".agentic.yml"
 VECTORS_DB = CLAUDE_DIR / "state" / "vectors.db"
 SKILLS_DIR = CLAUDE_DIR / "skills"
+PROJECT_YML = CLAUDE_DIR / "state" / "project.yml"
+
+_DEFAULT_PROJECT_EXCLUDES = [
+    "node_modules/**", ".git/**", "dist/**", "build/**",
+    "__pycache__/**", ".claude/**", "*.lock", "*.min.js",
+    "tests/**", "__tests__/**", "*.test.*", "*.spec.*",
+]
 
 # ---------- config ----------
 
@@ -93,6 +103,68 @@ def chunk_markdown(text: str, target_tokens: int) -> list[tuple[str, str]]:
             current = []
     flush()
     return chunks
+
+
+# ---------- source code chunking ----------
+
+_BLANK_BLOCK_RE = re.compile(r"\n\s*\n")
+
+
+def build_file_preamble(rel_path: str) -> str:
+    ext = Path(rel_path).suffix.lstrip(".")
+    return f"# file: {rel_path}\n# lang: {ext}\n"
+
+
+def chunk_source_code(text: str, target_tokens: int) -> list[tuple[str, str]]:
+    """Return [(anchor, chunk_text)]. Anchor = first non-empty line (definition header)."""
+    blocks = _BLANK_BLOCK_RE.split(text)
+    chunks: list[tuple[str, str]] = []
+    word_limit = max(1, int(target_tokens / 1.3))
+
+    for block in blocks:
+        body = block.strip()
+        if not body:
+            continue
+        anchor = next((line.strip() for line in body.split("\n") if line.strip()), "doc")
+        if len(anchor) > 120:
+            anchor = anchor[:120]
+
+        if approx_tokens(body) <= target_tokens:
+            chunks.append((anchor, body))
+        else:
+            words = body.split()
+            for i in range(0, len(words), word_limit):
+                part = " ".join(words[i : i + word_limit])
+                part_anchor = anchor if i == 0 else f"{anchor} (cont.)"
+                chunks.append((part_anchor, part))
+
+    return chunks
+
+
+# ---------- project glob helpers ----------
+
+def _is_excluded(rel_path: str, excludes: list[str]) -> bool:
+    for pat in excludes:
+        if fnmatch.fnmatch(rel_path, pat):
+            return True
+        if pat.endswith("/**") and rel_path.startswith(pat[:-3] + "/"):
+            return True
+    return False
+
+
+def _load_project_globs(cfg: dict) -> tuple[list[str], list[str]]:
+    pi = cfg.get("project_index") or {}
+    include = [g for g in (pi.get("include") or []) if g]
+
+    if not include and yaml is not None and PROJECT_YML.exists():
+        try:
+            pdata = yaml.safe_load(PROJECT_YML.read_text(encoding="utf-8")) or {}
+            include = pdata.get("project_index_globs") or []
+        except Exception:
+            pass
+
+    exclude = (pi.get("exclude") or []) or _DEFAULT_PROJECT_EXCLUDES
+    return include, exclude
 
 
 # ---------- embeddings ----------
@@ -183,6 +255,14 @@ def open_db() -> sqlite3.Connection:
 
 
 def ensure_schema(conn: sqlite3.Connection, dim: int) -> None:
+    _ensure_base_schema(conn)
+    if _vec_loaded(conn):
+        conn.execute("DROP TABLE IF EXISTS vec_chunks")
+        conn.execute(f"CREATE VIRTUAL TABLE vec_chunks USING vec0(embedding float[{dim}])")
+    conn.commit()
+
+
+def _ensure_base_schema(conn: sqlite3.Connection) -> None:
     conn.execute(
         """CREATE TABLE IF NOT EXISTS chunks(
             id INTEGER PRIMARY KEY,
@@ -193,12 +273,26 @@ def ensure_schema(conn: sqlite3.Connection, dim: int) -> None:
             embedding BLOB NOT NULL
         )"""
     )
-    if _vec_loaded(conn):
-        # virtual table; recreate to match dim
-        conn.execute("DROP TABLE IF EXISTS vec_chunks")
-        conn.execute(
-            f"CREATE VIRTUAL TABLE vec_chunks USING vec0(embedding float[{dim}])"
-        )
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS file_hashes(
+            path TEXT PRIMARY KEY,
+            hash TEXT NOT NULL,
+            indexed_at TEXT NOT NULL
+        )"""
+    )
+    conn.commit()
+
+
+def _rebuild_vec_chunks(conn: sqlite3.Connection) -> None:
+    if not _vec_loaded(conn):
+        return
+    row = conn.execute("SELECT embedding FROM chunks LIMIT 1").fetchone()
+    if not row:
+        return
+    dim = len(unpack_f32(row[0]))
+    conn.execute("DROP TABLE IF EXISTS vec_chunks")
+    conn.execute(f"CREATE VIRTUAL TABLE vec_chunks USING vec0(embedding float[{dim}])")
+    conn.execute("INSERT INTO vec_chunks(rowid, embedding) SELECT id, embedding FROM chunks")
     conn.commit()
 
 
@@ -217,21 +311,103 @@ def cosine(a: list[float], b: list[float]) -> float:
 
 # ---------- commands ----------
 
+def _reindex_project(
+    conn: sqlite3.Connection,
+    cfg: dict,
+    embed_fn,
+    provider_id: str,
+    target_tokens: int,
+) -> None:
+    include_globs, exclude_globs = _load_project_globs(cfg)
+    if not include_globs:
+        print("[retriever] no project globs configured — skipping project indexing.")
+        print("[retriever]   Set project_index.include in .agentic.yml or run /agentic-index for auto-detection.")
+        return
+
+    candidate: set[Path] = set()
+    for pattern in include_globs:
+        candidate.update(REPO_ROOT.glob(pattern))
+
+    project_files = sorted(
+        f for f in candidate
+        if f.is_file() and not _is_excluded(str(f.relative_to(REPO_ROOT)), exclude_globs)
+    )
+
+    existing_hashes: dict[str, str] = dict(
+        conn.execute("SELECT path, hash FROM file_hashes").fetchall()
+    )
+    first_run = not existing_hashes
+    if first_run and project_files:
+        print(f"[retriever] first run — indexing {len(project_files)} project files (this may take a moment)")
+
+    cur = conn.cursor()
+    n_indexed = n_skipped = n_encoding = 0
+
+    for fpath in project_files:
+        rel = str(fpath.relative_to(REPO_ROOT))
+        try:
+            text = fpath.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            print(f"[retriever] skip {rel}: not UTF-8")
+            n_encoding += 1
+            continue
+
+        file_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        if existing_hashes.get(rel) == file_hash:
+            n_skipped += 1
+            continue
+
+        chunks = chunk_source_code(text, target_tokens)
+        if not chunks:
+            continue
+
+        preamble = build_file_preamble(rel)
+        embeddings = embed_fn([preamble + chunk_text for _, chunk_text in chunks])
+
+        cur.execute("DELETE FROM chunks WHERE skill='project' AND file=?", (rel,))
+        for (anchor, chunk_text), emb in zip(chunks, embeddings):
+            cur.execute(
+                "INSERT INTO chunks(skill, file, anchor, text, embedding) VALUES (?,?,?,?,?)",
+                ("project", rel, anchor, chunk_text, pack_f32(emb)),
+            )
+
+        now = datetime.datetime.utcnow().isoformat()
+        cur.execute(
+            "INSERT OR REPLACE INTO file_hashes(path, hash, indexed_at) VALUES (?,?,?)",
+            (rel, file_hash, now),
+        )
+        n_indexed += 1
+
+    # Stale cleanup: paths in file_hashes that no longer exist on disk
+    current_paths = {str(f.relative_to(REPO_ROOT)) for f in project_files}
+    n_removed = 0
+    for stale_path in list(existing_hashes.keys()):
+        if stale_path not in current_paths:
+            cur.execute("DELETE FROM chunks WHERE skill='project' AND file=?", (stale_path,))
+            cur.execute("DELETE FROM file_hashes WHERE path=?", (stale_path,))
+            n_removed += 1
+
+    conn.commit()
+    print(
+        f"[retriever] project: {n_indexed} indexed, {n_skipped} skipped (unchanged), "
+        f"{n_removed} removed (stale), {n_encoding} skipped (non-UTF-8)"
+    )
+
+
 def cmd_reindex() -> None:
     cfg = load_config()
-    skills = cfg.get("enabled_skills") or []
-    if not skills:
-        print("[retriever] no enabled_skills in .agentic.yml; nothing to index")
-        return
     target_tokens = (cfg.get("retrieval") or {}).get("chunk_tokens", 400)
-
     embed_fn, provider_id = get_embedder(cfg)
 
-    if VECTORS_DB.exists():
-        VECTORS_DB.unlink()
     conn = open_db()
+    _ensure_base_schema(conn)
 
-    all_chunks: list[tuple[str, str, str, str]] = []  # skill, file, anchor, text
+    # Skills pass: full rebuild (preserve project chunks)
+    conn.execute("DELETE FROM chunks WHERE skill != 'project'")
+    conn.commit()
+
+    skills = cfg.get("enabled_skills") or []
+    all_skill_chunks: list[tuple[str, str, str, str]] = []  # skill, file, anchor, text
     for skill in skills:
         ref_dir = SKILLS_DIR / skill / "references"
         if not ref_dir.exists():
@@ -242,29 +418,32 @@ def cmd_reindex() -> None:
         for md in files:
             text = md.read_text(encoding="utf-8")
             for anchor, chunk in chunk_markdown(text, target_tokens):
-                all_chunks.append((skill, str(md.relative_to(REPO_ROOT)), anchor, chunk))
+                all_skill_chunks.append((skill, str(md.relative_to(REPO_ROOT)), anchor, chunk))
                 count += 1
         print(f"[retriever] {skill}: {len(files)} files, {count} chunks")
 
-    if not all_chunks:
-        print("[retriever] no chunks; nothing to embed")
-        return
+    if not skills:
+        print("[retriever] no enabled_skills in .agentic.yml; skipping skills pass")
 
-    print(f"[retriever] embedding {len(all_chunks)} chunks via {provider_id}...")
-    embeddings = embed_fn([c[3] for c in all_chunks])
-    dim = len(embeddings[0])
-    ensure_schema(conn, dim)
+    if all_skill_chunks:
+        print(f"[retriever] embedding {len(all_skill_chunks)} skill chunks via {provider_id}...")
+        embeddings = embed_fn([c[3] for c in all_skill_chunks])
+        cur = conn.cursor()
+        for (skill, file, anchor, text), emb in zip(all_skill_chunks, embeddings):
+            cur.execute(
+                "INSERT INTO chunks(skill, file, anchor, text, embedding) VALUES (?,?,?,?,?)",
+                (skill, file, anchor, text, pack_f32(emb)),
+            )
+        conn.commit()
 
-    cur = conn.cursor()
-    for i, ((skill, file, anchor, text), emb) in enumerate(zip(all_chunks, embeddings), start=1):
-        cur.execute(
-            "INSERT INTO chunks(id, skill, file, anchor, text, embedding) VALUES (?, ?, ?, ?, ?, ?)",
-            (i, skill, file, anchor, text, pack_f32(emb)),
-        )
-        if _vec_loaded(conn):
-            cur.execute("INSERT INTO vec_chunks(rowid, embedding) VALUES (?, ?)", (i, pack_f32(emb)))
-    conn.commit()
-    print(f"[retriever] wrote {VECTORS_DB} (dim={dim})")
+    # Project pass: incremental, hash-cached
+    _reindex_project(conn, cfg, embed_fn, provider_id, target_tokens)
+
+    # Rebuild ANN index from all current chunks
+    _rebuild_vec_chunks(conn)
+
+    total = conn.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
+    print(f"[retriever] total: {total} chunks in {VECTORS_DB}")
 
 
 def cmd_query(text: str, k: int, skill_filter: list[str] | None) -> None:
