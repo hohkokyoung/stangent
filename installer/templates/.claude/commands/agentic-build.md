@@ -21,13 +21,18 @@ Dispatcher. The only orchestrator. Algorithm is fixed; do not invent your own.
 4. Filter to runnable: `status == pending` AND every dep is `status == done`.
 5. If single `<task-id>` was given, restrict the runnable set to that one (or refuse if its deps aren't done).
 6. **Execute sequentially.** For each runnable task in topo order:
-   a. Read the task file's `role` field.
-   b. Invoke the matching subagent (`planner` is never invoked here — only `implementer` / `reviewer` / `tester` / `sketcher`) with:
+   a. Re-index project files by running:
+      ```
+      python .claude/hooks/lib/retriever.py reindex --project-only
+      ```
+      This ensures the vector index reflects any code written by earlier tasks in this run. Skills are not re-embedded (that is handled by `/agentic-index`).
+   b. Read the task file's `role` field.
+   c. Invoke the matching subagent (`planner` is never invoked here — only `implementer` / `reviewer` / `tester` / `sketcher`) with:
       - The absolute path to the task file
       - The `run_id`
       - The list of skill files (resolved from `skills_to_load` → `.claude/skills/<name>/SKILL.md`). If a skill name is `"project"`, skip SKILL.md injection — it is a retrieve-only pseudo-skill with no corresponding SKILL.md file. The agent receives project file chunks exclusively through `retrieve()`.
       - The task's `k` frontmatter value (default `6` if unset), passed to the agent as the retrieve k parameter
-   c. Wait for the subagent to flip `status` (`done` | `blocked`) or for failure.
+   d. Wait for the subagent to flip `status` (`done` | `blocked`) or for failure.
 7. If a dependency ends up `blocked`, do NOT dispatch its dependents. They stay `pending`; `/agentic-status` will show them as transitively waiting.
 8. After each task, re-evaluate step 4.
 9. Stop when no runnable tasks remain.

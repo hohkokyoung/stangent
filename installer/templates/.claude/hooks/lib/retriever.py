@@ -394,7 +394,7 @@ def _reindex_project(
     )
 
 
-def cmd_reindex() -> None:
+def cmd_reindex(project_only: bool = False) -> None:
     cfg = load_config()
     target_tokens = (cfg.get("retrieval") or {}).get("chunk_tokens", 400)
     embed_fn, provider_id = get_embedder(cfg)
@@ -402,39 +402,40 @@ def cmd_reindex() -> None:
     conn = open_db()
     _ensure_base_schema(conn)
 
-    # Skills pass: full rebuild (preserve project chunks)
-    conn.execute("DELETE FROM chunks WHERE skill != 'project'")
-    conn.commit()
-
-    skills = cfg.get("enabled_skills") or []
-    all_skill_chunks: list[tuple[str, str, str, str]] = []  # skill, file, anchor, text
-    for skill in skills:
-        ref_dir = SKILLS_DIR / skill / "references"
-        if not ref_dir.exists():
-            print(f"[retriever] skip {skill}: no references dir")
-            continue
-        files = sorted(ref_dir.glob("*.md"))
-        count = 0
-        for md in files:
-            text = md.read_text(encoding="utf-8")
-            for anchor, chunk in chunk_markdown(text, target_tokens):
-                all_skill_chunks.append((skill, str(md.relative_to(REPO_ROOT)), anchor, chunk))
-                count += 1
-        print(f"[retriever] {skill}: {len(files)} files, {count} chunks")
-
-    if not skills:
-        print("[retriever] no enabled_skills in .agentic.yml; skipping skills pass")
-
-    if all_skill_chunks:
-        print(f"[retriever] embedding {len(all_skill_chunks)} skill chunks via {provider_id}...")
-        embeddings = embed_fn([c[3] for c in all_skill_chunks])
-        cur = conn.cursor()
-        for (skill, file, anchor, text), emb in zip(all_skill_chunks, embeddings):
-            cur.execute(
-                "INSERT INTO chunks(skill, file, anchor, text, embedding) VALUES (?,?,?,?,?)",
-                (skill, file, anchor, text, pack_f32(emb)),
-            )
+    if not project_only:
+        # Skills pass: full rebuild (preserve project chunks)
+        conn.execute("DELETE FROM chunks WHERE skill != 'project'")
         conn.commit()
+
+        skills = cfg.get("enabled_skills") or []
+        all_skill_chunks: list[tuple[str, str, str, str]] = []  # skill, file, anchor, text
+        for skill in skills:
+            ref_dir = SKILLS_DIR / skill / "references"
+            if not ref_dir.exists():
+                print(f"[retriever] skip {skill}: no references dir")
+                continue
+            files = sorted(ref_dir.glob("*.md"))
+            count = 0
+            for md in files:
+                text = md.read_text(encoding="utf-8")
+                for anchor, chunk in chunk_markdown(text, target_tokens):
+                    all_skill_chunks.append((skill, str(md.relative_to(REPO_ROOT)), anchor, chunk))
+                    count += 1
+            print(f"[retriever] {skill}: {len(files)} files, {count} chunks")
+
+        if not skills:
+            print("[retriever] no enabled_skills in .agentic.yml; skipping skills pass")
+
+        if all_skill_chunks:
+            print(f"[retriever] embedding {len(all_skill_chunks)} skill chunks via {provider_id}...")
+            embeddings = embed_fn([c[3] for c in all_skill_chunks])
+            cur = conn.cursor()
+            for (skill, file, anchor, text), emb in zip(all_skill_chunks, embeddings):
+                cur.execute(
+                    "INSERT INTO chunks(skill, file, anchor, text, embedding) VALUES (?,?,?,?,?)",
+                    (skill, file, anchor, text, pack_f32(emb)),
+                )
+            conn.commit()
 
     # Project pass: incremental, hash-cached
     _reindex_project(conn, cfg, embed_fn, provider_id, target_tokens)
@@ -481,7 +482,9 @@ def cmd_query(text: str, k: int, skill_filter: list[str] | None) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("reindex")
+    ri = sub.add_parser("reindex")
+    ri.add_argument("--project-only", action="store_true",
+                    help="Only re-index project files (skip skills re-embed).")
     q = sub.add_parser("query")
     q.add_argument("text")
     q.add_argument("k", nargs="?", type=int, default=6)
@@ -490,7 +493,7 @@ def main() -> None:
     args = ap.parse_args()
 
     if args.cmd == "reindex":
-        cmd_reindex()
+        cmd_reindex(project_only=getattr(args, "project_only", False))
     elif args.cmd == "query":
         cmd_query(args.text, args.k, args.skill)
 
