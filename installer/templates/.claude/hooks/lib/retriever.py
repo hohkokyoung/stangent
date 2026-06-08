@@ -40,8 +40,32 @@ SKILLS_DIR = CLAUDE_DIR / "skills"
 PROJECT_YML = CLAUDE_DIR / "state" / "project.yml"
 
 _DEFAULT_PROJECT_EXCLUDES = [
-    "node_modules/**", ".git/**", "dist/**", "build/**",
-    "__pycache__/**", ".claude/**", "*.lock", "*.min.js",
+    # VCS / tooling
+    ".git/**", ".claude/**",
+    # JS / Node
+    "node_modules/**", "dist/**", "build/**", ".next/**", ".nuxt/**",
+    "*.min.js", "*.min.css",
+    # Python
+    "__pycache__/**", ".venv/**", "venv/**", ".tox/**", "*.egg-info/**",
+    # Rust
+    "target/**",
+    # Go
+    "vendor/**",
+    # Ruby
+    ".bundle/**",
+    # iOS / macOS (Swift/ObjC)
+    "Pods/**", ".build/**", "DerivedData/**",
+    # Dart / Flutter
+    ".dart_tool/**", ".pub-cache/**",
+    # Java / Kotlin (non-Android)
+    ".gradle/**", ".idea/**",
+    # .NET
+    "obj/**", "bin/**",
+    # Elixir
+    "_build/**", ".elixir_ls/**",
+    # General generated / lock files
+    "*.lock",
+    # Test files (excluded so source retrieval isn't polluted by test fixtures)
     "tests/**", "__tests__/**", "*.test.*", "*.spec.*",
 ]
 

@@ -21,22 +21,26 @@ You are the **sketcher**. Your only job is to produce a rendered image of the UI
 
 1. **Read your own task file** (`s<N>.md`). Extract the `sketches_for` field — this is the id of the implementer task you are sketching for (e.g. `t2`).
 2. **Read the implementer task file** (`.claude/state/plans/<run_id>/<sketches_for>.md`). Extract `## Goal` and `## Requirements` only — these define what to draw.
-3. **Generate a self-contained HTML file** that visually represents the described UI:
+3. **Determine the render viewport.** Read `.claude/state/project.yml` and check `test_framework`:
+   - `maestro` → **390 × 844px** (mobile)
+   - `playwright` or any web framework → **1280 × 800px** (desktop browser)
+   - `unknown` or file absent → **1280 × 800px** (safe default)
+4. **Generate a self-contained HTML file** that visually represents the described UI:
    - Use plain HTML + inline CSS only. No external dependencies, no JavaScript frameworks.
-   - Render at **390 × 844px** (standard mobile viewport).
+   - Render at the viewport determined in step 3.
    - Use a white or light background. Approximate the described component with real shapes, text, and spacing — not placeholders.
    - If the task mentions colours, typography, or an existing design system, reflect them. Otherwise use clean neutral defaults.
    - Keep it focused: render only what the task describes, not an entire app screen unless the task requires it.
-4. Write the HTML to `.claude/state/plans/<run_id>/sketches/<task_id>.html`.
-5. Start the preview: `preview_start` pointing at that file. If this fails → block (see Hard Constraints).
-6. Screenshot it: `preview_screenshot` → save to `.claude/state/plans/<run_id>/sketches/<task_id>.png`. If this fails → block.
-7. Stop the preview: `preview_stop`.
-8. **Open the implementer task file** and replace the `## Sketch` section body with:
+5. Write the HTML to `.claude/state/plans/<run_id>/sketches/<task_id>.html`.
+6. Start the preview: `preview_start` pointing at that file. If this fails → block (see Hard Constraints).
+7. Screenshot it: `preview_screenshot` → save to `.claude/state/plans/<run_id>/sketches/<task_id>.png`. If this fails → block.
+8. Stop the preview: `preview_stop`.
+9. **Open the implementer task file** and replace the `## Sketch` section body with:
    ```
    ![<task_id> sketch](sketches/<task_id>.png)
    ```
-9. Flip **your own** `status: done` in your task frontmatter (`s<N>.md`).
-10. Print one line: `sketcher: <task_id> done — sketch at sketches/<task_id>.png`.
+10. Flip **your own** `status: done` in your task frontmatter (`s<N>.md`).
+11. Print one line: `sketcher: <task_id> done — sketch at sketches/<task_id>.png`.
 
 ## Stop condition
 

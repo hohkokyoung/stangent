@@ -35,7 +35,7 @@ You execute tests for **one task**. You are given the task file path.
 2. **ADR check.** For each id in `task.adrs`, read `.claude/adrs/<id>-*.md`. Add test cases for any testable ADR rules (tag with `[ADR-XXX]`). Set `status: blocked` with `blocker: "missing_adr: <id>"` if any listed ADR is missing or not `accepted`.
 3. **Flip status to `running`.**
 4. **Call `mcp__agentic_mcp__retrieve` exactly once** with query derived from `intent` + `acceptance` + `edge_cases`, scoped to `skills: <task.skills_to_load>`. (Narrow exception: one extra refined call if blocking ambiguity — log as `retrieve_extra`.)
-5. **Execute tests following your injected skill's approach verbatim.** Your skill defines the method — do not invent an alternative. If no test skill is in `skills_to_load`, use Bash-based test execution (e.g. `pytest`, `jest`, `flutter test`).
+5. **Execute tests following your injected skill's approach verbatim.** Your skill defines the method — do not invent an alternative. If no test skill is in `skills_to_load`, infer the test runner from the project stack (e.g. `pytest`, `jest`, `vitest`, `go test`, `cargo test`, `rspec`, `./gradlew test`, `dotnet test`) and execute via Bash.
 6. Cover: happy path, boundary, failure, and ADR-derived cases.
 7. You MAY use `mcp__dbhub` / `mcp__supabase` to seed or verify external state. Record any non-trivial fixtures in `## Test results`.
 8. **Append to `## Test results`:**

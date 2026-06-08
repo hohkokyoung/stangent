@@ -41,7 +41,7 @@ You MUST NOT assign `role: sketcher`. Sketch tasks are created and dispatched by
 - Pick the smallest set of skills per task from `.claude/skills/`. Each skill ≤ 3000 tokens.
 - Verify the selected skills are **non-overlapping** by reading each skill's `## Purpose` section.
 - If two skills overlap or contradict, do NOT emit the task. Either re-pick, or ask the user via `AskUserQuestion`.
-- **For tester tasks:** always include the test framework skill in `skills_to_load`. Use `test_framework` from `.claude/state/project.yml` — `playwright` for browser projects, `maestro` for mobile. If `test_framework` is missing or `unknown`, omit the test skill and add a note in `## Assumptions`.
+- **For tester tasks:** read `test_framework` from `.claude/state/project.yml`. If a skill directory named `test_framework` exists under `.claude/skills/`, include it in `skills_to_load`. Do not fabricate skill names — only use skills that exist. If `test_framework` is `unknown`, missing, or has no corresponding skill directory, omit the test skill and add a note in `## Assumptions`.
 
 ### Clarifications block
 
@@ -62,16 +62,23 @@ Carry every entry into `_overview.md` under `## Resolved Questions`. Do NOT add 
 
 ## Procedure
 
-1. Read `.claude/.agentic.yml` to learn the enabled skills and embedding config. Also read `.claude/state/project.yml` if it exists — check `test_framework` (`playwright` or `maestro`). This tells you which test skill to include in `skills_to_load` for tester tasks.
+1. Read `.claude/.agentic.yml` to learn the enabled skills and embedding config. Also read `.claude/state/project.yml` if it exists — check `test_framework`. This tells you which test skill to include in `skills_to_load` for tester tasks (see Skills selection rules).
 2. Read the user goal carefully. Extract explicit and inferred requirements.
 3. Read the `## Clarifications` block in your prompt. All Q→A pairs and ASSUMPTION lines are resolved scope — treat them as authoritative. Do not re-derive or second-guess them.
 4. List constraints and edge cases (informed by the goal and the Clarifications block).
-   **If `mobile` is in `enabled_skills`:** before finalising, check for cross-screen scope gaps and surface any you find as explicit requirements or edge cases:
+   **If `mobile` is in `enabled_skills`:** before finalising, check for cross-screen scope gaps:
    - Does a state change from this feature need to be visible on screens other than where the action occurs?
    - Can any screen in this feature be reached from outside the app's normal flow (deep link, notification tap)?
    - Do any existing list or collection screens need to reflect this feature's state changes?
    - Are there in-place content actions (long-press, swipe, action sheet) involved?
-   Any yes answer is an in-scope requirement to carry forward — do not resolve how, just surface what.
+
+   **If `react`, `html-css`, or `playwright` is in `enabled_skills`:** before finalising, check for cross-page scope gaps:
+   - Does a state change from this feature need to be reflected on other pages or routes?
+   - Can any page in this feature be reached directly via URL (shared link, browser back, reload)?
+   - Do any existing list or collection views need to reflect this feature's state changes?
+   - Are there keyboard navigation, focus management, or accessibility implications?
+
+   Any yes answer (from either checklist) is an in-scope requirement to carry forward — do not resolve how, just surface what.
 5. Read all **accepted ADRs**: `.claude/adrs/ADR-*.md` where frontmatter `status: accepted`. These are project-level rules that bind every task. Make a short mental index: id → title → one-line decision.
 6. Decide on skills involved (from `enabled_skills`).
 7. Decompose into 3–8 tasks. For each task, decide:

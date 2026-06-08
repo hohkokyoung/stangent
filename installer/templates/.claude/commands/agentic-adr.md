@@ -11,7 +11,7 @@ Manage project-level architectural decisions. ADRs override skill defaults and b
 
 ### `new <title>`
 
-1. Allocate id: `python .claude/hooks/lib/adr_id.py next` (e.g. `ADR-003`).
+1. Allocate id: `python3 .claude/hooks/lib/adr_id.py next` (e.g. `ADR-003`).
 2. Create `.claude/adrs/<id>-<slug>.md` by copying `.claude/templates/adr.md`.
 3. Set frontmatter: `id`, `title`, `status: proposed`, `date` (UTC YYYY-MM-DD), `supersedes: null`.
 4. Print the path and tell the user: *"Edit it, then re-run `/agentic-adr accept <id>` to make it binding."*
@@ -85,7 +85,7 @@ Scan the existing codebase and propose ADRs for recurring architectural patterns
    - 10+ instances = strong
    Propose strongest first, up to `--max N`.
 
-6. **Draft each ADR.** Allocate id with `python .claude/hooks/lib/adr_id.py next`. For each candidate write `.claude/adrs/<id>-<slug>.md`:
+6. **Draft each ADR.** Allocate id with `python3 .claude/hooks/lib/adr_id.py next`. For each candidate write `.claude/adrs/<id>-<slug>.md`:
    - Frontmatter: `status: proposed`, today's UTC date, `supersedes: null`.
    - `## Context` — *why this is worth pinning*, plus a short evidence list (3–5 concrete file references like `src/api/users.py:42`).
    - `## Decision` — single-sentence rule.

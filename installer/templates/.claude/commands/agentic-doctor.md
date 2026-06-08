@@ -11,7 +11,7 @@ Run a battery of fast, deterministic checks against this project's agentic insta
 
 1. Run:
    ```
-   python .claude/hooks/lib/doctor.py
+   python3 .claude/hooks/lib/doctor.py
    ```
    (Add `--json` to `$ARGUMENTS` for machine-readable output.)
 2. Show the script's stdout verbatim.

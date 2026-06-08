@@ -11,13 +11,13 @@ Run the planner on the given goal.
 
 1. Allocate the next `run_id` by running:
    ```
-   python .claude/hooks/lib/plan_id.py next
+   python3 .claude/hooks/lib/plan_id.py next
    ```
    The script reads `.claude/.agentic.yml: plan_id.{prefix,pad,start}` and scans existing `.claude/state/plans/<prefix>-*` dirs. Default format: `FEAT-001`, `FEAT-002`, ...
 
 2. **Create the feature branch** (if `git.auto_branch` is true in `.agentic.yml`):
    ```
-   python .claude/hooks/lib/git_branch.py create <run_id>
+   python3 .claude/hooks/lib/git_branch.py create <run_id>
    ```
    - Skips silently if not a git repo.
    - **Refuses (exit 1) if the working tree has uncommitted changes** and `git.fail_on_wip` is true. If this happens, STOP — tell the user to commit or stash, then re-run `/agentic-plan` with the same goal. Do NOT proceed to step 3 in this case (otherwise you'd allocate a `run_id` and have a half-finished plan with no branch).
@@ -50,7 +50,7 @@ Run the planner on the given goal.
    - Never ask about file names, class names, or implementation choices — those belong to the implementer.
    - If a dimension is clearly not applicable to the goal (e.g. no backend touched → skip auth/data model questions), skip it silently. Do not ask irrelevant questions.
    - After 4 rounds with unanswered blocking gaps: list the remaining gaps and STOP. Do NOT invoke the planner.
-   - **If `flutter` or `mobile` is in `enabled_skills`:** always include this question in the first clarification round: "Do you want a visual sketch of the UI rendered before implementation starts?" (suggested: yes). Record the answer as `sketch: yes` or `sketch: no` in the Clarifications block.
+   - **If any of `flutter`, `mobile`, `react`, `html-css` is in `enabled_skills`, OR if the goal description mentions UI, screen, page, view, or component:** always include this question in the first clarification round: "Do you want a visual sketch of the UI rendered before implementation starts?" (suggested: yes). Record the answer as `sketch: yes` or `sketch: no` in the Clarifications block.
 
    Collect all answers into a `## Clarifications` block (format below) to pass to the planner.
 

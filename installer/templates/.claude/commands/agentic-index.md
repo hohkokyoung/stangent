@@ -13,7 +13,7 @@ Embed the references corpus into sqlite-vec and detect the project stack.
 
 Run:
 ```
-python .claude/hooks/lib/retriever.py reindex
+python3 .claude/hooks/lib/retriever.py reindex
 ```
 
 The script:
@@ -35,14 +35,22 @@ Inspect the project root to determine the test framework and default project ind
 | Signal | Contributes to `test_framework` | Globs to add |
 |---|---|---|
 | `pubspec.yaml` exists | `maestro` | `["**/*.dart"]` |
-| `android/` or `ios/` dir exists (without pubspec) | `maestro` | `["**/*.kt", "**/*.swift"]` |
-| `package.json` with `next`, `react`, `vue`, `svelte`, `nuxt` in dependencies | `playwright` | `["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]` |
-| `package.json` exists (any web JS project) | `playwright` | `["**/*.ts", "**/*.js"]` |
-| `requirements.txt` or `pyproject.toml` exists | _(no test framework change)_ | `["**/*.py"]` |
+| `android/` or `ios/` dir exists (without `pubspec.yaml`) | `maestro` | `["**/*.kt", "**/*.swift"]` |
+| `package.json` with `next`, `react`, `vue`, `svelte`, `nuxt`, `angular`, `vite` in deps | `playwright` | `["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]` |
+| `package.json` exists (no browser-framework deps above — backend/CLI JS) | _(no test framework change)_ | `["**/*.ts", "**/*.js"]` |
+| `requirements.txt` or `pyproject.toml` exists | `pytest` | `["**/*.py"]` |
+| `go.mod` exists | `go_test` | `["**/*.go"]` |
+| `Cargo.toml` exists | `cargo_test` | `["**/*.rs"]` |
+| `Gemfile` exists | `rspec` | `["**/*.rb"]` |
+| `pom.xml` or `build.gradle` exists (without `android/` dir) | `junit` | `["**/*.java", "**/*.kt"]` |
+| `*.csproj` or `*.sln` exists | `dotnet_test` | `["**/*.cs"]` |
+| `mix.exs` exists | `ex_unit` | `["**/*.ex", "**/*.exs"]` |
+| `composer.json` exists | _(no test framework change)_ | `["**/*.php"]` |
 
 #### Rules for `test_framework`
 - If any mobile signal matched → `maestro`
-- Else if any JS/web signal matched → `playwright`
+- Else if any browser-frontend JS signal matched → `playwright`
+- Else use the first matched from: `pytest` → `go_test` → `cargo_test` → `rspec` → `junit` → `dotnet_test` → `ex_unit`
 - Else → `unknown`
 
 #### Rules for `project_index_globs`
@@ -70,7 +78,7 @@ If no signals matched, print:
 
 ### Step 4 — Index project files
 
-This step runs automatically inside the same `python .claude/hooks/lib/retriever.py reindex` call from Step 1.
+This step runs automatically inside the same `python3 .claude/hooks/lib/retriever.py reindex` call from Step 1.
 
 The retriever:
 1. Reads `project_index.include` from `.agentic.yml` (manual override). If non-empty, uses those globs. Otherwise falls back to `project_index_globs` from `.claude/state/project.yml` (auto-detected in Step 2).

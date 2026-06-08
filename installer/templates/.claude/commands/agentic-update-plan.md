@@ -21,7 +21,7 @@ If no amendment text is given, use `AskUserQuestion` (YOU, not the planner) to e
 
 ## Procedure
 
-1. Resolve `<run-id>`. If not given, use `python .claude/hooks/lib/plan_id.py peek`.
+1. Resolve `<run-id>`. If not given, use `python3 .claude/hooks/lib/plan_id.py peek`.
 2. Read every task file in `.claude/state/plans/<run-id>/` plus `_overview.md`.
 3. Compute the **frozen set** = tasks with `status: done`. These are immutable — the planner may NOT modify their frontmatter, sections, or status.
 4. **Clarification phase (YOU do this — do NOT delegate to the planner).** Using the amendment text as the starting point, walk only the dimensions from the coverage checklist (see `/agentic-plan`) that the amendment touches. Ask up to **4 rounds**, up to **3 questions per round**. Collect answers into a `## Clarifications` block (same format as `/agentic-plan`) to pass to the planner. If the amendment is unambiguous, skip this step.
