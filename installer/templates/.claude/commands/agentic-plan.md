@@ -68,8 +68,27 @@ Run the planner on the given goal.
 6. The planner writes `_overview.md` + per-task files (all `status: pending`).
 
 7. **Sketch injection + render.** If the Clarifications block contains `sketch: yes`:
-   a. For each `role: implementer` task file in the run dir, create a corresponding `role: sketcher` task file (`t<N>.md`) with `intent: "Sketch the UI for <original task intent>"`, `skills_to_load: []`, and `depends_on: []`. Update the original implementer task's `depends_on` to include the new sketcher task id.
-   b. Invoke the **sketcher** agent for each new sketcher task sequentially. Wait for each to flip `status: done`.
+
+   **Validate first:** scan all task files the planner just wrote. If any has `role: sketcher`, the planner violated its contract — stop, print an error listing the offending task ids, and ask the developer to re-run `/agentic-plan`. Do NOT proceed.
+
+   a. **Create all sketcher task files first** (do not invoke any sketcher yet). For each `role: implementer` task file `t<N>.md` in the run dir:
+      - Create `s<N>.md` (e.g. `t2` → `s2`) with:
+        ```
+        role: sketcher
+        intent: "Sketch the UI for: <original implementer task intent>"
+        sketches_for: t<N>
+        skills_to_load: []
+        depends_on: []
+        status: pending
+        blocker: null
+        ```
+      - Update `t<N>.md`'s `depends_on` to include `s<N>`.
+
+   b. **Run all sketchers sequentially.** For each `s<N>.md` in creation order:
+      - Invoke the **sketcher** agent with the path to `s<N>.md`.
+      - Wait for it to flip `status: done` or `status: blocked`.
+      - If `blocked`: print a warning (`sketcher s<N> blocked: <blocker>`) and continue to the next — do NOT halt the entire plan. The implementer task will be runnable only after the sketch is manually resolved or removed from `depends_on`.
+
    If `sketch: no`, skip this step entirely.
 
 8. After the sketch phase, print:
