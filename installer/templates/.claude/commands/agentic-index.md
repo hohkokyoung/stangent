@@ -13,7 +13,7 @@ Embed the references corpus into sqlite-vec and detect the project stack.
 
 Run:
 ```
-python3 .claude/hooks/lib/retriever.py reindex
+PYEXE=$(ls .venv/bin/python venv/bin/python .env/bin/python 2>/dev/null | head -1) && ${PYEXE:-python3} .claude/hooks/lib/retriever.py reindex
 ```
 
 The script:

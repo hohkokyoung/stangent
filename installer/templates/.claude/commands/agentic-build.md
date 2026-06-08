@@ -23,7 +23,7 @@ Dispatcher. The only orchestrator. Algorithm is fixed; do not invent your own.
 6. **Execute sequentially.** For each runnable task in topo order:
    a. Re-index project files by running:
       ```
-      python3 .claude/hooks/lib/retriever.py reindex --project-only
+      PYEXE=$(ls .venv/bin/python venv/bin/python .env/bin/python 2>/dev/null | head -1) && ${PYEXE:-python3} .claude/hooks/lib/retriever.py reindex --project-only
       ```
       This ensures the vector index reflects any code written by earlier tasks in this run. Skills are not re-embedded (that is handled by `/agentic-index`).
    b. Read the task file's `role` field.
