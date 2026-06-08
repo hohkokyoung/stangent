@@ -16,7 +16,7 @@ cd /path/to/project
 python <repo>/installer/agentic.py
 ```
 
-Cross-platform (Windows / macOS / Linux). Idempotent — re-run anytime to refresh templates; user-added files are preserved.
+Cross-platform (Windows / macOS / Linux). Safe to re-run — system dirs (`agents/`, `commands/`, `hooks/`, `mcp/`) are always refreshed. Config files (`.agentic.yml`, `settings.json`, `.mcp.json`) are seeded on first install and left untouched on re-install so project-specific settings survive upgrades.
 
 Runtime dependencies in the target project:
 ```bash
@@ -56,8 +56,8 @@ The **sketcher** is a unique role that fires automatically during `/agentic-plan
 
 1. Reads the task's `## Goal` and `## Requirements`
 2. Generates a self-contained HTML mockup (plain HTML + inline CSS, no frameworks)
-3. Renders it at 390 × 844px (mobile viewport) via the Preview MCP
-4. Screenshots it and embeds the image directly in the task file under `## Sketch`
+3. Renders it via the Preview MCP — viewport is `390×844` for mobile projects (`test_framework: maestro`) or `1280×800` for web/unknown
+4. Screenshots it and embeds the image in the **implementer's** task file under `## Sketch`
 
 The implementer then uses the sketch as a visual spec — not a description, an actual rendered image. This prevents the classic loop of "implement → review → redesign → re-implement."
 
@@ -69,19 +69,26 @@ The sketcher writes **no framework code**. It produces exactly one image and sto
 
 `/agentic-index` detects your project stack and writes `test_framework` to `.claude/state/project.yml`. The planner then automatically includes the right test skill on every tester task — no manual configuration.
 
-| Stack | Detected by | Test framework | Viewable output |
-|---|---|---|---|
-| React / Next.js / Vue / web JS | `package.json` dependencies | Playwright MCP | Live headed browser + HTML report |
-| Flutter / React Native / iOS / Android | `pubspec.yaml` or `android/` / `ios/` dirs | Maestro MCP | Maestro Viewer (device in browser) |
+| Stack | Detected by | `test_framework` value |
+|---|---|---|
+| React / Next.js / Vue (frontend) | `package.json` + no server-only markers | `playwright` |
+| Flutter / React Native / iOS / Android | `pubspec.yaml` or `android/` / `ios/` dirs | `maestro` |
+| Python | `*.py` + `pyproject.toml` / `setup.py` / `requirements.txt` | `pytest` |
+| Go | `go.mod` | `go_test` |
+| Rust | `Cargo.toml` | `cargo_test` |
+| Ruby | `Gemfile` | `rspec` |
+| Java / Kotlin (Android excluded) | `build.gradle` / `pom.xml` | `junit` |
+| .NET | `*.csproj` / `*.sln` | `dotnet_test` |
+| Elixir | `mix.exs` | `ex_unit` |
+| PHP | `composer.json` | `phpunit` |
 
 **How the tester works:**
-1. Tester reads its injected skill (playwright or maestro)
-2. Opens a real browser / device via MCP tools
-3. Explores the live app — navigates, clicks, fills forms, screenshots each step
-4. Generates `.spec.ts` (Playwright) or flow YAML (Maestro) from what it actually observed
-5. Runs the artifact and reports results
+1. Reads its injected skill — the skill defines the complete testing method (tools, commands, artifact format)
+2. If a test runner MCP is available (e.g. Playwright, Maestro), uses it to explore the live app
+3. Generates test artifacts (`.spec.ts`, flow YAML, `.py`, etc.) from actual exploration
+4. Runs the artifact and reports results
 
-The spec is always written from live exploration — never generated blind from the task description.
+The testing method is fully defined by the injected skill — the tester role itself contains no framework-specific logic.
 
 **For existing projects (brownfield):**
 ```
@@ -104,7 +111,7 @@ The spec is always written from live exploration — never generated blind from 
 
 `/agentic-debug <description>` runs the **debugger** agent, which follows a strict order:
 
-1. **Queries the database first** (via Supabase / dbhub MCP) — fetches actual rows, checks for nulls, missing foreign keys, RLS violations
+1. **Queries the database first** — uses any available DB MCP tool (`mcp__supabase`, `mcp__dbhub`) or falls back to CLI (`psql`, `sqlite3`, `mysql`, etc.) — fetches actual rows, checks for nulls, missing foreign keys, access-control violations
 2. **Reads the code second** — only after knowing what the data actually contains
 3. **Correlates** — matches data shape against what the code expects
 4. Writes a structured diagnosis report to `.claude/state/debug/<DBG-id>.md`
@@ -203,16 +210,8 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 ```yaml
 system_version: 1.0.0
 
-enabled_skills:
-  - fastapi
-  - flutter
-  - mobile
-  - supabase
-  - owasp
-  - html-css
-  - react
-  - playwright
-  - maestro
+enabled_skills: []   # empty by default — add skills that match your stack
+# available: react, html-css, flutter, mobile, fastapi, supabase, owasp, playwright, maestro
 
 embedding:
   provider: voyage-3-lite       # falls back to fastembed if unavailable
@@ -243,8 +242,8 @@ plan_id:
   start: 1
 
 # Set automatically by /agentic-index. Override manually if detection is wrong.
-# Values: auto | playwright | maestro
-test_framework: auto
+# Values: playwright | maestro | pytest | go_test | cargo_test | rspec | junit | dotnet_test | ex_unit | phpunit | unknown
+# test_framework: playwright
 ```
 
 ---
