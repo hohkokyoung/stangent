@@ -55,8 +55,11 @@ def copy_templates(target: Path) -> None:
 
     System-owned directories (agents/, commands/, skills/, hooks/, mcp/) are
     fully replaced — any stale files removed in a newer template version
-    disappear here too. The single-file system-owned items (.agentic.yml,
-    settings.json) are overwritten in place.
+    disappear here too.
+
+    Seed files (.agentic.yml, settings.json, adrs/) are copied only on first
+    install. On re-install they are left untouched — they are user config, not
+    system code. The user is expected to update them manually when upgrading.
 
     Everything outside the system-owned set is untouched, so state/ and any
     user-added subdirs survive a re-install.
@@ -68,7 +71,10 @@ def copy_templates(target: Path) -> None:
     dst.mkdir(parents=True, exist_ok=True)
 
     mirror_dirs = {"agents", "commands", "skills", "hooks", "mcp", "evals", "templates"}
-    overwrite_files = {".agentic.yml", "settings.json"}
+    # Seed files: copied on first install only. These are user config — never
+    # overwritten so project-specific settings (enabled_skills, MCP servers,
+    # hook list) survive a re-install / upgrade.
+    seed_files = {".agentic.yml", "settings.json"}
     seed_dirs = {"adrs"}  # copied only on first install; user-managed thereafter
 
     for name in mirror_dirs:
@@ -80,10 +86,16 @@ def copy_templates(target: Path) -> None:
             shutil.rmtree(dst_d)
         shutil.copytree(src_d, dst_d)
 
-    for name in overwrite_files:
+    for name in seed_files:
         src_f = src / name
-        if src_f.exists():
-            shutil.copy2(src_f, dst / name)
+        dst_f = dst / name
+        if not src_f.exists():
+            continue
+        if dst_f.exists():
+            info(f"{name} already present — leaving as-is (edit manually to pick up new defaults)")
+        else:
+            shutil.copy2(src_f, dst_f)
+            info(f"seeded {name}")
 
     for name in seed_dirs:
         src_d = src / name
