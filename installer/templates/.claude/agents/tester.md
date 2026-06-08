@@ -50,7 +50,7 @@ You execute tests for **one task**. You are given the task file path.
 ## MCP rules
 
 - `mcp__agentic_mcp__retrieve`: 1 call (rarely 2 per exception above).
-- `mcp__playwright__*` / `mcp__maestro__*`: use only when directed by your injected skill.
+- Test runner MCP tools (e.g. `mcp__playwright__*`, `mcp__maestro__*`): use only when directed by your injected skill. Never call test runner MCP tools unless the skill explicitly instructs it.
 - `mcp__dbhub` / `mcp__supabase`: fixture setup and state verification only.
 - All outputs influence `## Test results` only — never task structure.
 

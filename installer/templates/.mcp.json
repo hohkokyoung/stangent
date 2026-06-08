@@ -1,5 +1,5 @@
 {
-  "_comment": "Claude Code MCP server config — read by Claude Desktop / Claude Code at project root. agentic_mcp, playwright, and maestro work out of the box. dbhub and supabase need real credentials — see README.",
+  "_comment": "MCP server definitions. Only agentic_mcp is enabled by default. To activate others, add their name to enabledMcpjsonServers in .claude/settings.json. Fill in credentials for dbhub/supabase before enabling them.",
   "mcpServers": {
     "agentic_mcp": {
       "command": "python3",
@@ -21,7 +21,7 @@
         "--transport",
         "stdio",
         "--dsn",
-        "REPLACE_WITH_DSN  e.g.  postgresql://postgres.<project-ref>:<URL-encoded-password>@aws-X-region.pooler.supabase.com:6543/postgres"
+        "REPLACE_WITH_DSN"
       ]
     },
     "supabase": {

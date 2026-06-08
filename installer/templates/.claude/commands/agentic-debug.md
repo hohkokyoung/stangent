@@ -15,7 +15,7 @@ Entry point for data-aware debugging. Collects context from the developer, then 
 2. **Clarification phase (YOU do this — do NOT delegate to the debugger).**
    Ask the developer for the following — batch into one `AskUserQuestion` round:
    - What is the symptom? (what does the user see vs what they expect)
-   - Which feature, screen, or flow is affected?
+   - Which feature, endpoint, or flow is affected?
    - Is there a specific user ID, record ID, or table name involved? (if known)
    - Has this ever worked, or is it a regression?
 

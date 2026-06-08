@@ -35,11 +35,11 @@ Run the planner on the given goal.
    | **Functional requirements** | Exact user-visible behavior — inputs, outputs, state transitions. |
    | **Acceptance criteria** | Concrete, testable bullets for "done." |
    | **Edge cases** | Empty/null/zero, max sizes, concurrent edits, offline, partial failure, idempotency. |
-   | **Auth & permissions** | Who can do this? Anonymous, authenticated, owner-only, admin? RLS implications? |
+   | **Auth & permissions** | Who can do this? Anonymous, authenticated, owner-only, admin? Access control implications? |
    | **Security surface** | Does the goal add an HTTP endpoint, browser-facing UI, form, file upload, user input reaching a DB query, auth flow, or outbound HTTP from user-supplied URL? |
    | **Validation** | Field constraints (lengths, ranges, formats, enums). Server-side, client-side, or both? |
    | **Error UX** | What does the user see on failure? 401 vs 403, retry vs hard-fail, toast vs full-screen. |
-   | **Data model impact** | New tables/columns? Migrations? Backfill? RLS policies? |
+   | **Data model impact** | New tables/columns/schemas? Migrations? Backfill? Access control rules? |
    | **API surface** | New endpoints? Breaking changes? Versioning? Idempotency keys? |
    | **Non-functional** | Perf budgets, payload sizes, rate limits, observability, audit log. |
 

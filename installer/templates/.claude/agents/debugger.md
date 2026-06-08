@@ -32,7 +32,7 @@ You are the **debugger**. Your only job is to produce a diagnosis — what is wr
    - Document exactly what the data looks like.
 
 3. **Read the code second.** Only after step 2:
-   - Find the relevant handler, service, provider, or component using `Grep` and `Glob`
+   - Find the relevant code — handler, service, module, or function — using `Grep` and `Glob`
    - Read what the code expects the data to look like
    - Look for error handlers that might be silencing failures
 

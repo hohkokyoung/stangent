@@ -1,23 +1,23 @@
 system_version: 1.0.0
 
-enabled_skills:
-  - fastapi
-  - flutter
-  - mobile
-  - owasp
-  - supabase
-  - playwright
-  - maestro
-  - html-css
-  - react
-
-# Test framework — set automatically by /agentic-index, or override manually.
-# Values: auto | playwright | maestro
-# auto = /agentic-index detects from project structure and writes to .claude/state/project.yml
-test_framework: auto
+# Add skills that match your project stack. Only listed skills are indexed and
+# injected into agents. Available built-in skills:
+#   frontend:  react, html-css
+#   mobile:    flutter, mobile
+#   backend:   fastapi
+#   database:  supabase
+#   testing:   playwright, maestro
+#   security:  owasp
+#
+# Example — React + FastAPI:
+#   enabled_skills: [react, fastapi, owasp]
+#
+# Example — Flutter + Supabase:
+#   enabled_skills: [flutter, mobile, supabase, owasp, maestro]
+enabled_skills: []
 
 embedding:
-  provider: voyage-3-lite
+  provider: voyage-3-lite    # falls back to fastembed if VOYAGE_API_KEY is unset
   fallback: fastembed
 
 gateway:
@@ -30,36 +30,24 @@ gateway:
     - "DROP TABLE"
     - "DROP DATABASE"
     - "TRUNCATE"
-    - "supabase db reset"
 
 project_index:
-  include: []        # leave empty to use auto-detected globs from /agentic-index;
-                     # set explicitly to override, e.g. ["src/**/*.ts", "lib/**/*.dart"]
-  exclude:
-    - "node_modules/**"
-    - ".git/**"
-    - "dist/**"
-    - "build/**"
-    - "__pycache__/**"
-    - ".claude/**"
-    - "*.lock"
-    - "*.min.js"
-    - "tests/**"
-    - "__tests__/**"
-    - "*.test.*"
-    - "*.spec.*"
+  include: []   # leave empty → auto-detected globs from /agentic-index
+                # override example: ["src/**/*.ts", "lib/**/*.dart", "**/*.go"]
+  exclude: []   # leave empty → retriever.py built-in defaults apply
+                # add entries to suppress specific paths, e.g. ["fixtures/**"]
 
 retrieval:
   default_k: 6
   chunk_tokens: 400
 
 plan_id:
-  prefix: FEAT       # plans become FEAT-001, FEAT-002, ...
-  pad: 3             # digit count; 3 → 001..999, 4 → 0001..9999
-  start: 1           # first number when no existing plans
+  prefix: FEAT   # FEAT-001, FEAT-002, ...
+  pad: 3
+  start: 1
 
 git:
-  auto_branch: true                    # /agentic-plan creates a feature branch
-  branch_template: "feat/{run_id}"     # {run_id} → e.g. FEAT-001 → feat/FEAT-001
-  base_branch: ""                      # empty = branch from current HEAD; else e.g. "main"
-  fail_on_wip: true                    # refuse if working tree has uncommitted changes
+  auto_branch: true
+  branch_template: "feat/{run_id}"
+  base_branch: ""       # empty = branch from current HEAD; set to e.g. "main" to always branch from there
+  fail_on_wip: true     # refuse to plan if working tree has uncommitted changes

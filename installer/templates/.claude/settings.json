@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "enabledMcpjsonServers": ["playwright", "agentic_mcp", "maestro"],
+  "enabledMcpjsonServers": ["agentic_mcp"],
   "hooks": {
     "PreToolUse": [
       {

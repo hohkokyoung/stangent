@@ -1,5 +1,5 @@
 ---
-description: Bootstrap tests for an existing project (brownfield). Scans existing screens/flows, asks which ones to cover, generates baseline test artifacts.
+description: Bootstrap tests for an existing project (brownfield). Ask the developer which flows to cover, then generate and run baseline tests using the detected test framework.
 argument-hint: "init"
 ---
 
@@ -9,78 +9,70 @@ argument-hint: "init"
 
 | Command | What it does |
 |---|---|
-| `/agentic-test init` | Brownfield bootstrap — scan existing flows, ask user, generate baseline tests |
+| `/agentic-test init` | Brownfield bootstrap — ask developer which flows to cover, generate and run baseline tests |
 
 ---
 
 ## /agentic-test init
 
-Use this on a project that already has code but no tests. It scans what exists, asks which flows to cover, and generates baseline test artifacts using the detected test framework.
+Use this on a project that already has code but no tests. It asks the developer which flows matter most, then generates baseline test artifacts using the configured test skill.
 
 ### Procedure
 
-**Step 1 — Read config**
+**Step 1 — Verify test framework is configured**
 
-Read `.claude/state/project.yml` for `test_framework`. If missing or `unknown`, stop with:
+Read `.claude/state/project.yml` for `test_framework`. If missing or `unknown`:
 ```
-Run /agentic-index first so the test framework can be detected.
+[agentic-test] No test framework detected. Run /agentic-index first.
 ```
 
-Read `.claude/.agentic.yml` to confirm `playwright` or `maestro` is in `enabled_skills`.
+Read `.claude/.agentic.yml` and check that a skill matching `test_framework` is in `enabled_skills`. If not:
+```
+[agentic-test] test_framework=<value> but no matching skill is in enabled_skills.
+Add the skill to .agentic.yml and re-run /agentic-index.
+```
 
-**Step 2 — Scan existing flows**
-
-For **playwright** (web):
-- Glob for route definitions: `pages/`, `app/`, `src/routes/`, `src/views/`, router config files.
-- List up to 10 distinct user-facing routes/screens found.
-
-For **maestro** (mobile):
-- Glob for screen files: `lib/screens/`, `lib/pages/`, `src/screens/`, `*.screen.dart`, `*Screen.kt`, `*ViewController.swift`.
-- List up to 10 distinct screens found.
-
-**Step 3 — Ask the user**
+**Step 2 — Ask the developer**
 
 Use `AskUserQuestion` (1 round, up to 3 questions):
 
-1. Which flows/screens should have baseline tests? (show the list found in step 2)
-2. Is the dev server / emulator already running? If not, what command starts it?
-3. What is the app entry point? (URL for web, bundle ID for mobile)
+1. What are the most important user-facing flows or entry points in this project? (list them — e.g. "login, dashboard, checkout" or "GET /users, POST /orders")
+2. Is the app / server / environment already running? If not, what command starts it?
+3. Is there an existing test directory or naming convention to follow?
 
-**Step 4 — Generate baseline tests**
+Do not attempt to infer flows from file paths — the developer knows their project. Only scan files if the developer explicitly references a directory or file in their answers.
 
-For each selected flow/screen:
+**Step 3 — Generate baseline tests**
 
-- **playwright**: Use Playwright MCP tools to navigate to the screen, snapshot, screenshot, then generate a `.spec.ts` covering: page loads without error, key elements visible, primary action reachable. Place in `tests/e2e/<screen_name>.spec.ts` (or existing test dir).
+For each flow the developer listed, invoke a **tester** subagent with:
+- The flow description as the task intent
+- The `test_framework` from `project.yml`
+- The matching test skill in `skills_to_load`
+- Context: "This is a brownfield baseline — explore the running app/service and generate one test that covers the happy path. Do not assume file structure."
 
-- **maestro**: Use Maestro MCP tools to launch the app, navigate to the screen, inspect hierarchy, screenshot, then generate a flow YAML covering: screen loads, key elements visible, primary action reachable. Place in `.maestro/<screen_name>/baseline.yaml`.
+Wait for each tester to complete before starting the next.
 
-**Step 5 — Run and report**
+**Step 4 — Report**
 
-Run the generated tests:
-- Playwright: `npx playwright test --reporter=list`
-- Maestro: `mcp__maestro__run_flow_files` for each generated file
-
-Report results:
+Print a summary:
 ```
 Baseline test summary
 ---------------------
-✓ login_screen      — 1 flow, all pass
-✓ dashboard         — 1 flow, all pass
-✗ settings_screen   — 1 flow, FAILED: element "Save" not found
-  → blocker noted, fix manually or re-run after implementer addresses it
+✓ <flow name>  — generated <artifact path>, all pass
+✗ <flow name>  — generated <artifact path>, FAILED: <reason>
+  → failing baseline kept for reference; fix or re-run after the issue is addressed
 
 Generated artifacts:
-  tests/e2e/login_screen.spec.ts
-  tests/e2e/dashboard.spec.ts
-  tests/e2e/settings_screen.spec.ts   ← failing baseline, kept for reference
+  <path1>
+  <path2>
 ```
 
 ### What this does NOT do
 
-- Does not create a plan or task files — this is a one-time bootstrap, not a feature build.
-- Does not fix failing tests — it captures the current state as a baseline. Failures indicate existing gaps.
-- Does not run in CI — wire that up manually once you have passing baselines.
+- Does not create plan or task files.
+- Does not fix failing tests — it captures the current state as a baseline.
+- Does not wire up CI — do that manually once you have passing baselines.
 
 ### After init
 
-Every new `/agentic-plan` will automatically include test tasks using the same framework. The generated baseline files serve as regression anchors.
+Every new `/agentic-plan` will automatically include tester tasks using the same framework. The generated baseline files serve as regression anchors.
