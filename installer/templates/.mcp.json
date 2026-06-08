@@ -2,7 +2,7 @@
   "_comment": "Claude Code MCP server config — read by Claude Desktop / Claude Code at project root. agentic_mcp, playwright, and maestro work out of the box. dbhub and supabase need real credentials — see README.",
   "mcpServers": {
     "agentic_mcp": {
-      "command": "python",
+      "command": "python3",
       "args": [".claude/mcp/agentic_mcp.py"]
     },
     "playwright": {
