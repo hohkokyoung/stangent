@@ -15,7 +15,11 @@ Dispatcher. The only orchestrator. Algorithm is fixed; do not invent your own.
 
 ## Algorithm (FIXED CONTRACT — do not deviate)
 
-1. Resolve `run-id`. List `.claude/state/plans/<run-id>/*.md` (exclude `_overview.md`).
+1. Resolve `run-id`. List `.claude/state/plans/<run-id>/*.md` (exclude `_overview.md`). Then **immediately** run this exact Bash command (mandatory — do not skip):
+   ```
+   printf '%s' '<resolved-run-id>' > .claude/state/current_run.txt
+   ```
+   This lets the post-tool hook tag every log entry with the correct run_id.
 2. Parse every task file's frontmatter into `{id, role, depends_on, status}`.
 3. Topologically sort by `depends_on`. **Cycle → abort with error.** Do NOT partially dispatch.
 4. Filter to runnable: `status == pending` AND every dep is `status == done`.
@@ -36,7 +40,11 @@ Dispatcher. The only orchestrator. Algorithm is fixed; do not invent your own.
 7. If a dependency ends up `blocked`, do NOT dispatch its dependents. They stay `pending`; `/agentic-status` will show them as transitively waiting.
 8. After each task, re-evaluate step 4.
 9. Stop when no runnable tasks remain.
-10. Print the final dashboard.
+10. Run this exact Bash command to clean up (mandatory — do not skip):
+    ```
+    rm -f .claude/state/current_run.txt
+    ```
+    Then print the final dashboard.
 
 ## Constraints
 

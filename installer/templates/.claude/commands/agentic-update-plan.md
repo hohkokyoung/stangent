@@ -40,7 +40,35 @@ If no amendment text is given, use `AskUserQuestion` (YOU, not the planner) to e
    - Re-allocate the `run_id` or rename the directory.
    - Delete task files (mark superseded ones as `blocked` with `blocker: "superseded by t<N>"` instead).
    - Modify `## Design`, `## Decisions log`, `## Review`, or `## Test results` of any task.
-7. After planner finishes, print:
+7. **Sketch injection (mirrors `/agentic-plan` step 7).** Determine if sketching is active for this run:
+   - Check `_overview.md` for a `## Clarifications` block containing `sketch: yes`, OR
+   - Check if any `s<N>.md` files already exist in the run dir (i.e. sketching was used on the original plan).
+
+   If sketching is active AND the planner added any new `role: implementer` tasks:
+
+   **Validate first:** if any newly added task already has `role: sketcher`, the planner violated its contract — stop, print an error, and ask the developer to re-run `/agentic-update-plan`.
+
+   a. **Create all sketcher task files first** (do not invoke any sketcher yet). For each newly added `role: implementer` task `t<N>.md`:
+      - Create `s<N>.md` with:
+        ```
+        role: sketcher
+        intent: "Sketch the UI for: <original implementer task intent>"
+        sketches_for: t<N>
+        skills_to_load: []
+        depends_on: []
+        status: pending
+        blocker: null
+        ```
+      - Update `t<N>.md`'s `depends_on` to include `s<N>`.
+
+   b. **Run all sketchers sequentially.** For each new `s<N>.md` in creation order:
+      - Invoke the **sketcher** agent with the path to `s<N>.md`.
+      - Wait for it to flip `status: done` or `status: blocked`.
+      - If `blocked`: print a warning and continue — do NOT halt. The implementer task will wait until the sketch is resolved.
+
+   If sketching is not active, or no new implementer tasks were added, skip this step entirely.
+
+8. After planner (and optional sketch phase) finishes, print:
    - Which tasks were added, modified, or untouched.
    - The new task index (id → intent → status).
    - "next step: /agentic-build all" if there are runnable pending tasks.

@@ -87,6 +87,10 @@ def main() -> None:
             deny_reason = tool_response.get("deny_reason")
 
     run_id = os.environ.get("AGENTIC_RUN_ID")
+    if not run_id:
+        _cur = Path.cwd() / ".claude" / "state" / "current_run.txt"
+        if _cur.exists():
+            run_id = _cur.read_text(encoding="utf-8").strip() or None
     line = {
         "ts": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "run_id": run_id,
