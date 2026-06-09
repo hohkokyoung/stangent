@@ -1,164 +1,102 @@
-# React hooks
+# React Hooks (React 18+)
 
-## useState
+## Rules of hooks — unchanged, but StrictMode changed
 
-```jsx
-const [value, setValue] = useState(initialValue);
-
-// Functional update — when new state depends on old state
-setValue(prev => prev + 1);
-
-// Object state — always spread, never mutate
-const [form, setForm] = useState({ email: '', password: '' });
-setForm(prev => ({ ...prev, email: 'new@example.com' }));
-```
-
----
-
-## useEffect
+React 18 StrictMode double-invokes effects in dev (mount → unmount → remount). Effects MUST be idempotent and have correct cleanup.
 
 ```jsx
-// Run once on mount
+// Effects run twice in dev — cleanup MUST be correct
 useEffect(() => {
-  fetchData();
-}, []);
-
-// Run when dep changes
-useEffect(() => {
-  document.title = `${count} items`;
-}, [count]);
-
-// Cleanup (subscriptions, timers, abort)
-useEffect(() => {
-  const controller = new AbortController();
-  fetch(url, { signal: controller.signal })
-    .then(r => r.json())
-    .then(setData)
-    .catch(err => { if (err.name !== 'AbortError') setError(err.message); });
-  return () => controller.abort();
-}, [url]);
+  let active = true;
+  fetchData().then(data => { if (active) setData(data); });
+  return () => { active = false; }; // cleanup prevents stale setState
+}, [id]);
 ```
 
-**Lint rule:** every value used inside the effect that comes from outside must be in the deps array, or it's a bug.
-
----
-
-## useRef
+## Root API changed in React 18
 
 ```jsx
-// DOM access
-const inputRef = useRef(null);
-<input ref={inputRef} />
-// Later:
-inputRef.current.focus();
+// WRONG — React 17 API, opts out of concurrent features
+import ReactDOM from 'react-dom';
+ReactDOM.render(<App />, document.getElementById('root'));
 
-// Mutable value that doesn't trigger re-render
-const timerRef = useRef(null);
-timerRef.current = setTimeout(...);
-clearTimeout(timerRef.current);
+// CORRECT — React 18+
+import { createRoot } from 'react-dom/client';
+const root = createRoot(document.getElementById('root'));
+root.render(<App />);
+
+// SSR hydration
+import { hydrateRoot } from 'react-dom/client';
+hydrateRoot(document.getElementById('root'), <App />);
 ```
 
----
-
-## useCallback
-
-Memoises a function — prevents child re-renders when the function identity changes:
+## Automatic batching (React 18)
 
 ```jsx
-const handleClick = useCallback(() => {
-  doSomething(id);
-}, [id]);   // recreated only when id changes
+// React 17: two renders. React 18: one render (automatic batching everywhere)
+setTimeout(() => {
+  setCount(c => c + 1);  // batched
+  setFlag(f => !f);      // batched — single render
+}, 1000);
+
+// Opt out if needed
+import { flushSync } from 'react-dom';
+flushSync(() => setCount(c => c + 1)); // forces immediate render
 ```
 
-Only add `useCallback` when you can measure a real perf problem. Don't add it everywhere.
-
----
-
-## useMemo
-
-Memoises an expensive computed value:
+## Concurrent features (React 18)
 
 ```jsx
-const sortedItems = useMemo(() => {
-  return [...items].sort((a, b) => a.name.localeCompare(b.name));
-}, [items]);
+import { useTransition, useDeferredValue, useId } from 'react';
+
+// useTransition — mark update as non-urgent (can be interrupted)
+const [isPending, startTransition] = useTransition();
+startTransition(() => setSearchQuery(input));
+
+// useDeferredValue — defer expensive re-renders
+const deferredQuery = useDeferredValue(searchQuery);
+
+// useId — stable IDs for SSR/hydration
+const id = useId();
+return <label htmlFor={id}>Name<input id={id} /></label>;
 ```
 
-Same rule: measure before adding. useMemo has overhead too.
-
----
-
-## useContext
+## React 19 hooks
 
 ```jsx
-// 1. Create
-const ThemeContext = createContext('light');
+// use() — unwrap promises/context in render; causes Suspense
+import { use } from 'react';
+function Comments({ commentsPromise }) {
+  const comments = use(commentsPromise); // suspends until resolved
+  return comments.map(c => <p key={c.id}>{c.text}</p>);
+}
 
-// 2. Provide (high up in tree)
-<ThemeContext.Provider value="dark">
-  <App />
-</ThemeContext.Provider>
+// useActionState (React 19)
+const [error, submitAction, isPending] = useActionState(
+  async (prevState, formData) => {
+    const err = await updateName(formData.get('name'));
+    return err ?? null;
+  },
+  null
+);
 
-// 3. Consume (anywhere in tree)
-function Button() {
-  const theme = useContext(ThemeContext);
-  return <button className={theme}>Click</button>;
+// useOptimistic (React 19)
+const [optimisticName, setOptimisticName] = useOptimistic(currentName);
+
+// ref as prop — no forwardRef needed in React 19
+function MyInput({ placeholder, ref }) {
+  return <input placeholder={placeholder} ref={ref} />;
 }
 ```
 
-Use context for values that many components need (auth, theme, locale). Don't use it as a replacement for all prop passing.
+## Common AI mistakes
 
----
-
-## useReducer
-
-For complex state with multiple sub-values or actions:
-
-```jsx
-const initialState = { count: 0, step: 1 };
-
-function reducer(state, action) {
-  switch (action.type) {
-    case 'increment': return { ...state, count: state.count + state.step };
-    case 'set_step':  return { ...state, step: action.payload };
-    default: throw new Error(`Unknown action: ${action.type}`);
-  }
-}
-
-function Counter() {
-  const [state, dispatch] = useReducer(reducer, initialState);
-  return (
-    <>
-      <p>{state.count}</p>
-      <button onClick={() => dispatch({ type: 'increment' })}>+</button>
-    </>
-  );
-}
-```
-
----
-
-## Custom hooks — naming and shape
-
-```jsx
-// Always starts with "use"
-function useLocalStorage(key, initialValue) {
-  const [value, setValue] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(key)) ?? initialValue;
-    } catch {
-      return initialValue;
-    }
-  });
-
-  function setItem(newValue) {
-    setValue(newValue);
-    localStorage.setItem(key, JSON.stringify(newValue));
-  }
-
-  return [value, setItem];
-}
-
-// Usage
-const [token, setToken] = useLocalStorage('auth_token', null);
-```
+| AI generates | Correct |
+|---|---|
+| `ReactDOM.render(...)` | `createRoot(...).render(...)` |
+| `ReactDOM.hydrate(...)` | `hydrateRoot(...)` |
+| `useEffect` without cleanup | Return cleanup function — always |
+| Class components | Function components only |
+| `useEffect` with no dependency array | Add `[]` and document why it's empty |
+| `forwardRef` wrapper (React 19) | Pass `ref` directly as prop |
+| Legacy Context (`childContextTypes`) — removed React 19 | `React.createContext()` |

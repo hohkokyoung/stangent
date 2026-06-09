@@ -68,6 +68,16 @@ Governs app-wide UX coherence on mobile: how state changes in one part of the ap
       )
   ```
 
+## Planner hints
+
+Before finalising task decomposition, check for cross-screen scope gaps:
+- Does a state change from this feature need to be visible on screens other than where the action occurs?
+- Can any screen in this feature be reached from outside the app's normal flow (deep link, notification tap)?
+- Do any existing list or collection screens need to reflect this feature's state changes?
+- Are there in-place content actions (long-press, swipe, action sheet) involved?
+
+Any "yes" is an in-scope requirement. Surface it in requirements — do not resolve how.
+
 ## Anti-patterns
 
 - Holding state that multiple screens need inside a single screen's local state.

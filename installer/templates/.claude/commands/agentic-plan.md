@@ -69,6 +69,11 @@ Run the planner on the given goal.
 
 7. **Sketch injection + render.** If the Clarifications block contains `sketch: yes`:
 
+   First, write the run_id to state so sketcher logs are tagged correctly:
+   ```
+   printf '%s' '<run_id>' > .claude/state/current_run.txt
+   ```
+
    **Validate first:** scan all task files the planner just wrote. If any has `role: sketcher`, the planner violated its contract — stop, print an error listing the offending task ids, and ask the developer to re-run `/agentic-plan`. Do NOT proceed.
 
    a. **Create all sketcher task files first** (do not invoke any sketcher yet). For each `role: implementer` task file `t<N>.md` in the run dir:
@@ -90,6 +95,11 @@ Run the planner on the given goal.
       - Wait for it to flip `status: done` or `status: blocked`.
       - Run: `rm -f .claude/state/current_task.txt .claude/state/current_role.txt`
       - If `blocked`: print a warning (`sketcher s<N> blocked: <blocker>`) and continue to the next — do NOT halt the entire plan. The implementer task will be runnable only after the sketch is manually resolved or removed from `depends_on`.
+
+   After all sketchers finish (or if none ran), clean up:
+   ```
+   rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt
+   ```
 
    If `sketch: no`, skip this step entirely.
 

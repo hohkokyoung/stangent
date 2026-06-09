@@ -1,164 +1,141 @@
-# React data fetching
+# React Data Fetching
 
-## Pattern: fetch in useEffect
+## TanStack Query v5 — breaking changes from v4
 
-Use for simple cases without a fetching library.
+```ts
+// WRONG — v4 overloaded signatures (removed in v5)
+useQuery(key, fn, options)
+useMutation(fn, options)
+queryClient.fetchQuery(key, fn, options)
 
-```jsx
-function UserProfile({ userId }) {
-  const [user, setUser]       = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    fetch(`/api/users/${userId}`)
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(data => { if (!cancelled) setUser(data); })
-      .catch(err  => { if (!cancelled) setError(err.message); })
-      .finally(()  => { if (!cancelled) setLoading(false); });
-
-    return () => { cancelled = true; };  // prevent setState on unmount
-  }, [userId]);  // re-fetch when userId changes
-
-  if (loading) return <p aria-live="polite">Loading…</p>;
-  if (error)   return <p role="alert">Error: {error}</p>;
-  if (!user)   return null;
-  return <div>{user.name}</div>;
-}
+// CORRECT — v5 single object signature
+useQuery({ queryKey, queryFn, ...options })
+useMutation({ mutationFn, ...options })
+queryClient.fetchQuery({ queryKey, queryFn })
 ```
 
----
+### Status rename
 
-## Custom fetch hook
+```ts
+// WRONG — v4 status name
+const { isLoading } = useQuery(...)  // status: 'loading'
 
-Extract fetch logic to keep components thin:
-
-```jsx
-function useFetch(url) {
-  const [data, setData]       = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
-
-  useEffect(() => {
-    if (!url) return;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    fetch(url)
-      .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
-      .then(d  => { if (!cancelled) setData(d); })
-      .catch(e => { if (!cancelled) setError(e.message); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-
-    return () => { cancelled = true; };
-  }, [url]);
-
-  return { data, loading, error };
-}
-
-// Usage — component has no fetch logic
-function UserProfile({ userId }) {
-  const { data: user, loading, error } = useFetch(`/api/users/${userId}`);
-  if (loading) return <p>Loading…</p>;
-  if (error)   return <p role="alert">{error}</p>;
-  return <div>{user?.name}</div>;
-}
+// CORRECT — v5
+const { isPending, isLoading } = useQuery(...)
+// isPending = no data yet (was isLoading in v4)
+// isLoading = isPending && isFetching
+// status: 'pending' | 'error' | 'success'  (not 'loading')
 ```
 
----
+### Options renamed
 
-## Mutations (POST/PUT/DELETE)
+```ts
+// WRONG — v4 option names
+useQuery({ cacheTime: 600000, keepPreviousData: true, useErrorBoundary: true })
 
-Mutations are triggered by user action, not on mount:
-
-```jsx
-function useSubmit(url) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
-
-  async function submit(body) {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message ?? `HTTP ${res.status}`);
-      }
-      return await res.json();
-    } catch (err) {
-      setError(err.message);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return { submit, loading, error };
-}
-
-// Usage
-function LoginForm({ onSuccess }) {
-  const { submit, loading, error } = useSubmit('/api/login');
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    const result = await submit({ email, password });
-    if (result) onSuccess(result);
-  }
-  // ...
-}
+// CORRECT — v5
+useQuery({ gcTime: 600000, placeholderData: keepPreviousData, throwOnError: true })
 ```
 
----
+### onSuccess/onError callbacks removed from useQuery
 
-## Abort on unmount
+```ts
+// WRONG — v4 callbacks (removed in v5)
+useQuery({ queryKey, queryFn, onSuccess: (data) => toast(data) })
 
-Always abort fetch calls when the component unmounts to prevent state updates on dead components:
+// CORRECT — use useEffect
+const { data } = useQuery({ queryKey, queryFn })
+useEffect(() => { if (data) toast(data); }, [data])
+```
+
+### Infinite query requires initialPageParam
+
+```ts
+// WRONG — v4 default pageParam
+useInfiniteQuery({ queryKey, queryFn: ({ pageParam = 0 }) => fetch(pageParam) })
+
+// CORRECT — v5
+useInfiniteQuery({
+  queryKey,
+  queryFn: ({ pageParam }) => fetch(pageParam),
+  initialPageParam: 0,
+  getNextPageParam: (lastPage) => lastPage.nextCursor,
+})
+```
+
+### Hydrate renamed
+
+```ts
+// WRONG — v4
+import { Hydrate } from '@tanstack/react-query'
+<Hydrate state={dehydratedState}><App /></Hydrate>
+
+// CORRECT — v5
+import { HydrationBoundary } from '@tanstack/react-query'
+<HydrationBoundary state={dehydratedState}><App /></HydrationBoundary>
+```
+
+## v5 best practices
+
+```ts
+// Query key factories — type-safe, consistent
+export const userKeys = {
+  all: ['users'] as const,
+  detail: (id: string) => [...userKeys.all, 'detail', id] as const,
+}
+
+// queryOptions() — reusable, typed
+export const userQueryOptions = (userId: string) =>
+  queryOptions({
+    queryKey: userKeys.detail(userId),
+    queryFn: () => fetchUser(userId),
+    staleTime: 5 * 60 * 1000,
+  })
+
+// Optimistic mutation with rollback
+useMutation({
+  mutationFn: updateTodo,
+  onMutate: async (updated) => {
+    await queryClient.cancelQueries({ queryKey: todoKeys.detail(updated.id) })
+    const previous = queryClient.getQueryData(todoKeys.detail(updated.id))
+    queryClient.setQueryData(todoKeys.detail(updated.id), old => ({ ...old, ...updated }))
+    return { previous }
+  },
+  onError: (err, updated, context) => {
+    queryClient.setQueryData(todoKeys.detail(updated.id), context?.previous)
+  },
+  onSettled: () => queryClient.invalidateQueries({ queryKey: todoKeys.all }),
+})
+```
+
+## Plain fetch with cleanup (no library)
 
 ```jsx
 useEffect(() => {
-  const controller = new AbortController();
-
-  fetch(url, { signal: controller.signal })
-    .then(...)
-    .catch(err => {
-      if (err.name === 'AbortError') return;  // ignore intentional abort
-      setError(err.message);
-    });
-
-  return () => controller.abort();
-}, [url]);
+  let cancelled = false;
+  async function load() {
+    try {
+      const data = await fetchUsers();
+      if (!cancelled) setUsers(data);
+    } catch (err) {
+      if (!cancelled) setError(err.message);
+    } finally {
+      if (!cancelled) setLoading(false);
+    }
+  }
+  load();
+  return () => { cancelled = true; };
+}, []);
 ```
 
----
+## AI mistake cheatsheet
 
-## Loading and error UI requirements
-
-Every async operation must render three states:
-
-| State | What to show |
+| AI generates | Correct |
 |---|---|
-| Loading | Spinner, skeleton, or "Loading…" text with `aria-live="polite"` |
-| Error | Error message with `role="alert"` so screen readers announce it |
-| Empty | "No results" message — don't render an empty list silently |
-| Data | The actual content |
-
-```jsx
-if (loading) return <p aria-live="polite">Loading users…</p>;
-if (error)   return <p role="alert">Failed to load: {error}</p>;
-if (!data?.length) return <p>No users found.</p>;
-return <ul>{data.map(u => <li key={u.id}>{u.name}</li>)}</ul>;
-```
+| `useQuery(key, fn, opts)` — 3-arg | `useQuery({ queryKey, queryFn, ...opts })` |
+| `status === 'loading'` (v5) | `status === 'pending'` or `isPending` |
+| `onSuccess` in `useQuery` | `useEffect` on `data` |
+| `cacheTime` | `gcTime` |
+| `keepPreviousData: true` | `placeholderData: keepPreviousData` |
+| `<Hydrate>` | `<HydrationBoundary>` |
+| `pageParam = 0` as default arg | `initialPageParam: 0` in options |

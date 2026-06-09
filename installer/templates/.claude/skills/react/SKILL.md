@@ -111,6 +111,16 @@ function UserList() {
 }
 ```
 
+## Planner hints
+
+Before finalising task decomposition, check for cross-page scope gaps:
+- Does a state change from this feature need to be reflected on other pages or routes?
+- Can any page in this feature be reached directly via URL (shared link, browser back, reload)?
+- Do any existing list or collection views need to reflect this feature's state changes?
+- Are there keyboard navigation, focus management, or accessibility implications?
+
+Any "yes" is an in-scope requirement. Surface it in requirements — do not resolve how.
+
 ## Anti-patterns
 
 - Class components — use function components.

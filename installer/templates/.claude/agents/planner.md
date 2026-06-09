@@ -62,23 +62,11 @@ Carry every entry into `_overview.md` under `## Resolved Questions`. Do NOT add 
 
 ## Procedure
 
-1. Read `.claude/.agentic.yml` to learn the enabled skills and embedding config. Also read `.claude/state/project.yml` if it exists — check `test_framework`. This tells you which test skill to include in `skills_to_load` for tester tasks (see Skills selection rules).
+1. **Accept the `run_id` from the caller** — it is provided in your prompt. Do NOT run `plan_id.py` yourself; the command already allocated it. Read `.claude/.agentic.yml` to learn the enabled skills and embedding config. For each enabled skill, read `.claude/skills/<name>/SKILL.md` and extract any `## Planner hints` section — these are scope-gap checklists specific to that skill (cross-screen state, cross-page state, etc.). Store them for use in step 4. Also read `.claude/state/project.yml` if it exists — check `test_framework`. This tells you which test skill to include in `skills_to_load` for tester tasks (see Skills selection rules).
 2. Read the user goal carefully. Extract explicit and inferred requirements.
 3. Read the `## Clarifications` block in your prompt. All Q→A pairs and ASSUMPTION lines are resolved scope — treat them as authoritative. Do not re-derive or second-guess them.
 4. List constraints and edge cases (informed by the goal and the Clarifications block).
-   **If `mobile` is in `enabled_skills`:** before finalising, check for cross-screen scope gaps:
-   - Does a state change from this feature need to be visible on screens other than where the action occurs?
-   - Can any screen in this feature be reached from outside the app's normal flow (deep link, notification tap)?
-   - Do any existing list or collection screens need to reflect this feature's state changes?
-   - Are there in-place content actions (long-press, swipe, action sheet) involved?
-
-   **If `react`, `html-css`, or `playwright` is in `enabled_skills`:** before finalising, check for cross-page scope gaps:
-   - Does a state change from this feature need to be reflected on other pages or routes?
-   - Can any page in this feature be reached directly via URL (shared link, browser back, reload)?
-   - Do any existing list or collection views need to reflect this feature's state changes?
-   - Are there keyboard navigation, focus management, or accessibility implications?
-
-   Any yes answer (from either checklist) is an in-scope requirement to carry forward — do not resolve how, just surface what.
+   **Apply skill planner hints.** For each skill whose SKILL.md contained a `## Planner hints` section (read in step 1), work through its checklist now. Any "yes" answer is an in-scope requirement to carry forward — do not resolve how, just surface what.
 5. Read all **accepted ADRs**: `.claude/adrs/ADR-*.md` where frontmatter `status: accepted`. These are project-level rules that bind every task. Make a short mental index: id → title → one-line decision.
 6. Decide on skills involved (from `enabled_skills`).
 7. Decompose into 3–8 tasks. For each task, decide:
@@ -90,7 +78,7 @@ Carry every entry into `_overview.md` under `## Resolved Questions`. Do NOT add 
   - `k`: (optional, default `6`) number of chunks to retrieve. Set to `10` for tasks where `"project"` is in `skills_to_load` AND the task also spans multiple skill patterns — the extra slots accommodate both project code and skill references.
    - `adrs`: list of accepted ADR ids that are **relevant to this task only**. Be parsimonious — list an ADR only if its rule could plausibly affect the implementer's choices. Do NOT list every accepted ADR on every task.
    - `depends_on`: justified edges only
-8. Allocate the `run_id` by running `python .claude/hooks/lib/plan_id.py next` (default format: `FEAT-001`, `FEAT-002`, ... configurable via `.agentic.yml: plan_id`).
+8. Use the `run_id` provided by the caller in your prompt (already allocated by the command before you were invoked).
 9. **Read the templates**: `.claude/templates/task.md` and `.claude/templates/overview.md`. These define the exact structure of what you're about to write.
 10. Create `.claude/state/plans/<run-id>/` and write:
     - `_overview.md` matching `templates/overview.md` (goal, requirements, constraints, edge cases, assumptions, resolved questions, ADRs in scope, amendments log placeholder, task index).

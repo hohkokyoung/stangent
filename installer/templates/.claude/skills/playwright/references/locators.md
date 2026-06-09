@@ -1,70 +1,113 @@
-# Playwright locators
+# Playwright Locators (v1.49+)
 
-When generating `.spec.ts` from MCP interactions, use these locators in priority order.
+## Preferred locators — in order of preference
 
-## Priority order (most to least preferred)
-
-### 1. Role-based (best)
-```typescript
-page.getByRole('button', { name: 'Submit' })
-page.getByRole('textbox', { name: 'Email' })
-page.getByRole('heading', { name: 'Dashboard' })
-page.getByRole('link', { name: 'Sign in' })
-page.getByRole('checkbox', { name: 'Remember me' })
-```
-Matches the accessibility tree. Survives style refactors.
-
-### 2. Label-based
-```typescript
-page.getByLabel('Email address')
+```js
+page.getByRole('button', { name: 'Sign in' })
 page.getByLabel('Password')
-```
-Matches `<label>` text or `aria-label`. Very stable.
-
-### 3. Placeholder
-```typescript
-page.getByPlaceholder('Search...')
-```
-
-### 4. Text content
-```typescript
-page.getByText('Welcome back')
-page.getByText('Error: invalid email', { exact: true })
-```
-Use `exact: true` when the text could be a substring of something else.
-
-### 5. Test ID (when role/label are not available)
-```typescript
-page.getByTestId('submit-btn')
-```
-Requires `data-testid` attribute in the HTML. Ask the implementer to add these if needed.
-
-### 6. CSS selector (last resort)
-```typescript
-page.locator('.error-message')
-```
-Fragile — breaks on style changes. Only use when no semantic alternative exists.
-
----
-
-## Scoping
-
-Narrow scope to a container before locating:
-```typescript
-const form = page.getByRole('form', { name: 'Login' });
-await form.getByLabel('Email').fill('user@example.com');
-await form.getByRole('button', { name: 'Submit' }).click();
+page.getByPlaceholder('name@example.com')
+page.getByText('Welcome, John')
+page.getByAltText('playwright logo')
+page.getByTitle('Issues count')
+page.getByTestId('submit-btn')  // uses data-testid by default
 ```
 
-## Chaining
+## Scoped and chained locators
 
-```typescript
-page.getByRole('listitem').filter({ hasText: 'John Doe' }).getByRole('button', { name: 'Delete' })
+```js
+page.getByRole('listitem').filter({ hasText: 'Product 2' })
+page.locator('.nav').getByRole('link')
+
+const row = page.getByRole('row', { name: 'Alice' });
+await row.getByRole('button', { name: 'Edit' }).click();
 ```
 
-## Waiting
+## Deprecated — do not generate
 
-Playwright auto-waits. Do NOT add manual `page.waitForTimeout()`. If you need to wait for a specific element:
+```js
+// DEPRECATED — ElementHandle (stale, not auto-retrying)
+const el = await page.$('.btn');    // avoid
+const els = await page.$$('.btn');  // avoid
+await el.click();
+
+// DEPRECATED
+await page.waitForSelector('.spinner');  // use locator.waitFor()
+await page.type('#input', 'text');       // use locator.fill()
+
+// RACE CONDITION PATTERN — avoid
+await Promise.all([page.waitForNavigation(), page.click('a')]);
+```
+
+## Replacements for deprecated APIs
+
+```js
+// waitForSelector → locator.waitFor()
+await page.getByRole('dialog').waitFor({ state: 'visible' });
+
+// waitForNavigation → waitForURL
+await page.getByRole('link', { name: 'Dashboard' }).click();
+await page.waitForURL('**/dashboard');
+
+// type → fill
+await page.getByLabel('Email').fill('user@example.com');
+
+// page.$ → getByRole / getByLabel / etc.
+await page.getByRole('button', { name: 'Submit' }).click();
+```
+
+## Common AI mistakes
+
+```js
+// WRONG: Fragile CSS chain
+page.locator('#app > div.container > ul > li:nth-child(2) > a')
+
+// CORRECT: Semantic
+page.getByRole('link', { name: 'Settings' })
+
+// WRONG: force:true (hides real UI state)
+await page.getByRole('button').click({ force: true });
+
+// WRONG: networkidle as load signal (slow, unreliable)
+await page.goto('/app', { waitUntil: 'networkidle' });
+// CORRECT: wait for meaningful UI element
+await page.goto('/app');
+await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+
+// WRONG: arbitrary sleep
+await page.waitForTimeout(5000);
+// CORRECT: wait for condition
+await expect(page.getByRole('status')).toHaveText('Saved');
+
+// WRONG: pre-wait before auto-waiting action
+await page.getByRole('button').waitFor({ state: 'visible' });
+await page.getByRole('button').click(); // click already auto-waits — double wait
+// CORRECT:
+await page.getByRole('button').click();
+
+// WRONG: response listener set up after action (may miss it)
+await page.click('button');
+await page.waitForResponse('/api/data');
+// CORRECT: set up listener first
+const responsePromise = page.waitForResponse('/api/data');
+await page.click('button');
+await responsePromise;
+```
+
+## Spec file shape
+
 ```typescript
-await expect(page.getByRole('status')).toBeVisible();
+import { test, expect } from '@playwright/test';
+
+test.describe('<feature>', () => {
+  test('happy path', async ({ page }) => {
+    await page.goto('/path');
+    await page.getByLabel('Email').fill('user@example.com');
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(page.getByText('Success')).toBeVisible();
+    await expect(page).toHaveURL('/dashboard');
+  });
+
+  test('boundary — edge case', async ({ page }) => { /* ... */ });
+  test('failure — error case', async ({ page }) => { /* ... */ });
+});
 ```

@@ -41,6 +41,11 @@ If no amendment text is given, use `AskUserQuestion` (YOU, not the planner) to e
    - Delete task files (mark superseded ones as `blocked` with `blocker: "superseded by t<N>"` instead).
    - Modify `## Design`, `## Decisions log`, `## Review`, or `## Test results` of any task.
 7. **Sketch injection (mirrors `/agentic-plan` step 7).** Determine if sketching is active for this run:
+
+   If sketching is active and new sketchers will run, first write the run_id so logs are tagged:
+   ```
+   printf '%s' '<run_id>' > .claude/state/current_run.txt
+   ```
    - Check `_overview.md` for a `## Clarifications` block containing `sketch: yes`, OR
    - Check if any `s<N>.md` files already exist in the run dir (i.e. sketching was used on the original plan).
 
@@ -67,6 +72,11 @@ If no amendment text is given, use `AskUserQuestion` (YOU, not the planner) to e
       - Wait for it to flip `status: done` or `status: blocked`.
       - Run: `rm -f .claude/state/current_task.txt .claude/state/current_role.txt`
       - If `blocked`: print a warning and continue — do NOT halt. The implementer task will wait until the sketch is resolved.
+
+   After all sketchers finish, clean up:
+   ```
+   rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt
+   ```
 
    If sketching is not active, or no new implementer tasks were added, skip this step entirely.
 

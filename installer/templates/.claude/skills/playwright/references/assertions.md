@@ -1,85 +1,90 @@
-# Playwright assertions
+# Playwright Assertions (v1.49+)
 
-All assertions use `expect()`. Playwright auto-retries until timeout (default 5s). Do NOT add manual waits before assertions.
+All `expect(locator)` assertions auto-retry until timeout (default 5s). Use these over manual checks.
 
 ## Visibility
 
-```typescript
+```js
 await expect(locator).toBeVisible();
-await expect(locator).toBeHidden();
+await expect(locator).toBeHidden();       // prefer over .not.toBeVisible()
+await expect(locator).toBeAttached();     // in DOM (may be invisible)
+await expect(locator).toBeInViewport();
 ```
 
-## Text content
+## State
 
-```typescript
-await expect(locator).toHaveText('Exact text');
-await expect(locator).toContainText('partial');
-await expect(locator).toHaveText(/regex pattern/);
-```
-
-## Input state
-
-```typescript
-await expect(locator).toHaveValue('filled value');
-await expect(locator).toBeEmpty();
-await expect(locator).toBeChecked();
-await expect(locator).toBeDisabled();
+```js
 await expect(locator).toBeEnabled();
+await expect(locator).toBeDisabled();
+await expect(locator).toBeChecked();
+await expect(locator).toBeChecked({ checked: false });
+await expect(locator).toBeEditable();
+await expect(locator).toBeEmpty();
 await expect(locator).toBeFocused();
 ```
 
-## Count
+## Content
 
-```typescript
+```js
+await expect(locator).toHaveText('Submit');
+await expect(locator).toHaveText(/welcome/i);       // regex
+await expect(locator).toContainText('partial');
+await expect(locator).toHaveValue('current value');
+await expect(locator).toHaveValues(['opt1', 'opt2']); // multi-select
 await expect(locator).toHaveCount(3);
 ```
 
-## URL
+## Attributes and CSS
 
-```typescript
+```js
+await expect(locator).toHaveAttribute('href', '/home');
+await expect(locator).toHaveAttribute('disabled');    // presence only
+await expect(locator).toHaveClass('active');
+await expect(locator).toContainClass('btn');
+await expect(locator).toHaveId('submit');
+await expect(locator).toHaveCSS('color', 'rgb(0, 0, 0)');
+```
+
+## Accessibility
+
+```js
+await expect(locator).toHaveAccessibleName('Close dialog');
+await expect(locator).toHaveRole('button');
+```
+
+## Page-level
+
+```js
 await expect(page).toHaveURL('/dashboard');
-await expect(page).toHaveURL(/.*\/dashboard/);
+await expect(page).toHaveURL(/.*dashboard/);
+await expect(page).toHaveTitle('Home');
 ```
 
-## Page title
+## Snapshots
 
-```typescript
-await expect(page).toHaveTitle('Dashboard | MyApp');
+```js
+await expect(locator).toHaveScreenshot('baseline.png');
+await expect(locator).toMatchAriaSnapshot(`
+  - heading "Sign in"
+  - textbox "Email"
+`);
 ```
 
-## Attribute
+## Common AI mistakes
 
-```typescript
-await expect(locator).toHaveAttribute('aria-expanded', 'true');
-await expect(locator).toHaveClass(/active/);
-```
+```js
+// WRONG: non-retrying assertion (snapshot in time, fails on async)
+expect(await page.getByText('Done').isVisible()).toBe(true);
 
----
+// CORRECT: web-first assertion (auto-retries)
+await expect(page.getByText('Done')).toBeVisible();
 
-## Soft assertions (non-blocking)
-
-When you want to collect multiple failures in one run:
-```typescript
-await expect.soft(locator).toBeVisible();
-await expect.soft(page).toHaveURL('/dashboard');
-// test continues even if one fails
-```
-
----
-
-## Negative assertions
-
-```typescript
+// WRONG: .not.toBeVisible() for hidden check
 await expect(locator).not.toBeVisible();
-await expect(locator).not.toContainText('Error');
+
+// CORRECT
+await expect(locator).toBeHidden();
+
+// WRONG: only checking happy path
+// CORRECT: always cover boundary and failure cases as separate test() blocks
 ```
-
----
-
-## Required coverage per task
-
-| Case | Assertions to include |
-|---|---|
-| Happy path | Final URL, success message visible, key data rendered |
-| Boundary | Edge input accepted/rejected correctly, count assertions |
-| Failure | Error message visible, form not submitted, URL unchanged |

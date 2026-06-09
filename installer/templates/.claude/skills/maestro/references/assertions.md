@@ -1,83 +1,65 @@
-# Maestro assertions
+# Maestro Assertions (CLI 2.6.0)
 
-Maestro assertions check the visible state of the screen using the accessibility layer. All assertions are retried until they pass or timeout (default 5s).
-
-## Visibility
+## assertVisible / assertNotVisible
 
 ```yaml
-- assertVisible: "Text on screen"
+# Element must be visible
+- assertVisible: "Welcome back"
+
+# Both text AND id must match
+- assertVisible:
+    text: "Welcome back"
+    id: "welcome_message"
+
+# Element must NOT be visible
 - assertNotVisible: "Error message"
+- assertNotVisible:
+    text: "Loading..."
 ```
 
-By text with options:
-```yaml
-- assertVisible:
-    text: "Submit"
-    enabled: true           # also check it's interactable
-    checked: false          # for checkboxes/toggles
-```
+Maestro does **partial text matching** by default — `assertVisible: "Order #"` matches `"Order #12345"`.
 
----
-
-## Element state
+## assertTrue — custom condition
 
 ```yaml
-- assertVisible:
-    text: "Save"
-    enabled: false          # assert it's disabled (grayed out)
-
-- assertVisible:
-    text: "Remember me"
-    checked: true           # assert checkbox is checked
+- assertTrue:
+    condition: ${username == "alice"}
+    label: "Username should be alice"   # shown in output on failure
 ```
 
----
-
-## Expression assertions
-
-For dynamic values (counters, computed text):
-```yaml
-- assertTrue: ${element.text == "3 items"}
-- assertTrue: ${element.text.startsWith("Hello")}
-```
-
-Get an element value into a variable first:
-```yaml
-- copyTextFrom: "Cart count"      # copies visible text to clipboard
-- assertTrue: ${maestro.copiedText == "2"}
-```
-
----
-
-## Screen-level assertions
+## AI assertions (v1.39.0+, requires Maestro Cloud API key)
 
 ```yaml
-- assertVisible: "Dashboard"       # presence of key screen landmark
-- assertNotVisible: "Loading..."   # loading state cleared
-- assertNotVisible: "Sign In"      # navigation succeeded (login screen gone)
+- assertWithAI: "The profile picture of a user named Alice is visible"
+- assertNoDefectsWithAI   # visual regression without baseline
 ```
 
----
+## Wait for slow elements
 
-## Required coverage per task
-
-| Case | What to assert |
-|---|---|
-| Happy path | Success state visible, error state not visible, correct screen reached |
-| Boundary | Edge input accepted (or rejected) correctly, button state correct |
-| Failure | Error message visible, app does not crash, recoverable state |
-
----
-
-## Taking screenshots alongside assertions
-
-Always pair assertions with screenshots so failures are visually traceable:
 ```yaml
-- assertVisible: "Dashboard"
-- takeScreenshot: after_login
+# Preferred: element-based wait (not arbitrary sleep)
+- extendedWaitUntil:
+    visible:
+      text: "Dashboard"
+    timeout: 15000    # ms
 
-- assertNotVisible: "Error"
-- takeScreenshot: no_error_state
+# AI commonly generates sleep — avoid it
+# - sleep: 3000  ← WRONG, causes flakiness
 ```
 
-Screenshot files are saved to `.maestro/screenshots/` and referenced in `## Test results`.
+Maestro auto-retries until timeout — `tapOn` waits automatically. Only use `extendedWaitUntil` for genuinely slow operations (e.g., loading screens, network-dependent content).
+
+## Screenshot for evidence
+
+```yaml
+- takeScreenshot: "after_login"
+- assertVisible: "Welcome"
+- takeScreenshot: "welcome_shown"
+```
+
+## Behaviour difference: tapOn vs assertVisible on missing element
+
+- `assertVisible` — **throws immediately** if element not found by timeout
+- `tapOn` — **waits silently** until timeout, then throws
+
+Use `assertVisible` before `tapOn` when timing matters or you need explicit failure messages.
