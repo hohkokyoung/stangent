@@ -451,8 +451,7 @@ def detect_stack() -> None:
     pkg_json = root / "package.json"
     if pkg_json.exists():
         try:
-            import json as _json
-            pkg = _json.loads(pkg_json.read_text(encoding="utf-8"))
+            pkg = json.loads(pkg_json.read_text(encoding="utf-8"))
             deps = set((pkg.get("dependencies") or {}) | (pkg.get("devDependencies") or {}))
             browser_frameworks = {"next", "react", "vue", "svelte", "nuxt", "angular", "vite"}
             if deps & browser_frameworks:
