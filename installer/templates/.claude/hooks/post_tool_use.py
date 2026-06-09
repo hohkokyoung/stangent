@@ -86,16 +86,18 @@ def main() -> None:
         if "deny_reason" in tool_response:
             deny_reason = tool_response.get("deny_reason")
 
-    run_id = os.environ.get("AGENTIC_RUN_ID")
-    if not run_id:
-        _cur = Path.cwd() / ".claude" / "state" / "current_run.txt"
-        if _cur.exists():
-            run_id = _cur.read_text(encoding="utf-8").strip() or None
+    def _read_state(filename: str) -> str | None:
+        p = Path.cwd() / ".claude" / "state" / filename
+        return p.read_text(encoding="utf-8").strip() or None if p.exists() else None
+
+    run_id = os.environ.get("AGENTIC_RUN_ID") or _read_state("current_run.txt")
+    task_id = os.environ.get("AGENTIC_TASK_ID") or _read_state("current_task.txt")
+    agent_role = os.environ.get("AGENTIC_AGENT_ROLE") or _read_state("current_role.txt")
     line = {
         "ts": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "run_id": run_id,
-        "task_id": os.environ.get("AGENTIC_TASK_ID"),
-        "agent_role": os.environ.get("AGENTIC_AGENT_ROLE"),
+        "task_id": task_id,
+        "agent_role": agent_role,
         "tool": tool,
         "ok": ok,
         "args": summarize(tool_input),

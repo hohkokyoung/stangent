@@ -31,18 +31,26 @@ Dispatcher. The only orchestrator. Algorithm is fixed; do not invent your own.
       ```
       This ensures the vector index reflects any code written by earlier tasks in this run. Skills are not re-embedded (that is handled by `/agentic-index`).
    b. Read the task file's `role` field.
-   c. Invoke the matching subagent (`planner` is never invoked here — only `implementer` / `reviewer` / `tester` / `sketcher`) with:
+   c. Before invoking the subagent, run:
+      ```
+      printf '%s' '<task-id>' > .claude/state/current_task.txt
+      printf '%s' '<role>' > .claude/state/current_role.txt
+      ```
+   d. Invoke the matching subagent (`planner` is never invoked here — only `implementer` / `reviewer` / `tester` / `sketcher`) with:
       - The absolute path to the task file
       - The `run_id`
       - The list of skill files (resolved from `skills_to_load` → `.claude/skills/<name>/SKILL.md`). If a skill name is `"project"`, skip SKILL.md injection — it is a retrieve-only pseudo-skill with no corresponding SKILL.md file. The agent receives project file chunks exclusively through `retrieve()`.
       - The task's `k` frontmatter value (default `6` if unset), passed to the agent as the retrieve k parameter
-   d. Wait for the subagent to flip `status` (`done` | `blocked`) or for failure.
+   e. After the subagent returns, run:
+      ```
+      rm -f .claude/state/current_task.txt .claude/state/current_role.txt
+      ```
 7. If a dependency ends up `blocked`, do NOT dispatch its dependents. They stay `pending`; `/agentic-status` will show them as transitively waiting.
 8. After each task, re-evaluate step 4.
 9. Stop when no runnable tasks remain.
 10. Run this exact Bash command to clean up (mandatory — do not skip):
     ```
-    rm -f .claude/state/current_run.txt
+    rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt
     ```
     Then print the final dashboard.
 
