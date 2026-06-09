@@ -9,12 +9,16 @@ Multi-line strings are flattened. Long strings are truncated mid-value with
 an ellipsis so they stay JSONL-friendly.
 
 Log file path:
-  .claude/state/logs/<run_id>.jsonl    when AGENTIC_RUN_ID is set
+  .claude/state/logs/<run_id>.jsonl    when run_id is known
   .claude/state/logs/_no-run.jsonl     otherwise (ambient / setup tool calls)
 
-run_id / task_id / agent_role come from env vars set by the dispatcher
-before invoking a subagent (AGENTIC_RUN_ID, AGENTIC_TASK_ID,
-AGENTIC_AGENT_ROLE).
+run_id / task_id / agent_role are read from state files written by the
+dispatcher before each subagent call:
+  .claude/state/current_run.txt   → run_id
+  .claude/state/current_task.txt  → task_id
+  .claude/state/current_role.txt  → agent_role
+Env vars AGENTIC_RUN_ID / AGENTIC_TASK_ID / AGENTIC_AGENT_ROLE are checked
+first as an override but are not set by any dispatcher in practice.
 """
 from __future__ import annotations
 
@@ -88,7 +92,12 @@ def main() -> None:
 
     def _read_state(filename: str) -> str | None:
         p = Path.cwd() / ".claude" / "state" / filename
-        return p.read_text(encoding="utf-8").strip() or None if p.exists() else None
+        if not p.exists():
+            return None
+        try:
+            return p.read_text(encoding="utf-8").strip() or None
+        except Exception:
+            return None
 
     run_id = os.environ.get("AGENTIC_RUN_ID") or _read_state("current_run.txt")
     task_id = os.environ.get("AGENTIC_TASK_ID") or _read_state("current_task.txt")

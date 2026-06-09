@@ -418,6 +418,120 @@ def _reindex_project(
     )
 
 
+def detect_stack() -> None:
+    """Detect project stack and write test_framework + project_index_globs to project.yml."""
+    root = REPO_ROOT
+    framework = "unknown"
+    globs: list[str] = []
+
+    has_pubspec = (root / "pubspec.yaml").exists()
+    has_android = (root / "android").is_dir()
+    has_ios = (root / "ios").is_dir()
+    has_go_mod = (root / "go.mod").exists()
+    has_cargo = (root / "Cargo.toml").exists()
+    has_gemfile = (root / "Gemfile").exists()
+    has_pom = (root / "pom.xml").exists()
+    has_gradle = any(root.glob("build.gradle")) or any(root.glob("build.gradle.kts"))
+    has_csproj = any(root.glob("*.csproj")) or any(root.glob("*.sln"))
+    has_mix = (root / "mix.exs").exists()
+    has_composer = (root / "composer.json").exists()
+    has_requirements = (root / "requirements.txt").exists()
+    has_pyproject = (root / "pyproject.toml").exists()
+
+    is_mobile = False
+    is_web_frontend = False
+
+    if has_pubspec:
+        is_mobile = True
+        globs += ["**/*.dart"]
+    if (has_android or has_ios) and not has_pubspec:
+        is_mobile = True
+        globs += ["**/*.kt", "**/*.swift"]
+
+    pkg_json = root / "package.json"
+    if pkg_json.exists():
+        try:
+            import json as _json
+            pkg = _json.loads(pkg_json.read_text(encoding="utf-8"))
+            deps = set((pkg.get("dependencies") or {}) | (pkg.get("devDependencies") or {}))
+            browser_frameworks = {"next", "react", "vue", "svelte", "nuxt", "angular", "vite"}
+            if deps & browser_frameworks:
+                is_web_frontend = True
+                globs += ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
+            else:
+                globs += ["**/*.ts", "**/*.js"]
+        except Exception:
+            globs += ["**/*.ts", "**/*.js"]
+
+    if has_requirements or has_pyproject:
+        globs += ["**/*.py"]
+        if framework == "unknown" and not is_mobile and not is_web_frontend:
+            framework = "pytest"
+    if has_go_mod:
+        globs += ["**/*.go"]
+        if framework == "unknown" and not is_mobile and not is_web_frontend:
+            framework = "go_test"
+    if has_cargo:
+        globs += ["**/*.rs"]
+        if framework == "unknown" and not is_mobile and not is_web_frontend:
+            framework = "cargo_test"
+    if has_gemfile:
+        globs += ["**/*.rb"]
+        if framework == "unknown" and not is_mobile and not is_web_frontend:
+            framework = "rspec"
+    if (has_pom or has_gradle) and not has_android:
+        globs += ["**/*.java", "**/*.kt"]
+        if framework == "unknown" and not is_mobile and not is_web_frontend:
+            framework = "junit"
+    if has_csproj:
+        globs += ["**/*.cs"]
+        if framework == "unknown" and not is_mobile and not is_web_frontend:
+            framework = "dotnet_test"
+    if has_mix:
+        globs += ["**/*.ex", "**/*.exs"]
+        if framework == "unknown" and not is_mobile and not is_web_frontend:
+            framework = "ex_unit"
+    if has_composer:
+        globs += ["**/*.php"]
+
+    if is_mobile:
+        framework = "maestro"
+    elif is_web_frontend:
+        framework = "playwright"
+
+    globs = list(dict.fromkeys(globs))  # deduplicate, preserve order
+
+    # Merge into existing project.yml (preserve unknown extra fields)
+    existing: dict = {}
+    if yaml is not None and PROJECT_YML.exists():
+        try:
+            existing = yaml.safe_load(PROJECT_YML.read_text(encoding="utf-8")) or {}
+        except Exception:
+            pass
+
+    existing["test_framework"] = framework
+    existing["detected_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    existing["project_index_globs"] = globs
+
+    PROJECT_YML.parent.mkdir(parents=True, exist_ok=True)
+    if yaml is not None:
+        PROJECT_YML.write_text(yaml.dump(existing, default_flow_style=False, allow_unicode=True), encoding="utf-8")
+    else:
+        # yaml not available — write minimal YAML by hand
+        lines = [
+            f"test_framework: {framework}",
+            f"detected_at: '{existing['detected_at']}'",
+            "project_index_globs:",
+        ] + ([f"  - '{g}'" for g in globs] if globs else ["  []"])
+        PROJECT_YML.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    if globs:
+        print(f"[agentic-index] detected test_framework: {framework}")
+        print(f"[agentic-index] project_index_globs: {globs}")
+    else:
+        print("[agentic-index] could not detect stack. Set test_framework and project_index_globs manually in .claude/state/project.yml")
+
+
 def cmd_reindex(project_only: bool = False) -> None:
     cfg = load_config()
     target_tokens = (cfg.get("retrieval") or {}).get("chunk_tokens", 400)
@@ -425,6 +539,9 @@ def cmd_reindex(project_only: bool = False) -> None:
 
     conn = open_db()
     _ensure_base_schema(conn)
+
+    if not project_only:
+        detect_stack()
 
     if not project_only:
         # Skills pass: full rebuild (preserve project chunks)

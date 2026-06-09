@@ -124,7 +124,7 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 
 ```
 .claude/
-├── .agentic.yml                # enabled_skills, embedding, deny patterns, plan_id, test_framework
+├── .agentic.yml                # enabled_skills, embedding, deny patterns, plan_id
 ├── settings.json               # hooks + MCP servers (all _agentic_managed: true)
 ├── agents/
 │   ├── planner.md              # decomposition only — no file names, no classes, no assumptions
@@ -148,7 +148,7 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 │   ├── flutter/    SKILL.md + references/*.md   # Riverpod 3.x
 │   ├── mobile/     SKILL.md + references/*.md   # cross-screen patterns (nav guards, optimistic UI, etc.)
 │   ├── supabase/   SKILL.md + references/*.md
-│   ├── owasp/      SKILL.md + references/*.md   # web security, auto-included on HTTP surface
+│   ├── owasp/      SKILL.md + references/*.md   # web security; add to enabled_skills to activate
 │   ├── html-css/   SKILL.md + references/*.md   # vanilla HTML/CSS/JS
 │   ├── react/      SKILL.md + references/*.md   # React 18+, hooks, data fetching
 │   ├── playwright/ SKILL.md + references/*.md   # browser UI testing via Playwright MCP
@@ -241,9 +241,8 @@ plan_id:
   pad: 3
   start: 1
 
-# Set automatically by /agentic-index. Override manually if detection is wrong.
-# Values: playwright | maestro | pytest | go_test | cargo_test | rspec | junit | dotnet_test | ex_unit | phpunit | unknown
-# test_framework: playwright
+# test_framework is NOT set here. /agentic-index writes it to .claude/state/project.yml automatically.
+# To override: edit .claude/state/project.yml directly after running /agentic-index.
 ```
 
 ---

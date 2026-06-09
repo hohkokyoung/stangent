@@ -76,7 +76,7 @@ If no signals matched, print:
 [agentic-index] could not detect stack. Set test_framework and project_index_globs manually in .claude/state/project.yml
 ```
 
-### Step 4 — Index project files
+### Step 3 — Index project files
 
 This step runs automatically inside the same `python3 .claude/hooks/lib/retriever.py reindex` call from Step 1.
 
@@ -89,7 +89,7 @@ The retriever:
 
 Print a reminder to run `/agentic-index` again if the user later adds `project_index.include` to `.agentic.yml` manually.
 
-### Step 3 — Confirm enabled skills
+### Step 4 — Confirm enabled skills
 
 Print a reminder if the detected `test_framework` skill is not in `enabled_skills` in `.agentic.yml`:
 ```
