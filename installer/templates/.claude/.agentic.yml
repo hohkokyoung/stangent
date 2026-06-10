@@ -4,7 +4,7 @@ system_version: 1.0.0
 # injected into agents. Available built-in skills:
 #   frontend:  react, html-css
 #   mobile:    flutter, mobile
-#   backend:   fastapi
+#   backend:   fastapi, rest-openapi
 #   database:  supabase
 #   testing:   playwright, maestro
 #   security:  owasp

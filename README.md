@@ -1,6 +1,6 @@
 # Agentic Development Workflow System
 
-A Claude Code–native agentic development workflow. Installs per-project under `.claude/`. Agents are organized by **role** (planner / sketcher / implementer / reviewer / tester / debugger), not by stack. Stack expertise lives in skill prompt blocks plus a retrievable references corpus.
+A Claude Code–native agentic development workflow. Installs per-project under `.claude/`. Agents are organized by **role** (planner / sketcher / implementer / reviewer / tester / debugger / refactor), not by stack. Stack expertise lives in skill prompt blocks plus a retrievable references corpus.
 
 ---
 
@@ -41,6 +41,7 @@ In the installed project, in Claude Code:
 /agentic-index                              # one-time setup (or when skills/references change)
 /agentic-plan <natural-language goal>       # planner clarifies, sketches UI, emits FEAT-### task files
 /agentic-build all                          # dispatcher runs tasks in dep order, re-indexes code before each
+/agentic-refactor <refactoring goal>        # clarify scope, run refactor agent, verify tests stay green
 /agentic-status                             # dashboard
 /agentic-update-plan <run-id> <amendment>   # amend without touching done tasks
 /agentic-debug <bug description>            # diagnose a live bug — data first, code second
@@ -165,7 +166,8 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 │   ├── implementer.md          # one task; loads skills verbatim; one retrieve() call
 │   ├── reviewer.md             # append-only ## Review; never finalizes done
 │   ├── tester.md               # generic — testing method defined by injected skill
-│   └── debugger.md             # data first, code second; writes diagnosis only
+│   ├── debugger.md             # data first, code second; writes diagnosis only
+│   └── refactor.md             # no new behavior; runs tests before/after; blocks on regression
 ├── commands/
 │   ├── agentic-plan.md
 │   ├── agentic-build.md        # fixed topo-sort dispatcher; re-indexes project before each task
@@ -175,18 +177,20 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 │   ├── agentic-adr.md
 │   ├── agentic-doctor.md
 │   ├── agentic-debug.md        # data-aware bug diagnosis
+│   ├── agentic-refactor.md     # refactor with test-green guarantee
 │   ├── agentic-test.md         # brownfield test bootstrap
 │   └── agentic-screenshot.md   # screenshot all pages/screens → docs/screenshots/<date>/
 ├── skills/
-│   ├── fastapi/    SKILL.md + references/*.md
-│   ├── flutter/    SKILL.md + references/*.md   # Riverpod 3.x
-│   ├── mobile/     SKILL.md + references/*.md   # cross-screen patterns (nav guards, optimistic UI, etc.)
-│   ├── supabase/   SKILL.md + references/*.md
-│   ├── owasp/      SKILL.md + references/*.md   # web security; add to enabled_skills to activate
-│   ├── html-css/   SKILL.md + references/*.md   # vanilla HTML/CSS/JS
-│   ├── react/      SKILL.md + references/*.md   # React 18+, hooks, data fetching
-│   ├── playwright/ SKILL.md + references/*.md   # browser UI testing via Playwright MCP
-│   └── maestro/    SKILL.md + references/*.md   # mobile UI testing via Maestro MCP
+│   ├── fastapi/      SKILL.md + references/*.md
+│   ├── rest-openapi/ SKILL.md + references/*.md  # REST API design, status codes, pagination, OpenAPI
+│   ├── flutter/      SKILL.md + references/*.md  # Riverpod 3.x
+│   ├── mobile/       SKILL.md + references/*.md  # cross-screen patterns (nav guards, optimistic UI, etc.)
+│   ├── supabase/     SKILL.md + references/*.md
+│   ├── owasp/        SKILL.md + references/*.md  # web security; add to enabled_skills to activate
+│   ├── html-css/     SKILL.md + references/*.md  # vanilla HTML/CSS/JS
+│   ├── react/        SKILL.md + references/*.md  # React 18+, hooks, data fetching
+│   ├── playwright/   SKILL.md + references/*.md  # browser UI testing via Playwright MCP
+│   └── maestro/      SKILL.md + references/*.md  # mobile UI testing via Maestro MCP
 ├── hooks/
 │   ├── pre_tool_use.py         # hard safety only (rm -rf, force push, DROP, TRUNCATE, ...)
 │   ├── post_tool_use.py        # JSONL logger, one file per run_id
