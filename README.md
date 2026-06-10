@@ -44,6 +44,7 @@ In the installed project, in Claude Code:
 /agentic-status                             # dashboard
 /agentic-update-plan <run-id> <amendment>   # amend without touching done tasks
 /agentic-debug <bug description>            # diagnose a live bug — data first, code second
+/agentic-screenshot [all | <slugs>]         # screenshot every page/screen into docs/screenshots/<date>/
 ```
 
 The planner is strict — it walks an 11-dimension coverage checklist (scope, functional, acceptance, edges, auth, validation, error UX, data model, API, NFRs, out-of-scope) and asks via `AskUserQuestion` on blocking gaps, up to 4 rounds. **It makes no assumptions** — every gap must be answered by the developer before planning proceeds.
@@ -107,6 +108,38 @@ The testing method is fully defined by the injected skill — the tester role it
 
 ---
 
+## Screenshot capture
+
+`/agentic-screenshot [all | <slugs>]` walks the running app and saves screenshots to `docs/screenshots/<date-time>/` in your project root — ready for a README, portfolio, or design docs.
+
+```
+/agentic-screenshot               # interactive — asks which pages/screens and URL
+/agentic-screenshot all           # auto-discover all static routes/screens and capture everything
+/agentic-screenshot home login    # capture specific pages by slug
+```
+
+**Hard gates:**
+- Requires `test_framework` set in `.claude/state/project.yml` (run `/agentic-index` first)
+- Probes the MCP server before doing anything — if Playwright or Maestro does not respond, it stops immediately with a fix checklist
+- If Maestro returns no connected device, it stops
+
+**What it captures:**
+- Web (Playwright): desktop 1280×800 + mobile 390×844 by default, navigates each route, waits for DOM before shooting
+- Mobile (Maestro): taps through each screen from the app home, confirms via view hierarchy before shooting
+
+**Output:**
+```
+docs/screenshots/<YYYY-MM-DD_HH-MM>/
+├── 01-home-desktop.png
+├── 01-home-mobile.png
+├── 02-login-desktop.png
+└── README.md           ← auto-generated index with embedded images
+```
+
+A single page/screen failure does not abort the run — it is logged and the capture continues.
+
+---
+
 ## Debugging — data first
 
 `/agentic-debug <description>` runs the **debugger** agent, which follows a strict order:
@@ -142,7 +175,8 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 │   ├── agentic-adr.md
 │   ├── agentic-doctor.md
 │   ├── agentic-debug.md        # data-aware bug diagnosis
-│   └── agentic-test.md         # brownfield test bootstrap
+│   ├── agentic-test.md         # brownfield test bootstrap
+│   └── agentic-screenshot.md   # screenshot all pages/screens → docs/screenshots/<date>/
 ├── skills/
 │   ├── fastapi/    SKILL.md + references/*.md
 │   ├── flutter/    SKILL.md + references/*.md   # Riverpod 3.x
@@ -272,7 +306,7 @@ Then add `<name>` to `enabled_skills` in `.agentic.yml`, run `/agentic-index`, a
 - Security-analyzer role agent
 - Advanced observability (`/agentic-stats`, run summaries)
 - CI integration for generated test artifacts
-- Visual regression testing
+- Visual regression testing (foundation exists via `/agentic-screenshot` — comparing across builds is v2)
 - Maestro Cloud integration
 
 Each of these is a **v2 layer**, built only when a real, repeated v1 failure mode points at it.

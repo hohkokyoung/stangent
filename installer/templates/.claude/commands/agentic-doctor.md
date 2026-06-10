@@ -31,6 +31,7 @@ Run a battery of fast, deterministic checks against this project's agentic insta
 - Skills: each has `SKILL.md`; flags any >3000 tokens
 - ADRs: count by status (proposed / accepted / superseded)
 - Git: repo present, current branch, working-tree clean status
+- Screenshot readiness: if `test_framework` in `project.yml` is `playwright` or `maestro`, warns if the matching MCP server is absent from `.mcp.json` (would cause `/agentic-screenshot` to stop at the MCP probe)
 
 ## Output legend
 

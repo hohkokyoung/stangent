@@ -131,6 +131,24 @@ def check_mcp_json() -> list[dict]:
                               "still contains REPLACE_WITH_ placeholder"))
         else:
             out.append(_check(f"mcp:{name} credentials", OK))
+
+    # if test_framework requires playwright or maestro, the matching MCP entry must be present
+    proj_yml = CLAUDE / "state" / "project.yml"
+    if proj_yml.exists():
+        try:
+            import yaml  # type: ignore
+            proj = yaml.safe_load(proj_yml.read_text(encoding="utf-8")) or {}
+            tf = proj.get("test_framework", "")
+            if tf in ("playwright", "maestro") and tf not in servers:
+                out.append(_check(
+                    f"mcp:{tf} for screenshot",
+                    WARN,
+                    f"test_framework={tf} but '{tf}' is not in .mcp.json — "
+                    f"/agentic-screenshot will stop at the MCP probe step",
+                ))
+        except Exception:
+            pass  # yaml unavailable or parse error — already caught by check_config_files
+
     return out
 
 
