@@ -1,10 +1,31 @@
 {
-  "_comment": "MCP server definitions. Only agentic_mcp is enabled by default. To activate others, add their name to enabledMcpjsonServers in .claude/settings.json. Fill in credentials for dbhub/supabase before enabling them.",
+  "_comment": "MCP server definitions. agentic_mcp, context7, fetch, and sequential-thinking are enabled by default. To activate others, add their name to enabledMcpjsonServers in .claude/settings.json. Fill in credentials for dbhub/supabase/github before enabling them.",
   "mcpServers": {
     "agentic_mcp": {
       "command": "python3",
       "args": [".claude/mcp/agentic_mcp.py"]
     },
+
+    "_docs_and_research": "--- docs & research ---",
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "env": {
+        "CONTEXT7_API_KEY": "OPTIONAL_set_if_you_hit_rate_limits_free_at_context7.com"
+      }
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"]
+    },
+
+    "_reasoning": "--- reasoning ---",
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+
+    "_testing": "--- testing & mobile ---",
     "playwright": {
       "command": "npx",
       "args": ["-y", "@playwright/mcp@latest"]
@@ -13,6 +34,17 @@
       "command": "maestro",
       "args": ["mcp"]
     },
+
+    "_vcs": "--- version control ---",
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "REPLACE_WITH_GITHUB_PAT"
+      }
+    },
+
+    "_databases": "--- databases ---",
     "dbhub": {
       "command": "npx",
       "args": [

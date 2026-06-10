@@ -213,11 +213,20 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 ```json
 {
   "mcpServers": {
-    "agentic_mcp": { ... },      // internal retrieve() — always on
-    "playwright":  { ... },      // browser automation — no credentials needed
-    "maestro":     { ... },      // mobile automation — requires Maestro CLI
-    "dbhub":       { ... },      // fill in DSN to enable
-    "supabase":    { ... }       // fill in PAT + project-ref to enable
+    "agentic_mcp":          { ... },  // internal retrieve() — always on
+    // docs & research
+    "context7":             { ... },  // always-fresh library docs — no credentials needed
+    "fetch":                { ... },  // general URL fetching — no credentials needed
+    // reasoning
+    "sequential-thinking":  { ... },  // structured reasoning tool — no credentials needed
+    // testing & mobile
+    "playwright":           { ... },  // browser automation — no credentials needed
+    "maestro":              { ... },  // mobile automation — requires Maestro CLI
+    // version control
+    "github":               { ... },  // fill in GITHUB_PERSONAL_ACCESS_TOKEN to enable
+    // databases
+    "dbhub":                { ... },  // fill in DSN to enable
+    "supabase":             { ... }   // fill in PAT + project-ref to enable
   }
 }
 ```
@@ -233,7 +242,7 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 - **Skills define HOW, agents define WHAT.** The tester role is generic — its testing method (MCP tools, commands, artifact format) is entirely defined by the injected skill. No framework logic in the role prompt.
 - **Sketch before code.** For any task with visible UI changes, the sketcher runs during planning and embeds a rendered image before any implementer task is dispatched.
 - **Debugger = diagnosis only.** The debugger never writes to the codebase. Data before code, always.
-- **MCP rules:** `agentic_mcp.retrieve` is the internal knowledge plane; `playwright` / `maestro` / `dbhub` / `supabase` are runtime tools usable only by implementer/tester/debugger. Planner/reviewer/sketcher never touch external MCP (except sketcher uses Preview MCP for rendering).
+- **MCP rules:** `agentic_mcp.retrieve` is the internal knowledge plane; `context7` / `fetch` / `sequential-thinking` are available to all agents; `playwright` / `maestro` / `dbhub` / `supabase` / `github` are runtime tools usable only by implementer/tester/debugger. Planner/reviewer/sketcher never touch external MCP (except sketcher uses Preview MCP for rendering).
 - **Hooks = safety + logging.** No tool filtering, no context-aware gating.
 - **State ownership:** every section of every task file has exactly one writing role. No agent overwrites another's section.
 
