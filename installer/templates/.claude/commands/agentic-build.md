@@ -36,7 +36,7 @@ Dispatcher. The only orchestrator. Algorithm is fixed; do not invent your own.
       printf '%s' '<task-id>' > .claude/state/current_task.txt
       printf '%s' '<role>' > .claude/state/current_role.txt
       ```
-   d. Invoke the matching subagent (`planner` is never invoked here — only `implementer` / `reviewer` / `tester` / `sketcher`) with:
+   d. Invoke the matching subagent (`planner` is never invoked here — only `implementer` / `reviewer` / `tester` / `sketcher` / `refactor`) with:
       - The absolute path to the task file
       - The `run_id`
       - The list of skill files (resolved from `skills_to_load` → `.claude/skills/<name>/SKILL.md`). If a skill name is `"project"`, skip SKILL.md injection — it is a retrieve-only pseudo-skill with no corresponding SKILL.md file. The agent receives project file chunks exclusively through `retrieve()`.

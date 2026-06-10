@@ -7,38 +7,48 @@ Test cases that pin agent behavior. Run after every prompt edit so you can catch
 ```
 .claude/evals/
 ├── run.py
-└── planner/
-    ├── case_01_minimal/
-    │   ├── input.md          # the user goal to feed /agentic-plan
-    │   ├── expect.md         # human-readable expectation
-    │   └── assert.py         # programmatic check
+├── planner/
+│   ├── case_01_minimal/
+│   │   ├── input.md          # the user goal to feed /agentic-plan
+│   │   ├── expect.md         # human-readable expectation
+│   │   └── assert.py         # programmatic check
+│   └── ...
+├── implementer/
+│   ├── case_01_status_lifecycle/     # status pending→done, Design+Decisions log filled
+│   ├── case_02_blocked_missing_adr/  # blocked when ADR file is absent
+│   └── ...
+└── reviewer/
+    ├── case_01_review_appended/      # ## Review filled, status left unchanged
+    ├── case_02_blocking_review/      # blocks on SQL injection violation
     └── ...
 ```
 
 Three files per case:
 
-- **`input.md`** — the natural-language goal you would pass to `/agentic-plan`.
+- **`input.md`** — setup instructions and the task file content (or goal text for planner cases).
 - **`expect.md`** — what a human reading the output should see. Prose.
 - **`assert.py`** — programmatic check. Exposes `check(run_dir: Path) -> list[str]` which returns a list of failure messages (empty = pass).
 
 ## Running
 
-v1 is **score-only**: you run the planner manually, then score the output.
+v1 is **score-only**: you run the agent manually, then score the output.
 
 ```bash
-# 1. Run the case input through the planner
+# Planner case
 /agentic-plan <paste contents of input.md>
-# (planner writes .claude/state/plans/FEAT-NNN/)
-
-# 2. Score it
 python .claude/evals/run.py planner/case_01_minimal FEAT-NNN
+
+# Implementer / reviewer case — follow setup steps in input.md, then:
+python .claude/evals/run.py implementer/case_01_status_lifecycle FEAT-901
+python .claude/evals/run.py reviewer/case_01_review_appended FEAT-903
 ```
 
-To score every case at once after producing one run per case:
+To score every case under a role at once (requires a `.runid` file in each case dir):
 
 ```bash
 python .claude/evals/run.py planner --all
-# (you supply a mapping file or just point at the latest N runs)
+python .claude/evals/run.py implementer --all
+python .claude/evals/run.py reviewer --all
 ```
 
 ## Adding a case
