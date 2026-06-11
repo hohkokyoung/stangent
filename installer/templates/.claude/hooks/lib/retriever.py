@@ -424,19 +424,32 @@ def detect_stack() -> None:
     framework = "unknown"
     globs: list[str] = []
 
-    has_pubspec = (root / "pubspec.yaml").exists()
-    has_android = (root / "android").is_dir()
-    has_ios = (root / "ios").is_dir()
-    has_go_mod = (root / "go.mod").exists()
-    has_cargo = (root / "Cargo.toml").exists()
-    has_gemfile = (root / "Gemfile").exists()
-    has_pom = (root / "pom.xml").exists()
-    has_gradle = any(root.glob("build.gradle")) or any(root.glob("build.gradle.kts"))
-    has_csproj = any(root.glob("*.csproj")) or any(root.glob("*.sln"))
-    has_mix = (root / "mix.exs").exists()
-    has_composer = (root / "composer.json").exists()
-    has_requirements = (root / "requirements.txt").exists()
-    has_pyproject = (root / "pyproject.toml").exists()
+    # Scan root + immediate subdirectories so monorepos are detected
+    # (e.g. Flutter in mobile/ + FastAPI in backend/).
+    scan_dirs = [root] + [d for d in root.iterdir() if d.is_dir() and not d.name.startswith(".")]
+
+    def has_file(name: str) -> bool:
+        return any((d / name).exists() for d in scan_dirs)
+
+    def has_dir(name: str) -> bool:
+        return any((d / name).is_dir() for d in scan_dirs)
+
+    def has_glob(pattern: str) -> bool:
+        return any(any(d.glob(pattern)) for d in scan_dirs)
+
+    has_pubspec = has_file("pubspec.yaml")
+    has_android = has_dir("android")
+    has_ios = has_dir("ios")
+    has_go_mod = has_file("go.mod")
+    has_cargo = has_file("Cargo.toml")
+    has_gemfile = has_file("Gemfile")
+    has_pom = has_file("pom.xml")
+    has_gradle = has_glob("build.gradle") or has_glob("build.gradle.kts")
+    has_csproj = has_glob("*.csproj") or has_glob("*.sln")
+    has_mix = has_file("mix.exs")
+    has_composer = has_file("composer.json")
+    has_requirements = has_file("requirements.txt")
+    has_pyproject = has_file("pyproject.toml")
 
     is_mobile = False
     is_web_frontend = False
@@ -448,8 +461,8 @@ def detect_stack() -> None:
         is_mobile = True
         globs += ["**/*.kt", "**/*.swift"]
 
-    pkg_json = root / "package.json"
-    if pkg_json.exists():
+    pkg_json = next((d / "package.json" for d in scan_dirs if (d / "package.json").exists()), None)
+    if pkg_json is not None:
         try:
             pkg = json.loads(pkg_json.read_text(encoding="utf-8"))
             deps = set((pkg.get("dependencies") or {}) | (pkg.get("devDependencies") or {}))
