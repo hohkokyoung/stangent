@@ -332,14 +332,21 @@ def _upgrade_agentic_yml(target: Path) -> None:
         return
     if not dst_m:
         info(".agentic.yml: skills comment block not found (file may be customized) — skipping; add rest-openapi to the backend list manually if needed")
-        return
-    if tpl_m.group(1) == dst_m.group(1):
-        info(".agentic.yml: already up to date")
-        return
+    elif tpl_m.group(1) == dst_m.group(1):
+        info(".agentic.yml: skills block already up to date")
+    else:
+        dst_text = dst_text[: dst_m.start(1)] + tpl_m.group(1) + dst_text[dst_m.end(1):]
+        dst_path.write_text(dst_text, encoding="utf-8")
+        info(".agentic.yml: updated available-skills comment block")
 
-    new_text = dst_text[: dst_m.start(1)] + tpl_m.group(1) + dst_text[dst_m.end(1):]
-    dst_path.write_text(new_text, encoding="utf-8")
-    info(".agentic.yml: updated available-skills comment block")
+    # Append the models: section if it doesn't exist yet (independent of the skills block).
+    dst_text = dst_path.read_text(encoding="utf-8")
+    if "models:" not in dst_text:
+        models_block_re = re.compile(r"^models:.*?(?=^\w|\Z)", re.DOTALL | re.MULTILINE)
+        tpl_m2 = models_block_re.search(tpl_text)
+        if tpl_m2:
+            dst_path.write_text(dst_text.rstrip() + "\n\n" + tpl_m2.group(0).rstrip() + "\n", encoding="utf-8")
+            info(".agentic.yml: added models: section")
 
 
 def upgrade_config(target: Path) -> None:

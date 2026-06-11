@@ -46,6 +46,19 @@ plan_id:
   pad: 3
   start: 1
 
+# Per-role model overrides. Each role uses this model regardless of what model
+# is active in your Claude Code session. Set a role to "" to inherit the session default.
+# Available model IDs: claude-opus-4-8, claude-sonnet-4-6, claude-haiku-4-5-20251001
+models:
+  default:     claude-sonnet-4-6           # fallback for any unlisted role
+  planner:     claude-sonnet-4-6           # ambiguity resolution + full coverage checklist
+  sketcher:    claude-sonnet-4-6           # HTML mockup generation + screenshot
+  implementer: claude-sonnet-4-6           # primary coding work
+  reviewer:    claude-haiku-4-5-20251001   # mechanical pattern matching against skill rules
+  tester:      claude-haiku-4-5-20251001   # run tests, check pass/fail counts
+  debugger:    claude-sonnet-4-6           # diagnosis requires reasoning
+  refactor:    claude-sonnet-4-6           # codebase understanding + careful edits
+
 git:
   auto_branch: true
   branch_template: "feat/{run_id}"

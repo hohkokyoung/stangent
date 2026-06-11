@@ -64,7 +64,7 @@ Run a refactoring session: clarify scope → create task file(s) → run the ref
 7. **Dispatch each task sequentially** (refactors must not run in parallel — they touch overlapping code):
    For each `t<N>.md`:
    a. `printf '%s' '<t-id>' > .claude/state/current_task.txt && printf '%s' 'refactor' > .claude/state/current_role.txt`
-   b. Invoke the **refactor** agent with the task file path.
+   b. Invoke the **refactor** agent with the task file path, using model `models.refactor` from `.agentic.yml` (fall back to `models.default`).
    c. Wait for it to flip `status: done` or `status: blocked`.
    d. `rm -f .claude/state/current_task.txt .claude/state/current_role.txt`
    e. If `blocked`: print `refactor <task-id> blocked: <blocker>` and STOP — do not continue to the next task.

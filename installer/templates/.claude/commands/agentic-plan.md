@@ -64,6 +64,7 @@ Run the planner on the given goal.
    - The generated `run_id`
    - The contents of `.claude/.agentic.yml`
    - The `## Clarifications` block from step 4
+   - **Model**: use `models.planner` from `.agentic.yml` (fall back to `models.default`, then session default)
 
 6. The planner writes `_overview.md` + per-task files (all `status: pending`).
 
@@ -91,7 +92,7 @@ Run the planner on the given goal.
 
    b. **Run all sketchers sequentially.** For each `s<N>.md` in creation order:
       - Run: `printf '%s' '<s-id>' > .claude/state/current_task.txt && printf '%s' 'sketcher' > .claude/state/current_role.txt`
-      - Invoke the **sketcher** agent with the path to `s<N>.md`.
+      - Invoke the **sketcher** agent with the path to `s<N>.md`, using model `models.sketcher` from `.agentic.yml` (fall back to `models.default`).
       - Wait for it to flip `status: done` or `status: blocked`.
       - Run: `rm -f .claude/state/current_task.txt .claude/state/current_role.txt`
       - If `blocked`: print a warning (`sketcher s<N> blocked: <blocker>`) and continue to the next — do NOT halt the entire plan. The implementer task will be runnable only after the sketch is manually resolved or removed from `depends_on`.
