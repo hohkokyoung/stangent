@@ -10,6 +10,7 @@ Usage (from any directory):
     python <repo>/installer/agentic.py              # install into $PWD
     python <repo>/installer/agentic.py --target <p> # install into <p>
     python <repo>/installer/agentic.py --uninstall  # remove managed entries
+    python <repo>/installer/agentic.py --upgrade-config  # merge new template defaults into existing config
 """
 from __future__ import annotations
 
@@ -239,16 +240,137 @@ def uninstall(target: Path) -> None:
     info(f"uninstall complete at {target}")
 
 
+# ---------- upgrade-config ----------
+
+def _upgrade_settings_json(target: Path) -> None:
+    """Add new enabledMcpjsonServers entries from template; leave existing entries alone."""
+    tpl_path = TEMPLATES_DIR / ".claude" / "settings.json"
+    dst_path = target / ".claude" / "settings.json"
+    if not tpl_path.exists() or not dst_path.exists():
+        return
+    try:
+        tpl = json.loads(tpl_path.read_text(encoding="utf-8"))
+        dst = json.loads(dst_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        info(f"warning: could not parse settings.json: {e} — skipping")
+        return
+
+    changed = False
+
+    tpl_servers = tpl.get("enabledMcpjsonServers", [])
+    dst_servers = dst.get("enabledMcpjsonServers", [])
+    new_servers = [s for s in tpl_servers if s not in dst_servers]
+    if new_servers:
+        dst["enabledMcpjsonServers"] = dst_servers + new_servers
+        changed = True
+        info(f"settings.json: added to enabledMcpjsonServers: {new_servers}")
+
+    if changed:
+        dst_path.write_text(json.dumps(dst, indent=2) + "\n", encoding="utf-8")
+    else:
+        info("settings.json: already up to date")
+
+
+def _upgrade_mcp_json(target: Path) -> None:
+    """Add new mcpServers entries from template; leave existing entries alone."""
+    tpl_path = TEMPLATES_DIR / ".mcp.json"
+    dst_path = target / ".mcp.json"
+    if not tpl_path.exists() or not dst_path.exists():
+        return
+    try:
+        tpl = json.loads(tpl_path.read_text(encoding="utf-8"))
+        dst = json.loads(dst_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        info(f"warning: could not parse .mcp.json: {e} — skipping")
+        return
+
+    tpl_servers = tpl.get("mcpServers", {})
+    dst_servers = dst.get("mcpServers", {})
+
+    added = []
+    for name, config in tpl_servers.items():
+        # Skip JSON comment/divider entries (string values, not server objects).
+        if not isinstance(config, dict):
+            continue
+        if name not in dst_servers:
+            dst_servers[name] = config
+            added.append(name)
+
+    if added:
+        dst["mcpServers"] = dst_servers
+        # Refresh the top-level comment so it stays accurate.
+        if "_comment" in tpl:
+            dst["_comment"] = tpl["_comment"]
+        dst_path.write_text(json.dumps(dst, indent=2) + "\n", encoding="utf-8")
+        info(f".mcp.json: added servers: {added}")
+    else:
+        info(".mcp.json: already up to date")
+
+
+def _upgrade_agentic_yml(target: Path) -> None:
+    """Replace only the available-skills comment block in .agentic.yml.
+
+    Everything else (enabled_skills, embedding, gateway, etc.) is untouched
+    because those are user configuration, not documentation.
+    """
+    tpl_path = TEMPLATES_DIR / ".claude" / ".agentic.yml"
+    dst_path = target / ".claude" / ".agentic.yml"
+    if not tpl_path.exists() or not dst_path.exists():
+        return
+
+    # Match from any comment line containing "Available built-in skills:" through
+    # all subsequent comment lines, stopping just before "enabled_skills:".
+    block_re = re.compile(r"(#[^\n]*Available built-in skills:[^\n]*\n(?:#[^\n]*\n)*)(?=enabled_skills:)", re.DOTALL)
+
+    tpl_text = tpl_path.read_text(encoding="utf-8")
+    dst_text = dst_path.read_text(encoding="utf-8")
+
+    tpl_m = block_re.search(tpl_text)
+    dst_m = block_re.search(dst_text)
+
+    if not tpl_m:
+        return
+    if not dst_m:
+        info(".agentic.yml: skills comment block not found (file may be customized) — skipping; add rest-openapi to the backend list manually if needed")
+        return
+    if tpl_m.group(1) == dst_m.group(1):
+        info(".agentic.yml: already up to date")
+        return
+
+    new_text = dst_text[: dst_m.start(1)] + tpl_m.group(1) + dst_text[dst_m.end(1):]
+    dst_path.write_text(new_text, encoding="utf-8")
+    info(".agentic.yml: updated available-skills comment block")
+
+
+def upgrade_config(target: Path) -> None:
+    _upgrade_settings_json(target)
+    _upgrade_mcp_json(target)
+    _upgrade_agentic_yml(target)
+    info(f"upgrade-config complete at {target}")
+
+
 # ---------- cli ----------
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Agentic Development Workflow installer.")
     ap.add_argument("--target", default=os.getcwd(), help="Project directory (default: cwd).")
     ap.add_argument("--uninstall", action="store_true", help="Remove managed entries.")
+    ap.add_argument(
+        "--upgrade-config",
+        action="store_true",
+        help="Merge new template defaults into existing config files "
+             "(settings.json, .mcp.json, .agentic.yml). "
+             "Adds new keys; never overwrites existing values.",
+    )
     args = ap.parse_args()
 
     target = Path(args.target).resolve()
-    (uninstall if args.uninstall else install)(target)
+    if args.uninstall:
+        uninstall(target)
+    elif getattr(args, "upgrade_config"):
+        upgrade_config(target)
+    else:
+        install(target)
 
 
 if __name__ == "__main__":
