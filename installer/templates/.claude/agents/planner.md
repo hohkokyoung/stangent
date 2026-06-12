@@ -77,6 +77,11 @@ Carry every entry into `_overview.md` under `## Resolved Questions`. Do NOT add 
    - `skills_to_load`: list of skill names (verify non-overlap). This is BOTH the list of `SKILL.md` files to inject AND the retrieval scope — `retrieve()` only sees chunks from `skills/<name>/references/` for these names. **`"project"` is a valid pseudo-skill**: include it when the task requires reading or modifying *existing* project source files (not net-new files only). It has no SKILL.md — it surfaces project file chunks through `retrieve()` only. Omit for purely additive tasks.
   - `k`: (optional, default `6`) number of chunks to retrieve. Set to `10` for tasks where `"project"` is in `skills_to_load` AND the task also spans multiple skill patterns — the extra slots accommodate both project code and skill references.
    - `adrs`: list of accepted ADR ids that are **relevant to this task only**. Be parsimonious — list an ADR only if its rule could plausibly affect the implementer's choices. Do NOT list every accepted ADR on every task.
+   - `complexity`: assess implementation difficulty as `low | medium | high`:
+     - `low` — isolated change, ≤ 2 files, no cross-cutting concerns, mechanical/trivial (rename, CRUD field, config tweak)
+     - `medium` — typical feature, a few files, standard patterns — use this when uncertain
+     - `high` — cross-cutting concern, architectural change, security-sensitive, data model migration, or novel pattern requiring deep reasoning
+     **Default to `medium`, not `high`.** Escalating to `high` increases model cost; reserve it for genuinely complex tasks.
    - `depends_on`: justified edges only
 8. Use the `run_id` provided by the caller in your prompt (already allocated by the command before you were invoked).
 9. **Read the templates**: `.claude/templates/task.md` and `.claude/templates/overview.md`. These define the exact structure of what you're about to write.

@@ -6,6 +6,7 @@ intent: "<one-line statement of what this task achieves>"
 acceptance: "<single-sentence testable criteria>"
 edge_cases: ["<e1>", "<e2>"]
 skills_to_load: [<skill_names>]  # SKILL.md files injected verbatim + retrieval scope; "project" is a valid pseudo-skill
+complexity: medium               # low | medium | high — assessed by planner; drives model selection in agentic-build
 k: null                          # retrieve() chunk count; null = default 6; set 10 when "project" + multiple skill patterns
 adrs: []                         # accepted ADR ids relevant to THIS task only
 depends_on: []                   # justified edges only (no over-serialization)

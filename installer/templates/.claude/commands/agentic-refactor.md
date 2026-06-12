@@ -48,6 +48,7 @@ Run a refactoring session: clarify scope → create task file(s) → run the ref
    use your judgment from the Clarifications block. Write each as `.claude/state/plans/<run-id>/t<N>.md`
    using the task template at `.claude/templates/task.md` with these specifics:
    - `role: refactor`
+   - `complexity: medium` (default; adjust to `low` for a trivial rename/dead-code removal, `high` for cross-cutting restructuring that touches many files or public APIs)
    - `skills_to_load: ["project"]` — always include `"project"` so the agent can retrieve existing code;
      add any skill relevant to the language/framework (e.g. `fastapi`, `react`) if the goal touches
      framework-specific patterns
@@ -62,11 +63,24 @@ Run a refactoring session: clarify scope → create task file(s) → run the ref
    ```
 
 7. **Dispatch each task sequentially** (refactors must not run in parallel — they touch overlapping code):
+
+   Before dispatching, read `models.refactor` and `complexity_routing` from `.agentic.yml` to determine the selected model
+   (same routing logic as `agentic-build` step 7c: apply `low_cap` / `high_floor` based on task `complexity`).
+
    For each `t<N>.md`:
-   a. `printf '%s' '<t-id>' > .claude/state/current_task.txt && printf '%s' 'refactor' > .claude/state/current_role.txt`
-   b. Invoke the **refactor** agent with the task file path, using model `models.refactor` from `.agentic.yml` (fall back to `models.default`).
+   a. Read `complexity` from the task frontmatter (default `medium` if absent). Determine `selected_model` using the routing logic above. Then:
+      ```
+      printf '%s' '<t-id>' > .claude/state/current_task.txt
+      printf '%s' 'refactor' > .claude/state/current_role.txt
+      printf '%s' '<selected_model>' > .claude/state/current_model.txt
+      python3 .claude/hooks/lib/log_dispatch.py \
+        --run_id '<run_id>' --task_id '<t-id>' --role refactor \
+        --complexity '<complexity>' --role_baseline '<models.refactor>' \
+        --model_selected '<selected_model>' [--routing_applied if model changed]
+      ```
+   b. Invoke the **refactor** agent with the task file path, using `selected_model`.
    c. Wait for it to flip `status: done` or `status: blocked`.
-   d. `rm -f .claude/state/current_task.txt .claude/state/current_role.txt`
+   d. `rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt`
    e. If `blocked`: print `refactor <task-id> blocked: <blocker>` and STOP — do not continue to the next task.
       A blocked refactor likely means tests are already failing or a regression was introduced; it must be resolved manually.
 

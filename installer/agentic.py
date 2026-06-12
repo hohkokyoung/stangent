@@ -348,6 +348,15 @@ def _upgrade_agentic_yml(target: Path) -> None:
             dst_path.write_text(dst_text.rstrip() + "\n\n" + tpl_m2.group(0).rstrip() + "\n", encoding="utf-8")
             info(".agentic.yml: added models: section")
 
+    # Append the complexity_routing: section if it doesn't exist yet.
+    dst_text = dst_path.read_text(encoding="utf-8")
+    if "complexity_routing:" not in dst_text:
+        cr_re = re.compile(r"^complexity_routing:.*?(?=^\w|\Z)", re.DOTALL | re.MULTILINE)
+        tpl_cr = cr_re.search(tpl_text)
+        if tpl_cr:
+            dst_path.write_text(dst_text.rstrip() + "\n\n" + tpl_cr.group(0).rstrip() + "\n", encoding="utf-8")
+            info(".agentic.yml: added complexity_routing: section")
+
 
 def upgrade_config(target: Path) -> None:
     _upgrade_settings_json(target)

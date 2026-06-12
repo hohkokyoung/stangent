@@ -12,13 +12,14 @@ Log file path:
   .claude/state/logs/<run_id>.jsonl    when run_id is known
   .claude/state/logs/_no-run.jsonl     otherwise (ambient / setup tool calls)
 
-run_id / task_id / agent_role are read from state files written by the
-dispatcher before each subagent call:
+run_id / task_id / agent_role / agent_model are read from state files written by
+the dispatcher before each subagent call:
   .claude/state/current_run.txt   → run_id
   .claude/state/current_task.txt  → task_id
   .claude/state/current_role.txt  → agent_role
-Env vars AGENTIC_RUN_ID / AGENTIC_TASK_ID / AGENTIC_AGENT_ROLE are checked
-first as an override but are not set by any dispatcher in practice.
+  .claude/state/current_model.txt → agent_model (the selected model after complexity routing)
+Env vars AGENTIC_RUN_ID / AGENTIC_TASK_ID / AGENTIC_AGENT_ROLE / AGENTIC_AGENT_MODEL are
+checked first as an override but are not set by any dispatcher in practice.
 """
 from __future__ import annotations
 
@@ -102,11 +103,13 @@ def main() -> None:
     run_id = os.environ.get("AGENTIC_RUN_ID") or _read_state("current_run.txt")
     task_id = os.environ.get("AGENTIC_TASK_ID") or _read_state("current_task.txt")
     agent_role = os.environ.get("AGENTIC_AGENT_ROLE") or _read_state("current_role.txt")
+    agent_model = os.environ.get("AGENTIC_AGENT_MODEL") or _read_state("current_model.txt")
     line = {
         "ts": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "run_id": run_id,
         "task_id": task_id,
         "agent_role": agent_role,
+        "model": agent_model,
         "tool": tool,
         "ok": ok,
         "args": summarize(tool_input),

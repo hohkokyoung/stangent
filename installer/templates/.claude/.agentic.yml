@@ -59,6 +59,20 @@ models:
   debugger:    claude-sonnet-4-6           # diagnosis requires reasoning
   refactor:    claude-sonnet-4-6           # codebase understanding + careful edits
 
+# Dynamic complexity routing.
+# When enabled, the model selected for each task is adjusted based on its complexity field:
+#   complexity: low    → lesser of(role_model, low_cap)  — Haiku ceiling keeps cheap tasks cheap
+#   complexity: medium → role_model unchanged             — uses the per-role config above
+#   complexity: high   → greater of(role_model, high_floor) — Sonnet floor for demanding tasks
+#
+# high_floor defaults to Sonnet. Set it to claude-opus-4-8 only for roles that genuinely
+# benefit from deeper reasoning (planner, debugger) on architectural/security tasks.
+# Avoid Opus for reviewer/tester — they are pattern-matching, not reasoning.
+complexity_routing:
+  enabled: true
+  low_cap: claude-haiku-4-5-20251001    # low tasks never exceed this model
+  high_floor: claude-sonnet-4-6         # high tasks use at least this model
+
 git:
   auto_branch: true
   branch_template: "feat/{run_id}"
