@@ -86,7 +86,7 @@ Run a refactoring session: clarify scope → create task file(s) → run the ref
 
 8. **Clean up state:**
    ```
-   rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt
+   rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
    ```
 
 9. **Print summary:**

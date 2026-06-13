@@ -75,7 +75,7 @@ Dispatcher. The only orchestrator. Algorithm is fixed; do not invent your own.
 10. Stop when no runnable tasks remain.
 11. Run this exact Bash command to clean up (mandatory — do not skip):
     ```
-    rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt
+    rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
     ```
     Then print the final dashboard.
 

@@ -357,6 +357,15 @@ def _upgrade_agentic_yml(target: Path) -> None:
             dst_path.write_text(dst_text.rstrip() + "\n\n" + tpl_cr.group(0).rstrip() + "\n", encoding="utf-8")
             info(".agentic.yml: added complexity_routing: section")
 
+    # Append the maestro: section if it doesn't exist yet.
+    dst_text = dst_path.read_text(encoding="utf-8")
+    if "maestro:" not in dst_text:
+        maestro_re = re.compile(r"^maestro:.*?(?=^\w|\Z)", re.DOTALL | re.MULTILINE)
+        tpl_maestro = maestro_re.search(tpl_text)
+        if tpl_maestro:
+            dst_path.write_text(dst_text.rstrip() + "\n\n" + tpl_maestro.group(0).rstrip() + "\n", encoding="utf-8")
+            info(".agentic.yml: added maestro: section")
+
 
 def upgrade_config(target: Path) -> None:
     _upgrade_settings_json(target)
