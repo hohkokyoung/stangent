@@ -11,8 +11,13 @@ Governs how the tester runs mobile UI tests using the **Maestro MCP server**. Sc
 - Call `run_flow` or `run_flow_files` on a YAML you have not derived from live inspection
 
 **REQUIRED order — no deviation:**
-1. `mcp__maestro__list_devices` — confirm a device is available
-2. `mcp__maestro__launch_app(appId)` — start the app on the live device
+1. **Platform selection before anything else:**
+   - Read `maestro.platforms` from `.claude/.agentic.yml` to get the target platform(s).
+   - If the task frontmatter has a `platforms:` field, it overrides `.agentic.yml`.
+   - Call `mcp__maestro__list_devices` and filter results to the target platform(s) only.
+   - If no matching device is found, set `status: blocked` with `blocker: "no_<platform>_device_available: run list_devices to see what is connected"` and STOP.
+   - If `platforms` contains multiple entries (e.g. `[ios, android]`), run the full flow on each platform sequentially — do not skip one silently.
+2. `mcp__maestro__launch_app(appId)` — start the app on the selected device
 3. `mcp__maestro__inspect_view_hierarchy` — read the actual screen state
 4. `mcp__maestro__tap_on` / `input_text` — interact with real elements by their visible labels
 5. `mcp__maestro__take_screenshot` — capture evidence of each state
@@ -30,13 +35,15 @@ Generating a flow YAML from the task description alone is a **protocol violation
 ## Rules
 
 1. **MCP-first, artifact-second.** The hard gate above is non-negotiable.
-2. **One retrieve() call.** Already handled by the tester role — do not call it again.
-3. **Screenshot on every meaningful state transition.** Call `take_screenshot` after each action that changes visible state. Attach paths to `## Test results`.
-4. **Inspect before tapping.** Always call `inspect_view_hierarchy` before `tap_on` to confirm the element exists and get the exact visible label.
-5. **Artifact into `.maestro/` at project root.** Use path `.maestro/<feature>/<task_id>_<case>.yaml`. Create the directory if it doesn't exist.
-6. **Happy path → boundary → failure.** Cover all three. Each is a **separate flow YAML file**.
-7. **`appId` from the task file only.** Never hardcode a bundle ID you didn't get from the task or project config (`pubspec.yaml`, `build.gradle`, `Info.plist`).
-8. **Maestro Viewer is always on.** Do not suppress output or run in silent mode — the user watches the device in their browser.
+2. **Platform selection is mandatory.** Never pick a device by position in the list. Always match against the configured `platforms` — fail loudly if none match.
+3. **Multi-platform means sequential runs.** If both `ios` and `android` are configured, run the full happy/boundary/failure suite on each platform and report results per-platform in `## Test results`.
+4. **One retrieve() call.** Already handled by the tester role — do not call it again.
+5. **Screenshot on every meaningful state transition.** Call `take_screenshot` after each action that changes visible state. Attach paths to `## Test results`.
+6. **Inspect before tapping.** Always call `inspect_view_hierarchy` before `tap_on` to confirm the element exists and get the exact visible label.
+7. **Artifact into `.maestro/` at project root.** Use path `.maestro/<feature>/<task_id>_<case>.yaml`. Create the directory if it doesn't exist.
+8. **Happy path → boundary → failure.** Cover all three. Each is a **separate flow YAML file**.
+9. **`appId` from the task file only.** Never hardcode a bundle ID you didn't get from the task or project config (`pubspec.yaml`, `build.gradle`, `Info.plist`).
+10. **Maestro Viewer is always on.** Do not suppress output or run in silent mode — the user watches the device in their browser.
 
 ## Patterns
 
@@ -78,6 +85,14 @@ appId: com.example.myapp
     t3_boundary_invalid_email.yaml
     t3_failure_wrong_password.yaml
 ```
+
+## Planner hints
+
+When creating a tester task that uses this skill:
+- Check `maestro.platforms` in `.agentic.yml` — if it lists both `ios` and `android`, note in the task that the tester will run on both platforms sequentially (this doubles test time).
+- If the goal explicitly targets one platform (e.g. "test the Android login flow"), add `platforms: [android]` to the task frontmatter to override the project default.
+- If the goal is cross-platform ("verify on both iOS and Android"), add `platforms: [ios, android]` to the task frontmatter.
+- If no platform override is needed, omit the `platforms` field — the tester will use the project default from `.agentic.yml`.
 
 ## Anti-patterns
 

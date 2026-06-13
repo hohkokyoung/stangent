@@ -8,7 +8,9 @@ The Maestro MCP server exposes mobile automation as MCP tools. All tools are cal
 ```
 list_devices()
 ```
-Returns available emulators/simulators/physical devices. Always call first to confirm a device is ready.
+Returns available emulators/simulators/physical devices. Always call first, then filter the result
+to the target platform (`ios` or `android`) from `maestro.platforms` in `.agentic.yml` (or the
+task frontmatter `platforms:` field if set). Never pick a device by position — match by platform.
 
 ### `start_device`
 ```
