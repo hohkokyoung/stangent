@@ -25,6 +25,10 @@ Dispatcher. The only orchestrator. Algorithm is fixed; do not invent your own.
    c. Model capability order used for all routing comparisons (cheapest → most capable):
       `claude-haiku-4-5-20251001` < `claude-sonnet-4-6` < `claude-opus-4-8`
       Any model not in this list is treated as `claude-sonnet-4-6` for comparison purposes.
+   d. Extract the `retrieval` section:
+      - `default_k` — default `6` if absent
+      - `role_k` — map of role→k overrides (optional; roles absent from the map fall back to `default_k`)
+      Extract `skill_groups.test` as a list of skill names (default `[]` if absent).
 
 2. Resolve `run-id`. List `.claude/state/plans/<run-id>/*.md` (exclude `_overview.md`). Then **immediately** run this exact Bash command (mandatory — do not skip):
    ```
@@ -60,13 +64,16 @@ Dispatcher. The only orchestrator. Algorithm is fixed; do not invent your own.
         --complexity '<complexity>' --role_baseline '<role_model>' \
         --model_selected '<selected_model>' [add --routing_applied if routing_applied is true]
       ```
-   e. Invoke the matching subagent (`planner` is never invoked here — only `implementer` / `reviewer` / `tester` / `sketcher` / `refactor`) with:
+   e. Resolve effective skills and k for this invocation:
+      - `effective_k` = `role_k[role]` if defined in config (step 1d), else the task's `k` frontmatter value (default `6` if unset)
+      - `effective_skills` = for `role == tester` AND `skill_groups.test` is non-empty: intersection of `task.skills_to_load` with `skill_groups.test`; otherwise `task.skills_to_load` unchanged
+   f. Invoke the matching subagent (`planner` is never invoked here — only `implementer` / `reviewer` / `tester` / `sketcher` / `refactor`) with:
       - The absolute path to the task file
       - The `run_id`
-      - The list of skill files (resolved from `skills_to_load` → `.claude/skills/<name>/SKILL.md`). If a skill name is `"project"`, skip SKILL.md injection — it is a retrieve-only pseudo-skill with no corresponding SKILL.md file. The agent receives project file chunks exclusively through `retrieve()`.
-      - The task's `k` frontmatter value (default `6` if unset), passed to the agent as the retrieve k parameter
+      - The list of skill files (resolved from `effective_skills` → `.claude/skills/<name>/SKILL.md`). If a skill name is `"project"`, skip SKILL.md injection — it is a retrieve-only pseudo-skill with no corresponding SKILL.md file. The agent receives project file chunks exclusively through `retrieve()`.
+      - `effective_k`, passed to the agent as the retrieve k parameter
       - **`selected_model` from step 7c** — pass this as the `model` parameter when invoking the subagent so it overrides the session default.
-   f. After the subagent returns, run:
+   g. After the subagent returns, run:
       ```
       rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
       ```

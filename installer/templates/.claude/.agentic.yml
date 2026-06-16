@@ -40,6 +40,12 @@ project_index:
 retrieval:
   default_k: 6
   chunk_tokens: 400
+  role_k:
+    reviewer: 2   # pattern-matching against skill rules; doesn't need broad context
+    tester: 3     # needs test-method chunks, not implementation detail
+
+skill_groups:
+  test: [playwright, maestro]   # only these skills are injected into the tester role
 
 plan_id:
   prefix: FEAT   # FEAT-001, FEAT-002, ...
@@ -52,7 +58,7 @@ plan_id:
 models:
   default:     claude-sonnet-4-6           # fallback for any unlisted role
   planner:     claude-sonnet-4-6           # ambiguity resolution + full coverage checklist
-  sketcher:    claude-sonnet-4-6           # HTML mockup generation + screenshot
+  sketcher:    claude-haiku-4-5-20251001   # HTML mockup generation + screenshot
   implementer: claude-sonnet-4-6           # primary coding work
   reviewer:    claude-haiku-4-5-20251001   # mechanical pattern matching against skill rules
   tester:      claude-haiku-4-5-20251001   # run tests, check pass/fail counts
