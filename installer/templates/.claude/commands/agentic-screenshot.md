@@ -120,6 +120,8 @@ OUTPUT=docs/screenshots/$TIMESTAMP
 mkdir -p "$OUTPUT"
 ```
 
+Each page gets its own subfolder: `docs/screenshots/<timestamp>/<slug>/`. Create each subfolder just before capturing that page.
+
 ### Step 5 — Capture screenshots
 
 Index each page starting at `01`. Use zero-padded two-digit indices.
@@ -129,15 +131,28 @@ Index each page starting at `01`. Use zero-padded two-digit indices.
 For each page, in order:
 
 1. `mcp__playwright__browser_navigate(url=base_url + route)`
-2. `mcp__playwright__browser_snapshot()` — wait until the accessibility tree is populated; this confirms the page has rendered
-3. For each viewport (desktop first, mobile second if selected):
+2. `mcp__playwright__browser_snapshot()` — wait until the accessibility tree is populated; this confirms the page has rendered.
+3. **Verify the URL landed correctly.** Call `mcp__playwright__browser_evaluate(script="window.location.href")` and confirm the result matches `base_url + route`. If it differs (e.g. redirected to login), log the page as failed and continue to the next page — do NOT screenshot the wrong page.
+4. **Scroll to reveal lazy-loaded content.** Call `mcp__playwright__browser_evaluate` with:
+   ```js
+   window.scrollTo(0, document.body.scrollHeight);
+   ```
+   Then wait ~500 ms (one more `browser_snapshot()` call is sufficient), then scroll back to top:
+   ```js
+   window.scrollTo(0, 0);
+   ```
+5. Create the page subfolder: `mkdir -p docs/screenshots/<timestamp>/<slug>/`
+6. For each viewport (desktop first, mobile second if selected):
    a. `mcp__playwright__browser_resize(width, height)`
-   b. `mcp__playwright__browser_screenshot(name="<index>-<slug>-<viewport>")`
-   c. Move the saved file to `docs/screenshots/<timestamp>/<index>-<slug>-<viewport>.png`
+   b. `mcp__playwright__browser_screenshot(name="<slug>-<viewport>")`
+   c. Move the saved file to `docs/screenshots/<timestamp>/<slug>/<viewport>.png`
 
-Filename examples: `01-home-desktop.png`, `01-home-mobile.png`, `02-login-desktop.png`
+Filename examples (inside the page subfolder):
+- `docs/screenshots/<timestamp>/home/desktop.png`
+- `docs/screenshots/<timestamp>/home/mobile.png`
+- `docs/screenshots/<timestamp>/login/desktop.png`
 
-If `browser_navigate` or `browser_screenshot` returns an error for a page, print:
+If `browser_navigate`, URL verification, or `browser_screenshot` returns an error for a page, print:
 
 ```
 ✗  <index>-<slug> — failed: <error message>
@@ -151,10 +166,28 @@ The device is already confirmed live from Step 2.
 
 1. `mcp__maestro__launch_app(appId)` — read `appId` from `project.yml`, or from the task file, or ask if neither is available.
 2. For each screen, in order:
-   a. Navigate to the screen: tap through the minimal path from the app home (use `inspect_view_hierarchy` to confirm the screen before tapping)
-   b. `mcp__maestro__inspect_view_hierarchy()` — confirm the target screen is active
-   c. `mcp__maestro__take_screenshot(name="<index>-<slug>")` — Maestro saves to a platform-managed path
-   d. Copy/move the file to `docs/screenshots/<timestamp>/<index>-<slug>.png`
+   a. Call `mcp__maestro__inspect_view_hierarchy()` to see the current screen state and discover interactive element labels before tapping anything.
+   b. Navigate to the target screen by tapping through the minimal path from the current state. After each tap, call `inspect_view_hierarchy()` again to confirm the navigation moved to the expected intermediate or target screen before tapping further.
+   c. **Verify the correct screen is active.** After navigation, call `mcp__maestro__inspect_view_hierarchy()` one final time and check that the hierarchy contains elements consistent with the target screen (e.g. a heading, a distinctive element label, or the screen title). If the hierarchy does not match — or if it still shows the previous screen or a login/error screen — log the screen as failed and continue. Do NOT screenshot a mismatched screen.
+   d. **Scroll to reveal lazy-loaded content.** Call `mcp__maestro__run_flow` with this inline YAML (substituting the real `appId`):
+      ```yaml
+      appId: <appId>
+      ---
+      - scroll
+      - scroll
+      ```
+      This scrolls down to trigger any lazy-loaded content. Then call `run_flow` again to scroll back to top:
+      ```yaml
+      appId: <appId>
+      ---
+      - scrollUntilVisible:
+          element:
+            index: 0
+      ```
+      If `run_flow` is unavailable or errors, skip the scroll step (do not abort the screen capture).
+   e. Create the screen subfolder: `mkdir -p docs/screenshots/<timestamp>/<slug>/`
+   f. `mcp__maestro__take_screenshot(filename="<slug>")` — records the file path returned.
+   g. Move the file to `docs/screenshots/<timestamp>/<slug>/screen.png`
 
 If any Maestro call fails for a screen, print:
 
@@ -181,8 +214,8 @@ Viewports: Desktop 1280×800 · Mobile 390×844
 
 | # | Route | Desktop | Mobile |
 |---|-------|---------|--------|
-| 1 | `/` | ![](01-home-desktop.png) | ![](01-home-mobile.png) |
-| 2 | `/login` | ![](02-login-desktop.png) | ![](02-login-mobile.png) |
+| 1 | `/` | ![](home/desktop.png) | ![](home/mobile.png) |
+| 2 | `/login` | ![](login/desktop.png) | ![](login/mobile.png) |
 ```
 
 **Web (desktop only):**
@@ -192,7 +225,7 @@ Viewports: Desktop 1280×800 · Mobile 390×844
 
 | # | Route | Screenshot |
 |---|-------|------------|
-| 1 | `/` | ![](01-home-desktop.png) |
+| 1 | `/` | ![](home/desktop.png) |
 ```
 
 **Mobile:**
@@ -208,8 +241,8 @@ Device: <device name from list_devices>
 
 | # | Screen | Screenshot |
 |---|--------|------------|
-| 1 | Home | ![](01-home.png) |
-| 2 | Login | ![](02-login.png) |
+| 1 | Home | ![](home/screen.png) |
+| 2 | Login | ![](login/screen.png) |
 ```
 
 Omit any page/screen that failed from the table.
@@ -221,10 +254,10 @@ Print:
 ```
 Screenshots saved to docs/screenshots/<timestamp>/
 
-✓  01-home-desktop.png
-✓  01-home-mobile.png
-✓  02-login-desktop.png
-✗  03-dashboard-desktop.png — failed: navigate timed out
+✓  home/desktop.png
+✓  home/mobile.png
+✓  login/desktop.png
+✗  dashboard — failed: redirected to /login (not captured)
 
 Index: docs/screenshots/<timestamp>/README.md
 ```
