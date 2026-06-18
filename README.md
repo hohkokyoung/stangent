@@ -75,14 +75,6 @@ The sketcher writes **no framework code**. It produces exactly one image and sto
 |---|---|---|
 | React / Next.js / Vue (frontend) | `package.json` + no server-only markers | `playwright` |
 | Flutter / React Native / iOS / Android | `pubspec.yaml` or `android/` / `ios/` dirs | `maestro` |
-| Python | `*.py` + `pyproject.toml` / `setup.py` / `requirements.txt` | `pytest` |
-| Go | `go.mod` | `go_test` |
-| Rust | `Cargo.toml` | `cargo_test` |
-| Ruby | `Gemfile` | `rspec` |
-| Java / Kotlin (Android excluded) | `build.gradle` / `pom.xml` | `junit` |
-| .NET | `*.csproj` / `*.sln` | `dotnet_test` |
-| Elixir | `mix.exs` | `ex_unit` |
-| PHP | `composer.json` | `phpunit` |
 
 **How the tester works:**
 1. Reads its injected skill — the skill defines the complete testing method (tools, commands, artifact format)
@@ -199,6 +191,7 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 │       ├── plan_id.py          # FEAT-### allocator
 │       ├── adr_id.py           # ADR-### allocator
 │       ├── git_branch.py       # feat/{run_id} branch helper; auto-increments to -v2, -v3 on collision
+│       ├── log_dispatch.py     # structured dispatch events → .claude/state/logs/dispatch.jsonl
 │       └── doctor.py           # install health checks
 ├── mcp/
 │   └── agentic_mcp.py          # exposes retrieve(query, k, skills) over stdio MCP
@@ -258,7 +251,7 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 system_version: 1.0.0
 
 enabled_skills: []   # empty by default — add skills that match your stack
-# available: react, html-css, flutter, mobile, fastapi, supabase, owasp, playwright, maestro
+# available: react, html-css, flutter, mobile, fastapi, rest-openapi, supabase, owasp, playwright, maestro
 
 embedding:
   provider: voyage-3-lite       # falls back to fastembed if unavailable

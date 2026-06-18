@@ -74,11 +74,6 @@ models:
 # high_floor defaults to Sonnet. Set it to claude-opus-4-8 only for roles that genuinely
 # benefit from deeper reasoning (planner, debugger) on architectural/security tasks.
 # Avoid Opus for reviewer/tester — they are pattern-matching, not reasoning.
-maestro:
-  platforms: [android]   # Target platform(s) for Maestro tests: ios | android | [ios, android]
-                         # Tester reads this to filter list_devices output before selecting a device.
-                         # Override per-task by adding a `platforms:` field in the task frontmatter.
-
 complexity_routing:
   enabled: true
   low_cap: claude-haiku-4-5-20251001    # low tasks never exceed this model

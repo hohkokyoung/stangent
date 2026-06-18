@@ -66,7 +66,7 @@ Dispatcher. The only orchestrator. Algorithm is fixed; do not invent your own.
       ```
    e. Resolve effective skills and k for this invocation:
       - `effective_k` = `role_k[role]` if defined in config (step 1d), else the task's `k` frontmatter value (default `6` if unset)
-      - `effective_skills` = for `role == tester` AND `skill_groups.test` is non-empty: intersection of `task.skills_to_load` with `skill_groups.test`; otherwise `task.skills_to_load` unchanged
+      - `effective_skills` = for `role == tester` AND `skill_groups.test` is non-empty: intersection of `task.skills_to_load` with `skill_groups.test`; otherwise `task.skills_to_load` unchanged. If the intersection is empty (e.g. task has `skills_to_load: [fastapi]` but `skill_groups.test: [playwright, maestro]`), the tester receives no skill injection — it will proceed with no testing method defined. Log a warning and continue; do not abort.
    f. Invoke the matching subagent (`planner` is never invoked here — only `implementer` / `reviewer` / `tester` / `sketcher` / `refactor`) with:
       - The absolute path to the task file
       - The `run_id`

@@ -38,20 +38,21 @@ Inspect the project root to determine the test framework and default project ind
 | `android/` or `ios/` dir exists (without `pubspec.yaml`) | `maestro` | `["**/*.kt", "**/*.swift"]` |
 | `package.json` with `next`, `react`, `vue`, `svelte`, `nuxt`, `angular`, `vite` in deps | `playwright` | `["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]` |
 | `package.json` exists (no browser-framework deps above — backend/CLI JS) | _(no test framework change)_ | `["**/*.ts", "**/*.js"]` |
-| `requirements.txt` or `pyproject.toml` exists | `pytest` | `["**/*.py"]` |
-| `go.mod` exists | `go_test` | `["**/*.go"]` |
-| `Cargo.toml` exists | `cargo_test` | `["**/*.rs"]` |
-| `Gemfile` exists | `rspec` | `["**/*.rb"]` |
-| `pom.xml` or `build.gradle` exists (without `android/` dir) | `junit` | `["**/*.java", "**/*.kt"]` |
-| `*.csproj` or `*.sln` exists | `dotnet_test` | `["**/*.cs"]` |
-| `mix.exs` exists | `ex_unit` | `["**/*.ex", "**/*.exs"]` |
+| `requirements.txt` or `pyproject.toml` exists | _(no test framework change)_ | `["**/*.py"]` |
+| `go.mod` exists | _(no test framework change)_ | `["**/*.go"]` |
+| `Cargo.toml` exists | _(no test framework change)_ | `["**/*.rs"]` |
+| `Gemfile` exists | _(no test framework change)_ | `["**/*.rb"]` |
+| `pom.xml` or `build.gradle` exists (without `android/` dir) | _(no test framework change)_ | `["**/*.java", "**/*.kt"]` |
+| `*.csproj` or `*.sln` exists | _(no test framework change)_ | `["**/*.cs"]` |
+| `mix.exs` exists | _(no test framework change)_ | `["**/*.ex", "**/*.exs"]` |
 | `composer.json` exists | _(no test framework change)_ | `["**/*.php"]` |
 
 #### Rules for `test_framework`
 - If any mobile signal matched → `maestro`
 - Else if any browser-frontend JS signal matched → `playwright`
-- Else use the first matched from: `pytest` → `go_test` → `cargo_test` → `rspec` → `junit` → `dotnet_test` → `ex_unit`
 - Else → `unknown`
+
+Only `maestro` and `playwright` have tester skill files. Other stacks still contribute project index globs above, so source files are indexed and retrievable — but `test_framework` is set to `unknown` since no testing skill exists to back them.
 
 #### Rules for `project_index_globs`
 - Union of all matched glob lists, deduplicated
@@ -64,6 +65,7 @@ detected_at: <ISO timestamp>
 project_index_globs:              # union of all matched globs; used by retriever.py when project_index.include in .agentic.yml is empty
   - "**/*.dart"
   - "**/*.py"
+# appId: com.example.app         # optional, Maestro only — set manually; read by /agentic-screenshot
 ```
 
 If `.claude/state/project.yml` already exists, overwrite only the `test_framework`, `detected_at`, and `project_index_globs` fields (preserve any other fields).
