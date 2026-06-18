@@ -166,17 +166,18 @@ The device is already confirmed live from Step 2.
 
 1. `mcp__maestro__launch_app(appId)` — read `appId` from `project.yml`, or from the task file, or ask if neither is available.
 2. For each screen, in order:
-   a. Call `mcp__maestro__inspect_view_hierarchy()` to see the current screen state and discover interactive element labels before tapping anything.
-   b. Navigate to the target screen by tapping through the minimal path from the current state. After each tap, call `inspect_view_hierarchy()` again to confirm the navigation moved to the expected intermediate or target screen before tapping further.
-   c. **Verify the correct screen is active.** After navigation, call `mcp__maestro__inspect_view_hierarchy()` one final time and check that the hierarchy contains elements consistent with the target screen (e.g. a heading, a distinctive element label, or the screen title). If the hierarchy does not match — or if it still shows the previous screen or a login/error screen — log the screen as failed and continue. Do NOT screenshot a mismatched screen.
-   d. **Scroll to reveal lazy-loaded content.** Call `mcp__maestro__run_flow` with this inline YAML (substituting the real `appId`):
+   a. **Reset to a clean state before every screen.** Call `mcp__maestro__stop_app(appId)` then `mcp__maestro__launch_app(appId)`. This ensures the app starts fresh regardless of whether the screen is the default landing screen or requires navigation, and prevents any prior interaction (including from the scroll step) from polluting the next capture.
+   b. Call `mcp__maestro__inspect_view_hierarchy()` to see the current screen state and discover interactive element labels before tapping anything.
+   c. Navigate to the target screen by tapping through the minimal path from the current state. After each tap, call `inspect_view_hierarchy()` again to confirm the navigation moved to the expected intermediate or target screen before tapping further. If the screen is the default landing screen (already active after launch), skip navigation taps entirely.
+   d. **Verify the correct screen is active.** After navigation, call `mcp__maestro__inspect_view_hierarchy()` one final time and check that the hierarchy contains elements consistent with the target screen (e.g. a heading, a distinctive element label, or the screen title). If the hierarchy does not match — or if it still shows the previous screen or a login/error screen — log the screen as failed and continue. Do NOT screenshot a mismatched screen.
+   e. **Scroll only if safe.** Examine the view hierarchy from step (d). If it shows a card-based, swipeable, or pager layout (e.g. a ViewPager, HorizontalScrollView, or a single card that fills the screen with a nested ScrollView inside it), **skip the scroll step entirely** — generic scrolls will interact with the inner panel rather than the page, corrupting the capture state. Only scroll if the screen is a plain vertical list or feed with a single top-level scrollable container. If scrolling is safe, call `mcp__maestro__run_flow` with:
       ```yaml
       appId: <appId>
       ---
       - scroll
       - scroll
       ```
-      This scrolls down to trigger any lazy-loaded content. Then call `run_flow` again to scroll back to top:
+      Then scroll back to top:
       ```yaml
       appId: <appId>
       ---
@@ -184,10 +185,10 @@ The device is already confirmed live from Step 2.
           element:
             index: 0
       ```
-      If `run_flow` is unavailable or errors, skip the scroll step (do not abort the screen capture).
-   e. Create the screen subfolder: `mkdir -p docs/screenshots/<timestamp>/<slug>/`
-   f. `mcp__maestro__take_screenshot(filename="<slug>")` — records the file path returned.
-   g. Move the file to `docs/screenshots/<timestamp>/<slug>/screen.png`
+      If `run_flow` errors, skip the scroll step (do not abort the screen capture).
+   f. Create the screen subfolder: `mkdir -p docs/screenshots/<timestamp>/<slug>/`
+   g. `mcp__maestro__take_screenshot(filename="<slug>")` — records the file path returned.
+   h. Move the file to `docs/screenshots/<timestamp>/<slug>/screen.png`
 
 If any Maestro call fails for a screen, print:
 
