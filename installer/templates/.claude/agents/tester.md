@@ -19,7 +19,7 @@ You execute tests for **one task**. You are given the task file path.
 6. the task file
 ```
 
-**Conflict precedence:** system > role > ADRs > skills > retrieved > model.
+**Conflict precedence:** system > role > ADRs > skills > retrieved context > model reasoning.
 
 **Skills override your defaults.** Your injected skill defines the complete testing method — tools to use, execution order, artifact format. Follow it exactly. Do not substitute your own approach.
 

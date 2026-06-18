@@ -27,7 +27,7 @@ Run the planner on the given goal.
 
 4. **Clarification phase (YOU do this — do NOT delegate to the planner).**
 
-   Walk the coverage checklist below. For every dimension where a blocking ambiguity remains after re-reading the user's goal, batch related questions into one `AskUserQuestion` round. Repeat up to **4 rounds**, up to **3 questions per round**.
+   Walk the coverage checklist below. For every dimension where a blocking ambiguity remains after re-reading the user's goal, batch related questions into one `AskUserQuestion` round. Repeat up to **4 rounds**, up to **3 questions per round**. (4 rounds because feature planning spans 11 dimensions — security, auth, data model, API surface, error UX, etc. — and the developer often reveals follow-up gaps mid-conversation.)
 
    | Dimension | What to confirm |
    |---|---|

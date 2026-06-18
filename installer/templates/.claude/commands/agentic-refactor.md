@@ -29,7 +29,7 @@ Run a refactoring session: clarify scope → create task file(s) → run the ref
 4. **Clarification phase (YOU do this — do NOT delegate).**
 
    Walk this checklist. Batch related questions into one `AskUserQuestion` round.
-   Up to **3 rounds**, up to **3 questions per round**.
+   Up to **3 rounds**, up to **3 questions per round**. (3 rounds because refactoring scope is narrower than feature planning — 5 dimensions vs 11 — and is typically well-defined by the time the developer invokes this command.)
 
    | Dimension | What to confirm |
    |---|---|

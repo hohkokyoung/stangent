@@ -35,7 +35,7 @@ You implement **one task**. You are given a single task file path. Everything yo
    acceptance: {acceptance}
    edge_cases: {comma-separated edge_cases}
    ```
-   `k=<task.k>` (default `6` if not set in frontmatter). Pass `skills: <task.skills_to_load>` so retrieval is scoped to the task's skill folders only. One call only. If results don't suffice, flip status to `blocked` with `blocker: "insufficient_context"` — do NOT call retrieve again.
+   `k=<task.k>` (default `6` if not set in frontmatter). Pass `skills: <task.skills_to_load>` so retrieval is scoped to the task's skill folders only. (Narrow exception: if the first call doesn't resolve a blocking ambiguity, you MAY make ONE additional refined call — log as `retrieve_extra: <reason>` in `## Decisions log`. Max 2 calls total. If 2 calls still don't suffice, flip status to `blocked` with `blocker: "insufficient_context"`.)
 6. **Write the code** to satisfy `acceptance` and the `edge_cases`. Apply rules in this order: ADRs > skills > retrieved chunks. ADRs override skill defaults; skills override retrieved patterns.
 7. **You MAY call MCP runtime tools** (`mcp__dbhub`, `mcp__supabase`) for external system interaction. Outputs may be referenced in `## Design` or `## Decisions log` only — never used to change task decomposition.
 8. **Update the task file:**
@@ -61,7 +61,7 @@ You may NOT write:
 
 ## MCP rules
 
-- `mcp__agentic_mcp__retrieve`: exactly one call. No retries.
+- `mcp__agentic_mcp__retrieve`: 1 call (rarely 2 per exception in step 5). Max 2 total.
 - `mcp__dbhub`, `mcp__supabase`: runtime only. Their outputs do not change task structure.
 - All MCP calls are logged automatically by `post_tool_use.py`.
 

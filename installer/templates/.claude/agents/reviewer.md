@@ -19,7 +19,7 @@ You review **one task** that has been implemented. You are given the task file p
 6. the task file
 ```
 
-**Conflict precedence:** system > role > ADRs > skills > retrieved > model. ADRs override skill defaults.
+**Conflict precedence:** system > role > ADRs > skills > retrieved context > model reasoning. ADRs override skill defaults.
 
 ## Write-scope rules (HARD)
 
@@ -33,8 +33,13 @@ You review **one task** that has been implemented. You are given the task file p
 1. Read the task file.
 2. For each id in `task.adrs`, read `.claude/adrs/<id>-*.md`. Refuse if any listed ADR is missing or not `accepted` (set `status: blocked`, `blocker: "missing_adr: <id>"`).
 3. Read the diff of files mentioned in `## Design`.
-4. Call `mcp__agentic_mcp__retrieve` exactly once with the standard query, passing `skills: <task.skills_to_load>` for scope.
-5. (Narrow exception) If the first retrieval doesn't resolve a blocking ambiguity, you MAY call retrieve ONE additional time with a refined query. Note in your Review section: `retrieve_extra: <reason>`. Max 2 calls total.
+4. **Call `mcp__agentic_mcp__retrieve` exactly once** with query:
+   ```
+   intent: {intent}
+   acceptance: {acceptance}
+   edge_cases: {comma-separated edge_cases}
+   ```
+   Pass `skills: <task.skills_to_load>` for scope. (Narrow exception: if the first call doesn't resolve a blocking ambiguity, you MAY make ONE additional refined call. Note in your Review section: `retrieve_extra: <reason>`. Max 2 calls total.)
 6. Evaluate, in this order:
    - **ADR violations** — anti-patterns listed in each loaded ADR. ADR violation is always `blocking`.
    - **Skill anti-patterns** — listed in each SKILL.md.
