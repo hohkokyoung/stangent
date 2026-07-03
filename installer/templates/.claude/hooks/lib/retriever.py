@@ -282,7 +282,7 @@ def ensure_schema(conn: sqlite3.Connection, dim: int) -> None:
     _ensure_base_schema(conn)
     if _vec_loaded(conn):
         conn.execute("DROP TABLE IF EXISTS vec_chunks")
-        conn.execute(f"CREATE VIRTUAL TABLE vec_chunks USING vec0(embedding float[{dim}])")
+        conn.execute(f"CREATE VIRTUAL TABLE vec_chunks USING vec0(embedding float[{dim}] distance=cosine)")
     conn.commit()
 
 
@@ -315,7 +315,7 @@ def _rebuild_vec_chunks(conn: sqlite3.Connection) -> None:
         return
     dim = len(unpack_f32(row[0]))
     conn.execute("DROP TABLE IF EXISTS vec_chunks")
-    conn.execute(f"CREATE VIRTUAL TABLE vec_chunks USING vec0(embedding float[{dim}])")
+    conn.execute(f"CREATE VIRTUAL TABLE vec_chunks USING vec0(embedding float[{dim}] distance=cosine)")
     conn.execute("INSERT INTO vec_chunks(rowid, embedding) SELECT id, embedding FROM chunks")
     conn.commit()
 
@@ -395,7 +395,7 @@ def _reindex_project(
                 ("project", rel, anchor, chunk_text, pack_f32(emb)),
             )
 
-        now = datetime.datetime.utcnow().isoformat()
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
         cur.execute(
             "INSERT OR REPLACE INTO file_hashes(path, hash, indexed_at) VALUES (?,?,?)",
             (rel, file_hash, now),
@@ -600,35 +600,91 @@ def cmd_reindex(project_only: bool = False) -> None:
     print(f"[retriever] total: {total} chunks in {VECTORS_DB}")
 
 
+def _resolve_scope(cfg: dict, skill_filter: list[str] | None) -> list[str]:
+    """Skills the query is restricted to (empty list = no restriction)."""
+    if skill_filter:
+        return list(skill_filter)
+    return list(cfg.get("enabled_skills") or [])
+
+
+def _fetch_meta(conn: sqlite3.Connection, ids: list[int], scope: list[str]) -> dict[int, dict]:
+    if not ids:
+        return {}
+    sql = "SELECT id, skill, file, anchor, text FROM chunks WHERE id IN (" + ",".join("?" * len(ids)) + ")"
+    params: list = list(ids)
+    if scope:
+        sql += " AND skill IN (" + ",".join("?" * len(scope)) + ")"
+        params += scope
+    out = {}
+    for rid, s, f, a, t in conn.execute(sql, params).fetchall():
+        out[rid] = {"file": f, "anchor": a, "text": t, "skill": s}
+    return out
+
+
+def _knn_query(conn: sqlite3.Connection, q_emb: list[float], k: int, scope: list[str]) -> list[dict] | None:
+    """Top-k via the sqlite-vec ANN index. Returns None (→ brute-force fallback)
+    if the extension is unavailable, the query errors, or scope filtering thinned
+    the ANN candidates below k without having scanned the whole table."""
+    if not _vec_loaded(conn):
+        return None
+    try:
+        total = conn.execute("SELECT COUNT(*) FROM vec_chunks").fetchone()[0]
+        if total == 0:
+            return None
+        # Over-fetch when scoped, since the vec table has no skill column and we
+        # filter by skill after the KNN.
+        over = k if not scope else min(total, max(k * 8, 64))
+        knn = conn.execute(
+            "SELECT rowid FROM vec_chunks WHERE embedding MATCH ? ORDER BY distance LIMIT ?",
+            (pack_f32(q_emb), over),
+        ).fetchall()
+    except Exception:
+        return None
+    ordered_ids = [rid for (rid,) in knn]
+    meta = _fetch_meta(conn, ordered_ids, scope)
+    result = [meta[i] for i in ordered_ids if i in meta][:k]
+    if scope and len(result) < k and over < total:
+        return None  # may have missed scoped chunks — let brute force be exhaustive
+    return result
+
+
+def _brute_query(conn: sqlite3.Connection, q_emb: list[float], k: int, scope: list[str]) -> list[dict]:
+    where_sql = ""
+    params: list = []
+    if scope:
+        where_sql = "WHERE skill IN (" + ",".join("?" * len(scope)) + ")"
+        params = list(scope)
+    rows = conn.execute(
+        f"SELECT skill, file, anchor, text, embedding FROM chunks {where_sql}", params
+    ).fetchall()
+    scored, considered, dim_mismatch = [], 0, 0
+    for s, f, a, t, blob in rows:
+        considered += 1
+        emb = unpack_f32(blob)
+        if len(emb) != len(q_emb):
+            dim_mismatch += 1
+            continue
+        scored.append((cosine(q_emb, emb), {"file": f, "anchor": a, "text": t, "skill": s}))
+    # Surface the silent-empty case: every candidate was dropped on dimension.
+    # The usual cause is a different embedding provider at index vs query time.
+    if considered and dim_mismatch == considered:
+        sys.stderr.write(
+            f"[retriever] all {considered} chunks skipped on embedding-dimension mismatch "
+            f"(query dim {len(q_emb)}). The index was likely built with a different "
+            f"embedding provider than the current one — re-run /agentic-index.\n"
+        )
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [r for _, r in scored[:k]]
+
+
 def cmd_query(text: str, k: int, skill_filter: list[str] | None) -> None:
     cfg = load_config()
     q_emb = embed_query(cfg, text)
     conn = open_db()
-
-    where_sql = ""
-    params: list = []
-    if skill_filter:
-        where_sql = "WHERE skill IN (" + ",".join("?" * len(skill_filter)) + ")"
-        params = list(skill_filter)
-    else:
-        enabled = cfg.get("enabled_skills") or []
-        if enabled:
-            where_sql = "WHERE skill IN (" + ",".join("?" * len(enabled)) + ")"
-            params = list(enabled)
-
-    rows = conn.execute(
-        f"SELECT id, skill, file, anchor, text, embedding FROM chunks {where_sql}",
-        params,
-    ).fetchall()
-
-    scored = []
-    for rid, s, f, a, t, blob in rows:
-        emb = unpack_f32(blob)
-        if len(emb) != len(q_emb):
-            continue
-        scored.append((cosine(q_emb, emb), {"file": f, "anchor": a, "text": t, "skill": s}))
-    scored.sort(key=lambda x: x[0], reverse=True)
-    out = [r for _, r in scored[:k]]
+    scope = _resolve_scope(cfg, skill_filter)
+    out = _knn_query(conn, q_emb, k, scope)
+    if out is None:
+        out = _brute_query(conn, q_emb, k, scope)
     print(json.dumps(out, ensure_ascii=False))
 
 

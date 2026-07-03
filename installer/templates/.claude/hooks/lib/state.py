@@ -46,13 +46,15 @@ def clear() -> list[str]:
 
 
 def _latest_activity() -> float | None:
-    """Newest mtime across present state files AND the run logs.
+    """Newest mtime across present state files AND the CURRENT run's log.
 
     The dispatcher writes `current_run.txt` once at build start and
     `current_task.txt` once per task, but post_tool_use.py appends to
-    `logs/<run>.jsonl` on every tool call. So a long-running task keeps the log
-    fresh even though the state files are old — using log activity avoids
-    flagging an active build as stale.
+    `logs/<run>.jsonl` on every tool call. So a long-running task keeps that log
+    fresh even though the state files are old — using it avoids flagging an
+    active build as stale. We look ONLY at the current run's log (from
+    `current_run.txt`), not `_no-run.jsonl` or other runs, so ambient tool use
+    elsewhere in the session can't mask genuinely leftover state.
     """
     times: list[float] = []
     for p in present():
@@ -60,13 +62,16 @@ def _latest_activity() -> float | None:
             times.append(p.stat().st_mtime)
         except OSError:
             pass
-    logs = STATE_DIR / "logs"
-    if logs.is_dir():
-        for f in logs.glob("*.jsonl"):
-            try:
-                times.append(f.stat().st_mtime)
-            except OSError:
-                pass
+    try:
+        run_id = (STATE_DIR / "current_run.txt").read_text(encoding="utf-8").strip()
+    except OSError:
+        run_id = ""
+    if run_id:
+        run_log = STATE_DIR / "logs" / f"{run_id}.jsonl"
+        try:
+            times.append(run_log.stat().st_mtime)
+        except OSError:
+            pass
     return max(times) if times else None
 
 

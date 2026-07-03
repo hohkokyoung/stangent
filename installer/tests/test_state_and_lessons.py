@@ -74,15 +74,32 @@ class TestState(unittest.TestCase):
             self.assertEqual(sorted(s["file"] for s in data["stale"]),
                              ["current_run.txt", "current_task.txt"])
 
-    def test_recent_log_keeps_build_active(self):
-        # State files old, but a log written recently → still an active build.
+    def test_recent_current_run_log_keeps_build_active(self):
+        # State files old, but the CURRENT run's log was written recently → active.
         with tempfile.TemporaryDirectory() as td:
-            self._scaffold(td, {"current_run.txt": True, "current_task.txt": True})
-            logs = Path(td) / ".claude" / "state" / "logs"
+            sd = self._scaffold(td, {"current_run.txt": True, "current_task.txt": True})
+            (sd / "current_run.txt").write_text("FEAT-001")  # matches log below
+            old = time.time() - 4000
+            os.utime(sd / "current_run.txt", (old, old))  # keep run file old
+            logs = sd / "logs"
             logs.mkdir()
             (logs / "FEAT-001.jsonl").write_text("{}\n")  # fresh mtime
             r = run(STATE, ["check", "--json"], td)
             self.assertEqual(json.loads(r.stdout)["stale"], [])
+
+    def test_ambient_log_does_not_mask_stale_state(self):
+        # A fresh _no-run.jsonl (unrelated tool use) must NOT hide leftover state.
+        with tempfile.TemporaryDirectory() as td:
+            sd = self._scaffold(td, {"current_run.txt": True, "current_task.txt": True})
+            (sd / "current_run.txt").write_text("FEAT-001")
+            old = time.time() - 4000
+            os.utime(sd / "current_run.txt", (old, old))
+            logs = sd / "logs"
+            logs.mkdir()
+            (logs / "_no-run.jsonl").write_text("{}\n")   # fresh, but ambient
+            r = run(STATE, ["check", "--json"], td)
+            self.assertEqual(sorted(s["file"] for s in json.loads(r.stdout)["stale"]),
+                             ["current_run.txt", "current_task.txt"])
 
 
 class TestLessonsExtract(unittest.TestCase):

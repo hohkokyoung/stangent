@@ -34,6 +34,7 @@ TEMPLATES_DIR = SCRIPT_DIR / "templates"
 GITIGNORE_BLOCK = """# >>> agentic
 .claude/state/vectors.db
 .claude/state/logs/
+.claude/state/current_*.txt
 .mcp.json
 # <<< agentic
 """
@@ -356,6 +357,17 @@ def _upgrade_agentic_yml(target: Path) -> None:
         if tpl_cr:
             dst_path.write_text(dst_text.rstrip() + "\n\n" + tpl_cr.group(0).rstrip() + "\n", encoding="utf-8")
             info(".agentic.yml: added complexity_routing: section")
+
+    # Append the model_capability_order: section if it doesn't exist yet
+    # (dispatch_plan.py falls back to a built-in ladder, but adding it here lets
+    # users rank newer model IDs).
+    dst_text = dst_path.read_text(encoding="utf-8")
+    if "model_capability_order:" not in dst_text:
+        mco_re = re.compile(r"^model_capability_order:.*?(?=^\w|\Z)", re.DOTALL | re.MULTILINE)
+        tpl_mco = mco_re.search(tpl_text)
+        if tpl_mco:
+            dst_path.write_text(dst_text.rstrip() + "\n\n" + tpl_mco.group(0).rstrip() + "\n", encoding="utf-8")
+            info(".agentic.yml: added model_capability_order: section")
 
     # Append the maestro: section if it doesn't exist yet.
     dst_text = dst_path.read_text(encoding="utf-8")
