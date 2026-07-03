@@ -21,6 +21,9 @@ embedding:
   fallback: fastembed
 
 gateway:
+  # Each entry is matched as a LITERAL substring (case-insensitive) against Bash
+  # commands — not a regex. "rm -rf" blocks that exact text; it does not catch
+  # "rm -fr" (the hook's built-in rm guard handles flag variants separately).
   deny:
     - "rm -rf"
     - "git clean -fdx"
@@ -46,6 +49,18 @@ retrieval:
 
 skill_groups:
   test: [playwright, maestro]   # only these skills are injected into the tester role
+
+# Sketch design source.
+#   html          → classic self-contained HTML mockup, rendered + screenshotted (default)
+#   claude-design → sketcher pushes its mockup to a claude.ai/design project so you can
+#                   iterate on it visually; your edits are pulled back and re-rendered
+#                   before implementation (/agentic-build). Requires the built-in
+#                   DesignSync tool (claude.ai login or /design-login).
+design:
+  source: html            # html | claude-design
+  fallback: html          # used when claude-design / DesignSync is unavailable
+  project_id: ""          # claude.ai design-system project UUID; set up on first /agentic-plan
+  remote_prefix: screens  # remote path prefix inside the design project
 
 plan_id:
   prefix: FEAT   # FEAT-001, FEAT-002, ...
@@ -78,6 +93,16 @@ complexity_routing:
   enabled: true
   low_cap: claude-haiku-4-5-20251001    # low tasks never exceed this model
   high_floor: claude-sonnet-4-6         # high tasks use at least this model
+
+# Capability ladder (cheapest → most capable) used by dispatch_plan.py for all
+# routing comparisons. Add newer model IDs here in the right position so
+# complexity routing ranks them correctly; a model not listed is treated as
+# claude-sonnet-4-6 for comparison. Order matters; the exact strings must match
+# the IDs used in `models:` above.
+model_capability_order:
+  - claude-haiku-4-5-20251001
+  - claude-sonnet-4-6
+  - claude-opus-4-8
 
 git:
   auto_branch: true

@@ -15,6 +15,8 @@ You are the **auditor**. Your only job is to find problems — not fix them. You
 - You MUST NOT call any MCP tool.
 - Your only write is the findings report at `.claude/state/audit/<audit_id>/findings.md`.
 
+The `pre_tool_use` hook hard-enforces the last point: while your role is active, any Write/Edit outside `.claude/state/audit/` is denied. Treat a deny as a signal you strayed from the report.
+
 ## Input
 
 You will be given:

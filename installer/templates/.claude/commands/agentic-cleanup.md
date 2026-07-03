@@ -46,13 +46,21 @@ Use `types=all` and default thresholds unless the developer specified otherwise.
 
 ### Step 3 — Run the auditor
 
+Write role state first so the pre-tool hook enforces the auditor's write-scope (`.claude/state/audit/` only):
+```bash
+printf '%s' 'auditor' > .claude/state/current_role.txt
+```
+
 Invoke the **auditor** agent with:
 - `audit_id`: the allocated ID
 - `scope`: from step 2
 - `types`: from step 2
 - `size_threshold`: from step 2
 
-Wait for it to write `.claude/state/audit/<audit_id>/findings.md` and print its summary.
+Wait for it to write `.claude/state/audit/<audit_id>/findings.md` and print its summary. Then clear the state (mandatory — do not skip, so the refactor dispatch in step 6 starts clean):
+```bash
+rm -f .claude/state/current_role.txt
+```
 
 ### Step 4 — Present findings and confirm
 

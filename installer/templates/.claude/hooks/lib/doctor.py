@@ -220,6 +220,23 @@ def check_adrs() -> dict:
     return _check("adrs/", OK, f"{len(files)} ADRs (accepted={statuses['accepted']}, proposed={statuses['proposed']}, superseded={statuses['superseded']})")
 
 
+def check_stale_state() -> dict:
+    # Reuse state.py's definition of "stale" so the file list and age threshold
+    # live in exactly one place (doctor is run with the lib dir on sys.path).
+    try:
+        import state  # type: ignore
+        stale = state.find_stale()
+    except Exception as e:
+        return _check("dispatch state", WARN, f"could not check: {e}")
+    if stale:
+        detail = ", ".join(f"{s['file']} ({s['age_seconds']}s)" for s in stale)
+        return _check("dispatch state", WARN,
+                      "leftover from an interrupted build: " + detail
+                      + " — auto-cleared on next /agentic-build, or run "
+                        "`python .claude/hooks/lib/state.py clear`")
+    return _check("dispatch state", OK, "no stale state")
+
+
 def check_git() -> list[dict]:
     out = []
     try:
@@ -255,6 +272,7 @@ def run_all() -> list[dict]:
     results.extend(check_hooks_compile())
     results.extend(check_skills())
     results.append(check_adrs())
+    results.append(check_stale_state())
     results.extend(check_git())
     return results
 

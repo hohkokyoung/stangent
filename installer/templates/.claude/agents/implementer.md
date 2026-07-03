@@ -25,7 +25,7 @@ You implement **one task**. You are given a single task file path. Everything yo
 
 ## Procedure
 
-1. **Read the task file.** Validate that all required frontmatter fields are present (including `adrs:`, which may be `[]`). Then check `## Sketch` — if it contains an image reference (`![...](...)`), extract the path and **Read that file** now. It is a rendered PNG and you will see it as an image. Use it as your visual spec throughout implementation.
+1. **Read the task file.** Validate that all required frontmatter fields are present (including `adrs:`, which may be `[]`). Then check `## Sketch` — if it contains an image reference (`![...](...)`), extract the path and **Read that file** now. It is a rendered PNG and you will see it as an image. Use it as your visual spec throughout implementation. If `## Sketch` also contains a `Design HTML (synced with Claude Design):` line, Read that HTML file too — its markup and CSS values (spacing, colors, typography) are authoritative over eyeballing the PNG.
 2. **Load ADRs.** For each id in `task.adrs`, read `.claude/adrs/<id>-*.md`. Refuse to proceed (flip to `blocked` with `blocker: "missing_adr: <id>"`) if a listed ADR file is missing or has `status != accepted`.
 3. **Context-budget check.** Estimate `system + role + ADRs + skills + task frontmatter`. If this minimum already exceeds the model window, immediately flip status to `blocked` with `blocker: "context_budget_exceeded"` and stop. Do NOT generate, do NOT call any tool.
 4. **Flip status to `running`.** Update only the `status:` and `blocker: null` fields in frontmatter.

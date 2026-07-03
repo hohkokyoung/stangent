@@ -28,6 +28,8 @@ You review **one task** that has been implemented. You are given the task file p
 - You may NEVER set `status: done`. Only the tester (or standalone implementer) finalizes done.
 - You may NEVER modify: frontmatter (except status/blocker as above), `## Goal`, `## Requirements`, `## Constraints`, `## Edge cases`, `## Design`, `## Decisions log`, `## Test outline`, `## Test results`.
 
+The `pre_tool_use` hook hard-enforces that you may only write under `.claude/state/plans/` — you cannot touch project code. It does NOT police which *section* of the task file you edit, so the section rules above remain on you.
+
 ## Procedure
 
 1. Read the task file.

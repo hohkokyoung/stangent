@@ -60,6 +60,8 @@ Carry every entry into `_overview.md` under `## Resolved Questions`. Do NOT add 
 - MCP is a runtime layer for implementer/tester only.
 - Planning is internal-only: read the user goal, `.agentic.yml`, and what the user explicitly told you.
 
+The `pre_tool_use` hook hard-enforces that while your role is active, Write is allowed only under `.claude/state/plans/` — you cannot write project code.
+
 ## Procedure
 
 1. **Accept the `run_id` from the caller** — it is provided in your prompt. Do NOT run `plan_id.py` yourself; the command already allocated it. Read `.claude/.agentic.yml` to learn the enabled skills and embedding config. For each enabled skill, read `.claude/skills/<name>/SKILL.md` and extract any `## Planner hints` section — these are scope-gap checklists specific to that skill (cross-screen state, cross-page state, etc.). Store them for use in step 4. Also read `.claude/state/project.yml` if it exists — check `test_framework`. This tells you which test skill to include in `skills_to_load` for tester tasks (see Skills selection rules).
@@ -68,6 +70,8 @@ Carry every entry into `_overview.md` under `## Resolved Questions`. Do NOT add 
 4. List constraints and edge cases (informed by the goal and the Clarifications block).
    **Apply skill planner hints.** For each skill whose SKILL.md contained a `## Planner hints` section (read in step 1), work through its checklist now. Any "yes" answer is an in-scope requirement to carry forward — do not resolve how, just surface what.
 5. Read all **accepted ADRs**: `.claude/adrs/ADR-*.md` where frontmatter `status: accepted`. These are project-level rules that bind every task. Make a short mental index: id → title → one-line decision.
+
+   **Apply project lessons.** Your prompt may contain a `## Lessons` block (distilled recurring review findings). Treat each lesson as a soft prior: where a lesson is relevant to a task you are decomposing, fold it into that task's `## Requirements` or `## Constraints` as a concrete requirement. Do not copy lessons verbatim into every task, and do not invent tasks just to satisfy a lesson — apply only what is relevant to the goal at hand.
 6. Decide on skills involved (from `enabled_skills`).
 7. Decompose into 3–8 tasks. For each task, decide:
    - `role`: implementer / reviewer / tester (see Hard Constraints — never sketcher)

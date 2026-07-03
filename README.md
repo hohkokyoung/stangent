@@ -24,6 +24,8 @@ pip install pyyaml fastembed sqlite-vec
 # optional: pip install voyageai && export VOYAGE_API_KEY=...   (better embeddings)
 ```
 
+If you install these into a project virtualenv (`.venv/`, `venv/`, `env/`, or an active `$VIRTUAL_ENV`), the `agentic_mcp` retrieve server auto-detects that interpreter — it does not have to match the `python3` that launches the MCP server. Otherwise install the deps into the same `python3` that's on Claude Code's PATH.
+
 ## Uninstall
 
 ```bash
@@ -64,6 +66,30 @@ The **sketcher** is a unique role that fires automatically during `/agentic-plan
 The implementer then uses the sketch as a visual spec — not a description, an actual rendered image. This prevents the classic loop of "implement → review → redesign → re-implement."
 
 The sketcher writes **no framework code**. It produces exactly one image and stops.
+
+### Design source: Claude Design (optional)
+
+By default the sketch is a throwaway HTML file — the PNG is the only artifact. Set the design source to `claude-design` in `.agentic.yml` to make the design a living, editable artifact on [claude.ai/design](https://claude.ai/design) instead:
+
+```yaml
+design:
+  source: claude-design   # default: html
+  fallback: html          # used when DesignSync is unavailable
+  project_id: ""          # filled in automatically on first /agentic-plan
+  remote_prefix: screens
+```
+
+How it works:
+
+1. **Draft + push** — during `/agentic-plan`, the sketcher generates its mockup as usual, saves it under `.claude/design/screens/<run-id>/<task-id>.html`, and pushes it to your Claude Design project via the built-in `DesignSync` tool (first run asks you to pick or create a project).
+2. **Edit visually** — open the design on claude.ai/design and polish it: comment inline, tweak spacing/colors/layout, restructure freely.
+3. **Pull + refresh** — when `/agentic-build` runs, it compares each screen against the remote project. If you edited a design, it pulls your version down and re-runs the sketcher in refresh mode (re-render + re-screenshot only) before the implementer starts.
+
+The implementer receives both the rendered PNG **and** the synced HTML — so exact spacing, colors, and typography from your edited design carry into the implementation, not just an eyeballed screenshot.
+
+If DesignSync is unavailable (no claude.ai login, tool missing), everything falls back to the classic HTML flow — a plan or build never halts over it.
+
+> **Upgrading an existing install:** `.agentic.yml` is seeded once and never overwritten on re-install, so add the `design:` block manually to projects installed before this feature.
 
 ---
 
@@ -171,7 +197,9 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 │   ├── agentic-debug.md        # data-aware bug diagnosis
 │   ├── agentic-refactor.md     # refactor with test-green guarantee
 │   ├── agentic-test.md         # brownfield test bootstrap
-│   └── agentic-screenshot.md   # screenshot all pages/screens → docs/screenshots/<date>/
+│   ├── agentic-screenshot.md   # screenshot all pages/screens → docs/screenshots/<date>/
+│   ├── agentic-cleanup.md      # audit for smells → dispatch refactor tasks
+│   └── agentic-lessons.md      # distill recurring review findings → lessons the planner learns from
 ├── skills/
 │   ├── fastapi/      SKILL.md + references/*.md
 │   ├── rest-openapi/ SKILL.md + references/*.md  # REST API design, status codes, pagination, OpenAPI

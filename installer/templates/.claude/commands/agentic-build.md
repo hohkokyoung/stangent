@@ -15,79 +15,70 @@ Dispatcher. The only orchestrator. Algorithm is fixed; do not invent your own.
 
 ## Algorithm (FIXED CONTRACT — do not deviate)
 
-1. Read `.claude/.agentic.yml`:
-   a. Extract the `models` section. Build a role→model lookup:
-      - For each role (`planner`, `sketcher`, `implementer`, `reviewer`, `tester`, `debugger`, `refactor`), use `models.<role>` if set and non-empty; otherwise fall back to `models.default`; otherwise fall back to the current session model.
-   b. Extract the `complexity_routing` section (if present):
-      - `enabled` — default `false` if the section is absent
-      - `low_cap` — default `claude-haiku-4-5-20251001`
-      - `high_floor` — default `claude-sonnet-4-6`
-   c. Model capability order used for all routing comparisons (cheapest → most capable):
-      `claude-haiku-4-5-20251001` < `claude-sonnet-4-6` < `claude-opus-4-8`
-      Any model not in this list is treated as `claude-sonnet-4-6` for comparison purposes.
-   d. Extract the `retrieval` section:
-      - `default_k` — default `6` if absent
-      - `role_k` — map of role→k overrides (optional; roles absent from the map fall back to `default_k`)
-      Extract `skill_groups.test` as a list of skill names (default `[]` if absent).
+Ordering, cycle detection, the runnable set, and per-task model/skills/k resolution are **computed by `dispatch_plan.py`, not by you.** You never topologically sort, compare model capabilities, or apply complexity routing yourself — you run the script and execute what it emits. This keeps the contract deterministic and unit-tested.
 
-2. Resolve `run-id`. List `.claude/state/plans/<run-id>/*.md` (exclude `_overview.md`). Then **immediately** run this exact Bash command (mandatory — do not skip):
+1. **Clear any leftover dispatch state** from a previously interrupted build (so stale `current_*.txt` don't mistag this run's logs), then resolve `run-id` (default = latest run dir by mtime; or the `<run-id>` argument) and write it to state. Run:
    ```
+   python3 .claude/hooks/lib/state.py clear
    printf '%s' '<resolved-run-id>' > .claude/state/current_run.txt
    ```
-   This lets the post-tool hook tag every log entry with the correct run_id.
-3. Parse every task file's frontmatter into `{id, role, depends_on, status}`.
-4. Topologically sort by `depends_on`. **Cycle → abort with error.** Do NOT partially dispatch.
-5. Filter to runnable: `status == pending` AND every dep is `status == done`.
-6. If single `<task-id>` was given, restrict the runnable set to that one (or refuse if its deps aren't done).
-7. **Execute sequentially.** For each runnable task in topo order:
-   a. Re-index project files by running:
+   The second command lets the post-tool hook tag every log entry with the correct run_id.
+
+2. **Design refresh check (claude-design source only).** Read the `design:` block from `.claude/.agentic.yml`. If `design.source` is `claude-design` and `design.project_id` is non-empty, then for each `role: implementer` task in the run with `status: pending` whose `## Sketch` section contains a `Design HTML (synced with Claude Design):` line:
+   a. Derive the remote path from the linked local path by stripping the `.claude/design/` prefix (e.g. `.claude/design/screens/FEAT-001/t2.html` → `screens/FEAT-001/t2.html`).
+   b. Call `DesignSync get_file` for that remote path and compare with the local mirror file. If DesignSync is unavailable or the call fails, print one warning and skip this entire step — build with the local mirrors as-is; never halt the build over this.
+   c. If the remote content differs (the developer edited the design on claude.ai/design): overwrite the local mirror with the remote content, then edit the corresponding sketcher task file `s<N>.md` — set `status: pending` and add `refresh: true` to its frontmatter. The existing `depends_on: [s<N>]` on the implementer task guarantees the sketcher re-renders before the implementer runs.
+   d. If identical or the remote file is missing: leave everything untouched.
+
+3. **Compute the dispatch plan.** Run (pass `--task <task-id>` when a single task was requested; pass `--session-model <current session model id>` so unset per-role models fall back correctly):
+   ```
+   python3 .claude/hooks/lib/dispatch_plan.py '<run_id>' [--task '<task-id>'] [--session-model '<session-model>']
+   ```
+   - **Exit 3 (dependency cycle):** abort with the printed error. Do NOT partially dispatch. Jump to step 6 cleanup.
+   - **Exit 4 (`--task` refused):** print the refusal (deps not done / already done) and stop. This is the dependency check — do NOT bypass it, even for `/agentic-build <task-id>`.
+   - **Exit 0:** parse the JSON. `runnable` is a list of fully-resolved tasks, each already carrying `task_id`, `path`, `role`, `model`, `role_baseline`, `routing_applied`, `complexity`, `skills`, and `k`. `blocked_by_dep` lists pending tasks transitively waiting on a blocked dep — do not dispatch them; `/agentic-status` shows them as waiting. `invalid_deps` lists pending tasks whose `depends_on` names a task id that does not exist in the run (a planner typo or a hand-edit) — print a one-line warning naming each and its `missing` ids; they are never dispatched. If `runnable` is empty only because of `invalid_deps`, tell the developer to fix those dependencies and stop.
+
+4. **Execute sequentially** (v1 is sequential only — never parallel). Loop:
+   a. If `runnable` is empty, exit the loop and go to step 5.
+   b. Take the **first** entry `T` in `runnable`. Every value you need is already in `T` — do not recompute any of it.
+   c. Re-index project files so retrieval reflects code written by earlier tasks:
       ```
       PYEXE=$(ls .venv/bin/python venv/bin/python .env/bin/python 2>/dev/null | head -1) && ${PYEXE:-python3} .claude/hooks/lib/retriever.py reindex --project-only
       ```
-      This ensures the vector index reflects any code written by earlier tasks in this run. Skills are not re-embedded (that is handled by `/agentic-index`).
-   b. Read the task file's `role` and `complexity` fields. Default `complexity` to `medium` if the field is absent or unrecognized.
-   c. Determine the selected model:
-      - `role_model` = role→model lookup from step 1a
-      - If `complexity_routing.enabled` is true, apply routing using the capability order from step 1c:
-        - `complexity: low` → `selected_model` = lesser of (`role_model`, `low_cap`) — Haiku wins if role is already Haiku
-        - `complexity: medium` → `selected_model` = `role_model` (no change)
-        - `complexity: high` → `selected_model` = greater of (`role_model`, `high_floor`) — more capable model wins
-      - If routing is disabled: `selected_model = role_model`
-      - `routing_applied` = true if `selected_model != role_model`
-   d. Write state files and log the dispatch decision:
+      Skills are not re-embedded (that is handled by `/agentic-index`).
+   d. Write state files and log the dispatch using `T`'s fields:
       ```
-      printf '%s' '<task-id>' > .claude/state/current_task.txt
-      printf '%s' '<role>' > .claude/state/current_role.txt
-      printf '%s' '<selected_model>' > .claude/state/current_model.txt
+      printf '%s' '<T.task_id>' > .claude/state/current_task.txt
+      printf '%s' '<T.role>'    > .claude/state/current_role.txt
+      printf '%s' '<T.model>'   > .claude/state/current_model.txt
       python3 .claude/hooks/lib/log_dispatch.py \
-        --run_id '<run_id>' --task_id '<task_id>' --role '<role>' \
-        --complexity '<complexity>' --role_baseline '<role_model>' \
-        --model_selected '<selected_model>' [add --routing_applied if routing_applied is true]
+        --run_id '<run_id>' --task_id '<T.task_id>' --role '<T.role>' \
+        --complexity '<T.complexity>' --role_baseline '<T.role_baseline>' \
+        --model_selected '<T.model>' [add --routing_applied if T.routing_applied is true]
       ```
-   e. Resolve effective skills and k for this invocation:
-      - `effective_k` = `role_k[role]` if defined in config (step 1d), else the task's `k` frontmatter value (default `6` if unset)
-      - `effective_skills` = for `role == tester` AND `skill_groups.test` is non-empty: intersection of `task.skills_to_load` with `skill_groups.test`; otherwise `task.skills_to_load` unchanged. If the intersection is empty (e.g. task has `skills_to_load: [fastapi]` but `skill_groups.test: [playwright, maestro]`), the tester receives no skill injection — it will proceed with no testing method defined. Log a warning and continue; do not abort.
-   f. Invoke the matching subagent (`planner` is never invoked here — only `implementer` / `reviewer` / `tester` / `sketcher` / `refactor`) with:
-      - The absolute path to the task file
+   e. Invoke the matching subagent (`planner` is never invoked here — only `implementer` / `reviewer` / `tester` / `sketcher` / `refactor`) with:
+      - The absolute path to the task file (`T.path`)
       - The `run_id`
-      - The list of skill files (resolved from `effective_skills` → `.claude/skills/<name>/SKILL.md`). If a skill name is `"project"`, skip SKILL.md injection — it is a retrieve-only pseudo-skill with no corresponding SKILL.md file. The agent receives project file chunks exclusively through `retrieve()`.
-      - `effective_k`, passed to the agent as the retrieve k parameter
-      - **`selected_model` from step 7c** — pass this as the `model` parameter when invoking the subagent so it overrides the session default.
-   g. After the subagent returns, run:
+      - The skill files: for each name in `T.skills`, `.claude/skills/<name>/SKILL.md`. Skip the name `"project"` — it is a retrieve-only pseudo-skill with no SKILL.md; that task gets project chunks through `retrieve()` only. If `T.skills` is empty for a tester (the config's `skill_groups.test` intersection was empty), print a one-line warning that no testing method is injected and continue — do not abort.
+      - `T.k`, passed to the agent as the retrieve k parameter
+      - **`T.model`** — pass as the `model` parameter so it overrides the session default.
+   f. After the subagent returns, clear the per-task state:
       ```
       rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
       ```
-8. If a dependency ends up `blocked`, do NOT dispatch its dependents. They stay `pending`; `/agentic-status` will show them as transitively waiting.
-9. After each task, re-evaluate step 5.
-10. Stop when no runnable tasks remain.
-11. Run this exact Bash command to clean up (mandatory — do not skip):
-    ```
-    rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
-    ```
-    Then print the final dashboard.
+   g. **Re-run the step 3 command** to recompute `runnable` (task statuses on disk have changed). Go back to (a).
+
+5. Stop when no runnable tasks remain.
+
+6. Run this exact Bash command to clean up (mandatory — do not skip):
+   ```
+   rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
+   ```
+   Then print the final dashboard.
 
 ## Constraints
 
 - v1 is sequential only. Do not dispatch tasks in parallel.
-- Do not modify task files yourself. Only subagents write to them.
-- Do not bypass the dependency check, even for `/agentic-build <task-id>`.
+- Ordering, routing, and the runnable set come from `dispatch_plan.py` — never re-derive them by hand.
+- Do not modify task files yourself. Only subagents write to them. Exception: the design refresh check (step 2) may flip a sketcher task back to `pending` with `refresh: true`, and may overwrite local mirror files under `.claude/design/`.
+- Do not bypass the dependency check, even for `/agentic-build <task-id>` (enforced by `dispatch_plan.py` exit 4).

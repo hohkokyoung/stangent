@@ -59,14 +59,22 @@ Run the planner on the given goal.
    - Q: <question> → A: <developer's answer>
    ```
 
-5. Invoke the **planner** agent with:
+5. Invoke the **planner** agent. First write role state so the pre-tool hook enforces the planner's write-scope (`.claude/state/plans/` only):
+   ```
+   printf '%s' 'planner' > .claude/state/current_role.txt
+   ```
+   Then invoke the **planner** agent with:
    - The user goal: `$ARGUMENTS`
    - The generated `run_id`
    - The contents of `.claude/.agentic.yml`
    - The `## Clarifications` block from step 4
+   - **Project lessons**: run `python3 .claude/hooks/lib/lessons.py show`. If it produces output, pass it to the planner under a heading line `## Lessons` (exactly that — the planner looks for that block) so the plan accounts for recurring past review findings. If the command produces no output, omit the block entirely.
    - **Model**: use `models.planner` from `.agentic.yml` (fall back to `models.default`, then session default)
 
-6. The planner writes `_overview.md` + per-task files (all `status: pending`).
+6. The planner writes `_overview.md` + per-task files (all `status: pending`). After it returns, clear the state (mandatory — do not skip):
+   ```
+   rm -f .claude/state/current_role.txt
+   ```
 
 7. **Sketch injection + render.** If the Clarifications block contains `sketch: yes`:
 
@@ -76,6 +84,11 @@ Run the planner on the given goal.
    ```
 
    **Validate first:** scan all task files the planner just wrote. If any has `role: sketcher`, the planner violated its contract — stop, print an error listing the offending task ids, and ask the developer to re-run `/agentic-plan`. Do NOT proceed.
+
+   **Design project setup (claude-design source only).** Read the `design:` block from `.agentic.yml`. If `design.source` is `claude-design` and `design.project_id` is empty, set it up now — the sketcher runs as a subagent and cannot prompt the user:
+   - Call `DesignSync list_projects`. If the tool is unavailable or the call fails, print a warning that sketches will fall back to plain HTML this run, and continue.
+   - Otherwise ask the developer via `AskUserQuestion` to pick one of the listed design-system projects or create a new one. On "create new", call `DesignSync create_project` (suggest the repo directory name as the project name).
+   - Write the chosen/created project UUID back into `.agentic.yml` as `design.project_id`. This is a one-time setup; subsequent runs skip it.
 
    a. **Create all sketcher task files first** (do not invoke any sketcher yet). For each `role: implementer` task file `t<N>.md` in the run dir:
       - Create `s<N>.md` (e.g. `t2` → `s2`) with:
@@ -112,7 +125,7 @@ Run the planner on the given goal.
 
 ## Constraints
 
-- Do NOT call any MCP tool yourself. The planner has its own constraints.
+- Do NOT call any MCP tool yourself. The planner has its own constraints. Exception: the built-in `DesignSync` tool during the design project setup in step 7 (`list_projects` / `create_project` only).
 - Do NOT modify task files outside the planner.
 - Do NOT dispatch tasks; that's `/agentic-build`. Exception: `role: sketcher` tasks run during plan (step 7) so the user sees the drawing before deciding to build.
 - Do NOT commit or push anything yourself. Branch creation is the only git operation. Commits and merges are user-driven.
