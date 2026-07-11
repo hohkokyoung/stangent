@@ -11,12 +11,17 @@ Run state under `.claude/state/` is machine working-state — partly gitignored,
 
 ## Arguments
 
-- First arg (optional): `<run-id>` (e.g. `FEAT-004`). Default = latest run directory by mtime under `.claude/state/plans/`.
-- Remaining args: free text — why the run stopped.
+- First arg (optional): `<run-id>` (e.g. `FEAT-004`). Omit it for features that were never planned through `/agentic-plan` — deferral works without a run (see **no-run mode** below).
+- Remaining args: free text — why the work stopped.
 
 ## Procedure
 
-1. Resolve `<run-id>` and read every task file plus `_overview.md`. Refuse (print why, STOP) if:
+1. **Resolve the run — or decide there isn't one.**
+   - Explicit `<run-id>` given → use it.
+   - Otherwise read the `_overview.md` goal of every run under `.claude/state/plans/` and compare against the reason text / session context. A run qualifies only if its goal plausibly describes the same feature — **recency alone does NOT qualify it**. Exactly one qualifying run → confirm via `AskUserQuestion` ("Defer <run-id> — <goal>?") before touching it; several → ask which; none → **no-run mode**.
+   - NEVER freeze a run whose goal does not match the deferral reason — freezing the wrong run silently corrupts unrelated work.
+
+   With a run resolved, read every task file plus `_overview.md`. Refuse (print why, STOP) if:
    - every task is `done` — nothing to defer, the run is complete;
    - the overview is already `status: deferred` — point at the existing dossier instead.
 2. If no reason text was given, use `AskUserQuestion` to elicit:
@@ -58,6 +63,16 @@ Run state under `.claude/state/` is machine working-state — partly gitignored,
    | FEAT-004 | chat attachments | deferred | feat/FEAT-004 | backend not deployed | staging API live | [dossier](features/FEAT-004-chat-attachments.md) |
    ```
 9. Print a summary: frozen task ids, dossier path, and a reminder that the dossier only survives if committed — suggest `git add docs/FEATURES.md docs/features/ && git commit`, but do NOT run it yourself unless the user asks.
+
+## No-run mode (feature built outside `/agentic-plan`)
+
+When step 1 finds no qualifying run, there are no task files to freeze — produce only the dossier and registry row. Skip steps 4–5 and adjust the rest:
+
+- Source the dossier from the session, the code, and git history instead of task files: `## What shipped` / `## What's half-done` come from what you actually know. Ask the user to fill gaps rather than guessing.
+- Git facts (step 6): use the branch the work actually lives on (usually the current branch).
+- Dossier path: `docs/features/<slug>.md`; frontmatter `run_id: null`.
+- Registry row `Run` column: `-`.
+- Tell the user resume also works run-less: `/agentic-resume` matches the feature by its dossier and, once the blocker clears, seeds a fresh `/agentic-plan` from `## What's half-done / remaining`.
 
 ## Constraints
 

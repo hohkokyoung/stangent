@@ -192,6 +192,8 @@ Sometimes a run stops for reasons no agent can fix — the backend isn't deploye
 
 When the blocker clears, `/agentic-resume [run-id]` verifies the `resume_when` condition, flips the frozen tasks back to `pending`, checks how far the feature branch drifted from the base, and points you at `/agentic-update-plan` (if assumptions changed while parked) or `/agentic-build all`.
 
+Both commands also work for features that were **never planned through `/agentic-plan`**: with no qualifying run, defer writes just the dossier and registry row (`Run` column `-`), and resume seeds a fresh `/agentic-plan` from the dossier's *What's half-done / remaining* section. Defer never freezes a run whose goal doesn't match the deferral reason — a run must be named or confirmed, never guessed from recency.
+
 Ownership is strict: only `/agentic-defer` sets `deferred`, only `/agentic-resume` clears it. Agents and the planner never touch deferral state — an agent that can't proceed for an in-run reason uses its own blocker codes.
 
 ---

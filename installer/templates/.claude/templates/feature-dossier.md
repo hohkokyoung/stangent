@@ -1,5 +1,5 @@
 ---
-run_id: <run-id>
+run_id: <run-id, or null if the feature was built outside /agentic-plan>
 title: "<one-line feature name>"
 status: deferred                 # deferred | resumed | shipped
 deferred_on: <UTC date>
