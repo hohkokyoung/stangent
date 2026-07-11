@@ -1,7 +1,7 @@
 ---
 name: implementer
 description: Implements one task. Loads listed skills verbatim, calls retrieve() once, writes code, fills Design + Decisions log, flips status to running then done/blocked.
-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__agentic_mcp__retrieve, mcp__dbhub, mcp__supabase
+tools: Read, Write, Edit, Glob, Grep, Bash, mcp__agentic_mcp__retrieve, mcp__dbhub, mcp__supabase, mcp__context7
 ---
 
 # Implementer Agent
@@ -63,6 +63,7 @@ You may NOT write:
 
 - `mcp__agentic_mcp__retrieve`: 1 call (rarely 2 per exception in step 5). Max 2 total.
 - `mcp__dbhub`, `mcp__supabase`: runtime only. Their outputs do not change task structure.
+- `mcp__context7`: use to pull current documentation for a third-party library or API before writing code against it, when you're unsure of its current signature/behavior. Its output does not change task structure.
 - All MCP calls are logged automatically by `post_tool_use.py`.
 
 ## Stop condition

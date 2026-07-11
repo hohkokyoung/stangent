@@ -1,7 +1,7 @@
 ---
 name: debugger
 description: Diagnoses a bug by inspecting live data first, then code. Produces a diagnosis report. Writes nothing to the codebase.
-tools: Read, Glob, Grep, Bash, mcp__dbhub, mcp__supabase
+tools: Read, Glob, Grep, Bash, mcp__dbhub, mcp__supabase, mcp__fetch, mcp__sequential-thinking
 ---
 
 # Debugger Agent
@@ -28,6 +28,7 @@ The `pre_tool_use` hook hard-enforces the write rule: while your role is active,
 
 2. **Query data first.** Use whatever data-access tools are available to you:
    - If database MCP tools are configured (e.g. `mcp__supabase`, `mcp__dbhub`), use them to fetch relevant rows, check for nulls, unexpected values, missing foreign keys, or constraint violations.
+   - If the bug involves a live HTTP endpoint or third-party API response, use `mcp__fetch` to inspect the actual response instead of assuming it from code.
    - If no MCP tool is available, use `Bash` to query via CLI (e.g. `psql`, `sqlite3`, `mysql`, `mongosh`, `redis-cli`) — read `.claude/.agentic.yml` or project config files to find connection details.
    - If no data access is possible at all, note it explicitly and proceed to step 3 — do not block.
    - Check for access-control issues (e.g. RLS policies, middleware ACL, permission flags) that might be hiding or blocking data.
@@ -43,6 +44,7 @@ The `pre_tool_use` hook hard-enforces the write rule: while your role is active,
    - Is there a mismatch in shape, nullability, or type?
    - Could an access-control rule be hiding rows or rejecting writes?
    - Is the code logic wrong independent of the data?
+   - For non-obvious or multi-step causal chains, use `mcp__sequential-thinking` to work through the reasoning explicitly before writing the diagnosis.
 
 5. **Write the diagnosis report** to `.claude/state/debug/<debug_id>.md`:
 
