@@ -1,6 +1,6 @@
 # Agentic Development Workflow System
 
-A Claude Code–native agentic development workflow. Installs per-project under `.claude/`. Agents are organized by **role** (planner / sketcher / implementer / reviewer / tester / debugger / refactor), not by stack. Stack expertise lives in skill prompt blocks plus a retrievable references corpus.
+A Claude Code–native agentic development workflow. Installs per-project under `.claude/`. Agents are organized by **role** (planner / sketcher / architect / security-reviewer / implementer / reviewer / tester / debugger / refactor / auditor), not by stack. Stack expertise lives in skill prompt blocks plus a retrievable references corpus.
 
 ---
 
@@ -43,6 +43,10 @@ In the installed project, in Claude Code:
 /agentic-index                              # one-time setup (or when skills/references change)
 /agentic-plan <natural-language goal>       # planner clarifies, sketches UI, emits FEAT-### task files
 /agentic-build all                          # dispatcher runs tasks in dep order, re-indexes code before each
+/agentic-review-design [run_id | "feature"] # architect red-teams the DESIGN — data ownership, tenancy, compliance, scaling
+/agentic-review-security [run_id | "feature"] # security-reviewer red-teams for exploits — OWASP Top 10, IDOR, injection, secrets
+/agentic-review-pr <PR# | url> [--comment]  # fetch a GitHub PR → architect + security-reviewer; optional summary comment
+/agentic-open-pr [run_id]                   # open a PR from a completed run's feat/<run_id> branch
 /agentic-refactor <refactoring goal>        # clarify scope, run refactor agent, verify tests stay green
 /agentic-status                             # dashboard
 /agentic-update-plan <run-id> <amendment>   # amend without touching done tasks
@@ -181,11 +185,14 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 ├── agents/
 │   ├── planner.md              # decomposition only — no file names, no classes, no assumptions
 │   ├── sketcher.md             # renders HTML mockup → screenshot → embeds in task file
+│   ├── architect.md            # system-level design review; challenges assumptions incl. ADRs; report only
+│   ├── security-reviewer.md    # red-team threat model — OWASP Top 10, IDOR, injection, secrets; report only
 │   ├── implementer.md          # one task; loads skills verbatim; one retrieve() call
 │   ├── reviewer.md             # append-only ## Review; never finalizes done
 │   ├── tester.md               # generic — testing method defined by injected skill
 │   ├── debugger.md             # data first, code second; writes diagnosis only
-│   └── refactor.md             # no new behavior; runs tests before/after; blocks on regression
+│   ├── refactor.md             # no new behavior; runs tests before/after; blocks on regression
+│   └── auditor.md              # codebase-wide smell scan; writes findings report only
 ├── commands/
 │   ├── agentic-plan.md
 │   ├── agentic-build.md        # fixed topo-sort dispatcher; re-indexes project before each task
@@ -199,6 +206,10 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 │   ├── agentic-test.md         # brownfield test bootstrap
 │   ├── agentic-screenshot.md   # screenshot all pages/screens → docs/screenshots/<date>/
 │   ├── agentic-cleanup.md      # audit for smells → dispatch refactor tasks
+│   ├── agentic-review-design.md   # architect design review → findings report
+│   ├── agentic-review-security.md # security red-team → threat model report
+│   ├── agentic-review-pr.md       # review a GitHub PR (github MCP) → architect + security-reviewer
+│   ├── agentic-open-pr.md         # open a PR from a completed run (github MCP)
 │   └── agentic-lessons.md      # distill recurring review findings → lessons the planner learns from
 ├── skills/
 │   ├── fastapi/      SKILL.md + references/*.md
@@ -229,6 +240,8 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
     │   ├── t1.md, t2.md, ...
     │   └── sketches/<task_id>.png
     ├── debug/<DBG-id>.md
+    ├── design-review/<DR-id>/findings.md      # architect reports
+    ├── security-review/<SEC-id>/findings.md   # security-reviewer threat models
     ├── project.yml             # detected stack (test_framework, project_index_globs)
     ├── vectors.db              # skill chunks + project source chunks
     └── logs/<FEAT-###>.jsonl

@@ -11,8 +11,9 @@ Two kinds of rule live here:
 
   2. **Role-scoped contracts** (Phase 2) — enforced only when the dispatcher has
      written `.claude/state/current_role.txt`. Two rules:
-       - directory-restricted roles (auditor/debugger/planner/reviewer/sketcher)
-         may only write under their whitelisted prefixes;
+       - directory-restricted roles (auditor/debugger/planner/reviewer/sketcher/
+         architect/security-reviewer) may only write under their whitelisted
+         prefixes;
        - no subagent may run a git mutation (commit/push/merge/rebase/...).
      If no role state is set the role rules fail OPEN — this hook never guesses.
 
@@ -65,6 +66,8 @@ GIT_MUTATION_RE = re.compile(
 ROLE_WRITE_WHITELIST = {
     "auditor": [".claude/state/audit/"],
     "debugger": [".claude/state/debug/"],
+    "architect": [".claude/state/design-review/"],
+    "security-reviewer": [".claude/state/security-review/"],
     "planner": [".claude/state/plans/"],
     "reviewer": [".claude/state/plans/"],
     "sketcher": [".claude/state/plans/", ".claude/design/", ".claude/launch.json"],

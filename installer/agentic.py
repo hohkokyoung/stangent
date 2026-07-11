@@ -35,6 +35,10 @@ GITIGNORE_BLOCK = """# >>> agentic
 .claude/state/vectors.db
 .claude/state/logs/
 .claude/state/current_*.txt
+# review reports may contain exploit scenarios / sensitive design notes — never commit
+.claude/state/security-review/
+.claude/state/design-review/
+.claude/state/pr-review/
 .mcp.json
 # <<< agentic
 """
@@ -128,7 +132,16 @@ def add_gitignore_block(target: Path) -> None:
     if gi.exists():
         content = gi.read_text(encoding="utf-8")
         if "# >>> agentic" in content:
-            info(".gitignore already has agentic block")
+            # Refresh the managed block in place so re-installs pick up new
+            # ignore rules (e.g. review-report dirs). The block is delimited and
+            # installer-owned; anything outside it is left untouched.
+            if GITIGNORE_BLOCK.strip() in content:
+                info(".gitignore agentic block already current")
+                return
+            content = GITIGNORE_RE.sub("", content).rstrip("\n")
+            sep = "\n\n" if content else ""
+            gi.write_text(content + sep + GITIGNORE_BLOCK, encoding="utf-8")
+            info("refreshed .gitignore agentic block")
             return
         sep = "" if content.endswith("\n") else "\n"
         gi.write_text(content + sep + "\n" + GITIGNORE_BLOCK, encoding="utf-8")

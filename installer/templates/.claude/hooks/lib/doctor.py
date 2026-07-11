@@ -74,6 +74,24 @@ def check_dir_tree() -> list[dict]:
     return out
 
 
+EXPECTED_AGENTS = [
+    "planner", "sketcher", "implementer", "reviewer", "tester",
+    "debugger", "refactor", "auditor", "architect", "security-reviewer",
+]
+
+
+def check_agents() -> list[dict]:
+    out = []
+    d = CLAUDE / "agents"
+    for name in EXPECTED_AGENTS:
+        p = d / f"{name}.md"
+        if p.is_file():
+            out.append(_check(f"agent: {name}", OK))
+        else:
+            out.append(_check(f"agent: {name}", FAIL, "missing — re-run the installer to refresh agents/"))
+    return out
+
+
 def check_config_files() -> list[dict]:
     out = []
     # .agentic.yml
@@ -86,6 +104,19 @@ def check_config_files() -> list[dict]:
             cfg = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
             skills = cfg.get("enabled_skills") or []
             out.append(_check("file: .agentic.yml", OK, f"enabled_skills={skills}"))
+            # risk_profile drives architect/security-reviewer calibration. Absent
+            # on installs seeded before it existed (config is seed-once) — warn so
+            # the developer knows those reviews fall back to generic assumptions.
+            if "risk_profile" not in cfg:
+                out.append(_check("config: risk_profile", WARN,
+                                  "absent — architect/security-reviewer will use conservative generic "
+                                  "assumptions; add the block from the template to calibrate"))
+            else:
+                rp = cfg.get("risk_profile") or {}
+                sens = rp.get("data_sensitivity") or []
+                comp = rp.get("compliance") or []
+                out.append(_check("config: risk_profile", OK,
+                                  f"data_sensitivity={sens} compliance={comp}"))
         except Exception as e:
             out.append(_check("file: .agentic.yml", FAIL, f"parse error: {e}"))
     # settings.json
@@ -117,7 +148,11 @@ def check_mcp_json() -> list[dict]:
     except json.JSONDecodeError as e:
         return [_check("file: .mcp.json", FAIL, f"invalid JSON: {e}")]
 
-    servers = data.get("mcpServers", {})
+    raw = data.get("mcpServers", {})
+    # The template uses string-valued "_"-prefixed keys (e.g. "_docs_and_research")
+    # as section markers inside mcpServers. Skip any non-dict value so those
+    # markers don't get counted as servers or dereferenced with .get().
+    servers = {k: v for k, v in raw.items() if isinstance(v, dict)}
     if not servers:
         return [_check("file: .mcp.json", FAIL, "no mcpServers defined")]
 
@@ -266,6 +301,7 @@ def run_all() -> list[dict]:
     results.extend(check_required_deps())
     results.append(check_optional_voyage())
     results.extend(check_dir_tree())
+    results.extend(check_agents())
     results.extend(check_config_files())
     results.extend(check_mcp_json())
     results.append(check_vectors_db())
