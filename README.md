@@ -48,8 +48,10 @@ In the installed project, in Claude Code:
 /agentic-review-pr <PR# | url> [--comment]  # fetch a GitHub PR → architect + security-reviewer; optional summary comment
 /agentic-open-pr [run_id]                   # open a PR from a completed run's feat/<run_id> branch
 /agentic-refactor <refactoring goal>        # clarify scope, run refactor agent, verify tests stay green
-/agentic-status                             # dashboard
+/agentic-status [--all]                     # dashboard (one run, or every run incl. parked features)
 /agentic-update-plan <run-id> <amendment>   # amend without touching done tasks
+/agentic-defer [run-id] <reason>            # park a half-finished run — freeze tasks, write dossier to docs/features/
+/agentic-resume [run-id]                    # unfreeze a deferred run once its external blocker clears
 /agentic-debug <bug description>            # diagnose a live bug — data first, code second
 /agentic-screenshot [all | <slugs>]         # screenshot every page/screen into docs/screenshots/<date>/
 ```
@@ -176,6 +178,24 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 
 ---
 
+## Deferring half-finished features
+
+Sometimes a run stops for reasons no agent can fix — the backend isn't deployed yet, credentials are pending, another team isn't ready. That's not `blocked` (an agent failing at its job) and not a scope change: *the plan is fine, the world isn't ready.* And run state under `.claude/state/` is machine working-state — partly gitignored, none of it written for humans — so simply walking away means the run's context evaporates on a fresh clone or after a few months of forgetting.
+
+`/agentic-defer [run-id] <reason>` parks the run durably:
+
+1. Every non-`done` task is frozen: `status: deferred`, `blocker: "external: <dependency>"`, plus a `resume_when:` condition ("backend `/health` returns 200 on staging" — observable, not "later").
+2. A **committed** handoff dossier is written to `docs/features/<run-id>-<slug>.md` (from `templates/feature-dossier.md`): goal, what shipped with its key decisions, what's half-done, why it stopped, branch + last commit, a resume checklist, and any context that lives nowhere else.
+3. The run is registered in `docs/FEATURES.md` — a one-table registry of every parked and shipped feature.
+
+`/agentic-build` never dispatches deferred tasks (dependents freeze with them), and `/agentic-status --all` shows parked runs across the whole project — including on a fresh clone, where the dossier is the only surviving record.
+
+When the blocker clears, `/agentic-resume [run-id]` verifies the `resume_when` condition, flips the frozen tasks back to `pending`, checks how far the feature branch drifted from the base, and points you at `/agentic-update-plan` (if assumptions changed while parked) or `/agentic-build all`.
+
+Ownership is strict: only `/agentic-defer` sets `deferred`, only `/agentic-resume` clears it. Agents and the planner never touch deferral state — an agent that can't proceed for an in-run reason uses its own blocker codes.
+
+---
+
 ## Layout in an installed project
 
 ```
@@ -199,6 +219,8 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 │   ├── agentic-status.md
 │   ├── agentic-index.md        # embeds skill references + indexes project source files
 │   ├── agentic-update-plan.md
+│   ├── agentic-defer.md        # park a run on an external blocker → committed dossier in docs/features/
+│   ├── agentic-resume.md       # unfreeze a deferred run once its blocker clears
 │   ├── agentic-adr.md
 │   ├── agentic-doctor.md
 │   ├── agentic-debug.md        # data-aware bug diagnosis
@@ -234,7 +256,7 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 │       └── doctor.py           # install health checks
 ├── mcp/
 │   └── agentic_mcp.py          # exposes retrieve(query, k, skills) over stdio MCP
-└── state/                      # gitignored
+└── state/                      # local run state (vectors.db, logs/, review reports gitignored)
     ├── plans/<FEAT-###>/
     │   ├── _overview.md
     │   ├── t1.md, t2.md, ...
@@ -274,7 +296,7 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 ## Core invariants (v1)
 
 - **1 task = 1 file.** The task file is the single source of truth.
-- **State machine:** `pending → running → done | blocked`. Terminal states are terminal; no auto-recovery.
+- **State machine:** `pending → running → done | blocked`, plus `deferred` for external blockers — set only by `/agentic-defer`, cleared only by `/agentic-resume`, never by an agent. Terminal states are terminal; no auto-recovery.
 - **Strict injection order:** system > role > ADRs > skills (verbatim) > retrieved chunks > task file. Skills win on conflict.
 - **`retrieve()` = one call per agent per task.** Scoped to the task's `skills_to_load`.
 - **Skills define HOW, agents define WHAT.** The tester role is generic — its testing method (MCP tools, commands, artifact format) is entirely defined by the injected skill. No framework logic in the role prompt.

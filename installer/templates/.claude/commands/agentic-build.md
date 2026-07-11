@@ -36,7 +36,7 @@ Ordering, cycle detection, the runnable set, and per-task model/skills/k resolut
    ```
    - **Exit 3 (dependency cycle):** abort with the printed error. Do NOT partially dispatch. Jump to step 6 cleanup.
    - **Exit 4 (`--task` refused):** print the refusal (deps not done / already done) and stop. This is the dependency check — do NOT bypass it, even for `/agentic-build <task-id>`.
-   - **Exit 0:** parse the JSON. `runnable` is a list of fully-resolved tasks, each already carrying `task_id`, `path`, `role`, `model`, `role_baseline`, `routing_applied`, `complexity`, `skills`, and `k`. `blocked_by_dep` lists pending tasks transitively waiting on a blocked dep — do not dispatch them; `/agentic-status` shows them as waiting. `invalid_deps` lists pending tasks whose `depends_on` names a task id that does not exist in the run (a planner typo or a hand-edit) — print a one-line warning naming each and its `missing` ids; they are never dispatched. If `runnable` is empty only because of `invalid_deps`, tell the developer to fix those dependencies and stop.
+   - **Exit 0:** parse the JSON. `runnable` is a list of fully-resolved tasks, each already carrying `task_id`, `path`, `role`, `model`, `role_baseline`, `routing_applied`, `complexity`, `skills`, and `k`. `blocked_by_dep` lists pending tasks transitively waiting on a blocked or deferred dep — do not dispatch them; `/agentic-status` shows them as waiting. `invalid_deps` lists pending tasks whose `depends_on` names a task id that does not exist in the run (a planner typo or a hand-edit) — print a one-line warning naming each and its `missing` ids; they are never dispatched. If `runnable` is empty only because of `invalid_deps`, tell the developer to fix those dependencies and stop.
 
 4. **Execute sequentially** (v1 is sequential only — never parallel). Loop:
    a. If `runnable` is empty, exit the loop and go to step 5.
@@ -68,7 +68,7 @@ Ordering, cycle detection, the runnable set, and per-task model/skills/k resolut
       ```
    g. **Re-run the step 3 command** to recompute `runnable` (task statuses on disk have changed). Go back to (a).
 
-5. Stop when no runnable tasks remain.
+5. Stop when no runnable tasks remain. If tasks remain with `status: deferred` (the run was parked by `/agentic-defer`), never dispatch them — print the dossier path from `_overview.md`'s `## Deferral` block and suggest `/agentic-resume <run-id>` once the external blocker clears.
 
 6. Run this exact Bash command to clean up (mandatory — do not skip):
    ```

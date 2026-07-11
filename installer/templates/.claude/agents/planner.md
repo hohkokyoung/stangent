@@ -111,7 +111,7 @@ When the caller's prompt contains `update mode` (with an existing `run-id` and a
 2. Build the **frozen set** = `{task_id : status == done}`. These tasks are immutable in every respect.
 3. Apply the amendment:
    - **Add new tasks** as `t<N>.md` where N is the smallest free integer. New tasks start `status: pending`.
-   - **Edit non-frozen task frontmatter**: `intent`, `acceptance`, `edge_cases`, `skills_to_load`, `depends_on`. May flip `blocked` → `pending` only if the amendment removes the cause of the blocker.
+   - **Edit non-frozen task frontmatter**: `intent`, `acceptance`, `edge_cases`, `skills_to_load`, `depends_on`. May flip `blocked` → `pending` only if the amendment removes the cause of the blocker. Never flip `deferred` → `pending`, and never edit a deferred task's `blocker` or `resume_when` — deferral is owned by `/agentic-defer` and reversed only by `/agentic-resume`. Content edits on deferred tasks are allowed (they keep the plan current for resumption).
    - **Edit non-frozen task body sections**: `## Goal`, `## Requirements`, `## Constraints`, `## Edge cases`, `## Test outline`.
    - **Update `_overview.md`**: refresh `## Assumptions` and `## Resolved Questions` if new answers arrived; append an entry to `## Amendments` describing this update; regenerate the task index.
 4. Forbidden in update mode:

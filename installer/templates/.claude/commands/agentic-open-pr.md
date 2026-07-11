@@ -69,3 +69,5 @@ Then create the PR via the github MCP (base, head, title, body). Print the PR UR
 - Do NOT include security exploit detail or full design findings in the PR body —
   verdicts and counts only. Those reports stay in gitignored `.claude/state/`.
 - Do NOT open a PR for a run whose tasks are all blocked — say so and STOP.
+- Do NOT open a PR for a `deferred` run (overview `status: deferred`) — the work
+  is parked on an external blocker; point at `/agentic-resume <run_id>` and STOP.

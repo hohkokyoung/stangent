@@ -223,6 +223,15 @@ class TestBuildPlanCLI(unittest.TestCase):
         self.assertEqual(plan["runnable"], [])
         self.assertEqual(plan["blocked_by_dep"], ["t2"])
 
+    def test_deferred_dep_not_runnable(self):
+        code, plan = self._run({
+            "t1.md": task_md("t1", status="deferred"),
+            "t2.md": task_md("t2", depends_on=["t1"]),
+        })
+        self.assertEqual(code, 0)
+        self.assertEqual(plan["runnable"], [])  # t1 parked, t2 frozen with it
+        self.assertEqual(plan["blocked_by_dep"], ["t2"])
+
     def test_dangling_dep_not_runnable(self):
         code, plan = self._run({
             "t1.md": task_md("t1", status="done"),

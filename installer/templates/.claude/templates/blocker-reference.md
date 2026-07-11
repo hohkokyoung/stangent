@@ -6,7 +6,8 @@ All valid `blocker:` values by role. Format: always a quoted string. Set only wh
 
 - Use the exact codes below — do not invent variants.
 - Angle-bracket placeholders (`<id>`, `<summary>`) must be filled with the real value.
-- `blocker: null` when status is NOT blocked.
+- `blocker: null` when status is NOT blocked or deferred.
+- `resume_when:` is set only alongside `status: deferred`; null otherwise.
 
 ---
 
@@ -52,6 +53,11 @@ All valid `blocker:` values by role. Format: always a quoted string. Set only wh
 |------|-------------|
 | `"preview_mcp_unavailable"` | The preview MCP tool did not respond or is not configured. |
 
+### Deferral — set by `/agentic-defer` only, NEVER by an agent
+| Code | When to use |
+|------|-------------|
+| `"external: <dependency>"` | The world isn't ready: undeployed backend, missing credentials, a third party or another team. Set on every non-`done` task by `/agentic-defer`, together with `status: deferred` and a `resume_when:` condition. An agent that cannot proceed for an in-run reason uses its role's codes above — agents MUST NOT emit this code or the `deferred` status. |
+
 ---
 
 ## Recovery steps
@@ -64,3 +70,4 @@ All valid `blocker:` values by role. Format: always a quoted string. Set only wh
 | `pre-existing test failures` | Fix failing tests first, then re-run the refactor. |
 | `regression` | Revert the refactoring change that caused the regression; re-approach that specific change. |
 | `review: *` | Address the reviewer's blocking finding, then re-run `/agentic-build <reviewer-task-id>`. |
+| `external: *` | Clear the external dependency, then run `/agentic-resume <run-id>` — never hand-flip `deferred` back to `pending`. |

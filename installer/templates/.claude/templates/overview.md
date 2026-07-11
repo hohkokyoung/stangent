@@ -1,6 +1,6 @@
 ---
 run_id: <run-id>
-status: pending     # pending | blocked  (blocked = planner gave up after 4 AskUserQuestion rounds)
+status: pending     # pending | blocked | deferred  (blocked = planner gave up after 4 AskUserQuestion rounds; deferred = parked by /agentic-defer)
 created: <UTC date>
 ---
 
@@ -42,6 +42,10 @@ created: <UTC date>
 ## Amendments
 
 <!-- append-only log; one block per /agentic-update-plan invocation -->
+
+## Deferral
+
+<!-- only present if the run was parked; written by /agentic-defer, closed by /agentic-resume -->
 
 ## Task index
 

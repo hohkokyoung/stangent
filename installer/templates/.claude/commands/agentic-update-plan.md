@@ -32,14 +32,15 @@ If no amendment text is given, use `AskUserQuestion` (YOU, not the planner) to e
    - An explicit "update mode" flag in the prompt.
 5. Planner's allowed actions in update mode:
    - **Add new task files** (`<next-id>.md`), all `status: pending`. New ids use the smallest free `t<N>` in the run.
-   - **Edit `pending` or `blocked` task frontmatter**: `acceptance`, `edge_cases`, `skills_to_load`, `depends_on`, `intent`. May flip `blocked` → `pending` if the blocker is resolved by the amendment.
-   - **Edit `pending`/`blocked` task sections**: `## Goal`, `## Requirements`, `## Constraints`, `## Edge cases`, `## Test outline`.
+   - **Edit `pending` / `blocked` / `deferred` task frontmatter**: `acceptance`, `edge_cases`, `skills_to_load`, `depends_on`, `intent`. May flip `blocked` → `pending` if the blocker is resolved by the amendment — but never `deferred` → `pending`; unfreezing a parked run is `/agentic-resume`'s job.
+   - **Edit `pending`/`blocked`/`deferred` task sections**: `## Goal`, `## Requirements`, `## Constraints`, `## Edge cases`, `## Test outline` (editing deferred tasks keeps the plan current for when it's resumed).
    - **Update `_overview.md`**: `## Assumptions`, `## Resolved Questions`, `## Amendments` (append-only log of every update-plan run), task index.
 6. Planner MUST NOT:
    - Touch any task in the frozen set.
    - Re-allocate the `run_id` or rename the directory.
    - Delete task files (mark superseded ones as `blocked` with `blocker: "superseded by t<N>"` instead).
    - Modify `## Design`, `## Decisions log`, `## Review`, or `## Test results` of any task.
+   - Change a deferred task's `status`, `blocker`, or `resume_when` — deferral state is owned by `/agentic-defer` and `/agentic-resume`.
 7. **Sketch injection (mirrors `/agentic-plan` step 7).** Determine if sketching is active for this run:
 
    If sketching is active and new sketchers will run, first write the run_id so logs are tagged:

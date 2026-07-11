@@ -10,8 +10,9 @@ complexity: medium               # low | medium | high — assessed by planner; 
 k: null                          # retrieve() chunk count; null = default 6; set 10 when "project" + multiple skill patterns
 adrs: []                         # accepted ADR ids relevant to THIS task only
 depends_on: []                   # justified edges only (no over-serialization)
-status: pending                  # pending | running | done | blocked
-blocker: null                    # set when status=blocked, naming the failing bullet
+status: pending                  # pending | running | done | blocked | deferred (deferred set only by /agentic-defer)
+blocker: null                    # status=blocked: the failing bullet · status=deferred: "external: <dependency>"
+resume_when: null                # set only when status=deferred — observable condition to resume (cleared by /agentic-resume)
 definition_of_done: |
   - acceptance criteria met
   - no known unresolved blockers

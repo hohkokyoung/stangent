@@ -17,7 +17,7 @@ Emits JSON on stdout:
       "cycle": false,
       "order": ["s2", "t1", "t2"],          # full topological order (ids)
       "runnable": [ <resolved task>, ... ],  # status==pending & deps all done
-      "blocked_by_dep": ["t3"]               # pending, but a dep is blocked
+      "blocked_by_dep": ["t3"]               # pending, but a dep is blocked/deferred
     }
 
 A resolved task is:
@@ -332,7 +332,9 @@ def build_plan(run_id: str, cfg: dict, only_task: str | None, session_model: str
         return all(status.get(d) == "done" for d in t["depends_on"])
 
     def dep_blocked(t: dict) -> bool:
-        return any(status.get(d) == "blocked" for d in t["depends_on"] if d in by_id)
+        # deferred counts too: a parked dep freezes its dependents the same way
+        return any(status.get(d) in ("blocked", "deferred")
+                   for d in t["depends_on"] if d in by_id)
 
     runnable, blocked_by_dep, invalid_deps = [], [], []
     for tid in order:
