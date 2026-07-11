@@ -180,7 +180,7 @@ The debugger writes nothing to the codebase. Its output is a diagnosis and a sin
 
 ## Deferring half-finished features
 
-Sometimes a run stops for reasons no agent can fix — the backend isn't deployed yet, credentials are pending, another team isn't ready. That's not `blocked` (an agent failing at its job) and not a scope change: *the plan is fine, the world isn't ready.* And run state under `.claude/state/` is machine working-state — partly gitignored, none of it written for humans — so simply walking away means the run's context evaporates on a fresh clone or after a few months of forgetting.
+Sometimes a run stops for reasons no agent can fix — the backend isn't deployed yet, credentials are pending, another team isn't ready. That's not `blocked` (an agent failing at its job) and not a scope change: *the plan is fine, the world isn't ready.* And run state under `.claude/state/` is gitignored working memory — none of it written for humans — so simply walking away means the run's context evaporates on a fresh clone or after a few months of forgetting.
 
 `/agentic-defer [run-id] <reason>` parks the run durably:
 
@@ -258,7 +258,7 @@ Ownership is strict: only `/agentic-defer` sets `deferred`, only `/agentic-resum
 │       └── doctor.py           # install health checks
 ├── mcp/
 │   └── agentic_mcp.py          # exposes retrieve(query, k, skills) over stdio MCP
-└── state/                      # local run state (vectors.db, logs/, review reports gitignored)
+└── state/                      # gitignored — local working memory; durable artifacts are promoted to docs/ and adrs/
     ├── plans/<FEAT-###>/
     │   ├── _overview.md
     │   ├── t1.md, t2.md, ...

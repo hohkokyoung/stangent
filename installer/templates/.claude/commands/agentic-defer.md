@@ -7,7 +7,7 @@ argument-hint: "[run-id] <why it stopped>"
 
 Parks a run that cannot progress for **external** reasons — backend not deployed yet, credentials pending, a third party or another team not ready. This is different from `blocked` (an agent failed at its job) and from `/agentic-update-plan` (the scope changed). Deferral means: *the plan is fine, the world isn't ready.*
 
-Run state under `.claude/state/` is machine working-state — partly gitignored, none of it written for humans, and not guaranteed to survive a fresh clone. A parked run's context — what shipped, what's half-done, why it stopped — evaporates from memory long before then. This command exports that context to a **committed** dossier under `docs/features/` and registers it in `docs/FEATURES.md`, so the feature can be resumed cold, by anyone.
+Run state under `.claude/state/` is gitignored working memory — none of it written for humans, none of it surviving a fresh clone. A parked run's context — what shipped, what's half-done, why it stopped — evaporates from memory long before then. This command exports that context to a **committed** dossier under `docs/features/` and registers it in `docs/FEATURES.md`, so the feature can be resumed cold, by anyone.
 
 ## Arguments
 

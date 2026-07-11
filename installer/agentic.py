@@ -32,13 +32,10 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = SCRIPT_DIR / "templates"
 
 GITIGNORE_BLOCK = """# >>> agentic
-.claude/state/vectors.db
-.claude/state/logs/
-.claude/state/current_*.txt
-# review reports may contain exploit scenarios / sensitive design notes — never commit
-.claude/state/security-review/
-.claude/state/design-review/
-.claude/state/pr-review/
+# run state is local working memory — durable artifacts are promoted out of it
+# (ADRs, docs/features/ dossiers, docs/screenshots/). Review reports may contain
+# exploit scenarios — never commit. `**/` also covers nested installs in monorepos.
+**/.claude/state/
 .mcp.json
 # <<< agentic
 """
