@@ -36,6 +36,8 @@ GITIGNORE_BLOCK = """# >>> agentic
 # (ADRs, docs/features/ dossiers, docs/screenshots/). Review reports may contain
 # exploit scenarios — never commit. `**/` also covers nested installs in monorepos.
 **/.claude/state/
+# bytecode caches dropped by the installed hooks/MCP server at runtime
+**/.claude/**/__pycache__/
 .mcp.json
 # <<< agentic
 """
