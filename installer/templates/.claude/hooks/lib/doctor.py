@@ -158,10 +158,12 @@ def check_mcp_json() -> list[dict]:
 
     out.append(_check("file: .mcp.json", OK, f"{len(servers)} server(s): {', '.join(servers)}"))
 
-    # check for unfilled placeholders
+    # check for unfilled placeholders — credentials live in args (e.g. supabase
+    # --access-token) OR env (e.g. github GITHUB_PERSONAL_ACCESS_TOKEN), so scan both.
     for name, conf in servers.items():
         args_text = " ".join(str(a) for a in conf.get("args", []))
-        if "REPLACE_WITH_" in args_text:
+        env_text = " ".join(str(v) for v in (conf.get("env", {}) or {}).values())
+        if "REPLACE_WITH_" in args_text or "REPLACE_WITH_" in env_text:
             out.append(_check(f"mcp:{name} credentials", WARN,
                               "still contains REPLACE_WITH_ placeholder"))
         else:
