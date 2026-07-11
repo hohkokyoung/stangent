@@ -24,7 +24,9 @@ Run a battery of fast, deterministic checks against this project's agentic insta
 - Required deps: `pyyaml`, `fastembed`, `sqlite-vec`
 - Optional: `voyageai` + `VOYAGE_API_KEY`
 - Directory tree: `agents/`, `commands/`, `skills/`, `hooks/`, `mcp/`, `evals/`, `templates/`, `adrs/`, `state/`
+- Agents: all expected role files present (planner, sketcher, implementer, reviewer, tester, debugger, refactor, auditor, architect, security-reviewer)
 - Config files: `.agentic.yml` parses, `settings.json` parses (and doesn't contain dead `mcpServers` block)
+- `risk_profile` block present in `.agentic.yml` (warns if absent — architect/security-reviewer fall back to generic assumptions)
 - `.mcp.json` at project root: present, parses, no `REPLACE_WITH_` placeholders
 - `vectors.db` exists + readable + reports chunk/skill counts
 - Hooks compile (`pre_tool_use.py`, `post_tool_use.py`)

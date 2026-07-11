@@ -16,6 +16,24 @@ system_version: 1.0.0
 #   enabled_skills: [flutter, mobile, supabase, owasp, maestro]
 enabled_skills: []
 
+# Project risk profile. Read by the architect and security-reviewer agents to
+# calibrate findings and severity — a generic framework can't know your stakes
+# unless you declare them. Leave a field empty/[] and those agents will note the
+# gap and fall back to conservative generic assumptions rather than inventing
+# obligations you never declared.
+#   data_sensitivity: what kinds of sensitive data this project handles
+#                     — any of: pii, phi, payments, credentials  (empty = none)
+#   compliance:       regulatory regimes in scope
+#                     — any of: gdpr, ccpa, hipaa, pci, soc2      (empty = none)
+#   auth_model:       one line on how tenant/user isolation is enforced
+#                     — e.g. "supabase-rls", "app-layer middleware", "single-user"
+#   data_residency:   region constraint, or "" for none — e.g. "eu-only"
+risk_profile:
+  data_sensitivity: []
+  compliance: []
+  auth_model: ""
+  data_residency: ""
+
 embedding:
   provider: voyage-3-lite    # falls back to fastembed if VOYAGE_API_KEY is unset
   fallback: fastembed
@@ -46,6 +64,8 @@ retrieval:
   role_k:
     reviewer: 2   # pattern-matching against skill rules; doesn't need broad context
     tester: 3     # needs test-method chunks, not implementation detail
+    architect: 8          # cross-cutting design context — needs breadth
+    security-reviewer: 8  # owasp corpus + related-boundary references
 
 skill_groups:
   test: [playwright, maestro]   # only these skills are injected into the tester role
@@ -79,6 +99,8 @@ models:
   tester:      claude-haiku-4-5-20251001   # run tests, check pass/fail counts
   debugger:    claude-sonnet-4-6           # diagnosis requires reasoning
   refactor:    claude-sonnet-4-6           # codebase understanding + careful edits
+  architect:         claude-opus-4-8       # adversarial design reasoning — NOT pattern-matching; worth the spend
+  security-reviewer: claude-opus-4-8       # exploit-path construction — NOT pattern-matching; worth the spend
 
 # Dynamic complexity routing.
 # When enabled, the model selected for each task is adjusted based on its complexity field:
@@ -89,6 +111,9 @@ models:
 # high_floor defaults to Sonnet. Set it to claude-opus-4-8 only for roles that genuinely
 # benefit from deeper reasoning (planner, debugger) on architectural/security tasks.
 # Avoid Opus for reviewer/tester — they are pattern-matching, not reasoning.
+# The architect and security-reviewer are the opposite: pure reasoning roles that
+# construct design critiques and exploit paths. Keep them on Opus — do not "optimize"
+# them down to Haiku by analogy with the reviewer; they are not pattern-matchers.
 complexity_routing:
   enabled: true
   low_cap: claude-haiku-4-5-20251001    # low tasks never exceed this model
