@@ -30,7 +30,13 @@ import re
 import sys
 from pathlib import Path
 
-LOG_DIR = Path.cwd() / ".claude" / "state" / "logs"
+# Derive the repo root from THIS file's location, not the process cwd — the hook
+# runs with an unreliable cwd, so a cwd-based path wrote state into whatever
+# subdirectory happened to be current. __file__ is
+# <repo>/.claude/hooks/post_tool_use.py → parents[2].
+REPO_ROOT = Path(__file__).resolve().parents[2]
+STATE_DIR = REPO_ROOT / ".claude" / "state"
+LOG_DIR = STATE_DIR / "logs"
 
 MAX_VALUE_LEN = 120
 MAX_KEYS = 6
@@ -92,7 +98,7 @@ def main() -> None:
             deny_reason = tool_response.get("deny_reason")
 
     def _read_state(filename: str) -> str | None:
-        p = Path.cwd() / ".claude" / "state" / filename
+        p = STATE_DIR / filename
         if not p.exists():
             return None
         try:

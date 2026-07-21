@@ -33,7 +33,11 @@ try:
 except ImportError:
     yaml = None  # type: ignore
 
-REPO_ROOT = Path.cwd().resolve()
+# Derive the repo root from THIS file's location, not the process cwd: the hook
+# runs with an unreliable cwd (and an often-unset CLAUDE_PROJECT_DIR), so a
+# cwd-based root misjudged the repo boundary whenever cwd drifted into a
+# subdirectory. __file__ is <repo>/.claude/hooks/pre_tool_use.py → parents[2].
+REPO_ROOT = Path(__file__).resolve().parents[2]
 AGENTIC_YML = REPO_ROOT / ".claude" / ".agentic.yml"
 ROLE_STATE = REPO_ROOT / ".claude" / "state" / "current_role.txt"
 
