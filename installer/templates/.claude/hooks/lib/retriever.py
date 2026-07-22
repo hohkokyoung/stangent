@@ -187,9 +187,17 @@ def chunk_source_code(text: str, target_tokens: int) -> list[tuple[str, str]]:
 def _match_glob(rel_path: str, pat: str) -> bool:
     if fnmatch.fnmatch(rel_path, pat):
         return True
-    # Directory prefix: "foo/**" excludes everything under foo/.
-    if pat.endswith("/**") and rel_path.startswith(pat[:-3] + "/"):
-        return True
+    # Directory prefix "foo/**": exclude the "foo/" dir at the repo root OR
+    # nested at ANY depth (e.g. backend/.venv/, pkg/node_modules/, sub/build/).
+    # Root-anchoring here was a bug: fnmatch compiles "foo/**" to "starts with
+    # foo/", so a nested noise dir escaped every exclude and got indexed. This
+    # matches gitignore semantics, where a bare "foo/" ignores foo/ at any depth.
+    # (Patterns whose dir part contains a wildcard, e.g. "*.egg-info/**", are
+    # already depth-agnostic via fnmatch above, since "*" spans "/".)
+    if pat.endswith("/**"):
+        seg = pat[:-3].strip("/")
+        if seg and ("/" + seg + "/") in ("/" + rel_path + "/"):
+            return True
     return False
 
 

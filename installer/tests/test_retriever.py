@@ -93,6 +93,20 @@ class TestIsExcluded(unittest.TestCase):
         for path in ["mobile/lib/model.dart", "src/index.ts", "server/main.go"]:
             self.assertFalse(r._is_excluded(path, d), f"{path} should be kept")
 
+    def test_nested_noise_dirs_excluded(self):
+        # Root-anchoring bug: a venv/build dir nested in a subfolder must still
+        # be excluded, not just one at the repo root.
+        d = r._DEFAULT_PROJECT_EXCLUDES
+        for path in [
+            "backend/.venv/lib/pkg.py",       # nested venv
+            "packages/web/node_modules/x.js",  # nested node_modules
+            "sub/build/out.dart",              # nested build
+            ".venv/lib/pkg.py",                # root venv (still works)
+        ]:
+            self.assertTrue(r._is_excluded(path, d), f"{path} should be excluded")
+        # A dir whose name merely contains a noise segment is NOT falsely caught.
+        self.assertFalse(r._is_excluded("lib/buildings/model.dart", d))
+
     def test_config_excludes_are_additive(self):
         # Defaults still apply after a project adds its own exclude.
         excludes = r._DEFAULT_PROJECT_EXCLUDES + ["fixtures/**"]
