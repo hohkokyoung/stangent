@@ -7,6 +7,7 @@ really runs: a subprocess with a controlled working directory.
     python3 -m unittest discover installer/tests
 """
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -22,6 +23,14 @@ class HookCase(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             (root / ".claude" / "state").mkdir(parents=True)
+            # Install the hook where it really lives (<repo>/.claude/hooks/) so
+            # its __file__-derived REPO_ROOT (parents[2]) resolves to this
+            # tempdir — the same layout as a real install. Running the source
+            # copy directly would anchor the repo root at the framework tree.
+            hooks_dir = root / ".claude" / "hooks"
+            hooks_dir.mkdir(parents=True, exist_ok=True)
+            hook_copy = hooks_dir / HOOK.name
+            shutil.copy(HOOK, hook_copy)
             if role is not None:
                 (root / ".claude" / "state" / "current_role.txt").write_text(role)
             for rel, content in (extra_files or {}).items():
@@ -29,7 +38,7 @@ class HookCase(unittest.TestCase):
                 p.parent.mkdir(parents=True, exist_ok=True)
                 p.write_text(content)
             proc = subprocess.run(
-                [sys.executable, str(HOOK)], input=json.dumps(payload),
+                [sys.executable, str(hook_copy)], input=json.dumps(payload),
                 cwd=str(root), capture_output=True, text=True)
             return proc.returncode, proc.stdout
 
