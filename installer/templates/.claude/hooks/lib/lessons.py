@@ -9,7 +9,7 @@ half of the loop:
     lessons.py show               # print lessons.md (for planner injection)
 
 The *distillation* (deciding which raw findings are recurring and worth keeping)
-is LLM judgment done by /agentic-cleanup — this script only collects the raw
+is LLM judgment done by /agentic-lessons — this script only collects the raw
 material and manages the capped, deduped lessons file. /agentic-plan feeds
 `show` output to the planner so future plans account for past mistakes.
 """
@@ -27,7 +27,7 @@ LESSONS_FILE = REPO_ROOT / ".claude" / "state" / "lessons.md"
 MAX_LESSONS = 30
 HEADER = (
     "# Lessons — recurring review findings\n\n"
-    "<!-- Distilled by /agentic-cleanup from past ## Review sections; injected\n"
+    "<!-- Distilled by /agentic-lessons from past ## Review sections; injected\n"
     "     into the planner by /agentic-plan. Capped at "
     f"{MAX_LESSONS} entries (oldest dropped). -->\n\n"
 )
