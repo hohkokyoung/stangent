@@ -71,6 +71,47 @@ class TestKnnFallback(unittest.TestCase):
         self.assertIsNone(r._knn_query(conn, [1.0, 0.0], k=1, scope=[]))
 
 
+class TestIsExcluded(unittest.TestCase):
+    def test_generated_files_excluded_by_default(self):
+        d = r._DEFAULT_PROJECT_EXCLUDES
+        for path in [
+            "mobile/lib/model.g.dart",
+            "mobile/lib/model.freezed.dart",
+            "src/types/index.d.ts",
+            "server/pb/service.pb.go",
+            "api/schema_pb2.py",
+            "web/schema.generated.ts",
+            "components/Button.snap",
+        ]:
+            self.assertTrue(r._is_excluded(path, d), f"{path} should be excluded")
+
+    def test_real_source_not_excluded(self):
+        d = r._DEFAULT_PROJECT_EXCLUDES
+        for path in ["mobile/lib/model.dart", "src/index.ts", "server/main.go"]:
+            self.assertFalse(r._is_excluded(path, d), f"{path} should be kept")
+
+    def test_config_excludes_are_additive(self):
+        # Defaults still apply after a project adds its own exclude.
+        excludes = r._DEFAULT_PROJECT_EXCLUDES + ["fixtures/**"]
+        self.assertTrue(r._is_excluded("fixtures/data.dart", excludes))
+        self.assertTrue(r._is_excluded("lib/model.g.dart", excludes))  # default intact
+
+    def test_negation_re_includes(self):
+        # "!tests/**" un-excludes tests that the default "tests/**" caught.
+        excludes = r._DEFAULT_PROJECT_EXCLUDES + ["!tests/**"]
+        self.assertFalse(r._is_excluded("tests/test_foo.py", excludes))
+        # Other defaults still apply.
+        self.assertTrue(r._is_excluded("lib/model.g.dart", excludes))
+
+    def test_load_project_globs_merges_defaults(self):
+        cfg = {"project_index": {"include": ["**/*.dart"], "exclude": ["fixtures/**"]}}
+        include, exclude = r._load_project_globs(cfg)
+        self.assertEqual(include, ["**/*.dart"])
+        self.assertIn("fixtures/**", exclude)
+        self.assertIn("node_modules/**", exclude)  # default preserved
+        self.assertIn("*.g.dart", exclude)         # generated default preserved
+
+
 class TestResolveScope(unittest.TestCase):
     def test_filter_wins_over_enabled(self):
         cfg = {"enabled_skills": ["react"]}

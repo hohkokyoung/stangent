@@ -65,6 +65,22 @@ _DEFAULT_PROJECT_EXCLUDES = [
     "_build/**", ".elixir_ls/**",
     # General generated / lock files
     "*.lock",
+    # ---- Generated source code (machine-written; noise for retrieval) ----
+    # These live *alongside* hand-written code, so directory excludes above
+    # don't catch them — they must be matched by filename suffix.
+    # Dart / Flutter codegen: build_runner, freezed, json_serializable, riverpod
+    "*.g.dart", "*.freezed.dart", "*.gr.dart", "*.config.dart", "*.mocks.dart",
+    # Protobuf / gRPC (all languages)
+    "*.pb.dart", "*.pbenum.dart", "*.pbjson.dart", "*.pbserver.dart",
+    "*.pb.go", "*_pb2.py", "*_pb2_grpc.py", "*.pb.cc", "*.pb.h",
+    # TypeScript declaration files + source maps
+    "*.d.ts", "*.map",
+    # C# designer / generated partials (case varies by tooling)
+    "*.designer.cs", "*.Designer.cs", "*.g.cs", "*.g.i.cs",
+    # Jest / snapshot fixtures
+    "*.snap",
+    # Common codegen naming convention (e.g. schema.generated.ts)
+    "*.generated.*",
     # Test files (excluded so source retrieval isn't polluted by test fixtures)
     "tests/**", "__tests__/**", "*.test.*", "*.spec.*",
 ]
@@ -167,13 +183,32 @@ def chunk_source_code(text: str, target_tokens: int) -> list[tuple[str, str]]:
 
 # ---------- project glob helpers ----------
 
-def _is_excluded(rel_path: str, excludes: list[str]) -> bool:
-    for pat in excludes:
-        if fnmatch.fnmatch(rel_path, pat):
-            return True
-        if pat.endswith("/**") and rel_path.startswith(pat[:-3] + "/"):
-            return True
+def _match_glob(rel_path: str, pat: str) -> bool:
+    if fnmatch.fnmatch(rel_path, pat):
+        return True
+    # Directory prefix: "foo/**" excludes everything under foo/.
+    if pat.endswith("/**") and rel_path.startswith(pat[:-3] + "/"):
+        return True
     return False
+
+
+def _is_excluded(rel_path: str, excludes: list[str]) -> bool:
+    """True if rel_path is excluded.
+
+    Patterns are evaluated in order; the last matching pattern wins. A pattern
+    prefixed with "!" re-includes (un-excludes) a path an earlier pattern caught
+    — e.g. defaults exclude "tests/**", and a project can add "!tests/**" to
+    index its tests anyway. This ordering is why config excludes are appended
+    *after* the built-in defaults in _load_project_globs.
+    """
+    excluded = False
+    for pat in excludes:
+        if pat.startswith("!"):
+            if _match_glob(rel_path, pat[1:]):
+                excluded = False
+        elif _match_glob(rel_path, pat):
+            excluded = True
+    return excluded
 
 
 def _load_project_globs(cfg: dict) -> tuple[list[str], list[str]]:
@@ -187,7 +222,13 @@ def _load_project_globs(cfg: dict) -> tuple[list[str], list[str]]:
         except Exception:
             pass
 
-    exclude = (pi.get("exclude") or []) or _DEFAULT_PROJECT_EXCLUDES
+    # Config excludes are ADDITIVE: built-in defaults always apply, and any
+    # patterns from .agentic.yml are appended after them. This means adding one
+    # project-specific exclude never silently drops the sane defaults (build
+    # dirs, vendored deps, generated code). To un-exclude a default, prefix a
+    # config pattern with "!" (handled in _is_excluded).
+    user_exclude = [g for g in (pi.get("exclude") or []) if g]
+    exclude = _DEFAULT_PROJECT_EXCLUDES + user_exclude
     return include, exclude
 
 

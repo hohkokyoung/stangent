@@ -55,8 +55,12 @@ gateway:
 project_index:
   include: []   # leave empty → auto-detected globs from /agentic-index
                 # override example: ["src/**/*.ts", "lib/**/*.dart", "**/*.go"]
-  exclude: []   # leave empty → retriever.py built-in defaults apply
-                # add entries to suppress specific paths, e.g. ["fixtures/**"]
+  exclude: []   # ADDITIVE — built-in defaults ALWAYS apply (build dirs, vendored
+                # deps, and generated code like *.g.dart / *.d.ts / *.pb.* / *.generated.*).
+                # Entries here are appended to the defaults, so add only your
+                # project-specific extras, e.g. ["fixtures/**", "**/legacy/**"].
+                # To re-include something a default excludes, prefix with "!",
+                # e.g. ["!tests/**"] to index tests despite the default.
 
 retrieval:
   default_k: 6
