@@ -24,7 +24,7 @@ Run a battery of fast, deterministic checks against this project's agentic insta
 - Required deps: `pyyaml`, `fastembed`, `sqlite-vec`
 - Optional: `voyageai` + `VOYAGE_API_KEY`
 - Directory tree: `agents/`, `commands/`, `skills/`, `hooks/`, `mcp/`, `evals/`, `templates/`, `adrs/`, `state/`
-- Agents: all expected role files present (planner, sketcher, implementer, reviewer, tester, debugger, refactor, auditor, architect, security-reviewer)
+- Agents: all expected role files present (planner, sketcher, designer, implementer, reviewer, design-critic, tester, debugger, refactor, auditor, architect, security-reviewer)
 - Config files: `.agentic.yml` parses, `settings.json` parses (and doesn't contain dead `mcpServers` block)
 - `risk_profile` block present in `.agentic.yml` (warns if absent — architect/security-reviewer fall back to generic assumptions)
 - `.mcp.json` at project root: present, parses, no `REPLACE_WITH_` placeholders
@@ -32,6 +32,7 @@ Run a battery of fast, deterministic checks against this project's agentic insta
 - Hooks compile (`pre_tool_use.py`, `post_tool_use.py`)
 - Skills: each has `SKILL.md`; flags any >3000 tokens
 - ADRs: count by status (proposed / accepted / superseded)
+- Design spec: reports whether `docs/design/DESIGN-SPEC.md` exists (optional — authored by `/agentic-design`; never a failure)
 - Git: repo present, current branch, working-tree clean status
 - Screenshot readiness: if `test_framework` in `project.yml` is `playwright` or `maestro`, warns if the matching MCP server is absent from `.mcp.json` (would cause `/agentic-screenshot` to stop at the MCP probe)
 

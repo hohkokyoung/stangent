@@ -77,6 +77,7 @@ def check_dir_tree() -> list[dict]:
 EXPECTED_AGENTS = [
     "planner", "sketcher", "implementer", "reviewer", "tester",
     "debugger", "refactor", "auditor", "architect", "security-reviewer",
+    "designer", "design-critic",
 ]
 
 
@@ -257,6 +258,18 @@ def check_adrs() -> dict:
     return _check("adrs/", OK, f"{len(files)} ADRs (accepted={statuses['accepted']}, proposed={statuses['proposed']}, superseded={statuses['superseded']})")
 
 
+def check_design_spec() -> dict:
+    # The UI design spec is optional — authored by /agentic-design, enforced by
+    # /agentic-review-ui. Absent is fine (OK, not WARN): many projects have no
+    # frontend. Present means the sketcher + design-critic have a house style.
+    spec = REPO_ROOT / "docs" / "design" / "DESIGN-SPEC.md"
+    if spec.is_file():
+        tokens = (REPO_ROOT / "docs" / "design" / "tokens.md").is_file()
+        return _check("design spec", OK,
+                      f"docs/design/DESIGN-SPEC.md present{'' if tokens else ' (tokens.md missing)'}")
+    return _check("design spec", OK, "none yet (optional — /agentic-design to author one)")
+
+
 def check_stale_state() -> dict:
     # Reuse state.py's definition of "stale" so the file list and age threshold
     # live in exactly one place (doctor is run with the lib dir on sys.path).
@@ -310,6 +323,7 @@ def run_all() -> list[dict]:
     results.extend(check_hooks_compile())
     results.extend(check_skills())
     results.append(check_adrs())
+    results.append(check_design_spec())
     results.append(check_stale_state())
     results.extend(check_git())
     return results

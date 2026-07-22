@@ -31,6 +31,12 @@ The `pre_tool_use` hook hard-enforces your write-scope: while your role is activ
    - `maestro` → **390 × 844px** (mobile)
    - `playwright` or any web framework → **1280 × 800px** (desktop browser)
    - `unknown` or file absent → **1280 × 800px** (safe default)
+4b. **Load the house style, if any.** If `docs/design/DESIGN-SPEC.md` exists, read it
+   and `docs/design/tokens.md`. Your mockup MUST honour them: use the real token
+   colours, the type scale, the spacing scale, the corner radii, and the component
+   states the spec requires. This is what makes the sketch match the rest of the
+   product instead of a generic mockup. If no spec exists, fall back to clean
+   neutral defaults as before.
 5. **Produce the sketch HTML.** The local path depends on the mode:
    - html mode → `.claude/state/plans/<run_id>/sketches/<task_id>.html`
    - claude-design mode → `.claude/design/<remote_prefix>/<run_id>/<task_id>.html` (the local mirror; `<remote_prefix>` from the design config, default `screens`)
@@ -39,7 +45,7 @@ The `pre_tool_use` hook hard-enforces your write-scope: while your role is activ
       - Plain HTML + inline CSS only. No external dependencies, no JavaScript frameworks.
       - Render at the viewport determined in step 4.
       - White or light background. Approximate the described component with real shapes, text, and spacing — not placeholders.
-      - If the task mentions colours, typography, or an existing design system, reflect them. Otherwise use clean neutral defaults.
+      - Reflect the design spec loaded in step 4b if present (its tokens win over any ad-hoc choice). Otherwise, if the task mentions colours, typography, or an existing design system, reflect those; failing both, use clean neutral defaults.
       - Keep it focused: render only what the task describes, not an entire app screen unless the task requires it.
    b. **claude-design mode (normal):** call `DesignSync list_files` on the project and look for `<remote_prefix>/<run_id>/<task_id>.html`:
       - **Exists remotely** → `get_file` it and write the content to the local mirror path. The remote version is authoritative — the developer may have edited it on claude.ai/design.

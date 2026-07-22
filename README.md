@@ -1,6 +1,6 @@
 # Agentic Development Workflow System
 
-A Claude Code–native agentic development workflow. Installs per-project under `.claude/`. Agents are organized by **role** (planner / sketcher / architect / security-reviewer / implementer / reviewer / tester / debugger / refactor / auditor), not by stack. Stack expertise lives in skill prompt blocks plus a retrievable references corpus.
+A Claude Code–native agentic development workflow. Installs per-project under `.claude/`. Agents are organized by **role** (planner / sketcher / designer / architect / security-reviewer / implementer / reviewer / design-critic / tester / debugger / refactor / auditor), not by stack. Stack expertise lives in skill prompt blocks plus a retrievable references corpus.
 
 ---
 
@@ -43,8 +43,10 @@ In the installed project, in Claude Code:
 /agentic-index                              # one-time setup (or when skills/references change)
 /agentic-plan <natural-language goal>       # planner clarifies, sketches UI, emits FEAT-### task files
 /agentic-build all                          # dispatcher runs tasks in dep order, re-indexes code before each
-/agentic-review [commits:N | dir:path | all] # FULL review — hygiene + design + security in one pass → consolidated report → remediate
+/agentic-design ["<direction>"]             # author the UI design spec → docs/design/ (greenfield interview or brownfield extract+critique)
+/agentic-review [commits:N | dir:path | all] # FULL review — hygiene + design + security (+ UI adherence) → consolidated report → remediate
 /agentic-review-design [run_id | "feature"] # architect red-teams the DESIGN — data ownership, tenancy, compliance, scaling
+/agentic-review-ui [run_id: | dir: | all]   # design-critic checks the built UI against docs/design/DESIGN-SPEC.md → drift report
 /agentic-review-security [run_id | "feature"] # security-reviewer red-teams for exploits — OWASP Top 10, IDOR, injection, secrets
 /agentic-review-pr <PR# | url> [--comment]  # fetch a GitHub PR → architect + security-reviewer; optional summary comment
 /agentic-open-pr [run_id]                   # open a PR from a completed run's feat/<run_id> branch
@@ -97,6 +99,64 @@ The implementer receives both the rendered PNG **and** the synced HTML — so ex
 If DesignSync is unavailable (no claude.ai login, tool missing), everything falls back to the classic HTML flow — a plan or build never halts over it.
 
 > **Upgrading an existing install:** `.agentic.yml` is seeded once and never overwritten on re-install, so add the `design:` block manually to projects installed before this feature.
+
+---
+
+## UI design spec — author, recommend, enforce
+
+The sketcher draws one screen at a time. The **design spec** is the tier above it:
+a durable, committed house style the whole UI must obey. It's authored once,
+enforced continuously, and honoured automatically when new screens are sketched —
+closing the loop **spec → sketch → build → critique**.
+
+```
+/agentic-design                 # author or amend docs/design/DESIGN-SPEC.md
+/agentic-review-ui all          # critique the built UI against it
+```
+
+`/agentic-design` auto-detects which of two modes it's in (and confirms with you):
+
+- **Greenfield** (no UI yet) — it **interviews** you on aesthetic direction (vibe,
+  colour, typography, density, **motion appetite**, platforms, a11y bar) and then
+  **recommends a concrete stack** — motion library, component approach, theming,
+  optional 3D — each with a one-line reason and **where to install it**. It never
+  installs anything; the recommendations land in `docs/design/plugins.md` for you
+  to act on.
+- **Brownfield** (UI already exists) — the **designer** agent **extracts** the
+  current design language from your code (tailwind config, `:root` tokens, theme
+  files, component styles) into the spec, and **flags every inconsistency it hits**
+  along the way (a colour expressed as two hex values, off-scale spacing, a button
+  styled three ways, missing focus states). That drift report is the critique you
+  asked for before you commit the spec.
+
+The approved spec is promoted to committed `docs/design/`:
+
+```
+docs/design/
+├── DESIGN-SPEC.md    ← the house style: colour roles, type scale, motion budget, a11y bar, do/don't
+├── tokens.md         ← machine-diffable token table (the critic diffs against this)
+└── plugins.md        ← recommended stack + where to install each piece
+```
+
+**Enforcement.** `/agentic-review-ui` runs the **design-critic**, which checks the
+built UI against the spec — raw hex that should be tokens, spacing off the scale,
+interactive elements with no focus/disabled state, contrast under the AA floor, and
+internal inconsistencies where the UI contradicts itself. It's read-only: it writes
+a verdict (`on-spec` | `drift` | `off-spec`) and a findings report, never touches
+code. Its findings also fold into the umbrella `/agentic-review` as a fourth lane
+(only when a spec exists) and flow into remediation there.
+
+The critic works **statically** always (tokens/CSS/components), and uses the latest
+`docs/screenshots/` (from `/agentic-screenshot`) as visual evidence when present.
+
+Once a spec exists, every `/agentic-plan` sketch honours it — the sketcher reads
+`DESIGN-SPEC.md` + `tokens.md` and draws in the house style, so mockups match the
+product instead of a generic look.
+
+> **No auto-install.** The designer only recommends and documents — you install the
+> stack yourself. **Upgrading an existing install:** the new `designer` /
+> `design-critic` model entries in `.agentic.yml` are optional (both fall back to
+> `models.default`), so the feature works without editing config.
 
 ---
 
@@ -208,6 +268,8 @@ Ownership is strict: only `/agentic-defer` sets `deferred`, only `/agentic-resum
 ├── agents/
 │   ├── planner.md              # decomposition only — no file names, no classes, no assumptions
 │   ├── sketcher.md             # renders HTML mockup → screenshot → embeds in task file
+│   ├── designer.md             # authors/extracts the UI design spec + recommends a stack; draft only
+│   ├── design-critic.md        # checks the built UI against the design spec; drift report only
 │   ├── architect.md            # system-level design review; challenges assumptions incl. ADRs; report only
 │   ├── security-reviewer.md    # red-team threat model — OWASP Top 10, IDOR, injection, secrets; report only
 │   ├── implementer.md          # one task; loads skills verbatim; one retrieve() call
@@ -219,6 +281,7 @@ Ownership is strict: only `/agentic-defer` sets `deferred`, only `/agentic-resum
 ├── commands/
 │   ├── agentic-plan.md
 │   ├── agentic-build.md        # fixed topo-sort dispatcher; re-indexes project before each task
+│   ├── agentic-design.md       # author/amend the UI design spec → docs/design/ (greenfield or brownfield)
 │   ├── agentic-status.md
 │   ├── agentic-index.md        # embeds skill references + indexes project source files
 │   ├── agentic-update-plan.md
@@ -231,9 +294,10 @@ Ownership is strict: only `/agentic-defer` sets `deferred`, only `/agentic-resum
 │   ├── agentic-test.md         # brownfield test bootstrap
 │   ├── agentic-screenshot.md   # screenshot all pages/screens → docs/screenshots/<date>/
 │   ├── agentic-cleanup.md      # audit for smells → dispatch refactor tasks
-│   ├── agentic-review.md          # FULL review — hygiene + design + security → consolidated → remediate
+│   ├── agentic-review.md          # FULL review — hygiene + design + security (+ UI) → consolidated → remediate
 │   ├── agentic-review-design.md   # architect design review → findings report
 │   ├── agentic-review-security.md # security red-team → threat model report
+│   ├── agentic-review-ui.md       # design-critic checks built UI vs design spec → drift report
 │   ├── agentic-review-pr.md       # review a GitHub PR (github MCP) → architect + security-reviewer
 │   ├── agentic-open-pr.md         # open a PR from a completed run (github MCP)
 │   └── agentic-lessons.md      # distill recurring review findings → lessons the planner learns from
@@ -305,6 +369,7 @@ Ownership is strict: only `/agentic-defer` sets `deferred`, only `/agentic-resum
 - **`retrieve()` = one call per agent per task.** Scoped to the task's `skills_to_load`.
 - **Skills define HOW, agents define WHAT.** The tester role is generic — its testing method (MCP tools, commands, artifact format) is entirely defined by the injected skill. No framework logic in the role prompt.
 - **Sketch before code.** For any task with visible UI changes, the sketcher runs during planning and embeds a rendered image before any implementer task is dispatched.
+- **Design spec is the house style.** Authored (greenfield) or extracted (brownfield) by `/agentic-design` into committed `docs/design/`. Agents draft to gitignored state; the command promotes on approval. The sketcher honours it; the design-critic enforces it (`/agentic-review-ui`). Optional — projects with no frontend simply never author one.
 - **Debugger = diagnosis only.** The debugger never writes to the codebase. Data before code, always.
 - **MCP rules:** `agentic_mcp.retrieve` is the internal knowledge plane; `context7` / `fetch` / `sequential-thinking` are available to all agents; `playwright` / `maestro` / `dbhub` / `supabase` / `github` are runtime tools usable only by implementer/tester/debugger. Planner/reviewer/sketcher never touch external MCP (except sketcher uses Preview MCP for rendering).
 - **Hooks = safety + logging.** No tool filtering, no context-aware gating.

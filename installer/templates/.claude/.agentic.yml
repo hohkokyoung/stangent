@@ -71,6 +71,7 @@ retrieval:
   chunk_tokens: 400
   role_k:
     reviewer: 2   # pattern-matching against skill rules; doesn't need broad context
+    design-critic: 2  # pattern-matching against the design spec; same as reviewer
     tester: 3     # needs test-method chunks, not implementation detail
     architect: 8          # cross-cutting design context — needs breadth
     security-reviewer: 8  # owasp corpus + related-boundary references
@@ -89,6 +90,10 @@ design:
   fallback: html          # used when claude-design / DesignSync is unavailable
   project_id: ""          # claude.ai design-system project UUID; set up on first /agentic-plan
   remote_prefix: screens  # remote path prefix inside the design project
+  # Project-level UI design spec (separate from per-task sketches above).
+  # Authored by /agentic-design, enforced by /agentic-review-ui, honoured by the
+  # sketcher. Committed — survives fresh clones, reviewable in PRs.
+  spec_dir: docs/design   # where DESIGN-SPEC.md / tokens.md / plugins.md live
 
 plan_id:
   prefix: FEAT   # FEAT-001, FEAT-002, ...
@@ -102,6 +107,8 @@ models:
   default:     claude-sonnet-4-6           # fallback for any unlisted role
   planner:     claude-sonnet-4-6           # ambiguity resolution + full coverage checklist
   sketcher:    claude-haiku-4-5-20251001   # HTML mockup generation + screenshot
+  designer:    claude-sonnet-4-6           # authors/extracts the UI design spec + stack recommendation
+  design-critic: claude-haiku-4-5-20251001 # mechanical adherence check against the design spec
   implementer: claude-sonnet-4-6           # primary coding work
   reviewer:    claude-haiku-4-5-20251001   # mechanical pattern matching against skill rules
   tester:      claude-haiku-4-5-20251001   # run tests, check pass/fail counts

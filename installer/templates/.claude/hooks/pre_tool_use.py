@@ -75,6 +75,11 @@ ROLE_WRITE_WHITELIST = {
     "planner": [".claude/state/plans/"],
     "reviewer": [".claude/state/plans/"],
     "sketcher": [".claude/state/plans/", ".claude/design/", ".claude/launch.json"],
+    # designer drafts the UI design spec to state; /agentic-design promotes the
+    # approved draft to committed docs/design/ (the command, not this role).
+    "designer": [".claude/state/design-spec/"],
+    # design-critic writes a UI-adherence findings report only.
+    "design-critic": [".claude/state/ui-review/"],
 }
 
 

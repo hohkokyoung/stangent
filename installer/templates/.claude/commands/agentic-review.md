@@ -1,16 +1,17 @@
 ---
-description: Full-spectrum review over one scope — hygiene (auditor) + design (architect) + security (security-reviewer) — consolidated, then remediate everything via role agents.
+description: Full-spectrum review over one scope — hygiene (auditor) + design (architect) + security (security-reviewer) + UI adherence (design-critic, when a design spec exists) — consolidated, then remediate everything via role agents.
 argument-hint: "[commits:<N> | dir:<path> | all]"
 ---
 
 # /agentic-review
 
-The umbrella review. Runs all three analysis lenses over a single code scope,
-prints **one consolidated report**, then — because remediation is the goal here —
-turns every actionable finding into a fix task and dispatches it. This is the
-"do everything" command; the focused siblings (`/agentic-cleanup`,
-`/agentic-review-design`, `/agentic-review-security`, `/agentic-review-pr`) each
-run one lens if you want a narrower pass.
+The umbrella review. Runs every analysis lens over a single code scope, prints
+**one consolidated report**, then — because remediation is the goal here — turns
+every actionable finding into a fix task and dispatches it. This is the "do
+everything" command; the focused siblings (`/agentic-cleanup`,
+`/agentic-review-design`, `/agentic-review-security`, `/agentic-review-ui`,
+`/agentic-review-pr`) each run one lens if you want a narrower pass. The UI lens
+only runs when `docs/design/DESIGN-SPEC.md` exists (author it with `/agentic-design`).
 
 Analysis is **read-only** (agents write only their own report). Remediation
 **changes code** and is gated behind one explicit confirmation — nothing is
@@ -32,11 +33,12 @@ edited until you approve the fix-plan.
 REVIEW_ID=REVIEW-$(date +%Y%m%d-%H%M%S)
 mkdir -p .claude/state/audit/$REVIEW_ID \
          .claude/state/design-review/$REVIEW_ID \
-         .claude/state/security-review/$REVIEW_ID
+         .claude/state/security-review/$REVIEW_ID \
+         .claude/state/ui-review/$REVIEW_ID
 ```
 
-The same id is reused as each agent's sub-id, so the three reports are easy to
-correlate.
+The same id is reused as each agent's sub-id, so the reports are easy to correlate.
+The UI-review dir is only used when a design spec exists (Step 3d).
 
 ### Step 2 — Resolve scope (YOU do this — do NOT delegate)
 
@@ -52,7 +54,7 @@ Build a one-line human description of the scope for the review agents, e.g.
 `"the working codebase, files touched in the last 10 commits"` or
 `"the working codebase under backend/"`.
 
-### Step 3 — Run the three analysis agents (SEQUENTIALLY)
+### Step 3 — Run the analysis agents (SEQUENTIALLY)
 
 Only one role may be armed at a time — the pre-tool hook reads a single
 `current_role.txt`. Run them in this order, each: arm role → invoke → wait for
@@ -85,9 +87,19 @@ printf '%s' 'security-reviewer' > .claude/state/current_role.txt
 Invoke **security-reviewer** with `review_id=$REVIEW_ID` and the same `scope`.
 Wait for `.claude/state/security-review/$REVIEW_ID/findings.md`, then clear the role.
 
+**3d. Design-critic (UI adherence) — only if a spec exists.**
+Run this lane ONLY when `docs/design/DESIGN-SPEC.md` is present; otherwise skip it
+silently (there's nothing to check UI against). If present:
+```bash
+printf '%s' 'design-critic' > .claude/state/current_role.txt
+```
+Invoke **design-critic** with `review_id=$REVIEW_ID` and `scope` (translate the
+Step-2 scope: `commits:<N>`/`dir:<path>` → `dir:` of the touched UI files, `all` →
+`all`). Wait for `.claude/state/ui-review/$REVIEW_ID/findings.md`, then clear the role.
+
 ### Step 4 — Consolidate and present
 
-Read all three reports and print ONE dashboard:
+Read the reports and print ONE dashboard (include the UI line only if lane 3d ran):
 
 ```
 Full review — REVIEW-<ts>   scope: <scope>
@@ -95,6 +107,7 @@ Full review — REVIEW-<ts>   scope: <scope>
 HYGIENE (auditor)          High: N  Medium: N  Low: N
 DESIGN (architect)         verdict: sound | concerns | reconsider
 SECURITY (security-reviewer) verdict: no-blockers | hardening-needed | exploitable
+UI/DESIGN (design-critic)  verdict: on-spec | drift | off-spec        <!-- only if a spec exists -->
 ```
 
 Then print the findings grouped by lens. For security, print counts +
@@ -102,8 +115,9 @@ categories + the per-finding detail to the **terminal** (that is fine), but see
 the constraint below about not copying verbatim exploit scenarios into tracked
 files.
 
-If **all three are clean** (hygiene High=Med=Low=0, design `sound`, security
-`no-blockers`), print `No actionable findings across any lens.` and STOP.
+If **every lane that ran is clean** (hygiene High=Med=Low=0, design `sound`,
+security `no-blockers`, and — if it ran — UI `on-spec`), print
+`No actionable findings across any lens.` and STOP.
 
 ### Step 5 — Plan remediation
 
@@ -131,6 +145,11 @@ role and acceptance:
 | Hygiene (dup / inconsistency / bad-practice / oversized) | `refactor` | low→high by scope | **behavior identical**, all existing tests pass, <concrete improvement> |
 | Design (architect) that needs a code change | `implementer` | medium/high | design concern <X> addressed; existing tests pass; new behavior covered |
 | Security (security-reviewer) mitigation | `implementer` | medium/high | mitigation for <category> implemented; existing tests pass; regression test added where feasible |
+| UI drift — token/colour/spacing/state (design-critic) | `refactor` | low/medium | on-spec: raw values replaced with tokens, missing states added; **look/behaviour otherwise unchanged**; tests pass |
+| UI structural change — layout/responsive/component restructure | `implementer` | medium | spec rule <X> satisfied; existing tests pass |
+
+- Include the relevant frontend skill (`react`, `html-css`, `flutter`) on every UI
+  fix task's `skills_to_load`.
 
 - Group related findings (same file/module/pattern) into one task — never one task per finding.
 - `skills_to_load`: always `["project"]`; add relevant skills (`fastapi`, `react`, `owasp`, `supabase`, …) when the group touches that surface. Include `owasp` for every security task.
@@ -185,6 +204,7 @@ Reports:
   hygiene:  .claude/state/audit/<REVIEW_ID>/findings.md
   design:   .claude/state/design-review/<REVIEW_ID>/findings.md
   security: .claude/state/security-review/<REVIEW_ID>/findings.md
+  ui:       .claude/state/ui-review/<REVIEW_ID>/findings.md   (only if the UI lane ran)
 Branch: <branch name>
 
 Fixed:
@@ -203,9 +223,8 @@ behavior — then commit when satisfied.
 
 - **Sequential role handshakes only.** Never arm two roles at once; always clear
   `current_role.txt` between agents.
-- **Analysis changes nothing.** The three review agents only write their own
-  reports; all code edits happen in Step 6 via role agents, behind the Step 5
-  confirmation.
+- **Analysis changes nothing.** The review agents only write their own reports;
+  all code edits happen in Step 6 via role agents, behind the Step 5 confirmation.
 - **Do NOT auto-commit.** Commits are user-driven — especially important since
   security/design fixes change behavior and need review.
 - **Do NOT copy verbatim exploit scenarios into tracked files.** Security detail

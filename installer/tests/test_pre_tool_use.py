@@ -107,6 +107,20 @@ class TestRoleScopes(HookCase):
         self.assertAllowed(self.write(".claude/design/screens/x.html"), role="sketcher")
         self.assertDenied(self.write("lib/main.dart"), role="sketcher")
 
+    def test_designer_confined_to_design_spec_dir(self):
+        self.assertAllowed(self.write(".claude/state/design-spec/DS1/DESIGN-SPEC.md"), role="designer")
+        self.assertAllowed(self.write(".claude/state/design-spec/DS1/tokens.md"), role="designer")
+        # the designer drafts to state; it must NOT write the committed docs copy
+        # (the /agentic-design command promotes it) or touch project code.
+        self.assertDenied(self.write("docs/design/DESIGN-SPEC.md"), role="designer")
+        self.assertDenied(self.write("src/theme.ts"), role="designer")
+        self.assertDenied(self.write(".claude/state/plans/F/t1.md"), role="designer")
+
+    def test_design_critic_confined_to_ui_review_dir(self):
+        self.assertAllowed(self.write(".claude/state/ui-review/UIR1/findings.md"), role="design-critic")
+        self.assertDenied(self.write("src/components/Button.tsx"), role="design-critic")
+        self.assertDenied(self.write("docs/design/DESIGN-SPEC.md"), role="design-critic")
+
     def test_implementer_writes_code_freely(self):
         self.assertAllowed(self.write("src/main.py"), role="implementer")
 
