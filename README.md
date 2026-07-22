@@ -43,6 +43,7 @@ In the installed project, in Claude Code:
 /agentic-index                              # one-time setup (or when skills/references change)
 /agentic-plan <natural-language goal>       # planner clarifies, sketches UI, emits FEAT-### task files
 /agentic-build all                          # dispatcher runs tasks in dep order, re-indexes code before each
+/agentic-review [commits:N | dir:path | all] # FULL review — hygiene + design + security in one pass → consolidated report → remediate
 /agentic-review-design [run_id | "feature"] # architect red-teams the DESIGN — data ownership, tenancy, compliance, scaling
 /agentic-review-security [run_id | "feature"] # security-reviewer red-teams for exploits — OWASP Top 10, IDOR, injection, secrets
 /agentic-review-pr <PR# | url> [--comment]  # fetch a GitHub PR → architect + security-reviewer; optional summary comment
@@ -230,6 +231,7 @@ Ownership is strict: only `/agentic-defer` sets `deferred`, only `/agentic-resum
 │   ├── agentic-test.md         # brownfield test bootstrap
 │   ├── agentic-screenshot.md   # screenshot all pages/screens → docs/screenshots/<date>/
 │   ├── agentic-cleanup.md      # audit for smells → dispatch refactor tasks
+│   ├── agentic-review.md          # FULL review — hygiene + design + security → consolidated → remediate
 │   ├── agentic-review-design.md   # architect design review → findings report
 │   ├── agentic-review-security.md # security red-team → threat model report
 │   ├── agentic-review-pr.md       # review a GitHub PR (github MCP) → architect + security-reviewer
