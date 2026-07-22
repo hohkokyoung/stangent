@@ -23,6 +23,7 @@ import os
 import re
 import sqlite3
 import struct
+import subprocess
 import sys
 from pathlib import Path
 from typing import Iterable
@@ -211,6 +212,37 @@ def _is_excluded(rel_path: str, excludes: list[str]) -> bool:
     return excluded
 
 
+def _gitignored(rel_paths: list[str], root: Path) -> set[str]:
+    """Return the subset of rel_paths that git ignores.
+
+    This is the general, zero-maintenance way to skip useless files: virtualenvs
+    (including backups like .venv.bak/ and nested venvs), build output, caches,
+    and generated artifacts are almost always already in .gitignore. A static
+    exclude list can't anticipate every junk dir (e.g. ".venv.bak-py314/"), but
+    git already knows.
+
+    Returns an empty set (index everything) if this isn't a git repo, git is
+    unavailable, or the call errors. `git check-ignore` consults the index by
+    default, so *tracked* files are never reported as ignored — force-added
+    files stay indexed.
+    """
+    if not rel_paths:
+        return set()
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(root), "check-ignore", "--stdin"],
+            input="\n".join(rel_paths),
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, ValueError):
+        return set()
+    # 0 = some paths ignored, 1 = none ignored, 128 = error (not a repo, ...).
+    if proc.returncode not in (0, 1):
+        return set()
+    return {line for line in proc.stdout.splitlines() if line}
+
+
 def _load_project_globs(cfg: dict) -> tuple[list[str], list[str]]:
     pi = cfg.get("project_index") or {}
     include = [g for g in (pi.get("include") or []) if g]
@@ -397,6 +429,21 @@ def _reindex_project(
         f for f in candidate
         if f.is_file() and not _is_excluded(str(f.relative_to(REPO_ROOT)), exclude_globs)
     )
+
+    # Skip anything git ignores (virtualenvs, build output, caches, generated
+    # files). This is the primary junk filter; the static excludes above are a
+    # fast pre-filter and the fallback for non-git projects.
+    pi = cfg.get("project_index") or {}
+    if pi.get("respect_gitignore", True):
+        rels = [str(f.relative_to(REPO_ROOT)) for f in project_files]
+        ignored = _gitignored(rels, REPO_ROOT)
+        if ignored:
+            before = len(project_files)
+            project_files = [
+                f for f in project_files
+                if str(f.relative_to(REPO_ROOT)) not in ignored
+            ]
+            print(f"[retriever] gitignore: skipped {before - len(project_files)} ignored files")
 
     existing_hashes: dict[str, str] = dict(
         conn.execute("SELECT path, hash FROM file_hashes").fetchall()

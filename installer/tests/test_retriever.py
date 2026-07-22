@@ -8,7 +8,10 @@ sqlite-vec extension or an embedding model (stdlib sqlite3 only).
 """
 import importlib.util
 import io
+import shutil
 import sqlite3
+import subprocess
+import tempfile
 import unittest
 from contextlib import redirect_stderr
 from pathlib import Path
@@ -110,6 +113,50 @@ class TestIsExcluded(unittest.TestCase):
         self.assertIn("fixtures/**", exclude)
         self.assertIn("node_modules/**", exclude)  # default preserved
         self.assertIn("*.g.dart", exclude)         # generated default preserved
+
+
+@unittest.skipIf(shutil.which("git") is None, "git not available")
+class TestGitignored(unittest.TestCase):
+    def _repo(self, td):
+        root = Path(td)
+        subprocess.run(["git", "-C", str(root), "init", "-q"], check=True)
+        (root / ".gitignore").write_text(".venv/\n.venv.bak-py314/\nbuild/\n")
+        for rel in [
+            "backend/app.py", "mobile/lib/main.dart",
+            ".venv/lib/pkg.py", ".venv.bak-py314/lib/old.py",
+            "backend/.venv/nested.py", "build/out.js",
+        ]:
+            p = root / rel
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text("x")
+        return root
+
+    def test_skips_venvs_and_build(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._repo(td)
+            rels = [
+                "backend/app.py", "mobile/lib/main.dart",
+                ".venv/lib/pkg.py", ".venv.bak-py314/lib/old.py",
+                "backend/.venv/nested.py", "build/out.js",
+            ]
+            ignored = r._gitignored(rels, root)
+            # Backup and nested venvs — the ones static excludes miss — are caught.
+            self.assertIn(".venv.bak-py314/lib/old.py", ignored)
+            self.assertIn("backend/.venv/nested.py", ignored)
+            self.assertIn(".venv/lib/pkg.py", ignored)
+            self.assertIn("build/out.js", ignored)
+            # Real source is kept.
+            self.assertNotIn("backend/app.py", ignored)
+            self.assertNotIn("mobile/lib/main.dart", ignored)
+
+    def test_empty_input(self):
+        with tempfile.TemporaryDirectory() as td:
+            self.assertEqual(r._gitignored([], Path(td)), set())
+
+    def test_non_git_dir_returns_empty(self):
+        with tempfile.TemporaryDirectory() as td:
+            # No `git init` → check-ignore exits 128 → index everything.
+            self.assertEqual(r._gitignored(["a.py"], Path(td)), set())
 
 
 class TestResolveScope(unittest.TestCase):

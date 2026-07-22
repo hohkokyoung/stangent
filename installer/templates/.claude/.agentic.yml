@@ -61,6 +61,10 @@ project_index:
                 # project-specific extras, e.g. ["fixtures/**", "**/legacy/**"].
                 # To re-include something a default excludes, prefix with "!",
                 # e.g. ["!tests/**"] to index tests despite the default.
+  respect_gitignore: true   # skip any file git ignores (virtualenvs incl.
+                # backups/nested, build output, caches, generated artifacts).
+                # This is the main junk filter — leave on unless you deliberately
+                # need to index gitignored files. Tracked files are always kept.
 
 retrieval:
   default_k: 6
