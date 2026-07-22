@@ -40,7 +40,20 @@ LOG_DIR = STATE_DIR / "logs"
 
 MAX_VALUE_LEN = 120
 MAX_KEYS = 6
-SECRET_KEYS = {"password", "token", "secret", "api_key", "authorization", "bearer"}
+# Normalized secret markers: matched as substrings of the separator-stripped,
+# lowercased key, so `access_token`, `apiKey`, `x-api-key`, and
+# `GITHUB_PERSONAL_ACCESS_TOKEN` all redact — not just the bare words. Kept
+# specific (e.g. `apikey`/`privatekey`, never a bare `key`) so common,
+# non-sensitive keys like `file_path` are not over-redacted.
+SECRET_MARKERS = (
+    "password", "passwd", "token", "secret", "apikey", "authorization",
+    "bearer", "credential", "privatekey", "clientsecret", "sessionkey",
+)
+
+
+def _is_secret_key(key: str) -> bool:
+    norm = re.sub(r"[^a-z0-9]", "", key.lower())
+    return any(marker in norm for marker in SECRET_MARKERS)
 
 
 def _short(value, key: str = "") -> object:
@@ -48,7 +61,7 @@ def _short(value, key: str = "") -> object:
     if value is None or isinstance(value, (bool, int, float)):
         return value
     if isinstance(value, str):
-        if key.lower() in SECRET_KEYS:
+        if _is_secret_key(key):
             return "***"
         flat = re.sub(r"\s+", " ", value).strip()
         if len(flat) > MAX_VALUE_LEN:

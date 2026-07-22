@@ -55,7 +55,6 @@ DEFAULT_LOW_CAP = "claude-haiku-4-5-20251001"
 DEFAULT_HIGH_FLOOR = "claude-sonnet-4-6"
 # Model an unranked id is treated as, for comparison purposes.
 COMPARISON_FALLBACK = "claude-sonnet-4-6"
-ROLES = ("planner", "sketcher", "implementer", "reviewer", "tester", "debugger", "refactor")
 
 
 # ---------- config ----------

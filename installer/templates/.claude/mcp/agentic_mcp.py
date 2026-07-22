@@ -169,7 +169,10 @@ def _serve():
                 reply(req_id, error={"code": -32601, "message": f"unknown tool: {name}"})
                 continue
             query = args.get("query") or ""
-            k = int(args.get("k", 6))
+            try:
+                k = int(args.get("k", 6))
+            except (TypeError, ValueError):
+                k = 6  # a malformed k must not crash the long-lived server
             skills = args.get("skills") or None
 
             # Enforce the per-task retrieve budget — but only when a task
