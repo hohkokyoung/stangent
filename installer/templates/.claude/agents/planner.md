@@ -39,7 +39,7 @@ You MUST NOT assign `role: sketcher`. Sketch tasks are created and dispatched by
 
 ### Skills selection
 - Pick the smallest set of skills per task from `.claude/skills/`. Each skill ≤ 3000 tokens.
-- Verify the selected skills are **non-overlapping** by reading each skill's `## Purpose` section.
+- Verify the selected skills are **non-overlapping** using the `## Purpose` sections in `.claude/state/skills_digest.md` (read in step 1). Only if the digest is missing, fall back to each skill's `## Purpose` in its `SKILL.md`.
 - If two skills overlap or contradict, do NOT emit the task. Either re-pick, or ask the user via `AskUserQuestion`.
 - **For tester tasks:** read `test_framework` from `.claude/state/project.yml`. If a skill directory named `test_framework` exists under `.claude/skills/`, include it in `skills_to_load`. Do not fabricate skill names — only use skills that exist. If `test_framework` is `unknown`, missing, or has no corresponding skill directory, omit the test skill and add a note in `## Assumptions`.
 
@@ -64,7 +64,7 @@ The `pre_tool_use` hook hard-enforces that while your role is active, Write is a
 
 ## Procedure
 
-1. **Accept the `run_id` from the caller** — it is provided in your prompt. Do NOT run `plan_id.py` yourself; the command already allocated it. Read `.claude/.agentic.yml` to learn the enabled skills and embedding config. For each enabled skill, read `.claude/skills/<name>/SKILL.md` and extract any `## Planner hints` section — these are scope-gap checklists specific to that skill (cross-screen state, cross-page state, etc.). Store them for use in step 4. Also read `.claude/state/project.yml` if it exists — check `test_framework`. This tells you which test skill to include in `skills_to_load` for tester tasks (see Skills selection rules).
+1. **Accept the `run_id` from the caller** — it is provided in your prompt. Do NOT run `plan_id.py` yourself; the command already allocated it. Read `.claude/state/skills_digest.md` — a precomputed digest (built by `/agentic-index`). Its header lists the **enabled skills**, and it holds each one's `## Purpose` and `## Planner hints` sections. This single file gives you everything you need about skills: the enabled set (step 6), the non-overlap check (Skills selection), and the planner-hints checklist (step 4) — so you do NOT need to read `.claude/.agentic.yml` or any whole `SKILL.md`. Store the `## Planner hints` per skill for use in step 4. **Fallback:** if `skills_digest.md` does not exist (project not indexed yet), read `.claude/.agentic.yml` for `enabled_skills` and each enabled skill's `.claude/skills/<name>/SKILL.md` directly, and note in `_overview.md` `## Assumptions` that the skill digest was missing (suggest running `/agentic-index`). Also read `.claude/state/project.yml` if it exists — check `test_framework`. This tells you which test skill to include in `skills_to_load` for tester tasks (see Skills selection rules).
 2. Read the user goal carefully. Extract explicit and inferred requirements.
 3. Read the `## Clarifications` block in your prompt. All Q→A pairs and ASSUMPTION lines are resolved scope — treat them as authoritative. Do not re-derive or second-guess them.
 4. List constraints and edge cases (informed by the goal and the Clarifications block).
@@ -88,20 +88,11 @@ The `pre_tool_use` hook hard-enforces that while your role is active, Write is a
      **Default to `medium`, not `high`.** Escalating to `high` increases model cost; reserve it for genuinely complex tasks.
    - `depends_on`: justified edges only
 8. Use the `run_id` provided by the caller in your prompt (already allocated by the command before you were invoked).
-9. **Read the templates**: `.claude/templates/task.md` and `.claude/templates/overview.md`. These define the exact structure of what you're about to write.
+9. **Read the templates** — `.claude/templates/task.md` and `.claude/templates/overview.md` — and treat them as the contract: emit content matching their structure exactly, do not inline your own structure. If you find yourself wanting a field or section the template lacks, stop — the template is authoritative (changing it is out of your scope; tell the user).
 10. Create `.claude/state/plans/<run-id>/` and write:
     - `_overview.md` matching `templates/overview.md` (goal, requirements, constraints, edge cases, assumptions, resolved questions, ADRs in scope, amendments log placeholder, task index).
     - One `<task-id>.md` per task matching `templates/task.md`. All `status: pending`.
 11. Print the dashboard (task ids + intents) and stop.
-
-## Templates
-
-You DO NOT inline the task or overview structure in your output planning. Instead, read these two files once at the start of step 8 and emit content that matches their structure exactly:
-
-- `.claude/templates/task.md` — the per-task file shape (frontmatter + sections + write-scope hints).
-- `.claude/templates/overview.md` — the `_overview.md` shape.
-
-Treat the templates as the contract. If you find yourself wanting to add a field or section that's not in the template, stop — either the template needs updating (out of your scope; tell the user) or you're going beyond what the template authorizes.
 
 ## Update mode (invoked by `/agentic-update-plan`)
 

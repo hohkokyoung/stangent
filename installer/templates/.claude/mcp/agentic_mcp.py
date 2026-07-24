@@ -1,9 +1,23 @@
 #!/usr/bin/env python3
-"""agentic_mcp — MCP server exposing the single tool: retrieve(query, k).
+"""agentic_mcp — MCP server exposing the internal code-context tools.
 
-This is the v1 internal retrieval layer. It is the ONE exception to the
-"MCP = external systems" rule; it lives here because Claude Code consumes
-it as MCP. It must NOT be used for planning or task decomposition.
+  - retrieve(query, k, skills)  — semantic search over skill references and
+    indexed project source. Answers "where does this concept live?".
+  - get_symbol(name, file)      — structural fetch of one function/class/method
+    by name. Answers "give me exactly this, nothing around it" so an agent need
+    not Read a whole file to edit a fragment. Dependency-free (see symbols.py).
+
+Design principle (deliberate, bounded exception):
+
+    MCP is for EXTERNAL systems. The one internal exception is the **code-context
+    layer** — read-only retrieval of code and references that Claude Code happens
+    to consume as MCP. `retrieve` and `get_symbol` are that layer, and it stops
+    there. ORCHESTRATION never goes here: planning, task decomposition, run/task
+    state, dispatch, and status stay in commands/hooks/state — not in MCP tools.
+
+Adding a tool here is only justified if it is read-only code/reference context
+of the same kind. Anything that mutates workflow state or drives dispatch does
+not belong on this server.
 """
 from __future__ import annotations
 
@@ -15,6 +29,7 @@ from pathlib import Path
 
 REPO_ROOT = Path.cwd().resolve()
 RETRIEVER = REPO_ROOT / ".claude" / "hooks" / "lib" / "retriever.py"
+SYMBOLS = REPO_ROOT / ".claude" / "hooks" / "lib" / "symbols.py"
 STATE_DIR = REPO_ROOT / ".claude" / "state"
 
 # Per-task retrieve budget. The v1 contract is "one call per agent per task,
@@ -121,6 +136,25 @@ def _serve():
         except Exception as e:
             return [{"error": f"could not parse retriever output: {e}"}]
 
+    def call_symbols(name: str, file: str | None, max_matches: int) -> list[dict]:
+        cmd = [PYTHON, str(SYMBOLS), "get", name, "--max", str(max_matches)]
+        if file:
+            cmd += ["--file", file]
+        try:
+            proc = subprocess.run(cmd, cwd=str(REPO_ROOT), text=True, capture_output=True)
+        except Exception as e:
+            return [{"error": f"could not launch symbols ({PYTHON}): {e}"}]
+        if proc.returncode != 0:
+            tail = " | ".join((proc.stderr or "").strip().splitlines()[-5:])
+            return [{"error": f"symbols exited {proc.returncode} (interpreter: {PYTHON}): {tail}"}]
+        out = (proc.stdout or "").strip()
+        if not out:
+            return []  # no matches is a valid, non-error result
+        try:
+            return json.loads(out)
+        except Exception as e:
+            return [{"error": f"could not parse symbols output: {e}"}]
+
     for line in sys.stdin:
         line = line.strip()
         if not line:
@@ -158,15 +192,46 @@ def _serve():
                             },
                             "required": ["query"],
                         },
-                    }
+                    },
+                    {
+                        "name": "get_symbol",
+                        "description": "Fetch the exact definition(s) of a named function/class/method — signature + full body + file:line — instead of Reading a whole file to see one symbol. Use AFTER you know the name (e.g. from retrieve or a file list). Pass 'file' to scope to one file; omit it to search indexed project source. Returns [] if not found. Best-effort structural extraction (Python + brace languages).",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string", "description": "Symbol name (function/class/method)."},
+                                "file": {"type": "string", "description": "Optional repo-relative file to scope the lookup to."},
+                                "max": {"type": "integer", "default": 5, "description": "Max matches to return when searching the project."},
+                            },
+                            "required": ["name"],
+                        },
+                    },
                 ]
             })
         elif method == "tools/call":
             params = req.get("params") or {}
-            name = params.get("name")
+            tool_name = params.get("name")
             args = params.get("arguments") or {}
-            if name != "retrieve":
-                reply(req_id, error={"code": -32601, "message": f"unknown tool: {name}"})
+
+            if tool_name == "get_symbol":
+                # Structural fetch — deterministic and cheap, so it is NOT
+                # charged against the retrieve budget.
+                sym = (args.get("name") or "").strip()
+                if not sym:
+                    reply(req_id, {"content": [{"type": "text", "text": json.dumps(
+                        [{"error": "get_symbol requires a non-empty 'name'"}])}]})
+                    continue
+                try:
+                    max_matches = max(1, int(args.get("max", 5)))
+                except (TypeError, ValueError):
+                    max_matches = 5
+                matches = call_symbols(sym, args.get("file") or None, max_matches)
+                reply(req_id, {"content": [{"type": "text", "text": json.dumps(
+                    matches, ensure_ascii=False, indent=2)}]})
+                continue
+
+            if tool_name != "retrieve":
+                reply(req_id, error={"code": -32601, "message": f"unknown tool: {tool_name}"})
                 continue
             query = args.get("query") or ""
             try:

@@ -323,7 +323,7 @@ Ownership is strict: only `/agentic-defer` sets `deferred`, only `/agentic-resum
 │       ├── log_dispatch.py     # structured dispatch events → .claude/state/logs/dispatch.jsonl
 │       └── doctor.py           # install health checks
 ├── mcp/
-│   └── agentic_mcp.py          # exposes retrieve(query, k, skills) over stdio MCP
+│   └── agentic_mcp.py          # exposes retrieve() + get_symbol() over stdio MCP
 └── state/                      # gitignored — local working memory; durable artifacts are promoted to docs/ and adrs/
     ├── plans/<FEAT-###>/
     │   ├── _overview.md
@@ -341,7 +341,7 @@ Ownership is strict: only `/agentic-defer` sets `deferred`, only `/agentic-resum
 ```json
 {
   "mcpServers": {
-    "agentic_mcp":          { ... },  // internal retrieve() — always on
+    "agentic_mcp":          { ... },  // internal retrieve() + get_symbol() — always on
     // docs & research
     "context7":             { ... },  // always-fresh library docs — no credentials needed
     "fetch":                { ... },  // general URL fetching — no credentials needed

@@ -1,7 +1,7 @@
 ---
 name: auditor
 description: Scans the codebase and recent commits for inconsistencies, duplication, bad practices, and oversized files. Produces a findings report. Writes nothing to the codebase.
-tools: Read, Glob, Grep, Bash
+tools: Read, Glob, Grep, Bash, mcp__agentic_mcp__get_symbol
 ---
 
 # Auditor Agent

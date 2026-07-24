@@ -272,6 +272,31 @@ def _load_project_globs(cfg: dict) -> tuple[list[str], list[str]]:
     return include, exclude
 
 
+def iter_project_files(cfg: dict) -> list[Path]:
+    """Enumerate indexable project source files: include globs, minus excludes,
+    minus gitignored paths. This is the SINGLE definition of "what counts as
+    project source" — shared by _reindex_project (embedding) and the symbols
+    fetcher (structural lookup) so the two never drift. Silent (no prints), so
+    callers that emit JSON on stdout can use it safely."""
+    include_globs, exclude_globs = _load_project_globs(cfg)
+    if not include_globs:
+        return []
+    candidate: set[Path] = set()
+    for pattern in include_globs:
+        candidate.update(REPO_ROOT.glob(pattern))
+    files = sorted(
+        f for f in candidate
+        if f.is_file() and not _is_excluded(str(f.relative_to(REPO_ROOT)), exclude_globs)
+    )
+    pi = cfg.get("project_index") or {}
+    if pi.get("respect_gitignore", True):
+        rels = [str(f.relative_to(REPO_ROOT)) for f in files]
+        ignored = _gitignored(rels, REPO_ROOT)
+        if ignored:
+            files = [f for f in files if str(f.relative_to(REPO_ROOT)) not in ignored]
+    return files
+
+
 # ---------- embeddings ----------
 
 def get_embedder(cfg: dict):
@@ -423,35 +448,16 @@ def _reindex_project(
     provider_id: str,
     target_tokens: int,
 ) -> None:
-    include_globs, exclude_globs = _load_project_globs(cfg)
+    include_globs, _ = _load_project_globs(cfg)
     if not include_globs:
         print("[retriever] no project globs configured — skipping project indexing.")
         print("[retriever]   Set project_index.include in .agentic.yml or run /agentic-index for auto-detection.")
         return
 
-    candidate: set[Path] = set()
-    for pattern in include_globs:
-        candidate.update(REPO_ROOT.glob(pattern))
-
-    project_files = sorted(
-        f for f in candidate
-        if f.is_file() and not _is_excluded(str(f.relative_to(REPO_ROOT)), exclude_globs)
-    )
-
-    # Skip anything git ignores (virtualenvs, build output, caches, generated
-    # files). This is the primary junk filter; the static excludes above are a
-    # fast pre-filter and the fallback for non-git projects.
-    pi = cfg.get("project_index") or {}
-    if pi.get("respect_gitignore", True):
-        rels = [str(f.relative_to(REPO_ROOT)) for f in project_files]
-        ignored = _gitignored(rels, REPO_ROOT)
-        if ignored:
-            before = len(project_files)
-            project_files = [
-                f for f in project_files
-                if str(f.relative_to(REPO_ROOT)) not in ignored
-            ]
-            print(f"[retriever] gitignore: skipped {before - len(project_files)} ignored files")
+    # Single source of truth for the file set (include − exclude − gitignored),
+    # shared with the symbols fetcher. Per-file skip counts are reported in the
+    # summary line at the end of this function.
+    project_files = iter_project_files(cfg)
 
     existing_hashes: dict[str, str] = dict(
         conn.execute("SELECT path, hash FROM file_hashes").fetchall()

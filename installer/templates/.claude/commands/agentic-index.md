@@ -91,7 +91,18 @@ The retriever:
 
 Print a reminder to run `/agentic-index` again if the user later adds `project_index.include` to `.agentic.yml` manually.
 
-### Step 4 — Confirm enabled skills
+### Step 4 — Build the planner skill digest
+
+Precompute the small `## Purpose` + `## Planner hints` digest the planner reads
+instead of every whole `SKILL.md`:
+```
+PYEXE=$(ls .venv/bin/python venv/bin/python .env/bin/python 2>/dev/null | head -1) && ${PYEXE:-python3} .claude/hooks/lib/skill_digest.py build
+```
+This writes `.claude/state/skills_digest.md` from the `enabled_skills` in
+`.agentic.yml`. It has no embedding deps and is safe to run anytime skills or
+`enabled_skills` change. Print its output (skills covered + any notes).
+
+### Step 5 — Confirm enabled skills
 
 Print a reminder if the detected `test_framework` skill is not in `enabled_skills` in `.agentic.yml`:
 ```

@@ -1,7 +1,7 @@
 ---
 name: tester
 description: Executes tests for one task following the approach defined by injected skills. Writes ## Test results. Finalizes status to done or blocked.
-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__agentic_mcp__retrieve, mcp__playwright, mcp__maestro, mcp__dbhub, mcp__supabase
+tools: Read, Write, Edit, Glob, Grep, Bash, mcp__agentic_mcp__retrieve, mcp__agentic_mcp__get_symbol, mcp__playwright, mcp__maestro, mcp__dbhub, mcp__supabase
 ---
 
 # Tester Agent

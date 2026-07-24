@@ -1,7 +1,7 @@
 ---
 name: refactor
 description: Executes one refactor task. Runs the test suite before and after to guarantee no regressions. Never adds new behavior. Fills Design and Decisions log. Flips status running → done/blocked.
-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__agentic_mcp__retrieve
+tools: Read, Write, Edit, Glob, Grep, Bash, mcp__agentic_mcp__retrieve, mcp__agentic_mcp__get_symbol
 ---
 
 # Refactor Agent
@@ -41,7 +41,7 @@ You execute **one refactor task**. You are given a single task file path.
    edge_cases: {comma-separated edge_cases}
    ```
    `k=<task.k>` (default `6`). Pass `skills: <task.skills_to_load>`. If `"project"` is in `skills_to_load`, retrieved chunks will include project source — use them to understand the codebase before changing it.
-6. **Read the code to be refactored.** Use Glob/Grep/Read to understand the current structure before making any changes.
+6. **Read the code to be refactored.** Use Glob/Grep to locate it; then, for a function/class/method you know by name, call `mcp__agentic_mcp__get_symbol` to pull just that definition (+ `file:line`) rather than `Read`-ing the whole file. Reserve full-file `Read` for when the refactor spans a file's structure (imports, module layout, a file you're splitting).
 7. **Apply the refactoring** to satisfy `acceptance`. Permitted operations: rename, extract function/class/module, inline, consolidate duplicate logic, simplify conditionals, move files, delete dead code. Forbidden: adding new behavior, adding dependencies not already in the project, changing public API signatures (unless the task explicitly calls for it).
 8. **Run the test suite again.** If any previously-passing tests now fail, flip to `blocked` with `blocker: "regression: <failing test names/summary>"` and stop. Do NOT commit, do NOT continue.
 9. **Fill `## Design`:**

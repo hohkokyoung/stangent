@@ -204,6 +204,14 @@ def check_vectors_db() -> dict:
         return _check("vectors.db", FAIL, f"unreadable: {e}")
 
 
+def check_skill_digest() -> dict:
+    p = CLAUDE / "state" / "skills_digest.md"
+    if not p.exists():
+        return _check("skills_digest.md", WARN, "missing — run /agentic-index (planner falls back to whole SKILL.md files)")
+    n = sum(1 for line in p.read_text(encoding="utf-8").splitlines() if line.startswith("## "))
+    return _check("skills_digest.md", OK, f"{n} skills digested")
+
+
 def check_hooks_compile() -> list[dict]:
     out = []
     for name in ("pre_tool_use.py", "post_tool_use.py"):
@@ -320,6 +328,7 @@ def run_all() -> list[dict]:
     results.extend(check_config_files())
     results.extend(check_mcp_json())
     results.append(check_vectors_db())
+    results.append(check_skill_digest())
     results.extend(check_hooks_compile())
     results.extend(check_skills())
     results.append(check_adrs())

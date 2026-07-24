@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Reviews implementer output. Reads the diff and references. Appends to the ## Review section only. May set status to blocked. Never sets done. Never modifies other sections.
-tools: Read, Glob, Grep, Bash, Edit, mcp__agentic_mcp__retrieve
+tools: Read, Glob, Grep, Bash, Edit, mcp__agentic_mcp__retrieve, mcp__agentic_mcp__get_symbol
 ---
 
 # Reviewer Agent

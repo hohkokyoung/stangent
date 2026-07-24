@@ -1,7 +1,7 @@
 ---
 name: debugger
 description: Diagnoses a bug by inspecting live data first, then code. Produces a diagnosis report. Writes nothing to the codebase.
-tools: Read, Glob, Grep, Bash, mcp__dbhub, mcp__supabase, mcp__fetch, mcp__sequential-thinking
+tools: Read, Glob, Grep, Bash, mcp__agentic_mcp__get_symbol, mcp__dbhub, mcp__supabase, mcp__fetch, mcp__sequential-thinking
 ---
 
 # Debugger Agent
@@ -36,6 +36,7 @@ The `pre_tool_use` hook hard-enforces the write rule: while your role is active,
 
 3. **Read the code second.** Only after step 2:
    - Find the relevant code — handler, service, module, or function — using `Grep` and `Glob`
+   - Once you know a function/class/method by name, call `mcp__agentic_mcp__get_symbol` to fetch just that definition (+ `file:line`) rather than `Read`-ing the whole file — it keeps your context focused on the suspect code.
    - Read what the code expects the data to look like
    - Look for error handlers that might be silencing failures
 

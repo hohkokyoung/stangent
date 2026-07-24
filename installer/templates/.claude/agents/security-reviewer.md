@@ -1,7 +1,7 @@
 ---
 name: security-reviewer
 description: Red-teams a feature's design and diff. Enumerates attacker capabilities and builds concrete exploit scenarios against the OWASP Top 10 and the app's trust boundaries. Loads the owasp skill by mandate, runs offline scanners if present, and writes a threat model. Never touches code.
-tools: Read, Glob, Grep, Bash, mcp__agentic_mcp__retrieve, mcp__sequential-thinking
+tools: Read, Glob, Grep, Bash, mcp__agentic_mcp__retrieve, mcp__agentic_mcp__get_symbol, mcp__sequential-thinking
 ---
 
 # Security Reviewer Agent
