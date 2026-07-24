@@ -57,6 +57,7 @@ In the installed project, in Claude Code:
 /agentic-resume [run-id]                    # unfreeze a deferred run once its external blocker clears
 /agentic-debug <bug description>            # diagnose a live bug — data first, code second
 /agentic-screenshot [all | <slugs>]         # screenshot every page/screen into docs/screenshots/<date>/
+/agentic-clean-state [days:N] [--apply]     # prune old runs/logs + empty review dirs from .claude/state/
 ```
 
 The planner is strict — it walks an 11-dimension coverage checklist (scope, functional, acceptance, edges, auth, validation, error UX, data model, API, NFRs, out-of-scope) and asks via `AskUserQuestion` on blocking gaps, up to 4 rounds. **It makes no assumptions** — every gap must be answered by the developer before planning proceeds.
@@ -293,7 +294,8 @@ Ownership is strict: only `/agentic-defer` sets `deferred`, only `/agentic-resum
 │   ├── agentic-refactor.md     # refactor with test-green guarantee
 │   ├── agentic-test.md         # brownfield test bootstrap
 │   ├── agentic-screenshot.md   # screenshot all pages/screens → docs/screenshots/<date>/
-│   ├── agentic-cleanup.md      # audit for smells → dispatch refactor tasks
+│   ├── agentic-cleanup.md      # CODE cleanup: audit for smells → dispatch refactor tasks
+│   ├── agentic-clean-state.md  # STATE cleanup: prune old runs/logs + empty review dirs
 │   ├── agentic-review.md          # FULL review — hygiene + design + security (+ UI) → consolidated → remediate
 │   ├── agentic-review-design.md   # architect design review → findings report
 │   ├── agentic-review-security.md # security red-team → threat model report

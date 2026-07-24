@@ -102,6 +102,49 @@ class TestState(unittest.TestCase):
                              ["current_run.txt", "current_task.txt"])
 
 
+class TestStateClean(unittest.TestCase):
+    def _build(self, td):
+        sd = Path(td) / ".claude" / "state"
+        (sd / "audit" / "REVIEW-empty").mkdir(parents=True)          # empty → prune
+        good = sd / "audit" / "REVIEW-good"
+        good.mkdir(parents=True)
+        (good / "findings.md").write_text("x")                       # keep
+        old = time.time() - 40 * 86400
+        old_plan = sd / "plans" / "FEAT-OLD"
+        old_plan.mkdir(parents=True)
+        (old_plan / "t1.md").write_text("x")
+        os.utime(old_plan, (old, old))                               # >30d → prune
+        new_plan = sd / "plans" / "FEAT-NEW"
+        new_plan.mkdir(parents=True)
+        (new_plan / "t1.md").write_text("x")                         # recent → keep
+        return sd
+
+    def test_dry_run_lists_but_keeps(self):
+        with tempfile.TemporaryDirectory() as td:
+            sd = self._build(td)
+            r = run(STATE, ["clean", "--json"], td)
+            data = json.loads(r.stdout)
+            self.assertIn("audit/REVIEW-empty", data["candidates"])
+            self.assertIn("plans/FEAT-OLD", data["candidates"])
+            self.assertEqual(data["removed"], [])
+            self.assertTrue((sd / "audit" / "REVIEW-empty").exists())  # untouched
+
+    def test_apply_removes_only_stale(self):
+        with tempfile.TemporaryDirectory() as td:
+            sd = self._build(td)
+            run(STATE, ["clean", "--apply"], td)
+            self.assertFalse((sd / "audit" / "REVIEW-empty").exists())
+            self.assertFalse((sd / "plans" / "FEAT-OLD").exists())
+            self.assertTrue((sd / "audit" / "REVIEW-good" / "findings.md").exists())
+            self.assertTrue((sd / "plans" / "FEAT-NEW").exists())
+
+    def test_nothing_to_clean(self):
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / ".claude" / "state").mkdir(parents=True)
+            r = run(STATE, ["clean"], td)
+            self.assertIn("nothing to clean", r.stdout)
+
+
 class TestLessonsExtract(unittest.TestCase):
     def test_extract_review_section(self):
         text = textwrap.dedent("""\

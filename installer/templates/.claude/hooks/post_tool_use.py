@@ -40,6 +40,9 @@ LOG_DIR = STATE_DIR / "logs"
 
 MAX_VALUE_LEN = 120
 MAX_KEYS = 6
+# A single log past this is rotated to `<name>.1.jsonl` so no log grows without
+# bound (a long build's run log, or an opted-in ambient log).
+MAX_LOG_BYTES = 5 * 1024 * 1024
 # Normalized secret markers: matched as substrings of the separator-stripped,
 # lowercased key, so `access_token`, `apiKey`, `x-api-key`, and
 # `GITHUB_PERSONAL_ACCESS_TOKEN` all redact — not just the bare words. Kept
@@ -91,6 +94,20 @@ def summarize(tool_input) -> dict:
     return {k: _short(v, k) for k, v in list(tool_input.items())[:MAX_KEYS]}
 
 
+def _ambient_logging_enabled() -> bool:
+    return os.environ.get("AGENTIC_LOG_AMBIENT", "").strip().lower() in ("1", "true", "yes")
+
+
+def _rotate_if_large(path: Path) -> None:
+    """Keep any single log bounded: past MAX_LOG_BYTES, roll it to one prior
+    generation (`<name>.1.jsonl`, overwriting an older roll) and start fresh."""
+    try:
+        if path.exists() and path.stat().st_size > MAX_LOG_BYTES:
+            path.replace(path.parent / (path.stem + ".1.jsonl"))
+    except OSError:
+        pass
+
+
 def main() -> None:
     raw = sys.stdin.buffer.read().decode("utf-8", errors="replace") or "{}"
     try:
@@ -120,6 +137,14 @@ def main() -> None:
             return None
 
     run_id = os.environ.get("AGENTIC_RUN_ID") or _read_state("current_run.txt")
+
+    # Audit the agentic workflow, not the whole project. With no run active, tool
+    # calls are ambient general dev; logging them made `_no-run.jsonl` an
+    # unbounded record of ALL Claude Code use in the repo. Skip unless the user
+    # opts in with AGENTIC_LOG_AMBIENT=1.
+    if not run_id and not _ambient_logging_enabled():
+        sys.exit(0)
+
     task_id = os.environ.get("AGENTIC_TASK_ID") or _read_state("current_task.txt")
     agent_role = os.environ.get("AGENTIC_AGENT_ROLE") or _read_state("current_role.txt")
     agent_model = os.environ.get("AGENTIC_AGENT_MODEL") or _read_state("current_model.txt")
@@ -139,6 +164,7 @@ def main() -> None:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     log_name = f"{run_id}.jsonl" if run_id else "_no-run.jsonl"
     out = LOG_DIR / log_name
+    _rotate_if_large(out)
     with out.open("a", encoding="utf-8") as f:
         f.write(json.dumps(line, ensure_ascii=False) + "\n")
 

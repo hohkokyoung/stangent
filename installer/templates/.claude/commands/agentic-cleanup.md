@@ -1,11 +1,14 @@
 ---
-description: Audit the codebase for inconsistencies, duplication, and bad practices, then create and dispatch refactor tasks to fix them.
+description: CODE cleanup — audit source for inconsistencies, duplication, and bad practices, then create and dispatch refactor tasks to fix them. (For .claude/state/ hygiene, use /agentic-clean-state.)
 argument-hint: "[commits:<N> | dir:<path> | all]"
 ---
 
 # /agentic-cleanup
 
 Two-phase command: **audit** (discover problems) → **cleanup** (fix them via the refactor agent).
+
+> **This cleans CODE, not state.** It refactors your source files. To prune
+> `.claude/state/` (old runs, logs, empty review dirs), use `/agentic-clean-state`.
 
 ## Arguments
 

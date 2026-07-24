@@ -9,11 +9,16 @@ belonging to the dead run. This module clears that leftover state.
 Usage:
     state.py clear                 # remove all dispatch state files (build start)
     state.py check [--max-age N]   # report present/stale state (doctor); --json
+    state.py clean [--max-age-days N] [--apply]
+                                   # prune empty review dirs + run artifacts
+                                   # older than N days (default 30). Dry-run
+                                   # unless --apply.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -28,6 +33,13 @@ STATE_FILES = [
 # Present state older than this (no per-task rewrite in that long) is leftover
 # from a crash, not an in-flight dispatch.
 DEFAULT_STALE_SECONDS = 1800
+
+# Review outputs are grouped one dir per role, sharing a <review_id>. Commands
+# mkdir these up front, so an aborted review leaves empty dirs behind.
+REVIEW_BASES = ("audit", "design-review", "security-review", "ui-review", "pr-review")
+# Run artifacts pruned by age.
+AGED_BASES = ("plans", "logs", *REVIEW_BASES)
+DEFAULT_CLEAN_MAX_AGE_DAYS = 30
 
 
 def present() -> list[Path]:
@@ -94,6 +106,76 @@ def find_stale(max_age: float = DEFAULT_STALE_SECONDS) -> list[dict]:
     return out
 
 
+def _is_empty_dir(p: Path) -> bool:
+    try:
+        return p.is_dir() and not any(p.iterdir())
+    except OSError:
+        return False
+
+
+def find_empty_review_dirs() -> list[Path]:
+    """Empty per-review-id subdirs under the review bases — orphaned by an
+    aborted review that mkdir'd its output dir but wrote no findings."""
+    out: list[Path] = []
+    for base in REVIEW_BASES:
+        d = STATE_DIR / base
+        if not d.is_dir():
+            continue
+        out.extend(sub for sub in d.iterdir() if _is_empty_dir(sub))
+    return out
+
+
+def find_old_runs(max_age_days: float) -> list[Path]:
+    """Run artifacts (plan dirs, per-run logs, review-output dirs) whose mtime is
+    older than `max_age_days`. Rotated/ambient logs are included by age too."""
+    cutoff = time.time() - max_age_days * 86400
+    out: list[Path] = []
+    for base in AGED_BASES:
+        d = STATE_DIR / base
+        if not d.is_dir():
+            continue
+        for entry in d.iterdir():
+            try:
+                if entry.stat().st_mtime < cutoff:
+                    out.append(entry)
+            except OSError:
+                pass
+    return out
+
+
+def clean(max_age_days: float, apply: bool) -> dict:
+    """Return (and optionally remove) prunable state: empty review dirs (any age)
+    plus run artifacts older than `max_age_days`. Dedupes overlaps."""
+    empties = find_empty_review_dirs()
+    old = find_old_runs(max_age_days)
+    targets: list[Path] = []
+    seen: set[Path] = set()
+    for p in empties + old:
+        if p not in seen:
+            seen.add(p)
+            targets.append(p)
+
+    removed: list[str] = []
+    if apply:
+        for p in targets:
+            try:
+                if p.is_dir():
+                    shutil.rmtree(p)
+                else:
+                    p.unlink()
+                removed.append(str(p.relative_to(STATE_DIR)))
+            except OSError:
+                pass
+    return {
+        "empty_dirs": [str(p.relative_to(STATE_DIR)) for p in empties],
+        "aged": [str(p.relative_to(STATE_DIR)) for p in old],
+        "candidates": [str(p.relative_to(STATE_DIR)) for p in targets],
+        "removed": removed,
+        "applied": apply,
+        "max_age_days": max_age_days,
+    }
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -101,7 +183,29 @@ def main() -> None:
     chk = sub.add_parser("check")
     chk.add_argument("--max-age", type=float, default=DEFAULT_STALE_SECONDS)
     chk.add_argument("--json", action="store_true")
+    cln = sub.add_parser("clean")
+    cln.add_argument("--max-age-days", type=float, default=DEFAULT_CLEAN_MAX_AGE_DAYS)
+    cln.add_argument("--apply", action="store_true", help="actually delete (default: dry-run)")
+    cln.add_argument("--json", action="store_true")
     args = ap.parse_args()
+
+    if args.cmd == "clean":
+        report = clean(args.max_age_days, args.apply)
+        if args.json:
+            print(json.dumps(report))
+        else:
+            verb = "removed" if args.apply else "would remove"
+            items = report["removed"] if args.apply else report["candidates"]
+            if not items:
+                print("nothing to clean")
+            else:
+                print(f"{verb} {len(items)} item(s) "
+                      f"(empty review dirs + artifacts >{args.max_age_days:g}d old):")
+                for it in items:
+                    print(f"  {it}")
+                if not args.apply:
+                    print("\nre-run with --apply to delete.")
+        sys.exit(0)
 
     if args.cmd == "clear":
         removed = clear()
