@@ -144,6 +144,35 @@ class TestStateClean(unittest.TestCase):
             r = run(STATE, ["clean"], td)
             self.assertIn("nothing to clean", r.stdout)
 
+    def test_deferred_run_protected_from_age_prune(self):
+        # An OLD run holding a deferred (parked) task must never be pruned —
+        # deleting it would break /agentic-resume.
+        with tempfile.TemporaryDirectory() as td:
+            sd = Path(td) / ".claude" / "state"
+            parked = sd / "plans" / "FEAT-PARKED"
+            parked.mkdir(parents=True)
+            (parked / "t1.md").write_text("---\nstatus: deferred\n---\n")
+            old = time.time() - 90 * 86400
+            os.utime(parked, (old, old))
+            os.utime(parked / "t1.md", (old, old))
+            r = run(STATE, ["clean", "--json"], td)
+            data = json.loads(r.stdout)
+            self.assertNotIn("plans/FEAT-PARKED", data["candidates"])
+
+    def test_current_run_protected(self):
+        with tempfile.TemporaryDirectory() as td:
+            sd = Path(td) / ".claude" / "state"
+            cur = sd / "plans" / "FEAT-CURRENT"
+            cur.mkdir(parents=True)
+            (cur / "t1.md").write_text("---\nstatus: done\n---\n")
+            (sd / "current_run.txt").write_text("FEAT-CURRENT")
+            old = time.time() - 90 * 86400
+            os.utime(cur, (old, old))
+            os.utime(cur / "t1.md", (old, old))
+            r = run(STATE, ["clean", "--json"], td)
+            data = json.loads(r.stdout)
+            self.assertNotIn("plans/FEAT-CURRENT", data["candidates"])
+
 
 class TestLessonsExtract(unittest.TestCase):
     def test_extract_review_section(self):

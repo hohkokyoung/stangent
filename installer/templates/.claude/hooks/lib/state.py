@@ -125,9 +125,28 @@ def find_empty_review_dirs() -> list[Path]:
     return out
 
 
+def _run_is_protected(run_dir: Path) -> bool:
+    """A plan dir must never be age-pruned if it is the current run, or holds a
+    `deferred` (parked) task — deleting it would break `/agentic-resume`."""
+    try:
+        current = (STATE_DIR / "current_run.txt").read_text(encoding="utf-8").strip()
+    except OSError:
+        current = ""
+    if current and run_dir.name == current:
+        return True
+    for md in run_dir.glob("*.md"):
+        try:
+            if "status: deferred" in md.read_text(encoding="utf-8"):
+                return True
+        except OSError:
+            pass
+    return False
+
+
 def find_old_runs(max_age_days: float) -> list[Path]:
     """Run artifacts (plan dirs, per-run logs, review-output dirs) whose mtime is
-    older than `max_age_days`. Rotated/ambient logs are included by age too."""
+    older than `max_age_days`. Rotated/ambient logs are included by age too.
+    Parked (deferred) and current-run plan dirs are protected regardless of age."""
     cutoff = time.time() - max_age_days * 86400
     out: list[Path] = []
     for base in AGED_BASES:
@@ -136,10 +155,13 @@ def find_old_runs(max_age_days: float) -> list[Path]:
             continue
         for entry in d.iterdir():
             try:
-                if entry.stat().st_mtime < cutoff:
-                    out.append(entry)
+                if entry.stat().st_mtime >= cutoff:
+                    continue
             except OSError:
-                pass
+                continue
+            if base == "plans" and entry.is_dir() and _run_is_protected(entry):
+                continue
+            out.append(entry)
     return out
 
 
