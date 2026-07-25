@@ -23,6 +23,9 @@ import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import read_text_or_none  # noqa: E402
+
 STATE_DIR = Path.cwd().resolve() / ".claude" / "state"
 STATE_FILES = [
     "current_run.txt",
@@ -74,10 +77,7 @@ def _latest_activity() -> float | None:
             times.append(p.stat().st_mtime)
         except OSError:
             pass
-    try:
-        run_id = (STATE_DIR / "current_run.txt").read_text(encoding="utf-8").strip()
-    except OSError:
-        run_id = ""
+    run_id = read_text_or_none(STATE_DIR / "current_run.txt")
     if run_id:
         run_log = STATE_DIR / "logs" / f"{run_id}.jsonl"
         try:
@@ -128,10 +128,7 @@ def find_empty_review_dirs() -> list[Path]:
 def _run_is_protected(run_dir: Path) -> bool:
     """A plan dir must never be age-pruned if it is the current run, or holds a
     `deferred` (parked) task — deleting it would break `/agentic-resume`."""
-    try:
-        current = (STATE_DIR / "current_run.txt").read_text(encoding="utf-8").strip()
-    except OSError:
-        current = ""
+    current = read_text_or_none(STATE_DIR / "current_run.txt")
     if current and run_dir.name == current:
         return True
     for md in run_dir.glob("*.md"):

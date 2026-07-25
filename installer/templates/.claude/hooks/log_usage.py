@@ -24,6 +24,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+from common import read_jsonl, read_text_or_none  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 STATE_DIR = REPO_ROOT / ".claude" / "state"
@@ -31,10 +32,7 @@ LOG_DIR = STATE_DIR / "logs"
 
 
 def _read_state(name: str) -> str | None:
-    try:
-        return (STATE_DIR / name).read_text(encoding="utf-8").strip() or None
-    except OSError:
-        return None
+    return read_text_or_none(STATE_DIR / name)
 
 
 def trailing_sidechain_usage(records: list[dict]) -> tuple[dict, str | None, int]:
@@ -67,22 +65,6 @@ def trailing_sidechain_usage(records: list[dict]) -> tuple[dict, str | None, int
     return tot, model, turns
 
 
-def _read_transcript(path: str) -> list[dict]:
-    out: list[dict] = []
-    try:
-        with open(path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    try:
-                        out.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        pass
-    except OSError:
-        pass
-    return out
-
-
 def main() -> None:
     try:
         payload = json.loads(sys.stdin.read() or "{}")
@@ -96,7 +78,7 @@ def main() -> None:
         sys.exit(0)
 
     try:
-        records = _read_transcript(tx)
+        records = read_jsonl(tx)
         tokens, model, turns = trailing_sidechain_usage(records)
         if turns == 0:
             sys.exit(0)

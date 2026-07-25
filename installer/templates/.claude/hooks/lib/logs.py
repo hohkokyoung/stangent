@@ -23,6 +23,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import read_jsonl  # noqa: E402
+
 STATE_DIR = Path.cwd().resolve() / ".claude" / "state"
 LOG_DIR = STATE_DIR / "logs"
 PLANS_DIR = STATE_DIR / "plans"
@@ -30,21 +33,6 @@ DISPATCH_LOG = LOG_DIR / "dispatch.jsonl"
 
 RETRIEVE_TOOL = "mcp__agentic_mcp__retrieve"
 SYMBOL_TOOL = "mcp__agentic_mcp__get_symbol"
-
-
-def _read_jsonl(path: Path) -> list[dict]:
-    out: list[dict] = []
-    try:
-        for line in path.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if line:
-                try:
-                    out.append(json.loads(line))
-                except json.JSONDecodeError:
-                    pass
-    except OSError:
-        pass
-    return out
 
 
 def _parse_ts(s) -> dt.datetime | None:
@@ -106,10 +94,10 @@ def _aggregate_usage(events: list[dict]) -> dict:
 
 
 def summarize(run_id: str) -> dict:
-    raw = _read_jsonl(LOG_DIR / f"{run_id}.jsonl")
+    raw = read_jsonl(LOG_DIR / f"{run_id}.jsonl")
     calls = [c for c in raw if c.get("event") != "usage"]
     usage_by_task = _aggregate_usage([c for c in raw if c.get("event") == "usage"])
-    dispatches = [d for d in _read_jsonl(DISPATCH_LOG) if d.get("run_id") == run_id]
+    dispatches = [d for d in read_jsonl(DISPATCH_LOG) if d.get("run_id") == run_id]
     statuses = _task_statuses(run_id)
 
     # role/model per task from the dispatch log (authoritative for build runs).

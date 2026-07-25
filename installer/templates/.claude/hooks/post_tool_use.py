@@ -142,6 +142,9 @@ def main() -> None:
         if "deny_reason" in tool_response:
             deny_reason = tool_response.get("deny_reason")
 
+    # Kept inline (not shared via lib/common) on purpose: this hook fires on
+    # EVERY tool call and its test runs it copied alone into a temp dir, so it
+    # stays self-contained with no lib import to break.
     def _read_state(filename: str) -> str | None:
         p = STATE_DIR / filename
         if not p.exists():
