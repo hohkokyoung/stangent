@@ -58,6 +58,7 @@ In the installed project, in Claude Code:
 /agentic-debug <bug description>            # diagnose a live bug — data first, code second
 /agentic-screenshot [all | <slugs>]         # screenshot every page/screen into docs/screenshots/<date>/
 /agentic-clean-state [days:N] [--apply]     # prune old runs/logs + empty review dirs from .claude/state/
+/agentic-logs [id] [--json]                 # readable summary of a run/review's logs — tool counts, denials, failures, duration
 ```
 
 The planner is strict — it walks an 11-dimension coverage checklist (scope, functional, acceptance, edges, auth, validation, error UX, data model, API, NFRs, out-of-scope) and asks via `AskUserQuestion` on blocking gaps, up to 4 rounds. **It makes no assumptions** — every gap must be answered by the developer before planning proceeds.
@@ -296,6 +297,7 @@ Ownership is strict: only `/agentic-defer` sets `deferred`, only `/agentic-resum
 │   ├── agentic-screenshot.md   # screenshot all pages/screens → docs/screenshots/<date>/
 │   ├── agentic-cleanup.md      # CODE cleanup: audit for smells → dispatch refactor tasks
 │   ├── agentic-clean-state.md  # STATE cleanup: prune old runs/logs + empty review dirs
+│   ├── agentic-logs.md         # readable per-run log report (tool counts, denials, duration)
 │   ├── agentic-review.md          # FULL review — hygiene + design + security (+ UI) → consolidated → remediate
 │   ├── agentic-review-design.md   # architect design review → findings report
 │   ├── agentic-review-security.md # security red-team → threat model report
@@ -323,6 +325,7 @@ Ownership is strict: only `/agentic-defer` sets `deferred`, only `/agentic-resum
 │       ├── adr_id.py           # ADR-### allocator
 │       ├── git_branch.py       # feat/{run_id} branch helper; auto-increments to -v2, -v3 on collision
 │       ├── log_dispatch.py     # structured dispatch events → .claude/state/logs/dispatch.jsonl
+│       ├── logs.py             # summarize a run/review's logs (/agentic-logs)
 │       └── doctor.py           # install health checks
 ├── mcp/
 │   └── agentic_mcp.py          # exposes retrieve() + get_symbol() over stdio MCP
