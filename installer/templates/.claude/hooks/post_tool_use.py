@@ -9,12 +9,19 @@ Multi-line strings are flattened. Long strings are truncated mid-value with
 an ellipsis so they stay JSONL-friendly.
 
 Log file path:
-  .claude/state/logs/<run_id>.jsonl    when run_id is known
-  .claude/state/logs/_no-run.jsonl     otherwise (ambient / setup tool calls)
+  .claude/state/logs/<run_id>.jsonl    when a workflow context is active
+  .claude/state/logs/_no-run.jsonl     only if AGENTIC_LOG_AMBIENT=1 (opt-in)
+
+`run_id` is the WORKFLOW/LOG CONTEXT — set by every agentic command around its
+agent dispatch, not just /agentic-build: build → FEAT-NNN, reviews → SEC-/DR-/
+UIR-/PR-, debug → DBG-, design → DS-, baseline tests → baseline-<flow>. This is
+what makes logging uniform: any command that dispatches an agent writes
+current_run.txt, so its tool calls are captured under that context. Ambient
+tool use (no command active) has no context and is skipped by default.
 
 run_id / task_id / agent_role / agent_model are read from state files written by
-the dispatcher before each subagent call:
-  .claude/state/current_run.txt   → run_id
+the command before each subagent call:
+  .claude/state/current_run.txt   → run_id (workflow/log context)
   .claude/state/current_task.txt  → task_id
   .claude/state/current_role.txt  → agent_role
   .claude/state/current_model.txt → agent_model (the selected model after complexity routing)
@@ -138,10 +145,11 @@ def main() -> None:
 
     run_id = os.environ.get("AGENTIC_RUN_ID") or _read_state("current_run.txt")
 
-    # Audit the agentic workflow, not the whole project. With no run active, tool
-    # calls are ambient general dev; logging them made `_no-run.jsonl` an
-    # unbounded record of ALL Claude Code use in the repo. Skip unless the user
-    # opts in with AGENTIC_LOG_AMBIENT=1.
+    # Audit agentic work, not the whole project. Every agentic command sets a
+    # workflow context (current_run.txt) around its dispatch, so a missing run_id
+    # means no command is active — ambient general dev. Logging that made
+    # `_no-run.jsonl` an unbounded record of ALL Claude Code use in the repo, so
+    # skip it unless the user opts in with AGENTIC_LOG_AMBIENT=1.
     if not run_id and not _ambient_logging_enabled():
         sys.exit(0)
 

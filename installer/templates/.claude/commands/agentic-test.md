@@ -47,14 +47,14 @@ Do not attempt to infer flows from file paths — the developer knows their proj
 This is a deliberate taskless shortcut — brownfield baseline tests don't fit the full plan/build cycle. The tester is invoked directly without task files.
 
 For each flow the developer listed:
-- Run: `printf '%s' 'baseline-<flow-slug>' > .claude/state/current_task.txt && printf '%s' 'tester' > .claude/state/current_role.txt`
+- Run: `printf '%s' 'baseline-<flow-slug>' > .claude/state/current_run.txt && printf '%s' 'baseline-<flow-slug>' > .claude/state/current_task.txt && printf '%s' 'tester' > .claude/state/current_role.txt`  (current_run gives the tool calls a log context: `logs/baseline-<flow-slug>.jsonl`)
 - Invoke a **tester** subagent with:
   - The flow description as the task intent
   - The `test_framework` from `project.yml`
   - The matching test skill in `skills_to_load`
   - Context: "This is a brownfield baseline — explore the running app/service and generate one test that covers the happy path. Do not assume file structure."
 - Wait for the tester to complete before starting the next.
-- Run: `rm -f .claude/state/current_task.txt .claude/state/current_role.txt`
+- Run: `rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_run.txt`
 
 **Step 4 — Report**
 

@@ -29,6 +29,7 @@ mkdir -p .claude/state/security-review/$REVIEW_ID
 ### Step 3 — Arm the hook and dispatch
 
 ```bash
+printf '%s' "$REVIEW_ID" > .claude/state/current_run.txt   # log context: tool calls land in logs/$REVIEW_ID.jsonl
 printf '%s' 'security-reviewer' > .claude/state/current_role.txt
 ```
 
@@ -38,7 +39,7 @@ Invoke the **security-reviewer** agent with `review_id` and the resolved
 Then clear the state (mandatory):
 
 ```bash
-rm -f .claude/state/current_role.txt
+rm -f .claude/state/current_role.txt .claude/state/current_run.txt
 ```
 
 ### Step 4 — Present

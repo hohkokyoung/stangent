@@ -24,8 +24,9 @@ Entry point for data-aware debugging. Collects context from the developer, then 
    - All four questions in one round. Do not split across multiple rounds.
    - If the developer says "unknown" for user/record, note it and proceed — the debugger will look broadly.
 
-3. **Invoke the debugger agent.** First write role state so the pre-tool hook enforces the debugger's write-scope (`.claude/state/debug/` only):
+3. **Invoke the debugger agent.** First write state so the pre-tool hook enforces the debugger's write-scope (`.claude/state/debug/` only) and its tool calls are logged under the debug id (`logs/<debug_id>.jsonl`):
    ```
+   printf '%s' '<debug_id>' > .claude/state/current_run.txt
    printf '%s' 'debugger' > .claude/state/current_role.txt
    ```
    Then invoke the **debugger** agent with:
@@ -35,7 +36,7 @@ Entry point for data-aware debugging. Collects context from the developer, then 
 
    After it returns, clear the state (mandatory — do not skip):
    ```
-   rm -f .claude/state/current_role.txt
+   rm -f .claude/state/current_role.txt .claude/state/current_run.txt
    ```
 
 4. After the debugger writes its report, print:

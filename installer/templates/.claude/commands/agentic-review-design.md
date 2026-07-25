@@ -32,6 +32,7 @@ Write role state first so the pre-tool hook enforces the architect's write-scope
 (`.claude/state/design-review/` only):
 
 ```bash
+printf '%s' "$REVIEW_ID" > .claude/state/current_run.txt   # log context: tool calls land in logs/$REVIEW_ID.jsonl
 printf '%s' 'architect' > .claude/state/current_role.txt
 ```
 
@@ -41,7 +42,7 @@ Invoke the **architect** agent with `review_id` and the resolved `run_id` /
 Then clear the state (mandatory):
 
 ```bash
-rm -f .claude/state/current_role.txt
+rm -f .claude/state/current_role.txt .claude/state/current_run.txt
 ```
 
 ### Step 4 — Present

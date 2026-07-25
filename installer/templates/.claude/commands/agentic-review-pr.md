@@ -48,16 +48,18 @@ coupled and needs acceptance criteria a raw PR does not carry.)
 
 **Architect:**
 ```bash
+printf '%s' "$PR_ID" > .claude/state/current_run.txt   # log context: tool calls land in logs/$PR_ID.jsonl
 printf '%s' 'architect' > .claude/state/current_role.txt
 ```
 Invoke **architect** with `review_id=<PR_ID>` and
 `scope="GitHub PR: <title>; diff at .claude/state/pr-review/<PR_ID>/diff.patch, description at .../pr.md"`.
 Wait for its findings, then:
 ```bash
-rm -f .claude/state/current_role.txt
+rm -f .claude/state/current_role.txt .claude/state/current_run.txt
 ```
 
-**Security-reviewer:** same handshake with role `security-reviewer` and the same
+**Security-reviewer:** same handshake (set `current_run.txt` to `$PR_ID` and role
+to `security-reviewer`, clear both after) with the same
 `scope`, writing to `.claude/state/security-review/<PR_ID>/findings.md`.
 
 ### Step 4 — Present, then optionally comment

@@ -41,6 +41,7 @@ Build a one-line human description of the scope for the critic.
 ### Step 4 — Arm the critic and dispatch
 
 ```bash
+printf '%s' "$REVIEW_ID" > .claude/state/current_run.txt   # log context: tool calls land in logs/$REVIEW_ID.jsonl
 printf '%s' 'design-critic' > .claude/state/current_role.txt
 ```
 
@@ -51,7 +52,7 @@ Invoke the **design-critic** agent with `review_id=$REVIEW_ID` and the resolved
 the role (mandatory):
 
 ```bash
-rm -f .claude/state/current_role.txt
+rm -f .claude/state/current_role.txt .claude/state/current_run.txt
 ```
 
 ### Step 5 — Present
@@ -72,4 +73,4 @@ say so and point back to `/agentic-design`.
 - Do NOT fix anything or edit the spec. Findings are advisory — remediation is
   `/agentic-review` or `/agentic-plan`.
 - Do NOT call any MCP tool yourself. Do NOT commit.
-- Always clear `.claude/state/current_role.txt` after the critic returns.
+- Always clear `.claude/state/current_role.txt` and `.claude/state/current_run.txt` after the critic returns.

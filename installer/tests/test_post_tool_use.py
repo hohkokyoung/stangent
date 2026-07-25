@@ -61,6 +61,13 @@ class LoggerCase(unittest.TestCase):
         logs = self.run_hook(run_id="FEAT-001")
         self.assertEqual(logs.get("FEAT-001.jsonl"), 1)
 
+    def test_non_build_context_logged_under_its_id(self):
+        # Tier 0: reviews/debug/design set current_run to their own workflow id
+        # (SEC-/DR-/UIR-/PR-/DBG-/DS-). Those must log under that id, not vanish.
+        for ctx in ("SEC-20260724-120000", "DBG-20260724-120000", "DS-20260724-120000"):
+            logs = self.run_hook(run_id=ctx)
+            self.assertEqual(logs.get(f"{ctx}.jsonl"), 1, f"{ctx} not logged")
+
     def test_large_log_rotates(self):
         big = b"x" * (5 * 1024 * 1024 + 8)  # just over MAX_LOG_BYTES
         logs = self.run_hook(run_id="FEAT-001", pre={"FEAT-001.jsonl": big})

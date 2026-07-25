@@ -70,6 +70,7 @@ inconsistencies matter most.)
 ### Step 4 — Arm the designer and dispatch
 
 ```bash
+printf '%s' "$SPEC_ID" > .claude/state/current_run.txt   # log context: tool calls land in logs/$SPEC_ID.jsonl
 printf '%s' 'designer' > .claude/state/current_role.txt
 ```
 
@@ -80,7 +81,7 @@ write the draft under `.claude/state/design-spec/$SPEC_ID/` and print its summar
 Then clear the role (mandatory):
 
 ```bash
-rm -f .claude/state/current_role.txt
+rm -f .claude/state/current_role.txt .claude/state/current_run.txt
 ```
 
 ### Step 5 — Present the draft
@@ -134,5 +135,5 @@ Next:
   are documentation. The developer installs.
 - Do NOT commit — writing `docs/design/` is the only file change; commits are
   user-driven.
-- Always clear `.claude/state/current_role.txt` after the designer returns, even on
-  a revise loop.
+- Always clear `.claude/state/current_role.txt` and `.claude/state/current_run.txt`
+  after the designer returns, even on a revise loop.
