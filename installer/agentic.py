@@ -166,23 +166,32 @@ def sync_managed_hooks(target: Path) -> None:
         info(f"warning: could not parse settings.json: {e} — skipping hook sync")
         return
 
+    def _script(cmd: str) -> str:
+        # Identify a managed hook by its .py script, NOT the full command — the
+        # command format has drifted across versions (e.g. a `${CLAUDE_PROJECT_DIR}`
+        # prefix vs a plain relative path), and matching on the whole string would
+        # add a duplicate of a hook that is already installed.
+        m = re.search(r"([\w.-]+\.py)", cmd or "")
+        return m.group(1) if m else (cmd or "")
+
     dst_hooks = dst.setdefault("hooks", {})
     added = []
     for event, tpl_entries in (tpl.get("hooks") or {}).items():
         dst_entries = dst_hooks.setdefault(event, [])
         existing = {
-            h.get("command")
+            _script(h.get("command"))
             for entry in dst_entries for h in entry.get("hooks", [])
             if h.get("_agentic_managed")
         }
         for entry in tpl_entries:
             for h in entry.get("hooks", []):
-                if not h.get("_agentic_managed") or h.get("command") in existing:
+                if not h.get("_agentic_managed") or _script(h.get("command")) in existing:
                     continue
                 new_entry = {"hooks": [h]}
                 if entry.get("matcher") is not None:
                     new_entry = {"matcher": entry["matcher"], "hooks": [h]}
                 dst_entries.append(new_entry)
+                existing.add(_script(h.get("command")))
                 added.append(f"{event}:{h.get('command')}")
     if added:
         dst_path.write_text(json.dumps(dst, indent=2) + "\n", encoding="utf-8")

@@ -47,6 +47,28 @@ class TestSyncManagedHooks(unittest.TestCase):
             self.assertIn("python3 my_own_hook.py", post_cmds)
             self.assertEqual(data["enabledMcpjsonServers"], ["agentic_mcp"])
 
+    def test_no_duplicate_across_command_format_drift(self):
+        # An older install used a ${CLAUDE_PROJECT_DIR} command prefix; syncing must
+        # recognize it by script name and NOT add a plain-path duplicate.
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            p = _settings(root, {"hooks": {
+                "PreToolUse": [{"matcher": "*", "hooks": [
+                    {"type": "command",
+                     "command": 'python3 "${CLAUDE_PROJECT_DIR:-.}"/.claude/hooks/pre_tool_use.py',
+                     "_agentic_managed": True}]}],
+                "PostToolUse": [{"matcher": "*", "hooks": [
+                    {"type": "command",
+                     "command": 'python3 "${CLAUDE_PROJECT_DIR:-.}"/.claude/hooks/post_tool_use.py',
+                     "_agentic_managed": True}]}],
+            }})
+            ag.sync_managed_hooks(root)
+            data = json.loads(p.read_text())
+            pre_cmds = [h["command"] for e in data["hooks"]["PreToolUse"] for h in e["hooks"]]
+            self.assertEqual(len(pre_cmds), 1, f"duplicated PreToolUse: {pre_cmds}")
+            # SubagentStop is genuinely new → added
+            self.assertIn("SubagentStop", data["hooks"])
+
     def test_idempotent(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
