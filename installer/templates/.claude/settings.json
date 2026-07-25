@@ -25,6 +25,17 @@
           }
         ]
       }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/log_usage.py",
+            "_agentic_managed": true
+          }
+        ]
+      }
     ]
   }
 }

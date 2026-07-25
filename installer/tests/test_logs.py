@@ -61,6 +61,27 @@ class TestSummarize(unittest.TestCase):
             self.assertEqual(rep["totals"]["failures"], 1)
             self.assertEqual(rep["totals"]["denials"], 1)
 
+    def test_usage_events_folded_in(self):
+        with tempfile.TemporaryDirectory() as td:
+            sd = Path(td) / ".claude" / "state"
+            logs = sd / "logs"; logs.mkdir(parents=True)
+            (logs / "FEAT-001.jsonl").write_text(jl([
+                {"ts": "2026-07-24T10:00:00Z", "run_id": "FEAT-001", "task_id": "t1",
+                 "agent_role": "implementer", "model": "claude-sonnet-4-6", "tool": "Bash", "ok": True, "args": {}},
+                {"ts": "2026-07-24T10:01:00Z", "event": "usage", "run_id": "FEAT-001", "task_id": "t1",
+                 "agent_role": "implementer", "model": "claude-sonnet-4-6", "turns": 3,
+                 "tokens": {"input": 1000, "output": 2000, "cache_read": 5000, "cache_write": 0},
+                 "cost_usd": 0.033},
+            ]))
+            rep = json.loads(run(["summarize", "FEAT-001", "--json"], td).stdout)
+            self.assertTrue(rep["has_usage"])
+            self.assertAlmostEqual(rep["totals"]["cost_usd"], 0.033, places=3)
+            self.assertEqual(rep["totals"]["tokens"]["output"], 2000)
+            t1 = next(t for t in rep["tasks"] if t["task_id"] == "t1")
+            self.assertEqual(t1["tokens"]["cache_read"], 5000)
+            # usage line must NOT be counted as a tool call
+            self.assertEqual(rep["totals"]["calls"], 1)
+
     def test_task_status_and_duration(self):
         with tempfile.TemporaryDirectory() as td:
             self._build(td)

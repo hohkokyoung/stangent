@@ -89,8 +89,26 @@ def _task_statuses(run_id: str) -> dict:
     return out
 
 
+def _aggregate_usage(events: list[dict]) -> dict:
+    """task_id → summed {input,output,cache_read,cache_write,cost,turns} from the
+    SubagentStop usage events (log_usage.py). Empty if telemetry hasn't run."""
+    by_task: dict[str, dict] = {}
+    for e in events:
+        tid = e.get("task_id") or "(session)"
+        agg = by_task.setdefault(tid, {"input": 0, "output": 0, "cache_read": 0,
+                                       "cache_write": 0, "cost": 0.0, "turns": 0})
+        tk = e.get("tokens") or {}
+        for k in ("input", "output", "cache_read", "cache_write"):
+            agg[k] += int(tk.get(k, 0) or 0)
+        agg["cost"] += float(e.get("cost_usd", 0) or 0)
+        agg["turns"] += int(e.get("turns", 0) or 0)
+    return by_task
+
+
 def summarize(run_id: str) -> dict:
-    calls = _read_jsonl(LOG_DIR / f"{run_id}.jsonl")
+    raw = _read_jsonl(LOG_DIR / f"{run_id}.jsonl")
+    calls = [c for c in raw if c.get("event") != "usage"]
+    usage_by_task = _aggregate_usage([c for c in raw if c.get("event") == "usage"])
     dispatches = [d for d in _read_jsonl(DISPATCH_LOG) if d.get("run_id") == run_id]
     statuses = _task_statuses(run_id)
 
@@ -142,6 +160,7 @@ def summarize(run_id: str) -> dict:
             run_first = t["first"] if run_first is None else min(run_first, t["first"])
             run_last = t["last"] if run_last is None else max(run_last, t["last"])
         all_events.extend(t.pop("events"))
+        use = usage_by_task.get(tid, {})
         task_list.append({
             "task_id": tid,
             "role": t["role"] or d.get("role"),
@@ -151,7 +170,24 @@ def summarize(run_id: str) -> dict:
             "get_symbol": t["get_symbol"], "denials": t["denials"],
             "failures": t["failures"], "duration_s": dur,
             "routing_applied": d.get("routing_applied", False),
+            "tokens": {k: use.get(k, 0) for k in ("input", "output", "cache_read", "cache_write")},
+            "cost_usd": round(use.get("cost", 0.0), 4),
         })
+
+    # Usage recorded for a task with no tool-call lines (rare) — still surface it.
+    for tid, use in usage_by_task.items():
+        if tid not in order:
+            task_list.append({
+                "task_id": tid, "role": None, "model": None,
+                "status": statuses.get(tid, "-"), "calls": 0, "retrieve": 0,
+                "get_symbol": 0, "denials": 0, "failures": 0, "duration_s": None,
+                "routing_applied": False,
+                "tokens": {k: use.get(k, 0) for k in ("input", "output", "cache_read", "cache_write")},
+                "cost_usd": round(use.get("cost", 0.0), 4),
+            })
+
+    def _tok_sum(key):
+        return sum(t["tokens"][key] for t in task_list)
 
     return {
         "run_id": run_id,
@@ -164,11 +200,14 @@ def summarize(run_id: str) -> dict:
             "failures": sum(t["failures"] for t in task_list),
             "retrieve": sum(t["retrieve"] for t in task_list),
             "get_symbol": sum(t["get_symbol"] for t in task_list),
+            "cost_usd": round(sum(t["cost_usd"] for t in task_list), 4),
+            "tokens": {k: _tok_sum(k) for k in ("input", "output", "cache_read", "cache_write")},
         },
+        "has_usage": bool(usage_by_task),
         "started": run_first.isoformat() if run_first else None,
         "ended": run_last.isoformat() if run_last else None,
         "duration_s": (run_last - run_first).total_seconds() if run_first and run_last else None,
-        "has_logs": bool(calls),
+        "has_logs": bool(raw),
     }
 
 
@@ -187,6 +226,14 @@ def list_contexts() -> list[dict]:
     return out
 
 
+def _fmt_tok(n: int) -> str:
+    if not n:
+        return "-"
+    if n >= 1000:
+        return f"{n / 1000:.0f}k"
+    return str(n)
+
+
 def _print_report(rep: dict) -> None:
     if not rep["has_logs"]:
         print(f"no tool-use log for '{rep['run_id']}' "
@@ -201,14 +248,27 @@ def _print_report(rep: dict) -> None:
     print(f"  tasks: {tot['tasks']}   tool calls: {tot['calls']}   "
           f"retrieve: {tot['retrieve']}   get_symbol: {tot['get_symbol']}   "
           f"denials: {tot['denials']}   failures: {tot['failures']}")
+    has_usage = rep.get("has_usage")
+    if has_usage:
+        tk = tot["tokens"]
+        billable = tk["input"] + tk["output"] + tk["cache_write"]
+        cache_pct = (100 * tk["cache_read"] / (tk["cache_read"] + billable)) if (tk["cache_read"] + billable) else 0
+        print(f"  cost: ${tot['cost_usd']:.2f}   tokens: in {_fmt_tok(tk['input'])} "
+              f"out {_fmt_tok(tk['output'])} cache-read {_fmt_tok(tk['cache_read'])} "
+              f"cache-write {_fmt_tok(tk['cache_write'])}   cache-hit {cache_pct:.0f}%")
     print()
-    hdr = f"  {'task':<14}{'role':<16}{'model':<14}{'status':<9}{'calls':>6}{'ret':>5}{'sym':>5}{'deny':>6}{'fail':>6}{'dur':>7}"
-    print(hdr)
+    extra = f"{'tok':>7}{'cost':>8}" if has_usage else ""
+    print(f"  {'task':<14}{'role':<16}{'model':<14}{'status':<9}{'calls':>6}"
+          f"{'ret':>5}{'sym':>5}{'deny':>6}{'fail':>6}{'dur':>7}{extra}")
     for t in rep["tasks"]:
-        print(f"  {str(t['task_id']):<14}{str(t['role'] or '-'):<16}"
-              f"{_short_model(t['model']):<14}{str(t['status']):<9}"
-              f"{t['calls']:>6}{t['retrieve']:>5}{t['get_symbol']:>5}"
-              f"{t['denials']:>6}{t['failures']:>6}{_fmt_dur(t['duration_s']):>7}")
+        row = (f"  {str(t['task_id']):<14}{str(t['role'] or '-'):<16}"
+               f"{_short_model(t['model']):<14}{str(t['status']):<9}"
+               f"{t['calls']:>6}{t['retrieve']:>5}{t['get_symbol']:>5}"
+               f"{t['denials']:>6}{t['failures']:>6}{_fmt_dur(t['duration_s']):>7}")
+        if has_usage:
+            tokt = t["tokens"]["input"] + t["tokens"]["output"]
+            row += f"{_fmt_tok(tokt):>7}{('$' + format(t['cost_usd'], '.2f')):>8}"
+        print(row)
     if rep["events"]:
         print("\n  denials / failures:")
         for kind, tid, tool, detail in rep["events"]:

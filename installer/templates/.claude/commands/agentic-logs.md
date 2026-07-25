@@ -35,7 +35,8 @@ design (`DS-`), baseline tests (`baseline-<flow>`).
 - Derived entirely from `.claude/state/logs/<id>.jsonl` + `dispatch.jsonl` (+ the
   plan dir for task status when the context is a build run). Read-only.
 - Tool-call counts, denials, failures, retrieve/get_symbol usage, and per-task
-  durations are all available today; token/cost columns arrive with the
-  telemetry hook.
+  durations come from the tool-use log. Token/cost columns and the run-level
+  cache-hit % come from the SubagentStop telemetry hook (`log_usage.py`) and
+  appear once a run has dispatched at least one agent under the new hook.
 - Only agentic work is logged (any command that dispatches an agent). Ambient
   dev is not, unless `AGENTIC_LOG_AMBIENT=1` is set.

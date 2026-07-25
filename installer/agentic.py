@@ -149,9 +149,50 @@ def add_gitignore_block(target: Path) -> None:
     info("wrote .gitignore agentic block")
 
 
+def sync_managed_hooks(target: Path) -> None:
+    """Keep `_agentic_managed` hooks in the project's settings.json current with the
+    template. settings.json is seed-once, so without this a NEW managed hook (e.g.
+    a new SubagentStop telemetry hook) would never reach existing installs. Only
+    managed entries are added; user hooks and all other settings are preserved.
+    Idempotent — matches by command string."""
+    tpl_path = TEMPLATES_DIR / ".claude" / "settings.json"
+    dst_path = target / ".claude" / "settings.json"
+    if not tpl_path.exists() or not dst_path.exists():
+        return
+    try:
+        tpl = json.loads(tpl_path.read_text(encoding="utf-8"))
+        dst = json.loads(dst_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        info(f"warning: could not parse settings.json: {e} — skipping hook sync")
+        return
+
+    dst_hooks = dst.setdefault("hooks", {})
+    added = []
+    for event, tpl_entries in (tpl.get("hooks") or {}).items():
+        dst_entries = dst_hooks.setdefault(event, [])
+        existing = {
+            h.get("command")
+            for entry in dst_entries for h in entry.get("hooks", [])
+            if h.get("_agentic_managed")
+        }
+        for entry in tpl_entries:
+            for h in entry.get("hooks", []):
+                if not h.get("_agentic_managed") or h.get("command") in existing:
+                    continue
+                new_entry = {"hooks": [h]}
+                if entry.get("matcher") is not None:
+                    new_entry = {"matcher": entry["matcher"], "hooks": [h]}
+                dst_entries.append(new_entry)
+                added.append(f"{event}:{h.get('command')}")
+    if added:
+        dst_path.write_text(json.dumps(dst, indent=2) + "\n", encoding="utf-8")
+        info(f"settings.json: synced managed hooks ({len(added)} added)")
+
+
 def install(target: Path) -> None:
     target.mkdir(parents=True, exist_ok=True)
     copy_templates(target)
+    sync_managed_hooks(target)
     add_gitignore_block(target)
     info(f"install complete at {target}")
     info("next: pip install pyyaml fastembed sqlite-vec")
