@@ -128,9 +128,17 @@ def main() -> None:
 
     ok = True
     deny_reason = None
+    error_text = None
     if isinstance(tool_response, dict):
         if tool_response.get("is_error") or tool_response.get("error"):
             ok = False
+            # Capture a short reason so a failed run is diagnosable from the log,
+            # not just "ok:false". Prefer an explicit error string; fall back to a
+            # stringified content/response snippet.
+            err = tool_response.get("error")
+            if not isinstance(err, str):
+                err = tool_response.get("content") or tool_response.get("stderr") or ""
+            error_text = _short(err, "error") if err else None
         if "deny_reason" in tool_response:
             deny_reason = tool_response.get("deny_reason")
 
@@ -168,6 +176,8 @@ def main() -> None:
     }
     if deny_reason:
         line["deny_reason"] = deny_reason
+    if error_text:
+        line["error"] = error_text
 
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     log_name = f"{run_id}.jsonl" if run_id else "_no-run.jsonl"

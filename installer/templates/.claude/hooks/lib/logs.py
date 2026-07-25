@@ -138,7 +138,7 @@ def summarize(run_id: str) -> dict:
             t["events"].append(("deny", tid, c.get("tool"), c.get("deny_reason")))
         if c.get("ok") is False:
             t["failures"] += 1
-            t["events"].append(("fail", tid, c.get("tool"), "tool error"))
+            t["events"].append(("fail", tid, c.get("tool"), c.get("error") or "tool error"))
         ts = _parse_ts(c.get("ts"))
         if ts:
             t["first"] = ts if t["first"] is None else min(t["first"], ts)

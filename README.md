@@ -261,6 +261,43 @@ Ownership is strict: only `/agentic-defer` sets `deferred`, only `/agentic-resum
 
 ---
 
+## Logging & observability
+
+Every command that dispatches an agent establishes a **log context** — it writes
+its workflow id to `.claude/state/current_run.txt` around the dispatch (build →
+`FEAT-NNN`, reviews → `SEC-`/`DR-`/`UIR-`/`PR-`, debug → `DBG-`, design → `DS-`,
+baseline tests → `baseline-<flow>`). Two hooks then capture activity under that
+context:
+
+- **`post_tool_use.py`** (PostToolUse) — one JSONL line per tool call →
+  `logs/<id>.jsonl`: `{ts, run_id, task_id, agent_role, model, tool, ok, args, deny_reason?, error?}`. Secrets in args are redacted.
+- **`log_usage.py`** (SubagentStop) — one `usage` event per finished agent, with
+  token counts (input/output/cache) and estimated cost, attributed to the task.
+- **`log_dispatch.py`** — one routing event per build dispatch → `dispatch.jsonl`.
+
+**Only agentic work is logged.** With no command active, tool calls are ambient
+general dev and are skipped (they used to fill an unbounded `_no-run.jsonl`). Set
+`AGENTIC_LOG_AMBIENT=1` to opt back in. Any single log rotates at 5 MB to
+`<id>.1.jsonl`.
+
+**Read the logs** with **`/agentic-logs [id]`** (or `python .claude/hooks/lib/logs.py summarize <id>`):
+
+```
+Run FEAT-024  2026-06-26 06:17 → 09:49  (3h32m)
+  tasks: 8   tool calls: 233   retrieve: 8   get_symbol: 0   denials: 0   failures: 0
+  cost: $2.14   tokens: in 40k out 88k cache-read 5.2M cache-write 310k   cache-hit 92%
+
+  task   role         model        status  calls  ret  sym  deny  fail   dur    tok   cost
+  t1     implementer  sonnet-4-6   done       56    1    3     0     0   33m    45k  $0.61
+  ...
+```
+
+**Cost rates** are estimates in `token_cost.py`; override per project in
+`.agentic.yml` under `pricing:`. **Retention:** `/agentic-clean-state` prunes old
+per-run logs (and empty review dirs) by age.
+
+---
+
 ## Layout in an installed project
 
 ```

@@ -214,7 +214,7 @@ def check_skill_digest() -> dict:
 
 def check_hooks_compile() -> list[dict]:
     out = []
-    for name in ("pre_tool_use.py", "post_tool_use.py"):
+    for name in ("pre_tool_use.py", "post_tool_use.py", "log_usage.py"):
         p = CLAUDE / "hooks" / name
         if not p.exists():
             out.append(_check(f"hook: {name}", FAIL, "missing"))
