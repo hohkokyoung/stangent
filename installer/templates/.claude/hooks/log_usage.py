@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 """SubagentStop hook — attribute a finished subagent's token usage + cost.
 
-When a subagent (a dispatched agent = Task subagent) finishes, Claude Code fires
-SubagentStop with the session `transcript_path`. Subagent turns are marked
-`isSidechain: true` in that transcript. Because v1 dispatch is sequential, the
-just-finished subagent's turns are the trailing contiguous sidechain block — so
-we sum their `message.usage` (stateless, no cursor) and attribute the total to
-the active workflow context (current_run/task/role, still set at this point).
+When a dispatched agent (a Task subagent) finishes, Claude Code fires
+SubagentStop with the MAIN session `transcript_path`. The subagent's own turns
+are NOT in that file — Claude Code writes them to a separate transcript:
+
+    <main-transcript-without-.jsonl>/subagents/agent-<id>.jsonl
+
+So we derive that `subagents/` dir and take the most-recently-modified file (the
+just-finished subagent; v1 dispatch is sequential), sum its assistant-message
+`message.usage`, and attribute the total to the active workflow context
+(current_run/task/role, still set when this hook fires).
 
 Appends one `usage` event to logs/<run_id>.jsonl:
   {ts, event:"usage", run_id, task_id, agent_role, model, turns, tokens{...}, cost_usd}
 
 Fail-safe by contract: ANY error → exit 0 with no event. Telemetry must never
-break a run. If no context is active, or the transcript has no sidechain turns,
-nothing is written.
+break a run. If no context is active or no subagent transcript is found, nothing
+is written.
 """
 from __future__ import annotations
 
@@ -35,34 +39,45 @@ def _read_state(name: str) -> str | None:
     return read_text_or_none(STATE_DIR / name)
 
 
-def trailing_sidechain_usage(records: list[dict]) -> tuple[dict, str | None, int]:
-    """Sum usage of the final contiguous run of isSidechain records.
-
-    Returns (tokens, model, turns). `turns` is the count of assistant messages
-    summed — 0 means no attributable subagent block was found.
-    """
+def subagent_usage(records: list[dict]) -> tuple[dict, str | None, int]:
+    """Sum assistant-message usage across a subagent transcript (the whole file is
+    one subagent's conversation). Returns (tokens, model, turns); turns==0 means
+    nothing to attribute."""
     from token_cost import tokens_of  # local import so failures stay contained
-
-    last_main = -1
-    for i, r in enumerate(records):
-        if not r.get("isSidechain"):
-            last_main = i
-    block = records[last_main + 1:]
 
     tot = {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0}
     model = None
     turns = 0
-    for r in block:
+    for r in records:
         if r.get("type") != "assistant":
             continue
         msg = r.get("message") or {}
-        t = tokens_of(msg.get("usage") or {})
+        usage = msg.get("usage")
+        if not usage:
+            continue
+        t = tokens_of(usage)
         for k in tot:
             tot[k] += t[k]
         if msg.get("model"):
             model = msg["model"]
         turns += 1
     return tot, model, turns
+
+
+def resolve_subagent_transcript(transcript_path: str) -> Path | None:
+    """Locate the just-finished subagent's transcript.
+
+    SubagentStop passes the MAIN transcript_path; the subagent's turns live in
+    `<main-without-.jsonl>/subagents/agent-*.jsonl`. Take the newest one (dispatch
+    is sequential). If the path already points inside a subagents/ dir, use it."""
+    p = Path(transcript_path)
+    if "subagents" in p.parts:
+        return p if p.is_file() else None
+    sub_dir = p.with_suffix("") / "subagents"
+    if not sub_dir.is_dir():
+        return None
+    files = sorted(sub_dir.glob("*.jsonl"), key=lambda f: f.stat().st_mtime, reverse=True)
+    return files[0] if files else None
 
 
 def main() -> None:
@@ -78,8 +93,14 @@ def main() -> None:
         sys.exit(0)
 
     try:
-        records = read_jsonl(tx)
-        tokens, model, turns = trailing_sidechain_usage(records)
+        sub = resolve_subagent_transcript(tx)
+        records = read_jsonl(sub) if sub else []
+        tokens, model, turns = subagent_usage(records)
+        # Fallback for versions that inline subagent turns in the main transcript
+        # as isSidechain=true, rather than in a subagents/ subfolder.
+        if turns == 0:
+            tokens, model, turns = subagent_usage(
+                [r for r in read_jsonl(tx) if r.get("isSidechain")])
         if turns == 0:
             sys.exit(0)
         model = model or _read_state("current_model.txt") or ""

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Tests for token_cost.py (pricing) and log_usage.trailing_sidechain_usage."""
 import importlib.util
+import os
+import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -42,39 +45,49 @@ class TestPricing(unittest.TestCase):
         self.assertEqual(tc.rates_for("gpt-4"), tc._FALLBACK)
 
 
-class TestSidechainAttribution(unittest.TestCase):
-    def _asst(self, sidechain, out, model="claude-sonnet-4-6"):
-        return {"type": "assistant", "isSidechain": sidechain,
-                "message": {"model": model, "usage": {"output_tokens": out, "input_tokens": 1}}}
+class TestSubagentUsage(unittest.TestCase):
+    def _asst(self, out, model="claude-opus-4-8"):
+        return {"type": "assistant",
+                "message": {"model": model, "usage": {"output_tokens": out, "input_tokens": 1,
+                            "cache_read_input_tokens": out * 10, "cache_creation_input_tokens": 0}}}
 
-    def test_trailing_block_only(self):
-        # main turn, then a 2-message subagent block at the tail
-        records = [
-            self._asst(False, 100),           # main (dispatcher) — excluded
-            self._asst(True, 10),             # subagent turn 1
-            {"type": "user", "isSidechain": True, "message": {}},  # tool result, no usage
-            self._asst(True, 20),             # subagent turn 2
-        ]
-        tokens, model, turns = lu.trailing_sidechain_usage(records)
+    def test_sums_all_assistant_turns(self):
+        # a subagent transcript is one agent's whole conversation → sum it all
+        records = [self._asst(100),
+                   {"type": "user", "message": {}},  # tool result, skipped
+                   self._asst(50)]
+        tokens, model, turns = lu.subagent_usage(records)
         self.assertEqual(turns, 2)
-        self.assertEqual(tokens["output"], 30)  # 10 + 20, NOT the main's 100
-        self.assertEqual(model, "claude-sonnet-4-6")
+        self.assertEqual(tokens["output"], 150)
+        self.assertEqual(tokens["cache_read"], 1500)  # 1000 + 500
+        self.assertEqual(model, "claude-opus-4-8")
 
-    def test_no_sidechain_returns_zero(self):
-        records = [self._asst(False, 100), self._asst(False, 50)]
-        tokens, model, turns = lu.trailing_sidechain_usage(records)
+    def test_empty_returns_zero(self):
+        _, _, turns = lu.subagent_usage([{"type": "user", "message": {}}])
         self.assertEqual(turns, 0)
 
-    def test_earlier_sidechain_block_excluded(self):
-        # a prior subagent, then main, then the current subagent — only the last counts
-        records = [
-            self._asst(True, 999),            # earlier subagent — excluded
-            self._asst(False, 5),             # main between dispatches
-            self._asst(True, 7),              # current subagent
-        ]
-        tokens, _, turns = lu.trailing_sidechain_usage(records)
-        self.assertEqual(turns, 1)
-        self.assertEqual(tokens["output"], 7)
+
+class TestResolveSubagentTranscript(unittest.TestCase):
+    def test_derives_newest_from_main_path(self):
+        # main.jsonl + main/subagents/agent-*.jsonl → pick the newest subagent file
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            main = root / "abc123.jsonl"; main.write_text("{}\n")
+            sub = root / "abc123" / "subagents"; sub.mkdir(parents=True)
+            (sub / "agent-old.jsonl").write_text("{}\n")
+            new = sub / "agent-new.jsonl"; new.write_text("{}\n")
+            os.utime(new, (time.time() + 10, time.time() + 10))
+            got = lu.resolve_subagent_transcript(str(main))
+            self.assertEqual(got.name, "agent-new.jsonl")
+
+    def test_uses_path_directly_when_already_subagent(self):
+        with tempfile.TemporaryDirectory() as td:
+            sub = Path(td) / "subagents"; sub.mkdir()
+            f = sub / "agent-x.jsonl"; f.write_text("{}\n")
+            self.assertEqual(lu.resolve_subagent_transcript(str(f)), f)
+
+    def test_missing_returns_none(self):
+        self.assertIsNone(lu.resolve_subagent_transcript("/no/such/main.jsonl"))
 
 
 if __name__ == "__main__":
