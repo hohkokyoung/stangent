@@ -83,5 +83,72 @@ class TestSyncManagedHooks(unittest.TestCase):
             ag.sync_managed_hooks(Path(td))  # must not raise
 
 
+class TestStampAgentModels(unittest.TestCase):
+    YML = (
+        "enabled_skills: []\n\n"
+        "models:\n"
+        "  default:     claude-sonnet-4-6\n"
+        "  design-critic: claude-haiku-4-5-20251001   # cheap\n"
+        "  planner:     \"\"\n"          # empty → inherit session default
+        "\n"
+        "complexity_routing:\n"
+        "  enabled: true\n"
+    )
+
+    def test_parse_models(self):
+        m = ag._parse_models(self.YML)
+        self.assertEqual(m["default"], "claude-sonnet-4-6")
+        self.assertEqual(m["design-critic"], "claude-haiku-4-5-20251001")
+        self.assertEqual(m["planner"], "")      # empty kept (means "inherit default")
+        self.assertNotIn("enabled", m)          # stopped at dedent (complexity_routing)
+
+    def test_set_frontmatter_model_adds_and_replaces(self):
+        md = "---\nname: x\ndescription: d\ntools: Read\n---\n\n# body\n"
+        added = ag._set_frontmatter_model(md, "claude-haiku-4-5-20251001")
+        self.assertIn("model: claude-haiku-4-5-20251001", added)
+        self.assertIn("# body", added)
+        # replacing is idempotent-ish (no duplicate model lines)
+        again = ag._set_frontmatter_model(added, "claude-sonnet-4-6")
+        self.assertEqual(again.count("model:"), 1)
+        self.assertIn("model: claude-sonnet-4-6", again)
+
+    def test_stamp_uses_role_model_then_default(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / ".claude").mkdir(parents=True)
+            (root / ".claude" / ".agentic.yml").write_text(self.YML)
+            agents = root / ".claude" / "agents"; agents.mkdir()
+            (agents / "design-critic.md").write_text("---\nname: design-critic\ntools: Read\n---\n\nx\n")
+            (agents / "implementer.md").write_text("---\nname: implementer\ntools: Read\n---\n\nx\n")
+            (agents / "planner.md").write_text("---\nname: planner\ntools: Read\n---\n\nx\n")
+            ag.stamp_agent_models(root)
+            dc = (agents / "design-critic.md").read_text()
+            impl = (agents / "implementer.md").read_text()
+            plan = (agents / "planner.md").read_text()
+            self.assertIn("model: claude-haiku-4-5-20251001", dc)   # role model
+            self.assertIn("model: claude-sonnet-4-6", impl)          # falls back to default
+            self.assertNotIn("model:", plan)                          # planner empty → not stamped
+
+    def test_merge_adds_missing_model_roles(self):
+        # a stale config (has models: but missing roles added later) self-heals,
+        # existing values + the following section stay intact
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); (root / ".claude").mkdir(parents=True)
+            (root / ".claude" / ".agentic.yml").write_text(
+                "enabled_skills: []\n\n"
+                "models:\n"
+                "  default: claude-sonnet-4-6\n"
+                "  implementer: claude-opus-4-8\n"   # a user override to preserve
+                "\n"
+                "git:\n  auto_branch: true\n"
+            )
+            ag._merge_missing_model_keys(root)
+            text = (root / ".claude" / ".agentic.yml").read_text()
+            m = ag._parse_models(text)
+            self.assertIn("design-critic", m)                     # newer role added from template
+            self.assertEqual(m["implementer"], "claude-opus-4-8")  # user override preserved
+            self.assertIn("git:", text)                            # next section intact
+
+
 if __name__ == "__main__":
     unittest.main()

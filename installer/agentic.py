@@ -198,10 +198,113 @@ def sync_managed_hooks(target: Path) -> None:
         info(f"settings.json: synced managed hooks ({len(added)} added)")
 
 
+def _parse_models(agentic_yml_text: str) -> dict:
+    """Parse the `models:` block of .agentic.yml with a line reader (no PyYAML,
+    which the installer does not depend on). Returns {role: model_id}, skipping
+    empty values (role: "" means 'inherit the session default')."""
+    out: dict[str, str] = {}
+    in_block = False
+    for line in agentic_yml_text.splitlines():
+        if re.match(r"^models:\s*(#.*)?$", line):
+            in_block = True
+            continue
+        if in_block:
+            if line and not line[0].isspace():  # dedent → block ended
+                break
+            m = re.match(r"^\s+([\w-]+):\s*(\S*)", line)
+            if m:
+                # Keep empty values too: role: "" means "inherit session default"
+                # (don't stamp), which is distinct from a role being absent.
+                out[m.group(1)] = m.group(2).strip('"').strip("'")
+    return out
+
+
+def _set_frontmatter_model(text: str, model: str) -> str:
+    """Set/replace `model:` in a Markdown agent's YAML frontmatter."""
+    m = re.match(r"(?s)^(---\n)(.*?\n)(---\n)", text)
+    if not m:
+        return text  # no frontmatter — leave untouched
+    head, fm, tail = m.group(1), m.group(2), m.group(3)
+    rest = text[m.end():]
+    if re.search(r"(?m)^model:\s*.*$", fm):
+        fm = re.sub(r"(?m)^model:\s*.*$", f"model: {model}", fm, count=1)
+    elif re.search(r"(?m)^name:\s*.*$", fm):
+        fm = re.sub(r"(?m)^(name:.*)$", r"\1\nmodel: " + model, fm, count=1)
+    else:
+        fm = f"model: {model}\n" + fm
+    return head + fm + tail + rest
+
+
+def stamp_agent_models(target: Path) -> None:
+    """Write each agent's configured model into its frontmatter from .agentic.yml.
+
+    Claude Desktop honors a subagent's frontmatter `model:` but IGNORES the
+    invocation-time model override that dispatch_plan.py relies on — so without
+    this every agent runs on the session model there, not its configured role
+    model. Stamping makes Desktop honor role models. In the CLI, an explicit
+    invocation model (complexity routing) still overrides frontmatter, so dynamic
+    per-task routing is preserved. .agentic.yml stays the single source of truth;
+    templates ship model-agnostic and this derives the frontmatter per install."""
+    ayml = target / ".claude" / ".agentic.yml"
+    agents_dir = target / ".claude" / "agents"
+    if not ayml.exists() or not agents_dir.is_dir():
+        return
+    models = _parse_models(ayml.read_text(encoding="utf-8"))
+    if not models:
+        return
+    default = models.get("default", "")
+    stamped = 0
+    for md in sorted(agents_dir.glob("*.md")):
+        # explicit role entry wins (incl. "" = inherit → skip); else the default
+        model = models[md.stem] if md.stem in models else default
+        if not model:  # "" → inherit session default; don't pin a model
+            continue
+        text = md.read_text(encoding="utf-8")
+        updated = _set_frontmatter_model(text, model)
+        if updated != text:
+            md.write_text(updated, encoding="utf-8")
+            stamped += 1
+    if stamped:
+        info(f"stamped model: into {stamped} agent frontmatter(s) from .agentic.yml models:")
+
+
+def _merge_missing_model_keys(target: Path) -> None:
+    """Add role→model entries the template defines but the project's models: block
+    is missing (e.g. roles added after the project was seeded), without touching
+    the user's existing values. Fixes seed-once drift that would otherwise leave
+    newer roles falling back to `default`."""
+    tpl_path = TEMPLATES_DIR / ".claude" / ".agentic.yml"
+    dst_path = target / ".claude" / ".agentic.yml"
+    if not tpl_path.exists() or not dst_path.exists():
+        return
+    tpl_models = _parse_models(tpl_path.read_text(encoding="utf-8"))
+    dst_text = dst_path.read_text(encoding="utf-8")
+    dst_models = _parse_models(dst_text)
+    missing = {k: v for k, v in tpl_models.items() if k not in dst_models}
+    if not missing:
+        return
+    lines = dst_text.splitlines(keepends=True)
+    start = next((i for i, l in enumerate(lines) if re.match(r"^models:\s*(#.*)?$", l)), None)
+    if start is None:
+        return
+    last = start  # index of the last indented line in the models: block
+    for i in range(start + 1, len(lines)):
+        if lines[i].strip() == "":
+            continue
+        if lines[i][:1].isspace():
+            last = i
+        else:
+            break
+    ins = "".join(f"  {k}: {v}\n" for k, v in missing.items())
+    dst_path.write_text("".join(lines[:last + 1]) + ins + "".join(lines[last + 1:]), encoding="utf-8")
+    info(f".agentic.yml: added missing model roles: {', '.join(missing)}")
+
+
 def install(target: Path) -> None:
     target.mkdir(parents=True, exist_ok=True)
     copy_templates(target)
     sync_managed_hooks(target)
+    stamp_agent_models(target)
     add_gitignore_block(target)
     info(f"install complete at {target}")
     info("next: pip install pyyaml fastembed sqlite-vec")
@@ -445,6 +548,8 @@ def upgrade_config(target: Path) -> None:
     _upgrade_settings_json(target)
     _upgrade_mcp_json(target)
     _upgrade_agentic_yml(target)
+    _merge_missing_model_keys(target)  # heal seed-once drift in models: block
+    stamp_agent_models(target)         # re-apply role models after the merge/edit
     info(f"upgrade-config complete at {target}")
 
 

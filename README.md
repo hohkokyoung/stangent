@@ -457,7 +457,24 @@ plan_id:
 
 # test_framework is NOT set here. /agentic-index writes it to .claude/state/project.yml automatically.
 # To override: edit .claude/state/project.yml directly after running /agentic-index.
+
+models:                          # per-role model; "" = inherit the session model
+  default:     claude-sonnet-4-6
+  reviewer:    claude-haiku-4-5-20251001
+  security-reviewer: claude-opus-4-8
+  # ...
 ```
+
+**Per-role models & the two harnesses.** `.agentic.yml` `models:` is the single
+source of truth. On install, the installer **stamps each agent's frontmatter
+`model:`** from it (templates ship model-agnostic). This matters because the two
+Claude harnesses differ: **Claude Desktop honors frontmatter `model:` but ignores
+invocation-time model overrides**, while the **CLI** honors the invocation model
+that `/agentic-build` passes for per-task complexity routing. Stamping the
+frontmatter makes Desktop run each agent on its role model; in the CLI the
+invocation override still wins, so dynamic routing is preserved. Edit `models:`
+then re-run the installer (or `--upgrade-config`) to re-stamp; `--upgrade-config`
+also back-fills role entries added in newer versions.
 
 ---
 
