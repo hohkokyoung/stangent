@@ -28,7 +28,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
-from common import read_jsonl, read_text_or_none  # noqa: E402
+from common import last_logged_context, read_text_or_none  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 STATE_DIR = REPO_ROOT / ".claude" / "state"
@@ -48,20 +48,6 @@ REPORTS = {
 
 def _read_state(name: str) -> str | None:
     return read_text_or_none(STATE_DIR / name)
-
-
-def _last_logged_context(run_id: str) -> dict:
-    """Role/task from the newest tool-call line — the state files may already be
-    gone by the time SubagentStop fires (see log_usage.py for the same race)."""
-    try:
-        rows = read_jsonl(LOG_DIR / f"{run_id}.jsonl")
-    except Exception:
-        return {}
-    for r in reversed(rows):
-        if r.get("event") or not r.get("tool"):
-            continue
-        return {"task_id": r.get("task_id"), "agent_role": r.get("agent_role")}
-    return {}
 
 
 def resolve_report(role: str, run_id: str, task_id: str | None) -> tuple[Path, Path] | None:
@@ -93,7 +79,7 @@ def main() -> None:
         role = _read_state("current_role.txt")
         task_id = _read_state("current_task.txt")
         if role is None or task_id is None:
-            last = _last_logged_context(run_id)
+            last = last_logged_context(LOG_DIR / f"{run_id}.jsonl")
             role = role or last.get("agent_role")
             task_id = task_id or last.get("task_id")
         if not role:

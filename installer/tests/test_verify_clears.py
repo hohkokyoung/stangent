@@ -33,7 +33,7 @@ class Base(unittest.TestCase):
     def run_on(self, cleared_body, section="Sections cleared"):
         f = self.write("findings.md",
                        f"# Review\n\n## Findings\n- none\n\n## {section}\n{cleared_body}\n")
-        return vc.verify(f, self.td, section)
+        return vc.verify(f, self.td)
 
     def statuses(self, rep):
         return [r["status"] for r in rep["results"]]
@@ -214,9 +214,9 @@ class TestClassification(Base):
 
     def test_missing_section_is_a_note_not_a_crash(self):
         f = self.write("findings.md", "# Review\n\n## Findings\n- one\n")
-        rep = vc.verify(f, self.td, "Sections cleared")
+        rep = vc.verify(f, self.td)
         self.assertEqual(rep["results"], [])
-        self.assertIn("no 'Sections cleared' section", rep["note"])
+        self.assertIn("no cleared sections", rep["note"])
 
     def test_section_name_is_configurable_for_other_agents(self):
         # security-reviewer uses "Categories cleared", architect uses
@@ -527,7 +527,7 @@ class TestCoverage(Base):
     def run_cov(self, coverage_block):
         self.write("spec.md", self.SPEC)
         f = self.write("findings.md", f"# R\n\n{coverage_block}\n")
-        return vc.verify(f, self.td, None, self.td / "spec.md")["coverage"]
+        return vc.verify(f, self.td, self.td / "spec.md")["coverage"]
 
     TABLE_HEAD = "## Coverage\n| # | item | search | result |\n|---|---|---|---|\n"
 
@@ -653,7 +653,7 @@ class TestCoverage(Base):
     def test_spec_without_a_checklist_is_reported_not_failed(self):
         self.write("plain.md", "# Spec\n\nProse only, no checklist.\n")
         f = self.write("findings.md", "# R\n\n## Findings\n- x\n")
-        cov = vc.verify(f, self.td, None, self.td / "plain.md")["coverage"]
+        cov = vc.verify(f, self.td, self.td / "plain.md")["coverage"]
         self.assertEqual(cov["status"], "no-checklist")
 
     def test_coverage_failure_sets_exit_1(self):
@@ -719,7 +719,7 @@ class TestShippedChecklistsAreExtractable(Base):
                        "| # | category | checked | result |\n|---|---|---|---|\n"
                        "| 1 | Broken access control | `grep -c x a` -> 0 matches | none |\n"
                        "\n## Threat model\n### S01 — something\n")
-        cov = vc.verify(f, self.td, None,
+        cov = vc.verify(f, self.td,
                         self.AGENTS / "security-reviewer.md")["coverage"]
         self.assertEqual(cov["status"], "incomplete")
         self.assertGreaterEqual(cov["expected"], 8)

@@ -46,7 +46,7 @@ Exit codes: 0 all citations reproduced (or nothing to check), 1 at least one did
 not. Advisory by default — the caller decides whether a mismatch blocks.
 
 Usage:
-    verify_clears.py <findings.md> [--json] [--section "Sections cleared"]
+    verify_clears.py <findings.md> [--cwd DIR] [--checklist SPEC] [--json]
 """
 from __future__ import annotations
 
@@ -142,16 +142,6 @@ def _item_label(body: str) -> str:
     if m:
         return m.group("label").strip()
     return body.split("—")[0].split(" - ")[0].strip()[:60] or "(unlabelled)"
-
-
-def extract_section(text: str, heading: str) -> str:
-    """Return the body of the `## <heading>` section, or '' if absent."""
-    pattern = re.compile(
-        r"^#{1,6}\s*" + re.escape(heading) + r"\s*$(?P<body>.*?)(?=^#{1,6}\s|\Z)",
-        re.MULTILINE | re.DOTALL,
-    )
-    m = pattern.search(text)
-    return m.group("body") if m else ""
 
 
 HEADING = re.compile(r"^(?P<hashes>#{1,6})\s*(?P<title>.+?)\s*$")
@@ -617,27 +607,21 @@ def verify_ref(rec: dict, cwd: Path) -> dict:
             "detail": f"snippet not found near line {rec['line']}"}
 
 
-def verify(findings: Path, cwd: Path, section: str | None = None,
-           checklist: Path | None = None) -> dict:
-    """Check every citation in the file. `section` restricts to one heading.
-    `checklist` is a spec whose `- [ ]` items the report must all account for."""
+def verify(findings: Path, cwd: Path, checklist: Path | None = None) -> dict:
+    """Check every citation in the file.
+
+    `checklist` is a spec whose `- [ ]` items the report must all account for.
+    Sections are auto-detected. An earlier `--section` flag let a caller name one
+    heading, but every agent's heading differs and no command ever passed it — it
+    only ever offered a way to verify the wrong part of a report."""
     text = findings.read_text(encoding="utf-8", errors="replace")
     coverage = _check_coverage(text, checklist) if checklist else None
-    if section:
-        body = extract_section(text, section)
-        if not body.strip():
-            return {"findings": str(findings), "section": section,
-                    "results": [], "coverage": coverage,
-                    "note": f"no '{section}' section found"}
-        records = [{**r, "section": section, "claim": "clear"}
-                   for r in parse_citations(body)]
-    else:
-        records = scan_document(text)
-        partial = partial_inspections(text)
-        if not records and not coverage and not partial:
-            return {"findings": str(findings), "section": None, "results": [],
-                    "coverage": coverage, "partial": [],
-                    "note": "no cleared sections and no citations found"}
+    records = scan_document(text)
+    partial = partial_inspections(text)
+    if not records and not coverage and not partial:
+        return {"findings": str(findings), "results": [],
+                "coverage": coverage, "partial": [],
+                "note": "no cleared sections and no citations found"}
 
     results = []
     for rec in records:
@@ -653,8 +637,8 @@ def verify(findings: Path, cwd: Path, section: str | None = None,
             results.append({**rec, "status": "uncited",
                             "detail": rec.get("detail")
                             or "no re-runnable evidence cited"})
-    return {"findings": str(findings), "section": section, "results": results,
-            "coverage": coverage, "partial": partial_inspections(text)}
+    return {"findings": str(findings), "results": results,
+            "coverage": coverage, "partial": partial}
 
 
 def partial_inspections(text: str) -> list[dict]:
@@ -791,9 +775,6 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog="verify_clears.py")
     ap.add_argument("findings", help="path to the review's findings.md")
     ap.add_argument("--cwd", default=".", help="project root to re-run against")
-    ap.add_argument("--section", default=None,
-                    help="restrict to one heading (default: scan the whole file "
-                         "and auto-detect clear-bearing sections)")
     ap.add_argument("--checklist", default=None,
                     help="spec file whose `- [ ]` items the report's Coverage "
                          "table must all account for")
@@ -808,7 +789,7 @@ def main(argv: list[str]) -> int:
     if checklist and not checklist.is_file():
         print(f"verify-clears: no such checklist: {checklist}", file=sys.stderr)
         return 2
-    rep = verify(f, Path(args.cwd).resolve(), args.section, checklist)
+    rep = verify(f, Path(args.cwd).resolve(), checklist)
     if args.json:
         print(json.dumps(rep, indent=2))
     else:

@@ -28,7 +28,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
-from common import read_jsonl, read_text_or_none  # noqa: E402
+from common import last_logged_context, read_jsonl, read_text_or_none  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 STATE_DIR = REPO_ROOT / ".claude" / "state"
@@ -62,22 +62,6 @@ def subagent_usage(records: list[dict]) -> tuple[dict, str | None, int]:
             model = msg["model"]
         turns += 1
     return tot, model, turns
-
-
-def _last_logged_context(run_id: str) -> dict:
-    """task_id / agent_role from the most recent tool-call line of this run.
-
-    Used only when the state files are already gone: the subagent whose usage we
-    are attributing is the one that wrote that line."""
-    try:
-        rows = read_jsonl(LOG_DIR / f"{run_id}.jsonl")
-    except Exception:
-        return {}
-    for r in reversed(rows):
-        if r.get("event") == "usage" or not r.get("tool"):
-            continue
-        return {"task_id": r.get("task_id"), "agent_role": r.get("agent_role")}
-    return {}
 
 
 def resolve_subagent_transcript(transcript_path: str) -> Path | None:
@@ -128,7 +112,7 @@ def main() -> None:
         task_id = _read_state("current_task.txt")
         agent_role = _read_state("current_role.txt")
         if task_id is None or agent_role is None:
-            last = _last_logged_context(run_id)
+            last = last_logged_context(LOG_DIR / f"{run_id}.jsonl")
             task_id = task_id if task_id is not None else last.get("task_id")
             agent_role = agent_role if agent_role is not None else last.get("agent_role")
 

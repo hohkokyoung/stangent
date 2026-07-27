@@ -20,6 +20,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import extract_section  # noqa: E402
+
 REPO_ROOT = Path.cwd().resolve()
 PLANS_DIR = REPO_ROOT / ".claude" / "state" / "plans"
 LESSONS_FILE = REPO_ROOT / ".claude" / "state" / "lessons.md"
@@ -33,24 +36,18 @@ HEADER = (
 )
 
 
-def _extract_section(text: str, header: str) -> str:
-    """Return the body of a `## <header>` section, empty string if absent/blank."""
-    lines = text.splitlines()
-    start = None
-    for i, ln in enumerate(lines):
-        if ln.strip() == f"## {header}":
-            start = i + 1
-            break
-    if start is None:
-        return ""
-    body = []
-    for ln in lines[start:]:
-        if ln.startswith("## "):
-            break
-        body.append(ln)
-    # Drop template placeholder comments and blank padding.
-    kept = [ln for ln in body if ln.strip() and not ln.strip().startswith("<!--")]
-    return "\n".join(kept).strip()
+def _review_body(text: str) -> str | None:
+    """The `## Review` section with template placeholders and padding dropped.
+
+    The comment-stripping is specific to distilling lessons — a reviewer's
+    section still carries the task template's `<!-- ... -->` scaffolding — so it
+    stays here rather than in the shared extractor."""
+    body = extract_section(text, "Review")
+    if not body:
+        return None
+    kept = [ln for ln in body.splitlines()
+            if ln.strip() and not ln.strip().startswith("<!--")]
+    return "\n".join(kept).strip() or None
 
 
 def collect() -> list[dict]:
@@ -63,7 +60,7 @@ def collect() -> list[dict]:
         for f in sorted(run_dir.glob("*.md")):
             if f.name == "_overview.md":
                 continue
-            review = _extract_section(f.read_text(encoding="utf-8"), "Review")
+            review = _review_body(f.read_text(encoding="utf-8")) or ""
             if review:
                 out.append({"run_id": run_dir.name, "task_id": f.stem, "review": review})
     return out

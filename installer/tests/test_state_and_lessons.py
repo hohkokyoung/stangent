@@ -185,12 +185,12 @@ class TestLessonsExtract(unittest.TestCase):
             ## Test results
             passed
             """)
-        self.assertIn("missing UTC timestamp", lessons._extract_section(text, "Review"))
-        self.assertNotIn("stuff", lessons._extract_section(text, "Review"))
+        self.assertIn("missing UTC timestamp", lessons._review_body(text))
+        self.assertNotIn("stuff", lessons._review_body(text))
 
     def test_extract_skips_placeholder_only(self):
         text = "## Review\n\n<!-- reviewer appends ONLY here -->\n"
-        self.assertEqual(lessons._extract_section(text, "Review"), "")
+        self.assertIsNone(lessons._review_body(text))
 
 
 class TestLessonsCLI(unittest.TestCase):

@@ -29,6 +29,7 @@ from pathlib import Path
 # retriever.py's heavy deps (sqlite_vec / fastembed) are imported lazily inside
 # functions, so importing it here does not require them to be installed.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import extract_section  # noqa: E402
 from retriever import CLAUDE_DIR, SKILLS_DIR, load_config  # noqa: E402
 
 DIGEST_PATH = CLAUDE_DIR / "state" / "skills_digest.md"
@@ -36,34 +37,6 @@ DIGEST_PATH = CLAUDE_DIR / "state" / "skills_digest.md"
 # Sections the planner actually consumes, in the order they should appear.
 WANTED_SECTIONS = ("Purpose", "Planner hints")
 
-
-def extract_section(text: str, heading: str) -> str | None:
-    """Return the body under a ``## <heading>`` level-2 section, or None.
-
-    Captures every line after the heading up to (but not including) the next
-    level-2 ``## `` header or end of file. Sub-headers (``### ``) inside the
-    section are preserved. Matching on the heading is case-insensitive and
-    tolerant of trailing whitespace; deeper/shallower headers do not match.
-    """
-    target = heading.strip().lower()
-    lines = text.splitlines()
-    body: list[str] = []
-    capturing = False
-    for line in lines:
-        stripped = line.strip()
-        is_h2 = stripped.startswith("## ") and not stripped.startswith("###")
-        if is_h2:
-            name = stripped[3:].strip().lower()
-            if capturing:
-                break  # next level-2 section — stop
-            if name == target:
-                capturing = True
-                continue
-        elif capturing:
-            body.append(line)
-    if not capturing:
-        return None
-    return "\n".join(body).strip() or None
 
 
 def build_digest(enabled: list[str]) -> tuple[str, list[str]]:
