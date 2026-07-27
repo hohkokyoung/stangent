@@ -61,6 +61,15 @@ ${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
   --enumerations docs/review/enumerations.md --reviewer security-reviewer
 ```
 
+If that output reports `unverified — no enumeration declared` for any item, or
+any `[FAIL] undeclared` / `search-broken` row, follow **How this file gets
+populated** in `.claude/templates/review-enumerations.md`. Propose the rows, show
+them, and write `docs/review/enumerations.md` only on the developer's approval —
+the first run's search is improvised by definition, and this is the moment it
+becomes the permanent definition of the item's scope. Never write the file
+silently.
+
+
 `--checklist` counts the agent's attacker categories and requires one `## Coverage`
 row per category. An attack class the review never considered produces no false
 claim — just silence, which reads like a class that held. This is the only check

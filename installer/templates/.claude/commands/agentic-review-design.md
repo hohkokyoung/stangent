@@ -59,6 +59,12 @@ ${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
   --checklist .claude/agents/architect.md
 ```
 
+No `--enumerations`: the architect's seven dimensions are questions about a
+design — who owns this entity, what breaks at 100×, can one tenant reach
+another's data — with no population of sites to search. Declaring one here
+would be cargo-culting the mechanism.
+
+
 `--checklist` counts the agent's design dimensions and requires one `## Coverage`
 row per dimension, so a dimension that was never interrogated fails rather than
 passing as silence.

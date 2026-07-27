@@ -62,7 +62,7 @@ from verify_parse import (  # noqa: F401
     REF_TAIL, SITE_REF, UNVERIFIED, VERB_RE, checklist_items, coverage_rows,
     find_citation, parse_citations, parse_coverage_citations,
     parse_inline_citations, partial_inspections, scan_document, split_sections,
-    declared_enumerations, undeclared_searches)
+    declared_enumerations, undeclared_searches, baseline_drift)
 from verify_exec import (  # noqa: F401
     command_is_safe, split_pipeline, verify_cmd, verify_ref)
 
@@ -80,10 +80,11 @@ def verify(findings: Path, cwd: Path, checklist: Path | None = None,
     # reproduces and the row still reads `24 of 24` — while silently redefining
     # which code the item was checked against. Only comparing against the
     # declaration catches it.
-    undeclared = []
+    undeclared, declared = [], {}
     if enumerations and reviewer and enumerations.is_file():
-        undeclared = undeclared_searches(text, declared_enumerations(
-            enumerations.read_text(encoding="utf-8", errors="replace"), reviewer))
+        declared = declared_enumerations(
+            enumerations.read_text(encoding="utf-8", errors="replace"), reviewer)
+        undeclared = undeclared_searches(text, declared)
     records = scan_document(text)
     partial = partial_inspections(text)
     if not records and not coverage and not partial and not undeclared:
@@ -106,7 +107,8 @@ def verify(findings: Path, cwd: Path, checklist: Path | None = None,
                             "detail": rec.get("detail")
                             or "no re-runnable evidence cited"})
     return {"findings": str(findings), "results": results,
-            "coverage": coverage, "partial": partial, "undeclared": undeclared}
+            "coverage": coverage, "partial": partial, "undeclared": undeclared,
+            "drift": baseline_drift(results, declared)}
 
 
 def _check_coverage(text: str, checklist: Path) -> dict:
@@ -186,12 +188,26 @@ def _print_undeclared(rep: dict) -> None:
           "declaration deliberately.")
 
 
+_DRIFT_MARK = {"regressed": "FAIL", "search-broken": "FAIL",
+               "search-suspect": "note", "closed": "note", "progress": "note"}
+
+
+def _print_drift(rep: dict) -> None:
+    if not rep.get("drift"):
+        return
+    print("  against declared baselines:")
+    for d in rep["drift"]:
+        print(f"    [{_DRIFT_MARK.get(d['status'], 'note')}] {d['status']:<14} "
+              f"item {d['index']:<3} {d['item'][:28]:<28} {d['detail']}")
+
+
 def _print(rep: dict) -> None:
     if rep.get("note"):
         print(f"verify-clears: {rep['note']}")
         _print_coverage(rep.get("coverage"))
         _print_partial(rep)
         _print_undeclared(rep)
+        _print_drift(rep)
         return
     order = {"mismatch": 0, "failed": 1, "uncited": 2, "unrunnable": 3,
              "stale": 4, "unverified": 5, "reproduced": 6}
@@ -204,6 +220,7 @@ def _print(rep: dict) -> None:
           + "  ".join(f"{k}: {v}" for k, v in sorted(counts.items())))
     _print_coverage(rep.get("coverage"))
     _print_undeclared(rep)
+    _print_drift(rep)
     _print_partial(rep)
     for r in rows:
         if r["status"] == "reproduced":
@@ -258,7 +275,9 @@ def main(argv: list[str]) -> int:
     else:
         _print(rep)
     bad_coverage = (rep.get("coverage") or {}).get("status") in ("missing", "incomplete")
-    return 1 if (bad_coverage or rep.get("undeclared")
+    bad_drift = any(d["status"] in ("regressed", "search-broken")
+                    for d in rep.get("drift", []))
+    return 1 if (bad_coverage or rep.get("undeclared") or bad_drift
                  or any(is_failing(r) for r in rep["results"])) else 0
 
 

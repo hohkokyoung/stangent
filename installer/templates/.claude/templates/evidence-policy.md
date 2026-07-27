@@ -71,14 +71,14 @@ This is not hypothetical. Three reviews of one project checked the same item —
 their own devising:
 
 ```
-BorderRadius.circular(        -> 189 sites
-BorderRadius.circular([0-9]   ->  24 sites
-AppRadius\.                   -> 203 sites
+BorderRadius.circular(        -> 189 sites   every radius site
+BorderRadius.circular([0-9]   ->  24 sites   raw literals only
+AppRadius\.                   -> 203 sites   token uses
 ```
 
-The middle run reported `24 of 24` and cleared the item. Every citation
-reproduced, the row was honest, and 165 sites were never searched. They surfaced
-in a later run as "new" problems in code nobody had touched.
+None was wrong. They answer different questions, and no one had decided which
+question the item asks — so the numbers were not comparable, and "is this closed?"
+had no defined answer. That is the failure: not a bad search, an undeclared one.
 
 So:
 
@@ -95,8 +95,44 @@ So:
   it is a change to the declaration, not something to route around mid-review.
 
 `N` in `inspected: k of N` is the declared search's count. That is what makes
-`k of N` mean the same thing twice, and what lets "closed" be arithmetic — the
-count reaching zero — rather than a run happening to report nothing.
+`k of N` mean the same thing twice.
+
+**Scope narrower than the whole repo.** Run the declared command **verbatim** and
+filter its results to your scope — never edit the command to add the scope. The
+citation stays comparable, and the row reports the in-scope subset:
+`6 of 24 (scope: features/auth)`.
+
+## Shape decides whether a rule can ever close
+
+Each declaration carries a `kind`, and it is the difference between a rule that
+finishes and one that cannot.
+
+**`violations`** — the search matches only what is wrong: `circular([0-9]`,
+`0xFF`, `FontWeight.w900`. The population **is** the remaining work. Fix a site
+and it leaves the set permanently; it cannot reappear next run. The count drains
+24 → 14 → 4 → 0, and zero means closed.
+
+**`candidates`** — the search matches everything that must be judged, compliant or
+not: `circular(` returning all 189 radius sites, or `rawQuery` returning every
+database call because grep cannot tell a parameterised query from a concatenated
+one. A site judged compliant **stays in the population forever**, so the count
+never drains and **`candidates` items can never be reported closed by count**.
+They report `k of N` honestly and nothing more.
+
+That difference is why reviews stop converging. With a `candidates` search there
+is always unexamined material left however diligent each run is, so every pass
+turns up findings in code nobody touched — not regressions, just the part of the
+set this run happened to reach.
+
+So: **prefer `violations`.** Search for what is wrong, not for everything that
+might be. Where no violating pattern is expressible — *"every interactive element
+renders a focus ring"*, *"contrast meets the floor"* — do not invent a
+`candidates` search to look thorough. Those are `unverified`, and an honest gap
+beats a denominator that cannot shrink.
+
+A `violations` search that reaches zero is the goal. A `candidates` search that
+reaches zero is a **broken search** — the path moved or the pattern stopped
+matching — and must be reported as such, never as a completed rule.
 
 **Only for checklists that enumerate sites.** Items phrased as questions about a
 design — *who owns this entity, what breaks at 100×, can one tenant reach

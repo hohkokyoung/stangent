@@ -218,15 +218,20 @@ def _split_row(line: str) -> list[str]:
     return [c.strip() for c in re.split(r"(?<!\\)\|", line.strip().strip("|"))]
 
 
-def declared_enumerations(text: str, reviewer: str) -> dict[int, str]:
-    """`{item number: command}` from a reviewer's section of docs/review/enumerations.md.
+def declared_enumerations(text: str, reviewer: str) -> dict[int, dict]:
+    """`{item number: {command, kind, baseline, item}}` from a reviewer's section
+    of docs/review/enumerations.md.
 
     The declaration is what makes two runs measure the same population. Parsing it
     here — beside the Coverage parser it is compared against — keeps both readings
     of a markdown table in one file and identical in their quirks (the `\\|`
     escaping in particular).
+
+    `kind` defaults to `candidates`, the conservative reading: a candidates item
+    can never be reported closed by count, so a malformed or missing kind fails
+    toward "cannot close this" rather than toward a false completion.
     """
-    out: dict[int, str] = {}
+    out: dict[int, dict] = {}
     for title, body in split_sections(text):
         if title.strip().lower() != reviewer.strip().lower():
             continue
@@ -239,17 +244,36 @@ def declared_enumerations(text: str, reviewer: str) -> dict[int, str]:
                 continue
             if not cells[0].isdigit():
                 continue  # header row, or a row without an item number
-            m = re.search(r"`([^`]+)`", cells[-1])
-            if not m:
-                continue
-            cmd = m.group(1).strip().replace("\\|", "|")
+            # The command is the one backticked cell; find it rather than
+            # indexing, so adding a column later does not silently break this.
+            cmd = ""
+            for c in cells[2:]:
+                m = re.search(r"`([^`]+)`", c)
+                if m:
+                    cmd = m.group(1).strip().replace("\\|", "|")
+                    break
             # The template ships `<read-only command>` in every row. Counting
             # those as declarations makes an untouched template look fully
             # declared, and then every review "matches" a placeholder — the
             # check would report health while comparing nothing.
-            if cmd.startswith("<") and cmd.endswith(">"):
+            if not cmd or (cmd.startswith("<") and cmd.endswith(">")):
                 continue
-            out[int(cells[0])] = cmd
+            kind = "candidates"
+            for c in cells:
+                if c.strip().lower() in ("violations", "candidates"):
+                    kind = c.strip().lower()
+                    break
+            baseline = None
+            # skip cells[0]: the item number is always a digit and would
+            # otherwise be read as the baseline whenever the column is absent
+            for c in reversed(cells[1:]):
+                if c.strip().isdigit():
+                    baseline = int(c.strip())
+                    break
+            out[int(cells[0])] = {
+                "command": cmd, "kind": kind, "baseline": baseline,
+                "item": (cells[1] if len(cells) > 1 else "")[:44],
+            }
     return out
 
 
@@ -281,14 +305,68 @@ def undeclared_searches(report: str, declared: dict[int, str]) -> list[dict]:
             if not cells[0].isdigit():
                 continue
             idx = int(cells[0])
-            want = declared.get(idx)
-            if not want:
+            dec = declared.get(idx)
+            if not dec:
                 continue  # nothing declared for this item; the row may say so
+            want = dec["command"]
             m = CMD_TAIL.search(s)
             used = m.group("cmd").strip().replace("\\|", "|") if m else ""
             if _norm_cmd(used) != _norm_cmd(want):
                 out.append({"index": idx, "declared": want, "used": used,
+                            "kind": dec.get("kind", "candidates"),
                             "item": (cells[1] if len(cells) > 1 else "")[:44]})
+    return out
+
+
+def baseline_drift(results: list[dict], declared: dict[int, dict]) -> list[dict]:
+    """How each declared item's live count compares to its agreed baseline.
+
+    Read differently per kind, which is the whole point of recording the kind:
+
+      violations — the count IS the remaining work. Above baseline means new bad
+        code landed; below is progress; zero means closed.
+      candidates — compliant sites never leave the set, so the count should stay
+        roughly flat. A collapse toward zero is a BROKEN SEARCH (a moved path, a
+        renamed idiom), and reading it as a finished rule is the most dangerous
+        false success available here.
+
+    Matches a result to a declaration by command, since that is what was actually
+    re-run. Items whose row never cited a command have nothing to compare.
+    """
+    by_cmd = {_norm_cmd(r.get("command", "")): r
+              for r in results if r.get("actual") is not None}
+    out = []
+    for idx, dec in sorted(declared.items()):
+        base = dec.get("baseline")
+        if base is None:
+            continue
+        r = by_cmd.get(_norm_cmd(dec["command"]))
+        if r is None:
+            continue
+        actual, kind = r["actual"], dec.get("kind", "candidates")
+        rec = {"index": idx, "item": dec.get("item", ""), "kind": kind,
+               "baseline": base, "actual": actual}
+        if kind == "violations":
+            if actual > base:
+                out.append({**rec, "status": "regressed",
+                            "detail": f"{actual} now vs {base} at baseline — new "
+                                      "violations have landed"})
+            elif actual == 0:
+                out.append({**rec, "status": "closed",
+                            "detail": "no violations remain"})
+            elif actual < base:
+                out.append({**rec, "status": "progress",
+                            "detail": f"{actual} left, down from {base}"})
+        else:
+            if base > 0 and actual == 0:
+                out.append({**rec, "status": "search-broken",
+                            "detail": f"returns 0 where baseline was {base}; a "
+                                      "candidates set does not empty by being "
+                                      "fixed — the search has stopped matching"})
+            elif base > 0 and actual < base // 2:
+                out.append({**rec, "status": "search-suspect",
+                            "detail": f"{actual} vs baseline {base} — a candidates "
+                                      "count should be roughly flat"})
     return out
 
 

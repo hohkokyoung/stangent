@@ -756,17 +756,18 @@ class DeclaredEnumerationsCase(unittest.TestCase):
 
     ENUM = """# Review enumerations
 ## design-critic
-| # | checklist item | enumerate |
-|---|----------------|-----------|
-| 1 | radius from the token scale | `grep -rn "BorderRadius.circular(" src` |
-| 2 | no raw hex | `grep -rn "0xFF" src \\| grep -v theme` |
-| 3 | not yet declared | <read-only command> |
-| 4 | also not declared | `<read-only command>` |
+| # | checklist item | kind | enumerate | baseline |
+|---|----------------|------|-----------|----------|
+| 1 | radius from the token scale | candidates | `grep -rn "BorderRadius.circular(" src` | 189 |
+| 2 | no raw hex | violations | `grep -rn "0xFF" src \\| grep -v theme` | 12 |
+| 3 | not yet declared | violations | <read-only command> | 0 |
+| 4 | also not declared | violations | `<read-only command>` | 0 |
+| 5 | no kind given | | `grep -rn "zzz" src` | 3 |
 
 ## security-reviewer
-| # | category | enumerate |
-|---|----------|-----------|
-| 1 | Injection | `grep -rn "rawQuery" src` |
+| # | category | kind | enumerate | baseline |
+|---|----------|------|-----------|----------|
+| 1 | Injection | candidates | `grep -rn "rawQuery" src` | 40 |
 """
 
     def report(self, rows: str) -> str:
@@ -779,15 +780,38 @@ class DeclaredEnumerationsCase(unittest.TestCase):
 
     def test_parses_only_the_named_reviewers_section(self):
         d = self.declared()
-        self.assertEqual(d[1], 'grep -rn "BorderRadius.circular(" src')
+        self.assertEqual(d[1]["command"], 'grep -rn "BorderRadius.circular(" src')
         self.assertNotIn(4, d)
-        self.assertEqual(self.declared("security-reviewer"),
-                         {1: 'grep -rn "rawQuery" src'})
+        sec = self.declared("security-reviewer")
+        self.assertEqual(list(sec), [1])
+        self.assertEqual(sec[1]["command"], 'grep -rn "rawQuery" src')
+
+    def test_parses_kind_and_baseline(self):
+        d = self.declared()
+        self.assertEqual((d[1]["kind"], d[1]["baseline"]), ("candidates", 189))
+        self.assertEqual((d[2]["kind"], d[2]["baseline"]), ("violations", 12))
+
+    def test_missing_kind_defaults_to_candidates(self):
+        # Conservative on purpose: a candidates item can never be reported closed
+        # by count, so a malformed kind fails toward "cannot close" rather than
+        # toward a false completion.
+        self.assertEqual(self.declared()[5]["kind"], "candidates")
+
+    def test_item_number_is_not_mistaken_for_a_baseline(self):
+        # `#` is always a digit; scanning cells for a number must skip it or an
+        # undeclared baseline silently becomes the row index.
+        d = vc.declared_enumerations(
+            "## design-critic\n"
+            "| # | item | kind | enumerate | baseline |\n"
+            "|---|------|------|-----------|----------|\n"
+            "| 7 | x | violations | `grep -rn q src` |  |\n", "design-critic")
+        self.assertIsNone(d[7]["baseline"])
 
     def test_unescapes_a_piped_command(self):
         # In a markdown table a literal pipe is written `\\|`; leaving it escaped
         # would make every piped declaration mismatch its own use.
-        self.assertEqual(self.declared()[2], 'grep -rn "0xFF" src | grep -v theme')
+        self.assertEqual(self.declared()[2]["command"],
+                         'grep -rn "0xFF" src | grep -v theme')
 
     def test_placeholder_rows_are_not_declarations(self):
         # Both shapes the template ships. The backticked one is the dangerous
@@ -834,3 +858,70 @@ class DeclaredEnumerationsCase(unittest.TestCase):
     def test_no_declarations_means_no_opinion(self):
         rows = '| 1 | radius | `grep -rn "anything" src` -> 1 matches | 1 of 1 | none |\n'
         self.assertEqual(vc.undeclared_searches(self.report(rows), {}), [])
+
+
+class BaselineDriftCase(unittest.TestCase):
+    """A count moving means opposite things depending on the item's shape.
+
+    `violations` reaching zero is the goal. `candidates` reaching zero is a broken
+    search — compliant sites never leave that set by being fixed — and reading it
+    as a finished rule is the most dangerous false success available here.
+    """
+
+    def declared(self, kind, baseline, cmd="grep -rn x src"):
+        return {1: {"command": cmd, "kind": kind, "baseline": baseline, "item": "r"}}
+
+    def results(self, actual, cmd="grep -rn x src"):
+        return [{"command": cmd, "actual": actual, "status": "reproduced"}]
+
+    def one(self, kind, baseline, actual):
+        got = vc.baseline_drift(self.results(actual), self.declared(kind, baseline))
+        return got[0] if got else None
+
+    # --- violations ---------------------------------------------------------
+
+    def test_violations_above_baseline_is_a_regression(self):
+        d = self.one("violations", 5, 8)
+        self.assertEqual(d["status"], "regressed")
+        self.assertIn("new", d["detail"])
+
+    def test_violations_below_baseline_is_progress(self):
+        self.assertEqual(self.one("violations", 5, 3)["status"], "progress")
+
+    def test_violations_at_zero_is_closed(self):
+        self.assertEqual(self.one("violations", 5, 0)["status"], "closed")
+
+    def test_violations_unchanged_is_silent(self):
+        self.assertIsNone(self.one("violations", 5, 5), "no news is not news")
+
+    # --- candidates ---------------------------------------------------------
+
+    def test_candidates_at_zero_is_a_broken_search_not_a_win(self):
+        d = self.one("candidates", 189, 0)
+        self.assertEqual(d["status"], "search-broken")
+        self.assertIn("stopped matching", d["detail"])
+
+    def test_candidates_collapsing_is_suspect(self):
+        self.assertEqual(self.one("candidates", 189, 20)["status"], "search-suspect")
+
+    def test_candidates_growing_is_not_a_regression(self):
+        # The set grows as the codebase grows; that is not new bad code, and
+        # calling it a regression would train people to ignore the check.
+        self.assertIsNone(self.one("candidates", 189, 210))
+
+    # --- wiring -------------------------------------------------------------
+
+    def test_no_baseline_means_no_comparison(self):
+        self.assertEqual(
+            vc.baseline_drift(self.results(3), self.declared("violations", None)), [])
+
+    def test_a_command_that_never_ran_is_skipped(self):
+        # The row cited something else, or nothing; there is no live count to
+        # compare, and inventing one would be worse than staying quiet.
+        self.assertEqual(
+            vc.baseline_drift([], self.declared("violations", 5)), [])
+
+    def test_matching_is_whitespace_insensitive(self):
+        got = vc.baseline_drift(self.results(0, "grep  -rn   x  src"),
+                                self.declared("violations", 5))
+        self.assertEqual(got[0]["status"], "closed")

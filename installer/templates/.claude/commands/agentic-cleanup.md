@@ -74,6 +74,15 @@ ${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
   --enumerations docs/review/enumerations.md --reviewer auditor
 ```
 
+If that output reports `unverified — no enumeration declared` for any item, or
+any `[FAIL] undeclared` / `search-broken` row, follow **How this file gets
+populated** in `.claude/templates/review-enumerations.md`. Propose the rows, show
+them, and write `docs/review/enumerations.md` only on the developer's approval —
+the first run's search is improvised by definition, and this is the moment it
+becomes the permanent definition of the item's scope. Never write the file
+silently.
+
+
 `--checklist` requires one `## Coverage` row per issue type — including types the
 caller did not request, marked `not requested`. An unscanned type otherwise
 leaves no trace, which reads exactly like a type that came back clean.

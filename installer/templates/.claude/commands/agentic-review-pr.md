@@ -78,6 +78,11 @@ ${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
   --checklist .claude/agents/security-reviewer.md
 ```
 
+No `--enumerations` in either lane: a PR review's population is the diff, which
+is already bounded and already identical between two runs. A repo-wide
+declaration would be the wrong scope.
+
+
 Print both outputs **above** the reports. This matters more here than in any
 other review: the output may be posted to a PR with `--comment`, so an
 unreproducible clear would be published as a checked-and-fine claim to the

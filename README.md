@@ -415,23 +415,43 @@ population every time. Three reviews of one project checked the same rule with
 three searches of their own devising:
 
 ```
-BorderRadius.circular(        -> 189 sites
-BorderRadius.circular([0-9]   ->  24 sites
-AppRadius\.                   -> 203 sites
+BorderRadius.circular(        -> 189 sites   every radius site
+BorderRadius.circular([0-9]   ->  24 sites   raw literals only
+AppRadius\.                   -> 203 sites   token uses
 ```
 
-The middle run reported `24 of 24` and cleared the item. Every citation
-reproduced, the coverage row was honest, and 165 sites were never searched —
-surfacing later as "new" problems in untouched code. That is why a review can be
-fully verified and still not converge: **you cannot close a set that is redefined
-each time you look at it.**
+None of them is wrong. They answer different questions, and nobody had decided
+which question the item asks — so the numbers were never comparable and "is this
+closed?" had no defined answer. **You cannot close a set that is redefined each
+time you look at it.**
 
 So the search belongs to the checklist item, not to the run. `docs/review/enumerations.md`
 declares one read-only command per item, keyed by reviewer; `verify_clears.py`
-compares every Coverage row against it and fails the run on a substitution. `N` in
-`inspected: k of N` then means the same thing twice, and "closed" becomes
-arithmetic — the count reaching zero — instead of a run happening to report
-nothing.
+compares every Coverage row against it and fails the run on a substitution, so
+`N` in `inspected: k of N` means the same thing twice.
+
+**Each declaration also carries a `kind`, and that is what decides whether a rule
+can ever finish.** A `violations` search matches only what is wrong
+(`circular([0-9]`): the population *is* the remaining work, a fixed site leaves
+the set permanently, and the count drains 24 → 14 → 0 with zero meaning closed. A
+`candidates` search matches everything that must be judged (`circular(` → all 189,
+or `rawQuery` → every database call, because grep cannot tell a parameterised
+query from a concatenated one): compliant sites stay forever, the count never
+drains, and the item can never be reported closed by count.
+
+That distinction is why reviews stop converging. Against a `candidates` search
+there is always unexamined material left however diligent each run is, so every
+pass turns up findings in code nobody touched — not regressions, just the part of
+the set that run happened to reach. **Prefer `violations`**; where no violating
+pattern exists (*"every interactive element renders a focus ring"*), leave the
+item undeclared and let the review report `unverified` rather than invent a
+denominator that cannot shrink.
+
+A `baseline` column makes movement legible, and it too reads per kind: for
+`violations`, above baseline is new bad code landing and fails the run; for
+`candidates`, a collapse toward zero is a **broken search** — a moved path, a
+renamed idiom — which is the most dangerous false success available here, since
+it looks exactly like a completed rule.
 
 This applies to the three reviewers whose checklists **enumerate sites**
 (`design-critic`, `security-reviewer`, `auditor`). It deliberately does not apply
@@ -689,7 +709,7 @@ gitignored: it holds an absolute local path and is regenerated on every install.
 python -m unittest discover installer/tests
 ```
 
-335 tests, no third-party dependency beyond `pyyaml`. CI runs them on Python
+348 tests, no third-party dependency beyond `pyyaml`. CI runs them on Python
 3.10, 3.12, and 3.14 for every push and pull request
 ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)); 3.10 is the
 verified floor.

@@ -407,8 +407,20 @@ def check_review_enumerations() -> dict:
     if total == 0:
         return _check("review enumerations", WARN,
                       "present but no declarations parsed — check the `## <reviewer>` "
-                      "headings and that each row is `| <n> | <item> | `<command>` |`; "
-                      "as written it silently disables the comparison")
+                      "headings, and that each row numbers its item and backticks a "
+                      "real command (the shipped `<read-only command>` placeholders "
+                      "do not count); as written it silently disables the comparison")
+    # A declaration with no kind is read as `candidates`, which can never be
+    # closed by count. Silent there would mean a rule that quietly never finishes.
+    vague = {r: [i for i, d in declared_enumerations(text, r).items()
+                 if d.get("kind") != "violations"]
+             for r in ("design-critic", "auditor")}
+    loose = ", ".join(f"{r} {sorted(v)}" for r, v in vague.items() if v)
+    if loose:
+        return _check("review enumerations", WARN,
+                      f"{detail} — candidates-kind items cannot be closed by count "
+                      f"and will keep surfacing findings: {loose}. Prefer a "
+                      "violations search, or leave the item undeclared.")
     return _check("review enumerations", OK, detail)
 
 
