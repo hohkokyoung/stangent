@@ -73,10 +73,24 @@ Ordering, cycle detection, the runnable set, and per-task model/skills/k resolut
       unexamined area passes as silently as a checked one. Report it alongside
       the verdict; do not re-dispatch automatically.
 
-   g. After the subagent returns, clear the per-task state:
+   g. After the subagent returns, clear the per-task state, then checkpoint the task's work:
       ```
       rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
+      python3 .claude/hooks/lib/git_branch.py checkpoint '<run_id>' '<T.task_id>' --role '<T.role>'
       ```
+      Order matters: the checkpoint must run **after** `current_role.txt` is
+      removed. `pre_tool_use.py` denies `git commit` while any role is active, so
+      checkpointing before the clear is refused — which is the same rule that
+      stops a subagent committing on its own behalf.
+
+      The checkpoint is the run's only recovery boundary. Without it a build
+      accumulates every task's edits uncommitted, and a task that damages earlier
+      work leaves nothing to fall back to — a live risk now that an implementer
+      may run a codemod across a whole directory. It always exits 0: a skipped
+      checkpoint (not a git repo, disabled in config, branch switched mid-run,
+      nothing to commit, a rejecting pre-commit hook) prints one line and the
+      build continues. Print that line; never retry it and never commit by hand
+      in its place.
    h. **Re-run the step 3 command** to recompute `runnable` (task statuses on disk have changed). Go back to (a).
 
 5. Stop when no runnable tasks remain. If tasks remain with `status: deferred` (the run was parked by `/agentic-defer`), never dispatch them — print the dossier path from `_overview.md`'s `## Deferral` block and suggest `/agentic-resume <run-id>` once the external blocker clears.

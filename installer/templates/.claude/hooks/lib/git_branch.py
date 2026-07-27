@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Create / switch to a feature branch for a plan run.
+"""Create / switch to a feature branch for a plan run; checkpoint finished tasks.
 
-Reads `.agentic.yml: git.{auto_branch, branch_template, base_branch, fail_on_wip}`
-and performs the safe set of git operations for /agentic-plan.
+Reads `.agentic.yml: git.{auto_branch, branch_template, base_branch, fail_on_wip,
+checkpoint_commits}` and performs the safe set of git operations for
+/agentic-plan and /agentic-build.
 
 Usage:
     python git_branch.py create FEAT-007
@@ -11,6 +12,19 @@ Usage:
         - if working tree dirty AND fail_on_wip=true: print message, exit 1
         - if target branch already exists: switch to it, exit 0
         - else: create from base_branch (or current HEAD), switch to it, exit 0
+
+    python git_branch.py checkpoint FEAT-007 t4 [--role implementer] [--note "..."]
+        Commit whatever the just-finished task wrote, on the run's branch.
+        Always exit 0 — a failed checkpoint must never abort a build.
+
+Why checkpoints exist: a build accumulates every task's changes in the working
+tree and commits nothing, so there is no boundary to fall back to when task 7
+damages what task 3 wrote. That was tolerable when each change was a single
+reviewable Edit; it is not once an implementer may run a codemod across a whole
+directory, where one wrong pattern rewrites hundreds of files at once. It also
+can't be fixed inside the agent: pre_tool_use.py denies `git commit` to any
+subagent (commits are user-driven), so the checkpoint has to be taken by the
+dispatcher between tasks, while no role is active.
 """
 from __future__ import annotations
 
@@ -33,8 +47,24 @@ def load_git_cfg() -> dict:
         "branch_template": "feat/{run_id}",
         "base_branch": "",
         "fail_on_wip": True,
+        # Default ON: the checkpoint is the only recovery boundary inside a run,
+        # and it is cheap and local (never pushed). Projects seeded before this
+        # key existed get the protection without editing config; set it to false
+        # to opt out.
+        "checkpoint_commits": True,
     }
-    if not AGENTIC_YML.exists() or yaml is None:
+    if yaml is None:
+        # Say so when there is a config to ignore. Silently using defaults means
+        # a deliberate `checkpoint_commits: false` (or `auto_branch`, or
+        # `base_branch`) does not apply and nothing indicates why — the setting
+        # looks honoured and is not. Matches retriever.py's warning for the same
+        # condition. No config file means nothing is being overridden, so stay quiet.
+        if AGENTIC_YML.exists():
+            sys.stderr.write(
+                "[git_branch] PyYAML not installed; .agentic.yml `git:` settings "
+                "are being IGNORED and defaults used\n")
+        return defaults
+    if not AGENTIC_YML.exists():
         return defaults
     try:
         full = yaml.safe_load(AGENTIC_YML.read_text(encoding="utf-8")) or {}
@@ -110,11 +140,90 @@ def cmd_create(run_id: str) -> int:
     return 0
 
 
+def expected_branches(run_id: str, cfg: dict) -> tuple[str, str]:
+    """(base name, versioned prefix) this run's branch may legitimately have.
+    cmd_create appends -v2/-v3 on collision, so both shapes are valid."""
+    name = cfg["branch_template"].format(run_id=run_id)
+    return name, name + "-v"
+
+
+def cmd_checkpoint(run_id: str, task_id: str, role: str = "", note: str = "") -> int:
+    """Commit the finished task's work. Never fails the build — exit is always 0."""
+    cfg = load_git_cfg()
+
+    if not cfg["checkpoint_commits"]:
+        print("[git_branch] checkpoint_commits disabled in .agentic.yml; skipping")
+        return 0
+    if not is_git_repo():
+        print("[git_branch] not a git repo; skipping checkpoint")
+        return 0
+
+    # Only ever commit onto this run's own branch. If the branch was switched
+    # mid-run (by the developer, or a task that shelled out), committing here
+    # would land the run's work on whatever is checked out — main, most likely.
+    # Skipping loses a checkpoint; committing to the wrong branch loses trust in
+    # every checkpoint.
+    base, vprefix = expected_branches(run_id, cfg)
+    cur = current_branch()
+    if cur != base and not cur.startswith(vprefix):
+        print(f"[git_branch] on '{cur or 'detached HEAD'}', expected '{base}' — "
+              f"skipping checkpoint for {task_id} (commit it yourself if intended)")
+        return 0
+
+    if not working_tree_dirty():
+        print(f"[git_branch] {task_id}: nothing to checkpoint")
+        return 0
+
+    # -A respects .gitignore, so .claude/state/ (run working memory) stays out.
+    r = run(["git", "add", "-A"], check=False)
+    if r.returncode != 0:
+        print(f"[git_branch] git add failed: {r.stderr.strip()} — skipping checkpoint")
+        return 0
+
+    subject = f"{run_id} {task_id}"
+    if role:
+        subject += f" ({role})"
+    if note:
+        subject += f": {note}"
+    body = ("Checkpoint written by /agentic-build after the task completed.\n"
+            "Recovery boundary only — squash or rewrite before opening a PR.")
+
+    r = run(["git", "commit", "-m", subject, "-m", body], check=False)
+    if r.returncode != 0:
+        # A pre-commit hook, missing git identity, or an empty diff after
+        # gitignore filtering. None of these are worth aborting a 3-hour build.
+        # A rejecting hook often prints nothing at all, so fall back to the exit
+        # code rather than reporting a bare "unknown error".
+        out = (r.stderr.strip() or r.stdout.strip())
+        detail = out.splitlines()[0] if out else f"git commit exited {r.returncode}"
+        print(f"[git_branch] checkpoint for {task_id} did not commit: {detail}")
+        return 0
+
+    sha = run(["git", "rev-parse", "--short", "HEAD"], check=False).stdout.strip()
+    print(f"[git_branch] checkpointed {task_id} as {sha} on '{cur}'")
+    return 0
+
+
 def main() -> None:
-    if len(sys.argv) < 3 or sys.argv[1] != "create":
-        sys.stderr.write("usage: git_branch.py create <run_id>\n")
-        sys.exit(2)
-    sys.exit(cmd_create(sys.argv[2]))
+    argv = sys.argv[1:]
+    if len(argv) >= 2 and argv[0] == "create":
+        sys.exit(cmd_create(argv[1]))
+    if len(argv) >= 3 and argv[0] == "checkpoint":
+        role = note = ""
+        rest = argv[3:]
+        for flag, target in (("--role", "role"), ("--note", "note")):
+            if flag in rest:
+                i = rest.index(flag)
+                if i + 1 < len(rest):
+                    if target == "role":
+                        role = rest[i + 1]
+                    else:
+                        note = rest[i + 1]
+        sys.exit(cmd_checkpoint(argv[1], argv[2], role, note))
+    sys.stderr.write(
+        "usage: git_branch.py create <run_id>\n"
+        "       git_branch.py checkpoint <run_id> <task_id> [--role R] [--note N]\n")
+    sys.exit(2)
 
 
 if __name__ == "__main__":

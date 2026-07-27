@@ -192,3 +192,7 @@ git:
   branch_template: "feat/{run_id}"
   base_branch: ""       # empty = branch from current HEAD; set to e.g. "main" to always branch from there
   fail_on_wip: true     # refuse to plan if working tree has uncommitted changes
+  # Commit each finished task onto the run's branch, so a task that damages
+  # earlier work has a boundary to fall back to. Local only — never pushed, and
+  # meant to be squashed before a PR. Set false to keep a run's work uncommitted.
+  checkpoint_commits: true
