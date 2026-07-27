@@ -47,6 +47,7 @@ In the installed project, in Claude Code:
 /agentic-review [commits:N | dir:path | all] # FULL review — hygiene + design + security (+ UI adherence) → consolidated report → remediate
 /agentic-review-design [run_id | "feature"] # architect red-teams the DESIGN — data ownership, tenancy, compliance, scaling
 /agentic-review-ui [run_id: | dir: | all]   # design-critic checks the built UI against docs/design/DESIGN-SPEC.md → drift report
+/agentic-sweep-ui [dir:<path>]              # EXHAUSTIVE UI review — every file × every rule, in computed batches
 /agentic-review-security [run_id | "feature"] # security-reviewer red-teams for exploits — OWASP Top 10, IDOR, injection, secrets
 /agentic-review-pr <PR# | url> [--comment]  # fetch a GitHub PR → architect + security-reviewer; optional summary comment
 /agentic-remediate <review_id>              # turn an EXISTING review's findings into fix tasks → dispatch
@@ -508,6 +509,7 @@ complete.**
 │   ├── agentic-review-design.md   # architect design review → findings report
 │   ├── agentic-review-security.md # security red-team → threat model report
 │   ├── agentic-review-ui.md       # design-critic checks built UI vs design spec → drift report
+│   ├── agentic-sweep-ui.md        # EXHAUSTIVE UI review — computed batches, coverage is arithmetic
 │   ├── agentic-review-pr.md       # review a GitHub PR (github MCP) → architect + security-reviewer
 │   ├── agentic-open-pr.md         # open a PR from a completed run (github MCP)
 │   └── agentic-lessons.md      # distill recurring review findings → lessons the planner learns from
@@ -530,6 +532,7 @@ complete.**
 │       ├── plan_id.py          # FEAT-### allocator
 │       ├── adr_id.py           # ADR-### allocator
 │       ├── git_branch.py       # feat/{run_id} branch helper (-v2/-v3 on collision) + per-task checkpoint commits
+│       ├── sweep_plan.py       # deterministic batch planner for /agentic-sweep-ui
 │       ├── log_dispatch.py     # structured dispatch events → .claude/state/logs/dispatch.jsonl
 │       ├── logs.py             # summarize a run/review's logs (/agentic-logs)
 │       └── doctor.py           # install health checks
@@ -669,6 +672,54 @@ also back-fills role entries added in newer versions.
 
 ---
 
+
+## Reviewing everything, not sampling
+
+`/agentic-review-ui` reads what it judges worth reading. That is why it is cheap,
+and it is also why it cannot tell you what it did not look at — the codebase does
+not fit in one context, so the agent samples, and sampling is unrepeatable. Two
+runs over identical code examine different subsets and each reports findings the
+other missed. That is the mechanism behind "I fixed everything it found, ran it
+again, and got new problems in files I never touched."
+
+`/agentic-sweep-ui` removes the choosing, the same way `dispatch_plan.py` removed
+it from task ordering. `sweep_plan.py` computes the file list and splits it into
+batches; the command dispatches every one; the agent only judges what it is
+handed. Each batch checks **every** rule against **every** file it was given — the
+inversion that matters, because a review that walks rules hunting for sites cannot
+see the sites it never thought to hunt in.
+
+```
+sweep: 164 files, 1390KB, 20 batches
+  b01  11 files   71KB  mobile/lib
+  b02  16 files   78KB  mobile/lib/core/providers
+  ...
+sweep-verify: 19/20 batches reported, 162/164 files covered
+  [FAIL] batches never reported: [20]
+```
+
+Coverage stops being a claim and becomes arithmetic: every in-scope file is in
+exactly one batch, and `verify` fails when a batch never reported. A partial
+sweep reads exactly like a complete one, so that check is the whole guarantee.
+
+**Batch size trades cost against attention, in both directions.** Each batch
+re-pays the fixed overhead (role prompt, spec, evidence policy), so halving
+`--max-chars` nearly doubles the spend without reading any file more carefully.
+Going too large means checking every rule against 50k tokens at once, which is
+where an agent skims — reintroducing sampling inside a batch. The 80k default
+lands around 8-16 files per batch on real code.
+
+**What it guarantees is that nothing was skipped — not that nothing was missed.**
+A critic reading a batch can still overlook a violation inside it, exactly as a
+human reviewer can. Coverage is not detection. And rules that are not in the
+source at any batch size — contrast, focus rings, rendered states — stay
+`unverified` and need `/agentic-screenshot` plus a real device pass.
+
+Use the sampling review for a quick read of recent work; use the sweep when a
+rule needs actually closing.
+
+---
+
 ## Knowing whether an install is current
 
 System directories are mirrored on re-install — replaced wholesale, so a stale
@@ -709,7 +760,7 @@ gitignored: it holds an absolute local path and is regenerated on every install.
 python -m unittest discover installer/tests
 ```
 
-348 tests, no third-party dependency beyond `pyyaml`. CI runs them on Python
+362 tests, no third-party dependency beyond `pyyaml`. CI runs them on Python
 3.10, 3.12, and 3.14 for every push and pull request
 ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)); 3.10 is the
 verified floor.
