@@ -30,8 +30,12 @@ class HookCase(unittest.TestCase):
         (self.state / "logs").mkdir(parents=True)
         (self.td / ".claude" / "agents").mkdir(parents=True)
         shutil.copy(TPL / "hooks" / "verify_review.py", self.hooks)
-        for lib in ("common.py", "verify_clears.py", "token_cost.py"):
-            shutil.copy(TPL / "hooks" / "lib" / lib, self.hooks / "lib")
+        # Copy the whole lib rather than a hand-listed subset: the list silently
+        # went stale when verify_clears was split into verify_parse/verify_exec,
+        # and a fixture that lags the real layout tests something that no longer
+        # ships.
+        for lib in (TPL / "hooks" / "lib").glob("*.py"):
+            shutil.copy(lib, self.hooks / "lib")
 
     def write(self, rel, text):
         p = self.td / rel
