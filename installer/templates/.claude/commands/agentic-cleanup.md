@@ -70,7 +70,8 @@ rm -f .claude/state/current_role.txt
 ```bash
 ${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
   .claude/state/audit/<audit_id>/findings.md --cwd . \
-  --checklist .claude/agents/auditor.md
+  --checklist .claude/agents/auditor.md \
+  --enumerations docs/review/enumerations.md --reviewer auditor
 ```
 
 `--checklist` requires one `## Coverage` row per issue type — including types the

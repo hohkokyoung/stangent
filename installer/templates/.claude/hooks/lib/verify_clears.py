@@ -61,11 +61,13 @@ from verify_parse import (  # noqa: F401
     CHECKLIST_ITEM, CLEAR_HEADING, CMD_TAIL, COVERAGE_HEADING, INSPECTED,
     REF_TAIL, SITE_REF, UNVERIFIED, VERB_RE, checklist_items, coverage_rows,
     find_citation, parse_citations, parse_coverage_citations,
-    parse_inline_citations, partial_inspections, scan_document, split_sections)
+    parse_inline_citations, partial_inspections, scan_document, split_sections,
+    declared_enumerations, undeclared_searches)
 from verify_exec import (  # noqa: F401
     command_is_safe, split_pipeline, verify_cmd, verify_ref)
 
-def verify(findings: Path, cwd: Path, checklist: Path | None = None) -> dict:
+def verify(findings: Path, cwd: Path, checklist: Path | None = None,
+           enumerations: Path | None = None, reviewer: str = "") -> dict:
     """Check every citation in the file.
 
     `checklist` is a spec whose `- [ ]` items the report must all account for.
@@ -74,11 +76,19 @@ def verify(findings: Path, cwd: Path, checklist: Path | None = None) -> dict:
     only ever offered a way to verify the wrong part of a report."""
     text = findings.read_text(encoding="utf-8", errors="replace")
     coverage = _check_coverage(text, checklist) if checklist else None
+    # An improvised search is invisible in the report — every citation still
+    # reproduces and the row still reads `24 of 24` — while silently redefining
+    # which code the item was checked against. Only comparing against the
+    # declaration catches it.
+    undeclared = []
+    if enumerations and reviewer and enumerations.is_file():
+        undeclared = undeclared_searches(text, declared_enumerations(
+            enumerations.read_text(encoding="utf-8", errors="replace"), reviewer))
     records = scan_document(text)
     partial = partial_inspections(text)
-    if not records and not coverage and not partial:
+    if not records and not coverage and not partial and not undeclared:
         return {"findings": str(findings), "results": [],
-                "coverage": coverage, "partial": [],
+                "coverage": coverage, "partial": [], "undeclared": [],
                 "note": "no cleared sections and no citations found"}
 
     results = []
@@ -96,7 +106,7 @@ def verify(findings: Path, cwd: Path, checklist: Path | None = None) -> dict:
                             "detail": rec.get("detail")
                             or "no re-runnable evidence cited"})
     return {"findings": str(findings), "results": results,
-            "coverage": coverage, "partial": partial}
+            "coverage": coverage, "partial": partial, "undeclared": undeclared}
 
 
 def _check_coverage(text: str, checklist: Path) -> dict:
@@ -162,11 +172,26 @@ def _print_partial(rep: dict) -> None:
           "established —\n           the unread remainder may hold more of the same.")
 
 
+def _print_undeclared(rep: dict) -> None:
+    if not rep.get("undeclared"):
+        return
+    print("  searches that are not the declared enumeration:")
+    for u in rep["undeclared"]:
+        print(f"    [FAIL] item {u['index']:<3} {u['item']}")
+        print(f"           declared: {u['declared']}")
+        print(f"           used:     {u['used'] or '(none cited)'}")
+    print("           A different search is a different population, so this run "
+          "is not\n           comparable with the last and the item cannot be "
+          "shown closed. Use the\n           declared command, or change the "
+          "declaration deliberately.")
+
+
 def _print(rep: dict) -> None:
     if rep.get("note"):
         print(f"verify-clears: {rep['note']}")
         _print_coverage(rep.get("coverage"))
         _print_partial(rep)
+        _print_undeclared(rep)
         return
     order = {"mismatch": 0, "failed": 1, "uncited": 2, "unrunnable": 3,
              "stale": 4, "unverified": 5, "reproduced": 6}
@@ -178,6 +203,7 @@ def _print(rep: dict) -> None:
     print(f"verify-clears: {Path(rep['findings']).name} — "
           + "  ".join(f"{k}: {v}" for k, v in sorted(counts.items())))
     _print_coverage(rep.get("coverage"))
+    _print_undeclared(rep)
     _print_partial(rep)
     for r in rows:
         if r["status"] == "reproduced":
@@ -207,6 +233,12 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--checklist", default=None,
                     help="spec file whose `- [ ]` items the report's Coverage "
                          "table must all account for")
+    ap.add_argument("--enumerations", default=None,
+                    help="docs/review/enumerations.md — the declared search per "
+                         "checklist item; compared against the Coverage table")
+    ap.add_argument("--reviewer", default="",
+                    help="section of the enumerations file to compare against "
+                         "(e.g. design-critic, security-reviewer, auditor)")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
 
@@ -218,13 +250,16 @@ def main(argv: list[str]) -> int:
     if checklist and not checklist.is_file():
         print(f"verify-clears: no such checklist: {checklist}", file=sys.stderr)
         return 2
-    rep = verify(f, Path(args.cwd).resolve(), checklist)
+    rep = verify(f, Path(args.cwd).resolve(), checklist,
+                 Path(args.enumerations) if args.enumerations else None,
+                 args.reviewer)
     if args.json:
         print(json.dumps(rep, indent=2))
     else:
         _print(rep)
     bad_coverage = (rep.get("coverage") or {}).get("status") in ("missing", "incomplete")
-    return 1 if (bad_coverage or any(is_failing(r) for r in rep["results"])) else 0
+    return 1 if (bad_coverage or rep.get("undeclared")
+                 or any(is_failing(r) for r in rep["results"])) else 0
 
 
 if __name__ == "__main__":

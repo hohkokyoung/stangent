@@ -68,7 +68,8 @@ Re-run the evidence the critic cited for everything it marked cleared:
 ```bash
 ${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
   .claude/state/ui-review/$REVIEW_ID/findings.md --cwd . \
-  --checklist docs/design/DESIGN-SPEC.md
+  --checklist docs/design/DESIGN-SPEC.md \
+  --enumerations docs/review/enumerations.md --reviewer design-critic
 ```
 
 `--checklist` counts the spec's `- [ ]` enforcement items and requires one

@@ -744,3 +744,93 @@ class TestExitCode(Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DeclaredEnumerationsCase(unittest.TestCase):
+    """The declared search is what makes two runs measure the same population.
+
+    Without it each run invents a regex: three reviews of one project checked the
+    same radius rule with searches returning 189, 24 and 203 sites, and the middle
+    one cleared it as `24 of 24` — honestly, verifiably, against the wrong 24.
+    """
+
+    ENUM = """# Review enumerations
+## design-critic
+| # | checklist item | enumerate |
+|---|----------------|-----------|
+| 1 | radius from the token scale | `grep -rn "BorderRadius.circular(" src` |
+| 2 | no raw hex | `grep -rn "0xFF" src \\| grep -v theme` |
+| 3 | not yet declared | <read-only command> |
+| 4 | also not declared | `<read-only command>` |
+
+## security-reviewer
+| # | category | enumerate |
+|---|----------|-----------|
+| 1 | Injection | `grep -rn "rawQuery" src` |
+"""
+
+    def report(self, rows: str) -> str:
+        return ("# R\n\n## Coverage\n"
+                "| # | item | what you checked | inspected | result |\n"
+                "|---|------|------------------|-----------|--------|\n" + rows)
+
+    def declared(self, reviewer="design-critic"):
+        return vc.declared_enumerations(self.ENUM, reviewer)
+
+    def test_parses_only_the_named_reviewers_section(self):
+        d = self.declared()
+        self.assertEqual(d[1], 'grep -rn "BorderRadius.circular(" src')
+        self.assertNotIn(4, d)
+        self.assertEqual(self.declared("security-reviewer"),
+                         {1: 'grep -rn "rawQuery" src'})
+
+    def test_unescapes_a_piped_command(self):
+        # In a markdown table a literal pipe is written `\\|`; leaving it escaped
+        # would make every piped declaration mismatch its own use.
+        self.assertEqual(self.declared()[2], 'grep -rn "0xFF" src | grep -v theme')
+
+    def test_placeholder_rows_are_not_declarations(self):
+        # Both shapes the template ships. The backticked one is the dangerous
+        # case: it parses as a command, so an untouched template would look fully
+        # declared and every review would "match" a placeholder.
+        d = self.declared()
+        self.assertNotIn(3, d, "<read-only command> is not a command")
+        self.assertNotIn(4, d, "`<read-only command>` is not a command either")
+
+    def test_matching_search_is_not_reported(self):
+        rows = ('| 1 | radius | `grep -rn "BorderRadius.circular(" src` -> 4 matches '
+                '| 4 of 4 | none |\n')
+        self.assertEqual(
+            vc.undeclared_searches(self.report(rows), self.declared()), [])
+
+    def test_whitespace_differences_are_not_drift(self):
+        rows = ('| 1 | radius | `grep  -rn   "BorderRadius.circular("   src` -> 4 matches '
+                '| 4 of 4 | none |\n')
+        self.assertEqual(
+            vc.undeclared_searches(self.report(rows), self.declared()), [])
+
+    def test_a_narrower_search_is_caught(self):
+        # The exact snuggle failure: a tighter regex, a clean row, a smaller
+        # population, and no other signal that anything was missed.
+        rows = ('| 1 | radius | `grep -rn "BorderRadius.circular([0-9]" src` -> 3 matches '
+                '| 3 of 3 | none |\n')
+        got = vc.undeclared_searches(self.report(rows), self.declared())
+        self.assertEqual(len(got), 1)
+        self.assertEqual(got[0]["index"], 1)
+        self.assertIn("[0-9]", got[0]["used"])
+
+    def test_a_row_citing_no_command_is_caught(self):
+        rows = "| 1 | radius | read the widget files | 3 of 3 | none |\n"
+        got = vc.undeclared_searches(self.report(rows), self.declared())
+        self.assertEqual(got[0]["used"], "", "no command cited where one is declared")
+
+    def test_undeclared_items_are_left_alone(self):
+        # Item 3 has no declaration, so the row is the coverage check's business,
+        # not this one's — reporting it here would penalise honest `unverified`.
+        rows = "| 3 | not yet declared | — | — | unverified — no enumeration declared |\n"
+        self.assertEqual(
+            vc.undeclared_searches(self.report(rows), self.declared()), [])
+
+    def test_no_declarations_means_no_opinion(self):
+        rows = '| 1 | radius | `grep -rn "anything" src` -> 1 matches | 1 of 1 | none |\n'
+        self.assertEqual(vc.undeclared_searches(self.report(rows), {}), [])

@@ -57,7 +57,8 @@ Re-run the evidence cited for every category the reviewer marked cleared:
 ```bash
 ${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
   .claude/state/security-review/$REVIEW_ID/findings.md --cwd . \
-  --checklist .claude/agents/security-reviewer.md
+  --checklist .claude/agents/security-reviewer.md \
+  --enumerations docs/review/enumerations.md --reviewer security-reviewer
 ```
 
 `--checklist` counts the agent's attacker categories and requires one `## Coverage`

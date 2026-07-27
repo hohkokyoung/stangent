@@ -60,6 +60,49 @@ exactly like a full sweep. Write `12 of 38`.
 passed — it is the only outcome that reads as "fine" while meaning "never
 looked", and the row count is verified against the checklist.
 
+## The search is declared, not invented
+
+The "what you checked" column decides which code the item was checked *against*.
+Improvise it and each run enumerates a different population, so findings are not
+comparable between runs and an item can never be shown closed.
+
+This is not hypothetical. Three reviews of one project checked the same item —
+*"all spacing/radius picks come from the token scale"* — with three searches of
+their own devising:
+
+```
+BorderRadius.circular(        -> 189 sites
+BorderRadius.circular([0-9]   ->  24 sites
+AppRadius\.                   -> 203 sites
+```
+
+The middle run reported `24 of 24` and cleared the item. Every citation
+reproduced, the row was honest, and 165 sites were never searched. They surfaced
+in a later run as "new" problems in code nobody had touched.
+
+So:
+
+- **Use the item's declared search verbatim.** For a checklist that lives in a
+  project file, the declaration sits with the item. Otherwise it is in
+  `docs/review/enumerations.md`, keyed by reviewer and item number.
+- **Never substitute your own** because it looks better scoped, faster, or more
+  precise. A better search that differs is still a different population, and the
+  comparison across runs is worth more than the improvement.
+- **If an item has no declared search**, do not invent one silently. Report
+  `unverified — no enumeration declared`, and propose a command in the row so it
+  can be added. One honest run beats a confident wrong denominator.
+- **If the declared search is wrong**, say so in the row and still run it. Fixing
+  it is a change to the declaration, not something to route around mid-review.
+
+`N` in `inspected: k of N` is the declared search's count. That is what makes
+`k of N` mean the same thing twice, and what lets "closed" be arithmetic — the
+count reaching zero — rather than a run happening to report nothing.
+
+**Only for checklists that enumerate sites.** Items phrased as questions about a
+design — *who owns this entity, what breaks at 100×, can one tenant reach
+another's data* — have no population to search. Answer those from the design
+itself; nothing here applies to them.
+
 ## Honesty is never penalised
 
 Load-bearing, not encouragement:

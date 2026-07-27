@@ -380,6 +380,38 @@ def check_design_spec() -> dict:
     return _check("design spec", OK, "none yet (optional — /agentic-design to author one)")
 
 
+def check_review_enumerations() -> dict:
+    """The declared search per checklist item — and whether it still parses.
+
+    Optional (absent means reviews improvise, which is the old behaviour). But a
+    file that is present and yields zero declarations is the dangerous state: the
+    comparison silently does nothing and every review passes the check by having
+    nothing to check against. That reads exactly like health, which is the same
+    failure mode the `- [ ]` checklist extraction has.
+    """
+    path = REPO_ROOT / "docs" / "review" / "enumerations.md"
+    if not path.is_file():
+        return _check("review enumerations", OK,
+                      "none yet (optional — reviews will improvise their searches, "
+                      "so runs are not comparable)")
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from verify_parse import declared_enumerations  # type: ignore
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except Exception as e:
+        return _check("review enumerations", WARN, f"could not read: {e}")
+    counts = {r: len(declared_enumerations(text, r))
+              for r in ("design-critic", "security-reviewer", "auditor")}
+    total = sum(counts.values())
+    detail = ", ".join(f"{r}: {n}" for r, n in counts.items())
+    if total == 0:
+        return _check("review enumerations", WARN,
+                      "present but no declarations parsed — check the `## <reviewer>` "
+                      "headings and that each row is `| <n> | <item> | `<command>` |`; "
+                      "as written it silently disables the comparison")
+    return _check("review enumerations", OK, detail)
+
+
 def check_install_manifest() -> list[dict]:
     """Report local edits to system files, and whether the source has moved on.
 
@@ -599,6 +631,7 @@ def run_all() -> list[dict]:
     results.extend(check_skills())
     results.append(check_adrs())
     results.append(check_design_spec())
+    results.append(check_review_enumerations())
     results.append(check_stale_state())
     results.extend(check_install_manifest())
     results.extend(check_git())

@@ -103,21 +103,29 @@ Run the checker over each report that ran (skip the ones that did not):
 
 ```bash
 V=".claude/hooks/lib/verify_clears.py"
+E="docs/review/enumerations.md"
 [ -f .claude/state/audit/$REVIEW_ID/findings.md ] && \
-  ${PYEXE:-python3} $V .claude/state/audit/$REVIEW_ID/findings.md --cwd .
+  ${PYEXE:-python3} $V .claude/state/audit/$REVIEW_ID/findings.md --cwd . \
+  --checklist .claude/agents/auditor.md --enumerations $E --reviewer auditor
 [ -f .claude/state/design-review/$REVIEW_ID/findings.md ] && \
   ${PYEXE:-python3} $V .claude/state/design-review/$REVIEW_ID/findings.md --cwd . \
   --checklist .claude/agents/architect.md
 [ -f .claude/state/security-review/$REVIEW_ID/findings.md ] && \
   ${PYEXE:-python3} $V .claude/state/security-review/$REVIEW_ID/findings.md --cwd . \
-  --checklist .claude/agents/security-reviewer.md
+  --checklist .claude/agents/security-reviewer.md \
+  --enumerations $E --reviewer security-reviewer
 [ -f .claude/state/ui-review/$REVIEW_ID/findings.md ] && \
   ${PYEXE:-python3} $V .claude/state/ui-review/$REVIEW_ID/findings.md --cwd . \
-  --checklist docs/design/DESIGN-SPEC.md
+  --checklist docs/design/DESIGN-SPEC.md \
+  --enumerations $E --reviewer design-critic
 ```
 
+`architect` gets no `--enumerations`: its seven dimensions are questions about a
+design, not sites to search, so there is no population to declare.
+
 Carry the result into the Step-4 dashboard: a lane with any `mismatch` /
-`failed` / `uncited` item has cleared something it could not re-derive, and its
+`failed` / `uncited` item has cleared something it could not re-derive, a lane
+with an undeclared search measured a different population than last time, and its
 "no issues here" lines must not be read as coverage. This is the lane most at
 risk of a false all-clear, because four reports consolidated into one dashboard
 lose the caveats that were in each.

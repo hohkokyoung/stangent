@@ -408,6 +408,38 @@ project the same section was written `[§2]`, `[§2 Principles]`, and
 reason for reviewing twice. Section numbers come from `DESIGN-SPEC.md`'s own
 headings (1-13) and are stable; the words after them are not.
 
+**4. The search is declared, not invented.** Citations prove claims about the code
+the review searched. They say nothing about whether that was the *right* code —
+and a reviewer that writes its own search each run measures a different
+population every time. Three reviews of one project checked the same rule with
+three searches of their own devising:
+
+```
+BorderRadius.circular(        -> 189 sites
+BorderRadius.circular([0-9]   ->  24 sites
+AppRadius\.                   -> 203 sites
+```
+
+The middle run reported `24 of 24` and cleared the item. Every citation
+reproduced, the coverage row was honest, and 165 sites were never searched —
+surfacing later as "new" problems in untouched code. That is why a review can be
+fully verified and still not converge: **you cannot close a set that is redefined
+each time you look at it.**
+
+So the search belongs to the checklist item, not to the run. `docs/review/enumerations.md`
+declares one read-only command per item, keyed by reviewer; `verify_clears.py`
+compares every Coverage row against it and fails the run on a substitution. `N` in
+`inspected: k of N` then means the same thing twice, and "closed" becomes
+arithmetic — the count reaching zero — instead of a run happening to report
+nothing.
+
+This applies to the three reviewers whose checklists **enumerate sites**
+(`design-critic`, `security-reviewer`, `auditor`). It deliberately does not apply
+to `architect`, whose seven dimensions are questions about a design — *who owns
+this entity, what breaks at 100×, can one tenant reach another's data* — with no
+population to search. The file is optional; without it reviews improvise exactly
+as before, and `/agentic-doctor` reports that they are not comparable.
+
 **What this does not do.** It verifies that stated claims are true. It cannot tell
 you the right questions were asked: a review against a vague spec will cite
 honestly, cover every row, and still find little. **Verified is not the same as
@@ -657,7 +689,7 @@ gitignored: it holds an absolute local path and is regenerated on every install.
 python -m unittest discover installer/tests
 ```
 
-326 tests, no third-party dependency beyond `pyyaml`. CI runs them on Python
+335 tests, no third-party dependency beyond `pyyaml`. CI runs them on Python
 3.10, 3.12, and 3.14 for every push and pull request
 ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)); 3.10 is the
 verified floor.

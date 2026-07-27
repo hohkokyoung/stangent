@@ -209,6 +209,89 @@ def _multi_site_without_enumeration(title: str, body: str) -> list[dict]:
     return out
 
 
+def _split_row(line: str) -> list[str]:
+    """Cells of a markdown table row, not splitting on an escaped `\\|`.
+
+    A piped command is written `a \\| b` inside a cell, so a naive split on `|`
+    tears it in half and the cell that should hold the command holds a fragment.
+    """
+    return [c.strip() for c in re.split(r"(?<!\\)\|", line.strip().strip("|"))]
+
+
+def declared_enumerations(text: str, reviewer: str) -> dict[int, str]:
+    """`{item number: command}` from a reviewer's section of docs/review/enumerations.md.
+
+    The declaration is what makes two runs measure the same population. Parsing it
+    here — beside the Coverage parser it is compared against — keeps both readings
+    of a markdown table in one file and identical in their quirks (the `\\|`
+    escaping in particular).
+    """
+    out: dict[int, str] = {}
+    for title, body in split_sections(text):
+        if title.strip().lower() != reviewer.strip().lower():
+            continue
+        for line in body.splitlines():
+            s = line.strip()
+            if not s.startswith("|"):
+                continue
+            cells = _split_row(s)
+            if len(cells) < 3 or set("".join(cells)) <= set("-: "):
+                continue
+            if not cells[0].isdigit():
+                continue  # header row, or a row without an item number
+            m = re.search(r"`([^`]+)`", cells[-1])
+            if not m:
+                continue
+            cmd = m.group(1).strip().replace("\\|", "|")
+            # The template ships `<read-only command>` in every row. Counting
+            # those as declarations makes an untouched template look fully
+            # declared, and then every review "matches" a placeholder — the
+            # check would report health while comparing nothing.
+            if cmd.startswith("<") and cmd.endswith(">"):
+                continue
+            out[int(cells[0])] = cmd
+    return out
+
+
+def _norm_cmd(cmd: str) -> str:
+    """Collapse whitespace so formatting differences are not reported as drift."""
+    return " ".join((cmd or "").split())
+
+
+def undeclared_searches(report: str, declared: dict[int, str]) -> list[dict]:
+    """Coverage rows whose search is not the declared one for that item.
+
+    An improvised search is the failure this exists to catch: it is invisible in
+    the report (every citation still reproduces, the row still reads `24 of 24`)
+    and it silently redefines which code the item was checked against.
+    """
+    if not declared:
+        return []
+    out = []
+    for title, body in split_sections(report):
+        if not COVERAGE_HEADING.search(title):
+            continue
+        for line in body.splitlines():
+            s = line.strip()
+            if not s.startswith("|"):
+                continue
+            cells = _split_row(s)
+            if not cells or set("".join(cells)) <= set("-: "):
+                continue
+            if not cells[0].isdigit():
+                continue
+            idx = int(cells[0])
+            want = declared.get(idx)
+            if not want:
+                continue  # nothing declared for this item; the row may say so
+            m = CMD_TAIL.search(s)
+            used = m.group("cmd").strip().replace("\\|", "|") if m else ""
+            if _norm_cmd(used) != _norm_cmd(want):
+                out.append({"index": idx, "declared": want, "used": used,
+                            "item": (cells[1] if len(cells) > 1 else "")[:44]})
+    return out
+
+
 def parse_coverage_citations(body: str) -> list[dict]:
     """Command-with-count claims in a Coverage table's rows.
 
