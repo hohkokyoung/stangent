@@ -146,6 +146,10 @@ Severity guide:
 
 If no issues are found for an issue type, note `No <type> issues found.` under a heading — never omit the section.
 
+Follow `.claude/templates/evidence-policy.md` — the two citation forms, the
+Coverage table with its `inspected` column, and why `unverified` is never
+penalised. What follows is only what is specific to this role.
+
 **Open the report with a `## Coverage` table** — one row for **every** issue type
 above, not just the ones in `types`. A type the caller did not request is
 `not requested`, which is different from "scanned and clean" and must not read

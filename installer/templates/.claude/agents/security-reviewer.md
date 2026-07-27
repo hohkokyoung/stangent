@@ -96,6 +96,10 @@ For each category, either construct a concrete attack scenario or clear it. Use
 `mcp__sequential-thinking` to work through multi-step exploit chains before
 writing them.
 
+Follow `.claude/templates/evidence-policy.md` — the two citation forms, the
+Coverage table with its `inspected` column, and why `unverified` is never
+penalised. What follows is only what is specific to this role.
+
 **Clearing a category — evidence required.** A cleared category reads as "an
 attacker was modelled here and the app held", and it stops the next person from
 looking. Clear one only by naming the **control that makes the attack fail**, at
@@ -103,18 +107,8 @@ looking. Clear one only by naming the **control that makes the attack fail**, at
 
 - Not finding an exploit is not a clear. If you looked and found nothing but
   cannot point at the control, that is `unverified — <what you searched>`.
-- **Cite the control in one of these two forms.** They are re-run by
-  `verify_clears.py` after you finish, so prose does not count:
-
-  ```
-  - **<category>** — cleared by: <path>:<line> "<exact snippet of the control>"
-  - **<category>** — cleared by: `<single command>` -> <N> matches
-  ```
-
-  One command, no `;` / `&&` / `|` / redirects — a chained command whose first
-  stage fails silently yields a confident wrong answer. An invented line number
-  or an approximate count is caught by the re-run, so cite what you actually saw.
-  `unverified` is never penalised; an uncited or non-reproducing clear is.
+- **Cite the control** in one of the evidence-policy forms — a `file:line`
+  with the exact snippet of the control, or a command with a count.
 - **Never narrow the category you are clearing.** Verify the category as scoped,
   or clear the narrower claim by name and mark the remainder `unverified`.
 - Scope the claim to what you covered. A grep or a sampled path clears only that;

@@ -89,6 +89,10 @@ finding.
 For each dimension: state the design's current answer, then challenge it. A
 dimension the plan does not answer is itself a finding.
 
+Follow `.claude/templates/evidence-policy.md` — the two citation forms, the
+Coverage table with its `inspected` column, and why `unverified` is never
+penalised. What follows is only what is specific to this role.
+
 **Clearing a dimension — evidence required.** A cleared dimension reads as "this
 was interrogated and holds", which stops the next reviewer from looking there.
 Clear one only by naming the specific thing in the design that makes it hold —

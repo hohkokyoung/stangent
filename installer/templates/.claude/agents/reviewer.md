@@ -61,7 +61,7 @@ The `pre_tool_use` hook hard-enforces that you may only write under `.claude/sta
    - Verdict: `pass` | `concerns` | `blocking`
    - Findings: bulleted, severity-tagged. Tag ADR-related findings with `[ADR-XXX]`.
    - Suggested fixes (if blocking)
-   - A `### Coverage` table with **exactly one row per evaluation area in step 6**,
+   - Per `.claude/templates/evidence-policy.md`, a `### Coverage` table with **exactly one row per evaluation area in step 6**,
      plus one row per ADR in `task.adrs`, always — whether or not it produced a
      finding:
 
