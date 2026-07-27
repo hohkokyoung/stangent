@@ -59,9 +59,11 @@ Run the planner on the given goal.
    - Q: <question> → A: <developer's answer>
    ```
 
-5. Invoke the **planner** agent. First write role state so the pre-tool hook enforces the planner's write-scope (`.claude/state/plans/` only):
+5. Invoke the **planner** agent. First write state so the pre-tool hook enforces the planner's write-scope (`.claude/state/plans/` only) **and its tool calls are logged under the run** — without `current_run.txt` the planner's writes land nowhere, so plan authoring is the one phase you cannot audit afterwards:
    ```
+   printf '%s' '<run_id>' > .claude/state/current_run.txt
    printf '%s' 'planner' > .claude/state/current_role.txt
+   printf '%s' '<resolved_model>' > .claude/state/current_model.txt
    ```
    Then invoke the **planner** agent with:
    - The user goal: `$ARGUMENTS`
@@ -69,11 +71,11 @@ Run the planner on the given goal.
    - The contents of `.claude/.agentic.yml`
    - The `## Clarifications` block from step 4
    - **Project lessons**: run `python3 .claude/hooks/lib/lessons.py show`. If it produces output, pass it to the planner under a heading line `## Lessons` (exactly that — the planner looks for that block) so the plan accounts for recurring past review findings. If the command produces no output, omit the block entirely.
-   - **Model**: use `models.planner` from `.agentic.yml` (fall back to `models.default`, then session default)
+   - **Model**: use `models.planner` from `.agentic.yml` (fall back to `models.default`, then session default). This is the `<resolved_model>` written to state above — pass it explicitly at invocation so the log records the model that actually ran.
 
 6. The planner writes `_overview.md` + per-task files (all `status: pending`). After it returns, clear the state (mandatory — do not skip):
    ```
-   rm -f .claude/state/current_role.txt
+   rm -f .claude/state/current_role.txt .claude/state/current_model.txt
    ```
 
 7. **Sketch injection + render.** If the Clarifications block contains `sketch: yes`:
@@ -104,10 +106,11 @@ Run the planner on the given goal.
       - Update `t<N>.md`'s `depends_on` to include `s<N>`.
 
    b. **Run all sketchers sequentially.** For each `s<N>.md` in creation order:
-      - Run: `printf '%s' '<s-id>' > .claude/state/current_task.txt && printf '%s' 'sketcher' > .claude/state/current_role.txt`
-      - Invoke the **sketcher** agent with the path to `s<N>.md`, using model `models.sketcher` from `.agentic.yml` (fall back to `models.default`).
+      - Resolve the sketcher's model from `models.sketcher` in `.agentic.yml` (fall back to `models.default`).
+      - Run: `printf '%s' '<s-id>' > .claude/state/current_task.txt && printf '%s' 'sketcher' > .claude/state/current_role.txt && printf '%s' '<resolved_model>' > .claude/state/current_model.txt`
+      - Invoke the **sketcher** agent with the path to `s<N>.md`, passing that model explicitly.
       - Wait for it to flip `status: done` or `status: blocked`.
-      - Run: `rm -f .claude/state/current_task.txt .claude/state/current_role.txt`
+      - Run: `rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt`
       - If `blocked`: print a warning (`sketcher s<N> blocked: <blocker>`) and continue to the next — do NOT halt the entire plan. The implementer task will be runnable only after the sketch is manually resolved or removed from `depends_on`.
 
    After all sketchers finish (or if none ran), clean up:

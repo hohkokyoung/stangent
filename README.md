@@ -49,6 +49,7 @@ In the installed project, in Claude Code:
 /agentic-review-ui [run_id: | dir: | all]   # design-critic checks the built UI against docs/design/DESIGN-SPEC.md → drift report
 /agentic-review-security [run_id | "feature"] # security-reviewer red-teams for exploits — OWASP Top 10, IDOR, injection, secrets
 /agentic-review-pr <PR# | url> [--comment]  # fetch a GitHub PR → architect + security-reviewer; optional summary comment
+/agentic-remediate <review_id>              # turn an EXISTING review's findings into fix tasks → dispatch
 /agentic-open-pr [run_id]                   # open a PR from a completed run's feat/<run_id> branch
 /agentic-refactor <refactoring goal>        # clarify scope, run refactor agent, verify tests stay green
 /agentic-status [--all]                     # dashboard (one run, or every run incl. parked features)
@@ -270,7 +271,11 @@ baseline tests → `baseline-<flow>`). Two hooks then capture activity under tha
 context:
 
 - **`post_tool_use.py`** (PostToolUse) — one JSONL line per tool call →
-  `logs/<id>.jsonl`: `{ts, run_id, task_id, agent_role, model, tool, ok, args, deny_reason?, error?}`. Secrets in args are redacted.
+  `logs/<id>.jsonl`: `{ts, run_id, task_id, agent_role, model, tool, ok, args, res_chars, deny_reason?, error?}`. Secrets in args are redacted.
+  `res_chars` sizes the tool's *result* — what lands in the agent's context and
+  is re-read every later turn. Since agentic cost is dominated by cache-read,
+  this is what makes a run's bill traceable to the calls that caused it;
+  `/agentic-logs` ranks the heaviest ones.
 - **`log_usage.py`** (SubagentStop) — one `usage` event per finished agent, with
   token counts (input/output/cache) and estimated cost, attributed to the task.
 - **`log_dispatch.py`** — one routing event per build dispatch → `dispatch.jsonl`.
@@ -295,6 +300,89 @@ Run FEAT-024  2026-06-26 06:17 → 09:49  (3h32m)
 **Cost rates** are estimates in `token_cost.py`; override per project in
 `.agentic.yml` under `pricing:`. **Retention:** `/agentic-clean-state` prunes old
 per-run logs (and empty review dirs) by age.
+
+---
+
+## From findings to fixes
+
+The four targeted reviews (`-ui`, `-security`, `-design`, `-pr`) are deliberately
+advisory: they end at a report and change nothing. `/agentic-review` remediates,
+but only from lanes it runs itself — it takes a *code scope*, never a review id.
+
+`/agentic-remediate <review_id>` is the connector. It reads a finished
+`findings.md`, re-runs `verify_clears.py` against it first, turns findings into
+grouped tasks with roles and acceptance criteria, and dispatches through the same
+path `/agentic-build` uses.
+
+```
+/agentic-review-ui all          # → UIR-… findings.md   (advisory)
+/agentic-remediate UIR-…        # → FEAT-… tasks → dispatch
+/agentic-review-ui all          # confirm the class is closed
+```
+
+Two details that matter:
+
+- **Evidence is re-verified before anything is dispatched.** A report is a
+  snapshot; code moves. A finding whose site list no longer reproduces is
+  re-derived or dropped, never used as-is — otherwise you write tasks against
+  sites that have already been fixed, or that never existed.
+- **Re-review after remediating.** This fixes what a report *said*. Only a fresh
+  review establishes the class is actually closed: one remediation pass fixed all
+  eleven sites it was given and left a twelfth the original review never found.
+
+---
+
+## Review verification — clears, citations, and coverage
+
+A reviewing agent's most damaging output is not a missed finding. It is a
+checklist item reported as **cleared**. A miss leaves the reader still looking; a
+clear tells them the item was checked and stops them. Every review command
+therefore re-checks its own agent's work before showing it to you.
+
+**1. Citations.** Anything an agent clears must carry evidence in one of two
+forms, and findings cite the search behind their site list the same way:
+
+```
+- **<item>** — cleared by: `<single read-only command>` -> <N> matches
+- **<item>** — cleared by: <path>:<line> "<exact snippet>"
+**Where:** enumerated by: `<command>` -> <N> sites
+```
+
+**2. Re-running.** `hooks/lib/verify_clears.py` runs each cited command again and
+re-reads each cited `file:line`, then reports what no longer reproduces — a count
+that has moved, a command that errors, a snippet that is not there. It knows
+nothing about the project, the language, or what any rule means; it only checks
+that the claim still holds. That is what makes it work unchanged on a Flutter app,
+a Django service, or a Rust CLI.
+
+Commands are allowlisted read-only tools (`grep`, `rg`, `find`, `wc`, …) and may
+pipe between them, but must not chain with `;`/`&&`, redirect, or substitute — a
+chained command whose first stage fails silently produces a confident wrong count.
+
+**3. Coverage.** Citations prove what was claimed; they cannot catch a rule the
+review never examined, because that leaves no false claim behind — just silence,
+which reads exactly like a rule that passed. So each review is checked against a
+declared checklist and must carry one `## Coverage` row per item:
+
+| review | checklist source | items |
+|---|---|---|
+| `/agentic-review-ui` | the project's `docs/design/DESIGN-SPEC.md` §13 | project-defined |
+| `/agentic-review-security` | `.claude/agents/security-reviewer.md` | 8 attacker categories |
+| `/agentic-review-design` | `.claude/agents/architect.md` | 7 design dimensions |
+
+Missing rows fail the run. `unverified — <why>` **counts as coverage** — if
+honesty did not satisfy the count, an agent would invent rows to make the number
+work.
+
+Checklists are plain markdown `- [ ]` task lists, which is the only syntax the
+extractor knows. Reformat one and extraction silently returns zero items,
+disabling enforcement for that source — `/agentic-doctor` checks for exactly that,
+since it is a failure that otherwise looks like health.
+
+**What this does not do.** It verifies that stated claims are true. It cannot tell
+you the right questions were asked: a review against a vague spec will cite
+honestly, cover every row, and still find little. **Verified is not the same as
+complete.**
 
 ---
 
@@ -460,10 +548,29 @@ plan_id:
 
 models:                          # per-role model; "" = inherit the session model
   default:     claude-sonnet-4-6
-  reviewer:    claude-haiku-4-5-20251001
+  reviewer:    claude-sonnet-4-6
+  tester:      claude-haiku-4-5-20251001
   security-reviewer: claude-opus-4-8
   # ...
 ```
+
+**Don't cheap out on the reviewing roles.** Reviewing looks mechanical from the
+outside — check the work against a written rule — so it is the first thing anyone
+cost-optimizes. Enumeration *is* mechanical, and a small model does it well. But
+the findings that matter usually need two or three facts joined across files, and
+a small model's failure mode there is not silence: it reports the checklist item
+as **cleared**. That reads as "checked and fine" and stops anyone looking again,
+which is worse than no review. Report length is no signal either — in the run
+that prompted this, the cheap reviews were the *longest*.
+
+So `reviewer`, `design-critic`, `architect`, and `security-reviewer` sit at Sonnet
+or above, and `complexity_routing.never_downgrade` keeps `low_cap` from pulling
+them back down on low-complexity tasks (they can still be routed *up* by
+`high_floor`). Independently, every one of these agents must now cite evidence for
+each item it clears — a `file:line`, a computed value, a command and its result —
+and report anything it could not check as `unverified` rather than clearing it.
+That helps at any model tier, but it is not a substitute for one that can do the
+joining.
 
 **Per-role models & the two harnesses.** `.agentic.yml` `models:` is the single
 source of truth. On install, the installer **stamps each agent's frontmatter

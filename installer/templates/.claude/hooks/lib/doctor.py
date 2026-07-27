@@ -14,6 +14,7 @@ import argparse
 import importlib
 import json
 import os
+import shutil
 import sqlite3
 import subprocess
 import sys
@@ -39,16 +40,103 @@ def check_python_version() -> dict:
     return _check("python >= 3.10", FAIL, f"found {v.major}.{v.minor}; need 3.10+")
 
 
+def _mcp_interpreter() -> tuple[str | None, str]:
+    """The Python that will actually run agentic_mcp.py, per .mcp.json.
+
+    Doctor is often invoked by a different interpreter than the MCP server uses —
+    a venv is active for one and not the other. Importing into *this* process
+    then reports on the wrong environment in both directions: a false FAIL when
+    the server is fine, and a false OK when it is not. Returns (command, note);
+    command is None when .mcp.json does not pin one."""
+    p = REPO_ROOT / ".mcp.json"
+    if not p.exists():
+        return None, ".mcp.json absent"
+    try:
+        cfg = json.loads(p.read_text(encoding="utf-8"))
+    except Exception as e:
+        return None, f".mcp.json unreadable ({e})"
+    srv = (cfg.get("mcpServers") or {}).get("agentic_mcp") or {}
+    cmd = srv.get("command")
+    if not cmd:
+        return None, "agentic_mcp has no command in .mcp.json"
+    resolved = shutil.which(cmd) or cmd
+    return resolved, ""
+
+
 def check_required_deps() -> list[dict]:
-    out = []
-    for mod in ("yaml", "fastembed", "sqlite_vec"):
+    """Probe the interpreter the MCP server uses, not the one running doctor."""
+    mods = ("yaml", "fastembed", "sqlite_vec")
+    pkg_of = {"yaml": "pyyaml", "sqlite_vec": "sqlite-vec"}
+    interp, note = _mcp_interpreter()
+
+    if interp is None:
+        # No pinned command — fall back to this process, and say so, because the
+        # result may not describe the environment retrieval actually runs in.
+        out = [_check("mcp interpreter", WARN,
+                      f"{note}; deps checked against {sys.executable}")]
+        for mod in mods:
+            try:
+                importlib.import_module(mod)
+                out.append(_check(f"dep: {mod}", OK))
+            except Exception:
+                out.append(_check(f"dep: {mod}", FAIL,
+                                  f"missing — pip install {pkg_of.get(mod, mod)}"))
+        return out
+
+    probe = "import importlib,sys;" + "".join(
+        f"\ntry:\n importlib.import_module({m!r})\n print({m!r},'ok')\nexcept Exception:\n print({m!r},'missing')"
+        for m in mods)
+    try:
+        r = subprocess.run([interp, "-c", probe], capture_output=True, text=True, timeout=60)
+    except Exception as e:
+        return [_check("mcp interpreter", FAIL, f"cannot run {interp}: {e}")]
+
+    status = dict(l.split() for l in r.stdout.split("\n") if len(l.split()) == 2)
+    out = [_check("mcp interpreter", OK, interp)]
+
+    # A bare command name in .mcp.json resolves against whatever PATH the process
+    # has. Claude Code may launch the MCP server from a shell with a virtualenv
+    # active while doctor runs without one, so the same `python3` is two
+    # different interpreters and this check silently describes the wrong one.
+    # Detect the disagreement rather than picking a side.
+    venv_py = REPO_ROOT / ".venv" / "bin" / "python"
+    bare = not os.path.isabs(_raw_mcp_command())
+    if bare and venv_py.exists() and os.path.realpath(venv_py) != os.path.realpath(interp):
         try:
-            importlib.import_module(mod)
+            rv = subprocess.run([str(venv_py), "-c", probe],
+                                capture_output=True, text=True, timeout=60)
+            vstatus = dict(l.split() for l in rv.stdout.split("\n") if len(l.split()) == 2)
+        except Exception:
+            vstatus = {}
+        if vstatus and vstatus != status:
+            out.append(_check(
+                "mcp interpreter ambiguous", WARN,
+                f"'.venv/bin/python' has different deps than {interp}; .mcp.json "
+                "uses a bare command, so which one runs depends on the launching "
+                "shell's PATH — pin the absolute path in .mcp.json"))
+            # Report whichever environment actually satisfies the deps, so a
+            # working setup is not reported as broken.
+            if all(vstatus.get(m) == "ok" for m in mods):
+                status = vstatus
+                out[0] = _check("mcp interpreter", OK,
+                                f"{venv_py} (resolved via project venv)")
+
+    for mod in mods:
+        if status.get(mod) == "ok":
             out.append(_check(f"dep: {mod}", OK))
-        except Exception as e:
-            pkg = {"yaml": "pyyaml", "sqlite_vec": "sqlite-vec"}.get(mod, mod)
-            out.append(_check(f"dep: {mod}", FAIL, f"missing — pip install {pkg}"))
+        else:
+            out.append(_check(f"dep: {mod}", FAIL,
+                              "missing in the interpreter above — install with its pip"))
     return out
+
+
+def _raw_mcp_command() -> str:
+    p = REPO_ROOT / ".mcp.json"
+    try:
+        cfg = json.loads(p.read_text(encoding="utf-8"))
+        return ((cfg.get("mcpServers") or {}).get("agentic_mcp") or {}).get("command") or ""
+    except Exception:
+        return ""
 
 
 def check_optional_voyage() -> dict:
@@ -318,6 +406,78 @@ def check_git() -> list[dict]:
 
 # ────────────────── runner ──────────────────
 
+def check_verification() -> list[dict]:
+    """The review-verification machinery, and the checklists it depends on.
+
+    These fail *silently* when broken, which is why they are checked here. If a
+    checklist is reformatted out of `- [ ]` task-list syntax, extraction returns
+    zero items and coverage enforcement quietly switches itself off for that
+    agent — every review then passes its coverage check by having nothing to
+    check. That reads as health, not as breakage."""
+    out: list[dict] = []
+    lib = REPO_ROOT / ".claude" / "hooks" / "lib"
+    vc_path = lib / "verify_clears.py"
+    if not vc_path.exists():
+        out.append(_check("verify_clears.py", FAIL,
+                          "missing — re-run the installer; review clears are unverified"))
+        return out
+    out.append(_check("verify_clears.py", OK))
+
+    # The command-level verify step is an instruction and can be skipped; this
+    # hook is the copy the harness fires regardless. If it is not registered,
+    # verification silently becomes optional again.
+    hook = REPO_ROOT / ".claude" / "hooks" / "verify_review.py"
+    settings = REPO_ROOT / ".claude" / "settings.json"
+    if not hook.exists():
+        out.append(_check("verify_review.py", FAIL, "missing — re-run the installer"))
+    else:
+        registered = False
+        try:
+            cfg = json.loads(settings.read_text(encoding="utf-8"))
+            registered = any(
+                "verify_review" in (h.get("command") or "")
+                for entry in (cfg.get("hooks", {}).get("SubagentStop") or [])
+                for h in entry.get("hooks", []))
+        except Exception:
+            pass
+        out.append(_check("verify_review hook", OK if registered else FAIL,
+                          "" if registered else
+                          "not in settings.json SubagentStop — review verification "
+                          "is skippable; re-run the installer to sync managed hooks"))
+
+    try:
+        sys.path.insert(0, str(lib))
+        from verify_clears import checklist_items  # noqa: E402
+    except Exception as e:  # pragma: no cover - import guard
+        out.append(_check("verify_clears importable", FAIL, str(e)[:80]))
+        return out
+
+    # (file, label, minimum items expected)
+    sources = [
+        (REPO_ROOT / ".claude" / "agents" / "security-reviewer.md",
+         "checklist: attacker categories", 8),
+        (REPO_ROOT / ".claude" / "agents" / "architect.md",
+         "checklist: design dimensions", 7),
+        (REPO_ROOT / "docs" / "design" / "DESIGN-SPEC.md",
+         "checklist: design spec §13", 1),
+    ]
+    for path, label, minimum in sources:
+        if not path.exists():
+            # A missing design spec is normal on a non-UI project; a missing
+            # agent file is already caught by check_agents().
+            out.append(_check(label, WARN, f"{path.name} not present"))
+            continue
+        n = len(checklist_items(path))
+        if n >= minimum:
+            out.append(_check(label, OK, f"{n} items"))
+        else:
+            out.append(_check(label, FAIL,
+                              f"{n} items found, expected >= {minimum} — "
+                              "coverage enforcement is disabled for this source; "
+                              "items must use `- [ ]` task-list syntax"))
+    return out
+
+
 def run_all() -> list[dict]:
     results: list[dict] = []
     results.append(check_python_version())
@@ -330,6 +490,7 @@ def run_all() -> list[dict]:
     results.append(check_vectors_db())
     results.append(check_skill_digest())
     results.extend(check_hooks_compile())
+    results.extend(check_verification())
     results.extend(check_skills())
     results.append(check_adrs())
     results.append(check_design_spec())

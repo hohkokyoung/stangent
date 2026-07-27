@@ -21,9 +21,11 @@ PAYLOAD = {"tool_name": "Bash", "tool_input": {"command": "echo hi"},
 
 
 class LoggerCase(unittest.TestCase):
-    def run_hook(self, run_id=None, env=None, pre=None):
+    def run_hook(self, run_id=None, env=None, pre=None, payload=None, state=None):
         """Run the hook and snapshot logs/ BEFORE the tempdir is cleaned up.
-        Returns {filename: line_count}. `pre`: {logname: bytes} to seed first."""
+        Returns {filename: line_count}; parsed lines land in self.logged.
+        `pre`: {logname: bytes} to seed first. `state`: {filename: text} extra
+        state files (current_role.txt, current_model.txt, …)."""
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             hooks = root / ".claude" / "hooks"
@@ -33,19 +35,25 @@ class LoggerCase(unittest.TestCase):
             shutil.copy(HOOK, hooks / HOOK.name)
             if run_id is not None:
                 (root / ".claude" / "state" / "current_run.txt").write_text(run_id)
+            for name, text in (state or {}).items():
+                (root / ".claude" / "state" / name).write_text(text)
             if pre:
                 logs.mkdir(parents=True, exist_ok=True)
                 for name, data in pre.items():
                     (logs / name).write_bytes(data)
             runenv = {**os.environ, **(env or {})}
             subprocess.run([sys.executable, str(hooks / HOOK.name)],
-                           input=json.dumps(PAYLOAD), cwd=str(root),
+                           input=json.dumps(payload or PAYLOAD), cwd=str(root),
                            capture_output=True, text=True, env=runenv)
             snapshot = {}
+            self.logged = {}
             if logs.exists():
                 for f in logs.iterdir():
                     if f.is_file():
-                        snapshot[f.name] = len(f.read_text(errors="replace").splitlines())
+                        lines = f.read_text(errors="replace").splitlines()
+                        snapshot[f.name] = len(lines)
+                        self.logged[f.name] = [
+                            json.loads(ln) for ln in lines if ln.startswith("{")]
             return snapshot
 
     def test_ambient_not_logged_by_default(self):
@@ -67,6 +75,81 @@ class LoggerCase(unittest.TestCase):
         for ctx in ("SEC-20260724-120000", "DBG-20260724-120000", "DS-20260724-120000"):
             logs = self.run_hook(run_id=ctx)
             self.assertEqual(logs.get(f"{ctx}.jsonl"), 1, f"{ctx} not logged")
+
+    def test_model_recorded_from_state(self):
+        # The reviews used to write current_run/current_role but not
+        # current_model, so every logged call carried "model": null and a run's
+        # cost could not be traced to the model that produced it.
+        self.run_hook(run_id="UIR-1", state={"current_model.txt": "claude-haiku-4-5-20251001"})
+        line = self.logged["UIR-1.jsonl"][0]
+        self.assertEqual(line["model"], "claude-haiku-4-5-20251001")
+
+    def test_result_size_recorded(self):
+        p = {"tool_name": "Bash", "tool_input": {"command": "grep -r x ."},
+             "tool_response": {"stdout": "y" * 5000, "stderr": "z" * 100}}
+        self.run_hook(run_id="FEAT-001", payload=p)
+        self.assertEqual(self.logged["FEAT-001.jsonl"][0]["res_chars"], 5100)
+
+    def test_result_size_measures_result_not_args(self):
+        # The point of res_chars: a tiny command can return a huge result. If it
+        # tracked args we would be blind to exactly the calls that cost the most.
+        p = {"tool_name": "Bash", "tool_input": {"command": "ls"},
+             "tool_response": {"content": "x" * 90000}}
+        self.run_hook(run_id="FEAT-001", payload=p)
+        line = self.logged["FEAT-001.jsonl"][0]
+        self.assertEqual(line["res_chars"], 90000)
+        self.assertLess(len(json.dumps(line["args"])), 200)
+
+    def test_result_size_handles_list_and_unknown_shapes(self):
+        for resp, expected in (
+            ({"content": [{"type": "text", "text": "ab"}]}, 2),
+            ("plain string", 12),
+            ({}, 0),
+            (None, 0),
+        ):
+            p = {"tool_name": "Read", "tool_input": {"file_path": "/a"},
+                 "tool_response": resp}
+            self.run_hook(run_id="FEAT-001", payload=p)
+            self.assertEqual(self.logged["FEAT-001.jsonl"][0]["res_chars"], expected,
+                             f"bad size for {resp!r}")
+
+    def test_result_size_never_raises_on_junk(self):
+        p = {"tool_name": "Weird", "tool_input": {"a": 1},
+             "tool_response": {"unknown_key": {"nested": [1, 2, 3]}}}
+        logs = self.run_hook(run_id="FEAT-001", payload=p)
+        self.assertEqual(logs.get("FEAT-001.jsonl"), 1)
+        self.assertGreater(self.logged["FEAT-001.jsonl"][0]["res_chars"], 0)
+
+    def test_budget_warning_fires_once_per_threshold(self):
+        # A task that keeps editing one file compounds cost silently — FEAT-025
+        # t4 hit $16.40 across 361 turns with no signal until the run ended.
+        import json as _j
+        line = _j.dumps({"run_id": "FEAT-001", "task_id": "t4", "tool": "Edit"})
+        seed = ("\n".join([line] * 149) + "\n").encode()
+        logs = self.run_hook(run_id="FEAT-001",
+                             state={"current_task.txt": "t4"},
+                             pre={"FEAT-001.jsonl": seed})
+        rows = self.logged["FEAT-001.jsonl"]
+        budget = [r for r in rows if r.get("event") == "budget"]
+        self.assertEqual(len(budget), 1, "150th call should emit one budget event")
+        self.assertEqual(budget[0]["threshold"], 150)
+        self.assertEqual(budget[0]["task_id"], "t4")
+
+    def test_budget_warning_not_repeated_below_next_threshold(self):
+        import json as _j
+        call = _j.dumps({"run_id": "FEAT-001", "task_id": "t4", "tool": "Edit"})
+        warned = _j.dumps({"run_id": "FEAT-001", "task_id": "t4",
+                           "event": "budget", "threshold": 150})
+        seed = ("\n".join([call] * 200 + [warned]) + "\n").encode()
+        self.run_hook(run_id="FEAT-001", state={"current_task.txt": "t4"},
+                      pre={"FEAT-001.jsonl": seed})
+        rows = self.logged["FEAT-001.jsonl"]
+        self.assertEqual(len([r for r in rows if r.get("event") == "budget"]), 1)
+
+    def test_no_budget_warning_without_a_task(self):
+        logs = self.run_hook(run_id="UIR-1")
+        rows = self.logged["UIR-1.jsonl"]
+        self.assertFalse([r for r in rows if r.get("event") == "budget"])
 
     def test_large_log_rotates(self):
         big = b"x" * (5 * 1024 * 1024 + 8)  # just over MAX_LOG_BYTES

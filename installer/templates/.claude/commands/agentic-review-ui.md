@@ -40,28 +40,61 @@ Build a one-line human description of the scope for the critic.
 
 ### Step 4 — Arm the critic and dispatch
 
+Resolve the critic's model first: `models.design-critic` from `.agentic.yml`
+(fall back to `models.default`, then the session default). Then arm the hook —
+`current_model.txt` is what puts the model on every logged tool call, so a run
+whose cost looks wrong can be traced to the model that actually ran:
+
 ```bash
 printf '%s' "$REVIEW_ID" > .claude/state/current_run.txt   # log context: tool calls land in logs/$REVIEW_ID.jsonl
 printf '%s' 'design-critic' > .claude/state/current_role.txt
+printf '%s' '<resolved_model>' > .claude/state/current_model.txt
 ```
 
-Invoke the **design-critic** agent with `review_id=$REVIEW_ID` and the resolved
-`scope`. Use model `models.design-critic` from `.agentic.yml` (fall back to
-`models.default`, then session default). Wait for it to write
+Invoke the **design-critic** agent with `review_id=$REVIEW_ID`, the resolved
+`scope`, and that model — pass it explicitly at invocation, do not rely on the
+agent inheriting the session model. Wait for it to write
 `.claude/state/ui-review/$REVIEW_ID/findings.md` and print its summary. Then clear
-the role (mandatory):
+the state (mandatory):
 
 ```bash
-rm -f .claude/state/current_role.txt .claude/state/current_run.txt
+rm -f .claude/state/current_role.txt .claude/state/current_run.txt .claude/state/current_model.txt
 ```
 
-### Step 5 — Present
+### Step 5 — Verify the critic's clears
+
+Re-run the evidence the critic cited for everything it marked cleared:
+
+```bash
+${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
+  .claude/state/ui-review/$REVIEW_ID/findings.md --cwd . \
+  --checklist docs/design/DESIGN-SPEC.md
+```
+
+`--checklist` counts the spec's `- [ ]` enforcement items and requires one
+`## Coverage` row for each. This is the only check that catches a rule the review
+never examined: an unexamined rule produces no false claim, just absence, which
+reads identically to a rule that passed.
+
+Print its output **above** the findings. A `mismatch`, `failed`, or `uncited`
+line means that item was not actually verified, whatever the report says — the
+count has moved, the command errors, or no re-runnable evidence was given. Treat
+those items as unreviewed and say so plainly when presenting.
+
+Do not edit the findings file to fix them, and do not re-dispatch the critic
+automatically — a critic that cannot reproduce its own clears is a signal about
+the review, and hiding it defeats the check. `unverified` entries are the honest
+outcome and need no action.
+
+### Step 6 — Present
 
 Read `.claude/state/ui-review/$REVIEW_ID/findings.md` and print it.
 
-- Verdict `off-spec` → recommend `/agentic-review` (to fold the fixes into a
-  remediation run) or targeted `/agentic-plan` tasks. A wholesale token/a11y breach
-  is worth fixing before more UI is built.
+- Verdict `off-spec` → recommend `/agentic-remediate $REVIEW_ID`, which turns
+  *these* findings into fix tasks. Do not recommend `/agentic-review` for this —
+  it re-runs all four analysis lanes to rediscover what this report already
+  contains, at several times the cost. A wholesale token/a11y breach is worth
+  fixing before more UI is built.
 - Verdict `drift` → summarize High/Medium findings; the developer picks what to fix.
 - Verdict `on-spec` → one-line confirmation.
 
@@ -71,6 +104,7 @@ say so and point back to `/agentic-design`.
 ## Constraints
 
 - Do NOT fix anything or edit the spec. Findings are advisory — remediation is
-  `/agentic-review` or `/agentic-plan`.
+  `/agentic-remediate <review_id>`.
 - Do NOT call any MCP tool yourself. Do NOT commit.
-- Always clear `.claude/state/current_role.txt` and `.claude/state/current_run.txt` after the critic returns.
+- Always clear `.claude/state/current_role.txt`, `.claude/state/current_run.txt`,
+  and `.claude/state/current_model.txt` after the critic returns.

@@ -65,6 +65,23 @@ Wait for it to write `.claude/state/audit/<audit_id>/findings.md` and print its 
 rm -f .claude/state/current_role.txt
 ```
 
+### Step 3b — Verify the auditor's citations
+
+```bash
+${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
+  .claude/state/audit/<audit_id>/findings.md --cwd . \
+  --checklist .claude/agents/auditor.md
+```
+
+`--checklist` requires one `## Coverage` row per issue type — including types the
+caller did not request, marked `not requested`. An unscanned type otherwise
+leaves no trace, which reads exactly like a type that came back clean.
+
+Print its output **above** the findings. A `No <type> issues found.` line whose
+scan does not reproduce means that issue type was not actually swept — say so
+when presenting, and do not let it narrow the refactor scope you propose in
+step 5. `unverified` is the honest outcome and needs no action.
+
 ### Step 4 — Present findings and confirm
 
 Read `.claude/state/audit/<audit_id>/findings.md`. Print the full findings to the developer.

@@ -96,22 +96,77 @@ For each category, either construct a concrete attack scenario or clear it. Use
 `mcp__sequential-thinking` to work through multi-step exploit chains before
 writing them.
 
-- **Broken access control (authz)** — IDOR / broken object-level authorization,
+**Clearing a category — evidence required.** A cleared category reads as "an
+attacker was modelled here and the app held", and it stops the next person from
+looking. Clear one only by naming the **control that makes the attack fail**, at
+`file:line` — the authz check, the parameterized query, the validator. Rules:
+
+- Not finding an exploit is not a clear. If you looked and found nothing but
+  cannot point at the control, that is `unverified — <what you searched>`.
+- **Cite the control in one of these two forms.** They are re-run by
+  `verify_clears.py` after you finish, so prose does not count:
+
+  ```
+  - **<category>** — cleared by: <path>:<line> "<exact snippet of the control>"
+  - **<category>** — cleared by: `<single command>` -> <N> matches
+  ```
+
+  One command, no `;` / `&&` / `|` / redirects — a chained command whose first
+  stage fails silently yields a confident wrong answer. An invented line number
+  or an approximate count is caught by the re-run, so cite what you actually saw.
+  `unverified` is never penalised; an uncited or non-reproducing clear is.
+- **Never narrow the category you are clearing.** Verify the category as scoped,
+  or clear the narrower claim by name and mark the remainder `unverified`.
+- Scope the claim to what you covered. A grep or a sampled path clears only that;
+  say so rather than generalizing to the whole surface.
+- A control that exists is not a control that applies. Confirm it sits on the
+  path the attack would take — RLS does not protect a service-role path, and an
+  auth check on one route says nothing about its neighbour.
+- `unverified` is expected and useful. Combined with `scanner unavailable`, it
+  tells the reader exactly how much of the surface the review actually covers.
+
+- [ ] **Broken access control (authz)** — IDOR / broken object-level authorization,
   privilege escalation, missing tenant check. Given `risk_profile.auth_model`,
   what request reads or mutates another user's/tenant's object?
-- **Injection** — SQL/NoSQL/command/template/LDAP. Where does untrusted input
+- [ ] **Injection** — SQL/NoSQL/command/template/LDAP. Where does untrusted input
   reach an interpreter?
-- **Authentication & session** — weak/again-usable tokens, missing expiry,
+- [ ] **Authentication & session** — weak/again-usable tokens, missing expiry,
   fixation, password/reset flow gaps.
-- **SSRF / CSRF / CORS** — server-side request forgery on user-supplied URLs;
+- [ ] **SSRF / CSRF / CORS** — server-side request forgery on user-supplied URLs;
   state-changing endpoints without anti-CSRF; over-permissive CORS.
-- **Secrets & logging** — PII, tokens, or credentials written to logs, error
+- [ ] **Secrets & logging** — PII, tokens, or credentials written to logs, error
   messages, or the vector index.
-- **Input trust** — mass assignment, unsafe deserialization, path traversal,
+- [ ] **Input trust** — mass assignment, unsafe deserialization, path traversal,
   unbounded upload.
-- **Rate-limiting / abuse / DoS** — unauthenticated expensive endpoints, no
+- [ ] **Rate-limiting / abuse / DoS** — unauthenticated expensive endpoints, no
   quota, amplification.
-- **Supply chain** — from step 3: known-vuln dependencies, unpinned versions.
+- [ ] **Supply chain** — from step 3: known-vuln dependencies, unpinned versions.
+
+### 4b. Coverage table — one row per category, always
+
+Work the checklist top-down: take each category in turn, decide what would prove
+or disprove it, run that, then write the outcome. Record every category in a
+`## Coverage` table before the threat model, whether or not you found anything:
+
+```
+## Coverage
+| # | attacker category | what you checked | result |
+|---|-------------------|------------------|--------|
+| 1 | Broken access control | `grep -rn "service_role" api/` -> 4 matches, each read | S01 |
+| 2 | Injection | all query construction sites read (`grep …` -> 12) | none (cleared) |
+| 3 | SSRF/CSRF/CORS | — | unverified — no HTTP client surface reachable statically |
+```
+
+A category you skip leaves no false claim behind — just silence, which reads
+exactly like a category that held. That is the failure this table exists to make
+impossible, and it matters more here than anywhere else in the system: a cleared
+category asserts an attacker was modelled on that path and the app survived. Nine
+rows where the checklist has ten means one attack class was never considered, and
+nothing else in the report will tell you which.
+
+Never omit a row. `unverified — <why>` is a real result and costs you nothing;
+the command verifies the row count against this file's checklist, so an omission
+fails the review rather than passing quietly.
 
 ### 5. Write the report
 
@@ -127,6 +182,12 @@ Scanners: <ran: osv-scanner, gitleaks; unavailable: semgrep>
 ## Verdict
 `no-blockers` | `hardening-needed` | `exploitable`
 
+## Coverage
+<!-- EXACTLY one row per attacker category, in checklist order, always. -->
+| # | attacker category | what you checked | result |
+|---|-------------------|------------------|--------|
+| 1 | <category> | <command + count, or file:line read> | <S01> / none (cleared) / unverified — <why> |
+
 ## Threat model
 ### S01 — [HIGH] <category>: <short title>
 **Attack scenario:** <concrete input/state → what leaks or breaks. Be specific:
@@ -138,7 +199,9 @@ the request, the precondition, the result.>
 ### S02 — [MEDIUM] ...
 
 ## Categories cleared
-<list each attacker-checklist category you found no issue in — never omit one>
+<list each attacker-checklist category you found no issue in — never omit one.
+ Each entry cites the control that makes the attack fail, at file:line — see
+ "Clearing a category".>
 ```
 
 Severity is blast-radius-scaled by `risk_profile`:

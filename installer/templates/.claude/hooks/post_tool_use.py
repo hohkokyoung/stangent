@@ -2,11 +2,18 @@
 """JSONL logger for every tool call.
 
 One line per tool call with:
-  {ts, run_id, task_id, agent_role, tool, args, ok, deny_reason?}
+  {ts, run_id, task_id, agent_role, tool, args, ok, res_chars, deny_reason?}
 
 `args` is a compact dict of short, human-readable values (NOT type names).
 Multi-line strings are flattened. Long strings are truncated mid-value with
 an ellipsis so they stay JSONL-friendly.
+
+`res_chars` is the size of the tool's RESULT — the thing that actually lands in
+the agent's context and is then re-read on every subsequent turn. Agentic cost is
+dominated by cache_read (context resident × turns), so without this the log can
+say a run cost $8 but not which calls inflated it. Args alone don't tell you: a
+one-line `grep -r` can return 200 lines. Chars, not tokens, because the hook
+can't tokenize — divide by ~4 for a rough token estimate.
 
 Log file path:
   .claude/state/logs/<run_id>.jsonl    when a workflow context is active
@@ -50,6 +57,13 @@ MAX_KEYS = 6
 # A single log past this is rotated to `<name>.1.jsonl` so no log grows without
 # bound (a long build's run log, or an opted-in ambient log).
 MAX_LOG_BYTES = 5 * 1024 * 1024
+# Tool-call counts at which a single task gets a `budget` warning in its run log.
+# A task that keeps editing the same file re-reads every prior result on every
+# turn, so cost grows superlinearly and nothing announces it: FEAT-025 t4 spent
+# $16.40 — 34% of the whole run — across 361 turns and 160 Edits to one file,
+# and no signal surfaced until the run was over. These thresholds do not block
+# (a long task can be legitimate); they make it visible while it is happening.
+BUDGET_WARN_CALLS = (150, 300, 500)
 # Normalized secret markers: matched as substrings of the separator-stripped,
 # lowercased key, so `access_token`, `apiKey`, `x-api-key`, and
 # `GITHUB_PERSONAL_ACCESS_TOKEN` all redact — not just the bare words. Kept
@@ -101,8 +115,87 @@ def summarize(tool_input) -> dict:
     return {k: _short(v, k) for k, v in list(tool_input.items())[:MAX_KEYS]}
 
 
+# Result keys carrying the payload an agent actually reads, in the shapes the
+# different tools return. Checked in order; the first present one wins.
+_RESULT_KEYS = ("content", "stdout", "stderr", "output", "result", "text",
+                "file", "data")
+
+
+def result_chars(tool_response) -> int:
+    """Character count of what the tool put into the agent's context.
+
+    Deliberately measures the RESULT, not our truncated `args` view — the whole
+    point is to see the calls that returned far more than their command implies.
+    Returns 0 for anything unmeasurable; this must never raise, since it runs on
+    every tool call."""
+    try:
+        return _measure(tool_response)
+    except Exception:
+        return 0
+
+
+def _measure(v) -> int:
+    if v is None or isinstance(v, bool):
+        return 0
+    if isinstance(v, str):
+        return len(v)
+    if isinstance(v, (int, float)):
+        return len(str(v))
+    if isinstance(v, list):
+        return sum(_measure(i) for i in v)
+    if isinstance(v, dict):
+        if not v:
+            return 0  # `{}` would otherwise serialize to 2 chars of nothing
+        # Sum every payload-bearing key rather than taking the first match: Bash
+        # returns stdout AND stderr, and a command whose noise lands on stderr
+        # costs the agent the same context as one that prints to stdout.
+        present = [k for k in _RESULT_KEYS if k in v]
+        if present:
+            return sum(_measure(v[k]) for k in present)
+        # Unknown shape (a tool we have no key for) — price the whole serialized
+        # blob so it is not silently recorded as free.
+        return len(json.dumps(v, ensure_ascii=False, default=str))
+    return 0
+
+
 def _ambient_logging_enabled() -> bool:
     return os.environ.get("AGENTIC_LOG_AMBIENT", "").strip().lower() in ("1", "true", "yes")
+
+
+def _budget_warning(log: Path, task_id, run_id) -> dict | None:
+    """Emit one `budget` event when a task crosses a call-count threshold.
+
+    Counts this task's own lines in the run log — cheap, and needs no extra state
+    file to go stale. Emitted once per threshold: the event is itself the marker,
+    so re-crossing does not re-warn."""
+    if not task_id:
+        return None
+    try:
+        calls = seen = 0
+        with log.open("r", encoding="utf-8", errors="replace") as f:
+            for ln in f:
+                if f'"task_id": "{task_id}"' not in ln:
+                    continue
+                if '"event": "budget"' in ln:
+                    seen += 1
+                elif '"tool":' in ln:
+                    calls += 1
+        crossed = [t for t in BUDGET_WARN_CALLS if calls >= t]
+        if len(crossed) <= seen:
+            return None
+        return {
+            "ts": dt.datetime.now(dt.timezone.utc).isoformat(
+                timespec="seconds").replace("+00:00", "Z"),
+            "event": "budget",
+            "run_id": run_id,
+            "task_id": task_id,
+            "calls": calls,
+            "threshold": crossed[-1],
+            "note": "task is long-running; check /agentic-logs for a single file "
+                    "being edited repeatedly before it compounds further",
+        }
+    except Exception:
+        return None  # telemetry must never break a run
 
 
 def _rotate_if_large(path: Path) -> None:
@@ -176,6 +269,7 @@ def main() -> None:
         "tool": tool,
         "ok": ok,
         "args": summarize(tool_input),
+        "res_chars": result_chars(tool_response),
     }
     if deny_reason:
         line["deny_reason"] = deny_reason
@@ -188,6 +282,10 @@ def main() -> None:
     _rotate_if_large(out)
     with out.open("a", encoding="utf-8") as f:
         f.write(json.dumps(line, ensure_ascii=False) + "\n")
+        f.flush()  # _budget_warning re-reads the file; the line above must be on disk
+        warn = _budget_warning(out, task_id, run_id)
+        if warn:
+            f.write(json.dumps(warn, ensure_ascii=False) + "\n")
 
     sys.exit(0)
 

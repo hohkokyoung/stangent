@@ -50,9 +50,24 @@ Read `.claude/.agentic.yml` (`enabled_skills`, `design:`) and
    never leave a section as a placeholder, and never hedge with two options.
    A design spec that won't commit is useless to a critic.
 3. Fill `tokens.md` with real values (actual hex, a real spacing scale, a real
-   type scale) — not `#…`. The colour choices must satisfy the accessibility bar
-   in the brief (contrast ≥ 4.5:1 for text). Pick token values, then verify the
-   primary text/background pair meets contrast; adjust if not.
+   type scale) — not `#…`.
+
+   **Compute a contrast ratio for every colour token, not just the primary text
+   pair.** Fill the Contrast column for each row, in both themes, against the
+   surface the token is actually used on. A token used as coloured text *and* as
+   a fill behind white text needs both numbers — they differ, and one passing
+   says nothing about the other. Write `n/a — decorative only` where a token
+   never touches text, and say what it is for.
+
+   Any token that carries text and misses §9's floor must be **adjusted here**.
+   A palette shipped below the floor cannot be fixed later by components using it
+   correctly, and no usage-level review will catch it: every call site looks
+   compliant while every one of them is inaccessible.
+
+   Verifying only the primary pair is how this is missed. A real project shipped
+   `error` at 3.76:1 as body text and 3.24:1 behind white labels across six
+   screens — the primary pair had been checked and passed, and nothing ever asked
+   about the rest of the palette.
 4. Fill `DESIGN-SPEC.md` referencing those token names. Every rule must be
    observable in a built UI (see the template's guidance).
 5. Recommend a stack in `plugins.md` using the matrix below — selected from the
@@ -69,6 +84,13 @@ Read `.claude/.agentic.yml` (`enabled_skills`, `design:`) and
    code" to the file you found so the critic reads from code, not a copy. If the
    project has no token layer at all, record that as the top drift finding and
    derive a token set from the most common values you observe.
+
+   **Compute the Contrast column for every extracted token** — brownfield is
+   where this matters most. An existing palette has never been audited unless
+   someone audited it, and shipped values are exactly the ones nobody questions.
+   Any token below §9's floor is a drift finding in its own right, separate from
+   how components use it: the token is the defect, and fixing it repairs every
+   call site at once.
 4. **Extract the design language** into `DESIGN-SPEC.md` — describe what the UI
    *actually is* today (colour roles in use, type in use, spacing patterns,
    component states that exist).

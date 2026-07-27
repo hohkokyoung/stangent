@@ -10,6 +10,24 @@ Visual check: <playwright screenshots | static-only — no screenshot MCP availa
      drift   = the design language is intact but individual elements diverge.
      off-spec = a load-bearing rule (tokens ignored wholesale, a11y floor breached) is broken. -->
 
+## Coverage
+<!-- EXACTLY one row per enforcement-checklist item in the spec, in spec order,
+     whether or not anything was found. Run each search first, then write the
+     findings from what came back — findings that come from noticing rather than
+     from searching are why two runs over the same code report different subsets.
+     An item you could not check is `unverified — <why>`, which is a real result.
+     Never omit a row: the row count is verified against the spec, and an omitted
+     row is the one outcome that reads as "fine" while meaning "never looked". -->
+| # | checklist item | search | inspected | result |
+|---|----------------|--------|-----------|--------|
+| 1 | <item, abbreviated> | `<single command>` -> <N> matches | <k> of <N> | <U01, U04> or none |
+| 2 | <item> | — | — | unverified — <why> |
+
+<!-- `inspected` = how many of the search's hits you actually opened and judged.
+     A search returning 38 and a reading of 12 must not look like a sweep of 38.
+     The honest number is never penalised; a concealed gap is a false clear one
+     level down. -->
+
 ## Findings
 <!-- One per deviation from the spec. Order by severity. Tag the spec section it
      violates, e.g. [§3 Color] or [§9 A11y]. Only cite rules the spec actually
@@ -32,8 +50,15 @@ Visual check: <playwright screenshots | static-only — no screenshot MCP availa
 
 ## Sections cleared
 <!-- List each enforcement-checklist item (spec §13) that passed — never silently
-     omit one, so the developer sees the whole surface was checked. -->
-- ...
+     omit one. Each entry cites the concrete observation that cleared it (a
+     file:line, a computed value, a command and its result); "no issues detected"
+     is not evidence. Scope each claim to what you actually searched, and mark an
+     item you could not check as `unverified — <why>` rather than clearing it.
+     This section is read as "these were checked and are fine", so an entry you
+     cannot back is worse than leaving it out. -->
+- **<item>** — cleared by: `<single read-only command>` -> <N> matches
+- **<item>** — cleared by: <path>:<line> "<exact snippet from that line>"
+- **<item>** — unverified — <why>
 
 ## Severity guide
 <!-- High   — a11y floor breached, tokens ignored wholesale, or an unusable state

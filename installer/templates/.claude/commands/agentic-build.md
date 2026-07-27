@@ -62,11 +62,22 @@ Ordering, cycle detection, the runnable set, and per-task model/skills/k resolut
       - The skill files: for each name in `T.skills`, `.claude/skills/<name>/SKILL.md`. Skip the name `"project"` — it is a retrieve-only pseudo-skill with no SKILL.md; that task gets project chunks through `retrieve()` only. If `T.skills` is empty for a tester (the config's `skill_groups.test` intersection was empty), print a one-line warning that no testing method is injected and continue — do not abort.
       - `T.k`, passed to the agent as the retrieve k parameter
       - **`T.model`** — pass as the `model` parameter so it overrides the session default.
-   f. After the subagent returns, clear the per-task state:
+   f. **If the task's role was `reviewer`, verify its Coverage table** before
+      moving on:
+      ```
+      ${PYEXE:-python3} .claude/hooks/lib/verify_clears.py '<T.path>' --cwd . \
+        --checklist .claude/agents/reviewer.md
+      ```
+      Print the output. A missing row means an evaluation area was never
+      examined — and since a non-blocking review lets the task proceed, an
+      unexamined area passes as silently as a checked one. Report it alongside
+      the verdict; do not re-dispatch automatically.
+
+   g. After the subagent returns, clear the per-task state:
       ```
       rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
       ```
-   g. **Re-run the step 3 command** to recompute `runnable` (task statuses on disk have changed). Go back to (a).
+   h. **Re-run the step 3 command** to recompute `runnable` (task statuses on disk have changed). Go back to (a).
 
 5. Stop when no runnable tasks remain. If tasks remain with `status: deferred` (the run was parked by `/agentic-defer`), never dispatch them — print the dossier path from `_overview.md`'s `## Deferral` block and suggest `/agentic-resume <run-id>` once the external blocker clears.
 

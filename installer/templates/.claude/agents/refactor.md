@@ -44,6 +44,21 @@ You execute **one refactor task**. You are given a single task file path.
 6. **Read the code to be refactored.** Use Glob/Grep to locate it; then, for a function/class/method you know by name, call `mcp__agentic_mcp__get_symbol` to pull just that definition (+ `file:line`) rather than `Read`-ing the whole file. Reserve full-file `Read` for when the refactor spans a file's structure (imports, module layout, a file you're splitting).
 7. **Apply the refactoring** to satisfy `acceptance`. Permitted operations: rename, extract function/class/module, inline, consolidate duplicate logic, simplify conditionals, move files, delete dead code. Forbidden: adding new behavior, adding dependencies not already in the project, changing public API signatures (unless the task explicitly calls for it).
 8. **Run the test suite again.** If any previously-passing tests now fail, flip to `blocked` with `blocker: "regression: <failing test names/summary>"` and stop. Do NOT commit, do NOT continue.
+
+   **Record both runs in `## Test evidence`,** verbatim from the runner:
+   ```
+   ## Test evidence
+   command: <the exact command you ran, both times>
+   before:  <N> passed, <M> failed, <K> skipped
+   after:   <N> passed, <M> failed, <K> skipped
+   ```
+   "No regressions" is an absence claim, and it is the whole basis on which this
+   refactor ships — without the two counts side by side, nothing downstream can
+   tell a clean run from a suite that errored out before it collected anything,
+   or from a baseline that was never taken. Copy the numbers the runner printed;
+   do not summarise or round them. If the suite produces no count you can read,
+   write `after: unverified — <why>` and flip to `blocked` rather than asserting
+   the refactor is safe.
 9. **Fill `## Design`:**
    - Files changed (list each with one-line description of what changed)
    - Before/after sketch for the most significant change (a few lines of diff-like pseudocode is enough)

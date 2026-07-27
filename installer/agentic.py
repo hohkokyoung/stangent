@@ -268,6 +268,48 @@ def stamp_agent_models(target: Path) -> None:
         info(f"stamped model: into {stamped} agent frontmatter(s) from .agentic.yml models:")
 
 
+def _merge_missing_routing_keys(target: Path) -> None:
+    """Back-fill keys the template adds INSIDE an existing `complexity_routing:`
+    block (e.g. `never_downgrade:`).
+
+    The section-level upgrade only appends blocks that are absent wholesale, so a
+    project seeded before a key existed keeps an outdated routing policy forever
+    and silently. That matters here: without `never_downgrade`, `low_cap` pulls
+    gate-owning reviewers back down to the cheapest model on low-complexity
+    tasks — the exact regression the key was added to prevent."""
+    tpl_path = TEMPLATES_DIR / ".claude" / ".agentic.yml"
+    dst_path = target / ".claude" / ".agentic.yml"
+    if not tpl_path.exists() or not dst_path.exists():
+        return
+    tpl_text = tpl_path.read_text(encoding="utf-8")
+    dst_text = dst_path.read_text(encoding="utf-8")
+    lines = dst_text.splitlines(keepends=True)
+    start = next((i for i, l in enumerate(lines)
+                  if re.match(r"^complexity_routing:\s*(#.*)?$", l)), None)
+    if start is None:
+        return  # no block at all — the section-level append handles that case
+    end = start
+    for i in range(start + 1, len(lines)):
+        if lines[i].strip() == "" or lines[i][:1].isspace():
+            end = i
+        else:
+            break
+    block = "".join(lines[start:end + 1])
+
+    added = []
+    for key in ("never_downgrade",):
+        if re.search(rf"^\s+{key}:", block, re.MULTILINE):
+            continue
+        m = re.search(rf"^(\s+{key}:.*)$", tpl_text, re.MULTILINE)
+        if m:
+            lines.insert(end + 1, m.group(1) + "\n")
+            end += 1
+            added.append(key)
+    if added:
+        dst_path.write_text("".join(lines), encoding="utf-8")
+        info(f".agentic.yml: added missing complexity_routing keys: {', '.join(added)}")
+
+
 def _merge_missing_model_keys(target: Path) -> None:
     """Add role→model entries the template defines but the project's models: block
     is missing (e.g. roles added after the project was seeded), without touching
@@ -548,8 +590,9 @@ def upgrade_config(target: Path) -> None:
     _upgrade_settings_json(target)
     _upgrade_mcp_json(target)
     _upgrade_agentic_yml(target)
-    _merge_missing_model_keys(target)  # heal seed-once drift in models: block
-    stamp_agent_models(target)         # re-apply role models after the merge/edit
+    _merge_missing_model_keys(target)    # heal seed-once drift in models: block
+    _merge_missing_routing_keys(target)  # …and inside complexity_routing:
+    stamp_agent_models(target)           # re-apply role models after the merge/edit
     info(f"upgrade-config complete at {target}")
 
 

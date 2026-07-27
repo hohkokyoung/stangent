@@ -97,6 +97,31 @@ Invoke **design-critic** with `review_id=$REVIEW_ID` and `scope` (translate the
 Step-2 scope: `commits:<N>`/`dir:<path>` → `dir:` of the touched UI files, `all` →
 `all`). Wait for `.claude/state/ui-review/$REVIEW_ID/findings.md`, then clear the role.
 
+### Step 3e — Verify every lane's citations
+
+Run the checker over each report that ran (skip the ones that did not):
+
+```bash
+V=".claude/hooks/lib/verify_clears.py"
+[ -f .claude/state/audit/$REVIEW_ID/findings.md ] && \
+  ${PYEXE:-python3} $V .claude/state/audit/$REVIEW_ID/findings.md --cwd .
+[ -f .claude/state/design-review/$REVIEW_ID/findings.md ] && \
+  ${PYEXE:-python3} $V .claude/state/design-review/$REVIEW_ID/findings.md --cwd . \
+  --checklist .claude/agents/architect.md
+[ -f .claude/state/security-review/$REVIEW_ID/findings.md ] && \
+  ${PYEXE:-python3} $V .claude/state/security-review/$REVIEW_ID/findings.md --cwd . \
+  --checklist .claude/agents/security-reviewer.md
+[ -f .claude/state/ui-review/$REVIEW_ID/findings.md ] && \
+  ${PYEXE:-python3} $V .claude/state/ui-review/$REVIEW_ID/findings.md --cwd . \
+  --checklist docs/design/DESIGN-SPEC.md
+```
+
+Carry the result into the Step-4 dashboard: a lane with any `mismatch` /
+`failed` / `uncited` item has cleared something it could not re-derive, and its
+"no issues here" lines must not be read as coverage. This is the lane most at
+risk of a false all-clear, because four reports consolidated into one dashboard
+lose the caveats that were in each.
+
 ### Step 4 — Consolidate and present
 
 Read the reports and print ONE dashboard (include the UI line only if lane 3d ran):

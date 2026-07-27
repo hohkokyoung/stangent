@@ -1,6 +1,11 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "enabledMcpjsonServers": ["agentic_mcp", "context7", "fetch", "sequential-thinking"],
+  "enabledMcpjsonServers": [
+    "agentic_mcp",
+    "context7",
+    "fetch",
+    "sequential-thinking"
+  ],
   "hooks": {
     "PreToolUse": [
       {
@@ -32,6 +37,11 @@
           {
             "type": "command",
             "command": "python3 .claude/hooks/log_usage.py",
+            "_agentic_managed": true
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/verify_review.py",
             "_agentic_managed": true
           }
         ]

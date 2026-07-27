@@ -53,6 +53,10 @@ DEFAULT_CAPABILITY_ORDER = [
 ]
 DEFAULT_LOW_CAP = "claude-haiku-4-5-20251001"
 DEFAULT_HIGH_FLOOR = "claude-sonnet-4-6"
+# Gate-owning roles the low_cap must not downgrade. Override per project with
+# `complexity_routing.never_downgrade:`; set it to [] to opt out entirely.
+DEFAULT_NEVER_DOWNGRADE = ("reviewer", "design-critic", "architect",
+                           "security-reviewer", "auditor")
 # Model an unranked id is treated as, for comparison purposes.
 COMPARISON_FALLBACK = "claude-sonnet-4-6"
 
@@ -252,9 +256,21 @@ def resolve_model(role: str, complexity: str, cfg: dict, session_model: str | No
     high_floor = routing.get("high_floor") or DEFAULT_HIGH_FLOOR
     rank = _rank_fn(order)
 
+    # Roles that own a gate (a blocking verdict, an a11y floor) are never routed
+    # DOWN by the low_cap. A cheap model is fine at enumerating and unreliable at
+    # joining facts across files, and its failure mode is to report a checklist
+    # item as cleared — which reads as "checked and fine" and stops anyone looking
+    # again. A low-complexity task is exactly where that goes unnoticed. They can
+    # still be routed UP by high_floor.
+    # Key presence, not truthiness — `never_downgrade: []` is a deliberate opt-out
+    # and must not fall back to the default set.
+    never_downgrade = routing.get("never_downgrade")
+    if never_downgrade is None:
+        never_downgrade = DEFAULT_NEVER_DOWNGRADE
+
     selected = role_model
     if enabled:
-        if complexity == "low":
+        if complexity == "low" and role not in never_downgrade:
             selected = role_model if rank(role_model) <= rank(low_cap) else low_cap
         elif complexity == "high":
             selected = role_model if rank(role_model) >= rank(high_floor) else high_floor

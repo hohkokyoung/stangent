@@ -89,26 +89,61 @@ finding.
 For each dimension: state the design's current answer, then challenge it. A
 dimension the plan does not answer is itself a finding.
 
-- **Data ownership** — Who is the system of record for each entity? Is the same
+**Clearing a dimension — evidence required.** A cleared dimension reads as "this
+was interrogated and holds", which stops the next reviewer from looking there.
+Clear one only by naming the specific thing in the design that makes it hold —
+the ownership rule, the boundary, the constraint — not by failing to think of a
+problem. A dimension you did not actually examine, or whose answer the plan never
+gives, is `unverified — <why>` or a finding, never a clear. Scope every claim to
+what you actually read.
+
+Where the thing that makes a dimension hold is visible in the code or the plan,
+cite it as `cleared by: <path>:<line> "<exact snippet>"` — `verify_clears.py`
+re-checks those citations afterwards, so an invented file or line number is
+caught. Where it is a design property with no single line to point at, say so
+plainly; do not manufacture a citation. `unverified` is never penalised.
+
+- [ ] **Data ownership** — Who is the system of record for each entity? Is the same
   fact written in two places that can diverge? Who is allowed to mutate it?
-- **Tenancy & isolation** — Can one user/tenant read or affect another's data?
+- [ ] **Tenancy & isolation** — Can one user/tenant read or affect another's data?
   Where is isolation enforced (row-level, app-level, both)? What happens if that
   one check is missing? Calibrate against `risk_profile.auth_model`.
-- **Privacy / PII** — What personal data does this collect or derive? Is any of
+- [ ] **Privacy / PII** — What personal data does this collect or derive? Is any of
   it logged, cached, sent to a third party, or embedded in an index/vector
   store? Is it minimized to what the feature needs? Calibrate against
   `risk_profile.data_sensitivity`.
-- **Trust boundaries** — Draw the boundary. What crosses it (user input,
+- [ ] **Trust boundaries** — Draw the boundary. What crosses it (user input,
   external API, background job)? What is trusted that shouldn't be?
-- **Compliance** — Only for regimes in `risk_profile.compliance`. Retention: how
+- [ ] **Compliance** — Only for regimes in `risk_profile.compliance`. Retention: how
   long is data kept and who deletes it? Deletion: can a "delete me" request
   actually remove it, including derived copies, indexes, and caches? Residency:
   does anything cross a region `risk_profile.data_residency` forbids?
-- **Scaling failure modes** — What breaks at 100×? Unbounded queries, N+1,
+- [ ] **Scaling failure modes** — What breaks at 100×? Unbounded queries, N+1,
   missing pagination, hot partitions, synchronous work that should be async,
   fan-out with no backpressure. Name the first thing to fall over and why.
-- **Blast radius** — When this fails, what else fails with it? Is failure
+- [ ] **Blast radius** — When this fails, what else fails with it? Is failure
   contained or does it cascade?
+
+### 3b. Coverage table — one row per dimension, always
+
+Work the checklist top-down: for each dimension, state the design's current
+answer, then challenge it. Record every dimension in a `## Coverage` table before
+the findings, whether or not it produced one:
+
+```
+## Coverage
+| # | dimension | the design's answer | result |
+|---|-----------|---------------------|--------|
+| 1 | Data ownership | profiles owned by auth.users, single writer | none (cleared) |
+| 2 | Tenancy & isolation | RLS on read, service-role on write | D01 |
+| 3 | Compliance | — | unverified — risk_profile declares no regimes |
+```
+
+A dimension you never interrogated leaves no false claim behind, just absence —
+which reads exactly like a dimension that held. This table is what separates
+"seven dimensions examined" from "the two that occurred to me". Never omit a row;
+`unverified — <why>` is a real result, and the command verifies the row count
+against this file's checklist.
 
 ### 4. Write the report
 
@@ -122,6 +157,12 @@ Risk profile: <summary, or "undeclared">
 
 ## Verdict
 `sound` | `concerns` | `reconsider`   <!-- reconsider = a load-bearing assumption is wrong -->
+
+## Coverage
+<!-- EXACTLY one row per checklist dimension, in order, always. -->
+| # | dimension | the design's answer | result |
+|---|-----------|---------------------|--------|
+| 1 | <dimension> | <what the design says, or "unstated"> | <D01> / none (cleared) / unverified — <why> |
 
 ## Challenged assumptions
 - **Assumption:** <what the plan takes as given>
@@ -139,7 +180,9 @@ Risk profile: <summary, or "undeclared">
 ### D02 — [MEDIUM] ...
 
 ## Dimensions with no issues
-<list each checklist dimension you cleared — never silently omit one>
+<list each checklist dimension you cleared — never silently omit one. Each entry
+ names what in the design makes it hold; a dimension you did not examine is
+ `unverified — <why>`, not cleared. See "Clearing a dimension".>
 ```
 
 Severity guide:

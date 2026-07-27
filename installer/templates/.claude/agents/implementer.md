@@ -29,7 +29,20 @@ You implement **one task**. You are given a single task file path. Everything yo
 2. **Load ADRs.** For each id in `task.adrs`, read `.claude/adrs/<id>-*.md`. Refuse to proceed (flip to `blocked` with `blocker: "missing_adr: <id>"`) if a listed ADR file is missing or has `status != accepted`.
 3. **Context-budget check.** Estimate `system + role + ADRs + skills + task frontmatter`. If this minimum already exceeds the model window, immediately flip status to `blocked` with `blocker: "context_budget_exceeded"` and stop. Do NOT generate, do NOT call any tool.
 4. **Flip status to `running`.** Update only the `status:` and `blocker: null` fields in frontmatter.
-5. **Call `mcp__agentic_mcp__retrieve` exactly once** with query:
+5. **Call `mcp__agentic_mcp__retrieve` exactly once — this is not optional.**
+
+   It is the only way you see the project's indexed conventions; skipping it means
+   writing code against guesses while a populated index sits unused. If the call
+   fails, flip to `blocked` with `blocker: "retrieve_unavailable: <error>"` rather
+   than proceeding without it — a silent skip is indistinguishable from a task
+   that had no context to find. Record the call in `## Decisions log`.
+
+   Observed on FEAT-025: both tasks routed to the cheapest model skipped this
+   entirely while all six on the larger model complied. If you are tempted to
+   skip because the task looks simple, that is exactly the case this rule exists
+   for.
+
+   Query:
    ```
    intent: {intent}
    acceptance: {acceptance}
@@ -44,7 +57,7 @@ You implement **one task**. You are given a single task file path. Everything yo
 9. **Check `definition_of_done` bullets one by one.** Each must hold.
 10. **Set final status:**
    - If this task has a downstream reviewer/tester task that depends on it: leave `status: running`'s outputs in place but flip to `done` if all your-side DoD bullets pass. The tester is what finalizes overall.
-   - If this is a standalone implementer task with no downstream reviewer/tester: flip to `done` only if every DoD bullet passes (you can observe them all).
+   - If this is a standalone implementer task with no downstream reviewer/tester: flip to `done` only if every DoD bullet passes (you can observe them all). **Nothing checks this one after you**, so record how you observed each bullet — one line per bullet naming what you ran or read (`file:line`, a command and its result). A bullet you cannot observe is not passing: write `unobservable — <why>` and flip to `blocked` instead. Do not infer a bullet from the code you just wrote — that you intended it is not evidence that it holds.
    - On any failure: flip to `blocked` with `blocker:` populated by exact failing bullet.
 
 ## Write-scope rules

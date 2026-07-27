@@ -31,19 +31,42 @@ mkdir -p .claude/state/design-review/$REVIEW_ID
 Write role state first so the pre-tool hook enforces the architect's write-scope
 (`.claude/state/design-review/` only):
 
+Resolve the architect's model first: `models.architect` from `.agentic.yml` (fall
+back to `models.default`, then the session default). Then arm the hook —
+`current_model.txt` is what puts the model on every logged tool call:
+
 ```bash
 printf '%s' "$REVIEW_ID" > .claude/state/current_run.txt   # log context: tool calls land in logs/$REVIEW_ID.jsonl
 printf '%s' 'architect' > .claude/state/current_role.txt
+printf '%s' '<resolved_model>' > .claude/state/current_model.txt
 ```
 
-Invoke the **architect** agent with `review_id` and the resolved `run_id` /
-`scope`. Wait for it to write
+Invoke the **architect** agent with `review_id`, the resolved `run_id` /
+`scope`, and that model — pass it explicitly at invocation, do not rely on the
+agent inheriting the session model. Wait for it to write
 `.claude/state/design-review/<review_id>/findings.md` and print its summary.
 Then clear the state (mandatory):
 
 ```bash
-rm -f .claude/state/current_role.txt .claude/state/current_run.txt
+rm -f .claude/state/current_role.txt .claude/state/current_run.txt .claude/state/current_model.txt
 ```
+
+### Step 3b — Verify the architect's citations
+
+```bash
+${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
+  .claude/state/design-review/$REVIEW_ID/findings.md --cwd . \
+  --checklist .claude/agents/architect.md
+```
+
+`--checklist` counts the agent's design dimensions and requires one `## Coverage`
+row per dimension, so a dimension that was never interrogated fails rather than
+passing as silence.
+
+Print its output **above** the findings. `mismatch` / `failed` / `uncited` means
+a dimension listed under "Dimensions with no issues" could not be re-derived —
+treat it as unreviewed and say so. `unverified` is the honest outcome and needs
+no action. Do not edit the findings or re-dispatch to make it pass.
 
 ### Step 4 — Present
 
@@ -57,5 +80,8 @@ Read `.claude/state/design-review/$REVIEW_ID/findings.md` and print it verbatim.
 
 ## Constraints
 
-- Do NOT fix anything or edit the plan. Findings are advisory.
+- Do NOT fix anything or edit the plan. Findings are advisory — remediation is
+  `/agentic-remediate <review_id>` for findings that are code changes. Design
+  findings that are *decisions* (tenancy model, retention policy) are not
+  auto-fixable; those go to `/agentic-adr new` or `/agentic-update-plan`.
 - Do NOT call any MCP tool yourself. Do NOT commit.

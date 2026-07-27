@@ -68,15 +68,16 @@ If no amendment text is given, use `AskUserQuestion` (YOU, not the planner) to e
       - Update `t<N>.md`'s `depends_on` to include `s<N>`.
 
    b. **Run all sketchers sequentially.** For each new `s<N>.md` in creation order:
-      - Run: `printf '%s' '<s-id>' > .claude/state/current_task.txt && printf '%s' 'sketcher' > .claude/state/current_role.txt`
-      - Invoke the **sketcher** agent with the path to `s<N>.md`.
+      - Resolve the sketcher's model from `models.sketcher` in `.agentic.yml` (fall back to `models.default`).
+      - Run: `printf '%s' '<s-id>' > .claude/state/current_task.txt && printf '%s' 'sketcher' > .claude/state/current_role.txt && printf '%s' '<resolved_model>' > .claude/state/current_model.txt`
+      - Invoke the **sketcher** agent with the path to `s<N>.md`, passing that model explicitly.
       - Wait for it to flip `status: done` or `status: blocked`.
-      - Run: `rm -f .claude/state/current_task.txt .claude/state/current_role.txt`
+      - Run: `rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt`
       - If `blocked`: print a warning and continue — do NOT halt. The implementer task will wait until the sketch is resolved.
 
    After all sketchers finish, clean up:
    ```
-   rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt
+   rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
    ```
 
    If sketching is not active, or no new implementer tasks were added, skip this step entirely.

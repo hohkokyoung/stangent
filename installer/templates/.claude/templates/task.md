@@ -14,10 +14,10 @@ status: pending                  # pending | running | done | blocked | deferred
 blocker: null                    # status=blocked: the failing bullet · status=deferred: "external: <dependency>"
 resume_when: null                # set only when status=deferred — observable condition to resume (cleared by /agentic-resume)
 definition_of_done: |
-  - acceptance criteria met
-  - no known unresolved blockers
-  - code compiles / runs
-  - reviewer/tester has no blocking failures (if applicable to this task)
+  - [ ] acceptance criteria met
+  - [ ] no known unresolved blockers
+  - [ ] code compiles / runs
+  - [ ] reviewer/tester has no blocking failures (if applicable to this task)
 ---
 
 ## Goal

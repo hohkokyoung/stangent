@@ -146,9 +146,36 @@ class TestRouting(unittest.TestCase):
         self.assertTrue(applied)
 
     def test_low_leaves_haiku_role_alone(self):
-        m, base, applied = dp.resolve_model("reviewer", "low", self.cfg, None)
+        m, base, applied = dp.resolve_model("tester", "low", self.cfg, None)
         self.assertEqual(m, "claude-haiku-4-5-20251001")
         self.assertFalse(applied)
+
+    def test_low_cap_does_not_downgrade_gate_roles(self):
+        # A gate-owning role on a low-complexity task must keep its configured
+        # model. A cheap reviewer's failure mode is reporting a checklist item as
+        # cleared — which reads as verified and stops anyone looking again — and
+        # a task marked "low" is exactly where that goes unnoticed.
+        cfg = dict(self.cfg)
+        cfg["models"] = {**cfg["models"], "reviewer": "claude-sonnet-4-6",
+                         "design-critic": "claude-sonnet-4-6"}
+        for role in ("reviewer", "design-critic", "architect", "security-reviewer"):
+            m, base, applied = dp.resolve_model(role, "low", cfg, None)
+            self.assertEqual(m, base, f"{role} was downgraded by low_cap")
+            self.assertFalse(applied)
+
+    def test_gate_roles_still_routed_up_by_high_floor(self):
+        # never_downgrade blocks the cap, not the floor.
+        m, base, applied = dp.resolve_model("reviewer", "high", self.cfg, None)
+        self.assertEqual(m, "claude-sonnet-4-6")
+        self.assertTrue(applied)
+
+    def test_never_downgrade_is_overridable(self):
+        cfg = dict(self.cfg)
+        cfg["complexity_routing"] = {**cfg["complexity_routing"], "never_downgrade": []}
+        cfg["models"] = {**cfg["models"], "reviewer": "claude-sonnet-4-6"}
+        m, base, applied = dp.resolve_model("reviewer", "low", cfg, None)
+        self.assertEqual(m, "claude-haiku-4-5-20251001")
+        self.assertTrue(applied)
 
     def test_medium_unchanged(self):
         m, base, applied = dp.resolve_model("implementer", "medium", self.cfg, None)

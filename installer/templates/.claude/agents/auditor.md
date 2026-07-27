@@ -57,6 +57,13 @@ Skip: `node_modules/`, `.git/`, `dist/`, `build/`, `*.lock`, binary files (image
 
 ### 3. Scan for each issue type
 
+The issue types, one row each in your Coverage table (see step 4):
+
+- [ ] **Inconsistency** — the same concept expressed differently across files
+- [ ] **Duplication** — repeated blocks that could be extracted or centralised
+- [ ] **Bad practice** — patterns the project's own skills/ADRs call anti-patterns
+- [ ] **Oversized** — files or functions past the threshold
+
 Work through the collected files. For each issue type in `types`:
 
 #### Inconsistency
@@ -138,6 +145,50 @@ Severity guide:
 - **Low** — style, naming, minor cleanup
 
 If no issues are found for an issue type, note `No <type> issues found.` under a heading — never omit the section.
+
+**Open the report with a `## Coverage` table** — one row for **every** issue type
+above, not just the ones in `types`. A type the caller did not request is
+`not requested`, which is different from "scanned and clean" and must not read
+like it. Four rows, always, whether or not anything was found:
+
+```
+## Coverage
+| # | issue type | scan | inspected | result |
+|---|-----------|------|-----------|--------|
+| 1 | Inconsistency | `grep -rn "userId\|user_id" src` -> 41 matches | 41 of 41 | F01 |
+| 2 | Duplication | `jscpd src --min-tokens 30` -> 3 clones | 3 of 3 | F02 |
+| 3 | Bad practice | fastapi + owasp anti-pattern lists vs api/ | 12 of 30 files | F03 |
+| 4 | Oversized | — | — | not requested (types=inconsistency,duplication,bad-practice) |
+```
+
+`inspected` is what you actually opened over what the scan returned. Row 3 above
+is the honest shape of a partial pass — and without that column it would read as
+a complete one. An issue type you could not scan is `unverified — <why>`; that
+costs you nothing and is far better than a row implying a sweep you did not do.
+
+**A finding's site list carries the same burden.** When a finding says a pattern
+occurs in N places, cite the search on the `**Where:**` line as
+`enumerated by: \`<single command>\` -> <N> sites`, then list them. It is re-run
+too. Naming three sites when the search returns twenty is not wrong about the
+defect, only about its scope — and someone who fixes the listed three believes
+they are done. Say `showing <k> of <N>` if you list a subset deliberately, and
+give the denominator even when it is 1: `-> 1 site` says you searched and this is
+the only one, which a bare single-site list does not.
+
+**Back that line with the scan that produced it,** in this form — it is re-run by
+`verify_clears.py` afterwards, so prose does not count:
+
+```
+- **No <type> issues found.** — cleared by: `<single command>` -> <N> matches
+```
+
+One command, no `;` / `&&` / `|` / redirects; a chained command whose first stage
+fails silently yields a confident wrong count. State the count you actually saw —
+an approximate one is caught by the re-run. A scan clears only what it covered, so
+if you sampled, say so rather than generalizing. If you could not run the check at
+all, write `unverified — <why>` instead: that is never penalised, while an uncited
+or non-reproducing clear is. A stated gap is useful; a false clear is worse than
+saying nothing.
 
 ### 5. Print summary
 

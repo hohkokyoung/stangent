@@ -150,5 +150,53 @@ class TestStampAgentModels(unittest.TestCase):
             self.assertIn("git:", text)                            # next section intact
 
 
+    def test_merge_adds_missing_routing_keys(self):
+        # A project seeded before `never_downgrade` existed keeps an outdated
+        # routing policy forever: the section-level upgrade only appends blocks
+        # that are absent wholesale, and complexity_routing: is already there.
+        # Without the back-fill, low_cap silently pulls gate-owning reviewers
+        # down to the cheapest model on low-complexity tasks.
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); (root / ".claude").mkdir(parents=True)
+            (root / ".claude" / ".agentic.yml").write_text(
+                "enabled_skills: []\n\n"
+                "complexity_routing:\n"
+                "  enabled: true\n"
+                "  low_cap: claude-haiku-4-5-20251001\n"
+                "  high_floor: claude-sonnet-4-6\n"
+                "\n"
+                "git:\n  auto_branch: true\n"
+            )
+            ag._merge_missing_routing_keys(root)
+            text = (root / ".claude" / ".agentic.yml").read_text()
+            self.assertIn("never_downgrade:", text)
+            self.assertIn("reviewer", text.split("never_downgrade:")[1].splitlines()[0])
+            self.assertIn("low_cap: claude-haiku-4-5-20251001", text)  # existing kept
+            self.assertIn("git:", text)                                # next section intact
+
+    def test_merge_routing_keys_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); (root / ".claude").mkdir(parents=True)
+            (root / ".claude" / ".agentic.yml").write_text(
+                "complexity_routing:\n"
+                "  enabled: true\n"
+                "  never_downgrade: [reviewer]\n"   # a user's own narrower list
+            )
+            ag._merge_missing_routing_keys(root)
+            ag._merge_missing_routing_keys(root)
+            text = (root / ".claude" / ".agentic.yml").read_text()
+            self.assertEqual(text.count("never_downgrade:"), 1)
+            self.assertIn("[reviewer]", text)  # user value never overwritten
+
+    def test_merge_routing_keys_skips_when_no_block(self):
+        # No complexity_routing: at all → the section-level append owns that case.
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); (root / ".claude").mkdir(parents=True)
+            p = root / ".claude" / ".agentic.yml"
+            p.write_text("enabled_skills: []\n")
+            ag._merge_missing_routing_keys(root)
+            self.assertNotIn("never_downgrade:", p.read_text())
+
+
 if __name__ == "__main__":
     unittest.main()

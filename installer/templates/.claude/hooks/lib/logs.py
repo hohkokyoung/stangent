@@ -34,6 +34,10 @@ DISPATCH_LOG = LOG_DIR / "dispatch.jsonl"
 RETRIEVE_TOOL = "mcp__agentic_mcp__retrieve"
 SYMBOL_TOOL = "mcp__agentic_mcp__get_symbol"
 
+# How many "heaviest result" calls to show. Enough to spot a pattern (the same
+# unbounded grep three times), short enough to stay scannable.
+HEAVY_CALLS = 8
+
 
 def _parse_ts(s) -> dt.datetime | None:
     if not isinstance(s, str):
@@ -95,7 +99,9 @@ def _aggregate_usage(events: list[dict]) -> dict:
 
 def summarize(run_id: str) -> dict:
     raw = read_jsonl(LOG_DIR / f"{run_id}.jsonl")
-    calls = [c for c in raw if c.get("event") != "usage"]
+    budget = [c for c in raw if c.get("event") == "budget"]
+    verifications = [c for c in raw if c.get("event") == "verification"]
+    calls = [c for c in raw if not c.get("event")]
     usage_by_task = _aggregate_usage([c for c in raw if c.get("event") == "usage"])
     dispatches = [d for d in read_jsonl(DISPATCH_LOG) if d.get("run_id") == run_id]
     statuses = _task_statuses(run_id)
@@ -112,11 +118,12 @@ def summarize(run_id: str) -> dict:
             t = tasks[tid] = {
                 "task_id": tid, "role": c.get("agent_role"),
                 "model": c.get("model"), "calls": 0, "retrieve": 0,
-                "get_symbol": 0, "denials": 0, "failures": 0,
+                "get_symbol": 0, "denials": 0, "failures": 0, "res_chars": 0,
                 "first": None, "last": None, "events": [],
             }
             order.append(tid)
         t["calls"] += 1
+        t["res_chars"] += int(c.get("res_chars") or 0)
         if c.get("tool") == RETRIEVE_TOOL:
             t["retrieve"] += 1
         if c.get("tool") == SYMBOL_TOOL:
@@ -157,6 +164,7 @@ def summarize(run_id: str) -> dict:
             "calls": t["calls"], "retrieve": t["retrieve"],
             "get_symbol": t["get_symbol"], "denials": t["denials"],
             "failures": t["failures"], "duration_s": dur,
+            "res_chars": t["res_chars"],
             "routing_applied": d.get("routing_applied", False),
             "tokens": {k: use.get(k, 0) for k in ("input", "output", "cache_read", "cache_write")},
             "cost_usd": round(use.get("cost", 0.0), 4),
@@ -169,7 +177,7 @@ def summarize(run_id: str) -> dict:
                 "task_id": tid, "role": None, "model": None,
                 "status": statuses.get(tid, "-"), "calls": 0, "retrieve": 0,
                 "get_symbol": 0, "denials": 0, "failures": 0, "duration_s": None,
-                "routing_applied": False,
+                "res_chars": 0, "routing_applied": False,
                 "tokens": {k: use.get(k, 0) for k in ("input", "output", "cache_read", "cache_write")},
                 "cost_usd": round(use.get("cost", 0.0), 4),
             })
@@ -177,10 +185,32 @@ def summarize(run_id: str) -> dict:
     def _tok_sum(key):
         return sum(t["tokens"][key] for t in task_list)
 
+    # The calls that put the most into context. Cost here is cache_read —
+    # context resident × turns — so a call returning 80k chars on turn 5 is paid
+    # for on every turn after it. Per-task totals say which task was expensive;
+    # this says which CALL made it expensive, which is the actionable part.
+    heavy = sorted(
+        (c for c in calls if c.get("res_chars")),
+        key=lambda c: c.get("res_chars") or 0, reverse=True)[:HEAVY_CALLS]
+
     return {
         "run_id": run_id,
         "tasks": task_list,
         "events": all_events,
+        "budget": [{"task_id": b.get("task_id"), "calls": b.get("calls"),
+                    "threshold": b.get("threshold")} for b in budget],
+        "verifications": [{"agent_role": v.get("agent_role"),
+                           "report": v.get("report"),
+                           "reproduced": v.get("reproduced"),
+                           "failing": v.get("failing"),
+                           "coverage": v.get("coverage"),
+                           "exit": v.get("exit")} for v in verifications],
+        "heavy_calls": [{
+            "task_id": c.get("task_id") or "(session)",
+            "tool": c.get("tool"),
+            "res_chars": c.get("res_chars"),
+            "args": c.get("args") or {},
+        } for c in heavy],
         "totals": {
             "tasks": len(task_list),
             "calls": sum(t["calls"] for t in task_list),
@@ -190,6 +220,7 @@ def summarize(run_id: str) -> dict:
             "get_symbol": sum(t["get_symbol"] for t in task_list),
             "cost_usd": round(sum(t["cost_usd"] for t in task_list), 4),
             "tokens": {k: _tok_sum(k) for k in ("input", "output", "cache_read", "cache_write")},
+            "res_chars": sum(t["res_chars"] for t in task_list),
         },
         "has_usage": bool(usage_by_task),
         "started": run_first.isoformat() if run_first else None,
@@ -236,6 +267,9 @@ def _print_report(rep: dict) -> None:
     print(f"  tasks: {tot['tasks']}   tool calls: {tot['calls']}   "
           f"retrieve: {tot['retrieve']}   get_symbol: {tot['get_symbol']}   "
           f"denials: {tot['denials']}   failures: {tot['failures']}")
+    if tot.get("res_chars"):
+        print(f"  tool results into context: {_fmt_tok(tot['res_chars'])} chars "
+              f"(~{_fmt_tok(tot['res_chars'] // 4)} tokens)")
     has_usage = rep.get("has_usage")
     if has_usage:
         tk = tot["tokens"]
@@ -247,16 +281,42 @@ def _print_report(rep: dict) -> None:
     print()
     extra = f"{'tok':>7}{'cost':>8}" if has_usage else ""
     print(f"  {'task':<14}{'role':<16}{'model':<14}{'status':<9}{'calls':>6}"
-          f"{'ret':>5}{'sym':>5}{'deny':>6}{'fail':>6}{'dur':>7}{extra}")
+          f"{'ret':>5}{'sym':>5}{'deny':>6}{'fail':>6}{'res':>7}{'dur':>7}{extra}")
     for t in rep["tasks"]:
         row = (f"  {str(t['task_id']):<14}{str(t['role'] or '-'):<16}"
                f"{_short_model(t['model']):<14}{str(t['status']):<9}"
                f"{t['calls']:>6}{t['retrieve']:>5}{t['get_symbol']:>5}"
-               f"{t['denials']:>6}{t['failures']:>6}{_fmt_dur(t['duration_s']):>7}")
+               f"{t['denials']:>6}{t['failures']:>6}"
+               f"{_fmt_tok(t.get('res_chars', 0)):>7}{_fmt_dur(t['duration_s']):>7}")
         if has_usage:
             tokt = t["tokens"]["input"] + t["tokens"]["output"]
             row += f"{_fmt_tok(tokt):>7}{('$' + format(t['cost_usd'], '.2f')):>8}"
         print(row)
+    if rep.get("heavy_calls"):
+        print("\n  heaviest results (what filled the context):")
+        for h in rep["heavy_calls"]:
+            arg = ""
+            for k in ("command", "file_path", "query", "pattern", "description"):
+                if h["args"].get(k):
+                    arg = re.sub(r"\s+", " ", str(h["args"][k]))[:70]
+                    break
+            print(f"    {_fmt_tok(h['res_chars']):>7}  {h['task_id']:<12}"
+                  f"{str(h['tool']):<28}{arg}")
+    if rep.get("verifications"):
+        print("\n  report verification (SubagentStop — cannot be skipped):")
+        for v in rep["verifications"]:
+            mark = "FAIL" if v.get("exit") else " ok "
+            cov = f"  coverage: {v['coverage']}" if v.get("coverage") else ""
+            print(f"    [{mark}] {str(v['agent_role']):<18} "
+                  f"reproduced {v.get('reproduced', 0)}, failing {v.get('failing', 0)}{cov}")
+            if v.get("exit"):
+                print(f"           {v['report']} — evidence did not re-derive; "
+                      "treat those items as unreviewed")
+    if rep.get("budget"):
+        print("\n  long-running tasks (call-count thresholds crossed):")
+        for b in rep["budget"]:
+            print(f"    {b['task_id']}  crossed {b['threshold']} calls "
+                  f"(at {b['calls']}) — check for one file edited repeatedly")
     if rep["events"]:
         print("\n  denials / failures:")
         for kind, tid, tool, detail in rep["events"]:

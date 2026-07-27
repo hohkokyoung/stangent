@@ -43,6 +43,28 @@ You execute tests for **one task**. You are given the task file path.
    - Artifact paths generated (spec files, flow YAMLs)
    - Evidence paths (screenshots, logs)
    - Any failures: minimal repro + error excerpt
+   - A `### Coverage` table with **one row per `- [ ]` item in the task file**
+     (its `## Requirements` and `definition_of_done` bullets) **and one per
+     `edge_cases` entry**, always:
+
+     ```
+     ### Coverage
+     | # | DoD bullet / edge case | case that exercises it | result |
+     |---|------------------------|------------------------|--------|
+     | 1 | acceptance criteria met | test_creates_profile | pass |
+     | 2 | edge: duplicate email | test_rejects_duplicate_email | pass |
+     | 3 | edge: expired token | — | uncovered — no way to force expiry in test env |
+     ```
+
+     A bullet no case exercises is `uncovered — <why>`, not a silent omission.
+     The row count comes from the task file, so a missing row is a bullet you
+     neither tested nor admitted to skipping.
+
+   **`done` is a claim that every DoD bullet holds, not that nothing failed.** A
+   green run only clears the bullets some case actually exercised — an untested
+   bullet is uncovered, not passing. If any bullet is uncovered and you cannot add
+   a case for it, stay `running` or flip to `blocked` and say which. Never infer
+   coverage from an all-green suite.
 9. **Finalize status:**
    - `done` only if every test passes AND every `definition_of_done` bullet holds.
    - Otherwise `blocked`, with `blocker:` naming the exact failing test or DoD bullet.

@@ -117,4 +117,11 @@ See [plugins.md](plugins.md) for the chosen stack and where to install each piec
 - [ ] Type sizes come from the type-scale tokens
 - [ ] Every interactive element renders focus + disabled states
 - [ ] Motion respects the budget in §7 and `prefers-reduced-motion`
-- [ ] Contrast meets the §9 floor
+- [ ] Contrast meets the §9 floor at every text/background pairing in components
+- [ ] Every colour token in `tokens.md` has a measured contrast entry, and every
+      text-carrying one meets the §9 floor
+      <!-- Separate from the line above on purpose. That one asks whether
+           components USE tokens correctly; this one asks whether the tokens are
+           VALID. A palette can be applied perfectly and still be inaccessible,
+           and a review checking only usage will clear it every time. -->
+

@@ -28,15 +28,24 @@ design (`DS-`), baseline tests (`baseline-<flow>`).
 4. Pass `--json` through to either subcommand when the developer asks for machine
    output.
 5. Print the report verbatim. If asked, call out what stands out — a task with
-   many tool calls, any denials/failures, or an unusually long duration.
+   many tool calls, any denials/failures, an unusually long duration, or a
+   lopsided `heaviest results` list (one unbounded grep dwarfing everything
+   else, or the same search repeated).
 
 ## Notes
 
 - Derived entirely from `.claude/state/logs/<id>.jsonl` + `dispatch.jsonl` (+ the
   plan dir for task status when the context is a build run). Read-only.
-- Tool-call counts, denials, failures, retrieve/get_symbol usage, and per-task
-  durations come from the tool-use log. Token/cost columns and the run-level
-  cache-hit % come from the SubagentStop telemetry hook (`log_usage.py`) and
-  appear once a run has dispatched at least one agent under the new hook.
+- Tool-call counts, denials, failures, retrieve/get_symbol usage, per-task
+  durations, and the `res`/`heaviest results` sizes come from the tool-use log.
+  Token/cost columns and the run-level cache-hit % come from the SubagentStop
+  telemetry hook (`log_usage.py`) and appear once a run has dispatched at least
+  one agent under the new hook.
+- `res` is characters of tool RESULT pulled into the agent's context (÷4 ≈
+  tokens), not billed tokens. It is the lever behind cache-read cost: a result
+  is re-read on every later turn, so one 80k-char grep on turn 5 of 70 costs far
+  more than its single call suggests. Use it to find which calls to bound; use
+  the cost column for what was actually charged. Runs logged before this field
+  existed show `-`.
 - Only agentic work is logged (any command that dispatches an agent). Ambient
   dev is not, unless `AGENTIC_LOG_AMBIENT=1` is set.

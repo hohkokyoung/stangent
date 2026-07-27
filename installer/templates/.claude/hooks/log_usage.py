@@ -64,6 +64,22 @@ def subagent_usage(records: list[dict]) -> tuple[dict, str | None, int]:
     return tot, model, turns
 
 
+def _last_logged_context(run_id: str) -> dict:
+    """task_id / agent_role from the most recent tool-call line of this run.
+
+    Used only when the state files are already gone: the subagent whose usage we
+    are attributing is the one that wrote that line."""
+    try:
+        rows = read_jsonl(LOG_DIR / f"{run_id}.jsonl")
+    except Exception:
+        return {}
+    for r in reversed(rows):
+        if r.get("event") == "usage" or not r.get("tool"):
+            continue
+        return {"task_id": r.get("task_id"), "agent_role": r.get("agent_role")}
+    return {}
+
+
 def resolve_subagent_transcript(transcript_path: str) -> Path | None:
     """Locate the just-finished subagent's transcript.
 
@@ -104,13 +120,25 @@ def main() -> None:
         if turns == 0:
             sys.exit(0)
         model = model or _read_state("current_model.txt") or ""
+        # SubagentStop can fire AFTER the command has cleared its per-task state,
+        # which stranded a task's whole cost under task_id=null (FEAT-025 t9).
+        # Fall back to the last tool call logged for this run — the subagent that
+        # just finished is the one that wrote it, so its context is the right
+        # attribution and is already on disk.
+        task_id = _read_state("current_task.txt")
+        agent_role = _read_state("current_role.txt")
+        if task_id is None or agent_role is None:
+            last = _last_logged_context(run_id)
+            task_id = task_id if task_id is not None else last.get("task_id")
+            agent_role = agent_role if agent_role is not None else last.get("agent_role")
+
         from token_cost import cost_usd
         event = {
             "ts": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
             "event": "usage",
             "run_id": run_id,
-            "task_id": _read_state("current_task.txt"),
-            "agent_role": _read_state("current_role.txt"),
+            "task_id": task_id,
+            "agent_role": agent_role,
             "model": model,
             "turns": turns,
             "tokens": tokens,

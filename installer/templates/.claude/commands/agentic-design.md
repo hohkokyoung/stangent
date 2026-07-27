@@ -69,19 +69,24 @@ inconsistencies matter most.)
 
 ### Step 4 — Arm the designer and dispatch
 
+Resolve the designer's model first: `models.designer` from `.agentic.yml` (fall
+back to `models.default`, then the session default). Then arm the hook —
+`current_model.txt` is what puts the model on every logged tool call:
+
 ```bash
 printf '%s' "$SPEC_ID" > .claude/state/current_run.txt   # log context: tool calls land in logs/$SPEC_ID.jsonl
 printf '%s' 'designer' > .claude/state/current_role.txt
+printf '%s' '<resolved_model>' > .claude/state/current_model.txt
 ```
 
 Invoke the **designer** agent with: `spec_id=$SPEC_ID`, `mode`, the `## Brief`
-block (if any), and the template paths. Use model `models.designer` from
-`.agentic.yml` (fall back to `models.default`, then session default). Wait for it to
+block (if any), the template paths, and that model — pass it explicitly at
+invocation, do not rely on the agent inheriting the session model. Wait for it to
 write the draft under `.claude/state/design-spec/$SPEC_ID/` and print its summary.
-Then clear the role (mandatory):
+Then clear the state (mandatory):
 
 ```bash
-rm -f .claude/state/current_role.txt .claude/state/current_run.txt
+rm -f .claude/state/current_role.txt .claude/state/current_run.txt .claude/state/current_model.txt
 ```
 
 ### Step 5 — Present the draft
@@ -135,5 +140,6 @@ Next:
   are documentation. The developer installs.
 - Do NOT commit — writing `docs/design/` is the only file change; commits are
   user-driven.
-- Always clear `.claude/state/current_role.txt` and `.claude/state/current_run.txt`
+- Always clear `.claude/state/current_role.txt`, `.claude/state/current_run.txt`,
+  and `.claude/state/current_model.txt`
   after the designer returns, even on a revise loop.

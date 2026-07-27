@@ -71,7 +71,11 @@ retrieval:
   chunk_tokens: 400
   role_k:
     reviewer: 2   # pattern-matching against skill rules; doesn't need broad context
-    design-critic: 2  # pattern-matching against the design spec; same as reviewer
+    design-critic: 6  # NOT pattern-matching — grep enumerates the literals it
+                      # already knows; retrieval's job is surfacing violation
+                      # shapes no grep was written for, and 2 chunks cannot do
+                      # that. Its worst misses are components nobody thought to
+                      # search, not sites a search skipped.
     tester: 3     # needs test-method chunks, not implementation detail
     architect: 8          # cross-cutting design context — needs breadth
     security-reviewer: 8  # owasp corpus + related-boundary references
@@ -102,20 +106,52 @@ plan_id:
 
 # Per-role model overrides. Each role uses this model regardless of what model
 # is active in your Claude Code session. Set a role to "" to inherit the session default.
-# Available model IDs: claude-opus-4-8, claude-sonnet-4-6, claude-haiku-4-5-20251001
+# Available model IDs: claude-opus-5, claude-sonnet-5, claude-haiku-4-5-20251001
+#
+# An ID your harness does not recognise does NOT error — it silently falls back
+# to the model your session is already running. So routing can reliably move
+# DOWN (a valid cheaper ID is honoured) but never UP: naming a model more capable
+# than your session model is a no-op if the ID is wrong, and the config then
+# states an intent it cannot deliver.
+#
+# Observed (Snuggle, 2026-07-26): every role configured `claude-sonnet-4-6` ran
+# as `claude-sonnet-5`, and `claude-opus-4-8` for architect/security-reviewer had
+# never once dispatched to Opus. Only the haiku entry — a real ID — was honoured.
+# Cost telemetry stayed correct (it prices the model the transcript reports), so
+# nothing surfaced it; check a `usage` event in .claude/state/logs/ after changing
+# these and confirm `model` is what you asked for.
 models:
-  default:     claude-sonnet-4-6           # fallback for any unlisted role
-  planner:     claude-sonnet-4-6           # ambiguity resolution + full coverage checklist
+  default:     claude-sonnet-5           # fallback for any unlisted role
+  planner:     claude-sonnet-5           # ambiguity resolution + full coverage checklist
   sketcher:    claude-haiku-4-5-20251001   # HTML mockup generation + screenshot
-  designer:    claude-sonnet-4-6           # authors/extracts the UI design spec + stack recommendation
-  design-critic: claude-haiku-4-5-20251001 # mechanical adherence check against the design spec
-  implementer: claude-sonnet-4-6           # primary coding work
-  reviewer:    claude-haiku-4-5-20251001   # mechanical pattern matching against skill rules
-  tester:      claude-haiku-4-5-20251001   # run tests, check pass/fail counts
-  debugger:    claude-sonnet-4-6           # diagnosis requires reasoning
-  refactor:    claude-sonnet-4-6           # codebase understanding + careful edits
-  architect:         claude-opus-4-8       # adversarial design reasoning — NOT pattern-matching; worth the spend
-  security-reviewer: claude-opus-4-8       # exploit-path construction — NOT pattern-matching; worth the spend
+  designer:    claude-sonnet-5           # authors/extracts the UI design spec + stack recommendation
+  design-critic: claude-sonnet-5         # owns the a11y gate — see "reviewing roles" below
+  implementer: claude-sonnet-5           # primary coding work
+  reviewer:    claude-sonnet-5           # owns the blocking gate — see "reviewing roles" below
+  tester:      claude-haiku-4-5-20251001   # run tests, check pass/fail counts — genuinely mechanical
+  debugger:    claude-sonnet-5           # diagnosis requires reasoning
+  refactor:    claude-sonnet-5           # codebase understanding + careful edits
+  architect:         claude-opus-5       # adversarial design reasoning — NOT pattern-matching; worth the spend
+  security-reviewer: claude-opus-5       # exploit-path construction — NOT pattern-matching; worth the spend
+
+# Reviewing roles: do not drop these below Sonnet.
+# design-critic and reviewer were on Haiku on the theory that checking work
+# against a written rule is mechanical. Enumerating is — counting off-scale font
+# sizes, tallying radii — and Haiku does it well, often more exhaustively than a
+# larger model. But the findings that matter are the ones that need two or three
+# facts joined across files, and that is not enumeration.
+#
+# Observed failure (Snuggle, 2026-07-25): a Haiku design-critic read the theme
+# file whose own comment says "never put a white label on brandGradient … fails
+# the 4.5:1 floor", then reported the contrast checklist item as cleared — twice.
+# An Opus run over the same code found it as the only HIGH and returned
+# `off-spec`; Haiku returned `drift`, which routes to a different action. The
+# report was also *longer*, so length is no signal of thoroughness.
+#
+# A missed finding is recoverable. A false clear is not: it tells the reader the
+# item was checked. These roles own gates (a11y floor, blocking verdict), so they
+# get a model that can do the joining. The agent specs now also require evidence
+# for every cleared item, which helps at any tier but does not substitute for it.
 
 # Dynamic complexity routing.
 # When enabled, the model selected for each task is adjusted based on its complexity field:
@@ -123,26 +159,33 @@ models:
 #   complexity: medium → role_model unchanged             — uses the per-role config above
 #   complexity: high   → greater of(role_model, high_floor) — Sonnet floor for demanding tasks
 #
-# high_floor defaults to Sonnet. Set it to claude-opus-4-8 only for roles that genuinely
+# high_floor defaults to Sonnet. Set it to claude-opus-5 only for roles that genuinely
 # benefit from deeper reasoning (planner, debugger) on architectural/security tasks.
-# Avoid Opus for reviewer/tester — they are pattern-matching, not reasoning.
-# The architect and security-reviewer are the opposite: pure reasoning roles that
-# construct design critiques and exploit paths. Keep them on Opus — do not "optimize"
-# them down to Haiku by analogy with the reviewer; they are not pattern-matchers.
+# Opus is still overkill for the tester — running a suite and reading counts really is
+# mechanical. The architect and security-reviewer are the opposite: pure reasoning roles
+# that construct design critiques and exploit paths. Keep them on Opus.
+#
+# `never_downgrade` protects gate-owning roles from the low_cap. Reviewing work looks
+# mechanical from the outside, so it is the first thing anyone cost-optimizes — but a
+# cheap reviewer's failure mode is reporting a checklist item as *cleared*, which reads
+# as "checked and fine" and stops anyone looking again. A task marked low-complexity is
+# where that goes unnoticed. These roles can still be routed UP by high_floor.
+# Set to [] to opt out.
 complexity_routing:
   enabled: true
   low_cap: claude-haiku-4-5-20251001    # low tasks never exceed this model
-  high_floor: claude-sonnet-4-6         # high tasks use at least this model
+  high_floor: claude-sonnet-5         # high tasks use at least this model
+  never_downgrade: [reviewer, design-critic, architect, security-reviewer, auditor]
 
 # Capability ladder (cheapest → most capable) used by dispatch_plan.py for all
 # routing comparisons. Add newer model IDs here in the right position so
 # complexity routing ranks them correctly; a model not listed is treated as
-# claude-sonnet-4-6 for comparison. Order matters; the exact strings must match
+# claude-sonnet-5 for comparison. Order matters; the exact strings must match
 # the IDs used in `models:` above.
 model_capability_order:
   - claude-haiku-4-5-20251001
-  - claude-sonnet-4-6
-  - claude-opus-4-8
+  - claude-sonnet-5
+  - claude-opus-5
 
 git:
   auto_branch: true

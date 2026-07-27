@@ -28,7 +28,13 @@ Entry point for data-aware debugging. Collects context from the developer, then 
    ```
    printf '%s' '<debug_id>' > .claude/state/current_run.txt
    printf '%s' 'debugger' > .claude/state/current_role.txt
+   printf '%s' '<resolved_model>' > .claude/state/current_model.txt
    ```
+   Resolve `<resolved_model>` from `models.debugger` in `.agentic.yml` (fall back
+   to `models.default`, then the session default), pass it explicitly at
+   invocation, and write it to state so every logged tool call carries the model
+   that actually ran.
+
    Then invoke the **debugger** agent with:
    - The bug description: `$ARGUMENTS`
    - The clarification answers
@@ -36,7 +42,7 @@ Entry point for data-aware debugging. Collects context from the developer, then 
 
    After it returns, clear the state (mandatory — do not skip):
    ```
-   rm -f .claude/state/current_role.txt .claude/state/current_run.txt
+   rm -f .claude/state/current_role.txt .claude/state/current_run.txt .claude/state/current_model.txt
    ```
 
 4. After the debugger writes its report, print:

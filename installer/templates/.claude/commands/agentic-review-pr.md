@@ -42,25 +42,47 @@ The github MCP is called ONLY here, by you. Agents never touch it.
 
 ### Step 3 — Run the two reviewers
 
-For each agent, arm the hook, invoke pointing at the saved files as `scope`,
-then clear state. (`reviewer` is deliberately not used here — it is task-file
-coupled and needs acceptance criteria a raw PR does not carry.)
+For each agent, resolve its model from `models.<role>` in `.agentic.yml` (fall
+back to `models.default`, then the session default), arm the hook, invoke
+pointing at the saved files as `scope`, then clear state. (`reviewer` is
+deliberately not used here — it is task-file coupled and needs acceptance
+criteria a raw PR does not carry.)
 
 **Architect:**
 ```bash
 printf '%s' "$PR_ID" > .claude/state/current_run.txt   # log context: tool calls land in logs/$PR_ID.jsonl
 printf '%s' 'architect' > .claude/state/current_role.txt
+printf '%s' '<resolved_model>' > .claude/state/current_model.txt   # models.architect, per Step 3
 ```
-Invoke **architect** with `review_id=<PR_ID>` and
+Invoke **architect** with `review_id=<PR_ID>`, that model (passed explicitly —
+do not rely on session inheritance), and
 `scope="GitHub PR: <title>; diff at .claude/state/pr-review/<PR_ID>/diff.patch, description at .../pr.md"`.
 Wait for its findings, then:
 ```bash
-rm -f .claude/state/current_role.txt .claude/state/current_run.txt
+rm -f .claude/state/current_role.txt .claude/state/current_run.txt .claude/state/current_model.txt
 ```
 
-**Security-reviewer:** same handshake (set `current_run.txt` to `$PR_ID` and role
-to `security-reviewer`, clear both after) with the same
-`scope`, writing to `.claude/state/security-review/<PR_ID>/findings.md`.
+**Security-reviewer:** same handshake (set `current_run.txt` to `$PR_ID`, role to
+`security-reviewer`, and `current_model.txt` to the resolved
+`models.security-reviewer`; clear all three after) with the same `scope`,
+writing to `.claude/state/security-review/<PR_ID>/findings.md`.
+
+### Step 3b — Verify both reviewers' citations
+
+```bash
+${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
+  .claude/state/pr-review/$PR_ID/findings.md --cwd . \
+  --checklist .claude/agents/architect.md
+${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
+  .claude/state/security-review/$PR_ID/findings.md --cwd . \
+  --checklist .claude/agents/security-reviewer.md
+```
+
+Print both outputs **above** the reports. This matters more here than in any
+other review: the output may be posted to a PR with `--comment`, so an
+unreproducible clear would be published as a checked-and-fine claim to the
+author. Any `mismatch` / `failed` / `uncited` item must be described as
+unreviewed in what you present — and in the PR comment, if one is posted.
 
 ### Step 4 — Present, then optionally comment
 
