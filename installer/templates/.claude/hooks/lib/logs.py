@@ -100,6 +100,7 @@ def _aggregate_usage(events: list[dict]) -> dict:
 def summarize(run_id: str) -> dict:
     raw = read_jsonl(LOG_DIR / f"{run_id}.jsonl")
     budget = [c for c in raw if c.get("event") == "budget"]
+    hook_errors = [c for c in raw if c.get("event") == "hook_error"]
     verifications = [c for c in raw if c.get("event") == "verification"]
     calls = [c for c in raw if not c.get("event")]
     usage_by_task = _aggregate_usage([c for c in raw if c.get("event") == "usage"])
@@ -199,6 +200,8 @@ def summarize(run_id: str) -> dict:
         "events": all_events,
         # `axis` defaults to calls: events predating the result_chars axis have no
         # such key, and every one of those was a call-count warning.
+        "hook_errors": [{"hook": h.get("hook"), "error": h.get("error")}
+                        for h in hook_errors],
         "budget": [{"task_id": b.get("task_id"), "calls": b.get("calls"),
                     "res_chars": b.get("res_chars"),
                     "axis": b.get("axis") or "calls",
@@ -316,6 +319,10 @@ def _print_report(rep: dict) -> None:
             if v.get("exit"):
                 print(f"           {v['report']} — evidence did not re-derive; "
                       "treat those items as unreviewed")
+    if rep.get("hook_errors"):
+        print("\n  hooks that failed (telemetry below is incomplete):")
+        for h in rep["hook_errors"]:
+            print(f"    [FAIL] {h['hook']}: {h['error']}")
     if rep.get("budget"):
         print("\n  budget thresholds crossed:")
         for b in rep["budget"]:

@@ -74,6 +74,29 @@ def _hash_file(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()[:16]
 
 
+def _source_commit() -> str:
+    """The stangent commit these templates came from, if it is a git checkout.
+
+    `system_version` in .agentic.yml has read `1.0.0` since the v3 migration and
+    has never been bumped — a hand-maintained version that nobody maintains is
+    worse than none, because it looks like information. The commit is derived, so
+    it cannot drift, and it answers the question the version was there for:
+    exactly which templates is this install running?
+    """
+    import subprocess
+    try:
+        r = subprocess.run(["git", "-C", str(SCRIPT_DIR), "rev-parse", "--short", "HEAD"],
+                           capture_output=True, text=True, timeout=10)
+        if r.returncode == 0 and r.stdout.strip():
+            dirty = subprocess.run(["git", "-C", str(SCRIPT_DIR), "status", "--porcelain"],
+                                   capture_output=True, text=True, timeout=10)
+            suffix = "-dirty" if dirty.stdout.strip() else ""
+            return r.stdout.strip() + suffix
+    except Exception:
+        pass
+    return ""
+
+
 def _template_version() -> str:
     tpl = TEMPLATES_DIR / ".claude" / ".agentic.yml"
     if tpl.exists():
@@ -113,6 +136,7 @@ def write_manifest(target: Path) -> None:
             files[rel] = {"tpl": _hash_file(f), "cur": _hash_file(installed)}
     manifest = {
         "system_version": _template_version(),
+        "source_commit": _source_commit(),
         "installed_at": _dt.datetime.now(_dt.timezone.utc).isoformat(
             timespec="seconds").replace("+00:00", "Z"),
         "source": str(SCRIPT_DIR),

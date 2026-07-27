@@ -459,8 +459,12 @@ def check_install_manifest() -> list[dict]:
     out = []
     version = mf.get("system_version", "?")
     when = mf.get("installed_at", "?")
+    # The commit is the useful half: system_version is declared and has not moved
+    # since the v3 migration, while the commit is derived and cannot drift.
+    commit = mf.get("source_commit") or ""
+    stamp = f"v{version}" + (f" @{commit}" if commit else "")
     out.append(_check("install manifest", OK,
-                      f"v{version}, installed {when}, {len(files)} files tracked"))
+                      f"{stamp}, installed {when}, {len(files)} files tracked"))
 
     edited = [rel for rel, hs in files.items()
               if h(CLAUDE / rel) not in (None, hs.get("cur"))]

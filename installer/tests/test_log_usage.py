@@ -222,3 +222,57 @@ class HookCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HookErrorCase(unittest.TestCase):
+    """A hook that dies must leave a trace, not vanish.
+
+    `except Exception: pass` keeps the contract — telemetry must never break a
+    run — but it makes a broken hook indistinguishable from an idle one. A run
+    whose usage events silently stopped looks exactly like a run that produced
+    none, so the cost table under-reports and nothing says why.
+    """
+
+    def run_broken(self, break_it: bool):
+        import shutil, subprocess, tempfile
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            hooks = root / ".claude" / "hooks"
+            (hooks / "lib").mkdir(parents=True)
+            shutil.copy(HOOK, hooks / HOOK.name)
+            for mod in ("common.py", "token_cost.py"):
+                shutil.copy(LIB / mod, hooks / "lib" / mod)
+            if break_it:
+                with (hooks / "lib" / "token_cost.py").open("a") as f:
+                    f.write("\ndef cost_usd(*a, **k): raise RuntimeError('boom')\n")
+            state = root / ".claude" / "state"
+            state.mkdir(parents=True)
+            (state / "current_run.txt").write_text("FEAT-001")
+            tx = root / "sess.jsonl"
+            tx.write_text("")
+            sub = tx.with_suffix("") / "subagents"
+            sub.mkdir(parents=True)
+            (sub / "agent-1.jsonl").write_text(json.dumps(assistant(inp=10)) + "\n")
+            r = subprocess.run([sys.executable, str(hooks / HOOK.name)],
+                               input=json.dumps({"transcript_path": str(tx)}),
+                               cwd=str(root), capture_output=True, text=True)
+            log = state / "logs" / "FEAT-001.jsonl"
+            rows = ([json.loads(l) for l in log.read_text().splitlines() if l.strip()]
+                    if log.is_file() else [])
+            return r.returncode, rows
+
+    def test_a_failing_hook_records_the_error_and_still_exits_zero(self):
+        code, rows = self.run_broken(True)
+        self.assertEqual(code, 0, "a broken hook must never break the run")
+        errs = [r for r in rows if r.get("event") == "hook_error"]
+        self.assertEqual(len(errs), 1)
+        self.assertEqual(errs[0]["hook"], "log_usage.py")
+        self.assertIn("boom", errs[0]["error"])
+        self.assertFalse([r for r in rows if r.get("event") == "usage"],
+                         "the usage event is exactly what was lost")
+
+    def test_a_healthy_hook_records_no_error(self):
+        code, rows = self.run_broken(False)
+        self.assertEqual(code, 0)
+        self.assertFalse([r for r in rows if r.get("event") == "hook_error"])
+        self.assertTrue([r for r in rows if r.get("event") == "usage"])

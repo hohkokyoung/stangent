@@ -80,6 +80,37 @@ def resolve_subagent_transcript(transcript_path: str) -> Path | None:
     return files[0] if files else None
 
 
+HOOK_NAME = "log_usage.py"
+
+
+def _note_hook_error(exc: Exception) -> None:
+    """Record that this hook failed, without letting the failure escape.
+
+    `except Exception: pass` keeps the contract — telemetry must never break a
+    run — but it also makes a broken hook indistinguishable from an idle one. A
+    run whose usage events silently stopped looks exactly like a run that
+    produced none, so the cost table quietly under-reports and nothing says why.
+
+    Best-effort by necessity: if the log is what failed, there is nowhere to
+    write, and the outer handler still swallows.
+    """
+    try:
+        run_id = _read_state("current_run.txt")
+        if not run_id:
+            return
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        with (LOG_DIR / f"{run_id}.jsonl").open("a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "ts": dt.datetime.now(dt.timezone.utc).isoformat(
+                    timespec="seconds").replace("+00:00", "Z"),
+                "event": "hook_error",
+                "hook": HOOK_NAME,
+                "error": f"{type(exc).__name__}: {exc}"[:300],
+            }, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+
 def main() -> None:
     try:
         payload = json.loads(sys.stdin.read() or "{}")
@@ -131,8 +162,8 @@ def main() -> None:
         LOG_DIR.mkdir(parents=True, exist_ok=True)
         with (LOG_DIR / f"{run_id}.jsonl").open("a", encoding="utf-8") as f:
             f.write(json.dumps(event, ensure_ascii=False) + "\n")
-    except Exception:
-        pass  # telemetry must never break a run
+    except Exception as _e:
+        _note_hook_error(_e)  # telemetry must never break a run
     sys.exit(0)
 
 

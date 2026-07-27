@@ -298,6 +298,14 @@ context:
 - **`log_usage.py`** (SubagentStop) — one `usage` event per finished agent, with
   token counts (input/output/cache) and estimated cost, attributed to the task.
 - **`log_dispatch.py`** — one routing event per build dispatch → `dispatch.jsonl`.
+- **`hook_error` events** — every telemetry hook swallows its exceptions, because
+  breaking a run to report a logging failure would be worse than the failure. But
+  a silently dead hook is indistinguishable from an idle one: a run whose usage
+  events stopped looks exactly like a run that produced none, so the cost table
+  under-reports and nothing says why. Each hook now records `{event: hook_error,
+  hook, error}` before swallowing, and `/agentic-logs` surfaces it above the
+  per-task table. Best-effort by necessity — if the log is what failed, there is
+  nowhere to write.
 
 **Only agentic work is logged.** With no command active, tool calls are ambient
 general dev and are skipped (they used to fill an unbounded `_no-run.jsonl`). Set
@@ -769,7 +777,7 @@ gitignored: it holds an absolute local path and is regenerated on every install.
 python -m unittest discover installer/tests
 ```
 
-362 tests, no third-party dependency beyond `pyyaml`. CI runs them on Python
+373 tests, no third-party dependency beyond `pyyaml`. CI runs them on Python
 3.10, 3.12, and 3.14 for every push and pull request
 ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)); 3.10 is the
 verified floor.
