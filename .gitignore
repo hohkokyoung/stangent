@@ -2,6 +2,10 @@
 __pycache__/
 *.pyc
 
+# pytest scratch dirs (the suite runs under unittest; these appear when anyone
+# runs it via pytest, at the repo root and under installer/)
+.pytest_cache/
+
 # >>> agentic
 .claude/state/vectors.db
 .claude/state/logs/

@@ -20,6 +20,79 @@ def _settings(root, data):
     return p
 
 
+class TestInstallManifest(unittest.TestCase):
+    """The manifest is what lets an install answer 'has anyone edited me?' and
+    'am I behind my source?' — neither was answerable before it existed."""
+
+    def install(self, root: Path):
+        ag.install(root)
+        return json.loads((root / ".claude" / ".install.json").read_text())
+
+    def test_written_on_install_with_both_hashes(self):
+        with tempfile.TemporaryDirectory() as td:
+            mf = self.install(Path(td))
+            self.assertTrue(mf["files"], "no system files tracked")
+            self.assertIn("agents/reviewer.md", mf["files"])
+            for rel, hs in mf["files"].items():
+                self.assertIn("tpl", hs, rel)
+                self.assertIn("cur", hs, rel)
+
+    def test_cur_hash_is_taken_after_model_stamping(self):
+        # The subtlety the two-hash design exists for: the installer rewrites
+        # agent frontmatter after copying, so a manifest recorded from the
+        # template would flag every agent as locally edited on a fresh install.
+        import hashlib
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            mf = self.install(root)
+            entry = mf["files"]["agents/reviewer.md"]
+            on_disk = hashlib.sha256(
+                (root / ".claude" / "agents" / "reviewer.md").read_bytes()
+            ).hexdigest()[:16]
+            self.assertEqual(entry["cur"], on_disk,
+                             "cur must hash the installed (stamped) file")
+            self.assertNotEqual(entry["cur"], entry["tpl"],
+                                "stamping should make cur differ from tpl")
+
+    def test_only_mirrored_dirs_are_tracked(self):
+        # Seed files (.agentic.yml, settings.json) are user config — editing them
+        # is expected and must never be reported as drift.
+        with tempfile.TemporaryDirectory() as td:
+            mf = self.install(Path(td))
+            tracked_roots = {rel.split("/")[0] for rel in mf["files"]}
+            self.assertTrue(tracked_roots <= set(ag.MIRROR_DIRS), tracked_roots)
+            self.assertNotIn(".agentic.yml", mf["files"])
+            self.assertNotIn("settings.json", mf["files"])
+
+    def test_records_version_and_source(self):
+        with tempfile.TemporaryDirectory() as td:
+            mf = self.install(Path(td))
+            self.assertEqual(mf["source"], str(ag.SCRIPT_DIR))
+            self.assertNotEqual(mf["system_version"], "unknown")
+
+    def test_reinstall_refreshes_the_manifest(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self.install(root)
+            # A local edit is erased by the re-install (dirs are mirrored), so the
+            # refreshed manifest must match the newly written file, not the edit.
+            agent = root / ".claude" / "agents" / "reviewer.md"
+            agent.write_text(agent.read_text() + "\nlocal edit\n")
+            mf = self.install(root)
+            import hashlib
+            self.assertEqual(
+                mf["files"]["agents/reviewer.md"]["cur"],
+                hashlib.sha256(agent.read_bytes()).hexdigest()[:16])
+            self.assertNotIn("local edit", agent.read_text())
+
+    def test_uninstall_removes_it(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self.install(root)
+            ag.uninstall(root)
+            self.assertFalse((root / ".claude" / ".install.json").exists())
+
+
 class TestSyncManagedHooks(unittest.TestCase):
     def test_adds_missing_managed_hook(self):
         # An existing install missing the SubagentStop hook should get it, while
@@ -167,7 +240,7 @@ class TestStampAgentModels(unittest.TestCase):
                 "\n"
                 "git:\n  auto_branch: true\n"
             )
-            ag._merge_missing_routing_keys(root)
+            ag._merge_missing_section_keys(root, "complexity_routing", ("never_downgrade",))
             text = (root / ".claude" / ".agentic.yml").read_text()
             self.assertIn("never_downgrade:", text)
             self.assertIn("reviewer", text.split("never_downgrade:")[1].splitlines()[0])
@@ -182,8 +255,8 @@ class TestStampAgentModels(unittest.TestCase):
                 "  enabled: true\n"
                 "  never_downgrade: [reviewer]\n"   # a user's own narrower list
             )
-            ag._merge_missing_routing_keys(root)
-            ag._merge_missing_routing_keys(root)
+            ag._merge_missing_section_keys(root, "complexity_routing", ("never_downgrade",))
+            ag._merge_missing_section_keys(root, "complexity_routing", ("never_downgrade",))
             text = (root / ".claude" / ".agentic.yml").read_text()
             self.assertEqual(text.count("never_downgrade:"), 1)
             self.assertIn("[reviewer]", text)  # user value never overwritten
@@ -194,7 +267,7 @@ class TestStampAgentModels(unittest.TestCase):
             root = Path(td); (root / ".claude").mkdir(parents=True)
             p = root / ".claude" / ".agentic.yml"
             p.write_text("enabled_skills: []\n")
-            ag._merge_missing_routing_keys(root)
+            ag._merge_missing_section_keys(root, "complexity_routing", ("never_downgrade",))
             self.assertNotIn("never_downgrade:", p.read_text())
 
 

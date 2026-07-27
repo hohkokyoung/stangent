@@ -67,6 +67,22 @@ def check_required_deps() -> list[dict]:
     """Probe the interpreter the MCP server uses, not the one running doctor."""
     mods = ("yaml", "fastembed", "sqlite_vec")
     pkg_of = {"yaml": "pyyaml", "sqlite_vec": "sqlite-vec"}
+    # Name what a missing dep actually costs. "missing — pip install pyyaml"
+    # reads as a setup nicety; nothing connects it to the fact that the project's
+    # own gateway.deny patterns are then not enforced at all. The one-shot CLIs
+    # warn at point of use, but pre_tool_use.py runs on every tool call and must
+    # not spam stderr, so this is where that consequence gets stated.
+    costs_of = {
+        "yaml": "the whole of .agentic.yml is ignored — gateway.deny patterns are "
+                "NOT enforced, per-role models, complexity_routing, plan_id and "
+                "pricing all fall back to built-in defaults",
+        "fastembed": "retrieval cannot embed; retrieve() returns nothing",
+        "sqlite_vec": "vector search falls back to a slower brute-force scan",
+    }
+
+    def _missing(mod: str, how: str) -> dict:
+        detail = f"{how}{' — ' + costs_of[mod] if mod in costs_of else ''}"
+        return _check(f"dep: {mod}", FAIL, detail)
     interp, note = _mcp_interpreter()
 
     if interp is None:
@@ -79,8 +95,7 @@ def check_required_deps() -> list[dict]:
                 importlib.import_module(mod)
                 out.append(_check(f"dep: {mod}", OK))
             except Exception:
-                out.append(_check(f"dep: {mod}", FAIL,
-                                  f"missing — pip install {pkg_of.get(mod, mod)}"))
+                out.append(_missing(mod, f"missing — pip install {pkg_of.get(mod, mod)}"))
         return out
 
     probe = "import importlib,sys;" + "".join(
@@ -125,8 +140,7 @@ def check_required_deps() -> list[dict]:
         if status.get(mod) == "ok":
             out.append(_check(f"dep: {mod}", OK))
         else:
-            out.append(_check(f"dep: {mod}", FAIL,
-                              "missing in the interpreter above — install with its pip"))
+            out.append(_missing(mod, "missing in the interpreter above — install with its pip"))
     return out
 
 
@@ -366,6 +380,97 @@ def check_design_spec() -> dict:
     return _check("design spec", OK, "none yet (optional — /agentic-design to author one)")
 
 
+def check_install_manifest() -> list[dict]:
+    """Report local edits to system files, and whether the source has moved on.
+
+    Both were unanswerable before. System dirs are mirrored on re-install, so a
+    hand-edited agent is destroyed without warning — and "am I running the
+    current templates?" required byte-comparing against the source tree by hand,
+    because `system_version` is static and never bumped.
+
+    The manifest records two hashes per file: `tpl` as shipped, `cur` as
+    installed. They legitimately differ for agents (the installer stamps role
+    models into frontmatter), which is exactly why one hash could not serve.
+    """
+    import hashlib
+    mf_path = CLAUDE / ".install.json"
+    if not mf_path.is_file():
+        return [_check("install manifest", WARN,
+                       "absent — installed before manifests existed; re-run the "
+                       "installer to enable drift and staleness checks")]
+    try:
+        mf = json.loads(mf_path.read_text(encoding="utf-8"))
+        files = mf.get("files") or {}
+    except (json.JSONDecodeError, OSError) as e:
+        return [_check("install manifest", WARN, f"unreadable: {e}")]
+    if not files:
+        return [_check("install manifest", WARN, "empty — re-run the installer")]
+
+    def h(p: Path) -> str | None:
+        try:
+            return hashlib.sha256(p.read_bytes()).hexdigest()[:16]
+        except OSError:
+            return None
+
+    out = []
+    version = mf.get("system_version", "?")
+    when = mf.get("installed_at", "?")
+    out.append(_check("install manifest", OK,
+                      f"v{version}, installed {when}, {len(files)} files tracked"))
+
+    edited = [rel for rel, hs in files.items()
+              if h(CLAUDE / rel) not in (None, hs.get("cur"))]
+    # check_agents already reports a missing role agent by name, and the two
+    # checks answer different questions — it asserts the system's expected roles
+    # exist (catching an install from a template that predates a role), this one
+    # asserts what was installed is still there. They overlap on exactly one
+    # case: an agent deleted after install. Drop those here so a single deletion
+    # is reported once, by the check that names the role.
+    covered = {f"agents/{name}.md" for name in EXPECTED_AGENTS}
+    missing = [rel for rel in files
+               if rel not in covered and not (CLAUDE / rel).is_file()]
+    if missing:
+        out.append(_check("system files present", FAIL,
+                          f"{len(missing)} tracked file(s) gone, e.g. "
+                          + ", ".join(sorted(missing)[:3])
+                          + " — re-run the installer"))
+    if edited:
+        out.append(_check("local edits to system files", WARN,
+                          f"{len(edited)} edited since install: "
+                          + ", ".join(sorted(edited)[:5])
+                          + " — these are OVERWRITTEN by the next install; move "
+                            "the change into the template repo to keep it"))
+    else:
+        out.append(_check("local edits to system files", OK, "none"))
+
+    # Staleness needs the source tree the install came from. If it has moved or
+    # is gone, say so rather than implying the install is current.
+    src = Path(mf.get("source") or "") / "templates" / ".claude"
+    if not src.is_dir():
+        out.append(_check("up to date with source", WARN,
+                          f"source not found at {mf.get('source')} — cannot tell "
+                          "whether newer templates exist"))
+        return out
+    behind = [rel for rel, hs in files.items()
+              if h(src / rel) not in (None, hs.get("tpl"))]
+    added = [f.relative_to(src).as_posix() for f in src.rglob("*")
+             if f.is_file() and "__pycache__" not in f.parts
+             and f.relative_to(src).as_posix() not in files
+             and f.relative_to(src).parts[0] in ("agents", "commands", "skills",
+                                                 "hooks", "mcp", "evals", "templates")]
+    if behind or added:
+        detail = []
+        if behind:
+            detail.append(f"{len(behind)} changed ({', '.join(sorted(behind)[:4])})")
+        if added:
+            detail.append(f"{len(added)} new ({', '.join(sorted(added)[:3])})")
+        out.append(_check("up to date with source", WARN,
+                          "; ".join(detail) + " — re-run the installer to update"))
+    else:
+        out.append(_check("up to date with source", OK, "matches source templates"))
+    return out
+
+
 def check_stale_state() -> dict:
     # Reuse state.py's definition of "stale" so the file list and age threshold
     # live in exactly one place (doctor is run with the lib dir on sys.path).
@@ -495,6 +600,7 @@ def run_all() -> list[dict]:
     results.append(check_adrs())
     results.append(check_design_spec())
     results.append(check_stale_state())
+    results.extend(check_install_manifest())
     results.extend(check_git())
     return results
 
