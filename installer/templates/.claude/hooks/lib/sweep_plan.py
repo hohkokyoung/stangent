@@ -70,6 +70,48 @@ DEFAULT_EXCLUDE_SUFFIXES = (
 )
 
 
+# Fallback only. The real answer comes from project.yml, which /agentic-index
+# already derived from the actual stack.
+FALLBACK_PATTERNS = ["*.dart", "*.tsx", "*.ts", "*.jsx", "*.js",
+                     "*.vue", "*.svelte", "*.html", "*.css"]
+
+
+def detected_patterns() -> tuple[list[str], str]:
+    """The project's own source globs, as `/agentic-index` detected them.
+
+    Reading project.yml rather than guessing keeps the sweep over the same file
+    universe the retrieval index covers, and — the point — removes one more
+    choice from the agent. A hardcoded default would silently sweep the wrong
+    language on any stack nobody thought of, and report full coverage of it.
+
+    Parsed with a line reader rather than PyYAML: this module has no other
+    dependency, and running without a parser must degrade to the fallback, not
+    to an exception.
+    """
+    p = REPO_ROOT / ".claude" / "state" / "project.yml"
+    try:
+        lines = p.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return FALLBACK_PATTERNS, "fallback (no project.yml — run /agentic-index)"
+    out, in_block = [], False
+    for line in lines:
+        if line.startswith("project_index_globs:"):
+            in_block = True
+            continue
+        if in_block:
+            t = line.strip()
+            if t.startswith("- "):
+                # `**/*.dart` and `*.dart` mean the same thing to rglob; keep the
+                # short form so batch listings stay readable.
+                g = t[2:].strip().strip("'\"")
+                out.append(g[3:] if g.startswith("**/") else g)
+            elif t and not line[:1].isspace():
+                break
+    if not out:
+        return FALLBACK_PATTERNS, "fallback (project.yml has no project_index_globs)"
+    return out, "detected (project.yml)"
+
+
 def _excluded(rel: str, excludes, suffixes) -> bool:
     p = rel.replace("\\", "/")
     if any(seg in f"/{p}" for seg in (f"/{e.rstrip('/')}/" for e in excludes)):
@@ -204,16 +246,20 @@ def main() -> None:
         if name == "verify":
             s.add_argument("batch_dir")
         s.add_argument("--pattern", action="append", default=None,
-                       help="glob to sweep, repeatable (default: *.dart, *.tsx, "
-                            "*.ts, *.jsx, *.js, *.vue, *.svelte, *.html, *.css)")
+                       help="glob to sweep, repeatable; overrides the globs "
+                            "/agentic-index detected into project.yml")
         s.add_argument("--max-files", type=int, default=DEFAULT_MAX_FILES)
         s.add_argument("--max-chars", type=int, default=DEFAULT_MAX_CHARS)
         s.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
-    patterns = args.pattern or ["*.dart", "*.tsx", "*.ts", "*.jsx", "*.js",
-                                "*.vue", "*.svelte", "*.html", "*.css"]
+    if args.pattern:
+        patterns, source = args.pattern, "explicit --pattern"
+    else:
+        patterns, source = detected_patterns()
     plan, code = build_plan(args.scope, patterns, args.max_files, args.max_chars)
+    if code == 0:
+        plan["pattern_source"] = source
     if code != 0:
         print(json.dumps(plan, indent=2)); sys.exit(code)
 
@@ -222,7 +268,8 @@ def main() -> None:
             print(json.dumps(plan, indent=2))
         else:
             print(f"sweep: {plan['total_files']} files, "
-                  f"{plan['total_chars'] // 1000}KB, {len(plan['batches'])} batches")
+                  f"{plan['total_chars'] // 1000}KB, {len(plan['batches'])} batches"
+                  f"  [patterns: {' '.join(plan['patterns'])} — {plan['pattern_source']}]")
             for b in plan["batches"]:
                 head = Path(b["files"][0]).parent
                 try:

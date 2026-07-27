@@ -61,10 +61,16 @@ printf '%s' "$REVIEW_ID" > .claude/state/current_run.txt
 printf '%s' '<the lane's agent>' > .claude/state/current_role.txt
 ```
 
-Read `.claude/state/project.yml` for the stack. Choose patterns to match it
-(`*.dart` for Flutter; `*.tsx,*.ts,*.jsx,*.js,*.vue,*.svelte,*.css` for web) and
-keep the same patterns for every step below. For `security` and `audit` include
-server//logic source too, not only the view layer.
+**Do not choose file patterns.** `sweep_plan.py` reads the globs `/agentic-index`
+already detected into `.claude/state/project.yml`, so the sweep covers the same
+file universe as the retrieval index. It prints which it used and whether they
+were detected or a fallback; if it says fallback, run `/agentic-index` rather than
+passing patterns by hand — a guessed pattern that misses a language still reports
+complete coverage of what it did match.
+
+The `ui` lane is narrowed by **scope**, not by pattern: pass the UI source
+directory (`dir:mobile/lib`, `dir:src/`). `security` and `audit` take the whole
+repo, since an IDOR is not confined to the view layer.
 
 ### Step 2 — Compute the plan, and show the cost
 

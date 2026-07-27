@@ -187,3 +187,53 @@ class SweepCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DetectedPatternsCase(unittest.TestCase):
+    """Which files a sweep covers must come from detection, not a guess.
+
+    A hardcoded default silently sweeps the wrong language on any stack nobody
+    anticipated — and then reports complete coverage of it, which is the failure
+    mode this whole module exists to remove.
+    """
+
+    def setUp(self):
+        self._td = tempfile.TemporaryDirectory()
+        self.root = Path(self._td.name)
+        (self.root / ".claude" / "state").mkdir(parents=True)
+        self.sw = load_at(self.root)
+
+    def tearDown(self):
+        self._td.cleanup()
+
+    def project_yml(self, text):
+        (self.root / ".claude" / "state" / "project.yml").write_text(text)
+
+    def test_reads_globs_detected_by_agentic_index(self):
+        self.project_yml("app_id: x\nproject_index_globs:\n  - '**/*.dart'\n"
+                         "  - '**/*.py'\ntest_framework: maestro\n")
+        pats, src = self.sw.detected_patterns()
+        self.assertEqual(pats, ["*.dart", "*.py"], "**/ prefix should normalise")
+        self.assertIn("detected", src)
+
+    def test_block_ends_at_the_next_top_level_key(self):
+        self.project_yml("project_index_globs:\n  - '**/*.dart'\n"
+                         "test_framework: maestro\napp_id: com.example\n")
+        self.assertEqual(self.sw.detected_patterns()[0], ["*.dart"],
+                         "a following key must not be swallowed as a glob")
+
+    def test_missing_project_yml_falls_back_and_says_so(self):
+        pats, src = self.sw.detected_patterns()
+        self.assertEqual(pats, self.sw.FALLBACK_PATTERNS)
+        self.assertIn("/agentic-index", src, "must name the fix, not fail silently")
+
+    def test_project_yml_without_globs_falls_back(self):
+        self.project_yml("app_id: x\ntest_framework: maestro\n")
+        pats, src = self.sw.detected_patterns()
+        self.assertEqual(pats, self.sw.FALLBACK_PATTERNS)
+        self.assertIn("fallback", src)
+
+    def test_unparseable_file_degrades_rather_than_raising(self):
+        # No PyYAML dependency here on purpose; a odd file must not except.
+        self.project_yml("\x00\x01 not yaml at all\n")
+        self.assertEqual(self.sw.detected_patterns()[0], self.sw.FALLBACK_PATTERNS)
