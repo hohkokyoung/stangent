@@ -1,13 +1,13 @@
 ---
-description: Exhaustive UI review — every in-scope file read against every spec rule, in computed batches
-argument-hint: "[dir:<path>] [--max-chars N]"
+description: Exhaustive review — every in-scope file read against every rule, in computed batches
+argument-hint: "<ui|security|audit> [dir:<path>] [--max-chars N]"
 ---
 
-# /agentic-sweep-ui
+# /agentic-sweep
 
-`/agentic-review-ui` is a *sampling* review: one pass, one agent, reading what it
+The ordinary reviews are *sampling* reviews: one pass, one agent, reading what it
 judges worth reading. That is fine for a quick read of recent work and it is why
-it is cheap. It cannot tell you what it did not look at.
+they are cheap. They cannot tell you what they did not look at.
 
 This is the exhaustive form. The file list is computed, split into batches, and
 every batch is dispatched — so coverage is arithmetic (`164/164 files × 11/11
@@ -18,11 +18,31 @@ surfacing findings in code nobody touched.
 It costs more than `/agentic-review-ui` and it terminates. Say so to the
 developer before starting, with the real batch count from step 2.
 
+## Lanes
+
+One algorithm, three lanes. Everything below is identical except this table.
+
+| lane | agent | checklist | reports under | default patterns |
+|---|---|---|---|---|
+| `ui` | design-critic | `docs/design/DESIGN-SPEC.md` §13 | `ui-review/` | UI source only |
+| `security` | security-reviewer | `.claude/agents/security-reviewer.md` (8 categories) | `security-review/` | **all** source |
+| `audit` | auditor | `.claude/agents/auditor.md` | `audit/` | **all** source |
+
+`ui` sweeps the UI surface; `security` and `audit` sweep everything, because an
+IDOR or a swallowed exception is not confined to widget files. That makes them
+proportionally more expensive — say so before dispatching.
+
+There is deliberately no `design` lane: the architect's seven dimensions are
+questions about a design (*who owns this entity, what breaks at 100×*), not rules
+applied to files, so batching source at it would be cargo-culting. Likewise no PR
+lane — a diff is already a bounded, stable population.
+
 ## Preconditions
 
-- `docs/design/DESIGN-SPEC.md` must exist (`/agentic-design` authors it). Without
-  a spec there is nothing to sweep against — stop and say so.
-- Default scope is the project's UI source. Pass `dir:<path>` to narrow it.
+- The lane's checklist must exist and yield items. For `ui` that means
+  `docs/design/DESIGN-SPEC.md` (authored by `/agentic-design`); without it there
+  is nothing to sweep against, so stop and say so.
+- Pass `dir:<path>` to narrow scope.
 
 ## Algorithm
 
@@ -33,15 +53,18 @@ remove.
 ### Step 1 — Establish context
 
 ```bash
+LANE='<ui|security|audit>'   # from the argument
+DIR='<ui-review|security-review|audit>'   # per the lane table
 REVIEW_ID="SWEEP-$(date +%Y%m%d-%H%M%S)"
-mkdir -p .claude/state/ui-review/$REVIEW_ID/batches
+mkdir -p .claude/state/$DIR/$REVIEW_ID/batches
 printf '%s' "$REVIEW_ID" > .claude/state/current_run.txt
-printf '%s' 'design-critic' > .claude/state/current_role.txt
+printf '%s' '<the lane's agent>' > .claude/state/current_role.txt
 ```
 
 Read `.claude/state/project.yml` for the stack. Choose patterns to match it
 (`*.dart` for Flutter; `*.tsx,*.ts,*.jsx,*.js,*.vue,*.svelte,*.css` for web) and
-keep the same patterns for every step below.
+keep the same patterns for every step below. For `security` and `audit` include
+server//logic source too, not only the view layer.
 
 ### Step 2 — Compute the plan, and show the cost
 
@@ -58,14 +81,14 @@ the failure this command exists to prevent.
 
 ### Step 3 — Dispatch every batch
 
-For each batch in the plan, in order, invoke **design-critic** with:
+For each batch in the plan, in order, invoke **the lane's agent** with:
 
 - the batch's exact file list — it reviews **those files and no others**
 - `review_id`, the batch index, and the spec
 - an instruction to write findings to
-  `.claude/state/ui-review/$REVIEW_ID/batches/b<NN>.md`
+  `.claude/state/$DIR/$REVIEW_ID/batches/b<NN>.md`
 
-Each batch checks **every** §13 rule against **every** file it was given. This is
+Each batch checks **every** checklist item against **every** file it was given. This is
 the inversion that makes the sweep work: a normal review walks rules and hunts
 for sites, so the sites it does not think to look at are invisible. Here the
 files are fixed and the rules are applied to them, so a rule cannot quietly skip
@@ -80,8 +103,9 @@ whole-sweep properties and belong in the merge.
 ### Step 4 — Merge
 
 Read every `batches/b*.md` and write
-`.claude/state/ui-review/$REVIEW_ID/findings.md` using
-`.claude/templates/ui-critique.md`:
+`.claude/state/$DIR/$REVIEW_ID/findings.md` using
+the lane's report template (`ui-critique.md` for `ui`; the lane agent's own report
+shape otherwise):
 
 - **Group by rule, not by batch.** One finding per rule with the complete site
   list gathered from every batch. Batch boundaries are an implementation detail
@@ -92,7 +116,7 @@ Read every `batches/b*.md` and write
   batches observed about shared components: the same component styled two ways in
   two directories, one colour expressed as two values, a spacing value used once.
   Batches saw parts; this is where the whole is checked.
-- **Coverage table** — one row per §13 item, as always. Because every file was
+- **Coverage table** — one row per checklist item, as always. Because every file was
   read against every rule, `inspected` is the sweep's file count, not a sample:
   write `164 of 164 files`.
 
@@ -100,10 +124,10 @@ Read every `batches/b*.md` and write
 
 ```bash
 python3 .claude/hooks/lib/sweep_plan.py verify '<scope>' \
-  .claude/state/ui-review/$REVIEW_ID/batches --pattern '<pat>' [--max-chars N]
+  .claude/state/$DIR/$REVIEW_ID/batches --pattern '<pat>' [--max-chars N]
 ${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
-  .claude/state/ui-review/$REVIEW_ID/findings.md --cwd . \
-  --checklist docs/design/DESIGN-SPEC.md
+  .claude/state/$DIR/$REVIEW_ID/findings.md --cwd . \
+  --checklist '<the lane's checklist path>'
 ```
 
 The first is the claim this command sells: it fails when a batch never reported,
@@ -133,10 +157,10 @@ The sweep guarantees **nothing was skipped**. It does not guarantee nothing was
 missed: a critic reading a batch can still overlook a violation inside it, the
 same way a human reviewer can. Coverage is not detection.
 
-And some rules are not in the source at any batch size — contrast, focus rings,
-rendered states. Those stay `unverified` here and need `/agentic-screenshot` plus
-a real device or browser pass. Do not let a complete-coverage line imply they
-were checked.
+And some rules are not in the source at any batch size — contrast, focus rings and
+rendered states for `ui`; anything requiring a running system or real traffic for
+`security`. Those stay `unverified` here and need a rendered or runtime pass. Do
+not let a complete-coverage line imply they were checked.
 
 ## Constraints
 

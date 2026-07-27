@@ -47,7 +47,7 @@ In the installed project, in Claude Code:
 /agentic-review [commits:N | dir:path | all] # FULL review — hygiene + design + security (+ UI adherence) → consolidated report → remediate
 /agentic-review-design [run_id | "feature"] # architect red-teams the DESIGN — data ownership, tenancy, compliance, scaling
 /agentic-review-ui [run_id: | dir: | all]   # design-critic checks the built UI against docs/design/DESIGN-SPEC.md → drift report
-/agentic-sweep-ui [dir:<path>]              # EXHAUSTIVE UI review — every file × every rule, in computed batches
+/agentic-sweep <ui|security|audit> [dir:]   # EXHAUSTIVE review — every file × every rule, in computed batches
 /agentic-review-security [run_id | "feature"] # security-reviewer red-teams for exploits — OWASP Top 10, IDOR, injection, secrets
 /agentic-review-pr <PR# | url> [--comment]  # fetch a GitHub PR → architect + security-reviewer; optional summary comment
 /agentic-remediate <review_id>              # turn an EXISTING review's findings into fix tasks → dispatch
@@ -509,7 +509,7 @@ complete.**
 │   ├── agentic-review-design.md   # architect design review → findings report
 │   ├── agentic-review-security.md # security red-team → threat model report
 │   ├── agentic-review-ui.md       # design-critic checks built UI vs design spec → drift report
-│   ├── agentic-sweep-ui.md        # EXHAUSTIVE UI review — computed batches, coverage is arithmetic
+│   ├── agentic-sweep.md           # EXHAUSTIVE review (ui|security|audit) — computed batches, coverage is arithmetic
 │   ├── agentic-review-pr.md       # review a GitHub PR (github MCP) → architect + security-reviewer
 │   ├── agentic-open-pr.md         # open a PR from a completed run (github MCP)
 │   └── agentic-lessons.md      # distill recurring review findings → lessons the planner learns from
@@ -532,7 +532,7 @@ complete.**
 │       ├── plan_id.py          # FEAT-### allocator
 │       ├── adr_id.py           # ADR-### allocator
 │       ├── git_branch.py       # feat/{run_id} branch helper (-v2/-v3 on collision) + per-task checkpoint commits
-│       ├── sweep_plan.py       # deterministic batch planner for /agentic-sweep-ui
+│       ├── sweep_plan.py       # deterministic batch planner for /agentic-sweep
 │       ├── log_dispatch.py     # structured dispatch events → .claude/state/logs/dispatch.jsonl
 │       ├── logs.py             # summarize a run/review's logs (/agentic-logs)
 │       └── doctor.py           # install health checks
@@ -682,7 +682,7 @@ runs over identical code examine different subsets and each reports findings the
 other missed. That is the mechanism behind "I fixed everything it found, ran it
 again, and got new problems in files I never touched."
 
-`/agentic-sweep-ui` removes the choosing, the same way `dispatch_plan.py` removed
+`/agentic-sweep` removes the choosing, the same way `dispatch_plan.py` removed
 it from task ordering. `sweep_plan.py` computes the file list and splits it into
 batches; the command dispatches every one; the agent only judges what it is
 handed. Each batch checks **every** rule against **every** file it was given — the
@@ -714,6 +714,15 @@ A critic reading a batch can still overlook a violation inside it, exactly as a
 human reviewer can. Coverage is not detection. And rules that are not in the
 source at any batch size — contrast, focus rings, rendered states — stay
 `unverified` and need `/agentic-screenshot` plus a real device pass.
+
+Three lanes share the one algorithm — `ui` (design-critic against the design
+spec), `security` (the eight attacker categories), `audit` (the smell classes).
+`ui` sweeps the UI surface; the other two sweep all source, since an IDOR is not
+confined to widget files, and cost scales accordingly.
+
+There is deliberately no `design` lane: the architect's dimensions are questions
+about a design, not rules applied to files. Nor a PR lane — a diff is already a
+bounded, stable population.
 
 Use the sampling review for a quick read of recent work; use the sweep when a
 rule needs actually closing.
