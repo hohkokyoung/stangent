@@ -657,7 +657,7 @@ gitignored: it holds an absolute local path and is regenerated on every install.
 python -m unittest discover installer/tests
 ```
 
-293 tests, no third-party dependency beyond `pyyaml`. CI runs them on Python
+326 tests, no third-party dependency beyond `pyyaml`. CI runs them on Python
 3.10, 3.12, and 3.14 for every push and pull request
 ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)); 3.10 is the
 verified floor.
