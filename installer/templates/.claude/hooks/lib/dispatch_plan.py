@@ -64,7 +64,18 @@ COMPARISON_FALLBACK = "claude-sonnet-4-6"
 # ---------- config ----------
 
 def load_config() -> dict:
-    if not AGENTIC_YML.exists() or yaml is None:
+    if yaml is None:
+        # An empty config is a valid state, but silently producing one when
+        # .agentic.yml exists means every per-role model, routing rule and k
+        # override is dropped and every task quietly runs on the session model.
+        # Warn to stderr, which never corrupts the JSON plan on stdout.
+        if AGENTIC_YML.exists():
+            sys.stderr.write(
+                "[dispatch_plan] PyYAML not installed; .agentic.yml is being "
+                "IGNORED — models, complexity_routing and retrieval.k defaults "
+                "will not apply\n")
+        return {}
+    if not AGENTIC_YML.exists():
         return {}
     try:
         return yaml.safe_load(AGENTIC_YML.read_text(encoding="utf-8")) or {}

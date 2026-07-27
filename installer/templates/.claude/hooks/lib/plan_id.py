@@ -27,7 +27,17 @@ PLANS_DIR = REPO_ROOT / ".claude" / "state" / "plans"
 
 def load_cfg() -> dict:
     defaults = {"prefix": "FEAT", "pad": 3, "start": 1}
-    if not AGENTIC_YML.exists() or yaml is None:
+    if yaml is None:
+        # Same contract as retriever / dispatch_plan / git_branch: a one-shot CLI
+        # that cannot read its config says so, because a configured `prefix` or
+        # `pad` silently reverting to FEAT-### mints ids that do not match the
+        # ones already on disk.
+        if AGENTIC_YML.exists():
+            sys.stderr.write(
+                "[plan_id] PyYAML not installed; .agentic.yml `plan_id:` settings "
+                "are being IGNORED and defaults used\n")
+        return defaults
+    if not AGENTIC_YML.exists():
         return defaults
     try:
         full = yaml.safe_load(AGENTIC_YML.read_text(encoding="utf-8")) or {}

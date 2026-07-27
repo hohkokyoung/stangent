@@ -44,6 +44,35 @@ CONFIG = textwrap.dedent("""
       test: [playwright, maestro]
 """)
 
+# The same configuration as a dict, for tests that exercise logic taking a config
+# rather than the loading of one. Kept honest by test_config_dict_matches_yaml.
+CONFIG_DICT = {
+    "models": {
+        "default": "claude-sonnet-4-6",
+        "implementer": "claude-sonnet-4-6",
+        "reviewer": "claude-haiku-4-5-20251001",
+        "tester": "claude-haiku-4-5-20251001",
+    },
+    "complexity_routing": {
+        "enabled": True,
+        "low_cap": "claude-haiku-4-5-20251001",
+        "high_floor": "claude-sonnet-4-6",
+    },
+    "model_capability_order": [
+        "claude-haiku-4-5-20251001",
+        "claude-sonnet-4-6",
+        "claude-opus-4-8",
+    ],
+    "retrieval": {"default_k": 6, "role_k": {"reviewer": 2, "tester": 3}},
+    "skill_groups": {"test": ["playwright", "maestro"]},
+}
+
+try:
+    import yaml as _yaml  # noqa: F401  — presence probe for skipUnless
+    HAVE_YAML = True
+except ImportError:
+    HAVE_YAML = False
+
 
 def task_md(tid, role="implementer", status="pending", complexity="medium",
             depends_on=None, skills=None, k=None):
@@ -137,8 +166,20 @@ class TestTopoSort(unittest.TestCase):
 
 class TestRouting(unittest.TestCase):
     def setUp(self):
+        # Built natively rather than parsed from CONFIG. resolve_model takes a
+        # plain dict, so parsing YAML here was incidental — and it made ten tests
+        # of pure routing logic ERROR (not skip) on an interpreter without PyYAML,
+        # which is a supported configuration the runtime has fallbacks for.
+        # test_config_dict_matches_yaml keeps this in step with CONFIG.
+        self.cfg = CONFIG_DICT
+
+    @unittest.skipUnless(HAVE_YAML, "needs PyYAML to parse the reference config")
+    def test_config_dict_matches_yaml(self):
+        # The one place the two representations are compared. Without this the
+        # dict could drift from CONFIG and every routing test would keep passing
+        # against a config that no longer matches what gets written to disk.
         import yaml
-        self.cfg = yaml.safe_load(CONFIG)
+        self.assertEqual(CONFIG_DICT, yaml.safe_load(CONFIG))
 
     def test_low_caps_sonnet_to_haiku(self):
         m, base, applied = dp.resolve_model("implementer", "low", self.cfg, None)
@@ -211,6 +252,46 @@ class TestRouting(unittest.TestCase):
         self.assertEqual(dp.resolve_skills("implementer", ["fastapi"], self.cfg), ["fastapi"])
 
 
+class TestWithoutPyYAML(unittest.TestCase):
+    """What actually happens when PyYAML is absent.
+
+    The runtime carries `yaml = None` fallbacks throughout and the README lists
+    pyyaml as a dependency to install, so running without it is a real state — but
+    it was only ever *unverified*, not supported: the tests that touched config
+    errored out, which looks identical to the path being broken.
+    """
+
+    def setUp(self):
+        self._saved = dp.yaml
+        dp.yaml = None
+
+    def tearDown(self):
+        dp.yaml = self._saved
+
+    def test_config_load_degrades_to_empty(self):
+        # Not a crash, and not a partial parse — an empty config, which is what
+        # every downstream default is written against.
+        self.assertEqual(dp.load_config(), {})
+
+    def test_routing_falls_back_to_the_session_model(self):
+        # With no config, the role has no configured model, so the session model
+        # is used and complexity routing is off (it is opt-in via config).
+        m, base, applied = dp.resolve_model("implementer", "low", {}, "claude-sonnet-4-6")
+        self.assertEqual(m, "claude-sonnet-4-6")
+        self.assertEqual(base, "claude-sonnet-4-6")
+        self.assertFalse(applied, "routing must not engage without a config to enable it")
+
+    def test_k_falls_back_to_the_documented_default(self):
+        self.assertEqual(dp.resolve_k("reviewer", None, {}), 6)
+        self.assertEqual(dp.resolve_k("reviewer", 10, {}), 10, "task k still honoured")
+
+    def test_skills_pass_through_untouched(self):
+        # No skill_groups to filter against, so a tester keeps what it was given
+        # rather than silently losing its testing method.
+        self.assertEqual(dp.resolve_skills("tester", ["playwright", "fastapi"], {}),
+                         ["playwright", "fastapi"])
+
+
 class TestBuildPlanCLI(unittest.TestCase):
     def _run(self, files, run_id="FEAT-001", args=None):
         with tempfile.TemporaryDirectory() as td:
@@ -227,16 +308,27 @@ class TestBuildPlanCLI(unittest.TestCase):
             out = json.loads(proc.stdout) if proc.stdout.strip() else {}
             return proc.returncode, out
 
-    def test_runnable_and_resolution(self):
-        code, plan = self._run({
-            "t1.md": task_md("t1", role="implementer", status="done"),
-            "t2.md": task_md("t2", role="reviewer", complexity="low", depends_on=["t1"]),
-            "t3.md": task_md("t3", role="tester", depends_on=["t2"]),
-        })
+    # Split from one test: the runnable set is computed from the task files and
+    # needs no config, while model/k come from .agentic.yml and therefore need a
+    # YAML parser. Together they made ordering coverage vanish on an interpreter
+    # without PyYAML — the case this whole split exists to keep covered.
+    _RESOLUTION_FILES = {
+        "t1.md": task_md("t1", role="implementer", status="done"),
+        "t2.md": task_md("t2", role="reviewer", complexity="low", depends_on=["t1"]),
+        "t3.md": task_md("t3", role="tester", depends_on=["t2"]),
+    }
+
+    def test_runnable_set_needs_no_config(self):
+        code, plan = self._run(dict(self._RESOLUTION_FILES))
         self.assertEqual(code, 0)
         self.assertFalse(plan["cycle"])
         ids = [r["task_id"] for r in plan["runnable"]]
         self.assertEqual(ids, ["t2"])  # t1 done, t3 waits on t2
+
+    @unittest.skipUnless(HAVE_YAML, "model/k resolution reads .agentic.yml")
+    def test_resolution_reads_config(self):
+        code, plan = self._run(dict(self._RESOLUTION_FILES))
+        self.assertEqual(code, 0)
         t2 = plan["runnable"][0]
         self.assertEqual(t2["model"], "claude-haiku-4-5-20251001")  # reviewer already haiku
         self.assertEqual(t2["k"], 2)
