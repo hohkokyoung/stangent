@@ -27,7 +27,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path.cwd().resolve()
+# Derived from THIS file, not the process cwd. Claude Code launches this server
+# from .mcp.json, so its cwd is the harness's business and not guaranteed to be
+# the project root — the same reason pre_tool_use/post_tool_use/log_usage all
+# switched. A wrong root here is silent and total: RETRIEVER, SYMBOLS and
+# STATE_DIR all miss, retrieval returns launch errors, and the per-task retrieve
+# budget never engages because it can never read current_task.txt.
+# __file__ is <repo>/.claude/mcp/agentic_mcp.py → parents[2].
+REPO_ROOT = Path(__file__).resolve().parents[2]
 RETRIEVER = REPO_ROOT / ".claude" / "hooks" / "lib" / "retriever.py"
 SYMBOLS = REPO_ROOT / ".claude" / "hooks" / "lib" / "symbols.py"
 STATE_DIR = REPO_ROOT / ".claude" / "state"

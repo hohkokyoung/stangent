@@ -92,3 +92,44 @@ class TestResolveSubagentTranscript(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ConfigPathIndependentOfCwdCase(unittest.TestCase):
+    """`pricing:` overrides must apply wherever the caller happens to be.
+
+    log_usage.py imports this module, and that hook runs with an unreliable cwd —
+    which is why it derives its own paths from __file__. This one did not, so a
+    project's pricing overrides silently did not apply and every cost fell back to
+    built-in rates: wrong numbers, no error, nothing to notice. The bug only
+    appears when cwd is not the repo root, so the test has to move.
+    """
+
+    def test_pricing_override_applies_from_a_foreign_cwd(self):
+        try:
+            import yaml  # noqa: F401
+        except ImportError:
+            self.skipTest("pricing: overrides need PyYAML — see doctor's dep note")
+        import importlib.util, os, shutil, tempfile
+        from pathlib import Path
+        src = (Path(__file__).resolve().parents[1] / "templates" / ".claude"
+               / "hooks" / "lib" / "token_cost.py")
+        with tempfile.TemporaryDirectory() as proj, tempfile.TemporaryDirectory() as elsewhere:
+            root = Path(proj)
+            lib = root / ".claude" / "hooks" / "lib"
+            lib.mkdir(parents=True)
+            shutil.copy(src, lib / "token_cost.py")
+            (root / ".claude" / ".agentic.yml").write_text(
+                "pricing:\n  claude-sonnet-4-6:\n    input: 999\n    output: 999\n"
+                "    cache_read: 999\n    cache_write: 999\n")
+            cwd = os.getcwd()
+            try:
+                os.chdir(elsewhere)          # the condition that exposed the bug
+                spec = importlib.util.spec_from_file_location(
+                    "tc_isolated", lib / "token_cost.py")
+                tc = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(tc)
+                rates = tc.rates_for("claude-sonnet-4-6")
+            finally:
+                os.chdir(cwd)
+        self.assertEqual(rates, (999.0, 999.0, 999.0, 999.0),
+                         "override not read — config path is cwd-dependent again")

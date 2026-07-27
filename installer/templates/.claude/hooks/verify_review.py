@@ -45,6 +45,17 @@ REPORTS = {
     "auditor":           ("audit",           AGENTS / "auditor.md"),
 }
 
+# Roles whose checklist enumerates SITES, so a declared search applies. architect
+# is absent for the same reason it gets no enumerations anywhere else: its
+# dimensions are questions about a design, with no population to search.
+#
+# This hook is the check that cannot be skipped — a review command's own verify
+# step is an instruction, and one was skipped on a real run while this fired
+# anyway. Leaving the enumeration comparison out of it meant the un-skippable
+# check was missing the newest thing worth checking.
+ENUMERATED_ROLES = ("design-critic", "security-reviewer", "auditor")
+ENUMERATIONS = REPO_ROOT / "docs" / "review" / "enumerations.md"
+
 
 def _read_state(name: str) -> str | None:
     return read_text_or_none(STATE_DIR / name)
@@ -94,7 +105,9 @@ def main() -> None:
         from verify_clears import verify, is_failing
 
         rep = verify(report, REPO_ROOT,
-                     checklist=checklist if checklist.is_file() else None)
+                     checklist=checklist if checklist.is_file() else None,
+                     enumerations=ENUMERATIONS if role in ENUMERATED_ROLES else None,
+                     reviewer=role if role in ENUMERATED_ROLES else "")
         results = rep.get("results", [])
         failing = [r for r in results if is_failing(r)]
         cov = rep.get("coverage") or {}

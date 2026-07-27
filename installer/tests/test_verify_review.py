@@ -139,3 +139,31 @@ class TestVerifyReviewHook(HookCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EnumeratedRolesCase(unittest.TestCase):
+    """This hook is the check that cannot be skipped — a command's own verify step
+    is an instruction, and one was skipped on a real run while this fired anyway.
+    So it must carry every check worth having, including the declared-search one."""
+
+    def _mod(self):
+        import importlib.util
+        from pathlib import Path
+        p = (Path(__file__).resolve().parents[1] / "templates" / ".claude"
+             / "hooks" / "verify_review.py")
+        spec = importlib.util.spec_from_file_location("vr_roles", p)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return m
+
+    def test_site_enumerating_roles_are_checked_architect_is_not(self):
+        m = self._mod()
+        self.assertEqual(set(m.ENUMERATED_ROLES),
+                         {"design-critic", "security-reviewer", "auditor"})
+        self.assertNotIn("architect", m.ENUMERATED_ROLES,
+                         "its dimensions are questions, with no population to search")
+
+    def test_every_enumerated_role_has_a_report_location(self):
+        m = self._mod()
+        for role in m.ENUMERATED_ROLES:
+            self.assertIn(role, m.REPORTS, f"{role} would never resolve a report")

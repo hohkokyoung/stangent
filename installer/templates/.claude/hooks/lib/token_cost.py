@@ -21,7 +21,12 @@ try:
 except ImportError:
     yaml = None  # type: ignore
 
-AGENTIC_YML = Path.cwd().resolve() / ".claude" / ".agentic.yml"
+# From __file__, not cwd: log_usage.py imports this, and that hook runs with an
+# unreliable cwd (which is why it derives its own paths the same way). With a
+# cwd-based path a project's `pricing:` overrides silently do not apply and every
+# cost lands on built-in rates — wrong numbers, no error, nothing to notice.
+# __file__ is <repo>/.claude/hooks/lib/token_cost.py → parents[3].
+AGENTIC_YML = Path(__file__).resolve().parents[3] / ".claude" / ".agentic.yml"
 
 # (input, output, cache_read, cache_write) USD per 1M tokens. Estimates.
 _DEFAULT_RATES: dict[str, tuple] = {

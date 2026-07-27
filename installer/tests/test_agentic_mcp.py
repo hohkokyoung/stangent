@@ -282,3 +282,29 @@ class ResolvePythonCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RepoRootCase(unittest.TestCase):
+    """The server is launched by the harness from .mcp.json, so its cwd is not
+    the project's to guarantee. A wrong root here is silent and total: RETRIEVER,
+    SYMBOLS and STATE_DIR all miss, and the per-task retrieve budget never
+    engages because current_task.txt can never be read."""
+
+    def test_root_comes_from_the_file_not_the_cwd(self):
+        import os, shutil, tempfile
+        with tempfile.TemporaryDirectory() as proj, tempfile.TemporaryDirectory() as elsewhere:
+            root = Path(proj)
+            mcp_dir = root / ".claude" / "mcp"
+            mcp_dir.mkdir(parents=True)
+            shutil.copy(SERVER, mcp_dir / "agentic_mcp.py")
+            cwd = os.getcwd()
+            try:
+                os.chdir(elsewhere)
+                spec = importlib.util.spec_from_file_location(
+                    "mcp_isolated", mcp_dir / "agentic_mcp.py")
+                mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mod)
+            finally:
+                os.chdir(cwd)
+        self.assertEqual(mod.REPO_ROOT, root.resolve())
+        self.assertEqual(mod.STATE_DIR, root.resolve() / ".claude" / "state")
