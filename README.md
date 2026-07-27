@@ -276,6 +276,16 @@ context:
   is re-read every later turn. Since agentic cost is dominated by cache-read,
   this is what makes a run's bill traceable to the calls that caused it;
   `/agentic-logs` ranks the heaviest ones.
+- **`budget` events** — the same hook warns, mid-run, when one task crosses a
+  threshold on either of two axes: **call count** (150/300/500) for a task that
+  will not terminate, and **cumulative result bytes** (800k/1.5M/3M chars) for a
+  task whose calls are individually expensive. The second is the one that tracks
+  the bill, and call count cannot stand in for it: on FEAT-025 one task did 34
+  edits for $3.68 while another did 89 for $12.28 — the difference was that the
+  second echoed a 25 KB file back into context on every edit. Replayed against
+  that run, the bytes axis fires at call 43 where the call axis waits until 150,
+  and stays silent on all six healthy tasks. Neither blocks; a long task can be
+  legitimate. They make it visible while it is still happening.
 - **`log_usage.py`** (SubagentStop) — one `usage` event per finished agent, with
   token counts (input/output/cache) and estimated cost, attributed to the task.
 - **`log_dispatch.py`** — one routing event per build dispatch → `dispatch.jsonl`.
@@ -379,6 +389,17 @@ extractor knows. Reformat one and extraction silently returns zero items,
 disabling enforcement for that source — `/agentic-doctor` checks for exactly that,
 since it is a failure that otherwise looks like health.
 
+**Findings carry a stable identity.** Verification makes one report trustworthy;
+it says nothing about whether a class of finding ever *closed*. Answering that
+means grouping two reports, so `/agentic-review-ui` findings tag their spec
+section by number alone — `[§9]`, or `[§9, §3]` for two — and the command greps
+for any tag that deviates. Titles drift immediately: across ten reviews of one
+project the same section was written `[§2]`, `[§2 Principles]`, and
+`[§2 Design principles]`, and `[§5]`, `[§5 Spacing]`, `[§5 Radius]` — which made
+"is §9 closed yet?" a manual read of both reports, and that question is the whole
+reason for reviewing twice. Section numbers come from `DESIGN-SPEC.md`'s own
+headings (1-13) and are stable; the words after them are not.
+
 **What this does not do.** It verifies that stated claims are true. It cannot tell
 you the right questions were asked: a review against a vague spec will cite
 honestly, cover every row, and still find little. **Verified is not the same as
@@ -448,12 +469,13 @@ complete.**
 │       ├── retriever.py        # sqlite-vec + voyage/fastembed; supports --project-only flag
 │       ├── plan_id.py          # FEAT-### allocator
 │       ├── adr_id.py           # ADR-### allocator
-│       ├── git_branch.py       # feat/{run_id} branch helper; auto-increments to -v2, -v3 on collision
+│       ├── git_branch.py       # feat/{run_id} branch helper (-v2/-v3 on collision) + per-task checkpoint commits
 │       ├── log_dispatch.py     # structured dispatch events → .claude/state/logs/dispatch.jsonl
 │       ├── logs.py             # summarize a run/review's logs (/agentic-logs)
 │       └── doctor.py           # install health checks
 ├── mcp/
 │   └── agentic_mcp.py          # exposes retrieve() + get_symbol() over stdio MCP
+├── .install.json               # gitignored — per-install record read by /agentic-doctor (see "Knowing whether an install is current")
 └── state/                      # gitignored — local working memory; durable artifacts are promoted to docs/ and adrs/
     ├── plans/<FEAT-###>/
     │   ├── _overview.md
@@ -498,6 +520,8 @@ complete.**
 - **Strict injection order:** system > role > ADRs > skills (verbatim) > retrieved chunks > task file. Skills win on conflict.
 - **`retrieve()` = one call per agent per task.** Scoped to the task's `skills_to_load`.
 - **Skills define HOW, agents define WHAT.** The tester role is generic — its testing method (MCP tools, commands, artifact format) is entirely defined by the injected skill. No framework logic in the role prompt.
+- **Every finished task is checkpointed.** `/agentic-build` commits each task's work onto the run's branch as soon as the subagent returns, so a task that damages earlier work has a boundary to fall back to (`git revert`, or reset to the last task's sha). Local only, never pushed, meant to be squashed before a PR. It is taken by the dispatcher rather than the agent because `pre_tool_use.py` denies `git commit` to any subagent — and it is skipped, never forced, when the branch was switched mid-run, a pre-commit hook rejects, or the project isn't a git repo. Disable with `git.checkpoint_commits: false`.
+- **Mechanical changes are scripted, not hand-edited.** When one transformation applies to more than ~5 sites (literals onto tokens, a rename across a package, one lint fix repeated), the implementer writes and runs a codemod, then verifies with the project's own checks — it does not edit each site in turn. N sequential edits to one file cost on the order of N², because every `Edit` returns its file into context and every later turn re-reads it. A script is also *more* reliable: it cannot silently miss site 17 of 21. Per-site changes, where each occurrence needs its own judgment, are still edited individually.
 - **Sketch before code.** For any task with visible UI changes, the sketcher runs during planning and embeds a rendered image before any implementer task is dispatched.
 - **Design spec is the house style.** Authored (greenfield) or extracted (brownfield) by `/agentic-design` into committed `docs/design/`. Agents draft to gitignored state; the command promotes on approval. The sketcher honours it; the design-critic enforces it (`/agentic-review-ui`). Optional — projects with no frontend simply never author one.
 - **Debugger = diagnosis only.** The debugger never writes to the codebase. Data before code, always.
@@ -582,6 +606,74 @@ frontmatter makes Desktop run each agent on its role model; in the CLI the
 invocation override still wins, so dynamic routing is preserved. Edit `models:`
 then re-run the installer (or `--upgrade-config`) to re-stamp; `--upgrade-config`
 also back-fills role entries added in newer versions.
+
+---
+
+## Knowing whether an install is current
+
+System directories are mirrored on re-install — replaced wholesale, so a stale
+file from an older version disappears. That has two consequences nothing used to
+surface: a hand-edited agent is **destroyed without warning** on the next
+install, and there was no way to ask whether an install was behind the templates
+it came from. `system_version` cannot answer it (nothing bumps it), so the only
+method was byte-comparing against the source tree by hand.
+
+Every install now writes `.claude/.install.json` — version, timestamp, the source
+path it was installed from, and **two hashes per system file**: `tpl` as the file
+ships, `cur` as it landed on disk. Two, because they legitimately differ: the
+installer stamps role models into agent frontmatter, so a single hash would flag
+all twelve agents as locally edited the moment they were installed.
+
+`/agentic-doctor` reads it and reports three things:
+
+```
+[ok]    install manifest              v1.0.0, installed 2026-07-27T11:33:40Z, 163 files tracked
+[warn]  local edits to system files   1 edited since install: agents/reviewer.md — these are
+                                      OVERWRITTEN by the next install; move the change into
+                                      the template repo to keep it
+[warn]  up to date with source        3 changed (agents/planner.md, …); 1 new (…) — re-run
+                                      the installer to update
+```
+
+Only mirrored directories are tracked. Seed files (`.agentic.yml`,
+`settings.json`) are user config — editing them is the documented workflow and is
+never reported as drift. If the source tree has moved or is gone, the check says
+it **cannot tell** rather than implying the install is current. The manifest is
+gitignored: it holds an absolute local path and is regenerated on every install.
+
+---
+
+## Development
+
+```bash
+python -m unittest discover installer/tests
+```
+
+288 tests, no third-party dependency beyond `pyyaml`. CI runs them on Python
+3.10, 3.12, and 3.14 for every push and pull request
+([`.github/workflows/tests.yml`](.github/workflows/tests.yml)); 3.10 is the
+verified floor.
+
+The suite covers the deterministic half of the system — dispatch planning,
+citation parsing and sandboxed re-execution, retrieval, symbol extraction, state
+hygiene, logging, cost, the hooks, and the installer. Agent *behaviour* is not
+unit-testable and is covered separately by `.claude/evals/` (see
+[`evals/README.md`](installer/templates/.claude/evals/README.md)).
+
+**Running without PyYAML is verified, not assumed.** The runtime carries
+`yaml = None` fallbacks throughout, so a project that never installed the
+dependency still works — on defaults. A second CI job runs the whole suite with
+the parser absent and it must pass, skipping only the three cases that genuinely
+cannot run without one. Everything else was rewritten to not need a parser it was
+only using for convenience: ten routing tests built their config by parsing a YAML
+fixture, though the function under test takes a plain dict.
+
+What that surfaced is worth knowing when you run this way: **config is silently
+ignored without PyYAML.** A deliberate `checkpoint_commits: false`, a per-role
+model, a `complexity_routing` rule — none of them apply, and the setting looks
+honoured. `git_branch.py` and `dispatch_plan.py` now warn on stderr when
+`.agentic.yml` exists but cannot be read (matching `retriever.py`, which already
+did), and stay quiet when there is no config to ignore.
 
 ---
 
