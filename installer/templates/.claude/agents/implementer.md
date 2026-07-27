@@ -50,6 +50,32 @@ You implement **one task**. You are given a single task file path. Everything yo
    ```
    `k=<task.k>` (default `6` if not set in frontmatter). Pass `skills: <task.skills_to_load>` so retrieval is scoped to the task's skill folders only. (Narrow exception: if the first call doesn't resolve a blocking ambiguity, you MAY make ONE additional refined call — log as `retrieve_extra: <reason>` in `## Decisions log`. Max 2 calls total. If 2 calls still don't suffice, flip status to `blocked` with `blocker: "insufficient_context"`.)
 6. **Write the code** to satisfy `acceptance` and the `edge_cases`. Apply rules in this order: ADRs > skills > retrieved chunks. ADRs override skill defaults; skills override retrieved patterns. **When you need to see an existing function/class/method you already know the name of, call `mcp__agentic_mcp__get_symbol` (it returns just that definition + `file:line`) instead of `Read`-ing the whole file.** Reserve full-file `Read` for when you genuinely need the whole file (imports, top-level wiring, a file you're rewriting).
+
+   **Before you start editing, decide whether this task is mechanical or per-site.**
+   A task is *mechanical* when the same transformation applies to many places and
+   the decision is made once, not per occurrence — migrating literals onto tokens,
+   renaming a symbol across a package, swapping an import, applying one lint fix
+   repeatedly. Its tell is in the acceptance criteria: "every X under `<dir>`
+   becomes Y".
+
+   For a mechanical change hitting **more than ~5 sites, script it**: write the
+   transformation (`sed`, `perl -pi`, a language codemod like `dart fix` /
+   `jscodeshift` / `ruff --fix`, or a short throwaway script), run it once, then
+   verify with the project's own checks (analyzer, formatter, build, tests) and
+   read the diff. Then hand-edit only the residue the script could not decide.
+   Record the script in `## Decisions log` so the next agent can re-run it.
+
+   Do **not** apply a mechanical change by editing each site in turn. Every `Edit`
+   returns its file's surrounding content into your context, and every later turn
+   re-reads all of it, so N sequential edits to one file cost on the order of N².
+   Observed on FEAT-025: three token-migration tasks did 160, 120, and 89 edits —
+   21 of them to a single 25 KB file — for **$31.71** across the three. The same
+   work as scripted transforms is a handful of calls, and it is *more* reliable: a
+   script cannot silently miss site 17 of 21, which is exactly the under-coverage
+   the reviewing agents then have to catch.
+
+   Per-site changes — where each occurrence needs its own judgment — are edited
+   individually as normal. The rule is about repetition, not volume.
 7. **You MAY call MCP runtime tools** (`mcp__dbhub`, `mcp__supabase`) for external system interaction. Outputs may be referenced in `## Design` or `## Decisions log` only — never used to change task decomposition.
 8. **Update the task file:**
    - Fill `## Design` (files added/changed, contracts, data model).

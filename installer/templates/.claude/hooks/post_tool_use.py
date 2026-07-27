@@ -64,6 +64,14 @@ MAX_LOG_BYTES = 5 * 1024 * 1024
 # and no signal surfaced until the run was over. These thresholds do not block
 # (a long task can be legitimate); they make it visible while it is happening.
 BUDGET_WARN_CALLS = (150, 300, 500)
+# Cumulative result bytes at which a single task gets a `budget` warning. This is
+# the axis that tracks the bill: call count cannot separate a task making many
+# cheap calls from one making many expensive ones. FEAT-025 t8 did 34 edits for
+# $3.68 while t5 did 89 for $12.28 — because t5's edits each echoed a ~25 KB file
+# back into context, where every later turn re-read it. Summing res_chars sees
+# that; counting calls does not. Thresholds are set off that run: healthy tasks
+# landed at 192k–463k chars, the three runaway migrations at 1503k/2175k/3523k.
+BUDGET_WARN_RESULT_CHARS = (800_000, 1_500_000, 3_000_000)
 # Normalized secret markers: matched as substrings of the separator-stripped,
 # lowercased key, so `access_token`, `apiKey`, `x-api-key`, and
 # `GITHUB_PERSONAL_ACCESS_TOKEN` all redact — not just the bare words. Kept
@@ -158,44 +166,85 @@ def _measure(v) -> int:
     return 0
 
 
+# Field scanners for _budget_warning's re-read of the task log (see its docstring
+# for why this is regex and not json.loads).
+_RES_CHARS_RE = re.compile(r'"res_chars":\s*(\d+)')
+_AXIS_RE = re.compile(r'"axis":\s*"(\w+)"')
+_THRESHOLD_RE = re.compile(r'"threshold":\s*(\d+)')
+
+
 def _ambient_logging_enabled() -> bool:
     return os.environ.get("AGENTIC_LOG_AMBIENT", "").strip().lower() in ("1", "true", "yes")
 
 
-def _budget_warning(log: Path, task_id, run_id) -> dict | None:
-    """Emit one `budget` event when a task crosses a call-count threshold.
+def _budget_warning(log: Path, task_id, run_id) -> list[dict]:
+    """Emit `budget` events when a task crosses a call-count or result-bytes threshold.
+
+    Two axes, because they catch different failures. Calls catch a task that will
+    not terminate. Result bytes catch a task whose individual calls are expensive
+    — the one that actually shows up on the bill (see BUDGET_WARN_RESULT_CHARS).
 
     Counts this task's own lines in the run log — cheap, and needs no extra state
-    file to go stale. Emitted once per threshold: the event is itself the marker,
-    so re-crossing does not re-warn."""
+    file to go stale. Emitted once per threshold PER AXIS: the event is itself the
+    marker, so re-crossing does not re-warn. Dedup is on the highest threshold
+    already warned, not on a count of warnings: calls only ever tick up by one, but
+    res_chars can clear several thresholds in a single call (one 4 MB result), and
+    a count-based check would then re-warn on every later call until the count
+    caught up. Scanned with regex rather than json.loads because this runs on every
+    tool call and re-reads the whole task log each time; parsing would make a long
+    task quadratic in real time, not just in line count."""
     if not task_id:
-        return None
+        return []
     try:
-        calls = seen = 0
+        calls = res_chars = 0
+        warned_max = {"calls": 0, "result_chars": 0}
         with log.open("r", encoding="utf-8", errors="replace") as f:
             for ln in f:
                 if f'"task_id": "{task_id}"' not in ln:
                     continue
                 if '"event": "budget"' in ln:
-                    seen += 1
+                    # Events written before the result_chars axis existed carry no
+                    # "axis" key; they were always call-count warnings.
+                    a = _AXIS_RE.search(ln)
+                    axis = a.group(1) if a and a.group(1) in warned_max else "calls"
+                    t = _THRESHOLD_RE.search(ln)
+                    if t:
+                        warned_max[axis] = max(warned_max[axis], int(t.group(1)))
                 elif '"tool":' in ln:
                     calls += 1
-        crossed = [t for t in BUDGET_WARN_CALLS if calls >= t]
-        if len(crossed) <= seen:
-            return None
-        return {
-            "ts": dt.datetime.now(dt.timezone.utc).isoformat(
-                timespec="seconds").replace("+00:00", "Z"),
-            "event": "budget",
-            "run_id": run_id,
-            "task_id": task_id,
-            "calls": calls,
-            "threshold": crossed[-1],
-            "note": "task is long-running; check /agentic-logs for a single file "
-                    "being edited repeatedly before it compounds further",
-        }
+                    m = _RES_CHARS_RE.search(ln)
+                    if m:
+                        res_chars += int(m.group(1))
+
+        now = dt.datetime.now(dt.timezone.utc).isoformat(
+            timespec="seconds").replace("+00:00", "Z")
+        out = []
+        for axis, value, thresholds, note in (
+            ("calls", calls, BUDGET_WARN_CALLS,
+             "task is long-running; check /agentic-logs for a single file "
+             "being edited repeatedly before it compounds further"),
+            ("result_chars", res_chars, BUDGET_WARN_RESULT_CHARS,
+             "tool results are filling this task's context and every later turn "
+             "re-reads them; if this is the same transformation applied site by "
+             "site, script it instead of editing each site"),
+        ):
+            crossed = [t for t in thresholds if value >= t]
+            if not crossed or crossed[-1] <= warned_max[axis]:
+                continue
+            out.append({
+                "ts": now,
+                "event": "budget",
+                "axis": axis,
+                "run_id": run_id,
+                "task_id": task_id,
+                "calls": calls,
+                "res_chars": res_chars,
+                "threshold": crossed[-1],
+                "note": note,
+            })
+        return out
     except Exception:
-        return None  # telemetry must never break a run
+        return []  # telemetry must never break a run
 
 
 def _rotate_if_large(path: Path) -> None:
@@ -283,8 +332,7 @@ def main() -> None:
     with out.open("a", encoding="utf-8") as f:
         f.write(json.dumps(line, ensure_ascii=False) + "\n")
         f.flush()  # _budget_warning re-reads the file; the line above must be on disk
-        warn = _budget_warning(out, task_id, run_id)
-        if warn:
+        for warn in _budget_warning(out, task_id, run_id):
             f.write(json.dumps(warn, ensure_ascii=False) + "\n")
 
     sys.exit(0)

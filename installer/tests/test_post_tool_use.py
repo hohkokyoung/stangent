@@ -146,6 +146,75 @@ class LoggerCase(unittest.TestCase):
         rows = self.logged["FEAT-001.jsonl"]
         self.assertEqual(len([r for r in rows if r.get("event") == "budget"]), 1)
 
+    def test_budget_warning_fires_on_result_bytes(self):
+        # The axis that tracks the bill. 60 calls is well under the 150-call
+        # threshold, but 60 x 20k chars is the FEAT-025 t4/t5 shape: each Edit
+        # echoing a whole 25 KB file back into a context every later turn re-reads.
+        import json as _j
+        line = _j.dumps({"run_id": "FEAT-001", "task_id": "t4", "tool": "Edit",
+                         "res_chars": 20000})
+        seed = ("\n".join([line] * 60) + "\n").encode()
+        self.run_hook(run_id="FEAT-001", state={"current_task.txt": "t4"},
+                      pre={"FEAT-001.jsonl": seed})
+        budget = [r for r in self.logged["FEAT-001.jsonl"]
+                  if r.get("event") == "budget"]
+        self.assertEqual(len(budget), 1, "crossing 800k result chars should warn")
+        self.assertEqual(budget[0]["axis"], "result_chars")
+        self.assertEqual(budget[0]["threshold"], 800_000)
+
+    def test_budget_axes_are_deduped_independently(self):
+        # A prior calls warning must not suppress the first result_chars warning:
+        # they are different failures and the bytes one is the expensive default.
+        import json as _j
+        call = _j.dumps({"run_id": "FEAT-001", "task_id": "t4", "tool": "Edit",
+                         "res_chars": 20000})
+        warned = _j.dumps({"run_id": "FEAT-001", "task_id": "t4", "event": "budget",
+                           "axis": "calls", "threshold": 150})
+        seed = ("\n".join([call] * 160 + [warned]) + "\n").encode()
+        self.run_hook(run_id="FEAT-001", state={"current_task.txt": "t4"},
+                      pre={"FEAT-001.jsonl": seed})
+        # Only events the hook just wrote carry a "ts"; the seeded one does not.
+        emitted = [r for r in self.logged["FEAT-001.jsonl"]
+                   if r.get("event") == "budget" and "ts" in r]
+        self.assertEqual([e["axis"] for e in emitted], ["result_chars"],
+                         "bytes axis must fire; calls axis must stay deduped")
+
+    def test_bytes_axis_clearing_several_thresholds_warns_once(self):
+        # res_chars can jump past multiple thresholds in one call (a single 4 MB
+        # result), unlike calls which tick up by one. Dedup is on the highest
+        # threshold warned, so the jump produces one event, not one per later call.
+        import json as _j
+        big = _j.dumps({"run_id": "FEAT-001", "task_id": "t4", "tool": "Bash",
+                        "res_chars": 4_000_000})
+        first = self.run_hook(run_id="FEAT-001", state={"current_task.txt": "t4"},
+                              pre={"FEAT-001.jsonl": (big + "\n").encode()})
+        del first
+        emitted = [r for r in self.logged["FEAT-001.jsonl"]
+                   if r.get("event") == "budget" and "ts" in r]
+        self.assertEqual(len(emitted), 1)
+        self.assertEqual(emitted[0]["threshold"], 3_000_000,
+                         "should name the highest threshold crossed")
+
+        # …and a later call on the same task must not re-warn.
+        seeded = "\n".join(_j.dumps(r) for r in self.logged["FEAT-001.jsonl"])
+        self.run_hook(run_id="FEAT-001", state={"current_task.txt": "t4"},
+                      pre={"FEAT-001.jsonl": (seeded + "\n").encode()})
+        again = [r for r in self.logged["FEAT-001.jsonl"]
+                 if r.get("event") == "budget" and r.get("axis") == "result_chars"]
+        self.assertEqual(len(again), 1, "already-warned threshold must not re-fire")
+
+    def test_cheap_calls_do_not_trip_the_bytes_axis(self):
+        # The separation that motivated the axis: many small results is fine.
+        import json as _j
+        line = _j.dumps({"run_id": "FEAT-001", "task_id": "t8", "tool": "Edit",
+                         "res_chars": 2000})
+        seed = ("\n".join([line] * 100) + "\n").encode()
+        self.run_hook(run_id="FEAT-001", state={"current_task.txt": "t8"},
+                      pre={"FEAT-001.jsonl": seed})
+        budget = [r for r in self.logged["FEAT-001.jsonl"]
+                  if r.get("event") == "budget"]
+        self.assertFalse(budget, "200k chars over 100 calls is healthy; must not warn")
+
     def test_no_budget_warning_without_a_task(self):
         logs = self.run_hook(run_id="UIR-1")
         rows = self.logged["UIR-1.jsonl"]

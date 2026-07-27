@@ -197,7 +197,11 @@ def summarize(run_id: str) -> dict:
         "run_id": run_id,
         "tasks": task_list,
         "events": all_events,
+        # `axis` defaults to calls: events predating the result_chars axis have no
+        # such key, and every one of those was a call-count warning.
         "budget": [{"task_id": b.get("task_id"), "calls": b.get("calls"),
+                    "res_chars": b.get("res_chars"),
+                    "axis": b.get("axis") or "calls",
                     "threshold": b.get("threshold")} for b in budget],
         "verifications": [{"agent_role": v.get("agent_role"),
                            "report": v.get("report"),
@@ -313,10 +317,17 @@ def _print_report(rep: dict) -> None:
                 print(f"           {v['report']} — evidence did not re-derive; "
                       "treat those items as unreviewed")
     if rep.get("budget"):
-        print("\n  long-running tasks (call-count thresholds crossed):")
+        print("\n  budget thresholds crossed:")
         for b in rep["budget"]:
-            print(f"    {b['task_id']}  crossed {b['threshold']} calls "
-                  f"(at {b['calls']}) — check for one file edited repeatedly")
+            if b.get("axis") == "result_chars":
+                thresh = _fmt_tok(b.get("threshold") or 0)
+                print(f"    {b['task_id']}  results passed {thresh} chars "
+                      f"(at call {b['calls']}) — the same edit repeated across "
+                      "sites; a mechanical change should have been scripted")
+            else:
+                res = _fmt_tok(b.get("res_chars") or 0)
+                print(f"    {b['task_id']}  crossed {b['threshold']} calls "
+                      f"(results {res} chars) — long-running")
     if rep["events"]:
         print("\n  denials / failures:")
         for kind, tid, tool, detail in rep["events"]:
