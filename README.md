@@ -285,7 +285,15 @@ context:
   second echoed a 25 KB file back into context on every edit. Replayed against
   that run, the bytes axis fires at call 43 where the call axis waits until 150,
   and stays silent on all six healthy tasks. Neither blocks; a long task can be
-  legitimate. They make it visible while it is still happening.
+  legitimate. Instead the hook returns the warning as `additionalContext`, so it
+  is injected as a system reminder beside the tool result and **the running agent
+  reads it on its next turn**, naming the action ("script it") rather than only
+  the number. Writing it to the run log alone would have made it forensics —
+  nothing reads that log until someone runs `/agentic-logs` after the run, which
+  is exactly when it can no longer help. On FEAT-025 the bytes threshold is
+  crossed at call 43 of 247, leaving 200 calls to change course. The hook emits
+  nothing on stdout unless a threshold was actually crossed; it fires on every
+  tool call, so an unconditional emit would staple a reminder to every result.
 - **`log_usage.py`** (SubagentStop) — one `usage` event per finished agent, with
   token counts (input/output/cache) and estimated cost, attributed to the task.
 - **`log_dispatch.py`** — one routing event per build dispatch → `dispatch.jsonl`.
@@ -649,7 +657,7 @@ gitignored: it holds an absolute local path and is regenerated on every install.
 python -m unittest discover installer/tests
 ```
 
-288 tests, no third-party dependency beyond `pyyaml`. CI runs them on Python
+293 tests, no third-party dependency beyond `pyyaml`. CI runs them on Python
 3.10, 3.12, and 3.14 for every push and pull request
 ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)); 3.10 is the
 verified floor.

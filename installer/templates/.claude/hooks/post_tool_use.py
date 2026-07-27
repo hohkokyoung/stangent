@@ -247,6 +247,52 @@ def _budget_warning(log: Path, task_id, run_id) -> list[dict]:
         return []  # telemetry must never break a run
 
 
+def _emit_budget_context(warnings: list[dict]) -> None:
+    """Tell the agent running up the bill, not just the log.
+
+    A PostToolUse hook that writes this JSON on stdout gets `additionalContext`
+    injected as a system reminder beside the tool result, so the agent sees it on
+    its next turn — while it still has calls left to change course. Writing the
+    event to the run log alone made it forensics: nothing reads that log until
+    someone runs /agentic-logs afterwards, which is precisely when it can no
+    longer help. On FEAT-025 the bytes threshold is crossed at call 43 of 247.
+
+    Deliberately never blocks. Blocking is exit 2, and a hook that halts real work
+    on a heuristic is worse than the cost it saves — a long task can be
+    legitimate, which is why the text says so.
+
+    Emits NOTHING unless a threshold was crossed. This hook runs on every tool
+    call; unconditional stdout would put a reminder beside every single result.
+    """
+    try:
+        notes = []
+        for w in warnings:
+            if w.get("axis") == "result_chars":
+                notes.append(
+                    f"{(w.get('res_chars') or 0) // 1000}k characters of tool "
+                    f"results are now in this task's context, over "
+                    f"{w.get('calls')} calls. Every one is re-read on each later "
+                    "turn, so cost grows superlinearly from here. If you are "
+                    "applying one transformation site by site, stop and script it "
+                    "(a single codemod run, then verify with the project's own "
+                    "checks) instead of editing the remaining sites by hand.")
+            else:
+                notes.append(
+                    f"This task has made {w.get('calls')} tool calls. If you are "
+                    "repeating one edit across many sites, script it instead.")
+        text = ("Agentic budget notice — " + " ".join(notes)
+                + " If this task is genuinely long-running, carry on.")
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "PostToolUse",
+            # The documented cap is 10k chars; this text is bounded by
+            # construction (at most two fixed-shape notes), but clamp anyway
+            # rather than rely on that staying true.
+            "additionalContext": text[:9000],
+        }}))
+    except Exception:
+        pass  # telemetry must never break a run
+
+
 def _rotate_if_large(path: Path) -> None:
     """Keep any single log bounded: past MAX_LOG_BYTES, roll it to one prior
     generation (`<name>.1.jsonl`, overwriting an older roll) and start fresh."""
@@ -329,11 +375,17 @@ def main() -> None:
     log_name = f"{run_id}.jsonl" if run_id else "_no-run.jsonl"
     out = LOG_DIR / log_name
     _rotate_if_large(out)
+    warns: list[dict] = []
     with out.open("a", encoding="utf-8") as f:
         f.write(json.dumps(line, ensure_ascii=False) + "\n")
         f.flush()  # _budget_warning re-reads the file; the line above must be on disk
-        for warn in _budget_warning(out, task_id, run_id):
+        warns = _budget_warning(out, task_id, run_id)
+        for warn in warns:
             f.write(json.dumps(warn, ensure_ascii=False) + "\n")
+
+    # Only after the log is closed, and only when something actually crossed.
+    if warns:
+        _emit_budget_context(warns)
 
     sys.exit(0)
 

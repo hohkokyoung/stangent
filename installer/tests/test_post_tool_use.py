@@ -42,9 +42,11 @@ class LoggerCase(unittest.TestCase):
                 for name, data in pre.items():
                     (logs / name).write_bytes(data)
             runenv = {**os.environ, **(env or {})}
-            subprocess.run([sys.executable, str(hooks / HOOK.name)],
-                           input=json.dumps(payload or PAYLOAD), cwd=str(root),
-                           capture_output=True, text=True, env=runenv)
+            proc = subprocess.run([sys.executable, str(hooks / HOOK.name)],
+                                  input=json.dumps(payload or PAYLOAD), cwd=str(root),
+                                  capture_output=True, text=True, env=runenv)
+            self.stdout = proc.stdout
+            self.returncode = proc.returncode
             snapshot = {}
             self.logged = {}
             if logs.exists():
@@ -219,6 +221,54 @@ class LoggerCase(unittest.TestCase):
         logs = self.run_hook(run_id="UIR-1")
         rows = self.logged["UIR-1.jsonl"]
         self.assertFalse([r for r in rows if r.get("event") == "budget"])
+
+    def test_ordinary_call_emits_nothing_on_stdout(self):
+        # The load-bearing one. This hook fires on EVERY tool call, and stdout is
+        # parsed by the harness — anything unconditional would staple a system
+        # reminder to every single tool result in every session.
+        self.run_hook(run_id="FEAT-001", state={"current_task.txt": "t1"})
+        self.assertEqual(self.stdout, "")
+        self.assertEqual(self.returncode, 0)
+
+    def test_budget_warning_reaches_the_running_agent(self):
+        # Written to the log the warning is forensics — nothing reads it until
+        # /agentic-logs, after the run. Injected as additionalContext the agent
+        # sees it next turn, with calls left to change course.
+        import json as _j
+        line = _j.dumps({"run_id": "FEAT-001", "task_id": "t4", "tool": "Edit",
+                         "res_chars": 20000})
+        seed = ("\n".join([line] * 60) + "\n").encode()
+        self.run_hook(run_id="FEAT-001", state={"current_task.txt": "t4"},
+                      pre={"FEAT-001.jsonl": seed})
+        payload = _j.loads(self.stdout)
+        hso = payload["hookSpecificOutput"]
+        self.assertEqual(hso["hookEventName"], "PostToolUse")
+        ctx = hso["additionalContext"]
+        self.assertIn("script it", ctx, "must name the action, not just the number")
+        self.assertLessEqual(len(ctx), 10000, "documented additionalContext cap")
+
+    def test_budget_warning_never_blocks_the_tool_call(self):
+        # Exit 2 would block. A long task can be legitimate; halting real work on
+        # a heuristic costs more than the spend it prevents.
+        import json as _j
+        line = _j.dumps({"run_id": "FEAT-001", "task_id": "t4", "tool": "Edit",
+                         "res_chars": 20000})
+        self.run_hook(run_id="FEAT-001", state={"current_task.txt": "t4"},
+                      pre={"FEAT-001.jsonl": ("\n".join([line] * 60) + "\n").encode()})
+        self.assertEqual(self.returncode, 0)
+
+    def test_context_is_not_re_emitted_once_warned(self):
+        # Same dedup as the log event: crossing a threshold already warned about
+        # must not staple the reminder to every subsequent call.
+        import json as _j
+        call = _j.dumps({"run_id": "FEAT-001", "task_id": "t4", "tool": "Edit",
+                         "res_chars": 20000})
+        warned = _j.dumps({"run_id": "FEAT-001", "task_id": "t4", "event": "budget",
+                           "axis": "result_chars", "threshold": 800000})
+        seed = ("\n".join([call] * 60 + [warned]) + "\n").encode()
+        self.run_hook(run_id="FEAT-001", state={"current_task.txt": "t4"},
+                      pre={"FEAT-001.jsonl": seed})
+        self.assertEqual(self.stdout, "")
 
     def test_large_log_rotates(self):
         big = b"x" * (5 * 1024 * 1024 + 8)  # just over MAX_LOG_BYTES
