@@ -86,6 +86,21 @@ automatically — a critic that cannot reproduce its own clears is a signal abou
 the review, and hiding it defeats the check. `unverified` entries are the honest
 outcome and need no action.
 
+Then check that every finding tags its spec section in the canonical `[§N]` form,
+so this report can be grouped with earlier ones:
+
+```bash
+grep -nE '^###+[[:space:]]+U[0-9]+' .claude/state/ui-review/$REVIEW_ID/findings.md \
+  | grep -vE '\[§[0-9]+([[:space:]]*,[[:space:]]*§[0-9]+)*\]' || true
+```
+
+Any line printed is a finding whose section tag will not group across runs — a
+titled tag (`[§2 Principles]`) or a missing one. Print them as a note; do not
+edit the file. The point of a second review is to ask whether a class of finding
+ever closed, and free-form tags make that a manual read of both reports: one
+project's ten reviews wrote the same section as `[§2]`, `[§2 Principles]`, and
+`[§2 Design principles]`.
+
 ### Step 6 — Present
 
 Read `.claude/state/ui-review/$REVIEW_ID/findings.md` and print it.

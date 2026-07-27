@@ -111,6 +111,16 @@ Write `.claude/state/ui-review/<review_id>/findings.md` using
 List every enforcement-checklist item you cleared under "Sections cleared" — never
 silently omit one.
 
+**Tag every finding with its spec section by number alone** — `[§9]`, or
+`[§9, §3]` when it breaks two. Never append the section title. The number is the
+only thing that identifies a finding across reviews, and a title attached to it
+drifts on the very next run: ten reviews of one project wrote the same sections
+as `[§2]`, `[§2 Principles]`, and `[§2 Design principles]`, and as `[§5]`,
+`[§5 Spacing]`, `[§5 Radius]`. Grouping two reports to ask *"is §9 closed yet?"*
+then takes a human read of both — and that question is the entire reason for
+reviewing a second time. Section numbers come from `DESIGN-SPEC.md`'s own
+headings (1-13) and are stable; the words after them are not.
+
 ### 5a-0. Coverage table
 
 Per the evidence policy, with one specialisation: **one row for every item in the

@@ -29,17 +29,27 @@ Visual check: <playwright screenshots | static-only — no screenshot MCP availa
      level down. -->
 
 ## Findings
-<!-- One per deviation from the spec. Order by severity. Tag the spec section it
-     violates, e.g. [§3 Color] or [§9 A11y]. Only cite rules the spec actually
-     states — never invent a standard the spec doesn't declare. -->
+<!-- One per deviation from the spec. Order by severity. Only cite rules the spec
+     actually states — never invent a standard the spec doesn't declare.
 
-### U01 — [HIGH] [§9 A11y] <short title>
+     TAG THE SPEC SECTION BY NUMBER ALONE: [§9], or [§9, §3] when a finding
+     breaks two. No title after the number.
+
+     The number is the finding's only identity across runs, and a title attached
+     to it drifts immediately: one project's ten UI reviews wrote the same three
+     sections as [§2], [§2 Principles], and [§2 Design principles], and [§5],
+     [§5 Spacing], [§5 Radius] — so no one could group two reports and ask "is §9
+     closed yet?" without reading both by hand. That question is the whole point
+     of reviewing twice. The section numbers are fixed by DESIGN-SPEC.md's own
+     headings (1-13) and are stable; the words after them are not. -->
+
+### U01 — [HIGH] [§9] <short title>
 **Where:** <file:line or component / screen>
 **Spec rule:** <the exact line from DESIGN-SPEC.md or tokens.md it breaks>
 **Observed:** <what the code/screenshot actually does>
 **Suggested fix:** <the smallest change that brings it on-spec>
 
-### U02 — [MEDIUM] [§5 Spacing] ...
+### U02 — [MEDIUM] [§5] ...
 
 ## Consistency scan
 <!-- Cross-cutting drift the per-element findings miss: the same component styled
