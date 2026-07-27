@@ -43,7 +43,11 @@ If `$ARGUMENTS` is empty, ask the developer — **one `AskUserQuestion` round, u
 If `$ARGUMENTS` is provided, parse it directly:
 - `commits:<N>` → `scope=commits:<N>`
 - `dir:<path>` → `scope=dir:<path>`
-- `all` → `scope=all`
+- `all` → `scope=all` — every file *eligible*, not every file read. This is a
+  sampling audit; `/agentic-sweep audit` is the exhaustive form. Say so in one
+  line when the developer chooses it, especially since duplication and
+  inconsistency are cross-file properties that a partial pass reports as absent
+  rather than as unchecked.
 
 Use `types=all` and default thresholds unless the developer specified otherwise.
 

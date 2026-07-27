@@ -32,11 +32,25 @@ mkdir -p .claude/state/ui-review/$REVIEW_ID
 Parse `$ARGUMENTS`:
 - `run_id:<FEAT-###>` → the files touched by that run (from its task `## Design` sections)
 - `dir:<path>` → components/styles under that path
-- `all` → the whole UI surface
+- `all` → every UI file is *eligible*
 - empty → ask the developer **one `AskUserQuestion`** round (recent run / a
-  directory / whole UI) — default `all`.
+  directory / all eligible) — default `all`.
 
-Build a one-line human description of the scope for the critic.
+**Scope is not coverage, and the option names must not imply otherwise.** `all`
+sets what the critic is allowed to read; it does not mean every file gets read.
+This is a sampling review — the critic reads what it judges worth reading inside
+the scope, which is why it costs one pass. Offer the choice in those words: "all
+UI files eligible (sampled)", never "the whole UI surface".
+
+When the developer picks `all`, say in one line that `/agentic-sweep ui` is the
+exhaustive form — every file in computed batches, coverage verified — and roughly
+what it costs. Then proceed with whichever they want. A developer who asked for
+"the whole codebase" and got a sample they believed was complete is the precise
+failure this system exists to prevent, and it is worse here than in any finding,
+because it silently discredits every clean report.
+
+Build a one-line human description of the scope for the critic — including the
+word *sampled*, so it reaches the report.
 
 ### Step 4 — Arm the critic and dispatch
 
