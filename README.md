@@ -34,30 +34,35 @@ The last row is a real limitation rather than an oversight. Without Git for
 Windows, Claude Code runs shell commands through the PowerShell tool, and every
 command here is written in POSIX shell (`mkdir -p`, `printf`, `$(date +…)`).
 
-**Native Windows is unverified.** A `windows-latest` CI job exists and fails.
-What is established, from job-level results:
+**Native Windows: two real limitations, now found and guarded.** CI narrowed the
+`windows-latest` failure to `verify_clears.py`, and both causes are about how
+Windows runs a child process, not about stangent's logic:
 
-```
-FAILURE  test_verify_clears — under every invocation (alone, via discover, in the full suite)
-SUCCESS  test_symbols via discover — so the loader and test isolation are not the fault
-```
+1. **`find` is not `find(1)` there.** Windows ships a `find.exe` that searches
+   for a string *inside* files and shadows Git's findutils. `find . -name '*.dart'`
+   does not error — it answers a different question and returns a count.
+2. **Arguments carrying regex metacharacters cannot be delivered intact.** There
+   is no argv array at the OS level: `subprocess` joins the list into one command
+   line, and quoting is applied only for spaces and quotes — not for `|`, `(`,
+   `)`. The child re-splits it, so `grep -E "circular\((11|18)\)"` arrives
+   altered. grep does not error on a corrupted pattern; it matches a different
+   set and returns a count.
 
-The citation suite is where it breaks. `verify_clears.py` re-runs review
-citations by executing `grep`, `find` and `wc`; whether those are present and
-usable on the runner is being determined now, and that is the leading
-explanation but not yet a confirmed one.
+Both produce the one thing this system is built to prevent — a **confident wrong
+count**, reported as a reproduced clear. `verify_exec.py` now refuses such
+citations on Windows rather than running them, which is the safe direction: an
+`unrunnable` says the evidence could not be checked, where a wrong count says it
+was checked and passed.
 
-An earlier revision of this section reported the opposite — that the tools were
-present and the fault was test isolation. **That was wrong, and worth recording
-why.** The probes behind it used `continue-on-error: true` on CI *steps*, and
-GitHub forces a step's `conclusion` to `success` when that is set, exposing no
-separate `outcome` field. So the instrument reported success unconditionally, and
-its output was published here as fact — a check that could only ever say
-"cleared", which is precisely the failure mode `verify_clears.py` exists to
-catch, committed by the tooling built to test it.
+The consequence is honest but real: **on native Windows a review can still run,
+but citations using `find` or a metacharacter-bearing pattern will report
+`unrunnable` instead of being verified.** That is why the row above says
+*unverified* rather than *supported*, and why **WSL is the recommended path on
+Windows** — there the argv array is real and both limitations disappear.
 
-The row stays *unverified* until a working instrument says otherwise, and the
-job runs non-blocking meanwhile. **WSL is the tested path on Windows today.**
+A `windows-argv-fidelity` CI job pins the underlying mechanism, so if a future
+Windows or Python release fixes it, the guard can be revisited rather than
+carried forever on the strength of a comment.
 
 Runtime dependencies in the target project:
 ```bash

@@ -8,6 +8,7 @@ framework-specific, and the checker would behave identically on any repo.
 
     python3 -m unittest discover installer/tests
 """
+import os
 import shutil
 import sys
 import tempfile
@@ -336,6 +337,12 @@ class TestFindingEnumeration(Base):
         self.assertTrue(vc.is_failing(by_claim["clear"]))
 
 
+@unittest.skipIf(os.name == "nt",
+                 "these citations carry regex metacharacters (| ( ) ) in a quoted "
+                 "argument, which Windows cannot deliver to a child intact — there "
+                 "is no argv array, only a re-parsed command line. verify_exec now "
+                 "refuses such citations there rather than returning a count for a "
+                 "corrupted pattern, so 'reproduced' is not reachable on Windows.")
 class TestRealWorldCitationShapes(Base):
     """Regressions from citations a live reviewer actually wrote. Each of these
     was rejected by an over-narrow parser, not by a bad citation — the checker
@@ -991,3 +998,45 @@ class FindShadowingCase(Base):
         vx._FIND_OK = False
         for cmd in ("grep -rn x .", "rg -c x .", "wc -l a.txt"):
             self.assertTrue(vc.command_is_safe(cmd)[0], cmd)
+
+
+class WindowsArgFidelityCase(Base):
+    """A pattern that cannot reach the tool intact must not be run.
+
+    POSIX passes argv as an array, so `grep -E "circular\\((11|18)\\)"` is
+    delivered byte-for-byte. Windows has no argv at the OS level — subprocess
+    joins the list into one command line, list2cmdline quotes only for spaces
+    and quotes, and the child re-splits it. grep does not error on a corrupted
+    pattern; it matches a different set and returns a count, which is exactly
+    the confident wrong count this module exists to prevent.
+    """
+
+    def tearDown(self):
+        vx.os = os
+
+    def as_windows(self):
+        vx.os = type("_nt", (), {"name": "nt"})()
+
+    def test_metacharacter_argument_is_refused_on_windows(self):
+        self.as_windows()
+        for cmd in (r'grep -rEn "circular\((11|18)\)" src',
+                    r'grep -rn "alpha\|beta" src'):
+            ok, why = vx.command_is_safe(cmd)
+            self.assertFalse(ok, cmd)
+            self.assertIn("re-parses", why)
+
+    def test_the_same_citation_is_fine_on_posix(self):
+        for cmd in (r'grep -rEn "circular\((11|18)\)" src',
+                    r'grep -rn "alpha\|beta" src'):
+            self.assertTrue(vx.command_is_safe(cmd)[0], cmd)
+
+    def test_plain_patterns_still_run_on_windows(self):
+        self.as_windows()
+        for cmd in ("grep -rn hit src", "grep -c hit src/a.txt", "wc -l a.txt"):
+            self.assertTrue(vx.command_is_safe(cmd)[0], cmd)
+
+    def test_a_pipeline_of_plain_stages_still_runs_on_windows(self):
+        self.as_windows()
+        # The `|` between stages is consumed by our own splitter before any
+        # argument is built, so a pipeline is not itself the problem.
+        self.assertTrue(vx.command_is_safe("grep -rn hit src | wc -l")[0])

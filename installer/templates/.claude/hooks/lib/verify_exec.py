@@ -92,6 +92,25 @@ def _find_is_real() -> bool:
     return _FIND_OK
 
 
+# Characters that a Windows child process re-parses out of the single command
+# line it receives. There is no argv array at the OS level there: subprocess
+# joins the list with list2cmdline, which quotes only for spaces and quotes —
+# not for these — and the child (Git's MSYS2 grep) then splits it again.
+_WIN_UNSAFE_ARG = re.compile(r"[|()<>^&]")
+
+
+def _arg_survives_windows(arg: str) -> bool:
+    r"""Whether `arg` reaches the child intact on Windows.
+
+    POSIX passes argv as an array, so a grep pattern containing `|` or `()` is
+    delivered byte-for-byte. Windows cannot: the pattern is re-parsed, and
+    `circular\((11|18|19)\)` arrives as something else. grep does not error on
+    a corrupted pattern — it matches a different set and returns a count, which
+    is the confident-wrong-count failure this module exists to prevent.
+    """
+    return os.name != "nt" or not _WIN_UNSAFE_ARG.search(arg)
+
+
 def _stage_is_safe(argv: list[str]) -> tuple[bool, str]:
     if not argv:
         return False, "empty command"
@@ -108,6 +127,11 @@ def _stage_is_safe(argv: list[str]) -> tuple[bool, str]:
         return False, ("`find` on PATH is Windows' string-search find.exe, not "
                        "find(1) — it would answer a different question and "
                        "return a count rather than erroring")
+    for arg in argv[1:]:
+        if not _arg_survives_windows(arg):
+            return False, (f"argument {arg!r} contains characters Windows re-parses "
+                           f"out of the command line — the pattern would reach the "
+                           f"tool altered and return a count for a different query")
     banned = BANNED_ARGS.get(exe)
     if banned:
         for arg in argv[1:]:

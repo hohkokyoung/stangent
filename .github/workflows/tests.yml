@@ -113,43 +113,20 @@ jobs:
       - name: ruff
         run: ruff check .
 
-  # ---------------------------------------------------------------------------
-  # TEMPORARY diagnostic, final narrowing.
-  #
-  # Established on Windows: grep and wc resolve; `find` is the OS string-search
-  # find.exe, not find(1) (now refused outright by verify_exec, so it is fixed
-  # rather than pending). The classes that execute commands, that only parse, and
-  # that gate unsafe input all PASS — yet the module as a whole FAILS. So the
-  # failures are in the classes not yet covered, one leg each below.
-  #
-  # Job legs, not steps: `continue-on-error` on a step forces its API
-  # `conclusion` to "success" and no `outcome` is exposed, which made an earlier
-  # probe report success unconditionally.
-  #
-  # Delete this job once the cause is fixed.
-  # ---------------------------------------------------------------------------
-  windows-class-probe:
+  # Confirms the mechanism behind the one Windows limitation we document, rather
+  # than asserting it from a Mac: a child process there receives a single command
+  # line, not an argv array, so an argument carrying regex metacharacters is
+  # re-parsed before it arrives. If this ever passes on windows-latest, the
+  # limitation has gone and verify_exec's guard (plus the skip on
+  # TestRealWorldCitationShapes) should be revisited.
+  windows-argv-fidelity:
     runs-on: windows-latest
     continue-on-error: true
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {leg: "TestRefCitations", cmd: "python -m unittest installer.tests.test_verify_clears.TestRefCitations -b"}
-          - {leg: "TestAutoDetectSections", cmd: "python -m unittest installer.tests.test_verify_clears.TestAutoDetectSections -b"}
-          - {leg: "TestFindingEnumeration", cmd: "python -m unittest installer.tests.test_verify_clears.TestFindingEnumeration -b"}
-          - {leg: "TestRealWorldCitationShapes", cmd: "python -m unittest installer.tests.test_verify_clears.TestRealWorldCitationShapes -b"}
-          - {leg: "TestMultiSiteFindingsNeedEnumeration", cmd: "python -m unittest installer.tests.test_verify_clears.TestMultiSiteFindingsNeedEnumeration -b"}
-          - {leg: "TestCoverage", cmd: "python -m unittest installer.tests.test_verify_clears.TestCoverage -b"}
-          - {leg: "TestShippedChecklistsAreExtractable", cmd: "python -m unittest installer.tests.test_verify_clears.TestShippedChecklistsAreExtractable -b"}
-          - {leg: "TestExitCode", cmd: "python -m unittest installer.tests.test_verify_clears.TestExitCode -b"}
-          - {leg: "BaselineDriftCase", cmd: "python -m unittest installer.tests.test_verify_clears.BaselineDriftCase -b"}
-    name: "class ${{ matrix.leg }}"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install --upgrade pip pyyaml
-      - name: run
-        run: ${{ matrix.cmd }}
+      - name: "argv survives the round trip (expected to FAIL on Windows)"
+        run: |
+          python -c "import subprocess,sys; a=[sys.executable,'-c','import sys;print(sys.argv[1])',r'x(1|2)y']; r=subprocess.run(a,capture_output=True,text=True); got=(r.stdout or '').strip(); print('sent: x(1|2)y  got:',repr(got)); sys.exit(0 if got=='x(1|2)y' else 1)"
