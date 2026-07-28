@@ -190,13 +190,19 @@ def plan_batches(files: list[Path], max_files: int = DEFAULT_MAX_FILES,
 
 
 def build_plan(scope: str, patterns: list[str], max_files: int,
-               max_chars: int) -> tuple[dict, int]:
+               max_chars: int, pattern_source: str = "") -> tuple[dict, int]:
     root = (REPO_ROOT / scope).resolve() if scope else REPO_ROOT
     if not root.exists():
         return {"error": f"scope not found: {scope}"}, 2
     files = iter_files(root, patterns)
     if not files:
-        return {"error": f"no files under {scope} matching {patterns}"}, 2
+        # The fallback list covers the web/mobile stacks and nothing else, so on a
+        # Go, Rust or Java project it matches zero files. detect_stack knows all of
+        # those — the fix is to index, not to hand-write patterns, and the error has
+        # to say so or it reads like the sweep does not support the language.
+        hint = (" — run /agentic-index so the project's own languages are detected"
+                if "fallback" in pattern_source else "")
+        return {"error": f"no files under {scope or '.'} matching {patterns}{hint}"}, 2
     batches = plan_batches(files, max_files, max_chars)
     return {
         "scope": scope or ".",
@@ -257,7 +263,7 @@ def main() -> None:
         patterns, source = args.pattern, "explicit --pattern"
     else:
         patterns, source = detected_patterns()
-    plan, code = build_plan(args.scope, patterns, args.max_files, args.max_chars)
+    plan, code = build_plan(args.scope, patterns, args.max_files, args.max_chars, source)
     if code == 0:
         plan["pattern_source"] = source
     if code != 0:

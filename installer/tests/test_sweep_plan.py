@@ -126,6 +126,23 @@ class SweepCase(unittest.TestCase):
             dirs = {Path(f).parent.as_posix() for f in b["files"]}
             self.assertLessEqual(len(dirs), 2, f"batch spans {dirs}")
 
+
+    def test_fallback_matching_nothing_names_the_fix(self):
+        # A Go/Rust/Java project before indexing: the fallback covers web/mobile
+        # only, so it matches zero files. detect_stack knows those languages, so
+        # the error must point at /agentic-index rather than read as "unsupported".
+        self.write("cmd/main.go")
+        plan, code = self.sw.build_plan("", self.sw.FALLBACK_PATTERNS, 20, 80_000,
+                                        "fallback (no project.yml — run /agentic-index)")
+        self.assertEqual(code, 2)
+        self.assertIn("/agentic-index", plan["error"])
+
+    def test_a_deliberate_pattern_matching_nothing_gets_no_such_hint(self):
+        self.write("cmd/main.go")
+        plan, code = self.sw.build_plan("", ["*.kt"], 20, 80_000, "explicit --pattern")
+        self.assertEqual(code, 2)
+        self.assertNotIn("/agentic-index", plan["error"])
+
     # --- verification of a finished sweep -----------------------------------
 
     def sweep_of(self, n_files=25):
