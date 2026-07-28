@@ -114,40 +114,43 @@ jobs:
         run: ruff check .
 
   # ---------------------------------------------------------------------------
-  # TEMPORARY diagnostic. windows-latest passes every test module on its own but
-  # fails when all 406 run in one process, so the fault is an interaction, not a
-  # test. Each matrix leg pairs the citation suite with one other module; the leg
-  # that fails names the partner. Job names are visible in the public API, so
-  # this reports without needing repo-admin log access.
+  # TEMPORARY diagnostic — a controlled experiment, replacing a pair-wise bisect
+  # that varied two things at once and so proved nothing (all 19 legs failed).
   #
-  # Delete this job once the interaction is fixed.
+  # Known: `installer.tests.test_verify_clears` alone, dotted, from the repo root
+  # PASSES on Windows. `discover` over all modules FAILS. The pair legs used bare
+  # module names from inside installer/tests — discover's import style — and all
+  # failed regardless of partner, which points at the invocation, not any pairing.
+  #
+  # Each leg below changes exactly one variable from the known-passing baseline.
+  # Leg names are visible in the public API, so the pattern of pass/fail reads
+  # without repo-admin log access.
+  #
+  # Delete this job once the cause is fixed.
   # ---------------------------------------------------------------------------
-  windows-pair-probe:
+  windows-isolation-probe:
     runs-on: windows-latest
     continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
-        partner:
-          - test_agentic_mcp
-          - test_command_state_protocol
-          - test_common
-          - test_dispatch_plan
-          - test_doctor_manifest
-          - test_git_branch
-          - test_ids_and_dispatch_log
-          - test_installer
-          - test_log_usage
-          - test_logs
-          - test_post_tool_use
-          - test_pre_tool_use
-          - test_retriever
-          - test_skill_digest
-          - test_state_and_lessons
-          - test_sweep_plan
-          - test_symbols
-          - test_token_cost
-          - test_verify_review
+        include:
+          # Baseline. Expected PASS (already observed).
+          - {leg: "1-dotted-alone-from-root", dir: ".",
+             cmd: "python -m unittest installer.tests.test_verify_clears -b"}
+          # Changes ONLY the import naming + cwd.
+          - {leg: "2-bare-alone-from-testsdir", dir: "installer/tests",
+             cmd: "python -m unittest test_verify_clears -b"}
+          # Changes ONLY the loader: discover, but restricted to the same module.
+          - {leg: "3-discover-only-verifyclears", dir: ".",
+             cmd: "python -m unittest discover installer/tests -p test_verify_clears.py -b"}
+          # Discover restricted to a module that does NOT touch the hooks lib.
+          - {leg: "4-discover-only-symbols", dir: ".",
+             cmd: "python -m unittest discover installer/tests -p test_symbols.py -b"}
+          # The known failure, for a same-run reference point.
+          - {leg: "5-discover-everything", dir: ".",
+             cmd: "python -m unittest discover installer/tests -b"}
+    name: "isolation ${{ matrix.leg }}"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -157,9 +160,6 @@ jobs:
       - run: |
           git config --global user.email "ci@example.com"
           git config --global user.name "CI"
-      # Bare module names, run from inside the tests dir — this reproduces how
-      # `discover` imports them (there is no __init__.py), which the earlier
-      # dotted-path probes did not.
-      - name: pair
-        working-directory: installer/tests
-        run: python -m unittest test_verify_clears ${{ matrix.partner }} -b
+      - name: run
+        working-directory: ${{ matrix.dir }}
+        run: ${{ matrix.cmd }}
