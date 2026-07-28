@@ -19,7 +19,7 @@ Ordering, cycle detection, the runnable set, and per-task model/skills/k resolut
 
 1. **Clear any leftover dispatch state** from a previously interrupted build (so stale `current_*.txt` don't mistag this run's logs), then resolve `run-id` (default = latest run dir by mtime; or the `<run-id>` argument) and write it to state. Run:
    ```
-   python3 .claude/hooks/lib/state.py clear
+   sh .claude/py .claude/hooks/lib/state.py clear
    printf '%s' '<resolved-run-id>' > .claude/state/current_run.txt
    ```
    The second command lets the post-tool hook tag every log entry with the correct run_id.
@@ -32,7 +32,7 @@ Ordering, cycle detection, the runnable set, and per-task model/skills/k resolut
 
 3. **Compute the dispatch plan.** Run (pass `--task <task-id>` when a single task was requested; pass `--session-model <current session model id>` so unset per-role models fall back correctly):
    ```
-   python3 .claude/hooks/lib/dispatch_plan.py '<run_id>' [--task '<task-id>'] [--session-model '<session-model>']
+   sh .claude/py .claude/hooks/lib/dispatch_plan.py '<run_id>' [--task '<task-id>'] [--session-model '<session-model>']
    ```
    - **Exit 3 (dependency cycle):** abort with the printed error. Do NOT partially dispatch. Jump to step 6 cleanup.
    - **Exit 4 (`--task` refused):** print the refusal (deps not done / already done) and stop. This is the dependency check — do NOT bypass it, even for `/agentic-build <task-id>`.
@@ -43,7 +43,7 @@ Ordering, cycle detection, the runnable set, and per-task model/skills/k resolut
    b. Take the **first** entry `T` in `runnable`. Every value you need is already in `T` — do not recompute any of it.
    c. Re-index project files so retrieval reflects code written by earlier tasks:
       ```
-      PYEXE=$(ls .venv/bin/python venv/bin/python .env/bin/python 2>/dev/null | head -1) && ${PYEXE:-python3} .claude/hooks/lib/retriever.py reindex --project-only
+      sh .claude/py .claude/hooks/lib/retriever.py reindex --project-only
       ```
       Skills are not re-embedded (that is handled by `/agentic-index`).
    d. Write state files and log the dispatch using `T`'s fields:
@@ -51,7 +51,7 @@ Ordering, cycle detection, the runnable set, and per-task model/skills/k resolut
       printf '%s' '<T.task_id>' > .claude/state/current_task.txt
       printf '%s' '<T.role>'    > .claude/state/current_role.txt
       printf '%s' '<T.model>'   > .claude/state/current_model.txt
-      python3 .claude/hooks/lib/log_dispatch.py \
+      sh .claude/py .claude/hooks/lib/log_dispatch.py \
         --run_id '<run_id>' --task_id '<T.task_id>' --role '<T.role>' \
         --complexity '<T.complexity>' --role_baseline '<T.role_baseline>' \
         --model_selected '<T.model>' [add --routing_applied if T.routing_applied is true]
@@ -65,7 +65,7 @@ Ordering, cycle detection, the runnable set, and per-task model/skills/k resolut
    f. **If the task's role was `reviewer`, verify its Coverage table** before
       moving on:
       ```
-      ${PYEXE:-python3} .claude/hooks/lib/verify_clears.py '<T.path>' --cwd . \
+      sh .claude/py .claude/hooks/lib/verify_clears.py '<T.path>' --cwd . \
         --checklist .claude/agents/reviewer.md
       ```
       Print the output. A missing row means an evaluation area was never
@@ -75,8 +75,8 @@ Ordering, cycle detection, the runnable set, and per-task model/skills/k resolut
 
    g. After the subagent returns, clear the per-task state, then checkpoint the task's work:
       ```
-      python3 .claude/hooks/lib/state.py clear --agent
-      python3 .claude/hooks/lib/git_branch.py checkpoint '<run_id>' '<T.task_id>' --role '<T.role>'
+      sh .claude/py .claude/hooks/lib/state.py clear --agent
+      sh .claude/py .claude/hooks/lib/git_branch.py checkpoint '<run_id>' '<T.task_id>' --role '<T.role>'
       ```
       Order matters: the checkpoint must run **after** `current_role.txt` is
       removed. `pre_tool_use.py` denies `git commit` while any role is active, so
@@ -97,7 +97,7 @@ Ordering, cycle detection, the runnable set, and per-task model/skills/k resolut
 
 6. Run this exact Bash command to clean up (mandatory — do not skip):
    ```
-   python3 .claude/hooks/lib/state.py clear
+   sh .claude/py .claude/hooks/lib/state.py clear
    ```
    Then print the final dashboard.
 

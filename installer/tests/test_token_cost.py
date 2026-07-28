@@ -109,7 +109,10 @@ class ConfigPathIndependentOfCwdCase(unittest.TestCase):
             import yaml  # noqa: F401
         except ImportError:
             self.skipTest("pricing: overrides need PyYAML — see doctor's dep note")
-        import importlib.util, os, shutil, tempfile
+        import importlib.util
+        import os
+        import shutil
+        import tempfile
         from pathlib import Path
         src = (Path(__file__).resolve().parents[1] / "templates" / ".claude"
                / "hooks" / "lib" / "token_cost.py")

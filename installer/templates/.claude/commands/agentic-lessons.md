@@ -15,7 +15,7 @@ the result into the planner so future plans avoid repeat mistakes.
 
 1. **Collect raw findings.** Run:
    ```
-   python3 .claude/hooks/lib/lessons.py collect
+   sh .claude/py .claude/hooks/lib/lessons.py collect
    ```
    This prints a JSON array of `{run_id, task_id, review}` for every task whose
    `## Review` section is non-empty. If the array is empty, print "No reviews to
@@ -23,7 +23,7 @@ the result into the planner so future plans avoid repeat mistakes.
 
 2. **Read the existing lessons** so you don't re-add what's already captured:
    ```
-   python3 .claude/hooks/lib/lessons.py show
+   sh .claude/py .claude/hooks/lib/lessons.py show
    ```
 
 3. **Distill.** Across all collected reviews, identify findings that are
@@ -37,7 +37,7 @@ the result into the planner so future plans avoid repeat mistakes.
    - Keep it to one line.
    - Add it:
      ```
-     python3 .claude/hooks/lib/lessons.py add "<the distilled lesson>"
+     sh .claude/py .claude/hooks/lib/lessons.py add "<the distilled lesson>"
      ```
    The script deduplicates and caps the file at 30 entries (oldest dropped), so
    you do not need to prune manually.
@@ -45,7 +45,7 @@ the result into the planner so future plans avoid repeat mistakes.
 4. **Report.** Print the number of lessons added this run and the current
    contents:
    ```
-   python3 .claude/hooks/lib/lessons.py show
+   sh .claude/py .claude/hooks/lib/lessons.py show
    ```
 
 ## Constraints

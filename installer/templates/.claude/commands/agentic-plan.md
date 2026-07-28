@@ -11,13 +11,13 @@ Run the planner on the given goal.
 
 1. Allocate the next `run_id` by running:
    ```
-   python3 .claude/hooks/lib/plan_id.py next
+   sh .claude/py .claude/hooks/lib/plan_id.py next
    ```
    The script reads `.claude/.agentic.yml: plan_id.{prefix,pad,start}` and scans existing `.claude/state/plans/<prefix>-*` dirs. Default format: `FEAT-001`, `FEAT-002`, ...
 
 2. **Create the feature branch** (if `git.auto_branch` is true in `.agentic.yml`):
    ```
-   python3 .claude/hooks/lib/git_branch.py create <run_id>
+   sh .claude/py .claude/hooks/lib/git_branch.py create <run_id>
    ```
    - Skips silently if not a git repo.
    - **Refuses (exit 1) if the working tree has uncommitted changes** and `git.fail_on_wip` is true. If this happens, STOP — tell the user to commit or stash, then re-run `/agentic-plan` with the same goal. Do NOT proceed to step 3 in this case (otherwise you'd allocate a `run_id` and have a half-finished plan with no branch).
@@ -70,12 +70,12 @@ Run the planner on the given goal.
    - The generated `run_id`
    - The contents of `.claude/.agentic.yml`
    - The `## Clarifications` block from step 4
-   - **Project lessons**: run `python3 .claude/hooks/lib/lessons.py show`. If it produces output, pass it to the planner under a heading line `## Lessons` (exactly that — the planner looks for that block) so the plan accounts for recurring past review findings. If the command produces no output, omit the block entirely.
+   - **Project lessons**: run `sh .claude/py .claude/hooks/lib/lessons.py show`. If it produces output, pass it to the planner under a heading line `## Lessons` (exactly that — the planner looks for that block) so the plan accounts for recurring past review findings. If the command produces no output, omit the block entirely.
    - **Model**: use `models.planner` from `.agentic.yml` (fall back to `models.default`, then session default). This is the `<resolved_model>` written to state above — pass it explicitly at invocation so the log records the model that actually ran.
 
 6. The planner writes `_overview.md` + per-task files (all `status: pending`). After it returns, clear the state (mandatory — do not skip):
    ```
-   python3 .claude/hooks/lib/state.py clear --agent
+   sh .claude/py .claude/hooks/lib/state.py clear --agent
    ```
 
 7. **Sketch injection + render.** If the Clarifications block contains `sketch: yes`:
@@ -110,12 +110,12 @@ Run the planner on the given goal.
       - Run: `printf '%s' '<s-id>' > .claude/state/current_task.txt && printf '%s' 'sketcher' > .claude/state/current_role.txt && printf '%s' '<resolved_model>' > .claude/state/current_model.txt`
       - Invoke the **sketcher** agent with the path to `s<N>.md`, passing that model explicitly.
       - Wait for it to flip `status: done` or `status: blocked`.
-      - Run: `python3 .claude/hooks/lib/state.py clear --agent`
+      - Run: `sh .claude/py .claude/hooks/lib/state.py clear --agent`
       - If `blocked`: print a warning (`sketcher s<N> blocked: <blocker>`) and continue to the next — do NOT halt the entire plan. The implementer task will be runnable only after the sketch is manually resolved or removed from `depends_on`.
 
    After all sketchers finish (or if none ran), clean up:
    ```
-   python3 .claude/hooks/lib/state.py clear
+   sh .claude/py .claude/hooks/lib/state.py clear
    ```
 
    If `sketch: no`, skip this step entirely.

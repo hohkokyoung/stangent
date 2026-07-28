@@ -42,7 +42,7 @@ Entry point for data-aware debugging. Collects context from the developer, then 
 
    After it returns, clear the state (mandatory — do not skip):
    ```
-   python3 .claude/hooks/lib/state.py clear
+   sh .claude/py .claude/hooks/lib/state.py clear
    ```
 
 4. After the debugger writes its report, print:

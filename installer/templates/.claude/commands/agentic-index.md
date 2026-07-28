@@ -13,7 +13,7 @@ Embed the references corpus into sqlite-vec and detect the project stack.
 
 Run:
 ```
-PYEXE=$(ls .venv/bin/python venv/bin/python .env/bin/python 2>/dev/null | head -1) && ${PYEXE:-python3} .claude/hooks/lib/retriever.py reindex
+sh .claude/py .claude/hooks/lib/retriever.py reindex
 ```
 
 The script:
@@ -80,7 +80,7 @@ If no signals matched, print:
 
 ### Step 3 — Index project files
 
-This step runs automatically inside the same `python3 .claude/hooks/lib/retriever.py reindex` call from Step 1.
+This step runs automatically inside the same `sh .claude/py .claude/hooks/lib/retriever.py reindex` call from Step 1.
 
 The retriever:
 1. Reads `project_index.include` from `.agentic.yml` (manual override). If non-empty, uses those globs. Otherwise falls back to `project_index_globs` from `.claude/state/project.yml` (auto-detected in Step 2).
@@ -96,7 +96,7 @@ Print a reminder to run `/agentic-index` again if the user later adds `project_i
 Precompute the small `## Purpose` + `## Planner hints` digest the planner reads
 instead of every whole `SKILL.md`:
 ```
-PYEXE=$(ls .venv/bin/python venv/bin/python .env/bin/python 2>/dev/null | head -1) && ${PYEXE:-python3} .claude/hooks/lib/skill_digest.py build
+sh .claude/py .claude/hooks/lib/skill_digest.py build
 ```
 This writes `.claude/state/skills_digest.md` from the `enabled_skills` in
 `.agentic.yml`. It has no embedding deps and is safe to run anytime skills or

@@ -1,0 +1,39 @@
+#!/bin/sh
+# Run a Python script with the interpreter that has THIS project's dependencies.
+#
+# Every command invokes Python as `sh .claude/py <script>` rather than naming an
+# interpreter, because neither available spelling is correct everywhere:
+#
+#   * `python3` does not exist on native Windows outside the Store build — the
+#     python.org installer ships `python.exe` and `py.exe` only.
+#   * A bare name resolves against PATH, which is not where a project's deps
+#     live. PyYAML, fastembed and sqlite-vec are typically installed into the
+#     project venv, and a command that misses it does not fail loudly: config
+#     reading falls back to defaults, so a deliberate `checkpoint_commits: false`
+#     or a per-role model is silently ignored, and retrieval returns nothing.
+#
+# Resolution order: project venv (POSIX and Windows layouts), an active
+# VIRTUAL_ENV, then whichever of python3/python is on PATH.
+#
+# Resolved per call rather than stamped in at install time on purpose: .claude/
+# is committed, so an absolute path baked in here would be one developer's
+# machine imposed on everyone who clones the repo.
+
+for candidate in \
+    .venv/bin/python .venv/Scripts/python.exe \
+    venv/bin/python venv/Scripts/python.exe \
+    .env/bin/python .env/Scripts/python.exe
+do
+    [ -x "$candidate" ] && exec "$candidate" "$@"
+done
+
+if [ -n "$VIRTUAL_ENV" ]; then
+    [ -x "$VIRTUAL_ENV/bin/python" ] && exec "$VIRTUAL_ENV/bin/python" "$@"
+    [ -x "$VIRTUAL_ENV/Scripts/python.exe" ] && exec "$VIRTUAL_ENV/Scripts/python.exe" "$@"
+fi
+
+command -v python3 >/dev/null 2>&1 && exec python3 "$@"
+command -v python  >/dev/null 2>&1 && exec python  "$@"
+
+echo "[agentic] no Python interpreter found (looked for a project venv, \$VIRTUAL_ENV, python3, python)" >&2
+exit 127

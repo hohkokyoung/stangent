@@ -26,7 +26,6 @@ import struct
 import subprocess
 import sys
 from pathlib import Path
-from typing import Iterable
 
 try:
     import yaml  # type: ignore
@@ -432,7 +431,7 @@ def cosine(a: list[float], b: list[float]) -> float:
     s = 0.0
     na = 0.0
     nb = 0.0
-    for x, y in zip(a, b):
+    for x, y in zip(a, b, strict=True):
         s += x * y
         na += x * x
         nb += y * y
@@ -493,7 +492,10 @@ def _reindex_project(
         embeddings = embed_fn([preamble + chunk_text for _, chunk_text in chunks])
 
         cur.execute("DELETE FROM chunks WHERE skill='project' AND file=?", (rel,))
-        for (anchor, chunk_text), emb in zip(chunks, embeddings):
+        # strict=: one embedding per chunk is an invariant of the embedder.
+        # Silently zipping to the shorter list would drop chunks from the
+        # index with no error — a retrieval gap that looks like bad recall.
+        for (anchor, chunk_text), emb in zip(chunks, embeddings, strict=True):
             cur.execute(
                 "INSERT INTO chunks(skill, file, anchor, text, embedding) VALUES (?,?,?,?,?)",
                 ("project", rel, anchor, chunk_text, pack_f32(emb)),
@@ -687,7 +689,8 @@ def cmd_reindex(project_only: bool = False) -> None:
             print(f"[retriever] embedding {len(all_skill_chunks)} skill chunks via {provider_id}...")
             embeddings = embed_fn([c[3] for c in all_skill_chunks])
             cur = conn.cursor()
-            for (skill, file, anchor, text), emb in zip(all_skill_chunks, embeddings):
+            for (skill, file, anchor, text), emb in zip(all_skill_chunks,
+                                                        embeddings, strict=True):
                 cur.execute(
                     "INSERT INTO chunks(skill, file, anchor, text, embedding) VALUES (?,?,?,?,?)",
                     (skill, file, anchor, text, pack_f32(emb)),

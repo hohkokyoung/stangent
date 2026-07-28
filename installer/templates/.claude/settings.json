@@ -12,7 +12,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/pre_tool_use.py",
+            "command": "sh .claude/py .claude/hooks/pre_tool_use.py",
             "_agentic_managed": true
           }
         ]
@@ -24,7 +24,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/post_tool_use.py",
+            "command": "sh .claude/py .claude/hooks/post_tool_use.py",
             "_agentic_managed": true
           }
         ]
@@ -35,12 +35,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/log_usage.py",
+            "command": "sh .claude/py .claude/hooks/log_usage.py",
             "_agentic_managed": true
           },
           {
             "type": "command",
-            "command": "python3 .claude/hooks/verify_review.py",
+            "command": "sh .claude/py .claude/hooks/verify_review.py",
             "_agentic_managed": true
           }
         ]

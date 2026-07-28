@@ -83,7 +83,7 @@ repo, since an IDOR is not confined to the view layer.
 ### Step 2 — Compute the plan, and show the cost
 
 ```bash
-python3 .claude/hooks/lib/sweep_plan.py plan '<scope>' --pattern '<pat>' [--max-chars N]
+sh .claude/py .claude/hooks/lib/sweep_plan.py plan '<scope>' --pattern '<pat>' [--max-chars N]
 ```
 
 Print the summary line (`N files, NNNKB, B batches`) and **confirm with the
@@ -137,9 +137,9 @@ shape otherwise):
 ### Step 5 — Verify coverage, then citations
 
 ```bash
-python3 .claude/hooks/lib/sweep_plan.py verify '<scope>' \
+sh .claude/py .claude/hooks/lib/sweep_plan.py verify '<scope>' \
   .claude/state/$DIR/$REVIEW_ID/batches --pattern '<pat>' [--max-chars N]
-${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
+sh .claude/py .claude/hooks/lib/verify_clears.py \
   .claude/state/$DIR/$REVIEW_ID/findings.md --cwd . \
   --checklist '<the lane's checklist path>'
 ```
@@ -154,7 +154,7 @@ The second is the ordinary evidence check. Both outputs go above the findings.
 Then clear the state:
 
 ```bash
-python3 .claude/hooks/lib/state.py clear
+sh .claude/py .claude/hooks/lib/state.py clear
 ```
 
 ### Step 6 — Present

@@ -23,13 +23,12 @@ per-run logs, and review outputs. This command reports and removes that cruft.
 
 1. Resolve the interpreter and run a **dry-run** first:
    ```
-   PYEXE=$(ls .venv/bin/python venv/bin/python .env/bin/python 2>/dev/null | head -1)
-   ${PYEXE:-python3} .claude/hooks/lib/state.py clean [--max-age-days <N>]
+   sh .claude/py .claude/hooks/lib/state.py clean [--max-age-days <N>]
    ```
 2. Show the candidate list to the developer.
 3. Only if the developer confirms (or passed `--apply`), re-run with `--apply`:
    ```
-   ${PYEXE:-python3} .claude/hooks/lib/state.py clean [--max-age-days <N>] --apply
+   sh .claude/py .claude/hooks/lib/state.py clean [--max-age-days <N>] --apply
    ```
 4. Print a one-line summary of what was removed.
 

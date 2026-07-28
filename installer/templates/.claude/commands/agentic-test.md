@@ -55,7 +55,7 @@ For each flow the developer listed:
   - The matching test skill in `skills_to_load`
   - Context: "This is a brownfield baseline — explore the running app/service and generate one test that covers the happy path. Do not assume file structure."
 - Wait for the tester to complete before starting the next.
-- Run: `python3 .claude/hooks/lib/state.py clear`
+- Run: `sh .claude/py .claude/hooks/lib/state.py clear`
 
 **Step 4 — Report**
 

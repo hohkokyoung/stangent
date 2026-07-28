@@ -1,0 +1,30 @@
+# Tool configuration only. stangent is not (yet) a distributable package — the
+# installer resolves its templates relative to its own file, so packaging it
+# means restructuring installer/ into a real package tree. That is a separate,
+# larger change; this file exists so `ruff check .` means the same thing on a
+# laptop as it does in CI.
+
+[tool.ruff]
+target-version = "py310"   # the verified floor, matching the CI matrix
+line-length = 100
+
+[tool.ruff.lint]
+# Deliberately narrow. The value here is catching what would ship broken to a
+# user's project — undefined names, unused imports, real bug shapes — not
+# enforcing a house style on 24k lines written before the linter existed.
+# E7 in particular is excluded: it flags `l` as a variable name and semicolons,
+# which are style opinions with no failure mode behind them.
+select = [
+    "E4",   # imports
+    "E9",   # syntax / IO errors
+    "F",    # pyflakes: undefined names, unused imports, dead assignments
+    "B",    # bugbear: real bug shapes (mutable defaults, silent zip truncation)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Eval `assert.py` files are exec'd by evals/run.py with helpers injected into
+# their namespace (parse_frontmatter, load_tasks, …). They are not importable on
+# their own and every such use already carries `# type: ignore[name-defined]`;
+# the module docstrings list exactly what run.py provides.
+"installer/templates/.claude/evals/**/assert.py" = ["F821"]
+"installer/templates/.claude/templates/eval-case/assert.py" = ["F821"]

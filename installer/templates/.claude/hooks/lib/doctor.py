@@ -5,8 +5,8 @@ Runs a battery of fast, deterministic checks against the current project's
 agentic install. Exits non-zero if any check fails.
 
 Usage:
-    python .claude/hooks/lib/doctor.py
-    python .claude/hooks/lib/doctor.py --json     # machine-readable
+    sh .claude/py .claude/hooks/lib/doctor.py
+    sh .claude/py .claude/hooks/lib/doctor.py --json     # machine-readable
 """
 from __future__ import annotations
 
@@ -278,7 +278,7 @@ def check_config_files() -> list[dict]:
             n = sum(len(e.get("hooks", [])) for ev in hooks.values() for e in ev)
             if "mcpServers" in data:
                 out.append(_check("file: settings.json", WARN,
-                                  f"contains dead mcpServers block — MCP belongs in .mcp.json"))
+                                  "contains dead mcpServers block — MCP belongs in .mcp.json"))
             else:
                 out.append(_check("file: settings.json", OK, f"{n} hook(s) registered"))
         except json.JSONDecodeError as e:
@@ -577,7 +577,7 @@ def check_stale_state() -> dict:
         return _check("dispatch state", WARN,
                       "leftover from an interrupted build: " + detail
                       + " — auto-cleared on next /agentic-build, or run "
-                        "`python .claude/hooks/lib/state.py clear`")
+                        "`sh .claude/py .claude/hooks/lib/state.py clear`")
     return _check("dispatch state", OK, "no stale state")
 
 

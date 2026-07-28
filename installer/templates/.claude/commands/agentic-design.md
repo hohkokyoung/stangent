@@ -86,7 +86,7 @@ write the draft under `.claude/state/design-spec/$SPEC_ID/` and print its summar
 Then clear the state (mandatory):
 
 ```bash
-python3 .claude/hooks/lib/state.py clear
+sh .claude/py .claude/hooks/lib/state.py clear
 ```
 
 ### Step 5 — Present the draft
@@ -140,5 +140,5 @@ Next:
   are documentation. The developer installs.
 - Do NOT commit — writing `docs/design/` is the only file change; commits are
   user-driven.
-- Always run `python3 .claude/hooks/lib/state.py clear` after the designer
+- Always run `sh .claude/py .claude/hooks/lib/state.py clear` after the designer
   returns, even on a revise loop.

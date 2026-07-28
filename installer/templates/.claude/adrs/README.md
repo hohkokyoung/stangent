@@ -26,7 +26,7 @@ See `.claude/templates/adr.md` for the canonical structure. New ADRs are created
 ## Allocating an id
 
 ```
-python .claude/hooks/lib/adr_id.py next       # prints ADR-003
+sh .claude/py .claude/hooks/lib/adr_id.py next       # prints ADR-003
 ```
 
 Or use the slash command:

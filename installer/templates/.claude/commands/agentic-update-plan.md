@@ -21,7 +21,7 @@ If no amendment text is given, use `AskUserQuestion` (YOU, not the planner) to e
 
 ## Procedure
 
-1. Resolve `<run-id>`. If not given, use `python3 .claude/hooks/lib/plan_id.py peek`.
+1. Resolve `<run-id>`. If not given, use `sh .claude/py .claude/hooks/lib/plan_id.py peek`.
 2. Read every task file in `.claude/state/plans/<run-id>/` plus `_overview.md`.
 3. Compute the **frozen set** = tasks with `status: done`. These are immutable — the planner may NOT modify their frontmatter, sections, or status.
 4. **Clarification phase (YOU do this — do NOT delegate to the planner).** Using the amendment text as the starting point, walk only the dimensions from the coverage checklist (see `/agentic-plan`) that the amendment touches. Ask up to **4 rounds**, up to **3 questions per round**. Collect answers into a `## Clarifications` block (same format as `/agentic-plan`) to pass to the planner. If the amendment is unambiguous, skip this step.
@@ -72,12 +72,12 @@ If no amendment text is given, use `AskUserQuestion` (YOU, not the planner) to e
       - Run: `printf '%s' '<s-id>' > .claude/state/current_task.txt && printf '%s' 'sketcher' > .claude/state/current_role.txt && printf '%s' '<resolved_model>' > .claude/state/current_model.txt`
       - Invoke the **sketcher** agent with the path to `s<N>.md`, passing that model explicitly.
       - Wait for it to flip `status: done` or `status: blocked`.
-      - Run: `python3 .claude/hooks/lib/state.py clear --agent`
+      - Run: `sh .claude/py .claude/hooks/lib/state.py clear --agent`
       - If `blocked`: print a warning and continue — do NOT halt. The implementer task will wait until the sketch is resolved.
 
    After all sketchers finish, clean up:
    ```
-   python3 .claude/hooks/lib/state.py clear
+   sh .claude/py .claude/hooks/lib/state.py clear
    ```
 
    If sketching is not active, or no new implementer tasks were added, skip this step entirely.

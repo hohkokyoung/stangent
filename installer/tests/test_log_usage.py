@@ -234,7 +234,9 @@ class HookErrorCase(unittest.TestCase):
     """
 
     def run_broken(self, break_it: bool):
-        import shutil, subprocess, tempfile
+        import shutil
+        import subprocess
+        import tempfile
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             hooks = root / ".claude" / "hooks"

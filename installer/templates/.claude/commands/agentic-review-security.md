@@ -47,7 +47,7 @@ rely on the agent inheriting the session model. Wait for it to write
 Then clear the state (mandatory):
 
 ```bash
-python3 .claude/hooks/lib/state.py clear
+sh .claude/py .claude/hooks/lib/state.py clear
 ```
 
 ### Step 4 — Verify the reviewer's clears
@@ -55,7 +55,7 @@ python3 .claude/hooks/lib/state.py clear
 Re-run the evidence cited for every category the reviewer marked cleared:
 
 ```bash
-${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
+sh .claude/py .claude/hooks/lib/verify_clears.py \
   .claude/state/security-review/$REVIEW_ID/findings.md --cwd . \
   --checklist .claude/agents/security-reviewer.md \
   --enumerations docs/review/enumerations.md --reviewer security-reviewer

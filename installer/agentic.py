@@ -194,6 +194,19 @@ def copy_templates(target: Path) -> None:
             continue
         shutil.copytree(src_d, dst_d)
 
+    # `py` — the interpreter resolver every command goes through. Mirrored (not
+    # seeded) so a fix to it reaches existing installs, and copied with its exec
+    # bit intact. Commands invoke it as `sh .claude/py`, so the bit is a
+    # convenience rather than a requirement.
+    py_src = src / "py"
+    if py_src.exists():
+        py_dst = dst / "py"
+        shutil.copy2(py_src, py_dst)
+        try:
+            py_dst.chmod(py_dst.stat().st_mode | 0o111)
+        except OSError:
+            pass  # Windows filesystems have no exec bit; `sh .claude/py` still works
+
     # .mcp.json — Claude Desktop reads this at project root (not under .claude/).
     # Seeded only on first install so user-added credentials survive re-install.
     mcp_src = TEMPLATES_DIR / ".mcp.json"
@@ -257,27 +270,47 @@ def sync_managed_hooks(target: Path) -> None:
         return m.group(1) if m else (cmd or "")
 
     dst_hooks = dst.setdefault("hooks", {})
-    added = []
+    added: list[str] = []
+    updated: list[str] = []
     for event, tpl_entries in (tpl.get("hooks") or {}).items():
         dst_entries = dst_hooks.setdefault(event, [])
         existing = {
-            _script(h.get("command"))
+            _script(h.get("command")): h
             for entry in dst_entries for h in entry.get("hooks", [])
             if h.get("_agentic_managed")
         }
         for entry in tpl_entries:
             for h in entry.get("hooks", []):
-                if not h.get("_agentic_managed") or _script(h.get("command")) in existing:
+                if not h.get("_agentic_managed"):
+                    continue
+                script = _script(h.get("command"))
+                if script in existing:
+                    # Refresh how a managed hook is invoked. Matching by script
+                    # name means the entry is found but never updated, so a fix
+                    # to the command itself — routing it through .claude/py so
+                    # it uses the interpreter that actually has PyYAML, without
+                    # which gateway.deny is silently not enforced — reached new
+                    # installs only. `_agentic_managed` marks the entry as
+                    # installer-owned, which is the licence to rewrite it.
+                    current = existing[script]
+                    if current.get("command") != h.get("command"):
+                        current["command"] = h["command"]
+                        updated.append(f"{event}:{script}")
                     continue
                 new_entry = {"hooks": [h]}
                 if entry.get("matcher") is not None:
                     new_entry = {"matcher": entry["matcher"], "hooks": [h]}
                 dst_entries.append(new_entry)
-                existing.add(_script(h.get("command")))
+                existing[script] = h
                 added.append(f"{event}:{h.get('command')}")
-    if added:
+    if added or updated:
         dst_path.write_text(json.dumps(dst, indent=2) + "\n", encoding="utf-8")
-        info(f"settings.json: synced managed hooks ({len(added)} added)")
+        parts = []
+        if added:
+            parts.append(f"{len(added)} added")
+        if updated:
+            parts.append(f"{len(updated)} updated")
+        info(f"settings.json: synced managed hooks ({', '.join(parts)})")
 
 
 def _parse_models(agentic_yml_text: str) -> dict:
@@ -348,6 +381,53 @@ def stamp_agent_models(target: Path) -> None:
             stamped += 1
     if stamped:
         info(f"stamped model: into {stamped} agent frontmatter(s) from .agentic.yml models:")
+
+
+def resolve_interpreter(target: Path) -> str:
+    """The interpreter to launch the MCP server with: project venv, else this one.
+
+    Same order as `.claude/py`, which the commands go through. The two differ on
+    purpose in *when* they resolve: `py` is committed, so it must resolve per
+    call rather than carry one developer's path; `.mcp.json` is gitignored and
+    regenerated per install, so an absolute path is both safe and better here —
+    Claude Code spawns an MCP server directly rather than through a shell, so a
+    `sh .claude/py` indirection would add a shell dependency that native Windows
+    does not have.
+    """
+    names = ("bin/python", "Scripts/python.exe")
+    for venv in (".venv", "venv", ".env"):
+        for name in names:
+            p = target / venv / name
+            if p.is_file():
+                # NOT p.resolve(): a venv's bin/python is a symlink to the base
+                # interpreter, and resolving it hands back exactly the Python
+                # that does not have the venv's site-packages. `target` is
+                # already absolute, so this path is too.
+                return str(p)
+    return sys.executable
+
+
+def stamp_mcp_interpreter(target: Path) -> None:
+    """Point agentic_mcp at a real interpreter instead of the name `python3`.
+
+    `python3` is not on PATH on native Windows outside the Store build, so the
+    retrieve/get_symbol server simply never started there. Only rewritten while
+    the value is still the template default, so a user who pinned their own
+    interpreter keeps it.
+    """
+    p = target / ".mcp.json"
+    if not p.is_file():
+        return
+    try:
+        cfg = json.loads(p.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return
+    srv = (cfg.get("mcpServers") or {}).get("agentic_mcp")
+    if not isinstance(srv, dict) or srv.get("command") not in ("python3", "python"):
+        return
+    srv["command"] = resolve_interpreter(target)
+    p.write_text(json.dumps(cfg, indent=2) + "\n", encoding="utf-8")
+    info(f".mcp.json: agentic_mcp interpreter -> {srv['command']}")
 
 
 def _merge_missing_section_keys(target: Path, section: str, keys: tuple[str, ...]) -> None:
@@ -431,6 +511,7 @@ def install(target: Path) -> None:
     target.mkdir(parents=True, exist_ok=True)
     copy_templates(target)
     sync_managed_hooks(target)
+    stamp_mcp_interpreter(target)
     stamp_agent_models(target)
     write_manifest(target)  # after stamping — `cur` must hash the final files
     add_gitignore_block(target)
@@ -688,6 +769,7 @@ def upgrade_config(target: Path) -> None:
     _upgrade_settings_json(target)
     _upgrade_mcp_json(target)
     _upgrade_agentic_yml(target)
+    stamp_mcp_interpreter(target)   # heal installs seeded with the name `python3`
     _merge_missing_model_keys(target)    # heal seed-once drift in models: block
     _merge_missing_section_keys(target, "complexity_routing", ("never_downgrade",))
     _merge_missing_section_keys(target, "git", ("checkpoint_commits",))
@@ -714,7 +796,7 @@ def main() -> None:
     target = Path(args.target).resolve()
     if args.uninstall:
         uninstall(target)
-    elif getattr(args, "upgrade_config"):
+    elif args.upgrade_config:
         upgrade_config(target)
     else:
         install(target)

@@ -109,3 +109,44 @@ class StatePyBackstheContract(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OneInterpreterConvention(unittest.TestCase):
+    """Commands must invoke Python exactly one way: `sh .claude/py`.
+
+    Three conventions had accumulated — bare `python3`, `${PYEXE:-python3}` with
+    PYEXE defined, and `${PYEXE:-python3}` with it never defined (8 files, so the
+    project venv was never found). The third is the one that bites: shell state
+    does not persist between tool calls, so a PYEXE set in one fenced block is
+    gone in the next, and the fallback silently uses a PATH interpreter that may
+    not have PyYAML — which makes .agentic.yml read as empty and every setting in
+    it look honoured while being ignored.
+    """
+
+    def test_no_command_names_an_interpreter_directly(self):
+        offenders = []
+        for p in command_files():
+            text = p.read_text(encoding="utf-8")
+            if re.search(r"(?<!\.)\bpython3?\s+\.claude/", text):
+                offenders.append(p.name)
+        self.assertEqual(offenders, [], (
+            "these commands name an interpreter instead of going through "
+            "`sh .claude/py`, which resolves the project venv and works where "
+            "`python3` is not a valid name (native Windows)."))
+
+    def test_pyexe_shell_variable_is_fully_retired(self):
+        offenders = [p.name for p in command_files()
+                     if "PYEXE" in p.read_text(encoding="utf-8")]
+        self.assertEqual(offenders, [], (
+            "PYEXE cannot work across fenced blocks — shell state does not "
+            "persist between tool calls. Use `sh .claude/py`."))
+
+    def test_the_resolver_ships_and_is_executable_shell(self):
+        py = (REPO / "templates" / ".claude" / "py")
+        self.assertTrue(py.is_file(), "the resolver must ship with the templates")
+        text = py.read_text(encoding="utf-8")
+        self.assertTrue(text.startswith("#!/bin/sh"), "must be POSIX sh, not bash")
+        # The fallbacks that make it portable, each load-bearing on some platform.
+        for needle in (".venv/bin/python", "Scripts/python.exe", "VIRTUAL_ENV",
+                       "command -v python3", "command -v python "):
+            self.assertIn(needle, text, f"resolver lost its {needle!r} case")

@@ -40,7 +40,7 @@ Read the report and extract each finding: its id, severity, spec/category tag,
 ### Step 2 — Verify the evidence still holds (mandatory)
 
 ```bash
-${PYEXE:-python3} .claude/hooks/lib/verify_clears.py <findings_path> --cwd .
+sh .claude/py .claude/hooks/lib/verify_clears.py <findings_path> --cwd .
 ```
 
 A report is a snapshot. Between the review and now, the code may have moved,
@@ -71,8 +71,8 @@ Filter to the chosen severity. If nothing remains, print
 ### Step 4 — Create the run
 
 ```bash
-python3 .claude/hooks/lib/plan_id.py next                  # -> run_id
-python3 .claude/hooks/lib/git_branch.py create <run_id>    # if git.auto_branch
+sh .claude/py .claude/hooks/lib/plan_id.py next                  # -> run_id
+sh .claude/py .claude/hooks/lib/git_branch.py create <run_id>    # if git.auto_branch
 mkdir -p .claude/state/plans/<run_id>
 ```
 
@@ -126,7 +126,7 @@ printf '%s' '<run_id>'  > .claude/state/current_run.txt
 printf '%s' '<task-id>' > .claude/state/current_task.txt
 printf '%s' '<role>'    > .claude/state/current_role.txt
 printf '%s' '<model>'   > .claude/state/current_model.txt
-python3 .claude/hooks/lib/log_dispatch.py \
+sh .claude/py .claude/hooks/lib/log_dispatch.py \
   --run_id '<run_id>' --task_id '<task_id>' --role '<role>' \
   --complexity '<complexity>' --role_baseline '<models.role>' \
   --model_selected '<model>' [--routing_applied if changed]
@@ -134,14 +134,14 @@ python3 .claude/hooks/lib/log_dispatch.py \
 Invoke the task's role agent with the task file and selected model. Wait for
 `status: done` or `status: blocked`, then:
 ```bash
-python3 .claude/hooks/lib/state.py clear --agent
+sh .claude/py .claude/hooks/lib/state.py clear --agent
 ```
 If `blocked`: print `remediate <task-id> blocked: <blocker>` and STOP.
 
 ### Step 7 — Clean state and report
 
 ```bash
-python3 .claude/hooks/lib/state.py clear
+sh .claude/py .claude/hooks/lib/state.py clear
 ```
 
 Print:

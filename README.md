@@ -16,7 +16,25 @@ cd /path/to/project
 python <repo>/installer/agentic.py
 ```
 
-Cross-platform (Windows / macOS / Linux). Safe to re-run — system dirs (`agents/`, `commands/`, `hooks/`, `mcp/`) are always refreshed. Config files (`.agentic.yml`, `settings.json`, `.mcp.json`) are seeded on first install and left untouched on re-install so project-specific settings survive upgrades.
+Use `python3` if `python` is not on your PATH — on most macOS and Linux setups it
+is the only spelling that exists.
+
+Safe to re-run — system dirs (`agents/`, `commands/`, `hooks/`, `mcp/`) are always refreshed. Config files (`.agentic.yml`, `settings.json`, `.mcp.json`) are seeded on first install and left untouched on re-install so project-specific settings survive upgrades.
+
+### Supported platforms
+
+| Platform | Status |
+|---|---|
+| macOS, Linux | supported, CI-tested |
+| Windows + WSL | supported, CI-tested (as Linux) |
+| Windows native + [Git for Windows](https://git-scm.com/downloads/win) | supported, CI-tested |
+| Windows native, no Git for Windows | **not supported** |
+
+The last row is a real limitation rather than an oversight. Without Git for
+Windows, Claude Code runs shell commands through the PowerShell tool, and every
+command here is written in POSIX shell (`mkdir -p`, `printf`, `$(date +…)`).
+Installing Git for Windows — which Anthropic recommends anyway — gets you Git
+Bash and everything works.
 
 Runtime dependencies in the target project:
 ```bash
@@ -24,7 +42,19 @@ pip install pyyaml fastembed sqlite-vec
 # optional: pip install voyageai && export VOYAGE_API_KEY=...   (better embeddings)
 ```
 
-If you install these into a project virtualenv (`.venv/`, `venv/`, `env/`, or an active `$VIRTUAL_ENV`), the `agentic_mcp` retrieve server auto-detects that interpreter — it does not have to match the `python3` that launches the MCP server. Otherwise install the deps into the same `python3` that's on Claude Code's PATH.
+**Where to install them: a project virtualenv is the reliable answer.** Commands
+invoke Python through `.claude/py`, which prefers a project venv (`.venv/`,
+`venv/`, `.env/`, in POSIX or Windows layout) and an active `$VIRTUAL_ENV` before
+falling back to whichever of `python3`/`python` is on PATH. The installer stamps
+that same interpreter into `.mcp.json` for the retrieve server. So deps in a
+project venv are found by everything; deps in a PATH interpreter are found only
+if that is also what `.claude/py` lands on.
+
+This matters more than it looks. PyYAML missing from the interpreter a command
+happens to use does not fail loudly — `.agentic.yml` reads as empty, so a
+deliberate `checkpoint_commits: false` or a per-role model is silently ignored
+while appearing to be honoured. `/agentic-doctor` reports which interpreter is
+actually in use.
 
 ## Uninstall
 
@@ -320,7 +350,7 @@ general dev and are skipped (they used to fill an unbounded `_no-run.jsonl`). Se
 `AGENTIC_LOG_AMBIENT=1` to opt back in. Any single log rotates at 5 MB to
 `<id>.1.jsonl`.
 
-**Read the logs** with **`/agentic-logs [id]`** (or `python .claude/hooks/lib/logs.py summarize <id>`):
+**Read the logs** with **`/agentic-logs [id]`** (or `sh .claude/py .claude/hooks/lib/logs.py summarize <id>`):
 
 ```
 Run FEAT-024  2026-06-26 06:17 → 09:49  (3h32m)

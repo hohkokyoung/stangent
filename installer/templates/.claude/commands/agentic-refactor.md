@@ -11,12 +11,12 @@ Run a refactoring session: clarify scope → create task file(s) → run the ref
 
 1. **Allocate a run_id:**
    ```
-   python3 .claude/hooks/lib/plan_id.py next
+   sh .claude/py .claude/hooks/lib/plan_id.py next
    ```
 
 2. **Create the feature branch** (if `git.auto_branch` is true in `.agentic.yml`):
    ```
-   python3 .claude/hooks/lib/git_branch.py create <run_id>
+   sh .claude/py .claude/hooks/lib/git_branch.py create <run_id>
    ```
    Refuse (exit 1) if the working tree has uncommitted changes and `git.fail_on_wip` is true.
    Tell the user to commit or stash, then re-run.
@@ -73,20 +73,20 @@ Run a refactoring session: clarify scope → create task file(s) → run the ref
       printf '%s' '<t-id>' > .claude/state/current_task.txt
       printf '%s' 'refactor' > .claude/state/current_role.txt
       printf '%s' '<selected_model>' > .claude/state/current_model.txt
-      python3 .claude/hooks/lib/log_dispatch.py \
+      sh .claude/py .claude/hooks/lib/log_dispatch.py \
         --run_id '<run_id>' --task_id '<t-id>' --role refactor \
         --complexity '<complexity>' --role_baseline '<models.refactor>' \
         --model_selected '<selected_model>' [--routing_applied if model changed]
       ```
    b. Invoke the **refactor** agent with the task file path, using `selected_model`.
    c. Wait for it to flip `status: done` or `status: blocked`.
-   d. `python3 .claude/hooks/lib/state.py clear --agent`
+   d. `sh .claude/py .claude/hooks/lib/state.py clear --agent`
    e. If `blocked`: print `refactor <task-id> blocked: <blocker>` and STOP — do not continue to the next task.
       A blocked refactor likely means tests are already failing or a regression was introduced; it must be resolved manually.
 
 8. **Clean up state:**
    ```
-   python3 .claude/hooks/lib/state.py clear
+   sh .claude/py .claude/hooks/lib/state.py clear
    ```
 
 9. **Print summary:**

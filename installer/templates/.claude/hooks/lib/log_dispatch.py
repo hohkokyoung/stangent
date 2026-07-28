@@ -7,7 +7,7 @@ audit trail — role, task complexity, baseline model, and final model — is
 queryable after a build run.
 
 Usage:
-    python3 .claude/hooks/lib/log_dispatch.py \
+    sh .claude/py .claude/hooks/lib/log_dispatch.py \
         --run_id FEAT-001 --task_id t1 --role implementer \
         --complexity medium --role_baseline claude-sonnet-5 \
         --model_selected claude-sonnet-5

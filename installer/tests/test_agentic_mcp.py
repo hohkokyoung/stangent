@@ -291,7 +291,9 @@ class RepoRootCase(unittest.TestCase):
     engages because current_task.txt can never be read."""
 
     def test_root_comes_from_the_file_not_the_cwd(self):
-        import os, shutil, tempfile
+        import os
+        import shutil
+        import tempfile
         with tempfile.TemporaryDirectory() as proj, tempfile.TemporaryDirectory() as elsewhere:
             root = Path(proj)
             mcp_dir = root / ".claude" / "mcp"

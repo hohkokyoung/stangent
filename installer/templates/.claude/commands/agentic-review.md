@@ -68,7 +68,7 @@ Invoke **auditor** with `audit_id=$REVIEW_ID`, `scope` (from Step 2),
 `types=all`, `size_threshold` default (300 code / 200 docs). Wait for
 `.claude/state/audit/$REVIEW_ID/findings.md`, then:
 ```bash
-python3 .claude/hooks/lib/state.py clear --agent
+sh .claude/py .claude/hooks/lib/state.py clear --agent
 ```
 
 **3b. Architect (design).**
@@ -105,17 +105,17 @@ Run the checker over each report that ran (skip the ones that did not):
 V=".claude/hooks/lib/verify_clears.py"
 E="docs/review/enumerations.md"
 [ -f .claude/state/audit/$REVIEW_ID/findings.md ] && \
-  ${PYEXE:-python3} $V .claude/state/audit/$REVIEW_ID/findings.md --cwd . \
+  sh .claude/py $V .claude/state/audit/$REVIEW_ID/findings.md --cwd . \
   --checklist .claude/agents/auditor.md --enumerations $E --reviewer auditor
 [ -f .claude/state/design-review/$REVIEW_ID/findings.md ] && \
-  ${PYEXE:-python3} $V .claude/state/design-review/$REVIEW_ID/findings.md --cwd . \
+  sh .claude/py $V .claude/state/design-review/$REVIEW_ID/findings.md --cwd . \
   --checklist .claude/agents/architect.md
 [ -f .claude/state/security-review/$REVIEW_ID/findings.md ] && \
-  ${PYEXE:-python3} $V .claude/state/security-review/$REVIEW_ID/findings.md --cwd . \
+  sh .claude/py $V .claude/state/security-review/$REVIEW_ID/findings.md --cwd . \
   --checklist .claude/agents/security-reviewer.md \
   --enumerations $E --reviewer security-reviewer
 [ -f .claude/state/ui-review/$REVIEW_ID/findings.md ] && \
-  ${PYEXE:-python3} $V .claude/state/ui-review/$REVIEW_ID/findings.md --cwd . \
+  sh .claude/py $V .claude/state/ui-review/$REVIEW_ID/findings.md --cwd . \
   --checklist docs/design/DESIGN-SPEC.md \
   --enumerations $E --reviewer design-critic
 ```
@@ -163,8 +163,8 @@ Filter findings to the chosen severity. If nothing remains, print
 
 Create a run + branch:
 ```bash
-python3 .claude/hooks/lib/plan_id.py next          # -> run_id
-python3 .claude/hooks/lib/git_branch.py create <run_id>   # if git.auto_branch
+sh .claude/py .claude/hooks/lib/plan_id.py next          # -> run_id
+sh .claude/py .claude/hooks/lib/git_branch.py create <run_id>   # if git.auto_branch
 mkdir -p .claude/state/plans/<run_id>
 ```
 Refuse if the working tree is dirty and `git.fail_on_wip` is true — tell the
@@ -208,7 +208,7 @@ printf '%s' '<run_id>'  > .claude/state/current_run.txt
 printf '%s' '<task-id>' > .claude/state/current_task.txt
 printf '%s' '<role>'    > .claude/state/current_role.txt      # refactor | implementer
 printf '%s' '<model>'   > .claude/state/current_model.txt     # complexity routing, per /agentic-build 7c
-python3 .claude/hooks/lib/log_dispatch.py \
+sh .claude/py .claude/hooks/lib/log_dispatch.py \
   --run_id '<run_id>' --task_id '<task_id>' --role '<role>' \
   --complexity '<complexity>' --role_baseline '<models.role>' \
   --model_selected '<model>' [--routing_applied if changed]
@@ -216,7 +216,7 @@ python3 .claude/hooks/lib/log_dispatch.py \
 Invoke the task's role agent with the task file and selected model. Wait for
 `status: done` or `status: blocked`, then:
 ```bash
-python3 .claude/hooks/lib/state.py clear --agent
+sh .claude/py .claude/hooks/lib/state.py clear --agent
 ```
 If `blocked`: print `review <task-id> blocked: <blocker>` and STOP — a blocked
 fix means tests were already failing or a regression was introduced; resolve
@@ -225,7 +225,7 @@ manually.
 ### Step 7 — Clean state and report
 
 ```bash
-python3 .claude/hooks/lib/state.py clear
+sh .claude/py .claude/hooks/lib/state.py clear
 ```
 
 Print:

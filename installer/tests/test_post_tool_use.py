@@ -128,7 +128,7 @@ class LoggerCase(unittest.TestCase):
         import json as _j
         line = _j.dumps({"run_id": "FEAT-001", "task_id": "t4", "tool": "Edit"})
         seed = ("\n".join([line] * 149) + "\n").encode()
-        logs = self.run_hook(run_id="FEAT-001",
+        self.run_hook(run_id="FEAT-001",
                              state={"current_task.txt": "t4"},
                              pre={"FEAT-001.jsonl": seed})
         rows = self.logged["FEAT-001.jsonl"]
@@ -218,7 +218,7 @@ class LoggerCase(unittest.TestCase):
         self.assertFalse(budget, "200k chars over 100 calls is healthy; must not warn")
 
     def test_no_budget_warning_without_a_task(self):
-        logs = self.run_hook(run_id="UIR-1")
+        self.run_hook(run_id="UIR-1")
         rows = self.logged["UIR-1.jsonl"]
         self.assertFalse([r for r in rows if r.get("event") == "budget"])
 

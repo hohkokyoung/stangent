@@ -72,7 +72,7 @@ agent inheriting the session model. Wait for it to write
 the state (mandatory):
 
 ```bash
-python3 .claude/hooks/lib/state.py clear
+sh .claude/py .claude/hooks/lib/state.py clear
 ```
 
 ### Step 5 — Verify the critic's clears
@@ -80,7 +80,7 @@ python3 .claude/hooks/lib/state.py clear
 Re-run the evidence the critic cited for everything it marked cleared:
 
 ```bash
-${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
+sh .claude/py .claude/hooks/lib/verify_clears.py \
   .claude/state/ui-review/$REVIEW_ID/findings.md --cwd . \
   --checklist docs/design/DESIGN-SPEC.md \
   --enumerations docs/review/enumerations.md --reviewer design-critic
@@ -145,4 +145,4 @@ say so and point back to `/agentic-design`.
 - Do NOT fix anything or edit the spec. Findings are advisory — remediation is
   `/agentic-remediate <review_id>`.
 - Do NOT call any MCP tool yourself. Do NOT commit.
-- Always run `python3 .claude/hooks/lib/state.py clear` after the critic returns.
+- Always run `sh .claude/py .claude/hooks/lib/state.py clear` after the critic returns.

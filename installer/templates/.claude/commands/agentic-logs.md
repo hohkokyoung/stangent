@@ -13,17 +13,16 @@ design (`DS-`), baseline tests (`baseline-<flow>`).
 
 1. Resolve the interpreter:
    ```
-   PYEXE=$(ls .venv/bin/python venv/bin/python .env/bin/python 2>/dev/null | head -1)
    ```
 2. **If `$ARGUMENTS` names a context id** → summarize it:
    ```
-   ${PYEXE:-python3} .claude/hooks/lib/logs.py summarize <id>
+   sh .claude/py .claude/hooks/lib/logs.py summarize <id>
    ```
 3. **If `$ARGUMENTS` is empty** → list contexts (newest first), then summarize the
    most recent:
    ```
-   ${PYEXE:-python3} .claude/hooks/lib/logs.py list
-   ${PYEXE:-python3} .claude/hooks/lib/logs.py summarize <newest-id>
+   sh .claude/py .claude/hooks/lib/logs.py list
+   sh .claude/py .claude/hooks/lib/logs.py summarize <newest-id>
    ```
 4. Pass `--json` through to either subcommand when the developer asks for machine
    output.

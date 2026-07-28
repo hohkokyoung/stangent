@@ -48,13 +48,13 @@ agent inheriting the session model. Wait for it to write
 Then clear the state (mandatory):
 
 ```bash
-python3 .claude/hooks/lib/state.py clear
+sh .claude/py .claude/hooks/lib/state.py clear
 ```
 
 ### Step 3b — Verify the architect's citations
 
 ```bash
-${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
+sh .claude/py .claude/hooks/lib/verify_clears.py \
   .claude/state/design-review/$REVIEW_ID/findings.md --cwd . \
   --checklist .claude/agents/architect.md
 ```

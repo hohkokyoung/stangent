@@ -66,13 +66,13 @@ Invoke the **auditor** agent with:
 
 Wait for it to write `.claude/state/audit/<audit_id>/findings.md` and print its summary. Then clear the state (mandatory — do not skip, so the refactor dispatch in step 6 starts clean):
 ```bash
-python3 .claude/hooks/lib/state.py clear --agent
+sh .claude/py .claude/hooks/lib/state.py clear --agent
 ```
 
 ### Step 3b — Verify the auditor's citations
 
 ```bash
-${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
+sh .claude/py .claude/hooks/lib/verify_clears.py \
   .claude/state/audit/<audit_id>/findings.md --cwd . \
   --checklist .claude/agents/auditor.md \
   --enumerations docs/review/enumerations.md --reviewer auditor
@@ -116,12 +116,12 @@ Filter the findings list to the chosen severity. If the filtered list is empty a
 
 Allocate a run_id:
 ```bash
-python3 .claude/hooks/lib/plan_id.py next
+sh .claude/py .claude/hooks/lib/plan_id.py next
 ```
 
 Create the feature branch (if `git.auto_branch` is true in `.agentic.yml`):
 ```bash
-python3 .claude/hooks/lib/git_branch.py create <run_id>
+sh .claude/py .claude/hooks/lib/git_branch.py create <run_id>
 ```
 Refuse if the working tree has uncommitted changes and `git.fail_on_wip` is true — tell the developer to commit or stash first.
 
@@ -166,20 +166,20 @@ b. Write state files and log the dispatch:
    printf '%s' '<task-id>' > .claude/state/current_task.txt
    printf '%s' 'refactor' > .claude/state/current_role.txt
    printf '%s' '<selected_model>' > .claude/state/current_model.txt
-   python3 .claude/hooks/lib/log_dispatch.py \
+   sh .claude/py .claude/hooks/lib/log_dispatch.py \
      --run_id '<run_id>' --task_id '<task_id>' --role refactor \
      --complexity '<complexity>' --role_baseline '<models.refactor>' \
      --model_selected '<selected_model>' [--routing_applied if model changed]
    ```
 c. Invoke the **refactor** agent with the task file path and `selected_model`.
 d. Wait for `status: done` or `status: blocked`.
-e. `python3 .claude/hooks/lib/state.py clear --agent`
+e. `sh .claude/py .claude/hooks/lib/state.py clear --agent`
 f. If `blocked`: print `cleanup <task-id> blocked: <blocker>` and STOP. A blocked refactor means tests were already failing or a regression was introduced — must be resolved manually.
 
 ### Step 7 — Clean up state and report
 
 ```bash
-python3 .claude/hooks/lib/state.py clear
+sh .claude/py .claude/hooks/lib/state.py clear
 ```
 
 Print:

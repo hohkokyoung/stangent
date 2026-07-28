@@ -61,7 +61,7 @@ do not rely on session inheritance), and
 `scope="GitHub PR: <title>; diff at .claude/state/pr-review/<PR_ID>/diff.patch, description at .../pr.md"`.
 Wait for its findings, then:
 ```bash
-python3 .claude/hooks/lib/state.py clear
+sh .claude/py .claude/hooks/lib/state.py clear
 ```
 
 **Security-reviewer:** same handshake (set `current_run.txt` to `$PR_ID`, role to
@@ -72,10 +72,10 @@ writing to `.claude/state/security-review/<PR_ID>/findings.md`.
 ### Step 3b — Verify both reviewers' citations
 
 ```bash
-${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
+sh .claude/py .claude/hooks/lib/verify_clears.py \
   .claude/state/pr-review/$PR_ID/findings.md --cwd . \
   --checklist .claude/agents/architect.md
-${PYEXE:-python3} .claude/hooks/lib/verify_clears.py \
+sh .claude/py .claude/hooks/lib/verify_clears.py \
   .claude/state/security-review/$PR_ID/findings.md --cwd . \
   --checklist .claude/agents/security-reviewer.md
 ```
