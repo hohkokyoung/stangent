@@ -34,17 +34,27 @@ The last row is a real limitation rather than an oversight. Without Git for
 Windows, Claude Code runs shell commands through the PowerShell tool, and every
 command here is written in POSIX shell (`mkdir -p`, `printf`, `$(date +…)`).
 
-**Native Windows is honestly unverified.** A `windows-latest` CI job exists and
-currently fails, and the cause is not yet established. The suspected reason is
-not incidental: `verify_clears.py` re-runs review citations by executing `grep`,
-`find` and `wc`, which native Windows does not have — its `find.exe` is a string
-search with unrelated semantics. Git for Windows ships POSIX tools under
-`usr/bin`, but they are not on PATH for processes spawned outside its shell.
+**Native Windows is unverified — but the reason is narrower than first thought.**
+A `windows-latest` CI job exists and its full-suite step fails. Step-level probes
+have since established what is *not* wrong:
 
-Until that is settled, the job runs non-blocking and this row says *unverified*
-rather than *supported*. Reporting it as working on the strength of reasoning
-alone would be the same failure this system is built to catch: a checklist item
-marked cleared, which stops anyone looking. Use WSL on Windows today.
+```
+SUCCESS  grep is resolvable          SUCCESS  citation-execution suite (109 tests)
+SUCCESS  find is GNU findutils       SUCCESS  suite excluding it      (297 tests)
+SUCCESS  wc is resolvable            FAILURE  all 406 run together
+```
+
+So the POSIX tools `verify_clears.py` depends on are present (Git for Windows
+puts them on PATH), citation re-running works there, and every test passes in
+one half or the other. Only the union fails — which makes this a test-isolation
+problem in the suite, not a limitation of the product. An earlier revision of
+this section blamed missing POSIX tools; the probes disproved it.
+
+The row stays *unverified* until the interaction is identified and fixed, and
+the job runs non-blocking meanwhile. Marking it supported on the strength of
+"the failure is probably only in the tests" would be the same move this system
+exists to catch — an item reported cleared, which stops anyone looking. WSL is
+the tested path on Windows today.
 
 Runtime dependencies in the target project:
 ```bash
