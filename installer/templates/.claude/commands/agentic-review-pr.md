@@ -13,7 +13,9 @@ agents stay offline and read-only — they never call the github MCP themselves.
 
 The github MCP must be enabled and credentialed:
 - `github` present in `enabledMcpjsonServers` in `.claude/settings.json`
-- `GITHUB_PERSONAL_ACCESS_TOKEN` filled in `.mcp.json` (no `REPLACE_WITH_`)
+- the server authenticated — it authenticates over OAuth on first use, so if a
+  call returns 401/403, the fix is to complete that sign-in, not to edit a token
+  into `.mcp.json`
 
 If either is missing, print exactly what to fix and STOP — do not fall back to
 guessing the diff from local git.
@@ -59,12 +61,12 @@ do not rely on session inheritance), and
 `scope="GitHub PR: <title>; diff at .claude/state/pr-review/<PR_ID>/diff.patch, description at .../pr.md"`.
 Wait for its findings, then:
 ```bash
-rm -f .claude/state/current_role.txt .claude/state/current_run.txt .claude/state/current_model.txt
+python3 .claude/hooks/lib/state.py clear
 ```
 
 **Security-reviewer:** same handshake (set `current_run.txt` to `$PR_ID`, role to
 `security-reviewer`, and `current_model.txt` to the resolved
-`models.security-reviewer`; clear all three after) with the same `scope`,
+`models.security-reviewer`; clear the same way after) with the same `scope`,
 writing to `.claude/state/security-review/<PR_ID>/findings.md`.
 
 ### Step 3b — Verify both reviewers' citations

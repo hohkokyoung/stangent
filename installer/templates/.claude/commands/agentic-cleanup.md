@@ -66,7 +66,7 @@ Invoke the **auditor** agent with:
 
 Wait for it to write `.claude/state/audit/<audit_id>/findings.md` and print its summary. Then clear the state (mandatory — do not skip, so the refactor dispatch in step 6 starts clean):
 ```bash
-rm -f .claude/state/current_role.txt
+python3 .claude/hooks/lib/state.py clear --agent
 ```
 
 ### Step 3b — Verify the auditor's citations
@@ -173,13 +173,13 @@ b. Write state files and log the dispatch:
    ```
 c. Invoke the **refactor** agent with the task file path and `selected_model`.
 d. Wait for `status: done` or `status: blocked`.
-e. `rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt`
+e. `python3 .claude/hooks/lib/state.py clear --agent`
 f. If `blocked`: print `cleanup <task-id> blocked: <blocker>` and STOP. A blocked refactor means tests were already failing or a regression was introduced — must be resolved manually.
 
 ### Step 7 — Clean up state and report
 
 ```bash
-rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
+python3 .claude/hooks/lib/state.py clear
 ```
 
 Print:

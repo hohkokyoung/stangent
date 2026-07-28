@@ -72,7 +72,7 @@ agent inheriting the session model. Wait for it to write
 the state (mandatory):
 
 ```bash
-rm -f .claude/state/current_role.txt .claude/state/current_run.txt .claude/state/current_model.txt
+python3 .claude/hooks/lib/state.py clear
 ```
 
 ### Step 5 — Verify the critic's clears
@@ -145,5 +145,4 @@ say so and point back to `/agentic-design`.
 - Do NOT fix anything or edit the spec. Findings are advisory — remediation is
   `/agentic-remediate <review_id>`.
 - Do NOT call any MCP tool yourself. Do NOT commit.
-- Always clear `.claude/state/current_role.txt`, `.claude/state/current_run.txt`,
-  and `.claude/state/current_model.txt` after the critic returns.
+- Always run `python3 .claude/hooks/lib/state.py clear` after the critic returns.

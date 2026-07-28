@@ -134,15 +134,14 @@ python3 .claude/hooks/lib/log_dispatch.py \
 Invoke the task's role agent with the task file and selected model. Wait for
 `status: done` or `status: blocked`, then:
 ```bash
-rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
+python3 .claude/hooks/lib/state.py clear --agent
 ```
 If `blocked`: print `remediate <task-id> blocked: <blocker>` and STOP.
 
 ### Step 7 — Clean state and report
 
 ```bash
-rm -f .claude/state/current_run.txt .claude/state/current_task.txt \
-      .claude/state/current_role.txt .claude/state/current_model.txt
+python3 .claude/hooks/lib/state.py clear
 ```
 
 Print:

@@ -68,7 +68,7 @@ Invoke **auditor** with `audit_id=$REVIEW_ID`, `scope` (from Step 2),
 `types=all`, `size_threshold` default (300 code / 200 docs). Wait for
 `.claude/state/audit/$REVIEW_ID/findings.md`, then:
 ```bash
-rm -f .claude/state/current_role.txt
+python3 .claude/hooks/lib/state.py clear --agent
 ```
 
 **3b. Architect (design).**
@@ -216,7 +216,7 @@ python3 .claude/hooks/lib/log_dispatch.py \
 Invoke the task's role agent with the task file and selected model. Wait for
 `status: done` or `status: blocked`, then:
 ```bash
-rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
+python3 .claude/hooks/lib/state.py clear --agent
 ```
 If `blocked`: print `review <task-id> blocked: <blocker>` and STOP — a blocked
 fix means tests were already failing or a regression was introduced; resolve
@@ -225,8 +225,7 @@ manually.
 ### Step 7 — Clean state and report
 
 ```bash
-rm -f .claude/state/current_run.txt .claude/state/current_task.txt \
-      .claude/state/current_role.txt .claude/state/current_model.txt
+python3 .claude/hooks/lib/state.py clear
 ```
 
 Print:

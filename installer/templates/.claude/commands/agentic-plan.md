@@ -75,7 +75,7 @@ Run the planner on the given goal.
 
 6. The planner writes `_overview.md` + per-task files (all `status: pending`). After it returns, clear the state (mandatory — do not skip):
    ```
-   rm -f .claude/state/current_role.txt .claude/state/current_model.txt
+   python3 .claude/hooks/lib/state.py clear --agent
    ```
 
 7. **Sketch injection + render.** If the Clarifications block contains `sketch: yes`:
@@ -110,12 +110,12 @@ Run the planner on the given goal.
       - Run: `printf '%s' '<s-id>' > .claude/state/current_task.txt && printf '%s' 'sketcher' > .claude/state/current_role.txt && printf '%s' '<resolved_model>' > .claude/state/current_model.txt`
       - Invoke the **sketcher** agent with the path to `s<N>.md`, passing that model explicitly.
       - Wait for it to flip `status: done` or `status: blocked`.
-      - Run: `rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt`
+      - Run: `python3 .claude/hooks/lib/state.py clear --agent`
       - If `blocked`: print a warning (`sketcher s<N> blocked: <blocker>`) and continue to the next — do NOT halt the entire plan. The implementer task will be runnable only after the sketch is manually resolved or removed from `depends_on`.
 
    After all sketchers finish (or if none ran), clean up:
    ```
-   rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt
+   python3 .claude/hooks/lib/state.py clear
    ```
 
    If `sketch: no`, skip this step entirely.

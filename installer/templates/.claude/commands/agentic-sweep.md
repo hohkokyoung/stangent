@@ -59,7 +59,15 @@ REVIEW_ID="SWEEP-$(date +%Y%m%d-%H%M%S)"
 mkdir -p .claude/state/$DIR/$REVIEW_ID/batches
 printf '%s' "$REVIEW_ID" > .claude/state/current_run.txt
 printf '%s' '<the lane's agent>' > .claude/state/current_role.txt
+printf '%s' '<resolved_model>' > .claude/state/current_model.txt
 ```
+
+Resolve `<resolved_model>` from `models.<the lane's agent>` in `.agentic.yml`
+(fall back to `models.default`, then the session default) and pass it explicitly
+at invocation. A sweep dispatches one agent per batch and is the most expensive
+command here, so an unarmed `current_model.txt` would leave every one of those
+calls logged with a null model — exactly the run whose cost you most need to
+attribute.
 
 **Do not choose file patterns.** `sweep_plan.py` reads the globs `/agentic-index`
 already detected into `.claude/state/project.yml`, so the sweep covers the same
@@ -146,7 +154,7 @@ The second is the ordinary evidence check. Both outputs go above the findings.
 Then clear the state:
 
 ```bash
-rm -f .claude/state/current_role.txt .claude/state/current_run.txt
+python3 .claude/hooks/lib/state.py clear
 ```
 
 ### Step 6 — Present

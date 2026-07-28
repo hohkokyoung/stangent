@@ -80,13 +80,13 @@ Run a refactoring session: clarify scope → create task file(s) → run the ref
       ```
    b. Invoke the **refactor** agent with the task file path, using `selected_model`.
    c. Wait for it to flip `status: done` or `status: blocked`.
-   d. `rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt`
+   d. `python3 .claude/hooks/lib/state.py clear --agent`
    e. If `blocked`: print `refactor <task-id> blocked: <blocker>` and STOP — do not continue to the next task.
       A blocked refactor likely means tests are already failing or a regression was introduced; it must be resolved manually.
 
 8. **Clean up state:**
    ```
-   rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
+   python3 .claude/hooks/lib/state.py clear
    ```
 
 9. **Print summary:**

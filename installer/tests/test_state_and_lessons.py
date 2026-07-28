@@ -45,7 +45,7 @@ class TestState(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             sd = self._scaffold(td, {"current_run.txt": False, "current_task.txt": False})
             r = run(STATE, ["clear"], td)
-            self.assertIn("cleared leftover", r.stdout)
+            self.assertIn("cleared dispatch state", r.stdout)
             self.assertFalse((sd / "current_run.txt").exists())
             self.assertFalse((sd / "current_task.txt").exists())
 
@@ -53,7 +53,20 @@ class TestState(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             (Path(td) / ".claude" / "state").mkdir(parents=True)
             r = run(STATE, ["clear"], td)
-            self.assertIn("no leftover", r.stdout)
+            self.assertIn("no dispatch state", r.stdout)
+
+    def test_clear_agent_keeps_the_run_context(self):
+        # The distinction the commands depend on: a command dispatching several
+        # subagents clears between them, but its tool calls must keep landing in
+        # the same run's log until teardown.
+        with tempfile.TemporaryDirectory() as td:
+            sd = self._scaffold(td, {"current_run.txt": False, "current_task.txt": False,
+                                     "current_role.txt": False, "current_model.txt": False})
+            r = run(STATE, ["clear", "--agent"], td)
+            self.assertIn("cleared agent state", r.stdout)
+            self.assertTrue((sd / "current_run.txt").exists(), "run context must survive")
+            for gone in ("current_task.txt", "current_role.txt", "current_model.txt"):
+                self.assertFalse((sd / gone).exists(), gone)
 
     def test_fresh_activity_is_not_stale(self):
         # An old current_run.txt alongside a freshly-written current_task.txt is

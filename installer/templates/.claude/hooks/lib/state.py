@@ -7,7 +7,9 @@ files survive and mistag every later log line (post_tool_use.py reads them) as
 belonging to the dead run. This module clears that leftover state.
 
 Usage:
-    state.py clear                 # remove all dispatch state files (build start)
+    state.py clear                 # remove all dispatch state files (teardown)
+    state.py clear --agent         # remove task/role/model only, keep the run id
+                                   # (between two subagents in one command)
     state.py check [--max-age N]   # report present/stale state (doctor); --json
     state.py clean [--max-age-days N] [--apply]
                                    # prune empty review dirs + run artifacts
@@ -45,13 +47,22 @@ AGED_BASES = ("plans", "logs", *REVIEW_BASES)
 DEFAULT_CLEAN_MAX_AGE_DAYS = 30
 
 
-def present() -> list[Path]:
-    return [STATE_DIR / n for n in STATE_FILES if (STATE_DIR / n).exists()]
+# Files identifying the subagent that just ran, as opposed to the workflow it
+# ran inside. A command that dispatches several agents clears these BETWEEN
+# them, while `current_run.txt` stays put so every tool call keeps landing in
+# the same run's log.
+AGENT_FILES = ("current_task.txt", "current_role.txt", "current_model.txt")
 
 
-def clear() -> list[str]:
+def present(names: tuple[str, ...] | None = None) -> list[Path]:
+    return [STATE_DIR / n for n in (names or STATE_FILES) if (STATE_DIR / n).exists()]
+
+
+def clear(names: tuple[str, ...] | None = None) -> list[str]:
+    """Delete dispatch state. Defaults to all of it (command teardown); pass
+    AGENT_FILES to clear only the per-subagent files and keep the run context."""
     removed = []
-    for p in present():
+    for p in present(names):
         try:
             p.unlink()
             removed.append(p.name)
@@ -198,7 +209,11 @@ def clean(max_age_days: float, apply: bool) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("clear")
+    clr = sub.add_parser("clear")
+    clr.add_argument("--agent", action="store_true",
+                     help="clear only the per-subagent files (task/role/model), "
+                          "keeping current_run.txt — use between dispatches "
+                          "inside one command")
     chk = sub.add_parser("check")
     chk.add_argument("--max-age", type=float, default=DEFAULT_STALE_SECONDS)
     chk.add_argument("--json", action="store_true")
@@ -227,11 +242,12 @@ def main() -> None:
         sys.exit(0)
 
     if args.cmd == "clear":
-        removed = clear()
+        removed = clear(AGENT_FILES if args.agent else None)
+        scope = "agent" if args.agent else "dispatch"
         if removed:
-            print("cleared leftover dispatch state: " + ", ".join(removed))
+            print(f"cleared {scope} state: " + ", ".join(removed))
         else:
-            print("no leftover dispatch state")
+            print(f"no {scope} state to clear")
         sys.exit(0)
 
     # check

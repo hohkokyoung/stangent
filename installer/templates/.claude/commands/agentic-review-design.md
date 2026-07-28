@@ -48,7 +48,7 @@ agent inheriting the session model. Wait for it to write
 Then clear the state (mandatory):
 
 ```bash
-rm -f .claude/state/current_role.txt .claude/state/current_run.txt .claude/state/current_model.txt
+python3 .claude/hooks/lib/state.py clear
 ```
 
 ### Step 3b — Verify the architect's citations

@@ -75,7 +75,7 @@ Ordering, cycle detection, the runnable set, and per-task model/skills/k resolut
 
    g. After the subagent returns, clear the per-task state, then checkpoint the task's work:
       ```
-      rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
+      python3 .claude/hooks/lib/state.py clear --agent
       python3 .claude/hooks/lib/git_branch.py checkpoint '<run_id>' '<T.task_id>' --role '<T.role>'
       ```
       Order matters: the checkpoint must run **after** `current_role.txt` is
@@ -97,7 +97,7 @@ Ordering, cycle detection, the runnable set, and per-task model/skills/k resolut
 
 6. Run this exact Bash command to clean up (mandatory — do not skip):
    ```
-   rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
+   python3 .claude/hooks/lib/state.py clear
    ```
    Then print the final dashboard.
 

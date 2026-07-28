@@ -72,12 +72,12 @@ If no amendment text is given, use `AskUserQuestion` (YOU, not the planner) to e
       - Run: `printf '%s' '<s-id>' > .claude/state/current_task.txt && printf '%s' 'sketcher' > .claude/state/current_role.txt && printf '%s' '<resolved_model>' > .claude/state/current_model.txt`
       - Invoke the **sketcher** agent with the path to `s<N>.md`, passing that model explicitly.
       - Wait for it to flip `status: done` or `status: blocked`.
-      - Run: `rm -f .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt`
+      - Run: `python3 .claude/hooks/lib/state.py clear --agent`
       - If `blocked`: print a warning and continue — do NOT halt. The implementer task will wait until the sketch is resolved.
 
    After all sketchers finish, clean up:
    ```
-   rm -f .claude/state/current_run.txt .claude/state/current_task.txt .claude/state/current_role.txt .claude/state/current_model.txt
+   python3 .claude/hooks/lib/state.py clear
    ```
 
    If sketching is not active, or no new implementer tasks were added, skip this step entirely.
