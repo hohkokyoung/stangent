@@ -81,7 +81,7 @@ actually in use.
 ```bash
 python <repo>/installer/agentic.py --target /path/to/project --uninstall
 ```
-Removes only `_agentic_managed` hooks/MCP entries from `settings.json`, system-owned directories, and the `# >>> agentic` block from `.gitignore`. Anything you added is left alone.
+Removes only `_agentic_managed` hooks/MCP entries from `settings.json`, system-owned directories, and the `# >>> agentic` block from `.gitignore`. Anything you added is left alone — **including `.claude/state/`**, which holds every plan, run log and `vectors.db`. That is gitignored, so deleting it is unrecoverable; uninstall reports it and leaves it, and you can remove the directory by hand if you want it gone.
 
 ---
 
@@ -618,7 +618,11 @@ complete.**
     └── logs/<FEAT-###>.jsonl
 ```
 
-`.mcp.json` at project root (seeded on install):
+`.mcp.json` at project root (seeded on install). It holds **no secrets** —
+credentials come from `${VAR}` in your environment — so it is committed with the
+project and reviewable in PRs. `/agentic-doctor` warns when a referenced var is
+unset, because an unset one launches the server with the literal `${VAR}` and
+fails later with a confusing error about the DSN rather than about the variable:
 ```json
 {
   "mcpServers": {
@@ -634,8 +638,8 @@ complete.**
     // version control
     "github":               { ... },  // remote HTTP server — OAuth on first use, no token stored
     // databases
-    "dbhub":                { ... },  // fill in DSN to enable
-    "supabase":             { ... }   // fill in PAT + project-ref to enable
+    "dbhub":                { ... },  // set $DBHUB_DSN to enable
+    "supabase":             { ... }   // set $SUPABASE_ACCESS_TOKEN + $SUPABASE_PROJECT_REF
   }
 }
 ```

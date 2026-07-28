@@ -1,28 +1,41 @@
 {
-  "_comment": "MCP server definitions. agentic_mcp, context7 and sequential-thinking are enabled by default. To activate others, add their name to enabledMcpjsonServers in .claude/settings.json. dbhub and supabase need credentials filled in first; github authenticates over OAuth on first use, so no token is stored here.",
+  "_comment": "MCP server definitions. agentic_mcp, context7 and sequential-thinking are enabled by default. To activate others, add their name to enabledMcpjsonServers in .claude/settings.json. Credentials are read from the environment (${VAR}) so this file holds no secrets and is committed with the project; export the vars in your shell or a local .env that is not. github authenticates over OAuth on first use.",
   "mcpServers": {
     "agentic_mcp": {
       "command": "python3",
-      "args": [".claude/mcp/agentic_mcp.py"]
+      "args": [
+        ".claude/mcp/agentic_mcp.py"
+      ]
     },
     "context7": {
       "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ],
       "env": {
         "CONTEXT7_API_KEY": "OPTIONAL_set_if_you_hit_rate_limits_free_at_context7.com"
       }
     },
     "sequential-thinking": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
     },
     "playwright": {
       "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest"]
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
     },
     "maestro": {
       "command": "maestro",
-      "args": ["mcp"]
+      "args": [
+        "mcp"
+      ]
     },
     "github": {
       "type": "http",
@@ -36,7 +49,7 @@
         "--transport",
         "stdio",
         "--dsn",
-        "REPLACE_WITH_DSN"
+        "${DBHUB_DSN}"
       ]
     },
     "supabase": {
@@ -44,8 +57,10 @@
       "args": [
         "-y",
         "@supabase/mcp-server-supabase",
-        "--access-token", "REPLACE_WITH_SUPABASE_PAT",
-        "--project-ref",  "REPLACE_WITH_PROJECT_REF"
+        "--access-token",
+        "${SUPABASE_ACCESS_TOKEN}",
+        "--project-ref",
+        "${SUPABASE_PROJECT_REF}"
       ]
     }
   }

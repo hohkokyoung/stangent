@@ -14,6 +14,7 @@ import argparse
 import importlib
 import json
 import os
+import re
 import shutil
 import sqlite3
 import subprocess
@@ -311,9 +312,15 @@ def check_mcp_json() -> list[dict]:
     for name, conf in servers.items():
         args_text = " ".join(str(a) for a in conf.get("args", []))
         env_text = " ".join(str(v) for v in (conf.get("env", {}) or {}).values())
-        if "REPLACE_WITH_" in args_text or "REPLACE_WITH_" in env_text:
+        # Credentials come from the environment. An unset var is the failure
+        # mode now — the server launches with a literal "${FOO}" and fails at
+        # connect time with an error about the DSN rather than about the var.
+        unset = [v for v in re.findall(r"\$\{(\w+)\}", args_text + " " + env_text)
+                 if not os.environ.get(v)]
+        if unset:
             out.append(_check(f"mcp:{name} credentials", WARN,
-                              "still contains REPLACE_WITH_ placeholder"))
+                              f"env var(s) not set: {', '.join(sorted(set(unset)))} — "
+                              f"the server will start with the literal placeholder"))
         else:
             out.append(_check(f"mcp:{name} credentials", OK))
 

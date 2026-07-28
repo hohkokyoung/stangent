@@ -27,7 +27,8 @@ Run a battery of fast, deterministic checks against this project's agentic insta
 - Agents: all expected role files present (planner, sketcher, designer, implementer, reviewer, design-critic, tester, debugger, refactor, auditor, architect, security-reviewer)
 - Config files: `.agentic.yml` parses, `settings.json` parses (and doesn't contain dead `mcpServers` block)
 - `risk_profile` block present in `.agentic.yml` (warns if absent — architect/security-reviewer fall back to generic assumptions)
-- `.mcp.json` at project root: present, parses, no `REPLACE_WITH_` placeholders
+- `.mcp.json` at project root: present, parses, and every `${VAR}` credential it
+  references is actually set in the environment
 - `vectors.db` exists + readable + reports chunk/skill counts
 - Hooks compile (`pre_tool_use.py`, `post_tool_use.py`)
 - Skills: each has `SKILL.md`; flags any >3000 tokens
