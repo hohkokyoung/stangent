@@ -19,21 +19,41 @@ execution only. Does NOT cover unit tests, widget tests, non-Flutter mobile
 - Registering a case in `.claude/tests/` for a flow you have not driven
 
 **REQUIRED order — no deviation:**
-1. **Attach.** `flutter_skill launch . --detach` (or `connect` if the app is
-   already running). Confirm with `flutter_skill server list`. If no Flutter app
-   can be attached, set `status: blocked` with
-   `blocker: "no_flutter_app_attached: <what launch reported>"` and STOP.
-2. `screenshot()` — see the current screen.
-3. `inspect_interactive()` — discover the real elements and their semantic refs.
-4. `tap(ref: ...)` / `enter_text(ref: ..., text: ...)` — drive by the refs
-   inspection returned, never by a ref you guessed.
-5. `wait_for_element(key: ...)` — assert the transition actually happened.
-6. `screenshot()` — capture evidence of the new state.
-7. Repeat 3–6 until the flow is covered.
+1. **Attach through MCP, not the CLI.** Call `mcp__flutter-skill__launch_app`
+   with `project_path` set to the directory holding `pubspec.yaml` (in a
+   monorepo that is the app subdirectory, e.g. `mobile/`, **not** the repo
+   root), plus `device_id` when the task names a device. Use
+   `mcp__flutter-skill__scan_and_connect` instead when the app is already
+   running. Confirm with `mcp__flutter-skill__get_connection_status`.
+
+   **If `launch_app` fails with `E303` ("found VM Service but failed to
+   connect"), do not stop — the app is usually running anyway.** Call
+   `scan_and_connect` with `port_start: 49000, port_end: 65000`; it attaches
+   where `launch_app` did not. Only after that also fails, set `status: blocked`
+   with `blocker: "no_flutter_app_attached: <what both reported>"`.
+2. **Re-read the tool list.** Until an app is attached the server exposes only
+   13 connection-management tools; the ~117 inspection and interaction tools
+   appear after step 1 (it declares `listChanged`). Do not plan a flow around a
+   tool you have not seen in the post-connection list — and do not trust a tool
+   name from documentation, including this skill's own reference. The project's
+   published docs list several tools and CLI subcommands that do not exist.
+3. `screenshot` — evidence, and your own orientation.
+4. `inspect_interactive` — the real elements and their refs. Every ref you act
+   on must come from this output, never from source code or from a guess.
+5. `tap` / `enter_text` using those refs only.
+6. `wait_for_element` to assert the transition happened, then `screenshot`.
+7. Repeat 4–6 until the flow is covered.
 8. **Only then:** write the `integration_test` file from what you observed.
 9. Run it: `flutter test integration_test/<file> -d <device>`. It must pass
    before the case is registered.
 10. Hand off to the `regression` skill to register and record the case.
+
+**Prerequisite, once per project:** `flutter-skill init <app-dir>` writes
+`.flutter-skill.yaml` and installs the testing bridge into the app. Run
+`flutter-skill doctor` to check it — it reports the SDK, the available devices
+and whether that config is present. If `.flutter-skill.yaml` is missing, say so
+and stop rather than launching; without the bridge the app attaches but exposes
+nothing useful.
 
 Writing a test file before `inspect_interactive` is a **protocol violation**.
 The test must reflect what the app renders, not what the task says it renders.
@@ -72,7 +92,10 @@ The test must reflect what the app renders, not what the task says it renders.
 
 ### MCP exploration loop
 ```
-flutter_skill launch . --detach     → attach to the app
+launch_app(project_path:"mobile", device_id:"<sim id>")   → build, install, attach
+   ↳ on E303: scan_and_connect(port_start:49000, port_end:65000)
+→ get_connection_status()           → confirm before anything else
+→ tools/list                        → the interaction tools exist only now
 → screenshot()                      → see current screen
 → inspect_interactive()             → real refs, e.g. "input:Email", "button:Login"
 → enter_text(ref:"input:Email", text:"qa@example.test")

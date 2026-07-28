@@ -13,11 +13,12 @@ provides one — copy changes, keys do not.
 
 ## Capture (one screen at a time)
 
-1. Confirm the attached app with `flutter_skill server list`, or
-   `mcp__flutter-skill__screenshot` if you only need to prove liveness.
+1. Confirm the attached app with `mcp__flutter-skill__get_connection_status`.
+   (There is no `flutter_skill server list` — the shipped CLI has no such
+   subcommand, whatever the project's docs say.)
 2. For each screen, in order:
    a. **Reset to a clean state.** `mcp__flutter-skill__go_back` until the root is
-      reached, or hot-restart with `flutter_skill hot_restart`. Restart is the
+      reached, or `mcp__flutter-skill__hot_restart`. Restart is the
       reliable option — a screen reached by backing out of a half-filled form is
       not the same screen a user sees on a fresh launch, and the difference shows
       up in the capture.
@@ -27,7 +28,9 @@ provides one — copy changes, keys do not.
       only. Re-inspect after each tap to confirm you landed where you expected
       before tapping again.
    d. **Verify the target screen is active.** Call
-      `mcp__flutter-skill__wait_for_element(key: "<screen key>")`. If it times
+      `mcp__flutter-skill__wait_for_element(key: "<screen key>")`, or
+      `get_current_route` where the app uses named routes — the route is a
+      stronger identity check than any on-screen string. If it times
       out, log the screen as failed and continue — do NOT screenshot a screen you
       could not confirm. A mislabelled screenshot is worse than a missing one: it
       is wrong in a document people trust.

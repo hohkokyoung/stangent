@@ -93,7 +93,9 @@ STOP.
 
 #### Flutter (flutter-skill)
 
-Call `mcp__flutter-skill__screenshot`.
+Call `mcp__flutter-skill__get_connection_status`. **Not `screenshot`** — the
+interaction tools do not exist until an app is attached, so probing with one
+reports a healthy server as broken.
 
 If the call throws, times out, or returns an error of any kind:
 
@@ -104,15 +106,16 @@ To fix:
   1. Confirm "flutter-skill" is in enabledMcpjsonServers in .claude/settings.json
   2. Confirm the CLI is installed: flutter_skill --version
      (install: dart pub global activate flutter_skill  |  npm i -g flutter-skill)
-  3. Attach the app: flutter_skill launch . --detach
+  3. Attach the app via MCP launch_app (project_path = the dir with pubspec.yaml)
   4. Restart Claude Code and retry /agentic-screenshot
 ```
 
 STOP. Do not attempt any further flutter-skill calls.
 
-If the server responds but reports no attached app, the app is not running —
-`flutter_skill launch . --detach` first, then retry. Do not try to launch it
-yourself as part of this command; a capture run must not change what is running.
+If the server responds but reports no attached app, attach with `launch_app`
+(`project_path` = the directory holding `pubspec.yaml`, which in a monorepo is
+the app subdirectory). If that returns `E303`, fall back to `scan_and_connect`
+over ports 49000–65000 — the app is usually running despite the error.
 
 ### Step 3 — Resolve pages/screens
 
