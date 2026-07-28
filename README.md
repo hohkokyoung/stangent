@@ -63,6 +63,24 @@ work there, and refusing beats returning a count that may be wrong.
 further problem remains unmeasured elsewhere in the suite. Native Windows stays
 *unverified* for that reason too, not only for the two above.
 
+### Known issue: native Windows (parked)
+
+Investigation is stopped, not finished. Recorded so it can be resumed cheaply:
+
+| established | how |
+|---|---|
+| `find` resolves to Windows' string-search `find.exe`, not `find(1)` | direct CI measurement |
+| `TestRealWorldCitationShapes` fails; every citation in it carries `\|`, `(` or `)` | job-level CI leg |
+| the suite still fails with that class skipped | CI |
+| **why** either happens | **unknown** — one hypothesis was tested and retracted |
+
+The cheapest way to finish it is one CI job per test module (job-level, never
+step-level — `continue-on-error` on a *step* forces its API `conclusion` to
+`success`, which invalidated an earlier round of probing here). That finds every
+Windows failure at once instead of one per round trip.
+
+Not a blocker for anyone on macOS, Linux or WSL, which is why it is parked.
+
 Runtime dependencies in the target project:
 ```bash
 pip install pyyaml fastembed sqlite-vec
