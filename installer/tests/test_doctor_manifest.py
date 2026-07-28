@@ -7,6 +7,7 @@ comparing files on disk against recorded hashes.
     python3 -m unittest discover installer/tests
 """
 import importlib.util
+import os
 import json
 import tempfile
 import unittest
@@ -191,3 +192,56 @@ class ModelIdCheckCase(unittest.TestCase):
 
     def test_no_models_block_is_not_an_error(self):
         self.assertEqual(self.doc._check_model_ids({}), [])
+
+
+class McpCredentialCheckCase(unittest.TestCase):
+    """Both ways a credential goes missing must be reported.
+
+    Moving the template to ${VAR} made "unset env var" the new failure mode. It
+    did not retire the old one — a project seeded earlier still carries
+    REPLACE_WITH_ placeholders — and checking only the new shape reported a real
+    install's unfilled dbhub DSN as [ok].
+    """
+
+    def setUp(self):
+        self._td = tempfile.TemporaryDirectory()
+        self.root = Path(self._td.name)
+        ag.install(self.root)
+        self.doc = load_doctor_at(self.root)
+
+    def tearDown(self):
+        self._td.cleanup()
+
+    def write_mcp(self, servers):
+        (self.root / ".mcp.json").write_text(json.dumps({"mcpServers": servers}))
+
+    def cred_checks(self):
+        return {c["name"]: c for c in self.doc.check_mcp_json()
+                if c["name"].endswith("credentials")}
+
+    def test_unfilled_placeholder_is_warned(self):
+        self.write_mcp({"dbhub": {"command": "npx",
+                                  "args": ["--dsn", "REPLACE_WITH_DSN"]}})
+        c = self.cred_checks()["mcp:dbhub credentials"]
+        self.assertEqual(c["status"], "warn")
+        self.assertIn("REPLACE_WITH_", c["detail"])
+
+    def test_unset_env_var_is_warned(self):
+        self.write_mcp({"dbhub": {"command": "npx",
+                                  "args": ["--dsn", "${DEFINITELY_UNSET_VAR_X}"]}})
+        c = self.cred_checks()["mcp:dbhub credentials"]
+        self.assertEqual(c["status"], "warn")
+        self.assertIn("DEFINITELY_UNSET_VAR_X", c["detail"])
+
+    def test_a_set_env_var_passes(self):
+        os.environ["AGENTIC_TEST_DSN"] = "postgres://x"
+        try:
+            self.write_mcp({"dbhub": {"command": "npx",
+                                      "args": ["--dsn", "${AGENTIC_TEST_DSN}"]}})
+            self.assertEqual(self.cred_checks()["mcp:dbhub credentials"]["status"], "ok")
+        finally:
+            del os.environ["AGENTIC_TEST_DSN"]
+
+    def test_a_filled_literal_passes(self):
+        self.write_mcp({"dbhub": {"command": "npx", "args": ["--dsn", "postgres://x"]}})
+        self.assertEqual(self.cred_checks()["mcp:dbhub credentials"]["status"], "ok")

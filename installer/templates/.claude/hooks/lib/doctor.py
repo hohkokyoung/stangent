@@ -312,15 +312,24 @@ def check_mcp_json() -> list[dict]:
     for name, conf in servers.items():
         args_text = " ".join(str(a) for a in conf.get("args", []))
         env_text = " ".join(str(v) for v in (conf.get("env", {}) or {}).values())
-        # Credentials come from the environment. An unset var is the failure
-        # mode now — the server launches with a literal "${FOO}" and fails at
-        # connect time with an error about the DSN rather than about the var.
-        unset = [v for v in re.findall(r"\$\{(\w+)\}", args_text + " " + env_text)
-                 if not os.environ.get(v)]
+        # Two ways a credential can be missing, and both must be reported.
+        # Switching the template to ${VAR} made "unset env var" the new failure
+        # mode, but it did not retire the old one: a project seeded before that
+        # still has REPLACE_WITH_ placeholders, and checking only for the new
+        # shape silently passed them. Found on a real install whose dbhub DSN
+        # was still unfilled and reported [ok].
+        blob = args_text + " " + env_text
+        problems = []
+        unset = sorted({v for v in re.findall(r"\$\{(\w+)\}", blob)
+                        if not os.environ.get(v)})
         if unset:
-            out.append(_check(f"mcp:{name} credentials", WARN,
-                              f"env var(s) not set: {', '.join(sorted(set(unset)))} — "
-                              f"the server will start with the literal placeholder"))
+            problems.append(f"env var(s) not set: {', '.join(unset)} — the server "
+                            f"starts with the literal placeholder")
+        if "REPLACE_WITH_" in blob:
+            problems.append("still has an unfilled REPLACE_WITH_ placeholder — "
+                            "fill it in or switch the entry to ${VAR} expansion")
+        if problems:
+            out.append(_check(f"mcp:{name} credentials", WARN, "; ".join(problems)))
         else:
             out.append(_check(f"mcp:{name} credentials", OK))
 
