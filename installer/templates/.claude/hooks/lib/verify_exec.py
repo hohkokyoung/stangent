@@ -24,11 +24,32 @@ from pathlib import Path
 SAFE_COMMANDS = {
     "grep", "egrep", "fgrep", "rg", "ag", "ack",
     "find", "fd", "ls", "wc", "cat", "head", "tail", "sort", "uniq", "nl",
-    "basename", "dirname", "stat", "file", "test", "true", "cut", "awk", "sed",
+    "basename", "dirname", "stat", "file", "test", "true", "cut",
 }
+# `awk` and `sed` are deliberately NOT here. Both are read-only only by
+# convention: awk's `system()` and `print > "f"` run commands and write files
+# from inside a BEGIN block, and sed's `-i`, `w` and GNU `e` do the same — none
+# of which uses a shell metacharacter, so the gate below cannot see them. A
+# citation needing either is expressing something the grammar in the README does
+# not (`grep`/`rg`/`find`/`wc` and pipes between them); it now reports
+# `unrunnable`, which is the safe direction for a claim nobody can re-derive.
+
 # `xargs <cmd>` runs <cmd>, so it is allowed only when what it runs is itself
 # allowlisted — validated recursively rather than trusted.
 PIPE_ONLY = {"xargs"}
+
+# Flags that make an allowlisted tool run a command or write a file. argv[0]
+# alone is not the whole attack surface: `find . -exec sh -c '…' {} +` and
+# `rg --pre ./evil` are argv[0]-clean, and `+` (unlike `;`) is not a shell
+# metacharacter, so nothing above catches them. Matched after stripping any
+# `=value`, so `--pre=x` and `--pre x` are both refused.
+BANNED_ARGS = {
+    "find": {"-exec", "-execdir", "-ok", "-okdir", "-delete",
+             "-fprint", "-fprint0", "-fprintf", "-fls"},
+    "fd":   {"-x", "--exec", "-X", "--exec-batch"},
+    "rg":   {"--pre", "--hostname-bin"},
+    "sort": {"--compress-program", "-o", "--output"},
+}
 # Shell metacharacters that chain, redirect, or substitute. A pipe is NOT here:
 # `grep … | grep -v …` and `… | wc -l` are how these counts are naturally
 # expressed, and every stage is validated independently, so a pipeline is no
@@ -52,6 +73,17 @@ def _stage_is_safe(argv: list[str]) -> tuple[bool, str]:
         return _stage_is_safe(rest)
     if exe not in SAFE_COMMANDS:
         return False, f"'{exe}' is not in the read-only command allowlist"
+    banned = BANNED_ARGS.get(exe)
+    if banned:
+        for arg in argv[1:]:
+            flag = arg.split("=", 1)[0]
+            if flag in banned:
+                return False, f"'{exe} {flag}' runs a command or writes a file"
+            # fd clusters its short flags (`-xj4`), so an exact match is not
+            # enough — any cluster carrying the exec flags is refused.
+            if exe == "fd" and re.fullmatch(r"-[a-zA-Z]+", flag) and (
+                    "x" in flag[1:] or "X" in flag[1:]):
+                return False, f"'{exe} {flag}' runs a command per result"
     return True, ""
 
 

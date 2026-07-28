@@ -99,6 +99,41 @@ class TestCommandSafety(Base):
             ok, _ = vc.command_is_safe(cmd)
             self.assertTrue(ok, cmd)
 
+    def test_exec_flags_on_allowlisted_tools_refused(self):
+        # argv[0] alone is not the attack surface. `find -exec … +` terminates
+        # with `+`, not `;`, so no shell metacharacter appears and the stage is
+        # argv[0]-clean — it ran arbitrary commands until this check existed.
+        for cmd in ("find . -name '*.py' -exec echo x {} +",
+                    "find . -execdir echo x {} +",
+                    "find . -ok rm {} +",
+                    "find . -name '*.tmp' -delete",
+                    "find . -fprintf /tmp/out %p",
+                    "rg --pre ./evil.sh foo",
+                    "rg --pre=./evil.sh foo",
+                    "fd -x rm {}",
+                    "fd --exec-batch rm",
+                    "sort -o /tmp/written file"):
+            ok, why = vc.command_is_safe(cmd)
+            self.assertFalse(ok, f"{cmd} must not pass the gate")
+
+    def test_awk_and_sed_are_not_allowlisted(self):
+        # Read-only by convention only: awk's system()/print> and sed's -i/w/e
+        # run commands and write files without any shell metacharacter.
+        for cmd in ("awk 'BEGIN{system(\"echo x\")}'",
+                    "awk '{print > \"/tmp/out\"}' a.txt",
+                    "sed -i.bak s/a/b/ file.txt",
+                    "sed 's/a/b/w /tmp/out' file.txt"):
+            ok, _ = vc.command_is_safe(cmd)
+            self.assertFalse(ok, cmd)
+
+    def test_ordinary_uses_of_those_tools_still_pass(self):
+        # The banned-flag check must not cost the citations reviewers actually
+        # write — a flag list that refuses `find -name` would be useless.
+        for cmd in ("find . -name '*.dart'", "find . -type f | wc -l",
+                    "rg -c BorderRadius .", "fd -e dart", "sort a.txt | uniq"):
+            ok, why = vc.command_is_safe(cmd)
+            self.assertTrue(ok, f"{cmd} -> {why}")
+
 
 class TestPipelines(Base):
     """`grep … | grep -v …` and `… | wc -l` are how reviewers naturally express

@@ -40,11 +40,17 @@ class HookCase(unittest.TestCase):
             proc = subprocess.run(
                 [sys.executable, str(hook_copy)], input=json.dumps(payload),
                 cwd=str(root), capture_output=True, text=True)
-            return proc.returncode, proc.stdout
+            # stderr, not stdout: on exit 2 that is the only stream Claude Code
+            # reads back. Returning stdout alone made every assertion here blind
+            # to whether the reason reached the agent at all.
+            return proc.returncode, proc.stderr
 
     def assertDenied(self, payload, role=None):
         code, out = self.run_hook(payload, role=role)
         self.assertEqual(code, 2, f"expected deny, got {code}: {out}")
+        # A deny with no reason on stderr is a deny the agent cannot act on.
+        self.assertIn("[agentic deny]", out, "deny reason must reach Claude via stderr")
+        return out
 
     def assertAllowed(self, payload, role=None):
         code, out = self.run_hook(payload, role=role)

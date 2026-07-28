@@ -9,8 +9,8 @@ Open a PR from a finished `/agentic-build` run. The command owns all GitHub I/O.
 
 ## Preconditions
 
-- github MCP enabled + `GITHUB_PERSONAL_ACCESS_TOKEN` filled (same check as
-  `/agentic-review-pr`). If missing, print the fix and STOP.
+- github MCP enabled and authenticated (same check as `/agentic-review-pr` —
+  OAuth on first use, no token in `.mcp.json`). If missing, print the fix and STOP.
 - A GitHub `origin` remote exists (`git remote get-url origin`). If not, STOP —
   this command is GitHub-specific.
 

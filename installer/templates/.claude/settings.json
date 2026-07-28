@@ -3,7 +3,6 @@
   "enabledMcpjsonServers": [
     "agentic_mcp",
     "context7",
-    "fetch",
     "sequential-thinking"
   ],
   "hooks": {

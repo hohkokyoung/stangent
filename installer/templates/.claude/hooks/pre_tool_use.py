@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Hard safety hook. Blocks destructive and out-of-contract operations.
 
-Reads Claude Code's PreToolUse JSON payload on stdin. Exits 2 (with a message
-on stdout) to deny the call. Exits 0 to allow.
+Reads Claude Code's PreToolUse JSON payload on stdin. Exits 2 (with the reason
+on stderr, which is what the contract feeds back to Claude) to deny the call.
+Exits 0 to allow.
 
 Two kinds of rule live here:
 
@@ -224,7 +225,12 @@ def path_allowed_for_role(rel: str, prefixes: list[str]) -> bool:
 
 
 def deny(reason: str) -> None:
-    sys.stdout.write(f"[agentic deny] {reason}\n")
+    # STDERR, not stdout: the hooks contract is "exit 2 blocks the call, Claude
+    # Code ignores stdout and any JSON in it, and stderr is fed back to Claude as
+    # the error message". Written to stdout, every reason below was composed and
+    # then discarded — the subagent saw a blocked call with no explanation and
+    # retried the same write blindly.
+    sys.stderr.write(f"[agentic deny] {reason}\n")
     # Exit code 2 = deny in Claude Code hooks contract
     sys.exit(2)
 
