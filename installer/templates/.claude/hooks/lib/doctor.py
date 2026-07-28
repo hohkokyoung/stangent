@@ -169,13 +169,14 @@ def check_optional_voyage() -> dict:
 
 def check_dir_tree() -> list[dict]:
     out = []
-    required = ["agents", "commands", "skills", "hooks", "mcp", "evals", "templates", "adrs", "state"]
+    required = ["agents", "commands", "skills", "hooks", "mcp", "evals", "templates",
+                "adrs", "tests", "state"]
     for d in required:
         p = CLAUDE / d
         if p.is_dir():
             out.append(_check(f"dir: .claude/{d}/", OK))
         else:
-            sev = WARN if d in ("state", "adrs") else FAIL
+            sev = WARN if d in ("state", "adrs", "tests") else FAIL
             out.append(_check(f"dir: .claude/{d}/", sev, "missing"))
     return out
 
@@ -333,14 +334,14 @@ def check_mcp_json() -> list[dict]:
         else:
             out.append(_check(f"mcp:{name} credentials", OK))
 
-    # if test_framework requires playwright or maestro, the matching MCP entry must be present
+    # if test_framework names a runner with an MCP server, that entry must be present
     proj_yml = CLAUDE / "state" / "project.yml"
     if proj_yml.exists():
         try:
             import yaml  # type: ignore
             proj = yaml.safe_load(proj_yml.read_text(encoding="utf-8")) or {}
             tf = proj.get("test_framework", "")
-            if tf in ("playwright", "maestro") and tf not in servers:
+            if tf in ("playwright", "maestro", "flutter-skill") and tf not in servers:
                 out.append(_check(
                     f"mcp:{tf} for screenshot",
                     WARN,
@@ -409,6 +410,53 @@ def check_skills() -> list[dict]:
                               f"~{token_estimate} tokens (>3000 soft limit — consider splitting)"))
         else:
             out.append(_check(f"skill: {name} size", OK, f"~{token_estimate} tokens"))
+    return out
+
+
+def check_test_registry() -> list[dict]:
+    """Registered cases parse, and the ones in the gate have actually been run.
+
+    A registry that fails to parse is worse than an empty one: `regressions`
+    counts what it can read, so an unreadable case silently leaves the gate and
+    the run still reports a number.
+    """
+    d = CLAUDE / "tests" / "cases"
+    if not d.is_dir():
+        return [_check("test registry", WARN,
+                       "missing .claude/tests/cases/ — no regression gate. "
+                       "Re-run the installer, then register cases with the "
+                       "`regression` skill")]
+    sys.path.insert(0, str(CLAUDE / "hooks" / "lib"))
+    try:
+        import test_registry  # type: ignore
+    except Exception as e:
+        return [_check("test registry", WARN, f"cannot load test_registry.py: {e}")]
+
+    try:
+        problems, n = test_registry.validate_all()
+    except Exception as e:
+        return [_check("test registry", WARN, f"validation errored: {e}")]
+
+    out = [_check("test registry", OK if not problems else FAIL,
+                  f"{n} case(s)" + (f", {len(problems)} problem(s): {problems[0]}"
+                                    if problems else ""))]
+    try:
+        cases, _ = test_registry.load_all()
+    except Exception:
+        return out
+
+    active = [c for c in cases if c.get("status") == "active"]
+    never = [c for c in active if not isinstance(c.get("last_run"), dict)]
+    if never:
+        out.append(_check("test registry: unrun cases", WARN,
+                          f"{len(never)} active case(s) have never been run "
+                          f"({', '.join(str(c.get('id')) for c in never[:5])}) — "
+                          f"they assert coverage nothing has verified"))
+    regressed = [c for c in active if test_registry.is_regression(c)]
+    if regressed:
+        out.append(_check("test registry: regressions", FAIL,
+                          f"{len(regressed)} case(s) were passing and are not now: "
+                          f"{', '.join(str(c.get('id')) for c in regressed[:5])}"))
     return out
 
 
@@ -707,6 +755,7 @@ def run_all() -> list[dict]:
     results.extend(check_verification())
     results.extend(check_skills())
     results.append(check_adrs())
+    results.extend(check_test_registry())
     results.append(check_design_spec())
     results.append(check_review_enumerations())
     results.append(check_stale_state())

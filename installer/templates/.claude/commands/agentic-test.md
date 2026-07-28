@@ -80,4 +80,24 @@ Generated artifacts:
 
 ### After init
 
-Every new `/agentic-plan` will automatically include tester tasks using the same framework. The generated baseline files serve as regression anchors.
+Every new `/agentic-plan` will automatically include tester tasks using the same framework.
+
+**Register each passing baseline as a case** — this is what makes them regression
+anchors rather than files that happened to be generated once. For each flow that
+passed, have the tester follow the `regression` skill: allocate an id, copy
+`.claude/templates/test-case.md`, record the exact command and the observed
+`expect`, then `record --result pass`. Finish with:
+
+```bash
+sh .claude/py .claude/hooks/lib/test_registry.py validate
+sh .claude/py .claude/hooks/lib/test_registry.py index
+```
+
+A failing baseline is **not** registered as `active`. Register it with
+`status: quarantined` and a `flake_reason` naming the known failure, or leave it
+unregistered and note it in the summary. Recording a red baseline as an active
+case makes the gate red from birth, and a gate that is red on day one never gets
+looked at again.
+
+From then on, `/agentic-regress` re-runs the lot and tells you which failures are
+new.

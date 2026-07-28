@@ -54,6 +54,7 @@ You MUST NOT assign `role: sketcher`. Sketch tasks are created and dispatched by
 - Verify the selected skills are **non-overlapping** using the `## Purpose` sections in `.claude/state/skills_digest.md` (read in step 1). Only if the digest is missing, fall back to each skill's `## Purpose` in its `SKILL.md`.
 - If two skills overlap or contradict, do NOT emit the task. Either re-pick, or ask the user via `AskUserQuestion`.
 - **For tester tasks:** read `test_framework` from `.claude/state/project.yml`. If a skill directory named `test_framework` exists under `.claude/skills/`, include it in `skills_to_load`. Do not fabricate skill names — only use skills that exist. If `test_framework` is `unknown`, missing, or has no corresponding skill directory, omit the test skill and add a note in `## Assumptions`.
+- **Also add `regression` to every tester task**, if that skill is enabled. It is stack-agnostic and pairs with whatever runner was selected above: the runner skill verifies the behaviour, `regression` is what turns the passing run into a registered case in `.claude/tests/`. A tester given only a runner will verify a flow correctly and leave nothing behind, so the same flow is re-derived from scratch on the next feature. The two are not alternatives and selecting one is not a reason to skip the other — this pairing is exempt from the non-overlap check, because their `## Purpose` sections are deliberately disjoint (execute vs. record).
 
 ### Clarifications block
 

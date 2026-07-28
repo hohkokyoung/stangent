@@ -8,12 +8,13 @@ sqlite-vec extension or an embedding model (stdlib sqlite3 only).
 """
 import importlib.util
 import io
+import os
 import shutil
 import sqlite3
 import subprocess
 import tempfile
 import unittest
-from contextlib import redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -183,6 +184,95 @@ class TestResolveScope(unittest.TestCase):
 
     def test_empty_when_neither(self):
         self.assertEqual(r._resolve_scope({}, None), [])
+
+
+class TestDetectStack(unittest.TestCase):
+    """Which runner a stack gets is a routing decision, and the tester follows
+    it blindly — a wrong answer here is a whole suite written against the wrong
+    tool before anyone notices."""
+
+    def detect(self, build) -> dict:
+        import importlib.util
+        import yaml
+        cwd = Path.cwd()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td).resolve()
+            build(root)
+            os.chdir(root)
+            try:
+                spec = importlib.util.spec_from_file_location(f"ret_{td}", RET)
+                mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mod)
+                with redirect_stdout(io.StringIO()):
+                    mod.detect_stack()
+                data = yaml.safe_load(
+                    (root / ".claude" / "state" / "project.yml").read_text())
+            finally:
+                os.chdir(cwd)
+        return data
+
+    def test_flutter_routes_to_flutter_skill(self):
+        def build(root):
+            (root / "pubspec.yaml").write_text("name: demo\n")
+        self.assertEqual(self.detect(build)["test_framework"], "flutter-skill")
+
+    def test_flutter_wins_even_with_android_and_ios_dirs(self):
+        """A Flutter project has both; the pubspec is the discriminator."""
+        def build(root):
+            (root / "pubspec.yaml").write_text("name: demo\n")
+            (root / "android").mkdir()
+            (root / "ios").mkdir()
+        self.assertEqual(self.detect(build)["test_framework"], "flutter-skill")
+
+    def test_native_mobile_stays_on_maestro(self):
+        def build(root):
+            (root / "android").mkdir()
+        self.assertEqual(self.detect(build)["test_framework"], "maestro")
+
+    def test_browser_frontend_stays_on_playwright(self):
+        def build(root):
+            (root / "package.json").write_text('{"dependencies":{"react":"18"}}')
+        self.assertEqual(self.detect(build)["test_framework"], "playwright")
+
+
+class TestPlatformIsIndependentOfRunner(unittest.TestCase):
+    """`platform` exists so that adding a runner cannot change an answer about
+    the app. The sketcher's viewport, /agentic-design's brownfield test and
+    /agentic-screenshot all key off it; when they keyed off `test_framework`
+    instead, introducing a second mobile runner silently moved Flutter mockups
+    to a 1280px desktop viewport."""
+
+    detect = TestDetectStack.detect
+
+    def test_both_mobile_runners_report_mobile(self):
+        def flutter(root):
+            (root / "pubspec.yaml").write_text("name: demo\n")
+
+        def native(root):
+            (root / "android").mkdir()
+
+        for build in (flutter, native):
+            d = self.detect(build)
+            self.assertEqual(d["platform"], "mobile", d["test_framework"])
+
+    def test_browser_frontend_is_web(self):
+        def build(root):
+            (root / "package.json").write_text('{"dependencies":{"next":"14"}}')
+        self.assertEqual(self.detect(build)["platform"], "web")
+
+    def test_backend_only_is_unknown_not_web(self):
+        """A FastAPI service has no UI to size a mockup for; saying 'web' would
+        hand the sketcher a viewport for a thing that does not render."""
+        def build(root):
+            (root / "pyproject.toml").write_text("[project]\nname='x'\n")
+        d = self.detect(build)
+        self.assertEqual(d["platform"], "unknown")
+        self.assertEqual(d["test_framework"], "pytest")
+
+    def test_platform_is_always_written(self):
+        def build(root):
+            (root / "go.mod").write_text("module x\n")
+        self.assertIn("platform", self.detect(build))
 
 
 if __name__ == "__main__":

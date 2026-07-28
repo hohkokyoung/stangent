@@ -35,7 +35,8 @@ Run a battery of fast, deterministic checks against this project's agentic insta
 - ADRs: count by status (proposed / accepted / superseded)
 - Design spec: reports whether `docs/design/DESIGN-SPEC.md` exists (optional — authored by `/agentic-design`; never a failure)
 - Git: repo present, current branch, working-tree clean status
-- Screenshot readiness: if `test_framework` in `project.yml` is `playwright` or `maestro`, warns if the matching MCP server is absent from `.mcp.json` (would cause `/agentic-screenshot` to stop at the MCP probe)
+- Screenshot readiness: if `test_framework` in `project.yml` is `playwright`, `maestro` or `flutter-skill`, warns if the matching MCP server is absent from `.mcp.json` (would cause `/agentic-screenshot` to stop at the MCP probe)
+- Test registry: every case in `.claude/tests/cases/` parses and satisfies the determinism contract; warns on active cases that have never been run, and FAILS on any case that was passing and is not now
 
 ## Output legend
 

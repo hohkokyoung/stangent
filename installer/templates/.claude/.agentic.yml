@@ -4,14 +4,20 @@
 #   mobile:    flutter, mobile
 #   backend:   fastapi, rest-openapi
 #   database:  supabase
-#   testing:   playwright, maestro
+#   testing:   playwright, maestro, flutter-skill, regression
 #   security:  owasp
 #
+# `regression` is stack-agnostic — it owns the durable test-case registry in
+# .claude/tests/ and pairs with whichever runner skill you enable. Enable it on
+# any project you want a regression gate on, whatever the language.
+# `flutter-skill` is the Flutter runner; /agentic-index selects it automatically
+# when it finds a pubspec.yaml (non-Flutter mobile stays on maestro).
+#
 # Example — React + FastAPI:
-#   enabled_skills: [react, fastapi, owasp]
+#   enabled_skills: [react, fastapi, owasp, playwright, regression]
 #
 # Example — Flutter + Supabase:
-#   enabled_skills: [flutter, mobile, supabase, owasp, maestro]
+#   enabled_skills: [flutter, mobile, supabase, owasp, flutter-skill, regression]
 enabled_skills: []
 
 # Project risk profile. Read by the architect and security-reviewer agents to
@@ -79,7 +85,12 @@ retrieval:
     security-reviewer: 8  # owasp corpus + related-boundary references
 
 skill_groups:
-  test: [playwright, maestro]   # only these skills are injected into the tester role
+  # Allowlist, not a load list — the planner picks a task's skills and this
+  # filters out anything that isn't a testing skill before the tester sees it.
+  # Adding a name here permits it; it costs no tokens on tasks that don't use it.
+  # `regression` belongs on every project: it is how a passing run becomes a
+  # durable case instead of a one-off.
+  test: [playwright, maestro, flutter-skill, regression]
 
 # Sketch design source.
 #   html          → classic self-contained HTML mockup, rendered + screenshotted (default)

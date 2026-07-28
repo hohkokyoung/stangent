@@ -25,7 +25,7 @@ mkdir -p .claude/state/design-spec/$SPEC_ID
 
 Decide **brownfield** if any hold, else **greenfield**:
 - `.claude/.agentic.yml: enabled_skills` intersects `{react, html-css, flutter, mobile}`
-- `.claude/state/project.yml: test_framework` is `playwright` or `maestro`
+- `.claude/state/project.yml: platform` is `mobile` or `web` (on an older project.yml with no `platform`, fall back to `test_framework` being any of `playwright`, `maestro`, `flutter-skill`)
 - frontend source exists: `*.tsx`/`*.jsx`/`*.vue`/`tailwind.config.*`/`*.css` under
   the repo, or `pubspec.yaml` (Flutter). Use Glob.
 

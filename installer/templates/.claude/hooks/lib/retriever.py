@@ -612,7 +612,14 @@ def detect_stack() -> None:
     if has_composer:
         globs += ["**/*.php"]
 
-    if is_mobile:
+    if has_pubspec:
+        # Flutter gets flutter-skill: it drives the app through Flutter's own
+        # semantics tree, so it sees keys and widgets maestro can only reach as
+        # pixels. Non-Flutter mobile (bare android/ios, React Native) stays on
+        # maestro — flutter-skill claims those platforms too, but nothing here
+        # has measured it there.
+        framework = "flutter-skill"
+    elif is_mobile:
         framework = "maestro"
     elif is_web_frontend:
         framework = "playwright"
@@ -627,6 +634,13 @@ def detect_stack() -> None:
         except Exception:
             pass
 
+    # `platform` answers "what kind of app is this", `test_framework` answers
+    # "which runner drives it". They were one field, and every consumer that
+    # actually meant the first asked the second — the sketcher picked its
+    # viewport by testing `test_framework == maestro`, so adding a second mobile
+    # runner silently rendered Flutter mockups at desktop width. Splitting them
+    # means a new runner never again changes an answer about the platform.
+    existing["platform"] = "mobile" if is_mobile else ("web" if is_web_frontend else "unknown")
     existing["test_framework"] = framework
     existing["detected_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     existing["project_index_globs"] = globs
@@ -637,6 +651,7 @@ def detect_stack() -> None:
     else:
         # yaml not available — write minimal YAML by hand
         lines = [
+            f"platform: {existing['platform']}",
             f"test_framework: {framework}",
             f"detected_at: '{existing['detected_at']}'",
             "project_index_globs:",
@@ -644,6 +659,7 @@ def detect_stack() -> None:
         PROJECT_YML.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     if globs:
+        print(f"[agentic-index] detected platform: {existing['platform']}")
         print(f"[agentic-index] detected test_framework: {framework}")
         print(f"[agentic-index] project_index_globs: {globs}")
     else:

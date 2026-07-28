@@ -34,7 +34,7 @@ Inspect the project root to determine the test framework and default project ind
 
 | Signal | Contributes to `test_framework` | Globs to add |
 |---|---|---|
-| `pubspec.yaml` exists | `maestro` | `["**/*.dart"]` |
+| `pubspec.yaml` exists | `flutter-skill` | `["**/*.dart"]` |
 | `android/` or `ios/` dir exists (without `pubspec.yaml`) | `maestro` | `["**/*.kt", "**/*.swift"]` |
 | `package.json` with `next`, `react`, `vue`, `svelte`, `nuxt`, `angular`, `vite` in deps | `playwright` | `["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]` |
 | `package.json` exists (no browser-framework deps above — backend/CLI JS) | _(no test framework change)_ | `["**/*.ts", "**/*.js"]` |
@@ -48,11 +48,16 @@ Inspect the project root to determine the test framework and default project ind
 | `composer.json` exists | _(no test framework change)_ | `["**/*.php"]` |
 
 #### Rules for `test_framework`
-- If any mobile signal matched → `maestro`
+- If `pubspec.yaml` matched → `flutter-skill`
+- Else if any other mobile signal matched → `maestro`
 - Else if any browser-frontend JS signal matched → `playwright`
 - Else → `unknown`
 
-Only `maestro` and `playwright` have tester skill files. Other stacks still contribute project index globs above, so source files are indexed and retrievable — but `test_framework` is set to `unknown` since no testing skill exists to back them.
+Flutter takes `flutter-skill` because that server drives the app through Flutter's own semantics tree — it addresses widgets and keys, where maestro reaches the same screen only as pixels. Non-Flutter mobile stays on `maestro`; flutter-skill advertises those platforms too, but nothing here has measured it there.
+
+Only `flutter-skill`, `maestro` and `playwright` have tester skill files. Other stacks still contribute project index globs above, so source files are indexed and retrievable — but `test_framework` is set to `unknown` since no testing skill exists to back them.
+
+`test_framework` selects the **runner**. The `regression` skill is orthogonal to it — it is stack-agnostic and should be enabled on every project regardless of what was detected here.
 
 #### Rules for `project_index_globs`
 - Union of all matched glob lists, deduplicated
@@ -107,6 +112,19 @@ This writes `.claude/state/skills_digest.md` from the `enabled_skills` in
 Print a reminder if the detected `test_framework` skill is not in `enabled_skills` in `.agentic.yml`:
 ```
 [agentic-index] warning: test_framework=playwright but skill 'playwright' is not in enabled_skills. Add it to .agentic.yml and re-run /agentic-index.
+```
+
+If the detected framework is `flutter-skill`, also check that the MCP server is reachable and print, if not:
+```
+[agentic-index] note: test_framework=flutter-skill but the binary is not on PATH.
+  Install one of:  dart pub global activate flutter_skill   |   npm i -g flutter-skill
+  Then enable it in .claude/settings.json → enabledMcpjsonServers.
+```
+
+Print a reminder if `regression` is not in `enabled_skills`, whatever the detected framework:
+```
+[agentic-index] note: skill 'regression' is not enabled. Without it, testers verify
+  behaviour but register no durable cases, and /agentic-regress has nothing to re-run.
 ```
 
 ## Constraints

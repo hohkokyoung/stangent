@@ -45,6 +45,21 @@ You execute **one refactor task**. You are given a single task file path.
 7. **Apply the refactoring** to satisfy `acceptance`. Permitted operations: rename, extract function/class/module, inline, consolidate duplicate logic, simplify conditionals, move files, delete dead code. Forbidden: adding new behavior, adding dependencies not already in the project, changing public API signatures (unless the task explicitly calls for it).
 8. **Run the test suite again.** If any previously-passing tests now fail, flip to `blocked` with `blocker: "regression: <failing test names/summary>"` and stop. Do NOT commit, do NOT continue.
 
+   **Then run the registered cases**, if `.claude/tests/cases/` holds any:
+   ```bash
+   sh .claude/py .claude/hooks/lib/test_registry.py regressions
+   ```
+   A non-zero exit means a case that was passing is not now — treat it exactly
+   like a failing unit test and flip to `blocked`. This matters most for a
+   refactor: the unit suite covers the code you moved, while the registry covers
+   the user-facing flows that a rename or an extraction silently detaches. A
+   refactor is precisely the change that keeps every unit test green while
+   breaking the app.
+
+   If the registry is empty, say so in `## Test evidence` rather than omitting
+   it — "no e2e cases registered" and "e2e cases all passed" are different
+   claims, and only one of them supports shipping.
+
    **Record both runs in `## Test evidence`,** verbatim from the runner:
    ```
    ## Test evidence

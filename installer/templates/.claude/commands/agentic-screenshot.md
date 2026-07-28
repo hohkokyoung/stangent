@@ -32,11 +32,12 @@ STOP. Do not proceed.
 Map framework → MCP:
 - `playwright` → `mcp__playwright__*`
 - `maestro` → `mcp__maestro__*`
+- `flutter-skill` → `mcp__flutter-skill__*`
 - anything else:
 
 ```
 [agentic-screenshot] test_framework=<value> is not supported.
-Supported: playwright (web), maestro (mobile).
+Supported: playwright (web), maestro (non-Flutter mobile), flutter-skill (Flutter).
 ```
 
 STOP. Do not proceed.
@@ -90,6 +91,29 @@ Start a simulator or connect a physical device, then retry /agentic-screenshot
 
 STOP.
 
+#### Flutter (flutter-skill)
+
+Call `mcp__flutter-skill__screenshot`.
+
+If the call throws, times out, or returns an error of any kind:
+
+```
+[agentic-screenshot] flutter-skill MCP did not respond.
+
+To fix:
+  1. Confirm "flutter-skill" is in enabledMcpjsonServers in .claude/settings.json
+  2. Confirm the CLI is installed: flutter_skill --version
+     (install: dart pub global activate flutter_skill  |  npm i -g flutter-skill)
+  3. Attach the app: flutter_skill launch . --detach
+  4. Restart Claude Code and retry /agentic-screenshot
+```
+
+STOP. Do not attempt any further flutter-skill calls.
+
+If the server responds but reports no attached app, the app is not running —
+`flutter_skill launch . --detach` first, then retry. Do not try to launch it
+yourself as part of this command; a capture run must not change what is running.
+
 ### Step 3 — Resolve pages/screens
 
 **If `$ARGUMENTS` is empty (interactive mode):**
@@ -128,6 +152,7 @@ Follow the procedure for the detected framework:
 
 - **Web (Playwright):** see `.claude/templates/screenshot-web.md`
 - **Mobile (Maestro):** see `.claude/templates/screenshot-mobile.md`
+- **Flutter (flutter-skill):** see `.claude/templates/screenshot-flutter.md`
 
 Each template covers: per-page/screen capture loop, index file format, and the final report to print.
 

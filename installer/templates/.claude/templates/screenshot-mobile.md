@@ -1,6 +1,6 @@
 # Screenshot — Mobile (Maestro) Capture Procedure
 
-Used by `/agentic-screenshot` when `test_framework = maestro`. Execute this after Steps 1–4 of the main command. The device is confirmed live from Step 2.
+Used by `/agentic-screenshot` when `test_framework = maestro` (non-Flutter mobile — Flutter uses `screenshot-flutter.md`). Execute this after Steps 1–4 of the main command. The device is confirmed live from Step 2.
 
 ---
 

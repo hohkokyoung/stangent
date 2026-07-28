@@ -37,6 +37,12 @@
         "mcp"
       ]
     },
+    "flutter-skill": {
+      "command": "flutter-skill",
+      "args": [
+        "server"
+      ]
+    },
     "github": {
       "type": "http",
       "url": "https://api.githubcopilot.com/mcp/"

@@ -27,10 +27,11 @@ The `pre_tool_use` hook hard-enforces your write-scope: while your role is activ
 3. **Read the design config.** Read the `design:` block from `.claude/.agentic.yml`:
    - `source: html`, block absent, or `project_id` empty → **html mode**.
    - `source: claude-design` → **claude-design mode**. Verify availability now: call `DesignSync get_project` with `design.project_id`. If the call fails or the project is not `type: PROJECT_TYPE_DESIGN_SYSTEM`, apply the DesignSync fallback rule from Hard Constraints (usually: warn and continue in html mode).
-4. **Determine the render viewport.** Read `.claude/state/project.yml` and check `test_framework`:
-   - `maestro` → **390 × 844px** (mobile)
-   - `playwright` or any web framework → **1280 × 800px** (desktop browser)
+4. **Determine the render viewport.** Read `.claude/state/project.yml` and check `platform` — not `test_framework`, which names the test runner and says nothing about screen size:
+   - `mobile` → **390 × 844px**
+   - `web` → **1280 × 800px** (desktop browser)
    - `unknown` or file absent → **1280 × 800px** (safe default)
+   - `platform` missing (project.yml predates the field) → fall back to `test_framework`: `maestro` or `flutter-skill` → mobile, anything else → desktop. Then suggest re-running `/agentic-index`.
 4b. **Load the house style, if any.** If `docs/design/DESIGN-SPEC.md` exists, read it
    and `docs/design/tokens.md`. Your mockup MUST honour them: use the real token
    colours, the type scale, the spacing scale, the corner radii, and the component

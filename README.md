@@ -254,13 +254,22 @@ product instead of a generic look.
 | Stack | Detected by | `test_framework` value |
 |---|---|---|
 | React / Next.js / Vue (frontend) | `package.json` + no server-only markers | `playwright` |
-| Flutter / React Native / iOS / Android | `pubspec.yaml` or `android/` / `ios/` dirs | `maestro` |
+| Flutter | `pubspec.yaml` | `flutter-skill` |
+| React Native / iOS / Android (no Flutter) | `android/` / `ios/` dirs | `maestro` |
+
+Flutter gets [flutter-skill](https://github.com/ai-dashboad/flutter-skill) rather than maestro because it drives the app through Flutter's own semantics tree — it addresses widgets and keys, where maestro reaches the same screen only as pixels. Non-Flutter mobile stays on maestro; flutter-skill advertises React Native, Electron and Tauri too, but nothing here has measured it on them, so the routing does not claim it.
+
+Install it and enable the server (it is in `.mcp.json` but not in `enabledMcpjsonServers` by default):
+
+```bash
+dart pub global activate flutter_skill    # or: npm install -g flutter-skill
+```
 
 **How the tester works:**
 1. Reads its injected skill — the skill defines the complete testing method (tools, commands, artifact format)
-2. If a test runner MCP is available (e.g. Playwright, Maestro), uses it to explore the live app
-3. Generates test artifacts (`.spec.ts`, flow YAML, `.py`, etc.) from actual exploration
-4. Runs the artifact and reports results
+2. If a test runner MCP is available (Playwright, Maestro, flutter-skill), uses it to explore the live app
+3. Generates test artifacts (`.spec.ts`, flow YAML, `integration_test/*.dart`) from actual exploration
+4. Runs the artifact, reports results, and registers the case in the regression registry below
 
 The testing method is fully defined by the injected skill — the tester role itself contains no framework-specific logic.
 
@@ -268,6 +277,43 @@ The testing method is fully defined by the injected skill — the tester role it
 ```
 /agentic-test init    # scan existing screens/routes, ask which flows to cover, generate baseline tests
 ```
+
+---
+
+## Regression registry — tests that stay checked
+
+A run that goes green and leaves no record is verification that expires when the task ends. The `regression` skill fixes that: every case a tester verifies is written to `.claude/tests/cases/TC-NNN-slug.md` and committed, and `/agentic-regress` re-runs the lot.
+
+```
+.claude/tests/
+  README.md            the convention, in full
+  INDEX.md             generated
+  cases/
+    TC-001-login-happy.md
+```
+
+Each case records the exact command to re-run, what passing means, what it is evidence for (DoD bullets, ADR ids, task ids), and its run history.
+
+**It is deliberately runner-agnostic.** A case names a `runner` but the registry never interprets it — `command` is just a shell command, so `flutter test`, `maestro test`, `npx playwright test`, `pytest` and a bash script all register identically. One gate covers a monorepo with three stacks, and adopting a fourth means writing a skill, not touching the registry. Enable `regression` on any project regardless of language.
+
+**Regression vs. gap.** A red suite alone cannot tell you whether something *broke*. Because the registry keeps history, `/agentic-regress` separates a case that passed last week and fails today (a regression — investigate) from one that has never passed (a known gap — not news). Only the first fails the gate.
+
+**The determinism contract**, enforced by `test_registry.py validate`:
+
+- `command` is non-interactive, repo-relative, and free of machine-local paths
+- nothing is read from the clock or a random source at run time — pin it in `fixtures`
+- `expect` carries at least one of `exit_code` or `assertions`; a case that cannot fail cannot catch a regression
+- a `quarantined` case states a `flake_reason`, so an excluded case is a visible hole rather than a silent one
+
+**The rule the whole thing rests on:** `expect` is never edited to make a failing run pass. `record` writes only `last_run` and `history` and *cannot* touch `expect` — changing a baseline is a separate hand edit that bumps `revision` and explains itself in the case's revision log. Without that separation, every green run afterwards is unfalsifiable, and a registry that asserts coverage it no longer has is worse than no registry.
+
+```bash
+/agentic-regress              # run the gate
+/agentic-regress status       # report from history, run nothing
+/agentic-regress validate     # check the contract
+```
+
+Case files are committed on purpose — they are excluded from the `.gitignore` block, because a fresh clone with no baseline has no gate.
 
 ---
 
@@ -592,6 +638,7 @@ complete.**
 │   ├── agentic-debug.md        # data-aware bug diagnosis
 │   ├── agentic-refactor.md     # refactor with test-green guarantee
 │   ├── agentic-test.md         # brownfield test bootstrap
+│   ├── agentic-regress.md      # re-run the registered cases; regressions vs. never-passed
 │   ├── agentic-screenshot.md   # screenshot all pages/screens → docs/screenshots/<date>/
 │   ├── agentic-cleanup.md      # CODE cleanup: audit for smells → dispatch refactor tasks
 │   ├── agentic-clean-state.md  # STATE cleanup: prune old runs/logs + empty review dirs
@@ -614,7 +661,9 @@ complete.**
 │   ├── html-css/     SKILL.md + references/*.md  # vanilla HTML/CSS/JS
 │   ├── react/        SKILL.md + references/*.md  # React 18+, hooks, data fetching
 │   ├── playwright/   SKILL.md + references/*.md  # browser UI testing via Playwright MCP
-│   └── maestro/      SKILL.md + references/*.md  # mobile UI testing via Maestro MCP
+│   ├── maestro/      SKILL.md + references/*.md  # non-Flutter mobile UI testing via Maestro MCP
+│   ├── flutter-skill/ SKILL.md + references/*.md # Flutter UI testing via flutter-skill MCP → integration_test
+│   └── regression/   SKILL.md                    # stack-agnostic: registering cases in .claude/tests/
 ├── hooks/
 │   ├── pre_tool_use.py         # hard safety only (rm -rf, force push, DROP, TRUNCATE, ...)
 │   ├── post_tool_use.py        # JSONL logger, one file per run_id
@@ -622,6 +671,7 @@ complete.**
 │       ├── retriever.py        # sqlite-vec + voyage/fastembed; supports --project-only flag
 │       ├── plan_id.py          # FEAT-### allocator
 │       ├── adr_id.py           # ADR-### allocator
+│       ├── test_registry.py    # TC-### regression registry: validate / record / regressions
 │       ├── git_branch.py       # feat/{run_id} branch helper (-v2/-v3 on collision) + per-task checkpoint commits
 │       ├── sweep_plan.py       # deterministic batch planner for /agentic-sweep
 │       ├── log_dispatch.py     # structured dispatch events → .claude/state/logs/dispatch.jsonl
@@ -629,6 +679,10 @@ complete.**
 │       └── doctor.py           # install health checks
 ├── mcp/
 │   └── agentic_mcp.py          # exposes retrieve() + get_symbol() over stdio MCP
+├── tests/                      # COMMITTED — the regression registry; survives reinstall and uninstall
+│   ├── README.md               # the convention
+│   ├── INDEX.md                # generated from the cases
+│   └── cases/TC-###-slug.md    # one case: command, expect, covers, run history
 ├── .install.json               # gitignored — per-install record read by /agentic-doctor (see "Knowing whether an install is current")
 └── state/                      # gitignored — local working memory; durable artifacts are promoted to docs/ and adrs/
     ├── plans/<FEAT-###>/
@@ -659,7 +713,8 @@ fails later with a confusing error about the DSN rather than about the variable:
     "sequential-thinking":  { ... },  // structured reasoning tool — no credentials needed
     // testing & mobile
     "playwright":           { ... },  // browser automation — no credentials needed
-    "maestro":              { ... },  // mobile automation — requires Maestro CLI
+    "maestro":              { ... },  // non-Flutter mobile automation — requires Maestro CLI
+    "flutter-skill":        { ... },  // Flutter automation — requires the flutter_skill CLI
     // version control
     "github":               { ... },  // remote HTTP server — OAuth on first use, no token stored
     // databases
@@ -683,7 +738,7 @@ fails later with a confusing error about the DSN rather than about the variable:
 - **Sketch before code.** For any task with visible UI changes, the sketcher runs during planning and embeds a rendered image before any implementer task is dispatched.
 - **Design spec is the house style.** Authored (greenfield) or extracted (brownfield) by `/agentic-design` into committed `docs/design/`. Agents draft to gitignored state; the command promotes on approval. The sketcher honours it; the design-critic enforces it (`/agentic-review-ui`). Optional — projects with no frontend simply never author one.
 - **Debugger = diagnosis only.** The debugger never writes to the codebase. Data before code, always.
-- **MCP rules:** `agentic_mcp.retrieve` is the internal knowledge plane; `context7` / `sequential-thinking` are available to all agents; `playwright` / `maestro` / `dbhub` / `supabase` / `github` are runtime tools usable only by implementer/tester/debugger. Planner/reviewer/sketcher never touch external MCP (except sketcher uses Preview MCP for rendering).
+- **MCP rules:** `agentic_mcp.retrieve` is the internal knowledge plane; `context7` / `sequential-thinking` are available to all agents; `playwright` / `maestro` / `flutter-skill` / `dbhub` / `supabase` / `github` are runtime tools usable only by implementer/tester/debugger. Planner/reviewer/sketcher never touch external MCP (except sketcher uses Preview MCP for rendering).
 - **Hooks = safety + logging.** No tool filtering, no context-aware gating.
 - **State ownership:** every section of every task file has exactly one writing role. No agent overwrites another's section.
 
@@ -693,7 +748,8 @@ fails later with a confusing error about the DSN rather than about the variable:
 
 ```yaml
 enabled_skills: []   # empty by default — add skills that match your stack
-# available: react, html-css, flutter, mobile, fastapi, rest-openapi, supabase, owasp, playwright, maestro
+# available: react, html-css, flutter, mobile, fastapi, rest-openapi, supabase, owasp,
+#            playwright, maestro, flutter-skill, regression
 
 embedding:
   provider: voyage-3-lite       # falls back to fastembed if unavailable
@@ -915,6 +971,13 @@ did), and stay quiet when there is no config to ignore.
 ```
 
 Then add `<name>` to `enabled_skills` in `.agentic.yml`, run `/agentic-index`, and the planner can include it in any future task's `skills_to_load`. No agent or command edits needed.
+
+**If it is a testing skill, two more steps** — the tester filters its injected skills against an allowlist, so a skill it is never permitted to load looks identical to one that does not exist:
+
+1. Add `<name>` to `skill_groups.test` in `.agentic.yml`.
+2. If it drives a live app, add its MCP server to `.mcp.json`, and teach `detect_stack()` in `hooks/lib/retriever.py` when to select it. Keep **skill name == MCP server name == `test_framework` value** — `/agentic-doctor` and `/agentic-screenshot` both match on that string, and a skill that breaks the convention silently loses its MCP readiness check.
+
+**Branch on `platform`, not `test_framework`, when you mean "is this mobile or web".** `project.yml` carries both because they are different questions: `test_framework` names the runner, `platform` names the kind of app. Conflating them is how adding `flutter-skill` briefly made the sketcher render Flutter mockups at desktop width — the viewport rule had been testing `test_framework == maestro` as a proxy for "mobile", and a second mobile runner falsified it.
 
 ---
 

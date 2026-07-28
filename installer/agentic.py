@@ -50,18 +50,24 @@ GITIGNORE_BLOCK = """# >>> agentic
 # .mcp.json is deliberately NOT ignored: it carries no secrets (credentials come
 # from ${VAR} in the environment), so server config is reviewable in PRs like the
 # rest of .claude/.
+# .claude/tests/ is deliberately NOT ignored either. It is the record of what has
+# actually been verified, and its run history is what tells a red case apart from
+# one that was never green. Ignore it and every fresh clone starts with no
+# regression baseline at all.
 # <<< agentic
 """
 GITIGNORE_RE = re.compile(r"# >>> agentic.*?# <<< agentic\r?\n?", re.DOTALL)
 
 SYSTEM_OWNED = ["agents", "commands", "skills", "hooks", "mcp", "evals", "templates",
                 "py", ".agentic.yml", ".install.json"]
-# Note: adrs/ and state/ are intentionally NOT in SYSTEM_OWNED, for different
-# reasons. ADRs are user-authored project decisions. state/ is every plan, run
-# log and vectors.db — gitignored, so deleting it is unrecoverable, and it made
+# Note: adrs/, tests/ and state/ are intentionally NOT in SYSTEM_OWNED, for
+# different reasons. ADRs are user-authored project decisions. tests/ holds the
+# registered regression cases — the record of what has actually been verified,
+# which no reinstall should be able to erase. state/ is every plan, run log and
+# vectors.db — gitignored, so deleting it is unrecoverable, and it made
 # `--uninstall` a data-loss operation contradicting the README's promise that
 # "anything you added is left alone". Keeping it also means uninstall can be run
-# safely as a step toward reinstalling. Both are reported and left in place.
+# safely as a step toward reinstalling. All are reported and left in place.
 
 
 def info(msg: str) -> None:
@@ -173,7 +179,10 @@ def copy_templates(target: Path) -> None:
     # overwritten so project-specific settings (enabled_skills, MCP servers,
     # hook list) survive a re-install / upgrade.
     seed_files = {".agentic.yml", "settings.json"}
-    seed_dirs = {"adrs"}  # copied only on first install; user-managed thereafter
+    # Seed dirs: copied only on first install; user-managed thereafter.
+    # `tests/` holds the project's registered regression cases — mirroring it
+    # would delete every case on the next upgrade.
+    seed_dirs = {"adrs", "tests"}
 
     for name in mirror_dirs:
         src_d = src / name

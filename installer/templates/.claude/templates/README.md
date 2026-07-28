@@ -9,8 +9,18 @@ Canonical shapes for the artifacts the system produces and consumes.
 | `overview.md` | The per-run `_overview.md` written by the planner |
 | `feature-dossier.md` | Committed handoff doc for a parked run (`/agentic-defer` copies from this into `docs/features/`) |
 | `skill.md` | A new `SKILL.md` when you add a stack |
+| `test-case.md` | A registered regression case (`.claude/tests/cases/TC-NNN-slug.md`) |
+| `screenshot-web.md` | `/agentic-screenshot` capture procedure — Playwright |
+| `screenshot-mobile.md` | `/agentic-screenshot` capture procedure — Maestro (non-Flutter mobile) |
+| `screenshot-flutter.md` | `/agentic-screenshot` capture procedure — flutter-skill |
 | `agent.md` | A new role agent prompt — captures the shape every current agent follows |
 | `eval-case/` | A directory template for adding a new eval case (`input.md`, `expect.md`, `assert.py`) |
+| `blocker-reference.md` | Every valid `blocker:` value, by role |
+| `evidence-policy.md` | The rules any report must follow before it clears or covers an item |
+| `design-spec.md` | `docs/design/DESIGN-SPEC.md`, authored by `/agentic-design` |
+| `design-tokens.md` | `docs/design/tokens.md`, the token table the spec references |
+| `review-enumerations.md` | The declared search behind each site-based review checklist item |
+| `ui-critique.md` | The design-critic's drift report |
 
 ## Rules
 
