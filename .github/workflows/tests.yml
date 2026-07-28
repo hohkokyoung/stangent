@@ -72,6 +72,43 @@ jobs:
         run: |
           python -c "import shutil; print({t: shutil.which(t) for t in ['grep','find','wc','sh','rg','sort','head']})"
 
+      # The step above prints to the job log, which needs repo admin to download
+      # — so it cannot answer the question for anyone without it. These probes
+      # encode the same facts in step NAMES and pass/fail, which the public jobs
+      # API does expose. All non-blocking: they are instruments, not gates.
+      - name: "probe: grep is resolvable"
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        run: python -c "import shutil,sys; sys.exit(0 if shutil.which('grep') else 1)"
+
+      - name: "probe: find is GNU findutils (not Windows find.exe)"
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        run: python -c "import subprocess,sys; r=subprocess.run(['find','--version'],capture_output=True,text=True); sys.exit(0 if 'findutils' in (r.stdout or '').lower() else 1)"
+
+      - name: "probe: wc is resolvable"
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        run: python -c "import shutil,sys; sys.exit(0 if shutil.which('wc') else 1)"
+
+      # Which half is broken decides the fix. If only the citation-execution
+      # suite fails, that is a true finding about the product (verify_clears.py
+      # cannot re-run citations without POSIX tools). If the rest fails too, it
+      # is test portability and unrelated to the product claim.
+      - name: "probe: citation-execution suite (test_verify_clears)"
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        run: python -m unittest installer.tests.test_verify_clears -b
+
+      - name: "probe: suite excluding citation execution"
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        shell: bash
+        run: |
+          mods=$(ls installer/tests/test_*.py | grep -v test_verify_clears \
+                 | sed 's|/|.|g; s|\.py$||')
+          python -m unittest $mods -b
+
       - name: Run tests
         run: python -m unittest discover installer/tests -v -b
 
