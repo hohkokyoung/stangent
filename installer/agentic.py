@@ -272,10 +272,15 @@ def mcp_json_holds_secret(target: Path) -> bool:
 def gitignore_block_for(target: Path) -> str:
     block = GITIGNORE_BLOCK
     if mcp_json_holds_secret(target):
-        block = block.replace("# <<< agentic",
-                              "# kept ignored: this project's .mcp.json still has a credential written\n"
-                              "# in plaintext. Move it to ${VAR} expansion to commit the file.\n"
-                              ".mcp.json\n# <<< agentic")
+        # Replace the "not ignored" rationale rather than appending after it —
+        # leaving both makes the committed .gitignore contradict itself.
+        block = block.replace(
+            "# .mcp.json is deliberately NOT ignored: it carries no secrets (credentials come\n"
+            "# from ${VAR} in the environment), so server config is reviewable in PRs like the\n"
+            "# rest of .claude/.\n",
+            "# this project's .mcp.json still holds a credential in plaintext, so it stays\n"
+            "# ignored. Switch those entries to ${VAR} expansion and re-run the installer to\n"
+            "# commit it alongside the rest of .claude/.\n.mcp.json\n")
     return block
 
 
