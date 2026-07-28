@@ -64,50 +64,14 @@ jobs:
       # The suite's fixtures install into temp dirs and run the citation
       # verifier, which together printed 319 lines of passing-run output that a
       # real failure had to be found inside.
-      # verify_clears.py re-runs review citations by executing these. If they are
-      # absent or shadowed (Windows ships an unrelated find.exe), a failure here
-      # is a true finding about the product, not a test-portability artifact — so
-      # record what each platform actually resolves, for comparison.
+      #
+      # The interpreter's view of the POSIX tools verify_clears.py executes is
+      # recorded on every platform, for comparison. On Windows they turned out to
+      # be present — Git for Windows puts them on PATH — which is what ruled out
+      # the first theory for that platform's failure.
       - name: Report resolvable POSIX tools
         run: |
           python -c "import shutil; print({t: shutil.which(t) for t in ['grep','find','wc','sh','rg','sort','head']})"
-
-      # The step above prints to the job log, which needs repo admin to download
-      # — so it cannot answer the question for anyone without it. These probes
-      # encode the same facts in step NAMES and pass/fail, which the public jobs
-      # API does expose. All non-blocking: they are instruments, not gates.
-      - name: "probe: grep is resolvable"
-        if: runner.os == 'Windows'
-        continue-on-error: true
-        run: python -c "import shutil,sys; sys.exit(0 if shutil.which('grep') else 1)"
-
-      - name: "probe: find is GNU findutils (not Windows find.exe)"
-        if: runner.os == 'Windows'
-        continue-on-error: true
-        run: python -c "import subprocess,sys; r=subprocess.run(['find','--version'],capture_output=True,text=True); sys.exit(0 if 'findutils' in (r.stdout or '').lower() else 1)"
-
-      - name: "probe: wc is resolvable"
-        if: runner.os == 'Windows'
-        continue-on-error: true
-        run: python -c "import shutil,sys; sys.exit(0 if shutil.which('wc') else 1)"
-
-      # Which half is broken decides the fix. If only the citation-execution
-      # suite fails, that is a true finding about the product (verify_clears.py
-      # cannot re-run citations without POSIX tools). If the rest fails too, it
-      # is test portability and unrelated to the product claim.
-      - name: "probe: citation-execution suite (test_verify_clears)"
-        if: runner.os == 'Windows'
-        continue-on-error: true
-        run: python -m unittest installer.tests.test_verify_clears -b
-
-      - name: "probe: suite excluding citation execution"
-        if: runner.os == 'Windows'
-        continue-on-error: true
-        shell: bash
-        run: |
-          mods=$(ls installer/tests/test_*.py | grep -v test_verify_clears \
-                 | sed 's|/|.|g; s|\.py$||')
-          python -m unittest $mods -b
 
       - name: Run tests
         run: python -m unittest discover installer/tests -v -b
@@ -148,3 +112,54 @@ jobs:
       # reaches them as a broken install rather than a failed build here.
       - name: ruff
         run: ruff check .
+
+  # ---------------------------------------------------------------------------
+  # TEMPORARY diagnostic. windows-latest passes every test module on its own but
+  # fails when all 406 run in one process, so the fault is an interaction, not a
+  # test. Each matrix leg pairs the citation suite with one other module; the leg
+  # that fails names the partner. Job names are visible in the public API, so
+  # this reports without needing repo-admin log access.
+  #
+  # Delete this job once the interaction is fixed.
+  # ---------------------------------------------------------------------------
+  windows-pair-probe:
+    runs-on: windows-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        partner:
+          - test_agentic_mcp
+          - test_command_state_protocol
+          - test_common
+          - test_dispatch_plan
+          - test_doctor_manifest
+          - test_git_branch
+          - test_ids_and_dispatch_log
+          - test_installer
+          - test_log_usage
+          - test_logs
+          - test_post_tool_use
+          - test_pre_tool_use
+          - test_retriever
+          - test_skill_digest
+          - test_state_and_lessons
+          - test_sweep_plan
+          - test_symbols
+          - test_token_cost
+          - test_verify_review
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip pyyaml
+      - run: |
+          git config --global user.email "ci@example.com"
+          git config --global user.name "CI"
+      # Bare module names, run from inside the tests dir — this reproduces how
+      # `discover` imports them (there is no __init__.py), which the earlier
+      # dotted-path probes did not.
+      - name: pair
+        working-directory: installer/tests
+        run: python -m unittest test_verify_clears ${{ matrix.partner }} -b
