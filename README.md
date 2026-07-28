@@ -41,28 +41,27 @@ Windows runs a child process, not about stangent's logic:
 1. **`find` is not `find(1)` there.** Windows ships a `find.exe` that searches
    for a string *inside* files and shadows Git's findutils. `find . -name '*.dart'`
    does not error — it answers a different question and returns a count.
-2. **Arguments carrying regex metacharacters cannot be delivered intact.** There
-   is no argv array at the OS level: `subprocess` joins the list into one command
-   line, and quoting is applied only for spaces and quotes — not for `|`, `(`,
-   `)`. The child re-splits it, so `grep -E "circular\((11|18)\)"` arrives
-   altered. grep does not error on a corrupted pattern; it matches a different
-   set and returns a count.
+2. **Citations carrying regex metacharacters fail there — mechanism not yet
+   confirmed.** `TestRealWorldCitationShapes` is the one class that fails on
+   Windows, and every citation in it carries `|`, `(` or `)` inside a quoted
+   argument. The suspected cause is argument delivery: Windows has no argv array
+   at the OS level, so `subprocess` joins the list into one command line that the
+   child re-splits, and Git's MSYS2 `grep.exe` does not use the same parsing
+   rules `list2cmdline` assumes.
 
-Both produce the one thing this system is built to prevent — a **confident wrong
-count**, reported as a reproduced clear. `verify_exec.py` now refuses such
-citations on Windows rather than running them, which is the safe direction: an
-`unrunnable` says the evidence could not be checked, where a wrong count says it
-was checked and passed.
+   **That explanation is not established.** A first CI probe appeared to confirm
+   it and did not — it sent the argument to a *Python* child, and Python on
+   Windows round-trips with `list2cmdline` by construction. The probe now targets
+   `grep.exe` directly. Until it reports, treat the mechanism as the leading
+   hypothesis rather than a finding.
 
-The consequence is honest but real: **on native Windows a review can still run,
-but citations using `find` or a metacharacter-bearing pattern will report
-`unrunnable` instead of being verified.** That is why the row above says
-*unverified* rather than *supported*, and why **WSL is the recommended path on
-Windows** — there the argv array is real and both limitations disappear.
+`verify_exec.py` refuses such citations on Windows as a **conservative guard**:
+whatever the mechanism, the observed behaviour is that these citations do not
+work there, and refusing beats returning a count that may be wrong.
 
-A `windows-argv-fidelity` CI job pins the underlying mechanism, so if a future
-Windows or Python release fixes it, the guard can be revisited rather than
-carried forever on the strength of a comment.
+**The Windows suite still fails even with that class skipped**, so at least one
+further problem remains unmeasured elsewhere in the suite. Native Windows stays
+*unverified* for that reason too, not only for the two above.
 
 Runtime dependencies in the target project:
 ```bash

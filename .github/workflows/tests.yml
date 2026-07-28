@@ -113,12 +113,13 @@ jobs:
       - name: ruff
         run: ruff check .
 
-  # Confirms the mechanism behind the one Windows limitation we document, rather
-  # than asserting it from a Mac: a child process there receives a single command
-  # line, not an argv array, so an argument carrying regex metacharacters is
-  # re-parsed before it arrives. If this ever passes on windows-latest, the
-  # limitation has gone and verify_exec's guard (plus the skip on
-  # TestRealWorldCitationShapes) should be revisited.
+  # Tests the ACTUAL path a citation takes: Python -> Git's MSYS2 grep.exe.
+  #
+  # A previous version of this job sent the argument to a Python child and
+  # passed, which proved nothing: Python on Windows parses with MSVCRT rules and
+  # list2cmdline is built to be their inverse, so Python->Python always round
+  # trips. MSYS2 programs use different rules. Testing the wrong pair is how the
+  # mechanism below came to be documented before it was confirmed.
   windows-argv-fidelity:
     runs-on: windows-latest
     continue-on-error: true
@@ -127,6 +128,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: "argv survives the round trip (expected to FAIL on Windows)"
+      - name: "a metacharacter pattern reaches grep intact (FAIL = the guard is right)"
         run: |
-          python -c "import subprocess,sys; a=[sys.executable,'-c','import sys;print(sys.argv[1])',r'x(1|2)y']; r=subprocess.run(a,capture_output=True,text=True); got=(r.stdout or '').strip(); print('sent: x(1|2)y  got:',repr(got)); sys.exit(0 if got=='x(1|2)y' else 1)"
+          python -c "import subprocess,sys,tempfile,os; d=tempfile.mkdtemp(); f=os.path.join(d,'a.txt'); open(f,'w').write('x1y\nx2y\nx3y\n'); r=subprocess.run(['grep','-cE','x(1|2)y',f],capture_output=True,text=True); print('rc',r.returncode,'out',repr(r.stdout),'err',repr(r.stderr)); sys.exit(0 if (r.stdout or '').strip()=='2' else 1)"
