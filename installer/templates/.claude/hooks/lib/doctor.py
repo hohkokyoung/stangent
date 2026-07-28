@@ -20,6 +20,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import read_agentic_config  # noqa: E402
+
 REPO_ROOT = Path.cwd().resolve()
 CLAUDE = REPO_ROOT / ".claude"
 
@@ -195,6 +198,48 @@ def check_agents() -> list[dict]:
     return out
 
 
+def _check_model_ids(cfg: dict) -> list[dict]:
+    """Every configured model id must be one the capability ladder ranks.
+
+    This is the one config error the system cannot notice on its own. An id the
+    harness does not recognise does NOT error — it silently falls back to the
+    session model. So routing moves down reliably and never up: naming a model
+    more capable than your session's is a no-op when the id is wrong, and the
+    config then states an intent it cannot deliver. Cost telemetry stays correct
+    the whole time, because it prices the model the transcript reports, so
+    nothing anywhere contradicts the config. On one project every role
+    configured `claude-sonnet-4-6` ran as `claude-sonnet-5` and the two Opus
+    roles never once dispatched to Opus — for weeks, invisibly.
+
+    Ranking is the right oracle rather than a hardcoded list of live ids: an
+    unranked id is *already* broken for complexity routing (dispatch_plan treats
+    it as mid-ladder), so one check covers both failures and the fix is the same
+    — add it to `model_capability_order` or correct the typo.
+    """
+    models = cfg.get("models") or {}
+    if not models:
+        return []
+    order = cfg.get("model_capability_order") or []
+    if not order:
+        return [_check("config: model ids", WARN,
+                       "no model_capability_order — ids cannot be checked and "
+                       "complexity routing ranks every model the same; add the "
+                       "block from the template")]
+    ranked = set(order)
+    # "" means "inherit the session model" and is a deliberate, valid choice.
+    unranked = sorted({m for r, m in models.items()
+                       if isinstance(m, str) and m.strip() and m not in ranked})
+    if unranked:
+        roles = {m: sorted(r for r, v in models.items() if v == m) for m in unranked}
+        detail = "; ".join(f"{m} ({', '.join(roles[m])})" for m in unranked)
+        return [_check("config: model ids", WARN,
+                       f"not in model_capability_order: {detail} — an "
+                       f"unrecognised id silently falls back to the session "
+                       f"model, so these roles may not be running what you asked "
+                       f"for. Verify against a `usage` event in state/logs/")]
+    return [_check("config: model ids", OK, f"{len(set(models.values()))} ranked")]
+
+
 def check_config_files() -> list[dict]:
     out = []
     # .agentic.yml
@@ -203,8 +248,7 @@ def check_config_files() -> list[dict]:
         out.append(_check("file: .agentic.yml", FAIL, "missing"))
     else:
         try:
-            import yaml  # type: ignore
-            cfg = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+            cfg = read_agentic_config(REPO_ROOT, "doctor")
             skills = cfg.get("enabled_skills") or []
             out.append(_check("file: .agentic.yml", OK, f"enabled_skills={skills}"))
             # risk_profile drives architect/security-reviewer calibration. Absent
@@ -220,6 +264,7 @@ def check_config_files() -> list[dict]:
                 comp = rp.get("compliance") or []
                 out.append(_check("config: risk_profile", OK,
                                   f"data_sensitivity={sens} compliance={comp}"))
+            out.extend(_check_model_ids(cfg))
         except Exception as e:
             out.append(_check("file: .agentic.yml", FAIL, f"parse error: {e}"))
     # settings.json
@@ -429,8 +474,7 @@ def check_install_manifest() -> list[dict]:
 
     Both were unanswerable before. System dirs are mirrored on re-install, so a
     hand-edited agent is destroyed without warning — and "am I running the
-    current templates?" required byte-comparing against the source tree by hand,
-    because `system_version` is static and never bumped.
+    current templates?" required byte-comparing against the source tree by hand.
 
     The manifest records two hashes per file: `tpl` as shipped, `cur` as
     installed. They legitimately differ for agents (the installer stamps role
@@ -457,12 +501,13 @@ def check_install_manifest() -> list[dict]:
             return None
 
     out = []
-    version = mf.get("system_version", "?")
     when = mf.get("installed_at", "?")
-    # The commit is the useful half: system_version is declared and has not moved
-    # since the v3 migration, while the commit is derived and cannot drift.
+    # The commit is the whole answer. A hand-maintained `system_version` sat
+    # beside it reading 1.0.0 since the v3 migration, which is worse than no
+    # version at all — it looks like information. The commit is derived, so it
+    # cannot drift, and it says exactly which templates this install is running.
     commit = mf.get("source_commit") or ""
-    stamp = f"v{version}" + (f" @{commit}" if commit else "")
+    stamp = f"@{commit}" if commit else "source commit unknown"
     out.append(_check("install manifest", OK,
                       f"{stamp}, installed {when}, {len(files)} files tracked"))
 

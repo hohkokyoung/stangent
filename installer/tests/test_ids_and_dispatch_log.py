@@ -14,6 +14,11 @@ import subprocess
 import sys
 import tempfile
 import unittest
+
+try:
+    import yaml as _yaml  # noqa: F401  — presence probe; the config path needs it
+except ImportError:
+    _yaml = None
 from pathlib import Path
 
 LIB = Path(__file__).resolve().parents[1] / "templates" / ".claude" / "hooks" / "lib"
@@ -36,14 +41,19 @@ class PlanIdCase(unittest.TestCase):
         self.root = Path(self._td.name)
         self.plans = self.root / ".claude" / "state" / "plans"
         self.plans.mkdir(parents=True)
-        # Both derived constants are computed at import from cwd; patch them.
-        self._saved = (plan_id.PLANS_DIR, plan_id.AGENTIC_YML)
+        # The config path is resolved from REPO_ROOT per call, so pointing the
+        # root at the temp dir is enough — there is no second frozen constant to
+        # keep in sync. PLANS_DIR is still derived at import and needs its own.
+        self._saved = (plan_id.PLANS_DIR, plan_id.REPO_ROOT)
         plan_id.PLANS_DIR = self.plans
-        plan_id.AGENTIC_YML = self.root / ".claude" / ".agentic.yml"
+        plan_id.REPO_ROOT = self.root
 
     def tearDown(self):
-        plan_id.PLANS_DIR, plan_id.AGENTIC_YML = self._saved
+        plan_id.PLANS_DIR, plan_id.REPO_ROOT = self._saved
         self._td.cleanup()
+
+    def write_cfg(self, text):
+        (self.root / ".claude" / ".agentic.yml").write_text(text)
 
     def mk(self, *names):
         for n in names:
@@ -78,9 +88,9 @@ class PlanIdCase(unittest.TestCase):
         self.assertEqual(plan_id.cmd_peek(), "FEAT-002")
 
     def test_config_overrides_prefix_pad_and_start(self):
-        if plan_id.yaml is None:
+        if _yaml is None:
             self.skipTest("needs PyYAML to read plan_id: config")
-        plan_id.AGENTIC_YML.write_text(
+        self.write_cfg(
             "plan_id:\n  prefix: TASK\n  pad: 4\n  start: 100\n")
         self.assertEqual(plan_id.cmd_next(), "TASK-0100")
         (self.plans / "TASK-0100").mkdir()
@@ -89,10 +99,10 @@ class PlanIdCase(unittest.TestCase):
     def test_prefix_change_does_not_see_the_old_prefix(self):
         # Ids are scoped to their prefix, so switching prefix restarts rather
         # than continuing someone else's sequence.
-        if plan_id.yaml is None:
+        if _yaml is None:
             self.skipTest("needs PyYAML to read plan_id: config")
         self.mk("FEAT-007")
-        plan_id.AGENTIC_YML.write_text("plan_id:\n  prefix: TASK\n  pad: 3\n  start: 1\n")
+        self.write_cfg("plan_id:\n  prefix: TASK\n  pad: 3\n  start: 1\n")
         self.assertEqual(plan_id.cmd_next(), "TASK-001")
 
     def test_missing_plans_dir_is_not_an_error(self):

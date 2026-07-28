@@ -63,8 +63,7 @@ def info(msg: str) -> None:
 # otherwise cannot: "has anyone edited a system file here?" (those edits are
 # silently destroyed by the next re-install, since system dirs are mirrored) and
 # "is this install behind the template it came from?". Both were guesswork before
-# — answering the second took a manual byte-comparison against the source tree,
-# and `system_version` cannot help because nothing bumps it.
+# — answering the second took a manual byte-comparison against the source tree.
 MANIFEST_NAME = ".install.json"
 MIRROR_DIRS = ("agents", "commands", "skills", "hooks", "mcp", "evals", "templates")
 
@@ -77,11 +76,11 @@ def _hash_file(p: Path) -> str:
 def _source_commit() -> str:
     """The stangent commit these templates came from, if it is a git checkout.
 
-    `system_version` in .agentic.yml has read `1.0.0` since the v3 migration and
-    has never been bumped — a hand-maintained version that nobody maintains is
-    worse than none, because it looks like information. The commit is derived, so
-    it cannot drift, and it answers the question the version was there for:
-    exactly which templates is this install running?
+    This replaced a hand-maintained `system_version` that had read `1.0.0` since
+    the v3 migration — a version nobody bumps is worse than none, because it
+    looks like information. The commit is derived, so it cannot drift, and it
+    answers the question the version was there for: exactly which templates is
+    this install running?
     """
     import subprocess
     try:
@@ -95,16 +94,6 @@ def _source_commit() -> str:
     except Exception:
         pass
     return ""
-
-
-def _template_version() -> str:
-    tpl = TEMPLATES_DIR / ".claude" / ".agentic.yml"
-    if tpl.exists():
-        m = re.search(r"^system_version:\s*(\S+)", tpl.read_text(encoding="utf-8"),
-                      re.MULTILINE)
-        if m:
-            return m.group(1).strip('"').strip("'")
-    return "unknown"
 
 
 def write_manifest(target: Path) -> None:
@@ -135,7 +124,6 @@ def write_manifest(target: Path) -> None:
                 continue
             files[rel] = {"tpl": _hash_file(f), "cur": _hash_file(installed)}
     manifest = {
-        "system_version": _template_version(),
         "source_commit": _source_commit(),
         "installed_at": _dt.datetime.now(_dt.timezone.utc).isoformat(
             timespec="seconds").replace("+00:00", "Z"),
@@ -645,43 +633,55 @@ def _upgrade_agentic_yml(target: Path) -> None:
         dst_path.write_text(dst_text, encoding="utf-8")
         info(".agentic.yml: updated available-skills comment block")
 
-    # Append the models: section if it doesn't exist yet (independent of the skills block).
+    # Append any top-level section the template defines and this config lacks.
+    #
+    # This was four copy-pasted blocks naming one section each, which is why
+    # config is seed-once and never healed for anything nobody remembered to add
+    # a block for: `risk_profile`, `design` and `skill_groups` shipped and never
+    # reached an existing install. One of the four searched for `maestro:`, a
+    # section the template does not define — it had been silently doing nothing.
+    #
+    # Reading the section list off the template means a new section is upgraded
+    # by existing, not by remembering to add a block here.
     dst_text = dst_path.read_text(encoding="utf-8")
-    if "models:" not in dst_text:
-        models_block_re = re.compile(r"^models:.*?(?=^\w|\Z)", re.DOTALL | re.MULTILINE)
-        tpl_m2 = models_block_re.search(tpl_text)
-        if tpl_m2:
-            dst_path.write_text(dst_text.rstrip() + "\n\n" + tpl_m2.group(0).rstrip() + "\n", encoding="utf-8")
-            info(".agentic.yml: added models: section")
+    for name in _top_level_sections(tpl_text):
+        if re.search(rf"^{re.escape(name)}:", dst_text, re.MULTILINE):
+            continue
+        block = _section_block(tpl_text, name)
+        if not block:
+            continue
+        dst_text = dst_text.rstrip() + "\n\n" + block.rstrip() + "\n"
+        dst_path.write_text(dst_text, encoding="utf-8")
+        info(f".agentic.yml: added {name}: section")
 
-    # Append the complexity_routing: section if it doesn't exist yet.
-    dst_text = dst_path.read_text(encoding="utf-8")
-    if "complexity_routing:" not in dst_text:
-        cr_re = re.compile(r"^complexity_routing:.*?(?=^\w|\Z)", re.DOTALL | re.MULTILINE)
-        tpl_cr = cr_re.search(tpl_text)
-        if tpl_cr:
-            dst_path.write_text(dst_text.rstrip() + "\n\n" + tpl_cr.group(0).rstrip() + "\n", encoding="utf-8")
-            info(".agentic.yml: added complexity_routing: section")
 
-    # Append the model_capability_order: section if it doesn't exist yet
-    # (dispatch_plan.py falls back to a built-in ladder, but adding it here lets
-    # users rank newer model IDs).
-    dst_text = dst_path.read_text(encoding="utf-8")
-    if "model_capability_order:" not in dst_text:
-        mco_re = re.compile(r"^model_capability_order:.*?(?=^\w|\Z)", re.DOTALL | re.MULTILINE)
-        tpl_mco = mco_re.search(tpl_text)
-        if tpl_mco:
-            dst_path.write_text(dst_text.rstrip() + "\n\n" + tpl_mco.group(0).rstrip() + "\n", encoding="utf-8")
-            info(".agentic.yml: added model_capability_order: section")
+def _top_level_sections(text: str) -> list[str]:
+    """Top-level `key:` names, in file order."""
+    return re.findall(r"^([a-z_][\w-]*):", text, re.MULTILINE)
 
-    # Append the maestro: section if it doesn't exist yet.
-    dst_text = dst_path.read_text(encoding="utf-8")
-    if "maestro:" not in dst_text:
-        maestro_re = re.compile(r"^maestro:.*?(?=^\w|\Z)", re.DOTALL | re.MULTILINE)
-        tpl_maestro = maestro_re.search(tpl_text)
-        if tpl_maestro:
-            dst_path.write_text(dst_text.rstrip() + "\n\n" + tpl_maestro.group(0).rstrip() + "\n", encoding="utf-8")
-            info(".agentic.yml: added maestro: section")
+
+def _section_block(text: str, name: str) -> str:
+    """A section plus the comment lines immediately above it.
+
+    The comments are the part that makes a block usable — `risk_profile:` copied
+    without them is four keys with no statement of what `data_sensitivity` or
+    `compliance` accept. The old per-section regexes started at the key and
+    dropped them.
+    """
+    m = re.search(rf"^{re.escape(name)}:.*?(?=^[a-z_][\w-]*:|\Z)",
+                  text, re.DOTALL | re.MULTILINE)
+    if not m:
+        return ""
+    lines = text[:m.start()].splitlines()
+    lead = []
+    for line in reversed(lines):
+        if line.startswith("#"):
+            lead.append(line)
+        elif line.strip() == "" and not lead:
+            continue  # blank line between the previous block and the comments
+        else:
+            break
+    return ("\n".join(reversed(lead)) + "\n" if lead else "") + m.group(0)
 
 
 def upgrade_config(target: Path) -> None:

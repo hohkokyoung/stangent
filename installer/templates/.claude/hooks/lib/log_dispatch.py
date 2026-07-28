@@ -9,8 +9,8 @@ queryable after a build run.
 Usage:
     python3 .claude/hooks/lib/log_dispatch.py \
         --run_id FEAT-001 --task_id t1 --role implementer \
-        --complexity medium --role_baseline claude-sonnet-4-6 \
-        --model_selected claude-sonnet-4-6
+        --complexity medium --role_baseline claude-sonnet-5 \
+        --model_selected claude-sonnet-5
     # add --routing_applied when the selected model differs from the baseline
 """
 from __future__ import annotations

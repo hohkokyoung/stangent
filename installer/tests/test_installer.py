@@ -2,6 +2,7 @@
 """Tests for installer helpers — sync_managed_hooks (hook propagation)."""
 import importlib.util
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -64,11 +65,14 @@ class TestInstallManifest(unittest.TestCase):
             self.assertNotIn(".agentic.yml", mf["files"])
             self.assertNotIn("settings.json", mf["files"])
 
-    def test_records_version_and_source(self):
+    def test_records_source_and_commit_not_a_hand_maintained_version(self):
         with tempfile.TemporaryDirectory() as td:
             mf = self.install(Path(td))
             self.assertEqual(mf["source"], str(ag.SCRIPT_DIR))
-            self.assertNotEqual(mf["system_version"], "unknown")
+            # The commit is derived and cannot drift; `system_version` was
+            # hand-maintained, never bumped, and is deliberately gone.
+            self.assertNotIn("system_version", mf)
+            self.assertTrue(mf["source_commit"], "installing from a checkout must record its commit")
 
     def test_reinstall_refreshes_the_manifest(self):
         with tempfile.TemporaryDirectory() as td:
@@ -273,3 +277,73 @@ class TestStampAgentModels(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestAgenticYmlSectionUpgrade(unittest.TestCase):
+    """`--upgrade-config` must heal a config seeded before a section existed.
+
+    Config is seed-once, so a section added to the template after a project was
+    installed never reaches it. This was four hardcoded blocks naming one
+    section each — so `risk_profile`, `design` and `skill_groups` shipped and
+    silently never arrived, and a fourth block named `maestro:`, which the
+    template does not define at all.
+    """
+
+    OLD_SECTIONS = ("risk_profile", "design", "skill_groups", "model_capability_order")
+
+    def setUp(self):
+        self._td = tempfile.TemporaryDirectory()
+        self.root = Path(self._td.name)
+        ag.install(self.root)
+        self.cfg = self.root / ".claude" / ".agentic.yml"
+
+    def tearDown(self):
+        self._td.cleanup()
+
+    def sections(self) -> set:
+        return set(re.findall(r"^([a-z_][\w-]*):", self.cfg.read_text(), re.MULTILINE))
+
+    def strip(self, *names):
+        t = self.cfg.read_text()
+        for n in names:
+            t = re.sub(rf"^{n}:.*?(?=^[a-z_][\w-]*:|\Z)", "", t,
+                       flags=re.DOTALL | re.MULTILINE)
+        self.cfg.write_text(t)
+
+    def test_missing_sections_are_restored(self):
+        self.strip(*self.OLD_SECTIONS)
+        self.assertTrue(self.sections().isdisjoint(self.OLD_SECTIONS))
+        ag.upgrade_config(self.root)
+        self.assertTrue(set(self.OLD_SECTIONS) <= self.sections())
+
+    def test_restored_section_keeps_its_explanatory_comments(self):
+        # risk_profile: without its comments is four keys with no statement of
+        # what data_sensitivity or compliance accept.
+        self.strip("risk_profile")
+        ag.upgrade_config(self.root)
+        text = self.cfg.read_text()
+        head = text[:text.index("risk_profile:")]
+        self.assertIn("data_sensitivity", head,
+                      "the block's documentation must come with it")
+
+    def test_result_is_still_valid_yaml(self):
+        try:
+            import yaml
+        except ImportError:
+            self.skipTest("needs PyYAML to validate the merged file")
+        self.strip(*self.OLD_SECTIONS)
+        ag.upgrade_config(self.root)
+        self.assertIsInstance(yaml.safe_load(self.cfg.read_text()), dict)
+
+    def test_user_values_are_never_overwritten(self):
+        t = self.cfg.read_text().replace("enabled_skills: []",
+                                         "enabled_skills: [react, fastapi]")
+        self.cfg.write_text(t)
+        ag.upgrade_config(self.root)
+        self.assertIn("enabled_skills: [react, fastapi]", self.cfg.read_text())
+
+    def test_upgrade_is_idempotent(self):
+        ag.upgrade_config(self.root)
+        once = self.cfg.read_text()
+        ag.upgrade_config(self.root)
+        self.assertEqual(once, self.cfg.read_text())

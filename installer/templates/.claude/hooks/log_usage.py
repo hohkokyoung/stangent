@@ -28,15 +28,12 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
-from common import last_logged_context, read_jsonl, read_text_or_none  # noqa: E402
+from common import (last_logged_context, note_hook_error, read_jsonl,  # noqa: E402
+                    read_state)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 STATE_DIR = REPO_ROOT / ".claude" / "state"
 LOG_DIR = STATE_DIR / "logs"
-
-
-def _read_state(name: str) -> str | None:
-    return read_text_or_none(STATE_DIR / name)
 
 
 def subagent_usage(records: list[dict]) -> tuple[dict, str | None, int]:
@@ -83,32 +80,12 @@ def resolve_subagent_transcript(transcript_path: str) -> Path | None:
 HOOK_NAME = "log_usage.py"
 
 
-def _note_hook_error(exc: Exception) -> None:
-    """Record that this hook failed, without letting the failure escape.
+def _state(name: str) -> str | None:
+    return read_state(STATE_DIR, name)
 
-    `except Exception: pass` keeps the contract — telemetry must never break a
-    run — but it also makes a broken hook indistinguishable from an idle one. A
-    run whose usage events silently stopped looks exactly like a run that
-    produced none, so the cost table quietly under-reports and nothing says why.
 
-    Best-effort by necessity: if the log is what failed, there is nowhere to
-    write, and the outer handler still swallows.
-    """
-    try:
-        run_id = _read_state("current_run.txt")
-        if not run_id:
-            return
-        LOG_DIR.mkdir(parents=True, exist_ok=True)
-        with (LOG_DIR / f"{run_id}.jsonl").open("a", encoding="utf-8") as f:
-            f.write(json.dumps({
-                "ts": dt.datetime.now(dt.timezone.utc).isoformat(
-                    timespec="seconds").replace("+00:00", "Z"),
-                "event": "hook_error",
-                "hook": HOOK_NAME,
-                "error": f"{type(exc).__name__}: {exc}"[:300],
-            }, ensure_ascii=False) + "\n")
-    except Exception:
-        pass
+def _hook_error(exc: Exception) -> None:
+    note_hook_error(LOG_DIR, STATE_DIR, HOOK_NAME, exc)
 
 
 def main() -> None:
@@ -118,7 +95,7 @@ def main() -> None:
         sys.exit(0)
 
     tx = payload.get("transcript_path")
-    run_id = os.environ.get("AGENTIC_RUN_ID") or _read_state("current_run.txt")
+    run_id = os.environ.get("AGENTIC_RUN_ID") or _state("current_run.txt")
     # No workflow context, or no transcript → nothing to attribute.
     if not tx or not run_id:
         sys.exit(0)
@@ -134,14 +111,14 @@ def main() -> None:
                 [r for r in read_jsonl(tx) if r.get("isSidechain")])
         if turns == 0:
             sys.exit(0)
-        model = model or _read_state("current_model.txt") or ""
+        model = model or _state("current_model.txt") or ""
         # SubagentStop can fire AFTER the command has cleared its per-task state,
         # which stranded a task's whole cost under task_id=null (FEAT-025 t9).
         # Fall back to the last tool call logged for this run — the subagent that
         # just finished is the one that wrote it, so its context is the right
         # attribution and is already on disk.
-        task_id = _read_state("current_task.txt")
-        agent_role = _read_state("current_role.txt")
+        task_id = _state("current_task.txt")
+        agent_role = _state("current_role.txt")
         if task_id is None or agent_role is None:
             last = last_logged_context(LOG_DIR / f"{run_id}.jsonl")
             task_id = task_id if task_id is not None else last.get("task_id")
@@ -163,7 +140,7 @@ def main() -> None:
         with (LOG_DIR / f"{run_id}.jsonl").open("a", encoding="utf-8") as f:
             f.write(json.dumps(event, ensure_ascii=False) + "\n")
     except Exception as _e:
-        _note_hook_error(_e)  # telemetry must never break a run
+        _hook_error(_e)  # telemetry must never break a run
     sys.exit(0)
 
 

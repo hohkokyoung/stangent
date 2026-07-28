@@ -139,3 +139,55 @@ class ManifestCheckCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ModelIdCheckCase(unittest.TestCase):
+    """`_check_model_ids` — the one config error nothing else can surface.
+
+    An unrecognised model id does not error; it silently falls back to the
+    session model, and cost telemetry stays correct because it prices what the
+    transcript reports. So the config states an intent it never delivered and
+    nothing anywhere disagrees.
+    """
+
+    def setUp(self):
+        self.doc = load_doctor_at(Path("/nonexistent"))  # pure-function tests
+
+    def statuses(self, cfg):
+        return [(c["name"], c["status"]) for c in self.doc._check_model_ids(cfg)]
+
+    LADDER = ["claude-haiku-4-5-20251001", "claude-sonnet-5", "claude-opus-5"]
+
+    def test_all_ranked_ids_pass(self):
+        cfg = {"models": {"default": "claude-sonnet-5", "architect": "claude-opus-5"},
+               "model_capability_order": self.LADDER}
+        self.assertEqual(self.statuses(cfg), [("config: model ids", "ok")])
+
+    def test_the_observed_failure_is_caught(self):
+        # The real incident: every role on an id from an older generation, the
+        # ladder already updated. Ran for weeks with nothing to notice.
+        cfg = {"models": {"default": "claude-sonnet-4-6",
+                          "architect": "claude-opus-4-8",
+                          "tester": "claude-haiku-4-5-20251001"},
+               "model_capability_order": self.LADDER}
+        result = self.doc._check_model_ids(cfg)
+        self.assertEqual(result[0]["status"], "warn")
+        detail = result[0]["detail"]
+        self.assertIn("claude-sonnet-4-6", detail)
+        self.assertIn("claude-opus-4-8", detail)
+        self.assertIn("architect", detail)          # names the affected role
+        self.assertNotIn("claude-haiku", detail)    # the valid id is not flagged
+
+    def test_empty_string_means_inherit_and_is_not_flagged(self):
+        cfg = {"models": {"default": "claude-sonnet-5", "tester": "", "reviewer": "  "},
+               "model_capability_order": self.LADDER}
+        self.assertEqual(self.statuses(cfg), [("config: model ids", "ok")])
+
+    def test_missing_ladder_warns_rather_than_passing_silently(self):
+        cfg = {"models": {"default": "anything-at-all"}}
+        result = self.doc._check_model_ids(cfg)
+        self.assertEqual(result[0]["status"], "warn")
+        self.assertIn("model_capability_order", result[0]["detail"])
+
+    def test_no_models_block_is_not_an_error(self):
+        self.assertEqual(self.doc._check_model_ids({}), [])

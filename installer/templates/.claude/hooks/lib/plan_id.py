@@ -11,83 +11,46 @@ Usage:
 """
 from __future__ import annotations
 
-import re
 import sys
 from pathlib import Path
 
-try:
-    import yaml  # type: ignore
-except ImportError:
-    yaml = None  # type: ignore
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import read_agentic_config, config_section  # noqa: E402
+from id_alloc import cli, existing, next_id, peek_id  # noqa: E402
 
 REPO_ROOT = Path.cwd().resolve()
-AGENTIC_YML = REPO_ROOT / ".claude" / ".agentic.yml"
 PLANS_DIR = REPO_ROOT / ".claude" / "state" / "plans"
 
 
 def load_cfg() -> dict:
     defaults = {"prefix": "FEAT", "pad": 3, "start": 1}
-    if yaml is None:
-        # Same contract as retriever / dispatch_plan / git_branch: a one-shot CLI
-        # that cannot read its config says so, because a configured `prefix` or
-        # `pad` silently reverting to FEAT-### mints ids that do not match the
-        # ones already on disk.
-        if AGENTIC_YML.exists():
-            sys.stderr.write(
-                "[plan_id] PyYAML not installed; .agentic.yml `plan_id:` settings "
-                "are being IGNORED and defaults used\n")
-        return defaults
-    if not AGENTIC_YML.exists():
-        return defaults
-    try:
-        full = yaml.safe_load(AGENTIC_YML.read_text(encoding="utf-8")) or {}
-    except Exception:
-        return defaults
-    pid = (full.get("plan_id") or {})
-    return {**defaults, **{k: pid[k] for k in ("prefix", "pad", "start") if k in pid}}
+    # A configured `prefix` or `pad` silently reverting to FEAT-### mints ids
+    # that do not match the ones already on disk.
+    cfg = read_agentic_config(REPO_ROOT, "plan_id",
+                              "`plan_id:` settings are ignored and defaults used")
+    return config_section(cfg, "plan_id", defaults)
+
+
+# Runs are directories named exactly `FEAT-003` — no slug, and a *file* named
+# FEAT-999.md is not a run.
+SHAPE = {"files": False, "slug": False}
 
 
 def existing_ids(prefix: str) -> list[tuple[int, str]]:
-    if not PLANS_DIR.exists():
-        return []
-    pat = re.compile(rf"^{re.escape(prefix)}-(\d+)$")
-    out: list[tuple[int, str]] = []
-    for p in PLANS_DIR.iterdir():
-        if not p.is_dir():
-            continue
-        m = pat.match(p.name)
-        if m:
-            out.append((int(m.group(1)), p.name))
-    out.sort()
-    return out
-
-
-def fmt(n: int, prefix: str, pad: int) -> str:
-    return f"{prefix}-{n:0{pad}d}"
+    return existing(PLANS_DIR, prefix, **SHAPE)
 
 
 def cmd_next() -> str:
     cfg = load_cfg()
-    existing = existing_ids(cfg["prefix"])
-    n = (existing[-1][0] + 1) if existing else cfg["start"]
-    return fmt(n, cfg["prefix"], cfg["pad"])
+    return next_id(PLANS_DIR, cfg["prefix"], cfg["pad"], cfg["start"], **SHAPE)
 
 
 def cmd_peek() -> str:
-    cfg = load_cfg()
-    existing = existing_ids(cfg["prefix"])
-    return existing[-1][1] if existing else ""
+    return peek_id(PLANS_DIR, load_cfg()["prefix"], **SHAPE)
 
 
 def main() -> None:
-    cmd = sys.argv[1] if len(sys.argv) > 1 else "next"
-    if cmd == "next":
-        print(cmd_next())
-    elif cmd in ("peek", "current"):
-        print(cmd_peek())
-    else:
-        sys.stderr.write(f"unknown subcommand: {cmd}\n")
-        sys.exit(1)
+    cli(cmd_next, cmd_peek)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,3 @@
-system_version: 1.0.0
-
 # Add skills that match your project stack. Only listed skills are indexed and
 # injected into agents. Available built-in skills:
 #   frontend:  react, html-css

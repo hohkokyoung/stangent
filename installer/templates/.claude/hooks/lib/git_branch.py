@@ -32,13 +32,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-try:
-    import yaml  # type: ignore
-except ImportError:
-    yaml = None  # type: ignore
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import read_agentic_config, config_section  # noqa: E402
 
 REPO_ROOT = Path.cwd().resolve()
-AGENTIC_YML = REPO_ROOT / ".claude" / ".agentic.yml"
 
 
 def load_git_cfg() -> dict:
@@ -53,25 +50,11 @@ def load_git_cfg() -> dict:
         # to opt out.
         "checkpoint_commits": True,
     }
-    if yaml is None:
-        # Say so when there is a config to ignore. Silently using defaults means
-        # a deliberate `checkpoint_commits: false` (or `auto_branch`, or
-        # `base_branch`) does not apply and nothing indicates why — the setting
-        # looks honoured and is not. Matches retriever.py's warning for the same
-        # condition. No config file means nothing is being overridden, so stay quiet.
-        if AGENTIC_YML.exists():
-            sys.stderr.write(
-                "[git_branch] PyYAML not installed; .agentic.yml `git:` settings "
-                "are being IGNORED and defaults used\n")
-        return defaults
-    if not AGENTIC_YML.exists():
-        return defaults
-    try:
-        full = yaml.safe_load(AGENTIC_YML.read_text(encoding="utf-8")) or {}
-    except Exception:
-        return defaults
-    g = (full.get("git") or {})
-    return {**defaults, **{k: g[k] for k in defaults if k in g}}
+    # A deliberate `checkpoint_commits: false` or `auto_branch: false`
+    # that does not apply looks exactly like one that did.
+    cfg = read_agentic_config(REPO_ROOT, "git_branch",
+                              "`git:` settings are ignored and defaults used")
+    return config_section(cfg, "git", defaults)
 
 
 def run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:

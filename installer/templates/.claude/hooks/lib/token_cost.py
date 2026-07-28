@@ -6,27 +6,26 @@ Prices a `usage` dict (as found in a Claude Code transcript's
 tokens and can be overridden per project via `.agentic.yml`:
 
     pricing:
-      claude-opus-4-8:   { input: 15, output: 75, cache_read: 1.5, cache_write: 18.75 }
-      claude-sonnet-4-6: { input: 3,  output: 15, cache_read: 0.3, cache_write: 3.75 }
+      claude-opus-5:   { input: 15, output: 75, cache_read: 1.5, cache_write: 18.75 }
+      claude-sonnet-5: { input: 3,  output: 15, cache_read: 0.3, cache_write: 3.75 }
 
 Matched by longest model-id prefix, so future point releases inherit a family's
 rate until you add an explicit entry.
 """
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
-try:
-    import yaml  # type: ignore
-except ImportError:
-    yaml = None  # type: ignore
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import read_agentic_config  # noqa: E402
 
 # From __file__, not cwd: log_usage.py imports this, and that hook runs with an
 # unreliable cwd (which is why it derives its own paths the same way). With a
-# cwd-based path a project's `pricing:` overrides silently do not apply and every
+# cwd-based root a project's `pricing:` overrides silently do not apply and every
 # cost lands on built-in rates — wrong numbers, no error, nothing to notice.
 # __file__ is <repo>/.claude/hooks/lib/token_cost.py → parents[3].
-AGENTIC_YML = Path(__file__).resolve().parents[3] / ".claude" / ".agentic.yml"
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 # (input, output, cache_read, cache_write) USD per 1M tokens. Estimates.
 _DEFAULT_RATES: dict[str, tuple] = {
@@ -41,12 +40,8 @@ _FALLBACK = (3.0, 15.0, 0.30, 3.75)  # sonnet-ish
 
 
 def _config_rates() -> dict:
-    if yaml is None or not AGENTIC_YML.exists():
-        return {}
-    try:
-        cfg = yaml.safe_load(AGENTIC_YML.read_text(encoding="utf-8")) or {}
-    except Exception:
-        return {}
+    cfg = read_agentic_config(REPO_ROOT, "token_cost",
+                              "`pricing:` overrides will not apply")
     out = {}
     for model, r in (cfg.get("pricing") or {}).items():
         if isinstance(r, dict):

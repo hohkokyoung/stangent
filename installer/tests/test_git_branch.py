@@ -11,6 +11,7 @@ import contextlib
 import importlib.util
 import io
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -43,9 +44,28 @@ def load_module_at(root: Path):
     spec = importlib.util.spec_from_file_location(f"gb_{root.name}", MODULE)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    # Rebinding the root is enough: the config path is resolved from it on every
+    # call rather than frozen at import, so there is no second constant to keep
+    # in sync (which this helper previously had to do by hand).
     mod.REPO_ROOT = root
-    mod.AGENTIC_YML = root / ".claude" / ".agentic.yml"
     return mod
+
+
+@contextlib.contextmanager
+def no_pyyaml():
+    """Simulate PyYAML being absent.
+
+    The parser lives in `common` now, imported by every config reader, so that
+    is the one place to patch — previously each module carried its own `yaml`
+    and each test had to know which. git_branch imports common on load, so it
+    is in sys.modules by the time any test runs.
+    """
+    common = sys.modules["common"]
+    saved, common.yaml = common.yaml, None
+    try:
+        yield
+    finally:
+        common.yaml = saved
 
 
 class CheckpointCase(unittest.TestCase):
@@ -77,6 +97,9 @@ class CheckpointCase(unittest.TestCase):
 
     def count_commits(self) -> int:
         return len(self.git("log", "--oneline").stdout.strip().splitlines())
+
+    def cfg_path(self) -> Path:
+        return self.root / ".claude" / ".agentic.yml"
 
     def dirty(self, name="app.txt", text="x\n"):
         (self.root / name).write_text(text)
@@ -124,7 +147,7 @@ class CheckpointCase(unittest.TestCase):
 
     @unittest.skipUnless(HAVE_YAML, "reading `checkpoint_commits: false` needs PyYAML")
     def test_disabled_in_config_skips(self):
-        self.gb.AGENTIC_YML.write_text(AGENTIC_YML.replace(
+        self.cfg_path().write_text(AGENTIC_YML.replace(
             "checkpoint_commits: true", "checkpoint_commits: false"))
         self.dirty()
         before = self.count_commits()
@@ -136,9 +159,8 @@ class CheckpointCase(unittest.TestCase):
         # no YAML parser the opt-out cannot be read, so checkpointing proceeds —
         # and the only thing standing between that and a silent surprise is the
         # warning. Assert both halves.
-        saved, self.gb.yaml = self.gb.yaml, None
-        try:
-            self.gb.AGENTIC_YML.write_text(AGENTIC_YML.replace(
+        with no_pyyaml():
+            self.cfg_path().write_text(AGENTIC_YML.replace(
                 "checkpoint_commits: true", "checkpoint_commits: false"))
             self.dirty()
             before = self.count_commits()
@@ -149,24 +171,19 @@ class CheckpointCase(unittest.TestCase):
                              "without a parser the opt-out cannot be honoured")
             self.assertIn("IGNORED", err.getvalue(),
                           "an unreadable opt-out must not be silent")
-        finally:
-            self.gb.yaml = saved
 
     def test_no_warning_when_there_is_no_config_to_ignore(self):
-        saved, self.gb.yaml = self.gb.yaml, None
-        try:
-            self.gb.AGENTIC_YML.unlink()
+        with no_pyyaml():
+            self.cfg_path().unlink()
             self.dirty()
             err = io.StringIO()
             with contextlib.redirect_stderr(err):
                 self.gb.cmd_checkpoint("FEAT-001", "t4")
             self.assertEqual(err.getvalue(), "", "nothing is being overridden")
-        finally:
-            self.gb.yaml = saved
 
     def test_absent_key_defaults_to_enabled(self):
         # Projects seeded before the key existed must still get the boundary.
-        self.gb.AGENTIC_YML.write_text(
+        self.cfg_path().write_text(
             AGENTIC_YML.replace("  checkpoint_commits: true\n", ""))
         self.dirty()
         before = self.count_commits()

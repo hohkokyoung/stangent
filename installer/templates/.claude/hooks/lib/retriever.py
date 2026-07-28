@@ -33,9 +33,11 @@ try:
 except ImportError:
     yaml = None  # type: ignore
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import read_agentic_config  # noqa: E402
+
 REPO_ROOT = Path.cwd().resolve()
 CLAUDE_DIR = REPO_ROOT / ".claude"
-AGENTIC_YML = CLAUDE_DIR / ".agentic.yml"
 VECTORS_DB = CLAUDE_DIR / "state" / "vectors.db"
 SKILLS_DIR = CLAUDE_DIR / "skills"
 PROJECT_YML = CLAUDE_DIR / "state" / "project.yml"
@@ -94,15 +96,15 @@ def load_config() -> dict:
         "embedding": {"provider": "fastembed"},
         "retrieval": {"default_k": 6, "chunk_tokens": 400},
     }
-    if not AGENTIC_YML.exists() or yaml is None:
-        if yaml is None:
-            sys.stderr.write("[retriever] PyYAML not installed; using defaults\n")
+    cfg = read_agentic_config(REPO_ROOT, "retriever",
+                              "enabled_skills, embedding and retrieval defaults "
+                              "will not apply")
+    if not cfg:
         return defaults
-    cfg = yaml.safe_load(AGENTIC_YML.read_text(encoding="utf-8")) or defaults
     # back-compat: accept the older key name
     if "enabled_skills" not in cfg and "enabled_stacks" in cfg:
         cfg["enabled_skills"] = cfg.pop("enabled_stacks")
-    return cfg
+    return {**defaults, **cfg}
 
 
 # ---------- chunking ----------

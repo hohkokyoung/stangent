@@ -35,52 +35,51 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import read_agentic_config  # noqa: E402
+
+# Config reading lives in common; this second import is for parse_frontmatter,
+# which parses task-file frontmatter (not .agentic.yml) and has its own
+# hand-rolled fallback for when the parser is absent.
 try:
     import yaml  # type: ignore
 except ImportError:
     yaml = None  # type: ignore
 
 REPO_ROOT = Path.cwd().resolve()
-AGENTIC_YML = REPO_ROOT / ".claude" / ".agentic.yml"
 PLANS_DIR = REPO_ROOT / ".claude" / "state" / "plans"
 
-# Faithful defaults from the old agentic-build.md contract. Overridable via
-# .agentic.yml so newer models can be ranked without editing this file.
+# Overridable via .agentic.yml so newer models can be ranked without editing
+# this file. These must be REAL model ids: an unrecognised one does not error,
+# it silently falls back to the session model, so a dead id here routes nothing
+# and says nothing. This is the path taken whenever .agentic.yml cannot be read
+# — notably with PyYAML absent, a state the project supports and CI tests — so
+# it is the last place that can afford ids inherited from an older generation.
 DEFAULT_CAPABILITY_ORDER = [
     "claude-haiku-4-5-20251001",
-    "claude-sonnet-4-6",
-    "claude-opus-4-8",
+    "claude-sonnet-5",
+    "claude-opus-5",
 ]
 DEFAULT_LOW_CAP = "claude-haiku-4-5-20251001"
-DEFAULT_HIGH_FLOOR = "claude-sonnet-4-6"
+DEFAULT_HIGH_FLOOR = "claude-sonnet-5"
 # Gate-owning roles the low_cap must not downgrade. Override per project with
 # `complexity_routing.never_downgrade:`; set it to [] to opt out entirely.
 DEFAULT_NEVER_DOWNGRADE = ("reviewer", "design-critic", "architect",
                            "security-reviewer", "auditor")
 # Model an unranked id is treated as, for comparison purposes.
-COMPARISON_FALLBACK = "claude-sonnet-4-6"
+COMPARISON_FALLBACK = "claude-sonnet-5"
 
 
 # ---------- config ----------
 
 def load_config() -> dict:
-    if yaml is None:
-        # An empty config is a valid state, but silently producing one when
-        # .agentic.yml exists means every per-role model, routing rule and k
-        # override is dropped and every task quietly runs on the session model.
-        # Warn to stderr, which never corrupts the JSON plan on stdout.
-        if AGENTIC_YML.exists():
-            sys.stderr.write(
-                "[dispatch_plan] PyYAML not installed; .agentic.yml is being "
-                "IGNORED — models, complexity_routing and retrieval.k defaults "
-                "will not apply\n")
-        return {}
-    if not AGENTIC_YML.exists():
-        return {}
-    try:
-        return yaml.safe_load(AGENTIC_YML.read_text(encoding="utf-8")) or {}
-    except Exception:
-        return {}
+    # Dropping this config silently means every per-role model, routing rule and
+    # retrieval k override is gone and every task quietly runs on the session
+    # model. The warning goes to stderr, which never corrupts the JSON plan on
+    # stdout.
+    return read_agentic_config(
+        REPO_ROOT, "dispatch_plan",
+        "models, complexity_routing and retrieval.k defaults will not apply")
 
 
 # ---------- frontmatter parsing ----------

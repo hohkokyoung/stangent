@@ -59,9 +59,17 @@ In the installed project, in Claude Code:
 /agentic-resume [run-id]                    # unfreeze a deferred run once its external blocker clears
 /agentic-debug <bug description>            # diagnose a live bug — data first, code second
 /agentic-screenshot [all | <slugs>]         # screenshot every page/screen into docs/screenshots/<date>/
-/agentic-clean-state [days:N] [--apply]     # prune old runs/logs + empty review dirs from .claude/state/
+/agentic-cleanup [commits:N | dir: | all]   # CODE cleanup — audit for smells, then dispatch refactor tasks to fix them
+/agentic-clean-state [days:N] [--apply]     # STATE cleanup — prune old runs/logs + empty review dirs from .claude/state/
+/agentic-adr new <title> | list | bootstrap # create/manage Architectural Decision Records; `bootstrap` back-fills from history
+/agentic-lessons                            # distill recurring review findings into lessons the planner reads on every plan
 /agentic-logs [id] [--json]                 # readable summary of a run/review's logs — tool counts, denials, failures, duration
+/agentic-doctor [--json]                    # install health — deps, config, MCP, vectors.db, hooks, model ids, drift
 ```
+
+`/agentic-cleanup` and `/agentic-clean-state` are easy to confuse: the first
+rewrites **code**, the second prunes **`.claude/state/`**. Only the first
+dispatches agents.
 
 The planner is strict — it walks an 11-dimension coverage checklist (scope, functional, acceptance, edges, auth, validation, error UX, data model, API, NFRs, out-of-scope) and asks via `AskUserQuestion` on blocking gaps, up to 4 rounds. **It makes no assumptions** — every gap must be answered by the developer before planning proceeds.
 
@@ -320,7 +328,7 @@ Run FEAT-024  2026-06-26 06:17 → 09:49  (3h32m)
   cost: $2.14   tokens: in 40k out 88k cache-read 5.2M cache-write 310k   cache-hit 92%
 
   task   role         model        status  calls  ret  sym  deny  fail   dur    tok   cost
-  t1     implementer  sonnet-4-6   done       56    1    3     0     0   33m    45k  $0.61
+  t1     implementer  sonnet-5     done       56    1    3     0     0   33m    45k  $0.61
   ...
 ```
 
@@ -567,14 +575,14 @@ complete.**
     "agentic_mcp":          { ... },  // internal retrieve() + get_symbol() — always on
     // docs & research
     "context7":             { ... },  // always-fresh library docs — no credentials needed
-    "fetch":                { ... },  // general URL fetching — no credentials needed
+    // (URL fetching is Claude Code's built-in WebFetch/WebSearch — no server needed)
     // reasoning
     "sequential-thinking":  { ... },  // structured reasoning tool — no credentials needed
     // testing & mobile
     "playwright":           { ... },  // browser automation — no credentials needed
     "maestro":              { ... },  // mobile automation — requires Maestro CLI
     // version control
-    "github":               { ... },  // fill in GITHUB_PERSONAL_ACCESS_TOKEN to enable
+    "github":               { ... },  // remote HTTP server — OAuth on first use, no token stored
     // databases
     "dbhub":                { ... },  // fill in DSN to enable
     "supabase":             { ... }   // fill in PAT + project-ref to enable
@@ -596,7 +604,7 @@ complete.**
 - **Sketch before code.** For any task with visible UI changes, the sketcher runs during planning and embeds a rendered image before any implementer task is dispatched.
 - **Design spec is the house style.** Authored (greenfield) or extracted (brownfield) by `/agentic-design` into committed `docs/design/`. Agents draft to gitignored state; the command promotes on approval. The sketcher honours it; the design-critic enforces it (`/agentic-review-ui`). Optional — projects with no frontend simply never author one.
 - **Debugger = diagnosis only.** The debugger never writes to the codebase. Data before code, always.
-- **MCP rules:** `agentic_mcp.retrieve` is the internal knowledge plane; `context7` / `fetch` / `sequential-thinking` are available to all agents; `playwright` / `maestro` / `dbhub` / `supabase` / `github` are runtime tools usable only by implementer/tester/debugger. Planner/reviewer/sketcher never touch external MCP (except sketcher uses Preview MCP for rendering).
+- **MCP rules:** `agentic_mcp.retrieve` is the internal knowledge plane; `context7` / `sequential-thinking` are available to all agents; `playwright` / `maestro` / `dbhub` / `supabase` / `github` are runtime tools usable only by implementer/tester/debugger. Planner/reviewer/sketcher never touch external MCP (except sketcher uses Preview MCP for rendering).
 - **Hooks = safety + logging.** No tool filtering, no context-aware gating.
 - **State ownership:** every section of every task file has exactly one writing role. No agent overwrites another's section.
 
@@ -605,8 +613,6 @@ complete.**
 ## Configuration (`.agentic.yml`)
 
 ```yaml
-system_version: 1.0.0
-
 enabled_skills: []   # empty by default — add skills that match your stack
 # available: react, html-css, flutter, mobile, fastapi, rest-openapi, supabase, owasp, playwright, maestro
 
@@ -642,12 +648,26 @@ plan_id:
 # To override: edit .claude/state/project.yml directly after running /agentic-index.
 
 models:                          # per-role model; "" = inherit the session model
-  default:     claude-sonnet-4-6
-  reviewer:    claude-sonnet-4-6
+  default:     claude-sonnet-5
+  reviewer:    claude-sonnet-5
   tester:      claude-haiku-4-5-20251001
-  security-reviewer: claude-opus-4-8
+  security-reviewer: claude-opus-5
   # ...
 ```
+
+**An unrecognised model ID does not error — it silently falls back to whatever
+your session is running.** So routing reliably moves *down* (a valid cheaper ID
+is honoured) and never *up*: naming a model more capable than your session's is a
+no-op if the ID is wrong, and the config then states an intent it cannot deliver.
+Cost telemetry stays correct throughout, because it prices the model the
+transcript reports — which is why this hides. On one project every role
+configured `claude-sonnet-4-6` ran as `claude-sonnet-5`, and `claude-opus-4-8`
+for `architect`/`security-reviewer` never once dispatched to Opus. Only the haiku
+entry, a real ID, was honoured.
+
+`/agentic-doctor` now checks every `models:` value against
+`model_capability_order` and warns on anything unranked. After changing these,
+confirm a `usage` event in `.claude/state/logs/` reports the model you asked for.
 
 **Don't cheap out on the reviewing roles.** Reviewing looks mechanical from the
 outside — check the work against a written rule — so it is the first thing anyone
@@ -743,8 +763,8 @@ System directories are mirrored on re-install — replaced wholesale, so a stale
 file from an older version disappears. That has two consequences nothing used to
 surface: a hand-edited agent is **destroyed without warning** on the next
 install, and there was no way to ask whether an install was behind the templates
-it came from. `system_version` cannot answer it (nothing bumps it), so the only
-method was byte-comparing against the source tree by hand.
+it came from — the old `system_version` could not answer it (nothing bumped it),
+so the only method was byte-comparing against the source tree by hand.
 
 Every install now writes `.claude/.install.json` — version, timestamp, the source
 path it was installed from, and **two hashes per system file**: `tpl` as the file
@@ -755,7 +775,7 @@ all twelve agents as locally edited the moment they were installed.
 `/agentic-doctor` reads it and reports three things:
 
 ```
-[ok]    install manifest              v1.0.0, installed 2026-07-27T11:33:40Z, 163 files tracked
+[ok]    install manifest              @38ccb3e, installed 2026-07-27T11:33:40Z, 166 files tracked
 [warn]  local edits to system files   1 edited since install: agents/reviewer.md — these are
                                       OVERWRITTEN by the next install; move the change into
                                       the template repo to keep it
@@ -774,10 +794,10 @@ gitignored: it holds an absolute local path and is regenerated on every install.
 ## Development
 
 ```bash
-python -m unittest discover installer/tests
+python3 -m unittest discover installer/tests
 ```
 
-373 tests, no third-party dependency beyond `pyyaml`. CI runs them on Python
+No third-party dependency beyond `pyyaml`. CI runs the suite on Python
 3.10, 3.12, and 3.14 for every push and pull request
 ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)); 3.10 is the
 verified floor.

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Allocate the next ADR id: `ADR-NNN` (zero-padded).
 
-Scans `.claude/adrs/ADR-*.md` for the highest existing N, returns N+1.
+Scans `.claude/adrs/ADR-*.md` for the highest existing N, returns N+1. The scan
+and format logic is shared with plan_id via id_alloc; only the directory and the
+filename shape differ.
 
 Usage:
     python adr_id.py next       # prints ADR-003
@@ -9,9 +11,11 @@ Usage:
 """
 from __future__ import annotations
 
-import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from id_alloc import cli, existing, next_id, peek_id  # noqa: E402
 
 REPO_ROOT = Path.cwd().resolve()
 ADRS_DIR = REPO_ROOT / ".claude" / "adrs"
@@ -19,47 +23,24 @@ ADRS_DIR = REPO_ROOT / ".claude" / "adrs"
 PREFIX = "ADR"
 PAD = 3
 START = 1
-PAT = re.compile(rf"^{PREFIX}-(\d+)(?:[-_].*)?\.md$")
+# ADRs are `.md` files and carry a slug after the number (ADR-002-use-utc.md).
+SHAPE = {"files": True, "slug": True}
 
 
-def existing() -> list[tuple[int, str]]:
-    if not ADRS_DIR.exists():
-        return []
-    out: list[tuple[int, str]] = []
-    for p in ADRS_DIR.iterdir():
-        if not p.is_file():
-            continue
-        m = PAT.match(p.name)
-        if m:
-            out.append((int(m.group(1)), p.stem))
-    out.sort()
-    return out
-
-
-def fmt(n: int) -> str:
-    return f"{PREFIX}-{n:0{PAD}d}"
+def existing_ids() -> list[tuple[int, str]]:
+    return existing(ADRS_DIR, PREFIX, **SHAPE)
 
 
 def cmd_next() -> str:
-    ex = existing()
-    n = (ex[-1][0] + 1) if ex else START
-    return fmt(n)
+    return next_id(ADRS_DIR, PREFIX, PAD, START, **SHAPE)
 
 
 def cmd_peek() -> str:
-    ex = existing()
-    return ex[-1][1] if ex else ""
+    return peek_id(ADRS_DIR, PREFIX, **SHAPE)
 
 
 def main() -> None:
-    cmd = sys.argv[1] if len(sys.argv) > 1 else "next"
-    if cmd == "next":
-        print(cmd_next())
-    elif cmd in ("peek", "current"):
-        print(cmd_peek())
-    else:
-        sys.stderr.write(f"unknown subcommand: {cmd}\n")
-        sys.exit(1)
+    cli(cmd_next, cmd_peek)
 
 
 if __name__ == "__main__":
