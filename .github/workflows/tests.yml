@@ -114,52 +114,47 @@ jobs:
         run: ruff check .
 
   # ---------------------------------------------------------------------------
-  # TEMPORARY diagnostic — a controlled experiment, replacing a pair-wise bisect
-  # that varied two things at once and so proved nothing (all 19 legs failed).
+  # TEMPORARY diagnostic. Third design; the first two produced nothing usable.
   #
-  # Known: `installer.tests.test_verify_clears` alone, dotted, from the repo root
-  # PASSES on Windows. `discover` over all modules FAILS. The pair legs used bare
-  # module names from inside installer/tests — discover's import style — and all
-  # failed regardless of partner, which points at the invocation, not any pairing.
+  # The second used `continue-on-error: true` on STEPS and read each step's
+  # `conclusion` from the API. That field is forced to "success" by
+  # continue-on-error, and the API exposes no `outcome` for steps — so all five
+  # probes reported success unconditionally, whatever happened. A check that can
+  # only ever say "passed" is worse than none, and its output was published as
+  # fact. Everything it "established" is void.
   #
-  # Each leg below changes exactly one variable from the known-passing baseline.
-  # Leg names are visible in the public API, so the pattern of pass/fail reads
-  # without repo-admin log access.
+  # JOB-level conclusions are not masked the same way (an isolation leg passed
+  # while its siblings failed), so every leg here is a job.
+  #
+  # Established: test_verify_clears fails on Windows under every invocation
+  # (dotted, bare, discover, full suite); test_symbols via discover passes. So
+  # the fault is in the citation suite, not in test isolation or the loader.
   #
   # Delete this job once the cause is fixed.
   # ---------------------------------------------------------------------------
-  windows-isolation-probe:
+  windows-cause-probe:
     runs-on: windows-latest
     continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Baseline. Expected PASS (already observed).
-          - {leg: "1-dotted-alone-from-root", dir: ".",
-             cmd: "python -m unittest installer.tests.test_verify_clears -b"}
-          # Changes ONLY the import naming + cwd.
-          - {leg: "2-bare-alone-from-testsdir", dir: "installer/tests",
-             cmd: "python -m unittest test_verify_clears -b"}
-          # Changes ONLY the loader: discover, but restricted to the same module.
-          - {leg: "3-discover-only-verifyclears", dir: ".",
-             cmd: "python -m unittest discover installer/tests -p test_verify_clears.py -b"}
-          # Discover restricted to a module that does NOT touch the hooks lib.
-          - {leg: "4-discover-only-symbols", dir: ".",
-             cmd: "python -m unittest discover installer/tests -p test_symbols.py -b"}
-          # The known failure, for a same-run reference point.
-          - {leg: "5-discover-everything", dir: ".",
-             cmd: "python -m unittest discover installer/tests -b"}
-    name: "isolation ${{ matrix.leg }}"
+          # Do the tools verify_clears shells out to actually exist here?
+          - {leg: "tool-grep-present", cmd: "python -c \"import shutil,sys; sys.exit(0 if shutil.which('grep') else 1)\""}
+          - {leg: "tool-wc-present",   cmd: "python -c \"import shutil,sys; sys.exit(0 if shutil.which('wc') else 1)\""}
+          - {leg: "tool-find-is-gnu",  cmd: "python -c \"import subprocess,sys; r=subprocess.run(['find','--version'],capture_output=True,text=True); sys.exit(0 if 'findutils' in (r.stdout or '').lower() else 1)\""}
+          # Classes that EXECUTE a cited command. Fail => the tool theory holds.
+          - {leg: "vc-executes-commands", cmd: "python -m unittest installer.tests.test_verify_clears.TestCommandCitations installer.tests.test_verify_clears.TestPipelines -b"}
+          # Classes that only PARSE. Pass => the fault is execution, not parsing.
+          - {leg: "vc-parses-only", cmd: "python -m unittest installer.tests.test_verify_clears.TestClassification installer.tests.test_verify_clears.DeclaredEnumerationsCase -b"}
+          # Gate check: refusing an unsafe command needs no external binary.
+          - {leg: "vc-safety-gate", cmd: "python -m unittest installer.tests.test_verify_clears.TestCommandSafety -b"}
+    name: "cause ${{ matrix.leg }}"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: python -m pip install --upgrade pip pyyaml
-      - run: |
-          git config --global user.email "ci@example.com"
-          git config --global user.name "CI"
       - name: run
-        working-directory: ${{ matrix.dir }}
         run: ${{ matrix.cmd }}

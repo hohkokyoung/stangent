@@ -34,27 +34,30 @@ The last row is a real limitation rather than an oversight. Without Git for
 Windows, Claude Code runs shell commands through the PowerShell tool, and every
 command here is written in POSIX shell (`mkdir -p`, `printf`, `$(date +…)`).
 
-**Native Windows is unverified — but the reason is narrower than first thought.**
-A `windows-latest` CI job exists and its full-suite step fails. Step-level probes
-have since established what is *not* wrong:
+**Native Windows is unverified.** A `windows-latest` CI job exists and fails.
+What is established, from job-level results:
 
 ```
-SUCCESS  grep is resolvable          SUCCESS  citation-execution suite (109 tests)
-SUCCESS  find is GNU findutils       SUCCESS  suite excluding it      (297 tests)
-SUCCESS  wc is resolvable            FAILURE  all 406 run together
+FAILURE  test_verify_clears — under every invocation (alone, via discover, in the full suite)
+SUCCESS  test_symbols via discover — so the loader and test isolation are not the fault
 ```
 
-So the POSIX tools `verify_clears.py` depends on are present (Git for Windows
-puts them on PATH), citation re-running works there, and every test passes in
-one half or the other. Only the union fails — which makes this a test-isolation
-problem in the suite, not a limitation of the product. An earlier revision of
-this section blamed missing POSIX tools; the probes disproved it.
+The citation suite is where it breaks. `verify_clears.py` re-runs review
+citations by executing `grep`, `find` and `wc`; whether those are present and
+usable on the runner is being determined now, and that is the leading
+explanation but not yet a confirmed one.
 
-The row stays *unverified* until the interaction is identified and fixed, and
-the job runs non-blocking meanwhile. Marking it supported on the strength of
-"the failure is probably only in the tests" would be the same move this system
-exists to catch — an item reported cleared, which stops anyone looking. WSL is
-the tested path on Windows today.
+An earlier revision of this section reported the opposite — that the tools were
+present and the fault was test isolation. **That was wrong, and worth recording
+why.** The probes behind it used `continue-on-error: true` on CI *steps*, and
+GitHub forces a step's `conclusion` to `success` when that is set, exposing no
+separate `outcome` field. So the instrument reported success unconditionally, and
+its output was published here as fact — a check that could only ever say
+"cleared", which is precisely the failure mode `verify_clears.py` exists to
+catch, committed by the tooling built to test it.
+
+The row stays *unverified* until a working instrument says otherwise, and the
+job runs non-blocking meanwhile. **WSL is the tested path on Windows today.**
 
 Runtime dependencies in the target project:
 ```bash
