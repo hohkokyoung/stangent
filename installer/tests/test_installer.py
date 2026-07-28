@@ -395,7 +395,13 @@ class TestInterpreterResolution(unittest.TestCase):
         d = self.root / ".venv" / "bin"
         d.mkdir(parents=True)
         link = d / "python"
-        link.symlink_to(base)
+        try:
+            link.symlink_to(base)
+        except (OSError, NotImplementedError) as e:
+            # Windows refuses symlinks without admin or Developer Mode. The
+            # behaviour under test is POSIX-specific anyway — a Windows venv's
+            # Scripts/python.exe is a real file, so there is nothing to resolve.
+            self.skipTest(f"symlinks unavailable on this platform: {e}")
         self.assertEqual(ag.resolve_interpreter(self.root), str(link))
         self.assertNotEqual(ag.resolve_interpreter(self.root), str(base))
 

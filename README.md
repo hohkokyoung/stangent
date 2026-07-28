@@ -27,14 +27,24 @@ Safe to re-run — system dirs (`agents/`, `commands/`, `hooks/`, `mcp/`) are al
 |---|---|
 | macOS, Linux | supported, CI-tested |
 | Windows + WSL | supported, CI-tested (as Linux) |
-| Windows native + [Git for Windows](https://git-scm.com/downloads/win) | supported, CI-tested |
+| Windows native + [Git for Windows](https://git-scm.com/downloads/win) | **unverified — see below** |
 | Windows native, no Git for Windows | **not supported** |
 
 The last row is a real limitation rather than an oversight. Without Git for
 Windows, Claude Code runs shell commands through the PowerShell tool, and every
 command here is written in POSIX shell (`mkdir -p`, `printf`, `$(date +…)`).
-Installing Git for Windows — which Anthropic recommends anyway — gets you Git
-Bash and everything works.
+
+**Native Windows is honestly unverified.** A `windows-latest` CI job exists and
+currently fails, and the cause is not yet established. The suspected reason is
+not incidental: `verify_clears.py` re-runs review citations by executing `grep`,
+`find` and `wc`, which native Windows does not have — its `find.exe` is a string
+search with unrelated semantics. Git for Windows ships POSIX tools under
+`usr/bin`, but they are not on PATH for processes spawned outside its shell.
+
+Until that is settled, the job runs non-blocking and this row says *unverified*
+rather than *supported*. Reporting it as working on the strength of reasoning
+alone would be the same failure this system is built to catch: a checklist item
+marked cleared, which stops anyone looking. Use WSL on Windows today.
 
 Runtime dependencies in the target project:
 ```bash
