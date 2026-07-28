@@ -546,3 +546,68 @@ class TestMcpCredentials(unittest.TestCase):
         self.mcp.write_text(json.dumps(cfg, indent=2))
         ag.uninstall(self.root)
         self.assertTrue(self.mcp.exists(), "local changes must survive uninstall")
+
+
+class TestGitignoreDoesNotExposeSecrets(unittest.TestCase):
+    """Un-ignoring .mcp.json is safe only once it holds no plaintext credential.
+
+    The template moved to ${VAR} expansion, which is what makes the file
+    committable. But a project installed BEFORE that has a real token sitting in
+    it and is gitignored for exactly that reason — refreshing the managed block
+    without checking would remove the protection and stage the token on the
+    owner's next `git add -A`.
+    """
+
+    def setUp(self):
+        self._td = tempfile.TemporaryDirectory()
+        self.root = Path(self._td.name)
+
+    def tearDown(self):
+        self._td.cleanup()
+
+    def write_mcp(self, server):
+        (self.root / ".mcp.json").write_text(json.dumps({"mcpServers": server}))
+
+    def ignored(self) -> bool:
+        block = ag.gitignore_block_for(self.root)
+        return any(l.strip() == ".mcp.json" for l in block.splitlines())
+
+    def test_plaintext_token_in_args_keeps_the_file_ignored(self):
+        self.write_mcp({"supabase": {"command": "npx",
+                                     "args": ["--access-token", "sbp_realtokenvalue"]}})
+        self.assertTrue(ag.mcp_json_holds_secret(self.root))
+        self.assertTrue(self.ignored())
+
+    def test_plaintext_token_in_env_keeps_the_file_ignored(self):
+        self.write_mcp({"github": {"command": "npx",
+                                   "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_real"}}})
+        self.assertTrue(self.ignored())
+
+    def test_env_expansion_is_committable(self):
+        self.write_mcp({"supabase": {"command": "npx",
+                                     "args": ["--access-token", "${SUPABASE_ACCESS_TOKEN}"]}})
+        self.assertFalse(ag.mcp_json_holds_secret(self.root))
+        self.assertFalse(self.ignored())
+
+    def test_unfilled_placeholder_is_not_a_secret(self):
+        self.write_mcp({"dbhub": {"command": "npx",
+                                  "args": ["--dsn", "REPLACE_WITH_DSN"]}})
+        self.assertFalse(ag.mcp_json_holds_secret(self.root))
+
+    def test_unreadable_file_is_assumed_unsafe(self):
+        (self.root / ".mcp.json").write_text("{ not json")
+        self.assertTrue(ag.mcp_json_holds_secret(self.root),
+                        "if it cannot be inspected it must stay ignored")
+
+    def test_a_fresh_install_commits_the_file(self):
+        ag.install(self.root)
+        self.assertFalse(self.ignored(), "the shipped template carries no secrets")
+
+    def test_reinstall_over_a_legacy_file_preserves_the_ignore(self):
+        # The Snuggle case: installed before ${VAR}, real token in the file.
+        ag.install(self.root)
+        self.write_mcp({"supabase": {"command": "npx",
+                                     "args": ["--access-token", "sbp_realtokenvalue"]}})
+        ag.install(self.root)
+        gi = (self.root / ".gitignore").read_text()
+        self.assertIn("\n.mcp.json\n", gi, "a live token must not be un-ignored")

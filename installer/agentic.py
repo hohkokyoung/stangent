@@ -31,6 +31,12 @@ except Exception:
 SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = SCRIPT_DIR / "templates"
 
+# `.mcp.json` is appended to this block ONLY when the project's own file still
+# holds plaintext credentials — see mcp_json_holds_secret(). The template ships
+# ${VAR} expansion so a fresh install has nothing to hide and the file is
+# committed like the rest of .claude/; but a project installed before that change
+# has a real token sitting in it, and silently un-ignoring the file would stage
+# the token on the owner's next `git add -A`.
 GITIGNORE_BLOCK = """# >>> agentic
 # run state is local working memory — durable artifacts are promoted out of it
 # (ADRs, docs/features/ dossiers, docs/screenshots/). Review reports may contain
@@ -226,6 +232,53 @@ def copy_templates(target: Path) -> None:
     info(f"copied templates to {dst}")
 
 
+# Flags whose value is a credential, and env keys that name one.
+_SECRET_FLAGS = ("--access-token", "--dsn", "--project-ref", "--api-key", "--token")
+_SECRET_ENV_RE = re.compile(r"(TOKEN|KEY|SECRET|PASSWORD|DSN|PAT)$", re.IGNORECASE)
+_PLACEHOLDER_RE = re.compile(r"^(REPLACE_WITH_|OPTIONAL_|\$\{)")
+
+
+def mcp_json_holds_secret(target: Path) -> bool:
+    """True if .mcp.json carries a credential as a literal rather than ${VAR}.
+
+    Decides whether the file may be un-ignored. A fresh install cannot trip this
+    — the template uses ${VAR} throughout — but a project installed before that
+    change has a live token in the file, and it is gitignored for that reason.
+    Refreshing the managed block without checking would remove that protection
+    and stage the token on the next `git add -A`.
+    """
+    p = target / ".mcp.json"
+    if not p.is_file():
+        return False
+    try:
+        cfg = json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return True  # unreadable: assume the worst and keep ignoring it
+    for srv in (cfg.get("mcpServers") or {}).values():
+        if not isinstance(srv, dict):
+            continue
+        args = [str(a) for a in srv.get("args") or []]
+        for flag in _SECRET_FLAGS:
+            if flag in args:
+                i = args.index(flag)
+                if i + 1 < len(args) and not _PLACEHOLDER_RE.match(args[i + 1]):
+                    return True
+        for k, v in (srv.get("env") or {}).items():
+            if _SECRET_ENV_RE.search(k) and not _PLACEHOLDER_RE.match(str(v)):
+                return True
+    return False
+
+
+def gitignore_block_for(target: Path) -> str:
+    block = GITIGNORE_BLOCK
+    if mcp_json_holds_secret(target):
+        block = block.replace("# <<< agentic",
+                              "# kept ignored: this project's .mcp.json still has a credential written\n"
+                              "# in plaintext. Move it to ${VAR} expansion to commit the file.\n"
+                              ".mcp.json\n# <<< agentic")
+    return block
+
+
 def add_gitignore_block(target: Path) -> None:
     gi = target / ".gitignore"
     if gi.exists():
@@ -234,18 +287,22 @@ def add_gitignore_block(target: Path) -> None:
             # Refresh the managed block in place so re-installs pick up new
             # ignore rules (e.g. review-report dirs). The block is delimited and
             # installer-owned; anything outside it is left untouched.
-            if GITIGNORE_BLOCK.strip() in content:
+            block = gitignore_block_for(target)
+            if block.strip() in content:
                 info(".gitignore agentic block already current")
                 return
             content = GITIGNORE_RE.sub("", content).rstrip("\n")
             sep = "\n\n" if content else ""
-            gi.write_text(content + sep + GITIGNORE_BLOCK, encoding="utf-8")
+            gi.write_text(content + sep + block, encoding="utf-8")
+            if mcp_json_holds_secret(target):
+                info("kept .mcp.json gitignored — it still holds a plaintext "
+                     "credential; switch it to ${VAR} expansion to commit it")
             info("refreshed .gitignore agentic block")
             return
         sep = "" if content.endswith("\n") else "\n"
-        gi.write_text(content + sep + "\n" + GITIGNORE_BLOCK, encoding="utf-8")
+        gi.write_text(content + sep + "\n" + gitignore_block_for(target), encoding="utf-8")
     else:
-        gi.write_text(GITIGNORE_BLOCK, encoding="utf-8")
+        gi.write_text(gitignore_block_for(target), encoding="utf-8")
     info("wrote .gitignore agentic block")
 
 
