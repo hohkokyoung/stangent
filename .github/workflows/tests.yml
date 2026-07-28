@@ -114,42 +114,37 @@ jobs:
         run: ruff check .
 
   # ---------------------------------------------------------------------------
-  # TEMPORARY diagnostic. Third design; the first two produced nothing usable.
+  # TEMPORARY diagnostic, final narrowing.
   #
-  # The second used `continue-on-error: true` on STEPS and read each step's
-  # `conclusion` from the API. That field is forced to "success" by
-  # continue-on-error, and the API exposes no `outcome` for steps — so all five
-  # probes reported success unconditionally, whatever happened. A check that can
-  # only ever say "passed" is worse than none, and its output was published as
-  # fact. Everything it "established" is void.
+  # Established on Windows: grep and wc resolve; `find` is the OS string-search
+  # find.exe, not find(1) (now refused outright by verify_exec, so it is fixed
+  # rather than pending). The classes that execute commands, that only parse, and
+  # that gate unsafe input all PASS — yet the module as a whole FAILS. So the
+  # failures are in the classes not yet covered, one leg each below.
   #
-  # JOB-level conclusions are not masked the same way (an isolation leg passed
-  # while its siblings failed), so every leg here is a job.
-  #
-  # Established: test_verify_clears fails on Windows under every invocation
-  # (dotted, bare, discover, full suite); test_symbols via discover passes. So
-  # the fault is in the citation suite, not in test isolation or the loader.
+  # Job legs, not steps: `continue-on-error` on a step forces its API
+  # `conclusion` to "success" and no `outcome` is exposed, which made an earlier
+  # probe report success unconditionally.
   #
   # Delete this job once the cause is fixed.
   # ---------------------------------------------------------------------------
-  windows-cause-probe:
+  windows-class-probe:
     runs-on: windows-latest
     continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Do the tools verify_clears shells out to actually exist here?
-          - {leg: "tool-grep-present", cmd: "python -c \"import shutil,sys; sys.exit(0 if shutil.which('grep') else 1)\""}
-          - {leg: "tool-wc-present",   cmd: "python -c \"import shutil,sys; sys.exit(0 if shutil.which('wc') else 1)\""}
-          - {leg: "tool-find-is-gnu",  cmd: "python -c \"import subprocess,sys; r=subprocess.run(['find','--version'],capture_output=True,text=True); sys.exit(0 if 'findutils' in (r.stdout or '').lower() else 1)\""}
-          # Classes that EXECUTE a cited command. Fail => the tool theory holds.
-          - {leg: "vc-executes-commands", cmd: "python -m unittest installer.tests.test_verify_clears.TestCommandCitations installer.tests.test_verify_clears.TestPipelines -b"}
-          # Classes that only PARSE. Pass => the fault is execution, not parsing.
-          - {leg: "vc-parses-only", cmd: "python -m unittest installer.tests.test_verify_clears.TestClassification installer.tests.test_verify_clears.DeclaredEnumerationsCase -b"}
-          # Gate check: refusing an unsafe command needs no external binary.
-          - {leg: "vc-safety-gate", cmd: "python -m unittest installer.tests.test_verify_clears.TestCommandSafety -b"}
-    name: "cause ${{ matrix.leg }}"
+          - {leg: "TestRefCitations", cmd: "python -m unittest installer.tests.test_verify_clears.TestRefCitations -b"}
+          - {leg: "TestAutoDetectSections", cmd: "python -m unittest installer.tests.test_verify_clears.TestAutoDetectSections -b"}
+          - {leg: "TestFindingEnumeration", cmd: "python -m unittest installer.tests.test_verify_clears.TestFindingEnumeration -b"}
+          - {leg: "TestRealWorldCitationShapes", cmd: "python -m unittest installer.tests.test_verify_clears.TestRealWorldCitationShapes -b"}
+          - {leg: "TestMultiSiteFindingsNeedEnumeration", cmd: "python -m unittest installer.tests.test_verify_clears.TestMultiSiteFindingsNeedEnumeration -b"}
+          - {leg: "TestCoverage", cmd: "python -m unittest installer.tests.test_verify_clears.TestCoverage -b"}
+          - {leg: "TestShippedChecklistsAreExtractable", cmd: "python -m unittest installer.tests.test_verify_clears.TestShippedChecklistsAreExtractable -b"}
+          - {leg: "TestExitCode", cmd: "python -m unittest installer.tests.test_verify_clears.TestExitCode -b"}
+          - {leg: "BaselineDriftCase", cmd: "python -m unittest installer.tests.test_verify_clears.BaselineDriftCase -b"}
+    name: "class ${{ matrix.leg }}"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

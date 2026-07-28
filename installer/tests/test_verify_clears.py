@@ -17,6 +17,7 @@ from pathlib import Path
 LIB = Path(__file__).resolve().parents[1] / "templates" / ".claude" / "hooks" / "lib"
 sys.path.insert(0, str(LIB))
 import verify_clears as vc  # noqa: E402
+import verify_exec as vx  # noqa: E402
 
 
 class Base(unittest.TestCase):
@@ -960,3 +961,33 @@ class BaselineDriftCase(unittest.TestCase):
         got = vc.baseline_drift(self.results(0, "grep  -rn   x  src"),
                                 self.declared("violations", 5))
         self.assertEqual(got[0]["status"], "closed")
+
+
+class FindShadowingCase(Base):
+    """Windows ships a `find.exe` that searches for a string INSIDE files.
+
+    It does not error on `find . -name '*.dart'` — it answers a different
+    question and returns a count, which is the confident-wrong-count failure
+    this whole module exists to prevent. CI confirmed the shadowing is real on
+    windows-latest: GNU findutils is not what `find` resolves to there.
+    """
+
+    def tearDown(self):
+        vx._FIND_OK = None  # probed once per process; unpin it
+
+    def test_a_shadowed_find_is_refused_not_run(self):
+        vx._FIND_OK = False
+        ok, why = vc.command_is_safe("find . -name '*.py'")
+        self.assertFalse(ok)
+        self.assertIn("find.exe", why)
+
+    def test_a_real_find_is_still_allowed(self):
+        # BSD find on macOS is not findutils but is a real find(1); checking for
+        # "findutils" everywhere would reject every legitimate citation there.
+        vx._FIND_OK = True
+        self.assertTrue(vc.command_is_safe("find . -name '*.py'")[0])
+
+    def test_other_tools_are_unaffected(self):
+        vx._FIND_OK = False
+        for cmd in ("grep -rn x .", "rg -c x .", "wc -l a.txt"):
+            self.assertTrue(vc.command_is_safe(cmd)[0], cmd)

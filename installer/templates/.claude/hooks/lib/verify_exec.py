@@ -12,6 +12,7 @@ in one sitting, and so a parsing change cannot widen it.
 """
 from __future__ import annotations
 
+import os
 import re
 import shlex
 import subprocess
@@ -61,6 +62,36 @@ SHELL_METACHARS = re.compile(r"[;&><`$\n]|\$\(")
 MAX_OUTPUT_BYTES = 4 * 1024 * 1024
 COMMAND_TIMEOUT_S = 30
 
+_FIND_OK: bool | None = None
+
+
+def _find_is_real() -> bool:
+    """Whether `find` on PATH is an actual find(1) rather than Windows find.exe.
+
+    Only Windows can get this wrong. There, `find.exe` ships with the OS and
+    searches for a STRING INSIDE files, so `find . -name '*.dart'` does not
+    error — it silently answers a different question and returns a count. A
+    confident wrong count is the failure this module exists to prevent, so a
+    citation resolving to it is refused rather than run.
+
+    On POSIX the answer is always yes: macOS ships BSD find and Linux ships GNU
+    findutils, and both are real. Checking for "findutils" everywhere would
+    reject every legitimate `find` citation on macOS. Probed once per process.
+    """
+    global _FIND_OK
+    if _FIND_OK is None:
+        if os.name != "nt":
+            _FIND_OK = True
+        else:
+            try:
+                r = subprocess.run(["find", "--version"], capture_output=True,
+                                   text=True, timeout=10)
+                _FIND_OK = "findutils" in (r.stdout or "").lower()
+            except (OSError, subprocess.SubprocessError):
+                _FIND_OK = False
+    return _FIND_OK
+
+
 def _stage_is_safe(argv: list[str]) -> tuple[bool, str]:
     if not argv:
         return False, "empty command"
@@ -73,6 +104,10 @@ def _stage_is_safe(argv: list[str]) -> tuple[bool, str]:
         return _stage_is_safe(rest)
     if exe not in SAFE_COMMANDS:
         return False, f"'{exe}' is not in the read-only command allowlist"
+    if exe == "find" and not _find_is_real():
+        return False, ("`find` on PATH is Windows' string-search find.exe, not "
+                       "find(1) — it would answer a different question and "
+                       "return a count rather than erroring")
     banned = BANNED_ARGS.get(exe)
     if banned:
         for arg in argv[1:]:
