@@ -463,3 +463,86 @@ class TestManagedHookRefresh(unittest.TestCase):
             once = p.read_text()
             ag.sync_managed_hooks(root)
             self.assertEqual(once, p.read_text())
+
+
+class TestNonDestructiveInstall(unittest.TestCase):
+    """Neither install nor uninstall may destroy work without saying so."""
+
+    def setUp(self):
+        self._td = tempfile.TemporaryDirectory()
+        self.root = Path(self._td.name)
+        ag.install(self.root)
+
+    def tearDown(self):
+        self._td.cleanup()
+
+    def seed_state(self):
+        d = self.root / ".claude" / "state" / "plans" / "FEAT-001"
+        d.mkdir(parents=True, exist_ok=True)
+        f = d / "t1.md"
+        f.write_text("a plan someone wrote")
+        return f
+
+    def test_uninstall_keeps_run_state(self):
+        # state/ is gitignored, so deleting it cannot be undone — and the README
+        # promises uninstall leaves anything you added alone.
+        f = self.seed_state()
+        ag.uninstall(self.root)
+        self.assertTrue(f.is_file(), "uninstall must not destroy run history")
+        self.assertFalse((self.root / ".claude" / "agents").exists(),
+                         "system dirs should still go")
+
+    def test_reinstall_keeps_run_state(self):
+        f = self.seed_state()
+        ag.install(self.root)
+        self.assertTrue(f.is_file())
+
+    def test_reinstall_warns_before_overwriting_a_local_edit(self):
+        agent = self.root / ".claude" / "agents" / "reviewer.md"
+        agent.write_text(agent.read_text() + "\nlocal edit\n")
+        edited = ag.warn_local_edits(self.root)
+        self.assertIn("agents/reviewer.md", edited,
+                      "an edited system file must be detected BEFORE mirroring")
+        ag.install(self.root)
+        self.assertNotIn("local edit", agent.read_text(), "mirroring still wins")
+
+    def test_no_warning_when_nothing_was_edited(self):
+        self.assertEqual(ag.warn_local_edits(self.root), [])
+
+
+class TestMcpCredentials(unittest.TestCase):
+    """Credentials come from the environment, so the file can be committed."""
+
+    def setUp(self):
+        self._td = tempfile.TemporaryDirectory()
+        self.root = Path(self._td.name)
+        ag.install(self.root)
+        self.mcp = self.root / ".mcp.json"
+
+    def tearDown(self):
+        self._td.cleanup()
+
+    def test_no_plaintext_secret_placeholders_ship(self):
+        text = self.mcp.read_text()
+        self.assertNotIn("REPLACE_WITH_", text)
+        for var in ("${DBHUB_DSN}", "${SUPABASE_ACCESS_TOKEN}"):
+            self.assertIn(var, text)
+
+    def test_gitignore_no_longer_hides_it(self):
+        gi = (self.root / ".gitignore").read_text()
+        self.assertNotIn("\n.mcp.json\n", gi,
+                         "carrying no secrets, it should be reviewable in PRs")
+
+    def test_uninstall_still_recognises_an_unedited_template(self):
+        # This used to key off REPLACE_WITH_, which no longer exists — without
+        # the template comparison every file would look edited and none would
+        # ever be removed.
+        ag.uninstall(self.root)
+        self.assertFalse(self.mcp.exists())
+
+    def test_uninstall_keeps_a_locally_changed_file(self):
+        cfg = json.loads(self.mcp.read_text())
+        cfg["mcpServers"]["my_server"] = {"command": "x"}
+        self.mcp.write_text(json.dumps(cfg, indent=2))
+        ag.uninstall(self.root)
+        self.assertTrue(self.mcp.exists(), "local changes must survive uninstall")
