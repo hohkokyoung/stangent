@@ -148,6 +148,34 @@ class HookCase(unittest.TestCase):
         ]))
         self.assertEqual(self.events()[0]["tokens"]["input"], 10)
 
+    def test_falls_back_to_the_run_that_just_ended(self):
+        # THE bug a first real run caught. Stop fires after the command finishes,
+        # and every command ends by clearing dispatch state, so current_run.txt is
+        # already gone — reading it alone logged nothing, ever.
+        (self.state / "current_run.txt").unlink()
+        logs = self.state / "logs"
+        logs.mkdir(parents=True, exist_ok=True)
+        (logs / "FEAT-001.jsonl").write_text('{"tool":"Bash"}\n')
+        (logs / "dispatch.jsonl").write_text('{"run_id":"FEAT-001"}\n')
+        self.fire(self.transcript([assistant(inp=100)]))
+        ev = [e for e in self.events() if e.get("event") == "usage"]
+        self.assertEqual(len(ev), 1, "the just-finished run must still be billed")
+        self.assertEqual(ev[0]["run_id"], "FEAT-001")
+        self.assertEqual(ev[0]["agent_role"], "orchestrator")
+
+    def test_stale_run_log_is_not_billed(self):
+        # Idle conversation hours after a run ended must not land in that run.
+        import os, time
+        (self.state / "current_run.txt").unlink()
+        logs = self.state / "logs"
+        logs.mkdir(parents=True, exist_ok=True)
+        old = logs / "FEAT-001.jsonl"
+        old.write_text('{"tool":"Bash"}\n')
+        stale = time.time() - 7200
+        os.utime(old, (stale, stale))
+        self.fire(self.transcript([assistant(inp=100)]))
+        self.assertEqual([e for e in self.events() if e.get("event") == "usage"], [])
+
     def test_no_run_means_no_event(self):
         # Ambient sessions outside a build have no run log to land in; inventing
         # one would make /agentic-logs list non-runs.

@@ -55,6 +55,32 @@ CURSOR = STATE_DIR / "main_usage_cursor.json"
 
 HOOK_NAME = "stop_usage.py"
 
+# A Stop hook fires AFTER the command that just ran has finished — and every
+# command ends by clearing dispatch state (`/agentic-plan` step 8,
+# `/agentic-build` step 6), so `current_run.txt` is already gone by then. Reading
+# it alone meant this hook exited silently on every completed command and logged
+# nothing at all, which is how it shipped and how a first real run caught it.
+#
+# The run that just ended is the one whose log post_tool_use.py was appending to
+# moments ago, so fall back to the most recently written run log. Bounded by age
+# so that idle conversation hours later is not billed to a finished run, and
+# `dispatch.jsonl` is excluded because it is shared across runs, not one of them.
+RECENT_RUN_SECONDS = 1800
+
+
+def recent_run_id() -> str | None:
+    try:
+        logs = [p for p in LOG_DIR.glob("*.jsonl") if p.name != "dispatch.jsonl"]
+        if not logs:
+            return None
+        newest = max(logs, key=lambda p: p.stat().st_mtime)
+        import time
+        if time.time() - newest.stat().st_mtime > RECENT_RUN_SECONDS:
+            return None
+        return newest.stem
+    except OSError:
+        return None
+
 
 def main_turns(records: list[dict]) -> list[dict]:
     """The main session's own assistant turns, in transcript order.
@@ -113,7 +139,9 @@ def main() -> None:
         sys.exit(0)
 
     tx = payload.get("transcript_path")
-    run_id = os.environ.get("AGENTIC_RUN_ID") or read_state(STATE_DIR, "current_run.txt")
+    run_id = (os.environ.get("AGENTIC_RUN_ID")
+              or read_state(STATE_DIR, "current_run.txt")
+              or recent_run_id())
     # No workflow context, or no transcript → nothing to attribute. Ambient
     # sessions outside a run are deliberately not logged: they have no run file
     # to land in, and inventing one would make `/agentic-logs` list non-runs.
