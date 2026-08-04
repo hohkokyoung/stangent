@@ -408,14 +408,17 @@ context:
   `/agentic-logs` ranks the heaviest ones.
 - **`budget` events** — the same hook warns, mid-run, when one task crosses a
   threshold on either of two axes: **call count** (150/300/500) for a task that
-  will not terminate, and **cumulative result bytes** (800k/1.5M/3M chars) for a
+  will not terminate, and **cumulative result bytes** (500k/1.5M/3M chars) for a
   task whose calls are individually expensive. The second is the one that tracks
   the bill, and call count cannot stand in for it: on FEAT-025 one task did 34
   edits for $3.68 while another did 89 for $12.28 — the difference was that the
   second echoed a 25 KB file back into context on every edit. Replayed against
   that run, the bytes axis fires at call 43 where the call axis waits until 150,
-  and stays silent on all six healthy tasks. Neither blocks; a long task can be
-  legitimate. Instead the hook returns the warning as `additionalContext`, so it
+  and stays silent on all six healthy tasks. The first bytes threshold sits just
+  above the healthy ceiling (those six topped out at 463k) rather than well past
+  it — at its original 800k the first notice arrived only once a task was already
+  most of the way into the spend it was meant to pre-empt. Neither blocks; a long
+  task can be legitimate. Instead the hook returns the warning as `additionalContext`, so it
   is injected as a system reminder beside the tool result and **the running agent
   reads it on its next turn**, naming the action ("script it") rather than only
   the number. Writing it to the run log alone would have made it forensics —
@@ -424,8 +427,41 @@ context:
   crossed at call 43 of 247, leaving 200 calls to change course. The hook emits
   nothing on stdout unless a threshold was actually crossed; it fires on every
   tool call, so an unconditional emit would staple a reminder to every result.
+- **Repeated-edit guard** (`pre_tool_use.py`) — the budget events above *observe*
+  the expensive shape; this one *interrupts* it. Past **8 edits to one file within
+  one task**, the next `Edit` is denied once, with a reason naming the cheaper
+  path (script the transform, verify with the project's own checks, read the
+  diff). Then it stands aside: a retry proceeds, and the file is never
+  interrupted again. That is the whole design — force one reconsideration while
+  scripting is still cheaper, rather than adjudicate whether a task may be long.
+  A genuinely per-site task loses a single call.
+
+  It exists because the equivalent rule already lived in `agents/implementer.md`
+  as prose and did not hold. Prose in this system demonstrably gets skipped: the
+  same run had two tasks ignore a `retrieve` call marked *"exactly once — this is
+  not optional"*, and three token migrations edit site by site for **$31.71**
+  between them. Tallies live in `.claude/state/edit_counts.json`, are scoped to
+  the current task, and reset per dispatch. Never enforced outside a dispatched
+  task (ambient editing in the main session is untouched), and task files under
+  `.claude/state/` are exempt — a reviewer legitimately edits one several times.
 - **`log_usage.py`** (SubagentStop) — one `usage` event per finished agent, with
   token counts (input/output/cache) and estimated cost, attributed to the task.
+- **`stop_usage.py`** (Stop) — the same, for the **orchestrator's own thread**,
+  logged against `agent_role: orchestrator` and bucketed under `(session)` in
+  `/agentic-logs` alongside the dispatcher's untagged tool calls. Without it the
+  report showed subagent cost only, which reads as a complete bill rather than a
+  partial one — and that thread is not a rounding error: `/agentic-build` runs
+  ~5–6 orchestrator turns per task, each re-reading everything before it.
+
+  Stop fires at the end of *every* main-agent response, so the hook records how
+  many turns it has already billed in `.claude/state/main_usage_cursor.json` and
+  counts only past that — re-summing the transcript per fire would inflate the
+  number quadratically, which is the exact error it exists to expose. The cursor
+  is keyed by transcript path (a new session restarts the count) and is
+  deliberately **not** in `state.py`'s clear list, which runs per build and would
+  replay the whole transcript into the next event. Turns marked `isSidechain` are
+  excluded — those are subagent turns inlined into the main transcript, and
+  `log_usage.py` already bills them.
 - **`log_dispatch.py`** — one routing event per build dispatch → `dispatch.jsonl`.
 - **`hook_error` events** — every telemetry hook swallows its exceptions, because
   breaking a run to report a logging failure would be worse than the failure. But
@@ -665,8 +701,11 @@ complete.**
 │   ├── flutter-skill/ SKILL.md + references/*.md # Flutter UI testing via flutter-skill MCP → integration_test
 │   └── regression/   SKILL.md                    # stack-agnostic: registering cases in .claude/tests/
 ├── hooks/
-│   ├── pre_tool_use.py         # hard safety only (rm -rf, force push, DROP, TRUNCATE, ...)
+│   ├── pre_tool_use.py         # hard safety (rm -rf, force push, DROP, TRUNCATE, ...) + repeated-edit cost guard
 │   ├── post_tool_use.py        # JSONL logger, one file per run_id
+│   ├── log_usage.py            # SubagentStop: per-subagent token usage + cost
+│   ├── stop_usage.py           # Stop: the orchestrator's own token usage + cost
+│   ├── verify_review.py        # SubagentStop: enforces review verification
 │   └── lib/
 │       ├── retriever.py        # sqlite-vec + voyage/fastembed; supports --project-only flag
 │       ├── plan_id.py          # FEAT-### allocator
@@ -674,6 +713,8 @@ complete.**
 │       ├── test_registry.py    # TC-### regression registry: validate / record / regressions
 │       ├── git_branch.py       # feat/{run_id} branch helper (-v2/-v3 on collision) + per-task checkpoint commits
 │       ├── sweep_plan.py       # deterministic batch planner for /agentic-sweep
+│       ├── dispatch_plan.py    # ordering, cycle detection, runnable set, model/skill/k resolution
+│       ├── build_step.py       # one call per side of a build task (next / finish)
 │       ├── log_dispatch.py     # structured dispatch events → .claude/state/logs/dispatch.jsonl
 │       ├── logs.py             # summarize a run/review's logs (/agentic-logs)
 │       └── doctor.py           # install health checks
@@ -734,6 +775,7 @@ fails later with a confusing error about the DSN rather than about the variable:
 - **`retrieve()` = one call per agent per task.** Scoped to the task's `skills_to_load`.
 - **Skills define HOW, agents define WHAT.** The tester role is generic — its testing method (MCP tools, commands, artifact format) is entirely defined by the injected skill. No framework logic in the role prompt.
 - **Every finished task is checkpointed.** `/agentic-build` commits each task's work onto the run's branch as soon as the subagent returns, so a task that damages earlier work has a boundary to fall back to (`git revert`, or reset to the last task's sha). Local only, never pushed, meant to be squashed before a PR. It is taken by the dispatcher rather than the agent because `pre_tool_use.py` denies `git commit` to any subagent — and it is skipped, never forced, when the branch was switched mid-run, a pre-commit hook rejects, or the project isn't a git repo. Disable with `git.checkpoint_commits: false`.
+- **The dispatcher's own turns are part of the bill.** Billed input is the sum over turns of the *entire* prefix — system prompt, tool schemas, command body, and everything accumulated so far — so every orchestrator turn re-reads all of it, and the turn *count* sets the cost more than any single message's size. `/agentic-build` therefore spends 2 script calls per task, not 6: `build_step.py next` (plan → reindex → state → dispatch log) and `build_step.py finish` (coverage → clear → checkpoint), with the subagent between them. `next` emits only the one task being dispatched, never the remaining plan — measured on a 12-task run, emitting the full plan each iteration cost ~9.2k tokens against ~1.7k, and it grows quadratically in task count. Ordering and resolution still come from `dispatch_plan.py`; only the number of calls changed.
 - **Mechanical changes are scripted, not hand-edited.** When one transformation applies to more than ~5 sites (literals onto tokens, a rename across a package, one lint fix repeated), the implementer writes and runs a codemod, then verifies with the project's own checks — it does not edit each site in turn. N sequential edits to one file cost on the order of N², because every `Edit` returns its file into context and every later turn re-reads it. A script is also *more* reliable: it cannot silently miss site 17 of 21. Per-site changes, where each occurrence needs its own judgment, are still edited individually.
 - **Sketch before code.** For any task with visible UI changes, the sketcher runs during planning and embeds a rendered image before any implementer task is dispatched.
 - **Design spec is the house style.** Authored (greenfield) or extracted (brownfield) by `/agentic-design` into committed `docs/design/`. Agents draft to gitignored state; the command promotes on approval. The sketcher honours it; the design-critic enforces it (`/agentic-review-ui`). Optional — projects with no frontend simply never author one.
