@@ -95,6 +95,21 @@ class BuildStepCase(unittest.TestCase):
         self.assertEqual((self.state / "current_model.txt").read_text(),
                          out["task"]["model"])
 
+    def test_reindex_field_carries_the_summary_not_progress_noise(self):
+        # Found on a real install: fastembed writes a download progress bar to
+        # stderr on a cold model cache, and taking the last line put
+        # "Fetching 5 files: 100%|####|" into the dispatcher's context once per
+        # task — the exact noise this script exists to remove.
+        lib = self.root / ".claude" / "hooks" / "lib"
+        (lib / "retriever.py").write_text(
+            "import sys\n"
+            "print('[retriever] project: 3 indexed, 0 skipped')\n"
+            "sys.stderr.write('Fetching 5 files: 100%|####| 5/5 [00:03<00:00]\\n')\n")
+        self.make_run({"t1.md": task_md("t1")})
+        _, out = self.step("next", "FEAT-001")
+        self.assertTrue(out["reindex"].startswith("[retriever]"), out["reindex"])
+        self.assertNotIn("Fetching", out["reindex"])
+
     def test_done_when_nothing_runnable(self):
         self.make_run({"t1.md": task_md("t1", status="done")})
         code, out = self.step("next", "FEAT-001")

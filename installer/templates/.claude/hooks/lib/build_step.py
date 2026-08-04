@@ -93,7 +93,12 @@ def cmd_next(run_id: str, only_task: str | None, session_model: str | None) -> i
     # ones. Its own summary line is captured rather than echoed: on a warm index
     # it says "0 indexed, N skipped (unchanged)" every single task.
     rc, reindex_out = _run([str(LIB / "retriever.py"), "reindex", "--project-only"])
-    out["reindex"] = reindex_out.strip().splitlines()[-1] if reindex_out.strip() else ""
+    # Its own `[retriever] ...` summary, not merely the last line: fastembed writes
+    # a download progress bar to stderr on a cold model cache, which otherwise won
+    # the tail and put "Fetching 5 files: 100%|####|" into the dispatcher's context
+    # once per task — exactly the noise this script exists to remove.
+    summary = [ln for ln in reindex_out.splitlines() if ln.startswith("[retriever]")]
+    out["reindex"] = summary[-1] if summary else ""
     if rc != 0:
         # Stale retrieval is a degraded task, not a failed build — the same call
         # was advisory when the command made it directly.
