@@ -71,7 +71,13 @@ BUDGET_WARN_CALLS = (150, 300, 500)
 # back into context, where every later turn re-read it. Summing res_chars sees
 # that; counting calls does not. Thresholds are set off that run: healthy tasks
 # landed at 192k–463k chars, the three runaway migrations at 1503k/2175k/3523k.
-BUDGET_WARN_RESULT_CHARS = (800_000, 1_500_000, 3_000_000)
+#
+# The first threshold sits just above that healthy ceiling, not at 2x past it.
+# It was 800k, which no healthy task ever approached — so the first warning
+# arrived only once a task was already most of the way into the spend it was
+# meant to pre-empt. 500k is the earliest point that still cannot fire on a task
+# behaving normally.
+BUDGET_WARN_RESULT_CHARS = (500_000, 1_500_000, 3_000_000)
 # Normalized secret markers: matched as substrings of the separator-stripped,
 # lowercased key, so `access_token`, `apiKey`, `x-api-key`, and
 # `GITHUB_PERSONAL_ACCESS_TOKEN` all redact — not just the bare words. Kept

@@ -34,6 +34,8 @@ STATE_FILES = [
     "current_task.txt",
     "current_role.txt",
     "current_model.txt",
+    # Per-file Edit tallies for the repeated-edit guard in pre_tool_use.py.
+    "edit_counts.json",
 ]
 # Present state older than this (no per-task rewrite in that long) is leftover
 # from a crash, not an in-flight dispatch.
@@ -51,7 +53,8 @@ DEFAULT_CLEAN_MAX_AGE_DAYS = 30
 # ran inside. A command that dispatches several agents clears these BETWEEN
 # them, while `current_run.txt` stays put so every tool call keeps landing in
 # the same run's log.
-AGENT_FILES = ("current_task.txt", "current_role.txt", "current_model.txt")
+AGENT_FILES = ("current_task.txt", "current_role.txt", "current_model.txt",
+               "edit_counts.json")
 
 
 def present(names: tuple[str, ...] | None = None) -> list[Path]:

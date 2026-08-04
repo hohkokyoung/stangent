@@ -187,5 +187,91 @@ class TestRoleScopes(HookCase):
         self.assertAllowed(self.bash("git commit -m x"))
 
 
+class RepeatedEditCase(unittest.TestCase):
+    """The repeated-edit cost guard.
+
+    Needs a root that SURVIVES between calls — the tally is the whole point, and
+    HookCase throws its tempdir away per invocation.
+    """
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.root = Path(self.td.name)
+        (self.root / ".claude" / "state").mkdir(parents=True)
+        hooks = self.root / ".claude" / "hooks"
+        hooks.mkdir(parents=True)
+        self.hook = hooks / HOOK.name
+        shutil.copy(HOOK, self.hook)
+        self.addCleanup(self.td.cleanup)
+
+    def state(self, name, value):
+        (self.root / ".claude" / "state" / name).write_text(value)
+
+    def edit(self, path):
+        payload = {"tool_name": "Edit", "tool_input": {"file_path": path}}
+        proc = subprocess.run([sys.executable, str(self.hook)],
+                              input=json.dumps(payload), cwd=str(self.root),
+                              capture_output=True, text=True)
+        return proc.returncode, proc.stderr
+
+    def edit_n(self, path, n):
+        return [self.edit(path)[0] for _ in range(n)]
+
+    def test_interrupts_once_then_stands_aside(self):
+        self.state("current_task.txt", "t5")
+        self.state("current_role.txt", "implementer")
+        # The limit is 8 completed edits; the 9th is the one interrupted.
+        self.assertEqual(self.edit_n("src/theme.dart", 8), [0] * 8)
+        code, err = self.edit("src/theme.dart")
+        self.assertEqual(code, 2, "9th edit to one file should interrupt")
+        self.assertIn("[agentic deny]", err)
+        self.assertIn("script it", err, "must name the cheaper path")
+        # A genuinely per-site task retries and proceeds — one lost call, not a wall.
+        self.assertEqual(self.edit("src/theme.dart")[0], 0)
+        self.assertEqual(self.edit_n("src/theme.dart", 5), [0] * 5)
+
+    def test_counts_are_per_file(self):
+        self.state("current_task.txt", "t5")
+        self.edit_n("src/a.dart", 8)
+        # A different file starts its own tally rather than inheriting a.dart's.
+        self.assertEqual(self.edit_n("src/b.dart", 8), [0] * 8)
+        self.assertEqual(self.edit("src/b.dart")[0], 2)
+
+    def test_counts_reset_between_tasks(self):
+        self.state("current_task.txt", "t5")
+        self.edit_n("src/a.dart", 8)
+        # Next dispatch: even if `state.py clear --agent` was missed, one task's
+        # edits must not be charged against the next.
+        self.state("current_task.txt", "t6")
+        self.assertEqual(self.edit_n("src/a.dart", 8), [0] * 8)
+        self.assertEqual(self.edit("src/a.dart")[0], 2)
+
+    def test_not_enforced_outside_a_dispatched_task(self):
+        # No current_task.txt: ambient editing by the main session, never counted.
+        self.assertEqual(self.edit_n("src/a.dart", 12), [0] * 12)
+
+    def test_task_files_are_exempt(self):
+        # A reviewer legitimately edits one task file repeatedly to fill ## Review.
+        self.state("current_task.txt", "t5")
+        self.state("current_role.txt", "reviewer")
+        self.assertEqual(
+            self.edit_n(".claude/state/plans/FEAT-001/t1.md", 12), [0] * 12)
+
+    def test_write_is_not_counted(self):
+        # Write replaces a file wholesale; it does not compound like Edit.
+        self.state("current_task.txt", "t5")
+        for _ in range(12):
+            payload = {"tool_name": "Write", "tool_input": {"file_path": "src/a.dart"}}
+            proc = subprocess.run([sys.executable, str(self.hook)],
+                                  input=json.dumps(payload), cwd=str(self.root),
+                                  capture_output=True, text=True)
+            self.assertEqual(proc.returncode, 0)
+
+    def test_corrupt_tally_file_does_not_break_edits(self):
+        self.state("current_task.txt", "t5")
+        self.state("edit_counts.json", "{not json")
+        self.assertEqual(self.edit("src/a.dart")[0], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

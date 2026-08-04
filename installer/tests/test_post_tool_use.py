@@ -160,9 +160,37 @@ class LoggerCase(unittest.TestCase):
                       pre={"FEAT-001.jsonl": seed})
         budget = [r for r in self.logged["FEAT-001.jsonl"]
                   if r.get("event") == "budget"]
-        self.assertEqual(len(budget), 1, "crossing 800k result chars should warn")
+        self.assertEqual(len(budget), 1, "crossing 500k result chars should warn")
         self.assertEqual(budget[0]["axis"], "result_chars")
-        self.assertEqual(budget[0]["threshold"], 800_000)
+        self.assertEqual(budget[0]["threshold"], 500_000)
+
+    def test_first_threshold_straddles_the_healthy_ceiling(self):
+        # The point of the first threshold is to fire while the spend can still be
+        # changed. On FEAT-025 healthy tasks topped out at 463k result chars and
+        # the runaways ran to 1503k+; a threshold above the former and below the
+        # latter is the only band that warns early without warning on normal work.
+        # Raising it back over the healthy ceiling (it was 800k) would restore the
+        # behaviour where the first notice arrived after most of the money was gone.
+        import json as _j
+
+        def chars(total):
+            line = _j.dumps({"run_id": "FEAT-001", "task_id": "t4",
+                             "tool": "Edit", "res_chars": 20000})
+            return ("\n".join([line] * (total // 20000)) + "\n").encode()
+
+        self.run_hook(run_id="FEAT-001", state={"current_task.txt": "t4"},
+                      pre={"FEAT-001.jsonl": chars(460_000)})
+        self.assertEqual(
+            [r for r in self.logged["FEAT-001.jsonl"] if r.get("event") == "budget"],
+            [], "a task at the healthy ceiling must not warn")
+
+        self.setUp()
+        self.run_hook(run_id="FEAT-001", state={"current_task.txt": "t4"},
+                      pre={"FEAT-001.jsonl": chars(520_000)})
+        self.assertEqual(
+            len([r for r in self.logged["FEAT-001.jsonl"]
+                 if r.get("event") == "budget"]), 1,
+            "a task past the healthy ceiling must warn")
 
     def test_budget_axes_are_deduped_independently(self):
         # A prior calls warning must not suppress the first result_chars warning:

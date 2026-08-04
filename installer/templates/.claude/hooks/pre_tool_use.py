@@ -42,6 +42,31 @@ except ImportError:
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AGENTIC_YML = REPO_ROOT / ".claude" / ".agentic.yml"
 ROLE_STATE = REPO_ROOT / ".claude" / "state" / "current_role.txt"
+TASK_STATE = REPO_ROOT / ".claude" / "state" / "current_task.txt"
+
+# --- Repeated-edit cost guard -----------------------------------------------
+# Applying one transformation site by site is the most expensive shape a task can
+# take. Every `Edit` echoes its file's surrounding content back into the agent's
+# context, and every later turn re-reads all of it, so N sequential edits to one
+# file cost on the order of N². Measured on FEAT-025: t5 did 89 edits — 21 of them
+# to a single 25 KB file — for $12.28, against $3.68 for a 34-edit task. Healthy
+# tasks landed at 192k–463k result chars; the three runaway migrations at
+# 1503k/2175k/3523k, $31.71 between them.
+#
+# `agents/implementer.md` already tells the agent to script a mechanical change
+# hitting more than ~5 sites. That rule is prose, and prose in this system
+# demonstrably gets skipped — the same run had two tasks ignore a retrieve call
+# marked "exactly once — this is not optional". This is that rule with a
+# mechanism behind it.
+#
+# It interrupts ONCE per file and then stands aside: a retry proceeds. That is
+# deliberate. The goal is to force one reconsideration while scripting is still
+# the cheaper path, not to adjudicate whether a task is allowed to be long — a
+# genuinely per-site task loses a single call and carries on. Blocking outright
+# would make a heuristic terminal, which is the objection `post_tool_use.py`
+# raises against its own budget thresholds, and it is a fair one.
+EDIT_REPEAT_LIMIT = 8
+EDIT_COUNTS = REPO_ROOT / ".claude" / "state" / "edit_counts.json"
 
 # Role-independent destructive patterns (in addition to `rm -rf`, handled by
 # is_dangerous_rm, and the user's gateway.deny list).
@@ -214,6 +239,72 @@ def current_role() -> str | None:
         return None
 
 
+def current_task() -> str | None:
+    try:
+        return TASK_STATE.read_text(encoding="utf-8").strip() or None
+    except OSError:
+        return None
+
+
+def _load_edit_counts(task: str) -> dict:
+    """Edit tallies for `task` only.
+
+    A file left over from an earlier task is reset rather than trusted, so a
+    missed `state.py clear --agent` cannot charge one task's edits against the
+    next. Any unreadable or malformed file resets the same way — this is a cost
+    heuristic, and losing a tally is cheaper than failing a tool call over it."""
+    try:
+        data = json.loads(EDIT_COUNTS.read_text(encoding="utf-8"))
+        if isinstance(data, dict) and data.get("task") == task:
+            files, warned = data.get("files"), data.get("warned")
+            return {
+                "task": task,
+                "files": files if isinstance(files, dict) else {},
+                "warned": warned if isinstance(warned, list) else [],
+            }
+    except (OSError, ValueError):
+        pass
+    return {"task": task, "files": {}, "warned": []}
+
+
+def _save_edit_counts(data: dict) -> None:
+    try:
+        EDIT_COUNTS.parent.mkdir(parents=True, exist_ok=True)
+        EDIT_COUNTS.write_text(json.dumps(data), encoding="utf-8")
+    except OSError:
+        pass  # bookkeeping must never break a run
+
+
+def check_repeated_edits(rel: str) -> None:
+    """Interrupt once when one file passes EDIT_REPEAT_LIMIT edits in one task."""
+    task = current_task()
+    if not task:
+        return  # ambient editing outside a dispatched task — never enforced
+    # Workflow bookkeeping is not the migration shape this guards: a reviewer
+    # legitimately edits one task file several times to fill `## Review`, and
+    # interrupting that would break the pipeline this exists to cost-control.
+    if rel.startswith(".claude/state/"):
+        return
+    data = _load_edit_counts(task)
+    n = data["files"].get(rel, 0)
+    if n >= EDIT_REPEAT_LIMIT and rel not in data["warned"]:
+        data["warned"].append(rel)
+        _save_edit_counts(data)
+        deny(
+            f"{n} edits to {rel} in task {task}. Every Edit echoes the file's "
+            "surrounding content back into context and every later turn re-reads "
+            "it, so editing one file site by site costs on the order of N² "
+            "(measured on this system: 89 edits = $12.28, against $3.68 for 34). "
+            "If this is one transformation across many sites, script it — sed, "
+            "perl -pi, or a codemod like dart fix / jscodeshift / ruff --fix — "
+            "run it once, verify with the project's own checks, then read the "
+            "diff. If these edits each genuinely need their own judgment, simply "
+            "retry: this interrupts once per file and then stands aside."
+        )
+    data["files"][rel] = n + 1
+    _save_edit_counts(data)
+
+
 def path_allowed_for_role(rel: str, prefixes: list[str]) -> bool:
     for pre in prefixes:
         if pre.endswith("/"):
@@ -301,6 +392,12 @@ def main() -> None:
             ):
                 allowed = ", ".join(ROLE_WRITE_WHITELIST[role])
                 deny(f"role '{role}' may only write under: {allowed} (got {rel})")
+
+            # 3. Repeated site-by-site edits to one file (cost guard). Scoped to
+            #    Edit: Write replaces a file wholesale and does not compound the
+            #    same way, and the measured failure mode is Edit specifically.
+            if tool == "Edit" and rel is not None:
+                check_repeated_edits(rel)
 
     sys.exit(0)
 

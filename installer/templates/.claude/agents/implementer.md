@@ -76,6 +76,11 @@ You implement **one task**. You are given a single task file path. Everything yo
 
    Per-site changes — where each occurrence needs its own judgment — are edited
    individually as normal. The rule is about repetition, not volume.
+
+   Past 8 edits to one file, `pre_tool_use.py` denies the next one and repeats
+   this rule. That interrupt is a prompt to reconsider, not a wall: it fires once
+   per file, and retrying the edit proceeds. If the change really is per-site,
+   retry and carry on. If it is one transformation, script it as above.
 7. **You MAY call MCP runtime tools** (`mcp__dbhub`, `mcp__supabase`) for external system interaction. Outputs may be referenced in `## Design` or `## Decisions log` only — never used to change task decomposition.
 8. **Update the task file:**
    - Fill `## Design` (files added/changed, contracts, data model).
