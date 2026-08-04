@@ -378,7 +378,8 @@ def check_skill_digest() -> dict:
 
 def check_hooks_compile() -> list[dict]:
     out = []
-    for name in ("pre_tool_use.py", "post_tool_use.py", "log_usage.py"):
+    for name in ("pre_tool_use.py", "post_tool_use.py", "log_usage.py",
+                 "stop_usage.py"):
         p = CLAUDE / "hooks" / name
         if not p.exists():
             out.append(_check(f"hook: {name}", FAIL, "missing"))
@@ -706,6 +707,28 @@ def check_verification() -> list[dict]:
                           "" if registered else
                           "not in settings.json SubagentStop — review verification "
                           "is skippable; re-run the installer to sync managed hooks"))
+
+    # Without this one registered, /agentic-logs silently reports subagent cost
+    # only — which reads as a complete bill rather than a partial one, and sent a
+    # cost investigation looking in the wrong place.
+    stop_hook = REPO_ROOT / ".claude" / "hooks" / "stop_usage.py"
+    if not stop_hook.exists():
+        out.append(_check("stop_usage.py", FAIL, "missing — re-run the installer"))
+    else:
+        registered = False
+        try:
+            cfg = json.loads(settings.read_text(encoding="utf-8"))
+            registered = any(
+                "stop_usage" in (h.get("command") or "")
+                for entry in (cfg.get("hooks", {}).get("Stop") or [])
+                for h in entry.get("hooks", []))
+        except Exception:
+            pass
+        out.append(_check("stop_usage hook", OK if registered else FAIL,
+                          "" if registered else
+                          "not in settings.json Stop — the orchestrator's own "
+                          "tokens go unlogged and /agentic-logs under-reports the "
+                          "run; re-run the installer to sync managed hooks"))
 
     try:
         sys.path.insert(0, str(lib))

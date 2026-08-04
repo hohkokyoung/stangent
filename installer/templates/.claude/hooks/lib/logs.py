@@ -82,18 +82,27 @@ def _task_statuses(run_id: str) -> dict:
 
 
 def _aggregate_usage(events: list[dict]) -> dict:
-    """task_id → summed {input,output,cache_read,cache_write,cost,turns} from the
-    SubagentStop usage events (log_usage.py). Empty if telemetry hasn't run."""
+    """task_id → summed {input,output,cache_read,cache_write,cost,turns,role} from
+    the usage events — SubagentStop (log_usage.py) for each dispatched agent, and
+    Stop (stop_usage.py) for the orchestrator's own thread. Empty if telemetry
+    hasn't run.
+
+    `role` is carried through so the `(session)` bucket can be labelled: the
+    orchestrator's own tool calls run with no `current_role.txt`, so without this
+    the row holding the dispatcher's entire cost printed a bare `-`."""
     by_task: dict[str, dict] = {}
     for e in events:
         tid = e.get("task_id") or "(session)"
         agg = by_task.setdefault(tid, {"input": 0, "output": 0, "cache_read": 0,
-                                       "cache_write": 0, "cost": 0.0, "turns": 0})
+                                       "cache_write": 0, "cost": 0.0, "turns": 0,
+                                       "role": None})
         tk = e.get("tokens") or {}
         for k in ("input", "output", "cache_read", "cache_write"):
             agg[k] += int(tk.get(k, 0) or 0)
         agg["cost"] += float(e.get("cost_usd", 0) or 0)
         agg["turns"] += int(e.get("turns", 0) or 0)
+        if agg["role"] is None and e.get("agent_role"):
+            agg["role"] = e["agent_role"]
     return by_task
 
 
@@ -159,7 +168,7 @@ def summarize(run_id: str) -> dict:
         use = usage_by_task.get(tid, {})
         task_list.append({
             "task_id": tid,
-            "role": t["role"] or d.get("role"),
+            "role": t["role"] or d.get("role") or use.get("role"),
             "model": t["model"] or d.get("model_selected"),
             "status": statuses.get(tid, "-"),
             "calls": t["calls"], "retrieve": t["retrieve"],
@@ -175,7 +184,7 @@ def summarize(run_id: str) -> dict:
     for tid, use in usage_by_task.items():
         if tid not in order:
             task_list.append({
-                "task_id": tid, "role": None, "model": None,
+                "task_id": tid, "role": use.get("role"), "model": None,
                 "status": statuses.get(tid, "-"), "calls": 0, "retrieve": 0,
                 "get_symbol": 0, "denials": 0, "failures": 0, "duration_s": None,
                 "res_chars": 0, "routing_applied": False,

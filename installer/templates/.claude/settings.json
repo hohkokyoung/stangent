@@ -30,6 +30,17 @@
         ]
       }
     ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .claude/py .claude/hooks/stop_usage.py",
+            "_agentic_managed": true
+          }
+        ]
+      }
+    ],
     "SubagentStop": [
       {
         "hooks": [
