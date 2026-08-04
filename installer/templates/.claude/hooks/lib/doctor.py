@@ -611,8 +611,15 @@ def check_install_manifest() -> list[dict]:
         return out
     behind = [rel for rel, hs in files.items()
               if h(src / rel) not in (None, hs.get("tpl"))]
+    # Cache dirs are excluded for the same reason the installer refuses to copy
+    # them (agentic.py COPY_IGNORE): they are one developer's local droppings in
+    # the source checkout, not template content. Filtering only __pycache__ here
+    # meant every .pytest_cache file in the source counted as a NEW template, so a
+    # correctly-installed project reported itself perpetually behind.
+    cache_dirs = {"__pycache__", ".pytest_cache", ".ruff_cache"}
     added = [f.relative_to(src).as_posix() for f in src.rglob("*")
-             if f.is_file() and "__pycache__" not in f.parts
+             if f.is_file() and not cache_dirs.intersection(f.parts)
+             and f.name != ".DS_Store" and f.suffix != ".pyc"
              and f.relative_to(src).as_posix() not in files
              and f.relative_to(src).parts[0] in ("agents", "commands", "skills",
                                                  "hooks", "mcp", "evals", "templates")]
