@@ -84,6 +84,25 @@ def info(msg: str) -> None:
 MANIFEST_NAME = ".install.json"
 MIRROR_DIRS = ("agents", "commands", "skills", "hooks", "mcp", "evals", "templates")
 
+# Tool caches that appear in the template tree whenever anyone runs the suite or
+# a linter from this checkout. They are gitignored here, so they never reach a
+# clone — but the installer copies from the WORKING TREE, which mirrored one
+# developer's local caches into every install and then tracked them in
+# .install.json as system files. Observed: 12 such dirs in a real install.
+COPY_IGNORE = ("__pycache__", "*.pyc", ".pytest_cache", ".ruff_cache", ".DS_Store")
+# The directory names among those, for filtering a walk rather than a copy.
+_CACHE_DIRS = frozenset(n for n in COPY_IGNORE if not n.startswith("*") and n != ".DS_Store")
+
+
+def _is_cache_path(p: Path) -> bool:
+    """True for tool-cache droppings, wherever they sit in the tree.
+
+    `write_manifest` filtered only `__pycache__`, so `.pytest_cache` files were
+    hashed and recorded as system files — which then read as install content that
+    a re-install would legitimately replace."""
+    return bool(_CACHE_DIRS.intersection(p.parts)) or p.name == ".DS_Store" \
+        or p.suffix == ".pyc"
+
 
 def _hash_file(p: Path) -> str:
     import hashlib
@@ -133,7 +152,7 @@ def write_manifest(target: Path) -> None:
         if not src_d.exists():
             continue
         for f in sorted(src_d.rglob("*")):
-            if not f.is_file() or "__pycache__" in f.parts:
+            if not f.is_file() or _is_cache_path(f):
                 continue
             rel = f.relative_to(src).as_posix()
             installed = dst / rel
@@ -191,7 +210,7 @@ def copy_templates(target: Path) -> None:
         dst_d = dst / name
         if dst_d.exists():
             shutil.rmtree(dst_d)
-        shutil.copytree(src_d, dst_d)
+        shutil.copytree(src_d, dst_d, ignore=shutil.ignore_patterns(*COPY_IGNORE))
 
     for name in seed_files:
         src_f = src / name

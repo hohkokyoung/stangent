@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -611,3 +612,48 @@ class TestGitignoreDoesNotExposeSecrets(unittest.TestCase):
         ag.install(self.root)
         gi = (self.root / ".gitignore").read_text()
         self.assertIn("\n.mcp.json\n", gi, "a live token must not be un-ignored")
+
+
+class CacheDroppingsCase(unittest.TestCase):
+    """Tool caches in the template tree must not reach an install.
+
+    The installer copies from the WORKING TREE, not from git, so `.pytest_cache/`
+    and `__pycache__/` left by running the suite were mirrored into every install
+    and then recorded in .install.json as system files — 12 of them in a real
+    project, where they read as install content rather than as one developer's
+    local droppings.
+    """
+
+    def test_caches_are_neither_copied_nor_tracked(self):
+        with tempfile.TemporaryDirectory() as td:
+            target = Path(td) / "proj"
+            target.mkdir()
+            src = ag.TEMPLATES_DIR / ".claude"
+            planted = [
+                src / "agents" / ".pytest_cache" / "CACHEDIR.TAG",
+                src / "commands" / "__pycache__" / "x.pyc",
+                src / "hooks" / ".ruff_cache" / "cache",
+            ]
+            made = []
+            for p in planted:
+                if not p.parent.exists():
+                    p.parent.mkdir(parents=True)
+                    made.append(p.parent)
+                p.write_text("junk")
+            try:
+                ag.install(target)
+                dst = target / ".claude"
+                for name in (".pytest_cache", "__pycache__", ".ruff_cache"):
+                    self.assertEqual(
+                        list(dst.rglob(name)), [],
+                        f"{name} was copied into the install")
+                manifest = json.loads((dst / ".install.json").read_text())
+                bad = [r for r in manifest["files"]
+                       if any(n in r for n in (".pytest_cache", "__pycache__",
+                                               ".ruff_cache"))]
+                self.assertEqual(bad, [], "cache files tracked as system files")
+            finally:
+                for p in planted:
+                    p.unlink(missing_ok=True)
+                for d in made:
+                    shutil.rmtree(d, ignore_errors=True)
