@@ -7,12 +7,14 @@ The build order (decisions.md D19) and how phases stay in step with each other (
 | Phase | Delivers | Consumes contracts from | Provides contracts | Status |
 |---|---|---|---|---|
 | **0. Foundation** | repo setup, store interface, artifact schema conventions, CLI skeleton, Claude Code plugin skeleton, telemetry event format, benchmark harness | — | `store`, `artifact-base`, `telemetry-event`, `cli-conventions`, `benchmark` | done ([report](phases/0-foundation.md#end-of-phase-report)) |
-| **1. Code graph** | Roslyn + TypeScript extractor, first link detectors, blind-spot markers, impact reports | 0 | `code-graph`, `impact-report` | not started |
-| **2. Spec** | document import, full code audit, provenance labels, link file, discrepancy queue | 0, 1 | `spec`, `trace-links`, `source-document`, `discrepancy` | not started |
-| **3. Tickets** | Jira ticket → context bundle (spec, impact, attachments); updates written back | 0, 1, 2 | `ticket-bundle`, `ticket-update` | not started |
-| **4. Agents** | ticket → task breakdown, bounded parallel subagents, D18 checks on every output | 0, 1, 2, 3 | `task-plan`, `agent-run` | not started |
-| **5. Testing** | unit, integration, Playwright tests chosen from the graph, tagged with requirement IDs | 0, 1, 2, 4 | `test-result` | not started |
-| **6. PR** | review package for seniors, senior comment layer | 0, 1, 2, 4, 5 | `pr-review` | not started |
+| **1a. C# map** | Roslyn extractor at method level, C# link detectors, blind-spot markers, impact answers, scoring | 0 | `code-graph`, `impact-report` | in progress ([plan](phases/1a-csharp-map.md)) |
+| **1b. Frontend + API shapes** | TypeScript extractor, frontend → backend HTTP links, API request/response fields | 0, 1a | — (extends `code-graph`) | not started |
+| **1c. Git history** | "usually changes together" evidence with noise filters | 0, 1a | — (extends `code-graph`) | not started |
+| **2. Spec** | document import, full code audit, provenance labels, link file, discrepancy queue | 0, 1a | `spec`, `trace-links`, `source-document`, `discrepancy` | not started |
+| **3. Tickets** | Jira ticket → context bundle (spec, impact, attachments); updates written back | 0, 1a, 2 | `ticket-bundle`, `ticket-update` | not started |
+| **4. Agents** | ticket → task breakdown, bounded parallel subagents, D18 checks on every output | 0, 1a, 2, 3 | `task-plan`, `agent-run` | not started |
+| **5. Testing** | unit, integration, Playwright tests chosen from the graph, tagged with requirement IDs | 0, 1a, 2, 4 | `test-result` | not started |
+| **6. PR** | review package for seniors, senior comment layer | 0, 1a, 2, 4, 5 | `pr-review` | not started |
 | **7. CI/CD** | deployment on GitHub Actions: simple, monitorable, retryable | 0, 5, 6 | `deployment` | not started |
 | **8. Dashboard** | BA/PM spec view (D12), then the links between everything | all | — | not started |
 | **Demo** (any time) | quick interactive prototypes | 0, 2 | `prototype` | not started |

@@ -277,6 +277,72 @@ Rejected: a store library per language (two copies drift); products touching fil
 - A per-repo switch turns off all AI steps (only code-only parts run), for any client whose
   contract forbids external AI. Cheap now, expensive to retrofit.
 
+## D25 · The code graph is rebuilt from code, never committed — 2026-10-19
+- The graph lives in `.stangent/graph.sqlite` (git-ignored), tagged with the commit it was built from.
+- CI builds it once per merge to `main` and saves it as a build output; developers and agents
+  download that copy instead of re-indexing, then re-index only what changed locally.
+- Same commit → same graph; tested by building twice and comparing.
+- The rule (refines D7): git holds what people decide (specs, trace links, verifications,
+  discrepancy decisions); anything code can regenerate stays out. The committed link file
+  (D10) is checked in CI against a freshly built graph.
+**Why:** committing it would add graph churn to every PR, cause unresolvable merge conflicts,
+and risk a stale graph — and CI would have to rebuild it to verify it anyway.
+**Cost:** a fresh checkout has no graph until it downloads one or indexes (minutes at 500k
+lines); CI build outputs expire, so old commits eventually need re-indexing.
+
+## D26 · What the code graph holds — 2026-10-19
+- **Points, at method level:** project, file, class/interface, method, property; entry points
+  (HTTP endpoint, frontend page/component, event/message, database table); test methods (marked as tests).
+- **Also, so non-call breakages show up:**
+  - **API data shapes:** each endpoint's request/response fields, plus entity/DTO properties
+    (respecting each project's JSON naming settings). Frontend fields are linked only when the
+    frontend type is clearly tied to the endpoint (typed interface, generated client); otherwise ❓.
+  - **Config keys,** linked to the code that reads them (including bound settings classes).
+    Environment variables and external secrets are ❓.
+- **Lines:** calls, uses, implements/overrides, inherits, wired to (DI), routes to, publishes/handles,
+  reads/writes table, HTTP call, reads config, tests.
+- **Every line is labelled:** ✅ certain (compiler), 🟡 guessed (detector pattern),
+  📜 usually changes together (from `git log`, filtered: no merges, no huge commits, older history
+  weighs less; a hint only, never blocking), ❓ unknown (blind spot).
+- Later: test coverage data (Phase 5); real traffic between services from OpenTelemetry traces, if the company has them.
+- Rejected: numeric confidence scores (made-up precision).
+**Cost:** Phase 1 takes longer (three extra detectors); the graph is roughly 1.5–2× bigger (estimate, to
+measure); history needs full clones, not shallow ones. Reports list ✅ first, then 🟡, then 📜 and ❓,
+grouped and capped, to avoid alert fatigue. The benchmark scores each label separately; a label that
+mostly adds false alarms is switched off or tuned.
+
+## D27 · Impact answers: summary first, details on request — 2026-10-19
+- An impact answer stops at entry points people recognise: endpoints, pages, event handlers,
+  requirements (via D10 links), and the tests that cover the change. Grouped by kind and by
+  label (✅ 🟡 📜 ❓), each group with its count.
+- Details come on request (`--expand <group>`); the methods in between stay available, not shown.
+- ❓ unknowns are always listed one by one, never folded into a count.
+- One result, two formats: compact JSON for agents, Markdown for PRs and people (reused in Phase 6).
+- Built by code (graph walk + grouping), no AI: the same change always gives the same report (D18).
+**Why:** an agent reads ~15 lines instead of hundreds; a BA/PM can follow it through requirement IDs.
+**Cost:** group counts can hide something important; mitigated by counts on every group and listing every unknown.
+
+## D28 · How impact analysis is scored — 2026-10-19
+Three tests, all run by code from git history (no AI, no manual labelling):
+1. **Finds the rest of the change:** given one file of a past PR, how many of the PR's other files
+   does impact analysis find, and how many wrong ones does it add.
+2. **Predicts what broke (headline):** pairs of a change and a later fix ("fix", "regression", a
+   referenced issue); does impact on the first commit include what the fix touched.
+3. **Stable and fast:** two builds of the same commit are byte-identical; full and incremental build times.
+- Tests 1–2 report found/wrong **per label** (✅ 🟡 📜 ❓, D26) in every end-of-phase report.
+- A sample of ~20 Test 2 pairs is hand-checked once to say how reliable the pair-finding is.
+- No targets yet: measure first, set targets from the first results.
+- The benchmark needs full git history for these repos, not shallow clones.
+
+## D29 · Phase 1 is split into 1a, 1b, 1c — 2026-10-19
+| Sub-phase | Delivers | Proven on |
+|---|---|---|
+| 1a. C# map | Roslyn extractor (method level); detectors: routes, DI, events, EF Core / entity tables, config keys, HTTP between services; impact answers (D27); scoring tests (D28) | nopCommerce, eShop |
+| 1b. Frontend + API shapes | TypeScript extractor; Angular/React → backend HTTP links; API request/response fields | CleanArchitecture |
+| 1c. Git history | 📜 "usually changes together", with noise filters | nopCommerce, eShop |
+Each ends with its own report (D20). 1b depends on 1a; 1c may wait if 1a's scores are good enough.
+**Why:** a working, scored C# impact analysis much sooner, and a chance to change course before the frontend half.
+
 ## Open questions
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
