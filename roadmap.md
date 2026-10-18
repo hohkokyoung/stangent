@@ -1,0 +1,58 @@
+# Roadmap
+
+The build order (decisions.md D19) and how phases stay in step with each other (D20).
+
+## Phases
+
+| Phase | Delivers | Consumes contracts from | Provides contracts | Status |
+|---|---|---|---|---|
+| **0. Foundation** | repo setup, store interface, artifact schema conventions, CLI skeleton, Claude Code plugin skeleton, telemetry event format, benchmark harness | — | `store`, `artifact-base`, `telemetry-event`, `cli-conventions`, `benchmark` | not started |
+| **1. Code graph** | Roslyn + TypeScript extractor, first link detectors, blind-spot markers, impact reports | 0 | `code-graph`, `impact-report` | not started |
+| **2. Spec** | document import, full code audit, provenance labels, link file, discrepancy queue | 0, 1 | `spec`, `trace-links`, `source-document`, `discrepancy` | not started |
+| **3. Tickets** | Jira ticket → context bundle (spec, impact, attachments); updates written back | 0, 1, 2 | `ticket-bundle`, `ticket-update` | not started |
+| **4. Agents** | ticket → task breakdown, bounded parallel subagents, D18 checks on every output | 0, 1, 2, 3 | `task-plan`, `agent-run` | not started |
+| **5. Testing** | unit, integration, Playwright tests chosen from the graph, tagged with requirement IDs | 0, 1, 2, 4 | `test-result` | not started |
+| **6. PR** | review package for seniors, senior comment layer | 0, 1, 2, 4, 5 | `pr-review` | not started |
+| **7. CI/CD** | deployment on GitHub Actions: simple, monitorable, retryable | 0, 5, 6 | `deployment` | not started |
+| **8. Dashboard** | BA/PM spec view (D12), then the links between everything | all | — | not started |
+| **Demo** (any time) | quick interactive prototypes | 0, 2 | `prototype` | not started |
+
+Status values: `not started` · `in progress` · `done` · `needs review` (an upstream contract changed after this phase was done).
+
+## Phase files
+
+Each phase gets `phases/<n>-<name>.md` when it starts. Front matter declares the contract
+versions it consumes and provides — this is what the dependency check reads:
+
+```yaml
+---
+phase: 2
+name: spec
+status: in progress
+consumes: { store: 1, artifact-base: 1, code-graph: 1 }
+provides: { spec: 1, trace-links: 1, source-document: 1, discrepancy: 1 }
+---
+```
+
+The body holds the phase's plan and, once it ends, its **end-of-phase report**.
+
+## End-of-phase report
+
+Written when a phase ends, and again whenever the phase is reopened and changed:
+
+1. **What was built.** Commands, files, contracts (with versions).
+2. **Benchmark results.** On nopCommerce, eShop and CleanArchitecture (D6), compared with the last report.
+3. **Decisions made or changed.** With links to `decisions.md` entries.
+4. **Known gaps.** What doesn't work yet, and the blind spots.
+5. **Impact on other phases.** Contracts that changed, and which phases consume them.
+6. **Follow-ups.** Work handed to later phases.
+
+## When a finished phase changes
+
+1. Reopen its phase file, make the change, and bump the version of any contract whose shape changed.
+2. A check (built in Phase 0) compares every phase's `consumes` against the current
+   `provides` versions and lists each phase still on an old version.
+3. Those phases are marked `needs review` here, each gets a follow-up task, and the change's
+   report lists them. Downstream code is never changed automatically: each consumer is updated
+   and re-tested by its own follow-up.
+4. A phase leaves `needs review` only when its `consumes` versions are current and its tests pass.
