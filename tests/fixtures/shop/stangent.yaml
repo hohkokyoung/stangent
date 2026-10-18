@@ -1,0 +1,8 @@
+version: 1
+detectorSettings:
+  publish-handle:
+    handlerInterfaces: [Shop.Core.IHandle`1]
+  entity-tables:
+    entityBaseTypes: [Shop.Core.Entity]
+  http-services:
+    services: [stock-api=Shop.Stock]

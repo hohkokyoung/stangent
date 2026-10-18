@@ -3,7 +3,7 @@ phase: 0
 name: foundation
 status: done
 consumes: {}
-provides: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 1, benchmark: 1 }
+provides: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1 }
 ---
 
 # Phase 0 · Foundation
@@ -127,3 +127,12 @@ None yet. All contracts are new at v1 and nothing consumes them. Phase 1 will be
 - ~~Add a GitHub remote, push, confirm CI is green~~: done. The repo is now `hohkokyoung/stangent`; the earlier
   repo of that name is archived as `hohkokyoung/stangent-archive`.
 - Phase 1 (code graph) starts with its own grilling (D22).
+
+### Reopened 2026-10-19 (during Phase 1a)
+- **`cli-conventions` v1 → v2:** commands with `--format md` may print Markdown instead of the
+  JSON envelope on success (needed for `graph impact` in PRs). It's opt-in, so callers that never pass
+  `--format md` see no change. Consumer flagged: 1a (updated in the same change, since it's the phase making it).
+- **`benchmark` stays v1, extended:** per-repo `configs/<name>.yaml` (detector settings) and
+  `configs/<name>.global.json` (SDK override; nopCommerce pins SDK 10.0.401, which neither this
+  machine nor CI has) are applied after `stangent init`.
+

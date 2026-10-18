@@ -37,6 +37,10 @@ while IFS=$'\t' read -r name url commit; do
 
   telemetry=$(mktemp -d)
   STANGENT_TELEMETRY_DIR="$telemetry" "$stangent" init --repo "$dir" >/dev/null
+  # A repo-specific stangent.yaml (detector settings) replaces the default when there is one.
+  [ -f "$here/configs/$name.yaml" ] && cp "$here/configs/$name.yaml" "$dir/stangent.yaml"
+  # Some repos pin a newer SDK than this machine or CI has; an override is recorded in the phase report.
+  [ -f "$here/configs/$name.global.json" ] && cp "$here/configs/$name.global.json" "$dir/global.json"
   start=$(now_ms)
   set +e
   (cd "$dir" && STANGENT_TELEMETRY_DIR="$telemetry" "$stangent" "$@" >"$telemetry/output.json")

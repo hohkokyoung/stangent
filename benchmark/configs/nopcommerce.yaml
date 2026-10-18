@@ -1,0 +1,11 @@
+# stangent.yaml for the nopCommerce benchmark: replaces the default written by `stangent init`.
+version: 1
+store:
+  root: .stangent/store
+ai:
+  enabled: true
+detectors: []
+detectorSettings:
+  entity-tables:
+    # nopCommerce maps entities with linq2db by convention: every BaseEntity subclass is a table.
+    entityBaseTypes: [Nop.Core.BaseEntity]

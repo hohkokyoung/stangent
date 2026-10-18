@@ -192,6 +192,9 @@ limits — and an archive that's only added to doesn't suffer the two-repo probl
   through the Microsoft DI API), linq2db + FluentMigrator (not EF Core), jQuery (no Angular/React),
   plus its own `IConsumer<T>` events. So on the benchmark, the database and frontend detectors
   in the first set can't be tested; a linq2db and an in-house event detector would be needed for it.
+- *Refined 2026-10-19 (Phase 1a):* events also match across services by type name (🟡), since
+  services keep their own copies of integration events; `http-services` takes a `services` map for
+  service names without Aspire.
 **Why:** plain-reference indexers miss the links that break production (string routes, events,
 DI choice, cross-service calls); nopCommerce alone has 234 string-based route definitions.
 **Cost:** we maintain the extractor and keep up with new C# and TypeScript language features.
@@ -319,6 +322,8 @@ mostly adds false alarms is switched off or tuned.
 - ❓ unknowns are always listed one by one, never folded into a count.
 - One result, two formats: compact JSON for agents, Markdown for PRs and people (reused in Phase 6).
 - Built by code (graph walk + grouping), no AI: the same change always gives the same report (D18).
+- *Refined 2026-10-19 (Phase 1a):* event handlers are end points of the walk. Past one, only further
+  events are followed, never the dispatcher behind it (otherwise one change reached 2,534 nopCommerce endpoints).
 **Why:** an agent reads ~15 lines instead of hundreds; a BA/PM can follow it through requirement IDs.
 **Cost:** group counts can hide something important; mitigated by counts on every group and listing every unknown.
 

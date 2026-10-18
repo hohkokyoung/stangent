@@ -10,8 +10,13 @@ public sealed class StangentConfig
     public int Version { get; set; } = 1;
     public StoreConfig Store { get; set; } = new();
     public AiConfig Ai { get; set; } = new();
-    /// <summary>Code-graph link detectors to run (D17). Filled in Phase 1.</summary>
+    /// <summary>
+    /// Code-graph link detectors to run (D17). Empty means every built-in detector; list names to
+    /// run only those; <c>[none]</c> runs none.
+    /// </summary>
     public List<string> Detectors { get; set; } = [];
+    /// <summary>Per-detector settings, e.g. <c>publish-handle: { handlerInterfaces: [...] }</c>.</summary>
+    public Dictionary<string, Dictionary<string, List<string>>> DetectorSettings { get; set; } = [];
     public AdaptersConfig Adapters { get; set; } = new();
 
     public sealed class StoreConfig

@@ -1,0 +1,119 @@
+{
+  "repo": "nopcommerce",
+  "graphCommit": "77d112f365e210ebdfa2f9790c8202a0e3b1c74e",
+  "windowMonths": 36,
+  "caveat": "Every commit is scored against the graph of the pinned commit, not the graph at that commit.",
+  "labels": "certain = ✅ only; certain+guessed = ✅ and 🟡. 📜 (Phase 1c) not built yet.",
+  "test1FindsTheRest": {
+    "cases": 925,
+    "certain": {
+      "recall": 0.278,
+      "precision": 0.005,
+      "found": 1560,
+      "of": 5602,
+      "medianPredictedFiles": 12
+    },
+    "certain+guessed": {
+      "recall": 0.283,
+      "precision": 0.005,
+      "found": 1584,
+      "of": 5602,
+      "medianPredictedFiles": 13
+    }
+  },
+  "test1FindsTheRestPlusDirectDependencies": {
+    "cases": 925,
+    "certain": {
+      "recall": 0.373,
+      "precision": 0.006,
+      "found": 2091,
+      "of": 5602,
+      "medianPredictedFiles": 60
+    },
+    "certain+guessed": {
+      "recall": 0.378,
+      "precision": 0.006,
+      "found": 2119,
+      "of": 5602,
+      "medianPredictedFiles": 62
+    }
+  },
+  "test2PredictsWhatBroke": {
+    "cases": 4,
+    "certain": {
+      "recall": 0.778,
+      "precision": 0.002,
+      "found": 7,
+      "of": 9,
+      "medianPredictedFiles": 1023
+    },
+    "certain+guessed": {
+      "recall": 0.778,
+      "precision": 0.002,
+      "found": 7,
+      "of": 9,
+      "medianPredictedFiles": 1053
+    }
+  },
+  "test2Pairs": {
+    "fixCommits": 60,
+    "pairs": 4,
+    "trivialPairsExcluded": 23,
+    "handCheckSample": [
+      {
+        "change": "4cd15f70c64ff3b01ef1dea2bf4067ff1181ff0b",
+        "changeSubject": "#8239 Inconsistency in currency parsing",
+        "fix": "59078e6b319b6b164e38e22f371dd43cafb5b3f7",
+        "fixSubject": "Fix #8279: read XLSX decimal cells independently of the current culture (#8280)",
+        "fixFilesElsewhere": [
+          "src/Tests/Nop.Tests/Nop.Services.Tests/ExportImport/PropertyByNameTests.cs"
+        ],
+        "genuine": "likely: currency-parsing change, then a fix for decimal reading that depended on currency"
+      },
+      {
+        "change": "22a926a9da30f2cf548ce67de8aae2d50da48afc",
+        "changeSubject": "Refactoring of \"path base\" functionality",
+        "fix": "d31c4a9ea80a4afab02d4d4b0862f1593428cc79",
+        "fixSubject": "#6868 Fixed paths when registering js/css assets",
+        "fixFilesElsewhere": [
+          "src/Presentation/Nop.Web.Framework/WebOptimizer/NopAssetHelper.cs"
+        ],
+        "genuine": "likely: a refactor of path handling, then a fix for broken asset paths"
+      },
+      {
+        "change": "3fa485bc366b738d0bc0469585e0f079197e4962",
+        "changeSubject": "Add notification to vendor when order cancelled #7108",
+        "fix": "3d72cede8d7b571ca83dcc197ab173f033e2ba81",
+        "fixSubject": " #7251 Fixed problems with wrong language in some message templates",
+        "fixFilesElsewhere": [
+          "src/Libraries/Nop.Services/Messages/CampaignService.cs",
+          "src/Libraries/Nop.Services/Messages/ICampaignService.cs",
+          "src/Libraries/Nop.Services/Messages/IMessageTokenProvider.cs",
+          "src/Presentation/Nop.Web/Areas/Admin/Controllers/CampaignController.cs",
+          "src/Tests/Nop.Tests/Nop.Services.Tests/Messages/CampaignServiceTests.cs"
+        ],
+        "genuine": "likely: a new notification, then a fix for wrong-language message templates"
+      },
+      {
+        "change": "34215c134d50b7a77c75d55536de59b322587a77",
+        "changeSubject": "#7094 PayPal Zettle plugin. Fix inventory doubling on webhook request (#7096)",
+        "fix": "25de00e68255a2c0a85289179c5f3ffa8e53c574",
+        "fixSubject": "#7094 PayPal Zettle plugin. Next changes to fix inventory doubling",
+        "fixFilesElsewhere": [
+          "src/Plugins/Nop.Plugin.Misc.Zettle/Data/InventoryBalanceMigration.cs",
+          "src/Plugins/Nop.Plugin.Misc.Zettle/ZettleSettings.cs"
+        ],
+        "genuine": "unlikely: same issue (#7094) continued, not a breakage"
+      }
+    ],
+    "handCheckNote": "All pairs judged by the agent (Claude) from commit subjects only, 2026-10-19; not verified by a person."
+  },
+  "test3StableAndFast": {
+    "identicalFullBuilds": true,
+    "incrementalEqualsFull": true,
+    "fullBuildMs": 38296,
+    "incrementalBuildMs": 2030,
+    "incrementalExtracted": 1,
+    "touchedFile": "src/Build/src/ClearPluginAssemblies/Program.cs"
+  }
+}

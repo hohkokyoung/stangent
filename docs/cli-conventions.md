@@ -12,6 +12,8 @@ are what callers (other products, Claude Code commands and hooks, CI) can rely o
 - Keys are sorted, so the same result always prints the same bytes.
 - Warnings go to stderr; stdout never holds anything but the envelope.
 - `error.code` is stable snake_case and safe to branch on; `message` is for people and may change.
+- One exception: commands with `--format md` (e.g. `graph impact`) print the Markdown itself on
+  success, for PRs and people. Failures still print the JSON envelope, and exit codes still apply.
 
 ## Exit codes
 

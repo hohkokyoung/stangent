@@ -1,0 +1,103 @@
+{
+  "repo": "eshop",
+  "graphCommit": "913acea66708a59595351174cee9b29f37179d29",
+  "windowMonths": 36,
+  "caveat": "Every commit is scored against the graph of the pinned commit, not the graph at that commit.",
+  "labels": "certain = ✅ only; certain+guessed = ✅ and 🟡. 📜 (Phase 1c) not built yet.",
+  "test1FindsTheRest": {
+    "cases": 332,
+    "certain": {
+      "recall": 0.087,
+      "precision": 0.155,
+      "found": 198,
+      "of": 2276,
+      "medianPredictedFiles": 1
+    },
+    "certain+guessed": {
+      "recall": 0.091,
+      "precision": 0.126,
+      "found": 208,
+      "of": 2276,
+      "medianPredictedFiles": 1
+    }
+  },
+  "test1FindsTheRestPlusDirectDependencies": {
+    "cases": 332,
+    "certain": {
+      "recall": 0.141,
+      "precision": 0.106,
+      "found": 322,
+      "of": 2276,
+      "medianPredictedFiles": 6
+    },
+    "certain+guessed": {
+      "recall": 0.147,
+      "precision": 0.098,
+      "found": 334,
+      "of": 2276,
+      "medianPredictedFiles": 7
+    }
+  },
+  "test2PredictsWhatBroke": {
+    "cases": 2,
+    "certain": {
+      "recall": 0.091,
+      "precision": 0.125,
+      "found": 1,
+      "of": 11,
+      "medianPredictedFiles": 8
+    },
+    "certain+guessed": {
+      "recall": 0.182,
+      "precision": 0.118,
+      "found": 2,
+      "of": 11,
+      "medianPredictedFiles": 11
+    }
+  },
+  "test2Pairs": {
+    "fixCommits": 8,
+    "pairs": 2,
+    "trivialPairsExcluded": 1,
+    "handCheckSample": [
+      {
+        "change": "0b07251070a94f21453e8139f6107f87c8329771",
+        "changeSubject": "Added catalog functional test Cases. (#135)",
+        "fix": "57b73de1972c36dfbd3bc3d9d55413b1f4f07780",
+        "fixSubject": "Fix product image urls in chat responses (#275)",
+        "fixFilesElsewhere": [
+          "src/Catalog.API/Infrastructure/EntityConfigurations/CatalogItemEntityTypeConfiguration.cs",
+          "src/Catalog.API/Model/CatalogItem.cs",
+          "src/WebApp/Components/Chatbot/ChatState.cs",
+          "src/WebApp/Components/Chatbot/MessageProcessor.cs",
+          "src/WebAppComponents/Catalog/CatalogItem.cs"
+        ],
+        "genuine": "unlikely: a test-only commit; blame noise"
+      },
+      {
+        "change": "63e82c9e75b1a50cd28499240fcbc2942bdc6939",
+        "changeSubject": "Inject Kernel into ChatState via DI (#147)",
+        "fix": "57b73de1972c36dfbd3bc3d9d55413b1f4f07780",
+        "fixSubject": "Fix product image urls in chat responses (#275)",
+        "fixFilesElsewhere": [
+          "src/Catalog.API/Apis/CatalogApi.cs",
+          "src/Catalog.API/Infrastructure/EntityConfigurations/CatalogItemEntityTypeConfiguration.cs",
+          "src/Catalog.API/Model/CatalogItem.cs",
+          "src/WebApp/Components/Chatbot/MessageProcessor.cs",
+          "src/WebAppComponents/Catalog/CatalogItem.cs",
+          "tests/Catalog.FunctionalTests/CatalogApiTests.cs"
+        ],
+        "genuine": "possible: changed the chat code the fix later touched"
+      }
+    ],
+    "handCheckNote": "All pairs judged by the agent (Claude) from commit subjects only, 2026-10-19; not verified by a person."
+  },
+  "test3StableAndFast": {
+    "identicalFullBuilds": true,
+    "incrementalEqualsFull": true,
+    "fullBuildMs": 13248,
+    "incrementalBuildMs": 2323,
+    "incrementalExtracted": 3,
+    "touchedFile": "src/Basket.API/Extensions/Extensions.cs"
+  }
+}

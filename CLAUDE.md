@@ -12,6 +12,7 @@ software-engineering pipeline: requirements → code → tests → PR → deploy
 | `roadmap.md` | Phases, their dependencies, contract versions, status, and the end-of-phase report format. |
 | `phases/` | One file per started phase: its plan and end-of-phase report. |
 | `docs/cli-conventions.md` | What every `stangent` command prints and returns. |
+| `docs/code-graph.md` | The code graph: points, lines, labels, detectors, impact answers. |
 
 ## How to work here
 
@@ -33,4 +34,5 @@ dotnet test                      # xUnit v3 on Microsoft.Testing.Platform
 dotnet run --project src/Stangent.Cli -- phases check     # D20 dependency check
 dotnet pack src/Stangent.Cli -c Release                   # → artifacts/packages/stangent.*.nupkg
 benchmark/run.sh <label> <stangent args...>               # D6 benchmark; results/ is committed
+dotnet run --project benchmark/Stangent.Benchmark -- <clone>   # D28 scoring (needs full history + a built graph)
 ```

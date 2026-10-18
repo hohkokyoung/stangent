@@ -5,6 +5,8 @@ using Stangent.Core;
 using Stangent.Core.Phases;
 using Stangent.Core.Store;
 using Stangent.Core.Telemetry;
+using Stangent.Graph;
+using Stangent.Graph.Impact;
 
 // The `stangent` CLI: the store's only door (D23). Output follows docs/cli-conventions.md:
 // one JSON envelope on stdout, exit codes from ExitCodes, warnings on stderr.
@@ -123,6 +125,67 @@ check.SetAction(pr => Cli.Run(pr, "phases check", ctx =>
 }));
 phases.Subcommands.Add(check);
 
+var graph = new Command("graph", "The code graph (D25–D27): build it, then ask what a change affects.");
+root.Subcommands.Add(graph);
+var noRestoreOption = new Option<bool>("--no-restore") { Description = "Skip `dotnet restore` (packages must already be restored)." };
+var fullOption = new Option<bool>("--full") { Description = "Re-extract every project instead of only those that changed." };
+var build = new Command("build", "Build or update .stangent/graph.sqlite from the code.") { noRestoreOption, fullOption };
+build.SetAction(pr => Cli.Run(pr, "graph build", ctx =>
+{
+    var (_, stats) = GraphBuilder.BuildAsync(ctx.Repo, new BuildOptions(!pr.GetValue(noRestoreOption), pr.GetValue(fullOption), Console.Error))
+        .GetAwaiter().GetResult();
+    ctx.Span.Attributes["stangent.artifact.count"] = stats.Nodes;
+    return JsonSerializer.SerializeToNode(stats, Cli.Json);
+}));
+graph.Subcommands.Add(build);
+
+var symbolOption = new Option<string?>("--symbol") { Description = "A graph id, or a name like OrderProcessingService.PlaceOrderAsync." };
+var fileImpactOption = new Option<string?>("--file") { Description = "Every point declared in this file." };
+var diffOption = new Option<string?>("--diff") { Description = "A git range (base..head), or one ref compared with the working tree." };
+var expandOption = new Option<string?>("--expand") { Description = "Show every item of one group: " + string.Join(", ", ImpactAnalyzer.Groups) + "." };
+var formatOption = new Option<string>("--format") { Description = "json (default) or md (prints Markdown instead of the JSON envelope).", DefaultValueFactory = _ => "json" };
+var impact = new Command("impact", "What a change affects, grouped and labelled (D27).") { symbolOption, fileImpactOption, diffOption, expandOption, formatOption };
+impact.SetAction(pr =>
+{
+    var given = new[] { ("symbol", pr.GetValue(symbolOption)), ("file", pr.GetValue(fileImpactOption)), ("diff", pr.GetValue(diffOption)) }
+        .Where(g => g.Item2 is not null).ToList();
+    var markdown = pr.GetValue(formatOption) == "md";
+    return Cli.Run(pr, "graph impact", ctx =>
+    {
+        if (given.Count != 1) throw new StangentException("usage", "Give exactly one of --symbol, --file or --diff.", ExitCodes.Usage);
+        var report = Cli.Analyzer(ctx).Analyze(new ChangeSpec(given[0].Item1, given[0].Item2!), ctx.Repo.Root, pr.GetValue(expandOption));
+        var errors = SchemaRegistry.Embedded.Validate("impact-report.v1.json", report.ToJsonString());
+        if (errors.Count > 0) throw new StangentException("invalid_report", "The impact report broke its contract (a stangent bug).", ExitCodes.Failed, errors);
+        ctx.Span.Attributes["stangent.artifact.count"] = report["groups"]!.AsArray().Sum(g => (int)g!["total"]!);
+        return report;
+    }, markdown ? r => ImpactAnalyzer.Markdown(r!.AsObject()) : null);
+});
+graph.Subcommands.Add(impact);
+
+var idArg = new Argument<string>("symbol") { Description = "A graph id, or a name like OrderProcessingService.PlaceOrderAsync." };
+var show = new Command("show", "A point and the lines in and out of it.") { idArg };
+show.SetAction(pr => Cli.Run(pr, "graph show", ctx => Cli.Show(ctx, pr.GetValue(idArg)!)));
+graph.Subcommands.Add(show);
+
+var exportArg = new Argument<string>("path") { Description = "File to write (gzip'd JSON lines)." };
+var export = new Command("export", "Write the graph to one file, the unit CI shares (D25).") { exportArg };
+export.SetAction(pr => Cli.Run(pr, "graph export", ctx =>
+{
+    var g = Cli.LoadGraph(ctx);
+    GraphStore.Export(g, pr.GetValue(exportArg)!);
+    return new JsonObject { ["path"] = Path.GetFullPath(pr.GetValue(exportArg)!), ["commit"] = g.Commit, ["hash"] = CanonicalJson.Hash(Convert.ToBase64String(File.ReadAllBytes(pr.GetValue(exportArg)!))) };
+}));
+graph.Subcommands.Add(export);
+var importArg = new Argument<string>("path") { Description = "A file written by graph export." };
+var import = new Command("import", "Replace .stangent/graph.sqlite with an exported graph.") { importArg };
+import.SetAction(pr => Cli.Run(pr, "graph import", ctx =>
+{
+    var g = GraphStore.Import(pr.GetValue(importArg)!);
+    GraphStore.Save(g, GraphStore.PathFor(ctx.Repo));
+    return new JsonObject { ["commit"] = g.Commit, ["nodes"] = g.AllNodes.Count(), ["head"] = Cli.Head(ctx) };
+}));
+graph.Subcommands.Add(import);
+
 return Cli.Execute(root, args, prettyOption);
 
 /// <summary>A check that ran and found problems: exit 1, with the report as the result.</summary>
@@ -155,6 +218,7 @@ sealed class CliContext(string? repoPath, TelemetryWriter telemetry, Span span)
 static class Cli
 {
     static bool pretty;
+    public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     public static int Execute(RootCommand root, string[] args, Option<bool> prettyOption)
     {
@@ -165,7 +229,46 @@ static class Cli
         return parsed.Invoke();
     }
 
-    public static int Run(ParseResult pr, string command, Func<CliContext, JsonNode?> body)
+    public static CodeGraph LoadGraph(CliContext ctx) => GraphStore.Load(GraphStore.PathFor(ctx.Repo))
+        ?? throw new StangentException("no_graph", "No code graph yet. Run `stangent graph build` (or `graph import`).", ExitCodes.NotFound);
+
+    public static ImpactAnalyzer Analyzer(CliContext ctx) => new(LoadGraph(ctx));
+
+    public static string Head(CliContext ctx)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo("git", "rev-parse HEAD") { WorkingDirectory = ctx.Repo.Root, RedirectStandardOutput = true, RedirectStandardError = true };
+        using var p = System.Diagnostics.Process.Start(psi)!;
+        var head = p.StandardOutput.ReadToEnd().Trim();
+        p.WaitForExit();
+        return head;
+    }
+
+    public static JsonNode Show(CliContext ctx, string symbol)
+    {
+        var g = LoadGraph(ctx);
+        var analyzer = new ImpactAnalyzer(g);
+        var matches = analyzer.Resolve(symbol);
+        if (matches.Count == 0) throw new StangentException("not_found", $"Nothing in the graph matches '{symbol}'.", ExitCodes.NotFound);
+        var edges = g.AllEdges.ToList();
+        var spots = g.AllBlindSpots.ToList();
+        JsonArray Lines(IEnumerable<Edge> list, Func<Edge, string> other) => new([.. GraphStore.SortEdges(list).Take(50).Select(e => (JsonNode)new JsonObject
+        {
+            ["kind"] = e.Kind, ["label"] = e.Label == Label.Certain ? "certain" : "guessed", ["detector"] = e.Detector,
+            ["id"] = other(e), ["name"] = analyzer.Find(other(e))?.Name,
+        })]);
+        return new JsonArray([.. matches.Take(10).Select(n => (JsonNode)new JsonObject
+        {
+            ["id"] = n.Id, ["name"] = n.Name, ["kind"] = n.Kind, ["file"] = n.File, ["line"] = n.Line, ["isTest"] = n.IsTest,
+            ["dependsOn"] = Lines(edges.Where(e => e.Source == n.Id), e => e.Target),
+            ["dependedOnBy"] = Lines(edges.Where(e => e.Target == n.Id), e => e.Source),
+            ["unresolved"] = new JsonArray([.. spots.Where(b => b.Owner == n.Id).Select(b => (JsonNode)$"{b.File}:{b.Line} {b.Reason}")]),
+        })]);
+    }
+
+    public static int Run(ParseResult pr, string command, Func<CliContext, JsonNode?> body) => Run(pr, command, body, null);
+
+    /// <summary><paramref name="render"/>, when given, prints its text instead of the JSON envelope on success.</summary>
+    public static int Run(ParseResult pr, string command, Func<CliContext, JsonNode?> body, Func<JsonNode?, string>? render)
     {
         var repoPath = pr.GetValue<string?>("--repo");
         var span = DefaultTelemetry().Start("stangent." + command.Replace(' ', '.'));
@@ -196,6 +299,11 @@ static class Cli
         }
         span.Attributes["stangent.exit_code"] = exit;
         ctx.Telemetry.End(span, exit == ExitCodes.Ok);
+        if (render is not null && exit == ExitCodes.Ok)
+        {
+            Console.Out.Write(render(output["result"]));
+            return exit;
+        }
         return Write(output, exit);
     }
 

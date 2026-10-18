@@ -1,7 +1,11 @@
 <Solution>
+  <Folder Name="/benchmark/">
+    <Project Path="benchmark/Stangent.Benchmark/Stangent.Benchmark.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Stangent.Cli/Stangent.Cli.csproj" />
     <Project Path="src/Stangent.Core/Stangent.Core.csproj" />
+    <Project Path="src/Stangent.Graph/Stangent.Graph.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Stangent.Core.Tests/Stangent.Core.Tests.csproj" />

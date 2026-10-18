@@ -6,6 +6,7 @@
   <ItemGroup>
     <PackageReference Include="xunit.v3" />
     <ProjectReference Include="..\..\src\Stangent.Core\Stangent.Core.csproj" />
+    <ProjectReference Include="..\..\src\Stangent.Graph\Stangent.Graph.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
