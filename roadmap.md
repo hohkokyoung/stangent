@@ -7,7 +7,7 @@ The build order (decisions.md D19) and how phases stay in step with each other (
 | Phase | Delivers | Consumes contracts from | Provides contracts | Status |
 |---|---|---|---|---|
 | **0. Foundation** | repo setup, store interface, artifact schema conventions, CLI skeleton, Claude Code plugin skeleton, telemetry event format, benchmark harness | — | `store`, `artifact-base`, `telemetry-event`, `cli-conventions`, `benchmark` | done ([report](phases/0-foundation.md#end-of-phase-report)) |
-| **1a. C# map** | Roslyn extractor at method level, C# link detectors, blind-spot markers, impact answers, scoring | 0 | `code-graph`, `impact-report` | in progress ([plan](phases/1a-csharp-map.md)) |
+| **1a. C# map** | Roslyn extractor at method level, C# link detectors, blind-spot markers, impact answers, scoring | 0 | `code-graph`, `impact-report` | done ([report](phases/1a-csharp-map.md#end-of-phase-report)) |
 | **1b. Frontend + API shapes** | TypeScript extractor, frontend → backend HTTP links, API request/response fields | 0, 1a | — (extends `code-graph`) | not started |
 | **1c. Git history** | "usually changes together" evidence with noise filters | 0, 1a | — (extends `code-graph`) | not started |
 | **2. Spec** | document import, full code audit, provenance labels, link file, discrepancy queue | 0, 1a | `spec`, `trace-links`, `source-document`, `discrepancy` | not started |

@@ -1,14 +1,14 @@
 ---
 phase: 1a
 name: csharp-map
-status: in progress
+status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1 }
 provides: { code-graph: 1, impact-report: 1 }
 ---
 
 # Phase 1a · C# map
 
-**Approved 2026-10-19. In progress.**
+**Approved 2026-10-19. Done 2026-10-19.**
 
 Decisions this phase builds on: D4, D17, D25–D29. The goal is a deterministic, scored C# impact
 analysis on nopCommerce and eShop. No AI anywhere in this phase (D18).
@@ -77,7 +77,7 @@ analysis on nopCommerce and eShop. No AI anywhere in this phase (D18).
 - [x] Every impact answer validates against `impact-report.v1.json`.
 - [x] Scoring tests 1–3 run from `benchmark/` and their results are in the report.
 - [x] Tests cover extraction, each detector (on small fixture projects), incremental = full, and impact grouping.
-- [ ] CI green (after push); end-of-phase report written.
+- [x] CI green ([run 39156170029](https://github.com/hohkokyoung/stangent/actions/runs/39156170029), ubuntu-latest); end-of-phase report written.
 
 ## Not in this phase
 TypeScript and frontend links, API request/response fields (1b); 📜 git history (1c); gRPC; publishing
@@ -89,7 +89,7 @@ flags any consumer (D20).
 
 ## End-of-phase report
 
-*2026-10-19 · first report.* Status stays **in progress** until CI is green on GitHub.
+*2026-10-19 · first report; updated the same day when CI ran green on GitHub. Phase 1a is **done**.*
 
 ### 1. What was built
 - **`src/Stangent.Graph`:** the project scanner (finds each `.csproj` once and fingerprints it); the
@@ -168,14 +168,14 @@ The acceptance checks behave as specified:
 - **Scoring uses the pinned commit's graph for all of history.** Older commits are scored against code that has since moved.
 - **Not covered by tests:** the EF Core path (`DbSet`, `ToTable`), because the fixture has no packages.
   It works on eShop (9 tables).
-- Not tested on Windows.
+- Tested on macOS (local) and Linux (CI); not on Windows.
 
 ### 5. Impact on other phases
 - `cli-conventions` v1 → v2 (opt-in `--format md`). Its only consumer, 1a, was updated with it.
 - No other phase consumes `code-graph` or `impact-report` yet. 1b and 1c will extend `code-graph` (v2, v3).
 
 ### 6. Follow-ups
-- Push and confirm CI is green, then mark this phase `done` here and in `roadmap.md`.
+- ~~Push and confirm CI is green~~: done (the graph tests run on Linux too).
 - Before 1b, the owner decides: score from changed lines (recommended), and tune precision if that
   shows it's needed.
 - 1b (frontend + API shapes) starts with its own grilling (D22).
