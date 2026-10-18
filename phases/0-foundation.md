@@ -1,14 +1,14 @@
 ---
 phase: 0
 name: foundation
-status: in progress
+status: done
 consumes: {}
 provides: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 1, benchmark: 1 }
 ---
 
 # Phase 0 · Foundation
 
-**Approved 2026-10-18. In progress.**
+**Approved 2026-10-18. Done 2026-10-19.**
 
 The skeleton every product plugs into, proven end to end with one trivial artifact.
 No product logic: no graph, no spec import, no AI calls.
@@ -63,7 +63,7 @@ specs/                 # spec + trace.yaml (Phase 2 fills it)
 - [x] Every command writes a valid telemetry event; nothing contains code or prompt text.
 - [x] `stangent phases check` flags a version mismatch in a test fixture.
 - [x] `/stangent:status` in Claude Code reports the store's contents through the CLI.
-- [ ] CI green — **not yet run on GitHub**: the repo has no remote. The workflow's exact steps pass locally.
+- [x] CI green ([run 39146680729](https://github.com/hohkokyoung/stangent/actions/runs/39146680729), ubuntu-latest).
       Tests (xUnit) cover the store, validation, index rebuild and phase check.
 - [x] End-of-phase report written below.
 
@@ -73,7 +73,7 @@ reserved. Each is built in the phase that first needs it (D22).
 
 ## End-of-phase report
 
-*2026-10-19 · first report.* Status stays **in progress** until CI has run green on GitHub.
+*2026-10-19 · first report; updated the same day when CI ran green on GitHub. Phase 0 is **done**.*
 
 ### 1. What was built
 - **Core** (`src/Stangent.Core`): the store interface (`IArtifactStore`) and its first backend,
@@ -118,12 +118,12 @@ telemetry events were recorded across the checks, and none fell outside the cont
 - Index freshness uses file size + modification time. An edit that keeps both unchanged would go unnoticed (rare).
 - No `store delete` yet. Per-ticket revert (D11) will need one.
 - Type schemas (`schemas/types/<type>.v<N>.json`) are supported, but none exist yet. Repo-local custom types aren't supported.
-- Not tested on Windows.
-- CI has not run on GitHub (no remote).
+- Tested on macOS (local) and Linux (CI); not on Windows.
 
 ### 5. Impact on other phases
 None yet. All contracts are new at v1 and nothing consumes them. Phase 1 will be the first consumer.
 
 ### 6. Follow-ups
-- Add a GitHub remote, push, and confirm CI is green. Then mark this phase `done` here and in `roadmap.md`.
+- ~~Add a GitHub remote, push, confirm CI is green~~: done. The repo is now `hohkokyoung/stangent`; the earlier
+  repo of that name is archived as `hohkokyoung/stangent-archive`.
 - Phase 1 (code graph) starts with its own grilling (D22).
