@@ -17,5 +17,5 @@ I want this project to be completed in phases, each product will be independent,
 9. agents: im thinking, we need to breakdown a big task into multiple tasks, spawn a limit of subagents, each independetly work on their task with the appropriate amount of context supplied in parallel while keeping the context usage low.
 10. process: we should allow devs to either update the spec after the development or after the pr is merged,because sometimes some clients are not certain whether certain features they really want or not, but of course we should cater to easy revert when we want to.
 11. the project itself: this project itself should be flexible for updates, in case we wwanna add in some plug in and plays, and easily installable, usable for others with claude code commands.
-12. telemetry: (to be defined — what is measured, for whom, and where it lives)
+12. telemetry: cost, quality, speed and failures for every run (see decisions.md D21)
 

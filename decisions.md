@@ -233,9 +233,49 @@ product; a failed check gives the agent one specific error to fix, which is chea
 - Dependents are flagged, never changed automatically: each is updated and re-tested by its own follow-up (D18).
 - Docs change in the same commit as the behaviour they describe.
 
+## D21 · Telemetry: cost, quality, speed and failures for every run — 2026-10-18
+- Recorded per run: **cost** (tokens, money per run / ticket / step), **quality** (D18 check
+  failures, human rejections of AI output, benchmark scores, false-discrepancy rate),
+  **speed** (time per step, ticket → merged PR), **failures** (errors, retries, timeouts, failing step).
+  Usage analytics can wait.
+- **Not in git** (an exception to D7): events are written locally and saved with each CI run,
+  then gathered into the SQLite index for the dashboard.
+- **OpenTelemetry format**, using its conventions for AI calls, so exporting to a team-wide tool
+  later is a setting (pluggable, D8).
+- **No content by default:** counts, durations, hashes and IDs; never prompts or code. A per-run
+  debug switch can record content locally, only when someone turns it on.
+- The event format is a Phase 0 contract (`telemetry-event`).
+**Why:** cost and quality are what prove stangent is effective and token-efficient.
+**Cost:** debugging a bad AI output without recorded prompts means re-running the step.
+
+## D22 · Grill each phase when it starts, not all upfront — 2026-10-18
+Only what Phase 0 needs is settled now. Each later phase gets its own grilling when it starts,
+recorded in its phase file (D20) and here.
+**Why:** building Phases 0–1 will change the answers for testing, PRs and agents; designing them now means designing them twice.
+
+## D23 · One `stangent` CLI is the store's only door; its core is C# — 2026-10-18
+- Products read and write artifacts through one `stangent` CLI (`stangent store get spec CHK-012 --json`);
+  input and output are JSON. Store logic, validation and checks exist once.
+- The core is C#, installed as a `dotnet tool`. The code graph (also C#) uses the core as a
+  library in-process for heavy writes; every other product calls the CLI.
+- The CLI accepts batches of reads/writes in one call, so start-up time doesn't add up.
+**Cost:** Node products and hooks pay start-up time per call; contributing to the core needs .NET.
+Rejected: a store library per language (two copies drift); products touching files directly (breaks D8).
+
+## D24 · Company constraints, and CI / code host behind adapters — 2026-10-18
+- Developers can install `dotnet tool`s and npm packages freely.
+- GitHub Actions is allowed (with secrets). CI must not be locked to it: workflow files stay
+  thin and only call `stangent` commands, so moving to GitLab CI means rewriting thin YAML,
+  not logic. The same goes for the code host (GitHub PRs now, GitLab merge requests later):
+  it sits behind an adapter, like tickets (Jira) and the document archive (D16).
+- Sending client code to Claude is approved. Whether data is used for training is set by
+  the account's terms and admin settings, not by anything a prompt says — confirm the
+  company's plan before pointing stangent at client code.
+- Everyone who'd use stangent has Claude Code.
+- A per-repo switch turns off all AI steps (only code-only parts run), for any client whose
+  contract forbids external AI. Cheap now, expensive to retrofit.
+
 ## Open questions
-- Dashboard sign-in for BA/PM: company SSO or GitHub accounts?
-- Writing specs for existing code: an agent drafting only the areas tickets touch, with BA/PM approving, or the whole system upfront? (asked, not answered)
-- Company constraints on what developers can install, or on what runs in CI? (asked, not answered)
-- Telemetry (spec item 12): what's measured, for whom, where it lives.
-- "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice?
+- Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
+- "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
+- Confirm the company's Claude plan excludes training on its data (D24), before running on client code.

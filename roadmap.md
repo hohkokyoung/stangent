@@ -6,7 +6,7 @@ The build order (decisions.md D19) and how phases stay in step with each other (
 
 | Phase | Delivers | Consumes contracts from | Provides contracts | Status |
 |---|---|---|---|---|
-| **0. Foundation** | repo setup, store interface, artifact schema conventions, CLI skeleton, Claude Code plugin skeleton, telemetry event format, benchmark harness | — | `store`, `artifact-base`, `telemetry-event`, `cli-conventions`, `benchmark` | not started |
+| **0. Foundation** | repo setup, store interface, artifact schema conventions, CLI skeleton, Claude Code plugin skeleton, telemetry event format, benchmark harness | — | `store`, `artifact-base`, `telemetry-event`, `cli-conventions`, `benchmark` | planned ([plan](phases/0-foundation.md)) |
 | **1. Code graph** | Roslyn + TypeScript extractor, first link detectors, blind-spot markers, impact reports | 0 | `code-graph`, `impact-report` | not started |
 | **2. Spec** | document import, full code audit, provenance labels, link file, discrepancy queue | 0, 1 | `spec`, `trace-links`, `source-document`, `discrepancy` | not started |
 | **3. Tickets** | Jira ticket → context bundle (spec, impact, attachments); updates written back | 0, 1, 2 | `ticket-bundle`, `ticket-update` | not started |
@@ -17,7 +17,7 @@ The build order (decisions.md D19) and how phases stay in step with each other (
 | **8. Dashboard** | BA/PM spec view (D12), then the links between everything | all | — | not started |
 | **Demo** (any time) | quick interactive prototypes | 0, 2 | `prototype` | not started |
 
-Status values: `not started` · `in progress` · `done` · `needs review` (an upstream contract changed after this phase was done).
+Status values: `not started` · `planned` · `in progress` · `done` · `needs review` (an upstream contract changed after this phase was done).
 
 ## Phase files
 
