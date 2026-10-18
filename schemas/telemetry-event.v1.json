@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:telemetry-event:v1",
+  "title": "Stangent telemetry event (contract v1)",
+  "description": "One OpenTelemetry-shaped span per command run (D21). Attributes are a closed list of counts, durations, ids, hashes and enums: nothing here can carry code, prompts or document text.",
+  "type": "object",
+  "required": ["schemaVersion", "traceId", "spanId", "name", "startTimeUnixNano", "endTimeUnixNano", "status", "resource", "attributes"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "traceId": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+    "spanId": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+    "parentSpanId": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+    "name": { "type": "string", "pattern": "^stangent(\\.[a-z][a-z0-9_]*)+$" },
+    "startTimeUnixNano": { "type": "string", "pattern": "^[0-9]{1,20}$" },
+    "endTimeUnixNano": { "type": "string", "pattern": "^[0-9]{1,20}$" },
+    "status": {
+      "type": "object",
+      "required": ["code"],
+      "additionalProperties": false,
+      "properties": {
+        "code": { "enum": ["STATUS_CODE_OK", "STATUS_CODE_ERROR"] }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "required": ["service.name", "service.version"],
+      "additionalProperties": false,
+      "properties": {
+        "service.name": { "const": "stangent" },
+        "service.version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$" }
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stangent.command": { "type": "string", "pattern": "^[a-z][a-z -]{0,63}$" },
+        "stangent.exit_code": { "type": "integer" },
+        "stangent.error.code": { "type": "string", "pattern": "^[a-z][a-z_]{0,63}$" },
+        "stangent.repo.id": { "description": "First 16 hex chars of a SHA-256 of the repo root path.", "type": "string", "pattern": "^[0-9a-f]{16}$" },
+        "stangent.ai.enabled": { "type": "boolean" },
+        "stangent.artifact.count": { "type": "integer", "minimum": 0 },
+        "stangent.phase": { "type": "string", "pattern": "^[0-9a-z-]{1,32}$" },
+        "gen_ai.provider.name": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,63}$" },
+        "gen_ai.request.model": { "type": "string", "pattern": "^[A-Za-z0-9._:/-]{1,128}$" },
+        "gen_ai.usage.input_tokens": { "type": "integer", "minimum": 0 },
+        "gen_ai.usage.output_tokens": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

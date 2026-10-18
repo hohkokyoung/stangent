@@ -1,0 +1,18 @@
+# Thin on purpose (D24): build, test and checks are commands that run the same locally.
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - run: dotnet build --configuration Release
+      - run: dotnet test --configuration Release --no-build
+      - run: dotnet run --project src/Stangent.Cli --configuration Release --no-build -- phases check

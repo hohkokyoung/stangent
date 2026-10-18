@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>stangent</AssemblyName>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>stangent</ToolCommandName>
+    <PackageId>stangent</PackageId>
+    <PackageOutputPath>..\..\artifacts\packages</PackageOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+    <ProjectReference Include="..\Stangent.Core\Stangent.Core.csproj" />
+  </ItemGroup>
+</Project>

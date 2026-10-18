@@ -231,6 +231,8 @@ product; a failed check gives the agent one specific error to fix, which is chea
   check (built in Phase 0) lists every phase still consuming the old version, and those are marked
   `needs review` with a follow-up task each.
 - Dependents are flagged, never changed automatically: each is updated and re-tested by its own follow-up (D18).
+- *Refined 2026-10-19:* an unmarked phase on an old contract version fails the check; once marked
+  `needs review` it passes, so an upstream change can merge while its follow-ups are open.
 - Docs change in the same commit as the behaviour they describe.
 
 ## D21 · Telemetry: cost, quality, speed and failures for every run — 2026-10-18

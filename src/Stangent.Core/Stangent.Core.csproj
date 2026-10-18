@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="NJsonSchema" />
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The contracts ship inside the tool, so it validates the same way anywhere. -->
+    <EmbeddedResource Include="..\..\schemas\**\*.json" LogicalName="schemas/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

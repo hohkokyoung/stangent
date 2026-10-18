@@ -11,6 +11,7 @@ software-engineering pipeline: requirements → code → tests → PR → deploy
 | `decisions.md` | Every settled decision (D1, D2, …) with its reason and cost, plus open questions. |
 | `roadmap.md` | Phases, their dependencies, contract versions, status, and the end-of-phase report format. |
 | `phases/` | One file per started phase: its plan and end-of-phase report. |
+| `docs/cli-conventions.md` | What every `stangent` command prints and returns. |
 
 ## How to work here
 
@@ -23,3 +24,13 @@ software-engineering pipeline: requirements → code → tests → PR → deploy
 - **The AI proposes, code checks (D18).** Prefer code; every AI step needs a checker or a person's approval.
 - **Phase changes ripple (D20).** When a finished phase changes a contract, bump its version and mark
   consumers `needs review` in `roadmap.md`; never change downstream phases automatically.
+
+## Commands
+
+```bash
+dotnet build                     # everything (warnings are errors)
+dotnet test                      # xUnit v3 on Microsoft.Testing.Platform
+dotnet run --project src/Stangent.Cli -- phases check     # D20 dependency check
+dotnet pack src/Stangent.Cli -c Release                   # → artifacts/packages/stangent.*.nupkg
+benchmark/run.sh <label> <stangent args...>               # D6 benchmark; results/ is committed
+```

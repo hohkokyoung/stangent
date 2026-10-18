@@ -1,0 +1,15 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "stangent",
+  "description": "Install stangent's Claude Code plugin from this repo.",
+  "owner": {
+    "name": "Hoh Kok Young"
+  },
+  "plugins": [
+    {
+      "name": "stangent",
+      "source": "./plugin",
+      "description": "Stangent's Claude Code layer: thin commands that call the stangent CLI."
+    }
+  ]
+}

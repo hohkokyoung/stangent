@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Stangent.Cli/Stangent.Cli.csproj" />
+    <Project Path="src/Stangent.Core/Stangent.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Stangent.Core.Tests/Stangent.Core.Tests.csproj" />
+  </Folder>
+</Solution>

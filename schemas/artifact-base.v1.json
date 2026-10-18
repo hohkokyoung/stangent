@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:artifact-base:v1",
+  "title": "Stangent artifact (base contract v1)",
+  "description": "Every artifact any product stores. Type-specific content goes in `data`, validated by types/<type>.v<schemaVersion>.json when that schema exists.",
+  "type": "object",
+  "required": ["id", "type", "schemaVersion"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "Unique within its type. Becomes the file name, so path characters are not allowed.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,63}$"
+    },
+    "schemaVersion": {
+      "description": "Version of the type's data schema.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": { "type": "string", "maxLength": 300 },
+    "provenance": {
+      "description": "Where this artifact came from (D13, D18).",
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["human", "document", "code", "ai"] },
+        "source": { "type": "string" },
+        "model": { "type": "string" },
+        "inputsHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "citations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "ref"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "enum": ["document", "symbol", "file", "url", "artifact"] },
+          "ref": { "type": "string", "minLength": 1 },
+          "locator": { "description": "Section, page, table cell, line range.", "type": "string" },
+          "quote": { "type": "string" },
+          "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "links": {
+      "description": "Links to other artifacts, as <type>/<id>. Targets must exist.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rel", "target"],
+        "additionalProperties": false,
+        "properties": {
+          "rel": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
+          "target": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" }
+        }
+      }
+    },
+    "data": { "type": "object" }
+  }
+}

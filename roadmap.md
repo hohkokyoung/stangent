@@ -6,7 +6,7 @@ The build order (decisions.md D19) and how phases stay in step with each other (
 
 | Phase | Delivers | Consumes contracts from | Provides contracts | Status |
 |---|---|---|---|---|
-| **0. Foundation** | repo setup, store interface, artifact schema conventions, CLI skeleton, Claude Code plugin skeleton, telemetry event format, benchmark harness | — | `store`, `artifact-base`, `telemetry-event`, `cli-conventions`, `benchmark` | planned ([plan](phases/0-foundation.md)) |
+| **0. Foundation** | repo setup, store interface, artifact schema conventions, CLI skeleton, Claude Code plugin skeleton, telemetry event format, benchmark harness | — | `store`, `artifact-base`, `telemetry-event`, `cli-conventions`, `benchmark` | in progress ([plan](phases/0-foundation.md)) |
 | **1. Code graph** | Roslyn + TypeScript extractor, first link detectors, blind-spot markers, impact reports | 0 | `code-graph`, `impact-report` | not started |
 | **2. Spec** | document import, full code audit, provenance labels, link file, discrepancy queue | 0, 1 | `spec`, `trace-links`, `source-document`, `discrepancy` | not started |
 | **3. Tickets** | Jira ticket → context bundle (spec, impact, attachments); updates written back | 0, 1, 2 | `ticket-bundle`, `ticket-update` | not started |

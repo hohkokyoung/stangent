@@ -1,0 +1,7 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "stangent",
+  "version": "0.1.0",
+  "description": "Stangent's Claude Code layer: thin commands, skills, agents and hooks that call the stangent CLI.",
+  "author": { "name": "Hoh Kok Young" }
+}

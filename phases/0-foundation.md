@@ -1,14 +1,14 @@
 ---
 phase: 0
 name: foundation
-status: planned
+status: in progress
 consumes: {}
 provides: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 1, benchmark: 1 }
 ---
 
 # Phase 0 · Foundation
 
-**Draft plan, awaiting the owner's approval.**
+**Approved 2026-10-18. In progress.**
 
 The skeleton every product plugs into, proven end to end with one trivial artifact.
 No product logic: no graph, no spec import, no AI calls.
@@ -57,18 +57,73 @@ specs/                 # spec + trace.yaml (Phase 2 fills it)
 - A thin GitHub Actions workflow that runs build + tests by calling scripts and `stangent` (D24).
 
 ## Done when
-- [ ] `dotnet tool install` from a local build gives a working `stangent`.
-- [ ] In each benchmark repo: `stangent init`, put and get a sample artifact (rejected when it
+- [x] `dotnet tool install` from a local build gives a working `stangent`.
+- [x] In each benchmark repo: `stangent init`, put and get a sample artifact (rejected when it
       breaks the schema), delete the index, `stangent index rebuild` reproduces it exactly.
-- [ ] Every command writes a valid telemetry event; nothing contains code or prompt text.
-- [ ] `stangent phases check` flags a version mismatch in a test fixture.
-- [ ] `/stangent:status` in Claude Code reports the store's contents through the CLI.
-- [ ] CI green; tests (xUnit) cover the store, validation, index rebuild and phase check.
-- [ ] End-of-phase report written below.
+- [x] Every command writes a valid telemetry event; nothing contains code or prompt text.
+- [x] `stangent phases check` flags a version mismatch in a test fixture.
+- [x] `/stangent:status` in Claude Code reports the store's contents through the CLI.
+- [ ] CI green — **not yet run on GitHub**: the repo has no remote. The workflow's exact steps pass locally.
+      Tests (xUnit) cover the store, validation, index rebuild and phase check.
+- [x] End-of-phase report written below.
 
 ## Not in this phase
 Adapters for Jira, GitHub PRs, GitLab and the archive: only their place in `stangent.yaml` is
 reserved. Each is built in the phase that first needs it (D22).
 
 ## End-of-phase report
-_Not started._
+
+*2026-10-19 · first report.* Status stays **in progress** until CI has run green on GitHub.
+
+### 1. What was built
+- **Core** (`src/Stangent.Core`): the store interface (`IArtifactStore`) and its first backend,
+  `FileArtifactStore`. One canonical JSON file per artifact (sorted keys, LF, so the same content
+  is always the same bytes and hash). The SQLite index is a pure cache: it records a fingerprint of
+  the store files and is rebuilt whenever they change, including changes from `git pull`. Also:
+  batch ops checked in order before any write, the schema registry (contracts embedded in the
+  tool), `stangent.yaml` loading, the AI switch (`AiPolicy`), the telemetry writer, and the phase check.
+- **CLI** (`src/Stangent.Cli`, dotnet tool `stangent`): `init`, `status`, `store get|put|link|query|batch`,
+  `index rebuild|dump`, `phases check`. Conventions in `docs/cli-conventions.md`.
+- **Contracts, all v1:** `store`, `artifact-base` (`schemas/artifact-base.v1.json`), `telemetry-event`
+  (`schemas/telemetry-event.v1.json`), `cli-conventions` (`docs/cli-conventions.md`),
+  `benchmark` (`benchmark/repos.tsv` + `benchmark/run.sh`).
+- **Plugin** (`plugin/`, marketplace at `.claude-plugin/marketplace.json`): `/stangent:status`.
+  Both pass `claude plugin validate --strict`.
+- **CI** (`.github/workflows/ci.yml`): build, test, `phases check`.
+- **Tests:** 25, all passing.
+
+### 2. Benchmark results (`benchmark/results/2026-10-18-phase0.json`)
+| Repo (pinned commit) | `stangent status` | Telemetry events | AI tokens |
+|---|---|---|---|
+| nopCommerce `77d112f` | exit 0, 147 ms | 2 (init + status) | 0 |
+| eShop `913acea` | exit 0, 145 ms | 2 | 0 |
+| CleanArchitecture `1bc2b07` | exit 0, 145 ms | 2 | 0 |
+
+Each CLI call costs about 145 ms, almost all of it .NET start-up. That's why batching exists (D23).
+In each repo, put/get/reject/rebuild all behaved as specified. After init, git sees only
+`stangent.yaml`, `.gitignore` and the store files; the index and telemetry are ignored. 21
+telemetry events were recorded across the checks, and none fell outside the contract.
+
+### 3. Decisions made or changed
+- D20 refined: a phase on an old contract version *fails* the check until it is marked
+  `needs review`. Once marked, it passes, so an upstream change can merge while its follow-ups are open.
+- JSON Schema draft-07 validated with **NJsonSchema** (MIT). JsonSchema.Net was rejected: its
+  current license is the OSMF EULA, not MIT.
+- Tests run on Microsoft.Testing.Platform (`global.json`), which .NET 10's `dotnet test` requires for xUnit v3.
+- Telemetry outside any repo goes to `~/.stangent/telemetry`; `STANGENT_TELEMETRY_DIR` overrides it (CI, benchmark).
+
+### 4. Known gaps
+- The index rebuilds in full after any change. That's fine now, but the Phase 2 audit will write
+  thousands of artifacts, so measure it then and add incremental updates if needed.
+- Index freshness uses file size + modification time. An edit that keeps both unchanged would go unnoticed (rare).
+- No `store delete` yet. Per-ticket revert (D11) will need one.
+- Type schemas (`schemas/types/<type>.v<N>.json`) are supported, but none exist yet. Repo-local custom types aren't supported.
+- Not tested on Windows.
+- CI has not run on GitHub (no remote).
+
+### 5. Impact on other phases
+None yet. All contracts are new at v1 and nothing consumes them. Phase 1 will be the first consumer.
+
+### 6. Follow-ups
+- Add a GitHub remote, push, and confirm CI is green. Then mark this phase `done` here and in `roadmap.md`.
+- Phase 1 (code graph) starts with its own grilling (D22).
