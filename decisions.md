@@ -38,12 +38,16 @@ No single pain point sets the order, so the foundation is the contracts between 
 |---|---|
 | [nopCommerce](https://github.com/nopSolutions/nopCommerce) | size (`net10.0`, 41 `.csproj`, ~386k lines C#, ~87k Razor, ~108k JS), monolith with plugins, string-based routes, in-house `IConsumer<T>` events, Autofac, linq2db |
 | [dotnet/eShop](https://github.com/dotnet/eShop) | microservices (Basket, Catalog, Ordering, Identity, Webhooks), events between services over RabbitMQ, EF Core |
-| [jasontaylordev/CleanArchitecture](https://github.com/jasontaylordev/CleanArchitecture) | Angular and React frontends calling the API, MediatR, EF Core, Minimal APIs, Playwright tests |
+| [jasontaylordev/CleanArchitecture](https://github.com/jasontaylordev/CleanArchitecture) | Angular and React frontends calling the API through an **NSwag-generated** client (not committed), MediatR, EF Core, Minimal APIs, Playwright tests |
+| [Kareadita/Kavita](https://github.com/Kareadita/Kavita) *(added 2026-10-19, Phase 1b)* | `net10.0` + **Angular 22**, typed hand-written `HttpClient` services, a committed `openapi.json`; 3.4k commits |
+| [Sonarr/Sonarr](https://github.com/Sonarr/Sonarr) *(added 2026-10-19, Phase 1b)* | `net10.0` + **React 18 + TypeScript**, TanStack Query behind its own `useApiQuery` wrapper (an in-house pattern); 12k commits. Pins SDK 10.0.402, so the benchmark uses a `global.json` override |
 
 Metric for impact analysis: for past issues with merged PRs (nopCommerce, eShop), compare
 predicted files/symbols against the files the PR actually changed (precision and recall).
 CleanArchitecture is a small template: it tests detector correctness, not scale or history.
-**Gaps:** no Jira (needs a sandbox Jira project); no large real-world Angular/React codebase.
+**Gaps:** no Jira (needs a sandbox Jira project). *(The large real-world Angular/React gap is closed by Kavita and Sonarr.)*
+Together the three frontends cover the three ways frontends call a backend: generated clients
+(CleanArchitecture), hand-written typed services (Kavita) and an in-house wrapper (Sonarr).
 
 ## D7 · Source of truth: files in the repo — 2026-10-18
 Artifacts are Markdown plus YAML/JSON, versioned by git. A local SQLite index is rebuilt
@@ -358,6 +362,49 @@ Three tests, all run by code from git history (no AI, no manual labelling):
 | 1c. Git history | 📜 "usually changes together", with noise filters | nopCommerce, eShop |
 Each ends with its own report (D20). 1b depends on 1a; 1c may wait if 1a's scores are good enough.
 **Why:** a working, scored C# impact analysis much sooner, and a chance to change course before the frontend half.
+
+## D30 · The TypeScript extractor runs in Node, inside the stangent tool — 2026-10-19
+- `stangent graph build` runs a bundled Node extractor for each frontend project (each `tsconfig.json`),
+  using the real TypeScript compiler. It writes its fragment in the same format as the C# side
+  (`code-graph`); linking frontend calls to backend endpoints happens in C#, in the same link step.
+- One install (the dotnet tool carries the bundled extractor); Node must be on the machine (D9).
+- Types need the frontend's packages: `graph build` runs `npm ci` (or yarn/pnpm, whichever the project
+  uses) when they aren't installed, just as it runs `dotnet restore`; `--no-restore` skips both.
+  Without packages, frontend links fall back to 🟡 name matching and stangent says so.
+- One bundled TypeScript version; code it can't parse is recorded as ❓, never skipped silently.
+Rejected: parsing TypeScript from C# (no types); a separate npm tool (two installs to keep in step).
+**Cost:** first-time `npm ci` per frontend takes minutes; Node is a hard requirement for frontend analysis.
+
+## D31 · What the frontend map holds — 2026-10-19
+- **From the TypeScript compiler (✅):** files, classes, functions, methods, properties; calls and uses;
+  React components through JSX (`<SeriesCard />` is a resolved reference).
+- **Angular templates:** parsed with Angular's own template parser (`@angular/compiler`, bundled).
+  Child components link by selector (✅ when exactly one component declares it, 🟡 when several do);
+  template bindings link to the component members they call or read. Both NgModule and standalone
+  apps are supported (the owner's apps weren't specified; CleanArchitecture uses NgModules).
+- **Pages:** Angular Router and React Router routes are frontend entry points, a new `pages` group in
+  impact answers (`impact-report` v3, recorded per D20 when built).
+- **Frontend → backend calls:** one frontend-HTTP detector, matched against backend endpoints like
+  `http-services`:
+  - hand-written calls (Angular `HttpClient`, `fetch`, axios): URL and verb from the code, 🟡;
+  - in-house wrappers (e.g. Sonarr's `useApiQuery`): named in `detectorSettings`, like `handlerInterfaces`;
+  - generated clients: read the generated file when it exists (exact URLs and types); otherwise the
+    generator's naming rules (NSwag: `TodoListsClient.getTodoLists()` → `GetTodoLists` in `TodoLists`), 🟡.
+    NSwag first; other generators each get their own small rule set when needed.
+- Out of scope until a repo needs them: Vue and Svelte templates.
+**Cost:** a larger extractor bundle (`@angular/compiler`); templates using new control flow (`@if`, `@for`) need a recent parser.
+
+## D32 · How Phase 1b's frontend links are proven — 2026-10-19
+| Link | Ground truth | Test |
+|---|---|---|
+| TypeScript code links (calls, uses, JSX, Angular templates) | the TypeScript / Angular type-checker | Test 4 for the frontend: rename a sampled method, property or component input; files that fail the type-check are what broke |
+| Frontend call → backend endpoint | Kavita's committed `openapi.json` | every endpoint we extract should be in it; every linked frontend call should land on one that is |
+| API data fields (C# `SeriesDto.Name` ↔ TS `Series.name`) | the same `openapi.json` | JSON field names per endpoint vs our naming-policy mapping and TS interface matches |
+- Sonarr gets the history tests (1–2, 12k commits); CleanArchitecture a small hand-checked list of its endpoint links.
+- Whole-stack breakage ("rename a backend field, which frontend code breaks") has no compiler answer;
+  it's estimated from the two checks it's made of.
+**Why:** the 🟡 cross-stack links are the ones no compiler checks; an OpenAPI file is a free, exact answer key.
+**Cost:** the OpenAPI check only works where a project publishes its OpenAPI file.
 
 ## Open questions
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)

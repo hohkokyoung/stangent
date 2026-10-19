@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""List the NuGet and npm packages a repo uses, grouped by the link detector they need.
+"""List the NuGet and npm packages a repo uses, grouped by the link detector they need, and how
+its frontends call the backend (generated API clients vs hand-written calls).
 
 A throwaway helper for choosing stangent's first link detectors (decisions.md, D17).
 Standard library only; reads project files, never runs or restores anything.
@@ -8,12 +9,43 @@ Standard library only; reads project files, never runs or restores anything.
 """
 
 import json
+import os
+import re
 import sys
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
 
 SKIP_DIRS = {"node_modules", "bin", "obj", ".git", "dist", "wwwroot", "lib"}
+
+# Config files that mean "API clients are generated from the backend's API description".
+GENERATOR_FILES = [
+    ("NSwag", re.compile(r"(^nswag\.json$|\.nswag$)", re.I)),
+    ("OpenAPI Generator", re.compile(r"^openapitools\.json$", re.I)),
+    ("orval", re.compile(r"^orval\.config\.(js|cjs|mjs|ts)$", re.I)),
+    ("ng-openapi-gen", re.compile(r"^ng-openapi-gen\.json$", re.I)),
+    ("@hey-api/openapi-ts", re.compile(r"^openapi-ts\.config\.(js|cjs|mjs|ts)$", re.I)),
+    ("Kiota", re.compile(r"^kiota-lock\.json$", re.I)),
+    ("AutoRest", re.compile(r"^(readme\.md|autorest\.md)$", re.I)),  # only counted with autorest in package.json
+]
+GENERATOR_PACKAGES = {
+    "nswag": "NSwag", "@openapitools/openapi-generator-cli": "OpenAPI Generator", "orval": "orval",
+    "ng-openapi-gen": "ng-openapi-gen", "@hey-api/openapi-ts": "@hey-api/openapi-ts", "openapi-typescript": "openapi-typescript",
+    "swagger-typescript-api": "swagger-typescript-api", "autorest": "AutoRest", "@microsoft/kiota-bundle": "Kiota",
+}
+
+# Hand-written call styles, counted per source file.
+CALL_STYLES = [
+    ("Angular HttpClient", re.compile(r"from\s+['\"]@angular/common/http['\"]")),
+    ("fetch()", re.compile(r"(?<![\w.])fetch\s*\(")),
+    ("axios", re.compile(r"from\s+['\"]axios['\"]|require\(['\"]axios['\"]\)")),
+    ("React Query / TanStack Query", re.compile(r"from\s+['\"]@tanstack/react-query['\"]|from\s+['\"]react-query['\"]")),
+    ("jQuery $.ajax / $.get / $.post", re.compile(r"\$\.(ajax|get|post|getJSON)\s*\(")),
+    ("generated client in use (new XxxClient())", re.compile(r"new\s+[A-Z]\w*Client\s*\(")),
+    ("generated client imported", re.compile(r"from\s+['\"][^'\"]*(web-api-client|api-client|generated|openapi)[^'\"]*['\"]", re.I)),
+]
+SOURCE_EXT = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".vue", ".cshtml")
+SKIP_SOURCE = SKIP_DIRS | {"dist", "build", "coverage", ".angular", "out"}
 
 # (detector category, package-name prefix). First match wins; prefixes are case-insensitive.
 CATEGORIES = [
@@ -81,6 +113,32 @@ def npm_packages(root):
                 yield name, rel
 
 
+def frontend_calls(root, npm_names):
+    """Generator configs and packages found, and how many source files use each call style."""
+    generators = defaultdict(set)
+    styles = defaultdict(set)
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_SOURCE]
+        rel_dir = os.path.relpath(dirpath, root)
+        for name in filenames:
+            rel = os.path.normpath(os.path.join(rel_dir, name))
+            for gen, pattern in GENERATOR_FILES:
+                if pattern.search(name) and (gen != "AutoRest" or "AutoRest" in npm_names.values()):
+                    generators[gen].add(rel)
+            if not name.endswith(SOURCE_EXT) or name.endswith((".min.js", ".d.ts")):
+                continue
+            try:
+                text = Path(dirpath, name).read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            for style, pattern in CALL_STYLES:
+                if pattern.search(text):
+                    styles[style].add(rel)
+    for package, gen in npm_names.items():
+        generators[gen].add(f"package.json: {package}")
+    return generators, styles
+
+
 def category(package):
     lower = package.lower()
     for name, prefix in CATEGORIES:
@@ -120,6 +178,25 @@ def main():
         print(f"- **{cat}**")
         for package, used_in in sorted(found[cat].items()):
             print(f"  - `{package}` in {len(used_in)} project(s)")
+    npm_generators = {}
+    for package, _ in npm_packages(root):
+        if package.lower() in GENERATOR_PACKAGES:
+            npm_generators[package] = GENERATOR_PACKAGES[package.lower()]
+    generators, styles = frontend_calls(root, npm_generators)
+    print("\n## How frontends call the backend\n")
+    if generators:
+        print("**Generated API clients:**")
+        for gen in sorted(generators):
+            print(f"- **{gen}**: " + ", ".join(f"`{f}`" for f in sorted(generators[gen])[:5]))
+    else:
+        print("**Generated API clients:** none found")
+    print("\n**Hand-written call styles** (files using each):")
+    if not styles:
+        print("- none found")
+    for style in [s for s, _ in CALL_STYLES if s in styles]:
+        files = sorted(styles[style])
+        print(f"- {style}: {len(files)} file(s), e.g. " + ", ".join(f"`{f}`" for f in files[:3]))
+
     print("\n## Everything else (check for in-house frameworks)\n")
     for package, used_in in sorted(other.items(), key=lambda kv: (-len(kv[1]), kv[0].lower())):
         print(f"- `{package}` ({len(used_in)})")
