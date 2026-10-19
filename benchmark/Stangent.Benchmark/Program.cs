@@ -20,22 +20,22 @@ using Stangent.Graph.Impact;
 // --exact-sample N rebuilds the graph at N past commits and compares the by-name answers with
 // exact ones, which measures the error left by scoring old commits against today's graph.
 //
-//   dotnet run --project benchmark/Stangent.Benchmark -- <clone> [--months 36] [--max-commits 200]
-//     [--max-fixes 60] [--exact-sample 0] [--sdk-override file] [--skip-build-test] [--out file]
+//   dotnet run --project benchmark/Stangent.Benchmark -- <clone> [--months 0 (all)] [--max-commits 200]
+//     [--max-fixes 400] [--exact-sample 0] [--sdk-override file] [--skip-build-test] [--out file]
 //     [--compile-break N] [--only-compile-break]   (test 4: rename N methods, see what fails to compile)
 //     [--openapi path/in/repo.json] [--ts-compile-break N] [--only-frontend]   (Phase 1b, D32)
 
 var argList = args.ToList();
 if (argList.Count == 0 || argList[0].StartsWith('-'))
 {
-    Console.Error.WriteLine("usage: Stangent.Benchmark <clone> [--months 36] [--max-commits 200] [--max-fixes 60] [--exact-sample 0] [--sdk-override file] [--skip-build-test] [--out file]");
+    Console.Error.WriteLine("usage: Stangent.Benchmark <clone> [--months 0] [--max-commits 200] [--max-fixes 400] [--exact-sample 0] [--sdk-override file] [--skip-build-test] [--out file]");
     return 2;
 }
 string Opt(string name, string fallback) => argList.IndexOf(name) is var i and >= 0 && i + 1 < argList.Count ? argList[i + 1] : fallback;
 var root = Path.GetFullPath(argList[0]);
-var months = int.Parse(Opt("--months", "36"));
+var months = int.Parse(Opt("--months", "0")); // 0 = all history (D33)
 var maxCommits = int.Parse(Opt("--max-commits", "200"));
-var maxFixes = int.Parse(Opt("--max-fixes", "60"));
+var maxFixes = int.Parse(Opt("--max-fixes", "400"));
 var exactSample = int.Parse(Opt("--exact-sample", "0"));
 var sdkOverride = Opt("--sdk-override", "");
 var skipBuildTest = argList.Contains("--skip-build-test");
@@ -65,9 +65,11 @@ var members = new MemberIndex(graph);
 var fileNodes = graph.AllNodes.Where(n => n.Kind == NodeKind.File && IsSource(n.Name))
     .GroupBy(n => n.Name).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
 
-// Commits in the window, newest first: hash, subject, C# files that still exist on the map.
+// Commits on main's own line, newest first: hash, subject, source files that still exist on the map.
+// A merged PR counts once, diffed against main before it; its branch commits aren't listed (D36).
 var commits = new List<(string Hash, string Subject, List<string> Files)>();
-foreach (var block in Run($"log --no-merges --since=\"{months} months ago\" --name-only --format=@@%H%x09%s HEAD").Split("@@", StringSplitOptions.RemoveEmptyEntries))
+var since = months > 0 ? $"--since=\"{months} months ago\" " : "";
+foreach (var block in Run($"log --first-parent --diff-merges=first-parent {since}--name-only --format=@@%H%x09%s HEAD").Split("@@", StringSplitOptions.RemoveEmptyEntries))
 {
     var lines = block.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     var head = lines[0].Split('\t', 2);
@@ -135,13 +137,33 @@ Dictionary<string, Label> SameFolder(IEnumerable<string> files, IReadOnlySet<str
     return fileNodes.Keys.Where(f => folders.Contains(Path.GetDirectoryName(f)) && !exclude.Contains(f)).ToDictionary(f => f, _ => Label.Certain, StringComparer.Ordinal);
 }
 // Files that changed together with these at least twice in commits *older* than this one (no peeking ahead).
-Dictionary<string, Label> CoChange(IEnumerable<string> files, string commit, IReadOnlySet<string> exclude)
+Dictionary<string, int> CoChangeCounts(IEnumerable<string> files, string commit, IReadOnlySet<string> exclude)
 {
     var seeds = files.ToHashSet(StringComparer.Ordinal);
     var counts = new Dictionary<string, int>(StringComparer.Ordinal);
     foreach (var c in commits.Skip(commitIndex[commit] + 1).Where(c => c.Files.Count <= 30 && c.Files.Any(seeds.Contains)))
         foreach (var f in c.Files.Where(f => !seeds.Contains(f))) counts[f] = counts.GetValueOrDefault(f) + 1;
-    return counts.Where(kv => kv.Value >= 2 && !exclude.Contains(kv.Key)).ToDictionary(kv => kv.Key, _ => Label.Certain, StringComparer.Ordinal);
+    return counts.Where(kv => kv.Value >= 2 && !exclude.Contains(kv.Key)).ToDictionary(StringComparer.Ordinal);
+}
+// A fix blamed on several changes is one case: each change predicts on its own history, and the case
+// takes the highest count per file (D33).
+Dictionary<string, int> CoChangeCountsFor(Case c)
+{
+    var merged = new Dictionary<string, int>(StringComparer.Ordinal);
+    foreach (var (commit, files) in c.Parts ?? [(c.Commit, c.SeedFiles)])
+        foreach (var (f, n) in CoChangeCounts(files, commit, c.Exclude))
+            merged[f] = Math.Max(merged.GetValueOrDefault(f), n);
+    return merged;
+}
+Dictionary<string, Label> CoChange(Case c) => CoChangeCountsFor(c).ToDictionary(kv => kv.Key, _ => Label.Certain, StringComparer.Ordinal);
+// The top n by count (ties by path), as a capped impact group would show them (D40, Gate 1 in D44).
+Dictionary<string, Label> CoChangeTop(Case c, int n) => CoChangeCountsFor(c).OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key, StringComparer.Ordinal)
+    .Take(n).ToDictionary(kv => kv.Key, _ => Label.Guessed, StringComparer.Ordinal);
+static Dictionary<string, Label> Union(Dictionary<string, Label> a, Dictionary<string, Label> b)
+{
+    var u = new Dictionary<string, Label>(a, StringComparer.Ordinal);
+    foreach (var (f, l) in b) if (!u.TryGetValue(f, out var have) || l < have) u[f] = l;
+    return u;
 }
 
 // ---- Scoring ---------------------------------------------------------------------------------
@@ -184,7 +206,7 @@ JsonObject Compare(List<Case> cases)
             ["cases"] = crossStack.Count,
             ["graph (lines)"] = Metrics(crossStack.Select(c => (c.Actual, GraphLines(c.Seeds, c.Exclude))), Label.Guessed),
             ["same folder"] = Metrics(crossStack.Select(c => (c.Actual, SameFolder(c.SeedFiles, c.Exclude))), Label.Guessed),
-            ["co-change"] = Metrics(crossStack.Select(c => (c.Actual, CoChange(c.SeedFiles, c.Commit, c.Exclude))), Label.Guessed),
+            ["co-change"] = Metrics(crossStack.Select(c => (c.Actual, CoChange(c))), Label.Guessed),
         };
     foreach (var (name, pick) in Predictors())
     {
@@ -194,6 +216,51 @@ JsonObject Compare(List<Case> cases)
             : Metrics(scored, Label.Guessed);
     }
     return result;
+}
+
+// Gate 1 (D44): does adding the co-change baseline's top 10 to "graph within 2 lines" raise recall?
+// 95% ranges come from resampling fixes (1,000 times, fixed seed), so a re-run prints the same numbers.
+JsonObject Gate1(List<Case> cases)
+{
+    const int Floor = 30, Resamples = 1000;
+    var graphOnly = cases.Select(c => GraphLinesDepth(c.Seeds, c.Exclude, 2).Keys.ToHashSet(StringComparer.Ordinal)).ToList();
+    var withHistory = cases.Select((c, i) => graphOnly[i].Union(CoChangeTop(c, 10).Keys).ToHashSet(StringComparer.Ordinal)).ToList();
+    var history = cases.Select(c => CoChangeTop(c, 10).Keys.ToHashSet(StringComparer.Ordinal)).ToList();
+    var hitsG = cases.Select((c, i) => c.Actual.Count(graphOnly[i].Contains)).ToArray();
+    var hitsGH = cases.Select((c, i) => c.Actual.Count(withHistory[i].Contains)).ToArray();
+    var hitsH = cases.Select((c, i) => c.Actual.Count(history[i].Contains)).ToArray();
+    var actual = cases.Select(c => c.Actual.Count).ToArray();
+
+    double Ratio(IEnumerable<int> idx, int[] num, Func<int, int> den) { long n = 0, d = 0; foreach (var i in idx) { n += num[i]; d += den(i); } return d == 0 ? 0 : (double)n / d; }
+    var rng = new Random(20261019);
+    var draws = Enumerable.Range(0, Resamples).Select(_ => Enumerable.Range(0, cases.Count).Select(_ => rng.Next(cases.Count)).ToArray()).ToList();
+    JsonArray Range95(Func<int[], double> stat)
+    {
+        if (cases.Count == 0) return [0, 0];
+        var values = draws.Select(stat).Order().ToList();
+        return [Math.Round(values[(int)(0.025 * Resamples)], 3), Math.Round(values[(int)(0.975 * Resamples) - 1], 3)];
+    }
+    var all = Enumerable.Range(0, cases.Count).ToArray();
+    JsonObject Score(int[] hits, List<HashSet<string>> predicted) => new()
+    {
+        ["recall"] = Math.Round(Ratio(all, hits, i => actual[i]), 3),
+        ["recallRange95"] = Range95(d => Ratio(d, hits, i => actual[i])),
+        ["precision"] = Math.Round(Ratio(all, hits, i => predicted[i].Count), 3),
+        ["precisionRange95"] = Range95(d => Ratio(d, hits, i => predicted[i].Count)),
+        ["medianPredictedFiles"] = predicted.Count == 0 ? 0 : predicted.Select(p => p.Count).Order().ElementAt(predicted.Count / 2),
+    };
+    var gainRange = Range95(d => Ratio(d, hitsGH, i => actual[i]) - Ratio(d, hitsG, i => actual[i]));
+    return new JsonObject
+    {
+        ["fixes"] = cases.Count,
+        ["countsTowardVerdict"] = cases.Count >= Floor,
+        ["graph (lines, depth ≤ 2)"] = Score(hitsG, graphOnly),
+        ["co-change (top 10)"] = Score(hitsH, history),
+        ["graph (lines, depth ≤ 2) + co-change (top 10)"] = Score(hitsGH, withHistory),
+        ["recallGain"] = Math.Round(Ratio(all, hitsGH, i => actual[i]) - Ratio(all, hitsG, i => actual[i]), 3),
+        ["recallGainRange95"] = gainRange,
+        ["historyHelps"] = cases.Count >= Floor && (double)gainRange[0]! > 0,
+    };
 }
 
 IEnumerable<(string, Func<Case, Dictionary<string, Label>>)> Predictors() =>
@@ -206,7 +273,9 @@ IEnumerable<(string, Func<Case, Dictionary<string, Label>>)> Predictors() =>
     ("graph (files)", c => GraphFiles(c.SeedFiles, c.Exclude)),
     ("same project", c => SameProject(c.SeedFiles, c.Exclude)),
     ("same folder", c => SameFolder(c.SeedFiles, c.Exclude)),
-    ("co-change", c => CoChange(c.SeedFiles, c.Commit, c.Exclude)),
+    ("co-change", c => CoChange(c)),
+    ("co-change (top 10)", c => CoChangeTop(c, 10)),
+    ("graph (lines, depth ≤ 2) + co-change (top 10)", c => Union(GraphLinesDepth(c.Seeds, c.Exclude, 2), CoChangeTop(c, 10))),
 ];
 
 // ---- Frontend checks alone (D32): OpenAPI answer key and TypeScript compile-break ---------------
@@ -255,36 +324,44 @@ Console.Error.WriteLine($"test 1: {test1Commits.Count} commits, {test1.Count} ca
 // ---- Test 2: SZZ pairs ------------------------------------------------------------------------
 var fixPattern = new Regex(@"\b(fix(e[sd])?|bug|regression|broke|broken|crash(es|ed)?|revert(s|ed)?)\b", RegexOptions.IgnoreCase);
 var byHash = commits.ToDictionary(c => c.Hash, c => c, StringComparer.Ordinal);
-var fixes = Sample(commits.Where(c => fixPattern.IsMatch(c.Subject) && c.Files.Count is >= 1 and <= 15).ToList(), maxFixes);
-var pairs = new List<(string Change, string Fix, HashSet<string> Elsewhere)>();
+var fixCandidates = commits.Where(c => fixPattern.IsMatch(c.Subject) && c.Files.Count is >= 1 and <= 15).ToList();
+var fixCommitsMatching = fixCandidates.Count;
+var fixes = Sample(fixCandidates, maxFixes);
+// Mixed squash-merged PRs ("A collection of bug fixes", "Polish 6") are scored as their own slice too (D33).
+var bundlePattern = new Regex(@"\b(fixes|polish(es)?|misc|bunch|collection|various|random|several|a few|lots? of|and more|tech debt)\b", RegexOptions.IgnoreCase);
+// One case per fix, however many changes it's blamed on (D33): seeds from every change, targets are
+// the fix's files outside all of them. Blame follows main's own line, so a change is the PR that landed it (D36).
+var pairCount = 0;
 var trivial = 0;
+var fixCases = new List<(string Fix, List<string> Changes, HashSet<string> Elsewhere)>();
 foreach (var fix in fixes)
 {
     var introducing = new HashSet<string>(StringComparer.Ordinal);
     foreach (var file in fix.Files)
         foreach (var (from, to) in OldRanges(Run($"diff -U0 {fix.Hash}^ {fix.Hash} -- \"{file}\"")))
-            foreach (var line in Run($"blame -l -s -L {from},{to} {fix.Hash}^ -- \"{file}\"").Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            foreach (var line in Run($"blame --first-parent -l -s -L {from},{to} {fix.Hash}^ -- \"{file}\"").Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
                 var hash = line.TrimStart('^').Split(' ')[0];
                 if (hash != fix.Hash && byHash.ContainsKey(hash)) introducing.Add(hash);
             }
-    foreach (var change in introducing.Order(StringComparer.Ordinal))
-    {
-        var changeFiles = byHash[change].Files;
-        if (changeFiles.Count is 0 or > 30) continue;
-        var elsewhere = fix.Files.Where(f => !changeFiles.Contains(f)).ToHashSet(StringComparer.Ordinal);
-        if (elsewhere.Count == 0) { trivial++; continue; }
-        pairs.Add((change, fix.Hash, elsewhere));
-    }
+    var changes = introducing.Where(h => byHash[h].Files.Count is > 0 and <= 30).Order(StringComparer.Ordinal).ToList();
+    pairCount += changes.Count;
+    if (changes.Count == 0) continue;
+    var changeFiles = changes.SelectMany(h => byHash[h].Files).ToHashSet(StringComparer.Ordinal);
+    var elsewhere = fix.Files.Where(f => !changeFiles.Contains(f)).ToHashSet(StringComparer.Ordinal);
+    if (elsewhere.Count == 0) { trivial++; continue; }
+    fixCases.Add((fix.Hash, changes, elsewhere));
 }
 var test2 = new List<Case>();
-foreach (var (change, _, elsewhere) in pairs)
+foreach (var (fix, changes, elsewhere) in fixCases)
 {
-    var files = byHash[change].Files;
-    var nodes = files.Where(IsCSharp).SelectMany(f => ChangedNodes(change, f)).DistinctBy(n => n.Id).ToList();
-    if (nodes.Count > 0) test2.Add(new Case(change, files, nodes, elsewhere, [.. files]));
+    var nodes = changes.SelectMany(h => byHash[h].Files.Where(IsCSharp).SelectMany(f => ChangedNodes(h, f))).DistinctBy(n => n.Id).ToList();
+    if (nodes.Count == 0) continue;
+    var files = changes.SelectMany(h => byHash[h].Files).Distinct().Order(StringComparer.Ordinal).ToList();
+    var parts = changes.Select(h => (h, (IReadOnlyList<string>)byHash[h].Files)).ToList();
+    test2.Add(new Case(changes[0], files, nodes, elsewhere, [.. files], parts, fix, bundlePattern.IsMatch(byHash[fix].Subject)));
 }
-Console.Error.WriteLine($"test 2: {fixes.Count} fixes, {pairs.Count} pairs (+{trivial} trivial), {test2.Count} with a changed member found");
+Console.Error.WriteLine($"test 2: {fixes.Count} fixes, {pairCount} change → fix pairs, {fixCases.Count} fixes with files elsewhere (+{trivial} trivial), {test2.Count} with a changed member found");
 
 // ---- Exact check: graphs rebuilt at past commits ----------------------------------------------
 JsonObject? exact = null;
@@ -322,20 +399,30 @@ var output = new JsonObject
 {
     ["repo"] = Path.GetFileName(root),
     ["graphCommit"] = graph.Commit,
-    ["windowMonths"] = months,
+    ["windowMonths"] = months > 0 ? months : "all",
+    ["history"] = "main line only (git log --first-parent, merges diffed against their first parent; D36)",
     ["predictors"] = "graph (lines): changed methods found by name in today's graph · graph (lines+deps): plus what they directly use · graph (files): every point in the changed files · same project / same folder / co-change: baselines without the graph",
     ["labels"] = "certain = ✅ only; certain+guessed = ✅ and 🟡. 📜 (Phase 1c) not built yet.",
     ["memberMatching"] = new JsonObject { ["sameFile"] = matchStats["sameFile"], ["moved"] = matchStats["moved"], ["unmatched"] = matchStats["unmatched"] },
     ["test1FindsTheRest"] = Compare(test1),
     ["test2PredictsWhatBroke"] = Compare(test2),
-    ["test2Pairs"] = new JsonObject
+    ["gate1"] = new JsonObject
     {
-        ["fixCommits"] = fixes.Count, ["pairs"] = pairs.Count, ["trivialPairsExcluded"] = trivial,
-        ["handCheckSample"] = new JsonArray([.. Sample(pairs, 20).Select(p => (JsonNode)new JsonObject
+        ["note"] = "D44 Gate 1: one case per fix; history helps when the 95% range of the recall gain is above zero on ≥ 30 fixes",
+        ["all"] = Gate1(test2),
+        ["singleTopic"] = Gate1([.. test2.Where(c => !c.Bundle)]),
+        ["bundle"] = Gate1([.. test2.Where(c => c.Bundle)]),
+        ["bundlePattern"] = bundlePattern.ToString(),
+    },
+    ["test2Fixes"] = new JsonObject
+    {
+        ["fixCommitsSampled"] = fixes.Count, ["fixCommitsMatching"] = fixCommitsMatching, ["changeFixPairs"] = pairCount,
+        ["fixesWithFilesElsewhere"] = fixCases.Count, ["trivialFixesExcluded"] = trivial, ["cases"] = test2.Count,
+        ["handCheckSample"] = new JsonArray([.. Sample(test2, 20).Select(c => (JsonNode)new JsonObject
         {
-            ["change"] = p.Change, ["changeSubject"] = byHash[p.Change].Subject,
-            ["fix"] = p.Fix, ["fixSubject"] = byHash[p.Fix].Subject,
-            ["fixFilesElsewhere"] = new JsonArray([.. p.Elsewhere.Order(StringComparer.Ordinal).Select(f => (JsonNode)f)]),
+            ["fix"] = c.Fix, ["fixSubject"] = byHash[c.Fix!].Subject, ["bundle"] = c.Bundle,
+            ["changes"] = new JsonArray([.. c.Parts!.Select(p => (JsonNode)$"{p.Commit[..10]} {byHash[p.Commit].Subject}")]),
+            ["fixFilesElsewhere"] = new JsonArray([.. c.Actual.Order(StringComparer.Ordinal).Select(f => (JsonNode)f)]),
             ["genuine"] = null,
         })]),
     },
@@ -482,4 +569,6 @@ static IEnumerable<(int From, int To)> Ranges(string diff, string pattern)
 }
 
 /// <summary>One scored case: what changed (files and the members found for them), and the files that should be predicted.</summary>
-sealed record Case(string Commit, IReadOnlyList<string> SeedFiles, List<Node> Seeds, HashSet<string> Actual, HashSet<string> Exclude);
+// Parts: for a Test 2 fix blamed on several changes, each change's commit and files (D33).
+sealed record Case(string Commit, IReadOnlyList<string> SeedFiles, List<Node> Seeds, HashSet<string> Actual, HashSet<string> Exclude,
+    IReadOnlyList<(string Commit, IReadOnlyList<string> Files)>? Parts = null, string? Fix = null, bool Bundle = false);

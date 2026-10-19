@@ -1,0 +1,551 @@
+{
+  "repo": "eshop",
+  "graphCommit": "913acea66708a59595351174cee9b29f37179d29",
+  "windowMonths": "all",
+  "history": "main line only (git log --first-parent, merges diffed against their first parent; D36)",
+  "predictors": "graph (lines): changed methods found by name in today's graph · graph (lines+deps): plus what they directly use · graph (files): every point in the changed files · same project / same folder / co-change: baselines without the graph",
+  "labels": "certain = ✅ only; certain+guessed = ✅ and \uD83D\uDFE1. \uD83D\uDCDC (Phase 1c) not built yet.",
+  "memberMatching": {
+    "sameFile": 794,
+    "moved": 8,
+    "unmatched": 150
+  },
+  "test1FindsTheRest": {
+    "cases": 296,
+    "graph (lines)": {
+      "certain": {
+        "recall": 0.088,
+        "precision": 0.161,
+        "medianCasePrecision": 0,
+        "found": 177,
+        "of": 2019,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 104
+      },
+      "certain+guessed": {
+        "recall": 0.092,
+        "precision": 0.133,
+        "medianCasePrecision": 0,
+        "found": 185,
+        "of": 2019,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 90
+      }
+    },
+    "graph (lines, depth ≤ 1)": {
+      "certain": {
+        "recall": 0.061,
+        "precision": 0.289,
+        "medianCasePrecision": 0,
+        "found": 123,
+        "of": 2019,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 120
+      },
+      "certain+guessed": {
+        "recall": 0.061,
+        "precision": 0.272,
+        "medianCasePrecision": 0,
+        "found": 123,
+        "of": 2019,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 108
+      }
+    },
+    "graph (lines, depth ≤ 2)": {
+      "certain": {
+        "recall": 0.081,
+        "precision": 0.215,
+        "medianCasePrecision": 0,
+        "found": 163,
+        "of": 2019,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 104
+      },
+      "certain+guessed": {
+        "recall": 0.082,
+        "precision": 0.192,
+        "medianCasePrecision": 0,
+        "found": 165,
+        "of": 2019,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 90
+      }
+    },
+    "graph (lines, depth ≤ 3)": {
+      "certain": {
+        "recall": 0.084,
+        "precision": 0.186,
+        "medianCasePrecision": 0,
+        "found": 169,
+        "of": 2019,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 104
+      },
+      "certain+guessed": {
+        "recall": 0.085,
+        "precision": 0.158,
+        "medianCasePrecision": 0,
+        "found": 172,
+        "of": 2019,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 90
+      }
+    },
+    "graph (lines+deps)": {
+      "certain": {
+        "recall": 0.148,
+        "precision": 0.139,
+        "medianCasePrecision": 0.083,
+        "found": 298,
+        "of": 2019,
+        "medianPredictedFiles": 5,
+        "emptyAnswers": 31
+      },
+      "certain+guessed": {
+        "recall": 0.152,
+        "precision": 0.126,
+        "medianCasePrecision": 0.083,
+        "found": 307,
+        "of": 2019,
+        "medianPredictedFiles": 5,
+        "emptyAnswers": 31
+      }
+    },
+    "graph (files)": {
+      "certain": {
+        "recall": 0.112,
+        "precision": 0.149,
+        "medianCasePrecision": 0,
+        "found": 226,
+        "of": 2019,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 70
+      },
+      "certain+guessed": {
+        "recall": 0.117,
+        "precision": 0.125,
+        "medianCasePrecision": 0,
+        "found": 236,
+        "of": 2019,
+        "medianPredictedFiles": 3,
+        "emptyAnswers": 54
+      }
+    },
+    "same project": {
+      "recall": 0.474,
+      "precision": 0.086,
+      "medianCasePrecision": 0.059,
+      "found": 958,
+      "of": 2019,
+      "medianPredictedFiles": 25,
+      "emptyAnswers": 0
+    },
+    "same folder": {
+      "recall": 0.165,
+      "precision": 0.34,
+      "medianCasePrecision": 0.143,
+      "found": 334,
+      "of": 2019,
+      "medianPredictedFiles": 2,
+      "emptyAnswers": 35
+    },
+    "co-change": {
+      "recall": 0.048,
+      "precision": 0.234,
+      "medianCasePrecision": 0.188,
+      "found": 96,
+      "of": 2019,
+      "medianPredictedFiles": 0,
+      "emptyAnswers": 214
+    },
+    "co-change (top 10)": {
+      "recall": 0.047,
+      "precision": 0.25,
+      "medianCasePrecision": 0.2,
+      "found": 94,
+      "of": 2019,
+      "medianPredictedFiles": 0,
+      "emptyAnswers": 214
+    },
+    "graph (lines, depth ≤ 2) + co-change (top 10)": {
+      "certain": {
+        "recall": 0.081,
+        "precision": 0.215,
+        "medianCasePrecision": 0,
+        "found": 163,
+        "of": 2019,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 104
+      },
+      "certain+guessed": {
+        "recall": 0.122,
+        "precision": 0.206,
+        "medianCasePrecision": 0.111,
+        "found": 247,
+        "of": 2019,
+        "medianPredictedFiles": 3,
+        "emptyAnswers": 69
+      }
+    }
+  },
+  "test2PredictsWhatBroke": {
+    "cases": 1,
+    "graph (lines)": {
+      "certain": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 4,
+        "medianPredictedFiles": 6,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 4,
+        "medianPredictedFiles": 9,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (lines, depth ≤ 1)": {
+      "certain": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 4,
+        "medianPredictedFiles": 4,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 4,
+        "medianPredictedFiles": 4,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (lines, depth ≤ 2)": {
+      "certain": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 4,
+        "medianPredictedFiles": 6,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 4,
+        "medianPredictedFiles": 6,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (lines, depth ≤ 3)": {
+      "certain": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 4,
+        "medianPredictedFiles": 6,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 4,
+        "medianPredictedFiles": 7,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (lines+deps)": {
+      "certain": {
+        "recall": 0.25,
+        "precision": 0.042,
+        "medianCasePrecision": 0.042,
+        "found": 1,
+        "of": 4,
+        "medianPredictedFiles": 24,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.25,
+        "precision": 0.038,
+        "medianCasePrecision": 0.038,
+        "found": 1,
+        "of": 4,
+        "medianPredictedFiles": 26,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (files)": {
+      "certain": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 4,
+        "medianPredictedFiles": 9,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 4,
+        "medianPredictedFiles": 13,
+        "emptyAnswers": 0
+      }
+    },
+    "same project": {
+      "recall": 0.75,
+      "precision": 0.045,
+      "medianCasePrecision": 0.045,
+      "found": 3,
+      "of": 4,
+      "medianPredictedFiles": 66,
+      "emptyAnswers": 0
+    },
+    "same folder": {
+      "recall": 0.25,
+      "precision": 0.25,
+      "medianCasePrecision": 0.25,
+      "found": 1,
+      "of": 4,
+      "medianPredictedFiles": 4,
+      "emptyAnswers": 0
+    },
+    "co-change": {
+      "recall": 0,
+      "precision": 0,
+      "medianCasePrecision": 0,
+      "found": 0,
+      "of": 4,
+      "medianPredictedFiles": 1,
+      "emptyAnswers": 0
+    },
+    "co-change (top 10)": {
+      "recall": 0,
+      "precision": 0,
+      "medianCasePrecision": 0,
+      "found": 0,
+      "of": 4,
+      "medianPredictedFiles": 1,
+      "emptyAnswers": 0
+    },
+    "graph (lines, depth ≤ 2) + co-change (top 10)": {
+      "certain": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 4,
+        "medianPredictedFiles": 6,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 4,
+        "medianPredictedFiles": 6,
+        "emptyAnswers": 0
+      }
+    }
+  },
+  "gate1": {
+    "note": "D44 Gate 1: one case per fix; history helps when the 95% range of the recall gain is above zero on ≥ 30 fixes",
+    "all": {
+      "fixes": 1,
+      "countsTowardVerdict": false,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 6
+      },
+      "co-change (top 10)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 1
+      },
+      "graph (lines, depth ≤ 2) + co-change (top 10)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 6
+      },
+      "recallGain": 0,
+      "recallGainRange95": [
+        0,
+        0
+      ],
+      "historyHelps": false
+    },
+    "singleTopic": {
+      "fixes": 1,
+      "countsTowardVerdict": false,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 6
+      },
+      "co-change (top 10)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 1
+      },
+      "graph (lines, depth ≤ 2) + co-change (top 10)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 6
+      },
+      "recallGain": 0,
+      "recallGainRange95": [
+        0,
+        0
+      ],
+      "historyHelps": false
+    },
+    "bundle": {
+      "fixes": 0,
+      "countsTowardVerdict": false,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 0
+      },
+      "co-change (top 10)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 0
+      },
+      "graph (lines, depth ≤ 2) + co-change (top 10)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 0
+      },
+      "recallGain": 0,
+      "recallGainRange95": [
+        0,
+        0
+      ],
+      "historyHelps": false
+    },
+    "bundlePattern": "\\b(fixes|polish(es)?|misc|bunch|collection|various|random|several|a few|lots? of|and more|tech debt)\\b"
+  },
+  "test2Fixes": {
+    "fixCommitsSampled": 8,
+    "fixCommitsMatching": 8,
+    "changeFixPairs": 3,
+    "fixesWithFilesElsewhere": 1,
+    "trivialFixesExcluded": 1,
+    "cases": 1,
+    "handCheckSample": [
+      {
+        "fix": "57b73de1972c36dfbd3bc3d9d55413b1f4f07780",
+        "fixSubject": "Fix product image urls in chat responses (#275)",
+        "bundle": false,
+        "changes": [
+          "0b07251070 Added catalog functional test Cases. (#135)",
+          "63e82c9e75 Inject Kernel into ChatState via DI (#147)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Catalog.API/Infrastructure/EntityConfigurations/CatalogItemEntityTypeConfiguration.cs",
+          "src/Catalog.API/Model/CatalogItem.cs",
+          "src/WebApp/Components/Chatbot/MessageProcessor.cs",
+          "src/WebAppComponents/Catalog/CatalogItem.cs"
+        ],
+        "genuine": null
+      }
+    ]
+  },
+  "exactCheck": null,
+  "test4CompileBreak": null,
+  "test3StableAndFast": null
+}

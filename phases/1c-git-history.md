@@ -1,14 +1,14 @@
 ---
 phase: 1c
 name: git-history
-status: planned
+status: in progress
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 2 }
 provides: {}
 ---
 
 # Phase 1c · Git history
 
-**Approved 2026-10-19. Not started.**
+**Approved 2026-10-19. Started 2026-10-19.**
 
 Builds on D26–D29 and D33–D44. The goal: 📜 "usually changes together" evidence from git history,
 shown as a capped hint after the ✅ and 🟡 answers, and kept only if it measurably helps. No AI anywhere (D18).
@@ -102,7 +102,7 @@ reopens `phases/1a-csharp-map.md` and bumps `code-graph` to v3 and `impact-repor
   minShare {0.2, 0.3, 0.5}, maxFiles {20, 30, 50}.
   - The rule: the highest graph + 📜 recall whose 📜 precision is at least the plain baseline's.
   - The chosen values become the defaults and are **frozen** (committed) before the judging repos are scored.
-- **Judging on Kavita and eShop** with the frozen defaults: Gate 2's checks (see Done when).
+- **Judging on bitwarden/server** with the frozen defaults (Kavita and eShop reported too; both fell under the 30-fix floor at Gate 1, D43): Gate 2's checks (see Done when).
 - **Timing:** 📜's share of a nopCommerce build, and the extra first-build time from following renames.
 - Results: `benchmark/results/<date>-phase1c-<repo>-history.json`, plus `-tuning.json` for the grid.
 
@@ -124,12 +124,12 @@ reopens `phases/1a-csharp-map.md` and bumps `code-graph` to v3 and `impact-repor
 - stangent's own CI needs no history: the fixture repo is created by the test.
 
 ## Done when
-- [ ] **Gate 1** run on all four repos, with each fix counted once, full history, 95% ranges and the bundle slice; results committed. *If it fails, 1c stops here: the report says why, and the boxes below don't apply.*
+- [x] **Gate 1** run on all four repos (and bitwarden/server), with each fix counted once, full history, 95% ranges and the bundle slice; results committed. *If it fails, 1c stops here: the report says why, and the boxes below don't apply.*
 - [ ] `stangent graph build` adds 📜 lines with all four noise filters, renames followed (or the fallback recorded), and `meta.history`; a shallow clone warns and keeps stored 📜.
 - [ ] `graph impact` shows the `history` group last, capped at 10 with evidence, `--expand history`, the "also 📜" tag, and never walks 📜 (`impact-report` v4).
 - [ ] Contracts bumped per D20: `code-graph` v3, `impact-report` v4, 1a reopened, 1b marked `needs review` with its follow-up; `phases check` passes.
 - [ ] Defaults tuned on nopCommerce and Sonarr, then frozen and committed before judging.
-- [ ] **Gate 2** on the judging repos (Kavita; eShop only if it reaches 30 fixes):
+- [ ] **Gate 2** on the judging repo, bitwarden/server (Kavita and eShop reported, under the floor):
   - [ ] **📜 adds something:** graph + top-10 📜 beats graph alone on recall, with the 95% range of the gain above zero;
   - [ ] **filters help, not hurt:** 📜's precision ≥ the plain baseline's, and its recall ≥ 90% of the baseline's;
   - [ ] **answers stay short:** the median answer grows by ≤ 10 files;
@@ -146,6 +146,33 @@ reopens `phases/1a-csharp-map.md` and bumps `code-graph` to v3 and `impact-repor
 - Files that aren't on the map (`.resx`, `.sql`, `.csproj`, JSON config) (D34).
 - Re-ranking ✅/🟡 items by their "also 📜" tag (D40): only once the benchmark shows it's clearly more precise.
 - The CI workflow that builds and shares the graph (Phase 7); 1c only documents the clone it needs.
+
+## Progress
+
+### Gate 1 · 2026-10-19 · passed (`benchmark/results/2026-10-19-phase1c-*-gate1.json`)
+Test 2 hardened as planned:
+- the main line only (`--first-parent`, blame too);
+- one case per fix;
+- full history;
+- up to 400 fix commits sampled per repo;
+- 95% ranges from 1,000 resamples of fixes (fixed seed).
+
+| Repo (role) | Fixes | Graph ≤ 2: recall | + co-change top 10 | Gain (95% range) | Median answer | Verdict |
+|---|---|---|---|---|---|---|
+| Sonarr (tune) | 87 | 0.46 | 0.52 | **+0.06 (0.03 to 0.10)** | 48 → 56 files | history helps |
+| nopCommerce (tune) | 44 | 0.45 | 0.46 | +0.01 (0 to 0.04) | 109 → 118 | no clear gain |
+| bitwarden/server (judge) | 91 | 0.44 | 0.48 | **+0.04 (0.02 to 0.07)** | 119 → 123 | history helps |
+| Kavita (reported) | 23 | 0.03 | 0.12 | +0.09 (0.02 to 0.20) | 36 → 46 | under the 30-fix floor |
+| eShop (reported) | 1 | — | — | — | — | under the floor |
+
+- **Gate 1 passes:** history adds recall on Sonarr and bitwarden/server, with ranges above zero, so 1c continues.
+- **nopCommerce gains almost nothing:** the graph already finds what its fixes touch.
+- **Kavita and eShop are too thin to count** (D43). Many of Kavita's fixes touch more than 15 files, Test 2's
+  cap from 1a; 18 of its 23 are bundles. Its direction matches 1b (history finds what the graph barely
+  reaches), but on 23 fixes. bitwarden/server was added as the judging repo instead (D43 refined).
+- **Bundle fixes:** 18 of 23 on Kavita, 17 of 44 on nopCommerce, 13 of 91 on bitwarden/server, 1 of 87 on Sonarr.
+  On Sonarr and bitwarden/server the gain comes from single-topic fixes (+0.06 and +0.05), not bundles.
+- The plain baseline's top 10 alone finds 0.06–0.13 of what fixes touch. Its value is in what it adds to the graph, not as a replacement.
 
 ## End-of-phase report
 

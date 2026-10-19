@@ -40,6 +40,7 @@ No single pain point sets the order, so the foundation is the contracts between 
 | [dotnet/eShop](https://github.com/dotnet/eShop) | microservices (Basket, Catalog, Ordering, Identity, Webhooks), events between services over RabbitMQ, EF Core |
 | [jasontaylordev/CleanArchitecture](https://github.com/jasontaylordev/CleanArchitecture) | Angular and React frontends calling the API through an **NSwag-generated** client (not committed), MediatR, EF Core, Minimal APIs, Playwright tests |
 | [Kareadita/Kavita](https://github.com/Kareadita/Kavita) *(added 2026-10-19, Phase 1b)* | `net10.0` + **Angular 22**, typed hand-written `HttpClient` services, a committed `openapi.json`; 3.4k commits |
+| [bitwarden/server](https://github.com/bitwarden/server) *(added 2026-10-19, Phase 1c)* | `net10.0`, squash-merged PRs only (~8k commits, ~1k fixes); the judging repo for 📜 history evidence (D43). No frontend in this repo |
 | [Sonarr/Sonarr](https://github.com/Sonarr/Sonarr) *(added 2026-10-19, Phase 1b)* | `net10.0` + **React 18 + TypeScript**, TanStack Query behind its own `useApiQuery` wrapper (an in-house pattern); 12k commits. Pins SDK 10.0.402, so the benchmark uses a `global.json` override |
 
 Metric for impact analysis: for past issues with merged PRs (nopCommerce, eShop), compare
@@ -363,7 +364,7 @@ Three tests, all run by code from git history (no AI, no manual labelling):
 | 1b. Frontend + API shapes | TypeScript extractor; Angular/React → backend HTTP links; API request/response fields | CleanArchitecture |
 | 1c. Git history | 📜 "usually changes together", with noise filters | nopCommerce, eShop |
 Each ends with its own report (D20). 1b depends on 1a; 1c may wait if 1a's scores are good enough.
-- *Refined 2026-10-19 (Phase 1c):* 1c is tuned on nopCommerce and Sonarr and judged on Kavita and eShop (D43).
+- *Refined 2026-10-19 (Phase 1c):* 1c is tuned on nopCommerce and Sonarr and judged on bitwarden/server (D43; Kavita and eShop have too few fixes).
 **Why:** a working, scored C# impact analysis much sooner, and a chance to change course before the frontend half.
 
 ## D30 · The TypeScript extractor runs in Node, inside the stangent tool — 2026-10-19
@@ -552,6 +553,11 @@ sliding 20-commit window, each a correctness bug in waiting, to save a few secon
   or fail. eShop will probably fall below it, so the verdict may rest on Kavita alone (bundles and all).
   Accepted; the report says so.
 - CleanArchitecture stays out (a template with little history).
+- *Refined 2026-10-19 (Gate 1 run):* Kavita has 23 usable fixes and eShop 1, so neither reaches the floor and
+  Gate 2 had no judging repo. **bitwarden/server** joins the judging side: 7,963 commits, every one a squashed
+  PR, ~15% of them fixes, a different team and style from both tuning repos. Kavita and eShop are still
+  reported. Rejected: lowering the floor or raising Test 2's 15-file cap after seeing Kavita's number (moving
+  the goalposts); splitting Sonarr by time (judging on the tuning repo's own team and style).
 **Why:** tuning on the repos that are then scored measures the tuning, not 📜.
 **Cost:** half the history is spent on tuning; a thin judging side.
 

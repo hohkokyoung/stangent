@@ -1,0 +1,846 @@
+{
+  "repo": "bitwarden",
+  "graphCommit": "9129efbd1531d5d8472345638efad7ef25a7337a",
+  "windowMonths": "all",
+  "history": "main line only (git log --first-parent, merges diffed against their first parent; D36)",
+  "predictors": "graph (lines): changed methods found by name in today's graph · graph (lines+deps): plus what they directly use · graph (files): every point in the changed files · same project / same folder / co-change: baselines without the graph",
+  "labels": "certain = ✅ only; certain+guessed = ✅ and \uD83D\uDFE1. \uD83D\uDCDC (Phase 1c) not built yet.",
+  "memberMatching": {
+    "sameFile": 9788,
+    "moved": 135,
+    "unmatched": 2664
+  },
+  "test1FindsTheRest": {
+    "cases": 813,
+    "graph (lines)": {
+      "certain": {
+        "recall": 0.239,
+        "precision": 0.009,
+        "medianCasePrecision": 0.045,
+        "found": 1088,
+        "of": 4556,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 333
+      },
+      "certain+guessed": {
+        "recall": 0.239,
+        "precision": 0.009,
+        "medianCasePrecision": 0.044,
+        "found": 1089,
+        "of": 4556,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 330
+      }
+    },
+    "graph (lines, depth ≤ 1)": {
+      "certain": {
+        "recall": 0.139,
+        "precision": 0.077,
+        "medianCasePrecision": 0.333,
+        "found": 632,
+        "of": 4556,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 370
+      },
+      "certain+guessed": {
+        "recall": 0.139,
+        "precision": 0.077,
+        "medianCasePrecision": 0.333,
+        "found": 633,
+        "of": 4556,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 367
+      }
+    },
+    "graph (lines, depth ≤ 2)": {
+      "certain": {
+        "recall": 0.201,
+        "precision": 0.031,
+        "medianCasePrecision": 0.122,
+        "found": 916,
+        "of": 4556,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 338
+      },
+      "certain+guessed": {
+        "recall": 0.201,
+        "precision": 0.031,
+        "medianCasePrecision": 0.122,
+        "found": 917,
+        "of": 4556,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 335
+      }
+    },
+    "graph (lines, depth ≤ 3)": {
+      "certain": {
+        "recall": 0.22,
+        "precision": 0.02,
+        "medianCasePrecision": 0.083,
+        "found": 1002,
+        "of": 4556,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 336
+      },
+      "certain+guessed": {
+        "recall": 0.22,
+        "precision": 0.02,
+        "medianCasePrecision": 0.083,
+        "found": 1003,
+        "of": 4556,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 333
+      }
+    },
+    "graph (lines+deps)": {
+      "certain": {
+        "recall": 0.351,
+        "precision": 0.012,
+        "medianCasePrecision": 0.062,
+        "found": 1597,
+        "of": 4556,
+        "medianPredictedFiles": 14,
+        "emptyAnswers": 27
+      },
+      "certain+guessed": {
+        "recall": 0.351,
+        "precision": 0.012,
+        "medianCasePrecision": 0.062,
+        "found": 1598,
+        "of": 4556,
+        "medianPredictedFiles": 14,
+        "emptyAnswers": 27
+      }
+    },
+    "graph (files)": {
+      "certain": {
+        "recall": 0.267,
+        "precision": 0.006,
+        "medianCasePrecision": 0.009,
+        "found": 1216,
+        "of": 4556,
+        "medianPredictedFiles": 3,
+        "emptyAnswers": 267
+      },
+      "certain+guessed": {
+        "recall": 0.267,
+        "precision": 0.006,
+        "medianCasePrecision": 0.009,
+        "found": 1217,
+        "of": 4556,
+        "medianPredictedFiles": 3,
+        "emptyAnswers": 267
+      }
+    },
+    "same project": {
+      "recall": 0.279,
+      "precision": 0.002,
+      "medianCasePrecision": 0.002,
+      "found": 1272,
+      "of": 4556,
+      "medianPredictedFiles": 495,
+      "emptyAnswers": 1
+    },
+    "same folder": {
+      "recall": 0.08,
+      "precision": 0.017,
+      "medianCasePrecision": 0,
+      "found": 366,
+      "of": 4556,
+      "medianPredictedFiles": 5,
+      "emptyAnswers": 49
+    },
+    "co-change": {
+      "recall": 0.187,
+      "precision": 0.082,
+      "medianCasePrecision": 0.111,
+      "found": 852,
+      "of": 4556,
+      "medianPredictedFiles": 3,
+      "emptyAnswers": 311
+    },
+    "co-change (top 10)": {
+      "recall": 0.158,
+      "precision": 0.198,
+      "medianCasePrecision": 0.2,
+      "found": 719,
+      "of": 4556,
+      "medianPredictedFiles": 3,
+      "emptyAnswers": 311
+    },
+    "graph (lines, depth ≤ 2) + co-change (top 10)": {
+      "certain": {
+        "recall": 0.201,
+        "precision": 0.031,
+        "medianCasePrecision": 0.122,
+        "found": 916,
+        "of": 4556,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 338
+      },
+      "certain+guessed": {
+        "recall": 0.309,
+        "precision": 0.043,
+        "medianCasePrecision": 0.125,
+        "found": 1410,
+        "of": 4556,
+        "medianPredictedFiles": 9,
+        "emptyAnswers": 132
+      }
+    }
+  },
+  "test2PredictsWhatBroke": {
+    "cases": 91,
+    "graph (lines)": {
+      "certain": {
+        "recall": 0.527,
+        "precision": 0.002,
+        "medianCasePrecision": 0.001,
+        "found": 147,
+        "of": 279,
+        "medianPredictedFiles": 508,
+        "emptyAnswers": 4
+      },
+      "certain+guessed": {
+        "recall": 0.527,
+        "precision": 0.002,
+        "medianCasePrecision": 0.001,
+        "found": 147,
+        "of": 279,
+        "medianPredictedFiles": 508,
+        "emptyAnswers": 4
+      }
+    },
+    "graph (lines, depth ≤ 1)": {
+      "certain": {
+        "recall": 0.323,
+        "precision": 0.005,
+        "medianCasePrecision": 0.003,
+        "found": 90,
+        "of": 279,
+        "medianPredictedFiles": 43,
+        "emptyAnswers": 4
+      },
+      "certain+guessed": {
+        "recall": 0.323,
+        "precision": 0.005,
+        "medianCasePrecision": 0.003,
+        "found": 90,
+        "of": 279,
+        "medianPredictedFiles": 43,
+        "emptyAnswers": 4
+      }
+    },
+    "graph (lines, depth ≤ 2)": {
+      "certain": {
+        "recall": 0.444,
+        "precision": 0.004,
+        "medianCasePrecision": 0.004,
+        "found": 124,
+        "of": 279,
+        "medianPredictedFiles": 119,
+        "emptyAnswers": 4
+      },
+      "certain+guessed": {
+        "recall": 0.444,
+        "precision": 0.004,
+        "medianCasePrecision": 0.004,
+        "found": 124,
+        "of": 279,
+        "medianPredictedFiles": 119,
+        "emptyAnswers": 4
+      }
+    },
+    "graph (lines, depth ≤ 3)": {
+      "certain": {
+        "recall": 0.498,
+        "precision": 0.002,
+        "medianCasePrecision": 0.002,
+        "found": 139,
+        "of": 279,
+        "medianPredictedFiles": 222,
+        "emptyAnswers": 4
+      },
+      "certain+guessed": {
+        "recall": 0.498,
+        "precision": 0.002,
+        "medianCasePrecision": 0.002,
+        "found": 139,
+        "of": 279,
+        "medianPredictedFiles": 222,
+        "emptyAnswers": 4
+      }
+    },
+    "graph (lines+deps)": {
+      "certain": {
+        "recall": 0.649,
+        "precision": 0.002,
+        "medianCasePrecision": 0.002,
+        "found": 181,
+        "of": 279,
+        "medianPredictedFiles": 587,
+        "emptyAnswers": 2
+      },
+      "certain+guessed": {
+        "recall": 0.649,
+        "precision": 0.002,
+        "medianCasePrecision": 0.002,
+        "found": 181,
+        "of": 279,
+        "medianPredictedFiles": 587,
+        "emptyAnswers": 2
+      }
+    },
+    "graph (files)": {
+      "certain": {
+        "recall": 0.624,
+        "precision": 0.001,
+        "medianCasePrecision": 0.001,
+        "found": 174,
+        "of": 279,
+        "medianPredictedFiles": 1778,
+        "emptyAnswers": 2
+      },
+      "certain+guessed": {
+        "recall": 0.624,
+        "precision": 0.001,
+        "medianCasePrecision": 0.001,
+        "found": 174,
+        "of": 279,
+        "medianPredictedFiles": 1778,
+        "emptyAnswers": 2
+      }
+    },
+    "same project": {
+      "recall": 0.746,
+      "precision": 0.001,
+      "medianCasePrecision": 0.001,
+      "found": 208,
+      "of": 279,
+      "medianPredictedFiles": 2575,
+      "emptyAnswers": 1
+    },
+    "same folder": {
+      "recall": 0.201,
+      "precision": 0.003,
+      "medianCasePrecision": 0,
+      "found": 56,
+      "of": 279,
+      "medianPredictedFiles": 68,
+      "emptyAnswers": 1
+    },
+    "co-change": {
+      "recall": 0.161,
+      "precision": 0.004,
+      "medianCasePrecision": 0,
+      "found": 45,
+      "of": 279,
+      "medianPredictedFiles": 59,
+      "emptyAnswers": 5
+    },
+    "co-change (top 10)": {
+      "recall": 0.065,
+      "precision": 0.022,
+      "medianCasePrecision": 0,
+      "found": 18,
+      "of": 279,
+      "medianPredictedFiles": 10,
+      "emptyAnswers": 5
+    },
+    "graph (lines, depth ≤ 2) + co-change (top 10)": {
+      "certain": {
+        "recall": 0.444,
+        "precision": 0.004,
+        "medianCasePrecision": 0.004,
+        "found": 124,
+        "of": 279,
+        "medianPredictedFiles": 119,
+        "emptyAnswers": 4
+      },
+      "certain+guessed": {
+        "recall": 0.484,
+        "precision": 0.004,
+        "medianCasePrecision": 0.005,
+        "found": 135,
+        "of": 279,
+        "medianPredictedFiles": 123,
+        "emptyAnswers": 1
+      }
+    }
+  },
+  "gate1": {
+    "note": "D44 Gate 1: one case per fix; history helps when the 95% range of the recall gain is above zero on ≥ 30 fixes",
+    "all": {
+      "fixes": 91,
+      "countsTowardVerdict": true,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0.444,
+        "recallRange95": [
+          0.361,
+          0.545
+        ],
+        "precision": 0.004,
+        "precisionRange95": [
+          0.003,
+          0.005
+        ],
+        "medianPredictedFiles": 119
+      },
+      "co-change (top 10)": {
+        "recall": 0.065,
+        "recallRange95": [
+          0.035,
+          0.099
+        ],
+        "precision": 0.022,
+        "precisionRange95": [
+          0.012,
+          0.034
+        ],
+        "medianPredictedFiles": 10
+      },
+      "graph (lines, depth ≤ 2) + co-change (top 10)": {
+        "recall": 0.484,
+        "recallRange95": [
+          0.4,
+          0.58
+        ],
+        "precision": 0.004,
+        "precisionRange95": [
+          0.003,
+          0.005
+        ],
+        "medianPredictedFiles": 123
+      },
+      "recallGain": 0.039,
+      "recallGainRange95": [
+        0.016,
+        0.069
+      ],
+      "historyHelps": true
+    },
+    "singleTopic": {
+      "fixes": 78,
+      "countsTowardVerdict": true,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0.474,
+        "recallRange95": [
+          0.383,
+          0.58
+        ],
+        "precision": 0.004,
+        "precisionRange95": [
+          0.003,
+          0.005
+        ],
+        "medianPredictedFiles": 134
+      },
+      "co-change (top 10)": {
+        "recall": 0.068,
+        "recallRange95": [
+          0.035,
+          0.107
+        ],
+        "precision": 0.022,
+        "precisionRange95": [
+          0.012,
+          0.035
+        ],
+        "medianPredictedFiles": 10
+      },
+      "graph (lines, depth ≤ 2) + co-change (top 10)": {
+        "recall": 0.521,
+        "recallRange95": [
+          0.432,
+          0.624
+        ],
+        "precision": 0.004,
+        "precisionRange95": [
+          0.003,
+          0.005
+        ],
+        "medianPredictedFiles": 139
+      },
+      "recallGain": 0.047,
+      "recallGainRange95": [
+        0.019,
+        0.078
+      ],
+      "historyHelps": true
+    },
+    "bundle": {
+      "fixes": 13,
+      "countsTowardVerdict": false,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0.289,
+        "recallRange95": [
+          0.174,
+          0.536
+        ],
+        "precision": 0.006,
+        "precisionRange95": [
+          0.004,
+          0.013
+        ],
+        "medianPredictedFiles": 86
+      },
+      "co-change (top 10)": {
+        "recall": 0.044,
+        "recallRange95": [
+          0,
+          0.125
+        ],
+        "precision": 0.02,
+        "precisionRange95": [
+          0,
+          0.045
+        ],
+        "medianPredictedFiles": 10
+      },
+      "graph (lines, depth ≤ 2) + co-change (top 10)": {
+        "recall": 0.289,
+        "recallRange95": [
+          0.174,
+          0.536
+        ],
+        "precision": 0.006,
+        "precisionRange95": [
+          0.004,
+          0.012
+        ],
+        "medianPredictedFiles": 90
+      },
+      "recallGain": 0,
+      "recallGainRange95": [
+        0,
+        0
+      ],
+      "historyHelps": false
+    },
+    "bundlePattern": "\\b(fixes|polish(es)?|misc|bunch|collection|various|random|several|a few|lots? of|and more|tech debt)\\b"
+  },
+  "test2Fixes": {
+    "fixCommitsSampled": 400,
+    "fixCommitsMatching": 461,
+    "changeFixPairs": 647,
+    "fixesWithFilesElsewhere": 92,
+    "trivialFixesExcluded": 225,
+    "cases": 91,
+    "handCheckSample": [
+      {
+        "fix": "b778e5a1cc42df855b0414dbde2c565712555482",
+        "fixSubject": "[PM-44658] fix: Send and apply U2F AppID for migrated WebAuthn 2FA keys (#8554)",
+        "bundle": false,
+        "changes": [
+          "b11ed3b62e [PM-40870] Auth renovate fido2 v4 migration (#8071)"
+        ],
+        "fixFilesElsewhere": [
+          "test/Common/Fakes/FakeWebAuthnAuthenticator.cs",
+          "test/Core.Test/Auth/Identity/WebAuthnTokenProviderMigratedU2fKeyTests.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "608746dcab8da5dc98da764c2a38853c611556ab",
+        "fixSubject": "[PM-42940] fix: prevent custom-role collection bypass on GetAdmin cipher endpoint (#8472)",
+        "bundle": true,
+        "changes": [
+          "0c29e9227c Remove provider-export-permission feature flag (#5263)",
+          "46b4d48a8f [PM-41268] Withhold gated cipher secrets behind a type-checked witness (#8115)",
+          "f6ebb20847 [Provider] Add support for events (#1447)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Api/Utilities/ServiceCollectionExtensions.cs",
+          "src/Core/Vault/Authorization/Ciphers/CipherOrganizationAuthorizationHandler.cs",
+          "src/Core/Vault/Authorization/Ciphers/CipherOrganizationOperationRequirement.cs",
+          "test/Core.Test/Vault/Authorization/CipherOrganizationAuthorizationHandlerTests.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "8f24b07002f729b659e2f4dd875449e8046a20f6",
+        "fixSubject": "Fix API base URL for Slack and Teams integration (#8449)",
+        "bundle": false,
+        "changes": [
+          "a565fd9ee4 Add Microsoft Teams integration (#6410)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Api/Dirt/Controllers/SlackIntegrationController.cs",
+          "src/Api/Dirt/Controllers/TeamsIntegrationController.cs",
+          "test/Api.Test/Dirt/Controllers/SlackIntegrationControllerTests.cs",
+          "test/Api.Test/Dirt/Controllers/TeamsIntegrationControllerTests.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "30053561efb3e1e88751a1fc54643af1a272d41d",
+        "fixSubject": "[PM-42488] fix: Treat a blank account recovery key as a withdrawal (#8356)",
+        "bundle": false,
+        "changes": [
+          "1323d0fb6a [PM-25690] Create UpdateUserResetPasswordEnrollment command (#7594)",
+          "3eba269bef [PM-41481] Fix policy enforcement when accepting invite link (#8146)",
+          "e4017f0fed Auth/PM-38129 (#7743)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Api/AdminConsole/Models/Request/Organizations/AcceptOrganizationInviteLinkRequestModel.cs",
+          "src/Api/AdminConsole/Models/Request/Organizations/ConfirmOrganizationInviteLinkRequestModel.cs",
+          "src/Api/AdminConsole/Models/Request/Organizations/OrganizationUserRequestModels.cs",
+          "src/Api/Auth/Controllers/EmergencyAccessController.cs",
+          "src/Api/Auth/Models/Request/EmergencyAccessRequestModels.cs",
+          "src/Core/AdminConsole/OrganizationFeatures/Organizations/Errors.cs",
+          "test/Api.IntegrationTest/Auth/Controllers/EmergencyAccessControllerTest.cs",
+          "test/Api.Test/AdminConsole/Models/Request/Organizations/AcceptOrganizationInviteLinkRequestModelTests.cs",
+          "test/Api.Test/AdminConsole/Models/Request/Organizations/ConfirmOrganizationInviteLinkRequestModelTests.cs",
+          "test/Api.Test/AdminConsole/Models/Request/Organizations/OrganizationUserAcceptRequestModelTests.cs",
+          "test/Api.Test/AdminConsole/Models/Request/Organizations/OrganizationUserResetPasswordEnrollmentRequestModelTests.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "9a87169066a984507e837b5fb8377a41c1de50c6",
+        "fixSubject": "Admin Portal - Fix GetTwoFactorProviders wrong exception type handling on Organization and User (#8234)",
+        "bundle": false,
+        "changes": [
+          "4d91350fb7 [PM-29498] Remove Premium Feature Flagged Logic (#6967)",
+          "5268f2781e Start Migration from Newtonsoft.Json to System.Text.Json (#1803)",
+          "f7c615cc01 [PM-21411] Refactor interface for determining premium status and features (#6688)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Core/AdminConsole/Entities/Organization.cs",
+          "test/Core.Test/AdminConsole/Entities/OrganizationTests.cs",
+          "test/Core.Test/Entities/UserTests.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "e733ee53855fa268a003297a87351ff1c5010686",
+        "fixSubject": "[PM-38272] fix: handle null or empty permissions in OrganizationUserResponseModel (#8207)",
+        "bundle": false,
+        "changes": [
+          "63fcdc1418 Implemented Custom role and permissions (#1057)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Api/AdminConsole/Models/Response/Organizations/OrganizationUserResponseModel.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "38fd574d29d63e3e45595e8eaf1b0129c7c87782",
+        "fixSubject": "[PM-40751] fix: Sales-assisted trials email copy (#8045)",
+        "bundle": false,
+        "changes": [
+          "ac18ce9996 [PM-38388] Support sales-assisted trials (#7881)"
+        ],
+        "fixFilesElsewhere": [
+          "test/Core.Test/Billing/TrialInitiation/SalesAssistedTrialInvitationEmailViewTests.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "e16e0685b78864c3b429130c118149f9b05e5468",
+        "fixSubject": "[PM-40002] Fix Teams 2019 Migration Display (#7933)",
+        "bundle": false,
+        "changes": [
+          "c04ee9c0a9 fix(billing): handle cross-product Phase 2 price overlay for Families 2019 (#7408)",
+          "cb1c12794f Derive item add on status from price metadata (#5389)",
+          "e758ca2e27 fix(billing): display Phase 2 prices and discount on org subscription page (#7393)"
+        ],
+        "fixFilesElsewhere": [
+          "test/Core.Test/Models/Business/SubscriptionInfoTests.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "d25553e5341285cc65b0aa72f6a739c49ced3a5d",
+        "fixSubject": "fix(billing): stop 500-retry loop on incomplete_expired subscription transitions (#7525)",
+        "bundle": false,
+        "changes": [
+          "768de5f1e2 [PM-32477]PremiumStatusChanged Push Notification (#7198)",
+          "84521a67c8 [PM-30908]Correct Premium subscription status handling (#6877)",
+          "89f6e432b5 [PM-33896] Update Families organization on schedule transition (#7300)",
+          "f045d06a9c [AC-2361] Refactor StripeController (#4136)"
+        ],
+        "fixFilesElsewhere": [
+          "test/Billing.Test/Services/PaymentFailedHandlerTests.cs",
+          "test/Billing.Test/Services/PaymentSucceededHandlerTests.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "74c4aced741855b946b88f3f9b6b5e567f041ce4",
+        "fixSubject": "fix(refactor): [PM-34246] Rename Set Password to Finalize Onboarding (#7328)",
+        "bundle": false,
+        "changes": [
+          "0d88aa1ca1 [PM-21925] Add MasterPasswordSalt Column to User Table (#6950)",
+          "2e92a53f11 [PM-27281] Support v2 account encryption on JIT master password signups (#6777)",
+          "b716a925f8 [PM-3797 Part 1] Layout new key rotation methods (#3425)",
+          "ee618328c0 Auth/PM-3275 - Changes to support TDE User without MP being able to Set a Password + misc refactoring (#3242)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Core/Auth/UserFeatures/UserMasterPassword/FinishSsoJitProvisionMasterPasswordCommand.cs",
+          "src/Core/Auth/UserFeatures/UserMasterPassword/Interfaces/IFinishSsoJitProvisionMasterPasswordCommand.cs",
+          "test/Core.Test/Auth/UserFeatures/UserMasterPassword/FinishSsoJitProvisionMasterPasswordCommandTests.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "cafe4ffce8cd2fe73fc5d50a54353b7bb8c28f0f",
+        "fixSubject": "[PM-34049] Fix PoliciesController authorize attribute (#7303)",
+        "bundle": false,
+        "changes": [
+          "524c5459d4 [PM-33819] Enforce use of authorize attributes (#7242)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Api/AdminConsole/Authorization/AuthorizationHandlerCollectionExtensions.cs",
+          "test/Api.IntegrationTest/AdminConsole/Controllers/PoliciesControllerTests.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "ee26a701e9cbaa65ea5c15f407452fe8d3b0f851",
+        "fixSubject": "[BEEEP] [PM-28808] Fix invalid identity URL in Swagger (#6653)",
+        "bundle": false,
+        "changes": [
+          "1c71af47bb swagger specs for public api",
+          "3a8f344202 Fix swagger errors (#2277)",
+          "6971f0a976 Update Swashbuckle and improve generated OpenAPI files (#6066)",
+          "e13f022c90 upgrade swagger"
+        ],
+        "fixFilesElsewhere": [
+          "src/SharedWeb/Utilities/ServiceCollectionExtensions.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "79ad1dbda014709de1d85e92903cb4e2e092259d",
+        "fixSubject": "fix(2fa): [PM-22323] Do not show 2FA warning for 2FA setup and login emails",
+        "bundle": false,
+        "changes": [
+          "1c3afcdffc Trusted Device Encryption feature (#3151)",
+          "2ac513e15a Defect/PM-1196 - SSO with Email 2FA Flow - Email Required error fixed (#2874)",
+          "34580f0472 Remove key rotation v1 (#5939)",
+          "3989e3b26b chore(feature-flag): [PM-8671] Remove new-device-verification feature flag",
+          "475160cfe1 two factor email setup",
+          "4a26c55599 [SG-698] Refactored 2fa send email and identity to cater for passwordless (#2346)",
+          "64b288035c Chore: document SutProvider and clean up UserServiceTests (#5879)",
+          "69511160cb [EC-400] Code clean up Device Verification (#2601)",
+          "6f60d24f5a Email verification for new devices (#1931)",
+          "a6d97118fa Feature/bit auto data (#2219)",
+          "a7a45893a3 PS-82 check send 2FA email for new devices on TwoFactorController send-email-login (#1977)",
+          "aba2f023cd [PM-9925] Tokenable for User Verification on Two Factor Authenticator settings (#4558)",
+          "b00f11fc43 [PM-17645] : update email for new email multi factor tokens (#5428)",
+          "c446ac86fe [PM-12512] Add Endpoint to allow users to request a new device otp (#5146)",
+          "d2567dd42d [PM-5518] Refactor Email Token Providers (#3784)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Core/Auth/Enums/TwoFactorEmailPurpose.cs",
+          "src/Core/Auth/Services/ITwoFactorEmailService.cs",
+          "src/Core/Auth/Services/Implementations/TwoFactorEmailService.cs",
+          "test/Core.Test/Auth/Services/TwoFactorEmailServiceTests.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "e4359f071c89df5be7ceb31cb489d35bb199c8f9",
+        "fixSubject": "[PM-21097] Fix: Prevent admin-added sponsored families from appearing in individual vault settings (#5767)",
+        "bundle": false,
+        "changes": [
+          "93f5b34223 Add limit item deletion server code (#5308)",
+          "dc5db5673f [PM-17775] (#5699)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Core/Models/Api/Response/OrganizationSponsorships/OrganizationSponsorshipResponseModel.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "82508fb7a962ee81fd3d1210b4fdc8b5f512c93f",
+        "fixSubject": "fix: remove delete from cs/billing and create new RequestDelete perm, refs PM-17014 (#5258)",
+        "bundle": false,
+        "changes": [
+          "eb9a061e6f [pm-15123] Add delete permissions for CS and Billing. (#5145)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Admin/Enums/Permissions.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "ce185eb3dfb759a1366b84de63b6fbdca6563481",
+        "fixSubject": "[PM-5963] Fix tde offboarding vault corruption (#4144)",
+        "bundle": false,
+        "changes": [
+          "80740aa4ba [PM-2032] Server endpoints to support authentication with a passkey (#3361)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Api/Auth/Controllers/AccountsController.cs",
+          "src/Api/Auth/Models/Request/Accounts/UpdateTdeOffboardingPasswordRequestModel.cs",
+          "src/Core/Auth/UserFeatures/TdeOffboardingPassword/Interfaces/ITdeOffboardingPasswordCommand.cs",
+          "src/Core/Auth/UserFeatures/TdeOffboardingPassword/TdeOffboardingPasswordCommand.cs",
+          "src/Core/Auth/UserFeatures/UserServiceCollectionExtensions.cs",
+          "test/Api.Test/Auth/Controllers/AccountsControllerTests.cs",
+          "test/Core.Test/Auth/UserFeatures/TdeOffboarding/TdeOffboardingPasswordCommandTests.cs",
+          "test/Identity.IntegrationTest/Endpoints/IdentityServerSsoTests.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "0258f4949c915e57d8c45d9c937a5175dd6947f7",
+        "fixSubject": "[AC-2184] Fix push sync notification on opt-in to Flexible Collections (#3794)",
+        "bundle": false,
+        "changes": [
+          "b6255a64fe [AC-2184] Force sync after opting in to Flexible Collections (#3766)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Notifications/HubHelpers.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "d60a0f52fdf80d1afc097686994d9b3b65e748e1",
+        "fixSubject": "fix logic in some EF cipher queries (#2366)",
+        "bundle": false,
+        "changes": [
+          "b13dda2799 Postgres & MySql Support For Self-Hosted Installations (#1386)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Infrastructure.EntityFramework/Repositories/Queries/UserCipherDetailsQuery.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "7cc7b84eaf4e8cf779444115b82293dbdc29939a",
+        "fixSubject": "use fixed-time comparison of secrets (#1698)",
+        "bundle": false,
+        "changes": [
+          "022e404cc5 Attachment blob upload (#1229)",
+          "5259b07889 create org with license file"
+        ],
+        "fixFilesElsewhere": [
+          "src/Billing/Controllers/AppleController.cs",
+          "src/Billing/Controllers/BitPayController.cs",
+          "src/Billing/Controllers/PayPalController.cs",
+          "src/Billing/Controllers/StripeController.cs",
+          "src/Core/Services/Implementations/UserService.cs",
+          "src/Core/Utilities/CoreHelpers.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "255855887b2463478ec93133bee301c61a18b517",
+        "fixSubject": "fix double `//`",
+        "bundle": false,
+        "changes": [
+          "3ac1f87e12 env files for compose. fixes to push relays"
+        ],
+        "fixFilesElsewhere": [
+          "src/Core/Services/Implementations/BaseIdentityClientService.cs"
+        ],
+        "genuine": null
+      }
+    ]
+  },
+  "exactCheck": null,
+  "test4CompileBreak": null,
+  "test3StableAndFast": null
+}
