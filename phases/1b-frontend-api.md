@@ -1,8 +1,8 @@
 ---
 phase: 1b
 name: frontend-api
-status: needs review
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 2 }
+status: done
+consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3 }
 provides: {}
 ---
 
@@ -250,3 +250,8 @@ How to read it:
 ### Needs review 2026-10-19 · `code-graph` v2 → v3 (Phase 1c)
 1c added 📜 `changes-with` lines and `meta.history` to the graph. Follow-up: confirm nothing in 1b depends on
 the v2 layout (the frontend extractor writes fragments, which are unchanged), then move `consumes` to `code-graph: 3`.
+
+*Reviewed 2026-10-19:* nothing in 1b depends on it. 1c changed none of 1b's code (the TypeScript extractor,
+`FrontendScanner`, `frontend-http`, `ApiShapes`); fragments are stored as before; all tests pass on v3. Kavita's
+OpenAPI answer key, re-run on the v3 graph, gives byte-identical results (endpoints and fields 1.00 / 1.00, 405
+callers linked). 1b now consumes `code-graph: 3` and is `done` again.

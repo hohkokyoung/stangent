@@ -289,13 +289,13 @@ How to read it:
 - **Hand-checking:** the Test 2 pairs from D28 are still not checked by a person.
 
 ### 5. Impact on other phases
-- `code-graph` v2 → v3: 1b is `needs review` (its follow-up: confirm, then move to v3).
+- `code-graph` v2 → v3: 1b was marked `needs review`, then reviewed and moved to v3 the same day (no changes needed).
 - `impact-report` v3 → v4: no phase consumes it yet. Phase 6 (PR review) will show the `history` section.
 - Phase 7's graph-building workflow must clone with `fetch-depth: 0` and `filter: blob:limit=200k` (D42).
 - Phase 5 (testing) could use 📜 to suggest tests that usually change with a file; not designed yet.
 
 ### 6. Follow-ups
 - ~~Push and confirm CI is green, then mark this phase `done` here and in `roadmap.md`.~~ Done.
-- 1b's `needs review`: confirm nothing in 1b depends on the v2 layout, then move it to `code-graph: 3`.
+- ~~1b's `needs review`: confirm nothing in 1b depends on the v2 layout, then move it to `code-graph: 3`.~~ Done.
 - Next time 📜 is tuned, make the eligibility rule all of Gate 2's checks.
 - A person checks the Test 2 hand-check sample once (D28).
