@@ -103,8 +103,8 @@ bundles sent to the AI (regenerable from the graph).
 ### 1. Import (code)
 - `stangent fsd import <file.docx>`: a deterministic `.docx` → Markdown conversion in C# (Open XML SDK, no external
   tool), keeping headings, numbered lists and tables. Images are kept as files with their captions; no AI reads them.
-- **Section IDs:** the FSD's own numbering (`4.2.3`); a heading path where a section has none. Duplicate or missing
-  numbers are reported, not guessed.
+- **Section IDs:** the FSD's own numbering (`4.2.3`); a heading path where a section has none. FSDs follow no standard,
+  so both are first-class, even within one document. Duplicate or missing numbers are reported, not guessed.
 - **The original** is archived and cited by archive name, path and content hash (D16). Phase 2's archive backend is a
   folder or a second git repo set in `stangent.yaml`.
 - The same file always gives byte-identical text; a file with a known content hash is imported once.
@@ -135,7 +135,7 @@ bundles sent to the AI (regenerable from the graph).
   reopens 1a (the provider) and bumps the version there.
 
 ### 6. Proving it on Sonarr (D56, D57)
-- `benchmark/fsd/sonarr/`: an FSD in our own words for 10–15 screens (`.docx`, numbered), and an answer key with
+- `benchmark/fsd/sonarr/`: an FSD in our own words for 10–15 screens (`.docx`; some chapters numbered, some plain prose), and an answer key with
   **30 planted items: 10 gaps, 10 conflicts, 10 undocumented**. Both are committed and frozen before the first run;
   the answer key never goes into a bundle.
 - A scoring command compares findings with the answer key; 20 unplanted findings are hand-checked once.
@@ -166,7 +166,7 @@ links (D52), and a discrepancy is a link's state (D58).
   project has several).
 - **E2E tests as an input to pages.** The company's pipeline uses them; Playwright links wait for 1d (D45).
 - The dashboard (Phase 8, D58); "code-wrong" → a Jira ticket (Phase 3); tests tagged with FSD section IDs (Phase 5).
-- The dry run on a real company FSD (D56): after 2b, once D24's training question is confirmed. The company's real
-  FSD format is confirmed then; Phase 2 assumes `.docx` with numbered sections.
+- The dry run on a real FSD from one of the owner's projects (D56): after 2b. Formats other than `.docx` get their own
+  converter when a real FSD needs one.
 
 ## Progress

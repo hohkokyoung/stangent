@@ -3,9 +3,11 @@
 Settled while grilling `spec.md`. Each entry: what was decided, why, and what it costs.
 Change a decision by editing its entry and noting the date — don't silently contradict it elsewhere.
 
-## D1 · Built for our own company first — 2026-10-18
-Stangent targets our own team's real workflow and stack. Making it installable for
+## D1 · Built for the owner's own use first — 2026-10-18
+Stangent targets the owner's real workflow and stack. Making it installable for
 others (spec item 11) is a later phase.
+- *Revised 2026-10-20:* "own use" means the owner's company **and** personal projects alike; nothing should assume
+  a single company, its tools or its documents.
 **Why:** abstracting over many ticket systems, hosts and stacks before one works end to end is how platforms stall.
 
 ## D2 · Tickets: Jira — 2026-10-18
@@ -291,6 +293,7 @@ Rejected: a store library per language (two copies drift); products touching fil
 - Sending client code to Claude is approved. Whether data is used for training is set by
   the account's terms and admin settings, not by anything a prompt says — confirm the
   company's plan before pointing stangent at client code.
+  *Confirmed 2026-10-20:* the Claude account keeps its data out of training.
 - Everyone who'd use stangent has Claude Code.
 - A per-repo switch turns off all AI steps (only code-only parts run), for any client whose
   contract forbids external AI. Cheap now, expensive to retrofit.
@@ -781,7 +784,8 @@ reopens its links (mitigated if regeneration reuses the old page when its inputs
 ## D56 · Phase 2 is proven on an FSD for Sonarr with planted discrepancies — 2026-10-19
 - **Repo:** Sonarr: a real React app whose routes are in the graph (D31), documented screen by screen in the Servarr
   wiki, already in the benchmark with full history (D6).
-- **FSD:** written in our own words from the wiki for 10–15 screens, as a `.docx` with numbered sections, like a real FSD.
+- **FSD:** written in our own words from the wiki for 10–15 screens, as a `.docx`. *Refined 2026-10-20:* FSDs follow no
+  standard (the owner's projects vary), so some chapters are numbered and some are plain prose under headings.
 - **Planted discrepancies,** listed in an answer-key file: **gaps** (sections for features Sonarr doesn't have),
   **conflicts** (changed rules, e.g. "at most 3 tags per series" where the code allows any number), **undocumented**
   (real screens or behaviours deleted from the FSD).
@@ -789,7 +793,7 @@ reopens its links (mitigated if regeneration reuses the old page when its inputs
   hand-checked once (some will be real drift between the wiki and the code).
 - **Also measured:** tokens and time per page, the D18 check failure rate, and the share of candidate pairs found by
   code vs by the AI (D53).
-- After Sonarr, a dry run on a real company FSD (summarised, nothing committed) once D24's training question is confirmed.
+- After Sonarr, a dry run on a real FSD from one of the owner's projects (summarised, nothing committed).
 Rejected: a company FSD first (no answer key, and not cleared yet).
 **Why:** an answer key turns "it found 40 discrepancies" into a score; the same reason 1a–1c used compilers and history.
 **Cost:** a planted test is tidier than a real FSD (vague wording, one section covering five screens), so it overstates
@@ -859,7 +863,6 @@ available; the subagent's tool limits are a setting, so `check` must still rejec
 ## Open questions
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
-- Confirm the company's Claude plan excludes training on its data (D24), before running on client code.
 - Bug tickets: how is a bug verified before it's fixed? Likely a test that fails because of the bug
   (the D18 check), then the fix makes it pass. What happens when it can't be reproduced, and how does
   the ticket's description become a starting point for the graph? (Phases 3–5)
