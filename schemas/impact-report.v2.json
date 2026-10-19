@@ -1,0 +1,252 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:impact-report:v2",
+  "title": "Stangent impact report (contract v2)",
+  "description": "The answer to 'what does this change affect' (D27): grouped, labelled, nearest first, summary first. v2 adds distance: each item's depth (lines away from the change), each group's direct/near/far counts, and an optional depth limit. Every ❓ is listed one by one.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "graph",
+    "change",
+    "groups",
+    "unresolved",
+    "hints",
+    "requirements",
+    "expanded",
+    "maxDepth"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "item": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "label",
+        "file",
+        "line",
+        "depth"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "project",
+            "file",
+            "type",
+            "method",
+            "property",
+            "field",
+            "endpoint",
+            "table",
+            "column",
+            "config"
+          ]
+        },
+        "label": {
+          "enum": [
+            "certain",
+            "guessed"
+          ]
+        },
+        "file": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "depth": {
+          "description": "Lines away from the change: 0 for the change itself, 1 for direct dependents.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "group": {
+      "type": "object",
+      "required": [
+        "name",
+        "total",
+        "certain",
+        "guessed",
+        "bands",
+        "items",
+        "more"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "enum": [
+            "change",
+            "endpoints",
+            "eventHandlers",
+            "tables",
+            "tests",
+            "projects",
+            "code"
+          ]
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "certain": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "guessed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/item"
+          }
+        },
+        "more": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bands": {
+          "type": "object",
+          "required": [
+            "direct",
+            "near",
+            "far"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "direct": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "near": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "far": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "graph": {
+      "type": "object",
+      "required": [
+        "commit"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "commit": {
+          "type": "string"
+        }
+      }
+    },
+    "change": {
+      "type": "object",
+      "required": [
+        "kind",
+        "value",
+        "start"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "symbol",
+            "file",
+            "diff"
+          ]
+        },
+        "value": {
+          "type": "string"
+        },
+        "start": {
+          "$ref": "#/definitions/group"
+        }
+      }
+    },
+    "groups": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "$ref": "#/definitions/group"
+      }
+    },
+    "unresolved": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "file",
+          "line",
+          "reason",
+          "in",
+          "detector"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "in": {
+            "type": "string"
+          },
+          "detector": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "hints": {
+      "description": "📜 usually-changes-together evidence (Phase 1c).",
+      "type": "array"
+    },
+    "requirements": {
+      "description": "Requirement IDs reached through trace links (Phase 2).",
+      "type": "array"
+    },
+    "expanded": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "maxDepth": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    }
+  }
+}

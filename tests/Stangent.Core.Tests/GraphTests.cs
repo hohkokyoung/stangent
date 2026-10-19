@@ -81,6 +81,14 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void Calls_from_top_level_statements_belong_to_the_generated_entry_point()
+    {
+        // Shop.Web/Program.cs uses top-level statements; its calls must still be on the map.
+        Assert.Contains(shop.Graph.AllNodes, n => n.Id == "Shop.Web|M:Program.<Main>$(System.String[])" && n.File == "Shop.Web/Program.cs");
+        Assert.Contains(Edges(EdgeKind.Uses), e => e.Source == "Shop.Web|M:Program.<Main>$(System.String[])" && e.Target == "Shop.Core|T:Shop.Core.PaymentOptions");
+    }
+
+    [Fact]
     public void Routes_are_found_for_minimal_apis_attributes_and_conventional_routes()
     {
         var endpoints = shop.Graph.AllNodes.Where(n => n.Kind == NodeKind.Endpoint).Select(n => n.Name).ToList();
@@ -121,7 +129,7 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     {
         var report = new ImpactAnalyzer(shop.Graph).Analyze(new ChangeSpec("symbol", "OrderService.PlaceOrder"), shop.Root);
 
-        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v1.json", report.ToJsonString()));
+        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v2.json", report.ToJsonString()));
         var groups = report["groups"]!.AsArray().ToDictionary(g => (string)g!["name"]!, g => g!);
         var endpoints = Names(groups["endpoints"]);
         Assert.Contains("POST /api/orders", endpoints);
@@ -135,6 +143,26 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         var md = ImpactAnalyzer.Markdown(report);
         Assert.Contains("✅", md);
         Assert.Contains("🟡 `ANY /checkout`", md);
+    }
+
+    [Fact]
+    public void Impact_lists_the_nearest_first_and_can_stop_at_a_depth()
+    {
+        var analyzer = new ImpactAnalyzer(shop.Graph);
+        var report = analyzer.Analyze(new ChangeSpec("symbol", PlaceOrder), shop.Root);
+        var code = report["groups"]!.AsArray().First(g => (string)g!["name"]! == "code")!;
+        var depths = code["items"]!.AsArray().Select(i => (int)i!["depth"]!).ToList();
+        Assert.Equal(depths.Order(), depths);
+        Assert.Equal(1, depths[0]);   // IOrderService.PlaceOrder dispatches straight to it
+        var bands = code["bands"]!;
+        Assert.Equal((int)code["total"]!, (int)bands["direct"]! + (int)bands["near"]! + (int)bands["far"]!);
+
+        // POST /api/orders is 3 lines away (endpoint → CreateOrder → IOrderService → PlaceOrder).
+        var direct = analyzer.Analyze(new ChangeSpec("symbol", PlaceOrder), shop.Root, maxDepth: 1);
+        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v2.json", direct.ToJsonString()));
+        Assert.Equal(0, (int)direct["groups"]![0]!["total"]!);
+        Assert.Equal(1, (int)direct["maxDepth"]!);
+        Assert.Contains("1 direct", ImpactAnalyzer.Markdown(report));
     }
 
     [Fact]
@@ -207,6 +235,28 @@ public class GraphBuildTests
             var (full, _) = await GraphBuilder.BuildAsync(repo, new BuildOptions(Restore: false, Full: true), ct);
             Assert.Equal(Export(full, root, "c"), Export(incremental, root, "d"));
             Assert.Contains(incremental.AllNodes, n => n.Name == "Extra.Twice");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Changing_detector_settings_re_extracts_every_project()
+    {
+        var root = ShopCopy.Create();
+        try
+        {
+            var ct = TestContext.Current.CancellationToken;
+            await GraphBuilder.BuildAsync(StangentRepo.Discover(root), new BuildOptions(), ct);
+            var config = Path.Combine(root, StangentRepo.ConfigFile);
+            File.WriteAllText(config, File.ReadAllText(config).Replace("entityBaseTypes: [Shop.Core.Entity]", "entityBaseTypes: []"));
+
+            // Reload: the config is read when the repo is discovered.
+            var (graph, stats) = await GraphBuilder.BuildAsync(StangentRepo.Discover(root), new BuildOptions(Restore: false), ct);
+            Assert.Equal(4, stats.Extracted);
+            Assert.DoesNotContain(graph.AllNodes, n => n.Id == "table:Shop.Core|Order");
         }
         finally
         {

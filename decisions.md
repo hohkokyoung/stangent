@@ -324,6 +324,10 @@ mostly adds false alarms is switched off or tuned.
 - Built by code (graph walk + grouping), no AI: the same change always gives the same report (D18).
 - *Refined 2026-10-19 (Phase 1a):* event handlers are end points of the walk. Past one, only further
   events are followed, never the dispatcher behind it (otherwise one change reached 2,534 nopCommerce endpoints).
+- *Refined 2026-10-19 (D28 scores):* items are listed nearest first, with each item's distance and each
+  group split into direct (1 line away), near (2–3) and far (4+). `--max-depth` cuts off the rest
+  (`impact-report` v2). Following every caller of a caller gave 0.5% precision on nopCommerce;
+  within 2 lines it was 7%.
 **Why:** an agent reads ~15 lines instead of hundreds; a BA/PM can follow it through requirement IDs.
 **Cost:** group counts can hide something important; mitigated by counts on every group and listing every unknown.
 
@@ -338,6 +342,13 @@ Three tests, all run by code from git history (no AI, no manual labelling):
 - A sample of ~20 Test 2 pairs is hand-checked once to say how reliable the pair-finding is.
 - No targets yet: measure first, set targets from the first results.
 - The benchmark needs full git history for these repos, not shallow clones.
+- *Refined 2026-10-19:* scoring starts from changed lines, finding changed methods by name in today's
+  graph. Every test also scores free baselines (same project, same folder, co-change) on the same cases.
+  An exact-graph check on a sample of past commits measures the error left by using today's graph
+  (median agreement 1.0).
+- *Refined 2026-10-19:* **Test 4, compile-break ground truth.** Rename sampled methods in memory,
+  recompile the projects that depend on them, and score against the files that fail to compile. It
+  checks the ✅ graph directly. Direct ✅ links scored recall 1.00 on nopCommerce and 0.97 on eShop.
 
 ## D29 · Phase 1 is split into 1a, 1b, 1c — 2026-10-19
 | Sub-phase | Delivers | Proven on |

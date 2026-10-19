@@ -37,6 +37,10 @@ public sealed class ExtractContext(
     {
         symbol = Normalize(symbol);
         if (symbol is null || !InRepo(symbol)) return null;
+        // Top-level statements compile into a generated entry point with no documentation id;
+        // give it the id it would have, so code in Program.cs is on the map.
+        if (symbol is IMethodSymbol { Name: "<Main>$", ContainingType: { } program })
+            return $"{symbol.ContainingAssembly?.Name}|M:{program.ToDisplayString().Replace("global::", "")}.<Main>$(System.String[])";
         var docId = symbol.GetDocumentationCommentId();
         return docId is null ? null : $"{symbol.ContainingAssembly?.Name}|{docId}";
     }

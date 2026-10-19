@@ -2,57 +2,311 @@
   "repo": "nopcommerce",
   "graphCommit": "77d112f365e210ebdfa2f9790c8202a0e3b1c74e",
   "windowMonths": 36,
-  "caveat": "Every commit is scored against the graph of the pinned commit, not the graph at that commit.",
+  "predictors": "graph (lines): changed methods found by name in today's graph · graph (lines+deps): plus what they directly use · graph (files): every point in the changed files · same project / same folder / co-change: baselines without the graph",
   "labels": "certain = ✅ only; certain+guessed = ✅ and 🟡. 📜 (Phase 1c) not built yet.",
-  "test1FindsTheRest": {
-    "cases": 925,
-    "certain": {
-      "recall": 0.278,
-      "precision": 0.005,
-      "found": 1560,
-      "of": 5602,
-      "medianPredictedFiles": 12
-    },
-    "certain+guessed": {
-      "recall": 0.283,
-      "precision": 0.005,
-      "found": 1584,
-      "of": 5602,
-      "medianPredictedFiles": 13
-    }
+  "memberMatching": {
+    "sameFile": 2616,
+    "moved": 87,
+    "unmatched": 275
   },
-  "test1FindsTheRestPlusDirectDependencies": {
-    "cases": 925,
-    "certain": {
-      "recall": 0.373,
-      "precision": 0.006,
-      "found": 2091,
-      "of": 5602,
-      "medianPredictedFiles": 60
+  "test1FindsTheRest": {
+    "cases": 894,
+    "graph (lines)": {
+      "certain": {
+        "recall": 0.231,
+        "precision": 0.005,
+        "medianCasePrecision": 0.004,
+        "found": 1234,
+        "of": 5347,
+        "medianPredictedFiles": 4,
+        "emptyAnswers": 326
+      },
+      "certain+guessed": {
+        "recall": 0.235,
+        "precision": 0.005,
+        "medianCasePrecision": 0.003,
+        "found": 1258,
+        "of": 5347,
+        "medianPredictedFiles": 5,
+        "emptyAnswers": 288
+      }
     },
-    "certain+guessed": {
-      "recall": 0.378,
-      "precision": 0.006,
-      "found": 2119,
-      "of": 5602,
-      "medianPredictedFiles": 62
+    "graph (lines, depth ≤ 1)": {
+      "certain": {
+        "recall": 0.127,
+        "precision": 0.124,
+        "medianCasePrecision": 0.125,
+        "found": 680,
+        "of": 5347,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 369
+      },
+      "certain+guessed": {
+        "recall": 0.128,
+        "precision": 0.124,
+        "medianCasePrecision": 0.093,
+        "found": 685,
+        "of": 5347,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 329
+      }
+    },
+    "graph (lines, depth ≤ 2)": {
+      "certain": {
+        "recall": 0.168,
+        "precision": 0.07,
+        "medianCasePrecision": 0.07,
+        "found": 898,
+        "of": 5347,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 330
+      },
+      "certain+guessed": {
+        "recall": 0.17,
+        "precision": 0.07,
+        "medianCasePrecision": 0.058,
+        "found": 909,
+        "of": 5347,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 292
+      }
+    },
+    "graph (lines, depth ≤ 3)": {
+      "certain": {
+        "recall": 0.178,
+        "precision": 0.04,
+        "medianCasePrecision": 0.04,
+        "found": 952,
+        "of": 5347,
+        "medianPredictedFiles": 3,
+        "emptyAnswers": 327
+      },
+      "certain+guessed": {
+        "recall": 0.181,
+        "precision": 0.04,
+        "medianCasePrecision": 0.03,
+        "found": 967,
+        "of": 5347,
+        "medianPredictedFiles": 3,
+        "emptyAnswers": 289
+      }
+    },
+    "graph (lines+deps)": {
+      "certain": {
+        "recall": 0.324,
+        "precision": 0.007,
+        "medianCasePrecision": 0.008,
+        "found": 1733,
+        "of": 5347,
+        "medianPredictedFiles": 20,
+        "emptyAnswers": 8
+      },
+      "certain+guessed": {
+        "recall": 0.329,
+        "precision": 0.007,
+        "medianCasePrecision": 0.008,
+        "found": 1757,
+        "of": 5347,
+        "medianPredictedFiles": 20,
+        "emptyAnswers": 7
+      }
+    },
+    "graph (files)": {
+      "certain": {
+        "recall": 0.282,
+        "precision": 0.005,
+        "medianCasePrecision": 0.004,
+        "found": 1508,
+        "of": 5347,
+        "medianPredictedFiles": 12,
+        "emptyAnswers": 281
+      },
+      "certain+guessed": {
+        "recall": 0.287,
+        "precision": 0.005,
+        "medianCasePrecision": 0.004,
+        "found": 1532,
+        "of": 5347,
+        "medianPredictedFiles": 13,
+        "emptyAnswers": 226
+      }
+    },
+    "same project": {
+      "recall": 0.432,
+      "precision": 0.005,
+      "medianCasePrecision": 0.003,
+      "found": 2312,
+      "of": 5347,
+      "medianPredictedFiles": 585,
+      "emptyAnswers": 0
+    },
+    "same folder": {
+      "recall": 0.163,
+      "precision": 0.043,
+      "medianCasePrecision": 0,
+      "found": 874,
+      "of": 5347,
+      "medianPredictedFiles": 11,
+      "emptyAnswers": 47
+    },
+    "co-change": {
+      "recall": 0.093,
+      "precision": 0.113,
+      "medianCasePrecision": 0.071,
+      "found": 496,
+      "of": 5347,
+      "medianPredictedFiles": 0,
+      "emptyAnswers": 585
     }
   },
   "test2PredictsWhatBroke": {
     "cases": 4,
-    "certain": {
-      "recall": 0.778,
-      "precision": 0.002,
-      "found": 7,
-      "of": 9,
-      "medianPredictedFiles": 1023
+    "graph (lines)": {
+      "certain": {
+        "recall": 0.778,
+        "precision": 0.003,
+        "medianCasePrecision": 0.005,
+        "found": 7,
+        "of": 9,
+        "medianPredictedFiles": 987,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.778,
+        "precision": 0.003,
+        "medianCasePrecision": 0.005,
+        "found": 7,
+        "of": 9,
+        "medianPredictedFiles": 1017,
+        "emptyAnswers": 0
+      }
     },
-    "certain+guessed": {
-      "recall": 0.778,
-      "precision": 0.002,
-      "found": 7,
+    "graph (lines, depth ≤ 1)": {
+      "certain": {
+        "recall": 0.333,
+        "precision": 0.052,
+        "medianCasePrecision": 0.25,
+        "found": 3,
+        "of": 9,
+        "medianPredictedFiles": 6,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.333,
+        "precision": 0.052,
+        "medianCasePrecision": 0.25,
+        "found": 3,
+        "of": 9,
+        "medianPredictedFiles": 6,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (lines, depth ≤ 2)": {
+      "certain": {
+        "recall": 0.333,
+        "precision": 0.03,
+        "medianCasePrecision": 0.111,
+        "found": 3,
+        "of": 9,
+        "medianPredictedFiles": 9,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.333,
+        "precision": 0.029,
+        "medianCasePrecision": 0.1,
+        "found": 3,
+        "of": 9,
+        "medianPredictedFiles": 10,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (lines, depth ≤ 3)": {
+      "certain": {
+        "recall": 0.333,
+        "precision": 0.019,
+        "medianCasePrecision": 0.077,
+        "found": 3,
+        "of": 9,
+        "medianPredictedFiles": 16,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.333,
+        "precision": 0.018,
+        "medianCasePrecision": 0.062,
+        "found": 3,
+        "of": 9,
+        "medianPredictedFiles": 16,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (lines+deps)": {
+      "certain": {
+        "recall": 0.889,
+        "precision": 0.004,
+        "medianCasePrecision": 0.005,
+        "found": 8,
+        "of": 9,
+        "medianPredictedFiles": 1007,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.889,
+        "precision": 0.004,
+        "medianCasePrecision": 0.005,
+        "found": 8,
+        "of": 9,
+        "medianPredictedFiles": 1037,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (files)": {
+      "certain": {
+        "recall": 0.778,
+        "precision": 0.002,
+        "medianCasePrecision": 0.001,
+        "found": 7,
+        "of": 9,
+        "medianPredictedFiles": 1023,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.778,
+        "precision": 0.002,
+        "medianCasePrecision": 0.001,
+        "found": 7,
+        "of": 9,
+        "medianPredictedFiles": 1053,
+        "emptyAnswers": 0
+      }
+    },
+    "same project": {
+      "recall": 0.667,
+      "precision": 0.001,
+      "medianCasePrecision": 0.003,
+      "found": 6,
       "of": 9,
-      "medianPredictedFiles": 1053
+      "medianPredictedFiles": 1762,
+      "emptyAnswers": 0
+    },
+    "same folder": {
+      "recall": 0.333,
+      "precision": 0.009,
+      "medianCasePrecision": 0,
+      "found": 3,
+      "of": 9,
+      "medianPredictedFiles": 98,
+      "emptyAnswers": 0
+    },
+    "co-change": {
+      "recall": 0,
+      "precision": 0,
+      "medianCasePrecision": 0,
+      "found": 0,
+      "of": 9,
+      "medianPredictedFiles": 18,
+      "emptyAnswers": 1
     }
   },
   "test2Pairs": {
@@ -108,11 +362,88 @@
     ],
     "handCheckNote": "All pairs judged by the agent (Claude) from commit subjects only, 2026-10-19; not verified by a person."
   },
+  "exactCheck": {
+    "commits": 20,
+    "cases": 101,
+    "skipped": [],
+    "medianAgreement": 1,
+    "meanAgreement": 0.877,
+    "identicalAnswers": 68,
+    "exact": {
+      "recall": 0.239,
+      "precision": 0.011,
+      "medianCasePrecision": 0.009,
+      "found": 165,
+      "of": 691,
+      "medianPredictedFiles": 2,
+      "emptyAnswers": 39
+    },
+    "byName": {
+      "recall": 0.239,
+      "precision": 0.009,
+      "medianCasePrecision": 0.005,
+      "found": 165,
+      "of": 691,
+      "medianPredictedFiles": 2,
+      "emptyAnswers": 38
+    },
+    "note": "agreement = |exact ∩ by-name| / |exact ∪ by-name| over predicted files (✅ and 🟡), per case"
+  },
+  "test4CompileBreak": {
+    "methods": 40,
+    "tried": 57,
+    "methodsWithBreakage": 15,
+    "brokenFiles": 17,
+    "note": "Ground truth = files with new compile errors after renaming the method, its own file excluded. Only ✅ links are expected to match; 🟡 links (routes, events, HTTP) break things the compiler can't see.",
+    "graph ✅ depth ≤ 1": {
+      "recall": 1,
+      "precision": 0.548,
+      "found": 17,
+      "of": 17,
+      "medianPredictedFiles": 1
+    },
+    "graph ✅ depth ≤ 2": {
+      "recall": 1,
+      "precision": 0.11,
+      "found": 17,
+      "of": 17,
+      "medianPredictedFiles": 2
+    },
+    "graph ✅ unlimited": {
+      "recall": 1,
+      "precision": 0.001,
+      "found": 17,
+      "of": 17,
+      "medianPredictedFiles": 6
+    },
+    "graph ✅+🟡 unlimited": {
+      "recall": 1,
+      "precision": 0.001,
+      "found": 17,
+      "of": 17,
+      "medianPredictedFiles": 6
+    },
+    "same folder": {
+      "recall": 0.353,
+      "precision": 0.034,
+      "found": 6,
+      "of": 17,
+      "medianPredictedFiles": 4
+    },
+    "same project": {
+      "recall": 0.765,
+      "precision": 0.002,
+      "found": 13,
+      "of": 17,
+      "medianPredictedFiles": 75
+    },
+    "graphDirectMisses": []
+  },
   "test3StableAndFast": {
     "identicalFullBuilds": true,
     "incrementalEqualsFull": true,
-    "fullBuildMs": 38296,
-    "incrementalBuildMs": 2030,
+    "fullBuildMs": 34083,
+    "incrementalBuildMs": 2181,
     "incrementalExtracted": 1,
     "touchedFile": "src/Build/src/ClearPluginAssemblies/Program.cs"
   }

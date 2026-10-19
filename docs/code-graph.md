@@ -84,12 +84,18 @@ Each detector extracts facts per project (with Roslyn), then links once across t
 A project that can't be loaded is listed in `loadErrors` and its code is ❓. MSBuild warnings
 (NuGet audit, for example) are reported as `loadWarnings` and don't stop the build.
 
-## Impact answers (contract `impact-report` v1, D27)
+## Impact answers (contract `impact-report` v2, D27)
 
-`stangent graph impact --symbol <id or Type.Member> | --file <path> | --diff <base..head or ref> [--expand <group>] [--format md]`
+`stangent graph impact --symbol <id or Type.Member> | --file <path> | --diff <base..head or ref> [--expand <group>] [--max-depth N] [--format md]`
 
-Groups, in order: `endpoints`, `eventHandlers`, `tables`, `tests`, `projects`, `code`. Each has a
-total, a ✅/🟡 split and its first five items. Every ❓ in the affected code is listed, never counted.
-Every answer is validated against `schemas/impact-report.v1.json` before it's printed.
+- **Groups, in order:** `endpoints`, `eventHandlers`, `tables`, `tests`, `projects`, `code`. Each
+  has a total, a ✅/🟡 split, a distance split and its first five items.
+- **Nearest first.** Every item has a `depth`: how many lines it is from the change (1 = a direct
+  dependent). Items are sorted by depth, then label. Groups count them as **direct** (1), **near** (2–3)
+  and **far** (4+). The D28 scores showed why: direct dependents are far likelier to be hit, while
+  following every caller of a caller reaches most of a layered app.
+- **`--max-depth N`** leaves out everything beyond N lines.
+- **Every ❓** in the affected code is listed, never counted.
+- Every answer is validated against `schemas/impact-report.v2.json` before it's printed (v1 is kept for history).
 
 `stangent graph show <id or Type.Member>` lists a point's lines in and out, and its blind spots.

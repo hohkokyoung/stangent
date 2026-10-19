@@ -27,7 +27,11 @@ public static class GraphBuilder
         EnsureSdk(repo.Root);
         var detectors = DetectorRegistry.Enabled(repo.Config);
         var projects = ProjectScanner.Find(repo.Root);
-        var fingerprints = ProjectScanner.Fingerprints(repo.Root, projects);
+        // A fragment is only reusable if it was made by this extractor with these detectors and
+        // settings: an upgrade or a config change must re-extract, not reuse stale facts.
+        var salt = Salt(repo.Config, detectors);
+        var fingerprints = ProjectScanner.Fingerprints(repo.Root, projects)
+            .ToDictionary(kv => kv.Key, kv => CanonicalJson.Hash(kv.Value + "\n" + salt), StringComparer.Ordinal);
         var previous = options.Full ? null : GraphStore.Load(GraphStore.PathFor(repo));
 
         var changed = projects.Where(p => previous?.Fragments.GetValueOrDefault(p.Id)?.Fingerprint != fingerprints[p.Id]).ToList();
@@ -46,10 +50,7 @@ public static class GraphBuilder
             if (options.Restore)
                 graph.LoadErrors.AddRange(ProjectScanner.Restore(repo.Root, changed.Count == projects.Count ? projects : changed, log));
 
-            var properties = new Dictionary<string, string> { ["Configuration"] = "Debug", ["NuGetAudit"] = "false", ["TreatWarningsAsErrors"] = "false" };
-            // Projects that build relative to $(SolutionDir) need it set when loaded on their own.
-            if (ProjectScanner.MainSolutionDir(repo.Root, projects) is { } solutionDir) properties["SolutionDir"] = solutionDir;
-            using var workspace = MSBuildWorkspace.Create(properties);
+            using var workspace = CreateWorkspace(repo.Root, projects);
             foreach (var p in changed)
             {
                 if (workspace.CurrentSolution.Projects.Any(x => x.FilePath == p.FullPath)) continue;
@@ -122,11 +123,29 @@ public static class GraphBuilder
         return (graph, stats);
     }
 
+    static string Salt(StangentConfig config, IReadOnlyList<IDetector> detectors)
+    {
+        var settings = string.Join("\n", detectors.Select(d => d.Name + "=" + string.Join(";",
+            DetectorRegistry.Settings(config, d.Name).OrderBy(kv => kv.Key, StringComparer.Ordinal)
+                .Select(kv => kv.Key + ":" + string.Join(",", kv.Value)))));
+        // The module version id changes whenever the extractor's code does (builds are deterministic).
+        return $"{typeof(GraphBuilder).Assembly.ManifestModule.ModuleVersionId}\n{GraphStore.SchemaVersion}\n{settings}";
+    }
+
+    /// <summary>An MSBuild workspace set up the way stangent loads projects (also used by the benchmark).</summary>
+    public static MSBuildWorkspace CreateWorkspace(string root, IReadOnlyList<RepoProject> projects)
+    {
+        var properties = new Dictionary<string, string> { ["Configuration"] = "Debug", ["NuGetAudit"] = "false", ["TreatWarningsAsErrors"] = "false" };
+        // Projects that build relative to $(SolutionDir) need it set when loaded on their own.
+        if (ProjectScanner.MainSolutionDir(root, projects) is { } solutionDir) properties["SolutionDir"] = solutionDir;
+        return MSBuildWorkspace.Create(properties);
+    }
+
     /// <summary>
     /// The repo's global.json may ask for a .NET SDK that isn't installed; MSBuild then fails deep
     /// inside project loading. Check first and say what to do.
     /// </summary>
-    static void EnsureSdk(string root)
+    public static void EnsureSdk(string root)
     {
         var psi = new ProcessStartInfo("dotnet", "--version")
         {

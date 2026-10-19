@@ -85,10 +85,14 @@ public sealed class ImpactAnalyzer
     sealed record Reached(Node Node, Label Label, string Via, int Depth);
 
     /// <summary>Every affected point with its label, without grouping (used by scoring, D28).</summary>
-    public IReadOnlyList<(Node Node, Label Label)> Affected(IReadOnlyList<Node> starts)
+    public IReadOnlyList<(Node Node, Label Label)> Affected(IReadOnlyList<Node> starts) =>
+        [.. AffectedWithDepth(starts).Select(a => (a.Node, a.Label))];
+
+    /// <summary>The same, with how many lines away from the change each point is (1 = direct).</summary>
+    public IReadOnlyList<(Node Node, Label Label, int Depth)> AffectedWithDepth(IReadOnlyList<Node> starts)
     {
         var startIds = starts.Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
-        return [.. Walk(starts).Values.Where(r => !startIds.Contains(r.Node.Id)).Select(r => (r.Node, r.Label))];
+        return [.. Walk(starts).Values.Where(r => !startIds.Contains(r.Node.Id)).Select(r => (r.Node, r.Label, r.Depth))];
     }
 
     /// <summary>Every point declared in a repo-relative file.</summary>
@@ -134,8 +138,14 @@ public sealed class ImpactAnalyzer
         return seen;
     }
 
-    public JsonObject Analyze(ChangeSpec change, string repoRoot, string? expand = null)
+    /// <summary>Distance bands (D27, refined): direct dependents, near (2–3 lines away), far (4+).</summary>
+    public static string Band(int depth) => depth <= 1 ? "direct" : depth <= 3 ? "near" : "far";
+
+    /// <param name="maxDepth">Leave out everything more than this many lines from the change.</param>
+    public JsonObject Analyze(ChangeSpec change, string repoRoot, string? expand = null, int? maxDepth = null)
     {
+        if (maxDepth is < 1)
+            throw new StangentException("usage", "--max-depth must be at least 1.", ExitCodes.Usage);
         if (expand is not null && !Groups.Contains(expand))
             throw new StangentException("usage", $"Unknown group '{expand}'. Groups: {string.Join(", ", Groups)}.", ExitCodes.Usage);
         var starts = StartNodes(change, repoRoot);
@@ -143,6 +153,8 @@ public sealed class ImpactAnalyzer
             throw new StangentException("not_found", $"Nothing in the graph matches {change.Kind} '{change.Value}'.", ExitCodes.NotFound);
 
         var reached = Walk(starts);
+        if (maxDepth is { } limit)
+            reached = reached.Where(r => r.Value.Depth <= limit).ToDictionary(r => r.Key, r => r.Value, StringComparer.Ordinal);
         var startIds = starts.Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
         var affected = reached.Values.Where(r => !startIds.Contains(r.Node.Id)).ToList();
 
@@ -155,7 +167,7 @@ public sealed class ImpactAnalyzer
             Group("projects", affected.Where(r => r.Node.Project is not null && r.Node.Kind != NodeKind.Project)
                 .GroupBy(r => r.Node.Project!)
                 .Select(g => new Reached(nodes.GetValueOrDefault(g.Key) ?? new Node(g.Key, NodeKind.Project, g.Key),
-                    g.Any(r => r.Label == Label.Certain) ? Label.Certain : Label.Guessed, "contains", 0)), expand),
+                    g.Any(r => r.Label == Label.Certain) ? Label.Certain : Label.Guessed, "contains", g.Min(r => r.Depth))), expand),
             Group("code", affected.Where(r => r.Node.Kind is NodeKind.Method or NodeKind.Property or NodeKind.Field or NodeKind.Type
                 && !r.Node.IsTest && r.Via != EdgeKind.TriggeredBy), expand),
         };
@@ -170,7 +182,7 @@ public sealed class ImpactAnalyzer
 
         return new JsonObject
         {
-            ["schemaVersion"] = 1,
+            ["schemaVersion"] = 2,
             ["graph"] = new JsonObject { ["commit"] = graph.Commit },
             ["change"] = new JsonObject
             {
@@ -182,13 +194,15 @@ public sealed class ImpactAnalyzer
             ["hints"] = new JsonArray(),
             ["requirements"] = new JsonArray(),
             ["expanded"] = expand,
+            ["maxDepth"] = maxDepth,
         };
     }
 
     JsonObject Group(string name, IEnumerable<Reached> items, string? expand)
     {
+        // Nearest first: a direct dependent is far likelier to break than one several lines away (D28 scores).
         var sorted = items.DistinctBy(r => r.Node.Id)
-            .OrderBy(r => r.Label).ThenBy(r => r.Node.Name, StringComparer.Ordinal).ThenBy(r => r.Node.Id, StringComparer.Ordinal).ToList();
+            .OrderBy(r => r.Depth).ThenBy(r => r.Label).ThenBy(r => r.Node.Name, StringComparer.Ordinal).ThenBy(r => r.Node.Id, StringComparer.Ordinal).ToList();
         var shown = expand == name ? sorted : [.. sorted.Take(ItemsPerGroup)];
         // Overloads share a display name: add parameter types. Same-named classes in different
         // projects (every plugin's "EventConsumer") also get their project.
@@ -204,11 +218,17 @@ public sealed class ImpactAnalyzer
             ["total"] = sorted.Count,
             ["certain"] = sorted.Count(r => r.Label == Label.Certain),
             ["guessed"] = sorted.Count(r => r.Label == Label.Guessed),
+            ["bands"] = new JsonObject
+            {
+                ["direct"] = sorted.Count(r => Band(r.Depth) == "direct"),
+                ["near"] = sorted.Count(r => Band(r.Depth) == "near"),
+                ["far"] = sorted.Count(r => Band(r.Depth) == "far"),
+            },
             ["items"] = new JsonArray([.. shown.Select(r => (JsonNode)new JsonObject
             {
                 ["id"] = r.Node.Id, ["name"] = names[r.Node.Id], ["kind"] = r.Node.Kind,
                 ["label"] = r.Label == Label.Certain ? "certain" : "guessed",
-                ["file"] = r.Node.File, ["line"] = r.Node.Line,
+                ["file"] = r.Node.File, ["line"] = r.Node.Line, ["depth"] = r.Depth,
             })]),
             ["more"] = sorted.Count - shown.Count,
         };
@@ -258,7 +278,10 @@ public sealed class ImpactAnalyzer
             if (total == 0) continue;
             var certain = (int)g["certain"]!;
             var guessed = (int)g["guessed"]!;
-            var counts = guessed == 0 ? $"✅ {certain}" : certain == 0 ? $"🟡 {guessed}" : $"✅ {certain} · 🟡 {guessed}";
+            var labels = guessed == 0 ? $"✅ {certain}" : certain == 0 ? $"🟡 {guessed}" : $"✅ {certain} · 🟡 {guessed}";
+            var bands = g["bands"]!;
+            var distance = string.Join(", ", new[] { "direct", "near", "far" }.Where(b => (int)bands[b]! > 0).Select(b => $"{bands[b]} {b}"));
+            var counts = (string)g["name"]! == "projects" ? labels : $"{labels}; {distance}";
             md.AppendLine($"- **{total} {Titles[(string)g["name"]!]}** ({counts}): "
                 + string.Join(", ", g["items"]!.AsArray().Select(i => $"{((string)i!["label"]! == "certain" ? "✅" : "🟡")} `{i["name"]}`"))
                 + More(g));
@@ -269,7 +292,8 @@ public sealed class ImpactAnalyzer
             md.AppendLine($"\n**❓ {unresolved.Count} link(s) couldn't be followed**\n");
             foreach (var u in unresolved) md.AppendLine($"- `{u!["file"]}:{u["line"]}`: {u["reason"]}");
         }
-        md.AppendLine($"\n<sub>graph {((string?)report["graph"]!["commit"])?[..Math.Min(7, ((string?)report["graph"]!["commit"])?.Length ?? 0)]} · expand a group with `--expand <group>`</sub>");
+        var depthNote = report["maxDepth"] is { } d ? $" · within {d} lines of the change" : "";
+        md.AppendLine($"\n<sub>graph {((string?)report["graph"]!["commit"])?[..Math.Min(7, ((string?)report["graph"]!["commit"])?.Length ?? 0)]}{depthNote} · nearest first; direct = 1 line away, near = 2–3, far = 4+ · expand a group with `--expand <group>`</sub>");
         return md.ToString();
     }
 

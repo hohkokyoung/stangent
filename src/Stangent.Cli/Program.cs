@@ -143,8 +143,9 @@ var symbolOption = new Option<string?>("--symbol") { Description = "A graph id, 
 var fileImpactOption = new Option<string?>("--file") { Description = "Every point declared in this file." };
 var diffOption = new Option<string?>("--diff") { Description = "A git range (base..head), or one ref compared with the working tree." };
 var expandOption = new Option<string?>("--expand") { Description = "Show every item of one group: " + string.Join(", ", ImpactAnalyzer.Groups) + "." };
+var maxDepthOption = new Option<int?>("--max-depth") { Description = "Leave out everything more than this many lines from the change (1 = direct dependents only)." };
 var formatOption = new Option<string>("--format") { Description = "json (default) or md (prints Markdown instead of the JSON envelope).", DefaultValueFactory = _ => "json" };
-var impact = new Command("impact", "What a change affects, grouped and labelled (D27).") { symbolOption, fileImpactOption, diffOption, expandOption, formatOption };
+var impact = new Command("impact", "What a change affects, grouped, labelled and nearest first (D27).") { symbolOption, fileImpactOption, diffOption, expandOption, maxDepthOption, formatOption };
 impact.SetAction(pr =>
 {
     var given = new[] { ("symbol", pr.GetValue(symbolOption)), ("file", pr.GetValue(fileImpactOption)), ("diff", pr.GetValue(diffOption)) }
@@ -153,8 +154,8 @@ impact.SetAction(pr =>
     return Cli.Run(pr, "graph impact", ctx =>
     {
         if (given.Count != 1) throw new StangentException("usage", "Give exactly one of --symbol, --file or --diff.", ExitCodes.Usage);
-        var report = Cli.Analyzer(ctx).Analyze(new ChangeSpec(given[0].Item1, given[0].Item2!), ctx.Repo.Root, pr.GetValue(expandOption));
-        var errors = SchemaRegistry.Embedded.Validate("impact-report.v1.json", report.ToJsonString());
+        var report = Cli.Analyzer(ctx).Analyze(new ChangeSpec(given[0].Item1, given[0].Item2!), ctx.Repo.Root, pr.GetValue(expandOption), pr.GetValue(maxDepthOption));
+        var errors = SchemaRegistry.Embedded.Validate("impact-report.v2.json", report.ToJsonString());
         if (errors.Count > 0) throw new StangentException("invalid_report", "The impact report broke its contract (a stangent bug).", ExitCodes.Failed, errors);
         ctx.Span.Attributes["stangent.artifact.count"] = report["groups"]!.AsArray().Sum(g => (int)g!["total"]!);
         return report;

@@ -40,7 +40,7 @@ public static class CSharpExtractor
             ctx.AddEdge(ctx.ProjectId, fileId, EdgeKind.Contains, Label.Certain);
             var root = file.Tree.GetRoot();
 
-            foreach (var decl in root.DescendantNodes().Where(IsDeclaration))
+            foreach (var decl in root.DescendantNodesAndSelf().Where(IsDeclaration))
                 Declare(ctx, file, decl, fileId, declared);
 
             foreach (var node in root.DescendantNodes())
