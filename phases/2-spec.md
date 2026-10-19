@@ -10,7 +10,7 @@ provides: { source-document: 1, reference-page: 1, trace-links: 1 }
 
 **Approved 2026-10-20. Not built until the Phase 1d split check reports (D45).**
 
-Builds on D10–D12, D18 and D50–D60. stangent is a standalone rebuild modelled on the company's spec pipeline (D50),
+Builds on D10–D12, D18 and D50–D62. stangent is a standalone rebuild modelled on the company's spec pipeline (D50),
 with one difference that matters: the agreed FSD is read alongside the code, so stangent can show where the code
 drifted from what the client agreed (D51).
 
@@ -65,6 +65,7 @@ bundles sent to the AI (regenerable from the graph).
   reading the bundle and writing the result.
 - The page's sections are **Shows**, **Actions** (each action → the endpoint it calls), **Rules** (validations,
   limits, permissions) and **Side effects** (events, emails, tables written). Every statement cites one or more symbol IDs.
+- The writer never verifies its own page (D61); that's 4b.
 
 ### 4. Check and record (code)
 - `stangent spec check <page>`: the schema; every statement cites at least one symbol; every cited symbol is in the
@@ -72,6 +73,13 @@ bundles sent to the AI (regenerable from the graph).
 - A failed check returns one specific error for **one retry**; a second failure marks the page failed and lists it.
 - Recorded: the page's JSON and Markdown, the commit, the bundle hash, the model and the tokens.
 - **Reuse:** an unchanged bundle hash means no AI call.
+
+### 4b. Fresh-agent verification (D61, D62)
+- After the code check passes, a **separate subagent, `stangent-page-verifier`**, starts from a fresh context with the
+  bundle and the finished page only (not the writer's output log). It flags each statement the slice's code doesn't
+  support, quoting the source line that contradicts it or saying nothing in the slice supports it.
+- Code checks each finding's evidence: the quoted line exists in the slice. A finding without evidence is dropped.
+- The writer gets the findings for its one retry; each one is fixed or rejected with a stated reason, recorded on the page.
 
 ### 5. Keeping current (D55)
 - `stangent spec stale --diff <base>..<head>` (code): pages whose bundle hash changed, as Markdown for the PR.
@@ -84,7 +92,8 @@ bundles sent to the AI (regenerable from the graph).
 
 ### 7. Proving it on Sonarr
 - Generate every page at Sonarr's pinned commit (D6).
-- Measured: page count; check failures on the first try and after the retry; tokens and time per page; zero AI calls
+- Measured: page count; check failures on the first try and after the retry; verifier findings per page, and how many
+  were fixed vs rejected; tokens and time per page (writer and verifier apart); zero AI calls
   on a re-run; on Sonarr's last 50 main-line commits, how many pages each commit flags as stale (median and worst).
 - The owner hand-reads 5 pages; the report counts wrong statements. No bar: it tells 2b whether the pages capture rules.
 
@@ -95,7 +104,9 @@ bundles sent to the AI (regenerable from the graph).
 - [ ] **Repeatable:** a re-run with no code change makes zero AI calls and leaves the files byte-identical.
 - [ ] **Cost:** tokens and time per page in the report.
 - [ ] Stale detection works on a fixture repo; Sonarr's stale counts per commit are in the report.
-- [ ] 5 pages hand-read, wrong statements counted.
+- [ ] Every page passed the fresh verifier (D62), each finding fixed or rejected with a reason; a test plants a wrong
+      statement and the verifier's evidence check is exercised with canned outputs.
+- [ ] 5 pages hand-read, wrong statements counted, and compared with what the verifier caught.
 - [ ] Tests run without an LLM (canned subagent outputs); CI green.
 
 ## 2b. FSD and discrepancies
@@ -119,6 +130,11 @@ bundles sent to the AI (regenerable from the graph).
 - A plugin subagent, `stangent-link-judge`, gets one FSD section and its candidate pages. It returns a state (agree /
   gap / conflict / undocumented) with the **exact FSD sentence and the exact page sentence** it relies on.
 - **Pages no section links to** are listed as undocumented by code, not by the AI.
+- The judge is its own subagent with a fresh context, never the page writer's (D61): it sees the FSD section and the
+  finished pages, nothing about how they were written.
+- **"Agree" verdicts get a second fresh check** before they can be bulk-approved (D62): a separate subagent sees the
+  same section and pages and either confirms or raises a finding with quotes. A disagreement makes the link a finding,
+  reviewed one by one. This is the guard on D53's weak spot.
 
 ### 4. Check (code)
 - Both quotes exist word for word; both IDs exist; every symbol the quoted page sentence cites is in the graph.
@@ -148,7 +164,7 @@ bundles sent to the AI (regenerable from the graph).
 - [ ] **Cost:** tokens and time per section and per page reported; candidates found by code vs AI reported.
 - [ ] Each share has its 95% range (fixed seed). If "finds" or "not too noisy" fails, discrepancy findings ship off
       by default and the report says why (D57).
-- [ ] End-of-phase report written; CI green.
+- [ ] End-of-phase report written; its claims checked against the results files by a fresh agent (D61); CI green.
 
 ## Contracts
 | Contract | v1 holds | Sub-phase |

@@ -874,6 +874,20 @@ reasoning. A fresh context judges only what's on the page, as a second engineer 
 in line with evaluator/reviewer patterns from agent builders).
 **Cost:** more tokens and time per check; the evaluator needs a brief good enough to judge without the history.
 
+## D62 · Phase 2 applies D61: a fresh verifier for pages and for "agree" links — 2026-10-20
+Where Phase 2 has an AI step judging whether work is right, a separate subagent with a fresh context does it, after the
+code checks (D18):
+- **Pages (2a):** `stangent-page-verifier` gets the bundle and the finished page only, and flags statements the slice's
+  code doesn't support, quoting the contradicting line. Code checks the quoted line exists; findings go back to the
+  writer for its one retry, each fixed or rejected with a stated reason recorded on the page.
+- **Link judging (2b):** the judge is already its own fresh subagent, never the page writer's context.
+- **"Agree" verdicts (2b)** get a second fresh check before bulk approval; a disagreement turns the link into a finding,
+  reviewed one by one. This is the guard D53 named as its cost.
+- **The end-of-phase report's claims** are checked against the results files by a fresh agent.
+Rejected: a second check on every finding (gaps, conflicts and undocumented items already go to a person one by one).
+**Why:** D61 is the owner's rule for every phase; these are the steps where a writer or judge would otherwise grade itself.
+**Cost:** roughly double the AI calls per page, plus one per "agree" link; reported apart from the writer's in 2a and 2b.
+
 ## Open questions
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
