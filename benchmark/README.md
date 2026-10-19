@@ -56,12 +56,26 @@ bench $B/cleanarchitecture --only-frontend --expected benchmark/expected/cleanar
 ```
 
 Options: `--months 0 (all history) --max-commits 200 --max-fixes 400 --exact-sample 0 --sdk-override <file> --skip-build-test
---compile-break <n> --only-compile-break --openapi <file> --ts-compile-break <n> --only-frontend --expected <file> --out <file>`.
+--compile-break <n> --only-compile-break --openapi <file> --ts-compile-break <n> --only-frontend --expected <file> --tune
+--history-settings <w,ms,share,max> --out <file>`.
 
 History is read on main's own line (`git log --first-parent`): a merged PR counts once (D36). Test 2
 has one case per fix, however many changes blame points at (D33), and reports a `gate1` block: "graph
 within 2 lines" with and without the co-change baseline's top 10, with 95% ranges from resampling fixes
 (fixed seed), split into single-topic and bundle fixes.
+
+**📜 (Phase 1c).** Every history run also scores 📜: the same counting `graph build` uses (`HistoryIndex`), but
+for each past change only from commits older than it, so no fix leaks into its own prediction. `historySelfCheck`
+confirms the index at today's commit reproduces the graph's stored lines. The `gate2` block is D44's Gate 2.
+Tuning (D43) runs a grid on the tuning repos, then picks the defaults by one rule, in code:
+
+```bash
+bench $B/nopcommerce --skip-build-test --tune --out $B/nopcommerce-tune.json
+bench $B/sonarr --skip-build-test --tune --out $B/sonarr-tune.json
+bench --select-tuning $B/nopcommerce-tune.json $B/sonarr-tune.json --out benchmark/results/<date>-phase1c-tuning.json
+```
+
+`--history-settings window,minShared,minShare,maxFiles` scores other settings without editing `stangent.yaml`.
 
 The compile-break tests edit files in the clone and put them back. A run that was interrupted is
 restored from git at the start of the next run.

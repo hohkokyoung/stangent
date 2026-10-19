@@ -1,0 +1,875 @@
+{
+  "repos": [
+    "nopcommerce-tune.json",
+    "sonarr-tune.json"
+  ],
+  "rule": "highest pooled graph + \uD83D\uDCDC recall among settings whose \uD83D\uDCDC precision ≥ the co-change top-10 baseline's on every tuning repo; ties: higher \uD83D\uDCDC precision, then grid order",
+  "graphOnlyRecall": 0.457,
+  "chosen": "10/3/0.2/50",
+  "settings": [
+    {
+      "key": "10/2/0.2/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.509,
+      "historyPrecision": 0.02,
+      "perRepo": [
+        {
+          "historyPrecision": 0.01,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.026,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/2/0.2/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.509,
+      "historyPrecision": 0.018,
+      "perRepo": [
+        {
+          "historyPrecision": 0.014,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.021,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/2/0.2/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.509,
+      "historyPrecision": 0.017,
+      "perRepo": [
+        {
+          "historyPrecision": 0.01,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.021,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/3/0.2/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.504,
+      "historyPrecision": 0.02,
+      "perRepo": [
+        {
+          "historyPrecision": 0.011,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.025,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/2/0.2/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.504,
+      "historyPrecision": 0.018,
+      "perRepo": [
+        {
+          "historyPrecision": 0.014,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.02,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/2/0.2/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.504,
+      "historyPrecision": 0.016,
+      "perRepo": [
+        {
+          "historyPrecision": 0.008,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.021,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/3/0.2/50",
+      "eligible": true,
+      "graphPlusHistoryRecall": 0.5,
+      "historyPrecision": 0.023,
+      "perRepo": [
+        {
+          "historyPrecision": 0.015,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.028,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/3/0.3/50",
+      "eligible": true,
+      "graphPlusHistoryRecall": 0.5,
+      "historyPrecision": 0.023,
+      "perRepo": [
+        {
+          "historyPrecision": 0.015,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.028,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/2/0.3/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.5,
+      "historyPrecision": 0.021,
+      "perRepo": [
+        {
+          "historyPrecision": 0.011,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.026,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/3/0.2/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.5,
+      "historyPrecision": 0.02,
+      "perRepo": [
+        {
+          "historyPrecision": 0.011,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.026,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/2/0.2/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.5,
+      "historyPrecision": 0.019,
+      "perRepo": [
+        {
+          "historyPrecision": 0.013,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.023,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/3/0.2/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.5,
+      "historyPrecision": 0.019,
+      "perRepo": [
+        {
+          "historyPrecision": 0.011,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.023,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/3/0.2/30",
+      "eligible": true,
+      "graphPlusHistoryRecall": 0.496,
+      "historyPrecision": 0.025,
+      "perRepo": [
+        {
+          "historyPrecision": 0.016,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.031,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/3/0.3/30",
+      "eligible": true,
+      "graphPlusHistoryRecall": 0.496,
+      "historyPrecision": 0.025,
+      "perRepo": [
+        {
+          "historyPrecision": 0.016,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.031,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/3/0.2/30",
+      "eligible": true,
+      "graphPlusHistoryRecall": 0.496,
+      "historyPrecision": 0.022,
+      "perRepo": [
+        {
+          "historyPrecision": 0.014,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.027,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/2/0.3/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.496,
+      "historyPrecision": 0.022,
+      "perRepo": [
+        {
+          "historyPrecision": 0.015,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.025,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/3/0.2/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.496,
+      "historyPrecision": 0.02,
+      "perRepo": [
+        {
+          "historyPrecision": 0.009,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.027,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/2/0.2/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.496,
+      "historyPrecision": 0.02,
+      "perRepo": [
+        {
+          "historyPrecision": 0.01,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.025,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/2/0.2/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.496,
+      "historyPrecision": 0.017,
+      "perRepo": [
+        {
+          "historyPrecision": 0.003,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.025,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/2/0.3/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.496,
+      "historyPrecision": 0.016,
+      "perRepo": [
+        {
+          "historyPrecision": 0.012,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.018,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/3/0.2/20",
+      "eligible": true,
+      "graphPlusHistoryRecall": 0.491,
+      "historyPrecision": 0.025,
+      "perRepo": [
+        {
+          "historyPrecision": 0.017,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.029,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/3/0.3/20",
+      "eligible": true,
+      "graphPlusHistoryRecall": 0.491,
+      "historyPrecision": 0.025,
+      "perRepo": [
+        {
+          "historyPrecision": 0.017,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.029,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/2/0.3/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.491,
+      "historyPrecision": 0.021,
+      "perRepo": [
+        {
+          "historyPrecision": 0.013,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.025,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/2/0.3/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.491,
+      "historyPrecision": 0.018,
+      "perRepo": [
+        {
+          "historyPrecision": 0.014,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.02,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/2/0.5/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.487,
+      "historyPrecision": 0.02,
+      "perRepo": [
+        {
+          "historyPrecision": 0.008,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.027,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/3/0.3/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.487,
+      "historyPrecision": 0.019,
+      "perRepo": [
+        {
+          "historyPrecision": 0.014,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.022,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/2/0.3/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.487,
+      "historyPrecision": 0.014,
+      "perRepo": [
+        {
+          "historyPrecision": 0.01,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.017,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/3/0.5/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.483,
+      "historyPrecision": 0.025,
+      "perRepo": [
+        {
+          "historyPrecision": 0.005,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.035,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/3/0.3/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.483,
+      "historyPrecision": 0.021,
+      "perRepo": [
+        {
+          "historyPrecision": 0.011,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.027,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/3/0.2/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.483,
+      "historyPrecision": 0.02,
+      "perRepo": [
+        {
+          "historyPrecision": 0.012,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.025,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/2/0.2/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.483,
+      "historyPrecision": 0.016,
+      "perRepo": [
+        {
+          "historyPrecision": 0.006,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.023,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/2/0.5/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.483,
+      "historyPrecision": 0.015,
+      "perRepo": [
+        {
+          "historyPrecision": 0.004,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.022,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/2/0.3/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.483,
+      "historyPrecision": 0.013,
+      "perRepo": [
+        {
+          "historyPrecision": 0.011,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.014,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/3/0.5/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.479,
+      "historyPrecision": 0.019,
+      "perRepo": [
+        {
+          "historyPrecision": 0,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.03,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/3/0.3/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.479,
+      "historyPrecision": 0.016,
+      "perRepo": [
+        {
+          "historyPrecision": 0.015,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.017,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/2/0.5/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.479,
+      "historyPrecision": 0.014,
+      "perRepo": [
+        {
+          "historyPrecision": 0.005,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.02,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/2/0.5/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.479,
+      "historyPrecision": 0.013,
+      "perRepo": [
+        {
+          "historyPrecision": 0.01,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.014,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/3/0.5/20",
+      "eligible": true,
+      "graphPlusHistoryRecall": 0.474,
+      "historyPrecision": 0.03,
+      "perRepo": [
+        {
+          "historyPrecision": 0.013,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.04,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/3/0.5/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.474,
+      "historyPrecision": 0.023,
+      "perRepo": [
+        {
+          "historyPrecision": 0.007,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.033,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/2/0.5/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.474,
+      "historyPrecision": 0.023,
+      "perRepo": [
+        {
+          "historyPrecision": 0.01,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.03,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/3/0.5/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.474,
+      "historyPrecision": 0.02,
+      "perRepo": [
+        {
+          "historyPrecision": 0.007,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.028,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/3/0.3/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.474,
+      "historyPrecision": 0.02,
+      "perRepo": [
+        {
+          "historyPrecision": 0.008,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.027,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/2/0.5/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.474,
+      "historyPrecision": 0.018,
+      "perRepo": [
+        {
+          "historyPrecision": 0.009,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.024,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/3/0.3/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.474,
+      "historyPrecision": 0.018,
+      "perRepo": [
+        {
+          "historyPrecision": 0.013,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.021,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/2/0.5/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.474,
+      "historyPrecision": 0.016,
+      "perRepo": [
+        {
+          "historyPrecision": 0,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.026,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "20/2/0.3/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.474,
+      "historyPrecision": 0.015,
+      "perRepo": [
+        {
+          "historyPrecision": 0,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.024,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/2/0.5/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.474,
+      "historyPrecision": 0.009,
+      "perRepo": [
+        {
+          "historyPrecision": 0.005,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.012,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "10/3/0.5/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.47,
+      "historyPrecision": 0.024,
+      "perRepo": [
+        {
+          "historyPrecision": 0.006,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.034,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/3/0.5/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.47,
+      "historyPrecision": 0.021,
+      "perRepo": [
+        {
+          "historyPrecision": 0.008,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.029,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/3/0.3/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.47,
+      "historyPrecision": 0.019,
+      "perRepo": [
+        {
+          "historyPrecision": 0.009,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.024,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/3/0.5/30",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.47,
+      "historyPrecision": 0.019,
+      "perRepo": [
+        {
+          "historyPrecision": 0.007,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.025,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/3/0.5/50",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.47,
+      "historyPrecision": 0.016,
+      "perRepo": [
+        {
+          "historyPrecision": 0,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.024,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/2/0.3/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.47,
+      "historyPrecision": 0.013,
+      "perRepo": [
+        {
+          "historyPrecision": 0.004,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.018,
+          "baselinePrecision": 0.026
+        }
+      ]
+    },
+    {
+      "key": "40/2/0.5/20",
+      "eligible": false,
+      "graphPlusHistoryRecall": 0.47,
+      "historyPrecision": 0.013,
+      "perRepo": [
+        {
+          "historyPrecision": 0,
+          "baselinePrecision": 0.012
+        },
+        {
+          "historyPrecision": 0.02,
+          "baselinePrecision": 0.026
+        }
+      ]
+    }
+  ]
+}

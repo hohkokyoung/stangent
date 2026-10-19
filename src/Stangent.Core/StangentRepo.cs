@@ -38,12 +38,13 @@ public sealed class StangentConfig
     /// </summary>
     public sealed class HistoryConfig
     {
+        // Tuned on nopCommerce and Sonarr, then frozen before judging (D43; benchmark/results/2026-10-19-phase1c-tuning.json).
         public bool Enabled { get; set; } = true;
-        public int Window { get; set; } = 20;
+        public int Window { get; set; } = 10;
         public int MinShared { get; set; } = 3;
-        public double MinShare { get; set; } = 0.3;
+        public double MinShare { get; set; } = 0.2;
         /// <summary>Commits touching more files on the map than this are dropped (D37).</summary>
-        public int MaxFiles { get; set; } = 30;
+        public int MaxFiles { get; set; } = 50;
         /// <summary>Bot authors (name or email) beyond those ending in <c>[bot]</c> (D37).</summary>
         public List<string> BotAuthors { get; set; } = [];
         /// <summary>Join a moved file's old history to its current path (D38).</summary>

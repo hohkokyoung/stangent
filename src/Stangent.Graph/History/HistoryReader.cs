@@ -71,56 +71,111 @@ public static class HistoryLog
 /// <summary>Counts how often files change together, after the noise filters (D35, D37).</summary>
 public static class HistoryCounter
 {
-    static readonly Regex Reverts = new(@"This reverts commit ([0-9a-f]{7,40})", RegexOptions.CultureInvariant);
-
     public sealed record Result(List<HistoryLine> Lines, int CommitsRead, int CommitsUsed, SortedDictionary<string, int> Dropped);
 
     /// <param name="commits">Newest first, paths as they are today.</param>
     /// <param name="ignoreRevs">Hashes (or prefixes) from <c>.git-blame-ignore-revs</c>.</param>
     public static Result Count(IReadOnlyList<HistoryCommit> commits, IReadOnlySet<string> mapFiles,
-        StangentConfig.HistoryConfig settings, IReadOnlyCollection<string> ignoreRevs)
+        StangentConfig.HistoryConfig settings, IReadOnlyCollection<string> ignoreRevs) =>
+        new HistoryIndex(commits, mapFiles, ignoreRevs, settings.BotAuthors).Count(settings);
+}
+
+/// <summary>
+/// The main line's commits that touch the map, indexed by file, with what each noise filter says about
+/// them. Answers "📜 for these files, from commits older than this one", so the benchmark scores each past
+/// change with only the history known before it, using the same code as <c>graph build</c>.
+/// </summary>
+public sealed class HistoryIndex
+{
+    static readonly Regex Reverts = new(@"This reverts commit ([0-9a-f]{7,40})", RegexOptions.CultureInvariant);
+
+    enum Drop { None, Revert, Formatting, Bot }
+
+    readonly string[][] files;          // per commit (newest first): its files on the map, sorted
+    readonly Drop[] drop;               // filters that don't depend on the settings or the cut-off
+    readonly int[] revertedAt;          // the oldest commit reverting it, or -1
+    readonly Dictionary<string, List<int>> byFile = new(StringComparer.Ordinal);
+    readonly Dictionary<string, int> position = new(StringComparer.Ordinal);
+
+    public HistoryIndex(IReadOnlyList<HistoryCommit> commits, IReadOnlySet<string> mapFiles,
+        IReadOnlyCollection<string> ignoreRevs, IEnumerable<string> botAuthors)
     {
-        var reverted = commits.SelectMany(c => Reverts.Matches(c.Message).Select(m => m.Groups[1].Value)).ToHashSet(StringComparer.Ordinal);
-        var bots = settings.BotAuthors.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var dropped = new SortedDictionary<string, int>(StringComparer.Ordinal) { ["reverts"] = 0, ["formatting"] = 0, ["bots"] = 0, ["huge"] = 0 };
-        var used = new List<string[]>();
-        var read = 0;
-        foreach (var c in commits)
+        var bots = botAuthors.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        files = new string[commits.Count][];
+        drop = new Drop[commits.Count];
+        revertedAt = new int[commits.Count];
+        var reverts = new List<(string Target, int At)>();
+        for (var i = 0; i < commits.Count; i++)
         {
-            var files = c.Files.Where(mapFiles.Contains).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
-            if (files.Length == 0) continue;
-            read++;
-            // A revert and the commit it reverts both go: the change didn't stick, and keeping both counts it twice.
-            if (Reverts.IsMatch(c.Message) || reverted.Any(r => c.Hash.StartsWith(r, StringComparison.Ordinal))) dropped["reverts"]++;
-            else if (ignoreRevs.Any(r => c.Hash.StartsWith(r, StringComparison.Ordinal))) dropped["formatting"]++;
-            else if (IsBot(c, bots)) dropped["bots"]++;
-            else if (files.Length > settings.MaxFiles) dropped["huge"]++;
-            else used.Add(files);
-        }
-
-        // Each file's window: its last N surviving commits. Anything older counts zero (D35).
-        var windows = new Dictionary<string, List<int>>(StringComparer.Ordinal);
-        for (var i = 0; i < used.Count; i++)
-            foreach (var f in used[i])
+            var c = commits[i];
+            position[c.Hash] = i;
+            files[i] = [.. c.Files.Where(mapFiles.Contains).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+            revertedAt[i] = -1;
+            foreach (Match m in Reverts.Matches(c.Message)) reverts.Add((m.Groups[1].Value, i));
+            drop[i] = Reverts.IsMatch(c.Message) ? Drop.Revert
+                : ignoreRevs.Any(r => c.Hash.StartsWith(r, StringComparison.Ordinal)) ? Drop.Formatting
+                : IsBot(c, bots) ? Drop.Bot : Drop.None;
+            foreach (var f in files[i])
             {
-                if (!windows.TryGetValue(f, out var w)) windows[f] = w = [];
-                if (w.Count < settings.Window) w.Add(i);
+                if (!byFile.TryGetValue(f, out var list)) byFile[f] = list = [];
+                list.Add(i);
             }
+        }
+        // A revert and the commit it reverts both go; the latter only once the revert has happened.
+        for (var i = 0; i < commits.Count; i++)
+            foreach (var (target, at) in reverts)
+                if (at < i && commits[i].Hash.StartsWith(target, StringComparison.Ordinal)) revertedAt[i] = Math.Max(revertedAt[i], at);
+    }
 
-        var lines = new List<HistoryLine>();
-        foreach (var (target, window) in windows)
+    /// <summary>A commit's position (0 = newest), or null when it touches nothing on the map.</summary>
+    public int? Position(string hash) => position.TryGetValue(hash, out var i) ? i : null;
+
+    /// <summary>Every file's 📜 lines from all of history, plus what the filters dropped (what <c>graph build</c> stores).</summary>
+    public HistoryCounter.Result Count(StangentConfig.HistoryConfig settings)
+    {
+        var dropped = new SortedDictionary<string, int>(StringComparer.Ordinal) { ["reverts"] = 0, ["formatting"] = 0, ["bots"] = 0, ["huge"] = 0 };
+        int read = 0, used = 0;
+        for (var i = 0; i < files.Length; i++)
         {
+            if (files[i].Length == 0) continue;
+            read++;
+            var reason = Reason(i, -1, settings);
+            if (reason is null) used++;
+            else dropped[reason]++;
+        }
+        return new HistoryCounter.Result(LinesFor(byFile.Keys, -1, settings), read, used, dropped);
+    }
+
+    /// <summary>
+    /// 📜 lines into these files, counting only commits older than position <paramref name="olderThan"/>
+    /// (-1 for all of them): each file's last N surviving commits, partners at ≥ minShared and ≥ minShare (D35).
+    /// </summary>
+    public List<HistoryLine> LinesFor(IEnumerable<string> targets, int olderThan, StangentConfig.HistoryConfig settings)
+    {
+        var lines = new List<HistoryLine>();
+        foreach (var target in targets.Distinct(StringComparer.Ordinal))
+        {
+            if (!byFile.TryGetValue(target, out var commits)) continue;
+            var window = commits.Where(i => i > olderThan && Reason(i, olderThan, settings) is null).Take(settings.Window).ToList();
             var shared = new Dictionary<string, int>(StringComparer.Ordinal);
             foreach (var i in window)
-                foreach (var f in used[i])
+                foreach (var f in files[i])
                     if (f != target) shared[f] = shared.GetValueOrDefault(f) + 1;
             foreach (var (source, n) in shared)
                 if (n >= settings.MinShared && n >= settings.MinShare * window.Count)
                     lines.Add(new HistoryLine(source, target, n, window.Count));
         }
         lines.Sort((a, b) => string.CompareOrdinal(a.Target, b.Target) is var t and not 0 ? t : string.CompareOrdinal(a.Source, b.Source));
-        return new Result(lines, read, used.Count, dropped);
+        return lines;
     }
+
+    /// <summary>Which filter drops commit <paramref name="i"/> as seen from just before <paramref name="olderThan"/>; null if it counts.</summary>
+    string? Reason(int i, int olderThan, StangentConfig.HistoryConfig settings) =>
+        drop[i] == Drop.Revert || revertedAt[i] > olderThan ? "reverts"
+        : drop[i] == Drop.Formatting ? "formatting"
+        : drop[i] == Drop.Bot ? "bots"
+        : files[i].Length > settings.MaxFiles ? "huge"
+        : null;
 
     static bool IsBot(HistoryCommit c, HashSet<string> bots) =>
         c.Author.EndsWith("[bot]", StringComparison.OrdinalIgnoreCase) || c.Email.Contains("[bot]", StringComparison.OrdinalIgnoreCase)
@@ -131,7 +186,7 @@ public static class HistoryCounter
 public static class HistoryStep
 {
     /// <summary>Bumped whenever the counting changes, so stored lines are recomputed.</summary>
-    const int AlgorithmVersion = 2;
+    const int AlgorithmVersion = 3;
 
     public static void Apply(StangentRepo repo, CodeGraph graph, CodeGraph? previous, Func<CodeGraph?> loadStored, List<string> warnings)
     {

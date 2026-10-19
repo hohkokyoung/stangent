@@ -61,12 +61,15 @@ public sealed class ImpactAnalyzer
                 if (changed.Contains(line.Source)) continue;
                 if (!best.TryGetValue(line.Source, out var have) || Stronger(line, have)) best[line.Source] = line;
             }
-        return [.. best.Values
-            .OrderByDescending(l => (double)l.Shared / l.Of).ThenByDescending(l => l.Shared).ThenBy(l => l.Source, StringComparer.Ordinal)
-            .Select(l => (l, foundByFile.TryGetValue(l.Source, out var found) ? found : (Label?)null))];
+        return [.. Rank(best.Values).Select(l => (l, foundByFile.TryGetValue(l.Source, out var found) ? found : (Label?)null))];
     }
 
-    static bool Stronger(HistoryLine a, HistoryLine b) =>
+    /// <summary>📜 order (D40): highest share first, then most shared commits, then path. Also used by scoring.</summary>
+    public static IEnumerable<HistoryLine> Rank(IEnumerable<HistoryLine> lines) =>
+        lines.OrderByDescending(l => (double)l.Shared / l.Of).ThenByDescending(l => l.Shared).ThenBy(l => l.Source, StringComparer.Ordinal);
+
+    /// <summary>Whether <paramref name="a"/> is stronger evidence than <paramref name="b"/> for the same partner.</summary>
+    public static bool Stronger(HistoryLine a, HistoryLine b) =>
         a.Shared * b.Of != b.Shared * a.Of ? a.Shared * b.Of > b.Shared * a.Of : a.Shared != b.Shared ? a.Shared > b.Shared : string.CompareOrdinal(a.Target, b.Target) < 0;
 
     public Node? Find(string id) => nodes.GetValueOrDefault(id);

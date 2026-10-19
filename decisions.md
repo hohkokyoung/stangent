@@ -448,6 +448,10 @@ code; minutes per build), give sparse evidence (two methods rarely change togeth
 - Directional: A → B and B → A are judged separately. A hub as the starting point yields almost
   nothing (no partner reaches 30% of its many commits); a small file that nearly always drags `Startup.cs` along shows it.
 - 20, 3 and 30% are starting defaults, tuned once on the hardened Test 2 (D33), then fixed in `stangent.yaml` (per repo, overridable).
+- *Tuned 2026-10-19 (D43):* the rule picked **window 10, minShared 3** (minShare then never binds: 3 of ≤ 10 is ≥ 30%;
+  its default is 0.2) and D37's size cap at **50** files. Pooled over nopCommerce and Sonarr, graph + 📜 recall 0.500 vs
+  0.457 for the graph alone, and 📜's precision beat the plain baseline's on both (0.015 vs 0.012, 0.028 vs 0.026).
+  The starting values (20/3/30%/30) missed by 0.001 on nopCommerce. The margins are small; the rule was fixed beforehand.
 **Why:** D26 rejected made-up numeric confidence; a half-life decay produces exactly that ("3.41").
 **Cost:** a hard cut at 20 commits ignores older evidence entirely; a file that changes in bursts can
 have its whole window filled by one burst.
@@ -474,7 +478,7 @@ have its whole window filled by one burst.
 Four filters, each checkable by code and reported as a count ("312 commits dropped: 40 huge, 251 bots, …"):
 | Filter | Example | Rule |
 |---|---|---|
-| Huge commits | "Upgrade to .NET 10", Kavita's "Polish 6" | more than 30 files on the map (default, tuned with D35's) |
+| Huge commits | "Upgrade to .NET 10", Kavita's "Polish 6" | more than 50 files on the map (tuned with D35's; started at 30) |
 | Bots | `dependabot[bot]`, Sonarr's "Automated API Docs update", Weblate translations | author ends in `[bot]`, plus a per-repo author list in `stangent.yaml` |
 | Formatting sweeps | "Run dotnet format" | listed in the repo's `.git-blame-ignore-revs` (the file teams already keep for `git blame`); most are also huge |
 | Reverts | "Revert 'Add series filter'" | a commit whose message says `This reverts commit <hash>`, **and** that commit: the change didn't stick, and keeping both counts it twice |

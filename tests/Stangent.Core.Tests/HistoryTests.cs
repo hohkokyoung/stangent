@@ -8,7 +8,8 @@ namespace Stangent.Core.Tests;
 /// <summary>📜 history evidence (D34–D42): parsing, noise filters, counting, the build step and storage.</summary>
 public class HistoryTests
 {
-    static readonly StangentConfig.HistoryConfig Defaults = new();
+    // The mechanics are tested with D35's starting values; the tuned defaults are a benchmark result, not a rule.
+    static readonly StangentConfig.HistoryConfig Defaults = new() { Window = 20, MinShared = 3, MinShare = 0.3, MaxFiles = 30 };
 
     static HistoryCommit C(string hash, params string[] files) => new(hash, "dev", "dev@example.invalid", "change", files);
 
@@ -114,6 +115,28 @@ public class HistoryTests
         Assert.Equal(3, result.CommitsUsed);
     }
 
+    [Fact]
+    public void Seen_from_a_past_commit_only_older_history_counts()
+    {
+        // Newest first: a revert of x3, then three commits of A with B, then three of A alone.
+        var commits = new List<HistoryCommit>
+        {
+            new("ddddddd1", "dev", "dev@example.invalid", "This reverts commit eeeeeee3.", ["Z.cs"]),
+            C("eeeeeee1", "A.cs", "B.cs"), C("eeeeeee2", "A.cs", "B.cs"), C("eeeeeee3", "A.cs", "B.cs"),
+            C("fffffff1", "A.cs"), C("fffffff2", "A.cs"), C("fffffff3", "A.cs"),
+        };
+        var index = new HistoryIndex(commits, Map("A.cs", "B.cs", "Z.cs"), [], []);
+        var settings = new StangentConfig.HistoryConfig { Window = 20, MinShared = 2, MinShare = 0.3, MaxFiles = 30 };
+
+        var beforeRevert = index.LinesFor(["A.cs"], index.Position("ddddddd1")!.Value, settings);
+        var today = index.LinesFor(["A.cs"], -1, settings);
+        var beforeAll = index.LinesFor(["A.cs"], index.Position("eeeeeee3")!.Value, settings);
+
+        Assert.Equal([new HistoryLine("B.cs", "A.cs", 3, 6)], beforeRevert);   // the revert hadn't happened yet
+        Assert.Equal([new HistoryLine("B.cs", "A.cs", 2, 5)], today);          // x3 and its revert both dropped
+        Assert.Empty(beforeAll);                                               // only the three commits without B
+    }
+
     // ---- Noise filters (D37) ----------------------------------------------------------------------
 
     static List<HistoryCommit> ThreeTogether() => [C("aaaaaaa1", "A.cs", "B.cs"), C("aaaaaaa2", "A.cs", "B.cs"), C("aaaaaaa3", "A.cs", "B.cs")];
@@ -145,7 +168,7 @@ public class HistoryTests
         var commits = ThreeTogether();
         commits[0] = commits[0] with { Author = "dependabot[bot]" };
         commits[1] = commits[1] with { Author = "Weblate" };
-        var settings = new StangentConfig.HistoryConfig { BotAuthors = ["weblate"] };
+        var settings = new StangentConfig.HistoryConfig { Window = 20, MinShared = 3, MinShare = 0.3, MaxFiles = 30, BotAuthors = ["weblate"] };
 
         var result = HistoryCounter.Count(commits, Map("A.cs", "B.cs"), settings, []);
 
@@ -168,7 +191,7 @@ public class HistoryTests
 
     sealed class HistoryRepo : IDisposable
     {
-        public HistoryRepo(string config = "version: 1\nhistory: { minShared: 2 }\n")
+        public HistoryRepo(string config = "version: 1\nhistory: { window: 20, minShared: 2, minShare: 0.3, maxFiles: 30 }\n")
         {
             Temp = new TempRepo(config);
             Git("init -q -b main");
@@ -268,7 +291,7 @@ public class HistoryTests
         HistoryStep.Apply(repo.Temp.Repo, downloaded, null, () => null, []);
         Assert.NotEmpty(downloaded.HistoryLines);
 
-        using var shallow = new TempRepo("version: 1\nhistory: { minShared: 2 }\n");
+        using var shallow = new TempRepo("version: 1\nhistory: { window: 20, minShared: 2, minShare: 0.3, maxFiles: 30 }\n");
         Directory.Delete(shallow.Root, recursive: true);
         ShopCopy.Git(Path.GetDirectoryName(shallow.Root)!, $"clone -q --depth 1 file://{repo.Root} {shallow.Root}");
         var repoAtShallow = StangentRepo.Discover(shallow.Root);

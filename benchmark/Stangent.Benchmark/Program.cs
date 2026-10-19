@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Stangent.Core;
 using Stangent.Graph;
+using Stangent.Graph.History;
 using Stangent.Graph.Impact;
 
 // Scores impact analysis against a repo's own git history (decisions.md D28). No AI, no labels:
@@ -26,6 +27,9 @@ using Stangent.Graph.Impact;
 //     [--openapi path/in/repo.json] [--ts-compile-break N] [--only-frontend]   (Phase 1b, D32)
 
 var argList = args.ToList();
+// Picks 📜's defaults from tuning runs (D43): `--select-tuning <tune.json>... [--out file]`.
+if (argList.Count > 0 && argList[0] == "--select-tuning")
+    return Tuning.Select([.. argList.Skip(1).TakeWhile(a => !a.StartsWith('-'))], argList.IndexOf("--out") is var o and >= 0 ? argList[o + 1] : null);
 if (argList.Count == 0 || argList[0].StartsWith('-'))
 {
     Console.Error.WriteLine("usage: Stangent.Benchmark <clone> [--months 0] [--max-commits 200] [--max-fixes 400] [--exact-sample 0] [--sdk-override file] [--skip-build-test] [--out file]");
@@ -45,6 +49,8 @@ var openApi = Opt("--openapi", "");
 var tsCompileBreakCount = int.Parse(Opt("--ts-compile-break", "0"));
 var onlyFrontend = argList.Contains("--only-frontend");
 var expectedLinks = Opt("--expected", "");
+var tune = argList.Contains("--tune");
+var historyOverride = Opt("--history-settings", ""); // "window,minShared,minShare,maxFiles"
 var buildCount = 0;
 
 // A run that was stopped mid-rename or mid-touch leaves its edit behind: put such files back first.
@@ -76,6 +82,30 @@ foreach (var block in Run($"log --first-parent --diff-merges=first-parent {since
     commits.Add((head[0], head.Length > 1 ? head[1] : "", [.. lines.Skip(1).Where(fileNodes.ContainsKey).Distinct().Order(StringComparer.Ordinal)]));
 }
 var commitIndex = commits.Select((c, i) => (c.Hash, i)).ToDictionary(x => x.Hash, x => x.i, StringComparer.Ordinal);
+
+// 📜 as graph build computes it, but seen from just before each scored change: no peeking ahead (D44).
+var historySettings = repo.Config.History;
+if (historyOverride.Length > 0)
+{
+    var h = historyOverride.Split(',');
+    historySettings = new StangentConfig.HistoryConfig
+    {
+        Window = int.Parse(h[0]), MinShared = int.Parse(h[1]), MinShare = double.Parse(h[2], System.Globalization.CultureInfo.InvariantCulture),
+        MaxFiles = int.Parse(h[3]), BotAuthors = repo.Config.History.BotAuthors, FollowRenames = repo.Config.History.FollowRenames,
+    };
+}
+var mapFiles = graph.AllNodes.Where(n => n.Kind is NodeKind.File or NodeKind.Template && n.File is not null).Select(n => n.File!).ToHashSet(StringComparer.Ordinal);
+var renamesFollowed = graph.History?.RenamesFollowed ?? historySettings.FollowRenames;
+var ignoreRevsPath = Path.Combine(root, ".git-blame-ignore-revs");
+var ignoreRevs = File.Exists(ignoreRevsPath)
+    ? File.ReadAllLines(ignoreRevsPath).Select(l => l.Split('#')[0].Trim()).Where(l => l.Length >= 7).Select(l => l.Split(' ')[0]).ToList() : [];
+var historyIndex = new HistoryIndex(
+    HistoryLog.Read(root, renamesFollowed, mapFiles.Select(Path.GetExtension).Where(e => !string.IsNullOrEmpty(e)).Distinct().Select(e => e!)) ?? [],
+    mapFiles, ignoreRevs, historySettings.BotAuthors);
+// The index at today's commit must give exactly the lines graph build stored (same code, same inputs).
+var historySelfCheck = historyOverride.Length == 0 && graph.History is { Status: "full" }
+    ? historyIndex.Count(historySettings).Lines.SequenceEqual(graph.HistoryLines) : (bool?)null;
+Console.Error.WriteLine($"history: self-check {historySelfCheck?.ToString() ?? "skipped"}");
 
 // ---- Seeds: what a commit changed in one file -----------------------------------------------
 var matchStats = new Dictionary<string, int> { ["sameFile"] = 0, ["moved"] = 0, ["unmatched"] = 0 };
@@ -159,6 +189,21 @@ Dictionary<string, Label> CoChange(Case c) => CoChangeCountsFor(c).ToDictionary(
 // The top n by count (ties by path), as a capped impact group would show them (D40, Gate 1 in D44).
 Dictionary<string, Label> CoChangeTop(Case c, int n) => CoChangeCountsFor(c).OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key, StringComparer.Ordinal)
     .Take(n).ToDictionary(kv => kv.Key, _ => Label.Guessed, StringComparer.Ordinal);
+// 📜's top n for a case, as an impact answer would show it, from history older than each change (D40).
+Dictionary<string, Label> HistoryTop(Case c, int n, StangentConfig.HistoryConfig? settings = null)
+{
+    var best = new Dictionary<string, HistoryLine>(StringComparer.Ordinal);
+    foreach (var (commit, files) in c.Parts ?? [(c.Commit, c.SeedFiles)])
+    {
+        if (historyIndex.Position(commit) is not { } at) continue;
+        var seeds = files.ToHashSet(StringComparer.Ordinal);
+        foreach (var l in historyIndex.LinesFor(files, at, settings ?? historySettings))
+            if (!seeds.Contains(l.Source) && !c.Exclude.Contains(l.Source) && IsSource(l.Source)
+                && (!best.TryGetValue(l.Source, out var have) || ImpactAnalyzer.Stronger(l, have)))
+                best[l.Source] = l;
+    }
+    return ImpactAnalyzer.Rank(best.Values).Take(n).ToDictionary(l => l.Source, _ => Label.History, StringComparer.Ordinal);
+}
 static Dictionary<string, Label> Union(Dictionary<string, Label> a, Dictionary<string, Label> b)
 {
     var u = new Dictionary<string, Label>(a, StringComparer.Ordinal);
@@ -212,20 +257,27 @@ JsonObject Compare(List<Case> cases)
     {
         var scored = cases.Select(c => (c.Actual, pick(c))).ToList();
         result[name] = name.StartsWith("graph", StringComparison.Ordinal)
-            ? new JsonObject { ["certain"] = Metrics(scored, Label.Certain), ["certain+guessed"] = Metrics(scored, Label.Guessed) }
-            : Metrics(scored, Label.Guessed);
+            ? name.Contains("📜", StringComparison.Ordinal)
+                ? new JsonObject { ["certain+guessed"] = Metrics(scored, Label.Guessed), ["certain+guessed+history"] = Metrics(scored, Label.History) }
+                : new JsonObject { ["certain"] = Metrics(scored, Label.Certain), ["certain+guessed"] = Metrics(scored, Label.Guessed) }
+            : Metrics(scored, Label.History);
     }
     return result;
 }
 
 // Gate 1 (D44): does adding the co-change baseline's top 10 to "graph within 2 lines" raise recall?
 // 95% ranges come from resampling fixes (1,000 times, fixed seed), so a re-run prints the same numbers.
-JsonObject Gate1(List<Case> cases)
+JsonObject Gate1(List<Case> cases) => Gate(cases, "co-change (top 10)", c => CoChangeTop(c, 10), gate2: false);
+JsonObject Gate2(List<Case> cases) => Gate(cases, "📜 (top 10)", c => HistoryTop(c, 10), gate2: true);
+
+// Gate 1 and Gate 2 (D44) on the same cases: "graph within 2 lines" with and without a history predictor.
+// Gate 2 also checks 📜 against the plain co-change baseline's top 10 and how much longer answers get.
+JsonObject Gate(List<Case> cases, string historyName, Func<Case, Dictionary<string, Label>> historyOf, bool gate2)
 {
     const int Floor = 30, Resamples = 1000;
     var graphOnly = cases.Select(c => GraphLinesDepth(c.Seeds, c.Exclude, 2).Keys.ToHashSet(StringComparer.Ordinal)).ToList();
-    var withHistory = cases.Select((c, i) => graphOnly[i].Union(CoChangeTop(c, 10).Keys).ToHashSet(StringComparer.Ordinal)).ToList();
-    var history = cases.Select(c => CoChangeTop(c, 10).Keys.ToHashSet(StringComparer.Ordinal)).ToList();
+    var history = cases.Select(c => historyOf(c).Keys.ToHashSet(StringComparer.Ordinal)).ToList();
+    var withHistory = cases.Select((c, i) => graphOnly[i].Union(history[i]).ToHashSet(StringComparer.Ordinal)).ToList();
     var hitsG = cases.Select((c, i) => c.Actual.Count(graphOnly[i].Contains)).ToArray();
     var hitsGH = cases.Select((c, i) => c.Actual.Count(withHistory[i].Contains)).ToArray();
     var hitsH = cases.Select((c, i) => c.Actual.Count(history[i].Contains)).ToArray();
@@ -250,17 +302,34 @@ JsonObject Gate1(List<Case> cases)
         ["medianPredictedFiles"] = predicted.Count == 0 ? 0 : predicted.Select(p => p.Count).Order().ElementAt(predicted.Count / 2),
     };
     var gainRange = Range95(d => Ratio(d, hitsGH, i => actual[i]) - Ratio(d, hitsG, i => actual[i]));
-    return new JsonObject
+    var result = new JsonObject
     {
         ["fixes"] = cases.Count,
         ["countsTowardVerdict"] = cases.Count >= Floor,
         ["graph (lines, depth ≤ 2)"] = Score(hitsG, graphOnly),
-        ["co-change (top 10)"] = Score(hitsH, history),
-        ["graph (lines, depth ≤ 2) + co-change (top 10)"] = Score(hitsGH, withHistory),
+        [historyName] = Score(hitsH, history),
+        [$"graph (lines, depth ≤ 2) + {historyName}"] = Score(hitsGH, withHistory),
         ["recallGain"] = Math.Round(Ratio(all, hitsGH, i => actual[i]) - Ratio(all, hitsG, i => actual[i]), 3),
         ["recallGainRange95"] = gainRange,
         ["historyHelps"] = cases.Count >= Floor && (double)gainRange[0]! > 0,
     };
+    if (!gate2) return result;
+
+    var baseline = cases.Select(c => CoChangeTop(c, 10).Keys.ToHashSet(StringComparer.Ordinal)).ToList();
+    var hitsB = cases.Select((c, i) => c.Actual.Count(baseline[i].Contains)).ToArray();
+    var (recallH, precisionH) = (Ratio(all, hitsH, i => actual[i]), Ratio(all, hitsH, i => history[i].Count));
+    var (recallB, precisionB) = (Ratio(all, hitsB, i => actual[i]), Ratio(all, hitsB, i => baseline[i].Count));
+    var added = cases.Select((_, i) => withHistory[i].Count - graphOnly[i].Count).Order().ToList();
+    var medianAdded = added.Count == 0 ? 0 : added[added.Count / 2];
+    result["co-change (top 10)"] = Score(hitsB, baseline);
+    result["medianFilesAdded"] = medianAdded;
+    result["checks"] = new JsonObject
+    {
+        ["addsSomething"] = cases.Count >= Floor && (double)gainRange[0]! > 0,
+        ["filtersHelpNotHurt"] = precisionH >= precisionB && recallH >= 0.9 * recallB,
+        ["answersStayShort"] = medianAdded <= 10,
+    };
+    return result;
 }
 
 IEnumerable<(string, Func<Case, Dictionary<string, Label>>)> Predictors() =>
@@ -276,6 +345,8 @@ IEnumerable<(string, Func<Case, Dictionary<string, Label>>)> Predictors() =>
     ("co-change", c => CoChange(c)),
     ("co-change (top 10)", c => CoChangeTop(c, 10)),
     ("graph (lines, depth ≤ 2) + co-change (top 10)", c => Union(GraphLinesDepth(c.Seeds, c.Exclude, 2), CoChangeTop(c, 10))),
+    ("📜 (top 10)", c => HistoryTop(c, 10)),
+    ("graph (lines, depth ≤ 2) + 📜 (top 10)", c => Union(GraphLinesDepth(c.Seeds, c.Exclude, 2), HistoryTop(c, 10))),
 ];
 
 // ---- Frontend checks alone (D32): OpenAPI answer key and TypeScript compile-break ---------------
@@ -384,7 +455,7 @@ if (!skipBuildTest)
         test3 = new JsonObject
         {
             ["identicalFullBuilds"] = a.Hash == b.Hash, ["incrementalEqualsFull"] = incremental.Hash == full.Hash,
-            ["fullBuildMs"] = a.Stats.TotalMs, ["incrementalBuildMs"] = incremental.Stats.TotalMs,
+            ["fullBuildMs"] = a.Stats.TotalMs, ["incrementalBuildMs"] = incremental.Stats.TotalMs, ["historyMs"] = a.Stats.HistoryMs,
             ["incrementalExtracted"] = incremental.Stats.Extracted, ["touchedFile"] = target,
         };
     }
@@ -402,10 +473,21 @@ var output = new JsonObject
     ["windowMonths"] = months > 0 ? months : "all",
     ["history"] = "main line only (git log --first-parent, merges diffed against their first parent; D36)",
     ["predictors"] = "graph (lines): changed methods found by name in today's graph · graph (lines+deps): plus what they directly use · graph (files): every point in the changed files · same project / same folder / co-change: baselines without the graph",
-    ["labels"] = "certain = ✅ only; certain+guessed = ✅ and 🟡. 📜 (Phase 1c) not built yet.",
+    ["labels"] = "certain = ✅ only; certain+guessed = ✅ and 🟡; certain+guessed+history adds 📜 (Phase 1c).",
     ["memberMatching"] = new JsonObject { ["sameFile"] = matchStats["sameFile"], ["moved"] = matchStats["moved"], ["unmatched"] = matchStats["unmatched"] },
     ["test1FindsTheRest"] = Compare(test1),
     ["test2PredictsWhatBroke"] = Compare(test2),
+    ["historySettings"] = $"window {historySettings.Window}, minShared {historySettings.MinShared}, minShare {historySettings.MinShare.ToString(System.Globalization.CultureInfo.InvariantCulture)}, maxFiles {historySettings.MaxFiles}, renames {(renamesFollowed ? "followed" : "not followed")}",
+    ["historySelfCheck"] = historySelfCheck,
+    ["gate2"] = new JsonObject
+    {
+        ["note"] = "D44 Gate 2: 📜 from history older than each change; adds something when the gain's 95% range is above zero on ≥ 30 fixes",
+        ["all"] = Gate2(test2),
+        ["singleTopic"] = Gate2([.. test2.Where(c => !c.Bundle)]),
+        ["bundle"] = Gate2([.. test2.Where(c => c.Bundle)]),
+    },
+    ["tuning"] = tune ? Tuning.Run(test2, historySettings, (c, s) => HistoryTop(c, 10, s).Keys.ToHashSet(StringComparer.Ordinal),
+        c => GraphLinesDepth(c.Seeds, c.Exclude, 2).Keys.ToHashSet(StringComparer.Ordinal), c => CoChangeTop(c, 10).Keys.ToHashSet(StringComparer.Ordinal)) : null,
     ["gate1"] = new JsonObject
     {
         ["note"] = "D44 Gate 1: one case per fix; history helps when the 95% range of the recall gain is above zero on ≥ 30 fixes",

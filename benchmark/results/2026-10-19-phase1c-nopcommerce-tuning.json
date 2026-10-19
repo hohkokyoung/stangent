@@ -1,0 +1,1435 @@
+{
+  "repo": "nopcommerce",
+  "graphCommit": "77d112f365e210ebdfa2f9790c8202a0e3b1c74e",
+  "windowMonths": "all",
+  "history": "main line only (git log --first-parent, merges diffed against their first parent; D36)",
+  "predictors": "graph (lines): changed methods found by name in today's graph · graph (lines+deps): plus what they directly use · graph (files): every point in the changed files · same project / same folder / co-change: baselines without the graph",
+  "labels": "certain = ✅ only; certain+guessed = ✅ and \uD83D\uDFE1; certain+guessed+history adds \uD83D\uDCDC (Phase 1c).",
+  "memberMatching": {
+    "sameFile": 3950,
+    "moved": 69,
+    "unmatched": 2838
+  },
+  "test1FindsTheRest": {
+    "cases": 691,
+    "graph (lines)": {
+      "certain": {
+        "recall": 0.338,
+        "precision": 0.005,
+        "medianCasePrecision": 0.004,
+        "found": 1329,
+        "of": 3933,
+        "medianPredictedFiles": 14,
+        "emptyAnswers": 191
+      },
+      "certain+guessed": {
+        "recall": 0.343,
+        "precision": 0.005,
+        "medianCasePrecision": 0.003,
+        "found": 1348,
+        "of": 3933,
+        "medianPredictedFiles": 15,
+        "emptyAnswers": 130
+      }
+    },
+    "graph (lines, depth ≤ 1)": {
+      "certain": {
+        "recall": 0.155,
+        "precision": 0.068,
+        "medianCasePrecision": 0.077,
+        "found": 610,
+        "of": 3933,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 215
+      },
+      "certain+guessed": {
+        "recall": 0.156,
+        "precision": 0.068,
+        "medianCasePrecision": 0.036,
+        "found": 612,
+        "of": 3933,
+        "medianPredictedFiles": 3,
+        "emptyAnswers": 155
+      }
+    },
+    "graph (lines, depth ≤ 2)": {
+      "certain": {
+        "recall": 0.213,
+        "precision": 0.039,
+        "medianCasePrecision": 0.035,
+        "found": 838,
+        "of": 3933,
+        "medianPredictedFiles": 5,
+        "emptyAnswers": 194
+      },
+      "certain+guessed": {
+        "recall": 0.214,
+        "precision": 0.039,
+        "medianCasePrecision": 0.021,
+        "found": 843,
+        "of": 3933,
+        "medianPredictedFiles": 5,
+        "emptyAnswers": 133
+      }
+    },
+    "graph (lines, depth ≤ 3)": {
+      "certain": {
+        "recall": 0.24,
+        "precision": 0.023,
+        "medianCasePrecision": 0.024,
+        "found": 942,
+        "of": 3933,
+        "medianPredictedFiles": 7,
+        "emptyAnswers": 193
+      },
+      "certain+guessed": {
+        "recall": 0.241,
+        "precision": 0.023,
+        "medianCasePrecision": 0.014,
+        "found": 947,
+        "of": 3933,
+        "medianPredictedFiles": 7,
+        "emptyAnswers": 132
+      }
+    },
+    "graph (lines+deps)": {
+      "certain": {
+        "recall": 0.42,
+        "precision": 0.006,
+        "medianCasePrecision": 0.005,
+        "found": 1652,
+        "of": 3933,
+        "medianPredictedFiles": 33,
+        "emptyAnswers": 13
+      },
+      "certain+guessed": {
+        "recall": 0.425,
+        "precision": 0.005,
+        "medianCasePrecision": 0.005,
+        "found": 1671,
+        "of": 3933,
+        "medianPredictedFiles": 33,
+        "emptyAnswers": 13
+      }
+    },
+    "graph (files)": {
+      "certain": {
+        "recall": 0.372,
+        "precision": 0.004,
+        "medianCasePrecision": 0.004,
+        "found": 1465,
+        "of": 3933,
+        "medianPredictedFiles": 31,
+        "emptyAnswers": 161
+      },
+      "certain+guessed": {
+        "recall": 0.378,
+        "precision": 0.004,
+        "medianCasePrecision": 0.003,
+        "found": 1488,
+        "of": 3933,
+        "medianPredictedFiles": 34,
+        "emptyAnswers": 84
+      }
+    },
+    "same project": {
+      "recall": 0.575,
+      "precision": 0.005,
+      "medianCasePrecision": 0.003,
+      "found": 2262,
+      "of": 3933,
+      "medianPredictedFiles": 585,
+      "emptyAnswers": 0
+    },
+    "same folder": {
+      "recall": 0.208,
+      "precision": 0.043,
+      "medianCasePrecision": 0.016,
+      "found": 820,
+      "of": 3933,
+      "medianPredictedFiles": 21,
+      "emptyAnswers": 33
+    },
+    "co-change": {
+      "recall": 0.273,
+      "precision": 0.06,
+      "medianCasePrecision": 0.067,
+      "found": 1073,
+      "of": 3933,
+      "medianPredictedFiles": 8,
+      "emptyAnswers": 201
+    },
+    "co-change (top 10)": {
+      "recall": 0.173,
+      "precision": 0.172,
+      "medianCasePrecision": 0.1,
+      "found": 682,
+      "of": 3933,
+      "medianPredictedFiles": 8,
+      "emptyAnswers": 201
+    },
+    "graph (lines, depth ≤ 2) + co-change (top 10)": {
+      "certain": {
+        "recall": 0.213,
+        "precision": 0.039,
+        "medianCasePrecision": 0.035,
+        "found": 838,
+        "of": 3933,
+        "medianPredictedFiles": 5,
+        "emptyAnswers": 194
+      },
+      "certain+guessed": {
+        "recall": 0.314,
+        "precision": 0.05,
+        "medianCasePrecision": 0.079,
+        "found": 1236,
+        "of": 3933,
+        "medianPredictedFiles": 11,
+        "emptyAnswers": 47
+      }
+    },
+    "\uD83D\uDCDC (top 10)": {
+      "recall": 0.09,
+      "precision": 0.251,
+      "medianCasePrecision": 0.2,
+      "found": 355,
+      "of": 3933,
+      "medianPredictedFiles": 1,
+      "emptyAnswers": 291
+    },
+    "graph (lines, depth ≤ 2) + \uD83D\uDCDC (top 10)": {
+      "certain+guessed": {
+        "recall": 0.214,
+        "precision": 0.039,
+        "medianCasePrecision": 0.021,
+        "found": 843,
+        "of": 3933,
+        "medianPredictedFiles": 5,
+        "emptyAnswers": 133
+      },
+      "certain+guessed+history": {
+        "recall": 0.257,
+        "precision": 0.044,
+        "medianCasePrecision": 0.038,
+        "found": 1011,
+        "of": 3933,
+        "medianPredictedFiles": 7,
+        "emptyAnswers": 65
+      }
+    }
+  },
+  "test2PredictsWhatBroke": {
+    "cases": 44,
+    "graph (lines)": {
+      "certain": {
+        "recall": 0.648,
+        "precision": 0.001,
+        "medianCasePrecision": 0.001,
+        "found": 59,
+        "of": 91,
+        "medianPredictedFiles": 1099,
+        "emptyAnswers": 3
+      },
+      "certain+guessed": {
+        "recall": 0.648,
+        "precision": 0.001,
+        "medianCasePrecision": 0.001,
+        "found": 59,
+        "of": 91,
+        "medianPredictedFiles": 1128,
+        "emptyAnswers": 3
+      }
+    },
+    "graph (lines, depth ≤ 1)": {
+      "certain": {
+        "recall": 0.363,
+        "precision": 0.008,
+        "medianCasePrecision": 0.003,
+        "found": 33,
+        "of": 91,
+        "medianPredictedFiles": 43,
+        "emptyAnswers": 3
+      },
+      "certain+guessed": {
+        "recall": 0.363,
+        "precision": 0.008,
+        "medianCasePrecision": 0.003,
+        "found": 33,
+        "of": 91,
+        "medianPredictedFiles": 43,
+        "emptyAnswers": 3
+      }
+    },
+    "graph (lines, depth ≤ 2)": {
+      "certain": {
+        "recall": 0.451,
+        "precision": 0.005,
+        "medianCasePrecision": 0.002,
+        "found": 41,
+        "of": 91,
+        "medianPredictedFiles": 109,
+        "emptyAnswers": 3
+      },
+      "certain+guessed": {
+        "recall": 0.451,
+        "precision": 0.005,
+        "medianCasePrecision": 0.002,
+        "found": 41,
+        "of": 91,
+        "medianPredictedFiles": 109,
+        "emptyAnswers": 3
+      }
+    },
+    "graph (lines, depth ≤ 3)": {
+      "certain": {
+        "recall": 0.473,
+        "precision": 0.003,
+        "medianCasePrecision": 0.002,
+        "found": 43,
+        "of": 91,
+        "medianPredictedFiles": 207,
+        "emptyAnswers": 3
+      },
+      "certain+guessed": {
+        "recall": 0.473,
+        "precision": 0.003,
+        "medianCasePrecision": 0.002,
+        "found": 43,
+        "of": 91,
+        "medianPredictedFiles": 210,
+        "emptyAnswers": 3
+      }
+    },
+    "graph (lines+deps)": {
+      "certain": {
+        "recall": 0.747,
+        "precision": 0.002,
+        "medianCasePrecision": 0.001,
+        "found": 68,
+        "of": 91,
+        "medianPredictedFiles": 1154,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.747,
+        "precision": 0.002,
+        "medianCasePrecision": 0.001,
+        "found": 68,
+        "of": 91,
+        "medianPredictedFiles": 1183,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (files)": {
+      "certain": {
+        "recall": 0.714,
+        "precision": 0.001,
+        "medianCasePrecision": 0.001,
+        "found": 65,
+        "of": 91,
+        "medianPredictedFiles": 1106,
+        "emptyAnswers": 2
+      },
+      "certain+guessed": {
+        "recall": 0.714,
+        "precision": 0.001,
+        "medianCasePrecision": 0.001,
+        "found": 65,
+        "of": 91,
+        "medianPredictedFiles": 1135,
+        "emptyAnswers": 1
+      }
+    },
+    "same project": {
+      "recall": 0.824,
+      "precision": 0.001,
+      "medianCasePrecision": 0.001,
+      "found": 75,
+      "of": 91,
+      "medianPredictedFiles": 1519,
+      "emptyAnswers": 0
+    },
+    "same folder": {
+      "recall": 0.319,
+      "precision": 0.004,
+      "medianCasePrecision": 0,
+      "found": 29,
+      "of": 91,
+      "medianPredictedFiles": 105,
+      "emptyAnswers": 0
+    },
+    "co-change": {
+      "recall": 0.308,
+      "precision": 0.004,
+      "medianCasePrecision": 0,
+      "found": 28,
+      "of": 91,
+      "medianPredictedFiles": 141,
+      "emptyAnswers": 3
+    },
+    "co-change (top 10)": {
+      "recall": 0.055,
+      "precision": 0.012,
+      "medianCasePrecision": 0,
+      "found": 5,
+      "of": 91,
+      "medianPredictedFiles": 10,
+      "emptyAnswers": 3
+    },
+    "graph (lines, depth ≤ 2) + co-change (top 10)": {
+      "certain": {
+        "recall": 0.451,
+        "precision": 0.005,
+        "medianCasePrecision": 0.002,
+        "found": 41,
+        "of": 91,
+        "medianPredictedFiles": 109,
+        "emptyAnswers": 3
+      },
+      "certain+guessed": {
+        "recall": 0.462,
+        "precision": 0.005,
+        "medianCasePrecision": 0.002,
+        "found": 42,
+        "of": 91,
+        "medianPredictedFiles": 118,
+        "emptyAnswers": 0
+      }
+    },
+    "\uD83D\uDCDC (top 10)": {
+      "recall": 0.033,
+      "precision": 0.011,
+      "medianCasePrecision": 0,
+      "found": 3,
+      "of": 91,
+      "medianPredictedFiles": 7,
+      "emptyAnswers": 5
+    },
+    "graph (lines, depth ≤ 2) + \uD83D\uDCDC (top 10)": {
+      "certain+guessed": {
+        "recall": 0.451,
+        "precision": 0.005,
+        "medianCasePrecision": 0.002,
+        "found": 41,
+        "of": 91,
+        "medianPredictedFiles": 109,
+        "emptyAnswers": 3
+      },
+      "certain+guessed+history": {
+        "recall": 0.462,
+        "precision": 0.005,
+        "medianCasePrecision": 0.002,
+        "found": 42,
+        "of": 91,
+        "medianPredictedFiles": 111,
+        "emptyAnswers": 1
+      }
+    }
+  },
+  "historySettings": "window 20, minShared 3, minShare 0.3, maxFiles 30, renames followed",
+  "historySelfCheck": true,
+  "gate2": {
+    "note": "D44 Gate 2: \uD83D\uDCDC from history older than each change; adds something when the gain's 95% range is above zero on ≥ 30 fixes",
+    "all": {
+      "fixes": 44,
+      "countsTowardVerdict": true,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0.451,
+        "recallRange95": [
+          0.309,
+          0.608
+        ],
+        "precision": 0.005,
+        "precisionRange95": [
+          0.003,
+          0.007
+        ],
+        "medianPredictedFiles": 109
+      },
+      "\uD83D\uDCDC (top 10)": {
+        "recall": 0.033,
+        "recallRange95": [
+          0,
+          0.077
+        ],
+        "precision": 0.011,
+        "precisionRange95": [
+          0,
+          0.027
+        ],
+        "medianPredictedFiles": 7
+      },
+      "graph (lines, depth ≤ 2) + \uD83D\uDCDC (top 10)": {
+        "recall": 0.462,
+        "recallRange95": [
+          0.326,
+          0.608
+        ],
+        "precision": 0.005,
+        "precisionRange95": [
+          0.003,
+          0.007
+        ],
+        "medianPredictedFiles": 111
+      },
+      "recallGain": 0.011,
+      "recallGainRange95": [
+        0,
+        0.036
+      ],
+      "historyHelps": false,
+      "co-change (top 10)": {
+        "recall": 0.055,
+        "recallRange95": [
+          0.011,
+          0.118
+        ],
+        "precision": 0.012,
+        "precisionRange95": [
+          0.002,
+          0.027
+        ],
+        "medianPredictedFiles": 10
+      },
+      "medianFilesAdded": 3,
+      "checks": {
+        "addsSomething": false,
+        "filtersHelpNotHurt": false,
+        "answersStayShort": true
+      }
+    },
+    "singleTopic": {
+      "fixes": 27,
+      "countsTowardVerdict": false,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0.423,
+        "recallRange95": [
+          0.264,
+          0.611
+        ],
+        "precision": 0.004,
+        "precisionRange95": [
+          0.003,
+          0.007
+        ],
+        "medianPredictedFiles": 113
+      },
+      "\uD83D\uDCDC (top 10)": {
+        "recall": 0.019,
+        "recallRange95": [
+          0,
+          0.071
+        ],
+        "precision": 0.006,
+        "precisionRange95": [
+          0,
+          0.02
+        ],
+        "medianPredictedFiles": 7
+      },
+      "graph (lines, depth ≤ 2) + \uD83D\uDCDC (top 10)": {
+        "recall": 0.423,
+        "recallRange95": [
+          0.264,
+          0.611
+        ],
+        "precision": 0.004,
+        "precisionRange95": [
+          0.003,
+          0.007
+        ],
+        "medianPredictedFiles": 120
+      },
+      "recallGain": 0,
+      "recallGainRange95": [
+        0,
+        0
+      ],
+      "historyHelps": false,
+      "co-change (top 10)": {
+        "recall": 0.058,
+        "recallRange95": [
+          0,
+          0.18
+        ],
+        "precision": 0.012,
+        "precisionRange95": [
+          0,
+          0.031
+        ],
+        "medianPredictedFiles": 10
+      },
+      "medianFilesAdded": 3,
+      "checks": {
+        "addsSomething": false,
+        "filtersHelpNotHurt": false,
+        "answersStayShort": true
+      }
+    },
+    "bundle": {
+      "fixes": 17,
+      "countsTowardVerdict": false,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0.487,
+        "recallRange95": [
+          0.212,
+          0.745
+        ],
+        "precision": 0.006,
+        "precisionRange95": [
+          0.002,
+          0.01
+        ],
+        "medianPredictedFiles": 82
+      },
+      "\uD83D\uDCDC (top 10)": {
+        "recall": 0.051,
+        "recallRange95": [
+          0,
+          0.122
+        ],
+        "precision": 0.022,
+        "precisionRange95": [
+          0,
+          0.054
+        ],
+        "medianPredictedFiles": 5
+      },
+      "graph (lines, depth ≤ 2) + \uD83D\uDCDC (top 10)": {
+        "recall": 0.513,
+        "recallRange95": [
+          0.265,
+          0.75
+        ],
+        "precision": 0.006,
+        "precisionRange95": [
+          0.003,
+          0.01
+        ],
+        "medianPredictedFiles": 86
+      },
+      "recallGain": 0.026,
+      "recallGainRange95": [
+        0,
+        0.081
+      ],
+      "historyHelps": false,
+      "co-change (top 10)": {
+        "recall": 0.051,
+        "recallRange95": [
+          0,
+          0.114
+        ],
+        "precision": 0.014,
+        "precisionRange95": [
+          0,
+          0.036
+        ],
+        "medianPredictedFiles": 10
+      },
+      "medianFilesAdded": 3,
+      "checks": {
+        "addsSomething": false,
+        "filtersHelpNotHurt": true,
+        "answersStayShort": true
+      }
+    }
+  },
+  "tuning": {
+    "note": "key = window/minShared/minShare/maxFiles; history = \uD83D\uDCDC top 10 from history older than each change",
+    "cases": 44,
+    "actual": 91,
+    "hitsGraph": 41,
+    "hitsBaseline": 5,
+    "predictedBaseline": 401,
+    "settings": [
+      {
+        "key": "10/2/0.2/20",
+        "hitsHistory": 4,
+        "predictedHistory": 385,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "10/2/0.2/30",
+        "hitsHistory": 5,
+        "predictedHistory": 394,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "10/2/0.2/50",
+        "hitsHistory": 4,
+        "predictedHistory": 406,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "10/2/0.3/20",
+        "hitsHistory": 4,
+        "predictedHistory": 306,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "10/2/0.3/30",
+        "hitsHistory": 5,
+        "predictedHistory": 326,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "10/2/0.3/50",
+        "hitsHistory": 4,
+        "predictedHistory": 358,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "10/2/0.5/20",
+        "hitsHistory": 2,
+        "predictedHistory": 196,
+        "hitsGraphPlusHistory": 42
+      },
+      {
+        "key": "10/2/0.5/30",
+        "hitsHistory": 2,
+        "predictedHistory": 214,
+        "hitsGraphPlusHistory": 42
+      },
+      {
+        "key": "10/2/0.5/50",
+        "hitsHistory": 2,
+        "predictedHistory": 247,
+        "hitsGraphPlusHistory": 42
+      },
+      {
+        "key": "10/3/0.2/20",
+        "hitsHistory": 5,
+        "predictedHistory": 287,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "10/3/0.2/30",
+        "hitsHistory": 5,
+        "predictedHistory": 314,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "10/3/0.2/50",
+        "hitsHistory": 5,
+        "predictedHistory": 333,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "10/3/0.3/20",
+        "hitsHistory": 5,
+        "predictedHistory": 287,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "10/3/0.3/30",
+        "hitsHistory": 5,
+        "predictedHistory": 314,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "10/3/0.3/50",
+        "hitsHistory": 5,
+        "predictedHistory": 333,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "10/3/0.5/20",
+        "hitsHistory": 2,
+        "predictedHistory": 155,
+        "hitsGraphPlusHistory": 42
+      },
+      {
+        "key": "10/3/0.5/30",
+        "hitsHistory": 1,
+        "predictedHistory": 164,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "10/3/0.5/50",
+        "hitsHistory": 1,
+        "predictedHistory": 189,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "20/2/0.2/20",
+        "hitsHistory": 1,
+        "predictedHistory": 352,
+        "hitsGraphPlusHistory": 42
+      },
+      {
+        "key": "20/2/0.2/30",
+        "hitsHistory": 5,
+        "predictedHistory": 364,
+        "hitsGraphPlusHistory": 45
+      },
+      {
+        "key": "20/2/0.2/50",
+        "hitsHistory": 4,
+        "predictedHistory": 384,
+        "hitsGraphPlusHistory": 45
+      },
+      {
+        "key": "20/2/0.3/20",
+        "hitsHistory": 0,
+        "predictedHistory": 274,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "20/2/0.3/30",
+        "hitsHistory": 4,
+        "predictedHistory": 291,
+        "hitsGraphPlusHistory": 44
+      },
+      {
+        "key": "20/2/0.3/50",
+        "hitsHistory": 4,
+        "predictedHistory": 323,
+        "hitsGraphPlusHistory": 45
+      },
+      {
+        "key": "20/2/0.5/20",
+        "hitsHistory": 0,
+        "predictedHistory": 184,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "20/2/0.5/30",
+        "hitsHistory": 2,
+        "predictedHistory": 200,
+        "hitsGraphPlusHistory": 42
+      },
+      {
+        "key": "20/2/0.5/50",
+        "hitsHistory": 1,
+        "predictedHistory": 235,
+        "hitsGraphPlusHistory": 42
+      },
+      {
+        "key": "20/3/0.2/20",
+        "hitsHistory": 3,
+        "predictedHistory": 340,
+        "hitsGraphPlusHistory": 42
+      },
+      {
+        "key": "20/3/0.2/30",
+        "hitsHistory": 4,
+        "predictedHistory": 360,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "20/3/0.2/50",
+        "hitsHistory": 4,
+        "predictedHistory": 371,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "20/3/0.3/20",
+        "hitsHistory": 2,
+        "predictedHistory": 237,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "20/3/0.3/30",
+        "hitsHistory": 3,
+        "predictedHistory": 263,
+        "hitsGraphPlusHistory": 42
+      },
+      {
+        "key": "20/3/0.3/50",
+        "hitsHistory": 4,
+        "predictedHistory": 283,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "20/3/0.5/20",
+        "hitsHistory": 1,
+        "predictedHistory": 135,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "20/3/0.5/30",
+        "hitsHistory": 1,
+        "predictedHistory": 145,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "20/3/0.5/50",
+        "hitsHistory": 0,
+        "predictedHistory": 164,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "40/2/0.2/20",
+        "hitsHistory": 2,
+        "predictedHistory": 346,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "40/2/0.2/30",
+        "hitsHistory": 5,
+        "predictedHistory": 363,
+        "hitsGraphPlusHistory": 44
+      },
+      {
+        "key": "40/2/0.2/50",
+        "hitsHistory": 3,
+        "predictedHistory": 377,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "40/2/0.3/20",
+        "hitsHistory": 1,
+        "predictedHistory": 262,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "40/2/0.3/30",
+        "hitsHistory": 3,
+        "predictedHistory": 277,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "40/2/0.3/50",
+        "hitsHistory": 3,
+        "predictedHistory": 308,
+        "hitsGraphPlusHistory": 43
+      },
+      {
+        "key": "40/2/0.5/20",
+        "hitsHistory": 0,
+        "predictedHistory": 179,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "40/2/0.5/30",
+        "hitsHistory": 1,
+        "predictedHistory": 191,
+        "hitsGraphPlusHistory": 42
+      },
+      {
+        "key": "40/2/0.5/50",
+        "hitsHistory": 1,
+        "predictedHistory": 222,
+        "hitsGraphPlusHistory": 42
+      },
+      {
+        "key": "40/3/0.2/20",
+        "hitsHistory": 4,
+        "predictedHistory": 328,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "40/3/0.2/30",
+        "hitsHistory": 5,
+        "predictedHistory": 346,
+        "hitsGraphPlusHistory": 42
+      },
+      {
+        "key": "40/3/0.2/50",
+        "hitsHistory": 4,
+        "predictedHistory": 357,
+        "hitsGraphPlusHistory": 42
+      },
+      {
+        "key": "40/3/0.3/20",
+        "hitsHistory": 2,
+        "predictedHistory": 217,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "40/3/0.3/30",
+        "hitsHistory": 3,
+        "predictedHistory": 235,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "40/3/0.3/50",
+        "hitsHistory": 4,
+        "predictedHistory": 259,
+        "hitsGraphPlusHistory": 42
+      },
+      {
+        "key": "40/3/0.5/20",
+        "hitsHistory": 1,
+        "predictedHistory": 128,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "40/3/0.5/30",
+        "hitsHistory": 1,
+        "predictedHistory": 138,
+        "hitsGraphPlusHistory": 41
+      },
+      {
+        "key": "40/3/0.5/50",
+        "hitsHistory": 0,
+        "predictedHistory": 149,
+        "hitsGraphPlusHistory": 41
+      }
+    ]
+  },
+  "gate1": {
+    "note": "D44 Gate 1: one case per fix; history helps when the 95% range of the recall gain is above zero on ≥ 30 fixes",
+    "all": {
+      "fixes": 44,
+      "countsTowardVerdict": true,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0.451,
+        "recallRange95": [
+          0.309,
+          0.608
+        ],
+        "precision": 0.005,
+        "precisionRange95": [
+          0.003,
+          0.007
+        ],
+        "medianPredictedFiles": 109
+      },
+      "co-change (top 10)": {
+        "recall": 0.055,
+        "recallRange95": [
+          0.011,
+          0.118
+        ],
+        "precision": 0.012,
+        "precisionRange95": [
+          0.002,
+          0.027
+        ],
+        "medianPredictedFiles": 10
+      },
+      "graph (lines, depth ≤ 2) + co-change (top 10)": {
+        "recall": 0.462,
+        "recallRange95": [
+          0.326,
+          0.608
+        ],
+        "precision": 0.005,
+        "precisionRange95": [
+          0.003,
+          0.007
+        ],
+        "medianPredictedFiles": 118
+      },
+      "recallGain": 0.011,
+      "recallGainRange95": [
+        0,
+        0.036
+      ],
+      "historyHelps": false
+    },
+    "singleTopic": {
+      "fixes": 27,
+      "countsTowardVerdict": false,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0.423,
+        "recallRange95": [
+          0.264,
+          0.611
+        ],
+        "precision": 0.004,
+        "precisionRange95": [
+          0.003,
+          0.007
+        ],
+        "medianPredictedFiles": 113
+      },
+      "co-change (top 10)": {
+        "recall": 0.058,
+        "recallRange95": [
+          0,
+          0.18
+        ],
+        "precision": 0.012,
+        "precisionRange95": [
+          0,
+          0.031
+        ],
+        "medianPredictedFiles": 10
+      },
+      "graph (lines, depth ≤ 2) + co-change (top 10)": {
+        "recall": 0.423,
+        "recallRange95": [
+          0.264,
+          0.611
+        ],
+        "precision": 0.004,
+        "precisionRange95": [
+          0.003,
+          0.006
+        ],
+        "medianPredictedFiles": 120
+      },
+      "recallGain": 0,
+      "recallGainRange95": [
+        0,
+        0
+      ],
+      "historyHelps": false
+    },
+    "bundle": {
+      "fixes": 17,
+      "countsTowardVerdict": false,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0.487,
+        "recallRange95": [
+          0.212,
+          0.745
+        ],
+        "precision": 0.006,
+        "precisionRange95": [
+          0.002,
+          0.01
+        ],
+        "medianPredictedFiles": 82
+      },
+      "co-change (top 10)": {
+        "recall": 0.051,
+        "recallRange95": [
+          0,
+          0.114
+        ],
+        "precision": 0.014,
+        "precisionRange95": [
+          0,
+          0.036
+        ],
+        "medianPredictedFiles": 10
+      },
+      "graph (lines, depth ≤ 2) + co-change (top 10)": {
+        "recall": 0.513,
+        "recallRange95": [
+          0.265,
+          0.75
+        ],
+        "precision": 0.006,
+        "precisionRange95": [
+          0.003,
+          0.01
+        ],
+        "medianPredictedFiles": 89
+      },
+      "recallGain": 0.026,
+      "recallGainRange95": [
+        0,
+        0.081
+      ],
+      "historyHelps": false
+    },
+    "bundlePattern": "\\b(fixes|polish(es)?|misc|bunch|collection|various|random|several|a few|lots? of|and more|tech debt)\\b"
+  },
+  "test2Fixes": {
+    "fixCommitsSampled": 400,
+    "fixCommitsMatching": 1013,
+    "changeFixPairs": 510,
+    "fixesWithFilesElsewhere": 47,
+    "trivialFixesExcluded": 220,
+    "cases": 44,
+    "handCheckSample": [
+      {
+        "fix": "59078e6b319b6b164e38e22f371dd43cafb5b3f7",
+        "fixSubject": "Fix #8279: read XLSX decimal cells independently of the current culture (#8280)",
+        "bundle": false,
+        "changes": [
+          "f43dcadd8c Merge branch '4.90-bug-fixes' into develop"
+        ],
+        "fixFilesElsewhere": [
+          "src/Tests/Nop.Tests/Nop.Services.Tests/ExportImport/PropertyByNameTests.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "f9fc71320bc3b32e255f4659480ccd2cc9df59eb",
+        "fixSubject": "Merge branch '4.90-bug-fixes' into develop",
+        "bundle": true,
+        "changes": [
+          "d811838f67 #7528 Remove Prefixes property from CacheKey class"
+        ],
+        "fixFilesElsewhere": [
+          "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs",
+          "src/Presentation/Nop.Web/Factories/CommonModelFactory.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "53ac597ae923b2203bb0431edec9f1fa0ee7a46e",
+        "fixSubject": "Merge branch '4.90-bug-fixes' into develop",
+        "bundle": true,
+        "changes": [
+          "38daad4340 Merge branch 'issue-88-Extract-File-IO-Functions' into develop",
+          "bf17557c0f Merge branch 'issue-7696-Move-StartEngine-logic-to-event-consumer' into develop",
+          "c3b2b271a6 Move some of theme files in Nop.Core project"
+        ],
+        "fixFilesElsewhere": [
+          "src/Libraries/Nop.Services/Themes/IThemeProvider.cs",
+          "src/Presentation/Nop.Web.Framework/Infrastructure/NopStartup.cs",
+          "src/Presentation/Nop.Web.Framework/Themes/ThemeableViewLocationExpander.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "290b504e60d112c52798e7e3dee36cf953f91bfe",
+        "fixSubject": "Merge branch '4.80-bug-fixes' into develop",
+        "bundle": true,
+        "changes": [
+          "98d68061b2 Merge branch 'issue-7351-admin-tour-paypal-commerce-plugin' into develop"
+        ],
+        "fixFilesElsewhere": [
+          "src/Presentation/Nop.Web.Framework/Migrations/UpgradeTo490/LocalizationMigration.cs",
+          "src/Presentation/Nop.Web/Controllers/CheckoutController.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "324486b38f31c5730047128f31b7bfb1b1be60f9",
+        "fixSubject": "Fix db call in PermissionService.cs to async (#7283)",
+        "bundle": false,
+        "changes": [
+          "e3bdf35f96 Added role-based ACL support."
+        ],
+        "fixFilesElsewhere": [
+          "src/Libraries/Nop.Services/Security/PermissionService.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "25de00e68255a2c0a85289179c5f3ffa8e53c574",
+        "fixSubject": "#7094 PayPal Zettle plugin. Next changes to fix inventory doubling",
+        "bundle": false,
+        "changes": [
+          "34215c134d #7094 PayPal Zettle plugin. Fix inventory doubling on webhook request (#7096)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Plugins/Nop.Plugin.Misc.Zettle/Data/InventoryBalanceMigration.cs",
+          "src/Plugins/Nop.Plugin.Misc.Zettle/ZettleSettings.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "d963e332f2e53aae6fb984f52395aa3fc3c8523e",
+        "fixSubject": "Merge branch '4.60-bug-fixes' into develop",
+        "bundle": true,
+        "changes": [
+          "4604c77ee1 Merge branch 'develop' of https://github.com/nopSolutions/nopCommerce into develop"
+        ],
+        "fixFilesElsewhere": [
+          "src/Presentation/Nop.Web/Factories/SitemapModelFactory.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "27bc4d9f901235b88b7b23513cbe458048394ec1",
+        "fixSubject": "Merge branch '4.60-bug-fixes' into develop",
+        "bundle": true,
+        "changes": [
+          "a8beb9dc42 Revert \"Order Note Status Change Localization (#4016)\""
+        ],
+        "fixFilesElsewhere": [
+          "src/Libraries/Nop.Services/Orders/IOrderProcessingService.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "bb06ff89573cf1e88c79841bb28124c6bf780dff",
+        "fixSubject": "Fix typos (#6616)",
+        "bundle": false,
+        "changes": [
+          "024cfe90fb Change startup configuration (now can add any middleware from plugins)",
+          "7f1727d4dc Merge branch '4.40-bug-fixes' into develop"
+        ],
+        "fixFilesElsewhere": [
+          "src/Presentation/Nop.Web.Framework/Infrastructure/NopCommonStartup.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "b575205275c68e32b43c17b86639284a6df966c0",
+        "fixSubject": "Merge branch '4.50-bug-fixes' into develop",
+        "bundle": true,
+        "changes": [
+          "06e35332d2 Merge branch 'develop' of https://github.com/nopSolutions/nopCommerce into develop",
+          "23df8f921d Issue 417 Allow a store owner to create vendor attributes",
+          "81b333df6d #3038 Move product extension methods to the service",
+          "b1e13cb4b1 #3038 Move media extension methods to  services",
+          "ecb046566b  #6102. Refactoring of plugin system",
+          "f967c9616a Merge branch 'issue-2243-Improve-Attribute-Combinations-generations' into develop"
+        ],
+        "fixFilesElsewhere": [
+          "src/Libraries/Nop.Core/ComponentModel/GenericDictionaryTypeConverter.cs",
+          "src/Libraries/Nop.Core/ComponentModel/GenericListTypeConverter.cs",
+          "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs",
+          "src/Presentation/Nop.Web/Areas/Admin/Controllers/RecurringPaymentController.cs",
+          "src/Tests/Nop.Tests/Nop.Services.Tests/Orders/OrderTotalCalculationServiceTests.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "5b12f8c035570f992057f4fd7fae12368fd9dfba",
+        "fixSubject": "#6087 Fixed problem with HTML minification",
+        "bundle": false,
+        "changes": [
+          "898480af9e Merge branch 'develop' of https://github.com/nopSolutions/nopCommerce into develop"
+        ],
+        "fixFilesElsewhere": [
+          "src/Presentation/Nop.Web.Framework/Infrastructure/NopWebMarkupMinStartup.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "66836d6c19a6c31bcbb4236cb1b1d9079b290037",
+        "fixSubject": "Merge branch '4.30-bug-fixes' into develop",
+        "bundle": true,
+        "changes": [
+          "e181242181 #4730 Add estimate shipping for grouped products"
+        ],
+        "fixFilesElsewhere": [
+          "src/Libraries/Nop.Core/Domain/Shipping/ShippingSettings.cs",
+          "src/Presentation/Nop.Web/Areas/Admin/Infrastructure/Mapper/AdminMapperConfiguration.cs",
+          "src/Presentation/Nop.Web/Factories/ShoppingCartModelFactory.cs",
+          "src/Presentation/Nop.Web/Models/ShoppingCart/EstimateShippingModel.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "1fc7e936d2f19d32b6b2935fcaab6b2c13e09e97",
+        "fixSubject": "Merge branch 'issue-3792-Stock-qty-bug-in-multiple-warehouse' into develop",
+        "bundle": false,
+        "changes": [
+          "3f1f946761 Performance optimization. Now we do not use CustomerContent table (TPH approach). The following entities now does not inherit from CustomerContent: BlogComment, ProductReview, ProductReviewHelpfulness, NewsComment, PollVotingRecord"
+        ],
+        "fixFilesElsewhere": [
+          "src/Presentation/Nop.Web/Areas/Admin/Controllers/OrderController.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "1d27292410bcd0adc67fd1c63e465f0f6099c3f0",
+        "fixSubject": "Fixed errors associated with the removal of \"this\"",
+        "bundle": false,
+        "changes": [
+          "ba41e96f13 Some of refactoring (move files to folders)"
+        ],
+        "fixFilesElsewhere": [
+          "src/Libraries/Nop.Services/Connected Services/EuropaCheckVatService/Reference.cs",
+          "src/Presentation/Nop.Web.Framework/UI/Paging/Pager.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "64e74b92ce38b591eefd21baaf984c326f5875d2",
+        "fixSubject": "#2608 Fixed paging. \"Page\" token became reserved in ASP.NET Core 2. For more info see https://github.com/aspnet/Mvc/issues/6660 and https://github.com/aspnet/Mvc/issues/6702",
+        "bundle": false,
+        "changes": [
+          "09a7dfff50 Private message pages",
+          "1232f87616 Back in stock notifications. This feature allows customers to subscribe to a notification list for a product that has gone out of stock. Notes: > As soon as a product goes out of stock, a message asking customers if they want to \"be notified when this product is back in stock...\" is shown. > This option is available for products with 'Manage inventory method' set to 'Track inventory' and 'Backorder mode' set to 'No backorders'. > This option is available for registered customers (guests are redirected to login page) > Customers can manage their back in stock notification subscriptions directly on their 'My Account' page",
+          "15b075caf0 Merge pull request #1128 from RomanovM/release-3.80-issue-161",
+          "1d3f6c486c Merge with #1420",
+          "2d3c94d744 Order pages",
+          "38a0fa2d65 Add inline-constraints in route templates",
+          "4a55156cd9 > Completed forum service > Completed forum pages for UI. Public store > Started private messages pages",
+          "4bf95c7985 Profile pages",
+          "722d040b16 #12574 Forums. Paging support for the active discussions page.",
+          "7d99e02208 Line ending issue fixed (no real changes done)",
+          "837d0e182f Refactoring of CustomerController. Moved a lot of methods to other controllers. Please note that some URLs have been changed.",
+          "af5adf3834 Replaced  ActionResult  with IActionResult",
+          "d4956e6143 > Completed private messages pages > Minor forum updates",
+          "da20e835df Recently viewed products and new products pages",
+          "fa86316de2 Forum Subscriptions (My Account) page"
+        ],
+        "fixFilesElsewhere": [
+          "src/Presentation/Nop.Web/Extensions/HtmlExtensions.cs",
+          "src/Presentation/Nop.Web/Factories/OrderModelFactory.cs",
+          "src/Presentation/Nop.Web/Factories/PrivateMessagesModelFactory.cs",
+          "src/Presentation/Nop.Web/Factories/ProfileModelFactory.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "187b96951d883b32da23140d56474686f9785e72",
+        "fixSubject": "Minor issue fixed. \"%Store.Email%\" message token was always set to email of the default email account. We should use email of the current \"Email Account\" assigned to a message template.",
+        "bundle": false,
+        "changes": [
+          "01023cfcac Merge",
+          "055801bdd9 \"Order paid\" email notification added (disabled by default). Some customers place orders but leave them suspended to complete payment at a later time. This email can notify a store owner of such payments.",
+          "1232f87616 Back in stock notifications. This feature allows customers to subscribe to a notification list for a product that has gone out of stock. Notes: > As soon as a product goes out of stock, a message asking customers if they want to \"be notified when this product is back in stock...\" is shown. > This option is available for products with 'Manage inventory method' set to 'Track inventory' and 'Backorder mode' set to 'No backorders'. > This option is available for registered customers (guests are redirected to login page) > Customers can manage their back in stock notification subscriptions directly on their 'My Account' page",
+          "4a55156cd9 > Completed forum service > Completed forum pages for UI. Public store > Started private messages pages",
+          "4dd403ba97 Merge",
+          "782bc42914 New order note customer notification via email (if an order note should be displayed to customer)",
+          "a50589d7ab > When a customer cancels an order, a store owner should be notified of that cancellation (added a \"Recurring payment cancelled\" message template). > Added \"ID\" column to the recurring payment list page (admin area)",
+          "b4e6151f0c Some null valiation added",
+          "c306125fc3 Further email changes",
+          "dc243f1454 Finished news supports",
+          "f41683f392 Finished blog"
+        ],
+        "fixFilesElsewhere": [
+          "src/Libraries/Nop.Services/Messages/CampaignService.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "dd68d58240823e56dad35ab380f157a780327673",
+        "fixSubject": "> Allow a store owner to restrict payment methods by countries > Some typo fixed",
+        "bundle": false,
+        "changes": [
+          "5a451f58e1 Added new setting (ShoppingCartSettings.RoundPricesDuringCalculation) setting which indicates whether calculated prices and totals should be rounded",
+          "d4be173d66 Allow a store owner to limit plugin per store (multi-store environment). Admin area > plugins > edit > stores tab."
+        ],
+        "fixFilesElsewhere": [
+          "src/Libraries/Nop.Services/Directory/CurrencyService.cs",
+          "src/Libraries/Nop.Services/Directory/ICurrencyService.cs",
+          "src/Libraries/Nop.Services/Localization/ILanguageService.cs",
+          "src/Libraries/Nop.Services/Localization/LanguageService.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "6b317b5e6280cbaecc14b3c5159e75ace17068c6",
+        "fixSubject": "Issue fixed. Price \"From\" did not consider tier prices and discounts when searching a product variant with the minimum price (when you had two or more product variants).",
+        "bundle": false,
+        "changes": [
+          "00cae58050 Made PrepareModel methods in the Nop.Web Controller classes callable (protected) from thridy party extensions",
+          "70e105d519 Further product details page changes",
+          "7fb8ea5fea Issue fixed. Don't load deleted product variants in PdfService.PrintProductsToPdf and ProductService.AdjustInventory",
+          "856fb41b4b Added support for catalog mode (based on customer role) by adding the following ACL permissions > Display prices (hence removed old 'Hide prices for non-registered customers' setting on catalog settings page) > Enable shopping cart > Enable wishlist (hence removed old 'Disable wishlist' setting on shopping cart settings page)",
+          "ad52e07565 Further category details page changes"
+        ],
+        "fixFilesElsewhere": [
+          "src/Libraries/Nop.Services/Catalog/IPriceCalculationService.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "ead752fd14e072b18d740cefdd2dba64c720b1d7",
+        "fixSubject": "> ACL. Added a new 'UploadPictures' permission > Minor issue fixed in 'Authorize' method of 'PermissionService' ('customer' parameter wasn't used). > Added missed 'Admin.Customers.Customers.AssociatedExternalAuth.Hint' locale resource",
+        "bundle": false,
+        "changes": [
+          "e3bdf35f96 Added role-based ACL support.",
+          "fd21535219 Minor refactoring"
+        ],
+        "fixFilesElsewhere": [
+          "src/Libraries/Nop.Services/Security/PermissionService.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "a0faaadb831aa8a807c45d5f77171efab11e149e",
+        "fixSubject": "Several forum issues fixed",
+        "bundle": true,
+        "changes": [
+          "d4956e6143 > Completed private messages pages > Minor forum updates",
+          "efd443a624 Completed customer profile page",
+          "f41683f392 Finished blog"
+        ],
+        "fixFilesElsewhere": [
+          "src/Presentation/Nop.Web/Models/Customer/CustomerInfoModel.cs"
+        ],
+        "genuine": null
+      }
+    ]
+  },
+  "exactCheck": null,
+  "test4CompileBreak": null,
+  "test3StableAndFast": null
+}

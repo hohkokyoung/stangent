@@ -128,7 +128,7 @@ reopens `phases/1a-csharp-map.md` and bumps `code-graph` to v3 and `impact-repor
 - [x] `stangent graph build` adds 📜 lines with all four noise filters, renames followed (or the fallback recorded), and `meta.history`; a shallow clone warns and keeps stored 📜.
 - [x] `graph impact` shows the `history` group last, capped at 10 with evidence, `--expand history`, the "also 📜" tag, and never walks 📜 (`impact-report` v4).
 - [x] Contracts bumped per D20: `code-graph` v3, `impact-report` v4, 1a reopened, 1b marked `needs review` with its follow-up; `phases check` passes.
-- [ ] Defaults tuned on nopCommerce and Sonarr, then frozen and committed before judging.
+- [x] Defaults tuned on nopCommerce and Sonarr, then frozen and committed before judging.
 - [ ] **Gate 2** on the judging repo, bitwarden/server (Kavita and eShop reported, under the floor):
   - [ ] **📜 adds something:** graph + top-10 📜 beats graph alone on recall, with the 95% range of the gain above zero;
   - [ ] **filters help, not hurt:** 📜's precision ≥ the plain baseline's, and its recall ≥ 90% of the baseline's;
@@ -194,6 +194,14 @@ Test 2 hardened as planned:
 - On Kavita, `--file Kavita.Services/SeriesService.cs --max-depth 2` lists `SeriesRepository.cs` and the Angular
   `series-detail.component.ts` (7 of the last 20 commits each), which the graph doesn't reach within 2 lines.
 - 5 more tests: cap and order, never walked, the tag, depth limits and Markdown, no history.
+
+### Step 5a · tuning · 2026-10-19 (`benchmark/results/2026-10-19-phase1c-*tuning.json`)
+- **No peeking ahead:** the counter became a `HistoryIndex` that answers "📜 for these files from commits older than
+  this one". The benchmark scores each change with only the history before it, using the product's own code; the
+  index at today's commit reproduced the stored lines exactly on both repos (`historySelfCheck`).
+- **Grid:** window {10, 20, 40} × minShared {2, 3} × minShare {0.2, 0.3, 0.5} × maxFiles {20, 30, 50}, on Test 2's
+  131 fixes (nopCommerce 44, Sonarr 87). `--select-tuning` applied the rule; 8 of 54 settings were eligible.
+- **Chosen and frozen:** window 10, minShared 3, minShare 0.2, maxFiles 50. Graph + 📜 recall 0.500 vs graph alone 0.457.
 
 ## End-of-phase report
 

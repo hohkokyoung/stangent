@@ -80,7 +80,8 @@ impact walk never follows them.
   (author ending in `[bot]`, or listed in `history.botAuthors`), `huge` (more than `history.maxFiles` files on the map).
 - **Counting (D35):** each file's last `window` surviving commits; B is 📜 for A when it changed in at least
   `minShared` of them and at least `minShare` of them. Each direction is judged separately.
-- **Settings** (`stangent.yaml`, defaults shown): `history: { enabled: true, window: 20, minShared: 3, minShare: 0.3, maxFiles: 30, botAuthors: [], followRenames: true }`.
+- **Settings** (`stangent.yaml`, defaults shown): `history: { enabled: true, window: 10, minShared: 3, minShare: 0.2, maxFiles: 50, botAuthors: [], followRenames: true }`.
+  The defaults were tuned on nopCommerce and Sonarr (D43); at window 10, three shared commits is always at least 30%.
 - **Recomputed in full** when the commit, the settings, `.git-blame-ignore-revs` or the files on the map
   change; otherwise reused (D41). About 1 s on nopCommerce's 16k commits.
 - **`meta.history`:** `status` (`full`, `shallow`, `none` or `off`), the `commit` the lines were computed at,
