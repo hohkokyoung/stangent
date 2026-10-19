@@ -51,6 +51,7 @@ sealed class SplitCheck(string root, SplitConfig config, ISplitChecker checker, 
         void Skip(string commit, string reason, IEnumerable<string>? detail = null)
         {
             skipCounts[reason] = skipCounts.GetValueOrDefault(reason) + 1;
+            log.WriteLine($"split: {commit[..10]} skipped: {reason}");
             var entry = new JsonObject { ["commit"] = commit[..10], ["reason"] = reason };
             if (detail?.ToList() is { Count: > 0 } d) entry["detail"] = new JsonArray([.. d.Take(3).Select(x => (JsonNode)x)]);
             skipped.Add(entry);

@@ -77,6 +77,33 @@ bench --select-tuning $B/nopcommerce-tune.json $B/sonarr-tune.json --out benchma
 
 `--history-settings window,minShared,minShare,maxFiles` scores other settings without editing `stangent.yaml`.
 
+**The split check (Phase 1d, D45–D49).** Walks main-line commits newest first from the clone's graph commit.
+It takes changes of ticket size (≥ 3 changed members across ≥ 2 files, ≤ 15 files) whose parent and change both
+build, and splits their changed members with the graph:
+- judged: within 2 steps, ✅ + 🟡;
+- reported beside it: direct only, and within 2 steps + 📜;
+- baseline: split by folder.
+
+Each group is applied alone onto the parent. Step A builds it; step B runs the unit tests that pass on both the
+parent and the change. The run stops at 30 split cases or 200 examined, and puts the clone back at its start
+commit (an interrupted run is put back by the next one).
+
+```bash
+bench $B/sonarr --split --split-config benchmark/configs/sonarr.split.json --sdk-override benchmark/configs/sonarr.global.json \
+  --out benchmark/results/<date>-phase1d-sonarr-split.json
+bench $B/bitwarden --split --split-config benchmark/configs/bitwarden.split.json --out benchmark/results/<date>-phase1d-bitwarden-split.json
+```
+
+`configs/<name>.split.json` sets how the repo is built and unit-tested:
+- `solution`;
+- `testProjects`: a name pattern;
+- `integrationMarkers`: test projects left out;
+- `testFilter`: the repo's own unit-test categories;
+- `buildExclude`: projects this machine can't build, left out with every project that references them;
+- the frontend paths and the commands that typecheck them.
+
+Runs take hours: each split case builds the parent, the change and every group, and runs the tests three or more times.
+
 The compile-break tests edit files in the clone and put them back. A run that was interrupted is
 restored from git at the start of the next run.
 

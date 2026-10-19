@@ -648,6 +648,17 @@ how those teams work today.
   file; a new type is a point, so its users link to it.
 - **Files with no changed methods** (`.csproj`, config, resources) form a shared group, applied together with
   every group, as Phase 4 would treat shared setup.
+- *Refined 2026-10-19, while building:* these are mechanics, not a change to the rule.
+  - **Owners.** A changed line belongs to the innermost member around it: method, property, field, or a TypeScript
+    component. A line inside a type but outside its members makes the type a changed member only when it carries
+    meaning (a header, base list or attribute; not a blank line, brace or comment).
+  - **A changed type keeps its changed members.** Its text holds theirs, so a new class is never applied without
+    its methods.
+  - **Hunks** are cut into one piece per owner. Old and new runs of the same owner are matched; the rest become
+    separate insertions and deletions, so any subset still applies as text. Only a line owned by two members at
+    once (`int a, b;`) can't be cut, and it is counted as "joined by a shared hunk".
+  - **Deleted members** join through the parent's graph with the same rule (1 or 2 steps).
+  - **📜** comes from commits older than each change, as in 1c.
 **Why:** Test 2 showed the graph's recall lives within 2 steps; direct-only misses too much.
 **Cost:** within 2 steps joins more, so fewer groups; a file whose changed methods fall into two groups has its
 other edits counted in both.
