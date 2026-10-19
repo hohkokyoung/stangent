@@ -1,5 +1,7 @@
+using System.Text.Json.Nodes;
 using Stangent.Graph;
 using Stangent.Graph.History;
+using Stangent.Graph.Impact;
 
 namespace Stangent.Core.Tests;
 
@@ -306,6 +308,99 @@ public class HistoryTests
 
         Assert.Equal("off", graph.History!.Status);
         Assert.Empty(graph.HistoryLines);
+    }
+
+    // ---- Impact answers (impact-report v4, D40) ----------------------------------------------------
+
+    const string AM = "App|M:App.A.Run", BM = "App|M:App.B.Run", CM = "App|M:App.C.Run";
+
+    /// <summary>B.Run calls A.Run (✅). History: C.cs and B.cs usually change with A.cs, plus 12 weaker
+    /// partners; X.cs usually changes with C.cs, which a walk through 📜 would wrongly reach.</summary>
+    static CodeGraph ImpactGraph()
+    {
+        var graph = new CodeGraph { Commit = "abc1234def", History = new HistoryInfo("full", "abc1234def", "", 0, 0, new Dictionary<string, int>(), true, "") };
+        foreach (var f in new[] { "A.cs", "B.cs", "C.cs", "X.cs" })
+            graph.LinkedNodes.Add(new Node("file:" + f, NodeKind.File, f, File: f));
+        graph.LinkedNodes.Add(new Node(AM, NodeKind.Method, "A.Run", File: "A.cs", Line: 1, EndLine: 5));
+        graph.LinkedNodes.Add(new Node(BM, NodeKind.Method, "B.Run", File: "B.cs", Line: 1, EndLine: 5));
+        graph.LinkedNodes.Add(new Node(CM, NodeKind.Method, "C.Run", File: "C.cs", Line: 1, EndLine: 5));
+        graph.LinkedEdges.Add(new Edge(BM, AM, EdgeKind.Calls, Label.Certain));
+        graph.HistoryLines.Add(new HistoryLine("B.cs", "A.cs", 5, 10));
+        graph.HistoryLines.Add(new HistoryLine("C.cs", "A.cs", 7, 10));
+        graph.HistoryLines.Add(new HistoryLine("X.cs", "C.cs", 9, 9));
+        for (var i = 0; i < 12; i++) graph.HistoryLines.Add(new HistoryLine($"W{i:00}.cs", "A.cs", 3, 10));
+        return graph;
+    }
+
+    static JsonObject Impact(CodeGraph graph, string? expand = null, int? maxDepth = null) =>
+        new ImpactAnalyzer(graph).Analyze(new ChangeSpec("symbol", AM), "/nonexistent", expand, maxDepth);
+
+    [Fact]
+    public void History_is_its_own_capped_group_strongest_first_with_its_evidence()
+    {
+        var report = Impact(ImpactGraph());
+        var history = report["history"]!;
+
+        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v4.json", report.ToJsonString()));
+        Assert.Equal(14, (int)history["total"]!);
+        Assert.Equal(10, history["items"]!.AsArray().Count);
+        Assert.Equal(4, (int)history["more"]!);
+        var first = history["items"]![0]!;
+        Assert.Equal(("C.cs", "A.cs", 7, 10), ((string)first["file"]!, (string)first["with"]!, (int)first["shared"]!, (int)first["of"]!));
+        Assert.Null((string?)first["found"]);                               // only history finds C.cs
+        Assert.Equal("certain", (string?)history["items"]![1]!["found"]);   // B.cs: the graph reached it too
+    }
+
+    [Fact]
+    public void History_is_never_walked()
+    {
+        var report = Impact(ImpactGraph(), expand: "history");
+        var all = report.ToJsonString();
+
+        Assert.DoesNotContain("X.cs", all);                                  // 📜 of a 📜 partner
+        Assert.DoesNotContain(CM, all);                                      // the walk didn't continue from C.cs
+        Assert.Equal(14, report["history"]!["items"]!.AsArray().Count);
+        Assert.Equal(0, (int)report["history"]!["more"]!);
+    }
+
+    [Fact]
+    public void Graph_items_in_a_partner_file_are_tagged_also_history_and_keep_their_place()
+    {
+        var report = Impact(ImpactGraph());
+        var code = report["groups"]!.AsArray().Single(g => (string)g!["name"]! == "code")!;
+
+        var b = Assert.Single(code["items"]!.AsArray());
+        Assert.Equal(BM, (string)b!["id"]!);
+        Assert.Equal(1, (int)b["depth"]!);
+        Assert.Equal(5, (int)b["history"]!["shared"]!);
+    }
+
+    [Fact]
+    public void A_depth_limit_does_not_cut_history_and_markdown_lists_it_last()
+    {
+        var report = Impact(ImpactGraph(), maxDepth: 1);
+        var md = ImpactAnalyzer.Markdown(report);
+
+        Assert.Equal(14, (int)report["history"]!["total"]!);
+        Assert.Contains("**📜 14 file(s) usually change with it**", md);
+        Assert.Contains("`C.cs`: changed together in 7 of the last 10 commits of `A.cs`", md);
+        Assert.Contains("`B.cs`: changed together in 5 of the last 10 commits of `A.cs` · also ✅ above", md);
+        Assert.Contains("✅ `B.Run` 📜", md);
+        Assert.True(md.IndexOf("📜 14", StringComparison.Ordinal) > md.IndexOf("other methods and types", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Without_history_the_group_is_empty_and_says_why()
+    {
+        var graph = ImpactGraph();
+        graph.HistoryLines.Clear();
+        graph.History = new HistoryInfo("off", "", "", 0, 0, new Dictionary<string, int>(), false, "");
+
+        var report = Impact(graph);
+
+        Assert.Equal("off", (string)report["history"]!["status"]!);
+        Assert.Equal(0, (int)report["history"]!["total"]!);
+        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v4.json", report.ToJsonString()));
     }
 
     // ---- Storage (code-graph v3) ------------------------------------------------------------------

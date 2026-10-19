@@ -130,7 +130,7 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     {
         var report = new ImpactAnalyzer(shop.Graph).Analyze(new ChangeSpec("symbol", "OrderService.PlaceOrder"), shop.Root);
 
-        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v3.json", report.ToJsonString()));
+        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v4.json", report.ToJsonString()));
         var groups = report["groups"]!.AsArray().ToDictionary(g => (string)g!["name"]!, g => g!);
         var endpoints = Names(groups["endpoints"]);
         Assert.Contains("POST /api/orders", endpoints);
@@ -161,7 +161,7 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
 
         // POST /api/orders is 3 lines away (endpoint → CreateOrder → IOrderService → PlaceOrder).
         var direct = analyzer.Analyze(new ChangeSpec("symbol", PlaceOrder), shop.Root, maxDepth: 1);
-        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v3.json", direct.ToJsonString()));
+        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v4.json", direct.ToJsonString()));
         Assert.Equal(0, (int)direct["groups"]![0]!["total"]!);
         Assert.Equal(1, (int)direct["maxDepth"]!);
         Assert.Contains("1 direct", ImpactAnalyzer.Markdown(report));
@@ -282,7 +282,7 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     public void A_backend_field_change_reaches_the_frontend_page_that_shows_it()
     {
         var report = new ImpactAnalyzer(shop.Graph).Analyze(new ChangeSpec("symbol", "Shop.Core|P:Shop.Core.Order.Total"), shop.Root);
-        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v3.json", report.ToJsonString()));
+        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v4.json", report.ToJsonString()));
         var pages = Names(report["groups"]!.AsArray().First(g => (string)g!["name"]! == "pages")!);
         Assert.Contains("/orders", pages);
         Assert.Contains("OrderFormComponent.submit", Names(report["groups"]!.AsArray().First(g => (string)g!["name"]! == "code")!));

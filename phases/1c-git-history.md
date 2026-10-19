@@ -126,8 +126,8 @@ reopens `phases/1a-csharp-map.md` and bumps `code-graph` to v3 and `impact-repor
 ## Done when
 - [x] **Gate 1** run on all four repos (and bitwarden/server), with each fix counted once, full history, 95% ranges and the bundle slice; results committed. *If it fails, 1c stops here: the report says why, and the boxes below don't apply.*
 - [x] `stangent graph build` adds 📜 lines with all four noise filters, renames followed (or the fallback recorded), and `meta.history`; a shallow clone warns and keeps stored 📜.
-- [ ] `graph impact` shows the `history` group last, capped at 10 with evidence, `--expand history`, the "also 📜" tag, and never walks 📜 (`impact-report` v4).
-- [ ] Contracts bumped per D20: `code-graph` v3 ✅, `impact-report` v4, 1a reopened, 1b marked `needs review` with its follow-up; `phases check` passes.
+- [x] `graph impact` shows the `history` group last, capped at 10 with evidence, `--expand history`, the "also 📜" tag, and never walks 📜 (`impact-report` v4).
+- [x] Contracts bumped per D20: `code-graph` v3, `impact-report` v4, 1a reopened, 1b marked `needs review` with its follow-up; `phases check` passes.
 - [ ] Defaults tuned on nopCommerce and Sonarr, then frozen and committed before judging.
 - [ ] **Gate 2** on the judging repo, bitwarden/server (Kavita and eShop reported, under the floor):
   - [ ] **📜 adds something:** graph + top-10 📜 beats graph alone on recall, with the 95% range of the gain above zero;
@@ -186,6 +186,14 @@ Test 2 hardened as planned:
 - **`code-graph` v3** (file layout 3): 1a reopened, 1b marked `needs review` (D20).
 - 18 tests: parsing, each filter, windows, thresholds, direction, a merged branch counting once, a move with an
   edited namespace line, reuse vs recompute, a shallow clone keeping stored lines, a blobless clone, storage round-trips.
+
+### Step 3 · impact answers · 2026-10-19
+- `impact-report` v4: the `history` section after every group (top 10 by share, evidence, the changed file it
+  goes with, whether the graph found it too, `--expand history`), the "also 📜" tag on graph items, and the
+  Markdown block. 1a reopened again; the `/stangent:impact` command explains 📜.
+- On Kavita, `--file Kavita.Services/SeriesService.cs --max-depth 2` lists `SeriesRepository.cs` and the Angular
+  `series-detail.component.ts` (7 of the last 20 commits each), which the graph doesn't reach within 2 lines.
+- 5 more tests: cap and order, never walked, the tag, depth limits and Markdown, no history.
 
 ## End-of-phase report
 

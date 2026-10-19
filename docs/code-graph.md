@@ -149,7 +149,7 @@ A project that can't be loaded is listed in `loadErrors` and its code is ❓. MS
   - **fields:** typed results and bodies give `maps-field` lines, matched by JSON name (C# side:
     `[JsonPropertyName]`, `[JsonProperty]`, `[DataMember]`, else camelCase).
 
-## Impact answers (contract `impact-report` v3, D27)
+## Impact answers (contract `impact-report` v4, D27)
 
 `stangent graph impact --symbol <id or Type.Member> | --file <path> | --diff <base..head or ref> [--expand <group>] [--max-depth N] [--format md]`
 
@@ -162,6 +162,13 @@ A project that can't be loaded is listed in `loadErrors` and its code is ❓. MS
 - **`--max-depth N`** leaves out everything beyond N lines.
 - **Every ❓** in the affected code is listed, never counted.
 - **`pages`** (v3) are frontend routes; components and templates are in `code`.
-- Every answer is validated against `schemas/impact-report.v3.json` before it's printed (v1 and v2 are kept for history).
+- **`history`** (v4, D40) comes after every group: the files that usually change together with the changed
+  files (📜), one step out from them and never walked. It lists the top 10 by share ("7 of the last 12"),
+  each with the changed file it goes with and whether the graph found it too (`found`: ✅, 🟡 or none);
+  `--expand history` lists the rest. `--max-depth` doesn't cut it. Its `status` says when there's no history
+  (`none`, `off`) or only a shallow clone's. Graph items whose file is one of them carry an "also 📜" `history`
+  tag and keep their place. The changed files are those of the start points, the `--file` itself, or
+  every file in the `--diff`.
+- Every answer is validated against `schemas/impact-report.v4.json` before it's printed (v1–v3 are kept for history).
 
 `stangent graph show <id or Type.Member>` lists a point's lines in and out, and its blind spots.

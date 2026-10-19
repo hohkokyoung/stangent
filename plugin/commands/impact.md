@@ -13,4 +13,6 @@ Report what a change affects, using only stangent's code graph. Don't read the c
 2. If the command fails with `no_graph`, run `stangent graph build`, then retry once.
 3. Show the Markdown as it is. Then add one or two sentences on what to check first: ✅ items are
    proven by the compiler, 🟡 items are pattern matches worth confirming, and every ❓ line is
-   something stangent couldn't see, which a person should look at.
+   something stangent couldn't see, which a person should look at. 📜 files come from git history,
+   not the code: they usually changed together with this one, so they're worth a glance, but they
+   aren't dependencies and nothing breaks because of them.

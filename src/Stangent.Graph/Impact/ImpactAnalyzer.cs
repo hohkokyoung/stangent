@@ -15,13 +15,16 @@ public sealed record ChangeSpec(string Kind, string Value);
 public sealed class ImpactAnalyzer
 {
     public const int ItemsPerGroup = 5;
-    public static readonly string[] Groups = ["change", "endpoints", "pages", "eventHandlers", "tables", "tests", "projects", "code"];
+    /// <summary>📜 files shown before <c>--expand history</c> (D40).</summary>
+    public const int HistoryItems = 10;
+    public static readonly string[] Groups = ["change", "endpoints", "pages", "eventHandlers", "tables", "tests", "projects", "code", "history"];
 
     readonly CodeGraph graph;
     readonly Dictionary<string, Node> nodes;
     readonly Dictionary<string, List<Edge>> incoming;
     readonly ILookup<string, Node> byFile;
     readonly ILookup<string, BlindSpot> blindByOwner;
+    readonly ILookup<string, HistoryLine> historyByTarget;
 
     public ImpactAnalyzer(CodeGraph graph)
     {
@@ -32,7 +35,39 @@ public sealed class ImpactAnalyzer
         byFile = nodes.Values.Where(n => n.File is not null && n.Line > 0 && n.Kind is not NodeKind.File and not NodeKind.Project)
             .ToLookup(n => n.File!, StringComparer.Ordinal);
         blindByOwner = graph.AllBlindSpots.ToLookup(b => b.Owner, StringComparer.Ordinal);
+        historyByTarget = graph.HistoryLines.ToLookup(l => l.Target, StringComparer.Ordinal);
     }
+
+    /// <summary>The files a change touches: where 📜 is looked up from (D40).</summary>
+    IReadOnlySet<string> ChangedFiles(ChangeSpec change, string repoRoot, IEnumerable<Node> starts)
+    {
+        var files = starts.Where(n => n.File is not null).Select(n => n.File!).ToHashSet(StringComparer.Ordinal);
+        if (change.Kind == "file") files.Add(Normalize(change.Value, repoRoot));
+        // A diff can touch files with no points on these lines (a template edit outside any member).
+        if (change.Kind == "diff") files.UnionWith(DiffMapper.ChangedLines(repoRoot, change.Value).Select(h => h.File));
+        return files;
+    }
+
+    /// <summary>
+    /// 📜 partners of the changed files: one step out, never walked (D40). A partner of several changed
+    /// files keeps its strongest evidence (highest share, then most shared commits).
+    /// </summary>
+    List<(HistoryLine Line, Label? Found)> HistoryPartners(IReadOnlySet<string> changed, IReadOnlyDictionary<string, Label> foundByFile)
+    {
+        var best = new Dictionary<string, HistoryLine>(StringComparer.Ordinal);
+        foreach (var file in changed.Order(StringComparer.Ordinal))
+            foreach (var line in historyByTarget[file])
+            {
+                if (changed.Contains(line.Source)) continue;
+                if (!best.TryGetValue(line.Source, out var have) || Stronger(line, have)) best[line.Source] = line;
+            }
+        return [.. best.Values
+            .OrderByDescending(l => (double)l.Shared / l.Of).ThenByDescending(l => l.Shared).ThenBy(l => l.Source, StringComparer.Ordinal)
+            .Select(l => (l, foundByFile.TryGetValue(l.Source, out var found) ? found : (Label?)null))];
+    }
+
+    static bool Stronger(HistoryLine a, HistoryLine b) =>
+        a.Shared * b.Of != b.Shared * a.Of ? a.Shared * b.Of > b.Shared * a.Of : a.Shared != b.Shared ? a.Shared > b.Shared : string.CompareOrdinal(a.Target, b.Target) < 0;
 
     public Node? Find(string id) => nodes.GetValueOrDefault(id);
 
@@ -158,6 +193,12 @@ public sealed class ImpactAnalyzer
         var startIds = starts.Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
         var affected = reached.Values.Where(r => !startIds.Contains(r.Node.Id)).ToList();
 
+        var changedFiles = ChangedFiles(change, repoRoot, starts);
+        var foundByFile = affected.Where(r => r.Node.File is not null).GroupBy(r => r.Node.File!)
+            .ToDictionary(g => g.Key, g => g.Min(r => r.Label), StringComparer.Ordinal);
+        var partners = HistoryPartners(changedFiles, foundByFile);
+        tags = partners.ToDictionary(p => p.Line.Source, p => p.Line, StringComparer.Ordinal);
+
         var groups = new JsonArray
         {
             Group("endpoints", affected.Where(r => r.Node.Kind == NodeKind.Endpoint), expand),
@@ -182,9 +223,23 @@ public sealed class ImpactAnalyzer
                 ["file"] = b.File, ["line"] = b.Line, ["reason"] = b.Reason, ["in"] = b.Owner, ["detector"] = b.Detector,
             });
 
+        var shownPartners = expand == "history" ? partners : [.. partners.Take(HistoryItems)];
+        var history = new JsonObject
+        {
+            ["status"] = graph.History?.Status ?? "none",
+            ["commit"] = graph.History?.Commit ?? "",
+            ["total"] = partners.Count,
+            ["items"] = new JsonArray([.. shownPartners.Select(p => (JsonNode)new JsonObject
+            {
+                ["file"] = p.Line.Source, ["with"] = p.Line.Target, ["shared"] = p.Line.Shared, ["of"] = p.Line.Of,
+                ["found"] = p.Found switch { Label.Certain => "certain", Label.Guessed => "guessed", _ => null },
+            })]),
+            ["more"] = partners.Count - shownPartners.Count,
+        };
+
         return new JsonObject
         {
-            ["schemaVersion"] = 3,
+            ["schemaVersion"] = 4,
             ["graph"] = new JsonObject { ["commit"] = graph.Commit },
             ["change"] = new JsonObject
             {
@@ -193,12 +248,15 @@ public sealed class ImpactAnalyzer
             },
             ["groups"] = groups,
             ["unresolved"] = unresolved,
-            ["hints"] = new JsonArray(),
+            ["history"] = history,
             ["requirements"] = new JsonArray(),
             ["expanded"] = expand,
             ["maxDepth"] = maxDepth,
         };
     }
+
+    /// <summary>📜 partners of the change being analysed, by file: graph items in them get an "also 📜" tag.</summary>
+    Dictionary<string, HistoryLine> tags = [];
 
     JsonObject Group(string name, IEnumerable<Reached> items, string? expand)
     {
@@ -230,11 +288,17 @@ public sealed class ImpactAnalyzer
                 ["near"] = sorted.Count(r => Band(r.Depth) == "near"),
                 ["far"] = sorted.Count(r => Band(r.Depth) == "far"),
             },
-            ["items"] = new JsonArray([.. shown.Select(r => (JsonNode)new JsonObject
+            ["items"] = new JsonArray([.. shown.Select(r =>
             {
-                ["id"] = r.Node.Id, ["name"] = names[r.Node.Id], ["kind"] = r.Node.Kind,
-                ["label"] = r.Label == Label.Certain ? "certain" : "guessed",
-                ["file"] = r.Node.File, ["line"] = r.Node.Line, ["depth"] = r.Depth,
+                var item = new JsonObject
+                {
+                    ["id"] = r.Node.Id, ["name"] = names[r.Node.Id], ["kind"] = r.Node.Kind,
+                    ["label"] = r.Label == Label.Certain ? "certain" : "guessed",
+                    ["file"] = r.Node.File, ["line"] = r.Node.Line, ["depth"] = r.Depth,
+                };
+                if (r.Node.File is { } f && tags.TryGetValue(f, out var h))
+                    item["history"] = new JsonObject { ["shared"] = h.Shared, ["of"] = h.Of };
+                return (JsonNode)item;
             })]),
             ["more"] = sorted.Count - shown.Count,
         };
@@ -289,8 +353,19 @@ public sealed class ImpactAnalyzer
             var distance = string.Join(", ", new[] { "direct", "near", "far" }.Where(b => (int)bands[b]! > 0).Select(b => $"{bands[b]} {b}"));
             var counts = (string)g["name"]! == "projects" ? labels : $"{labels}; {distance}";
             md.AppendLine($"- **{total} {Titles[(string)g["name"]!]}** ({counts}): "
-                + string.Join(", ", g["items"]!.AsArray().Select(i => $"{((string)i!["label"]! == "certain" ? "✅" : "🟡")} `{i["name"]}`"))
+                + string.Join(", ", g["items"]!.AsArray().Select(i => $"{((string)i!["label"]! == "certain" ? "✅" : "🟡")} `{i["name"]}`{(i["history"] is null ? "" : " 📜")}"))
                 + More(g));
+        }
+        var history = report["history"]!;
+        if ((int)history["total"]! > 0)
+        {
+            md.AppendLine($"\n**📜 {history["total"]} file(s) usually change with it** (from git history; a hint, not a dependency)\n");
+            foreach (var h in history["items"]!.AsArray())
+            {
+                var found = (string?)h!["found"] switch { "certain" => " · also ✅ above", "guessed" => " · also 🟡 above", _ => "" };
+                md.AppendLine($"- `{h["file"]}`: changed together in {h["shared"]} of the last {h["of"]} commits of `{Path.GetFileName((string)h["with"]!)}`{found}");
+            }
+            if ((int)history["more"]! > 0) md.AppendLine($"- and {history["more"]} more");
         }
         var unresolved = report["unresolved"]!.AsArray();
         if (unresolved.Count > 0)
@@ -299,6 +374,8 @@ public sealed class ImpactAnalyzer
             foreach (var u in unresolved) md.AppendLine($"- `{u!["file"]}:{u["line"]}`: {u["reason"]}");
         }
         var depthNote = report["maxDepth"] is { } d ? $" · within {d} lines of the change" : "";
+        if ((string)history["status"]! is "shallow") depthNote += " · 📜 from a shallow clone's partial history";
+        else if ((string)history["commit"]! is { Length: > 0 } hc && hc != (string?)report["graph"]!["commit"]) depthNote += $" · 📜 history read at {hc[..Math.Min(7, hc.Length)]}";
         md.AppendLine($"\n<sub>graph {((string?)report["graph"]!["commit"])?[..Math.Min(7, ((string?)report["graph"]!["commit"])?.Length ?? 0)]}{depthNote} · nearest first; direct = 1 line away, near = 2–3, far = 4+ · expand a group with `--expand <group>`</sub>");
         return md.ToString();
     }
