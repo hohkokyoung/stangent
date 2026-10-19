@@ -1,14 +1,14 @@
 ---
 phase: 1b
 name: frontend-api
-status: in progress
+status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 2 }
 provides: {}
 ---
 
 # Phase 1b · Frontend + API shapes
 
-**Approved 2026-10-19. In progress.**
+**Approved 2026-10-19. Done 2026-10-19.**
 
 Builds on D17, D26, D27, D30–D32. The goal: impact answers that cross from the C# backend into
 Angular and React frontends, and back, with every cross-stack link measured against a real answer
@@ -114,7 +114,7 @@ This phase **extends 1a's contracts** rather than providing new ones. When it la
 - [x] Renaming a backend DTO property (impact from the property) reaches the frontend code that reads that field.
 - [x] Frontend Test 4, the OpenAPI check and history tests run; results in the report.
 - [x] Tests (C# and Node) cover the extractor, templates, pages, `frontend-http`, NSwag rules and field mapping.
-- [ ] CI green (with Node); end-of-phase report written.
+- [x] CI green (with Node) ([run](https://github.com/hohkokyoung/stangent/actions/runs/39213514381)); end-of-phase report written.
 
 ## Not in this phase
 - Vue and Svelte templates; generators other than NSwag (each is a small rule set when a repo needs it).
@@ -123,7 +123,7 @@ This phase **extends 1a's contracts** rather than providing new ones. When it la
 
 ## End-of-phase report
 
-*2026-10-19 · first report.* Status stays **in progress** until CI is green on GitHub.
+*2026-10-19 · first report.* CI green on GitHub ([run](https://github.com/hohkokyoung/stangent/actions/runs/39213514381)); phase **done**.
 
 ### 1. What was built
 - **`tools/ts-extractor/`** (TypeScript, bundled with esbuild into one file, shipped in the dotnet
@@ -243,6 +243,6 @@ How to read it:
 - Phase 2 (spec) and later can link requirements to pages and frontend components, not only endpoints.
 
 ### 6. Follow-ups
-- Push and confirm CI is green, then mark this phase `done` here and in `roadmap.md`.
+- ~~Push and confirm CI is green, then mark this phase `done` here and in `roadmap.md`.~~ Done.
 - A person checks `benchmark/expected/cleanarchitecture-links.json` once.
 - 1c (git history) or Phase 2 next. The owner decides. Kavita's Test 2 (co-change beat the graph) argues for 1c.
