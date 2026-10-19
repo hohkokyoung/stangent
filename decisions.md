@@ -866,3 +866,7 @@ available; the subagent's tool limits are a setting, so `check` must still rejec
 - Bug tickets: how is a bug verified before it's fixed? Likely a test that fails because of the bug
   (the D18 check), then the fix makes it pass. What happens when it can't be reproduced, and how does
   the ticket's description become a starting point for the graph? (Phases 3–5)
+- Parallel subagents: should the orchestrator fix the contract first (API shapes, shared types), then run
+  the sides in parallel against it? And if a subagent finds mid-task that the contract must change, does it
+  stop and hand back, or change it and tell the others? Leading answer: contract first; stop and hand back.
+  Grilled with Phase 4, after the 1d verdict. (Phase 4)
