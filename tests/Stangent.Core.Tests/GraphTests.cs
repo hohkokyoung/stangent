@@ -67,7 +67,8 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     {
         Assert.Empty(shop.Stats.LoadErrors);
         Assert.Equal(4, shop.Stats.Projects);
-        Assert.Equal(4, shop.Graph.AllNodes.Count(n => n.Kind == NodeKind.Project));
+        Assert.Equal(2, shop.Stats.Frontends);
+        Assert.Equal(6, shop.Graph.AllNodes.Count(n => n.Kind == NodeKind.Project)); // 4 C# + 2 frontends
     }
 
     [Fact]
@@ -129,7 +130,7 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     {
         var report = new ImpactAnalyzer(shop.Graph).Analyze(new ChangeSpec("symbol", "OrderService.PlaceOrder"), shop.Root);
 
-        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v2.json", report.ToJsonString()));
+        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v3.json", report.ToJsonString()));
         var groups = report["groups"]!.AsArray().ToDictionary(g => (string)g!["name"]!, g => g!);
         var endpoints = Names(groups["endpoints"]);
         Assert.Contains("POST /api/orders", endpoints);
@@ -138,7 +139,8 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.DoesNotContain(endpoints, e => e.Contains("stock", StringComparison.Ordinal));
         Assert.Equal(2, (int)groups["endpoints"]["certain"]!);  // the minimal API and the attribute route
         Assert.Equal(["SendReceiptOnOrderPlaced.HandleAsync"], Names(groups["eventHandlers"]));
-        Assert.Equal(["OrderTests.Placing_an_order_keeps_the_customer"], Names(groups["tests"]));
+        // The C# test, and the Angular spec that reaches PlaceOrder through POST /api/orders.
+        Assert.Equal(["OrderTests.Placing_an_order_keeps_the_customer", "OrderService › places an order"], Names(groups["tests"]));
 
         var md = ImpactAnalyzer.Markdown(report);
         Assert.Contains("✅", md);
@@ -159,7 +161,7 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
 
         // POST /api/orders is 3 lines away (endpoint → CreateOrder → IOrderService → PlaceOrder).
         var direct = analyzer.Analyze(new ChangeSpec("symbol", PlaceOrder), shop.Root, maxDepth: 1);
-        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v2.json", direct.ToJsonString()));
+        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v3.json", direct.ToJsonString()));
         Assert.Equal(0, (int)direct["groups"]![0]!["total"]!);
         Assert.Equal(1, (int)direct["maxDepth"]!);
         Assert.Contains("1 direct", ImpactAnalyzer.Markdown(report));
@@ -171,7 +173,7 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         var analyzer = new ImpactAnalyzer(shop.Graph);
         var report = analyzer.Analyze(new ChangeSpec("symbol", PlaceOrder), shop.Root);
         // The handler is affected, but nothing that merely calls handlers in general is.
-        Assert.Equal(1, (int)report["groups"]![1]!["total"]!);
+        Assert.Equal(1, (int)report["groups"]!.AsArray().First(g => (string)g!["name"]! == "eventHandlers")!["total"]!);
         Assert.DoesNotContain("PluginLoader.Load", Names(report["groups"]!.AsArray().First(g => (string)g!["name"]! == "code")!));
     }
 
@@ -212,6 +214,90 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     static List<string> Names(JsonNode group) => [.. group["items"]!.AsArray().Select(i => (string)i!["name"]!)];
+
+    // ---- Phase 1b: frontends --------------------------------------------------------------
+
+    const string Angular = "ts|Shop.Web/ClientApp/src/app/";
+    const string React = "ts|Shop.Web/react-app/src/";
+
+    [Fact]
+    public void A_broken_extractor_is_a_load_error_not_an_empty_frontend()
+    {
+        var fake = Path.Combine(Path.GetTempPath(), $"stangent-fake-{Guid.NewGuid():N}.mjs");
+        File.WriteAllText(fake, "// prints nothing\n");
+        try
+        {
+            var frontend = Stangent.Graph.Loading.FrontendScanner.Find(shop.Root).First();
+            var (_, _, error) = Stangent.Graph.Loading.FrontendScanner.Extract(shop.Root, frontend, "x",
+                new Dictionary<string, Dictionary<string, List<string>>>(), extractorOverride: fake);
+            Assert.NotNull(error);
+            Assert.Contains("produced no output", error);
+        }
+        finally
+        {
+            File.Delete(fake);
+        }
+    }
+
+    [Fact]
+    public void Frontend_components_templates_and_pages_are_on_the_map()
+    {
+        Assert.Equal(NodeKind.Component, NodeById(Angular + "order-form.component.ts#OrderFormComponent")?.Kind);
+        Assert.Equal(NodeKind.Template, NodeById(Angular + "order-form.component.html#OrderFormComponent.template")?.Kind);
+        Assert.Equal(NodeKind.Component, NodeById(React + "StockPage.tsx#StockPage")?.Kind);
+        var pages = shop.Graph.AllNodes.Where(n => n.Kind == NodeKind.Page).Select(n => n.Name).Order().ToList();
+        Assert.Equal(["/orders", "/orders/:id", "/orders/new", "/stock/:id"], pages);
+        // The lazy child route resolves through import(...).then(m => m.TotalComponent).
+        Assert.Contains(Edges(EdgeKind.RoutesTo), e => e.Source == "page:Shop.Web/ClientApp/tsconfig.json|/orders/:id" && e.Target == Angular + "total.component.ts#TotalComponent");
+        Assert.True(NodeById(Angular + "order.service.spec.ts#test:OrderService › places an order")?.IsTest);
+    }
+
+    [Fact]
+    public void Angular_templates_link_to_child_components_members_and_pipes()
+    {
+        var template = Angular + "order-form.component.html#OrderFormComponent.template";
+        Assert.Contains(Edges(EdgeKind.Renders), e => e.Source == template && e.Target == Angular + "total.component.ts#TotalComponent" && e.Label == Label.Certain);
+        Assert.Contains(Edges(EdgeKind.Calls), e => e.Source == template && e.Target == Angular + "order-form.component.ts#OrderFormComponent.submit");
+        Assert.Contains(Edges(EdgeKind.Uses), e => e.Source == Angular + "total.component.ts#TotalComponent.template" && e.Target == Angular + "money.pipe.ts#MoneyPipe");
+    }
+
+    [Fact]
+    public void Frontend_calls_reach_backend_endpoints_by_url_and_by_nswag_naming()
+    {
+        Assert.Contains(Edges(EdgeKind.CallsHttp), e => e.Source == Angular + "order.service.ts#OrderService.place" && e.Target == "endpoint:Shop.Web|POST /api/orders");
+        Assert.Contains(Edges(EdgeKind.CallsHttp), e => e.Source == React + "StockPage.tsx#StockPage" && e.Target == "endpoint:Shop.Stock|GET /api/stock/{id:int}");
+        // OrdersClient isn't in the repo (NSwag generates it): createOrder → CreateOrder under /api/orders.
+        Assert.Contains(Edges(EdgeKind.CallsHttp), e => e.Source == React + "OrderPage.tsx#OrderPage" && e.Target == "endpoint:Shop.Web|POST /api/orders" && e.Label == Label.Guessed);
+    }
+
+    [Fact]
+    public void Typed_results_link_frontend_fields_to_backend_properties()
+    {
+        Assert.Contains(Edges(EdgeKind.MapsField), e => e.Source == Angular + "order.ts#Order.total" && e.Target == "Shop.Core|P:Shop.Core.Order.Total");
+        Assert.Contains(Edges(EdgeKind.MapsField), e => e.Source == Angular + "order.ts#Order.customer" && e.Target == "Shop.Core|P:Shop.Core.Order.Customer");
+        Assert.Contains(Edges(EdgeKind.MapsField), e => e.Source == Angular + "order.ts#Order.id" && e.Target == "Shop.Core|P:Shop.Core.Entity.Id");
+    }
+
+    [Fact]
+    public void A_backend_field_change_reaches_the_frontend_page_that_shows_it()
+    {
+        var report = new ImpactAnalyzer(shop.Graph).Analyze(new ChangeSpec("symbol", "Shop.Core|P:Shop.Core.Order.Total"), shop.Root);
+        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v3.json", report.ToJsonString()));
+        var pages = Names(report["groups"]!.AsArray().First(g => (string)g!["name"]! == "pages")!);
+        Assert.Contains("/orders", pages);
+        Assert.Contains("OrderFormComponent.submit", Names(report["groups"]!.AsArray().First(g => (string)g!["name"]! == "code")!));
+    }
+
+    [Fact]
+    public void A_backend_endpoint_change_reaches_pages_in_both_frontends_and_the_frontend_test()
+    {
+        var report = new ImpactAnalyzer(shop.Graph).Analyze(new ChangeSpec("symbol", "Endpoints.CreateOrder"), shop.Root, expand: "pages");
+        var pages = Names(report["groups"]!.AsArray().First(g => (string)g!["name"]! == "pages")!);
+        Assert.Contains("/orders", pages);       // Angular, through OrderService.place
+        Assert.Contains("/orders/new", pages);   // React, through the NSwag client
+        var tests = Names(report["groups"]!.AsArray().First(g => (string)g!["name"]! == "tests")!);
+        Assert.Contains("OrderService › places an order", tests);
+    }
 }
 
 public class GraphBuildTests
@@ -231,10 +317,17 @@ public class GraphBuildTests
             File.AppendAllText(Path.Combine(root, "Shop.Stock", "Extra.cs"), "namespace Shop.Stock;\npublic static class Extra { public static int Twice(int x) => x * 2; }\n");
             var (incremental, stats) = await GraphBuilder.BuildAsync(repo, new BuildOptions(Restore: false), ct);
             Assert.Equal(1, stats.Extracted);   // only Shop.Stock: nothing references it
-            Assert.Equal(3, stats.Reused);
+            Assert.Equal(5, stats.Reused);      // the other 3 C# projects and both frontends
             var (full, _) = await GraphBuilder.BuildAsync(repo, new BuildOptions(Restore: false, Full: true), ct);
             Assert.Equal(Export(full, root, "c"), Export(incremental, root, "d"));
             Assert.Contains(incremental.AllNodes, n => n.Name == "Extra.Twice");
+
+            // A frontend change re-extracts that frontend only, and still equals a full build.
+            File.AppendAllText(Path.Combine(root, "Shop.Web", "react-app", "src", "Extra.ts"), "export const twice = (x: number) => x * 2;\n");
+            var (frontInc, frontStats) = await GraphBuilder.BuildAsync(repo, new BuildOptions(Restore: false), ct);
+            Assert.Equal(1, frontStats.Extracted);
+            var (frontFull, _) = await GraphBuilder.BuildAsync(repo, new BuildOptions(Restore: false, Full: true), ct);
+            Assert.Equal(Export(frontFull, root, "e"), Export(frontInc, root, "f"));
         }
         finally
         {
@@ -255,7 +348,7 @@ public class GraphBuildTests
 
             // Reload: the config is read when the repo is discovered.
             var (graph, stats) = await GraphBuilder.BuildAsync(StangentRepo.Discover(root), new BuildOptions(Restore: false), ct);
-            Assert.Equal(4, stats.Extracted);
+            Assert.Equal(6, stats.Extracted); // 4 C# projects and 2 frontends
             Assert.DoesNotContain(graph.AllNodes, n => n.Id == "table:Shop.Core|Order");
         }
         finally

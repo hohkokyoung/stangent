@@ -1,0 +1,21 @@
+{
+  "repo": "cleanarchitecture",
+  "commit": "1bc2b07ce75864b0c399e8e3d481de5e17aad509",
+  "note": "Which backend endpoint each NSwag client call should reach. Drafted by the agent (Claude) on 2026-10-19 from the backend code (src/Web/Endpoints/*.cs: each IEndpointGroup is mapped at /api/<ClassName>, handlers named by method) — not from stangent's output. A person should check it once. null = no endpoint in the repo (ASP.NET Identity's MapIdentityApi), so the right answer is ❓.",
+  "checkedBy": null,
+  "links": [
+    { "client": "TodoListsClient", "method": "getTodoLists", "endpoint": "GET /api/TodoLists" },
+    { "client": "TodoListsClient", "method": "createTodoList", "endpoint": "POST /api/TodoLists" },
+    { "client": "TodoListsClient", "method": "updateTodoList", "endpoint": "PUT /api/TodoLists/{id}" },
+    { "client": "TodoListsClient", "method": "deleteTodoList", "endpoint": "DELETE /api/TodoLists/{id}" },
+    { "client": "TodoItemsClient", "method": "createTodoItem", "endpoint": "POST /api/TodoItems" },
+    { "client": "TodoItemsClient", "method": "updateTodoItem", "endpoint": "PUT /api/TodoItems/{id}" },
+    { "client": "TodoItemsClient", "method": "updateTodoItemDetail", "endpoint": "PATCH /api/TodoItems/UpdateDetail/{id}" },
+    { "client": "TodoItemsClient", "method": "deleteTodoItem", "endpoint": "DELETE /api/TodoItems/{id}" },
+    { "client": "WeatherForecastsClient", "method": "getWeatherForecasts", "endpoint": "GET /api/WeatherForecasts" },
+    { "client": "UsersClient", "method": "logout", "endpoint": "POST /api/Users/logout" },
+    { "client": "UsersClient", "method": "login", "endpoint": null },
+    { "client": "UsersClient", "method": "register", "endpoint": null },
+    { "client": "UsersClient", "method": "infoGET", "endpoint": null }
+  ]
+}

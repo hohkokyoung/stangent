@@ -29,6 +29,9 @@ public sealed class ExtractContext(
 
     readonly HashSet<(string, string, string, string)> edgeKeys = [];
 
+    /// <summary>Types whose JSON shape was already recorded for this project.</summary>
+    public HashSet<string> ShapesSeen { get; } = new(StringComparer.Ordinal);
+
     /// <summary>
     /// The graph id of a symbol declared in this repo: <c>&lt;assembly&gt;|&lt;documentation id&gt;</c>.
     /// Null for symbols from packages or the framework, which aren't on the map.

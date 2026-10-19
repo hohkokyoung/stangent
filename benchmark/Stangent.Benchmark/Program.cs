@@ -23,6 +23,7 @@ using Stangent.Graph.Impact;
 //   dotnet run --project benchmark/Stangent.Benchmark -- <clone> [--months 36] [--max-commits 200]
 //     [--max-fixes 60] [--exact-sample 0] [--sdk-override file] [--skip-build-test] [--out file]
 //     [--compile-break N] [--only-compile-break]   (test 4: rename N methods, see what fails to compile)
+//     [--openapi path/in/repo.json] [--ts-compile-break N] [--only-frontend]   (Phase 1b, D32)
 
 var argList = args.ToList();
 if (argList.Count == 0 || argList[0].StartsWith('-'))
@@ -40,15 +41,28 @@ var sdkOverride = Opt("--sdk-override", "");
 var skipBuildTest = argList.Contains("--skip-build-test");
 var compileBreakCount = int.Parse(Opt("--compile-break", "0"));
 var onlyCompileBreak = argList.Contains("--only-compile-break");
+var openApi = Opt("--openapi", "");
+var tsCompileBreakCount = int.Parse(Opt("--ts-compile-break", "0"));
+var onlyFrontend = argList.Contains("--only-frontend");
+var expectedLinks = Opt("--expected", "");
 var buildCount = 0;
+
+// A run that was stopped mid-rename or mid-touch leaves its edit behind: put such files back first.
+foreach (var marker in new[] { "__StangentBroken", "stangent benchmark touch" })
+    foreach (var leftover in (Git.Run(root, $"grep -l \"{marker}\"") ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries))
+    {
+        Console.Error.WriteLine($"benchmark: restoring {leftover}, left edited by an interrupted run");
+        Git.Run(root, $"checkout -- \"{leftover}\"");
+    }
 
 var repo = StangentRepo.Discover(root);
 var graph = GraphStore.Load(GraphStore.PathFor(repo)) ?? throw new InvalidOperationException("Build the graph first: stangent graph build");
-if (Run("rev-parse --is-shallow-repository").Trim() == "true")
+// History tests need every commit; the frontend and compile-break checks don't.
+if (!onlyFrontend && !onlyCompileBreak && Run("rev-parse --is-shallow-repository").Trim() == "true")
     throw new InvalidOperationException("Needs full history: git fetch --filter=blob:none --unshallow");
 var analyzer = new ImpactAnalyzer(graph);
 var members = new MemberIndex(graph);
-var fileNodes = graph.AllNodes.Where(n => n.Kind == NodeKind.File && n.Name.EndsWith(".cs", StringComparison.Ordinal))
+var fileNodes = graph.AllNodes.Where(n => n.Kind == NodeKind.File && IsSource(n.Name))
     .GroupBy(n => n.Name).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
 
 // Commits in the window, newest first: hash, subject, C# files that still exist on the map.
@@ -88,7 +102,7 @@ Dictionary<string, Label> FromNodes(IEnumerable<(Node Node, Label Label)> affect
 {
     var predicted = new Dictionary<string, Label>(StringComparer.Ordinal);
     foreach (var (node, label) in affected)
-        if (node.File is { } f && f.EndsWith(".cs", StringComparison.Ordinal) && !exclude.Contains(f) && (!predicted.TryGetValue(f, out var l) || label < l))
+        if (node.File is { } f && IsSource(f) && !exclude.Contains(f) && (!predicted.TryGetValue(f, out var l) || label < l))
             predicted[f] = label;
     return predicted;
 }
@@ -161,6 +175,17 @@ JsonObject Metrics(IEnumerable<(HashSet<string> Actual, Dictionary<string, Label
 JsonObject Compare(List<Case> cases)
 {
     var result = new JsonObject { ["cases"] = cases.Count };
+    // Backend change → frontend files: the same cases, scored only on the frontend files they touched.
+    var crossStack = cases.Select(c => c with { Actual = c.Actual.Where(f => !IsCSharp(f)).ToHashSet(StringComparer.Ordinal) })
+        .Where(c => c.Actual.Count > 0).ToList();
+    if (crossStack.Count > 0)
+        result["backendToFrontend"] = new JsonObject
+        {
+            ["cases"] = crossStack.Count,
+            ["graph (lines)"] = Metrics(crossStack.Select(c => (c.Actual, GraphLines(c.Seeds, c.Exclude))), Label.Guessed),
+            ["same folder"] = Metrics(crossStack.Select(c => (c.Actual, SameFolder(c.SeedFiles, c.Exclude))), Label.Guessed),
+            ["co-change"] = Metrics(crossStack.Select(c => (c.Actual, CoChange(c.SeedFiles, c.Commit, c.Exclude))), Label.Guessed),
+        };
     foreach (var (name, pick) in Predictors())
     {
         var scored = cases.Select(c => (c.Actual, pick(c))).ToList();
@@ -184,6 +209,22 @@ IEnumerable<(string, Func<Case, Dictionary<string, Label>>)> Predictors() =>
     ("co-change", c => CoChange(c.SeedFiles, c.Commit, c.Exclude)),
 ];
 
+// ---- Frontend checks alone (D32): OpenAPI answer key and TypeScript compile-break ---------------
+if (onlyFrontend)
+{
+    var feOut = new JsonObject
+    {
+        ["repo"] = Path.GetFileName(root), ["graphCommit"] = graph.Commit,
+        ["openApiCheck"] = openApi.Length > 0 ? OpenApiCheck.Run(graph, Path.Combine(root, openApi)) : null,
+        ["test4TypeScriptCompileBreak"] = tsCompileBreakCount > 0 ? TsCompileBreak.Run(root, graph, tsCompileBreakCount, GraphPredict, SameFolder) : null,
+        ["expectedLinks"] = expectedLinks.Length > 0 ? ExpectedLinks(expectedLinks) : null,
+    };
+    var feText = feOut.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+    if (Opt("--out", "") is { Length: > 0 } feFile) File.WriteAllText(feFile, feText + "\n");
+    Console.WriteLine(feText);
+    return 0;
+}
+
 // ---- Test 4 alone (slow tests skipped) -------------------------------------------------------
 if (onlyCompileBreak)
 {
@@ -203,7 +244,7 @@ var test1Commits = Sample(commits.Where(c => c.Files.Count is >= 2 and <= 15).To
 var test1 = new List<Case>();
 var test1NoSeeds = 0;
 foreach (var c in test1Commits)
-    foreach (var seed in c.Files)
+    foreach (var seed in c.Files.Where(IsCSharp)) // changed members are found by C# syntax; frontend files count as targets
     {
         var nodes = ChangedNodes(c.Hash, seed);
         if (nodes.Count == 0) { test1NoSeeds++; continue; }
@@ -240,7 +281,7 @@ var test2 = new List<Case>();
 foreach (var (change, _, elsewhere) in pairs)
 {
     var files = byHash[change].Files;
-    var nodes = files.SelectMany(f => ChangedNodes(change, f)).DistinctBy(n => n.Id).ToList();
+    var nodes = files.Where(IsCSharp).SelectMany(f => ChangedNodes(change, f)).DistinctBy(n => n.Id).ToList();
     if (nodes.Count > 0) test2.Add(new Case(change, files, nodes, elsewhere, [.. files]));
 }
 Console.Error.WriteLine($"test 2: {fixes.Count} fixes, {pairs.Count} pairs (+{trivial} trivial), {test2.Count} with a changed member found");
@@ -366,10 +407,41 @@ async Task<JsonObject> ExactCheck(List<(string Hash, string Subject, List<string
     };
 }
 
-Task<JsonObject> CompileBreakTest() => CompileBreak.Run(repo, graph, analyzer, compileBreakCount,
-    (seeds, exclude, maxDepth, maxLabel) => FromNodes(analyzer.AffectedWithDepth(seeds)
-        .Where(a => (maxDepth is null || a.Depth <= maxDepth) && a.Label <= maxLabel).Select(a => (a.Node, a.Label)), exclude),
-    SameFolder, SameProject);
+Dictionary<string, Label> GraphPredict(List<Node> seeds, HashSet<string> exclude, int? maxDepth, Label maxLabel) =>
+    FromNodes(analyzer.AffectedWithDepth(seeds).Where(a => (maxDepth is null || a.Depth <= maxDepth) && a.Label <= maxLabel).Select(a => (a.Node, a.Label)), exclude);
+
+Task<JsonObject> CompileBreakTest() => CompileBreak.Run(repo, graph, analyzer, compileBreakCount, GraphPredict, SameFolder, SameProject);
+
+// Generated-client calls vs a hand-written answer key (benchmark/expected/*.json): every call to a
+// client method should reach exactly the expected endpoint, or none when the endpoint isn't in the repo.
+JsonObject ExpectedLinks(string file)
+{
+    var key = JsonNode.Parse(File.ReadAllText(file))!.AsObject();
+    var nodesById = graph.AllNodes.GroupBy(n => n.Id).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+    var linksFrom = graph.AllEdges.Where(e => e.Kind == EdgeKind.CallsHttp && e.Detector == "frontend-http").ToLookup(e => e.Source);
+    var calls = graph.AllFacts.Where(f => f.Detector == "frontend-http" && f.Kind == "generated-call").ToList();
+    int right = 0, wrong = 0, missing = 0, correctlyUnlinked = 0;
+    var problems = new JsonArray();
+    foreach (var entry in key["links"]!.AsArray())
+    {
+        var client = (string)entry!["client"]!; var method = (string)entry["method"]!; var expected = (string?)entry["endpoint"];
+        foreach (var call in calls.Where(c => c["client"] == client && c["method"] == method))
+        {
+            // Links are per calling method; keep those this client method could explain (same verb + path family).
+            var reached = linksFrom[call.Owner].Select(e => nodesById.GetValueOrDefault(e.Target)?.Name).OfType<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var blind = graph.AllBlindSpots.Any(b => b.Owner == call.Owner && b.Line == call.Line && b.Detector == "frontend-http");
+            if (expected is null) { if (blind) correctlyUnlinked++; else { wrong++; problems.Add($"{client}.{method} at {call.File}:{call.Line}: expected ❓, got a link"); } }
+            else if (reached.Contains(expected)) right++;
+            else if (blind) { missing++; problems.Add($"{client}.{method} at {call.File}:{call.Line}: expected {expected}, got ❓"); }
+            else { wrong++; problems.Add($"{client}.{method} at {call.File}:{call.Line}: expected {expected}, got {string.Join(", ", reached)}"); }
+        }
+    }
+    return new JsonObject
+    {
+        ["calls"] = right + wrong + missing + correctlyUnlinked, ["right"] = right, ["correctlyUnlinked"] = correctlyUnlinked,
+        ["wrong"] = wrong, ["missing"] = missing, ["problems"] = problems, ["checkedBy"] = key["checkedBy"]?.DeepClone(),
+    };
+}
 
 void ApplySdkOverride()
 {
@@ -387,6 +459,10 @@ async Task<(string Hash, BuildStats Stats)> Build(bool full)
 }
 
 string Run(string gitArgs) => Git.Run(root, gitArgs) ?? "";
+
+static bool IsSource(string f) => f.EndsWith(".cs", StringComparison.Ordinal) || f.EndsWith(".ts", StringComparison.Ordinal)
+    || f.EndsWith(".tsx", StringComparison.Ordinal) || f.EndsWith(".js", StringComparison.Ordinal) || f.EndsWith(".jsx", StringComparison.Ordinal);
+static bool IsCSharp(string f) => f.EndsWith(".cs", StringComparison.Ordinal);
 
 // Deterministic sample: every k-th item of a list already in a fixed order.
 static List<T> Sample<T>(List<T> items, int max) =>

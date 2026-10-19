@@ -1,0 +1,596 @@
+{
+  "repo": "sonarr",
+  "graphCommit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+  "windowMonths": 36,
+  "predictors": "graph (lines): changed methods found by name in today's graph · graph (lines+deps): plus what they directly use · graph (files): every point in the changed files · same project / same folder / co-change: baselines without the graph",
+  "labels": "certain = ✅ only; certain+guessed = ✅ and \uD83D\uDFE1. \uD83D\uDCDC (Phase 1c) not built yet.",
+  "memberMatching": {
+    "sameFile": 1645,
+    "moved": 5,
+    "unmatched": 114
+  },
+  "test1FindsTheRest": {
+    "cases": 522,
+    "backendToFrontend": {
+      "cases": 87,
+      "graph (lines)": {
+        "recall": 0.47,
+        "precision": 0.002,
+        "medianCasePrecision": 0.002,
+        "found": 110,
+        "of": 234,
+        "medianPredictedFiles": 1150,
+        "emptyAnswers": 15
+      },
+      "same folder": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 234,
+        "medianPredictedFiles": 15,
+        "emptyAnswers": 2
+      },
+      "co-change": {
+        "recall": 0.013,
+        "precision": 0.037,
+        "medianCasePrecision": 0,
+        "found": 3,
+        "of": 234,
+        "medianPredictedFiles": 0,
+        "emptyAnswers": 57
+      }
+    },
+    "graph (lines)": {
+      "certain": {
+        "recall": 0.308,
+        "precision": 0.003,
+        "medianCasePrecision": 0.003,
+        "found": 730,
+        "of": 2373,
+        "medianPredictedFiles": 765,
+        "emptyAnswers": 156
+      },
+      "certain+guessed": {
+        "recall": 0.354,
+        "precision": 0.002,
+        "medianCasePrecision": 0.002,
+        "found": 840,
+        "of": 2373,
+        "medianPredictedFiles": 1150,
+        "emptyAnswers": 136
+      }
+    },
+    "graph (lines, depth ≤ 1)": {
+      "certain": {
+        "recall": 0.131,
+        "precision": 0.214,
+        "medianCasePrecision": 0.4,
+        "found": 310,
+        "of": 2373,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 249
+      },
+      "certain+guessed": {
+        "recall": 0.132,
+        "precision": 0.214,
+        "medianCasePrecision": 0.5,
+        "found": 314,
+        "of": 2373,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 249
+      }
+    },
+    "graph (lines, depth ≤ 2)": {
+      "certain": {
+        "recall": 0.174,
+        "precision": 0.084,
+        "medianCasePrecision": 0.143,
+        "found": 412,
+        "of": 2373,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 181
+      },
+      "certain+guessed": {
+        "recall": 0.18,
+        "precision": 0.084,
+        "medianCasePrecision": 0.133,
+        "found": 426,
+        "of": 2373,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 162
+      }
+    },
+    "graph (lines, depth ≤ 3)": {
+      "certain": {
+        "recall": 0.195,
+        "precision": 0.054,
+        "medianCasePrecision": 0.091,
+        "found": 462,
+        "of": 2373,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 157
+      },
+      "certain+guessed": {
+        "recall": 0.204,
+        "precision": 0.054,
+        "medianCasePrecision": 0.067,
+        "found": 484,
+        "of": 2373,
+        "medianPredictedFiles": 3,
+        "emptyAnswers": 137
+      }
+    },
+    "graph (lines+deps)": {
+      "certain": {
+        "recall": 0.435,
+        "precision": 0.004,
+        "medianCasePrecision": 0.005,
+        "found": 1033,
+        "of": 2373,
+        "medianPredictedFiles": 767,
+        "emptyAnswers": 5
+      },
+      "certain+guessed": {
+        "recall": 0.482,
+        "precision": 0.003,
+        "medianCasePrecision": 0.003,
+        "found": 1143,
+        "of": 2373,
+        "medianPredictedFiles": 1152,
+        "emptyAnswers": 5
+      }
+    },
+    "graph (files)": {
+      "certain": {
+        "recall": 0.355,
+        "precision": 0.003,
+        "medianCasePrecision": 0.003,
+        "found": 842,
+        "of": 2373,
+        "medianPredictedFiles": 765,
+        "emptyAnswers": 134
+      },
+      "certain+guessed": {
+        "recall": 0.406,
+        "precision": 0.002,
+        "medianCasePrecision": 0.002,
+        "found": 963,
+        "of": 2373,
+        "medianPredictedFiles": 1150,
+        "emptyAnswers": 120
+      }
+    },
+    "same project": {
+      "recall": 0.472,
+      "precision": 0.002,
+      "medianCasePrecision": 0.002,
+      "found": 1121,
+      "of": 2373,
+      "medianPredictedFiles": 1672,
+      "emptyAnswers": 0
+    },
+    "same folder": {
+      "recall": 0.176,
+      "precision": 0.051,
+      "medianCasePrecision": 0,
+      "found": 418,
+      "of": 2373,
+      "medianPredictedFiles": 9,
+      "emptyAnswers": 21
+    },
+    "co-change": {
+      "recall": 0.091,
+      "precision": 0.258,
+      "medianCasePrecision": 0.333,
+      "found": 215,
+      "of": 2373,
+      "medianPredictedFiles": 0,
+      "emptyAnswers": 340
+    }
+  },
+  "test2PredictsWhatBroke": {
+    "cases": 17,
+    "backendToFrontend": {
+      "cases": 2,
+      "graph (lines)": {
+        "recall": 1,
+        "precision": 0.001,
+        "medianCasePrecision": 0.001,
+        "found": 2,
+        "of": 2,
+        "medianPredictedFiles": 1174,
+        "emptyAnswers": 0
+      },
+      "same folder": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 2,
+        "medianPredictedFiles": 33,
+        "emptyAnswers": 0
+      },
+      "co-change": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 2,
+        "medianPredictedFiles": 0,
+        "emptyAnswers": 2
+      }
+    },
+    "graph (lines)": {
+      "certain": {
+        "recall": 0.882,
+        "precision": 0.002,
+        "medianCasePrecision": 0.002,
+        "found": 30,
+        "of": 34,
+        "medianPredictedFiles": 812,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.941,
+        "precision": 0.002,
+        "medianCasePrecision": 0.002,
+        "found": 32,
+        "of": 34,
+        "medianPredictedFiles": 1197,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (lines, depth ≤ 1)": {
+      "certain": {
+        "recall": 0.235,
+        "precision": 0.093,
+        "medianCasePrecision": 0.053,
+        "found": 8,
+        "of": 34,
+        "medianPredictedFiles": 0,
+        "emptyAnswers": 10
+      },
+      "certain+guessed": {
+        "recall": 0.235,
+        "precision": 0.092,
+        "medianCasePrecision": 0.05,
+        "found": 8,
+        "of": 34,
+        "medianPredictedFiles": 0,
+        "emptyAnswers": 10
+      }
+    },
+    "graph (lines, depth ≤ 2)": {
+      "certain": {
+        "recall": 0.735,
+        "precision": 0.028,
+        "medianCasePrecision": 0.056,
+        "found": 25,
+        "of": 34,
+        "medianPredictedFiles": 36,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.735,
+        "precision": 0.027,
+        "medianCasePrecision": 0.056,
+        "found": 25,
+        "of": 34,
+        "medianPredictedFiles": 36,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (lines, depth ≤ 3)": {
+      "certain": {
+        "recall": 0.765,
+        "precision": 0.017,
+        "medianCasePrecision": 0.035,
+        "found": 26,
+        "of": 34,
+        "medianPredictedFiles": 57,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.794,
+        "precision": 0.018,
+        "medianCasePrecision": 0.035,
+        "found": 27,
+        "of": 34,
+        "medianPredictedFiles": 57,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (lines+deps)": {
+      "certain": {
+        "recall": 0.912,
+        "precision": 0.002,
+        "medianCasePrecision": 0.002,
+        "found": 31,
+        "of": 34,
+        "medianPredictedFiles": 813,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.971,
+        "precision": 0.002,
+        "medianCasePrecision": 0.002,
+        "found": 33,
+        "of": 34,
+        "medianPredictedFiles": 1198,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (files)": {
+      "certain": {
+        "recall": 0.882,
+        "precision": 0.002,
+        "medianCasePrecision": 0.002,
+        "found": 30,
+        "of": 34,
+        "medianPredictedFiles": 826,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.941,
+        "precision": 0.002,
+        "medianCasePrecision": 0.002,
+        "found": 32,
+        "of": 34,
+        "medianPredictedFiles": 1211,
+        "emptyAnswers": 0
+      }
+    },
+    "same project": {
+      "recall": 0.794,
+      "precision": 0.001,
+      "medianCasePrecision": 0.001,
+      "found": 27,
+      "of": 34,
+      "medianPredictedFiles": 2133,
+      "emptyAnswers": 0
+    },
+    "same folder": {
+      "recall": 0.382,
+      "precision": 0.011,
+      "medianCasePrecision": 0.025,
+      "found": 13,
+      "of": 34,
+      "medianPredictedFiles": 40,
+      "emptyAnswers": 0
+    },
+    "co-change": {
+      "recall": 0.206,
+      "precision": 0.074,
+      "medianCasePrecision": 0.067,
+      "found": 7,
+      "of": 34,
+      "medianPredictedFiles": 4,
+      "emptyAnswers": 6
+    }
+  },
+  "test2Pairs": {
+    "fixCommits": 60,
+    "pairs": 19,
+    "trivialPairsExcluded": 18,
+    "handCheckSample": [
+      {
+        "change": "0a28ff84e8efd08f5799e1b0e19cedcf4e8e9736",
+        "changeSubject": "Fixed: Parsing of anime with 3 digit number in middle of title",
+        "fix": "808d483613b423abdfef2a9e0ab43982194d6d96",
+        "fixSubject": "Fixed: Don't parse release group as hash",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/MediaFiles/EpisodeImport/Aggregation/Aggregators/AggregateReleaseHashFixture.cs",
+          "src/NzbDrone.Core.Test/ParserTests/SingleEpisodeParserFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "0fdbbd018cb56640e1a5e1f5b48b8066bc80d222",
+        "changeSubject": "New: Parse absolute episode numbers within square brackets",
+        "fix": "808d483613b423abdfef2a9e0ab43982194d6d96",
+        "fixSubject": "Fixed: Don't parse release group as hash",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/MediaFiles/EpisodeImport/Aggregation/Aggregators/AggregateReleaseHashFixture.cs",
+          "src/NzbDrone.Core.Test/ParserTests/SingleEpisodeParserFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "1ef034af35caaa131dd98172b70e2a49938652b1",
+        "changeSubject": "Skip absolute + standard parsing when hash is not present",
+        "fix": "808d483613b423abdfef2a9e0ab43982194d6d96",
+        "fixSubject": "Fixed: Don't parse release group as hash",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/MediaFiles/EpisodeImport/Aggregation/Aggregators/AggregateReleaseHashFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "2335657fe4c06583c12fa677ade195290bfcafe8",
+        "changeSubject": "New: Parse NCOP/NCED as specials",
+        "fix": "808d483613b423abdfef2a9e0ab43982194d6d96",
+        "fixSubject": "Fixed: Don't parse release group as hash",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/MediaFiles/EpisodeImport/Aggregation/Aggregators/AggregateReleaseHashFixture.cs",
+          "src/NzbDrone.Core.Test/ParserTests/SingleEpisodeParserFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "41ddacc395e783b361b7766cd812f7114b36ac46",
+        "changeSubject": "New: Improve parsing absolute followed by standard numbering",
+        "fix": "808d483613b423abdfef2a9e0ab43982194d6d96",
+        "fixSubject": "Fixed: Don't parse release group as hash",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/MediaFiles/EpisodeImport/Aggregation/Aggregators/AggregateReleaseHashFixture.cs",
+          "src/NzbDrone.Core.Test/ParserTests/SingleEpisodeParserFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "4aa56e3f910d597d1b83609bd5715b51e38e6bfc",
+        "changeSubject": "Fixed: Parsing of some French and Spanish anime releases",
+        "fix": "808d483613b423abdfef2a9e0ab43982194d6d96",
+        "fixSubject": "Fixed: Don't parse release group as hash",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/MediaFiles/EpisodeImport/Aggregation/Aggregators/AggregateReleaseHashFixture.cs",
+          "src/NzbDrone.Core.Test/ParserTests/SingleEpisodeParserFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "bfe6a740faf8d977a8bf07e96b76f02b4957f97b",
+        "changeSubject": "Fixed: Parsing of anime releases using standard numbering",
+        "fix": "808d483613b423abdfef2a9e0ab43982194d6d96",
+        "fixSubject": "Fixed: Don't parse release group as hash",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/MediaFiles/EpisodeImport/Aggregation/Aggregators/AggregateReleaseHashFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "d86aeb7472f7f514c6793172e3858af299472bf8",
+        "changeSubject": "New: Release Hash renaming token",
+        "fix": "808d483613b423abdfef2a9e0ab43982194d6d96",
+        "fixSubject": "Fixed: Don't parse release group as hash",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/ParserTests/SingleEpisodeParserFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "d9c78383298c8c6b860e5f3bd01b93743d40d488",
+        "changeSubject": "Fixed: Sub group parsing could result in extra brackets being parsed",
+        "fix": "808d483613b423abdfef2a9e0ab43982194d6d96",
+        "fixSubject": "Fixed: Don't parse release group as hash",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/MediaFiles/EpisodeImport/Aggregation/Aggregators/AggregateReleaseHashFixture.cs",
+          "src/NzbDrone.Core.Test/ParserTests/SingleEpisodeParserFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "5d86329c182343de3103a5d6cf941553da0f8246",
+        "changeSubject": "Last Season and Recent Episodes",
+        "fix": "95c42a92b960e44748f43c40d8f2b44fc3e87196",
+        "fixSubject": "Fixed: Slow monitoring changes on series with many episodes",
+        "fixFilesElsewhere": [
+          "frontend/src/Series/useSeries.ts",
+          "src/NzbDrone.Core.Test/TvTests/EpisodeRepositoryTests/SetEpisodeMonitoredBySeriesFixture.cs",
+          "src/NzbDrone.Core/Tv/EpisodeRepository.cs",
+          "src/NzbDrone.Core/Tv/EpisodeService.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "b6ffe935e86aa7eaecb4a6489e4dedf32dcf3d8b",
+        "changeSubject": "Fixed: Don't monitor last season if series is ended",
+        "fix": "95c42a92b960e44748f43c40d8f2b44fc3e87196",
+        "fixSubject": "Fixed: Slow monitoring changes on series with many episodes",
+        "fixFilesElsewhere": [
+          "frontend/src/Series/useSeries.ts",
+          "src/NzbDrone.Core.Test/TvTests/EpisodeRepositoryTests/SetEpisodeMonitoredBySeriesFixture.cs",
+          "src/NzbDrone.Core/Tv/EpisodeRepository.cs",
+          "src/NzbDrone.Core/Tv/EpisodeService.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "27da0413882dc87e1617a5d091ac5111589e61a6",
+        "changeSubject": "Fixed: Reprocessing manual import items unable to detect sample",
+        "fix": "de0f1d461df8792857471746b81338203bf793f7",
+        "fixSubject": "Fixed: Parsing quality and languages when manual importing item with multiple series error",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportItem.cs",
+          "src/Sonarr.Api.V3/ManualImport/ManualImportController.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "45c53bea865447aa543242e64e3d796c93117975",
+        "changeSubject": "Convert Cutoff Unmet to TypeScript",
+        "fix": "7960bb8c7d8726fcf6fbffd5e094be709d2d0426",
+        "fixSubject": "Fix episode status on wanted",
+        "fixFilesElsewhere": [
+          "frontend/src/Wanted/Missing/Missing.tsx"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "811eb36c7b1a5124270ff93d18d16944e654de81",
+        "changeSubject": "Convert Calendar to TypeScript",
+        "fix": "90c4791d5f14ac4193c6586fbf5901edc68376c0",
+        "fixSubject": "Fix status for grabbed episodes part of grouped calendar events",
+        "fixFilesElsewhere": [
+          "src/Sonarr.Api.V3/Episodes/EpisodeResource.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "c6bb6ad8788fb1c20ed466a495f2b47034947145",
+        "changeSubject": "Round off the seeded ratio when checking for removal candidates",
+        "fix": "4dcc015fb19ceb57d2e8f4985c5137e765829d1c",
+        "fixSubject": "Fixed: qBittorrent Ratio Limit Check",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/Download/DownloadClientTests/QBittorrentTests/QBittorrentFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "ade40b72bc02d47845a719f2ae85edb2d41b6eaf",
+        "changeSubject": "New: Option to control whether new seasons get monitored automatically",
+        "fix": "12c1eb86f212f90f139d20a296ce1b15f756e05d",
+        "fixSubject": "Fixed: New episodes in season follow season's monitored status",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/TvTests/RefreshEpisodeServiceFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "c7d12066bf05f6b33063c6ac24b9b2bdf2f41fd4",
+        "changeSubject": "Fixed: Logging length of sample file",
+        "fix": "12ac123d5add71926ac2dd670064b0dbc06ee963",
+        "fixSubject": "Fixed: Prefer episode runtime when determining whether a file is a sample",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/MediaFiles/EpisodeImport/DetectSampleFixture.cs",
+          "src/NzbDrone.Core.Test/MediaFiles/EpisodeImport/Specifications/NotSampleSpecificationFixture.cs",
+          "src/NzbDrone.Core/MediaFiles/EpisodeImport/Specifications/NotSampleSpecification.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "6c232b062c5c11b76a2f205fcd949619e4346d16",
+        "changeSubject": "New: Multi Language selection per indexer",
+        "fix": "35a2bc940328bf61b39dd0012867bdaa564ee489",
+        "fixSubject": "Fix: Use indexer's Multi Languages setting for pushed releases",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/Download/Aggregation/Aggregators/AggregateLanguagesFixture.cs",
+          "src/NzbDrone.Core/Download/Aggregation/Aggregators/AggregateLanguages.cs",
+          "src/NzbDrone.Core/Parser/Parser.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "13af6f57796e54c3949cf340e03f020e6f8575c4",
+        "changeSubject": "Fixed: Don't disable IPv6 in IPv6-only Environment",
+        "fix": "060b789bc6f10f667795697eb536d4bd3851da49",
+        "fixSubject": "Fixed: Exceptions when checking for routable IPv4 addresses",
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/Framework/CoreTest.cs"
+        ],
+        "genuine": null
+      }
+    ]
+  },
+  "exactCheck": null,
+  "test4CompileBreak": null,
+  "test3StableAndFast": {
+    "identicalFullBuilds": true,
+    "incrementalEqualsFull": true,
+    "fullBuildMs": 23325,
+    "incrementalBuildMs": 5366,
+    "incrementalExtracted": 1,
+    "touchedFile": "frontend/src/Activity/Blocklist/Blocklist.tsx"
+  }
+}

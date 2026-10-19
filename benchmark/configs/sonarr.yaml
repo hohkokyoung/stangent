@@ -1,0 +1,11 @@
+# stangent.yaml for the Sonarr benchmark: replaces the default written by `stangent init`.
+version: 1
+store:
+  root: .stangent/store
+ai:
+  enabled: true
+detectors: []
+detectorSettings:
+  frontend-http:
+    # Sonarr's own API helpers (frontend/src/Helpers/Hooks, Utilities/Fetch): name:urlProperty[:verbProperty].
+    wrappers: ["useApiQuery:path", "usePagedApiQuery:path", "useApiMutation:path:method", "fetchJson:path:method", "createAjaxRequest:url:method"]

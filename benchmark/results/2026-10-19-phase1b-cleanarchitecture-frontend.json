@@ -1,0 +1,77 @@
+{
+  "repo": "cleanarchitecture",
+  "graphCommit": "1bc2b07ce75864b0c399e8e3d481de5e17aad509",
+  "openApiCheck": null,
+  "test4TypeScriptCompileBreak": {
+    "project:src/Web/ClientApp-React/tsconfig.json": {
+      "members": 0,
+      "membersWithBreakage": 0,
+      "brokenFiles": 0,
+      "graph ✅ depth ≤ 1": {
+        "recall": 0,
+        "precision": 0,
+        "found": 0,
+        "of": 0
+      },
+      "graph ✅ depth ≤ 2": {
+        "recall": 0,
+        "precision": 0,
+        "found": 0,
+        "of": 0
+      },
+      "graph ✅ unlimited": {
+        "recall": 0,
+        "precision": 0,
+        "found": 0,
+        "of": 0
+      },
+      "same folder": {
+        "recall": 0,
+        "precision": 0,
+        "found": 0,
+        "of": 0
+      },
+      "graphDirectMisses": []
+    },
+    "project:src/Web/ClientApp/tsconfig.app.json": {
+      "members": 20,
+      "membersWithBreakage": 4,
+      "brokenFiles": 4,
+      "graph ✅ depth ≤ 1": {
+        "recall": 1,
+        "precision": 1,
+        "found": 4,
+        "of": 4
+      },
+      "graph ✅ depth ≤ 2": {
+        "recall": 1,
+        "precision": 0.2,
+        "found": 4,
+        "of": 4
+      },
+      "graph ✅ unlimited": {
+        "recall": 1,
+        "precision": 0.085,
+        "found": 4,
+        "of": 4
+      },
+      "same folder": {
+        "recall": 0,
+        "precision": 0,
+        "found": 0,
+        "of": 4
+      },
+      "graphDirectMisses": []
+    },
+    "note": "Ground truth = .ts/.tsx files with new tsc errors after renaming the member; its own file excluded. Angular templates aren't type-checked by tsc, so they're out of this test."
+  },
+  "expectedLinks": {
+    "calls": 28,
+    "right": 22,
+    "correctlyUnlinked": 6,
+    "wrong": 0,
+    "missing": 0,
+    "problems": [],
+    "checkedBy": null
+  }
+}

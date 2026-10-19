@@ -13,6 +13,12 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+      # The TypeScript extractor (D30): its own tests, then the bundle the dotnet build ships.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm ci --no-audit --no-fund && npm test && npm run build
+        working-directory: tools/ts-extractor
       - run: dotnet build --configuration Release
       - run: dotnet test --configuration Release --no-build
       - run: dotnet run --project src/Stangent.Cli --configuration Release --no-build -- phases check

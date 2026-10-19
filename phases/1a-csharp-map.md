@@ -3,7 +3,7 @@ phase: 1a
 name: csharp-map
 status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1 }
-provides: { code-graph: 1, impact-report: 2 }
+provides: { code-graph: 2, impact-report: 3 }
 ---
 
 # Phase 1a · C# map
@@ -264,4 +264,15 @@ The line-level table above and the exact check were re-run after these fixes. eS
 - **Co-edit Test 1 still favours "same folder" on eShop.** That says more about what developers edit
   together than about what breaks.
 - **Not yet measured:** behavioural breakage (tests that fail), which belongs with Phase 5.
+
+### Reopened 2026-10-19 by Phase 1b · `code-graph` v1 → v2, `impact-report` v2 → v3
+- **`code-graph` v2:** frontend points (`component`, `template`, `page`, TypeScript `ts|` ids), the
+  `renders` and `maps-field` lines, and per-endpoint request/response shapes (`endpoint-types` and
+  `json-shape` facts).
+- **Routes detector, from 1b's benchmark repos:** route attributes are followed up the base classes
+  (Kavita); custom `IRouteTemplateProvider` attributes are evaluated from their constructors (Sonarr);
+  minimal-API calls bind arguments by parameter, so in-house `MapGet` wrappers work (CleanArchitecture);
+  `groupConventions` for groups mapped by reflection.
+- **`impact-report` v3:** the `pages` group.
+- **Consumers:** 1b only, which made the change.
 

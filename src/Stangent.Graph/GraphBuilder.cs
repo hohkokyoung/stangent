@@ -11,7 +11,7 @@ namespace Stangent.Graph;
 public sealed record BuildOptions(bool Restore = true, bool Full = false, TextWriter? Log = null);
 
 public sealed record BuildStats(
-    string Commit, int Projects, int Extracted, int Reused, int Nodes, int Edges, int BlindSpots,
+    string Commit, int Projects, int Frontends, int Extracted, int Reused, int Nodes, int Edges, int BlindSpots,
     IReadOnlyList<string> LoadErrors, IReadOnlyList<string> LoadWarnings, IReadOnlyList<string> Detectors, long LoadMs, long ExtractMs, long LinkMs, long TotalMs);
 
 /// <summary>
@@ -105,6 +105,52 @@ public static class GraphBuilder
         load.Stop();
         var loadMs = load.ElapsedMilliseconds - extract.ElapsedMilliseconds;
 
+        // Frontends (D30): fingerprinted and re-extracted the same way, by the bundled Node extractor.
+        var frontends = FrontendScanner.Find(repo.Root);
+        var frontendSalt = salt + "\n" + FrontendScanner.ExtractorHash();
+        var frontendDirs = frontends.Select(f => f.Directory).ToList();
+        var frontendPrints = frontends.ToDictionary(f => f.Id,
+            f => CanonicalJson.Hash(FrontendScanner.Fingerprint(repo.Root, f, frontendDirs) + "\n" + frontendSalt), StringComparer.Ordinal);
+        var frontendChanged = frontends.Where(f => previous?.Fragments.GetValueOrDefault(f.Id)?.Fingerprint != frontendPrints[f.Id]).ToList();
+        foreach (var f in frontends.Except(frontendChanged)) graph.Fragments[f.Id] = previous!.Fragments[f.Id];
+        if (previous is not null)
+            graph.LoadErrors.AddRange(previous.LoadErrors.Where(e => frontends.Except(frontendChanged).Any(f => e.StartsWith(f.RelativeTsConfig + ":"))));
+        if (frontendChanged.Count > 0)
+        {
+            extract.Start();
+            if (!FrontendScanner.NodeAvailable())
+            {
+                foreach (var f in frontendChanged)
+                    graph.LoadErrors.Add($"{f.RelativeTsConfig}: node_missing: Node.js isn't installed, so this frontend isn't on the map");
+            }
+            else
+            {
+                if (options.Restore)
+                    foreach (var f in frontendChanged)
+                        if (FrontendScanner.Restore(f, log) is { } problem) warnings.Add(problem);
+                var results = new (ProjectFragment, List<string>, string?)[frontendChanged.Count];
+                await Parallel.ForEachAsync(Enumerable.Range(0, frontendChanged.Count), new ParallelOptions { MaxDegreeOfParallelism = 2, CancellationToken = ct }, (i, _) =>
+                {
+                    var f = frontendChanged[i];
+                    log.WriteLine($"stangent: extracting {f.RelativeTsConfig}");
+                    results[i] = FrontendScanner.Extract(repo.Root, f, frontendPrints[f.Id], repo.Config.DetectorSettings);
+                    return ValueTask.CompletedTask;
+                });
+                foreach (var (fragment, frontWarnings, error) in results)
+                {
+                    warnings.AddRange(frontWarnings);
+                    if (error is not null)
+                    {
+                        graph.LoadErrors.Add(error);
+                        fragment.Nodes.Add(new Node(fragment.ProjectId, NodeKind.Project, fragment.ProjectId, fragment.ProjectId));
+                        fragment.BlindSpots.Add(new BlindSpot(fragment.ProjectId, fragment.ProjectId["project:".Length..], 0, "frontend could not be extracted"));
+                    }
+                    graph.Fragments[fragment.ProjectId] = fragment;
+                }
+            }
+            extract.Stop();
+        }
+
         var link = Stopwatch.StartNew();
         var linkCtx = new LinkContext(graph, new Dictionary<string, List<string>>());
         foreach (var detector in detectors)
@@ -116,7 +162,8 @@ public static class GraphBuilder
 
         GraphStore.Save(graph, GraphStore.PathFor(repo));
         total.Stop();
-        var stats = new BuildStats(graph.Commit, projects.Count, changed.Count, projects.Count - changed.Count,
+        var stats = new BuildStats(graph.Commit, projects.Count, frontends.Count, changed.Count + frontendChanged.Count,
+            projects.Count + frontends.Count - changed.Count - frontendChanged.Count,
             graph.AllNodes.Count(), graph.AllEdges.Count(), graph.AllBlindSpots.Count(),
             [.. graph.LoadErrors.Distinct().Order(StringComparer.Ordinal)], warnings, [.. detectors.Select(d => d.Name)],
             loadMs, extract.ElapsedMilliseconds, link.ElapsedMilliseconds, total.ElapsedMilliseconds);
@@ -135,7 +182,11 @@ public static class GraphBuilder
     /// <summary>An MSBuild workspace set up the way stangent loads projects (also used by the benchmark).</summary>
     public static MSBuildWorkspace CreateWorkspace(string root, IReadOnlyList<RepoProject> projects)
     {
-        var properties = new Dictionary<string, string> { ["Configuration"] = "Debug", ["NuGetAudit"] = "false", ["TreatWarningsAsErrors"] = "false" };
+        // EnableWindowsTargeting: Windows-only projects (Sonarr's tray app) still load on macOS and Linux.
+        var properties = new Dictionary<string, string>
+        {
+            ["Configuration"] = "Debug", ["NuGetAudit"] = "false", ["TreatWarningsAsErrors"] = "false", ["EnableWindowsTargeting"] = "true",
+        };
         // Projects that build relative to $(SolutionDir) need it set when loaded on their own.
         if (ProjectScanner.MainSolutionDir(root, projects) is { } solutionDir) properties["SolutionDir"] = solutionDir;
         return MSBuildWorkspace.Create(properties);

@@ -89,7 +89,7 @@ public static class ProjectScanner
     static void Run(string root, string target, TextWriter log, SortedDictionary<string, string> errors)
     {
         log.WriteLine($"stangent: dotnet restore {Rel(root, target)}");
-        var psi = new ProcessStartInfo("dotnet", $"restore \"{target}\" --nologo -v q -p:NuGetAudit=false")
+        var psi = new ProcessStartInfo("dotnet", $"restore \"{target}\" --nologo -v q -p:NuGetAudit=false -p:EnableWindowsTargeting=true")
         {
             WorkingDirectory = root, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false,
         };

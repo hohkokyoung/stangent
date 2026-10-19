@@ -22,6 +22,12 @@ public static class NodeKind
     public const string Table = "table";
     public const string Column = "column";
     public const string Config = "config";
+    /// <summary>An Angular or React component (code-graph v2).</summary>
+    public const string Component = "component";
+    /// <summary>An Angular component's template (code-graph v2).</summary>
+    public const string Template = "template";
+    /// <summary>A frontend route: the frontend's entry point (code-graph v2).</summary>
+    public const string Page = "page";
 }
 
 /// <summary>
@@ -47,10 +53,14 @@ public static class EdgeKind
     public const string Binds = "binds";
     public const string CallsHttp = "calls-http";
     public const string Tests = "tests";
+    /// <summary>A component (or template) renders a child component or its template (code-graph v2).</summary>
+    public const string Renders = "renders";
+    /// <summary>A frontend field depends on the backend property it's read from (code-graph v2).</summary>
+    public const string MapsField = "maps-field";
 
     /// <summary>Lines a change travels back along: behaviour flows through these.</summary>
     public static readonly HashSet<string> Propagating =
-        [Calls, Uses, DispatchesTo, RoutesTo, TriggeredBy, Maps, ReadsConfig, Binds, CallsHttp, Tests, WiredTo];
+        [Calls, Uses, DispatchesTo, RoutesTo, TriggeredBy, Maps, ReadsConfig, Binds, CallsHttp, Tests, WiredTo, Renders, MapsField];
 
     /// <summary>Lines followed only from the changed points themselves (a base change affects what derives from it).</summary>
     public static readonly HashSet<string> FirstStepOnly = [Inherits, Implements, Overrides];

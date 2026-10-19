@@ -1,0 +1,11 @@
+# stangent.yaml for the CleanArchitecture benchmark: replaces the default written by `stangent init`.
+version: 1
+store:
+  root: .stangent/store
+ai:
+  enabled: true
+detectors: []
+detectorSettings:
+  aspnetcore-routes:
+    # Every IEndpointGroup is mapped at /api/<ClassName> by reflection (WebApplicationExtensions.MapEndpoints).
+    groupConventions: ["CleanArchitecture.Web.Infrastructure.IEndpointGroup=/api/{type}"]

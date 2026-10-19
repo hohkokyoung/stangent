@@ -1,0 +1,68 @@
+{
+  "repo": "kavita",
+  "graphCommit": "2d225367f0310ac7354423b772a4c6a7caf63fd2",
+  "openApiCheck": {
+    "openApiOperations": 522,
+    "ourEndpoints": 522,
+    "endpoints": {
+      "recall": 1,
+      "precision": 1,
+      "missingSample": [],
+      "extraSample": []
+    },
+    "fields": {
+      "endpointsCompared": 247,
+      "recall": 1,
+      "precision": 1,
+      "mismatchSample": []
+    },
+    "frontendLinks": {
+      "links": 445,
+      "toRealEndpoints": 1,
+      "callersLinked": 405,
+      "callersWithOneEndpoint": 387,
+      "unmatchedCalls": 6
+    },
+    "note": "Paths compared case-insensitively with route constraints removed ({id:int} → {id})."
+  },
+  "test4TypeScriptCompileBreak": {
+    "project:UI/Web/tsconfig.app.json": {
+      "members": 40,
+      "membersWithBreakage": 19,
+      "brokenFiles": 42,
+      "graph ✅ depth ≤ 1": {
+        "recall": 0.881,
+        "precision": 0.974,
+        "found": 37,
+        "of": 42
+      },
+      "graph ✅ depth ≤ 2": {
+        "recall": 0.976,
+        "precision": 0.554,
+        "found": 41,
+        "of": 42
+      },
+      "graph ✅ unlimited": {
+        "recall": 0.976,
+        "precision": 0.093,
+        "found": 41,
+        "of": 42
+      },
+      "same folder": {
+        "recall": 0.048,
+        "precision": 0.002,
+        "found": 2,
+        "of": 42
+      },
+      "graphDirectMisses": [
+        "UpdateUserRequest.roles → UI/Web/src/app/admin/edit-user/edit-user.component.ts",
+        "GamePadService.keyDownEvents → UI/Web/src/app/_services/key-bind.service.ts",
+        "GamePadService.keyDownEvents → UI/Web/src/app/settings/_components/setting-key-bind-picker/setting-key-bind-picker.component.ts",
+        "ActionableModalComponent.entity → UI/Web/src/app/_single-module/card-actionables/card-actionables.component.ts",
+        "MetadataSettings.whitelist → UI/Web/src/app/admin/manage-metadata-settings/manage-metadata-settings.component.ts"
+      ]
+    },
+    "note": "Ground truth = .ts/.tsx files with new tsc errors after renaming the member; its own file excluded. Angular templates aren't type-checked by tsc, so they're out of this test."
+  },
+  "expectedLinks": null
+}

@@ -64,7 +64,9 @@ public sealed class RoutesDetector : IDetector
 
         var controllerName = type.Name.EndsWith("Controller", StringComparison.Ordinal) ? type.Name[..^"Controller".Length] : type.Name;
         var area = Attr(type, "AreaAttribute");
-        var classRoutes = RouteTemplates(type);
+        // Route attributes are inherited (Kavita puts [Route("api/[controller]")] on a base controller).
+        var classRoutes = new List<string>();
+        for (var t = type; t is not null && classRoutes.Count == 0; t = t.BaseType) classRoutes = RouteTemplates(t);
 
         for (var t = type; t is not null && t.SpecialType != SpecialType.System_Object; t = t.BaseType)
         {
@@ -75,6 +77,7 @@ public sealed class RoutesDetector : IDetector
                 if (method.GetAttributes().Any(a => a.AttributeClass?.Name == "NonActionAttribute")) continue;
                 var methodId = ctx.NodeId(method);
                 if (methodId is null) continue;
+                ApiShapes.Record(ctx, Name, method, methodId, ctx.ShapesSeen);
                 var actionName = Attr(method, "ActionNameAttribute") ?? (method.Name.EndsWith("Async", StringComparison.Ordinal) ? method.Name[..^5] : method.Name);
                 var verbs = method.GetAttributes()
                     .Select(a => a.AttributeClass?.Name is { } n && HttpAttributes.TryGetValue(n, out var v) ? (v, Arg(a)) : (null, null))
@@ -118,8 +121,74 @@ public sealed class RoutesDetector : IDetector
         return classRoutes.Select(c => template.Length == 0 ? c : $"{c}/{template}");
     }
 
+    /// <summary>
+    /// [Route("…")], and custom attributes implementing IRouteTemplateProvider whose constructor sets
+    /// Template (Sonarr's [V3ApiController] builds $"api/v{version}/{resource}").
+    /// </summary>
     static List<string> RouteTemplates(ISymbol symbol) =>
-        [.. symbol.GetAttributes().Where(a => a.AttributeClass?.Name == "RouteAttribute").Select(Arg).OfType<string>()];
+        [.. symbol.GetAttributes().Select(a => a.AttributeClass?.Name == "RouteAttribute" ? Arg(a)
+            : !HttpAttributes.ContainsKey(a.AttributeClass?.Name ?? "") && a.AttributeClass is { } c && Implements(c, "IRouteTemplateProvider") ? CustomTemplate(a) : null)
+            .OfType<string>()];
+
+    static bool Implements(INamedTypeSymbol type, string name) => type.AllInterfaces.Any(i => i.Name == name);
+
+    /// <summary>Evaluates the Template a custom route attribute's constructor chain assigns, from the arguments it was given.</summary>
+    static string? CustomTemplate(AttributeData attribute)
+    {
+        if (attribute.AttributeConstructor is not { } ctor) return null;
+        var values = new Dictionary<string, string>(StringComparer.Ordinal);
+        for (var i = 0; i < ctor.Parameters.Length; i++)
+        {
+            var p = ctor.Parameters[i];
+            var arg = i < attribute.ConstructorArguments.Length ? attribute.ConstructorArguments[i].Value : p.HasExplicitDefaultValue ? p.ExplicitDefaultValue : null;
+            if (arg is not null) values[p.Name] = Convert.ToString(arg, System.Globalization.CultureInfo.InvariantCulture)!;
+        }
+        for (var depth = 0; ctor is not null && depth < 5; depth++)
+        {
+            if (ctor.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() is not ConstructorDeclarationSyntax syntax) return null;
+            var assignment = syntax.Body?.Statements.OfType<ExpressionStatementSyntax>().Select(e => e.Expression).OfType<AssignmentExpressionSyntax>()
+                .FirstOrDefault(a => a.Left is IdentifierNameSyntax { Identifier.ValueText: "Template" } or MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Template" });
+            if (assignment is not null) return Evaluate(assignment.Right, values);
+            if (syntax.Initializer is not { } init || ctor.ContainingType.BaseType is not { } baseType) return null;
+            var next = baseType.InstanceConstructors.FirstOrDefault(c => c.Parameters.Length >= init.ArgumentList.Arguments.Count
+                && c.Parameters.Skip(init.ArgumentList.Arguments.Count).All(p => p.HasExplicitDefaultValue));
+            if (next is null) return null;
+            var nextValues = new Dictionary<string, string>(StringComparer.Ordinal);
+            for (var i = 0; i < next.Parameters.Length; i++)
+            {
+                var value = i < init.ArgumentList.Arguments.Count ? Evaluate(init.ArgumentList.Arguments[i].Expression, values)
+                    : next.Parameters[i].HasExplicitDefaultValue ? Convert.ToString(next.Parameters[i].ExplicitDefaultValue, System.Globalization.CultureInfo.InvariantCulture) : null;
+                if (value is not null) nextValues[next.Parameters[i].Name] = value;
+            }
+            (ctor, values) = (next, nextValues);
+        }
+        return null;
+    }
+
+    /// <summary>Literals, parameters, constants, interpolation and + concatenation; null when any part isn't known.</summary>
+    static string? Evaluate(ExpressionSyntax expr, IReadOnlyDictionary<string, string> values)
+    {
+        switch (expr)
+        {
+            case LiteralExpressionSyntax lit:
+                return lit.Token.ValueText;
+            case IdentifierNameSyntax id:
+                return values.GetValueOrDefault(id.Identifier.ValueText);
+            case InterpolatedStringExpressionSyntax interp:
+                var sb = new System.Text.StringBuilder();
+                foreach (var c in interp.Contents)
+                {
+                    if (c is InterpolatedStringTextSyntax t) sb.Append(t.TextToken.ValueText);
+                    else if (c is InterpolationSyntax h && Evaluate(h.Expression, values) is { } v) sb.Append(v);
+                    else return null;
+                }
+                return sb.ToString();
+            case BinaryExpressionSyntax bin when bin.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AddExpression):
+                return Evaluate(bin.Left, values) is { } l && Evaluate(bin.Right, values) is { } r ? l + r : null;
+            default:
+                return null;
+        }
+    }
 
     static string? Attr(ISymbol symbol, string attribute) =>
         symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == attribute) is { } a ? Arg(a) : null;
@@ -142,12 +211,31 @@ public sealed class RoutesDetector : IDetector
         var receiverType = method.ReducedFrom is not null ? method.ReceiverType : method.Parameters.FirstOrDefault()?.Type;
         if (!ExtractContext.IsOrDerives(receiverType, "Microsoft.AspNetCore.Routing.IEndpointRouteBuilder")) return;
 
-        var args = call.ArgumentList.Arguments;
-        var templateIndex = 0;
-        var handlerIndex = name == "MapMethods" ? 2 : 1;
-        if (args.Count <= handlerIndex) return;
-        var template = ExtractContext.StringValue(args[templateIndex].Expression, file.Model);
+        // Bind arguments by the method's parameters, not position: in-house wrappers such as
+        // CleanArchitecture's MapGet(Delegate handler, string pattern = "") put them in another order.
+        var parameters = method.ReducedFrom is not null || !method.IsExtensionMethod ? method.Parameters : method.Parameters.RemoveAt(0);
+        var args = call.ArgumentList.Arguments.Skip(method.ReducedFrom is null && method.IsExtensionMethod ? 1 : 0).ToList();
+        var bound = new Dictionary<IParameterSymbol, ExpressionSyntax>(SymbolEqualityComparer.Default);
+        for (var i = 0; i < args.Count; i++)
+        {
+            var p = args[i].NameColon is { } nc ? parameters.FirstOrDefault(x => x.Name == nc.Name.Identifier.ValueText) : i < parameters.Length ? parameters[i] : null;
+            if (p is not null) bound[p] = args[i].Expression;
+        }
+        var templateParam = parameters.FirstOrDefault(p => p.Type.SpecialType == SpecialType.System_String && p.Name is "pattern" or "template" or "route" or "path")
+            ?? parameters.FirstOrDefault(p => p.Type.SpecialType == SpecialType.System_String);
+        var handlerParam = parameters.FirstOrDefault(p => p.Type.Name == "Delegate" || p.Name is "handler" or "requestDelegate");
+        if (handlerParam is null || !bound.TryGetValue(handlerParam, out var handler)) return;
+
         var owner = ctx.OwnerId(call, file.Model);
+        string? template;
+        if (templateParam is not null && bound.TryGetValue(templateParam, out var templateExpr))
+        {
+            // A wrapper forwarding its own parameters (builder.MapGet(pattern, handler)) isn't an endpoint itself.
+            if (templateExpr is IdentifierNameSyntax tid && file.Model.GetSymbolInfo(tid).Symbol is IParameterSymbol
+                && handler is IdentifierNameSyntax hid && file.Model.GetSymbolInfo(hid).Symbol is IParameterSymbol) return;
+            template = ExtractContext.StringValue(templateExpr, file.Model);
+        }
+        else template = templateParam is { HasExplicitDefaultValue: true, ExplicitDefaultValue: string d } ? d : templateParam is null ? "" : null;
         if (template is null)
         {
             ctx.AddBlindSpot(owner, call, $"{name} with a route built at runtime", Name);
@@ -155,22 +243,42 @@ public sealed class RoutesDetector : IDetector
         }
 
         var prefix = call.Expression is MemberAccessExpressionSyntax ma ? GroupPrefix(ma.Expression, file.Model, 0) : "";
+        prefix ??= ConventionPrefix(ctx, file, call);
         if (prefix is null)
         {
             ctx.AddBlindSpot(owner, call, "route group prefix not known here (passed in as a parameter)", Name);
             prefix = "{*}";
         }
-        var verbs = name == "MapMethods"
-            ? (args[1].Expression.DescendantNodesAndSelf().OfType<LiteralExpressionSyntax>().Select(l => l.Token.ValueText.ToUpperInvariant()).ToList() is { Count: > 0 } v ? v : ["ANY"])
-            : [MapMethods[name]];
+        var methodsParam = parameters.FirstOrDefault(p => p.Name == "httpMethods");
+        var verbs = name == "MapMethods" && methodsParam is not null && bound.TryGetValue(methodsParam, out var verbsExpr)
+            ? (verbsExpr.DescendantNodesAndSelf().OfType<LiteralExpressionSyntax>().Select(l => l.Token.ValueText.ToUpperInvariant()).ToList() is { Count: > 0 } v ? v : ["ANY"])
+            : [MapMethods.GetValueOrDefault(name, "ANY")];
 
-        var handler = args[handlerIndex].Expression;
-        var target = handler is LambdaExpressionSyntax or AnonymousMethodExpressionSyntax
-            ? owner
-            : ctx.NodeId(file.Model.GetSymbolInfo(handler).Symbol ?? file.Model.GetSymbolInfo(handler).CandidateSymbols.FirstOrDefault());
+        var handlerSymbol = file.Model.GetSymbolInfo(handler).Symbol ?? file.Model.GetSymbolInfo(handler).CandidateSymbols.FirstOrDefault();
+        var target = handler is LambdaExpressionSyntax or AnonymousMethodExpressionSyntax ? owner : ctx.NodeId(handlerSymbol);
         if (target is null) return;
+        if (handlerSymbol is IMethodSymbol handlerMethod) ApiShapes.Record(ctx, Name, handlerMethod, target, ctx.ShapesSeen);
         foreach (var verb in verbs)
             AddEndpoint(ctx, verb, Normalize($"{prefix}/{template}"), target, file.RelativePath, ctx.Line(call), Label.Certain);
+    }
+
+    /// <summary>
+    /// A group mapped by convention rather than in code, e.g. CleanArchitecture registers every
+    /// IEndpointGroup at "/api/{ClassName}" by reflection:
+    /// detectorSettings: { aspnetcore-routes: { groupConventions: ["CleanArchitecture.Web.Infrastructure.IEndpointGroup=/api/{type}"] } }.
+    /// </summary>
+    static string? ConventionPrefix(ExtractContext ctx, SourceFile file, InvocationExpressionSyntax call)
+    {
+        var type = file.Model.GetEnclosingSymbol(call.SpanStart)?.ContainingType;
+        if (type is null) return null;
+        foreach (var entry in ctx.Settings.GetValueOrDefault("groupConventions") ?? [])
+        {
+            if (entry.Split('=', 2) is not [var iface, var pattern]) continue;
+            var matches = type.AllInterfaces.Any(i => ExtractContext.FullName(i) == iface.Trim() || i.Name == iface.Trim())
+                || ExtractContext.IsOrDerives(type.BaseType, iface.Trim());
+            if (matches) return pattern.Trim().Replace("{type}", type.Name);
+        }
+        return null;
     }
 
     /// <summary>

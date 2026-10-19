@@ -4,4 +4,24 @@
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" />
     <ProjectReference Include="..\Stangent.Core\Stangent.Core.csproj" />
   </ItemGroup>
+
+  <!-- The TypeScript extractor (D30): one bundled file, shipped beside the stangent assemblies. -->
+  <PropertyGroup>
+    <TsExtractorDir>$(MSBuildThisFileDirectory)../../tools/ts-extractor/</TsExtractorDir>
+    <TsExtractorBundle>$(TsExtractorDir)dist/stangent-ts-extract.mjs</TsExtractorBundle>
+  </PropertyGroup>
+  <Target Name="BuildTsExtractor" BeforeTargets="BeforeBuild" Condition="!Exists('$(TsExtractorBundle)')">
+    <Message Importance="high" Text="stangent: building the TypeScript extractor (needs Node)" />
+    <Exec Command="npm ci --no-audit --no-fund &amp;&amp; npm run build" WorkingDirectory="$(TsExtractorDir)" ContinueOnError="true" />
+  </Target>
+  <Target Name="IncludeTsExtractor" BeforeTargets="AssignTargetPaths" DependsOnTargets="BuildTsExtractor">
+    <ItemGroup Condition="Exists('$(TsExtractorBundle)')">
+      <!-- Always: a stale copy must never shadow a new bundle (it did once, silently). -->
+      <None Include="$(TsExtractorBundle)" Link="ts-extractor/stangent-ts-extract.mjs" CopyToOutputDirectory="Always" />
+      <!-- TypeScript's standard library types, found next to the bundle at run time. -->
+      <_TsLib Include="$(TsExtractorDir)dist/lib.*.d.ts" />
+      <None Include="@(_TsLib)" Link="ts-extractor/%(_TsLib.Filename)%(_TsLib.Extension)" CopyToOutputDirectory="Always" />
+    </ItemGroup>
+    <Warning Condition="!Exists('$(TsExtractorBundle)')" Text="stangent: the TypeScript extractor wasn't built, so frontends won't be on the map. Run: npm --prefix tools/ts-extractor ci &amp;&amp; npm --prefix tools/ts-extractor run build" />
+  </Target>
 </Project>

@@ -1,0 +1,49 @@
+{
+  "repo": "sonarr",
+  "graphCommit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+  "openApiCheck": null,
+  "test4TypeScriptCompileBreak": {
+    "project:tsconfig.json": {
+      "members": 40,
+      "membersWithBreakage": 22,
+      "brokenFiles": 256,
+      "graph ✅ depth ≤ 1": {
+        "recall": 0.363,
+        "precision": 0.939,
+        "found": 93,
+        "of": 256
+      },
+      "graph ✅ depth ≤ 2": {
+        "recall": 0.68,
+        "precision": 0.439,
+        "found": 174,
+        "of": 256
+      },
+      "graph ✅ unlimited": {
+        "recall": 1,
+        "precision": 0.074,
+        "found": 256,
+        "of": 256
+      },
+      "same folder": {
+        "recall": 0.059,
+        "precision": 0.032,
+        "found": 15,
+        "of": 256
+      },
+      "graphDirectMisses": [
+        "CalendarEventProps.id → frontend/src/Calendar/Day/CalendarDay.tsx",
+        "CalendarEventProps.id → frontend/src/Calendar/Events/CalendarEventGroup.tsx",
+        "SelectInputOption.value → frontend/src/Components/Filter/Builder/DateFilterBuilderRowValue.tsx",
+        "SelectInputOption.value → frontend/src/Components/Filter/Builder/FilterBuilderRow.tsx",
+        "SettingsCardProps.children → frontend/src/Settings/CustomFormats/CustomFormats/CustomFormat.tsx",
+        "SettingsCardProps.children → frontend/src/Settings/DownloadClients/DownloadClients/DownloadClient.tsx",
+        "EpisodeHistoryRowProps.qualityCutoffNotMet → frontend/src/Episode/History/EpisodeHistory.tsx",
+        "QueryOptions.queryOptions → frontend/src/Activity/Blocklist/Blocklist.tsx",
+        "QueryOptions.queryOptions → frontend/src/Activity/History/Details/HistoryDetails.tsx"
+      ]
+    },
+    "note": "Ground truth = .ts/.tsx files with new tsc errors after renaming the member; its own file excluded. Angular templates aren't type-checked by tsc, so they're out of this test."
+  },
+  "expectedLinks": null
+}

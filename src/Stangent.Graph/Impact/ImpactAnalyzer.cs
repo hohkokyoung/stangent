@@ -15,7 +15,7 @@ public sealed record ChangeSpec(string Kind, string Value);
 public sealed class ImpactAnalyzer
 {
     public const int ItemsPerGroup = 5;
-    public static readonly string[] Groups = ["change", "endpoints", "eventHandlers", "tables", "tests", "projects", "code"];
+    public static readonly string[] Groups = ["change", "endpoints", "pages", "eventHandlers", "tables", "tests", "projects", "code"];
 
     readonly CodeGraph graph;
     readonly Dictionary<string, Node> nodes;
@@ -161,6 +161,7 @@ public sealed class ImpactAnalyzer
         var groups = new JsonArray
         {
             Group("endpoints", affected.Where(r => r.Node.Kind == NodeKind.Endpoint), expand),
+            Group("pages", affected.Where(r => r.Node.Kind == NodeKind.Page), expand),
             Group("eventHandlers", affected.Where(r => r.Via == EdgeKind.TriggeredBy), expand),
             Group("tables", affected.Where(r => r.Node.Kind is NodeKind.Table or NodeKind.Column), expand),
             Group("tests", affected.Where(r => r.Node.IsTest), expand),
@@ -169,6 +170,7 @@ public sealed class ImpactAnalyzer
                 .Select(g => new Reached(nodes.GetValueOrDefault(g.Key) ?? new Node(g.Key, NodeKind.Project, g.Key),
                     g.Any(r => r.Label == Label.Certain) ? Label.Certain : Label.Guessed, "contains", g.Min(r => r.Depth))), expand),
             Group("code", affected.Where(r => r.Node.Kind is NodeKind.Method or NodeKind.Property or NodeKind.Field or NodeKind.Type
+                or NodeKind.Component or NodeKind.Template
                 && !r.Node.IsTest && r.Via != EdgeKind.TriggeredBy), expand),
         };
 
@@ -182,7 +184,7 @@ public sealed class ImpactAnalyzer
 
         return new JsonObject
         {
-            ["schemaVersion"] = 2,
+            ["schemaVersion"] = 3,
             ["graph"] = new JsonObject { ["commit"] = graph.Commit },
             ["change"] = new JsonObject
             {
@@ -212,6 +214,10 @@ public sealed class ImpactAnalyzer
         foreach (var g in sorted.GroupBy(r => names[r.Node.Id]).Where(g => g.Count() > 1))
             foreach (var r in g)
                 names[r.Node.Id] = $"{(r.Node.Project is { } p && nodes.TryGetValue(p, out var proj) ? proj.Name : "?")} › {names[r.Node.Id]}";
+        // Still the same (two frontends with one package name): the project's path tells them apart.
+        foreach (var g in sorted.GroupBy(r => names[r.Node.Id]).Where(g => g.Count() > 1))
+            foreach (var r in g)
+                names[r.Node.Id] = $"{(r.Node.Project ?? r.Node.Id).Replace("project:", "")} › {r.Node.Name}";
         return new JsonObject
         {
             ["name"] = name,
@@ -258,7 +264,7 @@ public sealed class ImpactAnalyzer
 
     static readonly Dictionary<string, string> Titles = new()
     {
-        ["endpoints"] = "endpoints", ["eventHandlers"] = "event handlers", ["tables"] = "tables and columns",
+        ["endpoints"] = "endpoints", ["pages"] = "pages", ["eventHandlers"] = "event handlers", ["tables"] = "tables and columns",
         ["tests"] = "tests that cover it", ["projects"] = "projects", ["code"] = "other methods and types",
     };
 

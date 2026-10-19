@@ -35,4 +35,9 @@ dotnet run --project src/Stangent.Cli -- phases check     # D20 dependency check
 dotnet pack src/Stangent.Cli -c Release                   # → artifacts/packages/stangent.*.nupkg
 benchmark/run.sh <label> <stangent args...>               # D6 benchmark; results/ is committed
 dotnet run --project benchmark/Stangent.Benchmark -- <clone>   # D28 scoring (needs full history + a built graph)
+npm --prefix tools/ts-extractor ci && npm --prefix tools/ts-extractor test   # the TypeScript extractor (D30)
+npm --prefix tools/ts-extractor run build                 # → dist/, shipped by the dotnet build (built automatically if missing)
 ```
+
+Frontend analysis needs Node. The extractor bundle and TypeScript's lib files are copied beside the
+stangent assemblies (`ts-extractor/`); `STANGENT_TS_EXTRACTOR` points elsewhere for development.

@@ -1,0 +1,702 @@
+{
+  "repo": "kavita",
+  "graphCommit": "2d225367f0310ac7354423b772a4c6a7caf63fd2",
+  "windowMonths": 36,
+  "predictors": "graph (lines): changed methods found by name in today's graph · graph (lines+deps): plus what they directly use · graph (files): every point in the changed files · same project / same folder / co-change: baselines without the graph",
+  "labels": "certain = ✅ only; certain+guessed = ✅ and \uD83D\uDFE1. \uD83D\uDCDC (Phase 1c) not built yet.",
+  "memberMatching": {
+    "sameFile": 393,
+    "moved": 1,
+    "unmatched": 30
+  },
+  "test1FindsTheRest": {
+    "cases": 143,
+    "backendToFrontend": {
+      "cases": 105,
+      "graph (lines)": {
+        "recall": 0.262,
+        "precision": 0.015,
+        "medianCasePrecision": 0.007,
+        "found": 127,
+        "of": 484,
+        "medianPredictedFiles": 45,
+        "emptyAnswers": 16
+      },
+      "same folder": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 484,
+        "medianPredictedFiles": 17,
+        "emptyAnswers": 1
+      },
+      "co-change": {
+        "recall": 0.008,
+        "precision": 0.04,
+        "medianCasePrecision": 0,
+        "found": 4,
+        "of": 484,
+        "medianPredictedFiles": 0,
+        "emptyAnswers": 87
+      }
+    },
+    "graph (lines)": {
+      "certain": {
+        "recall": 0.141,
+        "precision": 0.035,
+        "medianCasePrecision": 0.04,
+        "found": 195,
+        "of": 1383,
+        "medianPredictedFiles": 7,
+        "emptyAnswers": 39
+      },
+      "certain+guessed": {
+        "recall": 0.233,
+        "precision": 0.026,
+        "medianCasePrecision": 0.029,
+        "found": 322,
+        "of": 1383,
+        "medianPredictedFiles": 47,
+        "emptyAnswers": 24
+      }
+    },
+    "graph (lines, depth ≤ 1)": {
+      "certain": {
+        "recall": 0.068,
+        "precision": 0.199,
+        "medianCasePrecision": 0.2,
+        "found": 94,
+        "of": 1383,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 53
+      },
+      "certain+guessed": {
+        "recall": 0.069,
+        "precision": 0.203,
+        "medianCasePrecision": 0.227,
+        "found": 96,
+        "of": 1383,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 53
+      }
+    },
+    "graph (lines, depth ≤ 2)": {
+      "certain": {
+        "recall": 0.105,
+        "precision": 0.088,
+        "medianCasePrecision": 0.105,
+        "found": 145,
+        "of": 1383,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 41
+      },
+      "certain+guessed": {
+        "recall": 0.109,
+        "precision": 0.09,
+        "medianCasePrecision": 0.068,
+        "found": 151,
+        "of": 1383,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 26
+      }
+    },
+    "graph (lines, depth ≤ 3)": {
+      "certain": {
+        "recall": 0.118,
+        "precision": 0.049,
+        "medianCasePrecision": 0.071,
+        "found": 163,
+        "of": 1383,
+        "medianPredictedFiles": 3,
+        "emptyAnswers": 39
+      },
+      "certain+guessed": {
+        "recall": 0.128,
+        "precision": 0.052,
+        "medianCasePrecision": 0.062,
+        "found": 177,
+        "of": 1383,
+        "medianPredictedFiles": 3,
+        "emptyAnswers": 24
+      }
+    },
+    "graph (lines+deps)": {
+      "certain": {
+        "recall": 0.193,
+        "precision": 0.038,
+        "medianCasePrecision": 0.056,
+        "found": 267,
+        "of": 1383,
+        "medianPredictedFiles": 19,
+        "emptyAnswers": 5
+      },
+      "certain+guessed": {
+        "recall": 0.285,
+        "precision": 0.029,
+        "medianCasePrecision": 0.037,
+        "found": 394,
+        "of": 1383,
+        "medianPredictedFiles": 56,
+        "emptyAnswers": 5
+      }
+    },
+    "graph (files)": {
+      "certain": {
+        "recall": 0.186,
+        "precision": 0.024,
+        "medianCasePrecision": 0.029,
+        "found": 257,
+        "of": 1383,
+        "medianPredictedFiles": 31,
+        "emptyAnswers": 33
+      },
+      "certain+guessed": {
+        "recall": 0.312,
+        "precision": 0.019,
+        "medianCasePrecision": 0.02,
+        "found": 431,
+        "of": 1383,
+        "medianPredictedFiles": 92,
+        "emptyAnswers": 15
+      }
+    },
+    "same project": {
+      "recall": 0.146,
+      "precision": 0.007,
+      "medianCasePrecision": 0.007,
+      "found": 202,
+      "of": 1383,
+      "medianPredictedFiles": 140,
+      "emptyAnswers": 0
+    },
+    "same folder": {
+      "recall": 0.067,
+      "precision": 0.02,
+      "medianCasePrecision": 0,
+      "found": 93,
+      "of": 1383,
+      "medianPredictedFiles": 20,
+      "emptyAnswers": 2
+    },
+    "co-change": {
+      "recall": 0.014,
+      "precision": 0.152,
+      "medianCasePrecision": 0.125,
+      "found": 20,
+      "of": 1383,
+      "medianPredictedFiles": 0,
+      "emptyAnswers": 118
+    }
+  },
+  "test2PredictsWhatBroke": {
+    "cases": 24,
+    "backendToFrontend": {
+      "cases": 22,
+      "graph (lines)": {
+        "recall": 0.287,
+        "precision": 0.013,
+        "medianCasePrecision": 0.008,
+        "found": 33,
+        "of": 115,
+        "medianPredictedFiles": 30,
+        "emptyAnswers": 5
+      },
+      "same folder": {
+        "recall": 0.122,
+        "precision": 0.008,
+        "medianCasePrecision": 0,
+        "found": 14,
+        "of": 115,
+        "medianPredictedFiles": 66,
+        "emptyAnswers": 0
+      },
+      "co-change": {
+        "recall": 0.33,
+        "precision": 0.041,
+        "medianCasePrecision": 0.033,
+        "found": 38,
+        "of": 115,
+        "medianPredictedFiles": 11,
+        "emptyAnswers": 1
+      }
+    },
+    "graph (lines)": {
+      "certain": {
+        "recall": 0.017,
+        "precision": 0.001,
+        "medianCasePrecision": 0,
+        "found": 2,
+        "of": 120,
+        "medianPredictedFiles": 15,
+        "emptyAnswers": 5
+      },
+      "certain+guessed": {
+        "recall": 0.292,
+        "precision": 0.01,
+        "medianCasePrecision": 0.006,
+        "found": 35,
+        "of": 120,
+        "medianPredictedFiles": 40,
+        "emptyAnswers": 5
+      }
+    },
+    "graph (lines, depth ≤ 1)": {
+      "certain": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 120,
+        "medianPredictedFiles": 4,
+        "emptyAnswers": 5
+      },
+      "certain+guessed": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 120,
+        "medianPredictedFiles": 4,
+        "emptyAnswers": 5
+      }
+    },
+    "graph (lines, depth ≤ 2)": {
+      "certain": {
+        "recall": 0.017,
+        "precision": 0.003,
+        "medianCasePrecision": 0,
+        "found": 2,
+        "of": 120,
+        "medianPredictedFiles": 9,
+        "emptyAnswers": 5
+      },
+      "certain+guessed": {
+        "recall": 0.017,
+        "precision": 0.003,
+        "medianCasePrecision": 0,
+        "found": 2,
+        "of": 120,
+        "medianPredictedFiles": 9,
+        "emptyAnswers": 5
+      }
+    },
+    "graph (lines, depth ≤ 3)": {
+      "certain": {
+        "recall": 0.017,
+        "precision": 0.002,
+        "medianCasePrecision": 0,
+        "found": 2,
+        "of": 120,
+        "medianPredictedFiles": 15,
+        "emptyAnswers": 5
+      },
+      "certain+guessed": {
+        "recall": 0.017,
+        "precision": 0.002,
+        "medianCasePrecision": 0,
+        "found": 2,
+        "of": 120,
+        "medianPredictedFiles": 15,
+        "emptyAnswers": 5
+      }
+    },
+    "graph (lines+deps)": {
+      "certain": {
+        "recall": 0.025,
+        "precision": 0.002,
+        "medianCasePrecision": 0,
+        "found": 3,
+        "of": 120,
+        "medianPredictedFiles": 27,
+        "emptyAnswers": 5
+      },
+      "certain+guessed": {
+        "recall": 0.3,
+        "precision": 0.01,
+        "medianCasePrecision": 0.008,
+        "found": 36,
+        "of": 120,
+        "medianPredictedFiles": 66,
+        "emptyAnswers": 5
+      }
+    },
+    "graph (files)": {
+      "certain": {
+        "recall": 0.575,
+        "precision": 0.011,
+        "medianCasePrecision": 0.01,
+        "found": 69,
+        "of": 120,
+        "medianPredictedFiles": 206,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.642,
+        "precision": 0.011,
+        "medianCasePrecision": 0.014,
+        "found": 77,
+        "of": 120,
+        "medianPredictedFiles": 267,
+        "emptyAnswers": 0
+      }
+    },
+    "same project": {
+      "recall": 0.975,
+      "precision": 0.005,
+      "medianCasePrecision": 0.006,
+      "found": 117,
+      "of": 120,
+      "medianPredictedFiles": 859,
+      "emptyAnswers": 0
+    },
+    "same folder": {
+      "recall": 0.117,
+      "precision": 0.006,
+      "medianCasePrecision": 0,
+      "found": 14,
+      "of": 120,
+      "medianPredictedFiles": 66,
+      "emptyAnswers": 0
+    },
+    "co-change": {
+      "recall": 0.317,
+      "precision": 0.037,
+      "medianCasePrecision": 0.025,
+      "found": 38,
+      "of": 120,
+      "medianPredictedFiles": 11,
+      "emptyAnswers": 1
+    }
+  },
+  "test2Pairs": {
+    "fixCommits": 60,
+    "pairs": 129,
+    "trivialPairsExcluded": 8,
+    "handCheckSample": [
+      {
+        "change": "9ad394c43a544f7fb2721a36adef2cbf3f2cf79b",
+        "changeSubject": "Polish 6 - The last Polish (#3591)",
+        "fix": "378d6533e28fb3f8604402f7d22eeccf17468cc0",
+        "fixSubject": "Some bug fixes (#4821)",
+        "fixFilesElsewhere": [
+          "Kavita.API/Repositories/ISeriesRepository.cs",
+          "Kavita.Database/Repositories/SeriesRepository.cs",
+          "Kavita.Models/DTOs/SeriesDetail/SeriesDetailDto.cs",
+          "Kavita.Server/Controllers/ImageController.cs",
+          "Kavita.Server/Controllers/LicenseController.cs",
+          "Kavita.Server/Controllers/MetadataController.cs",
+          "Kavita.Server/Controllers/PluginController.cs",
+          "Kavita.Services.Tests/ScrobblingServiceTests.cs",
+          "Kavita.Services/Plus/ScrobbleService/SeriesScrobbleService.cs",
+          "Kavita.Services/Plus/ScrobblingService.cs",
+          "Kavita.Services/SeriesService.cs",
+          "UI/Web/src/app/_models/series-detail/series-detail.ts",
+          "UI/Web/src/app/_single-module/match-series-modal/match-series-modal.component.ts",
+          "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts",
+          "UI/Web/src/app/shared/read-more/read-more.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "0e0d8dca5bf5eb7b243e759fad1ed4c49b14b913",
+        "changeSubject": "Release Polish 2 (#3354)",
+        "fix": "f76bbe85d87f43e02f611915a2850ac34b19dfec",
+        "fixSubject": "Small scanner edge case fix (#4582)",
+        "fixFilesElsewhere": [
+          "Kavita.Models/Entities/Enums/MediaErrorProducer.cs",
+          "Kavita.Services.Tests/CacheServiceTests.cs",
+          "Kavita.Services.Tests/Helpers/ScannerHelper.cs",
+          "Kavita.Services.Tests/ParseScannedFilesTests.cs",
+          "Kavita.Services/Reading/ReadingItemService.cs",
+          "Kavita.Services/Scanner/ParseScannedFiles.cs",
+          "Kavita.Services/Scanner/ScannerService.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "857e419e4e59b8ef6bbb498d7c621111d7611b52",
+        "changeSubject": "Stats Fix & Library Bulk Actions (#3209)",
+        "fix": "3557b83c6fbe21826fdee298a115c8ae1c04b2fc",
+        "fixSubject": "A small collection of bug fixes (#4565)",
+        "fixFilesElsewhere": [
+          "Kavita.Database/Repositories/AppUserProgressRepository.cs",
+          "Kavita.Server/Controllers/LibraryController.cs",
+          "Kavita.Server/Controllers/OidcController.cs",
+          "Kavita.Server/Controllers/UploadController.cs",
+          "Kavita.Services/ImageService.cs",
+          "UI/Web/src/app/_single-module/edit-chapter-modal/edit-chapter-modal.component.ts",
+          "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts",
+          "UI/Web/src/app/shared/_services/download.service.ts",
+          "UI/Web/src/app/volume-detail/volume-detail.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "b5bfd341d7cdb093ed5a8f522262a894acbdb2cd",
+        "changeSubject": "OpenID Connect support (#3975)",
+        "fix": "619fa43b00402a71784aa6b81f48e90dec2904a0",
+        "fixSubject": "UI Tech Debt Fixes Part 2 (#4480)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_services/reader.service.ts",
+          "UI/Web/src/app/_services/theme.service.ts",
+          "UI/Web/src/app/book-reader/_components/_drawers/view-edit-annotation-drawer/view-edit-annotation-drawer.component.ts",
+          "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts",
+          "UI/Web/src/app/user-settings/theme-manager/theme-manager.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "ba20ad4ecc062e0c44e705e24620cad50b0fe8ce",
+        "changeSubject": "New Scanner + People Pages (#3286)",
+        "fix": "76f9e085ebdc0f5779fb47afbd62eba76714e3ec",
+        "fixSubject": "Inherit web links for Series and bug fixes (#4152)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_models/library/library.ts",
+          "UI/Web/src/app/_single-module/match-series-modal/match-series-modal.component.ts",
+          "UI/Web/src/app/cards/bulk-selection.service.ts",
+          "UI/Web/src/app/chapter-detail/chapter-detail.component.ts",
+          "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "7ce36bfc440caf76c11bbdcabd182a9635464c5a",
+        "changeSubject": "People Aliases and Merging (#3795)",
+        "fix": "bda2a4d50d83d0cecf50bf1ad154a9ddb6b604a7",
+        "fixSubject": "Bunch of OIDC fixes and one extra (#4126)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_services/account.service.ts",
+          "UI/Web/src/app/admin/manage-open-idconnect/manage-open-idconnect.component.ts",
+          "UI/Web/src/app/reading-list/_modals/edit-reading-list-modal/edit-reading-list-modal.component.ts",
+          "UI/Web/src/app/registration/user-login/user-login.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "6bb03618fb840ee55b4b89c51ca372ce11eea358",
+        "changeSubject": "EPUB Reader Fixes (#3662)",
+        "fix": "f7dca3806fdeef51b21163dd9acbd26bbff2f4ea",
+        "fixSubject": "Epub Text Bleeding Finally Fixed! (#4086)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_models/preferences/preferences.ts",
+          "UI/Web/src/app/_services/font.service.ts",
+          "UI/Web/src/app/cards/card-detail-layout/card-detail-layout.component.ts",
+          "UI/Web/src/app/carousel/_components/carousel-reel/carousel-reel.component.ts",
+          "UI/Web/src/app/pdf-reader/_components/pdf-reader/pdf-reader.component.ts",
+          "UI/Web/src/app/reading-list/_components/reading-lists/reading-lists.component.ts",
+          "UI/Web/src/app/settings/_components/setting-multi-check-box/setting-multi-check-box.component.ts",
+          "UI/Web/src/app/user-settings/manga-user-preferences/manage-user-preferences.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "8def92ff73ee9c618dcace380a9c4064d2d134ef",
+        "changeSubject": "More Epub Fixes (#4017)",
+        "fix": "21448a86bafb7086a03dec3cccd2793f54e700a0",
+        "fixSubject": "Epub and OPDS Fixes (#4038)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_models/preferences/reading-profiles.ts",
+          "UI/Web/src/app/_services/epub-reader-settings.service.ts",
+          "UI/Web/src/app/book-reader/_components/reader-settings/reader-settings.component.ts",
+          "UI/Web/src/app/shared/confirm-dialog/_models/confirm-config.ts",
+          "UI/Web/src/app/user-settings/manage-reading-profiles/manage-reading-profiles.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "6bb03618fb840ee55b4b89c51ca372ce11eea358",
+        "changeSubject": "EPUB Reader Fixes (#3662)",
+        "fix": "8def92ff73ee9c618dcace380a9c4064d2d134ef",
+        "fixSubject": "More Epub Fixes (#4017)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_services/account.service.ts",
+          "UI/Web/src/app/_services/epub-reader-menu.service.ts",
+          "UI/Web/src/app/_single-module/reviews/reviews.component.ts",
+          "UI/Web/src/app/book-reader/_components/_annotations/highlight-bar/highlight-bar.component.ts",
+          "UI/Web/src/app/book-reader/_components/_drawers/view-toc-drawer/view-toc-drawer.component.ts",
+          "UI/Web/src/app/book-reader/_components/table-of-contents/table-of-contents.component.ts",
+          "UI/Web/src/app/cards/cover-image-chooser/cover-image-chooser.component.ts",
+          "UI/Web/src/app/pdf-reader/_components/pdf-reader/pdf-reader.component.ts",
+          "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts",
+          "UI/Web/src/app/settings/_components/setting-item/setting-item.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "1856b01a46df91b1b813c616e080ccafb489a546",
+        "changeSubject": "Reading Profiles (#3845)",
+        "fix": "6137d2a30eb85a24aae166c62245088601b36e17",
+        "fixSubject": "Koreader Sync Fix and More (#4006)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_services/library.service.ts",
+          "UI/Web/src/app/_services/nav.service.ts",
+          "UI/Web/src/app/admin/import-mappings/import-mappings.component.ts",
+          "UI/Web/src/app/admin/manage-library/manage-library.component.ts",
+          "UI/Web/src/app/manga-reader/_components/infinite-scroller/infinite-scroller.component.ts",
+          "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "72c20fb54fbb66ff246e55438a619cdeaac96c4b",
+        "changeSubject": "One more small bug (#3175)",
+        "fix": "6137d2a30eb85a24aae166c62245088601b36e17",
+        "fixSubject": "Koreader Sync Fix and More (#4006)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_services/action-factory.service.ts",
+          "UI/Web/src/app/_services/action.service.ts",
+          "UI/Web/src/app/_services/library.service.ts",
+          "UI/Web/src/app/_services/nav.service.ts",
+          "UI/Web/src/app/admin/import-mappings/import-mappings.component.ts",
+          "UI/Web/src/app/admin/manage-library/manage-library.component.ts",
+          "UI/Web/src/app/library-detail/library-detail.component.ts",
+          "UI/Web/src/app/manga-reader/_components/infinite-scroller/infinite-scroller.component.ts",
+          "UI/Web/src/app/sidenav/_components/side-nav/side-nav.component.ts",
+          "UI/Web/src/app/sidenav/preference-nav/preference-nav.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "8cc1edc38d9140d17b80d32143cfe90c203cf9d5",
+        "changeSubject": "Width Override Fixes + Swagger (again) (#3034)",
+        "fix": "881727bd21d42dee043d91ba7ab06b9427fbbaef",
+        "fixSubject": "A few bug fixes (#3980)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/all-filters/all-filters.component.ts",
+          "UI/Web/src/app/reading-list/_components/reading-list-item/reading-list-item.component.ts",
+          "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts",
+          "UI/Web/src/app/user-settings/manage-reading-profiles/manage-reading-profiles.component.ts",
+          "UI/Web/src/app/user-settings/user-holds/scrobbling-holds.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "ba20ad4ecc062e0c44e705e24620cad50b0fe8ce",
+        "changeSubject": "New Scanner + People Pages (#3286)",
+        "fix": "6fa1cf994efe23096f05289dcb7cad91e9430ef3",
+        "fixSubject": "A bunch of bug fixes and some enhancements (#3871)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_services/nav.service.ts",
+          "UI/Web/src/app/admin/manage-metadata-settings/manage-metadata-settings.component.ts",
+          "UI/Web/src/app/nav/_components/nav-link-modal/nav-link-modal.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "dad212bfb96487db431bdc7e2827fa53163ab3ed",
+        "changeSubject": "Reading List Detail Overhaul + More Bugfixes and Polish (#3687)",
+        "fix": "193e9b1da95bbfcef57c57ac884af35bdac41b50",
+        "fixSubject": "A collection of bug fixes (#3820)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_services/account.service.ts",
+          "UI/Web/src/app/book-reader/_components/book-reader/book-reader.component.ts",
+          "UI/Web/src/app/book-reader/_components/table-of-contents/table-of-contents.component.ts",
+          "UI/Web/src/app/collections/_components/all-collections/all-collections.component.ts",
+          "UI/Web/src/app/collections/_components/collection-detail/collection-detail.component.ts",
+          "UI/Web/src/app/reading-list/_components/reading-lists/reading-lists.component.ts",
+          "UI/Web/src/app/shared/confirm-dialog/_models/confirm-config.ts",
+          "UI/Web/src/app/shared/confirm-dialog/confirm-dialog.component.ts",
+          "UI/Web/src/app/shared/confirm.service.ts",
+          "UI/Web/src/app/user-settings/change-password/change-password.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "a2fd87c454c4284504e4f2077117a65f3503d6dc",
+        "changeSubject": "Polish Round 2 (#2411)",
+        "fix": "39726f8c4dafa8fe2932406a077410f7e0513ed5",
+        "fixSubject": "Random Fixes  (#3549)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_services/reader.service.ts",
+          "UI/Web/src/app/_single-module/related-tab/related-tab.component.ts",
+          "UI/Web/src/app/book-reader/_models/book-white-theme.ts",
+          "UI/Web/src/app/book-reader/_services/book.service.ts",
+          "UI/Web/src/app/bookmark/_components/bookmarks/bookmarks.component.ts",
+          "UI/Web/src/app/cards/chapter-card/chapter-card.component.ts",
+          "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "d4bcd354dd5cdadd8ee7aba07f582b49c7c94911",
+        "changeSubject": "Bugs from UX Overhaul (#3117)",
+        "fix": "bb9621a588ef1608d965c811d3c12b6257ee184f",
+        "fixSubject": "Metadata Fixes (#3533)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_models/series-detail/external-series-detail.ts",
+          "UI/Web/src/app/_single-module/details-tab/details-tab.component.ts",
+          "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts",
+          "UI/Web/src/app/admin/manage-tasks-settings/manage-tasks-settings.component.ts",
+          "UI/Web/src/app/announcements/_components/changelog-update-item/changelog-update-item.component.ts",
+          "UI/Web/src/app/person-detail/person-detail.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "894b49bb7620b860c80f95175a1adbe9c03a4ce8",
+        "changeSubject": "v0.8.3.2 - A Small Hotfix (#3194)",
+        "fix": "6b13db129eeb649877a0727656062c33d6f27e83",
+        "fixSubject": "Last Read Filter + A lot of bug fixes (#3312)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_models/collection-tag.ts",
+          "UI/Web/src/app/admin/manage-library/manage-library.component.ts",
+          "UI/Web/src/app/cards/next-expected-card/next-expected-card.component.ts",
+          "UI/Web/src/app/metadata-filter/_components/metadata-filter-row/metadata-filter-row.component.ts",
+          "UI/Web/src/app/series-detail/_components/metadata-detail-row/metadata-detail-row.component.ts",
+          "UI/Web/src/app/typeahead/_components/typeahead.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "79eb98a3bb0efdd9ac52a302cf5d3acf9d2598d4",
+        "changeSubject": "UX Pass 7 (#3135)",
+        "fix": "d6ee97816ff6ec94c2353f1a7225c5db39cc7c33",
+        "fixSubject": "Fixes before Release (#3172)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_single-module/card-actionables/card-actionables.component.ts",
+          "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "7a6ef173e2ffe03fd757d3753b260bac1577791f",
+        "changeSubject": "Polish before Release (#2621)",
+        "fix": "1fd72ada365f3cf40539334bd3f328123305d65f",
+        "fixSubject": "Sort by Average Rating and Big Want to Read fix (#2672)",
+        "fixFilesElsewhere": [
+          "UI/Web/src/app/_models/metadata/series-filter.ts",
+          "UI/Web/src/app/_pipes/sort-field.pipe.ts",
+          "UI/Web/src/app/admin/manage-email-settings/manage-email-settings.component.ts",
+          "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts",
+          "UI/Web/src/app/announcements/_components/changelog/changelog.component.ts",
+          "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts",
+          "UI/Web/src/app/user-settings/manage-devices/manage-devices.component.ts"
+        ],
+        "genuine": null
+      },
+      {
+        "change": "a85644fb6bce8fc967d92f9fa4684d956dc1dc2f",
+        "changeSubject": "Email is now Built-in! (#2635)",
+        "fix": "b1e9d8cbba1fdbffc8293a8d7c7f47de673bb35e",
+        "fixSubject": "A lot of Misc Fixes (#2656)",
+        "fixFilesElsewhere": [
+          "Kavita.Common/EnvironmentInfo/IOsInfo.cs",
+          "UI/Web/src/app/_services/library.service.ts",
+          "UI/Web/src/app/manga-reader/_components/infinite-scroller/infinite-scroller.component.ts"
+        ],
+        "genuine": null
+      }
+    ]
+  },
+  "exactCheck": null,
+  "test4CompileBreak": null,
+  "test3StableAndFast": {
+    "identicalFullBuilds": true,
+    "incrementalEqualsFull": true,
+    "fullBuildMs": 24517,
+    "incrementalBuildMs": 14846,
+    "incrementalExtracted": 8,
+    "touchedFile": "Kavita.API/Attributes/SkipDeviceTrackingAttribute.cs"
+  }
+}
