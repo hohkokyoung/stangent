@@ -5,6 +5,7 @@ using Stangent.Core;
 using Stangent.Graph;
 using Stangent.Graph.History;
 using Stangent.Graph.Impact;
+using Stangent.Benchmark.Split;
 
 // Scores impact analysis against a repo's own git history (decisions.md D28). No AI, no labels:
 //   1. finds the rest of the change — from one file of a past commit, how many of its other files?
@@ -25,6 +26,7 @@ using Stangent.Graph.Impact;
 //     [--max-fixes 400] [--exact-sample 0] [--sdk-override file] [--skip-build-test] [--out file]
 //     [--compile-break N] [--only-compile-break]   (test 4: rename N methods, see what fails to compile)
 //     [--openapi path/in/repo.json] [--ts-compile-break N] [--only-frontend]   (Phase 1b, D32)
+//     [--split --split-config configs/<name>.split.json [--max-split 30] [--max-examined 200]]   (Phase 1d, D45–D49)
 
 var argList = args.ToList();
 // Picks 📜's defaults from tuning runs (D43): `--select-tuning <tune.json>... [--out file]`.
@@ -106,6 +108,35 @@ var historyIndex = new HistoryIndex(
 var historySelfCheck = historyOverride.Length == 0 && graph.History is { Status: "full" }
     ? historyIndex.Count(historySettings).Lines.SequenceEqual(graph.HistoryLines) : (bool?)null;
 Console.Error.WriteLine($"history: self-check {historySelfCheck?.ToString() ?? "skipped"}");
+
+// ---- Phase 1d part 1: the split check (D45–D49) ----------------------------------------------------
+if (argList.Contains("--split"))
+{
+    // An interrupted run leaves the tree at some past commit: start again from the commit it started at.
+    var startFile = Path.Combine(root, ".stangent", "split-start");
+    var start = File.Exists(startFile) ? File.ReadAllText(startFile).Trim() : graph.Commit;
+    File.WriteAllText(startFile, start);
+    var splitConfig = Opt("--split-config", "") is { Length: > 0 } cfg ? SplitConfig.Load(cfg) : new SplitConfig();
+    var check = new SplitCheck(root, splitConfig, new DotnetChecker(root, splitConfig, Path.Combine(root, ".stangent", "split"), Console.Error),
+        async () => (await GraphBuilder.BuildAsync(repo, new BuildOptions(Restore: true))).Graph,
+        historyIndex, historySettings, ApplySdkOverride, Console.Error)
+    {
+        MaxSplit = int.Parse(Opt("--max-split", "30")),
+        MaxExamined = int.Parse(Opt("--max-examined", "200")),
+        MaxWalk = int.Parse(Opt("--max-walk", "2000")),
+    };
+    var split = await check.RunAsync(start);
+    split.Insert(0, "repo", Path.GetFileName(root));
+    split.Insert(1, "note", "Phase 1d part 1 (D45–D49): each change's members grouped by the graph at the change; each group applied alone onto the parent, then built (step A) and unit-tested (step B). Judged on 'within 2 steps (✅+🟡)'.");
+    split.Insert(2, "historySettings", $"window {historySettings.Window}, minShared {historySettings.MinShared}, minShare {historySettings.MinShare.ToString(System.Globalization.CultureInfo.InvariantCulture)}, maxFiles {historySettings.MaxFiles} (📜 from commits older than each change)");
+    // Back at the start commit: rebuild its graph, so the clone's stored graph is the pinned one again.
+    await GraphBuilder.BuildAsync(repo, new BuildOptions(Restore: true));
+    File.Delete(startFile);
+    var splitText = split.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+    if (Opt("--out", "") is { Length: > 0 } splitFile) File.WriteAllText(splitFile, splitText + "\n");
+    Console.WriteLine(splitText);
+    return 0;
+}
 
 // ---- Seeds: what a commit changed in one file -----------------------------------------------
 var matchStats = new Dictionary<string, int> { ["sameFile"] = 0, ["moved"] = 0, ["unmatched"] = 0 };

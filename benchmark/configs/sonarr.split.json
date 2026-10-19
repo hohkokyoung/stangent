@@ -1,0 +1,15 @@
+// Phase 1d split check (D46): how Sonarr is built and unit-tested on this machine.
+{
+  "solution": "src/Sonarr.sln",
+  "testProjects": "\\.Test$",
+  // Sonarr.Integration.Test and Sonarr.Automation.Test need a running Sonarr or a browser.
+  "integrationMarkers": ["Integration", "Automation"],
+  // The unit-test filter Sonarr's own CI uses on macOS and Linux.
+  "testFilter": "TestCategory!=ManualTest&TestCategory!=WINDOWS&TestCategory!=IntegrationTest&TestCategory!=AutomationTest",
+  "frontendPaths": ["frontend/", "package.json", "yarn.lock", "tsconfig.json"],
+  // Sonarr's `yarn typecheck`: CSS module typings first, then tsc --noEmit.
+  "frontendCommands": [
+    "node_modules/.bin/tcm frontend/src --camelCase --pattern \"**/*.module.css\"",
+    "node_modules/.bin/tsc --noEmit -p frontend/tsconfig.json"
+  ]
+}

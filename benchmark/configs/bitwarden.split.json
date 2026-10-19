@@ -1,0 +1,6 @@
+// Phase 1d split check (D46): how bitwarden/server is built and unit-tested on this machine.
+{
+  "solution": "bitwarden-server.slnx",
+  "testProjects": "\\.Test$",
+  "integrationMarkers": ["Integration"]
+}
