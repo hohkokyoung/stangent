@@ -2,7 +2,7 @@
 phase: 1c
 name: git-history
 status: in progress
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 2 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3 }
 provides: {}
 ---
 
@@ -120,14 +120,14 @@ reopens `phases/1a-csharp-map.md` and bumps `code-graph` to v3 and `impact-repor
 - **Impact tests:** the `history` group, the cap and `--expand`, the "also 📜" tag, `changes-with` never walked, and the v4 schema.
 - **Determinism:** two builds byte-identical with 📜; incremental = full.
 - **Docs:** `docs/code-graph.md` and `benchmark/README.md`. The CI note for users' repos: the graph build needs `fetch-depth: 0` and
-  `filter: blob:none` on `actions/checkout`. Writing the workflow itself is Phase 7.
+  `filter: blob:limit=200k` on `actions/checkout` (D42 refined). Writing the workflow itself is Phase 7.
 - stangent's own CI needs no history: the fixture repo is created by the test.
 
 ## Done when
 - [x] **Gate 1** run on all four repos (and bitwarden/server), with each fix counted once, full history, 95% ranges and the bundle slice; results committed. *If it fails, 1c stops here: the report says why, and the boxes below don't apply.*
-- [ ] `stangent graph build` adds 📜 lines with all four noise filters, renames followed (or the fallback recorded), and `meta.history`; a shallow clone warns and keeps stored 📜.
+- [x] `stangent graph build` adds 📜 lines with all four noise filters, renames followed (or the fallback recorded), and `meta.history`; a shallow clone warns and keeps stored 📜.
 - [ ] `graph impact` shows the `history` group last, capped at 10 with evidence, `--expand history`, the "also 📜" tag, and never walks 📜 (`impact-report` v4).
-- [ ] Contracts bumped per D20: `code-graph` v3, `impact-report` v4, 1a reopened, 1b marked `needs review` with its follow-up; `phases check` passes.
+- [ ] Contracts bumped per D20: `code-graph` v3 ✅, `impact-report` v4, 1a reopened, 1b marked `needs review` with its follow-up; `phases check` passes.
 - [ ] Defaults tuned on nopCommerce and Sonarr, then frozen and committed before judging.
 - [ ] **Gate 2** on the judging repo, bitwarden/server (Kavita and eShop reported, under the floor):
   - [ ] **📜 adds something:** graph + top-10 📜 beats graph alone on recall, with the 95% range of the gain above zero;
@@ -173,6 +173,19 @@ Test 2 hardened as planned:
 - **Bundle fixes:** 18 of 23 on Kavita, 17 of 44 on nopCommerce, 13 of 91 on bitwarden/server, 1 of 87 on Sonarr.
   On Sonarr and bitwarden/server the gain comes from single-topic fixes (+0.06 and +0.05), not bundles.
 - The plain baseline's top 10 alone finds 0.06–0.13 of what fixes touch. Its value is in what it adds to the graph, not as a replacement.
+
+### Step 2 · history reader · 2026-10-19
+- `src/Stangent.Graph/History/HistoryReader.cs`: the log parser (renames, deletes), the counter (filters,
+  windows, thresholds) and the build step (reuse, shallow clones, blobless clones). 📜 lines live in their own
+  table, outside the walked lines, so "never walked" holds by construction.
+- **Cost on the benchmark repos** (full clones, history step only): nopCommerce 1.0 s (16k commits),
+  Sonarr 0.9 s, bitwarden/server 0.75 s, Kavita 0.4 s. Well under D41's 10 s, so no incremental history.
+- **Renames (D38):** the first version took 7.1 s on nopCommerce and 34 s on a blobless clone. Reading only the
+  map's file types fixed the first; the second is a property of blobless clones, so they skip renames with a
+  warning, and CI's clone is `blob:limit=200k` instead (D42 refined).
+- **`code-graph` v3** (file layout 3): 1a reopened, 1b marked `needs review` (D20).
+- 18 tests: parsing, each filter, windows, thresholds, direction, a merged branch counting once, a move with an
+  edited namespace line, reuse vs recompute, a shallow clone keeping stored lines, a blobless clone, storage round-trips.
 
 ## End-of-phase report
 

@@ -491,6 +491,11 @@ counts as a person until someone adds it.
 - It needs the contents of commits that add and delete files; a blobless clone downloads them on demand.
 - **Measured in 1c on nopCommerce.** If the first build gets more than ~30 s slower, 1c falls back to
   not following renames and records the gap.
+- *Measured 2026-10-19:* nopCommerce has 1,838 renames of map files on its main line, so following them matters.
+  Reading only the map's file types (`git log -- "*.cs" "*.ts" …`) keeps every one and cuts `git log -M` from
+  7.1 s to 0.75 s on a full clone. A **blobless** clone is the exception: it fetches old contents over the network
+  on *every* build (159 fetches, 34 s), so there renames aren't followed and the build warns. A clone with
+  `--filter=blob:limit=200k` (315 MB vs 1.6 GB full) has them: 4.9 s on its first build, 0.8 s after.
 **Cost:** a one-off download in blobless clones; renames git doesn't recognise (heavily edited in the same commit) still start fresh.
 
 ## D39 · 📜 lines live in the code graph (`code-graph` v3) — 2026-10-19
@@ -530,8 +535,10 @@ sliding 20-commit window, each a correctness bug in waiting, to save a few secon
 ## D42 · 📜 uses whatever history the clone has; CI's graph carries it — 2026-10-19
 - `stangent graph build` never fails over a shallow clone. It records the history it used (`meta.history`:
   the commit range, or none) and warns when there's none.
-- **CI builds the shared graph (D25) from a blobless full clone** (`fetch-depth: 0`, `filter: blob:none`),
-  set in the thin workflow file (D24). `actions/checkout`'s default (depth 1) would ship graphs with no 📜.
+- **CI builds the shared graph (D25) from a full-history clone without large files** (`fetch-depth: 0`,
+  `filter: blob:limit=200k`), set in the thin workflow file (D24). `actions/checkout`'s default (depth 1) would
+  ship graphs with no 📜. *Refined 2026-10-19:* `blob:none` was the first choice, but it can't follow renames
+  without fetching on every build (D38, measured).
 - No cut-off date: D35 reaches back 20 commits per file, and a quiet file needs years of history to fill that.
 - **A local rebuild on a shallow clone keeps the downloaded 📜 lines**, marked with the commit they were
   computed at, rather than dropping them. A few commits stale is fine for a hint.

@@ -18,6 +18,8 @@ public sealed class StangentConfig
     /// <summary>Per-detector settings, e.g. <c>publish-handle: { handlerInterfaces: [...] }</c>.</summary>
     public Dictionary<string, Dictionary<string, List<string>>> DetectorSettings { get; set; } = [];
     public AdaptersConfig Adapters { get; set; } = new();
+    /// <summary>📜 "usually changes together" evidence from git history (D35–D42).</summary>
+    public HistoryConfig History { get; set; } = new();
 
     public sealed class StoreConfig
     {
@@ -28,6 +30,24 @@ public sealed class StangentConfig
     {
         /// <summary>False turns off every AI step; only code-only parts run (D24).</summary>
         public bool Enabled { get; set; } = true;
+    }
+
+    /// <summary>
+    /// For each file, its last <see cref="Window"/> commits that survive the noise filters; a partner
+    /// is 📜 when it changed in at least <see cref="MinShared"/> of them and <see cref="MinShare"/> of them (D35).
+    /// </summary>
+    public sealed class HistoryConfig
+    {
+        public bool Enabled { get; set; } = true;
+        public int Window { get; set; } = 20;
+        public int MinShared { get; set; } = 3;
+        public double MinShare { get; set; } = 0.3;
+        /// <summary>Commits touching more files on the map than this are dropped (D37).</summary>
+        public int MaxFiles { get; set; } = 30;
+        /// <summary>Bot authors (name or email) beyond those ending in <c>[bot]</c> (D37).</summary>
+        public List<string> BotAuthors { get; set; } = [];
+        /// <summary>Join a moved file's old history to its current path (D38).</summary>
+        public bool FollowRenames { get; set; } = true;
     }
 
     /// <summary>Reserved in Phase 0; each adapter is built by the phase that first needs it (D24).</summary>

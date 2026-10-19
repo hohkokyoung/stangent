@@ -16,12 +16,13 @@ outside the repo (a scratch folder), one per repo:
 
 ```bash
 B=<scratch>/bench          # anywhere outside this repo
-git clone --filter=blob:none https://github.com/Kareadita/Kavita.git $B/kavita
+git clone --filter=blob:limit=200k https://github.com/Kareadita/Kavita.git $B/kavita
 git -C $B/kavita checkout -q 2d225367f0310ac7354423b772a4c6a7caf63fd2   # the commit pinned in repos.tsv
 ```
 
-Test 2 runs `git blame` across the whole history, which in a blobless clone fetches old files one
-at a time over the network (hours). Before the history tests, fetch them in one go:
+`blob:limit=200k` downloads every small file's history but skips large files: Test 2's `git blame` and
+📜's rename following need those contents. A blobless clone (`blob:none`) fetches them one at a time over
+the network (hours for Test 2). To fix an existing blobless clone, fetch them in one go:
 
 ```bash
 git -C $B/kavita config --unset remote.origin.partialclonefilter

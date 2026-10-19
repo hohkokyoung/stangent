@@ -1,7 +1,7 @@
 ---
 phase: 1b
 name: frontend-api
-status: done
+status: needs review
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 2 }
 provides: {}
 ---
@@ -246,3 +246,7 @@ How to read it:
 - ~~Push and confirm CI is green, then mark this phase `done` here and in `roadmap.md`.~~ Done.
 - A person checks `benchmark/expected/cleanarchitecture-links.json` once.
 - 1c (git history) or Phase 2 next. The owner decides. Kavita's Test 2 (co-change beat the graph) argues for 1c.
+
+### Needs review 2026-10-19 · `code-graph` v2 → v3 (Phase 1c)
+1c added 📜 `changes-with` lines and `meta.history` to the graph. Follow-up: confirm nothing in 1b depends on
+the v2 layout (the frontend extractor writes fragments, which are unchanged), then move `consumes` to `code-graph: 3`.

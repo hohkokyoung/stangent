@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.MSBuild;
 using Stangent.Core;
 using Stangent.Graph.Detectors;
 using Stangent.Graph.Extraction;
+using Stangent.Graph.History;
 using Stangent.Graph.Loading;
 
 namespace Stangent.Graph;
@@ -12,7 +13,8 @@ public sealed record BuildOptions(bool Restore = true, bool Full = false, TextWr
 
 public sealed record BuildStats(
     string Commit, int Projects, int Frontends, int Extracted, int Reused, int Nodes, int Edges, int BlindSpots,
-    IReadOnlyList<string> LoadErrors, IReadOnlyList<string> LoadWarnings, IReadOnlyList<string> Detectors, long LoadMs, long ExtractMs, long LinkMs, long TotalMs);
+    IReadOnlyList<string> LoadErrors, IReadOnlyList<string> LoadWarnings, IReadOnlyList<string> Detectors, long LoadMs, long ExtractMs, long LinkMs, long TotalMs,
+    int HistoryLines = 0, string HistoryStatus = "", long HistoryMs = 0);
 
 /// <summary>
 /// Builds the graph (D25): scan projects, re-extract only those whose fingerprint changed, then
@@ -160,13 +162,19 @@ public static class GraphBuilder
         }
         link.Stop();
 
+        // 📜 (D35–D42): after linking, from git only. A shallow clone may keep the lines it downloaded.
+        var history = Stopwatch.StartNew();
+        HistoryStep.Apply(repo, graph, previous, () => GraphStore.Load(GraphStore.PathFor(repo)), warnings);
+        history.Stop();
+
         GraphStore.Save(graph, GraphStore.PathFor(repo));
         total.Stop();
         var stats = new BuildStats(graph.Commit, projects.Count, frontends.Count, changed.Count + frontendChanged.Count,
             projects.Count + frontends.Count - changed.Count - frontendChanged.Count,
             graph.AllNodes.Count(), graph.AllEdges.Count(), graph.AllBlindSpots.Count(),
             [.. graph.LoadErrors.Distinct().Order(StringComparer.Ordinal)], warnings, [.. detectors.Select(d => d.Name)],
-            loadMs, extract.ElapsedMilliseconds, link.ElapsedMilliseconds, total.ElapsedMilliseconds);
+            loadMs, extract.ElapsedMilliseconds, link.ElapsedMilliseconds, total.ElapsedMilliseconds,
+            graph.HistoryLines.Count, graph.History?.Status ?? "", history.ElapsedMilliseconds);
         return (graph, stats);
     }
 

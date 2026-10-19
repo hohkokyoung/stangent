@@ -14,7 +14,7 @@ namespace Stangent.Graph;
 /// </summary>
 public static class GraphStore
 {
-    public const int SchemaVersion = 2; // v2: rows keyed by owner as well (older files are rebuilt)
+    public const int SchemaVersion = 3; // v2: rows keyed by owner as well; v3: 📜 history lines (older files are rebuilt)
     const string LinkedOwner = "";
 
     public static string PathFor(StangentRepo repo) => Path.Combine(repo.Root, ".stangent", "graph.sqlite");
@@ -41,6 +41,8 @@ public static class GraphStore
                 CREATE TABLE facts (owner TEXT NOT NULL, detector TEXT NOT NULL, kind TEXT NOT NULL, owner_node TEXT NOT NULL,
                   file TEXT, line INTEGER NOT NULL, data TEXT NOT NULL);
                 CREATE TABLE load_errors (message TEXT NOT NULL);
+                CREATE TABLE history_lines (source TEXT NOT NULL, target TEXT NOT NULL, shared INTEGER NOT NULL,
+                  of INTEGER NOT NULL, PRIMARY KEY (source, target));
                 """);
             using var tx = db.BeginTransaction();
             Exec(db, "INSERT INTO meta VALUES ('schemaVersion', $v), ('commit', $c)", ("$v", SchemaVersion.ToString()), ("$c", graph.Commit));
@@ -52,10 +54,15 @@ public static class GraphStore
             WriteParts(db, LinkedOwner, graph.LinkedNodes, graph.LinkedEdges, graph.LinkedBlindSpots, []);
             foreach (var e in graph.LoadErrors.Order(StringComparer.Ordinal))
                 Exec(db, "INSERT INTO load_errors VALUES ($m)", ("$m", e));
+            if (graph.History is { } history)
+                Exec(db, "INSERT INTO meta VALUES ('history', $h)", ("$h", CanonicalJson.SerializeCompact(HistoryJson(history))));
+            foreach (var l in SortHistory(graph.HistoryLines))
+                Exec(db, "INSERT INTO history_lines VALUES ($s, $t, $n, $of)", ("$s", l.Source), ("$t", l.Target), ("$n", l.Shared), ("$of", l.Of));
             Exec(db, """
                 CREATE INDEX edges_target ON edges (target);
                 CREATE INDEX nodes_file ON nodes (file, line);
                 CREATE INDEX blind_owner ON blind_spots (owner_node);
+                CREATE INDEX history_target ON history_lines (target);
                 """);
             tx.Commit();
         }
@@ -93,6 +100,10 @@ public static class GraphStore
         }
         foreach (var r in Rows(db, "SELECT message FROM load_errors ORDER BY message"))
             graph.LoadErrors.Add(r.GetString(0));
+        if (Scalar(db, "SELECT value FROM meta WHERE key = 'history'") is { } history)
+            graph.History = HistoryFrom(JsonNode.Parse(history)!.AsObject());
+        foreach (var r in Rows(db, "SELECT source, target, shared, of FROM history_lines ORDER BY target, source"))
+            graph.HistoryLines.Add(new HistoryLine(r.GetString(0), r.GetString(1), r.GetInt32(2), r.GetInt32(3)));
         return graph;
     }
 
@@ -124,6 +135,10 @@ public static class GraphStore
                     if ((int)o["schemaVersion"]! != SchemaVersion)
                         throw new StangentException("unsupported_graph", $"{path}: graph schema v{(int)o["schemaVersion"]!} (expected v{SchemaVersion}).");
                     graph.Commit = (string)o["commit"]!;
+                    if (o["history"] is JsonObject h) graph.History = HistoryFrom(h);
+                    break;
+                case "history":
+                    graph.HistoryLines.Add(new HistoryLine((string)o["source"]!, (string)o["target"]!, (int)o["shared"]!, (int)o["of"]!));
                     break;
                 case "fragment":
                     graph.Fragments[(string)o["project"]!] = new ProjectFragment { ProjectId = (string)o["project"]!, Fingerprint = (string)o["fingerprint"]! };
@@ -156,7 +171,11 @@ public static class GraphStore
 
     public static IEnumerable<string> CanonicalLines(CodeGraph graph)
     {
-        yield return Line(new() { ["t"] = "meta", ["schemaVersion"] = SchemaVersion, ["commit"] = graph.Commit });
+        yield return Line(new()
+        {
+            ["t"] = "meta", ["schemaVersion"] = SchemaVersion, ["commit"] = graph.Commit,
+            ["history"] = graph.History is { } history ? HistoryJson(history) : null,
+        });
         foreach (var f in graph.Fragments.Values)
             yield return Line(new() { ["t"] = "fragment", ["project"] = f.ProjectId, ["fingerprint"] = f.Fingerprint });
         foreach (var (owner, nodes, edges, spots, facts) in Owners(graph))
@@ -187,9 +206,25 @@ public static class GraphStore
                     ["data"] = new JsonObject(x.Data.OrderBy(d => d.Key, StringComparer.Ordinal).Select(d => KeyValuePair.Create(d.Key, (JsonNode?)d.Value))),
                 });
         }
+        foreach (var l in SortHistory(graph.HistoryLines))
+            yield return Line(new() { ["t"] = "history", ["source"] = l.Source, ["target"] = l.Target, ["shared"] = l.Shared, ["of"] = l.Of });
         foreach (var e in graph.LoadErrors.Order(StringComparer.Ordinal))
             yield return Line(new() { ["t"] = "loadError", ["message"] = e });
     }
+
+    static IEnumerable<HistoryLine> SortHistory(IEnumerable<HistoryLine> lines) =>
+        lines.OrderBy(l => l.Target, StringComparer.Ordinal).ThenBy(l => l.Source, StringComparer.Ordinal);
+
+    static JsonObject HistoryJson(HistoryInfo h) => new()
+    {
+        ["status"] = h.Status, ["commit"] = h.Commit, ["oldest"] = h.Oldest, ["commitsRead"] = h.CommitsRead, ["commitsUsed"] = h.CommitsUsed,
+        ["dropped"] = new JsonObject(h.Dropped.OrderBy(d => d.Key, StringComparer.Ordinal).Select(d => KeyValuePair.Create(d.Key, (JsonNode?)d.Value))),
+        ["renamesFollowed"] = h.RenamesFollowed, ["fingerprint"] = h.Fingerprint, ["note"] = h.Note,
+    };
+
+    static HistoryInfo HistoryFrom(JsonObject o) => new(
+        (string)o["status"]!, (string)o["commit"]!, (string)o["oldest"]!, (int)o["commitsRead"]!, (int)o["commitsUsed"]!,
+        o["dropped"]!.AsObject().ToDictionary(p => p.Key, p => (int)p.Value!), (bool)o["renamesFollowed"]!, (string)o["fingerprint"]!, (string?)o["note"]);
 
     static IEnumerable<(string, List<Node>, List<Edge>, List<BlindSpot>, List<Fact>)> Owners(CodeGraph graph)
     {

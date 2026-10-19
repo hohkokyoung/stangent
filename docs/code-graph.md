@@ -1,13 +1,14 @@
-# Code graph (contract `code-graph` v2)
+# Code graph (contract `code-graph` v3)
 
-The map of the code that impact analysis walks (decisions D25–D28, frontends D30–D32). It's built by
-code from the code; it's never committed and has no AI in it. v2 (Phase 1b) adds frontends:
-components, templates, pages, and the `renders` and `maps-field` lines.
+The map of the code that impact analysis walks (decisions D25–D28, frontends D30–D32, history D34–D42).
+It's built by code from the code and its git history; it's never committed and has no AI in it. v2
+(Phase 1b) added frontends: components, templates, pages, and the `renders` and `maps-field` lines.
+v3 (Phase 1c) adds 📜 `changes-with` lines from git history and `meta.history`.
 
 ## Where it lives
 
 - `.stangent/graph.sqlite`, git-ignored and tagged with the commit it was built from (D25). Its
-  file layout has its own version (`meta.schemaVersion`, now 2). An older layout is rebuilt rather
+  file layout has its own version (`meta.schemaVersion`, now 3). An older layout is rebuilt rather
   than migrated.
 - `stangent graph export <file>` / `import <file>` write and read one gzip'd, canonical JSON-lines
   file. Two exports of the same graph are byte-identical; this is the unit CI will share.
@@ -58,10 +59,39 @@ everything that can reach X by following lines backwards.
 
 - ✅ `certain`: the compiler proved it.
 - 🟡 `guessed`: a detector inferred it from a pattern.
-- 📜 `usually changes together`: from git history (Phase 1c).
+- 📜 `usually changes together`: from git history (below). Never walked.
 - ❓ **blind spots** are stored separately: a place, a reason and the detector that recorded it.
   Examples: reflection, `dynamic`, URLs and config keys built at runtime, unloaded projects,
   services registered with several implementations.
+
+## History: 📜 `changes-with` (D34–D42)
+
+A `changes-with` line from B to A says: B changed in `shared` of the last `of` commits that touched A
+("changed together in 7 of the last 12"). Both are files on the map (files of `file` and `template`
+points). Lines are stored apart from the others (`history_lines`; `"t":"history"` in exports), so the
+impact walk never follows them.
+
+- **Which commits:** main's own line, `git log --first-parent` from the graph's commit. A merged PR counts
+  once, diffed against main before it; rebased PRs count per commit (D36). Moves and renames are followed,
+  so a file keeps its history under today's path; a deleted path's history doesn't pass to a later file of
+  the same name (D38). Only paths with the map's file types are read.
+- **Noise filters (D37),** in this order, each counted in `meta.history.dropped`: `reverts` (a commit saying
+  `This reverts commit <hash>`, and that commit), `formatting` (listed in `.git-blame-ignore-revs`), `bots`
+  (author ending in `[bot]`, or listed in `history.botAuthors`), `huge` (more than `history.maxFiles` files on the map).
+- **Counting (D35):** each file's last `window` surviving commits; B is 📜 for A when it changed in at least
+  `minShared` of them and at least `minShare` of them. Each direction is judged separately.
+- **Settings** (`stangent.yaml`, defaults shown): `history: { enabled: true, window: 20, minShared: 3, minShare: 0.3, maxFiles: 30, botAuthors: [], followRenames: true }`.
+- **Recomputed in full** when the commit, the settings, `.git-blame-ignore-revs` or the files on the map
+  change; otherwise reused (D41). About 1 s on nopCommerce's 16k commits.
+- **`meta.history`:** `status` (`full`, `shallow`, `none` or `off`), the `commit` the lines were computed at,
+  the `oldest` commit read, `commitsRead` (touching the map), `commitsUsed`, `dropped`, `renamesFollowed`, `fingerprint`, `note`.
+- **Clones (D42):**
+  - A shallow clone that already has 📜 lines (e.g. downloaded from CI, D25) keeps them, marked with the
+    commit they were computed at. One without them uses what history it has. Either way it warns (`history_shallow`).
+  - Following renames needs old file contents. Clone with `--filter=blob:limit=200k`
+    (`actions/checkout`: `fetch-depth: 0`, `filter: blob:limit=200k`): small files are downloaded, large ones
+    aren't. A blobless clone (`blob:none`) would fetch over the network on every build (34 s on nopCommerce),
+    so there renames aren't followed and the build warns (`history_renames_skipped`).
 
 ## Detectors (D17)
 

@@ -3,7 +3,7 @@ phase: 1a
 name: csharp-map
 status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1 }
-provides: { code-graph: 2, impact-report: 3 }
+provides: { code-graph: 3, impact-report: 3 }
 ---
 
 # Phase 1a · C# map
@@ -276,3 +276,7 @@ The line-level table above and the exact check were re-run after these fixes. eS
 - **`impact-report` v3:** the `pages` group.
 - **Consumers:** 1b only, which made the change.
 
+### Reopened 2026-10-19 by Phase 1c · `code-graph` v2 → v3
+- **`code-graph` v3:** 📜 `changes-with` lines from git history, stored apart from the walked lines
+  (`history_lines`), `meta.history`, the `history` settings and the `Label.History` value; file layout version 3.
+- **Consumers:** 1b (consumes v2), marked `needs review` per D20; 1c, which made the change.
