@@ -231,6 +231,7 @@ product; a failed check gives the agent one specific error to fix, which is chea
 8 Dashboard; Demo can slot in at any point. Full table with dependencies: `roadmap.md`.
 - The dashboard comes late even though BA/PM need it (D12); until then spec changes are plain GitHub PRs.
 - Telemetry's event format is part of Phase 0, so no product has to retrofit it.
+- *Refined 2026-10-19:* phase 1d, an agent-fitness pilot, runs between 1c and 2 (D45).
 
 ## D20 · Every phase ends with a report; changes ripple to the phases that depend on it — 2026-10-18
 - Each phase has a file (`phases/<n>-<name>.md`) whose front matter declares the contract versions
@@ -594,7 +595,82 @@ Both gates use the hardened Test 2 (D33), each fix counted once.
 **Why:** a pre-agreed bar can't drift toward whatever the numbers turn out to be.
 **Cost:** with 30–60 fixes, a real but small gain may not clear "above zero"; strict on purpose.
 
+## D45 · Before Phase 2, check the graph can do its Phase 4 jobs; splitting first — 2026-10-19
+Every benchmark so far scores the graph's predictions; none shows it helps the agents of Phase 4. There it
+has three jobs: **(1) split** a ticket into tasks that really are independent, **(2) scope** each subagent's
+context to a slice, **(3) check** what a change may have broken (roughly Test 2).
+- A pilot (phase 1d, D19 amended) runs before Phase 2. **Job 1 first:** take past multi-part changes, let the
+  graph split them into "independent" groups, apply each group alone, and check it builds and passes tests.
+  No agent runs: cheap, deterministic, fits the benchmark harness.
+- **Job 2 next:** the same task given to a subagent with and without its graph slice; tokens, build/tests, misses.
+- The bar is agreed before any run (as D44). A failure reshapes Phase 4 before Phases 2–3 are built on it.
+- End-to-end test links (Playwright `goto` → pages) wait until the pilot reports.
+**Why:** the graph's accuracy doesn't show it makes agents safer or cheaper; 1c's gains were already small
+(+2 to +6 points), and a bad split makes parallel subagents break each other.
+**Cost:** Phase 2 starts later; job 2 needs agent runs, which vary between tries and cost tokens.
+
+## D46 · A split group "holds up" if it compiles alone, then passes the unit tests — 2026-10-19
+Each group the graph calls independent is applied alone onto the change's parent commit.
+- **Step A, every case:** it compiles (`dotnet build`; `tsc --noEmit` for frontends). A group that doesn't is an
+  unsafe split: the graph missed a link.
+- **Step B, groups that pass A:** the repo's unit-test projects run. A test that passes on the parent and on the
+  full change but fails with the group alone is also an unsafe split.
+- Integration tests (databases, services) are left out of the pilot.
+Rejected: compile only (misses behaviour breaks); every test including integration (a test environment per repo
+for little extra signal in a pilot).
+**Why:** compiling is exact, cheap and repeatable (D18), and Test 4 already runs it; unit tests catch behaviour
+breaks without infrastructure.
+**Cost:** breaks only integration tests would catch go unseen; flaky unit tests must be screened out on the parent first.
+
+## D47 · Split cases: recent main-line PRs from bitwarden/server and Sonarr — 2026-10-19
+- **Source:** main-line commits (`--first-parent`, 1c's reader); in a squash-merge repo each is one merged PR,
+  about a ticket's size.
+- **Size:** ≥ 3 changed methods across ≥ 2 files, ≤ 15 files (Test 2's cap). Smaller has nothing to split; bigger
+  is a refactor or a bundle.
+- **Health:** the parent and the change both build and pass their unit tests; otherwise a failure says nothing
+  about the split.
+- **Repos:** **bitwarden/server** (squash-only, judged 1c) and **Sonarr** (adds `tsc` on a React frontend).
+  nopCommerce is left out: slow builds, little extra.
+- **Count:** newest first, examine cases until **30 are split** into 2+ groups, at most **200 examined** per repo.
+  The split rate counts everything examined. "Safe" is judged on the plain percentage, with its 95% range
+  reported; under 30 split cases, "safe" is below the floor for that repo (as D43).
+- *Refined 2026-10-19:* first set at ~40 cases per repo, which gives only 10–16 split cases: too few to judge 90%.
+**Why:** real changes of ticket size on repos whose history the benchmark already reads.
+**Cost:** two repos, ~80 cases: a pilot's evidence, not a verdict for every codebase; recent cases lean towards
+how those teams work today.
+
+## D48 · Splits come from the after-change graph, joined within 2 steps (✅ + 🟡) — 2026-10-19
+- **Graph:** built at the change itself, so added methods exist. This is the best case: more than a Phase 4
+  planner knows before code is written. A pass doesn't prove Phase 4; a fail is decisive.
+- **Groups:** changed methods joined by ✅ or 🟡 lines within 2 steps (through unchanged points too), in
+  either direction, are one group. **Judged on this rule;** direct-only (1 step) and "+📜" are reported beside it.
+- **Edits outside methods** (usings, fields, attributes) go with the group of the changed methods in their
+  file; a new type is a point, so its users link to it.
+- **Files with no changed methods** (`.csproj`, config, resources) form a shared group, applied together with
+  every group, as Phase 4 would treat shared setup.
+**Why:** Test 2 showed the graph's recall lives within 2 steps; direct-only misses too much.
+**Cost:** within 2 steps joins more, so fewer groups; a file whose changed methods fall into two groups has its
+other edits counted in both.
+
+## D49 · The split check's done-when: safe, useful, better than split-by-folder — 2026-10-19
+Agreed before any run (as D44), on the D48 rule:
+| Check | Bar |
+|---|---|
+| Safe | of the cases split into 2+ groups, ≥ 90% have every group hold up alone (D46), **on each repo** |
+| Useful | ≥ 25% of all cases are split into 2+ groups |
+| Better than naive | safer than split-by-folder, whose split rate is no more than 5 points above the graph's |
+- **Both pass:** Phase 4 plans parallel subagents from the graph; job 2 (context scoping) is next.
+- **Safe fails:** Phase 4 doesn't trust the split: every parallel run is merged and built together before it
+  counts, or tasks run one after another.
+- **Useful fails:** parallel subagents seldom pay off; Phase 4 is mostly sequential.
+**Why:** Phase 4 checks the merged result anyway (D18), so rare misses are caught; a 1-in-5 miss rate would
+waste more than parallel runs save, and below 25% parallelism isn't worth building.
+**Cost:** a pre-set bar can fail a split that would have been good enough in practice.
+
 ## Open questions
+- What is stangent for, given the company already runs a spec-from-code pipeline (static call graph + E2E
+  tests → cited per-screen spec, reconciled each release) and a separate planning → review pipeline? Leading
+  answer: the graph and impact layer under such a pipeline, proven on the company's repo. Decide before Phase 2.
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
 - Confirm the company's Claude plan excludes training on its data (D24), before running on client code.
