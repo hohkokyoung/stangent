@@ -1,14 +1,14 @@
 ---
 phase: 1c
 name: git-history
-status: in progress
+status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3 }
 provides: {}
 ---
 
 # Phase 1c · Git history
 
-**Approved 2026-10-19. Started 2026-10-19.**
+**Approved 2026-10-19. Done 2026-10-19.**
 
 Builds on D26–D29 and D33–D44. The goal: 📜 "usually changes together" evidence from git history,
 shown as a capped hint after the ✅ and 🟡 answers, and kept only if it measurably helps. No AI anywhere (D18).
@@ -137,7 +137,7 @@ reopens `phases/1a-csharp-map.md` and bumps `code-graph` to v3 and `impact-repor
   - [x] **stable:** Test 3 holds (byte-identical builds, incremental = full).
   - *If "📜 adds something" fails:* 📜 ships **off by default** (`history.enabled: false`) and the report says why.
 - [x] Tests cover the fixture repo, the filters, renames, shallow clones, impact output and determinism.
-- [ ] CI green; end-of-phase report written.
+- [x] CI green ([run](https://github.com/hohkokyoung/stangent/actions/runs/39246814190)); end-of-phase report written.
 
 ## Not in this phase
 - Member-level 📜 (D34): only if file-level 📜 proves too noisy.
@@ -205,7 +205,7 @@ Test 2 hardened as planned:
 
 ## End-of-phase report
 
-*2026-10-19 · first report.* Gate 2 passed; the phase is done once CI is green on GitHub.
+*2026-10-19 · first report.* Gate 2 passed; CI green on GitHub ([run](https://github.com/hohkokyoung/stangent/actions/runs/39246814190)); phase **done**.
 
 ### 1. What was built
 - **The history reader** (`src/Stangent.Graph/History/`):
@@ -295,7 +295,7 @@ How to read it:
 - Phase 5 (testing) could use 📜 to suggest tests that usually change with a file; not designed yet.
 
 ### 6. Follow-ups
-- Push and confirm CI is green, then mark this phase `done` here and in `roadmap.md`.
+- ~~Push and confirm CI is green, then mark this phase `done` here and in `roadmap.md`.~~ Done.
 - 1b's `needs review`: confirm nothing in 1b depends on the v2 layout, then move it to `code-graph: 3`.
 - Next time 📜 is tuned, make the eligibility rule all of Gate 2's checks.
 - A person checks the Test 2 hand-check sample once (D28).
