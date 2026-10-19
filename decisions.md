@@ -860,6 +860,20 @@ still passes a code check before anything uses it.
 **Cost:** CI needs headless Claude Code and a token; prompt caching and the Batch API's half price aren't directly
 available; the subagent's tool limits are a setting, so `check` must still reject anything citing outside its slice.
 
+## D61 · Verification by a separate agent with a fresh context — 2026-10-20
+Whenever an AI step has to judge whether work is right (reviewing a change, sorting benchmark failures,
+checking a report's claims), a **separate agent** does it, starting from a fresh context. It gets the work,
+the criteria and the evidence, not the author's reasoning or conversation.
+- Applies to every phase, and to how stangent itself is built.
+- **Code checks still come first (D18).** A compiler, a test or a schema beats any reviewer. The fresh agent
+  covers what code can't check, and its findings are themselves checked against evidence (a file, a test
+  result, a line).
+- **The author doesn't overrule it silently.** A finding is fixed, or rejected with a stated reason a person can see.
+**Why:** an agent reviewing its own work shares the blind spots that produced it and tends to confirm its own
+reasoning. A fresh context judges only what's on the page, as a second engineer would (the owner's rule,
+in line with evaluator/reviewer patterns from agent builders).
+**Cost:** more tokens and time per check; the evaluator needs a brief good enough to judge without the history.
+
 ## Open questions
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
