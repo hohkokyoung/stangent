@@ -1,0 +1,1118 @@
+{
+  "repo": "sonarr",
+  "graphCommit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+  "windowMonths": "all",
+  "history": "main line only (git log --first-parent, merges diffed against their first parent; D36)",
+  "predictors": "graph (lines): changed methods found by name in today's graph · graph (lines+deps): plus what they directly use · graph (files): every point in the changed files · same project / same folder / co-change: baselines without the graph",
+  "labels": "certain = ✅ only; certain+guessed = ✅ and \uD83D\uDFE1; certain+guessed+history adds \uD83D\uDCDC (Phase 1c).",
+  "memberMatching": {
+    "sameFile": 5790,
+    "moved": 25,
+    "unmatched": 928
+  },
+  "test1FindsTheRest": {
+    "cases": 649,
+    "backendToFrontend": {
+      "cases": 26,
+      "graph (lines)": {
+        "recall": 0.329,
+        "precision": 0.004,
+        "medianCasePrecision": 0,
+        "found": 25,
+        "of": 76,
+        "medianPredictedFiles": 9,
+        "emptyAnswers": 2
+      },
+      "same folder": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 76,
+        "medianPredictedFiles": 12,
+        "emptyAnswers": 2
+      },
+      "co-change": {
+        "recall": 0,
+        "precision": 0,
+        "medianCasePrecision": 0,
+        "found": 0,
+        "of": 76,
+        "medianPredictedFiles": 0,
+        "emptyAnswers": 16
+      }
+    },
+    "graph (lines)": {
+      "certain": {
+        "recall": 0.356,
+        "precision": 0.004,
+        "medianCasePrecision": 0.003,
+        "found": 1050,
+        "of": 2952,
+        "medianPredictedFiles": 765,
+        "emptyAnswers": 203
+      },
+      "certain+guessed": {
+        "recall": 0.364,
+        "precision": 0.003,
+        "medianCasePrecision": 0.002,
+        "found": 1075,
+        "of": 2952,
+        "medianPredictedFiles": 1150,
+        "emptyAnswers": 193
+      }
+    },
+    "graph (lines, depth ≤ 1)": {
+      "certain": {
+        "recall": 0.128,
+        "precision": 0.152,
+        "medianCasePrecision": 0.2,
+        "found": 378,
+        "of": 2952,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 300
+      },
+      "certain+guessed": {
+        "recall": 0.128,
+        "precision": 0.152,
+        "medianCasePrecision": 0.2,
+        "found": 379,
+        "of": 2952,
+        "medianPredictedFiles": 1,
+        "emptyAnswers": 300
+      }
+    },
+    "graph (lines, depth ≤ 2)": {
+      "certain": {
+        "recall": 0.169,
+        "precision": 0.079,
+        "medianCasePrecision": 0.111,
+        "found": 500,
+        "of": 2952,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 231
+      },
+      "certain+guessed": {
+        "recall": 0.17,
+        "precision": 0.078,
+        "medianCasePrecision": 0.1,
+        "found": 503,
+        "of": 2952,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 223
+      }
+    },
+    "graph (lines, depth ≤ 3)": {
+      "certain": {
+        "recall": 0.19,
+        "precision": 0.056,
+        "medianCasePrecision": 0.073,
+        "found": 561,
+        "of": 2952,
+        "medianPredictedFiles": 3,
+        "emptyAnswers": 205
+      },
+      "certain+guessed": {
+        "recall": 0.192,
+        "precision": 0.055,
+        "medianCasePrecision": 0.062,
+        "found": 568,
+        "of": 2952,
+        "medianPredictedFiles": 3,
+        "emptyAnswers": 194
+      }
+    },
+    "graph (lines+deps)": {
+      "certain": {
+        "recall": 0.472,
+        "precision": 0.005,
+        "medianCasePrecision": 0.004,
+        "found": 1393,
+        "of": 2952,
+        "medianPredictedFiles": 767,
+        "emptyAnswers": 6
+      },
+      "certain+guessed": {
+        "recall": 0.48,
+        "precision": 0.003,
+        "medianCasePrecision": 0.003,
+        "found": 1418,
+        "of": 2952,
+        "medianPredictedFiles": 1152,
+        "emptyAnswers": 6
+      }
+    },
+    "graph (files)": {
+      "certain": {
+        "recall": 0.383,
+        "precision": 0.003,
+        "medianCasePrecision": 0.003,
+        "found": 1131,
+        "of": 2952,
+        "medianPredictedFiles": 765,
+        "emptyAnswers": 165
+      },
+      "certain+guessed": {
+        "recall": 0.393,
+        "precision": 0.002,
+        "medianCasePrecision": 0.002,
+        "found": 1161,
+        "of": 2952,
+        "medianPredictedFiles": 1150,
+        "emptyAnswers": 161
+      }
+    },
+    "same project": {
+      "recall": 0.589,
+      "precision": 0.002,
+      "medianCasePrecision": 0.002,
+      "found": 1738,
+      "of": 2952,
+      "medianPredictedFiles": 1672,
+      "emptyAnswers": 0
+    },
+    "same folder": {
+      "recall": 0.241,
+      "precision": 0.067,
+      "medianCasePrecision": 0,
+      "found": 711,
+      "of": 2952,
+      "medianPredictedFiles": 9,
+      "emptyAnswers": 20
+    },
+    "co-change": {
+      "recall": 0.176,
+      "precision": 0.115,
+      "medianCasePrecision": 0.111,
+      "found": 521,
+      "of": 2952,
+      "medianPredictedFiles": 2,
+      "emptyAnswers": 270
+    },
+    "co-change (top 10)": {
+      "recall": 0.16,
+      "precision": 0.189,
+      "medianCasePrecision": 0.125,
+      "found": 472,
+      "of": 2952,
+      "medianPredictedFiles": 2,
+      "emptyAnswers": 270
+    },
+    "graph (lines, depth ≤ 2) + co-change (top 10)": {
+      "certain": {
+        "recall": 0.169,
+        "precision": 0.079,
+        "medianCasePrecision": 0.111,
+        "found": 500,
+        "of": 2952,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 231
+      },
+      "certain+guessed": {
+        "recall": 0.285,
+        "precision": 0.099,
+        "medianCasePrecision": 0.125,
+        "found": 842,
+        "of": 2952,
+        "medianPredictedFiles": 6,
+        "emptyAnswers": 93
+      }
+    },
+    "\uD83D\uDCDC (top 10)": {
+      "recall": 0.124,
+      "precision": 0.273,
+      "medianCasePrecision": 0.25,
+      "found": 366,
+      "of": 2952,
+      "medianPredictedFiles": 1,
+      "emptyAnswers": 279
+    },
+    "graph (lines, depth ≤ 2) + \uD83D\uDCDC (top 10)": {
+      "certain+guessed": {
+        "recall": 0.17,
+        "precision": 0.078,
+        "medianCasePrecision": 0.1,
+        "found": 503,
+        "of": 2952,
+        "medianPredictedFiles": 2,
+        "emptyAnswers": 223
+      },
+      "certain+guessed+history": {
+        "recall": 0.261,
+        "precision": 0.103,
+        "medianCasePrecision": 0.182,
+        "found": 770,
+        "of": 2952,
+        "medianPredictedFiles": 3,
+        "emptyAnswers": 95
+      }
+    }
+  },
+  "test2PredictsWhatBroke": {
+    "cases": 87,
+    "graph (lines)": {
+      "certain": {
+        "recall": 0.65,
+        "precision": 0.001,
+        "medianCasePrecision": 0.001,
+        "found": 93,
+        "of": 143,
+        "medianPredictedFiles": 807,
+        "emptyAnswers": 4
+      },
+      "certain+guessed": {
+        "recall": 0.65,
+        "precision": 0.001,
+        "medianCasePrecision": 0.001,
+        "found": 93,
+        "of": 143,
+        "medianPredictedFiles": 1192,
+        "emptyAnswers": 4
+      }
+    },
+    "graph (lines, depth ≤ 1)": {
+      "certain": {
+        "recall": 0.371,
+        "precision": 0.011,
+        "medianCasePrecision": 0.004,
+        "found": 53,
+        "of": 143,
+        "medianPredictedFiles": 20,
+        "emptyAnswers": 14
+      },
+      "certain+guessed": {
+        "recall": 0.371,
+        "precision": 0.011,
+        "medianCasePrecision": 0.003,
+        "found": 53,
+        "of": 143,
+        "medianPredictedFiles": 20,
+        "emptyAnswers": 14
+      }
+    },
+    "graph (lines, depth ≤ 2)": {
+      "certain": {
+        "recall": 0.462,
+        "precision": 0.007,
+        "medianCasePrecision": 0.004,
+        "found": 66,
+        "of": 143,
+        "medianPredictedFiles": 47,
+        "emptyAnswers": 6
+      },
+      "certain+guessed": {
+        "recall": 0.462,
+        "precision": 0.007,
+        "medianCasePrecision": 0.004,
+        "found": 66,
+        "of": 143,
+        "medianPredictedFiles": 48,
+        "emptyAnswers": 6
+      }
+    },
+    "graph (lines, depth ≤ 3)": {
+      "certain": {
+        "recall": 0.497,
+        "precision": 0.005,
+        "medianCasePrecision": 0.004,
+        "found": 71,
+        "of": 143,
+        "medianPredictedFiles": 82,
+        "emptyAnswers": 4
+      },
+      "certain+guessed": {
+        "recall": 0.497,
+        "precision": 0.005,
+        "medianCasePrecision": 0.004,
+        "found": 71,
+        "of": 143,
+        "medianPredictedFiles": 84,
+        "emptyAnswers": 4
+      }
+    },
+    "graph (lines+deps)": {
+      "certain": {
+        "recall": 0.839,
+        "precision": 0.002,
+        "medianCasePrecision": 0.001,
+        "found": 120,
+        "of": 143,
+        "medianPredictedFiles": 831,
+        "emptyAnswers": 0
+      },
+      "certain+guessed": {
+        "recall": 0.839,
+        "precision": 0.001,
+        "medianCasePrecision": 0.001,
+        "found": 120,
+        "of": 143,
+        "medianPredictedFiles": 1215,
+        "emptyAnswers": 0
+      }
+    },
+    "graph (files)": {
+      "certain": {
+        "recall": 0.706,
+        "precision": 0.001,
+        "medianCasePrecision": 0.001,
+        "found": 101,
+        "of": 143,
+        "medianPredictedFiles": 831,
+        "emptyAnswers": 2
+      },
+      "certain+guessed": {
+        "recall": 0.706,
+        "precision": 0.001,
+        "medianCasePrecision": 0.001,
+        "found": 101,
+        "of": 143,
+        "medianPredictedFiles": 1216,
+        "emptyAnswers": 2
+      }
+    },
+    "same project": {
+      "recall": 0.804,
+      "precision": 0.001,
+      "medianCasePrecision": 0,
+      "found": 115,
+      "of": 143,
+      "medianPredictedFiles": 2126,
+      "emptyAnswers": 0
+    },
+    "same folder": {
+      "recall": 0.378,
+      "precision": 0.004,
+      "medianCasePrecision": 0,
+      "found": 54,
+      "of": 143,
+      "medianPredictedFiles": 85,
+      "emptyAnswers": 1
+    },
+    "co-change": {
+      "recall": 0.231,
+      "precision": 0.009,
+      "medianCasePrecision": 0,
+      "found": 33,
+      "of": 143,
+      "medianPredictedFiles": 37,
+      "emptyAnswers": 8
+    },
+    "co-change (top 10)": {
+      "recall": 0.133,
+      "precision": 0.026,
+      "medianCasePrecision": 0,
+      "found": 19,
+      "of": 143,
+      "medianPredictedFiles": 10,
+      "emptyAnswers": 8
+    },
+    "graph (lines, depth ≤ 2) + co-change (top 10)": {
+      "certain": {
+        "recall": 0.462,
+        "precision": 0.007,
+        "medianCasePrecision": 0.004,
+        "found": 66,
+        "of": 143,
+        "medianPredictedFiles": 47,
+        "emptyAnswers": 6
+      },
+      "certain+guessed": {
+        "recall": 0.524,
+        "precision": 0.007,
+        "medianCasePrecision": 0.005,
+        "found": 75,
+        "of": 143,
+        "medianPredictedFiles": 56,
+        "emptyAnswers": 0
+      }
+    },
+    "\uD83D\uDCDC (top 10)": {
+      "recall": 0.112,
+      "precision": 0.028,
+      "medianCasePrecision": 0,
+      "found": 16,
+      "of": 143,
+      "medianPredictedFiles": 10,
+      "emptyAnswers": 9
+    },
+    "graph (lines, depth ≤ 2) + \uD83D\uDCDC (top 10)": {
+      "certain+guessed": {
+        "recall": 0.462,
+        "precision": 0.007,
+        "medianCasePrecision": 0.004,
+        "found": 66,
+        "of": 143,
+        "medianPredictedFiles": 48,
+        "emptyAnswers": 6
+      },
+      "certain+guessed+history": {
+        "recall": 0.517,
+        "precision": 0.007,
+        "medianCasePrecision": 0.005,
+        "found": 74,
+        "of": 143,
+        "medianPredictedFiles": 51,
+        "emptyAnswers": 0
+      }
+    }
+  },
+  "historySettings": "window 10, minShared 3, minShare 0.2, maxFiles 50, renames followed",
+  "historySelfCheck": true,
+  "gate2": {
+    "note": "D44 Gate 2: \uD83D\uDCDC from history older than each change; adds something when the gain's 95% range is above zero on ≥ 30 fixes",
+    "all": {
+      "fixes": 87,
+      "countsTowardVerdict": true,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0.462,
+        "recallRange95": [
+          0.35,
+          0.571
+        ],
+        "precision": 0.007,
+        "precisionRange95": [
+          0.005,
+          0.009
+        ],
+        "medianPredictedFiles": 48
+      },
+      "\uD83D\uDCDC (top 10)": {
+        "recall": 0.112,
+        "recallRange95": [
+          0.06,
+          0.164
+        ],
+        "precision": 0.028,
+        "precisionRange95": [
+          0.014,
+          0.041
+        ],
+        "medianPredictedFiles": 10
+      },
+      "graph (lines, depth ≤ 2) + \uD83D\uDCDC (top 10)": {
+        "recall": 0.517,
+        "recallRange95": [
+          0.41,
+          0.624
+        ],
+        "precision": 0.007,
+        "precisionRange95": [
+          0.005,
+          0.01
+        ],
+        "medianPredictedFiles": 51
+      },
+      "recallGain": 0.056,
+      "recallGainRange95": [
+        0.023,
+        0.092
+      ],
+      "historyHelps": true,
+      "co-change (top 10)": {
+        "recall": 0.133,
+        "recallRange95": [
+          0.08,
+          0.198
+        ],
+        "precision": 0.026,
+        "precisionRange95": [
+          0.016,
+          0.037
+        ],
+        "medianPredictedFiles": 10
+      },
+      "medianFilesAdded": 4,
+      "checks": {
+        "addsSomething": true,
+        "filtersHelpNotHurt": false,
+        "answersStayShort": true
+      }
+    },
+    "singleTopic": {
+      "fixes": 86,
+      "countsTowardVerdict": true,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0.465,
+        "recallRange95": [
+          0.357,
+          0.57
+        ],
+        "precision": 0.007,
+        "precisionRange95": [
+          0.005,
+          0.009
+        ],
+        "medianPredictedFiles": 49
+      },
+      "\uD83D\uDCDC (top 10)": {
+        "recall": 0.113,
+        "recallRange95": [
+          0.062,
+          0.169
+        ],
+        "precision": 0.028,
+        "precisionRange95": [
+          0.015,
+          0.042
+        ],
+        "medianPredictedFiles": 10
+      },
+      "graph (lines, depth ≤ 2) + \uD83D\uDCDC (top 10)": {
+        "recall": 0.521,
+        "recallRange95": [
+          0.412,
+          0.628
+        ],
+        "precision": 0.007,
+        "precisionRange95": [
+          0.005,
+          0.01
+        ],
+        "medianPredictedFiles": 58
+      },
+      "recallGain": 0.056,
+      "recallGainRange95": [
+        0.022,
+        0.09
+      ],
+      "historyHelps": true,
+      "co-change (top 10)": {
+        "recall": 0.134,
+        "recallRange95": [
+          0.078,
+          0.2
+        ],
+        "precision": 0.026,
+        "precisionRange95": [
+          0.016,
+          0.037
+        ],
+        "medianPredictedFiles": 10
+      },
+      "medianFilesAdded": 4,
+      "checks": {
+        "addsSomething": true,
+        "filtersHelpNotHurt": false,
+        "answersStayShort": true
+      }
+    },
+    "bundle": {
+      "fixes": 1,
+      "countsTowardVerdict": false,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 8
+      },
+      "\uD83D\uDCDC (top 10)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 0
+      },
+      "graph (lines, depth ≤ 2) + \uD83D\uDCDC (top 10)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 8
+      },
+      "recallGain": 0,
+      "recallGainRange95": [
+        0,
+        0
+      ],
+      "historyHelps": false,
+      "co-change (top 10)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 0
+      },
+      "medianFilesAdded": 0,
+      "checks": {
+        "addsSomething": false,
+        "filtersHelpNotHurt": true,
+        "answersStayShort": true
+      }
+    }
+  },
+  "tuning": null,
+  "gate1": {
+    "note": "D44 Gate 1: one case per fix; history helps when the 95% range of the recall gain is above zero on ≥ 30 fixes",
+    "all": {
+      "fixes": 87,
+      "countsTowardVerdict": true,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0.462,
+        "recallRange95": [
+          0.35,
+          0.571
+        ],
+        "precision": 0.007,
+        "precisionRange95": [
+          0.005,
+          0.009
+        ],
+        "medianPredictedFiles": 48
+      },
+      "co-change (top 10)": {
+        "recall": 0.133,
+        "recallRange95": [
+          0.08,
+          0.198
+        ],
+        "precision": 0.026,
+        "precisionRange95": [
+          0.016,
+          0.037
+        ],
+        "medianPredictedFiles": 10
+      },
+      "graph (lines, depth ≤ 2) + co-change (top 10)": {
+        "recall": 0.524,
+        "recallRange95": [
+          0.415,
+          0.633
+        ],
+        "precision": 0.007,
+        "precisionRange95": [
+          0.005,
+          0.01
+        ],
+        "medianPredictedFiles": 56
+      },
+      "recallGain": 0.063,
+      "recallGainRange95": [
+        0.028,
+        0.104
+      ],
+      "historyHelps": true
+    },
+    "singleTopic": {
+      "fixes": 86,
+      "countsTowardVerdict": true,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0.465,
+        "recallRange95": [
+          0.357,
+          0.57
+        ],
+        "precision": 0.007,
+        "precisionRange95": [
+          0.005,
+          0.009
+        ],
+        "medianPredictedFiles": 49
+      },
+      "co-change (top 10)": {
+        "recall": 0.134,
+        "recallRange95": [
+          0.078,
+          0.2
+        ],
+        "precision": 0.026,
+        "precisionRange95": [
+          0.016,
+          0.037
+        ],
+        "medianPredictedFiles": 10
+      },
+      "graph (lines, depth ≤ 2) + co-change (top 10)": {
+        "recall": 0.528,
+        "recallRange95": [
+          0.417,
+          0.639
+        ],
+        "precision": 0.007,
+        "precisionRange95": [
+          0.005,
+          0.01
+        ],
+        "medianPredictedFiles": 57
+      },
+      "recallGain": 0.063,
+      "recallGainRange95": [
+        0.026,
+        0.107
+      ],
+      "historyHelps": true
+    },
+    "bundle": {
+      "fixes": 1,
+      "countsTowardVerdict": false,
+      "graph (lines, depth ≤ 2)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 8
+      },
+      "co-change (top 10)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 0
+      },
+      "graph (lines, depth ≤ 2) + co-change (top 10)": {
+        "recall": 0,
+        "recallRange95": [
+          0,
+          0
+        ],
+        "precision": 0,
+        "precisionRange95": [
+          0,
+          0
+        ],
+        "medianPredictedFiles": 8
+      },
+      "recallGain": 0,
+      "recallGainRange95": [
+        0,
+        0
+      ],
+      "historyHelps": false
+    },
+    "bundlePattern": "\\b(fixes|polish(es)?|misc|bunch|collection|various|random|several|a few|lots? of|and more|tech debt)\\b"
+  },
+  "test2Fixes": {
+    "fixCommitsSampled": 400,
+    "fixCommitsMatching": 2004,
+    "changeFixPairs": 523,
+    "fixesWithFilesElsewhere": 92,
+    "trivialFixesExcluded": 209,
+    "cases": 87,
+    "handCheckSample": [
+      {
+        "fix": "096f4e29f762f6ed0b0a2a873fa2f1b925a0c6f3",
+        "fixSubject": "Fix validation for empty values in media management",
+        "bundle": false,
+        "changes": [
+          "1d8da79172 Add v5 Media Management endpoints"
+        ],
+        "fixFilesElsewhere": [
+          "src/Sonarr.Api.V3/Config/MediaManagementConfigController.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "5821e40d4956683e62f71a65a5e5c393460bb8ab",
+        "fixSubject": "Fixed: Improve media info in Kodi metadata",
+        "bundle": false,
+        "changes": [
+          "b103005aa2 Add XML declaration and clean up Kodi metadata generation",
+          "f3b39ba4f7 New: Display multiple audio and subtitles streams in media info"
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/Extras/Metadata/Consumers/Xbmc/XbmcMetadataFormatterTests/FormatAudioCodecFixture.cs",
+          "src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadataFormatter.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "ebe23104d4b29a3c900a982fb84e75c27ed531ab",
+        "fixSubject": "Fixed: Custom Format score bypassing upgrades not being allowed",
+        "bundle": false,
+        "changes": [
+          "05e7b90aab Fixed: Correct rejection message when profile does not allow upgrades",
+          "6f51e72d00 Fixed: Respect Quality cutoff if Custom Format cutoff isn't met",
+          "8b20a9449c New: Minimum Upgrade Score for Custom Formats",
+          "8dd8c95f36 Fixed: Avoid upgrades for custom formats cut-off already met",
+          "fe5c52602a Fixed: Custom Formats upgrading even when profile doesn't allow upgrades"
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core/DecisionEngine/DownloadRejectionReason.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "4ff83f9efc8abb0890722c3f462fb884937c5e34",
+        "fixSubject": "Fixed: Persist Indexer Flags for automatic imports",
+        "bundle": false,
+        "changes": [
+          "217611d716 Fixed: Persist Indexer Flags when manual importing from queue"
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core/MediaFiles/EpisodeImport/ImportDecisionMaker.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "4cb110070422917ae87ab7c3293fb263977056f0",
+        "fixSubject": "Fixed: Remove old naming config from v3 API responses",
+        "bundle": false,
+        "changes": [
+          "49e2f26ffc Fixed: Multiple SeasonEpisode formats in the same pattern are now supported.",
+          "c72c2f24c0 Merge branch 'custom-naming' into develop"
+        ],
+        "fixFilesElsewhere": [
+          "src/Sonarr.Api.V3/Config/NamingConfigController.cs",
+          "src/Sonarr.Api.V3/Config/NamingConfigResource.cs",
+          "src/Sonarr.Api.V3/Config/NamingExampleResource.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "7986488c6d1687b0810b3bcac2c1dae725e770ac",
+        "fixSubject": "Fixed: Ignore case when comparing torrent infohash",
+        "bundle": false,
+        "changes": [
+          "29ca1bc9da Merge pull request #238 from Sonarr/blacklisting-v2"
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core/Blocklisting/BlocklistService.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "3ece1533d86c559ec1bf7689c908802f31e38e91",
+        "fixSubject": "Fix checking for SameTorrent when the indexer is null",
+        "bundle": false,
+        "changes": [
+          "29ca1bc9da Merge pull request #238 from Sonarr/blacklisting-v2"
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core/Blocklisting/BlocklistService.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "c1e5b7f642d03414f7c5587d4db377ef979f2067",
+        "fixSubject": "Fixed cutoff unmet integration tests",
+        "bundle": false,
+        "changes": [
+          "a2536deef0 Fixed: Significantly improved api performance."
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Integration.Test/ApiTests/WantedTests/CutoffUnmetFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "3bbec2ff5d60ad078afb786541b33116b7439629",
+        "fixSubject": "Fixed: Incorrectly Parsing [PublicHD] as Release Group",
+        "bundle": false,
+        "changes": [
+          "e5632019db Simplified more RegexReplace instances."
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/ParserTests/ReleaseGroupParserFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "813f8869202b54048db8d792ee6c3f0d060dbd72",
+        "fixSubject": "Fixed: QBittorrent imports when torrent name and folder name differ",
+        "bundle": false,
+        "changes": [
+          "2d42c59d70 Fixed: Log download client name when communication fails",
+          "3916495329 Monitor and Process downloads separately",
+          "81d131e732 Merge pull request #779 from cbodley/qbittorrent",
+          "9a3f49bf9c Merge branch 'develop' into phantom-develop",
+          "accf8d5c81 Mark completed imports based on history as imported to remove from queue",
+          "b359e1c175 Merge pull request #215 from Sonarr/manual-import",
+          "d2764cee2a Fixed: Heavy qbit api load when CDH Remove is disabled and Seeding time has been reached",
+          "e2644c3847 Fixed manual import possible null series"
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core/Download/DownloadClientBase.cs",
+          "src/NzbDrone.Core/Download/DownloadClientItem.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "4f7e00bdc4389a02dc13f0bdfb98d81a8b15fa35",
+        "fixSubject": "Fixed: Don't lock command queue if updating is disabled",
+        "bundle": false,
+        "changes": [
+          "066a9de7ae Parse the package_info file to determine whether the UpdateMechanism is configured properly.",
+          "1eaef4360d Merge pull request #127 from NzbDrone/wtf-gtfo",
+          "25abf52b3f Added update check early in startup if the package requested a post-install update check",
+          "5750f012cb Merge pull request #180 from Sonarr/updatecheck-fixes",
+          "e97e13e897 Fixed: Smarter application update completed message"
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core/Update/Commands/ApplicationUpdateCheckCommand.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "7b68ce49d5be315260418b132beb070ea458b817",
+        "fixSubject": "Fix .gitattributes and normalize to LF in repository",
+        "bundle": false,
+        "changes": [
+          "01bdec965b Add absolute episode numbers to episodes during refresh",
+          "0c1ce66053 Cleanup Multiple Compiler Warnings",
+          "1603b06431 New: Prefer regular episodes over specials when absolute numbers conflict",
+          "174a209c66 Update series test",
+          "2505a19a88 Fixed: Air-time adjustment for Amazon/Hulu releasing 4+ episodes on one day",
+          "2a0f461135 Fixed broken tests",
+          "4d19dddf88 Fixed: Don't recalculate episode air times for Netflix series",
+          "55beec4908 Fixed: Attempt to refresh anime episodes by absolute numering when refreshing",
+          "647ea5456b Merge pull request #44 from NzbDrone/series-editor",
+          "6c44121b09 Fixed: Now assuming that an Ended series without any airdates are direct-to-dvd.",
+          "6dfbc3c290 Fixed: Will no longer cause an error when trying to parse an anime episode with absolute number 0.",
+          "70f7404499 Fixed: Sabnzbd 2.0 api compatibility.",
+          "8aa523c6df AirDateUtc comparison validation on Linux",
+          "bb87d4e96e Fixed: Get all anime episodes even when absolute episode number is zero",
+          "c25496cb6a Fixed: Default episode title to TBA if missing",
+          "d4331e9470 removed trakt references, added user agent to tvdb requests",
+          "d5ba11bd51 Merge pull request #245 from Sonarr/skyhook-search"
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/TvTests/SeriesServiceTests/UpdateSeriesFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "1b3acb52f1e4304232f30bab5415da8c047bb9d3",
+        "fixSubject": "Fixed: Don't treat NZBs rejected by SABnzbd as successful",
+        "bundle": false,
+        "changes": [
+          "56436fea69 Fixed: Now shows UI notification if downloading nzb from indexer fails."
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core/Exceptions/DownloadClientRejectedReleaseException.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "46d8e5830a1c5fe7a54fe16738c770f29c9acea3",
+        "fixSubject": "Fixed: Concurrent manual imports silently failing",
+        "bundle": false,
+        "changes": [
+          "b359e1c175 Merge pull request #215 from Sonarr/manual-import"
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/Messaging/Commands/CommandEqualityComparerFixture.cs",
+          "src/NzbDrone.Core/Messaging/Commands/CommandEqualityComparer.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "73cb789f59a63816228904ad7fc53b137e6865df",
+        "fixSubject": "Fixed: Better import error messages",
+        "bundle": false,
+        "changes": [
+          "51f705d89a Merge pull request #139 from Sonarr/verified-file-transfer",
+          "70544738ed Merge branch 'metadata-creation' into develop",
+          "f91e1a3576 Tweaked error message when TransferFile destination already exists."
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Common/Disk/DestinationAlreadyExistsException.cs",
+          "src/NzbDrone.Core/MediaFiles/EpisodeImport/ImportApprovedEpisodes.cs",
+          "src/NzbDrone.Core/MediaFiles/EpisodeImport/RootFolderNotFoundException.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "e97e13e8970b1965cfbb200043aa069d4ede1750",
+        "fixSubject": "Fixed: Smarter application update completed message",
+        "bundle": false,
+        "changes": [
+          "5750f012cb Merge pull request #180 from Sonarr/updatecheck-fixes"
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/Messaging/Commands/CommandExecutorFixture.cs",
+          "src/NzbDrone.Core/Messaging/Commands/CommandQueueManager.cs",
+          "src/NzbDrone.Core/Update/Commands/ApplicationUpdateCommand.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "43c5d03f9ab64ad36446cd1c7064d6c4cfb5c4d9",
+        "fixSubject": "Fix GetAncestorFolders tests under mono",
+        "bundle": false,
+        "changes": [
+          "d3890bd712 New: Health check warning for macOS when running from App Translocation folder"
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Common.Test/PathExtensionFixture.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "b6ddc8756bb6dc3f7e8aac98f3a457074883daaa",
+        "fixSubject": "Fixed typo in nn caps and apikey error message.",
+        "bundle": false,
+        "changes": [
+          "55412968e0 New: Added auto-detection of indexer capabilities to torznab."
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core/Indexers/Newznab/NewznabCapabilitiesProvider.cs",
+          "src/NzbDrone.Core/Indexers/Newznab/NewznabRssParser.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "ddb24549d481dece372914da1102e34fc3beddd1",
+        "fixSubject": "Fixed: Extra checks in place to prevent config file corruption",
+        "bundle": false,
+        "changes": [
+          "0c71b7c5d0 Merge branch 'blacklisting' into develop"
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Common.Test/ConfigFileProviderTest.cs"
+        ],
+        "genuine": null
+      },
+      {
+        "fix": "8b3fd95d559505d06d7dc604d01c8fadf9c33d61",
+        "fixSubject": "Fixed: Multi-absolute episode parsing",
+        "bundle": false,
+        "changes": [
+          "9e0c8a60b4 Anime special fixes"
+        ],
+        "fixFilesElsewhere": [
+          "src/NzbDrone.Core.Test/ParserTests/SingleEpisodeParserFixture.cs"
+        ],
+        "genuine": null
+      }
+    ]
+  },
+  "exactCheck": null,
+  "test4CompileBreak": null,
+  "test3StableAndFast": null
+}

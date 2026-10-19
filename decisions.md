@@ -587,6 +587,10 @@ Both gates use the hardened Test 2 (D33), each fix counted once.
 - **If "adds something" fails,** 📜 ships **off by default** (`history: off` in `stangent.yaml`) and the
   report says why: D26's "a label that mostly adds false alarms is switched off", applied literally.
 - Rejected: report-and-decide with no pre-agreed bar; also requiring graph + 📜 to beat plain co-change alone.
+- *Result 2026-10-19:* Gate 1 passed (Sonarr, bitwarden/server). Gate 2 passed on bitwarden/server with every
+  check (recall +0.025, range 0.009–0.047; 📜 precision 0.031 vs 0.022; +4 files; 0.9 s; stable), so 📜 ships on
+  by default. Gap found: the tuning rule (D43) checked precision only, and with the frozen settings Sonarr misses
+  Gate 2's recall check. Next tuning uses all of Gate 2's checks as eligibility.
 **Why:** a pre-agreed bar can't drift toward whatever the numbers turn out to be.
 **Cost:** with 30–60 fixes, a real but small gain may not clear "above zero"; strict on purpose.
 

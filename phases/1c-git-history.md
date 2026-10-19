@@ -129,14 +129,14 @@ reopens `phases/1a-csharp-map.md` and bumps `code-graph` to v3 and `impact-repor
 - [x] `graph impact` shows the `history` group last, capped at 10 with evidence, `--expand history`, the "also 📜" tag, and never walks 📜 (`impact-report` v4).
 - [x] Contracts bumped per D20: `code-graph` v3, `impact-report` v4, 1a reopened, 1b marked `needs review` with its follow-up; `phases check` passes.
 - [x] Defaults tuned on nopCommerce and Sonarr, then frozen and committed before judging.
-- [ ] **Gate 2** on the judging repo, bitwarden/server (Kavita and eShop reported, under the floor):
-  - [ ] **📜 adds something:** graph + top-10 📜 beats graph alone on recall, with the 95% range of the gain above zero;
-  - [ ] **filters help, not hurt:** 📜's precision ≥ the plain baseline's, and its recall ≥ 90% of the baseline's;
-  - [ ] **answers stay short:** the median answer grows by ≤ 10 files;
-  - [ ] **cheap:** ≤ 10 s added to a nopCommerce build; ≤ 30 s added to the first build by rename following;
-  - [ ] **stable:** Test 3 holds (byte-identical builds, incremental = full).
+- [x] **Gate 2** on the judging repo, bitwarden/server (Kavita and eShop reported, under the floor): **passed**
+  - [x] **📜 adds something:** graph + top-10 📜 beats graph alone on recall, with the 95% range of the gain above zero;
+  - [x] **filters help, not hurt:** 📜's precision ≥ the plain baseline's, and its recall ≥ 90% of the baseline's;
+  - [x] **answers stay short:** the median answer grows by ≤ 10 files;
+  - [x] **cheap:** ≤ 10 s added to a nopCommerce build; ≤ 30 s added to the first build by rename following;
+  - [x] **stable:** Test 3 holds (byte-identical builds, incremental = full).
   - *If "📜 adds something" fails:* 📜 ships **off by default** (`history.enabled: false`) and the report says why.
-- [ ] Tests cover the fixture repo, the filters, renames, shallow clones, impact output and determinism.
+- [x] Tests cover the fixture repo, the filters, renames, shallow clones, impact output and determinism.
 - [ ] CI green; end-of-phase report written.
 
 ## Not in this phase
@@ -205,11 +205,97 @@ Test 2 hardened as planned:
 
 ## End-of-phase report
 
-*Written when the phase ends, in the format in `roadmap.md`:*
+*2026-10-19 · first report.* Gate 2 passed; the phase is done once CI is green on GitHub.
 
-1. What was built
-2. Benchmark results (Gate 1 on all four repos; tuning; Gate 2 on the judging repos; compared with 1b's history results)
-3. Decisions made or changed
-4. Known gaps
-5. Impact on other phases
-6. Follow-ups
+### 1. What was built
+- **The history reader** (`src/Stangent.Graph/History/`):
+  - `HistoryLog` reads main's own line (`--first-parent`), follows renames and moves (only the map's file
+    types), and stops a deleted path's history passing to a later file of the same name.
+  - `HistoryIndex` applies the four noise filters and counts each file's window. It answers "📜 from commits
+    older than X", which is what lets the benchmark score without peeking ahead.
+  - `HistoryStep` runs it in `graph build`: reuse by fingerprint, shallow clones keep stored lines, blobless
+    clones skip renames with a warning.
+- **The graph:** 📜 `changes-with` lines in their own table, outside the walked lines; `meta.history`; the
+  `history` settings in `stangent.yaml`.
+- **Impact answers:** the `history` section (top 10 by share, evidence, `found`, `--expand history`), the
+  "also 📜" tag, the Markdown block, and the `/stangent:impact` reading guide.
+- **Contracts:** `code-graph` v3 (file layout 3) and `impact-report` v4. 1a reopened; 1b marked `needs review` (D20).
+- **Benchmark:**
+  - Test 2 hardened (main line, one case per fix, full history, 400 fixes, bundle slice, 95% ranges);
+  - Gate 1 and Gate 2;
+  - 📜 predictors for Tests 1 and 2 (history older than each change) with a self-check against the stored lines;
+  - the tuning grid and `--select-tuning`;
+  - bitwarden/server added.
+- **Tests:** 24 new, 79 in all.
+
+### 2. Benchmark results (`benchmark/results/2026-10-19-phase1c-*.json`)
+Gate 1 and tuning are in Progress above. With the frozen defaults (window 10, minShared 3, maxFiles 50):
+
+**Gate 2: Test 2 (what broke), one case per fix** (recall · precision; 📜 and the baseline are each top 10)
+| Repo (role) | Fixes | Graph ≤ 2 | Graph + 📜 | Gain (95% range) | 📜 alone | Plain co-change | Median added | Checks |
+|---|---|---|---|---|---|---|---|---|
+| **bitwarden/server (judge)** | 91 | 0.444 · 0.004 | **0.470** · 0.004 | **+0.025 (0.009 to 0.047)** | 0.079 · **0.031** | 0.065 · 0.022 | 4 | **all pass** |
+| Sonarr (tune) | 87 | 0.462 · 0.007 | 0.517 · 0.007 | +0.056 (0.023 to 0.092) | 0.112 · 0.028 | 0.133 · 0.026 | 4 | recall check fails |
+| nopCommerce (tune) | 44 | 0.451 · 0.005 | 0.473 · 0.005 | +0.022 (0 to 0.058) | 0.055 · 0.015 | 0.055 · 0.012 | 4 | no clear gain |
+| Kavita (reported) | 23 | 0.030 · 0.002 | 0.090 · 0.004 | +0.06 (0 to 0.112) | 0.060 · 0.018 | 0.090 · 0.027 | 9 | under the floor |
+| eShop (reported) | 1 | — | — | — | — | — | — | under the floor |
+
+**Test 1: from one file of a commit, its other files** (recall · precision)
+| Predictor | bitwarden/server | Sonarr | nopCommerce | Kavita | eShop |
+|---|---|---|---|---|---|
+| graph ≤ 2 | 0.20 · 0.03 | 0.17 · 0.08 | 0.21 · 0.04 | 0.11 · 0.12 | 0.08 · 0.19 |
+| 📜 (top 10) | 0.14 · **0.27** | 0.12 · **0.27** | 0.12 · 0.19 | 0.05 · 0.12 | 0.02 · 0.37 |
+| plain co-change (top 10) | 0.16 · 0.20 | 0.16 · 0.19 | 0.17 · 0.17 | 0.02 · 0.14 | 0.05 · 0.25 |
+| **graph ≤ 2 + 📜** | **0.29** · 0.04 | **0.26** · 0.10 | **0.28** · 0.05 | **0.14** · 0.11 | **0.10** · 0.21 |
+
+**Cost and stability**
+| | bitwarden/server | nopCommerce | Sonarr | Kavita | eShop |
+|---|---|---|---|---|---|
+| 📜 step in `graph build` | 0.8–0.9 s | 1.0–1.3 s | 1.0 s | 0.5 s | 0.2 s (blobless: renames skipped) |
+| 📜 lines | 10,020 | 9,454 | 7,369 | 4,230 | 51 |
+| Test 3: identical builds · incremental = full | ✅ · ✅ | ✅ · ✅ | — | — | — |
+| Self-check: index at HEAD = stored lines | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+First build with rename following on a `blob:limit=200k` nopCommerce clone: 4.9 s (D38's limit: 30 s).
+
+How to read it:
+- **Gate 2 passes, so 📜 ships on by default.** On a repo it was never tuned on, with a different merge style
+  (squash-only), history adds recall the graph misses, at better precision than plain co-change, for +4 files.
+- **The gain for "what broke" is modest** (+2 to +6 points where it's clear). The gain for "what else this commit
+  touches" is larger (+6 to +9 points), and there 📜's top 10 is right 19–27% of the time, against 3–8% for the graph.
+  That's the hint's real use: "you probably need to touch these too".
+- **Compared with 1b:** 1b had co-change beating the graph on Kavita's Test 2 (0.32 vs 0.29 recall on 24 pairs).
+  Counted per fix on the main line, Kavita has 23 fixes, mostly bundles: too few to say anything, though history
+  still finds what the graph within 2 lines doesn't.
+- **📜 isn't uniformly better than plain co-change.** Its precision is higher everywhere except Kavita, but its
+  recall is lower on Sonarr and Kavita: its window is 10 commits, while plain co-change counts every older commit.
+
+### 3. Decisions made or changed
+- D33–D44, grilled before the phase.
+- **D43 refined:** bitwarden/server judges, because Kavita and eShop fell under the 30-fix floor.
+- **D38 and D42 refined by measurement:** read only the map's file types (7.1 s → 0.75 s). Blobless clones skip
+  renames and warn. CI clones with `blob:limit=200k`.
+- **D35 and D37 tuned:** window 10, minShared 3, minShare 0.2 (never binding), maxFiles 50.
+
+### 4. Known gaps
+- **The tuning rule didn't include Gate 2's recall check.** With the frozen settings, Sonarr fails "recall ≥ 90% of
+  the baseline's" (0.112 vs 0.120). The verdict is judged on bitwarden/server, but the next tuning should use
+  all of Gate 2's checks as its eligibility rule.
+- **Small margins:** the precision differences that decided tuning eligibility are 0.001–0.01.
+- **Rebased PRs count per commit** (D36), and blobless clones lose rename history (D38).
+- **Thin repos:** Kavita (23 fixes) and eShop (1). Test 2 still skips fixes touching more than 15 files, a cap inherited from 1a.
+- **Not built:** member-level 📜 (D34), files off the map, re-ranking by the "also 📜" tag (D40).
+- **Requirements and testing:** `--diff-merges` needs git 2.31 or newer. Not tested on Windows.
+- **Hand-checking:** the Test 2 pairs from D28 are still not checked by a person.
+
+### 5. Impact on other phases
+- `code-graph` v2 → v3: 1b is `needs review` (its follow-up: confirm, then move to v3).
+- `impact-report` v3 → v4: no phase consumes it yet. Phase 6 (PR review) will show the `history` section.
+- Phase 7's graph-building workflow must clone with `fetch-depth: 0` and `filter: blob:limit=200k` (D42).
+- Phase 5 (testing) could use 📜 to suggest tests that usually change with a file; not designed yet.
+
+### 6. Follow-ups
+- Push and confirm CI is green, then mark this phase `done` here and in `roadmap.md`.
+- 1b's `needs review`: confirm nothing in 1b depends on the v2 layout, then move it to `code-graph: 3`.
+- Next time 📜 is tuned, make the eligibility rule all of Gate 2's checks.
+- A person checks the Test 2 hand-check sample once (D28).
