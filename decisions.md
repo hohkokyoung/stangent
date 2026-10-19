@@ -312,6 +312,8 @@ lines); CI build outputs expire, so old commits eventually need re-indexing.
   📜 usually changes together (from `git log`, filtered: no merges, no huge commits, older history
   weighs less; a hint only, never blocking), ❓ unknown (blind spot).
 - Later: test coverage data (Phase 5); real traffic between services from OpenTelemetry traces, if the company has them.
+- *Refined 2026-10-19 (Phase 1c):* 📜 is file to file (D34), counted over each file's recent commits
+  (D35), and "no merges" became "main line only" (D36).
 - Rejected: numeric confidence scores (made-up precision).
 **Cost:** Phase 1 takes longer (three extra detectors); the graph is roughly 1.5–2× bigger (estimate, to
 measure); history needs full clones, not shallow ones. Reports list ✅ first, then 🟡, then 📜 and ❓,
@@ -361,6 +363,7 @@ Three tests, all run by code from git history (no AI, no manual labelling):
 | 1b. Frontend + API shapes | TypeScript extractor; Angular/React → backend HTTP links; API request/response fields | CleanArchitecture |
 | 1c. Git history | 📜 "usually changes together", with noise filters | nopCommerce, eShop |
 Each ends with its own report (D20). 1b depends on 1a; 1c may wait if 1a's scores are good enough.
+- *Refined 2026-10-19 (Phase 1c):* 1c is tuned on nopCommerce and Sonarr and judged on Kavita and eShop (D43).
 **Why:** a working, scored C# impact analysis much sooner, and a chance to change course before the frontend half.
 
 ## D30 · The TypeScript extractor runs in Node, inside the stangent tool — 2026-10-19
@@ -406,7 +409,174 @@ Rejected: parsing TypeScript from C# (no types); a separate npm tool (two instal
 **Why:** the 🟡 cross-stack links are the ones no compiler checks; an OpenAPI file is a free, exact answer key.
 **Cost:** the OpenAPI check only works where a project publishes its OpenAPI file.
 
+## D33 · Phase 1c starts by hardening Test 2; 📜 is built only if history still helps — 2026-10-19
+1b's "co-change beats the graph on Kavita" rests on too little to build on:
+- 24 usable pairs on Kavita and 17 on Sonarr. On Sonarr, 9 of the 19 sampled pairs share one fix, so
+  it's about 10 independent fixes.
+- Kavita squash-merges mixed PRs ("A collection of bug fixes", "Polish 6"). Its pairs mostly link one
+  bundle of edits to a later bundle, which co-change history naturally predicts.
+
+So 1c's first step is the measuring stick, before any 📜 code:
+- each fix counts once, however many change commits it pairs with;
+- full history, not a 36-month window;
+- nopCommerce and eShop pairs join Kavita and Sonarr;
+- bundle PRs (Kavita's style) are reported as their own slice.
+
+Then graph vs co-change is re-run. **If co-change adds nothing over "graph within 2 lines" on those
+numbers, 1c stops there** and records why (the exact bar is part of 1c's done-when).
+**Why:** a pass or fail on ~10–24 independent cases is noise; a day of benchmark work decides whether
+the rest of 1c is worth building.
+**Cost:** 📜 arrives later; the 1b history results are re-measured, not reused.
+
+## D34 · 📜 links files, not members (members maybe later) — 2026-10-19
+- A 📜 line joins two **file points already in the graph**: C#, TypeScript, Angular templates. Files
+  that aren't on the map (`.resx`, `.sql`, `.csproj`, JSON config) are ignored for now.
+- Only `git log --name-only` is needed: seconds, even on 12k commits, with dense evidence across the stack.
+- Hub files (`Startup.cs`, a big service) are handled by thresholds and commit-size filters, not by going finer.
+- **Follow-up, not in 1c:** member-level pairs, tried only if file-level 📜 proves too noisy on the hardened Test 2 (D33).
+**Why:** member pairs need every past commit diffed and parsed (Roslyn and the Node extractor on old
+code; minutes per build), give sparse evidence (two methods rarely change together twice), and can't reach templates.
+**Cost:** coarse: "this file usually changes with that one" doesn't say which part of it.
+
+## D35 · 📜 evidence is a count over each file's recent commits — 2026-10-19
+- For a file A, look at **its last 20 commits** that survive the noise filters. A busy file is judged on
+  recent months, a quiet one reaches further back; anything older counts zero. This is how "older
+  history weighs less" (D26) is met without a decimal score.
+- B is 📜 for A when B changed in **at least 3** of those commits **and at least 30%** of them.
+- Evidence is shown as a count anyone can check with `git log`: "changed together in 7 of the last 12".
+- Directional: A → B and B → A are judged separately. A hub as the starting point yields almost
+  nothing (no partner reaches 30% of its many commits); a small file that nearly always drags `Startup.cs` along shows it.
+- 20, 3 and 30% are starting defaults, tuned once on the hardened Test 2 (D33), then fixed in `stangent.yaml` (per repo, overridable).
+**Why:** D26 rejected made-up numeric confidence; a half-life decay produces exactly that ("3.41").
+**Cost:** a hard cut at 20 commits ignores older evidence entirely; a file that changes in bursts can
+have its whole window filled by one burst.
+
+## D36 · 📜 counts changes on main's own line — 2026-10-19
+- History is read with `git log --first-parent` on the graph's commit. A PR merged with a merge commit
+  counts **once** (the merge, diffed against main before it); its branch commits aren't counted again.
+  Squashed PRs and direct commits count once each. Closed or unmerged PRs aren't on main, so they're ignored.
+- Refines D26's "no merges": with `--no-merges`, a PR of 8 commits that each touch the same two files
+  counts as 8 pieces of evidence for one change.
+- **Rebase-and-merge PRs** land as separate commits and count separately. Git keeps no reliable trace of
+  which commits formed one PR: on Sonarr, six unrelated commits share one timestamp because a
+  maintainer rebased them together, so grouping by timestamp would invent PRs. Rebasing a branch
+  *locally* before a squash or merge changes nothing.
+- **Advised, not required:** squash merges for our own repos (one PR = one commit; revert per ticket, D11,
+  becomes one commit). Merge commits work as well; rebase-and-merge with messy commits ("wip", "fix typo") inflates 📜.
+- Sonarr (rebased, tidy commits) is in the benchmark, so the effect is measured, not assumed.
+- **Follow-up, not in 1c:** group commits by PR through the code-host adapter (D24; GitHub's commit → PR
+  lookup), built only if a team's rebased history measurably hurts the scores.
+**Why:** one logical change should count once, the same reason D33 counts each fix once.
+**Cost:** rebase-merged history is counted per commit; the fix needs network and a token at build time.
+
+## D37 · 📜 noise filters — 2026-10-19
+Four filters, each checkable by code and reported as a count ("312 commits dropped: 40 huge, 251 bots, …"):
+| Filter | Example | Rule |
+|---|---|---|
+| Huge commits | "Upgrade to .NET 10", Kavita's "Polish 6" | more than 30 files on the map (default, tuned with D35's) |
+| Bots | `dependabot[bot]`, Sonarr's "Automated API Docs update", Weblate translations | author ends in `[bot]`, plus a per-repo author list in `stangent.yaml` |
+| Formatting sweeps | "Run dotnet format" | listed in the repo's `.git-blame-ignore-revs` (the file teams already keep for `git blame`); most are also huge |
+| Reverts | "Revert 'Add series filter'" | a commit whose message says `This reverts commit <hash>`, **and** that commit: the change didn't stick, and keeping both counts it twice |
+- Not filtered: lock files, `.csproj` and generated files (off the map, D34, so already invisible);
+  EF Core migrations and model snapshots (true and useful: "changing `Series.cs` usually needs a migration").
+- Rejected: diffing every commit to find whitespace-only changes (minutes per build instead of seconds).
+**Cost:** a formatting sweep that isn't listed and isn't huge gets through; a bot not in the list
+counts as a person until someone adds it.
+
+## D38 · 📜 follows renames and moves, if it's cheap enough — 2026-10-19
+- git's normal rename detection (`-M`) joins a moved file's old history to its current path, so a
+  folder reorganisation doesn't wipe its 📜 evidence. Moving a C# file usually changes its `namespace`
+  line, so exact-only matching would miss most moves.
+- It needs the contents of commits that add and delete files; a blobless clone downloads them on demand.
+- **Measured in 1c on nopCommerce.** If the first build gets more than ~30 s slower, 1c falls back to
+  not following renames and records the gap.
+**Cost:** a one-off download in blobless clones; renames git doesn't recognise (heavily edited in the same commit) still start fresh.
+
+## D39 · 📜 lines live in the code graph (`code-graph` v3) — 2026-10-19
+- A new line kind, `changes-with`, between file points in `.stangent/graph.sqlite`, labelled 📜, carrying its evidence count.
+- Shared with the graph (D25): CI builds with full history, so a developer with a shallow clone still
+  downloads 📜. "Same commit → same graph" holds: history up to a commit and the filter inputs
+  (`stangent.yaml`, `.git-blame-ignore-revs`) are fixed by the commit.
+- A shallow clone would build a different graph for the same commit, so the graph records it
+  (`meta.history`: full or none) and `loadWarnings` says so.
+- **D20:** 1c reopens 1a and bumps `code-graph` v2 → v3. 1b consumes v2, so it's marked `needs review`
+  with a follow-up: confirm nothing in 1b breaks, then move it to v3.
+- Rejected: a separate `history.sqlite` (two files for CI to share and impact to join, and D26 already defines 📜 as a graph line label).
+**Cost:** a contract bump and a `needs review` on 1b for what is, for 1b, an additive change.
+
+## D40 · 📜 in impact answers: its own group, last, capped, never walked — 2026-10-19
+- **Never walked.** 📜 is looked up one step out from the changed files only; the walk never follows a 📜
+  line or continues from a file found through one (chains of "usually" are how D27's 0.5% precision happened).
+- **Its own group, after every ✅/🟡 group:** "usually changes together", top 10 by count, each with its
+  evidence ("7 of the last 12"); `--expand history` shows the rest. A hint only, never blocking (D26).
+- A file the graph already found keeps its ✅/🟡 place and gets an "also 📜" tag. Re-ranking by that
+  tag waits until the benchmark shows "found by both" is clearly more precise.
+- **Contract:** `impact-report` v3 → v4 (the group and the tag). Only 1a provides it and no phase consumes it yet.
+- Rejected: mixing 📜 into the existing groups (hints among certain answers); corroboration only (drops
+  the files only history finds, which is what co-change won with on Kavita).
+**Cost:** one more group to read; a capped list can hide the 11th file that mattered.
+
+## D41 · 📜 is recomputed in full, not incrementally — 2026-10-19
+- 📜 is recomputed in full whenever the graph's commit or a filter input (`stangent.yaml`,
+  `.git-blame-ignore-revs`) changes, and skipped when neither did.
+- Reading the main line and counting pairs should take seconds (≤30 files per commit, so ≤~900 pairs each).
+- Incremental history is built **only if nopCommerce's full recompute takes more than ~10 s**.
+- Test 3 ("incremental = full", two builds byte-identical) covers 📜 with no extra work.
+**Why:** incremental history has to handle force-pushes, branch switches, filter changes and D35's
+sliding 20-commit window, each a correctness bug in waiting, to save a few seconds.
+**Cost:** every new commit pays the full recompute.
+
+## D42 · 📜 uses whatever history the clone has; CI's graph carries it — 2026-10-19
+- `stangent graph build` never fails over a shallow clone. It records the history it used (`meta.history`:
+  the commit range, or none) and warns when there's none.
+- **CI builds the shared graph (D25) from a blobless full clone** (`fetch-depth: 0`, `filter: blob:none`),
+  set in the thin workflow file (D24). `actions/checkout`'s default (depth 1) would ship graphs with no 📜.
+- No cut-off date: D35 reaches back 20 commits per file, and a quiet file needs years of history to fill that.
+- **A local rebuild on a shallow clone keeps the downloaded 📜 lines**, marked with the commit they were
+  computed at, rather than dropping them. A few commits stale is fine for a hint.
+- Rejected: failing without full history (annoying for every developer); dropping 📜 on shallow builds
+  (most local rebuilds would lose it silently).
+**Cost:** the graph can carry 📜 a few commits older than its code; `meta.history` says by how much.
+
+## D43 · 📜 is tuned on two repos and judged on two others — 2026-10-19
+| Role | Repo | History | How changes land |
+|---|---|---|---|
+| Tune | nopCommerce | 16,295 commits since 2010 | direct + merges |
+| Tune | Sonarr | 12,099 since 2010 | direct / rebased |
+| Judge | Kavita | 3,452 since 2020 | squash bundles + direct |
+| Judge | eShop | 349 since 2023 | squash |
+- D35's and D37's defaults are chosen on the tuning repos only, then **frozen** before the judging repos are scored.
+- That also tests whether defaults tuned on direct-commit repos survive squash-merge repos, which is
+  what the company's repos (style unknown) will get.
+- **Floor:** a repo with fewer than 30 independent Test 2 fixes is reported but doesn't count toward pass
+  or fail. eShop will probably fall below it, so the verdict may rest on Kavita alone (bundles and all).
+  Accepted; the report says so.
+- CleanArchitecture stays out (a template with little history).
+**Why:** tuning on the repos that are then scored measures the tuning, not 📜.
+**Cost:** half the history is spent on tuning; a thin judging side.
+
+## D44 · 1c's done-when: two gates, judged by code — 2026-10-19
+Both gates use the hardened Test 2 (D33), each fix counted once.
+- **Gate 1, before any 📜 code (all four repos):** "graph within 2 lines" vs "graph within 2 lines + the plain
+  co-change baseline's top 10". If adding history raises recall on no repo with ≥ 30 fixes, 1c stops (D33).
+- **Gate 2, the done-when (judging repos, D43, frozen defaults):**
+  | Check | Bar |
+  |---|---|
+  | 📜 adds something | recall of graph + top-10 📜 beats graph alone, and the 95% range of the gain (resampling fixes, fixed seed) stays above zero |
+  | Filters help, not hurt | 📜's precision ≥ the plain baseline's, and its recall ≥ 90% of the baseline's |
+  | Answers stay short | the median answer grows by ≤ 10 files |
+  | Cheap | ≤ 10 s added to a nopCommerce build (D41); ≤ 30 s added to the first build by rename following (D38) |
+  | Stable | Test 3 holds: byte-identical builds, incremental = full |
+- **If "adds something" fails,** 📜 ships **off by default** (`history: off` in `stangent.yaml`) and the
+  report says why: D26's "a label that mostly adds false alarms is switched off", applied literally.
+- Rejected: report-and-decide with no pre-agreed bar; also requiring graph + 📜 to beat plain co-change alone.
+**Why:** a pre-agreed bar can't drift toward whatever the numbers turn out to be.
+**Cost:** with 30–60 fixes, a real but small gain may not clear "above zero"; strict on purpose.
+
 ## Open questions
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
 - Confirm the company's Claude plan excludes training on its data (D24), before running on client code.
+- Bug tickets: how is a bug verified before it's fixed? Likely a test that fails because of the bug
+  (the D18 check), then the fix makes it pass. What happens when it can't be reproduced, and how does
+  the ticket's description become a starting point for the graph? (Phases 3–5)
