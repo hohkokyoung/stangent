@@ -13,6 +13,7 @@ software-engineering pipeline: requirements → code → tests → PR → deploy
 | `phases/` | One file per started phase: its plan and end-of-phase report. |
 | `docs/cli-conventions.md` | What every `stangent` command prints and returns. |
 | `docs/code-graph.md` | The code graph: points, lines, labels, detectors, impact answers. |
+| `benchmark/README.md` | Running the benchmark: full-history clones, per-repo configs, scoring commands. |
 
 ## How to work here
 
