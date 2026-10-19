@@ -81,6 +81,7 @@ symbols. Production code is not annotated.
 - CI checks every linked symbol still exists; renames are auto-repaired from the graph diff or flagged.
 - Inferred-only links (embeddings/LLM guesses) are rejected: that is the hallucination leak.
 **Cost:** a refactor made outside stangent breaks links until CI catches it.
+- *Refined 2026-10-19 (D52):* the chain is FSD section → reference page → code symbols; every hop is checked.
 
 ## D11 · A living spec of the whole system, owned by BA/PM — 2026-10-18
 The spec describes what the system does now, organised as features, journeys and
@@ -99,6 +100,8 @@ requirements).
 - BA/PM own the spec. Each requirement can be marked **verified**; verification records a
   hash of the requirement's text, so any later edit drops it back to unverified automatically (checked in code).
 - Each requirement needs an easy-to-read history and a place for comments.
+- *Refined 2026-10-19 (D52):* "the spec" is now the FSD, the generated reference and the links between them;
+  verification (the text hash) applies to each FSD section ↔ page link and each decision.
 **Cost:** existing code has no spec, and drafting one from code is the biggest hallucination
 risk in the project. How to write specs for existing code is still open.
 
@@ -129,6 +132,10 @@ verification must record who approved.
   source text and every cited symbol exists in the graph.
 **Why:** code often runs ahead of the documents, so a requirement taken from code must be visibly different from one somebody wrote down.
 **Open:** what happens on a conflict; where the original documents are stored.
+- *Clarified 2026-10-19 (D51):* not "code as fallback": the FSD and the code are always read together; with no FSD,
+  the spec comes from code alone.
+- *Revised 2026-10-19 (D52):* no merged requirement list. The FSD and a reference generated from code stay
+  separate and are linked; the provenance labels become the states of those links.
 
 ## D14 · One full audit upfront, then kept current per area — 2026-10-18
 On adoption, stangent builds the whole spec in one pass: it imports every existing document
@@ -163,6 +170,8 @@ between documents and code.
   changes. When the order can't be told, stangent flags it.
 - Stangent never resolves a discrepancy itself: it points it out, and BA/PM clear it.
 - The archive lives in a separate repo — see D16.
+- *Deferred 2026-10-20 (Phase 2 plan):* versions and supersession wait for a project with several FSD versions;
+  Phase 2 handles one version per document, `.docx` only.
 
 ## D16 · Original documents live in a separate archive repo — 2026-10-18
 - Originals (`.docx`, `.xlsx`, `.pdf`, ...) go in their own GitHub repo, with Git LFS for large files.
@@ -678,10 +687,176 @@ Agreed before any run (as D44), on the D48 rule:
 waste more than parallel runs save, and below 25% parallelism isn't worth building.
 **Cost:** a pre-set bar can fail a split that would have been good enough in practice.
 
+## D50 · stangent is a standalone rebuild, modelled on the company's pipelines — 2026-10-19
+stangent depends on nothing the company runs. The company's pipelines are the **model to match**, not a system to
+plug into:
+- **Spec from code:** a static call graph plus E2E tests produce a cited spec per screen, reconciled each release.
+- **Planning → review:** a separate pipeline from plan to reviewed change.
+Phase 2 aims to do what the first one does, on stangent's own graph (Phases 1a–1c); Phases 4 and 6 aim at the second.
+Where Phase 2 differs from the model, the decision says why.
+- *Corrected 2026-10-19:* first recorded as "stangent is the layer under the company's pipelines"; the owner
+  clarified that it's a rebuild that only borrows their shape.
+**Why:** the company's pipeline shows the shape works in practice; copying a proven shape beats inventing one.
+**Cost:** only a one-line description of the model is known here, so details (what "cited" and "reconciled" mean
+in practice) are decided in this grilling, not copied.
+
+## D51 · The spec is built from the agreed FSD and the code together — 2026-10-19
+- The **functional specification document (FSD)** agreed with the PM and the client and the **code** are always read
+  together, each requirement labelled with D13's provenance: both agree, documented only, inferred from code only, or
+  conflict. Code isn't a fallback: it adds what the FSD never mentions. With no FSD, the spec comes from code alone
+  (the model's way, D50).
+- On a conflict the FSD is what was agreed, but stangent still doesn't pick a winner: BA/PM do (D15).
+- The code graph and everything else (E2E tests, later tickets) are compared with the FSD to find inconsistencies:
+  the discrepancy queue (D14).
+- This is where stangent departs from the model (D50): a spec drafted from code copies the code's bugs, so it can't
+  show where the code drifted from what the client agreed.
+**Why:** what the client signed off on is what the system owes them; code is evidence of what was built, not of what was asked.
+**Cost:** document import (D13, D15, D16) stays in Phase 2's scope, and judging "does this code do what the FSD says" is
+the step code can't fully check (D18).
+
+## D52 · Two documents, linked: the FSD and a reference generated from code — 2026-10-19
+Borrowed from the company's pipeline (D50). Replaces D13's single merged spec.
+| Layer | What it is | Who writes it | Checked by |
+|---|---|---|---|
+| **FSD** | the agreed documents, converted to text deterministically; **never rewritten by AI**; sections keep their own IDs | the client / BA, outside stangent | conversion is code; same file → same text |
+| **Reference** | pages describing what the code does, generated from the graph; every statement cites symbol IDs | AI proposes | code: every cited symbol exists in the graph (D18); recorded with its inputs' hashes and the commit it was built from |
+| **Links + decisions** | FSD section ↔ reference page, and every gap, conflict and decision | BA/PM and devs | the text hash on both ends (D11): editing either side drops a link back to unverified |
+- The link states are D13's labels: **agree**; **gap** (FSD says it, code doesn't); **undocumented** (code does it, FSD
+  doesn't, which the company's pipeline doesn't list); **conflict** (they disagree: BA decides which is right; if the code
+  is wrong, it goes to PM/dev as a ticket).
+- The reference is committed: it's AI output, which isn't reproducible, so it's stored rather than regenerated (D18).
+  The graph it cites is not (D25).
+- The chain FSD section → reference page → code symbols lets impact answers reach FSD sections (D10, D27).
+Rejected: one merged spec (D13 as first written): an LLM rewriting the FSD into requirements is where hallucinations get in,
+and it mixes "what was agreed" with "what was built".
+**Why:** less AI (nothing rewrites the client's words), each layer has its own check, and the only layer people write is small.
+**Cost:** two documents to read instead of one; an FSD section and a page rarely match one to one, so links are many-to-many.
+
+## D53 · Links: code finds candidates, AI judges with quotes, code checks, a person approves — 2026-10-19
+How an FSD section ↔ reference page link and its state (D52) are decided:
+1. **Code proposes candidate pairs** where names match: the FSD's "Checkout screen" ↔ the `/checkout` route, an FSD
+   field label ↔ a DTO property, a screen name ↔ a component.
+2. **AI judges each pair** (agree / gap / conflict / undocumented), quoting the exact FSD sentence and the exact
+   reference sentence it relies on.
+3. **Code checks** both quotes exist word for word, both IDs exist, and every symbol the quoted reference sentence cites
+   is in the graph. A failed check is rejected before anyone sees it.
+4. **A person approves.** "Agree" links are approved in bulk per FSD chapter; gaps, conflicts and undocumented items one by one.
+- Until approved, a link is unverified, and impact answers say so.
+Rejected: approving every link one by one (a 200-page FSD can produce over a thousand links, which turns approval into
+rubber-stamping); people linking everything by hand (slow, and it skips the code checks).
+**Why:** code does what it can (candidates, quote and symbol checks); the person's attention goes to the findings.
+**Cost:** bulk approval of "agree" is where a wrong AI judgment can slip through; telemetry counts links later
+reopened, to show whether it does (D21).
+
+## D54 · One reference page per screen, plus pages for the backend no screen reaches — 2026-10-19
+- **Screen pages:** one per frontend route, with the route as its stable ID (`page:/checkout`). It covers what the screen
+  shows, each action → the endpoint it calls → the rules and validations behind it → side effects (events, emails,
+  tables written). Every statement cites symbols (D52).
+- **Backend pages:** one per entry point no screen reaches (APIs only other services call, event handlers, scheduled
+  jobs), grouped per area, with the entry point as the ID.
+- **Shared components:** a component used by 3 or more screens gets its own page; the screens link to it.
+- **Each page's input is the graph's slice for it:** the walk from its entry point within impact's depth limit (D27).
+  That's what keeps each AI call small and grounded.
+- Server-rendered screens (Razor/MVC, no frontend route in the graph): the controller action that returns the view is
+  the screen. Default until a real repo needs it.
+Rejected: screens only (backend-only behaviour such as jobs and service-to-service APIs would go undescribed); pages per
+feature (where one feature ends and the next begins needs a person to decide).
+**Why:** the IDs come straight from the graph, so they're stable and found by code, not chosen by an AI.
+**Cost:** a renamed route changes a page's ID, so its links need the rename repair D10 already plans.
+
+## D55 · The reference catches up per change: detected on each PR, regenerated on merge — 2026-10-19
+1. **Every PR, code only:** the graph diff says which pages' slices changed (D54); the PR lists them with their linked
+   FSD sections. No AI, no tokens.
+2. **On merge to main, AI:** only those pages are regenerated, each version recorded with its commit and input hashes
+   (D18). Links whose page text changed drop back to unverified through the text hash (D11) and join the queue.
+3. **Per release, optional:** a full sweep regenerates any page whose inputs changed and was missed.
+- CI holds a Claude API key as a secret (D24); the per-repo no-AI switch turns step 2 off, leaving step 1.
+- Refines D14's "kept current per area": the unit is the page, and the trigger is the merge.
+Rejected: regenerating on every push (tokens spent on work in progress); per release only, as the company does (drift is
+found weeks after the change, when its author has moved on); a manual regenerate command only (pages go stale when nobody runs it).
+**Why:** drift shows up in the PR that causes it, and AI runs once per merged change.
+**Cost:** AI calls in CI on every merge that changes behaviour; a page regenerated with an unrelated wording change still
+reopens its links (mitigated if regeneration reuses the old page when its inputs' hashes didn't change, D18).
+
+## D56 · Phase 2 is proven on an FSD for Sonarr with planted discrepancies — 2026-10-19
+- **Repo:** Sonarr: a real React app whose routes are in the graph (D31), documented screen by screen in the Servarr
+  wiki, already in the benchmark with full history (D6).
+- **FSD:** written in our own words from the wiki for 10–15 screens, as a `.docx` with numbered sections, like a real FSD.
+- **Planted discrepancies,** listed in an answer-key file: **gaps** (sections for features Sonarr doesn't have),
+  **conflicts** (changed rules, e.g. "at most 3 tags per series" where the code allows any number), **undocumented**
+  (real screens or behaviours deleted from the FSD).
+- **Scored by code:** planted items found (recall) and unplanted findings raised; a sample of the unplanted ones is
+  hand-checked once (some will be real drift between the wiki and the code).
+- **Also measured:** tokens and time per page, the D18 check failure rate, and the share of candidate pairs found by
+  code vs by the AI (D53).
+- After Sonarr, a dry run on a real company FSD (summarised, nothing committed) once D24's training question is confirmed.
+Rejected: a company FSD first (no answer key, and not cleared yet).
+**Why:** an answer key turns "it found 40 discrepancies" into a score; the same reason 1a–1c used compilers and history.
+**Cost:** a planted test is tidier than a real FSD (vague wording, one section covering five screens), so it overstates
+quality; the company dry run is the correction.
+
+## D57 · Phase 2's done-when: finds what's planted, not too noisy, grounded, repeatable — 2026-10-19
+Agreed before any run (as D44, D49), on the Sonarr FSD (D56) with **30 planted items: 10 gaps, 10 conflicts, 10 undocumented**.
+| Check | Bar |
+|---|---|
+| Finds what's planted | ≥ 80% of planted items overall, and ≥ 60% of each kind |
+| Not too noisy | ≤ 30% of all findings are false alarms (unplanted, and the hand check says not real drift) |
+| Grounded | every page and link reaching the queue passes the D18 checks; tests show a planted fake citation is rejected |
+| Repeatable | the same `.docx` → byte-identical text; a re-run with unchanged inputs reuses the recorded AI output (zero tokens) |
+| Cost | tokens and time per page reported; no bar yet (D28) |
+- **If "finds" or "not too noisy" fails:** reference pages and links still ship, but discrepancy findings are **off by
+  default** and the report says why (D44's rule, applied to findings).
+- A 95% range (fixed seed, resampling planted items) is reported beside each share, as in D47.
+Rejected: stricter bars or 60 planted items (a bigger FSD to write for a first measure); no bars (the bar would drift
+toward the result).
+**Why:** a pre-agreed bar can't move to fit the numbers.
+**Cost:** with 10 per kind, one miss moves a kind's score by 10 points; the range makes that visible.
+
+## D58 · Decisions are fields in a committed YAML file; the website later edits the same file — 2026-10-20
+- Each link and finding (D52, D53) is an entry in a committed YAML file: the FSD section, the page, the state, both
+  quotes, a `decision` (agree / code-wrong / fsd-wrong / defer) and `decided_by`.
+- **Until the dashboard (Phase 8):** a person edits `decision` and opens an ordinary PR. Bulk approval of "agree" is
+  one edit over a chapter (D53).
+- **The dashboard** is a screen over the same file that opens the same PRs (D12). The file format is the contract;
+  nothing is redone when the website arrives.
+- **Checked in CI:** the schema and allowed values; both quotes still match the current FSD and page (the D11 hash),
+  otherwise the decision drops back to undecided; `decided_by` is filled from git (the PR's approver or merger), never typed.
+- "code-wrong" becomes a draft Jira ticket in Phase 3; until then it's listed.
+Rejected: bot-opened review PRs with comment commands (machinery the dashboard replaces anyway); an early approval page
+(pulls Phase 8 and sign-in forward).
+**Why:** the simplest thing that keeps a checked, attributed record, and the website reuses it unchanged.
+**Cost:** until Phase 8, reviewing means editing YAML in a PR, which is clunky for non-technical BAs.
+
+## D59 · Phase 2 is split: 2a reference from code, then 2b FSD and discrepancies — 2026-10-20
+| Sub-phase | Delivers | Proven by |
+|---|---|---|
+| **2a. Reference from code** | pages per screen and backend entry point (D54), every citation checked (D18), AI output recorded and reused, stale pages listed per PR and regenerated on merge (D55) | Sonarr: grounded, repeatable, cost per page; the owner hand-reads ~5 pages |
+| **2b. FSD and discrepancies** | `.docx` import, candidate pairs, the AI judge with quote checks (D53), the decisions file (D58) | the planted Sonarr FSD against D57's bars |
+- 2a is useful alone: it's the company's model (D50) and the spec of any project with no FSD (D51).
+- 2b's conflicts depend on the pages capturing the rules ("max 3 tags"); proving the pages first keeps a 2b failure readable.
+- One phase file (`phases/2-spec.md`) and one roadmap row until building starts; split into two files then, as Phase 1 was.
+**Why:** the same reason as D29: something working and scored sooner, and a chance to change course before the second half.
+**Cost:** 2a has no answer key for page accuracy; until 2b, it's mechanical checks plus a hand-read.
+
+## D60 · AI steps run in Claude Code; the CLI prepares their input and checks their output — 2026-10-20
+The first AI steps in the project (2a's pages, 2b's link judgments) and the pattern later phases follow:
+1. **`stangent ... prepare`** (code) writes the step's input as one bundle file: the graph slice (D54) or the candidate
+   pair (D53), the instructions and the output schema.
+2. **A Claude Code subagent from the stangent plugin** writes the output as JSON in that schema. Its tools are limited to
+   reading the bundle and writing the result, so it can't wander outside the slice.
+3. **`stangent ... check`** (code) validates the schema, the citations and quotes (D18), and records the output with its
+   inputs' hashes and the model used. A failed check returns one specific error for one retry.
+- **Locally:** run through the plugin's commands on the developer's own Claude Code (D24); no separate API key.
+- **In CI** (merge-time regeneration, D55): headless Claude Code (`claude -p`, JSON output) with a token held as a secret.
+- **Telemetry** (D21) takes tokens, cost and model from Claude Code's JSON result.
+Rejected: the CLI calling the Claude API directly (an API key and its separate billing for everyone who runs it, and a
+second way to call AI beside the one every user already has).
+**Why:** reuses the tool everyone has; the CLI stays deterministic and testable without an LLM (D9), and every AI output
+still passes a code check before anything uses it.
+**Cost:** CI needs headless Claude Code and a token; prompt caching and the Batch API's half price aren't directly
+available; the subagent's tool limits are a setting, so `check` must still reject anything citing outside its slice.
+
 ## Open questions
-- What is stangent for, given the company already runs a spec-from-code pipeline (static call graph + E2E
-  tests → cited per-screen spec, reconciled each release) and a separate planning → review pipeline? Leading
-  answer: the graph and impact layer under such a pipeline, proven on the company's repo. Decide before Phase 2.
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
 - Confirm the company's Claude plan excludes training on its data (D24), before running on client code.
