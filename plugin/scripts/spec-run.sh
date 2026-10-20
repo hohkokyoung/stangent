@@ -43,6 +43,13 @@ run_page() {
     prompt="$(jq -r '.result.next.prompt' <<<"$step")"
     $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" ${MODEL:+--model "$MODEL"} \
       --permission-mode dontAsk --allowedTools "Read(.stangent/**)" "Edit(.stangent/**)" --output-format json "$prompt" >"$usage" 2>/dev/null || true
+    # Claude Code itself failed (a usage limit, an outage, no login): not the page's fault. Leave the page's run where
+    # it is, report it, and stop the batch (exit 255 stops xargs); `prepare` starts it again on the next run.
+    if ! jq -e '.type == "result" and (.is_error | not)' "$usage" >/dev/null 2>&1; then
+      printf 'error\t%s\t%s\n' "$page" "$(jq -r '.result // .error // "claude exited without a result"' "$usage" 2>/dev/null | head -c 200 | tr '\n' ' ')"
+      rm -f "$usage"
+      exit 255
+    fi
     step="$($STANGENT "$MODE" check "${args[@]}" --usage "$usage" || true)"
     action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   done
