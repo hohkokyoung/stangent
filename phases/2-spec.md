@@ -8,7 +8,7 @@ provides: { source-document: 1, reference-page: 1, trace-links: 1 }
 
 # Phase 2 · Spec
 
-**Approved 2026-10-20. Not built until the Phase 1d split check reports (D45).**
+**Approved 2026-10-20. Built before the Phase 1d split check reports (D45, changed 2026-10-20).**
 
 Builds on D10–D12, D18 and D50–D62. stangent is a standalone rebuild modelled on the company's spec pipeline (D50),
 with one difference that matters: the agreed FSD is read alongside the code, so stangent can show where the code

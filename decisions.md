@@ -619,6 +619,10 @@ context to a slice, **(3) check** what a change may have broken (roughly Test 2)
 - End-to-end test links (Playwright `goto` → pages) wait until the pilot reports.
 **Why:** the graph's accuracy doesn't show it makes agents safer or cheaper; 1c's gains were already small
 (+2 to +6 points), and a bad split makes parallel subagents break each other.
+- *Changed 2026-10-20:* Phase 2 may be **built** before the split check reports. The verdict decides Phase 4's
+  shape (parallel or mostly sequential), not Phase 2's reference pages or FSD links. Phase 4 still waits for it,
+  and part 2 (context scoping) may add to Phase 2 later. Phase 2 is built in its own worktree, so the running
+  benchmark's binaries aren't rebuilt under it.
 **Cost:** Phase 2 starts later; job 2 needs agent runs, which vary between tries and cost tokens.
 
 ## D46 · A split group "holds up" if it compiles alone, then passes the unit tests — 2026-10-19
