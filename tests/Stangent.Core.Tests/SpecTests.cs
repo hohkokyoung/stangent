@@ -226,6 +226,21 @@ public class SpecTests
     }
 
     [Fact]
+    public void Each_AI_step_names_the_output_schema_a_single_turn_driver_asks_for()
+    {
+        using var app = new SpecApp();
+        var page = app.Pages().Find(SpecApp.Post)!;
+        var write = PageRun.Prepare(app.Pages(), page, app.Repo);
+        Assert.Equal("page-writer-output.v1.json", (string)write.ToJson(page.Id)["next"]!["schema"]!);
+        WriteOutput(app, write, GoodEndpointPage());
+        var verify = PageRun.Check(app.Pages(), page, app.Repo, null);
+        Assert.Equal("page-verifier-output.v1.json", (string)verify.ToJson(page.Id)["next"]!["schema"]!);
+        // The names resolve to real schemas, so `stangent spec schema <name>` can print them.
+        foreach (var agent in new[] { PageRun.Writer, PageRun.Verifier, Stangent.Spec.Fsd.LinkRun.Finder, Stangent.Spec.Fsd.LinkRun.Judge, Stangent.Spec.Fsd.LinkRun.Checker })
+            Assert.Contains("\"$schema\"", SchemaRegistry.EmbeddedText(RunStep.SchemaOf(agent)!));
+    }
+
+    [Fact]
     public void A_page_runs_write_check_verify_then_is_recorded_and_a_rerun_makes_no_AI_call()
     {
         using var app = new SpecApp();

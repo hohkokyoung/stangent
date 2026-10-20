@@ -30,10 +30,22 @@ public sealed record RunStep(string Status, string Action, string? Agent = null,
         if (Agent is not null) next["agent"] = Agent;
         if (Prompt is not null) next["prompt"] = Prompt;
         if (Output is not null) next["output"] = Output;
+        if (Agent is not null && SchemaOf(Agent) is { } schema) next["schema"] = schema;
         o["next"] = next;
         if (Errors is { Count: > 0 }) o["errors"] = new JsonArray([.. Errors.Select(e => (JsonNode)e)]);
         return o;
     }
+
+    /// <summary>The output schema a step's result must match, so a single-turn driver (D64) can ask for structured output.</summary>
+    public static string? SchemaOf(string agent) => agent switch
+    {
+        PageRun.Writer => Bundles.WriterSchema,
+        PageRun.Verifier => Bundles.VerifierSchema,
+        Stangent.Spec.Fsd.LinkRun.Finder => "candidate-finder-output.v1.json",
+        Stangent.Spec.Fsd.LinkRun.Judge => "link-judge-output.v1.json",
+        Stangent.Spec.Fsd.LinkRun.Checker => "agree-checker-output.v1.json",
+        _ => null,
+    };
 }
 
 /// <summary>

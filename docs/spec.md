@@ -23,8 +23,13 @@ Every AI step is the same small loop. The CLI holds all the logic; a driver only
 
 Drivers: `/stangent:spec-generate` and `/stangent:fsd-link` in a Claude Code session, and
 `plugin/scripts/spec-run.sh` for batches and CI (headless `claude -p --output-format json`, so tokens, cost, model and
-time are recorded per step; `--jobs N` runs pages side by side). The batch driver lets each subagent read and write
-only under `.stangent/` (`--permission-mode dontAsk --allowedTools "Read(.stangent/**)" "Edit(.stangent/**)"`); files
+time are recorded per step; `--jobs N` runs pages side by side). The batch driver makes **one turn per call** (D64):
+the step's input files go into the prompt, Claude Code runs with no tools and none of the user's settings, skills or
+MCP servers (`--tools "" --setting-sources "" --disable-slash-commands --strict-mcp-config`), the output schema is
+enforced with `--json-schema` (`next.schema`; `stangent spec schema <name>` prints it), and the driver writes the
+structured answer to `next.output`, so `check` is unchanged and input hashes are the same in both modes. `--agents`
+runs the plugin's subagents instead, each allowed to read and write only under `.stangent/`
+(`--permission-mode dontAsk --allowedTools "Read(.stangent/**)" "Edit(.stangent/**)"`). Files
 drivers share are written whole (temp file, then rename) under a lock. A section whose candidate pages have no recorded
 version is reported as failed, never turned into a gap. `ai.enabled: false` stops every `prepare` with exit
 code 4 (D24); `spec stale`, `fsd import`, `fsd candidates`, `fsd undocumented` and `trace check` are code only.

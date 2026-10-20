@@ -943,6 +943,14 @@ list price, ~$220 for all 718 pages; it hit the owner's usage limit twice.
 **Why:** the other ~550 pages only show that more of the same works; the questions Phase 2 answers (does the FSD
 comparison find planted drift, are pages grounded, what do they cost per kind) are answered by the smaller set.
 **Cost:** Sonarr has no complete reference; per-kind cost is measured on smaller samples (10 handlers).
+- *Refined 2026-10-20 (single-turn calls, measured):* the batch driver sends each step as one call: input in the prompt,
+  `--tools ""`, `--json-schema`, no settings, skills or MCP servers (a bare Claude Code call carried 41k tokens of
+  its own context; now 1.2k). On the same 10 pages (6.5k–152k characters, Sonnet 5.5, before and after in
+  `benchmark/results/2026-10-20-phase2a-singleturn-measure.json`): **41k input tokens per page against 200k, $0.18
+  against $0.31, 111 s for all ten at 3 jobs**; the same verifier findings or one more or fewer per page. The cost left
+  is mostly the bundle written to the prompt cache once for the writer and once for the verifier (their schemas
+  differ, so they can't share it); cost ≈ $0.035 + $4 per million bundle characters. The plugin's subagents stay for
+  interactive use and as `spec-run.sh --agents`.
 
 ## Open questions
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
