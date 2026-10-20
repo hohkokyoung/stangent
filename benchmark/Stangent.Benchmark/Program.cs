@@ -124,6 +124,7 @@ if (argList.Contains("--split"))
         MaxSplit = int.Parse(Opt("--max-split", "30")),
         MaxExamined = int.Parse(Opt("--max-examined", "200")),
         MaxWalk = int.Parse(Opt("--max-walk", "2000")),
+        ProgressFile = Path.Combine(root, ".stangent", "split-progress.jsonl"),
     };
     var split = await check.RunAsync(start);
     split.Insert(0, "repo", Path.GetFileName(root));
@@ -132,6 +133,7 @@ if (argList.Contains("--split"))
     // Back at the start commit: rebuild its graph, so the clone's stored graph is the pinned one again.
     await GraphBuilder.BuildAsync(repo, new BuildOptions(Restore: true));
     File.Delete(startFile);
+    File.Delete(Path.Combine(root, ".stangent", "split-progress.jsonl"));
     var splitText = split.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
     if (Opt("--out", "") is { Length: > 0 } splitFile) File.WriteAllText(splitFile, splitText + "\n");
     Console.WriteLine(splitText);

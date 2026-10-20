@@ -23,6 +23,8 @@ sealed class SplitCheck(string root, SplitConfig config, ISplitChecker checker, 
     public int MinMembers { get; init; } = 3;
     public int MinFiles { get; init; } = 2;
     public int MaxFiles { get; init; } = 15;
+    /// <summary>Each walked commit's result, appended as it's known, so a run that crashed resumes where it stopped.</summary>
+    public string? ProgressFile { get; init; }
 
     static readonly string[] SourceExtensions = [".cs", ".ts", ".tsx", ".js", ".jsx"];
     static readonly string[] BuildFiles = ["Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props", "global.json", "NuGet.config", "nuget.config"];
@@ -55,12 +57,39 @@ sealed class SplitCheck(string root, SplitConfig config, ISplitChecker checker, 
             var entry = new JsonObject { ["commit"] = commit[..10], ["reason"] = reason };
             if (detail?.ToList() is { Count: > 0 } d) entry["detail"] = new JsonArray([.. d.Take(3).Select(x => (JsonNode)x)]);
             skipped.Add(entry);
+            Save(new JsonObject { ["commit"] = commit, ["skip"] = entry.DeepClone() });
+        }
+        var done = Resume(start);
+        void Keep(string commit, JsonObject record, CaseOutcome outcome)
+        {
+            outcomes.Add(outcome);
+            cases.Add(record);
+            Save(new JsonObject { ["commit"] = commit, ["case"] = record.DeepClone() });
         }
 
         foreach (var change in walk)
         {
             if (outcomes.Count(o => o.Split(Splitter.Within2)) >= MaxSplit || outcomes.Count >= MaxExamined) break;
             walked++;
+            if (done.TryGetValue(change, out var earlier))
+            {
+                if (earlier["skip"] is JsonObject skip)
+                {
+                    var reason = (string)skip["reason"]!;
+                    skipCounts[reason] = skipCounts.GetValueOrDefault(reason) + 1;
+                    skipped.Add(skip.DeepClone());
+                }
+                else
+                {
+                    var saved = earlier["case"]!.AsObject();
+                    var replayed = new CaseOutcome(change);
+                    foreach (var (rule, r) in saved["rules"]!.AsObject())
+                        replayed.Rules[rule] = ((bool)r!["split"]!, (bool)r["holdsUp"]!);
+                    outcomes.Add(replayed);
+                    cases.Add(saved.DeepClone());
+                }
+                continue;
+            }
             var parentText = Encoding.UTF8.GetString(SplitDiff.Git(root, ["rev-list", "--parents", "-n", "1", change])).Trim().Split(' ');
             if (parentText.Length < 2) { Skip(change, "no parent"); continue; }
             var parent = parentText[1];
@@ -114,8 +143,7 @@ sealed class SplitCheck(string root, SplitConfig config, ISplitChecker checker, 
             {
                 foreach (var r in rules) outcome.Rules[r.Rule] = (false, true);
                 record["rules"] = RulesJson(rules, new Dictionary<string, GroupResult>());
-                outcomes.Add(outcome);
-                cases.Add(record);
+                Keep(change, record, outcome);
                 log.WriteLine($"split: {change[..10]} not split ({clock.Elapsed.TotalSeconds:F0} s)");
                 continue;
             }
@@ -160,8 +188,7 @@ sealed class SplitCheck(string root, SplitConfig config, ISplitChecker checker, 
             foreach (var r in rules)
                 outcome.Rules[r.Rule] = (r.Split, !r.Split || r.Groups.All(g => results[PatchKey(g)].HoldsUp));
             record["rules"] = RulesJson(rules, results);
-            outcomes.Add(outcome);
-            cases.Add(record);
+            Keep(change, record, outcome);
             log.WriteLine($"split: {change[..10]} split; {string.Join(", ", rules.Select(r => $"{r.Rule}: {r.Groups.Count} groups{(r.Split ? outcome.Rules[r.Rule].HoldsUp ? " hold" : " FAIL" : "")}"))} ({clock.Elapsed.TotalSeconds:F0} s)");
         }
 
@@ -179,6 +206,30 @@ sealed class SplitCheck(string root, SplitConfig config, ISplitChecker checker, 
             ["cases"] = cases,
             ["skippedCases"] = skipped,
         };
+    }
+
+    /// <summary>Results already known from an interrupted run with the same start commit, by commit.</summary>
+    Dictionary<string, JsonObject> Resume(string start)
+    {
+        var done = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
+        if (ProgressFile is null || !File.Exists(ProgressFile)) { Start(start); return done; }
+        var lines = File.ReadAllLines(ProgressFile).Where(l => l.Length > 0).Select(l => JsonNode.Parse(l)!.AsObject()).ToList();
+        if (lines.Count == 0 || (string?)lines[0]["start"] != start) { Start(start); return done; }
+        foreach (var l in lines.Skip(1)) done[(string)l["commit"]!] = l;
+        log.WriteLine($"split: resuming, {done.Count} commits already done");
+        return done;
+    }
+
+    void Start(string start)
+    {
+        if (ProgressFile is null) return;
+        Directory.CreateDirectory(Path.GetDirectoryName(ProgressFile)!);
+        File.WriteAllText(ProgressFile, new JsonObject { ["start"] = start }.ToJsonString() + "\n");
+    }
+
+    void Save(JsonObject line)
+    {
+        if (ProgressFile is not null) File.AppendAllText(ProgressFile, line.ToJsonString() + "\n");
     }
 
     static bool IsSource(string path) => SourceExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase);

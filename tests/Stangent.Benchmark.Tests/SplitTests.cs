@@ -408,14 +408,29 @@ public class SplitTests(SplitFixture fx) : IClassFixture<SplitFixture>
         Assert.All(rules[Splitter.Direct]!["groups"]!.AsArray(), g => Assert.True((bool)g!["compiles"]!));
     }
 
-    async Task<JsonObject> RunCheck()
+    [Fact]
+    public async Task A_run_that_stopped_resumes_from_its_progress_file_with_the_same_results()
+    {
+        var progress = Path.Combine(fx.Root, ".stangent", "test-progress.jsonl");
+        File.Delete(progress);
+        var full = await RunCheck(progress);
+        // As if the run had crashed after the first commit it walked: keep the header and that commit only.
+        File.WriteAllLines(progress, File.ReadAllLines(progress).Take(2));
+        var builds = 0;
+        var resumed = await RunCheck(progress, () => builds++);
+        Assert.Equal(full.ToJsonString(), resumed.ToJsonString());
+        Assert.Equal(3, File.ReadAllLines(progress).Length);
+        Assert.Equal(0, builds); // the change was already done; the root commit needs no graph
+    }
+
+    async Task<JsonObject> RunCheck(string? progress = null, Action? onGraph = null)
     {
         var repo = StangentRepo.Discover(fx.Root);
         var history = new HistoryIndex(HistoryLog.Read(fx.Root, true, [".cs"]) ?? [],
             fx.AfterGraph.AllNodes.Where(n => n.Kind == NodeKind.File && n.File is not null).Select(n => n.File!).ToHashSet(), [], []);
         var check = new SplitCheck(fx.Root, new SplitConfig(), new FakeChecker(fx),
-            async () => (await GraphBuilder.BuildAsync(repo, new BuildOptions(), TestContext.Current.CancellationToken)).Graph,
-            history, repo.Config.History, () => { }, TextWriter.Null);
+            async () => { onGraph?.Invoke(); return (await GraphBuilder.BuildAsync(repo, new BuildOptions(), TestContext.Current.CancellationToken)).Graph; },
+            history, repo.Config.History, () => { }, TextWriter.Null) { ProgressFile = progress };
         return await check.RunAsync(fx.Change);
     }
 
