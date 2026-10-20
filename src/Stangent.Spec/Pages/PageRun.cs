@@ -127,7 +127,20 @@ public static class PageRun
                 var staged = (JsonObject)state["staged"]!;
                 var (schemaErrors, kept, dropped) = errors.Count > 0 ? (errors, [], 0) : PageChecks.CheckVerifier(output, staged, bundle);
                 if (schemaErrors.Count > 0)
-                    return Fail(paths, page, state, work, "the verifier's output broke its schema", schemaErrors);
+                {
+                    // The verifier gets one retry too (D60), with the specific errors.
+                    if ((bool?)state["verifierRetryUsed"] == true)
+                        return Fail(paths, page, state, work, "the verifier's output was missing or broke its schema twice", schemaErrors);
+                    state["verifierRetryUsed"] = true;
+                    Save(work, state);
+                    var verifierOut = Path.Combine(work, "verifier.json");
+                    if (File.Exists(verifierOut)) File.Move(verifierOut, Path.Combine(work, "verifier-1.json"), overwrite: true);
+                    File.WriteAllText(Path.Combine(work, "verifier-feedback.md"), Feedback(schemaErrors, null));
+                    return new RunStep("retry", "verify", Verifier,
+                        $"Bundle: {paths.Relative(Path.Combine(work, "bundle.md"))}\nPage to check: {paths.Relative(Path.Combine(work, "verify.md"))}\n" +
+                        $"Write your findings as JSON to: {paths.Relative(verifierOut)}\nWhat to fix: {paths.Relative(Path.Combine(work, "verifier-feedback.md"))}",
+                        paths.Relative(verifierOut), schemaErrors);
+                }
                 state["dropped"] = dropped;
                 state["findings"] = new JsonArray([.. kept.Select(f => (JsonNode)FindingJson(f))]);
                 if (kept.Count == 0) return Record(set, paths, page, state, work, bundle);
@@ -237,7 +250,7 @@ public static class PageRun
             ["generated"] = new JsonObject
             {
                 ["commit"] = set.Commit, ["bundleHash"] = bundle.InputHash,
-                ["slice"] = new JsonObject { ["depth"] = slice.Depth, ["points"] = slice.Nodes.Count, ["chars"] = bundle.Chars },
+                ["slice"] = new JsonObject { ["depth"] = slice.Depth, ["points"] = slice.Nodes.Count, ["chars"] = bundle.Chars, ["cutOff"] = slice.CutOff },
                 ["writer"] = state["writer"]!.DeepClone(), ["verifier"] = state["verifier"]!.DeepClone(),
                 ["checkRetries"] = (int)state["checkRetries"]!,
             },
@@ -246,8 +259,8 @@ public static class PageRun
         if (errors.Count > 0)
             throw new StangentException("invalid_page", "The recorded page broke reference-page v1 (a stangent bug).", ExitCodes.Failed, errors);
         Directory.CreateDirectory(Path.GetDirectoryName(paths.PageJson(page))!);
-        File.WriteAllText(paths.PageJson(page), CanonicalJson.Serialize(record));
-        File.WriteAllText(paths.PageMarkdown(page), PageRender.Markdown(record, id => set.Find(id) is { } p && p.Id == id ? p.Path : null));
+        Quotes.WriteAtomic(paths.PageJson(page), CanonicalJson.Serialize(record));
+        Quotes.WriteAtomic(paths.PageMarkdown(page), PageRender.Markdown(record, id => set.Find(id) is { } p && p.Id == id ? p.Path : null));
         ClearFailed(paths, page);
         state["stage"] = "done";
         Save(work, state);
@@ -297,7 +310,7 @@ public static class PageRun
     static void WriteFailed(SpecPaths paths, List<JsonNode> list)
     {
         Directory.CreateDirectory(paths.ReferenceDir);
-        File.WriteAllText(paths.FailedFile, CanonicalJson.Serialize(new JsonArray([.. list.OrderBy(f => (string)f["id"]!, StringComparer.Ordinal)])));
+        Quotes.WriteAtomic(paths.FailedFile, CanonicalJson.Serialize(new JsonArray([.. list.OrderBy(f => (string)f["id"]!, StringComparer.Ordinal)])));
     }
 
     /// <summary>Drivers run pages side by side; failed.json is the one file they share.</summary>

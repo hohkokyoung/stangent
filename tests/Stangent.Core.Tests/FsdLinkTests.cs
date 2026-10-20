@@ -99,7 +99,7 @@ public class FsdLinkTests
         Write(app, step, Links(Link("conflict", "Orders over 75 need approval.", SpecApp.Post, "R1", "Orders over 100 are refused")));
         step = LinkRun.Check(app.Pages(), app.Repo, graph, "shop", "1", null);
         Assert.Equal("retry", step.Status);
-        Assert.Contains(step.Errors!, e => e.Contains("fsdQuote \"Orders over 75 need approval.\" isn't in the section's text word for word"));
+        Assert.Contains(step.Errors!, e => e.Contains("fsdQuote \"Orders over 75 need approval.\" isn't a sentence from the section's text, word for word"));
 
         Write(app, step, Links(
             Link("conflict", "Orders over 50 need approval.", SpecApp.Post, "R1", "Orders over 100 are refused", "FSD 50, code 100"),
@@ -165,6 +165,9 @@ public class FsdLinkTests
         Assert.Equal(2, Undocumented.Apply(app.Root, app.Pages(), null));           // /orders and /cart: both unlinked yet
         using var scoped = App("");
         Assert.Equal(1, Undocumented.Apply(scoped.Root, scoped.Pages(), ["/cart"]));
+        Assert.True(Undocumented.InScope("/settings", "/settings/tags"));
+        Assert.False(Undocumented.InScope("/settings", "/settingsx"));
+        Assert.False(Undocumented.InScope("/", "/series"));
     }
 
     [Fact]
@@ -234,5 +237,38 @@ public class FsdLinkTests
         Assert.Equal([SpecApp.Post], item["pages"]!.AsArray().Select(p => (string)p!));
         Assert.Contains("**📄 1 FSD section(s) reached through the reference pages**", Graph.Impact.ImpactAnalyzer.Markdown(report));
         Assert.Contains("§1 Orders (shop): via `endpoint:Shop.Api|POST /api/orders` · conflict · unverified", Graph.Impact.ImpactAnalyzer.Markdown(report));
+    }
+
+    [Fact]
+    public void Fragments_are_not_quotes_and_a_missing_output_still_gets_its_retry()
+    {
+        using var app = App();
+        var graph = GraphStore.Load(GraphStore.PathFor(app.Repo))!;
+        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
+        // Nothing written at all (a timeout): a retry, not a crash.
+        step = LinkRun.Check(app.Pages(), app.Repo, graph, "shop", "1", null);
+        Assert.Equal("retry", step.Status);
+        Assert.Contains(step.Errors!, e => e.Contains("No output"));
+        // Four-character fragments found anywhere are not quotes (fresh review, finding 2).
+        Write(app, step, Links(Link("conflict", "rder", SpecApp.Post, "R1", "over")));
+        step = LinkRun.Check(app.Pages(), app.Repo, graph, "shop", "1", null);
+        Assert.Equal("recorded", step.Status);
+        Assert.Empty(TraceFile.Load(app.Root)["entries"]!.AsArray());
+        Assert.Equal(1, (int)LinkRun.LoadRuns(app.Root)["shop#1"]!["rejected"]!);
+        Assert.False(Quotes.InText("over", "Orders over 50 need approval."));
+        Assert.True(Quotes.InText("Orders over 50 need", "Orders over 50 need approval."));
+        Assert.True(Quotes.InText("at most 100", "| Total | at most 100 |"));
+    }
+
+    [Fact]
+    public void A_section_whose_candidate_pages_were_never_recorded_is_not_turned_into_a_gap()
+    {
+        using var app = App();
+        File.Delete(new SpecPaths(app.Root).PageJson(app.Pages().Find("page:/orders")!));
+        File.Delete(new SpecPaths(app.Root).PageJson(app.Pages().Find(SpecApp.Post)!));
+        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
+        Assert.Equal("failed", step.Status);
+        Assert.Contains("no candidate page has been recorded yet", step.Errors![0]);
+        Assert.Empty(TraceFile.Load(app.Root)["entries"]!.AsArray());
     }
 }

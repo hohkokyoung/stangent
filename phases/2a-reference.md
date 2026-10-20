@@ -149,3 +149,20 @@ bundles sent to the AI (regenerable from the graph).
 Asked the owner (decisions.md, Open questions); the code supports both, through `spec` settings in `stangent.yaml`.
 Bundles show types, properties and fields inside the code that uses them rather than as rows of their own: one
 `/series/:titleSlug` bundle went from 982k to 330k characters at the same depth.
+
+### Step 2 · fresh review (D61) · 2026-10-20
+A separate agent reviewed the code from a fresh context against the plan and decisions (report in the session notes).
+Ten findings; each was fixed or rejected with a reason:
+
+| # | Finding | Outcome |
+|---|---|---|
+| 1 | `fsd check` crashed on a missing output and burnt the retry | fixed: a missing output gets its retry; test |
+| 2 | any 4-character fragment passed as a quote | fixed: prose quotes are ≥ 4 words or a whole cell/item/statement; code evidence ≥ 12 characters and two tokens (D53, D62); tests |
+| 3 | the bot's spec PR had no checks; regenerated pages left decisions on stale quotes; subagents could write anywhere | fixed: `trace check` runs on the bot PR, the merge job runs `trace check --fix`, subagents may only read and write under `.stangent/` (D60) |
+| 4 | a section whose candidate pages failed became a "gap by code" | fixed: reported as failed (D53); test |
+| 5 | the verifier had no retry | fixed (D62); test |
+| 6 | the answer key's scope named the 3 planted screens | fixed before any judging run: the scope is the areas the FSD's introduction names (D53) |
+| 7 | the converter read "2023 Roadmap" as section 2023; images and nested tables in cells were dropped; text boxes read twice; list counters per instance | fixed: a typed number must fit the numbering around it, else a plain heading and a problem; the rest fixed; test |
+| 8 | the agree check's missing answers were silent; a dispute without a state became a conflict | fixed: noted on the entry and counted (`unchecked`); a dispute without a state stays "agree", disputed |
+| 9 | parallel drivers could read half-written files | fixed: shared files are written whole (temp file, then rename) |
+| 10 | the stale comment lacked FSD sections; the depth cut-off wasn't recorded; docs said `spec bundle` prints the previous version; fixed pages aren't re-verified | fixed the first three; **rejected** the last with a reason (D62 refined): the plan doesn't ask for a second pass, and code checks every fix |

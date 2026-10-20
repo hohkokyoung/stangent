@@ -102,9 +102,12 @@
         "bundleHash": { "description": "The page's input hash (D18): unchanged means no AI call.", "type": "string", "pattern": "^[0-9a-f]{64}$" },
         "slice": {
           "type": "object",
-          "required": ["depth", "points", "chars"],
+          "required": ["depth", "points", "chars", "cutOff"],
           "additionalProperties": false,
-          "properties": { "depth": { "type": "integer" }, "points": { "type": "integer" }, "chars": { "type": "integer" } }
+          "properties": {
+            "depth": { "type": "integer" }, "points": { "type": "integer" }, "chars": { "type": "integer" },
+            "cutOff": { "description": "Points one line past the depth limit, left out of the slice.", "type": "integer", "minimum": 0 }
+          }
         },
         "writer": { "$ref": "#/definitions/run" },
         "verifier": { "$ref": "#/definitions/run" },

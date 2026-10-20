@@ -3,21 +3,16 @@
   "frozen": "2026-10-20",
   "note": "Phase 2b answer key (D56, D57). Frozen before the first judging run; never read by any AI step or bundle.",
   "scope": [
-    "/add/new",
-    "/series/:titleSlug",
+    "/",
+    "/add",
+    "/series",
+    "/seasonpass",
+    "/serieseditor",
     "/calendar",
-    "/activity/queue",
-    "/activity/history",
-    "/wanted/missing",
-    "/settings/tags",
-    "/settings/profiles",
-    "/settings/quality",
-    "/settings/general",
-    "/settings/ui",
-    "/system/backups",
-    "/activity/blocklist",
-    "/wanted/cutoffunmet",
-    "/system/tasks"
+    "/activity",
+    "/wanted",
+    "/settings",
+    "/system"
   ],
   "matching": {
     "gap_or_conflict": "found when a finding (state gap or conflict; the strict score also needs the planted kind) is on the item's section and its FSD quote overlaps the planted sentence: one contains the other, or at least 60% of the quote's words are in it.",
@@ -269,5 +264,6 @@
         "fail"
       ]
     }
-  ]
+  ],
+  "scopeNote": "fsd.scope for the run: the areas the FSD's introduction says it covers (library, calendar, activity, wanted, settings, system), as route prefixes. Not the planted screens: every screen in those areas that no section links to is listed by code."
 }

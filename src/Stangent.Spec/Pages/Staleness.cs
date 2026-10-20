@@ -14,6 +14,12 @@ public static class Staleness
     public static JsonObject Report(PageSet set, SpecPaths paths, string? diff)
     {
         var changedFiles = diff is null ? null : DiffMapper.ChangedLines(paths.Root, diff).Select(c => c.File).ToHashSet(StringComparer.Ordinal);
+        // The FSD sections linked to each page (D55 step 1: the PR lists them with the stale pages).
+        var linked = Trace.TraceFile.Load(paths.Root)["entries"]!.AsArray().OfType<JsonObject>()
+            .Where(e => e["fsd"] is JsonObject && (string?)e["page"]?["id"] is not null)
+            .GroupBy(e => (string)e["page"]!["id"]!)
+            .ToDictionary(g => g.Key, g => g.Select(e => (string)e["fsd"]!["section"]!).Distinct()
+                .OrderBy(Trace.TraceFile.SectionKey, StringComparer.Ordinal).ToList(), StringComparer.Ordinal);
         var stale = new JsonArray();
         var fresh = new JsonArray();
         var current = 0;
@@ -24,6 +30,8 @@ public static class Staleness
             var hash = Bundles.Build(set, page, null).InputHash;
             if ((string?)recorded["generated"]?["bundleHash"] == hash) { current++; continue; }
             var item = Item(page, recorded);
+            if (linked.TryGetValue(page.Id, out var sections))
+                item["fsdSections"] = new JsonArray([.. sections.Select(x => (JsonNode)x)]);
             if (changedFiles is not null)
                 item["changedFiles"] = new JsonArray([.. set.Slices[page.Id].Nodes.Select(n => n.Node.File).OfType<string>()
                     .Where(changedFiles.Contains).Distinct().Order(StringComparer.Ordinal).Select(f => (JsonNode)f)]);

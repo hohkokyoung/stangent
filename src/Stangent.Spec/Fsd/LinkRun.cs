@@ -37,7 +37,11 @@ public static class LinkRun
         var key = Key(doc, sectionId);
         var run = runs[key] as JsonObject;
 
-        var candidates = Candidates.ForSection(section, set, index.Pages, Parent(index, doc, section)).Where(c => index.Pages.ContainsKey(c.Page)).ToList();
+        var found = Candidates.ForSection(section, set, index.Pages, Parent(index, doc, section));
+        var candidates = found.Where(c => index.Pages.ContainsKey(c.Page)).ToList();
+        // A candidate with no recorded page (it failed, or was never generated) can't be judged: say so, never guess a gap.
+        if (candidates.Count == 0 && found.Count > 0)
+            return new RunStep("failed", "none", Errors: [$"no candidate page has been recorded yet: {string.Join(", ", found.Select(c => c.Page))}"]);
         var by = "code";
         if (candidates.Count == 0)
         {
@@ -68,8 +72,10 @@ public static class LinkRun
         {
             // Nothing in the code matches this section, by name or by the finder: a gap, found by code.
             var quote = FirstSentence((string)section["text"]!);
+            var unrecorded = set.Pages.Count(p => !index.Pages.ContainsKey(p.Id));
             var gap = Entry("gap", doc, section, quote, null, null, null, "code", null,
-                "no reference page matches this section (by name, field labels, or the candidate finder)");
+                "no reference page matches this section (by name, field labels, or the candidate finder)"
+                + (unrecorded > 0 ? $"; {unrecorded} page(s) have no recorded version, so it may be among them" : ""));
             var existing = TraceFile.Load(repo.Root)["entries"]!.AsArray().OfType<JsonObject>()
                 .Where(e => (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId).Select(e => (string)e["id"]!).ToList();
             if (carried is null && existing.SequenceEqual([(string)gap["id"]!])) return new RunStep("current", "none");
@@ -175,6 +181,7 @@ public static class LinkRun
         var entries = new List<JsonObject>();
         var k = 0;
         var disputed = 0;
+        var unchecked_ = 0;
         foreach (var link in state["links"]!.AsArray().OfType<JsonObject>())
         {
             var s = (string)link["state"]!;
@@ -184,14 +191,16 @@ public static class LinkRun
             {
                 var id = $"K{++k}";
                 var verdict = checks.FirstOrDefault(c => (string)c["link"]! == id);
-                if (verdict is not null && (string)verdict["verdict"]! == "confirm") check = "confirmed";
-                else if (verdict is not null)
+                if (verdict is null) { unchecked_++; final = (JsonObject)link.DeepClone(); final["note"] = $"{(string?)link["note"]} (the second check gave no answer: not confirmed, reviewed one by one)"; }
+                else if ((string)verdict["verdict"]! == "confirm") check = "confirmed";
+                else if (verdict["state"] is null) { check = "disputed"; disputed++; final = (JsonObject)link.DeepClone(); final["note"] = $"Disputed by the second check without saying what it is instead: {(string)verdict["note"]!}"; }
+                else
                 {
                     check = "disputed";
                     disputed++;
                     var raised = new JsonObject
                     {
-                        ["state"] = verdict["state"]?.DeepClone() ?? "conflict", ["fsdQuote"] = (verdict["fsdQuote"] ?? link["fsdQuote"])?.DeepClone(),
+                        ["state"] = verdict["state"]!.DeepClone(), ["fsdQuote"] = (verdict["fsdQuote"] ?? link["fsdQuote"])?.DeepClone(),
                         ["page"] = (verdict["page"] ?? link["page"])?.DeepClone(), ["statement"] = (verdict["statement"] ?? link["statement"])?.DeepClone(),
                         ["pageQuote"] = (verdict["pageQuote"] ?? link["pageQuote"])?.DeepClone(), ["note"] = $"Disputed by the second check: {(string)verdict["note"]!}",
                     };
@@ -215,6 +224,7 @@ public static class LinkRun
             r["rejected"] = (int?)state["rejected"] ?? 0;
             r["links"] = entries.Count;
             r["disputed"] = disputed;
+            r["unchecked"] = unchecked_;
         });
         state["stage"] = "done";
         Save(work, state);
@@ -231,7 +241,9 @@ public static class LinkRun
         sb.Append("(one more failure and the failing parts are rejected).\n\n");
         foreach (var e in errors.Take(40)) sb.Append($"- {e}\n");
         File.WriteAllText(Path.Combine(work, "feedback.md"), sb.ToString());
-        File.Move(Path.Combine(work, output), Path.Combine(work, "previous-" + output), overwrite: true);
+        // A subagent that wrote nothing (a timeout, a refusal) still gets its retry.
+        if (File.Exists(Path.Combine(work, output))) File.Move(Path.Combine(work, output), Path.Combine(work, "previous-" + output), overwrite: true);
+        else File.WriteAllText(Path.Combine(work, "previous-" + output), "(no output)");
         var step = Step(root, work, agent, bundle, output, "Input");
         return step with
         {
@@ -302,8 +314,7 @@ public static class LinkRun
         var copy = (JsonObject)run.DeepClone();
         change(copy);
         runs[key] = copy;
-        Directory.CreateDirectory(Path.GetDirectoryName(RunsFile(root))!);
-        File.WriteAllText(RunsFile(root), CanonicalJson.Serialize(runs));
+        Quotes.WriteAtomic(RunsFile(root), CanonicalJson.Serialize(runs));
     }
 
     static void MergeInto(JsonObject run, JsonObject? usage)
@@ -404,8 +415,8 @@ public static class LinkChecks
         if (state is "agree" or "conflict" or "gap" && fsdQuote is null) errors.Add($"a {state} link needs fsdQuote");
         if (state is "agree" or "conflict" or "undocumented" && (page is null || statement is null || pageQuote is null))
             errors.Add($"a {state} link needs page, statement and pageQuote");
-        if (fsdQuote is not null && !Quotes.InSource(fsdQuote, [Quotes.Normalize((string)section["text"]!)]))
-            errors.Add($"fsdQuote \"{Short(fsdQuote)}\" isn't in the section's text word for word");
+        if (fsdQuote is not null && !Quotes.InText(fsdQuote, (string)section["text"]!))
+            errors.Add($"fsdQuote \"{Short(fsdQuote)}\" isn't a sentence from the section's text, word for word (at least 4 words, or a whole table cell or list item)");
         if (page is not null && !candidates.Contains(page)) errors.Add($"page `{page}` isn't one of the candidate pages");
         else if (page is not null && statement is not null)
         {
@@ -413,8 +424,8 @@ public static class LinkChecks
             if (s is null) errors.Add($"page `{page}` has no statement {statement}");
             else
             {
-                if (pageQuote is not null && !Quotes.InSource(pageQuote, [Quotes.Normalize((string)s["text"]!)]))
-                    errors.Add($"pageQuote \"{Short(pageQuote)}\" isn't in statement {statement} of `{page}` word for word");
+                if (pageQuote is not null && !Quotes.InText(pageQuote, (string)s["text"]!))
+                    errors.Add($"pageQuote \"{Short(pageQuote)}\" isn't from statement {statement} of `{page}` word for word (at least 4 words, or the whole statement)");
                 if (nodes is not null)
                     foreach (var cite in s["cites"]!.AsArray().Select(c => (string)c!).Where(c => !nodes.Contains(c)))
                         errors.Add($"statement {statement} of `{page}` cites `{cite}`, which isn't in the code graph");
@@ -438,11 +449,16 @@ public static class Undocumented
             .Select(e => (string?)e["page"]?["id"]).OfType<string>().ToHashSet(StringComparer.Ordinal);
         var index = SpecIndex.Load(root);
         var screens = set.Pages.Where(p => p.Kind == PageKind.Screen && index.Pages.ContainsKey(p.Id))
-            .Where(p => scope is null || scope.Contains(p.Id) || scope.Contains(p.Id["page:".Length..]))
+            .Where(p => scope is null || scope.Any(s => InScope(s, p.Id["page:".Length..]) || s == p.Id))
             .Where(p => !linked.Contains(p.Id)).ToList();
         var entries = screens.Select(p => LinkRun.Entry("undocumented", "", null, null, p.Id, null, null, "code", null,
             "no FSD section links to this screen")).ToList();
         LinkRun.ApplyEntries(root, "", null, entries, e => (string?)e["by"] == "code" && (string?)e["state"] == "undocumented" && e["fsd"] is null);
         return entries.Count;
     }
+
+    /// <summary>A scope entry is a route or a route prefix by whole segments: <c>/settings</c> covers
+    /// <c>/settings/tags</c>; <c>/</c> covers only the root route.</summary>
+    public static bool InScope(string entry, string route) =>
+        route == entry || (entry != "/" && route.StartsWith(entry.TrimEnd('/') + "/", StringComparison.Ordinal));
 }

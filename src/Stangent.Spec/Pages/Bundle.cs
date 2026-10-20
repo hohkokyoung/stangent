@@ -133,11 +133,15 @@ public static class Quotes
 {
     public static string Normalize(string s) => System.Text.RegularExpressions.Regex.Replace(s, @"\s+", " ").Trim();
 
+    /// <summary>Evidence from code: at least this many non-space characters and two tokens, so a fragment like
+    /// <c>return</c> (found almost anywhere) isn't evidence of anything.</summary>
+    public const int MinSourceChars = 12;
+
     /// <summary>The quote, normalised, is part of one source line, or of consecutive lines joined by a space.</summary>
     public static bool InSource(string quote, IReadOnlyList<string> lines)
     {
         var q = Normalize(quote);
-        if (q.Length < 4) return false;
+        if (q.Count(c => c != ' ') < MinSourceChars || !q.Contains(' ')) return false;
         var parts = q.Split(" ").Length;
         for (var i = 0; i < lines.Count; i++)
         {
@@ -151,5 +155,27 @@ public static class Quotes
             }
         }
         return false;
+    }
+
+    /// <summary>A sentence quoted from prose (an FSD section, a page statement), D53: word for word, and either at
+    /// least 4 words or a whole line of the text (a table cell, a short list item). A fragment proves nothing.</summary>
+    public static bool InText(string quote, string text)
+    {
+        var q = Normalize(quote);
+        var t = Normalize(text);
+        if (q.Length == 0 || !t.Contains(q, StringComparison.Ordinal)) return false;
+        if (q.Split(' ').Length >= 4) return true;
+        return text.Split('\n').Select(l => Normalize(l).TrimStart('-', ' ').Trim('|', ' '))
+            .Any(l => l == q || l.Split('|').Select(c => c.Trim()).Contains(q));
+    }
+
+    /// <summary>Writes a file whole or not at all (temp file, then rename), so a driver running beside this one never
+    /// reads half of it.</summary>
+    public static void WriteAtomic(string path, string text)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var temp = path + "." + Environment.ProcessId + ".tmp";
+        File.WriteAllText(temp, text);
+        File.Move(temp, path, overwrite: true);
     }
 }

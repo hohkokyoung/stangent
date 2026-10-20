@@ -77,8 +77,7 @@ public static class TraceFile
 
     public static void Save(string root, JsonObject trace)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(PathIn(root))!);
-        File.WriteAllText(PathIn(root), Write(trace));
+        Quotes.WriteAtomic(PathIn(root), Write(trace));
     }
 
     public static IEnumerable<JsonObject> Sorted(JsonArray entries) => entries.OfType<JsonObject>()

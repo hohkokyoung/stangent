@@ -1,5 +1,5 @@
 % Sonarr: Functional Specification (benchmark FSD)
-This document describes the screens of Sonarr, a TV series manager, as agreed with the client. It covers the library, the calendar, activity, wanted episodes, settings and backups.
+This document describes the screens of Sonarr, a TV series manager, as agreed with the client. It covers the library, the calendar, activity, wanted episodes, settings and the system screens.
 #! Library
 The library holds every series the user has added. Each series has a root folder, a quality profile, a series type and a set of tags.
 ##! Adding a series

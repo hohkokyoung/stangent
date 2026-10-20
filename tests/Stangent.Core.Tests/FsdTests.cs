@@ -81,6 +81,23 @@ public class FsdTests
     }
 
     [Fact]
+    public void A_number_at_the_start_of_a_heading_is_kept_only_when_it_fits_the_numbering()
+    {
+        var doc = DocxConverter.Convert(DocxWriter.Write("""
+            # 1 Series
+            ## 1.1 List
+            ## 2.4 Out of place
+            # 2023 Roadmap
+            # 2 Calendar
+            # 24 hour clock
+            """));
+        Assert.Equal(["1", "1.1", "Series / 2.4 Out of place", "2023 Roadmap", "2", "24 hour clock"], doc.Sections.Select(s => s.Id));
+        Assert.Contains(doc.Problems, p => p.Contains("\"2023 Roadmap\" starts with 2023, which doesn't fit"));
+        Assert.Contains(doc.Problems, p => p.Contains("\"24 hour clock\" starts with 24"));
+        Assert.Contains("# 2023 Roadmap", doc.Markdown);
+    }
+
+    [Fact]
     public void Import_archives_the_original_and_the_same_file_always_gives_the_same_bytes()
     {
         using var archive = new TempRepo();

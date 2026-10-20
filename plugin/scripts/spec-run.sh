@@ -6,6 +6,7 @@
 # result back.
 #
 # usage: spec-run.sh [--jobs N] [--model M] [--retry-failed] (<page id>... | --all | --stale | --fsd <doc>)
+# Each subagent may read and write only under .stangent/ (its bundle and its result); anything else is refused (D60).
 # env:   STANGENT (default: stangent), PLUGIN_DIR (default: this plugin), CLAUDE (default: claude)
 # out:   one line per page or section: <status>\t<id>
 set -euo pipefail
@@ -41,7 +42,7 @@ run_page() {
     agent="$(jq -r '.result.next.agent' <<<"$step")"
     prompt="$(jq -r '.result.next.prompt' <<<"$step")"
     $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" ${MODEL:+--model "$MODEL"} \
-      --permission-mode acceptEdits --allowedTools Read Write --output-format json "$prompt" >"$usage" 2>/dev/null || true
+      --permission-mode dontAsk --allowedTools "Read(.stangent/**)" "Edit(.stangent/**)" --output-format json "$prompt" >"$usage" 2>/dev/null || true
     step="$($STANGENT "$MODE" check "${args[@]}" --usage "$usage" || true)"
     action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   done

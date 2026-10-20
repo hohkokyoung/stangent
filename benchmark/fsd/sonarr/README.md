@@ -7,7 +7,9 @@
   - **gaps:** features Sonarr doesn't have, described as if it did;
   - **conflicts:** real rules stated wrongly (`code` says what the code does);
   - **undocumented:** 3 real screens and 7 real behaviours left out of the FSD.
-  The key also holds the frozen matching rule and the FSD's scope (`fsd.scope`). **It never goes into a bundle:** no
+  The key also holds the frozen matching rule and the FSD's scope (`fsd.scope`): the areas the FSD's introduction
+  names, as route prefixes, not a list of screens (which would point code at the 3 planted screens; changed after a
+  fresh review, before the first judging run). **It never goes into a bundle:** no
   stangent command reads it; only the scoring command does.
 - Both were committed before the first judging run (2026-10-20) and are frozen: a change is a new benchmark, reported as such.
 

@@ -66,7 +66,7 @@ public static class TraceCheck
             {
                 if (!index.Sections.TryGetValue(((string)fsd["doc"]!, (string)fsd["section"]!), out var section))
                 { problems.Add($"{id}: FSD section {fsd["doc"]} §{fsd["section"]} doesn't exist"); quotesMatch = false; }
-                else if (fsd["quote"] is { } q && !Quotes.InSource((string)q!, [Quotes.Normalize((string)section["text"]!)]))
+                else if (fsd["quote"] is { } q && !Quotes.InText((string)q!, (string)section["text"]!))
                     quotesMatch = false;
             }
             if (page is not null)
@@ -75,7 +75,7 @@ public static class TraceCheck
                 else if (page["statement"] is { } st)
                 {
                     var statement = index.Statement((string)page["id"]!, (string)st!);
-                    if (statement is null || (page["quote"] is { } pq && !Quotes.InSource((string)pq!, [Quotes.Normalize((string)statement["text"]!)])))
+                    if (statement is null || (page["quote"] is { } pq && !Quotes.InText((string)pq!, (string)statement["text"]!)))
                         quotesMatch = false;
                     else if (nodes is not null)
                         foreach (var cite in statement["cites"]!.AsArray().Select(c => (string)c!).Where(c => !nodes.Contains(c)))

@@ -23,7 +23,10 @@ Every AI step is the same small loop. The CLI holds all the logic; a driver only
 
 Drivers: `/stangent:spec-generate` and `/stangent:fsd-link` in a Claude Code session, and
 `plugin/scripts/spec-run.sh` for batches and CI (headless `claude -p --output-format json`, so tokens, cost, model and
-time are recorded per step; `--jobs N` runs pages side by side). `ai.enabled: false` stops every `prepare` with exit
+time are recorded per step; `--jobs N` runs pages side by side). The batch driver lets each subagent read and write
+only under `.stangent/` (`--permission-mode dontAsk --allowedTools "Read(.stangent/**)" "Edit(.stangent/**)"`); files
+drivers share are written whole (temp file, then rename) under a lock. A section whose candidate pages have no recorded
+version is reported as failed, never turned into a gap. `ai.enabled: false` stops every `prepare` with exit
 code 4 (D24); `spec stale`, `fsd import`, `fsd candidates`, `fsd undocumented` and `trace check` are code only.
 
 ## Reference pages (2a, D54, D55)
@@ -38,21 +41,23 @@ code 4 (D24); `spec stale`, `fsd import`, `fsd candidates`, `fsd undocumented` a
   tables it maps to. A point with `spec.hubCallers` or more callers is included but not walked into. ❓ blind spots in
   the slice are appended to the page by code. Settings and defaults:
   `spec: { depth: 6, backendDepth: 4, splitAtEndpoints: true, hubCallers: 10, maxBundleChars: 260000 }`.
-- **The bundle** (`stangent spec bundle <page>` prints it): instructions, schema, the slice's symbols with ✅/🟡, key
+- **The bundle** (`stangent spec bundle <page>` prints it, without the previous version): instructions, schema, the slice's symbols with ✅/🟡, key
   lines, the source of each method and component, what it couldn't see, and the page's previous version. Its input
   hash covers everything but the previous version. Over `maxBundleChars` → listed as failed, never cut.
 - **The writer** (`stangent-page-writer`) returns sections `shows`, `actions` (with the `endpoints` they call), `rules`
   and `sideEffects`; every statement cites symbol ids. Code numbers them S1…, A1…, R1…, E1….
 - **The verifier** (`stangent-page-verifier`, fresh context, bundle and finished page only) flags statements the slice
-  doesn't support: `contradicted` (with the contradicting line, which code checks is in the slice; otherwise the
-  finding is dropped) or `unsupported`. The writer then fixes or rejects each finding once; a "fixed" statement must
+  doesn't support: `contradicted` (with the contradicting line, which code checks is in the slice: at least 12
+  characters and two tokens, so a fragment like `return` is no evidence; otherwise the finding is dropped) or
+  `unsupported`. It gets one retry when its output is missing or breaks the schema. The writer then fixes or rejects each finding once; a "fixed" statement must
   change, a rejected `unsupported` finding needs the supporting line. Findings and outcomes are recorded on the page.
 - **Recorded:** the page JSON (`schemas/reference-page.v1.json`) and its Markdown, rendered by code: the commit, the
   input hash, the slice size, the writer's and verifier's model, tokens, cost and time, and retries.
   `specs/reference/failed.json` lists pages that failed, with why; they're not retried until their inputs change
   (`--retry-failed` forces it).
 - **Keeping current** (D55): `stangent spec stale [--diff base..head] [--format md]` lists pages whose input hash
-  changed (with the changed files in each slice), new pages and removed ones, as a PR comment. On merge, CI runs
+  changed (with the changed files in each slice and the FSD sections linked to each), new pages and removed ones, as a
+  PR comment. On merge, CI runs
   `spec-run.sh --stale` and opens a spec-only PR (see `plugin/ci/spec.yml`).
 
 ## The FSD (2b, D13, D16)
@@ -77,7 +82,8 @@ code 4 (D24); `spec stale`, `fsd import`, `fsd candidates`, `fsd undocumented` a
   quotes word for word, both ends exist, and every symbol the quoted statement cites is in the graph. Every `agree`
   then goes to `stangent-agree-checker`, a second fresh check: `confirmed`, or `disputed` and turned into the finding it
   raises. `specs/trace-runs.json` records each section's inputs, candidates (by code or AI), tokens and retries.
-- `stangent fsd undocumented`: screens no section links to (within `fsd.scope`, when set) are undocumented, by code.
+- `stangent fsd undocumented`: screens no section links to are undocumented, by code, within `fsd.scope`: the areas
+  the FSD says it covers, as routes or route prefixes (`/settings` covers `/settings/tags`).
 - **`specs/trace.yaml`**: one entry per link or finding; people edit only `decision` (`agree`, `code-wrong`,
   `fsd-wrong`, `defer`) in a PR. `stangent trace approve <doc> <chapter>` sets `agree` on every confirmed agree link
   under a chapter in one edit. `stangent trace check [--base <ref>] [--fix]` is the CI check: schema, ids, both quotes

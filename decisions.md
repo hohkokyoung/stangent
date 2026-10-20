@@ -754,6 +754,10 @@ rubber-stamping); people linking everything by hand (slow, and it skips the code
 **Why:** code does what it can (candidates, quote and symbol checks); the person's attention goes to the findings.
 **Cost:** bulk approval of "agree" is where a wrong AI judgment can slip through; telemetry counts links later
 reopened, to show whether it does (D21).
+- *Refined 2026-10-20 (Phase 2b build, after a fresh review):* a quote is a sentence, not a fragment: word for word, and
+  at least 4 words or a whole table cell, list item or statement. A section whose candidate pages have no recorded
+  version is reported as failed, never turned into a gap. "Undocumented by code" only covers the FSD's scope
+  (`fsd.scope`): the areas it says it covers, as route prefixes, so an FSD for part of a system doesn't flag the rest.
 
 ## D54 · One reference page per screen, plus pages for the backend no screen reaches — 2026-10-19
 - **Screen pages:** one per frontend route, with the route as its stable ID (`page:/checkout`). It covers what the screen
@@ -834,6 +838,10 @@ Rejected: bot-opened review PRs with comment commands (machinery the dashboard r
 (pulls Phase 8 and sign-in forward).
 **Why:** the simplest thing that keeps a checked, attributed record, and the website reuses it unchanged.
 **Cost:** until Phase 8, reviewing means editing YAML in a PR, which is clunky for non-technical BAs.
+- *Refined 2026-10-20 (Phase 2b build):* a decision drops back to undecided when either quote no longer matches its
+  section or statement (each quote's hash is stored), not on any edit to the section: a typo fixed elsewhere in a long
+  section shouldn't reopen every link in it. An entry's id is the hash of its link and quotes, so an edited quote is
+  caught as a hand edit. On merge, CI fills `decided_by` and runs `trace check --fix` in the bot's spec PR.
 
 ## D59 · Phase 2 is split: 2a reference from code, then 2b FSD and discrepancies — 2026-10-20
 | Sub-phase | Delivers | Proven by |
@@ -863,6 +871,10 @@ second way to call AI beside the one every user already has).
 still passes a code check before anything uses it.
 **Cost:** CI needs headless Claude Code and a token; prompt caching and the Batch API's half price aren't directly
 available; the subagent's tool limits are a setting, so `check` must still reject anything citing outside its slice.
+- *Refined 2026-10-20 (Phase 2 build):* the batch driver enforces the tool limits with permission rules, not only the
+  subagent's tool list: `--permission-mode dontAsk --allowedTools "Read(.stangent/**)" "Edit(.stangent/**)"`, so a
+  subagent can't read or write outside its working folder (checked: a write elsewhere is refused). `prepare` and
+  `check` return the next step (subagent and prompt), so drivers (plugin command, CI, benchmark) hold no logic.
 
 ## D61 · Verification by a separate agent with a fresh context — 2026-10-20
 Whenever an AI step has to judge whether work is right (reviewing a change, sorting benchmark failures,
@@ -891,6 +903,12 @@ code checks (D18):
 Rejected: a second check on every finding (gaps, conflicts and undocumented items already go to a person one by one).
 **Why:** D61 is the owner's rule for every phase; these are the steps where a writer or judge would otherwise grade itself.
 **Cost:** roughly double the AI calls per page, plus one per "agree" link; reported apart from the writer's in 2a and 2b.
+- *Refined 2026-10-20 (Phase 2a build, after a fresh review):*
+  - A "contradicted" finding needs a quoted source line of at least 12 characters and two tokens (`return` proves nothing);
+    an "unsupported" finding has no line to quote and is kept. Rejecting an unsupported finding needs the supporting line.
+  - The verifier gets one retry when its output is missing or breaks the schema, as the writer does.
+  - A page fixed after the verifier's findings isn't verified again: code checks each "fixed" statement changed and each
+    rejection has a reason. A second verifier pass would double the cost of every page with findings; reported in 2a.
 
 ## Open questions
 - **Phase 2a's slice rule** (asked 2026-10-20, while building): the plan's "walk from the entry point within impact's

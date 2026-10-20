@@ -41,9 +41,11 @@ public static class PageRender
         }
 
         var unknowns = page["unknowns"]!.AsArray();
+        var cutOff = (int?)page["generated"]?["slice"]?["cutOff"] ?? 0;
         md.Append("\n## Couldn't see\n\n");
-        if (unknowns.Count == 0) md.Append("Nothing: every line in this page's slice was resolved.\n");
+        if (unknowns.Count == 0 && cutOff == 0) md.Append("Nothing: every line in this page's slice was resolved.\n");
         foreach (var u in unknowns.OfType<JsonObject>()) md.Append($"- ❓ `{(string)u["file"]!}:{(int)u["line"]!}` {(string)u["reason"]!}\n");
+        if (cutOff > 0) md.Append($"- the depth limit left out {cutOff} more point(s) one line further on\n");
 
         var findings = page["verification"]!["findings"]!.AsArray();
         if (findings.Count > 0)

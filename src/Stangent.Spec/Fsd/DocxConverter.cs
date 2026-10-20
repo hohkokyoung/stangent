@@ -47,7 +47,8 @@ public static partial class DocxConverter
         readonly Numbering? numbering = main.NumberingDefinitionsPart?.Numbering;
         readonly Dictionary<int, int[]> counters = [];
         readonly StringBuilder md = new();
-        readonly List<(string? Number, string Title, int Level, int Line, int Start, int TextStart)> headings = [];
+        readonly List<(string? Number, string Title, int Level, int Line, int Start, int TextStart, bool Typed, string Full)> headings = [];
+        readonly HashSet<int> instancesSeen = [];
         readonly List<FsdImage> images = [];
         readonly List<string> problems = [];
         string? title;
@@ -94,11 +95,12 @@ public static partial class DocxConverter
                 string? number = label is null ? null : label.TrimEnd('.', ')', ' ');
                 if (number is not null && !Regex.IsMatch(number, @"^\d+(\.\d+)*$")) number = null;
                 var shown = text;
-                if (number is null && TypedNumber().Match(text) is { Success: true } m) { number = m.Groups[1].Value; shown = m.Groups[2].Value; }
-                else if (number is not null) shown = text;
+                var typed = false;
+                // A number typed into the heading is a candidate only; Finish keeps it when it fits the numbering.
+                if (number is null && TypedNumber().Match(text) is { Success: true } m) { number = m.Groups[1].Value; shown = m.Groups[2].Value; typed = true; }
                 var start = md.Length;
-                Emit($"{new string('#', level)} {(number is null ? "" : number + " ")}{shown}");
-                headings.Add((number, shown, level, line, start, md.Length));
+                Emit($"{new string('#', level)} {(number is null || typed ? "" : number + " ")}{(typed ? text : shown)}");
+                headings.Add((number, shown, level, line, start, md.Length, typed, text));
                 return;
             }
             if (label is not null || bullet)
@@ -114,7 +116,9 @@ public static partial class DocxConverter
         {
             var rows = t.Elements<TableRow>().Select(r => r.Elements<TableCell>().SelectMany(c =>
             {
-                var cell = string.Join(" ", c.Elements<Paragraph>().Select(x => Text(x).Trim()).Where(x => x.Length > 0)).Replace("|", "\\|");
+                // Nested tables are flattened to their text; images keep their place as image links.
+                var cell = string.Join(" ", c.Descendants<Paragraph>().Select(x => string.Join(" ", Images(x).Select(i => $"![]({i})").Append(Text(x).Trim())).Trim())
+                    .Where(x => x.Length > 0)).Replace("|", "\\|");
                 var span = c.TableCellProperties?.GridSpan?.Val?.Value ?? 1;
                 return new[] { cell }.Concat(Enumerable.Repeat("", span - 1));
             }).ToList()).Where(r => r.Count > 0).ToList();
@@ -143,7 +147,8 @@ public static partial class DocxConverter
         static string Text(OpenXmlElement p)
         {
             var sb = new StringBuilder();
-            foreach (var e in p.Descendants())
+            // Word stores a text box twice (the shape and a fallback for old readers): read it once.
+            foreach (var e in p.Descendants().Where(d => !d.Ancestors().Any(a => a.LocalName == "Fallback")))
                 switch (e)
                 {
                     case Text t when t.Parent is Run: sb.Append(t.Text); break;
@@ -212,12 +217,18 @@ public static partial class DocxConverter
                 var overrideStart = instance!.Elements<LevelOverride>().FirstOrDefault(o => o.LevelIndex?.Value == l)?.StartOverrideNumberingValue?.Val?.Value;
                 return overrideStart ?? (levels.TryGetValue(l, out var d) ? d.StartNumberingValue?.Val?.Value ?? 1 : 1);
             }
-            if (!counters.TryGetValue(numId.Value, out var c))
+            // Word keeps one count per list definition: list instances sharing it continue each other's numbering,
+            // unless an instance restarts a level (a start override), which takes effect where it's first used.
+            var key = abstractId ?? numId.Value;
+            if (!counters.TryGetValue(key, out var c))
             {
                 c = new int[9];
                 for (var l = 0; l < 9; l++) c[l] = Start(l) - 1;
-                counters[numId.Value] = c;
+                counters[key] = c;
             }
+            if (instancesSeen.Add(numId.Value))
+                foreach (var o in instance!.Elements<LevelOverride>().Where(o => o.StartOverrideNumberingValue is not null))
+                    c[o.LevelIndex?.Value ?? 0] = Start(o.LevelIndex?.Value ?? 0) - 1;
             c[level]++;
             for (var l = level + 1; l < 9; l++) c[l] = Start(l) - 1;
             for (var l = 0; l < level; l++) if (c[l] < Start(l)) c[l] = Start(l);
@@ -258,9 +269,26 @@ public static partial class DocxConverter
             var sections = new List<FsdSection>();
             var path = new List<(int Level, string Title, string Id)>();
             var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+            string? lastTop = null;
             for (var i = 0; i < headings.Count; i++)
             {
                 var h = headings[i];
+                if (h.Typed)
+                {
+                    // "4.2 Tags" under chapter 4 is a number; "2023 Roadmap" or "24 hour clock" isn't. A typed number
+                    // must have one part per heading level and continue its parent's (or the previous chapter's) number.
+                    var parts = h.Number!.Split('.');
+                    var parentNumber = path.Where(x => x.Level < h.Level).Select(x => x.Id).LastOrDefault();
+                    var fits = parts.Length == h.Level && (h.Level == 1
+                        ? (lastTop is null ? parts[0] == "1" : int.TryParse(lastTop, out var t) && parts[0] == (t + 1).ToString())
+                        : parentNumber is not null && string.Join(".", parts[..^1]) == parentNumber);
+                    if (!fits)
+                    {
+                        problems.Add($"line {h.Line}: heading \"{h.Full}\" starts with {h.Number}, which doesn't fit the numbering around it; read as a plain heading");
+                        h = (null, h.Full, h.Level, h.Line, h.Start, h.TextStart, false, h.Full);
+                    }
+                }
+                if (h.Level == 1 && h.Number is not null) lastTop = h.Number;
                 while (path.Count > 0 && path[^1].Level >= h.Level) path.RemoveAt(path.Count - 1);
                 var parent = path.Count > 0 ? path[^1].Id : null;
                 var (id, kind) = h.Number is not null ? (h.Number, "number") : (string.Join(" / ", path.Select(x => x.Title).Append(h.Title)), "path");

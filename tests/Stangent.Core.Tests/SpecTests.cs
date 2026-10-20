@@ -350,6 +350,25 @@ public class SpecTests
     }
 
     [Fact]
+    public void The_verifier_gets_one_retry_and_a_code_fragment_is_not_evidence()
+    {
+        using var app = new SpecApp();
+        var page = app.Pages().Find(SpecApp.Post)!;
+        var step = PageRun.Prepare(app.Pages(), page, app.Repo);
+        WriteOutput(app, step, GoodEndpointPage());
+        step = PageRun.Check(app.Pages(), page, app.Repo, null);
+        step = PageRun.Check(app.Pages(), page, app.Repo, null);           // the verifier wrote nothing
+        Assert.Equal(("retry", "verify"), (step.Status, step.Action));
+        WriteOutput(app, step, new JsonObject
+        {
+            ["findings"] = new JsonArray(new JsonObject { ["statement"] = "R1", ["kind"] = "contradicted", ["quote"] = "return", ["explanation"] = "The code says otherwise." }),
+        });
+        var final = PageRun.Check(app.Pages(), page, app.Repo, null);
+        Assert.True(final.Status == "recorded", string.Join("; ", final.Errors ?? []));   // "return" is no evidence: dropped
+        Assert.False(Quotes.InSource("return", ["return new Order { Total = total };"]));
+    }
+
+    [Fact]
     public void A_slice_over_the_cap_is_listed_as_failed_without_an_AI_call()
     {
         using var app = new SpecApp("version: 1\nspec: { maxBundleChars: 100 }\n");
