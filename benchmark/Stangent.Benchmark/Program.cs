@@ -37,6 +37,14 @@ if (argList.Count >= 3 && argList[0] == "--fsd-docx")
     File.WriteAllBytes(argList[2], Stangent.Spec.Fsd.DocxWriter.Write(File.ReadAllText(argList[1]), Path.GetDirectoryName(Path.GetFullPath(argList[1]))));
     return 0;
 }
+if (argList.Count >= 2 && argList[0] == "--page-stats")
+{
+    var stats = Stangent.Benchmark.Spec.PageStats.Run(Path.GetFullPath(argList[1]));
+    var statsText = stats.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+    if (argList.IndexOf("--out") is var po and >= 0) File.WriteAllText(argList[po + 1], statsText + "\n");
+    Console.WriteLine(statsText);
+    return 0;
+}
 if (argList.Count >= 3 && argList[0] == "--score-fsd")
 {
     var hand = argList.IndexOf("--hand-check") is var hc and >= 0 ? argList[hc + 1] : null;

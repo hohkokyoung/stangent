@@ -49,13 +49,14 @@ bundles sent to the AI (regenerable from the graph).
 - `stangent spec pages` lists every page from the graph (D54):
   - **screens:** one per frontend route, ID `page:/series/:id`;
   - **backend pages:** each entry point no screen reaches (endpoints only other services call, event handlers,
-    scheduled jobs), grouped per project, ID'd by the entry point;
+    scheduled jobs), grouped per project, ID'd by the entry point. *Changed by D63 while building: every endpoint
+    gets a page, and screens stop at the endpoints they call;*
   - **shared components** used by 3 or more screens, ID'd by the component.
 - Server-rendered screens: the controller action that returns the view is the screen (D54's default).
 
 ### 2. The bundle (code)
 - `stangent spec prepare <page>` writes one bundle file: the slice (the walk from the page's entry point within the
-  impact depth limit, D27), the source text of each method in it with its ✅/🟡 labels, the instructions, the output
+  impact depth limit, D27; *made concrete by D63: frontend depth 6, backend depth 4, points with 10+ callers are leaves*), the source text of each method in it with its ✅/🟡 labels, the instructions, the output
   schema, and **the page's previous version**, so a regeneration edits the affected statements instead of rewording all of it (D55).
 - A slice over the size cap is reported, not silently cut.
 - The bundle's hash is the page's input hash (D18).
