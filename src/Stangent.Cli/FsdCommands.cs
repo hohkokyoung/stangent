@@ -43,7 +43,7 @@ static class FsdCommands
                     result.Add(new JsonObject
                     {
                         ["doc"] = (string)d["id"]!, ["section"] = (string)s["id"]!, ["title"] = (string)s["title"]!,
-                        ["candidates"] = new JsonArray([.. Candidates.ForSection(s, set, index.Pages)
+                        ["candidates"] = new JsonArray([.. Candidates.ForSection(s, set, index.Pages, (string?)s["parent"] is { } par ? index.Sections.GetValueOrDefault(((string)d["id"]!, par)) : null)
                             .Select(c => (JsonNode)new JsonObject { ["page"] = c.Page, ["why"] = c.Why, ["recorded"] = index.Pages.ContainsKey(c.Page) })]),
                     });
             ctx.Span.Attributes["stangent.artifact.count"] = result.Count;

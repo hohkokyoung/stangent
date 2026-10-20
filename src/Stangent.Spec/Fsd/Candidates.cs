@@ -82,7 +82,9 @@ public static partial class Candidates
         return [.. labels.Where(w => w.Count > 0).DistinctBy(w => string.Join(" ", w.Order()))];
     }
 
-    public static List<Candidate> ForSection(JsonObject section, PageSet set, IReadOnlyDictionary<string, JsonObject> recorded)
+    /// <param name="parent">The chapter the section sits in: a subsection is about part of its chapter's screen, so the
+    /// chapter's screens are its candidates too.</param>
+    public static List<Candidate> ForSection(JsonObject section, PageSet set, IReadOnlyDictionary<string, JsonObject> recorded, JsonObject? parent = null)
     {
         var title = Words((string)section["title"]!);
         var text = (string)section["text"]!;
@@ -121,13 +123,20 @@ public static partial class Candidates
                 if (hits >= Math.Min(2, labels.Count)) Add(page.Id, "fields", 0.5 * hits / labels.Count);
             }
 
-        // The endpoints a candidate screen calls carry the rules behind its actions (pages split at endpoints).
+        // A subsection inherits its chapter's screens, found the same way, at a lower score.
+        if (parent is not null)
+            foreach (var c in ForSection(new JsonObject { ["title"] = parent["title"]!.DeepClone(), ["text"] = "" }, set, recorded)
+                         .Where(c => c.Why == "name" && set.Find(c.Page)?.Kind == PageKind.Screen))
+                Add(c.Page, "chapter", c.Score * 0.6);
+
+        // The endpoints a candidate screen calls carry the rules behind its actions (pages split at endpoints): those
+        // named like the section first, then those that save (not GET), which carry the validation.
         var words = Words(text).Union(title).ToHashSet();
         foreach (var screen in byPage.Values.Where(c => set.Find(c.Page)?.Kind == PageKind.Screen).ToList())
             foreach (var ep in set.Slices[screen.Page].Nodes.Where(n => n.Node.Kind == NodeKind.Endpoint && n.Role == "stop")
-                         .Select(n => (Node: n.Node, Shared: Words(PageList.SplitEndpoint(n.Node.Name).Route).Intersect(title).Count(),
+                         .Select(n => (Node: n.Node, Shared: Words(PageList.SplitEndpoint(n.Node.Name).Route).Intersect(words).Count(),
                              Writes: PageList.SplitEndpoint(n.Node.Name).Verb is not "GET"))
-                         .Where(x => x.Shared > 0 && set.Find(x.Node.Id) is not null)
+                         .Where(x => (x.Shared > 0 || x.Writes) && set.Find(x.Node.Id) is not null)
                          .OrderByDescending(x => x.Shared).ThenByDescending(x => x.Writes).ThenBy(x => x.Node.Id, StringComparer.Ordinal)
                          .Take(MaxEndpointsPerScreen))
                 Add(ep.Node.Id, "endpoint", screen.Score * 0.5);

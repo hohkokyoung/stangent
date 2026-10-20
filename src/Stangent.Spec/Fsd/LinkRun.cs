@@ -24,6 +24,9 @@ public static class LinkRun
     static string Work(string root, string doc, string section) =>
         Path.Combine(root, ".stangent", "fsd", doc, PageList.Slug(section, Key(doc, section)));
 
+    static JsonObject? Parent(SpecIndex index, string doc, JsonObject section) =>
+        (string?)section["parent"] is { } parent ? index.Sections.GetValueOrDefault((doc, parent)) : null;
+
     public static RunStep Prepare(PageSet set, StangentRepo repo, string doc, string sectionId)
     {
         var index = SpecIndex.Load(repo.Root);
@@ -34,7 +37,7 @@ public static class LinkRun
         var key = Key(doc, sectionId);
         var run = runs[key] as JsonObject;
 
-        var candidates = Candidates.ForSection(section, set, index.Pages).Where(c => index.Pages.ContainsKey(c.Page)).ToList();
+        var candidates = Candidates.ForSection(section, set, index.Pages, Parent(index, doc, section)).Where(c => index.Pages.ContainsKey(c.Page)).ToList();
         var by = "code";
         if (candidates.Count == 0)
         {
