@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:source-document:v1",
+  "title": "An imported FSD (contract source-document v1, Phase 2b)",
+  "description": "A document converted to text by code (D13, D52): never rewritten by AI. The original is archived and cited by archive name, path and content hash (D16). Stored in specs/fsd/<id>/document.json beside document.md and its images.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "title", "original", "markdown", "sections", "images", "problems"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$" },
+    "title": { "type": "string" },
+    "original": {
+      "type": "object",
+      "required": ["archive", "path", "hash", "fileName"],
+      "additionalProperties": false,
+      "properties": {
+        "archive": { "description": "The archive's name from stangent.yaml, not its location.", "type": "string" },
+        "path": { "type": "string" },
+        "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "fileName": { "type": "string" }
+      }
+    },
+    "markdown": { "type": "string" },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "idKind", "title", "level", "line", "text", "textHash"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "description": "The FSD's own number (4.2.3), or the heading path where a section has none.", "type": "string" },
+          "idKind": { "enum": ["number", "path"] },
+          "title": { "type": "string" },
+          "level": { "type": "integer", "minimum": 1 },
+          "parent": { "type": "string" },
+          "line": { "description": "The heading's line in document.md.", "type": "integer", "minimum": 1 },
+          "text": { "description": "The section's own text, up to the next heading.", "type": "string" },
+          "textHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["file"], "additionalProperties": false,
+        "properties": { "file": { "type": "string" }, "caption": { "type": "string" } }
+      }
+    },
+    "problems": { "description": "Duplicate, missing or out-of-order section numbers: reported, never guessed.", "type": "array", "items": { "type": "string" } }
+  }
+}

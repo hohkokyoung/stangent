@@ -22,6 +22,8 @@ public sealed class StangentConfig
     public HistoryConfig History { get; set; } = new();
     /// <summary>Reference pages (Phase 2, D54–D55).</summary>
     public SpecConfig Spec { get; set; } = new();
+    /// <summary>Imported FSDs (Phase 2b, D16): where the original files are archived.</summary>
+    public FsdConfig Fsd { get; set; } = new();
 
     public sealed class StoreConfig
     {
@@ -67,6 +69,22 @@ public sealed class StangentConfig
         /// <summary>A point with this many distinct callers or more is included but not walked into (0: off).</summary>
         public int HubCallers { get; set; } = 10;
         public int MaxBundleChars { get; set; } = 260_000;
+    }
+
+    public sealed class FsdConfig
+    {
+        public ArchiveConfig? Archive { get; set; }
+    }
+
+    /// <summary>
+    /// Where original documents go (D16): a folder outside the repo, or a second git repo (<see cref="Git"/>: each
+    /// original is committed there). Citations name the archive by <see cref="Name"/>, so moving it changes one setting.
+    /// </summary>
+    public sealed class ArchiveConfig
+    {
+        public string Name { get; set; } = "";
+        public string Path { get; set; } = "";
+        public bool Git { get; set; }
     }
 
     /// <summary>Reserved in Phase 0; each adapter is built by the phase that first needs it (D24).</summary>
