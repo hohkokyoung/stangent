@@ -11,7 +11,7 @@ provides: { reference-page: 1 }
 **Approved 2026-10-20 (as part of the Phase 2 plan). Building started 2026-10-20, before the Phase 1d split check
 reports (D45, changed 2026-10-20). Split from `2-spec.md` when building started (D59); 2b is in `2b-fsd.md`.**
 
-Builds on D10–D12, D18 and D50–D62. stangent is a standalone rebuild modelled on the company's spec pipeline (D50),
+Builds on D10–D12, D18 and D50–D63. stangent is a standalone rebuild modelled on the company's spec pipeline (D50),
 with one difference that matters: the agreed FSD is read alongside the code, so stangent can show where the code
 drifted from what the client agreed (D51).
 
@@ -146,7 +146,7 @@ bundles sent to the AI (regenerable from the graph).
 | plan: one walk, depth 6 | 129k / 465k | 30 of 37 | 599 | 125 | 64M |
 | split at endpoints, depth 6 / 4, 10+ callers are leaves | 51k / 254k | 28 of 37 (all 364 endpoints have pages) | 718 | 2 | 16M |
 
-Asked the owner (decisions.md, Open questions); the code supports both, through `spec` settings in `stangent.yaml`.
+Asked the owner; **decided 2026-10-20: split at endpoints (D63)**. The code supports both through `spec` settings in `stangent.yaml`.
 Bundles show types, properties and fields inside the code that uses them rather than as rows of their own: one
 `/series/:titleSlug` bundle went from 982k to 330k characters at the same depth.
 

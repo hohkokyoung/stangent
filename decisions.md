@@ -910,15 +910,24 @@ Rejected: a second check on every finding (gaps, conflicts and undocumented item
   - A page fixed after the verifier's findings isn't verified again: code checks each "fixed" statement changed and each
     rejection has a reason. A second verifier pass would double the cost of every page with findings; reported in 2a.
 
+## D63 · Slices split at the API boundary; every endpoint gets a page — 2026-10-20
+Asked while building Phase 2a, because the plan's slice rule ("the walk from the entry point within impact's depth
+limit", D54) doesn't hold on Sonarr: at depth 4 a screen stops at the endpoint, so the rules behind an action aren't in
+its page; at depth 6, 125 of ~600 bundles pass 200k characters (one is 868k) and every screen repeats the same backend
+rules. "Impact's depth limit" isn't a fixed number either.
+- **Screens walk the frontend only and stop at the endpoints they call** (linked, like shared components).
+- **Every endpoint gets its own backend page**, as do event and command handlers. This changes D54, which gave pages
+  only to entry points no screen reaches.
+- **A point with 10 or more callers is a leaf:** included, not walked into (logging, `translate()`, base services).
+- Frontend depth 6, backend depth 4, bundle cap 260k characters; all settings in `stangent.yaml` (`spec:`).
+- 2b gives an FSD section its screen pages plus the endpoints those screens call (code), so the rules are still in reach.
+- Still open to change when 1d part 2 (context scoping) reports (D45): every page then goes stale through its input hash.
+**Why:** bounded, layered slices (Sonarr: 718 pages, medians 8k–51k characters, largest 254k); one place per backend
+rule instead of one per screen; a backend change makes its endpoint page stale, not every screen that calls it.
+**Cost:** more pages (all 364 Sonarr endpoints, many near-duplicates across API v3 and v5); a screen page alone doesn't
+tell the whole story of an action.
+
 ## Open questions
-- **Phase 2a's slice rule** (asked 2026-10-20, while building): the plan's "walk from the entry point within impact's
-  depth limit" doesn't hold on Sonarr. At depth 4 screens stop at the endpoint, so the rules behind an action aren't
-  in the page; at depth 6, 125 of ~600 bundles exceed 200k characters (one handler's is 868k) and every screen repeats
-  the same backend rules. "Impact's depth limit" isn't a fixed number (`--max-depth` is optional).
-  **Recommended:** screens walk the frontend only (depth 6) and stop at the endpoints they call; **every endpoint gets
-  its own backend page** (depth 4), which changes D54; a point with 10+ callers is a leaf (included, not walked into);
-  cap 260k characters. On Sonarr: 718 pages, medians 8k–51k characters, largest 254k, none over the cap; 2b adds a
-  screen's endpoint pages as candidates for its FSD section (code). Evidence in `phases/2a-reference.md` (Progress).
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
 - Bug tickets: how is a bug verified before it's fixed? Likely a test that fails because of the bug
