@@ -3,7 +3,7 @@ phase: 1a
 name: csharp-map
 status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1 }
-provides: { code-graph: 3, impact-report: 4 }
+provides: { code-graph: 3, impact-report: 5 }
 ---
 
 # Phase 1a · C# map
@@ -283,3 +283,11 @@ The line-level table above and the exact check were re-run after these fixes. eS
   items gained an optional "also 📜" `history` tag.
 - **Consumers:** 1b (consumes `code-graph` v2), marked `needs review` per D20; 1c, which made the change.
   No phase consumes `impact-report` yet; the `/stangent:impact` command shows its Markdown and was updated with it.
+
+### Reopened 2026-10-20 by Phase 2b · `impact-report` v4 → v5
+- **`impact-report` v5:** the reserved `requirements` array became `fsdSections`: the FSD sections a change reaches
+  through the reference pages whose statements cite a changed or affected symbol, with their link states and whether
+  every link has a person's decision (unverified otherwise, D53). The analyzer takes the sections from a provider the
+  spec layer supplies (`ImpactAnalyzer.FsdSections`); the graph itself knows nothing about pages or the FSD.
+  `--expand fsdSections` lists them all; the Markdown has a "📄 FSD sections" block.
+- **Consumers:** 2a and 2b, which consumed v4 and moved to v5 with the change. No other phase consumes it yet.

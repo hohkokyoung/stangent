@@ -74,6 +74,9 @@ public sealed class StangentConfig
     public sealed class FsdConfig
     {
         public ArchiveConfig? Archive { get; set; }
+        /// <summary>Screens the FSD covers (routes or page ids). Empty: every screen; screens outside it are never
+        /// listed as undocumented.</summary>
+        public List<string> Scope { get; set; } = [];
     }
 
     /// <summary>

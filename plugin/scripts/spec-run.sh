@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
-# Runs stangent's page steps through headless Claude Code (D60), for CI and long batch runs:
-#   stangent spec prepare → stangent-page-writer → stangent spec check → stangent-page-verifier → stangent spec check …
-# The logic lives in `stangent spec`; this only runs the subagent each step names, then hands its result back.
+# Runs stangent's AI steps through headless Claude Code (D60), for CI and long batch runs:
+#   pages:    stangent spec prepare → stangent-page-writer → stangent spec check → stangent-page-verifier → …
+#   sections: stangent fsd prepare → candidate finder / link judge / agree checker → stangent fsd check → …
+# The logic lives in `stangent spec` and `stangent fsd`; this only runs the subagent each step names, then hands its
+# result back.
 #
-# usage: spec-run.sh [--jobs N] [--model M] [--retry-failed] (<page id>... | --all | --stale)
+# usage: spec-run.sh [--jobs N] [--model M] [--retry-failed] (<page id>... | --all | --stale | --fsd <doc>)
 # env:   STANGENT (default: stangent), PLUGIN_DIR (default: this plugin), CLAUDE (default: claude)
-# out:   one line per page: <status>\t<page id>
+# out:   one line per page or section: <status>\t<id>
 set -euo pipefail
 
 JOBS=1
+MODE=spec
 MODEL=""
 RETRY=""
 PAGES=()
@@ -18,26 +21,28 @@ while [ $# -gt 0 ]; do
     --model) MODEL="$2"; shift 2 ;;
     --retry-failed) RETRY="--retry-failed"; shift ;;
     --all) while IFS= read -r p; do PAGES+=("$p"); done < <(${STANGENT:-stangent} spec pages | jq -r '.result.pages[].id'); shift ;;
+    --fsd) MODE=fsd; while IFS= read -r p; do PAGES+=("$p"); done < <(${STANGENT:-stangent} fsd sections --doc "$2" | jq -r '.result[] | .doc + "\t" + .section'); shift 2 ;;
     --stale) while IFS= read -r p; do PAGES+=("$p"); done < <(${STANGENT:-stangent} spec stale | jq -r '.result.stale[].id, .result.new[].id'); shift ;;
     *) PAGES+=("$1"); shift ;;
   esac
 done
 
-export STANGENT="${STANGENT:-stangent}" CLAUDE="${CLAUDE:-claude}" MODEL RETRY
+export STANGENT="${STANGENT:-stangent}" CLAUDE="${CLAUDE:-claude}" MODEL RETRY MODE
 export PLUGIN_DIR="${PLUGIN_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 run_page() {
-  local page="$1" step action agent prompt usage
+  local page="$1" step action agent prompt usage args
   usage="$(mktemp)"
+  if [ "$MODE" = fsd ]; then args=("${page%%$'\t'*}" "${page#*$'\t'}"); else args=("$page"); fi
   # prepare/check exit 1 when a check fails; the next step is still in the envelope.
-  step="$($STANGENT spec prepare "$page" $RETRY || true)"
+  if [ "$MODE" = fsd ]; then step="$($STANGENT fsd prepare "${args[@]}" || true)"; else step="$($STANGENT spec prepare "${args[@]}" $RETRY || true)"; fi
   action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   while [ "$action" != "none" ]; do
     agent="$(jq -r '.result.next.agent' <<<"$step")"
     prompt="$(jq -r '.result.next.prompt' <<<"$step")"
     $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" ${MODEL:+--model "$MODEL"} \
       --permission-mode acceptEdits --allowedTools Read Write --output-format json "$prompt" >"$usage" 2>/dev/null || true
-    step="$($STANGENT spec check "$page" --usage "$usage" || true)"
+    step="$($STANGENT "$MODE" check "${args[@]}" --usage "$usage" || true)"
     action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   done
   rm -f "$usage"

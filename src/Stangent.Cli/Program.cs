@@ -154,8 +154,9 @@ impact.SetAction(pr =>
     return Cli.Run(pr, "graph impact", ctx =>
     {
         if (given.Count != 1) throw new StangentException("usage", "Give exactly one of --symbol, --file or --diff.", ExitCodes.Usage);
-        var report = Cli.Analyzer(ctx).Analyze(new ChangeSpec(given[0].Item1, given[0].Item2!), ctx.Repo.Root, pr.GetValue(expandOption), pr.GetValue(maxDepthOption));
-        var errors = SchemaRegistry.Embedded.Validate("impact-report.v4.json", report.ToJsonString());
+        var report = Cli.Analyzer(ctx).Analyze(new ChangeSpec(given[0].Item1, given[0].Item2!), ctx.Repo.Root, pr.GetValue(expandOption), pr.GetValue(maxDepthOption),
+            (reached, expand) => Stangent.Spec.Trace.FsdImpact.Sections(ctx.Repo.Root, reached, expand));
+        var errors = SchemaRegistry.Embedded.Validate("impact-report.v5.json", report.ToJsonString());
         if (errors.Count > 0) throw new StangentException("invalid_report", "The impact report broke its contract (a stangent bug).", ExitCodes.Failed, errors);
         ctx.Span.Attributes["stangent.artifact.count"] = report["groups"]!.AsArray().Sum(g => (int)g!["total"]!);
         return report;

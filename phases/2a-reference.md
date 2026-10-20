@@ -2,7 +2,7 @@
 phase: 2a
 name: reference
 status: in progress
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 4 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 5 }
 provides: { reference-page: 1 }
 ---
 

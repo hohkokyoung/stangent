@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:trace-links:v1",
+  "title": "FSD ↔ reference page links and findings (contract trace-links v1, Phase 2b)",
+  "description": "specs/trace.yaml (D58), read as JSON. One entry per link or finding: both ends, the state, both quotes and their hashes, and the decision people make. decided_by comes from git, never typed.",
+  "type": "object",
+  "required": ["version", "entries"],
+  "additionalProperties": false,
+  "definitions": {
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  },
+  "properties": {
+    "version": { "const": 1 },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "state", "fsd", "page", "by", "decision", "decided_by"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^L[0-9a-f]{10}$" },
+          "state": { "enum": ["agree", "gap", "conflict", "undocumented"] },
+          "fsd": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["doc", "section"],
+                "additionalProperties": false,
+                "properties": {
+                  "doc": { "type": "string" }, "section": { "type": "string" }, "title": { "type": "string" },
+                  "quote": { "type": "string" }, "quoteHash": { "$ref": "#/definitions/hash" }
+                }
+              }
+            ]
+          },
+          "page": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["id"],
+                "additionalProperties": false,
+                "properties": {
+                  "id": { "type": "string" }, "statement": { "type": "string", "pattern": "^[SARE][0-9]+$" },
+                  "quote": { "type": "string" }, "quoteHash": { "$ref": "#/definitions/hash" }
+                }
+              }
+            ]
+          },
+          "by": { "description": "judge: the link judge proposed it (and, for agree, a second fresh check confirmed or disputed it); code: found by code.", "enum": ["judge", "code"] },
+          "check": { "enum": ["confirmed", "disputed"] },
+          "note": { "type": "string" },
+          "decision": { "oneOf": [{ "type": "null" }, { "enum": ["agree", "code-wrong", "fsd-wrong", "defer"] }] },
+          "decided_by": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] }
+        }
+      }
+    }
+  }
+}

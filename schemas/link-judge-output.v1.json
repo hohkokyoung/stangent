@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:link-judge-output:v1",
+  "title": "What stangent-link-judge returns (Phase 2b, D53, D60)",
+  "description": "Links between one FSD section and its candidate pages, each with the exact sentences it relies on. Code checks every quote word for word.",
+  "type": "object",
+  "required": ["links"],
+  "additionalProperties": false,
+  "properties": {
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["state", "note"],
+        "additionalProperties": false,
+        "properties": {
+          "state": { "enum": ["agree", "gap", "conflict", "undocumented"] },
+          "fsdQuote": { "description": "Copied exactly from the FSD section (agree, conflict, gap).", "type": "string" },
+          "page": { "description": "A candidate page's id (agree, conflict, undocumented; optional for gap).", "type": "string" },
+          "statement": { "description": "The page statement's id, e.g. R3.", "type": "string", "pattern": "^[SARE][0-9]+$" },
+          "pageQuote": { "description": "Copied exactly from that statement (agree, conflict, undocumented).", "type": "string" },
+          "note": { "type": "string", "maxLength": 600 }
+        }
+      }
+    }
+  }
+}

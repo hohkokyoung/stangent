@@ -59,7 +59,7 @@ static class SpecCommands
             var (set, page) = LoadPage(ctx, pr.GetValue(pageArg)!);
             var step = PageRun.Prepare(set, page, ctx.Repo, pr.GetValue(retryFailedOption));
             ctx.Span.Attributes["stangent.artifact.count"] = step.Action == "none" ? 0 : 1;
-            return Finish(step, page);
+            return Finish(step, page.Id);
         }));
         spec.Subcommands.Add(prepare);
 
@@ -68,17 +68,10 @@ static class SpecCommands
         check.SetAction(pr => Cli.Run(pr, "spec check", ctx =>
         {
             var (set, page) = LoadPage(ctx, pr.GetValue(pageArg)!);
-            var usage = pr.GetValue(usageOption) is { } file ? Usage.FromClaudeResult(Cli.ReadJson(file)) : null;
-            if (usage is not null)
-            {
-                if (usage.Model is { } model) ctx.Span.Attributes["gen_ai.request.model"] = model;
-                ctx.Span.Attributes["gen_ai.provider.name"] = "anthropic";
-                ctx.Span.Attributes["gen_ai.usage.input_tokens"] = usage.InputTokens + usage.CacheReadTokens + usage.CacheWriteTokens;
-                ctx.Span.Attributes["gen_ai.usage.output_tokens"] = usage.OutputTokens;
-            }
+            var usage = ReadUsage(ctx, pr.GetValue(usageOption));
             var step = PageRun.Check(set, page, ctx.Repo, usage);
             ctx.Span.Attributes["stangent.artifact.count"] = step.Status == "recorded" ? 1 : 0;
-            return Finish(step, page);
+            return Finish(step, page.Id);
         }));
         spec.Subcommands.Add(check);
 
@@ -99,6 +92,20 @@ static class SpecCommands
         spec.Subcommands.Add(stale);
     }
 
+    /// <summary>Tokens, model and time of the AI step just run, from Claude Code's JSON result; also into telemetry (D21).</summary>
+    public static Usage? ReadUsage(CliContext ctx, string? file)
+    {
+        if (file is null) return null;
+        var usage = Usage.FromClaudeResult(Cli.ReadJson(file));
+        if (usage.Model is { } model) ctx.Span.Attributes["gen_ai.request.model"] = model;
+        ctx.Span.Attributes["gen_ai.provider.name"] = "anthropic";
+        ctx.Span.Attributes["gen_ai.usage.input_tokens"] = usage.InputTokens + usage.CacheReadTokens + usage.CacheWriteTokens;
+        ctx.Span.Attributes["gen_ai.usage.output_tokens"] = usage.OutputTokens;
+        return usage;
+    }
+
+    public static PageSet LoadSet(CliContext ctx) => Load(ctx, null);
+
     static (PageSet, PageDef) LoadPage(CliContext ctx, string id)
     {
         var set = Load(ctx, null);
@@ -107,13 +114,13 @@ static class SpecCommands
     }
 
     /// <summary>A step that ends the page as failed, or asks for a retry, is a check that found problems: exit 1, with the next step in result.</summary>
-    static JsonNode Finish(RunStep step, PageDef page)
+    public static JsonNode Finish(RunStep step, string id)
     {
-        var json = step.ToJson(page.Id);
+        var json = step.ToJson(id);
         if (step.Status == "retry")
-            throw new CheckFailed("page_check_failed", $"{page.Id}: the code check failed; the writer gets one retry with the errors.", json);
+            throw new CheckFailed("check_failed", $"{id}: the code check failed; the subagent gets one retry with the errors.", json);
         if (step.Status == "failed")
-            throw new CheckFailed("page_failed", $"{page.Id} failed: {step.Errors?.FirstOrDefault()}", json);
+            throw new CheckFailed("step_failed", $"{id} failed: {step.Errors?.FirstOrDefault()}", json);
         return json;
     }
 

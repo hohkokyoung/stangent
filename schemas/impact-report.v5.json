@@ -1,0 +1,371 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:impact-report:v5",
+  "title": "Stangent impact report (contract v5)",
+  "description": "The answer to 'what does this change affect' (D27): grouped, labelled, nearest first, summary first. v2 added distance: each item's depth (lines away from the change), each group's direct/near/far counts, and an optional depth limit. Every ❓ is listed one by one. v3 adds the pages group (frontend routes) and frontend point kinds. v4 replaces the reserved hints with history: the files that usually change together with the changed files (📜, from git history, D40), capped, never walked; graph items whose file is one of them carry a history tag. v5 replaces the reserved requirements with fsdSections: the FSD sections reached through the reference pages whose cited symbols the change reaches, and their links (Phase 2b, D52).",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "graph",
+    "change",
+    "groups",
+    "unresolved",
+    "history",
+    "fsdSections",
+    "expanded",
+    "maxDepth"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "item": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "label",
+        "file",
+        "line",
+        "depth"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "project",
+            "file",
+            "type",
+            "method",
+            "property",
+            "field",
+            "endpoint",
+            "table",
+            "column",
+            "config",
+            "component",
+            "template",
+            "page"
+          ]
+        },
+        "label": {
+          "enum": [
+            "certain",
+            "guessed"
+          ]
+        },
+        "file": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "depth": {
+          "description": "Lines away from the change: 0 for the change itself, 1 for direct dependents.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "history": {
+          "description": "📜 also: this item's file usually changes with the changed files (D40). Present only then.",
+          "type": "object",
+          "required": [
+            "shared",
+            "of"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "shared": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "of": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "group": {
+      "type": "object",
+      "required": [
+        "name",
+        "total",
+        "certain",
+        "guessed",
+        "bands",
+        "items",
+        "more"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "enum": [
+            "change",
+            "endpoints",
+            "pages",
+            "eventHandlers",
+            "tables",
+            "tests",
+            "projects",
+            "code"
+          ]
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "certain": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "guessed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/item"
+          }
+        },
+        "more": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bands": {
+          "type": "object",
+          "required": [
+            "direct",
+            "near",
+            "far"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "direct": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "near": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "far": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": {
+      "const": 5
+    },
+    "graph": {
+      "type": "object",
+      "required": [
+        "commit"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "commit": {
+          "type": "string"
+        }
+      }
+    },
+    "change": {
+      "type": "object",
+      "required": [
+        "kind",
+        "value",
+        "start"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "symbol",
+            "file",
+            "diff"
+          ]
+        },
+        "value": {
+          "type": "string"
+        },
+        "start": {
+          "$ref": "#/definitions/group"
+        }
+      }
+    },
+    "groups": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "$ref": "#/definitions/group"
+      }
+    },
+    "unresolved": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "file",
+          "line",
+          "reason",
+          "in",
+          "detector"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "in": {
+            "type": "string"
+          },
+          "detector": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "history": {
+      "description": "📜 files that usually change together with the changed files: one step from them, never walked, top 10 by share (D40).",
+      "type": "object",
+      "required": [
+        "status",
+        "commit",
+        "total",
+        "items",
+        "more"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "description": "meta.history.status of the graph: full, shallow (partial history), none or off.",
+          "enum": [
+            "full",
+            "shallow",
+            "none",
+            "off"
+          ]
+        },
+        "commit": {
+          "description": "The commit the history was read at; older than the graph's when a shallow clone kept downloaded lines.",
+          "type": "string"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "file",
+              "with",
+              "shared",
+              "of",
+              "found"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "file": {
+                "type": "string",
+                "minLength": 1
+              },
+              "with": {
+                "description": "The changed file it usually changes with.",
+                "type": "string",
+                "minLength": 1
+              },
+              "shared": {
+                "description": "Commits that touched both, among the last `of` commits of `with`.",
+                "type": "integer",
+                "minimum": 1
+              },
+              "of": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "found": {
+                "description": "Whether the graph also reached this file, and how (best label); null when only history finds it.",
+                "enum": [
+                  "certain",
+                  "guessed",
+                  null
+                ]
+              }
+            }
+          }
+        },
+        "more": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "fsdSections": {
+      "description": "FSD sections reached through the reference pages (Phase 2b, D52): a page is reached when a symbol one of its statements cites is changed or affected; its links in specs/trace.yaml lead to sections. Undecided links are unverified (D53).",
+      "type": "object",
+      "required": ["status", "total", "items", "more"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "description": "none: no reference pages or links in this repo.", "enum": ["ok", "none"] },
+        "total": { "type": "integer", "minimum": 0 },
+        "more": { "type": "integer", "minimum": 0 },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["doc", "section", "title", "pages", "states", "verified"],
+            "additionalProperties": false,
+            "properties": {
+              "doc": { "type": "string" },
+              "section": { "type": "string" },
+              "title": { "type": "string" },
+              "pages": { "type": "array", "items": { "type": "string" } },
+              "states": { "type": "array", "items": { "enum": ["agree", "gap", "conflict", "undocumented"] } },
+              "verified": { "description": "Every link to the section has a person's decision.", "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "expanded": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "maxDepth": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    }
+  }
+}
