@@ -77,8 +77,8 @@ public class FsdLinkTests
         using var app = App();
         var index = SpecIndex.Load(app.Root);
         var orders = Candidates.ForSection(index.Sections[("shop", "1")], app.Pages(), index.Pages);
-        // The screen by its route, the endpoint by its route, the handler by the event it handles; recorded or not.
-        Assert.Equal([("page:/orders", "name"), (SpecApp.Post, "name"), (SpecApp.Receipt, "name")], orders.Select(c => (c.Page, c.Why)));
+        // The screen by its route, then the endpoint it calls, and the handler by the event it handles; recorded or not.
+        Assert.Equal([("page:/orders", "name"), (SpecApp.Post, "endpoint"), (SpecApp.Receipt, "name")], orders.Select(c => (c.Page, c.Why)));
         Assert.Empty(Candidates.ForSection(index.Sections[("shop", "2")], app.Pages(), index.Pages));
         Assert.True(Candidates.Words("Series Details").SetEquals(Candidates.Words("seriesDetails")));
         Assert.True(Candidates.Words("Adding series").SetEquals(Candidates.Words("/add/series")));

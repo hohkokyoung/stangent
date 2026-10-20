@@ -46,6 +46,8 @@ public static partial class Candidates
         return words;
     }
 
+    static int Order(string? kind) => kind switch { PageKind.Screen => 0, PageKind.Component => 1, _ => 2 };
+
     static string Fold(string w)
     {
         if (w.Length > 5 && w.EndsWith("ing", StringComparison.Ordinal)) w = w[..^3];
@@ -109,7 +111,12 @@ public static partial class Candidates
                 }
                 if (best > 0) named.Add(new Candidate(page.Id, "name", best + (page.Kind == PageKind.Screen ? 0.01 : 0)));
             }
-            foreach (var c in named.OrderByDescending(c => c.Score).ThenBy(c => c.Page, StringComparer.Ordinal).Take(MaxByName)) Add(c.Page, c.Why, c.Score);
+            // Screens and components first (what an FSD section usually describes), then backend pages; name-matched
+            // backend pages are capped so v3/v5 copies of one API don't crowd out the screen.
+            var ordered = named.OrderBy(c => Order(set.Find(c.Page)?.Kind)).ThenByDescending(c => c.Score).ThenBy(c => c.Page, StringComparer.Ordinal).ToList();
+            var picked = ordered.Where(c => set.Find(c.Page)?.Kind != PageKind.Backend).Take(MaxByName)
+                .Concat(ordered.Where(c => set.Find(c.Page)?.Kind == PageKind.Backend).Take(MaxEndpointsPerScreen)).ToList();
+            foreach (var c in picked) Add(c.Page, c.Why, c.Score + (set.Find(c.Page)?.Kind == PageKind.Backend ? 0 : 1));
         }
 
         // Field labels ↔ properties and fields in a screen's or component's slice: at least two labels, or every label when there's one.
@@ -123,11 +130,15 @@ public static partial class Candidates
                 if (hits >= Math.Min(2, labels.Count)) Add(page.Id, "fields", 0.5 * hits / labels.Count);
             }
 
-        // A subsection inherits its chapter's screens, found the same way, at a lower score.
+        // A subsection inherits its chapter's screen, found the same way, at a lower score: only when the chapter
+        // names one or two screens. A generic chapter ("Settings") names a whole area and would crowd out the rest.
         if (parent is not null)
-            foreach (var c in ForSection(new JsonObject { ["title"] = parent["title"]!.DeepClone(), ["text"] = "" }, set, recorded)
-                         .Where(c => c.Why == "name" && set.Find(c.Page)?.Kind == PageKind.Screen))
-                Add(c.Page, "chapter", c.Score * 0.6);
+        {
+            var chapter = ForSection(new JsonObject { ["title"] = parent["title"]!.DeepClone(), ["text"] = "" }, set, recorded)
+                .Where(c => c.Why == "name" && set.Find(c.Page)?.Kind == PageKind.Screen).ToList();
+            if (chapter.Count is > 0 and <= 2)
+                foreach (var c in chapter) Add(c.Page, "chapter", c.Score * 0.6);
+        }
 
         // The endpoints a candidate screen calls carry the rules behind its actions (pages split at endpoints): those
         // named like the section first, then those that save (not GET), which carry the validation.
