@@ -23,6 +23,15 @@ public sealed class SchemaRegistry(Func<string, string?> load)
 
     public bool Has(string name) => Get(name) is not null;
 
+    /// <summary>A contract's text as shipped in the tool, e.g. to hand an AI step its output schema (D60).</summary>
+    public static string EmbeddedText(string name)
+    {
+        using var stream = typeof(SchemaRegistry).Assembly.GetManifestResourceStream("schemas/" + name)
+            ?? throw new StangentException("unknown_schema", $"No schema named {name}.");
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd().Replace("\r\n", "\n");
+    }
+
     /// <summary>Validation errors as "path: kind" lines; empty when valid.</summary>
     public IReadOnlyList<string> Validate(string name, string json)
     {

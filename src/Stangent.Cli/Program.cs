@@ -187,6 +187,8 @@ import.SetAction(pr => Cli.Run(pr, "graph import", ctx =>
 }));
 graph.Subcommands.Add(import);
 
+SpecCommands.Add(root);
+
 return Cli.Execute(root, args, prettyOption);
 
 /// <summary>A check that ran and found problems: exit 1, with the report as the result.</summary>

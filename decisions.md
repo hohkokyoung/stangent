@@ -893,6 +893,14 @@ Rejected: a second check on every finding (gaps, conflicts and undocumented item
 **Cost:** roughly double the AI calls per page, plus one per "agree" link; reported apart from the writer's in 2a and 2b.
 
 ## Open questions
+- **Phase 2a's slice rule** (asked 2026-10-20, while building): the plan's "walk from the entry point within impact's
+  depth limit" doesn't hold on Sonarr. At depth 4 screens stop at the endpoint, so the rules behind an action aren't
+  in the page; at depth 6, 125 of ~600 bundles exceed 200k characters (one handler's is 868k) and every screen repeats
+  the same backend rules. "Impact's depth limit" isn't a fixed number (`--max-depth` is optional).
+  **Recommended:** screens walk the frontend only (depth 6) and stop at the endpoints they call; **every endpoint gets
+  its own backend page** (depth 4), which changes D54; a point with 10+ callers is a leaf (included, not walked into);
+  cap 260k characters. On Sonarr: 718 pages, medians 8k–51k characters, largest 254k, none over the cap; 2b adds a
+  screen's endpoint pages as candidates for its FSD section (code). Evidence in `phases/2a-reference.md` (Progress).
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
 - Bug tickets: how is a bug verified before it's fixed? Likely a test that fails because of the bug

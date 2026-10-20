@@ -1,14 +1,15 @@
 ---
-phase: 2
-name: spec
-status: planned
+phase: 2a
+name: reference
+status: in progress
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 4 }
-provides: { source-document: 1, reference-page: 1, trace-links: 1 }
+provides: { reference-page: 1 }
 ---
 
-# Phase 2 · Spec
+# Phase 2a · Reference from code
 
-**Approved 2026-10-20. Built before the Phase 1d split check reports (D45, changed 2026-10-20).**
+**Approved 2026-10-20 (as part of the Phase 2 plan). Building started 2026-10-20, before the Phase 1d split check
+reports (D45, changed 2026-10-20). Split from `2-spec.md` when building started (D59); 2b is in `2b-fsd.md`.**
 
 Builds on D10–D12, D18 and D50–D62. stangent is a standalone rebuild modelled on the company's spec pipeline (D50),
 with one difference that matters: the agreed FSD is read alongside the code, so stangent can show where the code
@@ -23,15 +24,14 @@ drifted from what the client agreed (D51).
 | **Links + decisions** | FSD section ↔ page, and every gap, conflict and undocumented item, with a decision | AI proposes, people decide | code: quotes, hashes, `decided_by` from git |
 
 Phase 2 is split (D59): **2a** builds the reference and is useful by itself (any project with no FSD). **2b** adds the
-FSD and the discrepancies. Both live in this file until building starts, then split into `2a-…` and `2b-…` as Phase 1 did.
+FSD and the discrepancies (`2b-fsd.md`).
 
 ## What waits on Phase 1d
-- **Nothing is built until 1d's split check reports** (D45).
-- **The parallel-vs-sequential verdict doesn't change this plan.** Writing a page and judging a link only read code;
-  they're independent per page and run side by side whatever 1d says. 1d is about parallel *code edits* (Phase 4).
-- **Left open: the slice rule.** Each page's input is its graph slice within impact's depth limit (D54). 1d part 2
-  (context scoping, D45 job 2) tests whether a graph slice is enough context for an agent. If it finds slices miss
-  what agents need, the slice rule (depth, what's included) changes before 2a is built.
+- **Nothing here waits for the split check (D45, changed 2026-10-20).** Its parallel-vs-sequential verdict shapes
+  Phase 4. Writing a page and checking it only read code; they're independent per page whatever 1d says.
+- **Left open: the slice rule.** 1d part 2 (context scoping, D45 job 2) tests whether a graph slice is enough context
+  for an agent. If it finds slices miss what agents need, the slice rule (depth, what's included) changes, and every
+  page goes stale through its input hash.
 
 ## Where the files live
 ```
@@ -43,7 +43,7 @@ specs/
 Committed: everything above (D52: AI output is stored, not regenerated). Not committed: the graph (D25) and the
 bundles sent to the AI (regenerable from the graph).
 
-## 2a. Reference from code
+## What gets built
 
 ### 1. The page list (code)
 - `stangent spec pages` lists every page from the graph (D54):
@@ -97,7 +97,7 @@ bundles sent to the AI (regenerable from the graph).
   on a re-run; on Sonarr's last 50 main-line commits, how many pages each commit flags as stale (median and worst).
 - The owner hand-reads 5 pages; the report counts wrong statements. No bar: it tells 2b whether the pages capture rules.
 
-### Done when (2a)
+## Done when
 - [ ] Every Sonarr screen and backend entry point has a page, or is listed as failed with its reason.
 - [ ] **Grounded:** every statement cites symbols inside its slice; tests plant a made-up citation and an out-of-slice
       citation, and both are rejected.
@@ -109,80 +109,43 @@ bundles sent to the AI (regenerable from the graph).
 - [ ] 5 pages hand-read, wrong statements counted, and compared with what the verifier caught.
 - [ ] Tests run without an LLM (canned subagent outputs); CI green.
 
-## 2b. FSD and discrepancies
-
-### 1. Import (code)
-- `stangent fsd import <file.docx>`: a deterministic `.docx` → Markdown conversion in C# (Open XML SDK, no external
-  tool), keeping headings, numbered lists and tables. Images are kept as files with their captions; no AI reads them.
-- **Section IDs:** the FSD's own numbering (`4.2.3`); a heading path where a section has none. FSDs follow no standard,
-  so both are first-class, even within one document. Duplicate or missing numbers are reported, not guessed.
-- **The original** is archived and cited by archive name, path and content hash (D16). Phase 2's archive backend is a
-  folder or a second git repo set in `stangent.yaml`.
-- The same file always gives byte-identical text; a file with a known content hash is imported once.
-
-### 2. Candidate pairs (code, D53)
-- `stangent fsd candidates`: names that match across the two sides: screen names ↔ routes, components and page titles;
-  field labels ↔ DTO properties; endpoint names. Case and word order are normalised.
-- An FSD section with no candidate goes to the AI with the **list of page titles only** (not the pages), which
-  proposes candidates for the same checks. The share found by code vs by the AI is reported.
-
-### 3. Judging (AI, D53, D60)
-- A plugin subagent, `stangent-link-judge`, gets one FSD section and its candidate pages. It returns a state (agree /
-  gap / conflict / undocumented) with the **exact FSD sentence and the exact page sentence** it relies on.
-- **Pages no section links to** are listed as undocumented by code, not by the AI.
-- The judge is its own subagent with a fresh context, never the page writer's (D61): it sees the FSD section and the
-  finished pages, nothing about how they were written.
-- **"Agree" verdicts get a second fresh check** before they can be bulk-approved (D62): a separate subagent sees the
-  same section and pages and either confirms or raises a finding with quotes. A disagreement makes the link a finding,
-  reviewed one by one. This is the guard on D53's weak spot.
-
-### 4. Check (code)
-- Both quotes exist word for word; both IDs exist; every symbol the quoted page sentence cites is in the graph.
-  Anything failing is rejected before it reaches the queue.
-
-### 5. The decisions file (D58)
-- `specs/trace.yaml`: one entry per link or finding, with both ends, the state, both quotes, `decision` (agree /
-  code-wrong / fsd-wrong / defer) and `decided_by`.
-- **CI checks:** the schema and allowed values; both quotes still match the current FSD and page (the D11 hash),
-  otherwise the decision drops back to undecided; `decided_by` comes from the PR's approver or merger through the
-  code-host adapter (D24), never typed.
-- Bulk approval of "agree" is one edit over a chapter (D53).
-- **Impact answers reach FSD sections** through the links: a new group in `impact-report` v5. Per D20, building it
-  reopens 1a (the provider) and bumps the version there.
-
-### 6. Proving it on Sonarr (D56, D57)
-- `benchmark/fsd/sonarr/`: an FSD in our own words for 10–15 screens (`.docx`; some chapters numbered, some plain prose), and an answer key with
-  **30 planted items: 10 gaps, 10 conflicts, 10 undocumented**. Both are committed and frozen before the first run;
-  the answer key never goes into a bundle.
-- A scoring command compares findings with the answer key; 20 unplanted findings are hand-checked once.
-
-### Done when (2b), D57's bars
-- [ ] **Finds what's planted:** ≥ 80% of planted items overall, and ≥ 60% of each kind.
-- [ ] **Not too noisy:** ≤ 30% of findings are false alarms.
-- [ ] **Grounded:** every link and finding in the queue passes the checks; tests show a made-up quote is rejected.
-- [ ] **Repeatable:** the same `.docx` gives byte-identical text; a re-run with unchanged inputs makes zero AI calls.
-- [ ] **Cost:** tokens and time per section and per page reported; candidates found by code vs AI reported.
-- [ ] Each share has its 95% range (fixed seed). If "finds" or "not too noisy" fails, discrepancy findings ship off
-      by default and the report says why (D57).
-- [ ] End-of-phase report written; its claims checked against the results files by a fresh agent (D61); CI green.
-
 ## Contracts
-| Contract | v1 holds | Sub-phase |
-|---|---|---|
-| `reference-page` | page ID and kind, sections, statements with cited symbol IDs, the commit, bundle hash, model, tokens | 2a |
-| `source-document` | document ID, archive name, path, content hash, section IDs and their text | 2b |
-| `trace-links` | links and findings: both ends, state, quotes and their hashes, decision, `decided_by` | 2b |
-| `impact-report` v4 → v5 | an FSD-sections group (provided by 1a, reopened per D20) | 2b |
-
-The roadmap's earlier `spec` and `discrepancy` contracts are replaced: the spec is now the reference pages plus the
-links (D52), and a discrepancy is a link's state (D58).
+| Contract | v1 holds |
+|---|---|
+| `reference-page` | page ID and kind, sections, statements with cited symbol IDs, the commit, bundle hash, model, tokens |
 
 ## Not in this phase
-- PDF, Excel and Confluence import; D15's document versions and supersession (one version per document until a
-  project has several).
 - **E2E tests as an input to pages.** The company's pipeline uses them; Playwright links wait for 1d (D45).
-- The dashboard (Phase 8, D58); "code-wrong" → a Jira ticket (Phase 3); tests tagged with FSD section IDs (Phase 5).
-- The dry run on a real FSD from one of the owner's projects (D56): after 2b. Formats other than `.docx` get their own
-  converter when a real FSD needs one.
+- The dashboard (Phase 8, D58).
 
 ## Progress
+
+### Step 1 · page list, slices, bundles, the run, checks · 2026-10-20
+- **`src/Stangent.Spec/`**, a new library: `PageList` (screens, server-rendered screens, shared components, backend
+  pages), `SliceBuilder` (the forward walk), `Bundles` (the writer's input and its hash), `PageRun` (prepare → write →
+  check → verify → fix → record, as a small state machine), `PageChecks` (schema, citations, verifier evidence),
+  `PageRender` (Markdown from the JSON) and `Staleness`.
+- **Commands:** `stangent spec pages | bundle | prepare | check | stale`. `prepare` and `check` return the next step
+  (`write`, `verify` or `none`) with the subagent to run and its prompt, so drivers stay a few lines.
+- **Drivers:** the plugin's `/stangent:spec-generate` (one page in the session, or the batch script) and
+  `plugin/scripts/spec-run.sh` (headless `claude -p`, parallel, for CI and the benchmark).
+- **Contracts:** `schemas/reference-page.v1.json`, plus the two AI-step contracts `page-writer-output.v1.json` and
+  `page-verifier-output.v1.json`.
+- **Sonarr's handlers:** `benchmark/configs/sonarr.spec.yaml` adds Sonarr's `IHandle<T>`, `IHandleAsync<T>` and
+  `IExecute<T>` to `publish-handle`, so its 200 event and command handlers are entry points (D54's "event handlers,
+  scheduled jobs"). It's a separate file so the graph Phases 1b–1d scored stays the same.
+- **First real pages** (Sonarr, Sonnet 5.5 through `claude -p`): the tag API endpoint (22k-character bundle) took 25 s
+  and $0.13 to write and $0.10 to verify, passed the code check first time, and the verifier found nothing; a re-run
+  made no AI call.
+
+**The slice rule didn't hold as planned** (bundle characters, ≈ 4 per token, Sonarr at the pinned commit):
+
+| Rule | Screens: median / largest | Screens reaching an endpoint | Pages | Bundles over 200k | All bundles |
+|---|---|---|---|---|---|
+| plan: one walk, depth 4 | 57k / 191k | 27 of 37, not the code behind it | 589 | 0 | 27M |
+| plan: one walk, depth 6 | 129k / 465k | 30 of 37 | 599 | 125 | 64M |
+| split at endpoints, depth 6 / 4, 10+ callers are leaves | 51k / 254k | 28 of 37 (all 364 endpoints have pages) | 718 | 2 | 16M |
+
+Asked the owner (decisions.md, Open questions); the code supports both, through `spec` settings in `stangent.yaml`.
+Bundles show types, properties and fields inside the code that uses them rather than as rows of their own: one
+`/series/:titleSlug` bundle went from 982k to 330k characters at the same depth.

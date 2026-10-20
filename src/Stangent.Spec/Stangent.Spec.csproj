@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Stangent.Core\Stangent.Core.csproj" />
+    <ProjectReference Include="..\Stangent.Graph\Stangent.Graph.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- What each AI step is told (D60): part of its input hash, so a change reopens every page. -->
+    <EmbeddedResource Include="Instructions\*.md" LogicalName="instructions/%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Stangent.Core.Tests" />
+  </ItemGroup>
+</Project>
