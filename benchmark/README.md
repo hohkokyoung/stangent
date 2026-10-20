@@ -103,6 +103,9 @@ bench $B/bitwarden --split --split-config benchmark/configs/bitwarden.split.json
 - the frontend paths and the commands that typecheck them.
 
 Runs take hours: each split case builds the parent, the change and every group, and runs the tests three or more times.
+Each walked commit's result is saved in the clone's `.stangent/split-progress.jsonl`, so a crashed run resumes where it
+stopped. `--groups-only <earlier results.json>` re-groups only the cases that run examined, building graphs but applying
+nothing: a cheap way to compare a new split rule on the same cases.
 
 The compile-break tests edit files in the clone and put them back. A run that was interrupted is
 restored from git at the start of the next run.
