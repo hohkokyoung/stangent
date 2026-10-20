@@ -51,7 +51,7 @@ public class SplitterUnitTests
     }
 
     [Fact]
-    public void A_new_type_keeps_its_members_even_when_its_header_belongs_to_a_record_property()
+    public void A_new_record_keeps_its_members_and_its_header()
     {
         const string after = "public record R(int A) : Base\n{\n    public int M() => 1;\n}\n";
         var file = Change("R.cs", 'A', "", after, new Hunk(0, 0, 1, 4));
@@ -65,7 +65,7 @@ public class SplitterUnitTests
 
         Assert.Contains("T:R", s.ChangedTypes);
         var record = Assert.Single(split.Groups, g => g.Members.Contains("T:R"));
-        Assert.Equal(["M:R.M", "P:R.A", "T:R"], record.Members);
+        Assert.Equal(["M:R.M", "T:R"], record.Members); // the header line, properties and all, is the type's
         Assert.Equal(after, Applied(s, record, "R.cs"));
     }
 
@@ -81,5 +81,34 @@ public class SplitterUnitTests
 
         Assert.Contains("M:T.M(System.Int32)", s.Members);
         Assert.Contains("M:T.M(System.String)", s.Members);
+    }
+
+    [Fact]
+    public void A_positional_record_header_belongs_to_the_type_not_its_properties()
+    {
+        const string before = "record E(int A) : Error(Msg(A))\n{\n}\n";
+        const string after = "record E(int A) : Error(Msg2(A))\n{\n}\n";
+        var file = Change("E.cs", 'M', before, after, new Hunk(1, 1, 1, 1));
+        Node[] nodes = [N("T:E", NodeKind.Type, "E.cs", 1, 3), N("P:E.A", NodeKind.Property, "E.cs", 1, 1), .. OtherNodes];
+
+        var s = new Splitter([file, Other], new GraphView(Graph(nodes, [Contains("T:E", "P:E.A")])), new GraphView(Graph(nodes, [Contains("T:E", "P:E.A")])));
+
+        Assert.Equal(["M:U.Y", "T:E"], s.Members);
+        Assert.Contains("T:E", s.ChangedTypes);
+    }
+
+    [Fact]
+    public void A_type_moved_to_another_namespace_is_one_member()
+    {
+        var oldFile = Change("A/X.cs", 'D', "namespace A;\nclass X\n{\n    void Run() { }\n}\n", "", new Hunk(1, 5, 0, 0));
+        var newFile = Change("B/X.cs", 'A', "", "namespace B;\nclass X\n{\n    void Run() { }\n}\n", new Hunk(0, 0, 1, 5));
+        var parent = Graph([new("P|T:A.X", NodeKind.Type, "A.X", "project:p", "A/X.cs", 2, 5), new("P|M:A.X.Run", NodeKind.Method, "X.Run", "project:p", "A/X.cs", 4, 4), .. OtherNodes],
+            [Contains("T:A.X", "M:A.X.Run")]);
+        var change = Graph([new("P|T:B.X", NodeKind.Type, "B.X", "project:p", "B/X.cs", 2, 5), new("P|M:B.X.Run", NodeKind.Method, "X.Run", "project:p", "B/X.cs", 4, 4), .. OtherNodes],
+            [Contains("T:B.X", "M:B.X.Run")]);
+
+        var split = new Splitter([oldFile, newFile, Other], new GraphView(change), new GraphView(parent)).Group(Splitter.Within2, 2);
+
+        Assert.Equal([["M:A.X.Run", "M:B.X.Run", "T:A.X", "T:B.X"], ["M:U.Y"]], split.Groups.Select(g => g.Members.ToArray()));
     }
 }

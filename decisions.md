@@ -674,6 +674,15 @@ how those teams work today.
     separate insertions and deletions, so any subset still applies as text. Only a line owned by two members at
     once (`int a, b;`) can't be cut, and it is counted as "joined by a shared hunk".
   - **Deleted members** join through the parent's graph with the same rule (1 or 2 steps).
+  - *Fixed after bitwarden's first run:* 8 of its 14 failed splits were the tool's own cuts, sorted by a fresh agent
+    (D61). The fixes:
+    - A member whose signature changed is one member, matched by name without its parameter list.
+    - A type or member that moved to another namespace or file is one member, when its name matches exactly one
+      deleted and one added.
+    - A type that exists on one side only is a changed member, so its members go with it.
+    - A positional record's header line belongs to the type, not its properties.
+
+    That run is kept as a record, not as the verdict.
   - **📜** comes from commits older than each change, as in 1c.
 **Why:** Test 2 showed the graph's recall lives within 2 steps; direct-only misses too much.
 **Cost:** within 2 steps joins more, so fewer groups; a file whose changed methods fall into two groups has its

@@ -43,7 +43,7 @@ sealed class Splitter
     public int HunksSplit { get; private set; }
 
     readonly Dictionary<string, SortedSet<string>> filesOfMember = new(StringComparer.Ordinal);
-    /// <summary>Old and new ids of a member whose signature changed: one member.</summary>
+    /// <summary>Old and new ids of a member whose signature changed, or that moved: one member.</summary>
     readonly List<(string Old, string New)> signatureChanges = [];
 
     public Splitter(IReadOnlyList<FileChange> files, GraphView after, GraphView parent)
@@ -58,6 +58,12 @@ sealed class Splitter
                 ChangedTypes.Add(type);
         Members.UnionWith(Pieces.SelectMany(p => p.Members));
         Members.UnionWith(ChangedTypes);
+        // A type or member that moved (to another file or namespace) is deleted on one side and added on the other
+        // under a new id: when the name matches exactly one of each, it's the same code.
+        var deleted = Members.Where(k => !after.Has(k) && parent.Has(k)).GroupBy(k => parent.MoveName(k)).Where(g => g.Key is not null && g.Count() == 1).ToDictionary(g => g.Key!, g => g.Single());
+        var added = Members.Where(k => after.Has(k) && !parent.Has(k)).GroupBy(k => after.MoveName(k)).Where(g => g.Key is not null && g.Count() == 1).ToDictionary(g => g.Key!, g => g.Single());
+        foreach (var (name, old) in deleted.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+            if (added.TryGetValue(name, out var moved)) signatureChanges.Add((old, moved));
         foreach (var p in Pieces)
             foreach (var key in KeysOf(p))
             {
