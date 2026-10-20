@@ -89,7 +89,7 @@ The pilot provides no contract and changes none: it reads `code-graph` v3 and li
   hold.
 - [x] End-of-phase report written, including what the verdict means for Phase 4 (D49).
 - [ ] Part 2 grilled or dropped accordingly: *the owner's call, still open.*
-- [ ] Tests cover the fixture repo; CI green. *(Tests are done; CI is checked after the push.)*
+- [x] Tests cover the fixture repo; CI green ([run](https://github.com/hohkokyoung/stangent/actions/runs/39430285763)).
 
 ## Not in this phase
 - Part 2, context scoping with agent runs (D45): grilled after part 1 reports.
