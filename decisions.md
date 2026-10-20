@@ -927,6 +927,23 @@ rule instead of one per screen; a backend change makes its endpoint page stale, 
 **Cost:** more pages (all 364 Sonarr endpoints, many near-duplicates across API v3 and v5); a screen page alone doesn't
 tell the whole story of an action.
 
+## D64 · Phase 2a is proven on the pages 2b needs plus a sample; Sonnet writes and verifies — 2026-10-20
+The first full Sonarr run used far more than estimated: 193k input tokens per page on average (two headless Claude
+Code sessions per page, each re-sending its system prompt and the bundle chunks every turn), about $0.31 per page at
+list price, ~$220 for all 718 pages; it hit the owner's usage limit twice.
+- **Pages generated for the proof:** every page 2b's candidates need (the FSD's in-scope screens and the endpoints and
+  components they link to, ~103), plus a fixed sample of 10 event/command handlers (seed 42). The rest (~550, mostly
+  endpoints, half of them v5 copies of v3, and handlers) is left to `spec-run.sh --all`.
+- **Every page is still checked by code without AI:** each of the 718 fits under the size cap or is listed as failed.
+- **Calls become single-turn first** (the bundle in the prompt, structured output, no tools), measured on 10 pages.
+- **Model:** Sonnet 5.5 writes and verifies. The owner's 5-page hand-read decides whether the writer needs Opus.
+  Weakening the verifier to save tokens was rejected: it's the guard D62 relies on.
+- Changes 2a's done-when box "every Sonarr screen and backend entry point has a page" to the set above; decided by the
+  owner before the bar was measured, not to fit a result.
+**Why:** the other ~550 pages only show that more of the same works; the questions Phase 2 answers (does the FSD
+comparison find planted drift, are pages grounded, what do they cost per kind) are answered by the smaller set.
+**Cost:** Sonarr has no complete reference; per-kind cost is measured on smaller samples (10 handlers).
+
 ## Open questions
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)

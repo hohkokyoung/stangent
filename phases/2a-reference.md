@@ -11,7 +11,7 @@ provides: { reference-page: 1 }
 **Approved 2026-10-20 (as part of the Phase 2 plan). Building started 2026-10-20, before the Phase 1d split check
 reports (D45, changed 2026-10-20). Split from `2-spec.md` when building started (D59); 2b is in `2b-fsd.md`.**
 
-Builds on D10–D12, D18 and D50–D63. stangent is a standalone rebuild modelled on the company's spec pipeline (D50),
+Builds on D10–D12, D18 and D50–D64. stangent is a standalone rebuild modelled on the company's spec pipeline (D50),
 with one difference that matters: the agreed FSD is read alongside the code, so stangent can show where the code
 drifted from what the client agreed (D51).
 
@@ -99,7 +99,8 @@ bundles sent to the AI (regenerable from the graph).
 - The owner hand-reads 5 pages; the report counts wrong statements. No bar: it tells 2b whether the pages capture rules.
 
 ## Done when
-- [ ] Every Sonarr screen and backend entry point has a page, or is listed as failed with its reason.
+- [ ] Every Sonarr screen and backend entry point has a page, or is listed as failed with its reason. *Changed by D64:*
+      every page 2b needs plus a sample of 10 handlers; all 718 checked against the size cap by code.
 - [ ] **Grounded:** every statement cites symbols inside its slice; tests plant a made-up citation and an out-of-slice
       citation, and both are rejected.
 - [ ] **Repeatable:** a re-run with no code change makes zero AI calls and leaves the files byte-identical.
