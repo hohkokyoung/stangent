@@ -682,7 +682,7 @@ how those teams work today.
     - A type that exists on one side only is a changed member, so its members go with it.
     - A positional record's header line belongs to the type, not its properties.
 
-    That run is kept as a record, not as the verdict.
+    That run is still the one judged on, as bounds (D64).
   - **📜** comes from commits older than each change, as in 1c.
 **Why:** Test 2 showed the graph's recall lives within 2 steps; direct-only misses too much.
 **Cost:** within 2 steps joins more, so fewer groups; a file whose changed methods fall into two groups has its
@@ -900,6 +900,52 @@ code checks (D18):
 Rejected: a second check on every finding (gaps, conflicts and undocumented items already go to a person one by one).
 **Why:** D61 is the owner's rule for every phase; these are the steps where a writer or judge would otherwise grade itself.
 **Cost:** roughly double the AI calls per page, plus one per "agree" link; reported apart from the writer's in 2a and 2b.
+
+## D64 · The split check is judged on bitwarden's first run; no rerun — 2026-10-20
+The plan asked both repos to run to 30 split cases or 200 examined, with every failure counted.
+- **What happened:**
+  - **bitwarden/server** reached 30 split cases (116 examined), but the tool's hunk cutter had bugs that added
+    failures. A fresh agent (D61) sorted the 14 failed splits: 8 were the tool's cuts, now fixed, and 6 were real.
+  - **Sonarr** crashed on a .NET runtime segfault after 32 examined cases. That run used the same buggy cutter.
+- **Decision:** don't rerun. Judge "safe" from bitwarden's real failures alone. "Useful" is left unmeasured: the
+  bug's false splits inflate the first run's 26%. A re-grouping with the fixed cutter was started, then stopped by
+  the owner (D65).
+  - "Safe" must pass **on each repo**. On bitwarden, at most (16 + 8) / 30 = 80% of the split cases could hold up,
+    even if every tool-made failure had passed. That's below the 90% bar.
+  - "Better than naive" isn't met as specified, whatever the cutter does: the graph is safer, but split-by-folder
+    splits 98% of cases against the graph's 26%, far over the 5-point condition.
+  - So no rerun can turn the verdict into a pass. Sonarr's partial run is reported, not judged.
+- The cutter is fixed and tested (d770578, b7e90e9) for whoever uses the harness next, for example to test a
+  Phase 4 split rule.
+**Why:** a rerun is about 22 hours of building and testing to confirm a fail the real failures already show. The
+tool's bugs added failures and false splits, so they can't have raised the safe share. A rerun walks the same commits newest first, so
+the 6 real failures would very likely fall among its first 30 split cases, and 90% of 30 allows at most 3.
+**Cost:**
+- The numbers come from a run with known bugs, so they are bounds, not measurements.
+- Sonarr has no judged result.
+- If the bar had been close to passing, this shortcut wouldn't have been allowed.
+
+## D65 · The graph's blind spots and a smarter split rule are Phase 4 work — 2026-10-20
+The split check (Phase 1d) found two reasons the graph can't yet split a change safely on its own:
+- **What it doesn't see:**
+  - Razor views (`.cshtml`);
+  - `.csproj` and `Directory.Build.props` files, and package versions;
+  - `using` edits that change what a name means.
+- **What it likely over-joins (inferred, not measured):** unchanged hub types (`Organization`, `User`) may link
+  unrelated edits within 2 steps. That's suggested by direct-only splitting 3× as often on bitwarden.
+
+Both go into **Phase 4**, not a separate graph phase:
+- The graph learns those files.
+- The splitter joins only through points that changed or that the change affects. Contract-first splits are
+  considered with it (see the open question).
+- Each change is proven with the 1d harness (`--split`) before Phase 4 relies on it.
+- The merged build and test stay, whatever the graph learns (D18). Some links (a test counting routes) are in no graph.
+
+Rejected: a small "1e" graph phase first. It would help Phases 5 and 6 sooner, but the owner chose to keep the work
+with the phase that needs it most.
+**Why:** Phase 4 designs the splitter, so it can shape the graph work around what the splitter needs. All of it is
+plain code (no AI tokens at runtime).
+**Cost:** Phases 5 and 6 get the better "what may break" only once Phase 4 lands; Phase 4 grows.
 
 ## Open questions
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)

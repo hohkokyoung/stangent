@@ -1,0 +1,841 @@
+{
+  "repo": "sonarr",
+  "status": "Partial and not judged on (D64): the run crashed after 4 hours on a segfault in the .NET runtime GC before writing results, and it used the hunk cutter with the bugs fixed in d770578 and b7e90e9. Rebuilt from its log, so per-group errors are not available.",
+  "startCommit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+  "examined": 32,
+  "skipped": {
+    "fewer than 2 source files": 205,
+    "fewer than 3 changed members": 33,
+    "more than 15 files": 52,
+    "parent doesn't build": 99
+  },
+  "skippedNote": "Most 'parent doesn't build' skips are this machine, not the code: NuGet audit turns advisories published after the commit into errors (NU1902/NU1903), and node_modules come from today's commit. A rerun needs -p:NuGetAudit=false and a per-commit frontend install.",
+  "rules": {
+    "within 2 steps (✅+🟡)": {
+      "splitCases": 10,
+      "holdUp": 7,
+      "safe": 0.7,
+      "splitRate": 0.312
+    },
+    "direct only (✅+🟡, 1 step)": {
+      "splitCases": 17,
+      "holdUp": 12,
+      "safe": 0.706,
+      "splitRate": 0.531
+    },
+    "within 2 steps (✅+🟡) + 📜": {
+      "splitCases": 9,
+      "holdUp": 6,
+      "safe": 0.667,
+      "splitRate": 0.281
+    },
+    "split by folder": {
+      "splitCases": 23,
+      "holdUp": 9,
+      "safe": 0.391,
+      "splitRate": 0.719
+    }
+  },
+  "cases": [
+    {
+      "commit": "0bffefe7c8",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "0eaa157ce5",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": false
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "69fd6f1344",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 4,
+          "split": true,
+          "holdsUp": false
+        }
+      }
+    },
+    {
+      "commit": "2b39049ee6",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": false
+        }
+      }
+    },
+    {
+      "commit": "3022489013",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 4,
+          "split": true,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 3,
+          "split": true,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "e9abf8ca5a",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 3,
+          "split": true,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "94a76f1f1f",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "3c9169d0f8",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 3,
+          "split": true,
+          "holdsUp": false
+        }
+      }
+    },
+    {
+      "commit": "90eab43f0b",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 3,
+          "split": true,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "5dc4c256d7",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 5,
+          "split": true,
+          "holdsUp": false
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 5,
+          "split": true,
+          "holdsUp": false
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 5,
+          "split": true,
+          "holdsUp": false
+        },
+        "split by folder": {
+          "groups": 3,
+          "split": true,
+          "holdsUp": false
+        }
+      }
+    },
+    {
+      "commit": "e3dbe600f0",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "460022a72e",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 4,
+          "split": true,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 6,
+          "split": true,
+          "holdsUp": false
+        }
+      }
+    },
+    {
+      "commit": "4949bff1eb",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": false
+        }
+      }
+    },
+    {
+      "commit": "42359526c7",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "76c006b946",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 3,
+          "split": true,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 5,
+          "split": true,
+          "holdsUp": false
+        }
+      }
+    },
+    {
+      "commit": "e807a23462",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": false
+        }
+      }
+    },
+    {
+      "commit": "2e1e3f61f3",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 3,
+          "split": true,
+          "holdsUp": false
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 4,
+          "split": true,
+          "holdsUp": false
+        }
+      }
+    },
+    {
+      "commit": "1c01b720a5",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 5,
+          "split": true,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 9,
+          "split": true,
+          "holdsUp": false
+        }
+      }
+    },
+    {
+      "commit": "af34322ff6",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": false
+        }
+      }
+    },
+    {
+      "commit": "1f546e5e3f",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 3,
+          "split": true,
+          "holdsUp": false
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 3,
+          "split": true,
+          "holdsUp": false
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 3,
+          "split": true,
+          "holdsUp": false
+        },
+        "split by folder": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "9273663101",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": false
+        }
+      }
+    },
+    {
+      "commit": "07442aa408",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 11,
+          "split": true,
+          "holdsUp": false
+        }
+      }
+    },
+    {
+      "commit": "c28e4b71c6",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 17,
+          "split": true,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 10,
+          "split": true,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "4a56bc32f9",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 8,
+          "split": true,
+          "holdsUp": false
+        }
+      }
+    },
+    {
+      "commit": "eb50a8a439",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "477249dee6",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "6fed7b2250",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 4,
+          "split": true,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 3,
+          "split": true,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "4831dfe91c",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "eb55c5d44e",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 3,
+          "split": true,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 4,
+          "split": true,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 2,
+          "split": true,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 4,
+          "split": true,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "f4f1a88dc5",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "525e675a55",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 3,
+          "split": true,
+          "holdsUp": false
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 4,
+          "split": true,
+          "holdsUp": false
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 3,
+          "split": true,
+          "holdsUp": false
+        },
+        "split by folder": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        }
+      }
+    },
+    {
+      "commit": "64dc5d9574",
+      "rules": {
+        "within 2 steps (✅+🟡)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "direct only (✅+🟡, 1 step)": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "within 2 steps (✅+🟡) + 📜": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        },
+        "split by folder": {
+          "groups": 1,
+          "split": false,
+          "holdsUp": true
+        }
+      }
+    }
+  ]
+}

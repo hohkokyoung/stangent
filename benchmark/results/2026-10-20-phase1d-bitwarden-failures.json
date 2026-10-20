@@ -1,0 +1,83 @@
+{
+  "note": "Each failed split of bitwarden/server under the judged rule (within 2 steps, ✅+🟡), sorted by a separate agent with a fresh context (D61) from the compiler errors and the diffs. MECHANICS = the tool cut the text badly; REAL = the group needs code in another group or a file the graph can't see.",
+  "totals": {
+    "splitCases": 30,
+    "holdUp": 16,
+    "failed": 14,
+    "mechanics": 8,
+    "real": 6
+  },
+  "safeCeiling": "(16 + 8) / 30 = 0.80 even if every MECHANICS case had held up; the bar is 0.90",
+  "cases": [
+    {
+      "commit": "c2aede3706",
+      "class": "REAL",
+      "why": "The shared Index.cshtml (Razor, not on the graph) uses Model.Products from one group and a new FeatureFlagKeys constant from the other."
+    },
+    {
+      "commit": "c40a93e144",
+      "class": "REAL",
+      "why": "One group deletes IFeatureService.cs while Organization.UpdateFromLicense(..., IFeatureService) in the other still uses it; the other group also fails because the shared Directory.Build.props stops excusing BWA0002."
+    },
+    {
+      "commit": "b778e5a1cc",
+      "class": "MECHANICS",
+      "why": "A file moved to another namespace: every member got a new id, and the deletion group broke the old users. Fixed in b7e90e9 (moves)."
+    },
+    {
+      "commit": "4f51a9d374",
+      "class": "MECHANICS",
+      "why": "PricingClientTests.CreatePlanJson gained a parameter; old and new ids were cut into a deletion and an insertion in different groups (syntax errors). Fixed in d770578."
+    },
+    {
+      "commit": "ea4b0474f0",
+      "class": "REAL",
+      "why": "A using-only edit in the shared EventDiagnosticLogger.cs changes the type of LogAggregateData's parameter; both EventsControllers call it, so they must move together."
+    },
+    {
+      "commit": "c3095f6099",
+      "class": "MECHANICS",
+      "why": "CreatedSchedule gained a parameter; the deletion and insertion landed in different groups. Fixed in d770578."
+    },
+    {
+      "commit": "b22d652c36",
+      "class": "REAL",
+      "why": "The YamlDotNet 18 upgrade in the shared Setup.csproj forces the new overrides, properties and test together (some groups also hit the signature-change bug)."
+    },
+    {
+      "commit": "0403a48640",
+      "class": "MECHANICS",
+      "why": "The ManageMutuallyExclusive record moved namespaces: each side had a different id (ambiguous reference / missing type). Fixed in b7e90e9 (moves)."
+    },
+    {
+      "commit": "607c0a1f39",
+      "class": "REAL",
+      "why": "New byte-length checks in EncryptedStringAttribute break CipherRequestModelTests until its test data (another group) is updated."
+    },
+    {
+      "commit": "735cc5db4b",
+      "class": "MECHANICS",
+      "why": "A new record file was split: its header went with a property, a const with another group. Fixed in d770578 / b7e90e9."
+    },
+    {
+      "commit": "0125fa89fa",
+      "class": "MECHANICS",
+      "why": "Positional record headers calling the new GetErrorMessage were owned by a property, not the type. Fixed in b7e90e9."
+    },
+    {
+      "commit": "f758b982f8",
+      "class": "REAL",
+      "why": "A test asserts the route count went from 22 to 23; it is tied to the new MapDelete only by that count, with no code link."
+    },
+    {
+      "commit": "9a87169066",
+      "class": "MECHANICS",
+      "why": "TwoFactorIsEnabledQuery's constructor gained an ILogger parameter; old and new ids were cut apart (syntax errors). Fixed in d770578."
+    },
+    {
+      "commit": "aebb9c4d3e",
+      "class": "MECHANICS",
+      "why": "Three test methods gained an IServiceProvider parameter; each was cut into a deletion and an insertion. Fixed in d770578."
+    }
+  ]
+}
