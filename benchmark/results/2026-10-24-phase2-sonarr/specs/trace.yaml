@@ -2,8 +2,8 @@
 # agree, code-wrong, fsd-wrong or defer. `decided_by` is filled from git after merge, never typed.
 version: 1
 entries:
-  - id: "Lf2da12452f"
-    state: "gap"
+  - id: "L476e4409eb"
+    state: "agree"
     fsd:
       doc: "sonarr-fsd"
       section: "1"
@@ -12,12 +12,33 @@ entries:
       quoteHash: "22d06f1f878175c65dcbad333ff5528c6b557808bed0b6b40a99fbc5438168ac"
     page:
       id: "endpoint:Sonarr.Api.V3|ANY /api/v3/Series"
+      statement: "S2"
+      quote: "a root folder path"
+      quoteHash: "7f5382be98b24ab7f21f908a769edf633273f72303e3d51c1263057817c145bf"
     by: "judge"
-    check: "disputed"
-    note: "Disputed by the second check: S1 lists quality profile and tags but not root folder (only in S2) or series type. Series type is not stated, so the statement does not fully show the FSD sentence."
+    check: "confirmed"
+    note: "Series returned with root folder path (root folder part of the claim)."
     decision: null
     decided_by: null
-  - id: "Ldef6411ee0"
+  - id: "L50153b550c"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1"
+      title: "Library"
+      quote: "Each series has a root folder, a quality profile, a series type and a set of tags."
+      quoteHash: "22d06f1f878175c65dcbad333ff5528c6b557808bed0b6b40a99fbc5438168ac"
+    page:
+      id: "endpoint:Sonarr.Api.V3|ANY /api/v3/Series"
+      statement: "S1"
+      quote: "quality profile, monitored flags, external ids, genres, tags"
+      quoteHash: "685489dd2caa3201b325b7f0d6a2cf0f323ab09a2ffe5d2708a9a25aa6a3ce91"
+    by: "judge"
+    check: "confirmed"
+    note: "Series resource includes quality profile and tags."
+    decision: null
+    decided_by: null
+  - id: "L29f81e5d71"
     state: "agree"
     fsd:
       doc: "sonarr-fsd"
@@ -28,11 +49,29 @@ entries:
     page:
       id: "page:/series"
       statement: "S1"
-      quote: "The page is titled \"Series\" and lists all series in one of three views: table, posters or overview."
-      quoteHash: "9067709924ab6919e37d449bee341a77f00ac646339828520a1979fb46315708"
+      quote: "lists all series in one of three views: table, posters or overview"
+      quoteHash: "5da1061c550a766ced3a5b2fa0ecadab58860d8700f1a510d4d6a41dcb3dd76e"
     by: "judge"
     check: "confirmed"
     note: "Series index lists all series."
+    decision: null
+    decided_by: null
+  - id: "L9ec4489b2d"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1"
+      title: "Library"
+      quote: "Each series has a root folder, a quality profile, a series type and a set of tags."
+      quoteHash: "22d06f1f878175c65dcbad333ff5528c6b557808bed0b6b40a99fbc5438168ac"
+    page:
+      id: "page:/series/:titleSlug"
+      statement: "A8"
+      quote: "quality profile, series type, language, season type, path and tags"
+      quoteHash: "9ce011e5943a3cdd127f60d393da4051c405609e2f68234c925693e0edbe730b"
+    by: "judge"
+    check: "confirmed"
+    note: "Edit form exposes series type, quality profile and tags for a series."
     decision: null
     decided_by: null
   - id: "L1aabb1bad8"
@@ -668,59 +707,7 @@ entries:
     note: "Page shows a Log Level select with a trace warning but doesn't list the options; the reconfigure page treats levels up to Trace. Options not confirmed, so this is weak; the log level select is present."
     decision: null
     decided_by: null
-  - id: "L650ca28cb0"
-    state: "gap"
-    fsd:
-      doc: "sonarr-fsd"
-      section: "Settings / Interface"
-      title: "Interface"
-      quote: "Theme: Light, Dark or Auto."
-      quoteHash: "3d138706013dcce0b6bbb92fb5296c6c93e8c2f56ef0dd389b175ac2621bce42"
-    page: null
-    by: "judge"
-    note: "No page shows theme setting."
-    decision: null
-    decided_by: null
-  - id: "L6548e94475"
-    state: "gap"
-    fsd:
-      doc: "sonarr-fsd"
-      section: "Settings / Interface"
-      title: "Interface"
-      quote: "The language of the interface can be chosen."
-      quoteHash: "0b83957aba8737b5f23763ec0d5b20a52f92b25edb6f3338237a08bf522307bb"
-    page: null
-    by: "judge"
-    note: "No page shows language setting."
-    decision: null
-    decided_by: null
-  - id: "L71bf47341e"
-    state: "gap"
-    fsd:
-      doc: "sonarr-fsd"
-      section: "Settings / Interface"
-      title: "Interface"
-      quote: "The short date format, long date format and time format can be chosen, and dates can be shown relative to today."
-      quoteHash: "5c0582fbf5e167a535cf37e47e2f120d0fe0ff506920f18d480d8e6056d6fb64"
-    page: null
-    by: "judge"
-    note: "Only time format appears (in calendar options); short/long date format and relative dates not shown on any page."
-    decision: null
-    decided_by: null
-  - id: "Ld8372f5ea5"
-    state: "gap"
-    fsd:
-      doc: "sonarr-fsd"
-      section: "Settings / Interface"
-      title: "Interface"
-      quote: "The font size can be set to small, medium or large."
-      quoteHash: "a522a7da9eb36b585b0775557093b1e36584a4d2a03cf68981531d35ea881031"
-    page: null
-    by: "judge"
-    note: "No page shows font size setting."
-    decision: null
-    decided_by: null
-  - id: "L0b27896f89"
+  - id: "L02956e3e53"
     state: "agree"
     fsd:
       doc: "sonarr-fsd"
@@ -729,13 +716,111 @@ entries:
       quote: "The interface settings set the first day of the week and the column headers of the calendar."
       quoteHash: "093e9abdd6dc5af35e529a8746381dd6c62a553081b9f47bc9e07369143f8f0b"
     page:
-      id: "page:/calendar"
-      statement: "A4"
-      quote: "global settings (first day of week, week column header, time format, color impaired mode)"
-      quoteHash: "dc4bd4b608adf25689de33ed2c4e3a2d818730757c3609d6756ca92dad4dab64"
+      id: "page:/settings/ui"
+      statement: "S5"
+      quote: "The Calendar section has selects for First Day of Week and Week Column Header, the latter with help text."
+      quoteHash: "c54c70cfc85f3442ed43f95f3acedc38558657e3be1a1e37f1b38811d3d56a4c"
     by: "judge"
     check: "confirmed"
-    note: "Calendar options dialog exposes first day of week and week column header as global settings."
+    note: "Both calendar fields present."
+    decision: null
+    decided_by: null
+  - id: "L1b0fba1da4"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      title: "Interface"
+    page:
+      id: "page:/settings/ui"
+      statement: "R3"
+      quote: "If the selected UI language is not in the available language list, the field shows the error \"InvalidUILanguage\" (translated)."
+      quoteHash: "6c8a0f8fea95c910bda7159b5188a9d825d3362be4139ea8e12e4e2839f2717b"
+    by: "judge"
+    note: "Language validation not in FSD."
+    decision: null
+    decided_by: null
+  - id: "L3a6fa52b0b"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      title: "Interface"
+      quote: "The language of the interface can be chosen."
+      quoteHash: "0b83957aba8737b5f23763ec0d5b20a52f92b25edb6f3338237a08bf522307bb"
+    page:
+      id: "page:/settings/ui"
+      statement: "S8"
+      quote: "The Language section has a UI Language select with help text and a warning that a browser reload is required."
+      quoteHash: "e54ddbd58250d56a95d3ac0263cb636d82313df869c725acf121faa9bc2d213a"
+    by: "judge"
+    check: "confirmed"
+    note: "UI language select exists."
+    decision: null
+    decided_by: null
+  - id: "L5532b9be07"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      title: "Interface"
+    page:
+      id: "page:/settings/ui"
+      statement: "S7"
+      quote: "The Style section has a Theme select, a Header Color select and an Enable Color Impaired Mode checkbox, each with help text."
+      quoteHash: "407a2a2b4753158fd03c96f65597cb95e7d48c5b68153d3bb4c3c6382ca5a73e"
+    by: "judge"
+    note: "Header Color and Color Impaired Mode not in FSD."
+    decision: null
+    decided_by: null
+  - id: "L8b304c491b"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      title: "Interface"
+      quote: "Theme: Light, Dark or Auto."
+      quoteHash: "3d138706013dcce0b6bbb92fb5296c6c93e8c2f56ef0dd389b175ac2621bce42"
+    page:
+      id: "page:/settings/ui"
+      statement: "R1"
+      quote: "Theme options are Auto, Light and Dark."
+      quoteHash: "584ca428292369a08cec80f4e8e7876138438ac7e4097e184c693d521bd88add"
+    by: "judge"
+    check: "confirmed"
+    note: "Same options."
+    decision: null
+    decided_by: null
+  - id: "La5564b8e26"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      title: "Interface"
+      quote: "The font size can be set to small, medium or large."
+      quoteHash: "a522a7da9eb36b585b0775557093b1e36584a4d2a03cf68981531d35ea881031"
+    page:
+      id: "page:/settings/ui"
+    by: "judge"
+    note: "No font size setting on the UI settings page."
+    decision: null
+    decided_by: null
+  - id: "Lbe97211de4"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      title: "Interface"
+      quote: "The short date format, long date format and time format can be chosen, and dates can be shown relative to today."
+      quoteHash: "5c0582fbf5e167a535cf37e47e2f120d0fe0ff506920f18d480d8e6056d6fb64"
+    page:
+      id: "page:/settings/ui"
+      statement: "S6"
+      quote: "The Dates section has selects for Short Date Format, Long Date Format, Time Format and Time Zone, and a checkbox for Show Relative Dates."
+      quoteHash: "615029664bfbd01b6aa4eae88436a925ebc75a9db35554b78def4072c409fee5"
+    by: "judge"
+    check: "confirmed"
+    note: "Matches; page also has Time Zone."
     decision: null
     decided_by: null
   - id: "L4c1acf1905"
@@ -1240,11 +1325,191 @@ entries:
     note: "FSD: no confirmation; page: a confirmation modal is shown before searching."
     decision: null
     decided_by: null
+  - id: "L90d600ed7e"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
   - id: "L65a4ce23dd"
     state: "undocumented"
     fsd: null
     page:
       id: "page:/activity/blocklist"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "Lc5075fde86"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/add/import"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L035853bf41"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/add/import/:rootFolderId"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L3b4e14ba3e"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/seasonpass"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L1e9be2b070"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/serieseditor"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L1b9db44ca8"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L4e5e31ff42"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/connect"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "Lcbcd6d63a8"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/customformats"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L5b8e20c169"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/downloadclients"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L0c6d91c33a"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/importlists"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L2b6e5c1412"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/indexers"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L1637b1c24c"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/mediamanagement"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L2f56538dff"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/metadata"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "Lcfb05fda6f"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/metadatasource"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "La1cb5f357f"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/events"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "Lf698bcabf4"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/logs/files"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "Ld42d286b27"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/logs/files/update"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L2e3de4a2e0"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/status"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L2622b95947"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/tasks"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "Lda9946bc4a"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/updates"
     by: "code"
     note: "no FSD section links to this screen"
     decision: null

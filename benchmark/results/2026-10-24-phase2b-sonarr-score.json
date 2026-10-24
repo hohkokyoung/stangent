@@ -1,0 +1,548 @@
+{
+  "doc": "sonarr-fsd",
+  "note": "Phase 2b (D56, D57): findings in specs/trace.yaml scored against the frozen answer key. 'found' lets a gap be reported as a conflict and back; 'foundAsKind' needs the planted kind.",
+  "found": {
+    "overall": {
+      "found": 27,
+      "of": 30,
+      "share": 0.9,
+      "range95": [
+        0.767,
+        1
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 7,
+      "of": 10,
+      "share": 0.7,
+      "range95": [
+        0.4,
+        0.9
+      ]
+    }
+  },
+  "foundAsKind": {
+    "overall": {
+      "found": 22,
+      "of": 30,
+      "share": 0.733,
+      "range95": [
+        0.567,
+        0.9
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 5,
+      "of": 10,
+      "share": 0.5,
+      "range95": [
+        0.2,
+        0.8
+      ]
+    },
+    "undocumented": {
+      "found": 7,
+      "of": 10,
+      "share": 0.7,
+      "range95": [
+        0.4,
+        0.9
+      ]
+    }
+  },
+  "noise": {
+    "findings": 89,
+    "unplanted": 62,
+    "worstCaseShare": 0.697,
+    "sample": 20,
+    "handChecked": 0,
+    "realInSample": null
+  },
+  "bars": {
+    "finds": true,
+    "notTooNoisy": null
+  },
+  "candidates": {
+    "sections": 16,
+    "byCode": 14,
+    "byAi": 2,
+    "aiFoundNone": 0
+  },
+  "cost": {
+    "finder": {
+      "calls": 2,
+      "sections": 2,
+      "inputTokensPerSection": 9422,
+      "outputTokensPerSection": 201.5,
+      "secondsPerSection": 3.4,
+      "costUsd": 0.07
+    },
+    "judge": {
+      "calls": 16,
+      "sections": 16,
+      "inputTokensPerSection": 9249.125,
+      "outputTokensPerSection": 698.4375,
+      "secondsPerSection": 5.9,
+      "costUsd": 0.65
+    },
+    "checker": {
+      "calls": 15,
+      "sections": 15,
+      "inputTokensPerSection": 9421.2,
+      "outputTokensPerSection": 419.93333333333334,
+      "secondsPerSection": 5.5,
+      "costUsd": 0.58
+    }
+  },
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "Le267e7dadc",
+      "state": "gap"
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L3afb2f7004",
+      "state": "gap"
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "Lb384898e1e",
+      "state": "gap"
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "Ldfb1351322",
+      "state": "gap"
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "Ldbe1ed2b8c",
+      "state": "gap"
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "Lcecdae8e39",
+      "state": "gap"
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L5516054a71",
+      "state": "gap"
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "Led68980de1",
+      "state": "gap"
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "La5564b8e26",
+      "state": "gap"
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L1d80d81805",
+      "state": "gap"
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "Lce24b02c4c",
+      "state": "conflict"
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": false,
+      "by": "Lf14b7b43ef",
+      "state": "gap"
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L20630847d5",
+      "state": "conflict"
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": false,
+      "by": "L3314a029ad",
+      "state": "gap"
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": false,
+      "by": "L8d67c8dcc1",
+      "state": "gap"
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L98fcdc7ab2",
+      "state": "conflict"
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L161615c608",
+      "state": "conflict"
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L72b47571d3",
+      "state": "conflict"
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": false,
+      "by": "L0766eedbb8",
+      "state": "gap"
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": false,
+      "by": "Lffd77d7c0e",
+      "state": "gap"
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L65a4ce23dd",
+      "state": "undocumented"
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "Lcc66338eaa",
+      "state": "undocumented"
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L2622b95947",
+      "state": "undocumented"
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L1aabb1bad8",
+      "state": "undocumented"
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "Lf31fad4a71",
+      "state": "undocumented"
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L5532b9be07",
+      "state": "undocumented"
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L5a344330cc",
+      "state": "undocumented"
+    }
+  ],
+  "handCheckSample": [
+    {
+      "id": "L75fb026b16",
+      "state": "gap",
+      "section": "1.1",
+      "fsdQuote": "| Series Type | Standard, daily or anime; this changes how searches are made. |",
+      "page": "page:/add/new",
+      "pageQuote": null,
+      "note": "Disputed by the second check: S16 says the popover describes Anime, Daily and Standard, but not that it changes how searches are made."
+    },
+    {
+      "id": "Lfefaa07baa",
+      "state": "undocumented",
+      "section": "Settings / Profiles / Quality profiles",
+      "fsdQuote": null,
+      "page": "page:/settings/profiles",
+      "pageQuote": "If the cutoff is unset or no longer allowed, it is set to the first allowed quality.",
+      "note": "Cutoff defaulting rule is not in the FSD."
+    },
+    {
+      "id": "L9a99a0d94b",
+      "state": "gap",
+      "section": "Settings / Profiles / Delay profiles",
+      "fsdQuote": "Usenet Delay and Torrent Delay: in minutes; neither can be negative.",
+      "page": "page:/settings/profiles",
+      "pageQuote": null,
+      "note": "Disputed by the second check: Page R7 says delays are in minutes, but nothing shows that negative values are rejected."
+    },
+    {
+      "id": "L2e3de4a2e0",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/system/status",
+      "pageQuote": null,
+      "note": "no FSD section links to this screen"
+    },
+    {
+      "id": "L62a755f545",
+      "state": "gap",
+      "section": "Wanted / Missing episodes",
+      "fsdQuote": "Episodes whose file exists but whose quality is below the cutoff are not listed here.",
+      "page": "page:/wanted/missing",
+      "pageQuote": null,
+      "note": "No statement on the missing page excludes cutoff-unmet episodes (those are on a separate cutoff unmet page)."
+    },
+    {
+      "id": "L4e5e31ff42",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/connect",
+      "pageQuote": null,
+      "note": "no FSD section links to this screen"
+    },
+    {
+      "id": "Ld8b49577e7",
+      "state": "conflict",
+      "section": "1.1",
+      "fsdQuote": "- Start search for missing episodes: when ticked, the new series' missing monitored episodes are searched for straight after adding.",
+      "page": "page:/add/new",
+      "pageQuote": "plus Search checkboxes for Missing and Cutoff Unmet.",
+      "note": "FSD mentions only the missing search option; page also has a Cutoff Unmet search checkbox."
+    },
+    {
+      "id": "Lf02bf20efd",
+      "state": "gap",
+      "section": "1.1",
+      "fsdQuote": "| Tags | Tags link the series to delay profiles, release profiles and indexers. |",
+      "page": "page:/add/new",
+      "pageQuote": null,
+      "note": "Disputed by the second check: S15 only lists a Tags field; the linkage to delay profiles, release profiles and indexers isn't shown."
+    },
+    {
+      "id": "La1cb5f357f",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/system/events",
+      "pageQuote": null,
+      "note": "no FSD section links to this screen"
+    },
+    {
+      "id": "L3b4e14ba3e",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/seasonpass",
+      "pageQuote": null,
+      "note": "no FSD section links to this screen"
+    },
+    {
+      "id": "Lcd2be0442b",
+      "state": "gap",
+      "section": "2",
+      "fsdQuote": "Monitored and unmonitored episodes can be shown or hidden",
+      "page": "page:/calendar",
+      "pageQuote": null,
+      "note": "Disputed by the second check: S14 only lists event statuses (downloaded, unmonitored, etc.); it does not show that monitored/unmonitored episodes can be shown or hidden. That is in other statements (R5 filter)."
+    },
+    {
+      "id": "L04d4ddb984",
+      "state": "gap",
+      "section": "System / Backups",
+      "fsdQuote": "The user can take a backup now, restore from a backup in the list, or restore from a backup file they upload.",
+      "page": "page:/system/backups",
+      "pageQuote": null,
+      "note": "Disputed by the second check: A1 only covers the Backup Now button. The FSD sentence also covers restoring from a listed backup and from an uploaded file (page A2, A4, A5), so A1 alone doesn't show the whole sentence."
+    },
+    {
+      "id": "L035853bf41",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/add/import/:rootFolderId",
+      "pageQuote": null,
+      "note": "no FSD section links to this screen"
+    },
+    {
+      "id": "Ld7dcac8eec",
+      "state": "gap",
+      "section": "1.2",
+      "fsdQuote": "The series details screen shows one series: its poster, overview, network, status, path, size on disk and its seasons, with each season's episodes listed underneath.",
+      "page": "page:/series/:titleSlug",
+      "pageQuote": null,
+      "note": "Disputed by the second check: S3 covers only the header (poster, fanart, title, alternate titles). It doesn't cover overview, network, status, path, size on disk, seasons or episodes. Those appear in other statements, so this link is partial."
+    },
+    {
+      "id": "L55fc880fb6",
+      "state": "conflict",
+      "section": "Settings / Quality definitions",
+      "fsdQuote": "The quality definitions screen lists every quality with its title and its minimum, preferred and maximum size in megabytes per minute.",
+      "page": "page:/settings/quality",
+      "pageQuote": "The list has column headers 'Quality' and 'Title'. Each row shows the quality name and an editable text input holding the title.",
+      "note": "FSD: screen lists min, preferred and max size; page screen shows only quality and editable title columns."
+    },
+    {
+      "id": "L90d600ed7e",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/",
+      "pageQuote": null,
+      "note": "no FSD section links to this screen"
+    },
+    {
+      "id": "L384481b321",
+      "state": "undocumented",
+      "section": "Settings / Tags",
+      "fsdQuote": null,
+      "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag",
+      "pageQuote": "Adding a tag whose label already exists returns the existing tag and does not insert a new one.",
+      "note": "Duplicate label handling not in FSD."
+    },
+    {
+      "id": "L0c6d91c33a",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/importlists",
+      "pageQuote": null,
+      "note": "no FSD section links to this screen"
+    },
+    {
+      "id": "L191027d8b5",
+      "state": "gap",
+      "section": "3.1",
+      "fsdQuote": "The user can remove a release from the queue. Removing an item from the queue always adds the release to the blocklist.",
+      "page": "page:/activity/queue",
+      "pageQuote": null,
+      "note": "Disputed by the second check: A6 confirms the user can remove an item. The FSD also says removal always adds the release to the blocklist. The page lets the user pick a blocklist method (A8) and a DoNotBlocklist option exists, so removal does not always blocklist."
+    },
+    {
+      "id": "L60bd6c7b0e",
+      "state": "undocumented",
+      "section": "Settings / Profiles / Quality profiles",
+      "fsdQuote": null,
+      "page": "page:/settings/profiles",
+      "pageQuote": "The Upgrade Until field shows only when Upgrades Allowed is checked.",
+      "note": "The FSD does not say that Upgrade Until is conditional on Upgrades Allowed."
+    }
+  ]
+}

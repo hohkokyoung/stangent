@@ -14,49 +14,49 @@
         "why": "ai"
       },
       {
-        "page": "page:/series/:titleSlug",
+        "page": "page:/serieseditor",
         "why": "ai"
       },
       {
-        "page": "ts|frontend/src/Components/SeriesTagList.tsx#SeriesTagList",
+        "page": "page:/series/:titleSlug",
         "why": "ai"
       }
     ],
     "candidatesBy": "ai",
     "checker": {
       "cacheReadTokens": 911,
-      "cacheWriteTokens": 8619,
+      "cacheWriteTokens": 8674,
       "calls": 1,
-      "costUsd": 0.036832,
+      "costUsd": 0.040682,
       "inputTokens": 2,
       "model": "claude-sonnet-5-5",
-      "ms": 2601,
-      "outputTokens": 217
+      "ms": 7004,
+      "outputTokens": 580
     },
-    "disputed": 1,
+    "disputed": 0,
     "finder": {
-      "cacheReadTokens": 0,
-      "cacheWriteTokens": 8573,
+      "cacheReadTokens": 757,
+      "cacheWriteTokens": 8629,
       "calls": 1,
-      "costUsd": 0.037076,
+      "costUsd": 0.037391,
       "inputTokens": 2,
       "model": "claude-sonnet-5-5",
-      "ms": 2893,
-      "outputTokens": 278
+      "ms": 3923,
+      "outputTokens": 272
     },
-    "finderInputs": "70d5830a7f0730210e69ec1c2e637f97f3a2f49e0d3f619d09c26e7d260bdc07",
-    "inputs": "35585f73a87671d5b65937e6d4e5b0142cd19b0c1bffd71c29382e94d15155e3",
+    "finderInputs": "046f2dc4b0bb74adbd01bedc39e66dac5b23e0440433117dedcd105431bc1c49",
+    "inputs": "e61679821b3d04920bb498e82413504ae49ab7c5d5f221475b89c7267a5d0254",
     "judge": {
       "cacheReadTokens": 939,
-      "cacheWriteTokens": 8723,
+      "cacheWriteTokens": 8668,
       "calls": 1,
-      "costUsd": 0.038564,
+      "costUsd": 0.042794,
       "inputTokens": 2,
       "model": "claude-sonnet-5-5",
-      "ms": 4490,
-      "outputTokens": 348
+      "ms": 5676,
+      "outputTokens": 793
     },
-    "links": 2,
+    "links": 4,
     "rejected": 0,
     "retries": 0,
     "unchecked": 0
@@ -582,49 +582,49 @@
   "sonarr-fsd#Settings / Interface": {
     "candidates": [
       {
-        "page": "page:/settings/general",
+        "page": "page:/settings/ui",
         "why": "ai"
       },
       {
-        "page": "page:/calendar",
+        "page": "page:/settings",
         "why": "ai"
       }
     ],
     "candidatesBy": "ai",
     "checker": {
       "cacheReadTokens": 911,
-      "cacheWriteTokens": 5380,
+      "cacheWriteTokens": 3437,
       "calls": 1,
-      "costUsd": 0.023726,
+      "costUsd": 0.016394,
       "inputTokens": 2,
       "model": "claude-sonnet-5-5",
-      "ms": 4121,
-      "outputTokens": 202
+      "ms": 5172,
+      "outputTokens": 246
     },
     "disputed": 0,
     "finder": {
       "cacheReadTokens": 757,
-      "cacheWriteTokens": 7888,
+      "cacheWriteTokens": 8697,
       "calls": 1,
-      "costUsd": 0.033317,
+      "costUsd": 0.036253,
       "inputTokens": 2,
       "model": "claude-sonnet-5-5",
-      "ms": 2553,
-      "outputTokens": 161
+      "ms": 2813,
+      "outputTokens": 131
     },
-    "finderInputs": "032f25efc631c7c88303d06a2ec6d93221c2ff4393f5ded6972cce54a7c9f48a",
-    "inputs": "7696abb9265b7b4885dd4f9c68bbaf35bab171a63c33449e3936454a3550cc65",
+    "finderInputs": "b61bb7e0e9420372755297ee00ff671d43ed9f2ead6c5d828d91b67e3b27191b",
+    "inputs": "2a6cb50340ccf0958f40e276e0ec958ecda63a9048f4c30689210a7dea4fa506",
     "judge": {
       "cacheReadTokens": 939,
-      "cacheWriteTokens": 5608,
+      "cacheWriteTokens": 3416,
       "calls": 1,
-      "costUsd": 0.026404,
+      "costUsd": 0.021166,
       "inputTokens": 2,
       "model": "claude-sonnet-5-5",
-      "ms": 4129,
-      "outputTokens": 378
+      "ms": 6294,
+      "outputTokens": 731
     },
-    "links": 5,
+    "links": 7,
     "rejected": 0,
     "retries": 0,
     "unchecked": 0
