@@ -73,13 +73,14 @@ static class FsdCommands
         }));
         fsd.Subcommands.Add(check);
 
-        var undocumented = new Command("undocumented", "List screens no FSD section links to as undocumented, in specs/trace.yaml (code, no AI).");
+        var undocumented = new Command("undocumented", "List screens no FSD section links to as undocumented, in specs/trace.yaml (code, no AI). Needs fsd.findings: true.");
         undocumented.SetAction(pr => Cli.Run(pr, "fsd undocumented", ctx =>
         {
             var scope = ctx.Repo.Config.Fsd.Scope;
-            var n = Undocumented.Apply(ctx.Repo.Root, SpecCommands.LoadSet(ctx), scope.Count == 0 ? null : scope);
+            var findings = ctx.Repo.Config.Fsd.Findings;
+            var n = Undocumented.Apply(ctx.Repo.Root, SpecCommands.LoadSet(ctx), scope.Count == 0 ? null : scope, findings);
             ctx.Span.Attributes["stangent.artifact.count"] = n;
-            return new JsonObject { ["undocumented"] = n };
+            return new JsonObject { ["undocumented"] = n, ["findings"] = findings };
         }));
         fsd.Subcommands.Add(undocumented);
 

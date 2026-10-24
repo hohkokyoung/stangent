@@ -88,7 +88,11 @@ code 4 (D24); `spec stale`, `fsd import`, `fsd candidates`, `fsd undocumented` a
   then goes to `stangent-agree-checker`, a second fresh check: `confirmed`, or `disputed` and turned into the finding it
   raises. `specs/trace-runs.json` records each section's inputs, candidates (by code or AI), tokens and retries.
 - `stangent fsd undocumented`: screens no section links to are undocumented, by code, within `fsd.scope`: the areas
-  the FSD says it covers, as routes or route prefixes (`/settings` covers `/settings/tags`).
+  the FSD says it covers, as routes or route prefixes (`/settings` covers `/settings/tags`). It only sees screens with
+  a recorded page, so generate every in-scope screen first.
+- **Findings are off by default (D66):** with `fsd: { findings: false }` (the default) sections record only links;
+  gaps, conflicts and undocumented items aren't written and `fsd undocumented` lists none. `findings: true` turns them
+  on (the Sonarr benchmark does); changing it makes each section run again.
 - **`specs/trace.yaml`**: one entry per link or finding; people edit only `decision` (`agree`, `code-wrong`,
   `fsd-wrong`, `defer`) in a PR. `stangent trace approve <doc> <chapter>` sets `agree` on every confirmed agree link
   under a chapter in one edit. `stangent trace check [--base <ref>] [--fix]` is the CI check: schema, ids, both quotes

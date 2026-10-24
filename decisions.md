@@ -967,6 +967,22 @@ unmeasured).
 **Cost:** an AI checker can share the judge's blind spots; a person's check is still owed before the findings are
 relied on in a real project (the dry run on a real FSD, D56, is checked by people).
 
+## D66 · Discrepancy findings ship off by default (D57's rule, applied) — 2026-10-25
+On the planted Sonarr FSD, "finds what's planted" passed (27 of 30, each kind ≥ 60%) but "not too noisy" failed: 31.3%
+of findings are false alarms (95% range 14–45%) against a bar of 30%, from a hand check of 20 unplanted findings by a
+fresh agent (D65). D57 says what follows: reference pages and links still ship; findings are off by default.
+- **`fsd.findings` in `stangent.yaml`, default `false`:** sections record only links ("agree", confirmed or not);
+  gaps, conflicts and undocumented items, including disputed agrees turned into findings, aren't written to
+  `specs/trace.yaml`, and `fsd undocumented` lists none. A project turns them on with `findings: true`.
+- Turning the setting off or on makes each section run again (it is part of the section's input hash only when off,
+  so runs recorded with findings on stay current). The Sonarr benchmark turns them on: it measures findings.
+- The bar isn't moved: the report states the result and why findings are off.
+Rejected: shipping findings on because the miss is narrow (the bar would drift toward the result, D57); dropping
+the agree checker's disputes to cut noise before re-measuring (tuning to the frozen key; a change is a new benchmark run).
+**Why:** D57, agreed before any run.
+**Cost:** a project that wants the drift list must opt in and accept roughly one false alarm in three; the likely
+lever (the agree checker turning "partial" agreements into gaps, 25 of the 62 unplanted findings) is a follow-up.
+
 ## Open questions
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)

@@ -19,10 +19,10 @@ public class FsdLinkTests
         Customers earn one point per dollar.
         """;
 
-    static SpecApp App(string extra = "")
+    static SpecApp App(string extra = "", bool findings = true)
     {
         var archive = Directory.CreateTempSubdirectory("stangent-archive-").FullName;
-        var app = new SpecApp($"version: 1\nfsd: {{ archive: {{ name: docs, path: '{archive}' }} }}\n{extra}");
+        var app = new SpecApp($"version: 1\nfsd: {{ archive: {{ name: docs, path: '{archive}' }}, findings: {(findings ? "true" : "false")} }}\n{extra}");
         Record(app, SpecApp.Post, new JsonObject
         {
             ["title"] = "Place an order",
@@ -168,6 +168,31 @@ public class FsdLinkTests
         Assert.True(Undocumented.InScope("/settings", "/settings/tags"));
         Assert.False(Undocumented.InScope("/settings", "/settingsx"));
         Assert.False(Undocumented.InScope("/", "/series"));
+    }
+
+    [Fact]
+    public void With_findings_off_by_default_only_links_are_recorded_and_no_screen_is_listed_as_undocumented()
+    {
+        using var app = App(findings: false);
+        var graph = GraphStore.Load(GraphStore.PathFor(app.Repo))!;
+        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
+        Write(app, step, Links(
+            Link("conflict", "Orders over 50 need approval.", SpecApp.Post, "R1", "Orders over 100 are refused", "FSD 50, code 100"),
+            Link("agree", "Every order sends a receipt.", SpecApp.Post, "E1", "which sends a receipt"),
+            Link("agree", "The orders screen has a Place order button.", "page:/orders", "A1", "The Place order button posts the order.")));
+        step = LinkRun.Check(app.Pages(), app.Repo, graph, "shop", "1", null);
+        Write(app, step, new JsonObject
+        {
+            ["checks"] = new JsonArray(
+                new JsonObject { ["link"] = "K1", ["verdict"] = "confirm", ["note"] = "same" },
+                new JsonObject { ["link"] = "K2", ["verdict"] = "dispute", ["state"] = "gap", ["fsdQuote"] = "The orders screen has a Place order button.", ["note"] = "not named" }),
+        });
+        Assert.Equal("recorded", LinkRun.Check(app.Pages(), app.Repo, graph, "shop", "1", null).Status);
+        var states = TraceFile.Load(app.Root)["entries"]!.AsArray().Select(e => (string)e!["state"]!).ToList();
+        Assert.Equal(["agree"], states);                                     // the conflict and the disputed agree are findings
+        Assert.Equal(0, Undocumented.Apply(app.Root, app.Pages(), null, findings: false));
+        Assert.Equal(["agree"], TraceFile.Load(app.Root)["entries"]!.AsArray().Select(e => (string)e!["state"]!).ToList());
+        Assert.False(new Stangent.Core.StangentConfig().Fsd.Findings);       // off unless stangent.yaml turns them on
     }
 
     [Fact]

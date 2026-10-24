@@ -78,13 +78,16 @@ public static class LinkRun
                 + (unrecorded > 0 ? $"; {unrecorded} page(s) have no recorded version, so it may be among them" : ""));
             var existing = TraceFile.Load(repo.Root)["entries"]!.AsArray().OfType<JsonObject>()
                 .Where(e => (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId).Select(e => (string)e["id"]!).ToList();
-            if (carried is null && existing.SequenceEqual([(string)gap["id"]!])) return new RunStep("current", "none");
-            ApplyEntries(repo.Root, doc, sectionId, [gap]);
+            List<JsonObject> recorded = repo.Config.Fsd.Findings ? [gap] : [];
+            if (carried is null && existing.SequenceEqual(recorded.Select(e => (string)e["id"]!))) return new RunStep("current", "none");
+            ApplyEntries(repo.Root, doc, sectionId, recorded);
             UpdateRun(repo.Root, key, r => { MergeInto(r, carried); r["inputs"] = null; r["candidates"] = new JsonArray(); r["candidatesBy"] = by; r["links"] = 1; });
             return new RunStep("recorded", "none");
         }
         var judgeBundle = JudgeBundle(section, doc, candidates.Select(c => c.Page), index);
         var inputs = CanonicalJson.Hash(judgeBundle + Bundles.Instructions("agree-checker.md") + SchemaRegistry.EmbeddedText("agree-checker-output.v1.json"));
+        // Turning findings off (or on) changes what a section records, so it runs again; with them on the hash is unchanged.
+        if (!repo.Config.Fsd.Findings) inputs = CanonicalJson.Hash(inputs + "\nfindings off");
         if ((string?)run?["inputs"] == inputs) return new RunStep("current", "none");
         AiPolicy.EnsureAllowed(repo.Config, "fsd prepare");
         var work = Fresh(repo.Root, doc, sectionId);
@@ -152,7 +155,7 @@ public static class LinkRun
                 state["rejected"] = links.Count - kept.Count;
                 state["links"] = new JsonArray([.. kept.Select(l => (JsonNode)l.DeepClone())]);
                 var agrees = kept.Where(l => (string)l["state"]! == "agree").ToList();
-                if (agrees.Count == 0) return Finish(repo.Root, work, state, doc, section, []);
+                if (agrees.Count == 0) return Finish(repo.Root, work, state, doc, section, [], repo.Config.Fsd.Findings);
                 state["stage"] = "confirm";
                 state["retryUsed"] = false; // the checker gets its own one retry
                 Save(work, state);
@@ -166,7 +169,7 @@ public static class LinkRun
                 if (errors.Count == 0) errors.AddRange(SchemaRegistry.Embedded.Validate("agree-checker-output.v1.json", output!.ToJsonString()).Select(e => $"Schema: {e}"));
                 if (errors.Count > 0 && Retry(repo.Root, work, state, errors, Checker, "checker.md", "checker.json") is { } retry) return retry;
                 var checks = errors.Count > 0 ? [] : output!["checks"]!.AsArray().OfType<JsonObject>().ToList();
-                return Finish(repo.Root, work, state, doc, section, checks, candidates, index, nodes);
+                return Finish(repo.Root, work, state, doc, section, checks, repo.Config.Fsd.Findings, candidates, index, nodes);
             }
             default:
                 throw new StangentException("nothing_to_check", $"{doc} §{sectionId}'s run is {stage}. Run `stangent fsd prepare` to start again.", ExitCodes.Usage);
@@ -175,7 +178,7 @@ public static class LinkRun
 
     /// <summary>Turns the checked links into trace entries. "agree" links take the checker's verdict: confirmed, or
     /// disputed and turned into the finding it raised (when its quotes pass), reviewed one by one (D62).</summary>
-    static RunStep Finish(string root, string work, JsonObject state, string doc, JsonObject section, List<JsonObject> checks,
+    static RunStep Finish(string root, string work, JsonObject state, string doc, JsonObject section, List<JsonObject> checks, bool findings,
         HashSet<string>? candidates = null, SpecIndex? index = null, IReadOnlySet<string>? nodes = null)
     {
         var entries = new List<JsonObject>();
@@ -212,6 +215,8 @@ public static class LinkRun
             entries.Add(Entry((string)final["state"]!, doc, section, (string?)final["fsdQuote"], (string?)final["page"], (string?)final["statement"],
                 (string?)final["pageQuote"], "judge", check, (string?)final["note"]));
         }
+        // With findings off (D57, D66) only links are recorded: a disputed "agree" that became a finding is left out too.
+        if (!findings) entries = [.. entries.Where(e => (string)e["state"]! == "agree")];
         ApplyEntries(root, doc, (string)state["section"]!, entries);
         var key = Key(doc, (string)state["section"]!);
         UpdateRun(root, key, r =>
@@ -441,7 +446,9 @@ public static class LinkChecks
 public static class Undocumented
 {
     /// <param name="scope">Screens the FSD claims to cover (routes or page ids); null: every screen.</param>
-    public static int Apply(string root, PageSet set, IReadOnlyCollection<string>? scope)
+    /// <param name="findings">False (the default, D66): undocumented screens are findings, so none are listed and any
+    /// listed before are removed.</param>
+    public static int Apply(string root, PageSet set, IReadOnlyCollection<string>? scope, bool findings = true)
     {
         var trace = TraceFile.Load(root);
         var linked = trace["entries"]!.AsArray().OfType<JsonObject>()
@@ -451,8 +458,8 @@ public static class Undocumented
         var screens = set.Pages.Where(p => p.Kind == PageKind.Screen && index.Pages.ContainsKey(p.Id))
             .Where(p => scope is null || scope.Any(s => InScope(s, p.Id["page:".Length..]) || s == p.Id))
             .Where(p => !linked.Contains(p.Id)).ToList();
-        var entries = screens.Select(p => LinkRun.Entry("undocumented", "", null, null, p.Id, null, null, "code", null,
-            "no FSD section links to this screen")).ToList();
+        List<JsonObject> entries = !findings ? [] : [.. screens.Select(p => LinkRun.Entry("undocumented", "", null, null, p.Id, null, null, "code", null,
+            "no FSD section links to this screen"))];
         LinkRun.ApplyEntries(root, "", null, entries, e => (string?)e["by"] == "code" && (string?)e["state"] == "undocumented" && e["fsd"] is null);
         return entries.Count;
     }

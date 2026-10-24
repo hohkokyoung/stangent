@@ -77,6 +77,9 @@ public sealed class StangentConfig
         /// <summary>The areas the FSD covers: routes or route prefixes (<c>/settings</c> covers <c>/settings/tags</c>).
         /// Empty: every screen. Screens outside it are never listed as undocumented.</summary>
         public List<string> Scope { get; set; } = [];
+        /// <summary>Discrepancy findings (gap, conflict, undocumented) in <c>specs/trace.yaml</c>. Off by default: Phase
+        /// 2b's "not too noisy" bar failed on Sonarr (D57, D66), so only links are recorded until a project turns them on.</summary>
+        public bool Findings { get; set; }
     }
 
     /// <summary>
