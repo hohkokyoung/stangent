@@ -1,0 +1,257 @@
+{
+  "codeTitle": "/system/status · Status",
+  "entry": "page:tsconfig.json|/system/status",
+  "generated": {
+    "bundleHash": "9cd364d4627e8eeb072570a539aa647d7b8f11531c51a6b5bb655a2686a5ea31",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 44760,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 187
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 24433,
+      "calls": 1,
+      "costUsd": 0.102651,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 9360,
+      "outputTokens": 474
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 45253,
+      "calls": 2,
+      "costUsd": 0.236422,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 35283,
+      "outputTokens": 5485
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/system/status",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/Health/useHealth.ts#useHealth"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/Health"
+        ],
+        "id": "A1",
+        "text": "The page loads health issues from the health API."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/DiskSpace/useDiskSpace.ts#useDiskSpace"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/diskspace"
+        ],
+        "id": "A2",
+        "text": "The page loads disk space information from the diskspace API."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/About/About.tsx#About",
+          "ts|frontend/src/System/Status/useSystemStatus.ts#useSystemStatus"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/System/status"
+        ],
+        "id": "A3",
+        "text": "The page loads system status for the About section, and refetches it when the section is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/Health/Health.tsx#Health",
+          "ts|frontend/src/Settings/Indexers/useIndexers.ts#useTestAllIndexers"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|POST /api/v5/Indexer/testall"
+        ],
+        "id": "A4",
+        "text": "For indexer-related health issues, a 'Test All' button runs the test-all call for indexers and spins while it runs."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/Health/Health.tsx#Health",
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/useDownloadClients.ts#useTestAllDownloadClients"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|POST /api/v5/DownloadClient/testall"
+        ],
+        "id": "A5",
+        "text": "For download-client-related health issues, a 'Test All' button runs the test-all call for download clients and spins while it runs."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/Health/Health.tsx#Health"
+        ],
+        "id": "A6",
+        "text": "Each health row has a wiki button ('Read the Wiki for more information') linking to the item's wiki URL."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/DiskSpace/DiskSpace.tsx#DiskSpace"
+        ],
+        "id": "R1",
+        "text": "Disk usage is 100 minus free/total as a percentage; the bar is danger above 90%, warning above 80%, otherwise primary."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/Health/Health.tsx#Health"
+        ],
+        "id": "R2",
+        "text": "Test All for indexers appears only for sources IndexerStatusCheck and IndexerLongTermStatusCheck; for download clients only for DownloadClientCheck and DownloadClientStatusCheck."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/About/About.tsx#About"
+        ],
+        "id": "R3",
+        "text": "Package Version is shown only when present, using package author text when an author exists. The .NET version row shows only for .NET Core, and Docker 'Yes' only when containerized."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ProviderTestAllResult.ts#getProviderTestAllResults"
+        ],
+        "id": "R4",
+        "text": "A test-all response of status 400 with an array body is treated as test results rather than an error."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+          "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation"
+        ],
+        "id": "R5",
+        "text": "API requests send the API key and a Sonarr client header."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/Status.tsx#Status"
+        ],
+        "id": "S1",
+        "text": "The page is titled Status under the System heading and has four sections: Health, Disk Space, About and More Info."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/Health/Health.tsx#Health"
+        ],
+        "id": "S2",
+        "text": "The Health section shows a loading indicator while loading, and next to the legend while fetching for the first time."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/Health/Health.tsx#Health"
+        ],
+        "id": "S3",
+        "text": "When health data has loaded and there are no issues, the Health section shows 'No issues with your configuration'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/Health/Health.tsx#Health"
+        ],
+        "id": "S4",
+        "text": "When there are health issues, they are listed in a table with an icon for the type, the message, and action buttons. An info alert about health messages with a link to /system/logs/files appears below the table."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/Health/Health.tsx#Health",
+          "ts|frontend/src/Utilities/String/titleCase.ts#titleCase"
+        ],
+        "id": "S5",
+        "text": "Each health row's icon is red/danger for type 'error', info for 'notice', and warning for 'warning' or any other type. The icon tooltip is the title-cased type."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/Health/HealthItemLink.tsx#HealthItemLink"
+        ],
+        "id": "S6",
+        "text": "Each health row has a Settings or other shortcut button depending on the source: indexer checks go to /settings/indexers, download client and import mechanism checks to /settings/downloadclients, notification status to /settings/connect, root folder check to /serieseditor (Series Editor), update check to /system/updates (Updates). Other sources show no shortcut."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/DiskSpace/DiskSpace.tsx#DiskSpace",
+          "ts|frontend/src/Utilities/Number/formatBytes.ts#formatBytes"
+        ],
+        "id": "S7",
+        "text": "The Disk Space section shows a loading indicator while fetching, otherwise a table of disks with path (plus label in parentheses when present), free space, total space and a usage progress bar."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/About/About.tsx#About",
+          "ts|frontend/src/Utilities/String/titleCase.ts#titleCase"
+        ],
+        "id": "S8",
+        "text": "The About section lists Version, Package Version, .NET version, Docker, Database (title-cased type and version), Database Migration, App Data Directory, Startup Directory, Mode and Uptime."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/About/StartTime.tsx#StartTime",
+          "ts|frontend/src/Utilities/Date/formatTimeSpan.ts#formatTimeSpan",
+          "ts|frontend/src/Utilities/Date/formatDateTime.ts#formatDateTime"
+        ],
+        "id": "S9",
+        "text": "Uptime is shown as a time span (days plus hh:mm:ss) that updates every second; hovering shows the formatted start date and time including seconds."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Status/MoreInfo/MoreInfo.tsx#MoreInfo"
+        ],
+        "id": "S10",
+        "text": "The More Info section lists links: Home page sonarr.tv, Wiki wiki.servarr.com/sonarr, Forums forums.sonarr.tv, Twitter @sonarrtv, Discord discord.sonarr.tv, IRC (irc.libera.chat/#sonarr and web chat), Donations sonarr.tv/donate, Source github.com/Sonarr/Sonarr, and Feature requests (forums and GitHub issues)."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/useIndexers.ts#useTestAllIndexers",
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/useDownloadClients.ts#useTestAllDownloadClients"
+        ],
+        "id": "E1",
+        "text": "Pressing Test All sends a POST to the indexer or download client testall endpoint."
+      }
+    ]
+  },
+  "title": "System Status",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "The slice shows only the POST to the testall path. The endpoint code isn't in the slice, so nothing shows that it tests all configured providers.",
+        "id": "F1",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Removed the claim about what the endpoint does; the statement now only says a POST is sent to the testall endpoint.",
+        "statement": "E1",
+        "statementText": "Pressing Test All sends a POST to the indexer or download client testall endpoint, which tests all configured providers."
+      }
+    ]
+  }
+}

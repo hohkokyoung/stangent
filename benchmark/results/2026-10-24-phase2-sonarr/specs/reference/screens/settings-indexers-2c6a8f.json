@@ -1,0 +1,332 @@
+{
+  "codeTitle": "/settings/indexers · IndexerSettings",
+  "entry": "page:tsconfig.json|/settings/indexers",
+  "generated": {
+    "bundleHash": "d2d3a31a4b09d7ff7645d8977835e21d5ff226abfd7dae716ddcc0a11c127351",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 130280,
+      "cutOff": 77,
+      "depth": 6,
+      "points": 439
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 64595,
+      "calls": 1,
+      "costUsd": 0.264229,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 9558,
+      "outputTokens": 567
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 60191,
+      "calls": 1,
+      "costUsd": 0.280324,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 23977,
+      "outputTokens": 3928
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/settings/indexers",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/IndexerSettings.tsx#IndexerSettings",
+          "ts|frontend/src/Settings/Indexers/useIndexers.ts#useTestAllIndexers"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/Indexer/testall",
+          "endpoint:Sonarr.Api.V5|POST /api/v5/Indexer/testall"
+        ],
+        "id": "A1",
+        "text": "Pressing \"Test All Indexers\" runs a test of all indexers."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/IndexerSettings.tsx#IndexerSettings"
+        ],
+        "id": "A2",
+        "text": "Pressing \"Manage Indexers\" opens the Manage Indexers dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/IndexerSettings.tsx#IndexerSettings",
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings"
+        ],
+        "id": "A3",
+        "text": "The toolbar save button saves the pending changes of the Options section."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Indexers/Indexers.tsx#Indexers"
+        ],
+        "id": "A4",
+        "text": "Pressing the Add Indexer card opens the Add Indexer dialog; selecting an indexer type or preset closes it and opens the edit dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Indexers/Indexer.tsx#Indexer",
+          "ts|frontend/src/Settings/Indexers/Indexers/Indexers.tsx#Indexers"
+        ],
+        "id": "A5",
+        "text": "Pressing a card opens the edit dialog; its clone action opens the edit dialog prefilled from that indexer."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Indexers/EditIndexerModalContent.tsx#EditIndexerModalContent",
+          "ts|frontend/src/Settings/Indexers/Indexers/Indexer.tsx#Indexer"
+        ],
+        "id": "A6",
+        "text": "The edit dialog offers Test, Cancel and Save, plus Delete when editing an existing indexer; Delete asks for confirmation then deletes the indexer."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Indexers/Manage/ManageIndexersModalContent.tsx#ManageIndexersModalContentInner"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|DELETE /api/v3/Indexer/bulk",
+          "endpoint:Sonarr.Api.V5|DELETE /api/v5/Indexer/bulk",
+          "endpoint:Sonarr.Api.V3|PUT /api/v3/Indexer/bulk",
+          "endpoint:Sonarr.Api.V5|PUT /api/v5/Indexer/bulk"
+        ],
+        "id": "A7",
+        "text": "In Manage Indexers, selected indexers can be bulk deleted (after confirmation), bulk edited, or have tags applied; the table can be sorted by column."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Indexers/Manage/ManageIndexersModalContent.tsx#ManageIndexersModalContentInner"
+        ],
+        "id": "R1",
+        "text": "Delete, Edit and Set Tags in Manage Indexers are disabled until at least one indexer is selected."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Indexers/Manage/Edit/ManageIndexersEditModalContent.tsx#ManageIndexersEditModalContent"
+        ],
+        "id": "R2",
+        "text": "Bulk edit only sends fields changed from \"no change\" (Rss, Automatic Search, Interactive Search, priority, max single episode age); nothing is sent if none changed. Priority is 1-50 and max age is at least 0 days."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Indexers/Manage/Tags/TagsModalContent.tsx#TagsModalContent"
+        ],
+        "id": "R3",
+        "text": "Tags can be applied to selected indexers with mode add (default), remove or replace."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Indexers/EditIndexerModalContent.tsx#EditIndexerModalContent"
+        ],
+        "id": "R4",
+        "text": "In the edit dialog, indexer priority is 1-50, and Rss/search checkboxes are disabled when the indexer does not support them."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/useIndexers.ts#useManageIndexer"
+        ],
+        "id": "R5",
+        "text": "Cloning copies the indexer with name from the copied-profile default and clears apiKey and password field values."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/useIndexers.ts#useManageIndexer"
+        ],
+        "id": "R6",
+        "text": "A new indexer from a schema defaults its name to the implementation name, with RSS enabled if supported and automatic and interactive search enabled if search is supported."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ProviderTestAllResult.ts#getProviderTestAllResults",
+          "ts|frontend/src/Settings/Indexers/useIndexers.ts#useTestAllIndexers"
+        ],
+        "id": "R7",
+        "text": "Test-all results can come from a 400 error response body array; otherwise the error is treated as a failure."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useManageProviderSettings"
+        ],
+        "id": "R8",
+        "text": "Saving an existing indexer with no changes skips testing and validation; re-saving identical data skips testing; after a warnings-only result the next save skips warning validation."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Indexers/EditIndexerModalContent.tsx#EditIndexerModalContent"
+        ],
+        "id": "R9",
+        "text": "The edit dialog closes automatically after a save finishes without error."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/IndexerSettings.tsx#IndexerSettings"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Indexer Settings\" and shows an \"Indexers\" heading with a section description, followed by the indexer cards and an Options section."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/IndexerSettings.tsx#IndexerSettings"
+        ],
+        "id": "S2",
+        "text": "Toolbar buttons \"Test All Indexers\" (spinning while testing) and \"Manage Indexers\" are shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/IndexerSettings.tsx#IndexerSettings"
+        ],
+        "id": "S3",
+        "text": "A status line shows \"Testing all indexers\" while testing, a completed message when results exist, or a failed message (as an alert) when the test call fails without per-indexer results."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Indexers/Indexers.tsx#Indexers",
+          "ts|frontend/src/Settings/Indexers/useIndexers.ts#useSortedIndexers"
+        ],
+        "id": "S4",
+        "text": "Indexers are listed as cards sorted by name ascending, followed by an \"Add Indexer\" card. A load error message is shown if loading fails."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Indexers/Indexer.tsx#Indexer",
+          "ts|frontend/src/Settings/Indexers/Indexers/Indexers.tsx#Indexers"
+        ],
+        "id": "S5",
+        "text": "Each indexer card shows its name, Enabled/Disabled status, priority (only when any indexer's priority is not 25), and test status after a test-all run."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Indexers/Indexer.tsx#Indexer"
+        ],
+        "id": "S6",
+        "text": "Each card shows a protocol label, Rss, Automatic Search and Interactive Search labels (only when supported and enabled), and a tag list when the indexer has tags."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ProviderTestAllResult.ts#getProviderTestStatus",
+          "ts|frontend/src/Settings/ProviderTestAllResult.ts#getProviderTestStatusLabel"
+        ],
+        "id": "S7",
+        "text": "The test status of a card is Not tested, Failed (any non-warning failure), Warning (only warnings) or Passed."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Options/IndexerOptions.tsx#IndexerOptions"
+        ],
+        "id": "S8",
+        "text": "The Options section shows Minimum Age (minutes), Retention (days) and Maximum Size (MB) number inputs, plus an advanced RSS Sync Interval (minutes, 0-120) input."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Options/IndexerOptions.tsx#IndexerOptions"
+        ],
+        "id": "S9",
+        "text": "The Options section shows a loading indicator while fetching and an error alert if loading options fails."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Indexers/AddIndexerModalContent.tsx#AddIndexerModalContent",
+          "ts|frontend/src/Settings/Indexers/Indexers/AddIndexerItem.tsx#AddIndexerItem"
+        ],
+        "id": "S10",
+        "text": "The Add Indexer dialog lists available indexer types grouped under Usenet and Torrents, with a loading indicator and an error alert on failure. Items with presets have a Presets menu and a More Info link."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/Indexers/Manage/ManageIndexersModalContent.tsx#ManageIndexersModalContentInner",
+          "ts|frontend/src/Settings/Indexers/Indexers/Manage/ManageIndexersModalRow.tsx#ManageIndexersModalRow"
+        ],
+        "id": "S11",
+        "text": "The Manage Indexers dialog shows a table of indexers with selection checkboxes, name, protocol, implementation, Rss/Automatic Search/Interactive Search Yes/No labels, priority, max single episode age and tags. It shows \"No indexers found\" when empty."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/useIndexers.ts#useTestAllIndexers"
+        ],
+        "id": "E1",
+        "text": "Test All sends a POST to the indexer testall endpoint."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/useIndexers.ts#useBulkEditIndexers"
+        ],
+        "id": "E2",
+        "text": "Bulk edit sends a PUT to the indexer bulk endpoint and updates cached indexers with the result."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Indexers/useIndexers.ts#useBulkDeleteIndexers"
+        ],
+        "id": "E3",
+        "text": "Bulk delete sends a DELETE to the indexer bulk endpoint and removes the deleted indexers from the cached list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider",
+          "ts|frontend/src/Settings/Indexers/useIndexers.ts#useDeleteIndexer"
+        ],
+        "id": "E4",
+        "text": "Deleting a single indexer sends a DELETE for that indexer and removes it from the cached list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings"
+        ],
+        "id": "E5",
+        "text": "Saving Options sends a PUT of the settings and refreshes the cached settings, clearing pending changes."
+      }
+    ]
+  },
+  "title": "Indexer Settings",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useProviderSettings",
+      "line": 78,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider",
+      "line": 403,
+      "reason": "HTTP DELETE to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSettings",
+      "line": 12,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+      "line": 29,
+      "reason": "HTTP PUT to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

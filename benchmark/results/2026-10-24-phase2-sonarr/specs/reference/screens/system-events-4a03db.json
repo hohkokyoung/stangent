@@ -1,0 +1,240 @@
+{
+  "codeTitle": "/system/events · LogsTable",
+  "entry": "page:tsconfig.json|/system/events",
+  "generated": {
+    "bundleHash": "cf93cb125b4ef9ec31181f4cbdcdd53505cb2fe58e2f1e00a49bebcce2da0871",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 33428,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 179
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 18600,
+      "calls": 1,
+      "costUsd": 0.077589,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4593,
+      "outputTokens": 301
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 15804,
+      "calls": 1,
+      "costUsd": 0.085006,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 12947,
+      "outputTokens": 2151
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/system/events",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTable.tsx#LogsTable"
+        ],
+        "id": "A1",
+        "text": "Refresh goes to page 1 and refetches the events."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTable.tsx#LogsTable",
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "A2",
+        "text": "Clear runs the ClearLog command, then goes to page 1 and refetches."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTable.tsx#LogsTable",
+          "ts|frontend/src/System/Events/useEvents.ts#useEvents"
+        ],
+        "id": "A3",
+        "text": "Choosing a filter in the filter menu sets the selected filter, which changes the events query."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTable.tsx#LogsTable"
+        ],
+        "id": "A4",
+        "text": "Clicking a column header sets the sort key and direction."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTable.tsx#LogsTable"
+        ],
+        "id": "A5",
+        "text": "Options opens a table options modal where the page size can be changed; columns cannot be modified. Changing page size returns to page 1."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTableRow.tsx#LogsTableRow"
+        ],
+        "id": "A6",
+        "text": "Clicking a row opens a details dialog for that event's message and exception."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTable.tsx#LogsTable",
+          "ts|frontend/src/Helpers/Hooks/usePage.ts#usePage"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Log",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/Log"
+        ],
+        "id": "A7",
+        "text": "The pager selects another page of events."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/useEvents.ts#useEvents",
+          "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery"
+        ],
+        "id": "R1",
+        "text": "Events are fetched from the /log API with page, page size, sort key, sort direction and the selected filter's filters as query parameters."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery"
+        ],
+        "id": "R2",
+        "text": "Total pages is the total records divided by page size, rounded up, with a minimum of 1."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/usePage.ts#pageStore",
+          "ts|frontend/src/Helpers/Hooks/usePage.ts#usePage"
+        ],
+        "id": "R3",
+        "text": "The events page number defaults to 1 and resets to 1 on a back/forward (POP) navigation."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/useEvents.ts#useEvents"
+        ],
+        "id": "R4",
+        "text": "Previous results stay displayed while new data loads."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R5",
+        "text": "Running the same command again within 5 seconds is ignored with a console warning."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTableDetailsModal.tsx#LogsTableDetailsModal"
+        ],
+        "id": "R6",
+        "text": "The details dialog shows the Exception section only when an exception exists."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTable.tsx#LogsTable"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Logs\" with the heading \"System\" / \"Events\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTable.tsx#LogsTable"
+        ],
+        "id": "S2",
+        "text": "While the first load is in progress a loading indicator is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTable.tsx#LogsTable"
+        ],
+        "id": "S3",
+        "text": "When loaded without error and there are no records, an info alert shows the message for \"NoEventsFound\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTable.tsx#LogsTable"
+        ],
+        "id": "S4",
+        "text": "When loaded without error and records exist, a table of log events is shown with a pager below it showing page, total pages and total records."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTableRow.tsx#LogsTableRow"
+        ],
+        "id": "S5",
+        "text": "Each row can show level (as an icon with the level as title), time (relative date), logger and message columns; hidden columns are not rendered."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTableRow.tsx#LogsTableRow"
+        ],
+        "id": "S6",
+        "text": "The level icon depends on level: trace, debug and info show an info icon; warn a danger icon; error a bug icon; fatal a fatal icon; anything else an unknown icon."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTable.tsx#LogsTable",
+          "ts|frontend/src/Commands/useCommands.ts#useCommandExecuting"
+        ],
+        "id": "S7",
+        "text": "The toolbar has Refresh, Clear and Options buttons and a filter menu. The Refresh icon spins while fetching, and the Clear icon spins while the clear-log command is queued or started."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Events/LogsTableDetailsModal.tsx#LogsTableDetailsModal"
+        ],
+        "id": "S8",
+        "text": "The row details dialog is titled \"Details\" and shows the Message, plus the Exception when one exists, each in a horizontally scrolling area, with a Close button."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand",
+          "ts|frontend/src/System/Events/LogsTable.tsx#LogsTable"
+        ],
+        "id": "E1",
+        "text": "Clear sends a POST to /command to run the ClearLog command, and stores the returned command in the command cache."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery"
+        ],
+        "id": "E2",
+        "text": "Requests are sent with the API key and client headers."
+      }
+    ]
+  },
+  "title": "System Events (Logs)",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/usePagedApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery",
+      "line": 79,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Utilities/Fetch/fetchJson.ts",
+      "in": "ts|frontend/src/Utilities/Fetch/fetchJson.ts#fetchJson",
+      "line": 56,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

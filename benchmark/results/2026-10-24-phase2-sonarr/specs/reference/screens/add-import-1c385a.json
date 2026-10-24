@@ -1,0 +1,286 @@
+{
+  "codeTitle": "/add/import · ImportSeriesSelectFolder",
+  "entry": "page:tsconfig.json|/add/import",
+  "generated": {
+    "bundleHash": "f88be9ac6c376076929311cf3c3825fa6c0f1e1948c33469da9132fa8ceef810",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 43290,
+      "cutOff": 2,
+      "depth": 6,
+      "points": 197
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 24357,
+      "calls": 1,
+      "costUsd": 0.100917,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4425,
+      "outputTokens": 331
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 20663,
+      "calls": 1,
+      "costUsd": 0.114402,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 17866,
+      "outputTokens": 3147
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/add/import",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx#ImportSeriesSelectFolder"
+        ],
+        "id": "A1",
+        "text": "Pressing the folder button opens the file browser modal to choose a folder."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx#ImportSeriesSelectFolder",
+          "ts|frontend/src/Components/FileBrowser/FileBrowserModalContent.tsx#FileBrowserModalContent",
+          "ts|frontend/src/RootFolder/useRootFolders.ts#useAddRootFolder"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/RootFolder",
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/RootFolder"
+        ],
+        "id": "A2",
+        "text": "Choosing a folder with Ok adds it as a root folder."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/FileBrowser/FileBrowserModalContent.tsx#FileBrowserModalContent",
+          "ts|frontend/src/Path/usePaths.ts#usePaths"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/FileSystem",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/FileSystem"
+        ],
+        "id": "A3",
+        "text": "In the file browser, clicking a row or editing the path input changes the current path and loads its contents; Cancel closes without choosing."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/RootFolderRow.tsx#RootFolderRow"
+        ],
+        "id": "A4",
+        "text": "Clicking a selectable, accessible root folder row opens the import page for that folder."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/RootFolderRow.tsx#RootFolderRow",
+          "ts|frontend/src/RootFolder/useRootFolders.ts#useDeleteRootFolder"
+        ],
+        "id": "A5",
+        "text": "Each root folder row has a remove icon that opens a confirmation modal; confirming deletes the root folder."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx#ImportSeriesSelectFolder"
+        ],
+        "id": "R1",
+        "text": "After a root folder is successfully added, the user is navigated to /add/import/{id} of the new folder."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/FileBrowser/FileBrowserModalContent.tsx#FileBrowserModalContent",
+          "ts|frontend/src/Path/usePaths.ts#usePaths"
+        ],
+        "id": "R2",
+        "text": "The file browser includes files by default and requests paths allowing folders without trailing slashes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Path/usePaths.ts#usePaths"
+        ],
+        "id": "R3",
+        "text": "Path suggestions are the directories and files whose path starts with the typed path, case-insensitively."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/RootFolderRow.tsx#RootFolderRow"
+        ],
+        "id": "R4",
+        "text": "A non-selectable, accessible root folder row shows an \"Import\" button; unavailable rows have no link or button to import."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/Number/formatBytes.ts#formatBytes"
+        ],
+        "id": "R5",
+        "text": "File sizes are formatted in base 2 rounded to 1 decimal; non-numeric input gives an empty string."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx#ImportSeriesSelectFolder"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Import Series\" with the heading scope \"Media\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx#ImportSeriesSelectFolder"
+        ],
+        "id": "S2",
+        "text": "A loading indicator is shown while root folders are being fetched for the first time."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx#ImportSeriesSelectFolder"
+        ],
+        "id": "S3",
+        "text": "If loading root folders fails, a danger alert shows the root folders load error message."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx#ImportSeriesSelectFolder"
+        ],
+        "id": "S4",
+        "text": "Once loaded without error, the page shows a section heading with a description, and a collapsible tips block with three tips about library import."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx#ImportSeriesSelectFolder"
+        ],
+        "id": "S5",
+        "text": "The tips give example good and bad series folder paths, which use Windows-style paths (C:\\tv shows) on Windows and Unix-style paths (/tv shows) otherwise."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx#ImportSeriesSelectFolder",
+          "ts|frontend/src/RootFolder/RootFolders.tsx#RootFolders"
+        ],
+        "id": "S6",
+        "text": "If at least one root folder exists, the list of existing root folders is shown and each row is selectable."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/RootFolderRow.tsx#RootFolderRow",
+          "ts|frontend/src/Utilities/Number/formatBytes.ts#formatBytes"
+        ],
+        "id": "S7",
+        "text": "Each root folder row shows its path, either \"not accessible\" or the count of folders to import (or nothing to import), and the free space when known."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/RootFolderRow.tsx#renderBadge"
+        ],
+        "id": "S8",
+        "text": "A root folder row shows an \"Unavailable\" badge when not accessible, or an \"Empty\" warning badge when the folder is empty."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx#ImportSeriesSelectFolder"
+        ],
+        "id": "S9",
+        "text": "If adding a root folder fails, a danger alert lists the error messages, or the raw error body if it is not a list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx#ImportSeriesSelectFolder"
+        ],
+        "id": "S10",
+        "text": "The folder button reads \"Start Import\" (primary style) when there are no root folders, otherwise \"Choose Another Folder\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/FileBrowser/FileBrowserModalContent.tsx#FileBrowserModalContent"
+        ],
+        "id": "S11",
+        "text": "The file browser modal is titled \"File Browser\" and has a path input, a list of rows with an icon and name, and Cancel and Ok buttons."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/FileBrowser/FileBrowserModalContent.tsx#FileBrowserModalContent"
+        ],
+        "id": "S12",
+        "text": "The file browser shows \"My Computer\" row when the parent is empty, a \"..\" parent row when a parent exists, then directories and files."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/FileBrowser/FileBrowserModalContent.tsx#FileBrowserModalContent"
+        ],
+        "id": "S13",
+        "text": "The file browser shows an error message if contents fail to load, and a loading indicator in the footer while fetching."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/FileBrowser/FileBrowserModalContent.tsx#FileBrowserModalContent"
+        ],
+        "id": "S14",
+        "text": "On a Windows service, the file browser shows a warning about mapped network drives."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/FileBrowser/FileBrowserRow.tsx#getIconName"
+        ],
+        "id": "S15",
+        "text": "File browser row icons differ by type: computer, drive, file, parent, and folder by default."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/useRootFolders.ts#useAddRootFolder",
+          "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#addOrUpdateQueryClientItem"
+        ],
+        "id": "E1",
+        "text": "Adding a root folder sends a POST to the root folder API and updates the cached root folder list with the new or updated item."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/useRootFolders.ts#useDeleteRootFolder"
+        ],
+        "id": "E2",
+        "text": "Confirming removal sends a DELETE for the root folder and refreshes the root folder list on success."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/useRootFolders.ts#useRootFolders"
+        ],
+        "id": "E3",
+        "text": "The root folder list is loaded from the root folder API."
+      }
+    ]
+  },
+  "title": "Import Series – Select Folder",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/RootFolder/useRootFolders.ts",
+      "in": "ts|frontend/src/RootFolder/useRootFolders.ts#useDeleteRootFolder",
+      "line": 61,
+      "reason": "HTTP DELETE {base}rootFolder/{*} matched no backend endpoint"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

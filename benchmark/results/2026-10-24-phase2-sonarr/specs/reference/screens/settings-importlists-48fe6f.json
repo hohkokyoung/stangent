@@ -1,0 +1,403 @@
+{
+  "codeTitle": "/settings/importlists · ImportListSettings",
+  "entry": "page:tsconfig.json|/settings/importlists",
+  "generated": {
+    "bundleHash": "8422a9387b3e0399a59741b4a84547c45fe54572d564e510487049a0d9483659",
+    "checkRetries": 1,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 176309,
+      "cutOff": 93,
+      "depth": 6,
+      "points": 595
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 85515,
+      "calls": 1,
+      "costUsd": 0.348419,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 12424,
+      "outputTokens": 618
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 165285,
+      "calls": 2,
+      "costUsd": 0.75969,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 55420,
+      "outputTokens": 9799
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/settings/importlists",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts#useTestAllImportLists",
+          "ts|frontend/src/Settings/ImportLists/ImportListSettings.tsx#ImportListSettings"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/ImportList/testall",
+          "endpoint:Sonarr.Api.V5|POST /api/v5/ImportList/testall"
+        ],
+        "id": "A1",
+        "text": "Pressing 'Test All Lists' posts to the test-all endpoint and shows the result per list card."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportListSettings.tsx#ImportListSettings"
+        ],
+        "id": "A2",
+        "text": "Pressing 'Manage Lists' opens the Manage Import Lists modal."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportListSettings.tsx#ImportListSettings",
+          "ts|frontend/src/Settings/ImportLists/Options/ImportListOptions.tsx#ImportListOptions"
+        ],
+        "id": "A3",
+        "text": "The page Save button saves the Options section."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/ImportLists.tsx#ImportLists"
+        ],
+        "id": "A4",
+        "text": "Pressing the 'Add Import List' card opens a modal to pick a list type. Selecting one opens the edit modal for that type."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/ImportList.tsx#ImportList",
+          "ts|frontend/src/Settings/ImportLists/ImportLists/ImportLists.tsx#ImportLists"
+        ],
+        "id": "A5",
+        "text": "Pressing a list card opens its edit modal. The clone action on the card opens an edit modal prefilled from that list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/EditImportListModalContent.tsx#EditImportListModalContent"
+        ],
+        "id": "A6",
+        "text": "The list edit modal has Name, Enable Automatic Add, search for missing episodes, monitor, root folder, quality profile, language, series type, season folder, provider fields, tags and tag existing. Buttons are Delete (existing only), Test, Cancel and Save."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/ImportList.tsx#ImportList",
+          "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider"
+        ],
+        "id": "A7",
+        "text": "Deleting a list asks for confirmation, then deletes it."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/Manage/ManageImportListsModalContent.tsx#ManageImportListsModalContentInner",
+          "ts|frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts#useBulkDeleteImportLists"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|DELETE /api/v3/ImportList/bulk",
+          "endpoint:Sonarr.Api.V5|DELETE /api/v5/ImportList/bulk"
+        ],
+        "id": "A8",
+        "text": "In the Manage modal, selected lists can be bulk deleted after confirmation."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/Manage/Edit/ManageImportListsEditModalContent.tsx#ManageImportListsEditModalContent",
+          "ts|frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts#useBulkEditImportLists"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|PUT /api/v3/ImportList/bulk",
+          "endpoint:Sonarr.Api.V5|PUT /api/v5/ImportList/bulk"
+        ],
+        "id": "A9",
+        "text": "In the Manage modal, selected lists can be bulk edited for automatic add, quality profile, root folder, language and tag existing."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/Manage/Tags/TagsModalContent.tsx#TagsModalContent",
+          "ts|frontend/src/Settings/ImportLists/ImportLists/Manage/ManageImportListsModalContent.tsx#ManageImportListsModalContentInner"
+        ],
+        "id": "A10",
+        "text": "In the Manage modal, 'Set Tags' applies tags to selected lists with an add, remove or replace choice."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportListExclusions/EditImportListExclusionModalContent.tsx#EditImportListExclusionModalContent",
+          "ts|frontend/src/Settings/ImportLists/ImportListExclusions/useImportListExclusions.ts#useManageImportListExclusion"
+        ],
+        "id": "A11",
+        "text": "Users can add an import list exclusion with a Title and a TVDB ID, or edit an existing one."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportListExclusions/ImportListExclusionRow.tsx#ImportListExclusionRow",
+          "ts|frontend/src/Settings/ImportLists/ImportListExclusions/ImportListExclusions.tsx#ImportListExclusionsContent"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|DELETE /api/v3/ImportListExclusion/bulk",
+          "endpoint:Sonarr.Api.V5|DELETE /api/v5/ImportListExclusion/bulk"
+        ],
+        "id": "A12",
+        "text": "Users can delete one exclusion from its edit modal after confirmation, or delete selected exclusions after confirmation."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts#useManageImportList"
+        ],
+        "id": "R1",
+        "text": "Default values for a new list are: automatic add on, monitor 'all', series type 'standard', season folder on, empty root folder. Name is the preset name or the implementation name."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts#useManageImportList"
+        ],
+        "id": "R2",
+        "text": "A cloned list is named from the original, gets id 0, and has API key and password field values cleared."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/Manage/ManageImportListsModalContent.tsx#ManageImportListsModalContentInner"
+        ],
+        "id": "R3",
+        "text": "The Manage modal's Delete, Edit and Set Tags buttons are disabled until at least one list is selected."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/Manage/Edit/ManageImportListsEditModalContent.tsx#ManageImportListsEditModalContent"
+        ],
+        "id": "R4",
+        "text": "In the bulk edit modal, only fields changed from 'no change' are sent. If nothing changed, nothing is saved."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/Options/ImportListOptions.tsx#ImportListOptions"
+        ],
+        "id": "R5",
+        "text": "Selecting a list sync tag stores the last selected tag id, or 0 when none is selected."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useManageProviderSettings"
+        ],
+        "id": "R6",
+        "text": "A saved list with no pending changes skips testing and validation on save. Resaving identical data skips testing, and after a warnings-only failure warnings are skipped on the next save or test."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ProviderTestAllResult.ts#getProviderTestAllResults",
+          "ts|frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts#useTestAllImportLists"
+        ],
+        "id": "R7",
+        "text": "Test-all results come from the response, or from the response body of a 400 error when it is an array."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportListExclusions/ImportListExclusions.tsx#ImportListExclusionsContent"
+        ],
+        "id": "R8",
+        "text": "The 'Delete Selected' link for exclusions is disabled when nothing is selected or a delete is running."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportListExclusions/ImportListExclusions.tsx#ImportListExclusionsContent",
+          "ts|frontend/src/Settings/ImportLists/ImportListExclusions/useImportListExclusions.ts#useImportListExclusions"
+        ],
+        "id": "R9",
+        "text": "Exclusions are loaded page by page, and changing the page size returns to page 1."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportListSettings.tsx#ImportListSettings"
+        ],
+        "id": "S1",
+        "text": "The page is titled 'Import List Settings' with the heading 'Import Lists' under the 'Settings' scope."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportListSettings.tsx#ImportListSettings"
+        ],
+        "id": "S2",
+        "text": "The toolbar has 'Test All Lists' and 'Manage Lists' buttons; the test button spins while testing is in progress."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportListSettings.tsx#ImportListSettings"
+        ],
+        "id": "S3",
+        "text": "A status indicator shows 'Testing all import lists' while testing, then a completed message on results or a failed message (as an alert) on error. It is hidden before any test."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/ImportLists.tsx#ImportLists",
+          "ts|frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts#useSortedImportLists"
+        ],
+        "id": "S4",
+        "text": "Import lists show as cards sorted by name ascending, followed by an 'Add Import List' card."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/ImportList.tsx#ImportList"
+        ],
+        "id": "S5",
+        "text": "Each list card shows its name, an 'Automatic Add' segment when enabled, the refresh interval, a test status label when test results exist, and its tags if any."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/ImportLists.tsx#ImportLists"
+        ],
+        "id": "S6",
+        "text": "The list section shows an error message if loading fails."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ProviderTestAllResult.ts#getProviderTestStatus"
+        ],
+        "id": "S7",
+        "text": "A list's test status is 'notTested' with no result, 'failed' if any non-warning failure exists, 'warning' if only warnings exist, otherwise 'passed'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/Options/ImportListOptions.tsx#ImportListOptions"
+        ],
+        "id": "S8",
+        "text": "The Options section ('Clean Library Level') appears only when advanced settings are shown. It shows a loading indicator while fetching and an error alert if loading fails."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/Options/ImportListOptions.tsx#ImportListOptions"
+        ],
+        "id": "S9",
+        "text": "The 'List Sync Tag' field appears only when the sync level is 'keepAndTag'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportListExclusions/ImportListExclusions.tsx#ImportListExclusionsContent",
+          "ts|frontend/src/Settings/ImportLists/ImportListExclusions/ImportListExclusionRow.tsx#ImportListExclusionRow"
+        ],
+        "id": "S10",
+        "text": "The Import List Exclusions section is a table with select, title and TVDB ID columns plus an edit button per row. It has a pager, a 'Delete Selected' link and an 'Add Import List Exclusion' link."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/Manage/ManageImportListsModalContent.tsx#ManageImportListsModalContentInner"
+        ],
+        "id": "S11",
+        "text": "The Manage Import Lists modal shows a table of lists, an info alert 'No import lists found' when empty, and Delete, Edit, Set Tags and Close buttons."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/Manage/ManageImportListsModalRow.tsx#ManageImportListsModalRow"
+        ],
+        "id": "S12",
+        "text": "Each Manage row shows name, implementation, quality profile (or 'None'), root folder, automatic add as Yes/No, tags and tag-existing option."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/AddImportListModalContent.tsx#AddImportListModalContent",
+          "ts|frontend/src/Settings/ImportLists/ImportLists/AddImportListItem.tsx#AddImportListItem"
+        ],
+        "id": "S13",
+        "text": "The Add Import List modal groups available list types by list type, sorted by list order within each group. Items with presets show a Presets menu."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportListExclusions/useImportListExclusions.ts#useManageImportListExclusion"
+        ],
+        "id": "E1",
+        "text": "Saving an exclusion sends a PUT (existing) or POST (new) to the exclusion endpoint, then refreshes the exclusion list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportListExclusions/useImportListExclusions.ts#useDeleteImportListExclusions",
+          "ts|frontend/src/Settings/ImportLists/ImportListExclusions/useImportListExclusions.ts#useDeleteImportListExclusion"
+        ],
+        "id": "E2",
+        "text": "Deleting exclusions refreshes the exclusion list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts#useBulkEditImportLists",
+          "ts|frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts#useBulkDeleteImportLists"
+        ],
+        "id": "E3",
+        "text": "Bulk edit and bulk delete of lists update the cached list data in place."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings"
+        ],
+        "id": "E4",
+        "text": "Saving Options sends a PUT of the settings and replaces the cached settings."
+      }
+    ]
+  },
+  "title": "Import List Settings",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/usePagedApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery",
+      "line": 79,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/ImportLists/ImportListExclusions/useImportListExclusions.ts",
+      "in": "ts|frontend/src/Settings/ImportLists/ImportListExclusions/useImportListExclusions.ts#useManageImportListExclusion",
+      "line": 78,
+      "reason": "HTTP POST to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useProviderSettings",
+      "line": 78,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider",
+      "line": 403,
+      "reason": "HTTP DELETE to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSettings",
+      "line": 12,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+      "line": 29,
+      "reason": "HTTP PUT to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Utilities/Fetch/fetchJson.ts",
+      "in": "ts|frontend/src/Utilities/Fetch/fetchJson.ts#fetchJson",
+      "line": 56,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

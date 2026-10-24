@@ -1,0 +1,367 @@
+{
+  "codeTitle": "/add/import/:rootFolderId · ImportSeries",
+  "entry": "page:tsconfig.json|/add/import/:rootFolderId",
+  "generated": {
+    "bundleHash": "4893aabe0cf040550a95076ddb6a8987b8b8a90e09bf2cff544fe816b323b760",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 135697,
+      "cutOff": 46,
+      "depth": 6,
+      "points": 489
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 66138,
+      "calls": 1,
+      "costUsd": 0.271251,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 15201,
+      "outputTokens": 652
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 61087,
+      "calls": 1,
+      "costUsd": 0.288788,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 23977,
+      "outputTokens": 4416
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/add/import/:rootFolderId",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesFooter.tsx#ImportSeriesFooter",
+          "ts|frontend/src/AddSeries/ImportSeries/Import/importSeriesStore.ts#startProcessing"
+        ],
+        "id": "A1",
+        "text": "Pressing the search button (\"Search N Folder(s)\") starts looking up all folders not yet searched; it appears only when unsearched items exist and no lookup is running."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesFooter.tsx#ImportSeriesFooter",
+          "ts|frontend/src/AddSeries/ImportSeries/Import/importSeriesStore.ts#stopProcessing"
+        ],
+        "id": "A2",
+        "text": "Pressing Stop (shown while lookups are queued) cancels processing and clears the lookup queue."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesFooter.tsx#ImportSeriesFooter",
+          "ts|frontend/src/AddSeries/ImportSeries/Import/useImportSeries.ts#useImportSeries"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/series/import",
+          "endpoint:Sonarr.Api.V5|POST /api/v5/series/import"
+        ],
+        "id": "A3",
+        "text": "Pressing the Import button imports the selected importable folders as series via a POST to the series import endpoint."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesFooter.tsx#ImportSeriesFooter",
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesDefaults.tsx#ImportSeriesDefaults"
+        ],
+        "id": "A4",
+        "text": "\"Apply to selected\" copies the default language, monitor, quality profile, season folder and series type onto every importable selected item."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesFooter.tsx#ImportSeriesFooter"
+        ],
+        "id": "A5",
+        "text": "The select-all checkbox selects all ready items and one chosen item per duplicate group, or clears the selection when unchecked."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesFooter.tsx#ImportSeriesFooter",
+          "ts|frontend/src/Settings/MetadataSource/MetadataSettingsModalContent.tsx#MetadataSettingsModalContent"
+        ],
+        "id": "A6",
+        "text": "The Metadata Settings button opens a modal to choose and save the preferred metadata language."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/SelectSeries/ImportSeriesSelectSeries.tsx#ImportSeriesSelectSeries"
+        ],
+        "id": "A7",
+        "text": "Users can search for and pick a different series match for a folder; picking one sets it as the selected series and, if its type is not standard, sets the series type to it."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/SelectSeries/ImportSeriesSelectSeries.tsx#ImportSeriesSelectSeries"
+        ],
+        "id": "A8",
+        "text": "Search results can be navigated with Arrow keys, chosen with Enter and dismissed with Escape."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesFooter.tsx#ImportSeriesFooter"
+        ],
+        "id": "A9",
+        "text": "The Compact Rows checkbox toggles compact rows."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/importSeriesEligibility.ts#getImportSeriesEligibility"
+        ],
+        "id": "R1",
+        "text": "An item is 'existing' if its matched TVDB id is already in the library, 'duplicate' if another folder matched the same TVDB id, 'ready' if matched and unique, otherwise 'unmatched'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/importSeriesEligibility.ts#getImportSeriesSelection"
+        ],
+        "id": "R2",
+        "text": "Only ready items and one chosen item per duplicate group are importable; extra selected duplicates are deselected."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesList.tsx#ImportSeriesList"
+        ],
+        "id": "R3",
+        "text": "Ready items are auto-selected; unmatched and existing items are disabled and unselected."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesFooter.tsx#ImportSeriesFooter"
+        ],
+        "id": "R4",
+        "text": "The Import button is disabled when nothing importable is selected or a lookup is running."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesFooter.tsx#ImportSeriesFooter"
+        ],
+        "id": "R5",
+        "text": "The Metadata Settings button is disabled (with a tooltip) once any item has been searched or while a lookup runs."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/SelectSeries/ImportSeriesSelectSeries.tsx#ImportSeriesSelectSeries"
+        ],
+        "id": "R6",
+        "text": "A folder is auto-matched to the first lookup result only when not editing, no series is selected yet, and the query equals the folder name."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/SelectSeries/ImportSeriesSelectSeries.tsx#ImportSeriesSelectSeries",
+          "ts|frontend/src/AddSeries/AddNewSeries/useAddSeries.ts#useLookupSeries"
+        ],
+        "id": "R7",
+        "text": "Lookup search input is debounced by 300 ms and the lookup runs only for a non-empty term, when it is the current queue item."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/importSeriesStore.ts#useEnsureImportSeriesItems",
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesCard.tsx#ImportSeriesCard"
+        ],
+        "id": "R8",
+        "text": "New items default to season type 'official' and the current default options; if the selected season type is not offered by the series, it resets to 'official'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/useImportSeries.ts#useImportSeries"
+        ],
+        "id": "R9",
+        "text": "Each imported series is sent as monitored, monitor new items 'all', no tags, with no search for missing or cutoff-unmet episodes; the same TVDB id is sent only once."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeries.tsx#ImportSeries"
+        ],
+        "id": "R10",
+        "text": "If the default quality profile is unset or not found, it is set to the first quality profile."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeries.tsx#ImportSeries"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Import Series\" under the \"Media\" scope heading."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeries.tsx#ImportSeries"
+        ],
+        "id": "S2",
+        "text": "While root folders are first loading, a loading indicator is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeries.tsx#ImportSeries"
+        ],
+        "id": "S3",
+        "text": "If root folders fail to load, a danger alert with the root-folders load error message is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeries.tsx#ImportSeries"
+        ],
+        "id": "S4",
+        "text": "If the root folder has no unmapped folders, an info alert says all series in the root folder path have been imported."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeries.tsx#ImportSeries",
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesList.tsx#ImportSeriesList"
+        ],
+        "id": "S5",
+        "text": "When unmapped folders exist, they are listed as one card per folder, and a footer is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesCard.tsx#ImportSeriesCard"
+        ],
+        "id": "S6",
+        "text": "Each card shows a select checkbox, a poster (or a \"?\" placeholder), the folder name or matched series title, and the folder path or relative path."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesCard.tsx#getMatchStatusLabel",
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesCard.tsx#ImportSeriesCard"
+        ],
+        "id": "S7",
+        "text": "Cards that are existing, unmatched or unresolved duplicates show a status label: \"Already in library\", \"Pending\" or \"Duplicate match\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesCard.tsx#ImportSeriesCard"
+        ],
+        "id": "S8",
+        "text": "Ready cards show per-folder selects: Monitor, Quality Profile, Series Type, Season Type, Metadata Language and Season Folder (Yes/No), disabled until a series is matched."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesDefaults.tsx#ImportSeriesDefaults"
+        ],
+        "id": "S9",
+        "text": "The footer shows a Defaults bar with Monitor, Quality Profile, Series Type, Metadata Language and Season Folder selects."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesFooter.tsx#ImportSeriesFooter"
+        ],
+        "id": "S10",
+        "text": "The footer shows a select-all checkbox, a selected-of-total count, a Ready count, a Pending count (when non-zero) and an Already in library count (when non-zero)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesFooter.tsx#ImportSeriesFooter"
+        ],
+        "id": "S11",
+        "text": "The footer has a Compact Rows checkbox."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeriesFooter.tsx#ImportSeriesFooter"
+        ],
+        "id": "S12",
+        "text": "If an import fails, a warning icon opens a popover titled \"Import Errors\" listing the error messages."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/SelectSeries/ImportSeriesSelectSeries.tsx#ImportSeriesSelectSeries"
+        ],
+        "id": "S13",
+        "text": "The series match control shows a search field with a loading indicator while looking up, or a warning icon (no match found, existing, or error message)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/SelectSeries/ImportSeriesSearchResult.tsx#ImportSeriesSearchResult",
+          "ts|frontend/src/AddSeries/ImportSeries/Import/SelectSeries/ImportSeriesSelectSeries.tsx#ImportSeriesSelectSeries"
+        ],
+        "id": "S14",
+        "text": "Lookup results list the series title, year and network with a link to TheTVDB."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/useImportSeries.ts#useImportSeries"
+        ],
+        "id": "E1",
+        "text": "After a successful import, root folder data is invalidated, the new series are appended to the cached series list, and imported folders are removed from the page."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/ImportSeries/Import/ImportSeries.tsx#ImportSeries",
+          "ts|frontend/src/AddSeries/ImportSeries/Import/importSeriesStore.ts#clearImportSeries"
+        ],
+        "id": "E2",
+        "text": "Leaving the page or changing the root folder clears all import items."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MetadataSource/useMetadataSourceSettings.ts#useSaveMetadataSourceSettings",
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings"
+        ],
+        "id": "E3",
+        "text": "Saving the metadata settings modal sends a PUT of the metadata source settings and closes the modal on success."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/useRootFolders.ts#useRootFolders"
+        ],
+        "id": "E4",
+        "text": "The page loads root folders from the root folder endpoint."
+      }
+    ]
+  },
+  "title": "Import Series (root folder)",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/RootFolder/useRootFolders.ts",
+      "in": "ts|frontend/src/RootFolder/useRootFolders.ts#useRootFolder",
+      "line": 41,
+      "reason": "HTTP GET {base}rootFolder/{*} matched no backend endpoint"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useProviderSettings",
+      "line": 78,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSettings",
+      "line": 12,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+      "line": 29,
+      "reason": "HTTP PUT to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

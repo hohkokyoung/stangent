@@ -1,0 +1,227 @@
+{
+  "codeTitle": "/system/updates · Updates",
+  "entry": "page:tsconfig.json|/system/updates",
+  "generated": {
+    "bundleHash": "631c6dbc1c27c123411a7f2d77c064d48d5457e62f88100893ecc1d6cdaca5a2",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 30222,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 127
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 16671,
+      "calls": 1,
+      "costUsd": 0.071213,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6890,
+      "outputTokens": 435
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 14004,
+      "calls": 1,
+      "costUsd": 0.077086,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 12746,
+      "outputTokens": 2079
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/system/updates",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates",
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "A1",
+        "text": "Pressing \"Install Latest\" runs the application update command; if the latest version is a higher major version, a confirmation modal opens first."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates"
+        ],
+        "id": "A2",
+        "text": "Confirming \"Install\" in the major version modal closes it and runs the application update command with installMajorUpdate set to true."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates"
+        ],
+        "id": "A3",
+        "text": "Cancelling the major version modal closes it without installing."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/useUpdates.ts#useUpdates",
+          "ts|frontend/src/Settings/General/useUpdateSettings.ts#useUpdateSettings"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Update",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/Update",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/settings/update"
+        ],
+        "id": "A4",
+        "text": "The page loads the updates list from /update and the update settings from /settings/update."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates"
+        ],
+        "id": "R1",
+        "text": "The \"Install Latest\" button shows only when some update is both installable and latest, and the update mechanism is 'builtIn' or 'script'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates"
+        ],
+        "id": "R2",
+        "text": "For other update mechanisms with an update to install, a warning icon and a message explain that updates must be done externally. The message is the system's package update mechanism message, or a text for external, apt or docker, defaulting to external."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates"
+        ],
+        "id": "R3",
+        "text": "The update mechanism defaults to 'builtIn' when update settings are unavailable."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates"
+        ],
+        "id": "R4",
+        "text": "An update is a major update when the major version number of the first (latest) listed update is greater than that of the current version."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates",
+          "ts|frontend/src/Commands/useCommands.ts#useCommandExecuting"
+        ],
+        "id": "R5",
+        "text": "The install button spins while an application update command is queued or started."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R6",
+        "text": "The same command is not re-sent if run again within 5 seconds."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/Date/formatDate.ts#formatDate",
+          "ts|frontend/src/Utilities/Date/formatDateTime.ts#formatDateTime"
+        ],
+        "id": "R7",
+        "text": "Dates display empty when no date is given."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Updates\" with the heading scope \"System\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates"
+        ],
+        "id": "S2",
+        "text": "A loading indicator shows until both the updates list and the update settings have been fetched, unless an error occurred."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates"
+        ],
+        "id": "S3",
+        "text": "When there are no updates, an info alert shows \"NoUpdatesAreAvailable\" text."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates",
+          "ts|frontend/src/Utilities/Date/formatDate.ts#formatDate",
+          "ts|frontend/src/Utilities/Date/formatDateTime.ts#formatDateTime"
+        ],
+        "id": "S4",
+        "text": "Each update shows its version, its release date in the short date format (with the long date and time as a tooltip), and a branch label when the branch is not 'main'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates"
+        ],
+        "id": "S5",
+        "text": "The update matching the current version gets a \"Currently Installed\" label; other updates with an installed-on date get a \"Previously Installed\" label. Both labels have the install date and time as a tooltip."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates",
+          "ts|frontend/src/System/Updates/UpdateChanges.tsx#UpdateChanges"
+        ],
+        "id": "S6",
+        "text": "If an update has changes, its \"New\" and \"Fixed\" change lists are shown, each rendered as markdown list items and hidden when empty. Otherwise \"MaintenanceRelease\" text is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates"
+        ],
+        "id": "S7",
+        "text": "When updates exist but none is both installable and latest, an up-to-date check icon with the \"OnLatestVersion\" message is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates"
+        ],
+        "id": "S8",
+        "text": "When fetching updates or settings, a small loading indicator appears beside the install or up-to-date message."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Updates/Updates.tsx#Updates"
+        ],
+        "id": "S9",
+        "text": "If fetching updates fails, a warning alert \"FailedToFetchUpdates\" is shown. If fetching settings fails, a danger alert \"FailedToFetchSettings\" is shown."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "E1",
+        "text": "Installing sends a POST to /command with the application update command and adds the returned command to the cached command list."
+      }
+    ]
+  },
+  "title": "System Updates",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSettings",
+      "line": 12,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}
