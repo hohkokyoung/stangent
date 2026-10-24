@@ -168,3 +168,90 @@ Ten findings; each was fixed or rejected with a reason:
 | 8 | the agree check's missing answers were silent; a dispute without a state became a conflict | fixed: noted on the entry and counted (`unchecked`); a dispute without a state stays "agree", disputed |
 | 9 | parallel drivers could read half-written files | fixed: shared files are written whole (temp file, then rename) |
 | 10 | the stale comment lacked FSD sections; the depth cut-off wasn't recorded; docs said `spec bundle` prints the previous version; fixed pages aren't re-verified | fixed the first three; **rejected** the last with a reason (D62 refined): the plan doesn't ask for a second pass, and code checks every fix |
+
+### Step 3 · single-turn calls, then the Sonarr proof · 2026-10-20 to 2026-10-24
+- **Single-turn calls (D64):** `spec-run.sh` sends each step as one call: the input files in the prompt, `--tools ""`,
+  no settings, skills or MCP servers, `--json-schema` from `next.schema` (`stangent spec schema <name>`). On the same
+  10 pages: 41k input tokens and $0.18 per page, against 200k and $0.31 with two file-reading sessions
+  (`benchmark/results/2026-10-20-phase2a-singleturn-measure.json`). `--agents` keeps the subagent mode.
+- **The scratch folder holding the first run was emptied between sessions** (the Sonarr clone, its graph, ~161 pages,
+  half a 2b run). The proof was run again from scratch, and its pages and results are now committed after each batch
+  (`benchmark/results/2026-10-24-phase2-sonarr/`).
+- **The page set** (`benchmark/sonarr-page-set.py` → `benchmark/fsd/sonarr/page-set.json`): every in-scope screen (35),
+  every page an FSD section names as a candidate (82, overlapping), and 10 handlers sampled with seed 42: 113 pages.
+  The first pass left out the 21 in-scope screens no section names, which hid planted undocumented screens from 2b's
+  check (it only sees recorded screens); they were added before the final score, and the first score is kept.
+
+## End-of-phase report
+
+*2026-10-24 · first report.* Built and proven on Sonarr; the owner's 5-page hand-read is **waiting for the owner**.
+Build, tests (120) and `phases check` pass locally; the branch isn't pushed yet, so CI hasn't run on it.
+
+### 1. What was built
+- **`src/Stangent.Spec/`**: the page list (screens, server-rendered screens, shared components, every endpoint and
+  handler, D54 as changed by D63), slices (D63: screens stop at endpoints; depth 6 / backend 4; 10+ callers are
+  leaves; cap 260k characters), bundles and their input hash, the page run (write → check → verify → fix → record),
+  the code checks, Markdown rendering and staleness.
+- **Commands:** `stangent spec pages | bundle | prepare | check | stale | schema`.
+- **Plugin:** `stangent-page-writer` and `stangent-page-verifier`, `/stangent:spec-generate`, the batch driver
+  `plugin/scripts/spec-run.sh` (single-turn by default, D64), the CI workflow `plugin/ci/spec.yml` (stale list on a PR,
+  regeneration and a bot spec PR on merge).
+- **Contracts:** `reference-page` v1 (`schemas/reference-page.v1.json`), plus the AI-step contracts
+  `page-writer-output.v1.json` and `page-verifier-output.v1.json`.
+- **Benchmark:** `--spec-stale N`, `--page-stats`, the Sonarr page set and its runner (`benchmark/sonarr-run-batch.sh`).
+- **Tests:** canned subagent outputs, no LLM (`tests/Stangent.Core.Tests/SpecTests.cs`).
+
+### 2. Benchmark results (Sonarr at 0bffefe7, Sonnet 5.5)
+Phase 2 is proven on Sonarr only (D56): it is the benchmark repo with an FSD and an answer key. nopCommerce, eShop and
+CleanArchitecture have no FSD, and a page run there would show only more of the same (D64).
+
+**Pages** (`2026-10-24-phase2a-sonarr-page-stats.json`, `…-sonarr/specs/reference/`)
+| | Result |
+|---|---|
+| Pages the graph calls for | 718 (37 screens, 117 components, 364 endpoints, 200 handlers); **all 718 under the size cap**, checked by code |
+| Generated (D64's set) | 113: 35 screens, 5 components, 62 endpoints, 11 handlers (10 sampled, 1 a section names); **0 failed** |
+| Code check | 110 passed first time, 3 after the one retry, 0 failed twice |
+| Fresh verifier | 14 findings on 13 pages (3 contradicted, 11 unsupported); 14 fixed, 0 rejected, 0 dropped for lack of evidence |
+| Statements | 1,739; median 13 per page, largest 42 |
+| Re-run, nothing changed | 113 pages current, **zero AI calls**, `specs/` byte-identical (`2026-10-24-phase2-sonarr-rerun.json`) |
+
+**Cost per page** (writer + verifier, single-turn, list price)
+| Kind | Pages | Median slice | Mean cost | Mean input tokens | Mean time |
+|---|---|---|---|---|---|
+| screen | 35 | 53k chars | $0.38 | 91k | 30 s |
+| endpoint | 62 | 19k | $0.13 | 28k | 16 s |
+| handler | 11 | 12k | $0.09 | 20k | 12 s |
+| component | 5 | 9k | $0.05 | 13k | 8 s |
+| **all** | **113** | 22k | **$0.20** ($22.48 in all; writer $13.0, verifier $9.5) | 46k | 20 s |
+
+Writer and verifier apart: medians 14k input tokens and 12 s for the writer per page; the verifier's totals are 2.38M
+input tokens, 517 s and $9.50 over 113 calls. At these per-kind means all 718 pages would cost about $85 (37 × $0.38 + 117 × $0.05 + 364 × $0.13 + 200 × $0.09).
+
+**Stale pages per commit** (`2026-10-20-phase2a-sonarr-stale.json`, Sonarr's last 50 main-line commits, no AI): median
+1, p90 31, worst 82 of 718.
+
+**Hand-read** (5 pages picked with seed 42, `2026-10-24-phase2a-handread-pick.json`): **waiting for the owner.**
+
+### 3. Decisions made or changed
+- [D63](../decisions.md): slices split at the API boundary; every endpoint gets a page (changes D54).
+- [D64](../decisions.md): the proof is the pages 2b needs plus 10 handlers; Sonnet writes and verifies; calls are
+  single-turn (refined with the measurement).
+- D60 refined (the batch driver's permission rules) and D62 refined (evidence length, the verifier's retry, no second
+  verifier pass after a fix).
+
+### 4. Known gaps
+- **Not every page exists:** 605 of 718 pages (mostly endpoints, half of them v5 copies of v3, and handlers) are left to
+  `spec-run.sh --all` (D64).
+- **The slice rule may change** when 1d part 2 (context scoping) reports (D45); every page then goes stale.
+- **Pages describe only their slice:** a screen page names the endpoints it calls but not their rules (D63's cost).
+- **The verifier fixes aren't re-verified** (D62 refined): code checks each fixed statement changed.
+- Per-kind costs for components and handlers rest on 5 and 11 pages.
+- The ❓ blind spots of the slice are listed on each page by code, not resolved.
+
+### 5. Impact on other phases
+- Provides `reference-page` v1, consumed by 2b (current). No contract of an earlier phase changed in 2a.
+
+### 6. Follow-ups
+- Generate the remaining 605 Sonarr pages when a full reference is wanted (about $85 at these rates).
+- Re-check the slice rule against 1d part 2's verdict (D45).
+- The writer model (Sonnet or Opus) once the owner's hand-read is in (D64).
