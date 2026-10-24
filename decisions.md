@@ -952,6 +952,21 @@ comparison find planted drift, are pages grounded, what do they cost per kind) a
   differ, so they can't share it); cost ≈ $0.035 + $4 per million bundle characters. The plugin's subagents stay for
   interactive use and as `spec-run.sh --agents`.
 
+## D65 · Phase 2's hand checks are done by a fresh agent, not the owner — 2026-10-24
+D56, D57 and 2a planned two checks by a person: 20 unplanted findings marked real drift or false alarm (the "not too
+noisy" bar), and 5 pages hand-read for wrong statements. The owner asked for them to be decided for him (Sonarr is a
+demo); decided before either check was run.
+- **A separate agent with a fresh context** does both (D61): it gets the criteria, the FSD text, the pages and the
+  Sonarr source at the pinned commit, nothing about how the pages or findings were made. It writes one verdict per
+  finding and one count per page, each with its reason and evidence (a source line or FSD sentence).
+- **Not the author:** the session that built and ran the pipeline doesn't mark its own findings.
+- The reports say the checks were made by an AI checker, and the bar is read with that caveat.
+Rejected: the author deciding (it would grade its own work, D61); skipping the checks (the noise bar would stay
+unmeasured).
+**Why:** keeps the noise bar measured by someone other than the author while the owner's time goes elsewhere.
+**Cost:** an AI checker can share the judge's blind spots; a person's check is still owed before the findings are
+relied on in a real project (the dry run on a real FSD, D56, is checked by people).
+
 ## Open questions
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
