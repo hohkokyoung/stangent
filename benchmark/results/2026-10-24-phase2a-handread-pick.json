@@ -1,0 +1,10 @@
+{
+ "handReadPages": [
+  "page:/calendar",
+  "page:/activity/blocklist",
+  "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus",
+  "endpoint:Sonarr.Api.V3|DELETE /api/v3/Blocklist/bulk",
+  "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Handle(NzbDrone.Core.ThingiProvider.Events.ProviderAddedEvent{`2})"
+ ],
+ "method": "random.Random(42).sample per kind over sorted recorded page ids: 2 screens, 1 component, 1 endpoint, 1 handler"
+}
