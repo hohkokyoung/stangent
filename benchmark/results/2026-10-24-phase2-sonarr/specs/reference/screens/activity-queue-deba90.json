@@ -1,0 +1,378 @@
+{
+  "codeTitle": "/activity/queue · Queue",
+  "entry": "page:tsconfig.json|/activity/queue",
+  "generated": {
+    "bundleHash": "d5df142df92afe055a563aed6089af192253f7fcc8054d65daf787b1881c21da",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 101077,
+      "cutOff": 2,
+      "depth": 6,
+      "points": 546
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 52688,
+      "calls": 1,
+      "costUsd": 0.217001,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6408,
+      "outputTokens": 607
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 48215,
+      "calls": 1,
+      "costUsd": 0.23319,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 22238,
+      "outputTokens": 4005
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/activity/queue",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent",
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "A1",
+        "text": "Refresh runs the RefreshMonitoredDownloads command."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent",
+          "ts|frontend/src/Activity/Queue/useQueue.ts#useGrabQueueItems"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/queue/grab/bulk",
+          "endpoint:Sonarr.Api.V5|POST /api/v5/queue/grab/bulk"
+        ],
+        "id": "A2",
+        "text": "Grab Selected sends the selected ids to the bulk grab call."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent",
+          "ts|frontend/src/Activity/Queue/useQueue.ts#useRemoveQueueItems"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|DELETE /api/v3/Queue/bulk",
+          "endpoint:Sonarr.Api.V5|DELETE /api/v5/Queue/bulk"
+        ],
+        "id": "A3",
+        "text": "Remove Selected opens a confirmation dialog; confirming sends the selected ids to the bulk delete call and closes the dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent"
+        ],
+        "id": "A4",
+        "text": "Import Selected opens interactive import for the download ids of the selected completed items."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueRow.tsx#QueueRow",
+          "ts|frontend/src/Activity/Queue/useQueue.ts#useGrabQueueItem"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/queue/grab/{id:int}",
+          "endpoint:Sonarr.Api.V5|POST /api/v5/queue/grab/{id:int}"
+        ],
+        "id": "A5",
+        "text": "A row's Grab button grabs that single queue item."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueRow.tsx#QueueRow",
+          "ts|frontend/src/Activity/Queue/useQueue.ts#useRemoveQueueItem"
+        ],
+        "id": "A6",
+        "text": "A row's remove button (Remove from queue) opens the remove dialog; confirming removes that item."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueRow.tsx#QueueRow"
+        ],
+        "id": "A7",
+        "text": "A row's interactive import button opens interactive import for that item's download."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/RemoveQueueItemModal.tsx#RemoveQueueItemModal"
+        ],
+        "id": "A8",
+        "text": "In the remove dialog the user picks a removal method and a blocklist method, then clicks Remove or Close."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent"
+        ],
+        "id": "A9",
+        "text": "The user can select a filter, sort by a column, change table options and page size, and change page."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent"
+        ],
+        "id": "A10",
+        "text": "The select-all checkbox selects or unselects all rows."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent"
+        ],
+        "id": "R1",
+        "text": "Grab Selected is disabled unless something is selected and at least one selected item has status 'delay'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent"
+        ],
+        "id": "R2",
+        "text": "Remove Selected is disabled when nothing is selected; Import Selected is disabled when nothing is selected or no selected item is completed."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueRow.tsx#QueueRow"
+        ],
+        "id": "R3",
+        "text": "A row's Grab button shows only for items with status 'delay' or 'downloadClientUnavailable'; the interactive import button shows only for completed items with tracked download status 'warning'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent"
+        ],
+        "id": "R4",
+        "text": "The maximum page size in table options is 200; changing page size returns to page 1."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/useQueue.ts#useQueue",
+          "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery"
+        ],
+        "id": "R5",
+        "text": "The queue is fetched from /queue with page, page size, sort key, sort direction and the selected filters; total pages is at least 1."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent",
+          "ts|frontend/src/Utilities/Object/selectUniqueIds.ts#selectUniqueIds"
+        ],
+        "id": "R6",
+        "text": "Episodes are loaded for the unique episode ids of the queue records; the table shows once episodes are fetched, or when there are no records or none have episodes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent"
+        ],
+        "id": "R7",
+        "text": "The visible page is not re-rendered while a remove or import dialog is open."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/RemoveQueueItemModal.tsx#RemoveQueueItemModal",
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent"
+        ],
+        "id": "R8",
+        "text": "In the remove dialog, Change category is disabled unless the download client has a post-import category, and Ignore is disabled unless the series and episodes are known."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/RemoveQueueItemModal.tsx#RemoveQueueItemModal"
+        ],
+        "id": "R9",
+        "text": "For pending items the removal method choice is hidden and Blocklist and search is disabled."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R10",
+        "text": "The Refresh command is ignored if the same command was run within the last 5 seconds."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/usePage.ts#usePage"
+        ],
+        "id": "R11",
+        "text": "Page number resets to 1 when navigating back (POP)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Status/useQueueStatus.ts#useQueueStatus"
+        ],
+        "id": "R12",
+        "text": "Queue status count is the total count when unknown-series items are included, otherwise the count."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent"
+        ],
+        "id": "S1",
+        "text": "The page is headed Activity / Queue and lists queue items in a table with a pager showing page, total pages and total records."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent"
+        ],
+        "id": "S2",
+        "text": "While loading and not yet populated, a loading indicator is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent"
+        ],
+        "id": "S3",
+        "text": "When loading is finished and the queue or episodes request failed, an error alert shows the 'QueueLoadError' message."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent"
+        ],
+        "id": "S4",
+        "text": "When there are no records, a message shows: 'QueueFilterHasNoItems' if a filter other than 'all' is selected and the queue status count is above 0, otherwise 'QueueIsEmpty'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent"
+        ],
+        "id": "S5",
+        "text": "The toolbar has Refresh, Grab Selected, Remove Selected, Import Selected, Options buttons and a filter menu with custom filters of type queue."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueRow.tsx#QueueRow"
+        ],
+        "id": "S6",
+        "text": "Each row has a selection checkbox and shows only the visible columns: status, series, episode, episode title, air date, languages, quality, custom formats, custom format score, protocol, indexer, download client, title, size, output path, time left, progress, added, actions."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueRow.tsx#QueueRow"
+        ],
+        "id": "S7",
+        "text": "The series cell links to the series if it is known; otherwise it shows the release title."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/EpisodeCellContent.tsx#EpisodeCellContent"
+        ],
+        "id": "S8",
+        "text": "The episode cell shows '-' when there are no episodes, the season number for a full season, a single episode number, or a first-to-last episode range."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/EpisodeTitleCellContent.tsx#EpisodeTitleCellContent"
+        ],
+        "id": "S9",
+        "text": "The episode title cell shows '-' without episodes or series, a link for one episode, or a 'Multiple Episodes' popover listing titles for several."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/TimeLeftCell.tsx#TimeLeftCell"
+        ],
+        "id": "S10",
+        "text": "The time-left cell shows an info tooltip for delayed items (delaying until) and for download-client-unavailable items (retrying on); '-' if no time left or status is completed or failed; otherwise the formatted time left with remaining/total size as hover title."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueRow.tsx#QueueRow"
+        ],
+        "id": "S11",
+        "text": "The progress cell shows a progress bar with percentage (one decimal) when progress is non-zero."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/RemoveQueueItemModal.tsx#RemoveQueueItemModal"
+        ],
+        "id": "S12",
+        "text": "The remove dialog title and message vary by whether it is for one named item, one selected item, or several selected items."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/useQueue.ts#useRemoveQueueItems",
+          "ts|frontend/src/Activity/Queue/useQueue.ts#useRemoveQueueItem",
+          "ts|frontend/src/Activity/Queue/useQueue.ts#useGrabQueueItems",
+          "ts|frontend/src/Activity/Queue/useQueue.ts#useGrabQueueItem"
+        ],
+        "id": "E1",
+        "text": "Successful bulk or single remove and grab calls invalidate the cached queue so it reloads."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/useQueue.ts#useRemoveQueueItems",
+          "ts|frontend/src/Activity/Queue/useQueue.ts#useRemovalOptions"
+        ],
+        "id": "E2",
+        "text": "Remove calls send the chosen removal method and blocklist method as query string, using DELETE."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/RemoveQueueItemModal.tsx#RemoveQueueItemModal"
+        ],
+        "id": "E3",
+        "text": "Choosing removal or blocklist options in the dialog saves them as queue options."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "E4",
+        "text": "Refresh posts a command to /command and stores the returned command."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Queue.tsx#QueueContent",
+          "ts|frontend/src/Utilities/pagePopulator.ts#registerPagePopulator"
+        ],
+        "id": "E5",
+        "text": "The page registers a page populator that refetches the queue, removed on leaving."
+      }
+    ]
+  },
+  "title": "Activity Queue",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/usePagedApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery",
+      "line": 79,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Utilities/Fetch/fetchJson.ts",
+      "in": "ts|frontend/src/Utilities/Fetch/fetchJson.ts#fetchJson",
+      "line": 56,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

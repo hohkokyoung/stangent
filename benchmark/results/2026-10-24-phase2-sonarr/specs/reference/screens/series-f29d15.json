@@ -1,0 +1,382 @@
+{
+  "codeTitle": "/series · SeriesIndex",
+  "entry": "page:tsconfig.json|/series",
+  "generated": {
+    "bundleHash": "36b3cbfad7e4e4bd980bdc3272ef1b79b80045018c120536f0c15dab753c75a2",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 226238,
+      "cutOff": 219,
+      "depth": 6,
+      "points": 780
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 109119,
+      "calls": 1,
+      "costUsd": 0.446145,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 9292,
+      "outputTokens": 949
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 212651,
+      "calls": 2,
+      "costUsd": 0.942774,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 48400,
+      "outputTokens": 9161
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/series",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody"
+        ],
+        "id": "A1",
+        "text": "Refresh/Update runs a RefreshSeries command for the selected series (in select mode with selection) or for all currently listed series."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody"
+        ],
+        "id": "A2",
+        "text": "RSS Sync runs the RssSync command."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody"
+        ],
+        "id": "A3",
+        "text": "Choosing a view saves it as the view option and scrolls the list to top."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody"
+        ],
+        "id": "A4",
+        "text": "Choosing a sort item sets the sort key."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody"
+        ],
+        "id": "A5",
+        "text": "Choosing a filter saves it as the selected filter."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody",
+          "ts|frontend/src/Components/Page/PageJumpBarItem.tsx#PageJumpBarItem"
+        ],
+        "id": "A6",
+        "text": "Pressing a jump bar letter scrolls the list to the first series starting with that character."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody",
+          "ts|frontend/src/Series/Index/Select/SeriesIndexSelectModeButton.tsx#SeriesIndexSelectModeButton"
+        ],
+        "id": "A7",
+        "text": "The select toggle enters or leaves select mode; leaving clears the selection."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/Select/SeriesIndexSelectFooter.tsx#SeriesIndexSelectFooter",
+          "ts|frontend/src/Series/useSeries.ts#useSaveSeriesEditor"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|PUT /api/v3/series/editor",
+          "endpoint:Sonarr.Api.V5|PUT /api/v5/series/editor"
+        ],
+        "id": "A8",
+        "text": "Saving the bulk Edit modal sends changes for the selected series to the series editor endpoint."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/Select/SeriesIndexSelectFooter.tsx#SeriesIndexSelectFooter",
+          "ts|frontend/src/Series/Index/Select/Tags/TagsModalContent.tsx#TagsModalContent",
+          "ts|frontend/src/Series/useSeries.ts#useSaveSeriesEditor"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|PUT /api/v3/series/editor",
+          "endpoint:Sonarr.Api.V5|PUT /api/v5/series/editor"
+        ],
+        "id": "A9",
+        "text": "Applying tags (add, remove or replace) sends the tags to the series editor endpoint for the selected series."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/Select/SeriesIndexSelectFooter.tsx#SeriesIndexSelectFooter",
+          "ts|frontend/src/Series/useSeries.ts#useUpdateSeriesMonitor"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/SeasonPass",
+          "endpoint:Sonarr.Api.V5|POST /api/v5/SeasonPass"
+        ],
+        "id": "A10",
+        "text": "Saving Update Monitoring posts the chosen monitor option for the selected series to the SeasonPass endpoint."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/Select/Delete/DeleteSeriesModalContent.tsx#DeleteSeriesModalContent",
+          "ts|frontend/src/Series/useSeries.ts#useBulkDeleteSeries"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|DELETE /api/v3/series/editor",
+          "endpoint:Sonarr.Api.V5|DELETE /api/v5/series/editor"
+        ],
+        "id": "A11",
+        "text": "Confirming Delete removes the selected series via the series editor delete endpoint, optionally deleting files and adding a list exclusion."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/Select/Organize/OrganizeSeriesModalContent.tsx#OrganizeSeriesModalContent"
+        ],
+        "id": "A12",
+        "text": "Confirming Rename Files runs the RenameSeries command for the selected series."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/Select/Delete/Files/DeleteSeriesFilesModalContent.tsx#DeleteSeriesFilesModalContent"
+        ],
+        "id": "A13",
+        "text": "Confirming Delete Files runs the DeleteSeriesFiles command for the selected series."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Series/useSeries.ts#useSeriesIndex",
+          "ts|frontend/src/Utilities/Filter/clientSideFilterAndSort.ts#sort"
+        ],
+        "id": "R1",
+        "text": "Series are filtered by the selected filter (built-in or custom) and sorted by the sort key, with ascending sortTitle as secondary sort."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody"
+        ],
+        "id": "R2",
+        "text": "Refresh and RSS Sync buttons, Options, and the View, Sort and Filter menus are disabled when there are no series."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody"
+        ],
+        "id": "R3",
+        "text": "The jump bar is built only when sorting by sortTitle; digit-leading titles group under '#', and order is reversed for descending sort."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Page/PageJumpBar.tsx#PageJumpBar"
+        ],
+        "id": "R4",
+        "text": "The jump bar is hidden when it has fewer than 5 items."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R5",
+        "text": "Repeating the same command within 5 seconds is ignored with a console warning."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/Select/SeriesIndexSelectFooter.tsx#SeriesIndexSelectFooter"
+        ],
+        "id": "R6",
+        "text": "All select-mode footer buttons are disabled when nothing is selected. Edit, Rename Files, Set Tags and Update Monitoring are also disabled while files are being renamed; Delete is also disabled while deleting; Delete Files is also disabled while its command is executing."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/Select/Edit/EditSeriesModalContent.tsx#EditSeriesModalContent"
+        ],
+        "id": "R7",
+        "text": "In the bulk Edit modal, only fields changed from 'no change' are sent; if nothing changed nothing is saved."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/Select/Edit/EditSeriesModalContent.tsx#EditSeriesModalContent",
+          "ts|frontend/src/Series/MoveSeries/MoveSeriesModal.tsx#MoveSeriesModal"
+        ],
+        "id": "R8",
+        "text": "Changing the root folder asks whether to move the files before saving."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/Table/SeriesIndexTable.tsx#SeriesIndexTable"
+        ],
+        "id": "R9",
+        "text": "Poster view columns and table row heights depend on options (table row height is 72 with banners, 48 without)."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody",
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#getViewComponent"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Series\" and lists all series in one of three views: table, posters or overview."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody"
+        ],
+        "id": "S2",
+        "text": "While series are first loading, a loading indicator is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody"
+        ],
+        "id": "S3",
+        "text": "If loading fails, an error alert shows the message for SeriesLoadError."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/NoSeries.tsx#NoSeries"
+        ],
+        "id": "S4",
+        "text": "When no series exist at all, the page shows a message to import or add series, with buttons \"Import Existing Series\" (to /add/import) and \"Add New Series\" (to /add/new)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/NoSeries.tsx#NoSeries",
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody"
+        ],
+        "id": "S5",
+        "text": "When series exist but the applied filter hides them all, the page shows a message that all series are hidden by the filter."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndexFooter.tsx#SeriesIndexFooter"
+        ],
+        "id": "S6",
+        "text": "A footer below the list shows a colour legend and statistics: series, ended, continuing, monitored, unmonitored, episodes, files and total file size."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndexFooter.tsx#SeriesIndexFooter"
+        ],
+        "id": "S7",
+        "text": "The footer statistics are computed from all series, not just the filtered ones."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody"
+        ],
+        "id": "S8",
+        "text": "The toolbar has Refresh/Update, RSS Sync, select-multiple, Options, and View, Sort and Filter menus."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/Menus/SeriesIndexViewMenu.tsx#SeriesIndexViewMenu"
+        ],
+        "id": "S9",
+        "text": "The View menu offers Table, Posters and Overview."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/Menus/SeriesIndexSortMenu.tsx#SeriesIndexSortMenu"
+        ],
+        "id": "S10",
+        "text": "The Sort menu offers: Monitored Status, Title, Network, Original Country, Original Language, Quality Profile, Next Airing, Previous Airing, Added, Seasons, Episodes, Episode Count, Latest Season, Path, Size on Disk, Average Size per Episode, Tags and Rating."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody"
+        ],
+        "id": "S11",
+        "text": "The refresh button label is Update All, Update Selected when something is selected, or Update Filtered when a non-'all' filter is selected."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody",
+          "ts|frontend/src/Series/Index/Select/SeriesIndexSelectAllButton.tsx#SeriesIndexSelectAllButton",
+          "ts|frontend/src/Series/Index/Select/SeriesIndexSelectFooter.tsx#SeriesIndexSelectFooter"
+        ],
+        "id": "S12",
+        "text": "In select mode a select-all button (or Unselect All when all are selected) and a footer with Edit, Rename Files, Set Tags, Update Monitoring, Delete and Delete Files buttons appear, plus a selected-count text."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody",
+          "ts|frontend/src/Components/Page/PageJumpBar.tsx#PageJumpBar"
+        ],
+        "id": "S13",
+        "text": "A jump bar of first characters appears on the side when sorted by title and the list is loaded."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody",
+          "ts|frontend/src/Series/Index/Table/SeriesIndexTableOptions.tsx#SeriesIndexTableOptions",
+          "ts|frontend/src/Series/Index/Posters/Options/SeriesIndexPosterOptionsModalContent.tsx#SeriesIndexPosterOptionsModalContent",
+          "ts|frontend/src/Series/Index/Overview/Options/SeriesIndexOverviewOptionsModalContent.tsx#SeriesIndexOverviewOptionsModalContent"
+        ],
+        "id": "S14",
+        "text": "The Options modal shows poster options (view posters), overview options (view overview), or table options with Show Banners and Show Search (table view)."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Series/useSeries.ts#useSaveSeriesEditor",
+          "ts|frontend/src/Series/useSeries.ts#useUpdateSeriesMonitor"
+        ],
+        "id": "E1",
+        "text": "Bulk edit, tags and monitoring saves update the cached series list from the response or variables."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/useSeries.ts#useBulkDeleteSeries",
+          "ts|frontend/src/Series/Index/Select/SeriesIndexSelectFooter.tsx#SeriesIndexSelectFooter"
+        ],
+        "id": "E2",
+        "text": "A successful bulk delete removes the deleted series from the cached list, and the selection is cleared when deletion finishes without error."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Index/SeriesIndex.tsx#SeriesIndexBody",
+          "ts|frontend/src/Series/seriesOptionsStore.ts#setSeriesTableOptions"
+        ],
+        "id": "E3",
+        "text": "View, sort, filter, column and table/poster/overview option changes are saved in the series options store."
+      }
+    ]
+  },
+  "title": "Series Index",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "Delete Files is not disabled while files are being renamed. It is disabled only when nothing is selected or when the delete-files command is executing. The same goes for Delete, which is disabled only when nothing is selected or while deleting. So 'the others while files are being renamed' is too broad.",
+        "id": "F1",
+        "kind": "contradicted",
+        "outcome": "fixed",
+        "quote": "isDisabled={!anySelected || isDeleteFilesCommandExecuting}",
+        "reason": "Rewrote the rule to list exactly which buttons are disabled under which conditions.",
+        "statement": "R6",
+        "statementText": "The footer buttons are disabled when nothing is selected; Delete is also disabled while deleting, and the others while files are being renamed."
+      }
+    ]
+  }
+}

@@ -1,0 +1,319 @@
+{
+  "codeTitle": "/add/new · AddNewSeries",
+  "entry": "page:tsconfig.json|/add/new",
+  "generated": {
+    "bundleHash": "24d2f3ae254eb4cac7d0c0c2a2a62fb6cd865b6b53b2cdc34fbb0fe1ef941d59",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 72336,
+      "cutOff": 20,
+      "depth": 6,
+      "points": 394
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 38223,
+      "calls": 1,
+      "costUsd": 0.158141,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5277,
+      "outputTokens": 507
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 33780,
+      "calls": 1,
+      "costUsd": 0.17429,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 21339,
+      "outputTokens": 3889
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/add/new",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeries.tsx#AddNewSeries",
+          "ts|frontend/src/Helpers/Hooks/useDebounce.ts#useDebounce"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/series/lookup",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/series/lookup"
+        ],
+        "id": "A1",
+        "text": "Typing in the search box looks up series by the term, with a 300 ms debounce; clearing the box applies immediately."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeries.tsx#AddNewSeries"
+        ],
+        "id": "A2",
+        "text": "The clear button empties the search box, stops the fetching state and refocuses the input."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeries.tsx#AddNewSeries",
+          "ts|frontend/src/Settings/MetadataSource/MetadataSettingsModalContent.tsx#MetadataSettingsModalContent",
+          "ts|frontend/src/Settings/MetadataSource/useMetadataSourceSettings.ts#useSaveMetadataSourceSettings"
+        ],
+        "id": "A3",
+        "text": "The Metadata Settings button opens a dialog to choose the preferred metadata language; Save stores it and closes the dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeriesSearchResult.tsx#AddNewSeriesSearchResult"
+        ],
+        "id": "A4",
+        "text": "Pressing a result that is not in the library opens the add-series dialog; pressing one already in the library links to its series page."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx#AddNewSeriesModalContent",
+          "ts|frontend/src/AddSeries/AddNewSeries/useAddSeries.ts#useAddSeries"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Series",
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/Series"
+        ],
+        "id": "A5",
+        "text": "The add button in the dialog, labelled \"Add\" with the title, submits the new series with the chosen root folder, monitor option, search options, quality profile, series type, season type, language, season folder and tags."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/useAddSeries.ts#useLookupSeries"
+        ],
+        "id": "R1",
+        "text": "The lookup runs only when the search term is non-empty, and sends the term and the preferred metadata language id. It does not refetch on window focus."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeries.tsx#AddNewSeries",
+          "ts|frontend/src/Helpers/Hooks/useQueryParams.ts#useQueryParams"
+        ],
+        "id": "R2",
+        "text": "The search term can be prefilled from the \"term\" query parameter in the URL."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/useExistingSeries.ts#useExistingSeries",
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeriesSearchResult.tsx#AddNewSeriesSearchResult"
+        ],
+        "id": "R3",
+        "text": "A result counts as existing when a series in the library has the same TVDB id. The add dialog cannot open for an existing series."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Language/useLanguages.ts#usePreferredMetadataLanguage"
+        ],
+        "id": "R4",
+        "text": "The preferred metadata language falls back to a default language when the setting or language list is unavailable."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx#AddNewSeriesModalContent"
+        ],
+        "id": "R5",
+        "text": "In the add dialog, the season type defaults to \"official\" if available, otherwise the first season type, otherwise \"official\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx#AddNewSeriesModalContent"
+        ],
+        "id": "R6",
+        "text": "The initial series type is the saved default when the lookup series type is standard; otherwise it is the lookup series type."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/selectSettings.ts#selectSettings",
+          "ts|frontend/src/Utilities/selectSettings.ts#getFailures",
+          "ts|frontend/src/Utilities/selectSettings.ts#getValidationFailures"
+        ],
+        "id": "R7",
+        "text": "Validation errors and warnings from a failed add (HTTP 400) are mapped onto the matching form fields by property name."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeries.tsx#AddNewSeries"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Add New Series\" with a \"Media\" scope and a \"Metadata Settings\" button in the heading."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeries.tsx#AddNewSeries"
+        ],
+        "id": "S2",
+        "text": "A search box (placeholder \"eg. Breaking Bad, tvdb:####\") is shown and focused automatically. A clear button appears only when the box has text."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeries.tsx#AddNewSeries"
+        ],
+        "id": "S3",
+        "text": "A loading indicator is shown while a search is in progress."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeries.tsx#AddNewSeries",
+          "ts|frontend/src/Utilities/Object/getErrorMessage.ts#getErrorMessage"
+        ],
+        "id": "S4",
+        "text": "When the lookup fails and nothing is loading, an error title and the error message from the response are shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeries.tsx#AddNewSeries"
+        ],
+        "id": "S5",
+        "text": "When results exist, a count label (singular for one result, plural otherwise) is shown above the list of results."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeries.tsx#AddNewSeries"
+        ],
+        "id": "S6",
+        "text": "When a search term returns no results, a \"could not find\" message with the term, a hint to search by TVDB ID, and a \"Why can't I find my show?\" link to the wiki are shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeries.tsx#AddNewSeries",
+          "ts|frontend/src/Series/useSeries.ts#useHasSeries"
+        ],
+        "id": "S7",
+        "text": "When the search box is empty, a help text and TVDB ID hint are shown. If the library has no series, a \"no series have been added\" message and an Import Existing Series button linking to /add/import also appear."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeriesSearchResult.tsx#AddNewSeriesSearchResult"
+        ],
+        "id": "S8",
+        "text": "Each result shows the poster (hidden on small screens), title with year in brackets (year hidden if already in the title), overview, and a TVDB external link."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeriesSearchResult.tsx#AddNewSeriesSearchResult"
+        ],
+        "id": "S9",
+        "text": "The result title and overview use the translation in the preferred metadata language when one exists; otherwise the title falls back to the original title, then the lookup title."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeriesSearchResult.tsx#AddNewSeriesSearchResult",
+          "ts|frontend/src/Components/HeartRating.tsx#HeartRating"
+        ],
+        "id": "S10",
+        "text": "Each result shows chips: heart rating percentage with vote count tooltip (only if votes > 0), status, network, original language, genres, and season count."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeriesSearchResult.tsx#getStatusChip"
+        ],
+        "id": "S11",
+        "text": "Status chip labels are Continuing, Upcoming, Ended and Deleted; other statuses show no status chip."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/SeriesGenres.tsx#SeriesGenres"
+        ],
+        "id": "S12",
+        "text": "Only the first genre is shown; any further genres appear in a tooltip."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeriesSearchResult.tsx#AddNewSeriesSearchResult"
+        ],
+        "id": "S13",
+        "text": "A result already in the library shows an \"Already in your library\" check icon. An excluded result shows a warning icon \"Series in import list exclusions\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/MetadataAttribution.tsx#MetadataAttribution"
+        ],
+        "id": "S14",
+        "text": "Each result shows a metadata attribution link, \"Metadata provided by TheTVDB\", pointing to /settings/metadatasource."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx#AddNewSeriesModalContent"
+        ],
+        "id": "S15",
+        "text": "The add-series dialog shows the title, poster, overview, and fields for Root Folder, Tags, Monitor, Season Folder, Quality Profile, Series Type, Language and Season Type, plus Search checkboxes for Missing and Cutoff Unmet."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx#AddNewSeriesModalContent",
+          "ts|frontend/src/AddSeries/SeriesTypePopoverContent.tsx#SeriesTypePopoverContent"
+        ],
+        "id": "S16",
+        "text": "Info popovers next to Monitor and Series Type explain the options; the Series Type popover describes Anime, Daily and Standard."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MetadataSource/MetadataSettingsModalContent.tsx#MetadataSettingsModalContent"
+        ],
+        "id": "S17",
+        "text": "The Metadata Settings dialog has a Preferred Metadata Language select with help text, and Cancel and Save buttons. A save error shows a danger alert."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/AddSeries/AddNewSeries/useAddSeries.ts#useAddSeries",
+          "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#addOrUpdateQueryClientItem"
+        ],
+        "id": "E1",
+        "text": "Adding a series sends a POST to /series and, on success, adds or updates that series in the cached series list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MetadataSource/useMetadataSourceSettings.ts#useSaveMetadataSourceSettings",
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings"
+        ],
+        "id": "E2",
+        "text": "Saving metadata settings sends a PUT with the existing settings plus the chosen preferred metadata language, updates the cached settings and then closes the dialog."
+      }
+    ]
+  },
+  "title": "Add New Series",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSettings",
+      "line": 12,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+      "line": 29,
+      "reason": "HTTP PUT to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}
