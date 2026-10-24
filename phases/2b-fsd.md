@@ -210,3 +210,9 @@ A separate agent checked both reports' claims against the results files: about 8
 for all 718), which first-score misses lacked a page (one screen, one behaviour), the 92-page set's make-up, and the
 `trace check` claim (its output is now committed); minor: "of 718" → the 717 pages at that commit, and what the ~$24
 total includes. None was rejected.
+
+A second fresh agent checked the lines added once the hand checks were in (2026-10-25): about 50 claims, 5 wrong,
+unsupported or misleading, all fixed: a "judgement call" remark with no evidence in the results files (dropped), the
+writer-model decision missing from decisions.md (D64 refined), what most false alarms are (6 of 9 are disputed
+agrees, not "a field without its meaning"), the hand-read's verifier comparison (A3's error is an endpoint link,
+which the verifier isn't asked to judge), and 0.70 × 9/20 written for 62/89 × 9/20. It also confirmed 121 tests pass.

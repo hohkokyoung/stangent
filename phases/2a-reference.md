@@ -274,4 +274,4 @@ check (it judges statement content). With 2 wrong in 88, Sonnet stays the writer
 - Re-check the slice rule against 1d part 2's verdict (D45).
 - A person's hand-read before pages are relied on in a real project (D65's cost).
 - The verifier: how it reads conditions whose names invert their meaning (S8), and whether it should also check each
-  action's endpoint links (A3), which today only code checks for existence.
+  action's endpoint links (A3); code checks only that each is an endpoint in the slice.
