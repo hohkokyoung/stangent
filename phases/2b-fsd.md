@@ -1,7 +1,7 @@
 ---
 phase: 2b
 name: fsd
-status: in progress
+status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 5, reference-page: 1 }
 provides: { source-document: 1, trace-links: 1 }
 ---
@@ -67,8 +67,8 @@ provides: { source-document: 1, trace-links: 1 }
 - [x] **Cost:** tokens and time per section and per page reported; candidates found by code vs AI reported.
 - [x] Each share has its 95% range (fixed seed). If "finds" or "not too noisy" fails, discrepancy findings ship off
       by default and the report says why (D57).
-- [ ] End-of-phase report written; its claims checked against the results files by a fresh agent (D61); CI green.
-      *Report written and checked; CI open until the branch is pushed (not pushed by this work).*
+- [x] End-of-phase report written; its claims checked against the results files by a fresh agent (D61); CI green.
+      *CI green on GitHub ([run](https://github.com/hohkokyoung/stangent/actions/runs/40114060098)).*
 
 ## Contracts
 | Contract | v1 holds |
@@ -115,8 +115,8 @@ links (D52), and a discrepancy is a link's state (D58).
 
 *2026-10-25 · first report.* "Finds what's planted" **passes**; "not too noisy" **fails narrowly** (31.3% false
 alarms against 30%; the 95% range, 14–45%, sits on both sides of the bar), so discrepancy findings ship **off by
-default** (D57, D68); pages and links ship. Build, tests
-(121) and `phases check` pass locally; CI runs once the branch is pushed.
+default** (D57, D68); pages and links ship. CI green on GitHub
+([run](https://github.com/hohkokyoung/stangent/actions/runs/40114060098)); phase **done**, with the noise bar failed as recorded.
 
 ### 1. What was built
 See Progress step 1. Contracts: `source-document` v1 (`schemas/source-document.v1.json`), `trace-links` v1

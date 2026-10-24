@@ -1,7 +1,7 @@
 ---
 phase: 2a
 name: reference
-status: in progress
+status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 5 }
 provides: { reference-page: 1 }
 ---
@@ -111,8 +111,8 @@ bundles sent to the AI (regenerable from the graph).
       statement and the verifier's evidence check is exercised with canned outputs.
 - [x] 5 pages hand-read, wrong statements counted, and compared with what the verifier caught. *Read by a fresh
       agent, not the owner (D67).*
-- [ ] Tests run without an LLM (canned subagent outputs); CI green. *Tests: 121 pass locally, no LLM. CI: open until
-      the branch is pushed (not pushed by this work).*
+- [x] Tests run without an LLM (canned subagent outputs); CI green. *126 tests after merging main, no LLM; CI green
+      on GitHub ([run](https://github.com/hohkokyoung/stangent/actions/runs/40114060098), PR hohkokyoung/stangent#1).*
 
 ## Contracts
 | Contract | v1 holds |
@@ -188,8 +188,8 @@ Ten findings; each was fixed or rejected with a reason:
 
 ## End-of-phase report
 
-*2026-10-25 · first report.* Built and proven on Sonarr; every done-when box is met except CI, which runs once the
-branch is pushed. Build, tests (121) and `phases check` pass locally.
+*2026-10-25 · first report.* Built and proven on Sonarr; every done-when box is met. CI green on GitHub ([run](https://github.com/hohkokyoung/stangent/actions/runs/40114060098));
+phase **done**.
 
 ### 1. What was built
 - **`src/Stangent.Spec/`**: the page list (screens, server-rendered screens, shared components, every endpoint and
