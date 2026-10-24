@@ -1,0 +1,269 @@
+{
+  "codeTitle": "/wanted/missing · Missing",
+  "entry": "page:tsconfig.json|/wanted/missing",
+  "generated": {
+    "bundleHash": "cda94edb9b2793995f8a82aa5eacb9265bac03fabb917ad97feab8d4f558d032",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 53218,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 317
+    },
+    "verifier": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 29343,
+      "calls": 1,
+      "costUsd": 0.121106,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5756,
+      "outputTokens": 373
+    },
+    "writer": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 26539,
+      "calls": 1,
+      "costUsd": 0.13365,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 16201,
+      "outputTokens": 2749
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/wanted/missing",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent",
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "A1",
+        "text": "Pressing Search with rows selected runs an episode search command for the selected episode ids, then refetches the list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent"
+        ],
+        "id": "A2",
+        "text": "Pressing Search with nothing selected opens a confirmation modal \"Search for all missing episodes\" showing the total record count and a mass search cancel warning."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent",
+          "ts|frontend/src/Wanted/toWantedSearchCommandBody.ts#toWantedSearchCommandBody"
+        ],
+        "id": "A3",
+        "text": "Confirming the modal runs a missing-episode search command built from the active filters, refetches the list and closes the modal."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent",
+          "ts|frontend/src/Episode/useEpisode.ts#useToggleEpisodesMonitored"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|PUT /api/v3/Episode/monitor",
+          "endpoint:Sonarr.Api.V5|PUT /api/v5/Episode/monitor"
+        ],
+        "id": "A4",
+        "text": "Monitor/Unmonitor Selected toggles the monitored state of the selected episodes through a PUT to the episode monitor endpoint."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent"
+        ],
+        "id": "A5",
+        "text": "Manual Import opens the interactive import modal."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/useMissing.tsx#useMissing",
+          "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/wanted/missing",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/wanted/missing"
+        ],
+        "id": "A6",
+        "text": "The list is loaded from the wanted/missing endpoint with page, page size, sort and filters."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent",
+          "ts|frontend/src/Wanted/Missing/MissingRow.tsx#MissingRow"
+        ],
+        "id": "A7",
+        "text": "Users can pick a filter, sort by a column, change table options (columns, page size) and select all or individual rows. Changing page size returns to page 1."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent",
+          "ts|frontend/src/Commands/useCommands.ts#useCommandExecuting"
+        ],
+        "id": "R1",
+        "text": "The Search button is disabled and spinning while a missing-episode or episode search command is queued or started."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent",
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#getMonitoredValue"
+        ],
+        "id": "R2",
+        "text": "Monitor/Unmonitor Selected is disabled when nothing is selected. It reads \"Unmonitor Selected\" when the selected filter shows monitored episodes, and sets monitored to the opposite of that."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R3",
+        "text": "The same command is not sent again if it was run within the last 5 seconds."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/toWantedSearchCommandBody.ts#toWantedSearchCommandBody"
+        ],
+        "id": "R4",
+        "text": "Only filters seriesIds, qualityProfileIds, seriesType, seriesTags and quality are passed into the search-all command body."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/usePage.ts#usePage",
+          "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery"
+        ],
+        "id": "R5",
+        "text": "The page number starts at 1 and resets to 1 on back/forward navigation. Total pages is at least 1 when records are loaded."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/useMissing.tsx#useMissing",
+          "ts|frontend/src/Utilities/Filter/findSelectedFilters.ts#findSelectedFilters"
+        ],
+        "id": "R6",
+        "text": "Filters come from the selected built-in filter or the saved custom filter of type wanted.missing; the previous page data is kept while a new page loads."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Missing\" with the heading scope \"Wanted\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent",
+          "ts|frontend/src/Wanted/Missing/MissingRow.tsx#MissingRow"
+        ],
+        "id": "S2",
+        "text": "Missing episodes are listed in a paged table, with a row per episode. Rows for episodes whose series is not found are not shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/MissingRow.tsx#MissingRow"
+        ],
+        "id": "S3",
+        "text": "Each row has a select checkbox and the visible columns: series title link, episode number, episode title link, air date, last search time, status and a search/actions cell."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent"
+        ],
+        "id": "S4",
+        "text": "A loading indicator shows while the list is fetching and loading."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent"
+        ],
+        "id": "S5",
+        "text": "When loading fails and it is not fetching, an error alert shows the message for \"MissingLoadError\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent"
+        ],
+        "id": "S6",
+        "text": "When there is no error and no records, a \"MissingNoItems\" message is shown instead of the table."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent"
+        ],
+        "id": "S7",
+        "text": "A pager below the table shows the current page, total pages and total records."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent"
+        ],
+        "id": "S8",
+        "text": "The toolbar has Search (label \"Search Selected\" when any row is selected, otherwise \"Search All\"), Monitor/Unmonitor Selected, Manual Import, Options and a filter menu."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/Missing.tsx#MissingContent",
+          "ts|frontend/src/Utilities/pagePopulator.ts#registerPagePopulator"
+        ],
+        "id": "E1",
+        "text": "The page refetches the list when seriesUpdated, episodeFileUpdated or episodeFileDeleted updates occur."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/useEpisode.ts#useToggleEpisodesMonitored"
+        ],
+        "id": "E2",
+        "text": "After a successful monitor toggle, the cached episodes are updated with the new monitored value."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "E3",
+        "text": "Running a search posts a command to the command API."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/Missing/useMissing.tsx#useMissing",
+          "ts|frontend/src/Episode/useEpisode.ts#setEpisodeQueryKey"
+        ],
+        "id": "E4",
+        "text": "The query key of the loaded missing list is stored for the wanted.missing episode entity."
+      }
+    ]
+  },
+  "title": "Wanted: Missing episodes",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/usePagedApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery",
+      "line": 79,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Utilities/Fetch/fetchJson.ts",
+      "in": "ts|frontend/src/Utilities/Fetch/fetchJson.ts#fetchJson",
+      "line": 56,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}
