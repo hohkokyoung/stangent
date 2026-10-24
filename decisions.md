@@ -951,6 +951,9 @@ comparison find planted drift, are pages grounded, what do they cost per kind) a
   is mostly the bundle written to the prompt cache once for the writer and once for the verifier (their schemas
   differ, so they can't share it); cost ≈ $0.035 + $4 per million bundle characters. The plugin's subagents stay for
   interactive use and as `spec-run.sh --agents`.
+- *Refined 2026-10-25 (the writer model):* the 5-page hand-read, made by a fresh agent instead of the owner (D65),
+  found 2 wrong statements in 88 (one inverted condition, one wrong endpoint link); the verifier caught neither.
+  **Sonnet stays the writer;** the owner had asked for the hand checks to be decided for him.
 
 ## D65 · Phase 2's hand checks are done by a fresh agent, not the owner — 2026-10-24
 D56, D57 and 2a planned two checks by a person: 20 unplanted findings marked real drift or false alarm (the "not too

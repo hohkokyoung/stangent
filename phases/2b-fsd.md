@@ -114,7 +114,8 @@ links (D52), and a discrepancy is a link's state (D58).
 ## End-of-phase report
 
 *2026-10-25 · first report.* "Finds what's planted" **passes**; "not too noisy" **fails narrowly** (31.3% false
-alarms against 30%), so discrepancy findings ship **off by default** (D57, D66); pages and links ship. Build, tests
+alarms against 30%; the 95% range, 14–45%, sits on both sides of the bar), so discrepancy findings ship **off by
+default** (D57, D66); pages and links ship. Build, tests
 (121) and `phases check` pass locally; CI runs once the branch is pushed.
 
 ### 1. What was built
@@ -142,13 +143,12 @@ was raised, as a conflict on the right statement rather than as undocumented.
 
 **Not too noisy** (bar: ≤ 30% of findings are false alarms): 89 findings, 62 unplanted. Worst case (every unplanted
 one false) 0.70. Of the 20 sampled (seed 42), a fresh agent checking against Sonarr's source (D65,
-`2026-10-24-phase2b-handcheck.json`) found **11 real drift and 9 false alarms**: false-alarm share 0.70 × 9/20 =
+`2026-10-24-phase2b-handcheck.json`) found **11 real drift and 9 false alarms**: false-alarm share 62/89 × 9/20 =
 **0.313 (95% range 0.14–0.45)**. **The bar fails.** The 9 false alarms: 7 gaps where the FSD statement is in fact true
 of the code (6 of them agrees the second check disputed; of the 7 disputed agrees in the sample, 6 were false), and 2
 routes that only redirect to `/series` (`/`, `/seasonpass`), listed as undocumented screens. One "real" one (A7, the
 Cutoff Unmet search option on Add New) is planted item U5 reported as a conflict; the frozen matching rule needs the
-undocumented state, so it counts as unplanted. The checker called two real ones judgement calls (a field shown only when another is ticked; a
-cutoff forced to an allowed quality); counting either as false would widen the miss. Where the 62 unplanted findings come from: 25 are "agree"
+undocumented state, so it counts as unplanted. Where the 62 unplanted findings come from: 25 are "agree"
 links the second check disputed (D62 turns each into a gap; most say the page shows a field but not its meaning), 19
 are in-scope screens no section links to (by code), 8 are undocumented items the judge raised, and 10 are other gaps
 (6) and conflicts (4).
@@ -180,8 +180,8 @@ files were lost (2a Progress step 3).
 
 ### 4. Known gaps
 - **Findings are off by default (D66):** the noise bar failed; a project opts in with `fsd.findings: true`.
-- **The second check is strict:** 25 of 62 unplanted findings are disputed agrees where the page shows a field but
-  not the FSD's explanation of it; most of the hand check's false alarms are of this kind.
+- **The second check is strict:** 25 of 62 unplanted findings are disputed agrees (the page covers only part of the
+  FSD statement, often a field without its meaning); 6 of the hand check's 9 false alarms are disputed agrees.
 - **Redirect routes count as screens:** `/` and `/seasonpass` only redirect, yet were listed as undocumented.
 - The hand check is an AI's (D65); a person's check is owed before findings are relied on.
 - **Same-kind accuracy:** half the planted conflicts came back as gaps (the page lacks the rule rather than stating a

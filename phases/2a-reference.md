@@ -244,16 +244,16 @@ Sonarr's source, D65: `2026-10-24-phase2a-handread.json`)
 | Bulk-delete blocklist entries (endpoint) | 4 | 0 | (the verifier flagged R1 as unsupported; fixed before recording) |
 | Provider added (handler) | 5 | 0 | — |
 | **all** | **88** | **2 (2%)** | **0 of 2** |
-Both errors sit where the slice's code says it but needs reading against something outside the statement (a
-breakpoint's meaning, which endpoint a row action calls); the verifier missed both. With 2 wrong in 88, Sonnet stays
-the writer (D64).
+S8 inverts a condition whose name reads the other way (`isLargeScreen` means 1200 px or narrower); the verifier
+missed it. A3's text is right and its error is in the statement's endpoint link, which the verifier isn't asked to
+check (it judges statement content). With 2 wrong in 88, Sonnet stays the writer (D64, refined).
 
 ### 3. Decisions made or changed
 - [D63](../decisions.md): slices split at the API boundary; every endpoint gets a page (changes D54).
 - [D64](../decisions.md): the proof is the pages 2b needs plus 10 handlers; Sonnet writes and verifies; calls are
   single-turn (refined with the measurement).
-- [D65](../decisions.md): the hand checks are done by a fresh agent, not the owner; the writer stays Sonnet after
-  the hand-read (D64).
+- [D65](../decisions.md): the hand checks are done by a fresh agent, not the owner.
+- [D64](../decisions.md) refined: after the hand-read (2 wrong in 88), the writer stays Sonnet.
 - D60 refined (the batch driver's permission rules) and D62 refined (evidence length, the verifier's retry, no second
   verifier pass after a fix).
 
@@ -273,4 +273,5 @@ the writer (D64).
 - Generate the remaining 605 Sonarr pages when a full reference is wanted (about $63 at these rates).
 - Re-check the slice rule against 1d part 2's verdict (D45).
 - A person's hand-read before pages are relied on in a real project (D65's cost).
-- The verifier missed both hand-read errors: worth a look at how it reads conditions with inverted names.
+- The verifier: how it reads conditions whose names invert their meaning (S8), and whether it should also check each
+  action's endpoint links (A3), which today only code checks for existence.
