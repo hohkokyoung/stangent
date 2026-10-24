@@ -190,6 +190,7 @@ Ten findings; each was fixed or rejected with a reason:
 
 *2026-10-25 · first report.* Built and proven on Sonarr; every done-when box is met. CI green on GitHub ([run](https://github.com/hohkokyoung/stangent/actions/runs/40114060098));
 phase **done**.
+The conclusion for Phase 2 as a whole (2a and 2b) is in [2b's report](2b-fsd.md#conclusion-of-phase-2-2a-and-2b-together).
 
 ### 1. What was built
 - **`src/Stangent.Spec/`**: the page list (screens, server-rendered screens, shared components, every endpoint and

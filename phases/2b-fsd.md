@@ -118,6 +118,20 @@ alarms against 30%; the 95% range, 14–45%, sits on both sides of the bar), so 
 default** (D57, D68); pages and links ship. CI green on GitHub
 ([run](https://github.com/hohkokyoung/stangent/actions/runs/40114060098)); phase **done**, with the noise bar failed as recorded.
 
+### Conclusion of Phase 2 (2a and 2b together)
+- **Works:** stangent writes accurate, grounded descriptions of what code does: 2 wrong statements in 88 on the
+  hand-read (so Sonnet is enough), every statement cites code inside its slice, about $0.20 a page ($85 for all 718
+  Sonarr pages), and a re-run with nothing changed costs nothing. It keeps up per commit (median 1 stale page).
+- **Half-works:** it finds where the FSD and the code differ (27 of 30 planted, every gap and conflict) but raises
+  too many false alarms (31%, bar 30%), mostly from the second check turning partial agreements into gaps.
+- **So:** pages and FSD ↔ page links ship and are ready as context for Phases 3 and 4; the drift list ships off by
+  default (`fsd.findings`, D68) and needs a person's review when turned on.
+- **Caveats:** a planted FSD is tidier than a real one, and both hand checks were an AI's (D67), so real results will
+  likely be worse until a person checks them.
+- **Next, worth doing before relying on the findings:** cut the noise (the second check's bar for partial agreement;
+  redirect-only routes as screens) and re-run Sonarr as a new benchmark; then the dry run on a real FSD from one of
+  the owner's projects, checked by a person (D56).
+
 ### 1. What was built
 See Progress step 1. Contracts: `source-document` v1 (`schemas/source-document.v1.json`), `trace-links` v1
 (`schemas/trace-links.v1.json`), and `impact-report` v4 → v5 (the FSD-sections group, provided by 1a, reopened per
