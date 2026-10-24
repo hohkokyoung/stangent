@@ -1,0 +1,222 @@
+{
+  "codeTitle": "/settings/ui · UISettings",
+  "entry": "page:tsconfig.json|/settings/ui",
+  "generated": {
+    "bundleHash": "1e5888d1da6427fa9e854545d07ae4de671af421a425f154b5c9c8e013f0f55e",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 35715,
+      "cutOff": 11,
+      "depth": 6,
+      "points": 144
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 18593,
+      "calls": 1,
+      "costUsd": 0.079541,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7526,
+      "outputTokens": 499
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 16105,
+      "calls": 1,
+      "costUsd": 0.08245,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 15336,
+      "outputTokens": 1775
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/settings/ui",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/UI/UISettings.tsx#UISettings",
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings",
+          "ts|frontend/src/Helpers/Hooks/usePendingChangesStore.ts#usePendingChangesStore"
+        ],
+        "id": "A1",
+        "text": "Changing any field stores it as a pending change without saving."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/UI/UISettings.tsx#UISettings",
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings",
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings"
+        ],
+        "id": "A2",
+        "text": "Pressing save sends the current settings merged with pending changes via a PUT request."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/UI/UISettings.tsx#UISettings",
+          "ts|frontend/src/Utilities/String/titleCase.ts#titleCase"
+        ],
+        "id": "R1",
+        "text": "Theme options are Auto, Light and Dark."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/UI/UISettings.tsx#UISettings",
+          "ts|frontend/src/Language/useLanguages.ts#useFilteredLanguages"
+        ],
+        "id": "R2",
+        "text": "The language list excludes the languages named Any, Original and Unknown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/UI/UISettings.tsx#UISettings"
+        ],
+        "id": "R3",
+        "text": "If the selected UI language is not in the available language list, the field shows the error \"InvalidUILanguage\" (translated)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings"
+        ],
+        "id": "R4",
+        "text": "Only values that differ from the loaded settings count as changed and are sent on save."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/selectSettings.ts#getValidationFailures",
+          "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#getValidationFailures"
+        ],
+        "id": "R5",
+        "text": "Validation failures come from a 400 response; those flagged as warnings are shown as warnings and the rest as errors."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Language/useLanguages.ts#useLanguages"
+        ],
+        "id": "R6",
+        "text": "The language list is cached indefinitely and never considered stale."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/UI/UISettings.tsx#UISettings"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"UiSettings\" (translated) with a heading \"Ui\" under the scope \"Settings\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/UI/UISettings.tsx#UISettings"
+        ],
+        "id": "S2",
+        "text": "A loading indicator shows while data is being fetched, but only once data has been populated before."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/UI/UISettings.tsx#UISettings"
+        ],
+        "id": "S3",
+        "text": "When not fetching and loading languages or settings failed, a danger alert shows the message \"UiSettingsLoadError\" (translated)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/UI/UISettings.tsx#UISettings"
+        ],
+        "id": "S4",
+        "text": "The form is shown only when settings exist, both languages and settings have loaded, and there is no error."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/UI/UISettings.tsx#UISettings"
+        ],
+        "id": "S5",
+        "text": "The Calendar section has selects for First Day of Week and Week Column Header, the latter with help text."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/UI/UISettings.tsx#UISettings"
+        ],
+        "id": "S6",
+        "text": "The Dates section has selects for Short Date Format, Long Date Format, Time Format and Time Zone, and a checkbox for Show Relative Dates."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/UI/UISettings.tsx#UISettings"
+        ],
+        "id": "S7",
+        "text": "The Style section has a Theme select, a Header Color select and an Enable Color Impaired Mode checkbox, each with help text."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/UI/UISettings.tsx#UISettings"
+        ],
+        "id": "S8",
+        "text": "The Language section has a UI Language select with help text and a warning that a browser reload is required."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/selectSettings.ts#selectSettings",
+          "ts|frontend/src/Settings/UI/UISettings.tsx#UISettings"
+        ],
+        "id": "S9",
+        "text": "Each field shows its current value, pending state, and any validation errors or warnings returned from a failed save."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Language/useLanguages.ts#useLanguages"
+        ],
+        "id": "E1",
+        "text": "The language list is fetched from the language API."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings"
+        ],
+        "id": "E2",
+        "text": "On successful save, the cached settings are replaced with the server's response and pending changes are cleared."
+      }
+    ]
+  },
+  "title": "UI Settings",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSettings",
+      "line": 12,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+      "line": 29,
+      "reason": "HTTP PUT to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

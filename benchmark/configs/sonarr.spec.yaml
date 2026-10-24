@@ -1,0 +1,17 @@
+# stangent.yaml for Phase 2 (spec) on Sonarr: sonarr.yaml plus Sonarr's own event and command handlers,
+# so event handlers and scheduled commands are entry points (D54). Kept apart from sonarr.yaml so the
+# graph that Phases 1b–1d scored stays the same.
+version: 1
+store:
+  root: .stangent/store
+ai:
+  enabled: true
+detectors: []
+detectorSettings:
+  frontend-http:
+    # Sonarr's own API helpers (frontend/src/Helpers/Hooks, Utilities/Fetch): name:urlProperty[:verbProperty].
+    wrappers: ["useApiQuery:path", "usePagedApiQuery:path", "useApiMutation:path:method", "fetchJson:path:method", "createAjaxRequest:url:method"]
+  publish-handle:
+    # IHandle<TEvent> and IHandleAsync<TEvent> for events; IExecute<TCommand> for commands, which Sonarr's
+    # scheduler and its command API run (src/NzbDrone.Core/Messaging).
+    handlerInterfaces: ["NzbDrone.Core.Messaging.Events.IHandle`1", "NzbDrone.Core.Messaging.Events.IHandleAsync`1", "NzbDrone.Core.Messaging.Commands.IExecute`1"]

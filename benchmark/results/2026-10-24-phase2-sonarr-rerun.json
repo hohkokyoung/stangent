@@ -1,0 +1,10 @@
+{
+  "repo": "sonarr",
+  "note": "Phase 2 repeatable check (D57): after every page and section was recorded, the same drivers ran again with nothing changed. A sha1 of every file under specs/ was taken before and after.",
+  "date": "2026-10-24",
+  "pages": { "run": 113, "current": 113, "aiCalls": 0 },
+  "sections": { "run": 16, "current": 16, "aiCalls": 0 },
+  "fsdImport": { "status": "unchanged", "hash": "1e5ebf4d714c004add742a66a9647892ef78f7a199cd44221434bf628c81bba6" },
+  "undocumentedByCode": 22,
+  "specsByteIdentical": true
+}

@@ -1,0 +1,82 @@
+{
+  "codeTitle": "HealthController.Handle(HealthCheckCompleteEvent)",
+  "entry": "Sonarr.Api.V3|M:Sonarr.Api.V3.Health.HealthController.Handle(NzbDrone.Core.HealthCheck.HealthCheckCompleteEvent)",
+  "generated": {
+    "bundleHash": "db64a170c6e3d44118c219e28535390759f8d65d3bd12cac945a877c46b8c7e8",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 7755,
+      "cutOff": 0,
+      "depth": 4,
+      "points": 3
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 5301,
+      "calls": 1,
+      "costUsd": 0.021913,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1849,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3920,
+      "calls": 1,
+      "costUsd": 0.02201,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3932,
+      "outputTokens": 605
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "Sonarr.Api.V3|M:Sonarr.Api.V3.Health.HealthController.Handle(NzbDrone.Core.HealthCheck.HealthCheckCompleteEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Health.HealthController.Handle(NzbDrone.Core.HealthCheck.HealthCheckCompleteEvent)"
+        ],
+        "id": "A1",
+        "text": "When a health check completes event is received, the controller broadcasts a resource change with action Sync."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestControllerWithSignalR`2.BroadcastResourceChange(NzbDrone.Core.Datastore.Events.ModelAction)"
+        ],
+        "id": "R1",
+        "text": "Nothing is broadcast if the SignalR broadcaster is not connected."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestControllerWithSignalR`2.BroadcastResourceChange(NzbDrone.Core.Datastore.Events.ModelAction)"
+        ],
+        "id": "R2",
+        "text": "The message is only sent when the controller's namespace contains \"V3\" or \"V5\"."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestControllerWithSignalR`2.BroadcastResourceChange(NzbDrone.Core.Datastore.Events.ModelAction)"
+        ],
+        "id": "E1",
+        "text": "A SignalR message is broadcast carrying the resource name, a resource change body, the action and the API version."
+      }
+    ]
+  },
+  "title": "Health check complete broadcast",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

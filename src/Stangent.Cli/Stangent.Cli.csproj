@@ -11,5 +11,6 @@
     <PackageReference Include="System.CommandLine" />
     <ProjectReference Include="..\Stangent.Core\Stangent.Core.csproj" />
     <ProjectReference Include="..\Stangent.Graph\Stangent.Graph.csproj" />
+    <ProjectReference Include="..\Stangent.Spec\Stangent.Spec.csproj" />
   </ItemGroup>
 </Project>

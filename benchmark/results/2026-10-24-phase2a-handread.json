@@ -1,0 +1,47 @@
+{
+  "_checker": "fresh agent (D67), 2026-10-24",
+  "pages": [
+    {
+      "page": "page:/calendar",
+      "statements": 40,
+      "wrong": 1,
+      "wrongStatements": [
+        {
+          "id": "S8",
+          "why": "This gets the screen-size condition backwards. isLargeScreen means width <= 1200px, so the dropdown appears on screens up to 1200px wide and the separate buttons appear on wider screens. The page says large screens get the dropdown. (The Month option being hidden on small screens is right.)",
+          "evidence": "frontend/src/App/appStore.ts:14 `isLargeScreen: width <= dimensions.breakpointLarge`; Styles/Variables/dimensions.ts:18 `breakpointLarge: 1200`; Calendar/Header/CalendarHeader.tsx `{isLargeScreen ? (<Menu ...>) : (<>CalendarHeaderViewButton ...</>)}`"
+        }
+      ]
+    },
+    {
+      "page": "page:/activity/blocklist",
+      "statements": 24,
+      "wrong": 1,
+      "wrongStatements": [
+        {
+          "id": "A3",
+          "why": "The text (the row's remove icon removes that one item) is right, but the statement links it to the bulk endpoints (DELETE /api/v5|v3/Blocklist/bulk). The single remove actually calls DELETE /blocklist/{id}, not the bulk endpoint. The error is in the link only.",
+          "evidence": "frontend/src/Activity/Blocklist/useBlocklist.ts useRemoveBlocklistItem: `path: `/blocklist/${id}`, method: 'DELETE'`"
+        }
+      ]
+    },
+    {
+      "page": "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus",
+      "statements": 15,
+      "wrong": 0,
+      "wrongStatements": []
+    },
+    {
+      "page": "endpoint:Sonarr.Api.V3|DELETE /api/v3/Blocklist/bulk",
+      "statements": 4,
+      "wrong": 0,
+      "wrongStatements": []
+    },
+    {
+      "page": "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Handle(NzbDrone.Core.ThingiProvider.Events.ProviderAddedEvent{`2})",
+      "statements": 5,
+      "wrong": 0,
+      "wrongStatements": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:page-verifier-output:v1",
+  "title": "What stangent-page-verifier returns (Phase 2, D61, D62)",
+  "description": "Statements of a finished page that the slice's code doesn't support. Code keeps a 'contradicted' finding only if its quote is in the slice's source.",
+  "type": "object",
+  "required": ["findings"],
+  "additionalProperties": false,
+  "properties": {
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["statement", "kind", "explanation"],
+        "additionalProperties": false,
+        "properties": {
+          "statement": { "description": "The statement's id, e.g. R3.", "type": "string", "pattern": "^[SARE][0-9]+$" },
+          "kind": { "enum": ["contradicted", "unsupported"] },
+          "quote": { "description": "For 'contradicted': the source line that contradicts the statement, copied exactly from the bundle.", "type": "string" },
+          "explanation": { "type": "string", "minLength": 3, "maxLength": 600 }
+        }
+      }
+    }
+  }
+}

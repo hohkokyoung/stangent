@@ -27,8 +27,33 @@ using Stangent.Benchmark.Split;
 //     [--compile-break N] [--only-compile-break]   (test 4: rename N methods, see what fails to compile)
 //     [--openapi path/in/repo.json] [--ts-compile-break N] [--only-frontend]   (Phase 1b, D32)
 //     [--split --split-config configs/<name>.split.json [--max-split 30] [--max-examined 200]]   (Phase 1d, D45–D49)
+//     [--spec-stale N]   (Phase 2a: reference pages each of the last N main-line commits makes stale, D55)
 
 var argList = args.ToList();
+// Phase 2b: write the planted FSD from its outline (`--fsd-docx <outline.md> <out.docx>`), and score findings
+// against the answer key (`--score-fsd <repo> <answer-key.json> [--hand-check <file>] [--out file]`).
+if (argList.Count >= 3 && argList[0] == "--fsd-docx")
+{
+    File.WriteAllBytes(argList[2], Stangent.Spec.Fsd.DocxWriter.Write(File.ReadAllText(argList[1]), Path.GetDirectoryName(Path.GetFullPath(argList[1]))));
+    return 0;
+}
+if (argList.Count >= 2 && argList[0] == "--page-stats")
+{
+    var stats = Stangent.Benchmark.Spec.PageStats.Run(Path.GetFullPath(argList[1]));
+    var statsText = stats.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+    if (argList.IndexOf("--out") is var po and >= 0) File.WriteAllText(argList[po + 1], statsText + "\n");
+    Console.WriteLine(statsText);
+    return 0;
+}
+if (argList.Count >= 3 && argList[0] == "--score-fsd")
+{
+    var hand = argList.IndexOf("--hand-check") is var hc and >= 0 ? argList[hc + 1] : null;
+    var score = Stangent.Benchmark.Spec.FsdScore.Run(Path.GetFullPath(argList[1]), argList[2], hand);
+    var scoreText = score.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+    if (argList.IndexOf("--out") is var so and >= 0) File.WriteAllText(argList[so + 1], scoreText + "\n");
+    Console.WriteLine(scoreText);
+    return 0;
+}
 // Picks 📜's defaults from tuning runs (D43): `--select-tuning <tune.json>... [--out file]`.
 if (argList.Count > 0 && argList[0] == "--select-tuning")
     return Tuning.Select([.. argList.Skip(1).TakeWhile(a => !a.StartsWith('-'))], argList.IndexOf("--out") is var o and >= 0 ? argList[o + 1] : null);
@@ -64,6 +89,14 @@ foreach (var marker in new[] { "__StangentBroken", "stangent benchmark touch" })
     }
 
 var repo = StangentRepo.Discover(root);
+if (argList.Contains("--spec-stale"))
+{
+    var report = await Stangent.Benchmark.Spec.SpecStale.RunAsync(root, repo, int.Parse(Opt("--spec-stale", "50")), ApplySdkOverride, Console.Error);
+    var reportText = report.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+    if (Opt("--out", "") is { Length: > 0 } reportFile) File.WriteAllText(reportFile, reportText + "\n");
+    Console.WriteLine(reportText);
+    return 0;
+}
 var graph = GraphStore.Load(GraphStore.PathFor(repo)) ?? throw new InvalidOperationException("Build the graph first: stangent graph build");
 // History tests need every commit; the frontend and compile-break checks don't.
 if (!onlyFrontend && !onlyCompileBreak && Run("rev-parse --is-shallow-repository").Trim() == "true")

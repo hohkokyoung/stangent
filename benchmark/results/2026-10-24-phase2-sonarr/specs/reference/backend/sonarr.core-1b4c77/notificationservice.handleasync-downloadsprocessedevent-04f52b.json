@@ -1,0 +1,149 @@
+{
+  "codeTitle": "NotificationService.HandleAsync(DownloadsProcessedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.HandleAsync(NzbDrone.Core.Download.DownloadsProcessedEvent)",
+  "generated": {
+    "bundleHash": "a670b10ab2faab5d34698e5d1d8735e9d37b16b08ea8bf52153470f037bde0be",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 12474,
+      "cutOff": 51,
+      "depth": 4,
+      "points": 55
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 8340,
+      "calls": 1,
+      "costUsd": 0.036469,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3602,
+      "outputTokens": 293
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 6048,
+      "calls": 1,
+      "costUsd": 0.039602,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8555,
+      "outputTokens": 1513
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.HandleAsync(NzbDrone.Core.Download.DownloadsProcessedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.HandleAsync(NzbDrone.Core.Download.DownloadsProcessedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.ProcessQueue",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.IProviderFactory`2.GetAvailableProviders"
+        ],
+        "id": "A1",
+        "text": "When a downloads-processed event arrives, the service processes the queued updates of every available notification provider."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.ProcessQueue"
+        ],
+        "id": "R1",
+        "text": "If processing one notification's queue throws, a warning 'Unable to process notification queue for <name>' is logged and the remaining notifications are still processed."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationBase`1.ProcessQueue"
+        ],
+        "id": "R2",
+        "text": "By default a notification's ProcessQueue does nothing; only providers that override it act."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Emby.MediaBrowser.ProcessQueue"
+        ],
+        "id": "R3",
+        "text": "Emby/MediaBrowser updates the library only when UpdateLibrary is enabled in its settings."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Emby.MediaBrowser.ProcessQueue"
+        ],
+        "id": "R4",
+        "text": "For Emby, if a series has exactly one update type that type is sent; otherwise no update type is sent and Emby decides."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Plex.Server.PlexServer.ProcessQueue"
+        ],
+        "id": "R5",
+        "text": "Plex Server updates the library only when UpdateLibrary is enabled in its settings."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Xbmc.Xbmc.ProcessQueue"
+        ],
+        "id": "R6",
+        "text": "Kodi (Xbmc) updates the library for each queued series only when UpdateLibrary is enabled."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Xbmc.Xbmc.ProcessQueue"
+        ],
+        "id": "R7",
+        "text": "Kodi cleans the library only when the queued item's info contains true and CleanLibrary is enabled."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Xbmc.Xbmc.ProcessQueue"
+        ],
+        "id": "R8",
+        "text": "If Kodi cannot be reached (socket error), a debug message 'Unable to connect to Kodi Host: host:port' is logged and processing continues."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Emby.MediaBrowser.ProcessQueue",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Plex.Server.PlexServer.ProcessQueue",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Xbmc.Xbmc.ProcessQueue"
+        ],
+        "id": "R9",
+        "text": "Queued items are processed per configured host (Settings.Host) for Emby, Plex and Kodi."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Emby.MediaBrowser.ProcessQueue"
+        ],
+        "id": "E1",
+        "text": "Emby receives a library update call for each queued series."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Plex.Server.PlexServer.ProcessQueue"
+        ],
+        "id": "E2",
+        "text": "Plex receives a library update for the queued series."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Xbmc.Xbmc.ProcessQueue"
+        ],
+        "id": "E3",
+        "text": "Kodi receives a library update per queued series and, when applicable, a library clean."
+      }
+    ]
+  },
+  "title": "Process notification queues after downloads processed",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

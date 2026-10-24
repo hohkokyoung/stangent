@@ -1,0 +1,121 @@
+{
+  "codeTitle": "ANY /api/v3/queue/details",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/queue/details",
+  "generated": {
+    "bundleHash": "c5692e60c6d8cd30fb3be2fffef2931844e4477e9b980aae369c25609be0dcb2",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 9898,
+      "cutOff": 0,
+      "depth": 4,
+      "points": 3
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6593,
+      "calls": 1,
+      "costUsd": 0.027081,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3957,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4732,
+      "calls": 1,
+      "costUsd": 0.030828,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7441,
+      "outputTokens": 1162
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/queue/details",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/queue/details"
+        ],
+        "id": "A1",
+        "text": "A caller requests a resource by id; the id is passed to the resource lookup and the result is returned as Ok or NotFound."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R1",
+        "text": "Before the action runs, for POST and PUT requests each resource in the arguments is validated, unless validation is skipped for that method."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R2",
+        "text": "For a PUT whose body resource has Id 0, the id is taken from the route id when one is present."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R3",
+        "text": "The id argument is validated when the action carries an id-validation attribute and validation is not skipped."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R4",
+        "text": "Validation can be skipped, including shared validation, through a skip-validation attribute on the action."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "On success the get-by-id action returns the resource as JSON with an Ok result."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "When the requested resource is not found, it returns a NotFound result."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "S3",
+        "text": "For calls to a deprecated endpoint, the response carries the header Deprecation: true."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "E1",
+        "text": "A call to a deprecated controller or action logs a warning including the caller's user agent."
+      }
+    ]
+  },
+  "title": "Queue details endpoint (generic REST base behaviour)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

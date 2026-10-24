@@ -1,0 +1,180 @@
+{
+  "codeTitle": "ANY /api/v5/DelayProfile",
+  "entry": "endpoint:Sonarr.Api.V5|ANY /api/v5/DelayProfile",
+  "generated": {
+    "bundleHash": "db786686bc667c7d037ade308aa4020c03d01e2136a669afd529c726a86ea8b3",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 21568,
+      "cutOff": 8,
+      "depth": 4,
+      "points": 56
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 14097,
+      "calls": 1,
+      "costUsd": 0.060737,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6036,
+      "outputTokens": 417
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 11034,
+      "calls": 1,
+      "costUsd": 0.068806,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 12928,
+      "outputTokens": 2439
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|ANY /api/v5/DelayProfile",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Delay.DelayProfileController.Create(Sonarr.Api.V5.Profiles.Delay.DelayProfileResource)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/DelayProfile"
+        ],
+        "id": "A1",
+        "text": "Create a delay profile from a JSON body; the profile is saved and returned as created."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Delay.DelayProfileController.Update(Sonarr.Api.V5.Profiles.Delay.DelayProfileResource)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/DelayProfile"
+        ],
+        "id": "A2",
+        "text": "Update a delay profile from a JSON body; the profile is saved and returned as accepted."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Delay.DelayProfileController.DeleteProfile(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/DelayProfile"
+        ],
+        "id": "A3",
+        "text": "Delete a delay profile by id; returns no content."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Delay.DelayProfileController.DeleteProfile(System.Int32)",
+          "Sonarr.Http|M:Sonarr.Http.REST.MethodNotAllowedException.#ctor(System.Object)"
+        ],
+        "id": "R1",
+        "text": "The profile with id 1 cannot be deleted; the call fails with Method Not Allowed and the message \"Cannot delete global delay profile\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Delay.DelayProfileService.Add(NzbDrone.Core.Profiles.Delay.DelayProfile)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Count"
+        ],
+        "id": "R2",
+        "text": "A new delay profile's order is set to the current number of delay profiles."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Delay.DelayProfileService.Delete(System.Int32)"
+        ],
+        "id": "R3",
+        "text": "After a delete, the remaining profiles are renumbered by their existing order as 1, 2, 3 and so on, skipping the profile with id 1, which keeps its order."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R4",
+        "text": "On PUT, if the body id is 0 and the route has an id, the route id is used. POST and PUT bodies are validated."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R5",
+        "text": "Calls to endpoints marked deprecated are logged as a warning and the response gets a \"Deprecation: true\" header."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Delay.DelayProfile.#ctor",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Delay.DelayProfileResourceMapper.ToModel(Sonarr.Api.V5.Profiles.Delay.DelayProfileResource)"
+        ],
+        "id": "R6",
+        "text": "A profile with no tags given starts with an empty tag set; the mapper always builds the tag set from the resource's tags."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "Fetching a delay profile by id returns the profile, or a not-found result when no such profile exists."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Delay.DelayProfileResourceMapper.ToModel(Sonarr.Api.V5.Profiles.Delay.DelayProfileResource)"
+        ],
+        "id": "S2",
+        "text": "A delay profile carries: enable Usenet, enable torrent, preferred protocol, Usenet delay, torrent delay, bypass if highest quality, bypass if above custom format score, minimum custom format score, order, and tags."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.TypedCreated(System.Int32)",
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.TypedAccepted(System.Int32)"
+        ],
+        "id": "S3",
+        "text": "Create returns the created profile, and update returns the accepted profile, each with a link to fetch it by id."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Delay.DelayProfileService.Add(NzbDrone.Core.Profiles.Delay.DelayProfile)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Insert(`0)",
+          "Sonarr.Common|M:NzbDrone.Common.Cache.ICached.Clear"
+        ],
+        "id": "E1",
+        "text": "Creating a profile inserts it in the data store and clears the best-for-tags cache."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Delay.DelayProfileService.Update(NzbDrone.Core.Profiles.Delay.DelayProfile)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Update(`0)",
+          "Sonarr.Common|M:NzbDrone.Common.Cache.ICached.Clear"
+        ],
+        "id": "E2",
+        "text": "Updating a profile saves it in the data store and clears the best-for-tags cache."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Delay.DelayProfileService.Delete(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Delete(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.UpdateMany(System.Collections.Generic.IList{`0})",
+          "Sonarr.Common|M:NzbDrone.Common.Cache.ICached.Clear"
+        ],
+        "id": "E3",
+        "text": "Deleting a profile removes it from the data store, saves the renumbered order of the remaining profiles, and clears the best-for-tags cache."
+      }
+    ]
+  },
+  "title": "Delay Profile API",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

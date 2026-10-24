@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:agree-checker-output:v1",
+  "title": "What stangent-agree-checker returns (Phase 2b, D62)",
+  "description": "A second, fresh check of each 'agree' link before it can be bulk-approved: confirm, or dispute with the state it should have and exact quotes.",
+  "type": "object",
+  "required": ["checks"],
+  "additionalProperties": false,
+  "properties": {
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["link", "verdict", "note"],
+        "additionalProperties": false,
+        "properties": {
+          "link": { "type": "string", "pattern": "^K[0-9]+$" },
+          "verdict": { "enum": ["confirm", "dispute"] },
+          "state": { "description": "For a dispute: what the link really is.", "enum": ["gap", "conflict", "undocumented"] },
+          "fsdQuote": { "type": "string" },
+          "page": { "type": "string" },
+          "statement": { "type": "string", "pattern": "^[SARE][0-9]+$" },
+          "pageQuote": { "type": "string" },
+          "note": { "type": "string", "maxLength": 600 }
+        }
+      }
+    }
+  }
+}

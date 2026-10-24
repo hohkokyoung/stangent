@@ -1,0 +1,141 @@
+{
+  "repo": "sonarr",
+  "note": "Phase 2a step 7: every recorded page and every failed one (specs/reference), with what the code checks and the fresh verifier found, and the cost per page (writer and verifier apart).",
+  "recorded": 113,
+  "byKind": {
+    "backend": 73,
+    "component": 5,
+    "screen": 35
+  },
+  "failed": 0,
+  "failedReasons": {},
+  "failedPages": [],
+  "codeCheck": {
+    "passedFirstTry": 110,
+    "passedAfterRetry": 3,
+    "failedTwice": 0
+  },
+  "verifier": {
+    "pagesWithFindings": 13,
+    "findings": 14,
+    "findingsPerPage": {
+      "n": 113,
+      "median": 0,
+      "p90": 1,
+      "max": 2,
+      "mean": 0.1,
+      "total": 14
+    },
+    "fixed": 14,
+    "rejected": 0,
+    "contradicted": 3,
+    "unsupported": 11,
+    "droppedWithoutEvidence": 0
+  },
+  "statements": {
+    "n": 113,
+    "median": 13,
+    "p90": 33,
+    "max": 42,
+    "mean": 15.4,
+    "total": 1739
+  },
+  "sliceChars": {
+    "n": 113,
+    "median": 22386,
+    "p90": 93980,
+    "max": 254260,
+    "mean": 36758.8,
+    "total": 4153744
+  },
+  "writer": {
+    "inputTokens": {
+      "n": 113,
+      "median": 13894,
+      "p90": 61301,
+      "max": 215411,
+      "mean": 24775.4,
+      "total": 2799622
+    },
+    "outputTokens": {
+      "n": 113,
+      "median": 2083,
+      "p90": 5378,
+      "max": 10279,
+      "mean": 2668.4,
+      "total": 301534
+    },
+    "seconds": {
+      "n": 113,
+      "median": 12.1,
+      "p90": 29.4,
+      "max": 55.9,
+      "mean": 14.9,
+      "total": 1687.9
+    },
+    "costUsd": {
+      "n": 113,
+      "median": 0.1,
+      "p90": 0.3,
+      "max": 0.9,
+      "mean": 0.1,
+      "total": 13
+    },
+    "calls": {
+      "n": 113,
+      "median": 1,
+      "p90": 2,
+      "max": 3,
+      "mean": 1.1,
+      "total": 129
+    },
+    "models": [
+      "claude-sonnet-5-5"
+    ]
+  },
+  "verifier_cost": {
+    "inputTokens": {
+      "n": 113,
+      "median": 15602,
+      "p90": 48879,
+      "max": 122857,
+      "mean": 21088.7,
+      "total": 2383025
+    },
+    "outputTokens": {
+      "n": 113,
+      "median": 278,
+      "p90": 568,
+      "max": 949,
+      "mean": 298,
+      "total": 33678
+    },
+    "seconds": {
+      "n": 113,
+      "median": 4,
+      "p90": 7.9,
+      "max": 15.2,
+      "mean": 4.6,
+      "total": 517.3
+    },
+    "costUsd": {
+      "n": 113,
+      "median": 0.1,
+      "p90": 0.2,
+      "max": 0.5,
+      "mean": 0.1,
+      "total": 9.5
+    },
+    "calls": {
+      "n": 113,
+      "median": 1,
+      "p90": 1,
+      "max": 1,
+      "mean": 1,
+      "total": 113
+    },
+    "models": [
+      "claude-sonnet-5-5"
+    ]
+  }
+}

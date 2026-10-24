@@ -763,6 +763,10 @@ rubber-stamping); people linking everything by hand (slow, and it skips the code
 **Why:** code does what it can (candidates, quote and symbol checks); the person's attention goes to the findings.
 **Cost:** bulk approval of "agree" is where a wrong AI judgment can slip through; telemetry counts links later
 reopened, to show whether it does (D21).
+- *Refined 2026-10-20 (Phase 2b build, after a fresh review):* a quote is a sentence, not a fragment: word for word, and
+  at least 4 words or a whole table cell, list item or statement. A section whose candidate pages have no recorded
+  version is reported as failed, never turned into a gap. "Undocumented by code" only covers the FSD's scope
+  (`fsd.scope`): the areas it says it covers, as route prefixes, so an FSD for part of a system doesn't flag the rest.
 
 ## D54 · One reference page per screen, plus pages for the backend no screen reaches — 2026-10-19
 - **Screen pages:** one per frontend route, with the route as its stable ID (`page:/checkout`). It covers what the screen
@@ -843,6 +847,10 @@ Rejected: bot-opened review PRs with comment commands (machinery the dashboard r
 (pulls Phase 8 and sign-in forward).
 **Why:** the simplest thing that keeps a checked, attributed record, and the website reuses it unchanged.
 **Cost:** until Phase 8, reviewing means editing YAML in a PR, which is clunky for non-technical BAs.
+- *Refined 2026-10-20 (Phase 2b build):* a decision drops back to undecided when either quote no longer matches its
+  section or statement (each quote's hash is stored), not on any edit to the section: a typo fixed elsewhere in a long
+  section shouldn't reopen every link in it. An entry's id is the hash of its link and quotes, so an edited quote is
+  caught as a hand edit. On merge, CI fills `decided_by` and runs `trace check --fix` in the bot's spec PR.
 
 ## D59 · Phase 2 is split: 2a reference from code, then 2b FSD and discrepancies — 2026-10-20
 | Sub-phase | Delivers | Proven by |
@@ -872,6 +880,10 @@ second way to call AI beside the one every user already has).
 still passes a code check before anything uses it.
 **Cost:** CI needs headless Claude Code and a token; prompt caching and the Batch API's half price aren't directly
 available; the subagent's tool limits are a setting, so `check` must still reject anything citing outside its slice.
+- *Refined 2026-10-20 (Phase 2 build):* the batch driver enforces the tool limits with permission rules, not only the
+  subagent's tool list: `--permission-mode dontAsk --allowedTools "Read(.stangent/**)" "Edit(.stangent/**)"`, so a
+  subagent can't read or write outside its working folder (checked: a write elsewhere is refused). `prepare` and
+  `check` return the next step (subagent and prompt), so drivers (plugin command, CI, benchmark) hold no logic.
 
 ## D61 · Verification by a separate agent with a fresh context — 2026-10-20
 Whenever an AI step has to judge whether work is right (reviewing a change, sorting benchmark failures,
@@ -900,6 +912,29 @@ code checks (D18):
 Rejected: a second check on every finding (gaps, conflicts and undocumented items already go to a person one by one).
 **Why:** D61 is the owner's rule for every phase; these are the steps where a writer or judge would otherwise grade itself.
 **Cost:** roughly double the AI calls per page, plus one per "agree" link; reported apart from the writer's in 2a and 2b.
+- *Refined 2026-10-20 (Phase 2a build, after a fresh review):*
+  - A "contradicted" finding needs a quoted source line of at least 12 characters and two tokens (`return` proves nothing);
+    an "unsupported" finding has no line to quote and is kept. Rejecting an unsupported finding needs the supporting line.
+  - The verifier gets one retry when its output is missing or breaks the schema, as the writer does.
+  - A page fixed after the verifier's findings isn't verified again: code checks each "fixed" statement changed and each
+    rejection has a reason. A second verifier pass would double the cost of every page with findings; reported in 2a.
+
+## D63 · Slices split at the API boundary; every endpoint gets a page — 2026-10-20
+Asked while building Phase 2a, because the plan's slice rule ("the walk from the entry point within impact's depth
+limit", D54) doesn't hold on Sonarr: at depth 4 a screen stops at the endpoint, so the rules behind an action aren't in
+its page; at depth 6, 125 of ~600 bundles pass 200k characters (one is 868k) and every screen repeats the same backend
+rules. "Impact's depth limit" isn't a fixed number either.
+- **Screens walk the frontend only and stop at the endpoints they call** (linked, like shared components).
+- **Every endpoint gets its own backend page**, as do event and command handlers. This changes D54, which gave pages
+  only to entry points no screen reaches.
+- **A point with 10 or more callers is a leaf:** included, not walked into (logging, `translate()`, base services).
+- Frontend depth 6, backend depth 4, bundle cap 260k characters; all settings in `stangent.yaml` (`spec:`).
+- 2b gives an FSD section its screen pages plus the endpoints those screens call (code), so the rules are still in reach.
+- Still open to change when 1d part 2 (context scoping) reports (D45): every page then goes stale through its input hash.
+**Why:** bounded, layered slices (Sonarr: 718 pages, medians 8k–51k characters, largest 254k); one place per backend
+rule instead of one per screen; a backend change makes its endpoint page stale, not every screen that calls it.
+**Cost:** more pages (all 364 Sonarr endpoints, many near-duplicates across API v3 and v5); a screen page alone doesn't
+tell the whole story of an action.
 
 ## D64 · The split check is judged on bitwarden's first run; no rerun — 2026-10-20
 The plan asked both repos to run to 30 split cases or 200 examined, with every failure counted.
@@ -946,6 +981,66 @@ with the phase that needs it most.
 **Why:** Phase 4 designs the splitter, so it can shape the graph work around what the splitter needs. All of it is
 plain code (no AI tokens at runtime).
 **Cost:** Phases 5 and 6 get the better "what may break" only once Phase 4 lands; Phase 4 grows.
+
+## D66 · Phase 2a is proven on the pages 2b needs plus a sample; Sonnet writes and verifies — 2026-10-20
+*Numbered D64 on the Phase 2 branch; D66–D68 there were D64–D66 until main's D64 and D65 were merged in (2026-10-25).*
+The first full Sonarr run used far more than estimated: 193k input tokens per page on average (two headless Claude
+Code sessions per page, each re-sending its system prompt and the bundle chunks every turn), about $0.31 per page at
+list price, ~$220 for all 718 pages; it hit the owner's usage limit twice.
+- **Pages generated for the proof:** every page 2b's candidates need (the FSD's in-scope screens and the endpoints and
+  components they link to, ~103), plus a fixed sample of 10 event/command handlers (seed 42). The rest (~550, mostly
+  endpoints, half of them v5 copies of v3, and handlers) is left to `spec-run.sh --all`.
+- **Every page is still checked by code without AI:** each of the 718 fits under the size cap or is listed as failed.
+- **Calls become single-turn first** (the bundle in the prompt, structured output, no tools), measured on 10 pages.
+- **Model:** Sonnet 5.5 writes and verifies. The owner's 5-page hand-read decides whether the writer needs Opus.
+  Weakening the verifier to save tokens was rejected: it's the guard D62 relies on.
+- Changes 2a's done-when box "every Sonarr screen and backend entry point has a page" to the set above; decided by the
+  owner before the bar was measured, not to fit a result.
+**Why:** the other ~550 pages only show that more of the same works; the questions Phase 2 answers (does the FSD
+comparison find planted drift, are pages grounded, what do they cost per kind) are answered by the smaller set.
+**Cost:** Sonarr has no complete reference; per-kind cost is measured on smaller samples (10 handlers).
+- *Refined 2026-10-20 (single-turn calls, measured):* the batch driver sends each step as one call: input in the prompt,
+  `--tools ""`, `--json-schema`, no settings, skills or MCP servers (a bare Claude Code call carried 41k tokens of
+  its own context; now 1.2k). On the same 10 pages (6.5k–152k characters, Sonnet 5.5, before and after in
+  `benchmark/results/2026-10-20-phase2a-singleturn-measure.json`): **41k input tokens per page against 200k, $0.18
+  against $0.31, 111 s for all ten at 3 jobs**; the same verifier findings or one more or fewer per page. The cost left
+  is mostly the bundle written to the prompt cache once for the writer and once for the verifier (their schemas
+  differ, so they can't share it); cost ≈ $0.035 + $4 per million bundle characters. The plugin's subagents stay for
+  interactive use and as `spec-run.sh --agents`.
+- *Refined 2026-10-25 (the writer model):* the 5-page hand-read, made by a fresh agent instead of the owner (D67),
+  found 2 wrong statements in 88 (one inverted condition, one wrong endpoint link); the verifier caught neither.
+  **Sonnet stays the writer;** the owner had asked for the hand checks to be decided for him.
+
+## D67 · Phase 2's hand checks are done by a fresh agent, not the owner — 2026-10-24
+D56, D57 and 2a planned two checks by a person: 20 unplanted findings marked real drift or false alarm (the "not too
+noisy" bar), and 5 pages hand-read for wrong statements. The owner asked for them to be decided for him (Sonarr is a
+demo); decided before either check was run.
+- **A separate agent with a fresh context** does both (D61): it gets the criteria, the FSD text, the pages and the
+  Sonarr source at the pinned commit, nothing about how the pages or findings were made. It writes one verdict per
+  finding and one count per page, each with its reason and evidence (a source line or FSD sentence).
+- **Not the author:** the session that built and ran the pipeline doesn't mark its own findings.
+- The reports say the checks were made by an AI checker, and the bar is read with that caveat.
+Rejected: the author deciding (it would grade its own work, D61); skipping the checks (the noise bar would stay
+unmeasured).
+**Why:** keeps the noise bar measured by someone other than the author while the owner's time goes elsewhere.
+**Cost:** an AI checker can share the judge's blind spots; a person's check is still owed before the findings are
+relied on in a real project (the dry run on a real FSD, D56, is checked by people).
+
+## D68 · Discrepancy findings ship off by default (D57's rule, applied) — 2026-10-25
+On the planted Sonarr FSD, "finds what's planted" passed (27 of 30, each kind ≥ 60%) but "not too noisy" failed: 31.3%
+of findings are false alarms (95% range 14–45%) against a bar of 30%, from a hand check of 20 unplanted findings by a
+fresh agent (D67). D57 says what follows: reference pages and links still ship; findings are off by default.
+- **`fsd.findings` in `stangent.yaml`, default `false`:** sections record only links ("agree", confirmed or not);
+  gaps, conflicts and undocumented items, including disputed agrees turned into findings, aren't written to
+  `specs/trace.yaml`, and `fsd undocumented` lists none. A project turns them on with `findings: true`.
+- Turning the setting off or on makes each section run again (it is part of the section's input hash only when off,
+  so runs recorded with findings on stay current). The Sonarr benchmark turns them on: it measures findings.
+- The bar isn't moved: the report states the result and why findings are off.
+Rejected: shipping findings on because the miss is narrow (the bar would drift toward the result, D57); dropping
+the agree checker's disputes to cut noise before re-measuring (tuning to the frozen key; a change is a new benchmark run).
+**Why:** D57, agreed before any run.
+**Cost:** a project that wants the drift list must opt in and accept roughly one false alarm in three; the likely
+lever (the agree checker turning "partial" agreements into gaps, 25 of the 62 unplanted findings) is a follow-up.
 
 ## Open questions
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)

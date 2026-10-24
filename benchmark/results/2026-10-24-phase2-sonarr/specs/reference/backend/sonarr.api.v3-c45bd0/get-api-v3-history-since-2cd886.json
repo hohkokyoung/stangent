@@ -1,0 +1,116 @@
+{
+  "codeTitle": "GET /api/v3/History/since",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/History/since",
+  "generated": {
+    "bundleHash": "ce87baac444192f59908a46bb3622d6d128199f6abb88d9755a44239eb8df543",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 22022,
+      "cutOff": 37,
+      "depth": 4,
+      "points": 94
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 12627,
+      "calls": 1,
+      "costUsd": 0.053177,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3968,
+      "outputTokens": 249
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 10331,
+      "calls": 1,
+      "costUsd": 0.057454,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 9098,
+      "outputTokens": 1585
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/History/since",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.History.HistoryController.GetHistorySince(System.DateTime,System.Nullable{NzbDrone.Core.History.EpisodeHistoryEventType},System.Boolean,System.Boolean)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/History/since"
+        ],
+        "id": "A1",
+        "text": "A caller requests history since a given date, optionally filtered by event type, and optionally including series and episode details."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.History.HistoryController.GetHistorySince(System.DateTime,System.Nullable{NzbDrone.Core.History.EpisodeHistoryEventType},System.Boolean,System.Boolean)"
+        ],
+        "id": "R1",
+        "text": "The date parameter is required; eventType is optional and defaults to none; includeSeries and includeEpisode default to false."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfile.CalculateCustomFormatScore(System.Collections.Generic.List{NzbDrone.Core.CustomFormats.CustomFormat})",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.History.HistoryResourceMapper.ToResource(NzbDrone.Core.History.EpisodeHistory,NzbDrone.Core.CustomFormats.ICustomFormatCalculationService)"
+        ],
+        "id": "R2",
+        "text": "The custom format score is the sum of the scores of the series quality profile's format items that match the record's calculated custom formats."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DecisionEngine.Specifications.UpgradableSpecification.QualityCutoffNotMet(NzbDrone.Core.Profiles.Qualities.QualityProfile,NzbDrone.Core.Qualities.QualityModel,NzbDrone.Core.Qualities.QualityModel)"
+        ],
+        "id": "R3",
+        "text": "Quality cutoff not met is true when the current quality ranks below the cutoff. The cutoff is the profile's cutoff if upgrades are allowed, otherwise its first allowed quality."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.History.HistoryResourceMapper.ToResource(NzbDrone.Core.History.EpisodeHistory,NzbDrone.Core.CustomFormats.ICustomFormatCalculationService)"
+        ],
+        "id": "S1",
+        "text": "Returns a list of history records, each with id, episode id, series id, source title, languages, quality, custom formats, custom format score, date, download id, event type and data."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.History.HistoryController.MapToResource(NzbDrone.Core.History.EpisodeHistory,System.Boolean,System.Boolean)"
+        ],
+        "id": "S2",
+        "text": "Each record carries a quality-cutoff-not-met flag when the history record has a series."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.History.HistoryController.MapToResource(NzbDrone.Core.History.EpisodeHistory,System.Boolean,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesResourceMapper.ToResource(NzbDrone.Core.Tv.Series,System.Boolean)"
+        ],
+        "id": "S3",
+        "text": "When series is included, each record contains the series details (title, status, overview, network, path, quality profile id, seasons, ids, genres, tags and so on)."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.History.HistoryController.MapToResource(NzbDrone.Core.History.EpisodeHistory,System.Boolean,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeResourceMapper.ToResource(NzbDrone.Core.Tv.Episode)"
+        ],
+        "id": "S4",
+        "text": "When episode is included, each record contains the episode details (season and episode number, title, air date, runtime, overview, has file, monitored, scene numbering and so on)."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Get history since a date",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

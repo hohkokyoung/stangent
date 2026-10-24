@@ -1,0 +1,189 @@
+{
+  "codeTitle": "GET /api/v3/Episode",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/Episode",
+  "generated": {
+    "bundleHash": "ea76d9906d6abd496bcdd73b484f99dc30a919758fa5d6b0d62568c5aa6eddb3",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 26719,
+      "cutOff": 104,
+      "depth": 4,
+      "points": 89
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 16827,
+      "calls": 1,
+      "costUsd": 0.071417,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3978,
+      "outputTokens": 393
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 12705,
+      "calls": 1,
+      "costUsd": 0.08671,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 18168,
+      "outputTokens": 3561
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/Episode",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeController.GetEpisodes(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Collections.Generic.List{System.Int32},System.Nullable{System.Int32},System.Boolean,System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.IEpisodeService.GetEpisodesBySeason(System.Int32,System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Episode"
+        ],
+        "id": "A1",
+        "text": "Caller lists episodes by seriesId and seasonNumber, returning that season's episodes of the series."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeController.GetEpisodes(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Collections.Generic.List{System.Int32},System.Nullable{System.Int32},System.Boolean,System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.IEpisodeService.GetEpisodeBySeries(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Episode"
+        ],
+        "id": "A2",
+        "text": "Caller lists episodes by seriesId alone, returning all episodes of the series."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeController.GetEpisodes(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Collections.Generic.List{System.Int32},System.Nullable{System.Int32},System.Boolean,System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.IEpisodeService.GetEpisodes(System.Collections.Generic.IEnumerable{System.Int32})"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Episode"
+        ],
+        "id": "A3",
+        "text": "Caller lists episodes by a list of episodeIds."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeController.GetEpisodes(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Collections.Generic.List{System.Int32},System.Nullable{System.Int32},System.Boolean,System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeService.GetEpisodesByFileId(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Episode"
+        ],
+        "id": "A4",
+        "text": "Caller lists episodes by episodeFileId, returning the episodes belonging to that file."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeController.GetEpisodes(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Collections.Generic.List{System.Int32},System.Nullable{System.Int32},System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Episode"
+        ],
+        "id": "A5",
+        "text": "Caller can set includeSeries, includeEpisodeFile and includeImages to add series, file and image data to each episode."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeController.GetEpisodes(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Collections.Generic.List{System.Int32},System.Nullable{System.Int32},System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "R1",
+        "text": "Filter priority: seriesId (with optional seasonNumber) first, then episodeIds, then episodeFileId; the first one supplied is used."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeController.GetEpisodes(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Collections.Generic.List{System.Int32},System.Nullable{System.Int32},System.Boolean,System.Boolean,System.Boolean)",
+          "Sonarr.Http|M:Sonarr.Http.REST.BadRequestException.#ctor(System.Object)"
+        ],
+        "id": "R2",
+        "text": "If none of seriesId, episodeIds or episodeFileId is provided, the request fails with a bad request: \"seriesId or episodeIds must be provided\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeController.GetEpisodes(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Collections.Generic.List{System.Int32},System.Nullable{System.Int32},System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "R3",
+        "text": "includeSeries, includeEpisodeFile and includeImages all default to false."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeControllerWithSignalR.MapToResource(System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "R4",
+        "text": "Episode file data is only added to episodes whose episode file id is not 0."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfile.CalculateCustomFormatScore(System.Collections.Generic.List{NzbDrone.Core.CustomFormats.CustomFormat})",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.EpisodeFiles.EpisodeFileResourceMapper.ToResource(NzbDrone.Core.MediaFiles.EpisodeFile,NzbDrone.Core.Tv.Series,NzbDrone.Core.DecisionEngine.Specifications.IUpgradableSpecification,NzbDrone.Core.CustomFormats.ICustomFormatCalculationService)"
+        ],
+        "id": "R5",
+        "text": "The custom format score is the sum of the quality profile scores of the file's matching custom formats, or 0 when there is no profile."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeResourceMapper.ToResource(NzbDrone.Core.Tv.Episode)"
+        ],
+        "id": "S1",
+        "text": "Returns a list of episodes, each with id, series id, TVDB id, episode file id, season and episode number, title, air date (local and UTC), runtime, finale type, overview and last search time."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeResourceMapper.ToResource(NzbDrone.Core.Tv.Episode)"
+        ],
+        "id": "S2",
+        "text": "Each episode also shows whether it has a file, whether it is monitored, absolute episode number, scene absolute/episode/season numbers and whether scene numbering is unverified."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesResourceMapper.ToResource(NzbDrone.Core.Tv.Series,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeControllerWithSignalR.MapToResource(System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "S3",
+        "text": "When series details are requested, each episode includes its series (title, overview, network, path, quality profile id, genres, tags, ratings, external ids and similar fields)."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.EpisodeFiles.EpisodeFileResourceMapper.ToResource(NzbDrone.Core.MediaFiles.EpisodeFile,NzbDrone.Core.Tv.Series,NzbDrone.Core.DecisionEngine.Specifications.IUpgradableSpecification,NzbDrone.Core.CustomFormats.ICustomFormatCalculationService)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeControllerWithSignalR.MapToResource(System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "S4",
+        "text": "When episode file details are requested, an episode with a file includes the file's path, size, date added, scene name, release group, languages, quality, media info, quality-cutoff-not-met flag, custom formats, custom format score, indexer flags and release type."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.EpisodeFiles.MediaInfoResourceMapper.ToResource(NzbDrone.Core.MediaFiles.MediaInfo.MediaInfoModel,System.String)"
+        ],
+        "id": "S5",
+        "text": "Media info includes audio and video codec, bitrates, channels, languages, resolution (WxH), runtime, scan type, frame rate and subtitles."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeControllerWithSignalR.MapToResource(System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "S6",
+        "text": "When images are requested, each episode includes its images."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Get episodes (GET /api/v3/Episode)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

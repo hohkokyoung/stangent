@@ -1,0 +1,121 @@
+{
+  "codeTitle": "ANY /api/v5/system/backup",
+  "entry": "endpoint:Sonarr.Api.V5|ANY /api/v5/system/backup",
+  "generated": {
+    "bundleHash": "bcac43b238dfb55e534432d95dd15ca50870caccc5e62bf0f36eb585189d5c93",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 12945,
+      "cutOff": 9,
+      "depth": 4,
+      "points": 21
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 8496,
+      "calls": 1,
+      "costUsd": 0.034693,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2253,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 6551,
+      "calls": 1,
+      "costUsd": 0.038774,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6891,
+      "outputTokens": 1229
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|ANY /api/v5/system/backup",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.Delete(System.Int32)",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.DeleteFile(System.String)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/system/backup"
+        ],
+        "id": "A1",
+        "text": "Deletes the backup identified by the given numeric id by removing its file from disk."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.GetBackupById(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.GetBackups"
+        ],
+        "id": "R1",
+        "text": "The id is matched by finding the single backup whose computed id equals it, among all backups of all backup types."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.GetBackupId(NzbDrone.Core.Backup.Backup)",
+          "Sonarr.Common|M:NzbDrone.Common.Crypto.HashConverter.GetHashInt31(System.String)"
+        ],
+        "id": "R2",
+        "text": "A backup's id is a 31-bit hash of the text \"backup-{type}-{name}\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.GetBackupPath(NzbDrone.Core.Backup.Backup)",
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.GetBackupFolder(NzbDrone.Core.Backup.BackupType)"
+        ],
+        "id": "R3",
+        "text": "The backup file path is the backup folder for its type (a lowercase type-named subfolder) combined with the backup name."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.Delete(System.Int32)",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.FileExists(System.String)"
+        ],
+        "id": "R4",
+        "text": "The file is deleted only if it exists on disk; otherwise Not Found is returned."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.Delete(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "Returns no content (204) when the backup file is deleted successfully."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.Delete(System.Int32)",
+          "Sonarr.Http|M:Sonarr.Http.REST.NotFoundException.#ctor(System.Object)"
+        ],
+        "id": "S2",
+        "text": "Returns Not Found when the backup does not exist or its file is missing from disk."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.Delete(System.Int32)",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.DeleteFile(System.String)"
+        ],
+        "id": "E1",
+        "text": "The backup file is permanently deleted from disk."
+      }
+    ]
+  },
+  "title": "Delete system backup",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,172 @@
+{
+  "codeTitle": "/settings/metadata · MetadataSettings",
+  "entry": "page:tsconfig.json|/settings/metadata",
+  "generated": {
+    "bundleHash": "47eb7cf398863984e6d065bc75390a699d31e26d4e638767a4953f296eeaab6d",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 26673,
+      "cutOff": 9,
+      "depth": 6,
+      "points": 116
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 15161,
+      "calls": 1,
+      "costUsd": 0.063133,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8450,
+      "outputTokens": 231
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 12881,
+      "calls": 1,
+      "costUsd": 0.067484,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 9364,
+      "outputTokens": 1568
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/settings/metadata",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Metadata/Metadata/Metadata.tsx#Metadata"
+        ],
+        "id": "A1",
+        "text": "Pressing a metadata card opens its edit modal."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Metadata/Metadata/EditMetadataModalContent.tsx#EditMetadataModalContent"
+        ],
+        "id": "A2",
+        "text": "In the modal the user can toggle Enable and change provider field values."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Metadata/Metadata/EditMetadataModalContent.tsx#EditMetadataModalContent"
+        ],
+        "id": "A3",
+        "text": "Save saves the metadata provider; Cancel closes the modal."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Metadata/MetadataSettings.tsx#MetadataSettings"
+        ],
+        "id": "R1",
+        "text": "The page's save button is hidden (showSave is false)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Metadata/Metadata/EditMetadataModalContent.tsx#EditMetadataModalContent"
+        ],
+        "id": "R2",
+        "text": "Provider fields in the modal are disabled when Enable is unchecked."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Metadata/Metadata/EditMetadataModalContent.tsx#EditMetadataModalContent",
+          "ts|frontend/src/Helpers/Hooks/usePrevious.tsx#usePrevious"
+        ],
+        "id": "R3",
+        "text": "The modal closes automatically after a save finishes without error."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Metadata/Metadata/EditMetadataModal.tsx#EditMetadataModal",
+          "ts|frontend/src/Settings/advancedSettingsStore.ts#useShowAdvancedSettings"
+        ],
+        "id": "R4",
+        "text": "Advanced settings visibility in the modal follows the show-advanced-settings setting."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/Array/sortByProp.ts#sortByProp",
+          "ts|frontend/src/Settings/Metadata/useMetadata.ts#useSortedMetadata"
+        ],
+        "id": "R5",
+        "text": "Names are sorted with locale comparison, numeric-aware."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Metadata/MetadataSettings.tsx#MetadataSettings"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Metadata\" with a \"Settings\" scope heading, and a \"Metadata\" section heading with a description."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Metadata/Metadata/Metadatas.tsx#Metadatas",
+          "ts|frontend/src/Settings/Metadata/useMetadata.ts#useSortedMetadata"
+        ],
+        "id": "S2",
+        "text": "The page lists metadata providers as cards, sorted by name."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Metadata/Metadata/Metadatas.tsx#Metadatas"
+        ],
+        "id": "S3",
+        "text": "If loading the list fails, the message \"MetadataLoadError\" translation is shown; the list shows fetching state until fetched."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Metadata/Metadata/Metadata.tsx#Metadata"
+        ],
+        "id": "S4",
+        "text": "Each card shows the metadata name and a status of Enabled (active dot) or Disabled (muted dot)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Metadata/Metadata/Metadata.tsx#Metadata"
+        ],
+        "id": "S5",
+        "text": "When enabled, a card shows a \"Metadata\" group of labels for metadata-section fields that have a value, and an \"Images\" group for the other fields that have a value."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Metadata/Metadata/EditMetadataModalContent.tsx#EditMetadataModalContent"
+        ],
+        "id": "S6",
+        "text": "The edit modal shows an Enable checkbox with help text, the provider's fields, an optional message alert, and Cancel and Save buttons."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Metadata/Metadata/EditMetadataModalContent.tsx#EditMetadataModalContent",
+          "ts|frontend/src/Settings/Metadata/useMetadata.ts#useManageMetadata"
+        ],
+        "id": "E1",
+        "text": "Saving in the edit modal persists the changed metadata provider settings."
+      }
+    ]
+  },
+  "title": "Metadata Settings",
+  "unknowns": [
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useProviderSettings",
+      "line": 78,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

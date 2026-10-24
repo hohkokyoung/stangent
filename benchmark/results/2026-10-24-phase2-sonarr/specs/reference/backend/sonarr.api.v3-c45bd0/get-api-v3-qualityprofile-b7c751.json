@@ -1,0 +1,108 @@
+{
+  "codeTitle": "GET /api/v3/QualityProfile",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/QualityProfile",
+  "generated": {
+    "bundleHash": "91c6303d10b500f21c5092ba801cc64c5fb74f9cf83646d8c860fbf71c9fb47d",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 11703,
+      "cutOff": 29,
+      "depth": 4,
+      "points": 30
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 7656,
+      "calls": 1,
+      "costUsd": 0.031333,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3848,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 5889,
+      "calls": 1,
+      "costUsd": 0.034456,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6027,
+      "outputTokens": 1062
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/QualityProfile",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/QualityProfile",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.QualityProfileController.GetAll"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/QualityProfile"
+        ],
+        "id": "A1",
+        "text": "A caller sends GET to /api/v3/QualityProfile and receives all stored quality profiles converted to API resources."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfileService.All"
+        ],
+        "id": "R1",
+        "text": "The profiles are read from the quality profile repository with no filtering, and returned as a list."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.ProfileResourceMapper.ToResource(NzbDrone.Core.Profiles.Qualities.QualityProfile)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.ProfileResourceMapper.ToResource(NzbDrone.Core.Profiles.Qualities.QualityProfileQualityItem)"
+        ],
+        "id": "R2",
+        "text": "A null profile or quality item maps to null."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.QualityProfileController.GetAll"
+        ],
+        "id": "S1",
+        "text": "Returns a JSON list of all quality profiles."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.ProfileResourceMapper.ToResource(NzbDrone.Core.Profiles.Qualities.QualityProfile)"
+        ],
+        "id": "S2",
+        "text": "Each profile has id, name, upgrade allowed flag, cutoff, items, minimum format score, cutoff format score, minimum upgrade format score and format items."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.ProfileResourceMapper.ToResource(NzbDrone.Core.Profiles.Qualities.QualityProfileQualityItem)"
+        ],
+        "id": "S3",
+        "text": "Each quality item shows id, name, quality, nested items, allowed flag, min size, max size and preferred size."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.ProfileResourceMapper.ToResource(NzbDrone.Core.Profiles.ProfileFormatItem)"
+        ],
+        "id": "S4",
+        "text": "Each format item shows the custom format id, its name and its score."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "List quality profiles (GET /api/v3/QualityProfile)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -15,4 +15,5 @@ Report what a change affects, using only stangent's code graph. Don't read the c
    proven by the compiler, 🟡 items are pattern matches worth confirming, and every ❓ line is
    something stangent couldn't see, which a person should look at. 📜 files come from git history,
    not the code: they usually changed together with this one, so they're worth a glance, but they
-   aren't dependencies and nothing breaks because of them.
+   aren't dependencies and nothing breaks because of them. 📄 FSD sections are what the client agreed that this
+   change may touch, found through the reference pages; "unverified" means nobody has approved that link yet.

@@ -1,0 +1,200 @@
+{
+  "what": "D66 step 1: the same 10 Sonarr pages written and verified twice by Sonnet 5.5 — before (two headless Claude Code sessions per page, plugin subagents reading files) and after (one single-turn call each for writer and verifier: bundle in the prompt, claude -p --tools \"\" --json-schema, no settings/skills/MCP)",
+  "date": "2026-10-20",
+  "model": "claude-sonnet-5-5",
+  "commit": "0bffefe7 (Sonarr)",
+  "jobs": 3,
+  "wallSecondsAfter": 111,
+  "pages": [
+    {
+      "id": "page:/settings/general",
+      "kind": "screen",
+      "sliceChars": 80552,
+      "before": {
+        "inputTokens": 373004,
+        "costUsd": 0.551,
+        "calls": 2,
+        "findings": 0
+      },
+      "after": {
+        "inputTokens": 77936,
+        "costUsd": 0.337,
+        "calls": 2,
+        "findings": 0,
+        "checkRetries": 0
+      }
+    },
+    {
+      "id": "page:/system/status",
+      "kind": "screen",
+      "sliceChars": 44760,
+      "before": {
+        "inputTokens": 142223,
+        "costUsd": 0.317,
+        "calls": 2,
+        "findings": 0
+      },
+      "after": {
+        "inputTokens": 73624,
+        "costUsd": 0.342,
+        "calls": 3,
+        "findings": 1,
+        "checkRetries": 0
+      }
+    },
+    {
+      "id": "page:/settings/quality",
+      "kind": "screen",
+      "sliceChars": 30204,
+      "before": {
+        "inputTokens": 165468,
+        "costUsd": 0.365,
+        "calls": 3,
+        "findings": 1
+      },
+      "after": {
+        "inputTokens": 33112,
+        "costUsd": 0.143,
+        "calls": 2,
+        "findings": 0,
+        "checkRetries": 0
+      }
+    },
+    {
+      "id": "ts|frontend/src/Components/Modal/ModalFooter.tsx#ModalFooter",
+      "kind": "component",
+      "sliceChars": 6510,
+      "before": {
+        "inputTokens": 53202,
+        "costUsd": 0.088,
+        "calls": 2,
+        "findings": 0
+      },
+      "after": {
+        "inputTokens": 15121,
+        "costUsd": 0.064,
+        "calls": 3,
+        "findings": 1,
+        "checkRetries": 0
+      }
+    },
+    {
+      "id": "ts|frontend/src/Components/Link/SpinnerErrorButton.tsx#SpinnerErrorButton",
+      "kind": "component",
+      "sliceChars": 12688,
+      "before": {
+        "inputTokens": 70793,
+        "costUsd": 0.151,
+        "calls": 2,
+        "findings": 0
+      },
+      "after": {
+        "inputTokens": 16675,
+        "costUsd": 0.075,
+        "calls": 2,
+        "findings": 0,
+        "checkRetries": 0
+      }
+    },
+    {
+      "id": "ts|frontend/src/Components/Link/SpinnerIconButton.tsx#SpinnerIconButton",
+      "kind": "component",
+      "sliceChars": 6928,
+      "before": {
+        "inputTokens": 55389,
+        "costUsd": 0.099,
+        "calls": 2,
+        "findings": 0
+      },
+      "after": {
+        "inputTokens": 10622,
+        "costUsd": 0.048,
+        "calls": 2,
+        "findings": 0,
+        "checkRetries": 0
+      }
+    },
+    {
+      "id": "ts|frontend/src/Components/Form/PathInput.tsx#PathInput",
+      "kind": "component",
+      "sliceChars": 9903,
+      "before": {
+        "inputTokens": 63210,
+        "costUsd": 0.122,
+        "calls": 2,
+        "findings": 0
+      },
+      "after": {
+        "inputTokens": 13950,
+        "costUsd": 0.06,
+        "calls": 2,
+        "findings": 0,
+        "checkRetries": 0
+      }
+    },
+    {
+      "id": "page:/settings/downloadclients",
+      "kind": "screen",
+      "sliceChars": 151884,
+      "before": {
+        "inputTokens": 960029,
+        "costUsd": 1.228,
+        "calls": 3,
+        "findings": 1
+      },
+      "after": {
+        "inputTokens": 145597,
+        "costUsd": 0.63,
+        "calls": 2,
+        "findings": 0,
+        "checkRetries": 0
+      }
+    },
+    {
+      "id": "ts|frontend/src/Components/Menu/SelectedMenuItem.tsx#SelectedMenuItem",
+      "kind": "component",
+      "sliceChars": 7331,
+      "before": {
+        "inputTokens": 56569,
+        "costUsd": 0.103,
+        "calls": 2,
+        "findings": 0
+      },
+      "after": {
+        "inputTokens": 11209,
+        "costUsd": 0.052,
+        "calls": 2,
+        "findings": 0,
+        "checkRetries": 0
+      }
+    },
+    {
+      "id": "ts|frontend/src/Components/Form/FormRow.tsx#FormRow",
+      "kind": "component",
+      "sliceChars": 8289,
+      "before": {
+        "inputTokens": 58924,
+        "costUsd": 0.111,
+        "calls": 2,
+        "findings": 0
+      },
+      "after": {
+        "inputTokens": 11860,
+        "costUsd": 0.046,
+        "calls": 2,
+        "findings": 0,
+        "checkRetries": 0
+      }
+    }
+  ],
+  "mean": {
+    "before": {
+      "inputTokensPerPage": 199881,
+      "costUsdPerPage": 0.313
+    },
+    "after": {
+      "inputTokensPerPage": 40971,
+      "costUsdPerPage": 0.18
+    }
+  }
+}

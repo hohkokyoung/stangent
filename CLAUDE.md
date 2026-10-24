@@ -13,6 +13,7 @@ software-engineering pipeline: requirements → code → tests → PR → deploy
 | `phases/` | One file per started phase: its plan and end-of-phase report. |
 | `docs/cli-conventions.md` | What every `stangent` command prints and returns. |
 | `docs/code-graph.md` | The code graph: points, lines, labels, detectors, impact answers. |
+| `docs/spec.md` | The spec: reference pages, the FSD import, links, findings and decisions (Phase 2). |
 | `benchmark/README.md` | Running the benchmark: full-history clones, per-repo configs, scoring commands. |
 
 ## How to work here
@@ -38,6 +39,7 @@ benchmark/run.sh <label> <stangent args...>               # D6 benchmark; result
 dotnet run --project benchmark/Stangent.Benchmark -- <clone>   # D28 scoring (needs full history + a built graph)
 npm --prefix tools/ts-extractor ci && npm --prefix tools/ts-extractor test   # the TypeScript extractor (D30)
 npm --prefix tools/ts-extractor run build                 # → dist/, shipped by the dotnet build (built automatically if missing)
+plugin/scripts/spec-run.sh --jobs 4 --all                 # Phase 2 AI steps through headless Claude Code (STANGENT= to point at a build)
 ```
 
 Frontend analysis needs Node. The extractor bundle and TypeScript's lib files are copied beside the

@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-24",
+  "command": "stangent trace check (in the Sonarr clone, after the final 2b run)",
+  "ok": true,
+  "result": {
+    "counts": {
+      "byState": {
+        "agree": 18,
+        "conflict": 9,
+        "gap": 46,
+        "undocumented": 34
+      },
+      "entries": 107,
+      "staleQuotes": 0,
+      "undecided": 107
+    },
+    "ok": true,
+    "problems": [],
+    "staleQuotes": []
+  }
+}

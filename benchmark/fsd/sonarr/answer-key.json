@@ -1,0 +1,269 @@
+{
+  "doc": "sonarr-fsd",
+  "frozen": "2026-10-20",
+  "note": "Phase 2b answer key (D56, D57). Frozen before the first judging run; never read by any AI step or bundle.",
+  "scope": [
+    "/",
+    "/add",
+    "/series",
+    "/seasonpass",
+    "/serieseditor",
+    "/calendar",
+    "/activity",
+    "/wanted",
+    "/settings",
+    "/system"
+  ],
+  "matching": {
+    "gap_or_conflict": "found when a finding (state gap or conflict; the strict score also needs the planted kind) is on the item's section and its FSD quote overlaps the planted sentence: one contains the other, or at least 60% of the quote's words are in it.",
+    "undocumented": "found when a finding with state undocumented is on one of the item's pages, or on the item's section, and (for a behaviour) one of its keywords is in the finding's page quote or note, case-insensitive.",
+    "falseAlarm": "a finding (gap, conflict or undocumented) that matches no planted item is unplanted; the hand check of a sample of 20 (fixed seed) says which are real drift.",
+    "ranges": "95% ranges by resampling planted items, 1,000 resamples, seed 42."
+  },
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "section": "1.1",
+      "text": "Up to 10 series can be selected from the search results and added together in one step."
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "section": "1.2",
+      "text": "The episode list of a series can be exported as a CSV file."
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "section": "2",
+      "text": "Episodes can be dragged to another day to change their air date."
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "section": "3.1",
+      "text": "Each queue item has a priority (High, Normal or Low) that the user can change to reorder the downloads."
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "section": "3.2",
+      "text": "Any history entry can be undone, which restores the episode file that an upgrade replaced."
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "section": "Wanted / Missing episodes",
+      "text": "A weekly email digest lists every missing episode."
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "section": "Settings / Tags",
+      "text": "Each tag has a colour, chosen from a palette of 12 colours, which is shown wherever the tag appears."
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "section": "Settings / Quality definitions",
+      "text": "Each quality can be limited to a maximum episode runtime."
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "section": "Settings / Interface",
+      "text": "The font size can be set to small, medium or large."
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "section": "System / Backups",
+      "text": "Backups can be copied automatically to an S3 bucket."
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "section": "1.2",
+      "text": "Deleting a series always deletes its folder and all its files from disk.",
+      "code": "deleting files is an option, off by default (DeleteSeriesModalContent)"
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "section": "2",
+      "text": "Sonarr can share the calendar as an iCal feed, which covers the previous 14 days and the next 60 days.",
+      "code": "7 days back, 28 ahead (CalendarFeedController)"
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "section": "3.1",
+      "text": "Removing an item from the queue always adds the release to the blocklist.",
+      "code": "blocklisting is an option (RemoveQueueItemModal)"
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "section": "Wanted / Missing episodes",
+      "text": "Search All starts straight away, without asking the user to confirm.",
+      "code": "a confirm dialog opens first (Missing.tsx)"
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "section": "Settings / Tags",
+      "text": "Tag labels may contain letters, numbers, spaces and underscores.",
+      "code": "^[a-z0-9-]+$ (TagController)"
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "section": "Settings / Tags",
+      "text": "Deleting a tag removes it from every series, profile and indexer that uses it.",
+      "code": "a tag in use can't be deleted (TagService.Delete)"
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "section": "Settings / Profiles / Delay profiles",
+      "text": "The default delay profile can be given tags like any other.",
+      "code": "the default profile must have no tags (DelayProfileController)"
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "section": "Settings / General / Logging",
+      "text": "Each log file can grow up to 50 megabytes before a new one is started.",
+      "code": "1–10 MB (HostConfigController, ConfigFileProvider)"
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "section": "Settings / General / Backups",
+      "text": "Interval: how often an automatic backup is taken, from 1 to 30 days.",
+      "code": "1–7 days (HostConfigController)"
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "section": "Settings / General / Backups",
+      "text": "Retention: how long backups are kept, up to 365 days.",
+      "code": "1–90 days (HostConfigController)"
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "pages": [
+        "page:/activity/blocklist"
+      ],
+      "what": "the blocklist screen is left out"
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "pages": [
+        "page:/wanted/cutoffunmet"
+      ],
+      "what": "the cutoff unmet screen is left out"
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "pages": [
+        "page:/system/tasks"
+      ],
+      "what": "the scheduled tasks screen is left out"
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "pages": [
+        "page:/add/new"
+      ],
+      "what": "the Season Folder option is left out of Add New",
+      "section": "1.1",
+      "keywords": [
+        "season folder",
+        "seasonfolder"
+      ]
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "pages": [
+        "page:/add/new"
+      ],
+      "what": "the 'search for cutoff unmet episodes' option is left out of Add New",
+      "section": "1.1",
+      "keywords": [
+        "cutoff"
+      ]
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "pages": [
+        "page:/activity/queue"
+      ],
+      "what": "manual import from the queue is left out",
+      "section": "3.1",
+      "keywords": [
+        "manual import",
+        "manualimport",
+        "interactive import",
+        "interactiveimport"
+      ]
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "pages": [
+        "page:/wanted/missing"
+      ],
+      "what": "unmonitoring selected missing episodes is left out",
+      "section": "Wanted / Missing episodes",
+      "keywords": [
+        "unmonitor"
+      ]
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "pages": [
+        "page:/system/backups"
+      ],
+      "what": "deleting a backup is left out",
+      "section": "System / Backups",
+      "keywords": [
+        "delet"
+      ]
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "pages": [
+        "page:/settings/ui"
+      ],
+      "what": "colour-impaired mode is left out",
+      "section": "Settings / Interface",
+      "keywords": [
+        "color",
+        "colour"
+      ]
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "pages": [
+        "page:/activity/history"
+      ],
+      "what": "marking a grabbed release as failed is left out",
+      "section": "3.2",
+      "keywords": [
+        "fail"
+      ]
+    }
+  ],
+  "scopeNote": "fsd.scope for the run: the areas the FSD's introduction says it covers (library, calendar, activity, wanted, settings, system), as route prefixes. Not the planted screens: every screen in those areas that no section links to is listed by code."
+}

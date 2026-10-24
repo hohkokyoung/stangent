@@ -17,7 +17,13 @@ public sealed class ImpactAnalyzer
     public const int ItemsPerGroup = 5;
     /// <summary>📜 files shown before <c>--expand history</c> (D40).</summary>
     public const int HistoryItems = 10;
-    public static readonly string[] Groups = ["change", "endpoints", "pages", "eventHandlers", "tables", "tests", "projects", "code", "history"];
+    public static readonly string[] Groups = ["change", "endpoints", "pages", "eventHandlers", "tables", "tests", "projects", "code", "history", "fsdSections"];
+
+    /// <summary>The FSD sections a change reaches (impact-report v5), given every changed or affected point id. Supplied by
+    /// the spec layer (Phase 2b), which knows the reference pages and the links; the graph doesn't.</summary>
+    public delegate JsonObject FsdSections(IReadOnlyCollection<string> reached, bool expand);
+
+    public static JsonObject NoFsdSections() => new() { ["status"] = "none", ["total"] = 0, ["items"] = new JsonArray(), ["more"] = 0 };
 
     readonly CodeGraph graph;
     readonly Dictionary<string, Node> nodes;
@@ -180,7 +186,7 @@ public sealed class ImpactAnalyzer
     public static string Band(int depth) => depth <= 1 ? "direct" : depth <= 3 ? "near" : "far";
 
     /// <param name="maxDepth">Leave out everything more than this many lines from the change.</param>
-    public JsonObject Analyze(ChangeSpec change, string repoRoot, string? expand = null, int? maxDepth = null)
+    public JsonObject Analyze(ChangeSpec change, string repoRoot, string? expand = null, int? maxDepth = null, FsdSections? fsdSections = null)
     {
         if (maxDepth is < 1)
             throw new StangentException("usage", "--max-depth must be at least 1.", ExitCodes.Usage);
@@ -242,7 +248,7 @@ public sealed class ImpactAnalyzer
 
         return new JsonObject
         {
-            ["schemaVersion"] = 4,
+            ["schemaVersion"] = 5,
             ["graph"] = new JsonObject { ["commit"] = graph.Commit },
             ["change"] = new JsonObject
             {
@@ -252,7 +258,7 @@ public sealed class ImpactAnalyzer
             ["groups"] = groups,
             ["unresolved"] = unresolved,
             ["history"] = history,
-            ["requirements"] = new JsonArray(),
+            ["fsdSections"] = fsdSections?.Invoke([.. reached.Keys.Order(StringComparer.Ordinal)], expand == "fsdSections") ?? NoFsdSections(),
             ["expanded"] = expand,
             ["maxDepth"] = maxDepth,
         };
@@ -375,6 +381,17 @@ public sealed class ImpactAnalyzer
         {
             md.AppendLine($"\n**❓ {unresolved.Count} link(s) couldn't be followed**\n");
             foreach (var u in unresolved) md.AppendLine($"- `{u!["file"]}:{u["line"]}`: {u["reason"]}");
+        }
+        var fsd = report["fsdSections"]!;
+        if ((int)fsd["total"]! > 0)
+        {
+            md.AppendLine($"\n**📄 {fsd["total"]} FSD section(s) reached through the reference pages**\n");
+            foreach (var f in fsd["items"]!.AsArray())
+            {
+                var states = string.Join(", ", f!["states"]!.AsArray().Select(x => (string)x!));
+                md.AppendLine($"- §{f["section"]} {f["title"]} ({f["doc"]}): via {string.Join(", ", f["pages"]!.AsArray().Select(p => $"`{p}`"))} · {states}{((bool)f["verified"]! ? "" : " · unverified")}");
+            }
+            if ((int)fsd["more"]! > 0) md.AppendLine($"- and {fsd["more"]} more");
         }
         var depthNote = report["maxDepth"] is { } d ? $" · within {d} lines of the change" : "";
         if ((string)history["status"]! is "shallow") depthNote += " · 📜 from a shallow clone's partial history";

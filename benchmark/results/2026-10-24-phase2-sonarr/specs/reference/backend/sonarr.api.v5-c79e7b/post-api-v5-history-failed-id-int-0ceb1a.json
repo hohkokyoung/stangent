@@ -1,0 +1,129 @@
+{
+  "codeTitle": "POST /api/v5/History/failed/{id:int}",
+  "entry": "endpoint:Sonarr.Api.V5|POST /api/v5/History/failed/{id:int}",
+  "generated": {
+    "bundleHash": "734c6daa3218f61c3c483e3d0443667bea64041e1ef7f4f421626a5c02f23e2d",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 18056,
+      "cutOff": 32,
+      "depth": 4,
+      "points": 22
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 11381,
+      "calls": 1,
+      "costUsd": 0.048813,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3674,
+      "outputTokens": 311
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 8891,
+      "calls": 1,
+      "costUsd": 0.053644,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 9633,
+      "outputTokens": 1780
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|POST /api/v5/History/failed/{id:int}",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryController.MarkAsFailed(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.MarkAsFailed(System.Int32,System.String,System.String,System.Boolean)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|POST /api/v5/History/failed/{id:int}"
+        ],
+        "id": "A1",
+        "text": "Marks the history item with the given id as a failed download, using the default message and no source, and with redownload allowed."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.MarkAsFailed(System.Int32,System.String,System.String,System.Boolean)"
+        ],
+        "id": "R1",
+        "text": "If no message is given, the failure message is \"Manually marked as failed\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.MarkAsFailed(System.Int32,System.String,System.String,System.Boolean)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.IsNullOrWhiteSpace(System.String)"
+        ],
+        "id": "R2",
+        "text": "If the history item has no download ID and is a Grabbed item, a failure is published for just that item's episode."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.MarkAsFailed(System.Int32,System.String,System.String,System.Boolean)"
+        ],
+        "id": "R3",
+        "text": "If the history item has no download ID and is not Grabbed, the call fails with \"Unable to mark download as failed, history item was not grabbed and has no download ID\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.MarkAsFailed(System.Int32,System.String,System.String,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.GetGrabbedHistory(System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.GetEpisodeIds(System.Collections.Generic.List{NzbDrone.Core.History.EpisodeHistory})"
+        ],
+        "id": "R4",
+        "text": "If there is a download ID, the Grabbed history items with that ID are gathered (the given item first if Grabbed, then others newest first), de-duplicated by id, and the first one is used for the failure event with all their distinct episode ids."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.MarkAsFailed(System.Int32,System.String,System.String,System.Boolean)"
+        ],
+        "id": "R5",
+        "text": "If there is a download ID but no Grabbed history is found, the call fails with \"Unable to mark download as failed, no grabbed history available\"."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryController.MarkAsFailed(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "Returns an empty 204 No Content response on success."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.PublishDownloadFailedEvent(NzbDrone.Core.History.EpisodeHistory,System.Collections.Generic.List{System.Int32},System.String,System.String,NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,System.Boolean)"
+        ],
+        "id": "E1",
+        "text": "Publishes a DownloadFailedEvent carrying the series, episodes, quality, source title, download client, download ID, message, languages, release source and history data."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistoryService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.RedownloadFailedDownloadService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.History.HistoryService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)"
+        ],
+        "id": "E2",
+        "text": "The event is handled by the blocklist service, the download event hub, the download history service, the redownload-failed-download service and the history service."
+      }
+    ]
+  },
+  "title": "Mark history item as failed (API)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

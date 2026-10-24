@@ -20,6 +20,10 @@ public sealed class StangentConfig
     public AdaptersConfig Adapters { get; set; } = new();
     /// <summary>📜 "usually changes together" evidence from git history (D35–D42).</summary>
     public HistoryConfig History { get; set; } = new();
+    /// <summary>Reference pages (Phase 2, D54–D55).</summary>
+    public SpecConfig Spec { get; set; } = new();
+    /// <summary>Imported FSDs (Phase 2b, D16): where the original files are archived.</summary>
+    public FsdConfig Fsd { get; set; } = new();
 
     public sealed class StoreConfig
     {
@@ -51,6 +55,44 @@ public sealed class StangentConfig
         public bool FollowRenames { get; set; } = true;
     }
 
+    /// <summary>
+    /// How a reference page's slice is cut (D54): the walk from its entry point, at most <see cref="Depth"/> lines deep
+    /// (<see cref="BackendDepth"/> from an endpoint or handler). A bundle bigger than <see cref="MaxBundleChars"/> is
+    /// reported, never cut (Phase 2 plan, step 2).
+    /// </summary>
+    public sealed class SpecConfig
+    {
+        public int Depth { get; set; } = 6;
+        public int BackendDepth { get; set; } = 4;
+        /// <summary>Screens stop at the endpoints they call, and every endpoint gets its own page.</summary>
+        public bool SplitAtEndpoints { get; set; } = true;
+        /// <summary>A point with this many distinct callers or more is included but not walked into (0: off).</summary>
+        public int HubCallers { get; set; } = 10;
+        public int MaxBundleChars { get; set; } = 260_000;
+    }
+
+    public sealed class FsdConfig
+    {
+        public ArchiveConfig? Archive { get; set; }
+        /// <summary>The areas the FSD covers: routes or route prefixes (<c>/settings</c> covers <c>/settings/tags</c>).
+        /// Empty: every screen. Screens outside it are never listed as undocumented.</summary>
+        public List<string> Scope { get; set; } = [];
+        /// <summary>Discrepancy findings (gap, conflict, undocumented) in <c>specs/trace.yaml</c>. Off by default: Phase
+        /// 2b's "not too noisy" bar failed on Sonarr (D57, D68), so only links are recorded until a project turns them on.</summary>
+        public bool Findings { get; set; }
+    }
+
+    /// <summary>
+    /// Where original documents go (D16): a folder outside the repo, or a second git repo (<see cref="Git"/>: each
+    /// original is committed there). Citations name the archive by <see cref="Name"/>, so moving it changes one setting.
+    /// </summary>
+    public sealed class ArchiveConfig
+    {
+        public string Name { get; set; } = "";
+        public string Path { get; set; } = "";
+        public bool Git { get; set; }
+    }
+
     /// <summary>Reserved in Phase 0; each adapter is built by the phase that first needs it (D24).</summary>
     public sealed class AdaptersConfig
     {
@@ -66,8 +108,8 @@ public sealed class StangentRepo
 {
     public const string ConfigFile = "stangent.yaml";
 
-    /// <summary>Lines <c>stangent init</c> adds to the repo's .gitignore: derived and run data, never committed (D7, D21).</summary>
-    public static readonly string[] GitIgnoreLines = [".stangent/index.sqlite*", ".stangent/telemetry/"];
+    /// <summary>Lines <c>stangent init</c> adds to the repo's .gitignore: derived and run data, never committed (D7, D21; AI run files, D52).</summary>
+    public static readonly string[] GitIgnoreLines = [".stangent/index.sqlite*", ".stangent/telemetry/", ".stangent/spec/"];
 
     static readonly IDeserializer Reader = new DeserializerBuilder()
         .WithNamingConvention(CamelCaseNamingConvention.Instance)

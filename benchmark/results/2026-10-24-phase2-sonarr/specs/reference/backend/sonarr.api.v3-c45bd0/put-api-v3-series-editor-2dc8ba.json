@@ -1,0 +1,133 @@
+{
+  "codeTitle": "PUT /api/v3/series/editor",
+  "entry": "endpoint:Sonarr.Api.V3|PUT /api/v3/series/editor",
+  "generated": {
+    "bundleHash": "35e4bca1e363ff3e6d02000937361575f70d9b08cc19ee29a844826b7029a0cf",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 14697,
+      "cutOff": 4,
+      "depth": 4,
+      "points": 51
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 9000,
+      "calls": 1,
+      "costUsd": 0.038059,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3407,
+      "outputTokens": 188
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 6607,
+      "calls": 1,
+      "costUsd": 0.043618,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 9469,
+      "outputTokens": 1691
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|PUT /api/v3/series/editor",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesEditorController.SaveAll(Sonarr.Api.V3.Series.SeriesEditorResource)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.ISeriesService.GetSeries(System.Collections.Generic.IEnumerable{System.Int32})",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.ISeriesService.UpdateSeries(System.Collections.Generic.List{NzbDrone.Core.Tv.Series},System.Boolean)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|PUT /api/v3/series/editor"
+        ],
+        "id": "A1",
+        "text": "Applies the supplied changes to all series whose ids are listed in the request, then saves them in one update."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesEditorController.SaveAll(Sonarr.Api.V3.Series.SeriesEditorResource)"
+        ],
+        "id": "R1",
+        "text": "Monitored, monitor new items, quality profile, series type and season folder are changed only when a value is supplied in the request."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesEditorController.SaveAll(Sonarr.Api.V3.Series.SeriesEditorResource)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.IsNotNullOrWhiteSpace(System.String)"
+        ],
+        "id": "R2",
+        "text": "Root folder path is changed only when it is not null or whitespace."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesEditorController.SaveAll(Sonarr.Api.V3.Series.SeriesEditorResource)"
+        ],
+        "id": "R3",
+        "text": "Language is changed only when it is not null."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesEditorController.SaveAll(Sonarr.Api.V3.Series.SeriesEditorResource)"
+        ],
+        "id": "R4",
+        "text": "When tags are supplied, the apply mode decides the result: Add adds them to the existing tags, Remove removes them, Replace sets the tags to exactly the supplied ones."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesEditorController.SaveAll(Sonarr.Api.V3.Series.SeriesEditorResource)"
+        ],
+        "id": "R5",
+        "text": "Each modified series is validated by the series editor validator, and a validation exception with the errors is thrown if any series is invalid."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesEditorController.SaveAll(Sonarr.Api.V3.Series.SeriesEditorResource)"
+        ],
+        "id": "R6",
+        "text": "Validation runs on every series before any is saved, so an invalid series prevents the update."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesEditorController.SaveAll(Sonarr.Api.V3.Series.SeriesEditorResource)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesResourceMapper.ToResource(System.Collections.Generic.IEnumerable{NzbDrone.Core.Tv.Series},System.Boolean)"
+        ],
+        "id": "S1",
+        "text": "Returns the updated series as a list of series resources, with an Accepted response."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesResourceMapper.ToResource(NzbDrone.Core.Tv.Series,System.Boolean)"
+        ],
+        "id": "S2",
+        "text": "Each returned series includes fields such as id, title, status, path, quality profile, monitored flag, monitor new items, series type, season folder, tags, language, seasons and ratings."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesEditorController.SaveAll(Sonarr.Api.V3.Series.SeriesEditorResource)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.ISeriesService.UpdateSeries(System.Collections.Generic.List{NzbDrone.Core.Tv.Series},System.Boolean)"
+        ],
+        "id": "E1",
+        "text": "Saves the changed series through the series service, passing the request's move-files flag."
+      }
+    ]
+  },
+  "title": "Bulk series editor save",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

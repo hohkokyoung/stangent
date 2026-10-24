@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:candidate-finder-output:v1",
+  "title": "What stangent-candidate-finder returns (Phase 2b, D53)",
+  "description": "Pages that may describe what one FSD section talks about, chosen from page titles only. Code checks every id is a page.",
+  "type": "object",
+  "required": ["candidates"],
+  "additionalProperties": false,
+  "properties": {
+    "candidates": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["page", "reason"],
+        "additionalProperties": false,
+        "properties": { "page": { "type": "string", "minLength": 1 }, "reason": { "type": "string", "maxLength": 300 } }
+      }
+    }
+  }
+}

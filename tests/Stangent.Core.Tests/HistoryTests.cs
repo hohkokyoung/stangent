@@ -364,7 +364,7 @@ public class HistoryTests
         var report = Impact(ImpactGraph());
         var history = report["history"]!;
 
-        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v4.json", report.ToJsonString()));
+        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v5.json", report.ToJsonString()));
         Assert.Equal(14, (int)history["total"]!);
         Assert.Equal(10, history["items"]!.AsArray().Count);
         Assert.Equal(4, (int)history["more"]!);
@@ -423,7 +423,7 @@ public class HistoryTests
 
         Assert.Equal("off", (string)report["history"]!["status"]!);
         Assert.Equal(0, (int)report["history"]!["total"]!);
-        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v4.json", report.ToJsonString()));
+        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v5.json", report.ToJsonString()));
     }
 
     // ---- Storage (code-graph v3) ------------------------------------------------------------------

@@ -150,7 +150,7 @@ A project that can't be loaded is listed in `loadErrors` and its code is ❓. MS
   - **fields:** typed results and bodies give `maps-field` lines, matched by JSON name (C# side:
     `[JsonPropertyName]`, `[JsonProperty]`, `[DataMember]`, else camelCase).
 
-## Impact answers (contract `impact-report` v4, D27)
+## Impact answers (contract `impact-report` v5, D27)
 
 `stangent graph impact --symbol <id or Type.Member> | --file <path> | --diff <base..head or ref> [--expand <group>] [--max-depth N] [--format md]`
 
@@ -170,6 +170,10 @@ A project that can't be loaded is listed in `loadErrors` and its code is ❓. MS
   (`none`, `off`) or only a shallow clone's. Graph items whose file is one of them carry an "also 📜" `history`
   tag and keep their place. The changed files are those of the start points, the `--file` itself, or
   every file in the `--diff`.
-- Every answer is validated against `schemas/impact-report.v4.json` before it's printed (v1–v3 are kept for history).
+- **`fsdSections`** (v5, Phase 2b): the FSD sections the change reaches through the reference pages. A page is reached
+  when a symbol one of its statements cites is changed or affected; its links in `specs/trace.yaml` lead to sections,
+  each with its link states and whether every link has a person's decision ("unverified" otherwise, D53). Top 10;
+  `--expand fsdSections` lists the rest. `status: none` when the repo has no pages or links. See `docs/spec.md`.
+- Every answer is validated against `schemas/impact-report.v5.json` before it's printed (v1–v4 are kept for history).
 
 `stangent graph show <id or Type.Member>` lists a point's lines in and out, and its blind spots.

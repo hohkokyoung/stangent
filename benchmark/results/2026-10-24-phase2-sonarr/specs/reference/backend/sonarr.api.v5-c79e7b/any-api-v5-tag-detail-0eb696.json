@@ -1,0 +1,108 @@
+{
+  "codeTitle": "ANY /api/v5/tag/detail",
+  "entry": "endpoint:Sonarr.Api.V5|ANY /api/v5/tag/detail",
+  "generated": {
+    "bundleHash": "e824f0436e7a886e7d9cac8ac90496e41e34ec621df02ec49ca65881ce0f154c",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 9880,
+      "cutOff": 0,
+      "depth": 4,
+      "points": 3
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6402,
+      "calls": 1,
+      "costUsd": 0.027867,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2892,
+      "outputTokens": 208
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4735,
+      "calls": 1,
+      "costUsd": 0.02882,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5956,
+      "outputTokens": 960
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|ANY /api/v5/tag/detail",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)",
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/tag/detail"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/tag/detail"
+        ],
+        "id": "A1",
+        "text": "A caller requests a single resource by id and receives it, or Not Found if no such resource exists."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R1",
+        "text": "For actions marked to validate the id, and not marked to skip validation, the id argument is validated before the action runs."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R2",
+        "text": "For POST and PUT requests, each resource in the request arguments is validated before the action runs."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R3",
+        "text": "On a PUT with a resource id of 0, the id from the route is used as the resource id."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "Returns the resource with the requested id as JSON with an OK result."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "Returns a Not Found result when the resource with the requested id does not exist."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "E1",
+        "text": "If the controller or action is marked deprecated, a warning with the caller's user agent is logged and the response gets a Deprecation: true header."
+      }
+    ]
+  },
+  "title": "Tag detail by id endpoint",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

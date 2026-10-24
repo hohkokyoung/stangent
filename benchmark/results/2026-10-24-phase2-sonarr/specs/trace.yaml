@@ -1,0 +1,1525 @@
+# FSD ↔ reference page links and findings (trace-links v1, D58). Edit `decision` only:
+# agree, code-wrong, fsd-wrong or defer. `decided_by` is filled from git after merge, never typed.
+version: 1
+entries:
+  - id: "L476e4409eb"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1"
+      title: "Library"
+      quote: "Each series has a root folder, a quality profile, a series type and a set of tags."
+      quoteHash: "22d06f1f878175c65dcbad333ff5528c6b557808bed0b6b40a99fbc5438168ac"
+    page:
+      id: "endpoint:Sonarr.Api.V3|ANY /api/v3/Series"
+      statement: "S2"
+      quote: "a root folder path"
+      quoteHash: "7f5382be98b24ab7f21f908a769edf633273f72303e3d51c1263057817c145bf"
+    by: "judge"
+    check: "confirmed"
+    note: "Series returned with root folder path (root folder part of the claim)."
+    decision: null
+    decided_by: null
+  - id: "L50153b550c"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1"
+      title: "Library"
+      quote: "Each series has a root folder, a quality profile, a series type and a set of tags."
+      quoteHash: "22d06f1f878175c65dcbad333ff5528c6b557808bed0b6b40a99fbc5438168ac"
+    page:
+      id: "endpoint:Sonarr.Api.V3|ANY /api/v3/Series"
+      statement: "S1"
+      quote: "quality profile, monitored flags, external ids, genres, tags"
+      quoteHash: "685489dd2caa3201b325b7f0d6a2cf0f323ab09a2ffe5d2708a9a25aa6a3ce91"
+    by: "judge"
+    check: "confirmed"
+    note: "Series resource includes quality profile and tags."
+    decision: null
+    decided_by: null
+  - id: "L29f81e5d71"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1"
+      title: "Library"
+      quote: "The library holds every series the user has added."
+      quoteHash: "8a72bc608ca82948f81082b84ad5b023e6ca041fb3dcac49840a87c8eabaf6f2"
+    page:
+      id: "page:/series"
+      statement: "S1"
+      quote: "lists all series in one of three views: table, posters or overview"
+      quoteHash: "5da1061c550a766ced3a5b2fa0ecadab58860d8700f1a510d4d6a41dcb3dd76e"
+    by: "judge"
+    check: "confirmed"
+    note: "Series index lists all series."
+    decision: null
+    decided_by: null
+  - id: "L9ec4489b2d"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1"
+      title: "Library"
+      quote: "Each series has a root folder, a quality profile, a series type and a set of tags."
+      quoteHash: "22d06f1f878175c65dcbad333ff5528c6b557808bed0b6b40a99fbc5438168ac"
+    page:
+      id: "page:/series/:titleSlug"
+      statement: "A8"
+      quote: "quality profile, series type, language, season type, path and tags"
+      quoteHash: "9ce011e5943a3cdd127f60d393da4051c405609e2f68234c925693e0edbe730b"
+    by: "judge"
+    check: "confirmed"
+    note: "Edit form exposes series type, quality profile and tags for a series."
+    decision: null
+    decided_by: null
+  - id: "L1aabb1bad8"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.1"
+      title: "Adding a series"
+    page:
+      id: "page:/add/new"
+      statement: "R5"
+      quote: "In the add dialog, the season type defaults to \"official\" if available, otherwise the first season type, otherwise \"official\"."
+      quoteHash: "ec16113a2d5fd769e1ac3deccd2a9ffd6526ebe820575d39de20b98deae130bd"
+    by: "judge"
+    note: "Season type and Season Folder, Language options not in FSD."
+    decision: null
+    decided_by: null
+  - id: "L27a18c4aa4"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.1"
+      title: "Adding a series"
+      quote: "The Add New screen lets the user search for a series by name and add it to the library."
+      quoteHash: "def63be0fbb613c7775aae01d466a74873f0b03d074e32994891b18c31746a5f"
+    page:
+      id: "page:/add/new"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: A1 only shows debounced typing lookup; it doesn't show adding to the library (A5/E1 do). Partial coverage."
+    decision: null
+    decided_by: null
+  - id: "L4c9f4eecde"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.1"
+      title: "Adding a series"
+      quote: "| Quality Profile | The quality profile used to download the series. |"
+      quoteHash: "1a8547f4871d7119ded7743ed7e6c88c36739eec5cadb4707331a4793b50c877"
+    page:
+      id: "page:/add/new"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: S15 only lists a Quality Profile field; no meaning shown."
+    decision: null
+    decided_by: null
+  - id: "L58a1dee6c7"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.1"
+      title: "Adding a series"
+      quote: "| Monitor | Which episodes are monitored at first: all, future, missing, existing, recent, pilot, first season, last season, specials, or none. |"
+      quoteHash: "8666ad72c8a485dad2fa1ee6ddd86b71d05132021a954e7317c078ee634dfeb2"
+    page:
+      id: "page:/add/new"
+    by: "judge"
+    note: "Monitor field exists but page doesn't list the monitor options."
+    decision: null
+    decided_by: null
+  - id: "L75fb026b16"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.1"
+      title: "Adding a series"
+      quote: "| Series Type | Standard, daily or anime; this changes how searches are made. |"
+      quoteHash: "7a86aa2eb37179af53e3d12bdd5bcd88ac07213bcb97262ea67851148eb2761c"
+    page:
+      id: "page:/add/new"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: S16 says the popover describes Anime, Daily and Standard, but not that it changes how searches are made."
+    decision: null
+    decided_by: null
+  - id: "L7767e474cc"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.1"
+      title: "Adding a series"
+      quote: "A series that is already in the library is marked as such in the search results and can't be added a second time."
+      quoteHash: "b566fc9a01138ba7f443c09d41e697e8705fb617e9430acfd62710df22ca7c2a"
+    page:
+      id: "page:/add/new"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: S13 covers the marking only. The can't-add-twice part is in R3/A4, not S13."
+    decision: null
+    decided_by: null
+  - id: "Ld8b49577e7"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.1"
+      title: "Adding a series"
+      quote: "- Start search for missing episodes: when ticked, the new series' missing monitored episodes are searched for straight after adding."
+      quoteHash: "3fb5549c8b118177dc7fc70240aba45caf3bb0e665dec8c99e39e4bd61c258a7"
+    page:
+      id: "page:/add/new"
+      statement: "S15"
+      quote: "plus Search checkboxes for Missing and Cutoff Unmet."
+      quoteHash: "dff22acb469a0004dab9c95ee7f458cc5cd2306b483e93e501b490d5ccc7f981"
+    by: "judge"
+    note: "FSD mentions only the missing search option; page also has a Cutoff Unmet search checkbox."
+    decision: null
+    decided_by: null
+  - id: "Le267e7dadc"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.1"
+      title: "Adding a series"
+      quote: "Up to 10 series can be selected from the search results and added together in one step."
+      quoteHash: "6e0a78cdc2f62083146d71489b6d63837e25c450265fc89520037de0a9754ca6"
+    page:
+      id: "page:/add/new"
+    by: "judge"
+    note: "Page shows adding one result at a time via dialog; no multi-select."
+    decision: null
+    decided_by: null
+  - id: "Lf02bf20efd"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.1"
+      title: "Adding a series"
+      quote: "| Tags | Tags link the series to delay profiles, release profiles and indexers. |"
+      quoteHash: "40e56607ce6aafb465746fdd3c45d8a24edf53d69d25b640f6913b525e00693f"
+    page:
+      id: "page:/add/new"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: S15 only lists a Tags field; the linkage to delay profiles, release profiles and indexers isn't shown."
+    decision: null
+    decided_by: null
+  - id: "Lf4bee3c1ca"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.1"
+      title: "Adding a series"
+    page:
+      id: "page:/add/new"
+      statement: "S17"
+      quote: "The Metadata Settings dialog has a Preferred Metadata Language select with help text, and Cancel and Save buttons."
+      quoteHash: "7fcf453e64a4881df683ba152a95013d53107e45ce2470cac97dc5aaac94d8e1"
+    by: "judge"
+    note: "Metadata settings dialog not in FSD."
+    decision: null
+    decided_by: null
+  - id: "Lfe4915b0b1"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.1"
+      title: "Adding a series"
+      quote: "| Root Folder | The library folder the series is stored in. |"
+      quoteHash: "673134cac7c83624290460977e3daedc7f96d4b1ba8beb1d6d82257b4ce0ba8b"
+    page:
+      id: "page:/add/new"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: S15 only lists a Root Folder field; it doesn't state its meaning."
+    decision: null
+    decided_by: null
+  - id: "L2dcfe98f8f"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.2"
+      title: "Series details"
+      quote: "The user can edit the series: its monitoring, quality profile, series type, path and tags."
+      quoteHash: "8658cc983794df183a9ff7a11f8007ff9e529e83f89d1db901eeaedcdc8ea547"
+    page:
+      id: "page:/series/:titleSlug"
+      statement: "A8"
+      quote: "Edit opens a form for monitored, new seasons monitoring, season folder, quality profile, series type, language, season type, path and tags. Save updates the series."
+      quoteHash: "716df99de08e66fa64341756094c01bc7f0111dba012a8669cabefd277135440"
+    by: "judge"
+    check: "confirmed"
+    note: "Covers listed fields and more."
+    decision: null
+    decided_by: null
+  - id: "L34560373a9"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.2"
+      title: "Series details"
+      quote: "The user can monitor or unmonitor the whole series, a season, or a single episode."
+      quoteHash: "6de05ddb5f2372a8d58d56d78c48638ee595409f1c8fac29aa5cfe73f1577d4f"
+    page:
+      id: "page:/series/:titleSlug"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: A11 covers only the season monitor toggle. The whole-series and single-episode cases are in A3 and A12, so this link is partial."
+    decision: null
+    decided_by: null
+  - id: "L3afb2f7004"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.2"
+      title: "Series details"
+      quote: "The episode list of a series can be exported as a CSV file."
+      quoteHash: "4c3e5ec08e5b93b4f4182f65649503c230a705cd0a0bb078707df38d52e1bef4"
+    page:
+      id: "page:/series/:titleSlug"
+    by: "judge"
+    note: "No CSV export on the details page."
+    decision: null
+    decided_by: null
+  - id: "Lcdd2345313"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.2"
+      title: "Series details"
+      quote: "The user can search for all monitored episodes of the series, or for one season, or for one episode, either automatically or interactively."
+      quoteHash: "307eb3abeeb47d89159cc4d0479e4b07c989eaf92eff75c52d5d1d0624689d4f"
+    page:
+      id: "page:/series/:titleSlug"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: A13 covers season search and season interactive search only. Series-wide search and single-episode search are not shown by this statement."
+    decision: null
+    decided_by: null
+  - id: "Lce24b02c4c"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.2"
+      title: "Series details"
+      quote: "Deleting a series always deletes its folder and all its files from disk."
+      quoteHash: "938ea1dc72f470198d9661eb7766fb9eefc78327e78964ccdc16d5e85094b442"
+    page:
+      id: "page:/series/:titleSlug"
+      statement: "R9"
+      quote: "The Delete files option defaults to unchecked; the delete modal warns with the path and file count when it is checked."
+      quoteHash: "4bd7840676340e51d75e302010b922df61aad1cd67acdddd4cd875af60b9fe94"
+    by: "judge"
+    note: "FSD: always deletes files; page: delete-files is optional, default unchecked."
+    decision: null
+    decided_by: null
+  - id: "Ld0eb186401"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.2"
+      title: "Series details"
+      quote: "The user can refresh the series to fetch the latest information about it and rescan its files."
+      quoteHash: "6cfaeb5a7d048f2951cb35fef918fed3c9cecaebf7166b4811590767ec35c438"
+    page:
+      id: "page:/series/:titleSlug"
+      statement: "A1"
+      quote: "Refresh & Scan runs the refresh series command for this series."
+      quoteHash: "9d9c016a36129adc958e3f8b41a0ee267f2431e0df864cc3c53d4873135042b6"
+    by: "judge"
+    check: "confirmed"
+    note: "Same behaviour."
+    decision: null
+    decided_by: null
+  - id: "Ld7dcac8eec"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.2"
+      title: "Series details"
+      quote: "The series details screen shows one series: its poster, overview, network, status, path, size on disk and its seasons, with each season's episodes listed underneath."
+      quoteHash: "a5ea9679f303f497f737d23ceb5d5c86a0c96fccea62e61b132d1d1b51a72f16"
+    page:
+      id: "page:/series/:titleSlug"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: S3 covers only the header (poster, fanart, title, alternate titles). It doesn't cover overview, network, status, path, size on disk, seasons or episodes. Those appear in other statements, so this link is partial."
+    decision: null
+    decided_by: null
+  - id: "L48788286c0"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "2"
+      title: "Calendar"
+      quote: "The calendar shows episodes that aired recently and those coming up, by month, week, forecast or day."
+      quoteHash: "b33c7e5708c4b5d50fc89970295c058d5aba187577ceaa9517afef847d659403"
+    page:
+      id: "page:/calendar"
+      statement: "S6"
+      quote: "view switchers for Month, Week, Forecast, Day and Agenda"
+      quoteHash: "0820d1aba18c85a4efee8e7f35bb832860e3ec6cb72f61f7f8ea8a90ea9a0427"
+    by: "judge"
+    check: "confirmed"
+    note: "Views match; page also has Agenda (extra)."
+    decision: null
+    decided_by: null
+  - id: "L60cd0363f9"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "2"
+      title: "Calendar"
+      quote: "The iCal feed can be limited to series with given tags, and to premieres only."
+      quoteHash: "183e2fd5a858d7a4e5ae232a2fe0798613dd916327923155e209ebc0a51f8f81"
+    page:
+      id: "page:/calendar"
+      statement: "A1"
+      quote: "Pressing the iCal link toolbar item opens a Calendar Feed dialog with options for unmonitored, season premieres only, all-day events and tags, and a generated feed URL with copy and webcal buttons."
+      quoteHash: "4bf8481d3728d7da38f1559d110b92c24d927b929096ef380e82a52499ffe223"
+    by: "judge"
+    check: "confirmed"
+    note: "Tags and premieres-only options present in feed dialog."
+    decision: null
+    decided_by: null
+  - id: "Lb384898e1e"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "2"
+      title: "Calendar"
+      quote: "Episodes can be dragged to another day to change their air date."
+      quoteHash: "5d72e55f1e0efc28c461d00241483a55b3d28997b9a27be28a53cff984e04cd9"
+    page:
+      id: "page:/calendar"
+    by: "judge"
+    note: "No page describes drag-and-drop to change air date."
+    decision: null
+    decided_by: null
+  - id: "Lcd2be0442b"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "2"
+      title: "Calendar"
+      quote: "Monitored and unmonitored episodes can be shown or hidden"
+      quoteHash: "8727187f2842a30c54f262ae65429a35d1553492fecc955b10a4ab6fd1ea23e2"
+    page:
+      id: "page:/calendar"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: S14 only lists event statuses (downloaded, unmonitored, etc.); it does not show that monitored/unmonitored episodes can be shown or hidden. That is in other statements (R5 filter)."
+    decision: null
+    decided_by: null
+  - id: "Lf14b7b43ef"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "2"
+      title: "Calendar"
+      quote: "Sonarr can share the calendar as an iCal feed, which covers the previous 14 days and the next 60 days."
+      quoteHash: "725c4c7bd33c8586fcd2c4da8a6c1302155bdf58d0f12cb0183b9532c4940bff"
+    page:
+      id: "page:/calendar"
+    by: "judge"
+    note: "Page shows iCal dialog but no 14/60 day range; no iCal feed endpoint page."
+    decision: null
+    decided_by: null
+  - id: "L0738eff6d6"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3"
+      title: "Activity"
+      quote: "Activity shows what Sonarr is downloading now and what it has done."
+      quoteHash: "1f2a6acf2a242ed664fe9b9202e2db21078b1134b5eeaa98e57926c7906b668c"
+    page:
+      id: "page:/activity/history"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: S1 only gives the page title and heading scope. It doesn't show that history records of what Sonarr has done are listed. Other History statements (S5) cover that, but S1 does not."
+    decision: null
+    decided_by: null
+  - id: "Lf91041d487"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3"
+      title: "Activity"
+      quote: "Activity shows what Sonarr is downloading now and what it has done."
+      quoteHash: "1f2a6acf2a242ed664fe9b9202e2db21078b1134b5eeaa98e57926c7906b668c"
+    page:
+      id: "page:/activity/queue"
+      statement: "S1"
+      quote: "The page is headed Activity / Queue and lists queue items in a table with a pager showing page, total pages and total records."
+      quoteHash: "162cda7939daece6a279e19cb25cc298d7f9006706277b454ab99656d38476d6"
+    by: "judge"
+    check: "confirmed"
+    note: "Queue page shows current downloads under Activity."
+    decision: null
+    decided_by: null
+  - id: "L0079fb9717"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.1"
+      title: "Queue"
+      quote: "The queue is not stored by Sonarr: it is read from the download clients."
+      quoteHash: "f752012d4d9b0bad17ee229f3463a512295aef53e464245b1a9d8f787000eb26"
+    page:
+      id: "endpoint:Sonarr.Api.V3|GET /api/v3/Queue"
+    by: "judge"
+    note: "No page states the queue is read live from download clients rather than stored."
+    decision: null
+    decided_by: null
+  - id: "L20630847d5"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.1"
+      title: "Queue"
+      quote: "Removing an item from the queue always adds the release to the blocklist."
+      quoteHash: "7e1523ba3a364e35864c2a58b48a94c64a40cc2190536dbd1a118b61ab8b581f"
+    page:
+      id: "endpoint:Sonarr.Api.V5|ANY /api/v5/Queue"
+      statement: "R4"
+      quote: "A pending release is blocklisted unless blocklistMethod is DoNotBlocklist."
+      quoteHash: "cabbb85f9da4f0996e12f0f668b10fae8a0b114e32f01a8689059b3cb61a4d45"
+    by: "judge"
+    note: "FSD: always blocklisted; page: blocklisting is optional (default false in V3, DoNotBlocklist option in V5)."
+    decision: null
+    decided_by: null
+  - id: "L191027d8b5"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.1"
+      title: "Queue"
+      quote: "The user can remove a release from the queue. Removing an item from the queue always adds the release to the blocklist."
+      quoteHash: "164dd20b03437829dd823dcb4d6875c592d6dec7c067cdde0305ee7b5e27a518"
+    page:
+      id: "page:/activity/queue"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: A6 confirms the user can remove an item. The FSD also says removal always adds the release to the blocklist. The page lets the user pick a blocklist method (A8) and a DoNotBlocklist option exists, so removal does not always blocklist."
+    decision: null
+    decided_by: null
+  - id: "Lb96075c66d"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.1"
+      title: "Queue"
+      quote: "The queue lists the releases the download clients are downloading for Sonarr, with each release's series, episode, quality, progress and time left."
+      quoteHash: "e551958cecbf789a4921da9e87669dc8ac6e49b755d3fd1278d986adc1aa81b6"
+    page:
+      id: "page:/activity/queue"
+      statement: "S6"
+      quote: "Each row has a selection checkbox and shows only the visible columns: status, series, episode, episode title, air date, languages, quality, custom formats, custom format score, protocol, indexer, download client, title, size, output path, time left, progress, added, actions."
+      quoteHash: "0d42943ed3d0f178178577765e05274fa4c6de8a69802572f01d2f473136621e"
+    by: "judge"
+    check: "confirmed"
+    note: "Queue table shows series, episode, quality, time left, progress."
+    decision: null
+    decided_by: null
+  - id: "Ldfb1351322"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.1"
+      title: "Queue"
+      quote: "Each queue item has a priority (High, Normal or Low) that the user can change to reorder the downloads."
+      quoteHash: "5f7ffd3fe2eb43e46c807dfc36f03138cf67c6119904434eb3b9fce00295a1ad"
+    page:
+      id: "page:/activity/queue"
+    by: "judge"
+    note: "No page shows a queue item priority or changing it."
+    decision: null
+    decided_by: null
+  - id: "Lfe6b9999fe"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.1"
+      title: "Queue"
+      quote: "A release that can't be imported automatically shows a warning with the reason."
+      quoteHash: "d82a34977a875b8f7781f6b2d9cccd5e55258d6cff02b61526cc596ce361da89"
+    page:
+      id: "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: S10 only says the popover body lists the status message groups when the status is warning or error. It doesn't tie this to the importBlocked case. S5 covers 'Unable to import automatically', so S10 alone doesn't show the warning for a release that can't be imported."
+    decision: null
+    decided_by: null
+  - id: "L5a344330cc"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.2"
+      title: "History"
+    page:
+      id: "page:/activity/history"
+      statement: "A7"
+      quote: "For grabbed events the details modal has a Mark as failed button that posts to the history failed endpoint."
+      quoteHash: "5198952852504a187841ecd0f5177739a1acd19bce7976e86d2ca8585c3cd832"
+    by: "judge"
+    note: "Mark as failed for grabbed items is not mentioned in the FSD."
+    decision: null
+    decided_by: null
+  - id: "L5f6825bdb0"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.2"
+      title: "History"
+      quote: "For a grabbed release the user can open its details: the indexer it came from, its age and the release title."
+      quoteHash: "f2e6f9669bff61c5b93f8e5add7c1593ba34213a949b27f11b107f9858a36980"
+    page:
+      id: "page:/activity/history"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: S14 lists Name, Indexer and Age When Grabbed among many fields, but the FSD sentence is a subset. The opening of details by the Details button is A6; S14 alone is a superset, so the FSD sentence is only partly stated."
+    decision: null
+    decided_by: null
+  - id: "L7e79bddfee"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.2"
+      title: "History"
+      quote: "The list can be filtered by event type, and more columns can be shown from the options."
+      quoteHash: "314ea4c1718d6cbcc901c6b20ccdca124a110662a442298dae3214f707593b9b"
+    page:
+      id: "page:/activity/history"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: A2 covers columns and page size via Options, but filtering by event type is not shown. The page's filter menu (S6, A3) describes built-in/custom filters, not event type filtering explicitly."
+    decision: null
+    decided_by: null
+  - id: "Ld1f61a8bbf"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.2"
+      title: "History"
+      quote: "History lists everything that has happened to episodes: grabbed, imported, upgraded, deleted, renamed and failed."
+      quoteHash: "35210e9fcc412afdfc7132c2b3aa9fa9f2214d0a2fbc7eceef9cb1dba86c6671"
+    page:
+      id: "page:/activity/history"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: S9 only maps event types to icons; it doesn't show that history lists all those events (e.g. no upgrade event, and it lists ignored/unknown). Not the same statement."
+    decision: null
+    decided_by: null
+  - id: "Ldbe1ed2b8c"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.2"
+      title: "History"
+      quote: "Any history entry can be undone, which restores the episode file that an upgrade replaced."
+      quoteHash: "5750091a578935b5e642243d2d4200279213effd6a4f5c6c1aab63ef9fba03d8"
+    page:
+      id: "page:/activity/history"
+    by: "judge"
+    note: "No page shows an undo action or restoring a replaced file; only Mark as failed for grabbed events exists."
+    decision: null
+    decided_by: null
+  - id: "L0766eedbb8"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / General / Backups"
+      title: "Backups"
+      quote: "- Interval: how often an automatic backup is taken, from 1 to 30 days."
+      quoteHash: "07023f143ecae3ee11976adc359c623287a5e8a7056a5223e32cfd66fdf5778b"
+    page:
+      id: "page:/settings/general"
+    by: "judge"
+    note: "Page lists Interval (days) field but shows no 1 to 30 range."
+    decision: null
+    decided_by: null
+  - id: "L24e346d2cd"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / General / Backups"
+      title: "Backups"
+      quote: "Folder: where backups are written; a relative path is inside Sonarr's data folder."
+      quoteHash: "04fd98a2595c658b32601446c6ae9177d4ac51817f60e03f3815f17ca6c431f9"
+    page:
+      id: "page:/settings/general"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: S17 only says the Backups section has a Folder field (shown with advanced settings). It doesn't say the folder is where backups are written, or that a relative path is inside the data folder."
+    decision: null
+    decided_by: null
+  - id: "Lffd77d7c0e"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / General / Backups"
+      title: "Backups"
+      quote: "- Retention: how long backups are kept, up to 365 days."
+      quoteHash: "2772c26e09b7b40f44d958daca4d866591c35ec8d016586825c0bd3f5c50f052"
+    page:
+      id: "page:/settings/general"
+    by: "judge"
+    note: "Page lists Retention (days) field but shows no 365 limit."
+    decision: null
+    decided_by: null
+  - id: "L72b47571d3"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / General / Logging"
+      title: "Logging"
+      quote: "Each log file can grow up to 50 megabytes before a new one is started."
+      quoteHash: "83bb1ca2ba2badd992d4e4b0afea3f0c84088a3438a4df3630bb1bf240f5ee19"
+    page:
+      id: "page:/settings/general"
+      statement: "R2"
+      quote: "Log Size Limit accepts values from 1 to 10 MB."
+      quoteHash: "3ddeca2108e950b748641aff8e74f17afc50b605242a04050be88485c011e167"
+    by: "judge"
+    note: "FSD: 50 MB per log file; page: Log Size Limit accepts 1 to 10 MB."
+    decision: null
+    decided_by: null
+  - id: "Le46ba3d300"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / General / Logging"
+      title: "Logging"
+      quote: "The log level can be set to info, debug or trace."
+      quoteHash: "bed40dccfce917dce7f059fb9238fa6cac26d46f8bb5fc608b076264edff462d"
+    page:
+      id: "page:/settings/general"
+      statement: "S13"
+      quote: "The Logging section has a Log Level select, with a warning shown when the level is 'trace', and a Log Size Limit in MB."
+      quoteHash: "412a52288d5bd8ea3dbdbd7b4275514be7c85bca8c0c1343deb8c00a2c138c9a"
+    by: "judge"
+    note: "Page shows a Log Level select with a trace warning but doesn't list the options; the reconfigure page treats levels up to Trace. Options not confirmed, so this is weak; the log level select is present."
+    decision: null
+    decided_by: null
+  - id: "L02956e3e53"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      title: "Interface"
+      quote: "The interface settings set the first day of the week and the column headers of the calendar."
+      quoteHash: "093e9abdd6dc5af35e529a8746381dd6c62a553081b9f47bc9e07369143f8f0b"
+    page:
+      id: "page:/settings/ui"
+      statement: "S5"
+      quote: "The Calendar section has selects for First Day of Week and Week Column Header, the latter with help text."
+      quoteHash: "c54c70cfc85f3442ed43f95f3acedc38558657e3be1a1e37f1b38811d3d56a4c"
+    by: "judge"
+    check: "confirmed"
+    note: "Both calendar fields present."
+    decision: null
+    decided_by: null
+  - id: "L1b0fba1da4"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      title: "Interface"
+    page:
+      id: "page:/settings/ui"
+      statement: "R3"
+      quote: "If the selected UI language is not in the available language list, the field shows the error \"InvalidUILanguage\" (translated)."
+      quoteHash: "6c8a0f8fea95c910bda7159b5188a9d825d3362be4139ea8e12e4e2839f2717b"
+    by: "judge"
+    note: "Language validation not in FSD."
+    decision: null
+    decided_by: null
+  - id: "L3a6fa52b0b"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      title: "Interface"
+      quote: "The language of the interface can be chosen."
+      quoteHash: "0b83957aba8737b5f23763ec0d5b20a52f92b25edb6f3338237a08bf522307bb"
+    page:
+      id: "page:/settings/ui"
+      statement: "S8"
+      quote: "The Language section has a UI Language select with help text and a warning that a browser reload is required."
+      quoteHash: "e54ddbd58250d56a95d3ac0263cb636d82313df869c725acf121faa9bc2d213a"
+    by: "judge"
+    check: "confirmed"
+    note: "UI language select exists."
+    decision: null
+    decided_by: null
+  - id: "L5532b9be07"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      title: "Interface"
+    page:
+      id: "page:/settings/ui"
+      statement: "S7"
+      quote: "The Style section has a Theme select, a Header Color select and an Enable Color Impaired Mode checkbox, each with help text."
+      quoteHash: "407a2a2b4753158fd03c96f65597cb95e7d48c5b68153d3bb4c3c6382ca5a73e"
+    by: "judge"
+    note: "Header Color and Color Impaired Mode not in FSD."
+    decision: null
+    decided_by: null
+  - id: "L8b304c491b"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      title: "Interface"
+      quote: "Theme: Light, Dark or Auto."
+      quoteHash: "3d138706013dcce0b6bbb92fb5296c6c93e8c2f56ef0dd389b175ac2621bce42"
+    page:
+      id: "page:/settings/ui"
+      statement: "R1"
+      quote: "Theme options are Auto, Light and Dark."
+      quoteHash: "584ca428292369a08cec80f4e8e7876138438ac7e4097e184c693d521bd88add"
+    by: "judge"
+    check: "confirmed"
+    note: "Same options."
+    decision: null
+    decided_by: null
+  - id: "La5564b8e26"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      title: "Interface"
+      quote: "The font size can be set to small, medium or large."
+      quoteHash: "a522a7da9eb36b585b0775557093b1e36584a4d2a03cf68981531d35ea881031"
+    page:
+      id: "page:/settings/ui"
+    by: "judge"
+    note: "No font size setting on the UI settings page."
+    decision: null
+    decided_by: null
+  - id: "Lbe97211de4"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      title: "Interface"
+      quote: "The short date format, long date format and time format can be chosen, and dates can be shown relative to today."
+      quoteHash: "5c0582fbf5e167a535cf37e47e2f120d0fe0ff506920f18d480d8e6056d6fb64"
+    page:
+      id: "page:/settings/ui"
+      statement: "S6"
+      quote: "The Dates section has selects for Short Date Format, Long Date Format, Time Format and Time Zone, and a checkbox for Show Relative Dates."
+      quoteHash: "615029664bfbd01b6aa4eae88436a925ebc75a9db35554b78def4072c409fee5"
+    by: "judge"
+    check: "confirmed"
+    note: "Matches; page also has Time Zone."
+    decision: null
+    decided_by: null
+  - id: "L4c1acf1905"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Delay profiles"
+      title: "Delay profiles"
+      quote: "A delay profile makes Sonarr wait before grabbing a release, so that a better one can appear."
+      quoteHash: "7c808c7eb663f77cf54b9288f801c3b13e844451bbabd37cb00bbd0191a04de1"
+    page: null
+    by: "judge"
+    note: "No page describes the waiting behaviour before grabbing."
+    decision: null
+    decided_by: null
+  - id: "L1d7f755207"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Delay profiles"
+      title: "Delay profiles"
+      quote: "Tags: a delay profile applies to the series with the same tags."
+      quoteHash: "df97e0c5a174150f4c50e974b369f7226031a2d65610780829f46a9bf9f37448"
+    page:
+      id: "endpoint:Sonarr.Api.V3|ANY /api/v3/DelayProfile"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: R6 only says the profile carries a set of tags. It does not say the profile applies to series with matching tags."
+    decision: null
+    decided_by: null
+  - id: "L6437685628"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Delay profiles"
+      title: "Delay profiles"
+      quote: "Usenet Delay and Torrent Delay: in minutes; neither can be negative."
+      quoteHash: "432d7cc8c316ebf8e39d5b51d71e56b78665143a38276a3428e470893b91176b"
+    page:
+      id: "endpoint:Sonarr.Api.V3|ANY /api/v3/DelayProfile"
+    by: "judge"
+    note: "No page shows validation that delays cannot be negative."
+    decision: null
+    decided_by: null
+  - id: "L161615c608"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Delay profiles"
+      title: "Delay profiles"
+      quote: "The default delay profile can be given tags like any other."
+      quoteHash: "c1dc91cdc9dc0c2fed6078d05d41c7f41d473cb851ee672916af29ab84ab2540"
+    page:
+      id: "page:/settings/profiles"
+      statement: "R6"
+      quote: "The default delay profile (id 1) cannot be dragged or deleted, and its tags are not editable."
+      quoteHash: "db26c3b8569473bde355ea57ee695d140f0ad14ba281d2156e975aa447e967f1"
+    by: "judge"
+    note: "FSD: default profile can have tags; page: its tags are not editable."
+    decision: null
+    decided_by: null
+  - id: "L7f6c2e42be"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Delay profiles"
+      title: "Delay profiles"
+      quote: "Preferred Protocol: Usenet or Torrent."
+      quoteHash: "d53b41613e8f14112e9a7f2c9ea72aa1ac3574be9e56c8b8d22cb469275209b9"
+    page:
+      id: "page:/settings/profiles"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: Page R7 says protocol options set enabled flags and preferred protocol, but does not state that the preferred protocol is either Usenet or Torrent."
+    decision: null
+    decided_by: null
+  - id: "L9a99a0d94b"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Delay profiles"
+      title: "Delay profiles"
+      quote: "Usenet Delay and Torrent Delay: in minutes; neither can be negative."
+      quoteHash: "432d7cc8c316ebf8e39d5b51d71e56b78665143a38276a3428e470893b91176b"
+    page:
+      id: "page:/settings/profiles"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: Page R7 says delays are in minutes, but nothing shows that negative values are rejected."
+    decision: null
+    decided_by: null
+  - id: "L1874bba01b"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Quality profiles"
+      title: "Quality profiles"
+    page:
+      id: "endpoint:Sonarr.Api.V3|ANY /api/v3/QualityProfile"
+      statement: "R1"
+      quote: "A profile cannot be deleted while any series or import list uses it."
+      quoteHash: "7c245b664d76f0f564b8f574bc3ddae48e3cf1b0c45cae99ab9d03f847789547"
+    by: "judge"
+    note: "The FSD does not mention the delete restriction."
+    decision: null
+    decided_by: null
+  - id: "L19c4988ee9"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Quality profiles"
+      title: "Quality profiles"
+      quote: "Upgrades Allowed: when ticked, a file is replaced by a better release until the cutoff is reached."
+      quoteHash: "ba138516ebd64c3ab1479e94f6352388a99c4431b39df64ef67ccd4bb2e43374"
+    page:
+      id: "page:/settings/profiles"
+      statement: "S5"
+      quote: "when upgrades are allowed it has a title explaining upgrades continue until the quality is met or exceeded"
+      quoteHash: "1691dbe7e0090482ee7e1bd62ee7f70edf267e4fdcbf1b56129e8b784ed22486"
+    by: "judge"
+    check: "confirmed"
+    note: "Both say upgrades continue until the cutoff quality is reached."
+    decision: null
+    decided_by: null
+  - id: "L52bbf3a22d"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Quality profiles"
+      title: "Quality profiles"
+      quote: "Upgrade Until: the cutoff quality."
+      quoteHash: "85f7bcc978ee32ca90a569d35bbc505e0702f3c0afd838c576b90e3adfdc9f3f"
+    page:
+      id: "page:/settings/profiles"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: A2 only lists an Upgrade Until field in the edit modal. It doesn't say the field sets the cutoff quality. S4 and S5 mention the cutoff, but A2 doesn't tie it to this field."
+    decision: null
+    decided_by: null
+  - id: "L60bd6c7b0e"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Quality profiles"
+      title: "Quality profiles"
+    page:
+      id: "page:/settings/profiles"
+      statement: "R2"
+      quote: "The Upgrade Until field shows only when Upgrades Allowed is checked."
+      quoteHash: "1b154566480853291839f559ccf595c5d94cdea32d1c148475ef44bdde7bab73"
+    by: "judge"
+    note: "The FSD does not say that Upgrade Until is conditional on Upgrades Allowed."
+    decision: null
+    decided_by: null
+  - id: "L692bbd1ad8"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Quality profiles"
+      title: "Quality profiles"
+      quote: "Name: the profile's name, which is required."
+      quoteHash: "7ede953b79415f3e35a2fa69eaacda5baaebf285610538dc53dfb5050ed45d6c"
+    page:
+      id: "page:/settings/profiles"
+    by: "judge"
+    note: "Pages show a Name field but none states that it is required."
+    decision: null
+    decided_by: null
+  - id: "Lfefaa07baa"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Quality profiles"
+      title: "Quality profiles"
+    page:
+      id: "page:/settings/profiles"
+      statement: "R3"
+      quote: "If the cutoff is unset or no longer allowed, it is set to the first allowed quality."
+      quoteHash: "6886f0d5f9ddcab44e7dfb7edbfc9e307f69c3f721382bdef592f9a7ff004e36"
+    by: "judge"
+    note: "Cutoff defaulting rule is not in the FSD."
+    decision: null
+    decided_by: null
+  - id: "Led68980de1"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Quality definitions"
+      title: "Quality definitions"
+      quote: "Each quality can be limited to a maximum episode runtime."
+      quoteHash: "67d24bd9230c7fa946ad223870a193eb540bfe05158f7dc5b2e631b1f0dec1f5"
+    page: null
+    by: "judge"
+    note: "No page shows a maximum episode runtime limit per quality."
+    decision: null
+    decided_by: null
+  - id: "L2a78609479"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Quality definitions"
+      title: "Quality definitions"
+      quote: "lists every quality with its title and its minimum, preferred and maximum size in megabytes per minute"
+      quoteHash: "c33d46e76b63761a3f2c9a520a20de489211878b2954ddae2a215080317548e7"
+    page:
+      id: "endpoint:Sonarr.Api.V3|GET /api/v3/QualityDefinition"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: The API item lists the size fields but does not say they are megabytes per minute. It also does not describe a screen listing them. The /settings/quality page shows only 'Quality' and 'Title' columns, with no sizes."
+    decision: null
+    decided_by: null
+  - id: "L55fc880fb6"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Quality definitions"
+      title: "Quality definitions"
+      quote: "The quality definitions screen lists every quality with its title and its minimum, preferred and maximum size in megabytes per minute."
+      quoteHash: "9cc58db70c9074e87994205ce403f16ef1be8384fda80cde0628f5b93835d599"
+    page:
+      id: "page:/settings/quality"
+      statement: "S3"
+      quote: "The list has column headers 'Quality' and 'Title'. Each row shows the quality name and an editable text input holding the title."
+      quoteHash: "a10f0112ed3888c73e369d134e11c7748b610a62202801048f63c5a8e66acb06"
+    by: "judge"
+    note: "FSD: screen lists min, preferred and max size; page screen shows only quality and editable title columns."
+    decision: null
+    decided_by: null
+  - id: "L384481b321"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Tags"
+      title: "Tags"
+    page:
+      id: "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag"
+      statement: "R1"
+      quote: "Adding a tag whose label already exists returns the existing tag and does not insert a new one."
+      quoteHash: "9acc7aeca367fec7868f861d42a60f916f9e86af99e1ee5d074514992a2ee746"
+    by: "judge"
+    note: "Duplicate label handling not in FSD."
+    decision: null
+    decided_by: null
+  - id: "L4763e7983e"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Tags"
+      title: "Tags"
+    page:
+      id: "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag"
+      statement: "R2"
+      quote: "Tag labels are converted to lower case when a tag is added or updated."
+      quoteHash: "9d51505487342bd8d83cec02560e1782f77549fe009cbdd1d68d40ac6f7a4517"
+    by: "judge"
+    note: "Lower-casing of labels not mentioned in FSD."
+    decision: null
+    decided_by: null
+  - id: "L8d67c8dcc1"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Tags"
+      title: "Tags"
+      quote: "Tag labels may contain letters, numbers, spaces and underscores."
+      quoteHash: "2e789b8777b56d0e5b8888977783bd205fc6e11c91958ff9f33598cce16b151c"
+    page:
+      id: "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag"
+    by: "judge"
+    note: "No page shows character validation of labels; pages only show lower-casing."
+    decision: null
+    decided_by: null
+  - id: "L98cfac3b20"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Tags"
+      title: "Tags"
+      quote: "Tags link series to delay profiles, release profiles, indexers, import lists, notifications and download clients."
+      quoteHash: "d42a4ba2c419f6589d8d3684de8c8c215719065990c2f8c4e3e6d7b0cbf5eda8"
+    page:
+      id: "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag"
+      statement: "R4"
+      quote: "Use is checked against delay profiles, import lists, notifications, release profiles, excluded release profiles, series, indexers, auto tags and download clients."
+      quoteHash: "dcc55cb588961a73d0c1467c774e69af8040383cdc7490a4340fc39be424890f"
+    by: "judge"
+    check: "confirmed"
+    note: "Tag usage covers these entities (plus auto tags)."
+    decision: null
+    decided_by: null
+  - id: "L98fcdc7ab2"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Tags"
+      title: "Tags"
+      quote: "Deleting a tag removes it from every series, profile and indexer that uses it."
+      quoteHash: "56b4430d010de1f36d52c35ac6dbfc3cf01339c0e1d8d140553fef40043c15cc"
+    page:
+      id: "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag"
+      statement: "R3"
+      quote: "A tag that is still in use cannot be deleted; a conflict error says \"'<label>' cannot be deleted since it's still in use\"."
+      quoteHash: "476ecee8c5e7ef97ab59db71f42b171e3ad4a39fe964cd3f3b21c220e049e83c"
+    by: "judge"
+    note: "FSD: delete cascades removal; page: delete blocked while in use."
+    decision: null
+    decided_by: null
+  - id: "L796f73d6db"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Tags"
+      title: "Tags"
+      quote: "The tags screen lists every tag with the number of things that use it."
+      quoteHash: "5e1d3ce9195786b3bf381bc6cb5f2b3dcae08c336560f4e25a72f2dd5d44b8d5"
+    page:
+      id: "page:/settings/tags"
+      statement: "S5"
+      quote: "Each tag card shows labels with counts of what uses the tag: series, delay profiles, import lists, connections, release profiles, indexers, download clients and auto tagging. Counts of zero are hidden."
+      quoteHash: "6968b588316d1957de8968837e8e822054f128a557539f6d378b2b763d377a59"
+    by: "judge"
+    check: "confirmed"
+    note: "Cards list tags with usage counts."
+    decision: null
+    decided_by: null
+  - id: "L5516054a71"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Tags"
+      title: "Tags"
+      quote: "Each tag has a colour, chosen from a palette of 12 colours, which is shown wherever the tag appears."
+      quoteHash: "cd43eef8fcd42f56d1976b8549a962b219fd571f45c50900b9b000deedf92e59"
+    page:
+      id: "ts|frontend/src/Components/TagList.tsx#TagList"
+    by: "judge"
+    note: "No page shows tag colours or a palette; labels use a kind, tags only have id and label."
+    decision: null
+    decided_by: null
+  - id: "L1d80d81805"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "System / Backups"
+      title: "Backups"
+      quote: "Backups can be copied automatically to an S3 bucket."
+      quoteHash: "8e8abfddd82a3bc006addd8239fc6c6e9e598e179a87dc6c60de803e93219bc9"
+    page: null
+    by: "judge"
+    note: "No page mentions S3 or automatic copying of backups."
+    decision: null
+    decided_by: null
+  - id: "Lffb8c35748"
+    state: "agree"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "System / Backups"
+      title: "Backups"
+      quote: "The backups screen lists the backups Sonarr has made, newest first, with their type, size and date."
+      quoteHash: "2d1b09ddbe0a58cbbcd585527c1000dafb98c5f5c8d2104d968000cb8a5988f7"
+    page:
+      id: "endpoint:Sonarr.Api.V3|GET /api/v3/system/backup"
+      statement: "R1"
+      quote: "The results are sorted by Time, newest first."
+      quoteHash: "1ec455024d0c921a279aceaa4226eca2184a61baa5073a13613711518c22f996"
+    by: "judge"
+    check: "confirmed"
+    note: "List endpoint sorts newest first; the screen shows type icon, size and relative date."
+    decision: null
+    decided_by: null
+  - id: "L04d4ddb984"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "System / Backups"
+      title: "Backups"
+      quote: "The user can take a backup now, restore from a backup in the list, or restore from a backup file they upload."
+      quoteHash: "352f53990d1ad41a4fc630edef0a695db36ef0df80d31367f175fdff9643b3de"
+    page:
+      id: "page:/system/backups"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: A1 only covers the Backup Now button. The FSD sentence also covers restoring from a listed backup and from an uploaded file (page A2, A4, A5), so A1 alone doesn't show the whole sentence."
+    decision: null
+    decided_by: null
+  - id: "Lf31fad4a71"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "System / Backups"
+      title: "Backups"
+    page:
+      id: "page:/system/backups"
+      statement: "A6"
+      quote: "A row's delete button opens a danger confirmation \"DeleteBackup\"; confirming deletes the backup and closes the dialog on success."
+      quoteHash: "2c29227f57a7cf680ab38aa89ecb63f1559605a11e0a1b29b07c55fc62188d38"
+    by: "judge"
+    note: "Deleting a backup is available but the FSD section doesn't mention it."
+    decision: null
+    decided_by: null
+  - id: "Lcecdae8e39"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Wanted / Missing episodes"
+      title: "Missing episodes"
+      quote: "A weekly email digest lists every missing episode."
+      quoteHash: "f1bc6b75f091c53c21153ea8f85ece20b1d843691a43bcb150a76b596b8efed2"
+    page: null
+    by: "judge"
+    note: "No page shows any email digest."
+    decision: null
+    decided_by: null
+  - id: "L156500cf74"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Wanted / Missing episodes"
+      title: "Missing episodes"
+      quote: "The missing screen lists monitored episodes that have aired but have no file on disk."
+      quoteHash: "7fdf420cc047b4c149da08c7cb0e007c5f8fb68fc2c17d75b0db0580990ea96c"
+    page:
+      id: "page:/wanted/missing"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: Page S2 only says missing episodes are listed in a paged table. It doesn't show the monitored, aired or no-file criteria."
+    decision: null
+    decided_by: null
+  - id: "L3314a029ad"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Wanted / Missing episodes"
+      title: "Missing episodes"
+      quote: "The user can search for the selected episodes, or for all missing episodes. Search All starts straight away, without asking the user to confirm."
+      quoteHash: "b6072b02585119a511e7eaed11047af0a43e8c4b3c6da1db4f6a2578ab777ee6"
+    page:
+      id: "page:/wanted/missing"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: A1 covers only searching selected episodes. The FSD also says Search All starts without confirmation, but page A2 says it opens a confirmation modal. So the FSD sentence isn't fully shown by A1, and it conflicts with A2."
+    decision: null
+    decided_by: null
+  - id: "L336ed97b69"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Wanted / Missing episodes"
+      title: "Missing episodes"
+      quote: "The user can toggle between monitored and unmonitored missing episodes."
+      quoteHash: "78f716187ae0383f6089dc65a6097fccf25d55a6bafa71b91b2d3f2cc91f213c"
+    page:
+      id: "page:/wanted/missing"
+    by: "judge"
+    check: "disputed"
+    note: "Disputed by the second check: The FSD describes toggling the view between monitored and unmonitored missing episodes. R2 describes the Monitor/Unmonitor Selected button, which changes the monitored state of selected episodes. These are different features."
+    decision: null
+    decided_by: null
+  - id: "L62a755f545"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Wanted / Missing episodes"
+      title: "Missing episodes"
+      quote: "Episodes whose file exists but whose quality is below the cutoff are not listed here."
+      quoteHash: "1a2d828d09c991124880953f23da771d458443290c91fe512add9ca17482ec3c"
+    page:
+      id: "page:/wanted/missing"
+    by: "judge"
+    note: "No statement on the missing page excludes cutoff-unmet episodes (those are on a separate cutoff unmet page)."
+    decision: null
+    decided_by: null
+  - id: "L6f020ed859"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Wanted / Missing episodes"
+      title: "Missing episodes"
+    page:
+      id: "page:/wanted/missing"
+      statement: "A5"
+      quote: "Manual Import opens the interactive import modal."
+      quoteHash: "63574bfc91da5f7edd9d4466e8cef8f5b6cec1362d65b99e9d50b041bc067f0e"
+    by: "judge"
+    note: "Manual Import action on missing screen not mentioned in FSD."
+    decision: null
+    decided_by: null
+  - id: "L7e4f008320"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Wanted / Missing episodes"
+      title: "Missing episodes"
+      quote: "Search All starts straight away, without asking the user to confirm."
+      quoteHash: "0bfb78d31a1e3c9ebffddefbda0f4cad418e814c702b140d46570dfeb84eef8d"
+    page:
+      id: "page:/wanted/missing"
+      statement: "A2"
+      quote: "Pressing Search with nothing selected opens a confirmation modal \"Search for all missing episodes\" showing the total record count and a mass search cancel warning."
+      quoteHash: "f90e851d9e998c36b6c739ae7b2446c0cf173bbc12b38ea29b79ed698362af00"
+    by: "judge"
+    note: "FSD: no confirmation; page: a confirmation modal is shown before searching."
+    decision: null
+    decided_by: null
+  - id: "L90d600ed7e"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L65a4ce23dd"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/activity/blocklist"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "Lc5075fde86"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/add/import"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L035853bf41"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/add/import/:rootFolderId"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L3b4e14ba3e"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/seasonpass"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L1e9be2b070"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/serieseditor"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L1b9db44ca8"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L4e5e31ff42"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/connect"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "Lcbcd6d63a8"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/customformats"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L5b8e20c169"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/downloadclients"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L0c6d91c33a"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/importlists"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L2b6e5c1412"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/indexers"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L1637b1c24c"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/mediamanagement"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L2f56538dff"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/metadata"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "Lcfb05fda6f"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/metadatasource"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "La1cb5f357f"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/events"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "Lf698bcabf4"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/logs/files"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "Ld42d286b27"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/logs/files/update"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L2e3de4a2e0"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/status"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "L2622b95947"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/tasks"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "Lda9946bc4a"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/updates"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null
+  - id: "Lcc66338eaa"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/wanted/cutoffunmet"
+    by: "code"
+    note: "no FSD section links to this screen"
+    decision: null
+    decided_by: null

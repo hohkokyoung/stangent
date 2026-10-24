@@ -1,0 +1,225 @@
+{
+  "id": "sonarr-fsd",
+  "images": [
+    {
+      "caption": "The Add New screen, as sketched with the client",
+      "file": "images/d6cae2360ba7.png"
+    }
+  ],
+  "markdown": "document.md",
+  "original": {
+    "archive": "fsd-archive",
+    "fileName": "sonarr-fsd.docx",
+    "hash": "1e5ebf4d714c004add742a66a9647892ef78f7a199cd44221434bf628c81bba6",
+    "path": "sonarr-fsd/1e5ebf4d714c-sonarr-fsd.docx"
+  },
+  "problems": [],
+  "schemaVersion": 1,
+  "sections": [
+    {
+      "id": "1",
+      "idKind": "number",
+      "level": 1,
+      "line": 5,
+      "text": "The library holds every series the user has added. Each series has a root folder, a quality profile, a series type and a set of tags.",
+      "textHash": "b04344cbbf1d1bad5b9d67873321b9d7662fd48646bc7129e94a22567b920f8d",
+      "title": "Library"
+    },
+    {
+      "id": "1.1",
+      "idKind": "number",
+      "level": 2,
+      "line": 9,
+      "parent": "1",
+      "text": "The Add New screen lets the user search for a series by name and add it to the library.\n\nFor each search result the user picks the options below before adding it.\n\n| Option | Meaning |\n|---|---|\n| Root Folder | The library folder the series is stored in. |\n| Monitor | Which episodes are monitored at first: all, future, missing, existing, recent, pilot, first season, last season, specials, or none. |\n| Quality Profile | The quality profile used to download the series. |\n| Series Type | Standard, daily or anime; this changes how searches are made. |\n| Tags | Tags link the series to delay profiles, release profiles and indexers. |\n\n- Start search for missing episodes: when ticked, the new series' missing monitored episodes are searched for straight after adding.\n\nUp to 10 series can be selected from the search results and added together in one step.\n\nA series that is already in the library is marked as such in the search results and can't be added a second time.\n\n![](images/d6cae2360ba7.png)\n\nThe Add New screen, as sketched with the client",
+      "textHash": "63a18da68ef8eb6cab3bfc7eb7fd3a84ff99abf9c77e621522286a3b1932982b",
+      "title": "Adding a series"
+    },
+    {
+      "id": "1.2",
+      "idKind": "number",
+      "level": 2,
+      "line": 33,
+      "parent": "1",
+      "text": "The series details screen shows one series: its poster, overview, network, status, path, size on disk and its seasons, with each season's episodes listed underneath.\n\nThe user can monitor or unmonitor the whole series, a season, or a single episode.\n\nThe user can search for all monitored episodes of the series, or for one season, or for one episode, either automatically or interactively.\n\nThe user can edit the series: its monitoring, quality profile, series type, path and tags.\n\nThe episode list of a series can be exported as a CSV file.\n\nDeleting a series always deletes its folder and all its files from disk.\n\nThe user can refresh the series to fetch the latest information about it and rescan its files.",
+      "textHash": "e1a922536bf3f47c2ba58ee27dfcd38e46a40daad9df49d3f70e5b244261cb51",
+      "title": "Series details"
+    },
+    {
+      "id": "2",
+      "idKind": "number",
+      "level": 1,
+      "line": 49,
+      "text": "The calendar shows episodes that aired recently and those coming up, by month, week, forecast or day.\n\nMonitored and unmonitored episodes can be shown or hidden, and episodes already downloaded are marked.\n\nEpisodes can be dragged to another day to change their air date.\n\nSonarr can share the calendar as an iCal feed, which covers the previous 14 days and the next 60 days.\n\nThe iCal feed can be limited to series with given tags, and to premieres only.",
+      "textHash": "f851d4de9ab0b80c73a6f3aa6eb3c4961b28ea588779ea2b6dac39cdae90a189",
+      "title": "Calendar"
+    },
+    {
+      "id": "3",
+      "idKind": "number",
+      "level": 1,
+      "line": 61,
+      "text": "Activity shows what Sonarr is downloading now and what it has done.",
+      "textHash": "1f2a6acf2a242ed664fe9b9202e2db21078b1134b5eeaa98e57926c7906b668c",
+      "title": "Activity"
+    },
+    {
+      "id": "3.1",
+      "idKind": "number",
+      "level": 2,
+      "line": 65,
+      "parent": "3",
+      "text": "The queue lists the releases the download clients are downloading for Sonarr, with each release's series, episode, quality, progress and time left.\n\nThe queue is not stored by Sonarr: it is read from the download clients.\n\nA release that can't be imported automatically shows a warning with the reason.\n\nThe user can remove a release from the queue. Removing an item from the queue always adds the release to the blocklist.\n\nEach queue item has a priority (High, Normal or Low) that the user can change to reorder the downloads.",
+      "textHash": "7c41138f4990fb0075c121a399023e6c2a07cf8e0cd03a6165762053881f4af2",
+      "title": "Queue"
+    },
+    {
+      "id": "3.2",
+      "idKind": "number",
+      "level": 2,
+      "line": 77,
+      "parent": "3",
+      "text": "History lists everything that has happened to episodes: grabbed, imported, upgraded, deleted, renamed and failed.\n\nThe list can be filtered by event type, and more columns can be shown from the options.\n\nFor a grabbed release the user can open its details: the indexer it came from, its age and the release title.\n\nAny history entry can be undone, which restores the episode file that an upgrade replaced.",
+      "textHash": "579fa9bb72a23784c4639de12fa68203a1b57b3785bdffe66496aa7dc2f87144",
+      "title": "History"
+    },
+    {
+      "id": "Wanted",
+      "idKind": "path",
+      "level": 1,
+      "line": 87,
+      "text": "",
+      "textHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "title": "Wanted"
+    },
+    {
+      "id": "Wanted / Missing episodes",
+      "idKind": "path",
+      "level": 2,
+      "line": 89,
+      "parent": "Wanted",
+      "text": "The missing screen lists monitored episodes that have aired but have no file on disk.\n\nEpisodes whose file exists but whose quality is below the cutoff are not listed here.\n\nThe user can search for the selected episodes, or for all missing episodes. Search All starts straight away, without asking the user to confirm.\n\nThe user can toggle between monitored and unmonitored missing episodes.\n\nA weekly email digest lists every missing episode.",
+      "textHash": "4ef6a2f5a8bf4e497c005d63d68f672450e3a9a94711061c4ad0f61e4d3ca4eb",
+      "title": "Missing episodes"
+    },
+    {
+      "id": "Settings",
+      "idKind": "path",
+      "level": 1,
+      "line": 101,
+      "text": "",
+      "textHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "title": "Settings"
+    },
+    {
+      "id": "Settings / Tags",
+      "idKind": "path",
+      "level": 2,
+      "line": 103,
+      "parent": "Settings",
+      "text": "Tags link series to delay profiles, release profiles, indexers, import lists, notifications and download clients.\n\nThe tags screen lists every tag with the number of things that use it.\n\nTag labels may contain letters, numbers, spaces and underscores.\n\nDeleting a tag removes it from every series, profile and indexer that uses it.\n\nEach tag has a colour, chosen from a palette of 12 colours, which is shown wherever the tag appears.",
+      "textHash": "c742581a233ac983a44233e357844fd10418bd6ece20af7526ebaef669f3ea92",
+      "title": "Tags"
+    },
+    {
+      "id": "Settings / Profiles",
+      "idKind": "path",
+      "level": 2,
+      "line": 115,
+      "parent": "Settings",
+      "text": "",
+      "textHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "title": "Profiles"
+    },
+    {
+      "id": "Settings / Profiles / Quality profiles",
+      "idKind": "path",
+      "level": 3,
+      "line": 117,
+      "parent": "Settings / Profiles",
+      "text": "A quality profile lists the qualities the user wants, in order of preference, and the quality at which upgrades stop (the cutoff).\n\n- Name: the profile's name, which is required.\n- Upgrades Allowed: when ticked, a file is replaced by a better release until the cutoff is reached.\n- Upgrade Until: the cutoff quality.",
+      "textHash": "26b4ac67e9b36c300b945a0a750f5aeac0c6e6a46737b2b67ed5f2587a3669dc",
+      "title": "Quality profiles"
+    },
+    {
+      "id": "Settings / Profiles / Delay profiles",
+      "idKind": "path",
+      "level": 3,
+      "line": 125,
+      "parent": "Settings / Profiles",
+      "text": "A delay profile makes Sonarr wait before grabbing a release, so that a better one can appear.\n\n- Preferred Protocol: Usenet or Torrent.\n- Usenet Delay and Torrent Delay: in minutes; neither can be negative.\n- Tags: a delay profile applies to the series with the same tags.\n\nThe default delay profile can be given tags like any other.",
+      "textHash": "9b8d97bf9711ba3223780ba6d934f3718309b7a461247f11dd663d17c4d48ace",
+      "title": "Delay profiles"
+    },
+    {
+      "id": "Settings / Quality definitions",
+      "idKind": "path",
+      "level": 2,
+      "line": 135,
+      "parent": "Settings",
+      "text": "The quality definitions screen lists every quality with its title and its minimum, preferred and maximum size in megabytes per minute.\n\nEach quality can be limited to a maximum episode runtime.",
+      "textHash": "aee73f8ec7119991535bdbc3a39f299a1d5c017867dd38e4bf59e08b0edadcb3",
+      "title": "Quality definitions"
+    },
+    {
+      "id": "Settings / General",
+      "idKind": "path",
+      "level": 2,
+      "line": 141,
+      "parent": "Settings",
+      "text": "",
+      "textHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "title": "General"
+    },
+    {
+      "id": "Settings / General / Logging",
+      "idKind": "path",
+      "level": 3,
+      "line": 143,
+      "parent": "Settings / General",
+      "text": "The log level can be set to info, debug or trace.\n\nEach log file can grow up to 50 megabytes before a new one is started.",
+      "textHash": "107aceac0eab09ef84869d1dcf87a5da6a2e601ddbba4ca162a206d095f9dfb1",
+      "title": "Logging"
+    },
+    {
+      "id": "Settings / General / Backups",
+      "idKind": "path",
+      "level": 3,
+      "line": 149,
+      "parent": "Settings / General",
+      "text": "- Folder: where backups are written; a relative path is inside Sonarr's data folder.\n- Interval: how often an automatic backup is taken, from 1 to 30 days.\n- Retention: how long backups are kept, up to 365 days.",
+      "textHash": "a2b074f4f45f312ab3fa049c060c252b8405631fe9212f3ff598bc4851985e60",
+      "title": "Backups"
+    },
+    {
+      "id": "Settings / Interface",
+      "idKind": "path",
+      "level": 2,
+      "line": 155,
+      "parent": "Settings",
+      "text": "The interface settings set the first day of the week and the column headers of the calendar.\n\nThe short date format, long date format and time format can be chosen, and dates can be shown relative to today.\n\nTheme: Light, Dark or Auto.\n\nThe language of the interface can be chosen.\n\nThe font size can be set to small, medium or large.",
+      "textHash": "2573848bd5a6ff14deb68b0045c0ca35b336ee054fc0121e2a38bab25b3b000d",
+      "title": "Interface"
+    },
+    {
+      "id": "System",
+      "idKind": "path",
+      "level": 1,
+      "line": 167,
+      "text": "",
+      "textHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "title": "System"
+    },
+    {
+      "id": "System / Backups",
+      "idKind": "path",
+      "level": 2,
+      "line": 169,
+      "parent": "System",
+      "text": "The backups screen lists the backups Sonarr has made, newest first, with their type, size and date.\n\nThe user can take a backup now, restore from a backup in the list, or restore from a backup file they upload.\n\nBackups can be copied automatically to an S3 bucket.",
+      "textHash": "6367159e0c7b3e770deb11c41bcb0f2b8a1f5aadf121f1b85df634dd0c3c7505",
+      "title": "Backups"
+    }
+  ],
+  "title": "Sonarr: Functional Specification (benchmark FSD)"
+}
