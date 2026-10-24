@@ -82,12 +82,17 @@
     "unplanted": 62,
     "worstCaseShare": 0.697,
     "sample": 20,
-    "handChecked": 0,
-    "realInSample": null
+    "handChecked": 20,
+    "realInSample": 11,
+    "falseAlarmShare": 0.313,
+    "falseAlarmRange95": [
+      0.139,
+      0.453
+    ]
   },
   "bars": {
     "finds": true,
-    "notTooNoisy": null
+    "notTooNoisy": false
   },
   "candidates": {
     "sections": 16,

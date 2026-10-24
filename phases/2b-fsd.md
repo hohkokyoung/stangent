@@ -59,14 +59,16 @@ provides: { source-document: 1, trace-links: 1 }
 - A scoring command compares findings with the answer key; 20 unplanted findings are hand-checked once.
 
 ## Done when (D57's bars)
-- [ ] **Finds what's planted:** ≥ 80% of planted items overall, and ≥ 60% of each kind.
-- [ ] **Not too noisy:** ≤ 30% of findings are false alarms.
-- [ ] **Grounded:** every link and finding in the queue passes the checks; tests show a made-up quote is rejected.
-- [ ] **Repeatable:** the same `.docx` gives byte-identical text; a re-run with unchanged inputs makes zero AI calls.
-- [ ] **Cost:** tokens and time per section and per page reported; candidates found by code vs AI reported.
-- [ ] Each share has its 95% range (fixed seed). If "finds" or "not too noisy" fails, discrepancy findings ship off
+- [x] **Finds what's planted:** ≥ 80% of planted items overall, and ≥ 60% of each kind.
+- [ ] **Not too noisy:** ≤ 30% of findings are false alarms. *Failed: 31.3% (95% range 14–45%), from a fresh agent's
+      hand check (D65). Findings ship off by default (D66).*
+- [x] **Grounded:** every link and finding in the queue passes the checks; tests show a made-up quote is rejected.
+- [x] **Repeatable:** the same `.docx` gives byte-identical text; a re-run with unchanged inputs makes zero AI calls.
+- [x] **Cost:** tokens and time per section and per page reported; candidates found by code vs AI reported.
+- [x] Each share has its 95% range (fixed seed). If "finds" or "not too noisy" fails, discrepancy findings ship off
       by default and the report says why (D57).
 - [ ] End-of-phase report written; its claims checked against the results files by a fresh agent (D61); CI green.
+      *Report written and checked; CI open until the branch is pushed (not pushed by this work).*
 
 ## Contracts
 | Contract | v1 holds |
@@ -111,9 +113,9 @@ links (D52), and a discrepancy is a link's state (D58).
 
 ## End-of-phase report
 
-*2026-10-24 · first report.* "Finds what's planted" **passes**; "not too noisy" is **waiting for the owner's hand
-check** of 20 unplanted findings. Build, tests (120) and `phases check` pass locally; the branch isn't pushed yet, so
-CI hasn't run on it.
+*2026-10-25 · first report.* "Finds what's planted" **passes**; "not too noisy" **fails narrowly** (31.3% false
+alarms against 30%), so discrepancy findings ship **off by default** (D57, D66); pages and links ship. Build, tests
+(121) and `phases check` pass locally; CI runs once the branch is pushed.
 
 ### 1. What was built
 See Progress step 1. Contracts: `source-document` v1 (`schemas/source-document.v1.json`), `trace-links` v1
@@ -139,8 +141,14 @@ page ("Search … Cutoff Unmet" on Add New, "Import Selected" on the queue, "Unm
 was raised, as a conflict on the right statement rather than as undocumented.
 
 **Not too noisy** (bar: ≤ 30% of findings are false alarms): 89 findings, 62 unplanted. Worst case (every unplanted
-one false) 0.70. The 20 sampled for the hand check (`2026-10-24-phase2-owner-check.md`): **waiting for the owner**;
-the bar passes if about 12 or more of the 20 are real drift. Where the 62 unplanted findings come from: 25 are "agree"
+one false) 0.70. Of the 20 sampled (seed 42), a fresh agent checking against Sonarr's source (D65,
+`2026-10-24-phase2b-handcheck.json`) found **11 real drift and 9 false alarms**: false-alarm share 0.70 × 9/20 =
+**0.313 (95% range 0.14–0.45)**. **The bar fails.** The 9 false alarms: 7 gaps where the FSD statement is in fact true
+of the code (6 of them agrees the second check disputed; of the 7 disputed agrees in the sample, 6 were false), and 2
+routes that only redirect to `/series` (`/`, `/seasonpass`), listed as undocumented screens. One "real" one (A7, the
+Cutoff Unmet search option on Add New) is planted item U5 reported as a conflict; the frozen matching rule needs the
+undocumented state, so it counts as unplanted. The checker called two real ones judgement calls (a field shown only when another is ticked; a
+cutoff forced to an allowed quality); counting either as false would widen the miss. Where the 62 unplanted findings come from: 25 are "agree"
 links the second check disputed (D62 turns each into a gap; most say the page shows a field but not its meaning), 19
 are in-scope screens no section links to (by code), 8 are undocumented items the judge raised, and 10 are other gaps
 (6) and conflicts (4).
@@ -167,10 +175,15 @@ files were lost (2a Progress step 3).
 - [D63](../decisions.md): 2b gives an FSD section its screen pages plus the endpoints those screens call.
 - [D58](../decisions.md) refined: a decision drops back to undecided when a quote no longer matches, not on any edit.
 - [D62](../decisions.md): the agree checker, applied as decided; its effect on noise is in Known gaps.
+- [D65](../decisions.md): the hand check was made by a fresh agent, not the owner.
+- [D66](../decisions.md): findings ship off by default (`fsd.findings`), as D57 says when a bar fails.
 
 ### 4. Known gaps
+- **Findings are off by default (D66):** the noise bar failed; a project opts in with `fsd.findings: true`.
 - **The second check is strict:** 25 of 62 unplanted findings are disputed agrees where the page shows a field but
-  not the FSD's explanation of it. Whether that is noise or useful is what the owner's hand check measures.
+  not the FSD's explanation of it; most of the hand check's false alarms are of this kind.
+- **Redirect routes count as screens:** `/` and `/seasonpass` only redirect, yet were listed as undocumented.
+- The hand check is an AI's (D65); a person's check is owed before findings are relied on.
 - **Same-kind accuracy:** half the planted conflicts came back as gaps (the page lacks the rule rather than stating a
   different one), so a reviewer sees the right place but sometimes the wrong label.
 - A planted FSD is tidier than a real one (D56): the score overstates quality; the dry run on a real FSD is next.
@@ -185,7 +198,9 @@ files were lost (2a Progress step 3).
 - The dry run on a real FSD from one of the owner's projects (D56).
 - "code-wrong" decisions → draft Jira tickets (Phase 3); tests tagged with FSD section ids (Phase 5); the dashboard
   over `trace.yaml` (Phase 8).
-- Depending on the hand check: tune the agree checker's bar for "partial" agreement (a new benchmark run, reported as such).
+- Cut the noise, then measure again as a new benchmark run (D66): the agree checker's bar for "partial" agreement,
+  and leaving redirect-only routes out of the screen list.
+- A person's hand check of the findings on the real-FSD dry run (D56, D65).
 
 
 ### Fresh check of this report (D61) · 2026-10-24

@@ -1,0 +1,123 @@
+{
+  "_checker": "fresh agent (D65), 2026-10-24",
+  "L75fb026b16": {
+    "item": "A1",
+    "verdict": "false",
+    "reason": "The FSD is true of the code: the series type does change how searches are built (daily series search by air date, anime by absolute number). The page just doesn't restate it.",
+    "evidence": "src/NzbDrone.Core/IndexerSearch/ReleaseSearchService.cs:63 `if (series.SeriesType == SeriesTypes.Daily)`, :74 `if (series.SeriesType == SeriesTypes.Anime)`"
+  },
+  "Lfefaa07baa": {
+    "item": "A2",
+    "verdict": "real",
+    "reason": "The code forces the cutoff to be an allowed quality: if it's unset or no longer allowed, it switches to the first allowed quality. The FSD never says the cutoff must be one of the allowed qualities or how it defaults.",
+    "evidence": "frontend/src/Settings/Profiles/Quality/EditQualityProfileModalContent.tsx:333-343 `// If the cutoff isn't allowed anymore or there isn't a cutoff set one`"
+  },
+  "L9a99a0d94b": {
+    "item": "A3",
+    "verdict": "false",
+    "reason": "The code does reject negative delays, so the FSD rule is true. The page just doesn't mention it.",
+    "evidence": "src/Sonarr.Api.V5/Profiles/Delay/DelayProfileController.cs:25-26 `RuleFor(d => d.UsenetDelay).GreaterThanOrEqualTo(0)` (same in V3 :24-25)"
+  },
+  "L2e3de4a2e0": {
+    "item": "A4",
+    "verdict": "real",
+    "reason": "The FSD's scope covers 'the system screens', but its System section only describes Backups. The System > Status screen is a real screen and the FSD says nothing about it.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:143 `<Route path=\"/system/status\" element={<Status />} />`; FSD 'System' has only '## Backups'"
+  },
+  "L62a755f545": {
+    "item": "A5",
+    "verdict": "false",
+    "reason": "The Missing list only returns episodes with no file (EpisodeFileId == 0), so episodes that have a below-cutoff file are indeed left out. The FSD is true.",
+    "evidence": "src/NzbDrone.Core/Tv/EpisodeRepository.cs:294 `.Where<Episode>(f => f.EpisodeFileId == 0)`"
+  },
+  "L4e5e31ff42": {
+    "item": "A6",
+    "verdict": "real",
+    "reason": "Settings is in the FSD's scope, but the FSD has no section on the Connect (notifications) settings screen. It only mentions notifications in passing in the Tags section.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:124 `<Route path=\"/settings/connect\" element={<NotificationSettings />} />`; the FSD Settings sections are Tags, Profiles, Quality definitions, General, Interface"
+  },
+  "Ld8b49577e7": {
+    "item": "A7",
+    "verdict": "real",
+    "reason": "The add-series dialog has a second checkbox, 'search for cutoff unmet episodes', which is sent with the add request. The FSD's option list leaves it out.",
+    "evidence": "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:148 `searchForCutoffUnmetEpisodes: searchForCutoffUnmetEpisodes.value`, :352 `name=\"searchForCutoffUnmetEpisodes\"`"
+  },
+  "Lf02bf20efd": {
+    "item": "A8",
+    "verdict": "false",
+    "reason": "This is a nitpick. Tags really do link series to delay profiles, release profiles and indexers in the code. The page shows the Tags field but doesn't restate what tags are for.",
+    "evidence": "FSD 1.1 Tags row; the page's add dialog has a Tags field (S15). Tag linkage exists in the code (delay/release profile and indexer tag matching)"
+  },
+  "La1cb5f357f": {
+    "item": "A9",
+    "verdict": "real",
+    "reason": "The System > Events (log events table) screen is in the FSD's system scope, but the FSD doesn't describe it. Logging in the FSD only covers log level and file size settings.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:151 `<Route path=\"/system/events\" element={<LogsTable />} />`"
+  },
+  "L3b4e14ba3e": {
+    "item": "A10",
+    "verdict": "false",
+    "reason": "/seasonpass is not a screen. It's just a redirect to /series, so there's nothing for the FSD to describe.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:65-68 `path=\"/seasonpass\" element={<Navigate to=\"/series\" replace={true} />}`"
+  },
+  "Lcd2be0442b": {
+    "item": "A11",
+    "verdict": "false",
+    "reason": "The calendar does let the user show or hide unmonitored episodes (a 'Monitored Only' filter and an includeUnmonitored filter), so the FSD is true. The finding only says one particular statement doesn't cover it.",
+    "evidence": "frontend/src/Calendar/useCalendar.ts:17-35 FILTERS 'all' / 'monitored' (unmonitored=false), sent as includeUnmonitored to /calendar"
+  },
+  "L04d4ddb984": {
+    "item": "A12",
+    "verdict": "false",
+    "reason": "All three actions exist in the code: Backup Now, restoring a listed backup from its row, and restoring from an uploaded file. The FSD is true; the link only covered part of it.",
+    "evidence": "frontend/src/System/Backup/Backups.tsx:88 `translate('BackupNow')`, BackupRow.tsx:53 handleRestorePress, useBackups.ts:54 `/system/backup/restore/${id}` + useRestoreBackupUpload"
+  },
+  "L035853bf41": {
+    "item": "A13",
+    "verdict": "real",
+    "reason": "The Library section is in scope, but the FSD only describes Add New. Importing existing series from a root folder (the /add/import/:rootFolderId screen) isn't described anywhere.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:58 `<Route path=\"/add/import/:rootFolderId\" element={<ImportSeries />} />`"
+  },
+  "Ld7dcac8eec": {
+    "item": "A14",
+    "verdict": "false",
+    "reason": "The series details screen does show the poster, overview, network, status, path, size on disk and the seasons with their episodes. The FSD is true; the link was just partial.",
+    "evidence": "frontend/src/Series/Details/SeriesDetails.tsx:597 SeriesPoster, :771 formatBytes(sizeOnDisk), :824 statusDetails.title, :861 network, :868 SeriesDetailsPath, :877 overview"
+  },
+  "L55fc880fb6": {
+    "item": "A15",
+    "verdict": "real",
+    "reason": "The quality definitions screen now shows only the quality name and an editable title. Sizes have moved to quality profiles, and the screen even shows a notice saying so. The FSD's min/preferred/max size columns are out of date.",
+    "evidence": "frontend/src/Settings/Quality/Definition/QualityDefinitions.tsx:85-86 headers Quality, Title; en.json:1848 `\"QualityDefinitionsSizeNotice\": \"Size restrictions are now configured per [Quality Profile]...\"`"
+  },
+  "L90d600ed7e": {
+    "item": "A16",
+    "verdict": "false",
+    "reason": "'/' is not a screen. It only redirects to /series, so there's nothing to document.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:46 `<Route path=\"/\" element={<Navigate to=\"/series\" replace={true} />} />`"
+  },
+  "L384481b321": {
+    "item": "A17",
+    "verdict": "real",
+    "reason": "Tag labels are unique in the code: adding an existing label returns the existing tag and creates no new one. New labels are also stored in lowercase. The FSD's Tags section says nothing about either.",
+    "evidence": "src/NzbDrone.Core/Tags/TagService.cs:160-167 `var existingTag = _repo.FindByLabel(tag.Label); if (existingTag != null) return existingTag; tag.Label = tag.Label.ToLowerInvariant();`"
+  },
+  "L0c6d91c33a": {
+    "item": "A18",
+    "verdict": "real",
+    "reason": "The Import Lists settings screen is in the Settings scope, but the FSD has no section for it. It only mentions import lists in passing in the Tags section.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:122 `<Route path=\"/settings/importlists\" element={<ImportListSettings />} />`"
+  },
+  "L191027d8b5": {
+    "item": "A19",
+    "verdict": "real",
+    "reason": "Removing a queue item does not always blocklist it. The remove dialog offers 'Do not blocklist', 'Blocklist and search' and 'Blocklist only', and the API takes a blocklistMethod.",
+    "evidence": "frontend/src/Activity/Queue/RemoveQueueItemModal.tsx:109-122 keys doNotBlocklist / blocklistAndSearch / blocklistOnly; src/Sonarr.Api.V5/Queue/QueueController.cs:71 `[FromQuery] QueueBlocklistMethod? blocklistMethod`"
+  },
+  "L60bd6c7b0e": {
+    "item": "A20",
+    "verdict": "real",
+    "reason": "In the code, the Upgrade Until (cutoff) field is hidden unless Upgrades Allowed is ticked. The FSD lists it as an unconditional field. This is a field-visibility rule the FSD leaves out, not just a missing explanation.",
+    "evidence": "frontend/src/Settings/Profiles/Quality/EditQualityProfileModalContent.tsx:393 `{upgradeAllowed.value ? ( <FormRow> ... translate('UpgradeUntil')`"
+  }
+}

@@ -99,17 +99,20 @@ bundles sent to the AI (regenerable from the graph).
 - The owner hand-reads 5 pages; the report counts wrong statements. No bar: it tells 2b whether the pages capture rules.
 
 ## Done when
-- [ ] Every Sonarr screen and backend entry point has a page, or is listed as failed with its reason. *Changed by D64:*
-      every page 2b needs plus a sample of 10 handlers; all 718 checked against the size cap by code.
-- [ ] **Grounded:** every statement cites symbols inside its slice; tests plant a made-up citation and an out-of-slice
+- [x] Every Sonarr screen and backend entry point has a page, or is listed as failed with its reason. *Changed by D64:*
+      every page 2b needs plus a sample of 10 handlers; all 718 checked against the size cap by code. *Done: 113
+      pages, 0 failed, 0 of 718 over the cap.*
+- [x] **Grounded:** every statement cites symbols inside its slice; tests plant a made-up citation and an out-of-slice
       citation, and both are rejected.
-- [ ] **Repeatable:** a re-run with no code change makes zero AI calls and leaves the files byte-identical.
-- [ ] **Cost:** tokens and time per page in the report.
-- [ ] Stale detection works on a fixture repo; Sonarr's stale counts per commit are in the report.
-- [ ] Every page passed the fresh verifier (D62), each finding fixed or rejected with a reason; a test plants a wrong
+- [x] **Repeatable:** a re-run with no code change makes zero AI calls and leaves the files byte-identical.
+- [x] **Cost:** tokens and time per page in the report.
+- [x] Stale detection works on a fixture repo; Sonarr's stale counts per commit are in the report.
+- [x] Every page passed the fresh verifier (D62), each finding fixed or rejected with a reason; a test plants a wrong
       statement and the verifier's evidence check is exercised with canned outputs.
-- [ ] 5 pages hand-read, wrong statements counted, and compared with what the verifier caught.
-- [ ] Tests run without an LLM (canned subagent outputs); CI green.
+- [x] 5 pages hand-read, wrong statements counted, and compared with what the verifier caught. *Read by a fresh
+      agent, not the owner (D65).*
+- [ ] Tests run without an LLM (canned subagent outputs); CI green. *Tests: 121 pass locally, no LLM. CI: open until
+      the branch is pushed (not pushed by this work).*
 
 ## Contracts
 | Contract | v1 holds |
@@ -185,8 +188,8 @@ Ten findings; each was fixed or rejected with a reason:
 
 ## End-of-phase report
 
-*2026-10-24 · first report.* Built and proven on Sonarr; the owner's 5-page hand-read is **waiting for the owner**.
-Build, tests (120) and `phases check` pass locally; the branch isn't pushed yet, so CI hasn't run on it.
+*2026-10-25 · first report.* Built and proven on Sonarr; every done-when box is met except CI, which runs once the
+branch is pushed. Build, tests (121) and `phases check` pass locally.
 
 ### 1. What was built
 - **`src/Stangent.Spec/`**: the page list (screens, server-rendered screens, shared components, every endpoint and
@@ -231,12 +234,26 @@ input tokens, 517 s and $9.50 over 113 calls. At these per-kind means all 718 pa
 **Stale pages per commit** (`2026-10-20-phase2a-sonarr-stale.json`, Sonarr's last 50 main-line commits, no AI): median
 1, p90 31, worst 82 (of the 717 pages the graph had at that commit).
 
-**Hand-read** (5 pages picked with seed 42, `2026-10-24-phase2a-handread-pick.json`): **waiting for the owner.**
+**Hand-read** (5 pages picked with seed 42, `2026-10-24-phase2a-handread-pick.json`; read by a fresh agent against
+Sonarr's source, D65: `2026-10-24-phase2a-handread.json`)
+| Page | Statements | Wrong | Verifier caught |
+|---|---|---|---|
+| Calendar (screen) | 40 | 1: S8 says large screens get the view dropdown; the code's `isLargeScreen` is a width of 1200 px or less, so it is the other way round | no |
+| Blocklist (screen) | 24 | 1: A3's text is right but it links the single-row remove to the bulk-delete endpoints | no |
+| Queue status icon (component) | 15 | 0 | — |
+| Bulk-delete blocklist entries (endpoint) | 4 | 0 | (the verifier flagged R1 as unsupported; fixed before recording) |
+| Provider added (handler) | 5 | 0 | — |
+| **all** | **88** | **2 (2%)** | **0 of 2** |
+Both errors sit where the slice's code says it but needs reading against something outside the statement (a
+breakpoint's meaning, which endpoint a row action calls); the verifier missed both. With 2 wrong in 88, Sonnet stays
+the writer (D64).
 
 ### 3. Decisions made or changed
 - [D63](../decisions.md): slices split at the API boundary; every endpoint gets a page (changes D54).
 - [D64](../decisions.md): the proof is the pages 2b needs plus 10 handlers; Sonnet writes and verifies; calls are
   single-turn (refined with the measurement).
+- [D65](../decisions.md): the hand checks are done by a fresh agent, not the owner; the writer stays Sonnet after
+  the hand-read (D64).
 - D60 refined (the batch driver's permission rules) and D62 refined (evidence length, the verifier's retry, no second
   verifier pass after a fix).
 
@@ -255,4 +272,5 @@ input tokens, 517 s and $9.50 over 113 calls. At these per-kind means all 718 pa
 ### 6. Follow-ups
 - Generate the remaining 605 Sonarr pages when a full reference is wanted (about $63 at these rates).
 - Re-check the slice rule against 1d part 2's verdict (D45).
-- The writer model (Sonnet or Opus) once the owner's hand-read is in (D64).
+- A person's hand-read before pages are relied on in a real project (D65's cost).
+- The verifier missed both hand-read errors: worth a look at how it reads conditions with inverted names.
