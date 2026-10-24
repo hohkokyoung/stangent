@@ -1,0 +1,183 @@
+{
+  "codeTitle": "SeriesScannedHandler.Handle(SeriesScannedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScannedEvent)",
+  "generated": {
+    "bundleHash": "b32421b01911e24e9d3f860f2370c7ecddf94399034f68d08e3b5fb347acd80a",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 23981,
+      "cutOff": 15,
+      "depth": 4,
+      "points": 67
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 16026,
+      "calls": 1,
+      "costUsd": 0.068303,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4461,
+      "outputTokens": 402
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 12445,
+      "calls": 1,
+      "costUsd": 0.07799,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 14526,
+      "outputTokens": 2793
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScannedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScannedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.HandleScanEvents(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "A1",
+        "text": "When a series scan completes, the handler runs the post-scan logic for the scanned series."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.HandleScanEvents(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeRefreshedService.Search(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "A2",
+        "text": "If the series has no add options, it runs the episode-refreshed search for the series and stops."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.HandleScanEvents(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeMonitoredService.SetEpisodeMonitoredStatus(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.MonitoringOptions)"
+        ],
+        "id": "A3",
+        "text": "If the series has add options, it logs that the series was recently added and sets episode monitored status from those options."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.HandleScanEvents(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.SeriesSearchCommand.#ctor(System.Int32)"
+        ],
+        "id": "R1",
+        "text": "If both search-for-missing and search-for-cutoff-unmet are enabled, one series search is queued for the whole series instead of separate searches."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.HandleScanEvents(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand.#ctor(System.Int32)"
+        ],
+        "id": "R2",
+        "text": "If only search-for-missing is enabled, a missing episode search is queued for the series, limited to monitored episodes."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.HandleScanEvents(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.CutoffUnmetEpisodeSearchCommand.#ctor(System.Int32)"
+        ],
+        "id": "R3",
+        "text": "If only search-for-cutoff-unmet is enabled, a cutoff-unmet episode search is queued for the series, limited to monitored episodes."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeMonitoredService.SetEpisodeMonitoredStatus(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.MonitoringOptions)"
+        ],
+        "id": "R4",
+        "text": "If the monitoring options are null, only the series is updated and the episodes are left unchanged."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeMonitoredService.SetEpisodeMonitoredStatus(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.MonitoringOptions)"
+        ],
+        "id": "R5",
+        "text": "If the monitor type is Skip, episode-level monitoring is skipped and season information is used."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeMonitoredService.SetEpisodeMonitoredStatus(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.MonitoringOptions)"
+        ],
+        "id": "R6",
+        "text": "The latest season (not specials) is monitored when the monitor type is All, or Future for a Continuing or Upcoming series."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeMonitoredService.SetEpisodeMonitoredStatus(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.MonitoringOptions)"
+        ],
+        "id": "R7",
+        "text": "With the Pilot monitor type, the first season is not monitored. Other seasons are monitored only if they have monitored episodes."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeRefreshedService.Search(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R8",
+        "text": "In the no-add-options search, only previously aired episodes for the series that still have no file are searched."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.HandleScanEvents(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.RemoveAddOptions(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "E1",
+        "text": "After queueing searches, the series add options are cleared and saved to the series record."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.HandleScanEvents(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Tv.Events.SeriesAddCompletedEvent)"
+        ],
+        "id": "E2",
+        "text": "A series-add-completed event is published, which the notification service handles."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeMonitoredService.SetEpisodeMonitoredStatus(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.MonitoringOptions)"
+        ],
+        "id": "E3",
+        "text": "Setting monitored status updates the series' season monitored flags and the episodes' monitored state, then saves the series."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.SeriesSearchService.Execute(NzbDrone.Core.IndexerSearch.SeriesSearchCommand)"
+        ],
+        "id": "E4",
+        "text": "The series search command is handled by the series search service."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.CutoffUnmetEpisodeSearchCommand)"
+        ],
+        "id": "E5",
+        "text": "The missing and cutoff-unmet commands are handled by the episode search service."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeRefreshedService.Search(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchCommand.#ctor(System.Collections.Generic.List{System.Int32})"
+        ],
+        "id": "E6",
+        "text": "When missing episodes are found, an episode search command is queued for them, and the series' cached entry is then removed."
+      }
+    ]
+  },
+  "title": "Series scanned: post-add actions and search",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

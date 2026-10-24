@@ -1,0 +1,90 @@
+{
+  "codeTitle": "TagList",
+  "entry": "ts|frontend/src/Components/TagList.tsx#TagList",
+  "generated": {
+    "bundleHash": "a225040dfae9e638bf1b956977a3c22aea3d1a0e7bb823f18f641574e0934e52",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 7378,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 17
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 5019,
+      "calls": 1,
+      "costUsd": 0.020785,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2441,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3757,
+      "calls": 1,
+      "costUsd": 0.020488,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3887,
+      "outputTokens": 518
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Components/TagList.tsx#TagList",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/TagList.tsx#TagList"
+        ],
+        "id": "R1",
+        "text": "Each tag id in the list is looked up in the tag list by id. Ids with no matching tag are left out."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/Array/sortByProp.ts#sortByProp"
+        ],
+        "id": "R2",
+        "text": "Sorting compares the label values using locale comparison with numeric ordering."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/TagList.tsx#TagList",
+          "ts|frontend/src/Components/Label.tsx#Label"
+        ],
+        "id": "S1",
+        "text": "Shows a group of labels, one for each tag, displaying the tag's label text."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/TagList.tsx#TagList",
+          "ts|frontend/src/Utilities/Array/sortByProp.ts#sortByProp"
+        ],
+        "id": "S2",
+        "text": "Tags are shown in order of label text, sorted with numeric-aware comparison."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/TagList.tsx#TagList"
+        ],
+        "id": "S3",
+        "text": "Each label uses the given kind, which defaults to the info kind."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Tag List",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

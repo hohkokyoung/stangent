@@ -1,0 +1,125 @@
+{
+  "codeTitle": "DELETE /api/v5/series/editor",
+  "entry": "endpoint:Sonarr.Api.V5|DELETE /api/v5/series/editor",
+  "generated": {
+    "bundleHash": "239dda80ffb4a5bc4e4430bd5545c10c52e3701a6bd9617b0a22b8ddcbaf829a",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 21907,
+      "cutOff": 8,
+      "depth": 4,
+      "points": 30
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 15170,
+      "calls": 1,
+      "costUsd": 0.062709,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2677,
+      "outputTokens": 185
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 12124,
+      "calls": 1,
+      "costUsd": 0.071806,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 11848,
+      "outputTokens": 2303
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|DELETE /api/v5/series/editor",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Series.SeriesEditorController.DeleteSeries(Sonarr.Api.V5.Series.SeriesEditorResource)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.DeleteSeries(System.Collections.Generic.List{System.Int32},System.Boolean,System.Boolean)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|DELETE /api/v5/series/editor"
+        ],
+        "id": "A1",
+        "text": "Deletes the series listed in the JSON request body's series IDs, passing along the delete-files and add-import-list-exclusion flags."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Series.SeriesEditorController.DeleteSeries(Sonarr.Api.V5.Series.SeriesEditorResource)"
+        ],
+        "id": "R1",
+        "text": "The request must be sent as application/json."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Series.SeriesEditorController.DeleteSeries(Sonarr.Api.V5.Series.SeriesEditorResource)"
+        ],
+        "id": "S1",
+        "text": "Returns an empty 204 No Content response after the series are deleted."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.DeleteSeries(System.Collections.Generic.List{System.Int32},System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.DeleteMany(System.Collections.Generic.IEnumerable{System.Int32})",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Get(System.Collections.Generic.IEnumerable{System.Int32})"
+        ],
+        "id": "E1",
+        "text": "The series records for the given IDs are loaded and then deleted from the series repository in one bulk delete."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.DeleteSeries(System.Collections.Generic.List{System.Int32},System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.Events.SeriesDeletedEvent.#ctor(System.Collections.Generic.List{NzbDrone.Core.Tv.Series},System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Events.IEventAggregator.PublishEvent``1(``0)"
+        ],
+        "id": "E2",
+        "text": "After the delete, a series-deleted event is published carrying the deleted series, the delete-files flag and the add-import-list-exclusion flag."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.MediaFileDeletionService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.MediaFileService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Files.ExtraFileService`1.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.History.HistoryService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistoryService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Pending.PendingReleaseService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.Exclusions.ImportListExclusionService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaCover.MediaCoverService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesTranslationService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)"
+        ],
+        "id": "E3",
+        "text": "Handlers for the series-deleted event include media file deletion, media file records, episodes, extra files, history, download history, pending releases, tracked downloads, blocklist, import list exclusions, media covers, notifications and series translations."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesController.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Series.SeriesController.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)"
+        ],
+        "id": "E4",
+        "text": "The V3 and V5 series controllers also have handlers for the series-deleted event."
+      }
+    ]
+  },
+  "title": "Delete series (bulk editor)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

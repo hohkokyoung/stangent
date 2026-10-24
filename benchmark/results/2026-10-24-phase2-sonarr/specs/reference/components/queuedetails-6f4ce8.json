@@ -1,0 +1,128 @@
+{
+  "codeTitle": "QueueDetails",
+  "entry": "ts|frontend/src/Activity/Queue/QueueDetails.tsx#QueueDetails",
+  "generated": {
+    "bundleHash": "50134d5bc0199609eb33e5a3d3e4e31e64619caa71a5ee3ec70108e1afac82d7",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 9206,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 37
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6456,
+      "calls": 1,
+      "costUsd": 0.026533,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1920,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4607,
+      "calls": 1,
+      "costUsd": 0.029738,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6307,
+      "outputTokens": 1103
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Activity/Queue/QueueDetails.tsx#QueueDetails",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueDetails.tsx#QueueDetails"
+        ],
+        "id": "R1",
+        "text": "Progress is computed as 100 - (sizeLeft / size) * 100."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueDetails.tsx#QueueDetails"
+        ],
+        "id": "R2",
+        "text": "The progress view is used only when status is downloading or paused and tracked download status is neither warning nor error."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueDetails.tsx#QueueDetails"
+        ],
+        "id": "R3",
+        "text": "Tracked download state defaults to 'downloading' and tracked download status defaults to 'ok' when not supplied."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueDetails.tsx#QueueDetails"
+        ],
+        "id": "R4",
+        "text": "The popover is positioned bottom-start; the fallback status tooltip is positioned left."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "R5",
+        "text": "Translation falls back to the key if no translation exists, and replaces {token} placeholders, with appName set to 'Sonarr'."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueDetails.tsx#QueueDetails",
+          "ts|frontend/src/Components/Icon.tsx#Icon"
+        ],
+        "id": "S1",
+        "text": "While an item is downloading or paused with no warning or error, and progress is under 5%, it shows a downloading icon whose tooltip reads \"<state> - <progress>% <title>\" (progress to one decimal)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueDetails.tsx#QueueDetails",
+          "ts|frontend/src/Components/Tooltip/Popover.tsx#Popover"
+        ],
+        "id": "S2",
+        "text": "While downloading or paused with no warning or error, and progress is 5% or more, it shows the progress bar anchor in a popover. The popover title is \"<state> - <progress>%\" and its body is the item title."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueDetails.tsx#QueueDetails",
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus"
+        ],
+        "id": "S3",
+        "text": "In all other cases it shows the queue status component, given the title, status, tracked download status and state, status messages and error message."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueDetails.tsx#QueueDetails",
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "S4",
+        "text": "The state text is \"Paused\" when the status is paused, otherwise \"Downloading\"; both are translated."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "E1",
+        "text": "In non-production builds, a missing translation key logs a console warning."
+      }
+    ]
+  },
+  "title": "Queue item status details",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

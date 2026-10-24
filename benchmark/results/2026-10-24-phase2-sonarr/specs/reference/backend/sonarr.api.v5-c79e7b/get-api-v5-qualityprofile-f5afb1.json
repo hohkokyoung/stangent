@@ -1,0 +1,104 @@
+{
+  "codeTitle": "GET /api/v5/QualityProfile",
+  "entry": "endpoint:Sonarr.Api.V5|GET /api/v5/QualityProfile",
+  "generated": {
+    "bundleHash": "231a462b115d13c65c8febce21b875cab74e56520303d8298f5fd8f4f7aa3805",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 11354,
+      "cutOff": 28,
+      "depth": 4,
+      "points": 30
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 7601,
+      "calls": 1,
+      "costUsd": 0.031113,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1621,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 5868,
+      "calls": 1,
+      "costUsd": 0.033992,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6051,
+      "outputTokens": 1024
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|GET /api/v5/QualityProfile",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/QualityProfile",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Quality.QualityProfileController.GetAll"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/QualityProfile"
+        ],
+        "id": "A1",
+        "text": "A caller sends GET to /api/v5/QualityProfile and receives all quality profiles with an OK response."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfileService.All",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Quality.QualityProfileController.GetAll"
+        ],
+        "id": "R1",
+        "text": "No filtering or paging is applied; every stored quality profile is returned."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Quality.QualityProfileController.GetAll",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Quality.ProfileResourceMapper.ToResource(NzbDrone.Core.Profiles.Qualities.QualityProfile)"
+        ],
+        "id": "S1",
+        "text": "Returns a JSON list of all quality profiles, each with id, name, upgrade-allowed flag, cutoff, quality items, minimum format score, cutoff format score, minimum upgrade format score and format items."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Quality.ProfileResourceMapper.ToResource(NzbDrone.Core.Profiles.Qualities.QualityProfileQualityItem)"
+        ],
+        "id": "S2",
+        "text": "Each quality item shows id, name, quality, nested items, allowed flag, min size, max size and preferred size."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Quality.ProfileResourceMapper.ToResource(NzbDrone.Core.Profiles.ProfileFormatItem)"
+        ],
+        "id": "S3",
+        "text": "Each format item shows the custom format id (as Format), its name and its score."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfileService.All",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.All"
+        ],
+        "id": "E1",
+        "text": "Read-only: the profiles are read from the quality profile repository and nothing is changed."
+      }
+    ]
+  },
+  "title": "List quality profiles (GET /api/v5/QualityProfile)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "codeTitle": "GET /api/v5/system/backup",
+  "entry": "endpoint:Sonarr.Api.V5|GET /api/v5/system/backup",
+  "generated": {
+    "bundleHash": "9aac32c251fb253c5406c0e240578becb931d7e9893b60f2f1c7ed45a49eaa5f",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 11929,
+      "cutOff": 6,
+      "depth": 4,
+      "points": 31
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 7800,
+      "calls": 1,
+      "costUsd": 0.033089,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2680,
+      "outputTokens": 171
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 5928,
+      "calls": 1,
+      "costUsd": 0.035562,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6555,
+      "outputTokens": 1157
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|GET /api/v5/system/backup",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/system/backup",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.GetAll"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/system/backup"
+        ],
+        "id": "A1",
+        "text": "A caller requests the list of existing backups and receives it with an OK response."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.GetAll"
+        ],
+        "id": "R1",
+        "text": "Results are sorted by Time, newest first."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.GetBackupId(NzbDrone.Core.Backup.Backup)",
+          "Sonarr.Common|M:NzbDrone.Common.Crypto.HashConverter.GetHashInt31(System.String)"
+        ],
+        "id": "R2",
+        "text": "The Id is a non-negative 31-bit hash of the text \"backup-{Type}-{Name}\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.GetBackups",
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.GetBackupFolder(NzbDrone.Core.Backup.BackupType)",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.FolderExists(System.String)"
+        ],
+        "id": "R3",
+        "text": "Every backup type is checked. Its folder is the backup folder plus the lowercase type name, and it is skipped if it doesn't exist."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.GetBackupFiles(System.String)"
+        ],
+        "id": "R4",
+        "text": "Only files directly in the folder (no subfolders) whose names match the backup file name pattern are listed."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.GetAll"
+        ],
+        "id": "S1",
+        "text": "Returns a JSON list of backups, each with Id, Name, Path, Size, Type and Time."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.GetAll"
+        ],
+        "id": "S2",
+        "text": "Each backup's Path is shown as /backup/{type in lowercase}/{name}."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.GetBackups",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.GetFileSize(System.String)",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.FileGetLastWrite(System.String)"
+        ],
+        "id": "S3",
+        "text": "Each backup's Name is the backup file's name, its Size is the file size, and its Time is the file's last-write time."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "List backups (GET /api/v5/system/backup)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

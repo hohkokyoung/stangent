@@ -1,0 +1,89 @@
+{
+  "codeTitle": "TagController.Handle(AutoTagsUpdatedEvent)",
+  "entry": "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagController.Handle(NzbDrone.Core.AutoTagging.AutoTagsUpdatedEvent)",
+  "generated": {
+    "bundleHash": "b1df34dd229feeca916ed7a49f7f60c2b72daa2a42d5a49229105fb52a619879",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 7698,
+      "cutOff": 0,
+      "depth": 4,
+      "points": 3
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 5433,
+      "calls": 1,
+      "costUsd": 0.023741,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4064,
+      "outputTokens": 183
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3926,
+      "calls": 1,
+      "costUsd": 0.023244,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4855,
+      "outputTokens": 726
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagController.Handle(NzbDrone.Core.AutoTagging.AutoTagsUpdatedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagController.Handle(NzbDrone.Core.AutoTagging.AutoTagsUpdatedEvent)"
+        ],
+        "id": "A1",
+        "text": "When an auto-tags-updated event is received, the tag controller broadcasts a Sync resource change for tags."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestControllerWithSignalR`2.BroadcastResourceChange(NzbDrone.Core.Datastore.Events.ModelAction)"
+        ],
+        "id": "R1",
+        "text": "Nothing is broadcast if the real-time (SignalR) broadcaster is not connected."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestControllerWithSignalR`2.BroadcastResourceChange(NzbDrone.Core.Datastore.Events.ModelAction)"
+        ],
+        "id": "R2",
+        "text": "The message is only sent when the controller's namespace contains \"V3\" or \"V5\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagController.Handle(NzbDrone.Core.AutoTagging.AutoTagsUpdatedEvent)"
+        ],
+        "id": "R3",
+        "text": "The handler is not exposed as an HTTP action."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestControllerWithSignalR`2.BroadcastResourceChange(NzbDrone.Core.Datastore.Events.ModelAction)"
+        ],
+        "id": "E1",
+        "text": "A real-time message is sent to connected clients with the resource name, the action Sync, a resource change body and the controller version."
+      }
+    ]
+  },
+  "title": "Tag list refresh on auto-tag update",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "codeTitle": "QueueDetailsProvider",
+  "entry": "ts|frontend/src/Activity/Queue/Details/QueueDetailsProvider.tsx#QueueDetailsProvider",
+  "generated": {
+    "bundleHash": "40da3aead98d7ade4eaedb89b1154fd8f43e6135dbba33f4bc38b4b32f888972",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 9074,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 19
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6129,
+      "calls": 1,
+      "costUsd": 0.026445,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2858,
+      "outputTokens": 175
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4717,
+      "calls": 1,
+      "costUsd": 0.026278,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4763,
+      "outputTokens": 713
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Activity/Queue/Details/QueueDetailsProvider.tsx#QueueDetailsProvider",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Details/QueueDetailsProvider.tsx#QueueDetailsProvider",
+          "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/queue/details",
+          "endpoint:Sonarr.Api.V3|GET /api/v3/queue/details"
+        ],
+        "id": "A1",
+        "text": "Fetches queue details from the /queue/details endpoint, passing the filter properties it receives as query parameters."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Details/QueueDetailsProvider.tsx#QueueDetailsProvider"
+        ],
+        "id": "R1",
+        "text": "The request is only made when at least one filter property is supplied. With no filter it is disabled."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery"
+        ],
+        "id": "R2",
+        "text": "Each request sends the Sonarr API key in the X-Api-Key header and the X-Sonarr-Client header set to Sonarr."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/Details/QueueDetailsProvider.tsx#QueueDetailsProvider"
+        ],
+        "id": "S1",
+        "text": "Makes the list of queue item details available to the components nested inside it."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+          "ts|frontend/src/Activity/Queue/Details/QueueDetailsProvider.tsx#QueueDetailsProvider"
+        ],
+        "id": "E1",
+        "text": "Sends a GET request to the queue details API."
+      }
+    ]
+  },
+  "title": "Queue Details Provider",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

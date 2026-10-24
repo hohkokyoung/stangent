@@ -1,0 +1,176 @@
+{
+  "codeTitle": "GET /api/v5/History",
+  "entry": "endpoint:Sonarr.Api.V5|GET /api/v5/History",
+  "generated": {
+    "bundleHash": "30ed2ea506ef1dfbb5e36d7c6a0275358facbbe45742e8a93f4b6cd2da165673",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 26592,
+      "cutOff": 35,
+      "depth": 4,
+      "points": 131
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 16812,
+      "calls": 1,
+      "costUsd": 0.070297,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3530,
+      "outputTokens": 287
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 12920,
+      "calls": 1,
+      "costUsd": 0.08378,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 16556,
+      "outputTokens": 3182
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|GET /api/v5/History",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryController.GetHistory(Sonarr.Http.PagingRequestResource,System.Int32[],System.Nullable{System.Int32},System.String,System.Int32[],System.Int32[],System.Int32[],Sonarr.Api.V5.History.HistorySubresource[])"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/History"
+        ],
+        "id": "A1",
+        "text": "A caller requests history with paging, optional event type, episode id, download id, series ids, languages, quality and includeSubresources parameters."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.PagingResource`1.#ctor(Sonarr.Http.PagingRequestResource)"
+        ],
+        "id": "R1",
+        "text": "Page defaults to 1 and page size defaults to 10 when not supplied."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryController.GetHistory(Sonarr.Http.PagingRequestResource,System.Int32[],System.Nullable{System.Int32},System.String,System.Int32[],System.Int32[],System.Int32[],Sonarr.Api.V5.History.HistorySubresource[])",
+          "Sonarr.Http|M:Sonarr.Http.PagingResourceMapper.MapToPagingSpec``2(Sonarr.Http.PagingResource{``0},System.Collections.Generic.HashSet{System.String},System.String,NzbDrone.Core.Datastore.SortDirection)"
+        ],
+        "id": "R2",
+        "text": "Sorting is allowed only by date, series.sortTitle or quality (case-insensitive); any other sort key falls back to date."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryController.GetHistory(Sonarr.Http.PagingRequestResource,System.Int32[],System.Nullable{System.Int32},System.String,System.Int32[],System.Int32[],System.Int32[],Sonarr.Api.V5.History.HistorySubresource[])",
+          "Sonarr.Http|M:Sonarr.Http.PagingResourceMapper.MapToPagingSpec``2(Sonarr.Http.PagingResource{``0},System.Collections.Generic.HashSet{System.String},System.String,NzbDrone.Core.Datastore.SortDirection)"
+        ],
+        "id": "R3",
+        "text": "The default sort direction is descending when the request's direction is Default."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryController.GetHistory(Sonarr.Http.PagingRequestResource,System.Int32[],System.Nullable{System.Int32},System.String,System.Int32[],System.Int32[],System.Int32[],Sonarr.Api.V5.History.HistorySubresource[])"
+        ],
+        "id": "R4",
+        "text": "The eventType filter, when given and non-empty, keeps only records whose event type is in the list."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryController.GetHistory(Sonarr.Http.PagingRequestResource,System.Int32[],System.Nullable{System.Int32},System.String,System.Int32[],System.Int32[],System.Int32[],Sonarr.Api.V5.History.HistorySubresource[])"
+        ],
+        "id": "R5",
+        "text": "The episodeId filter, when given, keeps only records for that episode."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryController.GetHistory(Sonarr.Http.PagingRequestResource,System.Int32[],System.Nullable{System.Int32},System.String,System.Int32[],System.Int32[],System.Int32[],Sonarr.Api.V5.History.HistorySubresource[])",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.IsNotNullOrWhiteSpace(System.String)"
+        ],
+        "id": "R6",
+        "text": "The downloadId filter applies only when it is not null or whitespace."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryController.GetHistory(Sonarr.Http.PagingRequestResource,System.Int32[],System.Nullable{System.Int32},System.String,System.Int32[],System.Int32[],System.Int32[],Sonarr.Api.V5.History.HistorySubresource[])"
+        ],
+        "id": "R7",
+        "text": "The seriesIds filter, when given and non-empty, keeps only records for those series."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryController.GetHistory(Sonarr.Http.PagingRequestResource,System.Int32[],System.Nullable{System.Int32},System.String,System.Int32[],System.Int32[],System.Int32[],Sonarr.Api.V5.History.HistorySubresource[])",
+          "Sonarr.Core|M:NzbDrone.Core.History.HistoryService.Paged(NzbDrone.Core.Datastore.PagingSpec{NzbDrone.Core.History.EpisodeHistory},System.Int32[],System.Int32[])"
+        ],
+        "id": "R8",
+        "text": "The languages and quality filters are passed to the history service's paged query."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DecisionEngine.Specifications.UpgradableSpecification.QualityCutoffNotMet(NzbDrone.Core.Profiles.Qualities.QualityProfile,NzbDrone.Core.Qualities.QualityModel,NzbDrone.Core.Qualities.QualityModel)"
+        ],
+        "id": "R9",
+        "text": "Quality cutoff not met is true when the current quality is below the profile cutoff, or the first allowed quality when upgrades are not allowed."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Extensions.RequestExtensions.ApplyToPage``2(NzbDrone.Core.Datastore.PagingSpec{``1},System.Func{NzbDrone.Core.Datastore.PagingSpec{``1},NzbDrone.Core.Datastore.PagingSpec{``1}},System.Converter{``1,``0})"
+        ],
+        "id": "S1",
+        "text": "Returns a paged list of history records with page, page size, sort direction, sort key, total records and the records."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryResourceMapper.ToResource(NzbDrone.Core.History.EpisodeHistory,NzbDrone.Core.CustomFormats.ICustomFormatCalculationService)"
+        ],
+        "id": "S2",
+        "text": "Each history record shows id, episode id, series id, source title, languages, quality, custom formats, custom format score, date, download id, event type and data."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryResourceMapper.ToResource(NzbDrone.Core.History.EpisodeHistory,NzbDrone.Core.CustomFormats.ICustomFormatCalculationService)",
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfile.CalculateCustomFormatScore(System.Collections.Generic.List{NzbDrone.Core.CustomFormats.CustomFormat})"
+        ],
+        "id": "S3",
+        "text": "Each record's custom formats are returned without details, and its custom format score is the sum of the quality profile scores of the matching formats."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryController.MapToResource(NzbDrone.Core.History.EpisodeHistory,System.Boolean,System.Boolean)"
+        ],
+        "id": "S4",
+        "text": "When the record has a series, it also shows whether the quality cutoff is not met."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryController.MapToResource(NzbDrone.Core.History.EpisodeHistory,System.Boolean,System.Boolean)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Series.SeriesResourceMapper.ToResource(NzbDrone.Core.Tv.Series,System.Boolean)"
+        ],
+        "id": "S5",
+        "text": "The full series details are included in a record only when the Series subresource is requested."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.History.HistoryController.MapToResource(NzbDrone.Core.History.EpisodeHistory,System.Boolean,System.Boolean)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Episodes.EpisodeResourceMapper.ToResource(NzbDrone.Core.Tv.Episode)"
+        ],
+        "id": "S6",
+        "text": "The full episode details are included in a record only when the Episode subresource is requested."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Get history (paged list)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}
