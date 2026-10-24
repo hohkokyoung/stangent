@@ -101,9 +101,11 @@ links (D52), and a discrepancy is a link's state (D58).
   before any run (2a Progress step 2).
 
 ### Step 2 · the Sonarr run · 2026-10-24
-- First score, on a page set with only the candidate pages (92): 25 of 30 found, undocumented 5 of 10, so "finds"
-  failed (`2026-10-24-phase2b-sonarr-score-first.json`). Two of the misses were planted screens that had no page:
-  `fsd undocumented` only sees recorded screens, and the set had left out the in-scope screens no section names.
+- First score, on a page set of the 82 candidate pages plus the 10 sampled handlers (92): 25 of 30 found, undocumented 5 of 10, so "finds"
+  failed (`2026-10-24-phase2b-sonarr-score-first.json`). Two misses had no page: one planted screen (U3,
+  `/system/tasks`, which `fsd undocumented` can only see once it is recorded) and one behaviour on an unrecorded screen
+  (U9, colour-impaired mode on `/settings/ui`, found by the judge once the page existed). The set had left out the
+  in-scope screens no section names.
   That set broke D64's definition ("the FSD's in-scope screens and the endpoints and components they link to"); the 21
   screens were generated and the score taken again on D64's set (113 pages). No bar, key or matching rule changed.
 
@@ -138,13 +140,13 @@ was raised, as a conflict on the right statement rather than as undocumented.
 
 **Not too noisy** (bar: ≤ 30% of findings are false alarms): 89 findings, 62 unplanted. Worst case (every unplanted
 one false) 0.70. The 20 sampled for the hand check (`2026-10-24-phase2-owner-check.md`): **waiting for the owner**;
-the bar passes if about 12 or more of the 20 are real drift. Where the unplanted findings come from: 26 are "agree"
-links the second check disputed (D62 turns each into a gap; most say the page shows a field but not its meaning), 22
-are in-scope screens no section links to (by code), 12 are undocumented items the judge raised, the rest gaps and
-conflicts.
+the bar passes if about 12 or more of the 20 are real drift. Where the 62 unplanted findings come from: 25 are "agree"
+links the second check disputed (D62 turns each into a gap; most say the page shows a field but not its meaning), 19
+are in-scope screens no section links to (by code), 8 are undocumented items the judge raised, and 10 are other gaps
+(6) and conflicts (4).
 
 **Grounded:** every one of the 107 entries in `specs/trace.yaml` passes `trace check` (quotes word for word, ids,
-cited symbols; 0 stale quotes); tests show a made-up quote and a 4-character fragment are rejected.
+cited symbols; 0 problems, 0 stale quotes: `2026-10-24-phase2b-sonarr-trace-check.json`); tests show a made-up quote and a 4-character fragment are rejected.
 
 **Repeatable:** the same `.docx` imports to the same hash (`unchanged`); a re-run of all 16 sections made zero AI
 calls and left `specs/` byte-identical (`2026-10-24-phase2-sonarr-rerun.json`).
@@ -152,12 +154,14 @@ calls and left `specs/` byte-identical (`2026-10-24-phase2-sonarr-rerun.json`).
 **Cost** (per section, single-turn): candidates found by code for 14 sections, by the AI for 2 (none came back empty).
 | Step | Calls | Input tokens per section | Time per section | Cost |
 |---|---|---|---|---|
-| candidate finder | 2 | 8.6k | 2.7 s | $0.07 |
-| link judge | 16 | 9.4k | 5.7 s | $0.65 |
-| agree checker | 15 | 9.5k | 5.2 s | $0.58 |
+| candidate finder | 2 | 9.4k | 3.4 s | $0.07 |
+| link judge | 16 | 9.2k | 5.9 s | $0.65 |
+| agree checker | 15 | 9.4k | 5.5 s | $0.58 |
 | **all** | 33 | | | **$1.30** |
-Per page: see 2a's report ($0.20 mean). The whole Sonarr proof cost about $24 (pages $22.48; 2b $1.30 plus the two
-sections re-run when their candidate screens were added).
+Per page: see 2a's report ($0.20 mean). The recorded Sonarr proof cost about $24: pages $22.48, 2b $1.30 (each
+section's latest run, which includes the two sections re-run when their candidate screens were added) plus about
+$0.19 for those two sections' first runs. Not counted: the 10-page single-turn measurement and the first run whose
+files were lost (2a Progress step 3).
 
 ### 3. Decisions made or changed
 - [D63](../decisions.md): 2b gives an FSD section its screen pages plus the endpoints those screens call.
@@ -165,7 +169,7 @@ sections re-run when their candidate screens were added).
 - [D62](../decisions.md): the agree checker, applied as decided; its effect on noise is in Known gaps.
 
 ### 4. Known gaps
-- **The second check is strict:** 26 of 62 unplanted findings are disputed agrees where the page shows a field but
+- **The second check is strict:** 25 of 62 unplanted findings are disputed agrees where the page shows a field but
   not the FSD's explanation of it. Whether that is noise or useful is what the owner's hand check measures.
 - **Same-kind accuracy:** half the planted conflicts came back as gaps (the page lacks the rule rather than stating a
   different one), so a reviewer sees the right place but sometimes the wrong label.
@@ -183,3 +187,11 @@ sections re-run when their candidate screens were added).
   over `trace.yaml` (Phase 8).
 - Depending on the hand check: tune the agree checker's bar for "partial" agreement (a new benchmark run, reported as such).
 
+
+### Fresh check of this report (D61) · 2026-10-24
+A separate agent checked both reports' claims against the results files: about 80 claims, 7 wrong or unsupported plus
+2 minor. All were fixed: the 2b cost table's tokens and times (taken from the first score file), the breakdown of the
+62 unplanted findings (it had counted all 89), "26" → "25" disputed agrees, the cost of the 605 pages left ($85 was
+for all 718), which first-score misses lacked a page (one screen, one behaviour), the 92-page set's make-up, and the
+`trace check` claim (its output is now committed); minor: "of 718" → the 717 pages at that commit, and what the ~$24
+total includes. None was rejected.

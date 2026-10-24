@@ -179,8 +179,9 @@ Ten findings; each was fixed or rejected with a reason:
   (`benchmark/results/2026-10-24-phase2-sonarr/`).
 - **The page set** (`benchmark/sonarr-page-set.py` → `benchmark/fsd/sonarr/page-set.json`): every in-scope screen (35),
   every page an FSD section names as a candidate (82, overlapping), and 10 handlers sampled with seed 42: 113 pages.
-  The first pass left out the 21 in-scope screens no section names, which hid planted undocumented screens from 2b's
-  check (it only sees recorded screens); they were added before the final score, and the first score is kept.
+  The first pass left out the 21 in-scope screens no section names, which hid two planted items from 2b: a screen
+  from the undocumented check (`/system/tasks`) and a behaviour from the judge (`/settings/ui`). They were added before
+  the final score, and the first score is kept.
 
 ## End-of-phase report
 
@@ -228,7 +229,7 @@ Writer and verifier apart: medians 14k input tokens and 12 s for the writer per 
 input tokens, 517 s and $9.50 over 113 calls. At these per-kind means all 718 pages would cost about $85 (37 × $0.38 + 117 × $0.05 + 364 × $0.13 + 200 × $0.09).
 
 **Stale pages per commit** (`2026-10-20-phase2a-sonarr-stale.json`, Sonarr's last 50 main-line commits, no AI): median
-1, p90 31, worst 82 of 718.
+1, p90 31, worst 82 (of the 717 pages the graph had at that commit).
 
 **Hand-read** (5 pages picked with seed 42, `2026-10-24-phase2a-handread-pick.json`): **waiting for the owner.**
 
@@ -252,6 +253,6 @@ input tokens, 517 s and $9.50 over 113 calls. At these per-kind means all 718 pa
 - Provides `reference-page` v1, consumed by 2b (current). No contract of an earlier phase changed in 2a.
 
 ### 6. Follow-ups
-- Generate the remaining 605 Sonarr pages when a full reference is wanted (about $85 at these rates).
+- Generate the remaining 605 Sonarr pages when a full reference is wanted (about $63 at these rates).
 - Re-check the slice rule against 1d part 2's verdict (D45).
 - The writer model (Sonnet or Opus) once the owner's hand-read is in (D64).
