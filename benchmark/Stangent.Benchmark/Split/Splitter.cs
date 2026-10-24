@@ -43,6 +43,8 @@ sealed class Splitter
     public int HunksSplit { get; private set; }
 
     readonly Dictionary<string, SortedSet<string>> filesOfMember = new(StringComparer.Ordinal);
+    /// <summary>Old and new ids of a member whose signature changed, or that moved: one member.</summary>
+    readonly List<(string Old, string New)> signatureChanges = [];
 
     public Splitter(IReadOnlyList<FileChange> files, GraphView after, GraphView parent)
     {
@@ -51,8 +53,17 @@ sealed class Splitter
         Files = files;
         foreach (var f in files)
             for (var h = 0; h < f.Hunks.Count; h++) Cut(f, h);
+        foreach (var key in Pieces.SelectMany(p => p.Members).Distinct().ToList())
+            if ((after.Has(key) ? after : parent).ContainerType(key) is { } type && after.Has(type) != parent.Has(type))
+                ChangedTypes.Add(type);
         Members.UnionWith(Pieces.SelectMany(p => p.Members));
         Members.UnionWith(ChangedTypes);
+        // A type or member that moved (to another file or namespace) is deleted on one side and added on the other
+        // under a new id: when the name matches exactly one of each, it's the same code.
+        var deleted = Members.Where(k => !after.Has(k) && parent.Has(k)).GroupBy(k => parent.MoveName(k)).Where(g => g.Key is not null && g.Count() == 1).ToDictionary(g => g.Key!, g => g.Single());
+        var added = Members.Where(k => after.Has(k) && !parent.Has(k)).GroupBy(k => after.MoveName(k)).Where(g => g.Key is not null && g.Count() == 1).ToDictionary(g => g.Key!, g => g.Single());
+        foreach (var (name, old) in deleted.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+            if (added.TryGetValue(name, out var moved)) signatureChanges.Add((old, moved));
         foreach (var p in Pieces)
             foreach (var key in KeysOf(p))
             {
@@ -82,12 +93,19 @@ sealed class Splitter
             var owner = view.Owner(f.Path, i + 1);
             if (owner.Members.Count == 0 && owner.Type is { } type && i < lines.Length && !IsTrivial(FileChange.Text(lines[i])))
                 ChangedTypes.Add(type);
-            var key = owner.Members.Count > 0 ? "m:" + string.Join('\u001f', owner.Members) : "o:" + owner.Type;
-            if (runs.Count > 0 && runs[^1].Key == key) runs[^1] = runs[^1] with { Len = runs[^1].Len + 1 };
+            var key = owner.Members.Count > 0 ? "m:" + string.Join('\u001f', owner.Members.Select(NameOf).Distinct()) : "o:" + owner.Type;
+            if (runs.Count > 0 && runs[^1].Key == key)
+                runs[^1] = runs[^1] with { Len = runs[^1].Len + 1, Members = [.. runs[^1].Members.Union(owner.Members).Order(StringComparer.Ordinal)] };
             else runs.Add(new Run(key, i, 1, owner.Members, owner.Type));
         }
         return runs;
     }
+
+    /// <summary>
+    /// A member's name without its parameter list: <c>M:Ns.T.Run(System.Int32)</c> → <c>M:Ns.T.Run</c>. A member whose
+    /// signature changed has a different id on each side of the diff, but it's the same text, so it's one member.
+    /// </summary>
+    public static string NameOf(string key) => key.StartsWith("M:", StringComparison.Ordinal) && key.IndexOf('(') is var i and > 0 ? key[..i] : key;
 
     /// <summary>Lines that change no meaning on their own: blank, braces and punctuation, comments, regions.</summary>
     public static bool IsTrivial(string line)
@@ -124,7 +142,10 @@ sealed class Splitter
             }
             if (i < oldRuns.Count)
             {
-                Pieces.Add(new Piece(Pieces.Count, f.Path, order++, oldRuns[i].From, oldRuns[i].Len, newRuns[j].From, newRuns[j].Len, oldRuns[i].Members, oldRuns[i].Type));
+                var members = oldRuns[i].Members.Union(newRuns[j].Members).Order(StringComparer.Ordinal).ToList();
+                foreach (var a in oldRuns[i].Members)
+                    foreach (var b in newRuns[j].Members.Where(b => b != a && NameOf(b) == NameOf(a))) signatureChanges.Add((a, b));
+                Pieces.Add(new Piece(Pieces.Count, f.Path, order++, oldRuns[i].From, oldRuns[i].Len, newRuns[j].From, newRuns[j].Len, members, oldRuns[i].Type ?? newRuns[j].Type));
                 cursor = oldRuns[i].End;
                 oi = i + 1;
                 ni = j + 1;
@@ -173,6 +194,7 @@ sealed class Splitter
                 if (inA.Count == 0 || inB.Count == 0) continue;
                 foreach (var k in inA.Concat(inB)) uf.Union(inA[0], k);
             }
+        foreach (var (a, b) in signatureChanges) uf.Union(a, b);
         var before = uf.Count;
         // Text no rule could cut: one line owned by several members (e.g. `int a, b;`).
         foreach (var p in Pieces.Where(p => p.Members.Count > 1))

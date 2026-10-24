@@ -131,7 +131,7 @@ The FSD text is in `2026-10-24-phase2-sonarr/specs/fsd/sonarr-fsd/document.md` (
 Picked by code: 2 screens, 1 component, 1 endpoint, 1 handler, `random.Random(42)` over the sorted recorded page ids of each
 kind. For each page, count the statements that are **wrong** (the code doesn't do that) and, if you like, name them
 by id (S3, R2…). Each statement cites the code it comes from; the page's Markdown links the symbols. No bar: it tells us
-whether Sonnet is good enough as the writer or Opus is needed (D64). I'll compare your count with what the verifier caught.
+whether Sonnet is good enough as the writer or Opus is needed (D66). I'll compare your count with what the verifier caught.
 
 1. **Calendar** (screen, 40 statements) — [2026-10-24-phase2-sonarr/specs/reference/screens/calendar-a662cd.md](2026-10-24-phase2-sonarr/specs/reference/screens/calendar-a662cd.md)  · wrong: __
 2. **Blocklist** (screen, 24 statements) — [2026-10-24-phase2-sonarr/specs/reference/screens/activity-blocklist-20ed5f.md](2026-10-24-phase2-sonarr/specs/reference/screens/activity-blocklist-20ed5f.md)  · wrong: __

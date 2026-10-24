@@ -36,7 +36,7 @@ public sealed record RunStep(string Status, string Action, string? Agent = null,
         return o;
     }
 
-    /// <summary>The output schema a step's result must match, so a single-turn driver (D64) can ask for structured output.</summary>
+    /// <summary>The output schema a step's result must match, so a single-turn driver (D66) can ask for structured output.</summary>
     public static string? SchemaOf(string agent) => agent switch
     {
         PageRun.Writer => Bundles.WriterSchema,

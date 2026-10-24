@@ -53,7 +53,7 @@ static class SpecCommands
         spec.Subcommands.Add(bundle);
 
         var schemaArg = new Argument<string>("name") { Description = "A step's output schema, as `next.schema` names it (page-writer-output.v1.json)." };
-        var schema = new Command("schema", "Print an AI step's output schema (for drivers that ask Claude Code for structured output, D64).") { schemaArg };
+        var schema = new Command("schema", "Print an AI step's output schema (for drivers that ask Claude Code for structured output, D66).") { schemaArg };
         schema.SetAction(pr => Cli.Run(pr, "spec schema", ctx =>
             new JsonObject { ["text"] = Stangent.Core.SchemaRegistry.EmbeddedText(pr.GetValue(schemaArg)!) }, r => (string)r!["text"]!));
         spec.Subcommands.Add(schema);

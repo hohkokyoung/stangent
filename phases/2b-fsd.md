@@ -61,7 +61,7 @@ provides: { source-document: 1, trace-links: 1 }
 ## Done when (D57's bars)
 - [x] **Finds what's planted:** ≥ 80% of planted items overall, and ≥ 60% of each kind.
 - [ ] **Not too noisy:** ≤ 30% of findings are false alarms. *Failed: 31.3% (95% range 14–45%), from a fresh agent's
-      hand check (D65). Findings ship off by default (D66).*
+      hand check (D67). Findings ship off by default (D68).*
 - [x] **Grounded:** every link and finding in the queue passes the checks; tests show a made-up quote is rejected.
 - [x] **Repeatable:** the same `.docx` gives byte-identical text; a re-run with unchanged inputs makes zero AI calls.
 - [x] **Cost:** tokens and time per section and per page reported; candidates found by code vs AI reported.
@@ -108,14 +108,14 @@ links (D52), and a discrepancy is a link's state (D58).
   `/system/tasks`, which `fsd undocumented` can only see once it is recorded) and one behaviour on an unrecorded screen
   (U9, colour-impaired mode on `/settings/ui`, found by the judge once the page existed). The set had left out the
   in-scope screens no section names.
-  That set broke D64's definition ("the FSD's in-scope screens and the endpoints and components they link to"); the 21
-  screens were generated and the score taken again on D64's set (113 pages). No bar, key or matching rule changed.
+  That set broke D66's definition ("the FSD's in-scope screens and the endpoints and components they link to"); the 21
+  screens were generated and the score taken again on D66's set (113 pages). No bar, key or matching rule changed.
 
 ## End-of-phase report
 
 *2026-10-25 · first report.* "Finds what's planted" **passes**; "not too noisy" **fails narrowly** (31.3% false
 alarms against 30%; the 95% range, 14–45%, sits on both sides of the bar), so discrepancy findings ship **off by
-default** (D57, D66); pages and links ship. Build, tests
+default** (D57, D68); pages and links ship. Build, tests
 (121) and `phases check` pass locally; CI runs once the branch is pushed.
 
 ### 1. What was built
@@ -142,7 +142,7 @@ page ("Search … Cutoff Unmet" on Add New, "Import Selected" on the queue, "Unm
 was raised, as a conflict on the right statement rather than as undocumented.
 
 **Not too noisy** (bar: ≤ 30% of findings are false alarms): 89 findings, 62 unplanted. Worst case (every unplanted
-one false) 0.70. Of the 20 sampled (seed 42), a fresh agent checking against Sonarr's source (D65,
+one false) 0.70. Of the 20 sampled (seed 42), a fresh agent checking against Sonarr's source (D67,
 `2026-10-24-phase2b-handcheck.json`) found **11 real drift and 9 false alarms**: false-alarm share 62/89 × 9/20 =
 **0.313 (95% range 0.14–0.45)**. **The bar fails.** The 9 false alarms: 7 gaps where the FSD statement is in fact true
 of the code (6 of them agrees the second check disputed; of the 7 disputed agrees in the sample, 6 were false), and 2
@@ -175,15 +175,15 @@ files were lost (2a Progress step 3).
 - [D63](../decisions.md): 2b gives an FSD section its screen pages plus the endpoints those screens call.
 - [D58](../decisions.md) refined: a decision drops back to undecided when a quote no longer matches, not on any edit.
 - [D62](../decisions.md): the agree checker, applied as decided; its effect on noise is in Known gaps.
-- [D65](../decisions.md): the hand check was made by a fresh agent, not the owner.
-- [D66](../decisions.md): findings ship off by default (`fsd.findings`), as D57 says when a bar fails.
+- [D67](../decisions.md): the hand check was made by a fresh agent, not the owner.
+- [D68](../decisions.md): findings ship off by default (`fsd.findings`), as D57 says when a bar fails.
 
 ### 4. Known gaps
-- **Findings are off by default (D66):** the noise bar failed; a project opts in with `fsd.findings: true`.
+- **Findings are off by default (D68):** the noise bar failed; a project opts in with `fsd.findings: true`.
 - **The second check is strict:** 25 of 62 unplanted findings are disputed agrees (the page covers only part of the
   FSD statement, often a field without its meaning); 6 of the hand check's 9 false alarms are disputed agrees.
 - **Redirect routes count as screens:** `/` and `/seasonpass` only redirect, yet were listed as undocumented.
-- The hand check is an AI's (D65); a person's check is owed before findings are relied on.
+- The hand check is an AI's (D67); a person's check is owed before findings are relied on.
 - **Same-kind accuracy:** half the planted conflicts came back as gaps (the page lacks the rule rather than stating a
   different one), so a reviewer sees the right place but sometimes the wrong label.
 - A planted FSD is tidier than a real one (D56): the score overstates quality; the dry run on a real FSD is next.
@@ -198,9 +198,9 @@ files were lost (2a Progress step 3).
 - The dry run on a real FSD from one of the owner's projects (D56).
 - "code-wrong" decisions → draft Jira tickets (Phase 3); tests tagged with FSD section ids (Phase 5); the dashboard
   over `trace.yaml` (Phase 8).
-- Cut the noise, then measure again as a new benchmark run (D66): the agree checker's bar for "partial" agreement,
+- Cut the noise, then measure again as a new benchmark run (D68): the agree checker's bar for "partial" agreement,
   and leaving redirect-only routes out of the screen list.
-- A person's hand check of the findings on the real-FSD dry run (D56, D65).
+- A person's hand check of the findings on the real-FSD dry run (D56, D67).
 
 
 ### Fresh check of this report (D61) · 2026-10-24
@@ -213,6 +213,6 @@ total includes. None was rejected.
 
 A second fresh agent checked the lines added once the hand checks were in (2026-10-25): about 50 claims, 5 wrong,
 unsupported or misleading, all fixed: a "judgement call" remark with no evidence in the results files (dropped), the
-writer-model decision missing from decisions.md (D64 refined), what most false alarms are (6 of 9 are disputed
+writer-model decision missing from decisions.md (D66 refined), what most false alarms are (6 of 9 are disputed
 agrees, not "a field without its meaning"), the hand-read's verifier comparison (A3's error is an endpoint link,
 which the verifier isn't asked to judge), and 0.70 × 9/20 written for 62/89 × 9/20. It also confirmed 121 tests pass.

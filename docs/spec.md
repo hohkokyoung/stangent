@@ -23,7 +23,7 @@ Every AI step is the same small loop. The CLI holds all the logic; a driver only
 
 Drivers: `/stangent:spec-generate` and `/stangent:fsd-link` in a Claude Code session, and
 `plugin/scripts/spec-run.sh` for batches and CI (headless `claude -p --output-format json`, so tokens, cost, model and
-time are recorded per step; `--jobs N` runs pages side by side). The batch driver makes **one turn per call** (D64):
+time are recorded per step; `--jobs N` runs pages side by side). The batch driver makes **one turn per call** (D66):
 the step's input files go into the prompt, Claude Code runs with no tools and none of the user's settings, skills or
 MCP servers (`--tools "" --setting-sources "" --disable-slash-commands --strict-mcp-config`), the output schema is
 enforced with `--json-schema` (`next.schema`; `stangent spec schema <name>` prints it), and the driver writes the
@@ -90,7 +90,7 @@ code 4 (D24); `spec stale`, `fsd import`, `fsd candidates`, `fsd undocumented` a
 - `stangent fsd undocumented`: screens no section links to are undocumented, by code, within `fsd.scope`: the areas
   the FSD says it covers, as routes or route prefixes (`/settings` covers `/settings/tags`). It only sees screens with
   a recorded page, so generate every in-scope screen first.
-- **Findings are off by default (D66):** with `fsd: { findings: false }` (the default) sections record only links;
+- **Findings are off by default (D68):** with `fsd: { findings: false }` (the default) sections record only links;
   gaps, conflicts and undocumented items aren't written and `fsd undocumented` lists none. `findings: true` turns them
   on (the Sonarr benchmark does); changing it makes each section run again.
 - **`specs/trace.yaml`**: one entry per link or finding; people edit only `decision` (`agree`, `code-wrong`,

@@ -215,7 +215,7 @@ public static class LinkRun
             entries.Add(Entry((string)final["state"]!, doc, section, (string?)final["fsdQuote"], (string?)final["page"], (string?)final["statement"],
                 (string?)final["pageQuote"], "judge", check, (string?)final["note"]));
         }
-        // With findings off (D57, D66) only links are recorded: a disputed "agree" that became a finding is left out too.
+        // With findings off (D57, D68) only links are recorded: a disputed "agree" that became a finding is left out too.
         if (!findings) entries = [.. entries.Where(e => (string)e["state"]! == "agree")];
         ApplyEntries(root, doc, (string)state["section"]!, entries);
         var key = Key(doc, (string)state["section"]!);
@@ -446,7 +446,7 @@ public static class LinkChecks
 public static class Undocumented
 {
     /// <param name="scope">Screens the FSD claims to cover (routes or page ids); null: every screen.</param>
-    /// <param name="findings">False (the default, D66): undocumented screens are findings, so none are listed and any
+    /// <param name="findings">False (the default, D68): undocumented screens are findings, so none are listed and any
     /// listed before are removed.</param>
     public static int Apply(string root, PageSet set, IReadOnlyCollection<string>? scope, bool findings = true)
     {

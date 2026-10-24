@@ -14,6 +14,6 @@
 - Both were committed before the first judging run (2026-10-20) and are frozen: a change is a new benchmark, reported as such.
 
 The clone's `stangent.yaml` needs `fsd: { findings: true, archive: …, scope: <the key's scope> }`: findings are
-off by default (D66), and the benchmark measures them. The pages scored are in `page-set.json` (`benchmark/sonarr-page-set.py`).
+off by default (D68), and the benchmark measures them. The pages scored are in `page-set.json` (`benchmark/sonarr-page-set.py`).
 
 Scoring: `dotnet run --project benchmark/Stangent.Benchmark -- --score-fsd <sonarr clone> benchmark/fsd/sonarr/answer-key.json [--hand-check <file>] --out <file>`.

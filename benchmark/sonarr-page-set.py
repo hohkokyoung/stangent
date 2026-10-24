@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 2 (D64): the pages generated for the Sonarr proof. Reads `stangent spec pages` and `stangent fsd candidates`
+"""Phase 2 (D66): the pages generated for the Sonarr proof. Reads `stangent spec pages` and `stangent fsd candidates`
 output (JSON files) and writes the page set: every screen inside the FSD's scope (the undocumented check only sees
 recorded screens), every page a candidate section uses, plus 10 handlers sampled with seed 42.
 usage: sonarr-page-set.py pages.json candidates.json answer-key.json out.json"""

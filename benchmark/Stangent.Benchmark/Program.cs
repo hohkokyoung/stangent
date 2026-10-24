@@ -158,6 +158,9 @@ if (argList.Contains("--split"))
         MaxExamined = int.Parse(Opt("--max-examined", "200")),
         MaxWalk = int.Parse(Opt("--max-walk", "2000")),
         ProgressFile = Path.Combine(root, ".stangent", "split-progress.jsonl"),
+        // `--groups-only <results.json>`: re-group the cases that run examined, applying nothing.
+        GroupsOnly = Opt("--groups-only", "") is { Length: > 0 } earlier
+            ? JsonNode.Parse(File.ReadAllText(earlier))!["cases"]!.AsArray().Select(c => (string)c!["commit"]!).ToHashSet(StringComparer.Ordinal) : null,
     };
     var split = await check.RunAsync(start);
     split.Insert(0, "repo", Path.GetFileName(root));

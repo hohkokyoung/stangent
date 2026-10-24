@@ -19,12 +19,14 @@ sealed class GraphView
     readonly Dictionary<string, List<string>> neighbours = new(StringComparer.Ordinal);
     readonly Dictionary<string, string> containerOf = new(StringComparer.Ordinal);
     readonly HashSet<string> typeIds = new(StringComparer.Ordinal);
+    readonly Dictionary<string, Node> nodes = new(StringComparer.Ordinal);
 
     public GraphView(CodeGraph graph)
     {
         foreach (var n in graph.AllNodes.DistinctBy(n => n.Id))
         {
             Add(idsByKey, KeyOf(n.Id), n.Id);
+            nodes[n.Id] = n;
             if (n.Kind == NodeKind.Type) typeIds.Add(n.Id);
             if (n.File is null || n.Line <= 0 || !(MemberKinds.Contains(n.Kind) || n.Kind == NodeKind.Type)) continue;
             Add(pointsByFile, n.File, n);
@@ -56,16 +58,34 @@ sealed class GraphView
     {
         if (!pointsByFile.TryGetValue(file, out var points)) return new([], null);
         var covering = points.Where(p => p.Line <= line && line <= Math.Max(p.Line, p.EndLine)).ToList();
+        var types = covering.Where(p => p.Kind == NodeKind.Type).ToList();
+        var type = types.Count == 0 ? null : types.Where(p => p.EndLine - p.Line == types.Min(t => t.EndLine - t.Line)).MinBy(p => KeyOf(p.Id), StringComparer.Ordinal);
         var members = covering.Where(p => MemberKinds.Contains(p.Kind)).ToList();
         if (members.Count > 0)
         {
             var span = members.Min(p => p.EndLine - p.Line);
-            return new([.. members.Where(p => p.EndLine - p.Line == span).Select(p => KeyOf(p.Id)).Distinct().Order(StringComparer.Ordinal)], null);
+            var innermost = members.Where(p => p.EndLine - p.Line == span).ToList();
+            // A positional record's properties are declared on its header line: that line is the type's.
+            if (!(type is not null && line == type.Line && innermost.All(p => p.Line == type.Line)))
+                return new([.. innermost.Select(p => KeyOf(p.Id)).Distinct().Order(StringComparer.Ordinal)], null);
         }
-        var types = covering.Where(p => p.Kind == NodeKind.Type).ToList();
-        if (types.Count == 0) return new([], null);
-        var typeSpan = types.Min(p => p.EndLine - p.Line);
-        return new([], types.Where(p => p.EndLine - p.Line == typeSpan).Select(p => KeyOf(p.Id)).Order(StringComparer.Ordinal).First());
+        return new([], type is null ? null : KeyOf(type.Id));
+    }
+
+    /// <summary>
+    /// A name that survives a move: a type's name without its namespace, a member's <c>Type.Member</c>. Null when the key
+    /// isn't a type or member point.
+    /// </summary>
+    public string? MoveName(string key)
+    {
+        if (!idsByKey.TryGetValue(key, out var ids)) return null;
+        var node = nodes[ids[0]];
+        if (node.Kind == NodeKind.Type)
+        {
+            var name = node.Name.Split('<')[0];
+            return "type " + name[(name.LastIndexOf('.') + 1)..] + node.Name[name.Length..];
+        }
+        return MemberKinds.Contains(node.Kind) ? node.Kind + " " + node.Name : null;
     }
 
     /// <summary>The type that declares this point (by key), if any.</summary>

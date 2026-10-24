@@ -6,7 +6,7 @@
 # result back.
 #
 # usage: spec-run.sh [--jobs N] [--model M] [--retry-failed] [--agents] (<page id>... | --all | --stale | --fsd <doc>)
-# Default (D64): one turn per call. The step's input files go into the prompt, Claude Code runs with no tools and none of
+# Default (D66): one turn per call. The step's input files go into the prompt, Claude Code runs with no tools and none of
 # the user's settings, skills or MCP servers, and the answer comes back as structured output (--json-schema) that this
 # script writes to the step's output file; `check` is unchanged. Far fewer tokens than a session that reads files.
 # --agents: the plugin's subagents instead, each limited to reading and writing under .stangent/ (D60).

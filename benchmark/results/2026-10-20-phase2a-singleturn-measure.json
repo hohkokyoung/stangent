@@ -1,5 +1,5 @@
 {
-  "what": "D64 step 1: the same 10 Sonarr pages written and verified twice by Sonnet 5.5 — before (two headless Claude Code sessions per page, plugin subagents reading files) and after (one single-turn call each for writer and verifier: bundle in the prompt, claude -p --tools \"\" --json-schema, no settings/skills/MCP)",
+  "what": "D66 step 1: the same 10 Sonarr pages written and verified twice by Sonnet 5.5 — before (two headless Claude Code sessions per page, plugin subagents reading files) and after (one single-turn call each for writer and verifier: bundle in the prompt, claude -p --tools \"\" --json-schema, no settings/skills/MCP)",
   "date": "2026-10-20",
   "model": "claude-sonnet-5-5",
   "commit": "0bffefe7 (Sonarr)",

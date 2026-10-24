@@ -25,6 +25,11 @@ sealed class SplitCheck(string root, SplitConfig config, ISplitChecker checker, 
     public int MaxFiles { get; init; } = 15;
     /// <summary>Each walked commit's result, appended as it's known, so a run that crashed resumes where it stopped.</summary>
     public string? ProgressFile { get; init; }
+    /// <summary>
+    /// Groups only these commits, with no health check and nothing applied: how a rule splits cases a full run
+    /// already examined (healthy), e.g. after a fix to the cutter. Splits are measured; "holds up" is not.
+    /// </summary>
+    public IReadOnlySet<string>? GroupsOnly { get; init; }
 
     static readonly string[] SourceExtensions = [".cs", ".ts", ".tsx", ".js", ".jsx"];
     static readonly string[] BuildFiles = ["Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props", "global.json", "NuGet.config", "nuget.config"];
@@ -69,7 +74,8 @@ sealed class SplitCheck(string root, SplitConfig config, ISplitChecker checker, 
 
         foreach (var change in walk)
         {
-            if (outcomes.Count(o => o.Split(Splitter.Within2)) >= MaxSplit || outcomes.Count >= MaxExamined) break;
+            if (GroupsOnly is not null) { if (outcomes.Count >= GroupsOnly.Count) break; if (!GroupsOnly.Contains(change)) continue; }
+            else if (outcomes.Count(o => o.Split(Splitter.Within2)) >= MaxSplit || outcomes.Count >= MaxExamined) break;
             walked++;
             if (done.TryGetValue(change, out var earlier))
             {
@@ -120,6 +126,23 @@ sealed class SplitCheck(string root, SplitConfig config, ISplitChecker checker, 
             var anySplit = rules.Any(r => r.Split);
             var dotnet = files.Any(f => !config.IsFrontend(f.Path));
             var frontend = files.Any(f => config.IsFrontend(f.Path));
+
+            if (GroupsOnly is not null)
+            {
+                var grouped = new CaseOutcome(change);
+                foreach (var r in rules) grouped.Rules[r.Rule] = (r.Split, true);
+                Keep(change, new JsonObject
+                {
+                    ["commit"] = change, ["changedMembers"] = splitter.Members.Count, ["memberFiles"] = splitter.MemberFiles.Count,
+                    ["rules"] = new JsonObject([.. rules.Select(r => KeyValuePair.Create(r.Rule, (JsonNode?)new JsonObject
+                    {
+                        ["split"] = r.Split, ["holdsUp"] = true, ["joinedBySharedHunk"] = r.JoinedBySharedHunk,
+                        ["groups"] = new JsonArray([.. r.Groups.Select(g => (JsonNode)new JsonArray([.. g.Members.Select(m => (JsonNode)m)]))]),
+                    }))]),
+                }, grouped);
+                log.WriteLine($"split: {change[..10]} grouped: {string.Join(", ", rules.Select(r => $"{r.Rule}: {r.Groups.Count}"))}");
+                continue;
+            }
 
             // ---- Health (D46, D47): the parent and the change both build.
             var parentHealth = Health(parent, dotnet, frontend);

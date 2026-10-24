@@ -11,7 +11,7 @@ provides: { reference-page: 1 }
 **Approved 2026-10-20 (as part of the Phase 2 plan). Building started 2026-10-20, before the Phase 1d split check
 reports (D45, changed 2026-10-20). Split from `2-spec.md` when building started (D59); 2b is in `2b-fsd.md`.**
 
-Builds on D10–D12, D18 and D50–D64. stangent is a standalone rebuild modelled on the company's spec pipeline (D50),
+Builds on D10–D12, D18 and D50–D66. stangent is a standalone rebuild modelled on the company's spec pipeline (D50),
 with one difference that matters: the agreed FSD is read alongside the code, so stangent can show where the code
 drifted from what the client agreed (D51).
 
@@ -99,7 +99,7 @@ bundles sent to the AI (regenerable from the graph).
 - The owner hand-reads 5 pages; the report counts wrong statements. No bar: it tells 2b whether the pages capture rules.
 
 ## Done when
-- [x] Every Sonarr screen and backend entry point has a page, or is listed as failed with its reason. *Changed by D64:*
+- [x] Every Sonarr screen and backend entry point has a page, or is listed as failed with its reason. *Changed by D66:*
       every page 2b needs plus a sample of 10 handlers; all 718 checked against the size cap by code. *Done: 113
       pages, 0 failed, 0 of 718 over the cap.*
 - [x] **Grounded:** every statement cites symbols inside its slice; tests plant a made-up citation and an out-of-slice
@@ -110,7 +110,7 @@ bundles sent to the AI (regenerable from the graph).
 - [x] Every page passed the fresh verifier (D62), each finding fixed or rejected with a reason; a test plants a wrong
       statement and the verifier's evidence check is exercised with canned outputs.
 - [x] 5 pages hand-read, wrong statements counted, and compared with what the verifier caught. *Read by a fresh
-      agent, not the owner (D65).*
+      agent, not the owner (D67).*
 - [ ] Tests run without an LLM (canned subagent outputs); CI green. *Tests: 121 pass locally, no LLM. CI: open until
       the branch is pushed (not pushed by this work).*
 
@@ -173,7 +173,7 @@ Ten findings; each was fixed or rejected with a reason:
 | 10 | the stale comment lacked FSD sections; the depth cut-off wasn't recorded; docs said `spec bundle` prints the previous version; fixed pages aren't re-verified | fixed the first three; **rejected** the last with a reason (D62 refined): the plan doesn't ask for a second pass, and code checks every fix |
 
 ### Step 3 · single-turn calls, then the Sonarr proof · 2026-10-20 to 2026-10-24
-- **Single-turn calls (D64):** `spec-run.sh` sends each step as one call: the input files in the prompt, `--tools ""`,
+- **Single-turn calls (D66):** `spec-run.sh` sends each step as one call: the input files in the prompt, `--tools ""`,
   no settings, skills or MCP servers, `--json-schema` from `next.schema` (`stangent spec schema <name>`). On the same
   10 pages: 41k input tokens and $0.18 per page, against 200k and $0.31 with two file-reading sessions
   (`benchmark/results/2026-10-20-phase2a-singleturn-measure.json`). `--agents` keeps the subagent mode.
@@ -198,7 +198,7 @@ branch is pushed. Build, tests (121) and `phases check` pass locally.
   the code checks, Markdown rendering and staleness.
 - **Commands:** `stangent spec pages | bundle | prepare | check | stale | schema`.
 - **Plugin:** `stangent-page-writer` and `stangent-page-verifier`, `/stangent:spec-generate`, the batch driver
-  `plugin/scripts/spec-run.sh` (single-turn by default, D64), the CI workflow `plugin/ci/spec.yml` (stale list on a PR,
+  `plugin/scripts/spec-run.sh` (single-turn by default, D66), the CI workflow `plugin/ci/spec.yml` (stale list on a PR,
   regeneration and a bot spec PR on merge).
 - **Contracts:** `reference-page` v1 (`schemas/reference-page.v1.json`), plus the AI-step contracts
   `page-writer-output.v1.json` and `page-verifier-output.v1.json`.
@@ -207,13 +207,13 @@ branch is pushed. Build, tests (121) and `phases check` pass locally.
 
 ### 2. Benchmark results (Sonarr at 0bffefe7, Sonnet 5.5)
 Phase 2 is proven on Sonarr only (D56): it is the benchmark repo with an FSD and an answer key. nopCommerce, eShop and
-CleanArchitecture have no FSD, and a page run there would show only more of the same (D64).
+CleanArchitecture have no FSD, and a page run there would show only more of the same (D66).
 
 **Pages** (`2026-10-24-phase2a-sonarr-page-stats.json`, `…-sonarr/specs/reference/`)
 | | Result |
 |---|---|
 | Pages the graph calls for | 718 (37 screens, 117 components, 364 endpoints, 200 handlers); **all 718 under the size cap**, checked by code |
-| Generated (D64's set) | 113: 35 screens, 5 components, 62 endpoints, 11 handlers (10 sampled, 1 a section names); **0 failed** |
+| Generated (D66's set) | 113: 35 screens, 5 components, 62 endpoints, 11 handlers (10 sampled, 1 a section names); **0 failed** |
 | Code check | 110 passed first time, 3 after the one retry, 0 failed twice |
 | Fresh verifier | 14 findings on 13 pages (3 contradicted, 11 unsupported); 14 fixed, 0 rejected, 0 dropped for lack of evidence |
 | Statements | 1,739; median 13 per page, largest 42 |
@@ -235,7 +235,7 @@ input tokens, 517 s and $9.50 over 113 calls. At these per-kind means all 718 pa
 1, p90 31, worst 82 (of the 717 pages the graph had at that commit).
 
 **Hand-read** (5 pages picked with seed 42, `2026-10-24-phase2a-handread-pick.json`; read by a fresh agent against
-Sonarr's source, D65: `2026-10-24-phase2a-handread.json`)
+Sonarr's source, D67: `2026-10-24-phase2a-handread.json`)
 | Page | Statements | Wrong | Verifier caught |
 |---|---|---|---|
 | Calendar (screen) | 40 | 1: S8 says large screens get the view dropdown; the code's `isLargeScreen` is a width of 1200 px or less, so it is the other way round | no |
@@ -246,20 +246,20 @@ Sonarr's source, D65: `2026-10-24-phase2a-handread.json`)
 | **all** | **88** | **2 (2%)** | **0 of 2** |
 S8 inverts a condition whose name reads the other way (`isLargeScreen` means 1200 px or narrower); the verifier
 missed it. A3's text is right and its error is in the statement's endpoint link, which the verifier isn't asked to
-check (it judges statement content). With 2 wrong in 88, Sonnet stays the writer (D64, refined).
+check (it judges statement content). With 2 wrong in 88, Sonnet stays the writer (D66, refined).
 
 ### 3. Decisions made or changed
 - [D63](../decisions.md): slices split at the API boundary; every endpoint gets a page (changes D54).
-- [D64](../decisions.md): the proof is the pages 2b needs plus 10 handlers; Sonnet writes and verifies; calls are
+- [D66](../decisions.md): the proof is the pages 2b needs plus 10 handlers; Sonnet writes and verifies; calls are
   single-turn (refined with the measurement).
-- [D65](../decisions.md): the hand checks are done by a fresh agent, not the owner.
-- [D64](../decisions.md) refined: after the hand-read (2 wrong in 88), the writer stays Sonnet.
+- [D67](../decisions.md): the hand checks are done by a fresh agent, not the owner.
+- [D66](../decisions.md) refined: after the hand-read (2 wrong in 88), the writer stays Sonnet.
 - D60 refined (the batch driver's permission rules) and D62 refined (evidence length, the verifier's retry, no second
   verifier pass after a fix).
 
 ### 4. Known gaps
 - **Not every page exists:** 605 of 718 pages (mostly endpoints, half of them v5 copies of v3, and handlers) are left to
-  `spec-run.sh --all` (D64).
+  `spec-run.sh --all` (D66).
 - **The slice rule may change** when 1d part 2 (context scoping) reports (D45); every page then goes stale.
 - **Pages describe only their slice:** a screen page names the endpoints it calls but not their rules (D63's cost).
 - **The verifier fixes aren't re-verified** (D62 refined): code checks each fixed statement changed.
@@ -272,6 +272,6 @@ check (it judges statement content). With 2 wrong in 88, Sonnet stays the writer
 ### 6. Follow-ups
 - Generate the remaining 605 Sonarr pages when a full reference is wanted (about $63 at these rates).
 - Re-check the slice rule against 1d part 2's verdict (D45).
-- A person's hand-read before pages are relied on in a real project (D65's cost).
+- A person's hand-read before pages are relied on in a real project (D67's cost).
 - The verifier: how it reads conditions whose names invert their meaning (S8), and whether it should also check each
   action's endpoint links (A3); code checks only that each is an endpoint in the slice.
