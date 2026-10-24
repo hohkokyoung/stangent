@@ -1,0 +1,145 @@
+{
+  "codeTitle": "ANY /api/v3/QualityDefinition",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/QualityDefinition",
+  "generated": {
+    "bundleHash": "c275f118a8bc59fea149695f3368fb56974c5f2770e9a2283d810ebb2b6f4403",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 19186,
+      "cutOff": 9,
+      "depth": 4,
+      "points": 59
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 11872,
+      "calls": 1,
+      "costUsd": 0.050247,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4725,
+      "outputTokens": 258
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 20974,
+      "calls": 2,
+      "costUsd": 0.117746,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 17799,
+      "outputTokens": 3329
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/QualityDefinition",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Qualities.QualityDefinitionController.Update(Sonarr.Api.V3.Qualities.QualityDefinitionResource)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/QualityDefinition"
+        ],
+        "id": "A1",
+        "text": "A caller updates a quality definition by sending it in the request body; it is saved and the response is Accepted."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Qualities.QualityDefinitionController.Update(Sonarr.Api.V3.Qualities.QualityDefinitionResource)"
+        ],
+        "id": "R1",
+        "text": "Size limits are pushed to quality profiles only when the definition has a MinSize, MaxSize or PreferredSize value."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R2",
+        "text": "For POST or PUT requests, each resource in the arguments is validated. For PUT, a resource Id of 0 is filled from the route id when one is present."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R3",
+        "text": "The id argument is validated on actions marked for id validation, unless validation is skipped."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Accepted(System.Int32)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Qualities.QualityDefinitionController.Update(Sonarr.Api.V3.Qualities.QualityDefinitionResource)"
+        ],
+        "id": "S1",
+        "text": "On success the endpoint returns an Accepted response with a location pointing to the get-by-id action; the body is the resource fetched by the definition's id."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "Getting a quality definition by id returns it as JSON, or Not Found when no such record exists."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Qualities.QualityDefinitionResourceMapper.ToModel(Sonarr.Api.V3.Qualities.QualityDefinitionResource)"
+        ],
+        "id": "S3",
+        "text": "A quality definition has an Id, Quality, Title, Weight, MinSize, MaxSize and PreferredSize."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Qualities.QualityDefinitionService.Update(NzbDrone.Core.Qualities.QualityDefinition)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Update(`0)",
+          "Sonarr.Common|M:NzbDrone.Common.Cache.ICached.Clear"
+        ],
+        "id": "E1",
+        "text": "The quality definition is saved to the repository and the service's cache is cleared."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfileService.UpdateAllSizeLimits(NzbDrone.Core.Profiles.Qualities.QualityProfileSizeLimit[])",
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfileSizeLimit.#ctor(NzbDrone.Core.Qualities.QualityDefinition)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.UpdateMany(System.Collections.Generic.IList{`0})"
+        ],
+        "id": "E2",
+        "text": "When a size is set, every quality profile has the matching quality item (or the item inside a group) updated with the new MinSize, MaxSize and PreferredSize, and all profiles are saved."
+      }
+    ]
+  },
+  "title": "Update Quality Definition (API)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "Accepted calls GetResourceById(id) and returns AcceptedAtAction. The body is the resource fetched by id, which the page calls the saved definition. That GetResourceById code is not in the slice, so this is only partly supported.",
+        "id": "F1",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Reworded to state only what Accepted shows: location to get-by-id action and body fetched by id.",
+        "statement": "S1",
+        "statementText": "On success the endpoint returns an Accepted response containing the saved quality definition, with a location pointing to the get-by-id action."
+      },
+      {
+        "explanation": "The code logs a warning and sets the header only when the controller or action has the deprecated attribute. This quality definition endpoint is not shown to be deprecated, so the rule is correct only as generic behavior. It still fits the code, so this finding is low-confidence.",
+        "id": "F2",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Removed the deprecation rule since this endpoint is not shown to be deprecated.",
+        "statement": "R4",
+        "statementText": "Calls to endpoints marked deprecated are logged as a warning and get a response header \"Deprecation: true\"."
+      }
+    ]
+  }
+}

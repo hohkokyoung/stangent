@@ -1,0 +1,144 @@
+{
+  "codeTitle": "ANY /api/v3/system/backup",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/system/backup",
+  "generated": {
+    "bundleHash": "f5f945ea501818e3edad0815d98886bcb9938540458958a2e5265c706118a6ee",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 13018,
+      "cutOff": 9,
+      "depth": 4,
+      "points": 21
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 8640,
+      "calls": 1,
+      "costUsd": 0.039209,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4311,
+      "outputTokens": 447
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 14625,
+      "calls": 2,
+      "costUsd": 0.08763,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 15748,
+      "outputTokens": 2857
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/system/backup",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.DeleteBackup(System.Int32)",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.DeleteFile(System.String)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/system/backup"
+        ],
+        "id": "A1",
+        "text": "A caller deletes a backup by its numeric id; the backup file is removed from disk."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.GetBackup(System.Int32)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.DeleteBackup(System.Int32)"
+        ],
+        "id": "R1",
+        "text": "The id is looked up among all existing backups; if no backup matches, the request fails with Not Found."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.GetBackupId(NzbDrone.Core.Backup.Backup)",
+          "Sonarr.Common|M:NzbDrone.Common.Crypto.HashConverter.GetHashInt31(System.String)"
+        ],
+        "id": "R2",
+        "text": "A backup's id is a non-negative 31-bit hash of the text \"backup-{type}-{name}\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.GetBackupPath(NzbDrone.Core.Backup.Backup)"
+        ],
+        "id": "R3",
+        "text": "The backup file path is the backup type's folder combined with the backup name."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.GetBackupFolder(NzbDrone.Core.Backup.BackupType)"
+        ],
+        "id": "R4",
+        "text": "Each backup type's folder is a subfolder of the backup folder named after the lower-cased type."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.GetBackups"
+        ],
+        "id": "R5",
+        "text": "The list of backups is built from every backup type's folder, only for folders that exist, and each entry has name, type, size and last-write time."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.DeleteBackup(System.Int32)",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.FileExists(System.String)"
+        ],
+        "id": "R6",
+        "text": "If the backup file does not exist on disk, deletion is not attempted and Not Found is returned."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.DeleteBackup(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "On success the endpoint returns an empty object."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.DeleteBackup(System.Int32)",
+          "Sonarr.Http|M:Sonarr.Http.REST.NotFoundException.#ctor(System.Object)"
+        ],
+        "id": "S2",
+        "text": "When the backup or its file is not found, the endpoint responds with HTTP 404 Not Found."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.DeleteBackup(System.Int32)",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.DeleteFile(System.String)"
+        ],
+        "id": "E1",
+        "text": "The backup file is permanently deleted from disk."
+      }
+    ]
+  },
+  "title": "Delete system backup",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "Only the case of no match is shown to give Not Found (backup == null). SingleOrDefault with more than one match throws a different exception, so the code does not show that 'otherwise' means Not Found.",
+        "id": "F1",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Removed the claim that exactly one match is required; the rule now says only that no match gives Not Found.",
+        "statement": "R1",
+        "statementText": "The id is looked up among all existing backups, and it must match exactly one; otherwise the request fails with Not Found."
+      }
+    ]
+  }
+}
