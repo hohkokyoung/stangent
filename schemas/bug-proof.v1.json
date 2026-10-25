@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:bug-proof:v1",
+  "title": "A bug's proof (contract bug-proof v1, Phase 3)",
+  "description": "Whether a reproduction test fails on the ticket's expected result before any fix (D75, D76). Each attempt is kept with its hint, test, runs and outcome; the latest attempt is the current outcome. Stored in .stangent/tickets/<KEY>/bug-proof.json; the test itself goes into the repo's test project with the fix.",
+  "type": "object",
+  "required": ["schemaVersion", "key", "outcome", "attempts", "confirmedBy", "verification"],
+  "additionalProperties": false,
+  "definitions": {
+    "run": {
+      "type": "object",
+      "required": ["result"],
+      "additionalProperties": false,
+      "properties": {
+        "result": { "enum": ["failed-on-assertion", "failed-other", "passed", "timeout", "compile-error", "not-found", "error"] },
+        "message": { "type": "string" }, "file": { "type": ["string", "null"] }, "line": { "type": ["integer", "null"] },
+        "ms": { "type": "integer" }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "key": { "type": "string" },
+    "outcome": {
+      "description": "reproduced: fails on the named assertion (the developer confirms it matches the reported actual result); not-reproduced: the test passes, or the attempt hit its cap; not-reproduced-flaky: a Playwright test that passed on one of its 3 runs; not-provable: no unit or Playwright test can reach it here; failed: no valid test after the one retry.",
+      "enum": ["reproduced", "not-reproduced", "not-reproduced-flaky", "not-provable", "failed"]
+    },
+    "attempts": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["n", "outcome", "commit"],
+        "additionalProperties": false,
+        "properties": {
+          "n": { "type": "integer", "minimum": 1 },
+          "hint": { "type": ["string", "null"] },
+          "outcome": { "$ref": "#/properties/outcome" },
+          "reason": { "type": "string" },
+          "commit": { "description": "The commit the test ran on (with -dirty when the working tree had changes beyond the test).", "type": "string" },
+          "kind": { "enum": ["unit", "playwright"] },
+          "target": { "type": "string" },
+          "testFile": { "type": "string" }, "testName": { "type": "string" },
+          "assertion": { "type": "object" },
+          "expectedQuote": { "type": "string" },
+          "runs": { "type": "array", "items": { "$ref": "#/definitions/run" } },
+          "baseline": { "description": "Other tests in the target already failing at this commit: --verify allows only these.", "type": "array", "items": { "type": "string" } },
+          "usage": { "type": "object" },
+          "retries": { "type": "integer" },
+          "inputs": { "type": "string" }
+        }
+      }
+    },
+    "confirmedBy": { "description": "The developer who confirmed the failure matches the reported actual result.", "type": ["string", "null"] },
+    "verification": {
+      "description": "On the fix branch (stangent ticket prove --verify): the test passes and nothing else started failing (D18).",
+      "type": ["object", "null"],
+      "required": ["commit", "passed", "newFailures"],
+      "properties": {
+        "commit": { "type": "string" }, "passed": { "type": "boolean" },
+        "newFailures": { "type": "array", "items": { "type": "string" } }, "runs": { "type": "array", "items": { "$ref": "#/definitions/run" } }
+      }
+    }
+  }
+}

@@ -139,6 +139,8 @@ public sealed class StangentConfig
         public string? Seed { get; set; }
         public string? Url { get; set; }
         public int ReadySeconds { get; set; } = 120;
+        /// <summary>Where new Playwright reproduction specs go, relative to the repo (D76).</summary>
+        public string SpecDir { get; set; } = "e2e/stangent";
     }
 
     public sealed class ProveBudgetConfig

@@ -61,10 +61,11 @@ static class TicketCommands
             var key = pr.GetValue(KeyArg)!;
             var step = StepSpec.Named(pr.GetValue(stepOption)!);
             var usage = SpecCommands.ReadUsage(ctx, pr.GetValue(usageOption));
+            var claudeResult = pr.GetValue(usageOption) is { } file ? Cli.ReadJson(file) : null;
             var run = step.Name switch
             {
                 "points" => TicketPoints.Check(ctx.Repo, TicketContext.Load(ctx.Repo), key, usage, Who(ctx)),
-                _ => TicketSteps.Check(ctx, step, key, usage),
+                _ => TicketSteps.Check(ctx, step, key, usage, claudeResult),
             };
             return SpecCommands.Finish(run, key);
         }));

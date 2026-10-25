@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:bug-reproducer-output:v1",
+  "title": "What stangent-bug-reproducer returns (Phase 3, D75, D76)",
+  "description": "A reproduction test it wrote, or why the bug can't be reproduced here. Code then builds and runs the test: it must fail on the named assertion, and the quoted expected result must be in the ticket word for word.",
+  "type": "object",
+  "required": ["outcome"],
+  "additionalProperties": false,
+  "properties": {
+    "outcome": { "enum": ["test-written", "not-provable"] },
+    "target": { "description": "The id of the test target the test was written in, as the input lists it.", "type": "string" },
+    "testFile": { "description": "The test file, relative to the repo root.", "type": "string" },
+    "testName": { "description": "The test's full name: Namespace.Class.Method for .NET; the full title for Jest, Vitest or Playwright.", "type": "string" },
+    "assertion": {
+      "type": "object", "required": ["line", "text"], "additionalProperties": false,
+      "properties": {
+        "line": { "description": "The line in testFile where the assertion that checks the expected result starts.", "type": "integer", "minimum": 1 },
+        "text": { "description": "That line's code, copied exactly.", "type": "string", "minLength": 3 }
+      }
+    },
+    "expectedQuote": { "description": "The ticket's sentence giving the expected result, word for word.", "type": "string", "minLength": 3 },
+    "reason": { "description": "For not-provable: why no unit or Playwright test can reach this behaviour here.", "type": "string", "maxLength": 1000 },
+    "notes": { "type": "string", "maxLength": 2000 }
+  }
+}
