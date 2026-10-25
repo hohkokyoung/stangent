@@ -7,6 +7,10 @@
     <ProjectReference Include="..\Stangent.Spec\Stangent.Spec.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- What each ticket AI step is told (D60): part of its input hash. -->
+    <EmbeddedResource Include="Instructions\*.md" LogicalName="ticket-instructions/%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
     <InternalsVisibleTo Include="Stangent.Core.Tests" />
   </ItemGroup>
 </Project>
