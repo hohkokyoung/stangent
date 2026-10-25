@@ -1,0 +1,6 @@
+2026-10-25 19:40:12.331 ERROR [SeriesService] Failed to update series 12
+System.NullReferenceException: Object reference not set to an instance of an object.
+   at NzbDrone.Core.Tv.SeriesService.UpdateSeries(Series series, Boolean updateEpisodesToMatchSeason, Boolean publishUpdatedEvent) in ./Sonarr.Core/Tv/SeriesService.cs:line 214
+   at Sonarr.Api.V3.Series.SeriesController.UpdateSeries(SeriesResource seriesResource, Boolean moveFiles) in ./Sonarr.Api.V3/Series/SeriesController.cs:line 241
+   at lambda_method(Closure, Object, Object[])
+-- stangent spike attachment: a fake stack trace (D72). Safe to delete. --

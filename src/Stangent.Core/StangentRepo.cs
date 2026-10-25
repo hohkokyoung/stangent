@@ -24,6 +24,8 @@ public sealed class StangentConfig
     public SpecConfig Spec { get; set; } = new();
     /// <summary>Imported FSDs (Phase 2b, D16): where the original files are archived.</summary>
     public FsdConfig Fsd { get; set; } = new();
+    /// <summary>Jira tickets (Phase 3, D69–D82).</summary>
+    public TicketsConfig Tickets { get; set; } = new();
 
     public sealed class StoreConfig
     {
@@ -93,6 +95,58 @@ public sealed class StangentConfig
         public bool Git { get; set; }
     }
 
+    /// <summary>
+    /// Phase 3's settings (names are plan details, D73–D82). <see cref="Site"/> is what Jira calls the site
+    /// (<c>acme.atlassian.net</c>, or its cloudId). <see cref="Fields"/> maps a bug's parts (<c>steps</c>, <c>expected</c>,
+    /// <c>actual</c>, <c>version</c>, <c>environment</c>) to the Jira field that holds them, by its label.
+    /// </summary>
+    public sealed class TicketsConfig
+    {
+        public string? Site { get; set; }
+        /// <summary>Atlassian's MCP server (D82).</summary>
+        public string Endpoint { get; set; } = "https://mcp.atlassian.com/v2/mcp";
+        /// <summary><c>oauth</c> (a person's browser sign-in, the default) or <c>apiToken</c> (unattended runs, D73).</summary>
+        public string Auth { get; set; } = "oauth";
+        /// <summary>The account's email, for <c>apiToken</c>.</summary>
+        public string? Email { get; set; }
+        public List<string> Projects { get; set; } = [];
+        /// <summary>Issue types that are bugs (D75).</summary>
+        public List<string> BugTypes { get; set; } = ["Bug"];
+        public Dictionary<string, string> Fields { get; set; } = [];
+        /// <summary>The default tone of a draft comment: <c>internal</c> or <c>client</c> (D74).</summary>
+        public string Tone { get; set; } = "internal";
+        /// <summary>The bundle's size cap in characters (D71).</summary>
+        public int BundleChars { get; set; } = 40_000;
+        /// <summary>How much of one text attachment goes into the bundle (D72); the rest is a pointer to the file.</summary>
+        public int AttachmentChars { get; set; } = 8_000;
+        /// <summary>AI picks starting points when code finds none (D70). Off if D79's bundle bars fail.</summary>
+        public bool AiPoints { get; set; } = true;
+        /// <summary>A folder of saved MCP results (<c>&lt;KEY&gt;/raw</c>, <c>&lt;KEY&gt;/attachments</c>): tickets are read from it
+        /// instead of Jira, so a score replays exactly what was read (D77). Relative to the repo.</summary>
+        public string? Replay { get; set; }
+        /// <summary>How to build, start and seed the app for Playwright reproductions (D76). None: unit proof only.</summary>
+        public AppConfig? App { get; set; }
+        /// <summary>The cap per reproduction attempt (D81).</summary>
+        public ProveBudgetConfig ProveBudget { get; set; } = new();
+
+        public bool IsBugType(string type) => BugTypes.Any(t => string.Equals(t, type, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public sealed class AppConfig
+    {
+        public string? Build { get; set; }
+        public string? Start { get; set; }
+        public string? Seed { get; set; }
+        public string? Url { get; set; }
+        public int ReadySeconds { get; set; } = 120;
+    }
+
+    public sealed class ProveBudgetConfig
+    {
+        public double Usd { get; set; } = 1.0;
+        public int Turns { get; set; } = 15;
+    }
+
     /// <summary>Reserved in Phase 0; each adapter is built by the phase that first needs it (D24).</summary>
     public sealed class AdaptersConfig
     {
@@ -109,7 +163,7 @@ public sealed class StangentRepo
     public const string ConfigFile = "stangent.yaml";
 
     /// <summary>Lines <c>stangent init</c> adds to the repo's .gitignore: derived and run data, never committed (D7, D21; AI run files, D52).</summary>
-    public static readonly string[] GitIgnoreLines = [".stangent/index.sqlite*", ".stangent/telemetry/", ".stangent/spec/"];
+    public static readonly string[] GitIgnoreLines = [".stangent/index.sqlite*", ".stangent/telemetry/", ".stangent/spec/", ".stangent/tickets/"];
 
     static readonly IDeserializer Reader = new DeserializerBuilder()
         .WithNamingConvention(CamelCaseNamingConvention.Instance)

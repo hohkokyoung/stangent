@@ -45,7 +45,14 @@ public sealed record JiraConnectionOptions
 /// <summary>
 /// One connection to Atlassian's MCP server. Code calls its tools by name with named arguments (no AI in the path, D73).
 /// </summary>
-public sealed class JiraConnection : IAsyncDisposable
+/// <summary>What the Jira backend needs from a connection: so tests can stand in for Atlassian with canned results.</summary>
+public interface IJiraTools : IAsyncDisposable
+{
+    Task<ToolResult> CallAsync(string tool, IReadOnlyDictionary<string, object?> args, CancellationToken ct = default);
+    Task<DownloadedAttachment> DownloadAttachmentAsync(string cloudId, string attachmentId, string destination, CancellationToken ct = default);
+}
+
+public sealed class JiraConnection : IJiraTools
 {
     readonly McpClient client;
     JiraConnection(McpClient client) => this.client = client;

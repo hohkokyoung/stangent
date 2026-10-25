@@ -1,0 +1,9 @@
+{
+  "content": [
+    {
+      "text": "{\"data\":{\"startAt\":0,\"maxResults\":100,\"total\":3,\"isLast\":true,\"appliedContentFormat\":\"markdown\",\"comments\":[{\"id\":\"10000\",\"author\":{\"displayName\":\"Pat Reporter\"},\"body\":\"Setup comment for the stangent spike: the log in error.log shows the failure when saving series 12.\",\"created\":\"2026-10-25T20:22:20.214+0800\",\"updated\":\"2026-10-25T20:22:20.214+0800\",\"jsdPublic\":true},{\"id\":\"10001\",\"author\":{\"displayName\":\"Pat Reporter\"},\"body\":\"stangent spike: posted from C# through the Atlassian MCP (D73).\",\"created\":\"2026-10-25T20:23:33.033+0800\",\"updated\":\"2026-10-25T20:23:33.033+0800\",\"jsdPublic\":true},{\"id\":\"10002\",\"author\":{\"displayName\":\"Pat Reporter\"},\"body\":\"stangent spike: posted from C# through the Atlassian MCP with an API token (D73).\",\"created\":\"2026-10-25T20:35:53.345+0800\",\"updated\":\"2026-10-25T20:35:53.345+0800\",\"jsdPublic\":true}]}}",
+      "type": "text"
+    }
+  ],
+  "isError": false
+}
