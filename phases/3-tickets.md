@@ -8,7 +8,7 @@ provides: { ticket-bundle: 1, ticket-update: 1, bug-proof: 1 }
 
 # Phase 3 · Tickets
 
-**Approved 2026-10-25 (grilled as D69–D81). Step 0, the MCP spike, passed 2026-10-25 (Progress; D82).**
+**Approved 2026-10-25 (grilled as D69–D81). Step 0, the MCP spike, passed 2026-10-25 (D82); steps 1–7 built (Progress). Step 8, the Sonarr run, waits for the owner's go-ahead.**
 
 A Jira ticket becomes a checked context bundle for the developer's Claude Code (D69): the ticket and its attachments,
 where in the code it lands, the reference pages and FSD sections for those places, and the impact answer. A bug is
@@ -204,3 +204,24 @@ the owner's approval (SCRUM-7: one text attachment, a setup comment):
 - **Left to confirm:** the OAuth grant in use was approved with the server's full scope list (before the Jira-only
   filter existed). A sign-in with only D82's scopes is still to be run before Phase 3 is done. The API token was created
   with the Jira scopes only and passed.
+
+### Steps 1–7 · built · 2026-10-25
+Code in `src/Stangent.Tickets`, commands `stangent ticket pull | points | prepare | check | bundle | prove | draft | post`,
+the plugin's `/stangent:ticket` and `plugin/scripts/ticket-run.sh`, docs in `docs/tickets.md`. Contracts:
+`ticket-bundle` v1, `bug-proof` v1, `ticket-update` v1; AI-step schemas `point-picker-output`, `bug-reproducer-output`,
+`draft-output` v1. Tests need no LLM and no network (canned subagent outputs, replayed MCP results, a fake test runner).
+- **Step 1:** `IIssueTracker` with the Jira backend (MCP v2) and a replay backend over saved results; the parser reads
+  named fields only and fails on a changed shape; SCRUM-7's real output is the test fixture (personal details replaced).
+- **Step 2:** a live pull of SCRUM-7, then a replay of what it saved, gave byte-identical `ticket.json` (checked live).
+  A ticket's `source` is the tracker it lives in, also when replayed, so replayed bundles match live ones.
+- **Step 3:** code signals first; the point picker only when code finds none; a made-up quote and a non-existent page
+  are rejected (tested); an unchanged ticket makes no AI call (tested).
+- **Step 4:** the impact answer starts from several points through `ImpactAnalyzer.AnalyzeStarts` (plan detail): the
+  `impact-report` contract and its consumers are unchanged; the bundle's contract carries the answer.
+- **Step 5:** checked once by hand on a real xUnit project: an `Assert.Equal` failure is found at its line; a
+  `NullReferenceException` isn't counted as proof. *Plan detail:* the reproducer's turn cap is passed as `--max-turns`
+  (not in this Claude Code's `--help`; unverified until a real run) and also enforced by `check` from the result's
+  `num_turns`; the dollar cap is `--max-budget-usd`.
+- **Step 6:** posting records who and when; a draft is never posted twice without `--again`.
+- **Left open:** a sign-in with only D82's Jira scopes, to confirm they're enough (the spike's grant had the full list).
+
