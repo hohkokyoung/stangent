@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:ticket-bundle:v1",
+  "title": "A ticket's context bundle (contract ticket-bundle v1, Phase 3)",
+  "description": "Built by code from the pulled ticket, its starting points, the reference pages, the FSD links and the code graph (D69-D72). Read by the developer's Claude Code, and later by Phase 4's planner. No source code: pointers say which files and symbols to open. Same inputs give the same bytes.",
+  "type": "object",
+  "required": ["schemaVersion", "key", "source", "raw", "inputs", "ticket", "points", "pages", "sections", "impact", "pointers", "cap", "missingPages", "stalePages"],
+  "additionalProperties": false,
+  "definitions": {
+    "hashed": {
+      "type": "object", "required": ["name", "hash"], "additionalProperties": false,
+      "properties": { "name": { "type": "string" }, "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" } }
+    },
+    "point": {
+      "type": "object",
+      "required": ["kind", "id", "title", "signal", "evidence", "where", "by"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["page", "symbol"] },
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "signal": { "enum": ["stack-frame", "url", "title", "fsd-section", "symbol", "ai", "developer"] },
+        "evidence": { "description": "The ticket text that led here (for an AI pick, its quote).", "type": "string" },
+        "where": { "type": "string" },
+        "by": { "description": "code, ai, or the person who added it.", "type": "string" }
+      }
+    },
+    "statement": {
+      "type": "object", "required": ["id", "section", "text", "cites"], "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" }, "section": { "type": "string" }, "text": { "type": "string" },
+        "cites": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "key": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*-[0-9]+$" },
+    "source": { "description": "The tracker the ticket lives in.", "enum": ["jira"] },
+    "raw": { "description": "The raw tool results the ticket was read from, with their hashes (D73).", "type": "array", "items": { "$ref": "#/definitions/hashed" } },
+    "inputs": {
+      "type": "object", "required": ["ticket", "points", "commit"], "additionalProperties": false,
+      "properties": {
+        "ticket": { "type": "string" }, "points": { "type": "string" },
+        "commit": { "description": "The commit the code graph was built from.", "type": "string" }
+      }
+    },
+    "ticket": {
+      "type": "object",
+      "required": ["type", "status", "summary", "description", "comments", "links", "attachments", "isBug"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string" }, "status": { "type": "string" }, "summary": { "type": "string" },
+        "description": { "type": "string" }, "priority": { "type": ["string", "null"] }, "reporter": { "type": ["string", "null"] },
+        "labels": { "type": "array", "items": { "type": "string" } },
+        "comments": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["id", "author", "created", "text"], "additionalProperties": false,
+            "properties": { "id": { "type": "string" }, "author": { "type": "string" }, "created": { "type": "string" }, "text": { "type": "string" } }
+          }
+        },
+        "links": { "type": "array", "items": { "type": "object" } },
+        "attachments": {
+          "description": "Every attachment with its hash and kind: text in up to the cap, everything else a pointer to the saved file (D72).",
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["id", "fileName", "kind"], "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" }, "fileName": { "type": "string" }, "kind": { "enum": ["text", "docx", "image", "other"] },
+              "mimeType": { "type": ["string", "null"] }, "size": { "type": "integer" }, "hash": { "type": "string" }, "path": { "type": "string" },
+              "text": { "type": "string" }, "truncated": { "type": "boolean" }, "mentionedIn": { "type": "array", "items": { "type": "string" } },
+              "notDownloaded": { "type": "string" }
+            }
+          }
+        },
+        "isBug": { "type": "boolean" },
+        "bug": {
+          "type": "object", "required": ["missing"],
+          "properties": {
+            "steps": { "type": ["string", "null"] }, "expected": { "type": ["string", "null"] }, "actual": { "type": ["string", "null"] },
+            "version": { "type": ["string", "null"] }, "environment": { "type": ["string", "null"] },
+            "from": { "type": "object" }, "missing": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "points": { "description": "The starting points with their reasons and who chose them (D70).", "type": "array", "items": { "$ref": "#/definitions/point" } },
+    "changes": { "description": "Starting points the developer added or removed, in order.", "type": "array", "items": { "type": "object" } },
+    "pages": {
+      "description": "The chosen reference pages, highest ranked first: whole, or a pointer when the cap cut them.",
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["id", "kind", "title", "path", "state"], "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" }, "kind": { "type": "string" }, "title": { "type": "string" }, "path": { "type": "string" },
+          "state": { "enum": ["included", "cut", "missing"] },
+          "stale": { "type": "boolean" },
+          "statements": { "type": "array", "items": { "$ref": "#/definitions/statement" } }
+        }
+      }
+    },
+    "sections": {
+      "description": "FSD sections linked to the included pages, with their text and each link's state (D53).",
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["doc", "id", "title", "text", "links"], "additionalProperties": false,
+        "properties": {
+          "doc": { "type": "string" }, "id": { "type": "string" }, "title": { "type": "string" }, "text": { "type": "string" },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object", "required": ["state", "page", "decided"], "additionalProperties": false,
+              "properties": {
+                "state": { "enum": ["agree", "conflict", "gap", "undocumented"] }, "page": { "type": "string" },
+                "statement": { "type": ["string", "null"] }, "check": { "type": ["string", "null"] },
+                "decision": { "type": ["string", "null"] }, "decided": { "type": "boolean" },
+                "unconfirmed": { "description": "A finding (fsd.findings on) no person has decided.", "type": "boolean" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "impact": {
+      "description": "The impact answer from the starting points within 2 lines (D27, D71), shaped as impact-report v5 with change.kind 'starting-points'.",
+      "type": "object",
+      "required": ["change", "groups", "unresolved", "fsdSections", "maxDepth"]
+    },
+    "pointers": {
+      "description": "Files and symbols behind the pages and the impact answer: what the developer's Claude Code opens.",
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["id", "name", "kind", "from"], "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" }, "name": { "type": "string" }, "kind": { "type": "string" },
+          "file": { "type": ["string", "null"] }, "line": { "type": "integer" }, "from": { "type": "string" }
+        }
+      }
+    },
+    "cap": {
+      "type": "object", "required": ["limit", "chars", "cut", "over"], "additionalProperties": false,
+      "properties": {
+        "limit": { "type": "integer" }, "chars": { "description": "The bundle's size as compact JSON.", "type": "integer" },
+        "cut": { "description": "Pages turned into pointers to stay under the cap, lowest ranked first.", "type": "array", "items": { "type": "string" } },
+        "over": { "description": "Still over the cap with every page cut.", "type": "boolean" }
+      }
+    },
+    "missingPages": { "description": "Chosen pages with no written version: flagged, never generated here (D71).", "type": "array", "items": { "type": "string" } },
+    "stalePages": { "description": "Chosen pages whose inputs changed since they were written.", "type": "array", "items": { "type": "string" } },
+    "findings": { "description": "Whether FSD findings are on (fsd.findings, D68).", "type": "boolean" }
+  }
+}

@@ -195,7 +195,21 @@ public sealed class ImpactAnalyzer
         var starts = StartNodes(change, repoRoot);
         if (starts.Count == 0)
             throw new StangentException("not_found", $"Nothing in the graph matches {change.Kind} '{change.Value}'.", ExitCodes.NotFound);
+        return Report(change, starts, repoRoot, expand, maxDepth, fsdSections);
+    }
 
+    /// <summary>
+    /// The same answer from points chosen elsewhere (Phase 3's bundle: a ticket's starting points, D71). It isn't an
+    /// <c>impact-report</c> artifact: <c>change.kind</c> is the caller's label, so the bundle's contract carries it.
+    /// </summary>
+    public JsonObject AnalyzeStarts(IReadOnlyList<Node> starts, string kind, string value, string repoRoot, int? maxDepth = null, FsdSections? fsdSections = null)
+    {
+        if (starts.Count == 0) throw new StangentException("not_found", "No start points for the impact answer.", ExitCodes.NotFound);
+        return Report(new ChangeSpec(kind, value), [.. starts.DistinctBy(s => s.Id).OrderBy(s => s.Id, StringComparer.Ordinal)], repoRoot, null, maxDepth, fsdSections);
+    }
+
+    JsonObject Report(ChangeSpec change, IReadOnlyList<Node> starts, string repoRoot, string? expand, int? maxDepth, FsdSections? fsdSections)
+    {
         var reached = Walk(starts);
         if (maxDepth is { } limit)
             reached = reached.Where(r => r.Value.Depth <= limit).ToDictionary(r => r.Key, r => r.Value, StringComparer.Ordinal);
