@@ -191,6 +191,7 @@ graph.Subcommands.Add(import);
 SpecCommands.Add(root);
 FsdCommands.Add(root);
 JiraCommands.Add(root);
+TicketCommands.Add(root);
 
 return Cli.Execute(root, args, prettyOption);
 

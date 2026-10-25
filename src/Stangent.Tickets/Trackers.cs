@@ -11,6 +11,7 @@ public sealed class JiraTracker(StangentConfig.TicketsConfig settings, Func<Canc
 {
     IJiraTools? connection;
     public string Source => "jira";
+    public bool Replaying => false;
     string Site => settings.Site ?? throw new StangentException("no_jira_site", "Set tickets.site in stangent.yaml (e.g. acme.atlassian.net).", ExitCodes.Usage);
 
     async Task<IJiraTools> Connect(CancellationToken ct) => connection ??= await connect(ct);
@@ -77,7 +78,9 @@ public sealed class JiraTracker(StangentConfig.TicketsConfig settings, Func<Canc
 /// </summary>
 public sealed class ReplayTracker(string dir, IRawSink? sink = null) : IIssueTracker
 {
-    public string Source => "replay";
+    /// <summary>Saved results are Atlassian MCP results: the tickets live in Jira.</summary>
+    public string Source => "jira";
+    public bool Replaying => true;
 
     public Task<Ticket> GetAsync(string key, CancellationToken ct = default)
     {

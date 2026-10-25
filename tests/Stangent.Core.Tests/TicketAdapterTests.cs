@@ -180,7 +180,7 @@ public class TicketAdapterTests
         Assert.Equal(15, t.ProveBudget.Turns);
         Assert.True(t.AiPoints);
         Assert.Equal("internal", t.Tone);
-        Assert.Equal("jira", Trackers.Open(repo.Repo, new MemorySecretStore(), TextWriter.Null, null).Source);
+        Assert.False(Trackers.Open(repo.Repo, new MemorySecretStore(), TextWriter.Null, null).Replaying);
     }
 
     [Fact]

@@ -86,8 +86,11 @@ public sealed record PostedComment(string Key, string CommentId);
 /// </summary>
 public interface IIssueTracker : IAsyncDisposable
 {
-    /// <summary><c>jira</c> or <c>replay</c>: recorded in the bundle.</summary>
+    /// <summary>The tracker the ticket lives in (<c>jira</c>), recorded in the bundle. The same for a replay, so a replayed
+    /// bundle is byte-identical to the live one (D79).</summary>
     string Source { get; }
+    /// <summary>True when tickets come from saved results instead of the tracker itself (D77).</summary>
+    bool Replaying { get; }
     Task<Ticket> GetAsync(string key, CancellationToken ct = default);
     Task<SavedFile> DownloadAsync(Ticket ticket, TicketAttachment attachment, string destination, CancellationToken ct = default);
     /// <summary>Posts a comment under the signed-in person's own login (D74). Nothing else is ever written.</summary>
