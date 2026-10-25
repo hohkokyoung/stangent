@@ -7,6 +7,7 @@
     <Project Path="src/Stangent.Core/Stangent.Core.csproj" />
     <Project Path="src/Stangent.Graph/Stangent.Graph.csproj" />
     <Project Path="src/Stangent.Spec/Stangent.Spec.csproj" />
+    <Project Path="src/Stangent.Tickets/Stangent.Tickets.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Stangent.Benchmark.Tests/Stangent.Benchmark.Tests.csproj" />

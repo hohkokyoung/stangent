@@ -1,14 +1,14 @@
 ---
 phase: 3
 name: tickets
-status: planned
+status: in progress
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 5, reference-page: 1, source-document: 1, trace-links: 1 }
 provides: { ticket-bundle: 1, ticket-update: 1, bug-proof: 1 }
 ---
 
 # Phase 3 · Tickets
 
-**Approved 2026-10-25 (grilled as D69–D81). No code yet; building starts with the MCP spike (step 0).**
+**Approved 2026-10-25 (grilled as D69–D81). Step 0, the MCP spike, passed 2026-10-25 (Progress; D82).**
 
 A Jira ticket becomes a checked context bundle for the developer's Claude Code (D69): the ticket and its attachments,
 where in the code it lands, the reference pages and FSD sections for those places, and the impact answer. A bug is
@@ -149,7 +149,7 @@ before building on it.
   ~$10–20 for missing pages: about $55–65.
 
 ## Done when (D79's bars)
-- [ ] **Spike:** OAuth and API-token sign-in, read, attachment download and posting work from C# (D73).
+- [x] **Spike:** OAuth and API-token sign-in, read, attachment download and posting work from C# (D73, D82).
 - [ ] **Bundle: right place:** ≥ 70% of the 40 bugs have a file the fix changed among the starting points' files.
 - [ ] **Bundle: beats a keyword search:** that hit rate beats the baseline, the 95% range of the gain above zero.
 - [ ] **Grounded:** every starting point, quote and draft claim passes the code checks; tests show a made-up quote and
@@ -184,3 +184,23 @@ before building on it.
 - Jira Data Center; issue trackers other than Jira (the adapter leaves room, D24).
 - A dry run on one of the owner's real projects: after the Sonarr proof, checked by a person (as D56).
 - The dashboard (Phase 8).
+
+## Progress
+
+### Step 0 · the MCP spike (D73) · 2026-10-25 · passed
+From C# (`ModelContextProtocol.Core` 2.3.0) against `peachpersonal.atlassian.net`, on a test ticket created for it with
+the owner's approval (SCRUM-7: one text attachment, a setup comment):
+| Check | OAuth (browser) | API token (Basic) |
+|---|---|---|
+| Sign in; secret in the macOS Keychain; a new process signs in silently | ✅ | ✅ |
+| Read the ticket (summary, type, description, status), its comment and its attachment's metadata | ✅ | ✅ |
+| Download the attachment (`downloadJiraIssueAttachment` → short-lived URL → code) | ✅ byte-identical | ✅ byte-identical |
+| Post a comment | ✅ comment 10001 | ✅ comment 10002 |
+- **The endpoint is MCP v2, not v1** (D82): v1's 32 tools have no attachment download. Recorded as D82.
+- Built: `src/Stangent.Tickets` (`Jira/JiraConnection.cs`, `Secrets/SecretStore.cs`) and `stangent jira login | logout |
+  tools | call | download` (`src/Stangent.Cli/JiraCommands.cs`); these become the adapter's Jira backend (step 1).
+- Problems hit and fixed: the SDK's 60 s initialization timeout cut off the browser sign-in; the callback listened on
+  IPv6 only; the first keychain write leaked the v2 tokens into the session (D82's incident note; grant revoked).
+- **Left to confirm:** the OAuth grant in use was approved with the server's full scope list (before the Jira-only
+  filter existed). A sign-in with only D82's scopes is still to be run before Phase 3 is done. The API token was created
+  with the Jira scopes only and passed.

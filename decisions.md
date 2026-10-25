@@ -1121,6 +1121,7 @@ screenshot and one line).
 - **First step of the build is a spike:** sign in, read a ticket with comments and an attachment, and post a comment,
   from C#, locally and with an API token. If any of that fails, the question comes back to the owner before more is built.
 - Answers D2's open question.
+- *Refined by D82 (spike, 2026-10-25):* the endpoint is `/v2/mcp`; v1 has no attachment download.
 Rejected (the owner's call, against the recommendation): Jira's versioned REST API with an API token (a fixed,
 versioned contract, the same path locally and in CI); the plugin fetching through the developer's MCP login (an AI
 session in the fetch path, no unattended runs).
@@ -1278,6 +1279,32 @@ search" could hardly clear zero); running 5 tickets first to measure cost (the c
 **Why:** cut where the money is, and keep the bundle bars on 40 cases.
 **Cost:** the proof's ranges are wide (about ±18 points around 50%); a result near a bar is reported with its range,
 judged on the plain share as before; 10 not-bugs catch only gross failure.
+
+## D82 · Jira through Atlassian's MCP v2 (`/v2/mcp`), with Jira-only scopes and secrets in the OS keychain — 2026-10-25
+Refines D73, from the spike (Phase 3 step 0). The owner was told before the build went on.
+- **Endpoint `https://mcp.atlassian.com/v2/mcp`,** not `/v1/mcp` as D73 assumed. v1 serves an older set of 32 tools with
+  no attachment download and no `discover`/`execute*`; v2 has a few primary tools and the rest (~320 operations) behind
+  `discover`, run by name through `executeRead` / `executeWrite`. stangent calls operations by fixed name, so it never
+  needs `discover` at run time.
+- **The calls Phase 3 uses:** `getJiraIssue` with `view: "evidence"` (the default view drops the issue type and
+  comments), `executeRead` → `listJiraIssueComments` (paged) and `downloadJiraIssueAttachment` (a short-lived URL code
+  fetches; only https on an Atlassian host), `addOrEditJiraIssueComment` to post. Every one passed live, with OAuth and
+  with an API token, on SCRUM-7.
+- **OAuth on v2** goes through `auth.atlassian.com` with dynamic client registration, a fixed loopback redirect
+  (`http://127.0.0.1:47813/callback`) and its own consent. The server offers every product's scopes (delete, Bitbucket,
+  Loom…); stangent asks only for `read:jira:agent-interface`, `write:jira:agent-interface`, `search:jira:agent-interface`,
+  `read:me`, `read:account`, `email`, `offline_access`. API tokens get the same three Jira scopes.
+- **Secrets** (the token container with the refresh token and registered client; API tokens) live in the OS keychain
+  through the OS's own API (macOS Security framework, Windows Credential Manager; Linux `secret-tool` on stdin), never on a
+  command line, in a file or in an error message. Keychain account per endpoint (`oauth:mcp.atlassian.com/v2/mcp`).
+**Why:** v1 can't download attachments (D72), and Atlassian is moving tools to v2 (its changelog, 2026-10); asking for
+fewer scopes limits what a leaked token can do.
+**Cost:** v2's operations are reached by name through `execute*`, so a renamed operation fails at run time, not at
+`tools/list`; the adapter tests on saved results (D73) are what catch it. A broad consent given before the scope filter
+existed stays until it is revoked.
+- *Incident during the spike:* the first keychain write went through `security -i`, which rejected the long v2 token and
+  echoed it in its error, printing the tokens into the session. The owner revoked the grant; the code now uses the
+  Security framework and its errors carry only a status code.
 
 ## Open questions
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)

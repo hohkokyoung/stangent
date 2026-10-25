@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <!-- Jira through Atlassian's MCP server, called from code (D73). -->
+    <PackageReference Include="ModelContextProtocol.Core" />
+    <ProjectReference Include="..\Stangent.Core\Stangent.Core.csproj" />
+    <ProjectReference Include="..\Stangent.Graph\Stangent.Graph.csproj" />
+    <ProjectReference Include="..\Stangent.Spec\Stangent.Spec.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Stangent.Core.Tests" />
+  </ItemGroup>
+</Project>

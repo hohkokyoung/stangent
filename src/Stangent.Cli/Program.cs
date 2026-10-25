@@ -190,6 +190,7 @@ graph.Subcommands.Add(import);
 
 SpecCommands.Add(root);
 FsdCommands.Add(root);
+JiraCommands.Add(root);
 
 return Cli.Execute(root, args, prettyOption);
 
