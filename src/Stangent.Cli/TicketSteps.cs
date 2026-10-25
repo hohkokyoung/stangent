@@ -35,6 +35,29 @@ static class TicketSteps
             return Prove(ctx, key, pr.GetValue(hintOption));
         }));
         ticket.Subcommands.Add(prove);
+
+        var kindOption = new Option<string>("--kind") { Description = "questions (before work: missing details, clashes, a bug not reproduced) or resolution (from the merged PR).", Required = true };
+        var toneOption = new Option<string?>("--tone") { Description = "internal or client (default: tickets.tone). Client drafts may hold no code names or file paths (D74)." };
+        var prOption = new Option<string?>("--pr") { Description = "resolution: the merged PR's range, base..head." };
+        var prUrlOption = new Option<string?>("--pr-url") { Description = "resolution: a link to the PR, for the comment." };
+        var draft = new Command("draft", "Prepare a draft comment for the ticket: the AI words what code found; code checks every claim (D74).") { TicketCommands.KeyArg, kindOption, toneOption, prOption, prUrlOption };
+        draft.SetAction(pr => Cli.Run(pr, "ticket draft", ctx =>
+        {
+            var key = pr.GetValue(TicketCommands.KeyArg)!;
+            var step = TicketDrafts.Prepare(ctx.Repo, TicketContext.Load(ctx.Repo), key, pr.GetValue(kindOption)!, pr.GetValue(toneOption), pr.GetValue(prOption), pr.GetValue(prUrlOption));
+            return SpecCommands.Finish(step, key);
+        }));
+        ticket.Subcommands.Add(draft);
+
+        var draftArg = new Argument<string>("draft") { Description = "The draft: questions or resolution (with the default tone), questions-client, or a path to its .json." };
+        var againOption = new Option<bool>("--again") { Description = "Post a draft that was already posted." };
+        var post = new Command("post", "Post a checked draft under your own Jira login, and record it (D74). Nothing else is written to the ticket.") { TicketCommands.KeyArg, draftArg, againOption };
+        post.SetAction(pr => Cli.Run(pr, "ticket post", ctx => TicketCommands.Async(async () =>
+        {
+            await using var tracker = TicketCommands.Tracker(ctx);
+            return (JsonNode)await TicketDrafts.PostAsync(ctx.Repo, tracker, pr.GetValue(TicketCommands.KeyArg)!, pr.GetValue(draftArg)!, TicketCommands.Who(ctx), pr.GetValue(againOption), TimeProvider.System);
+        })));
+        ticket.Subcommands.Add(post);
     }
 
     static JsonNode Prove(CliContext ctx, string key, string? hint)
@@ -49,12 +72,14 @@ static class TicketSteps
     public static RunStep Prepare(CliContext ctx, StepSpec step, string key, ParseResult pr) => step.Name switch
     {
         "prove" => BugProof.Prepare(ctx.Repo, TicketContext.Load(ctx.Repo), key, null),
+        "questions" => TicketDrafts.Prepare(ctx.Repo, TicketContext.Load(ctx.Repo), key, "questions", null, null, null),
         _ => throw new Stangent.Core.StangentException("usage", $"--step {step.Name} isn't built yet.", Stangent.Core.ExitCodes.Usage),
     };
 
     public static RunStep Check(CliContext ctx, StepSpec step, string key, Usage? usage, JsonNode? claudeResult) => step.Name switch
     {
         "prove" => TicketCommands.Async(() => BugProof.CheckAsync(ctx.Repo, key, claudeResult, new ShellRunner())),
+        "questions" or "resolution" => TicketDrafts.Check(ctx.Repo, TicketContext.Load(ctx.Repo), key, step.Name, usage),
         _ => throw new Stangent.Core.StangentException("usage", $"--step {step.Name} isn't built yet.", Stangent.Core.ExitCodes.Usage),
     };
 }

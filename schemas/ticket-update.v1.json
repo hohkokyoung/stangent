@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:ticket-update:v1",
+  "title": "A draft or posted ticket comment (contract ticket-update v1, Phase 3)",
+  "description": "Drafted by AI, every claim checked by code, posted by a person under their own login (D74). Stored in .stangent/tickets/<KEY>/drafts/<kind>-<tone>.json with its Markdown beside it.",
+  "type": "object",
+  "required": ["schemaVersion", "key", "kind", "tone", "text", "claims", "inputs", "run", "posted"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "key": { "type": "string" },
+    "kind": { "enum": ["questions", "resolution"] },
+    "tone": { "enum": ["internal", "client"] },
+    "text": { "description": "What gets posted: the draft's text with its claim markers removed.", "type": "string" },
+    "claims": {
+      "description": "Each claim and what it links to, as checked.",
+      "type": "array",
+      "items": { "type": "object", "required": ["id", "links"], "properties": { "id": { "type": "string" }, "links": { "type": "array" } } }
+    },
+    "pr": { "description": "resolution: the PR's range and link.", "type": ["object", "null"] },
+    "inputs": { "description": "The hash of the writer's input: unchanged means no new AI call (D18).", "type": "string" },
+    "run": {
+      "type": "object", "required": ["calls"],
+      "properties": {
+        "model": { "type": "string" }, "calls": { "type": "integer" }, "inputTokens": { "type": "integer" }, "outputTokens": { "type": "integer" },
+        "cacheReadTokens": { "type": "integer" }, "cacheWriteTokens": { "type": "integer" }, "costUsd": { "type": "number" }, "ms": { "type": "integer" },
+        "retries": { "type": "integer" }
+      }
+    },
+    "posted": {
+      "description": "Null until a person posts it with `stangent ticket post`.",
+      "type": ["object", "null"],
+      "required": ["by", "at", "commentId"],
+      "properties": { "by": { "type": "string" }, "at": { "type": "string" }, "commentId": { "type": "string" } }
+    }
+  }
+}
