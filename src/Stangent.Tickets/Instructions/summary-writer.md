@@ -6,7 +6,7 @@ FSD sections reached, and the bug proof's outcome. Word them; don't add facts th
 
 Every claim is marked in the text (`[C1]`, `[C2]`…) and linked to what supports it:
 `{"kind":"file","file":…}` (a changed file), `{"kind":"pr"}`, `{"kind":"page","page":…,"statement":…,"quote":…}`,
-`{"kind":"fsd","doc":…,"section":…,"quote":…}`, `{"kind":"proof"}`, or `{"kind":"ticket","quote":…}`. Quotes are copied
+`{"kind":"fsd","doc":…,"section":…,"quote":…}`, `{"kind":"proof","outcome":"<the outcome as the input gives it>"}`, or `{"kind":"ticket","quote":…}`. Quotes are copied
 **word for word** from the input.
 
 Cover: what was wrong (from the ticket), what changed and where it shows (pages, FSD sections), how it was checked (the
@@ -14,5 +14,8 @@ proof: a test that failed before the fix and passes after), and anything the rep
 
 **Tone.** `internal`: for the team; name screens, sections, files and the PR. `client`: for a non-technical client;
 **no code names, class or method names, file paths, page ids or backticks**: describe what they'll see. Code checks this.
+
+**Every sentence that states something carries a marker**; code rejects one that doesn't. Only questions and a short
+greeting (four words or fewer) go without.
 
 Write one JSON object matching the output schema to the result file you were given, and nothing else.

@@ -1,7 +1,7 @@
 ---
 description: Turn a Jira ticket into a checked context bundle (Phase 3), then offer the bug proof and draft comments.
 argument-hint: "<KEY> [prove [hint] | questions [client] | resolution <base..head> [client] | post <draft>]"
-allowed-tools: Bash(stangent ticket:*), Bash(stangent jira login:*), Task, Read
+allowed-tools: Bash(stangent ticket:*), Bash(stangent jira login:*), Bash(*ticket-run.sh:*), Task, Read
 ---
 
 Work on a Jira ticket with stangent (D69–D82). Code decides every step; you only run the subagent each step names.
@@ -23,9 +23,15 @@ Never judge a quote, a page or a test yourself, never write a comment to Jira yo
 6. Offer next steps: for a bug, **prove it** before any fix; for any ticket, a **questions** draft.
 
 **Prove a bug** (`<KEY> prove [hint]`): this runs an AI step that writes a test and runs commands; say it costs up to
-the `tickets.proveBudget` cap (default $1) before you start. Run `stangent ticket prove <KEY> [--hint "<hint>"]`; if
-`result.next.action` isn't `none`, start `stangent-bug-reproducer` with exactly `result.next.prompt`, then
-`stangent ticket check <KEY> --step prove`, following `result.next`. Report the outcome from `result`/`bug-proof.json`:
+the `tickets.proveBudget` cap (default $1 and 15 turns per attempt) and get the user's yes before you start. Run it
+through the driver, which starts the reproducer headless under the permission rules and caps stangent sets (D60, D81);
+don't start `stangent-bug-reproducer` yourself:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/ticket-run.sh --prove [--hint "<hint>"] <KEY>
+```
+
+Then report the outcome from `.stangent/tickets/<KEY>/bug-proof.json`:
 - **reproduced**: show the test and its failure; ask the user to confirm it matches the reported actual result
   (`stangent ticket prove <KEY> --confirm`). The test is committed with the fix; after the fix,
   `stangent ticket prove <KEY> --verify` checks it passes and nothing else broke.

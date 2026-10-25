@@ -51,7 +51,7 @@ public class BugProofTests
         public FakeRunner Runner { get; } = new();
         public string Root => App.Root;
 
-        public Proof(string extra = "", bool testProject = true, string type = "Bug")
+        public Proof(string extra = "", bool testProject = true, string type = "Bug", string description = Description, string? packageJson = null)
         {
             App = new SpecApp($"version: 1\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n{extra}");
             App.Write("Core/Shop.Core.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\" />");
@@ -61,7 +61,8 @@ public class BugProofTests
                       <ItemGroup><PackageReference Include="xunit" /><ProjectReference Include="..\Core\Shop.Core.csproj" /></ItemGroup>
                     </Project>
                     """);
-            TicketFixtures.Make(Path.Combine(Root, "replay"), Key, type, "Big orders skip approval", Description);
+            if (packageJson is not null) App.Write("package.json", packageJson);
+            TicketFixtures.Make(Path.Combine(Root, "replay"), Key, type, "Big orders skip approval", description);
             var tracker = Trackers.Open(App.Repo, new MemorySecretStore(), TextWriter.Null, null);
             TicketPull.RunAsync(App.Repo, tracker, Key).GetAwaiter().GetResult();
             var ctx = TicketContext.Load(App.Repo);
@@ -71,10 +72,13 @@ public class BugProofTests
 
         public RunStep Prepare(string? hint = null) => BugProof.Prepare(App.Repo, TicketContext.Load(App.Repo), Key, hint);
 
+        public static JsonNode Ok(int turns = 3, double usd = 0.1) =>
+            JsonNode.Parse($$"""{"type":"result","subtype":"success","num_turns":{{turns}},"total_cost_usd":{{usd.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}""")!;
+
         public RunStep Check(string output, JsonNode? claude = null)
         {
             File.WriteAllText(Path.Combine(Root, ".stangent", "tickets", Key, "prove", "output.json"), output);
-            return BugProof.CheckAsync(App.Repo, Key, claude, Runner).GetAwaiter().GetResult();
+            return BugProof.CheckAsync(App.Repo, Key, claude ?? Ok(), Runner).GetAwaiter().GetResult();
         }
 
         public JsonObject Record => BugProof.Load(new TicketPaths(Root, Key))!;
@@ -105,7 +109,7 @@ public class BugProofTests
         Assert.Contains("Orders over 100 are rejected until someone approves them.", input);
         var limits = BugProof.DriverLimits(p.App.Repo, Key);
         var tools = limits["allowedTools"]!.AsArray().Select(t => (string)t!).ToList();
-        Assert.Contains("Edit(Tests/**)", tools);
+        Assert.Contains("Edit(Tests/**/*.cs)", tools);
         Assert.Contains("Bash(dotnet test 'Tests/Shop.Tests.csproj':*)", tools);
         Assert.DoesNotContain(tools, t => t.StartsWith("Edit(Core", StringComparison.Ordinal));
         Assert.Equal(15, (int)limits["maxTurns"]!);
@@ -151,6 +155,11 @@ public class BugProofTests
         using var p = new Proof();
         p.Prepare();
         p.App.Write(TestFile, TestCode);
+        Assert.Equal("usage", Assert.Throws<StangentException>(() =>
+        {
+            File.WriteAllText(Path.Combine(p.Root, ".stangent", "tickets", Key, "prove", "output.json"), Written());
+            BugProof.CheckAsync(p.App.Repo, Key, null, p.Runner, TestContext.Current.CancellationToken).GetAwaiter().GetResult();
+        }).Code);
         var crash = TestReportTests.Trx((TestName, "Failed", "System.NullReferenceException : Object reference not set to an instance of an object.",
             $"   at Shop.Core.OrderService..ctor() in /x/Core/OrderService.cs:line 3\n   at Shop.Tests.OrderTests.Rejects_orders_over_100() in /x/{TestFile}:line 8"));
         p.Runner.Tests.Enqueue(crash);
@@ -220,8 +229,11 @@ public class BugProofTests
     {
         using var p = new Proof();
         p.Prepare();
-        Assert.Equal("recorded", p.Check("""{"outcome":"not-provable","reason":"the total is only shown on screen"}""").Status);
+        const string giveUp = """{"outcome":"not-provable","reason":"the total is only shown on screen"}""";
+        Assert.Equal("retry", p.Check(giveUp).Status); // code found a test project: it's a judgment, so one retry first
+        Assert.Equal("recorded", p.Check(giveUp).Status);
         Assert.Equal("not-provable", (string?)p.Record["outcome"]);
+        Assert.StartsWith("the reproducer's judgment", (string?)p.Record["attempts"]![0]!["reason"]);
 
         using var q = new Proof(testProject: false);
         Assert.Equal("recorded", q.Prepare().Status);
@@ -242,6 +254,7 @@ public class BugProofTests
         p.Runner.All = TestReportTests.Trx(("Shop.Tests.Other.AlreadyBroken", "Failed", "x", ""));
         p.Check(Written());
 
+        Assert.Equal("prepared", p.Prepare("a newer attempt replaces the prepared state").Status);
         p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
         var ok = (await BugProof.VerifyAsync(p.App.Repo, Key, p.Runner, TestContext.Current.CancellationToken))["verification"]!;
         Assert.True((bool)ok["passed"]!);
@@ -283,12 +296,65 @@ public class BugProofTests
         Assert.Equal(3, p.Record["attempts"]![1]!["runs"]!.AsArray().Count);
     }
 
+    [Fact]
+    public void The_cap_covers_the_whole_attempt_and_a_retry_gets_only_what_is_left()
+    {
+        using var p = new Proof();
+        p.Prepare();
+        p.App.Write(TestFile, TestCode);
+        var retry = p.Check(Written(quote: "a sentence the ticket never says at all"), Proof.Ok(turns: 10, usd: 0.6));
+        Assert.Equal("retry", retry.Status);
+        var left = BugProof.DriverLimits(p.App.Repo, Key);
+        Assert.Equal(5, (int)left["maxTurns"]!);
+        Assert.Equal(0.4, (double)left["maxBudgetUsd"]!, 2);
+        Assert.Equal("recorded", p.Check(Written(), Proof.Ok(turns: 6, usd: 0.3)).Status);
+        Assert.Equal("not-reproduced", (string?)p.Record["outcome"]);
+        Assert.Equal("hit the cap: 16 of 15 turns", (string?)p.Record["attempts"]![0]!["reason"]);
+        Assert.Empty(p.Runner.Commands); // capped before anything ran
+    }
+
+    [Fact]
+    public void A_Vitest_package_at_the_repo_root_takes_a_test_anywhere_in_it()
+    {
+        using var p = new Proof(testProject: false, description: Description.Replace("Call `OrderService.Place` with 150.", "Press save in `OrdersPage.save` with 150."),
+            packageJson: """{"devDependencies":{"vitest":"3.2.4"}}""");
+        p.Prepare();
+        var tools = BugProof.DriverLimits(p.App.Repo, Key)["allowedTools"]!.AsArray().Select(t => (string)t!).ToList();
+        Assert.Contains("Edit(**/*.test.ts)", tools);
+        const string file = "web/src/orders.test.ts";
+        p.App.Write(file, "import { test, expect } from 'vitest';\ntest('rejects big orders', () => {\n  expect(place(150)).toBe('needs approval');\n});");
+        p.Runner.Vitest.Enqueue("""{"testResults":[{"assertionResults":[{"fullName":"rejects big orders","status":"failed","failureMessages":["Error: expect(received).toBe(expected)\n    at /repo/web/src/orders.test.ts:3:21"]}]}]}""");
+        p.Runner.Vitest.Enqueue("""{"testResults":[{"assertionResults":[{"fullName":"rejects big orders","status":"failed","failureMessages":["x"]}]}]}""");
+        var output = Written(line: 3, text: "expect(place(150)).toBe('needs approval');", file: "./" + file, target: "vitest:.").Replace(TestName, "rejects big orders");
+        Assert.Equal("recorded", p.Check(output).Status);
+        Assert.Equal("reproduced", (string?)p.Record["outcome"]);
+        Assert.Contains(p.Runner.Commands, c => c.Contains("-t 'rejects big orders$'", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Test_names_are_matched_literally_and_exactly()
+    {
+        var t = new TestTarget("x", TestTarget.Unit, "vitest", ".", null, ["*.test.ts"], []);
+        Assert.Contains(@"-t 'shows total \(with tax\)$'", t.TestCommand("a.test.ts", "shows total (with tax)", "r.json"));
+        var dotnet = new TestTarget("d", TestTarget.Unit, "dotnet", "T", "T/T.csproj", ["*.cs"], []);
+        Assert.Contains(@"FullyQualifiedName~N.C.Case\(1\)", dotnet.TestCommand(null, "N.C.Case(1)", "r.trx"));
+        var pw = new TestTarget("p", TestTarget.Playwright, "playwright", "e2e", null, ["*.spec.ts"], []);
+        Assert.Contains("--retries=0", pw.TestCommand("e2e/a.spec.ts", "a", "r.json"));
+        Assert.True(BugProof.SameTest("Shop.Tests.OrderTests.Rejects_over_100", "Shop.Tests.OrderTests.Rejects_over_100"));
+        Assert.True(BugProof.SameTest("Rejects_over_100(150)", "Shop.Tests.OrderTests.Rejects_over_100"));
+        Assert.False(BugProof.SameTest("Shop.Tests.OrderTests.Rejects_over_1000", "Shop.Tests.OrderTests.Rejects_over_100"));
+        Assert.False(BugProof.SameTest("Shop.Tests.Other.Rejects_over_100", "Shop.Tests.OrderTests.Rejects_over_100"));
+        Assert.False(new TestTarget("x", TestTarget.Unit, "vitest", ".", null, ["*.test.ts"], []).Allows("../outside/a.test.ts"));
+        Assert.False(new TestTarget("x", TestTarget.Unit, "vitest", ".", null, ["*.test.ts"], []).Allows("/etc/a.test.ts"));
+    }
+
     /// <summary>Stands in for dotnet and npx: canned reports written where the command asks for them.</summary>
     sealed class FakeRunner : ICommandRunner
     {
         public List<string> Commands { get; } = [];
         public Queue<string> Tests { get; } = new();
         public Queue<string> Playwright { get; } = new();
+        public Queue<string> Vitest { get; } = new();
         public string? All { get; set; }
         public string? BuildFails { get; set; }
         public int Started { get; private set; }
@@ -303,6 +369,11 @@ public class BugProofTests
                 var report = Regex.Match(command, "LogFileName=([^']+)").Groups[1].Value;
                 var content = command.Contains("--filter", StringComparison.Ordinal) ? Tests.Dequeue() : All;
                 if (content is not null) File.WriteAllText(report, content);
+                return Task.FromResult(new CommandResult(1, "", false, 10));
+            }
+            if (command.StartsWith("npx vitest", StringComparison.Ordinal))
+            {
+                File.WriteAllText(Regex.Match(command, "--outputFile='([^']+)'").Groups[1].Value, Vitest.Dequeue());
                 return Task.FromResult(new CommandResult(1, "", false, 10));
             }
             if (command.StartsWith("npx playwright", StringComparison.Ordinal))

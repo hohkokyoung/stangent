@@ -125,7 +125,8 @@ public static class JiraParser
 
     static List<TicketAttachment> Attachments(RawResult raw, JsonArray? list) =>
         [.. (list ?? []).OfType<JsonObject>().Select(a => new TicketAttachment(
-            (string?)a["id"] ?? throw Unexpected(raw.Name, "an attachment has no id"),
+            // Ids become folder names: Jira's are numeric, so anything else is refused.
+            (string?)a["id"] is { } id && System.Text.RegularExpressions.Regex.IsMatch(id, "^[0-9]+$") ? id : throw Unexpected(raw.Name, $"attachment id '{(string?)a["id"]}' isn't numeric"),
             (string?)a["filename"] ?? throw Unexpected(raw.Name, $"attachment {(string?)a["id"]} has no filename"),
             (string?)a["mimeType"],
             Int(a["size"]) ?? 0))];

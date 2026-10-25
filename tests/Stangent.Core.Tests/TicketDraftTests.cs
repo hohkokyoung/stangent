@@ -138,6 +138,15 @@ public class TicketDraftTests
     }
 
     [Fact]
+    public void A_sentence_that_states_something_without_a_claim_is_rejected()
+    {
+        using var d = new Draft();
+        d.Prepare();
+        var errors = d.Check(GoodQuestions.Replace("Thanks for the report.", "Thanks. The root cause is the order scheduler running twice.")).Errors!;
+        Assert.Contains(errors, e => e.Contains("\"The root cause is the order scheduler running twice.\" states something without a claim"));
+    }
+
+    [Fact]
     public void A_client_draft_may_not_hold_code_names_paths_or_ids()
     {
         using var d = new Draft();
@@ -163,7 +172,8 @@ public class TicketDraftTests
         d.Prepare();
         Assert.Contains(d.Check(GoodQuestions).Errors!, e => e.Contains("wasn't reproduced"));
         var withProof = GoodQuestions.Replace("which is right?", "which is right? Our test of an order of 150 passed [C4].")
-            .Replace("]}]}", "]},{\"id\":\"C4\",\"links\":[{\"kind\":\"proof\"}]}]}");
+            .Replace("]}]}", "]},{\"id\":\"C4\",\"links\":[{\"kind\":\"proof\",\"outcome\":\"not-reproduced\"}]}]}");
+        Assert.Contains(d.Check(withProof.Replace("not-reproduced", "reproduced")).Errors!, e => e.Contains("the proof's outcome is not-reproduced"));
         Assert.Equal("recorded", d.Check(withProof).Status);
     }
 

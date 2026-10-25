@@ -183,6 +183,28 @@ public class TicketAdapterTests
         Assert.False(Trackers.Open(repo.Repo, new MemorySecretStore(), TextWriter.Null, null).Replaying);
     }
 
+    [Theory]
+    [InlineData("https://evil.example/mcp")]
+    [InlineData("http://mcp.atlassian.com/v2/mcp")]
+    [InlineData("https://mcp.atlassian.com.evil.example/v2/mcp")]
+    public async Task A_token_is_never_sent_to_an_endpoint_outside_Atlassian(string endpoint)
+    {
+        var secrets = new MemorySecretStore();
+        secrets.Set(JiraConnectionOptions.KeychainService, "token:a@b.c", "secret");
+        var options = new JiraConnectionOptions { Endpoint = new Uri(endpoint), Auth = JiraAuth.ApiToken, Email = "a@b.c", OpenBrowser = null };
+        var e = await Assert.ThrowsAsync<StangentException>(() => JiraConnection.OpenAsync(options, secrets, TextWriter.Null, TestContext.Current.CancellationToken));
+        Assert.Equal("untrusted_endpoint", e.Code);
+    }
+
+    [Fact]
+    public void An_attachment_id_that_isnt_numeric_is_refused()
+    {
+        var raw = Edit(Fixture(JiraParser.IssueTool), d => d["data"]!["fields"]!["attachment"]![0]!["id"] = "../../etc");
+        var e = Assert.Throws<StangentException>(() => JiraParser.Parse(raw, []));
+        Assert.Equal("jira_unexpected_output", e.Code);
+        Assert.Contains("isn't numeric", e.Message);
+    }
+
     [Fact]
     public async Task The_keychain_token_cache_keeps_the_refresh_token_and_client_across_processes()
     {

@@ -19,11 +19,11 @@ public sealed record TestTarget(string Id, string Kind, string Runner, string Di
     public string TestCommand(string? file, string? name, string report, bool vstest = true) => Runner switch
     {
         "dotnet" => vstest
-            ? $"dotnet test {Quote(Project!)}{(name is null ? "" : $" --filter {Quote("FullyQualifiedName~" + name)}")} --logger {Quote("trx;LogFileName=" + report)}"
+            ? $"dotnet test {Quote(Project!)}{(name is null ? "" : $" --filter {Quote("FullyQualifiedName~" + FilterEscape(name))}")} --logger {Quote("trx;LogFileName=" + report)}"
             : $"dotnet test --project {Quote(Project!)}{(name is null ? "" : $" --filter-method {Quote(name)}")} -- --report-trx --report-trx-filename {Quote(Path.GetFileName(report))} --results-directory {Quote(Path.GetDirectoryName(report)!)}",
-        "vitest" => $"npx vitest run{(file is null ? "" : " " + Quote(file))}{(name is null ? "" : $" -t {Quote(name)}")} --reporter=json --outputFile={Quote(report)}",
-        "jest" => $"npx jest{(file is null ? "" : " " + Quote(file))}{(name is null ? "" : $" -t {Quote(name)}")} --json --outputFile={Quote(report)}",
-        "playwright" => $"npx playwright test{(file is null ? "" : " " + Quote(file))}{(name is null ? "" : $" -g {Quote(name)}")} --reporter=json",
+        "vitest" => $"npx vitest run{(file is null ? "" : " " + Quote(file))}{(name is null ? "" : $" -t {Quote(Anchored(name))}")} --reporter=json --outputFile={Quote(report)}",
+        "jest" => $"npx jest{(file is null ? "" : " " + Quote(file))}{(name is null ? "" : $" -t {Quote(Anchored(name))}")} --json --outputFile={Quote(report)}",
+        "playwright" => $"npx playwright test{(file is null ? "" : " " + Quote(file))}{(name is null ? "" : $" -g {Quote(RegexEscape(name))}")} --retries=0 --reporter=json",
         _ => throw new StangentException("usage", $"Unknown runner {Runner}."),
     };
 
@@ -39,14 +39,37 @@ public sealed record TestTarget(string Id, string Kind, string Runner, string Di
     public static TestTarget FromJson(JsonNode n) => new((string)n["id"]!, (string)n["kind"]!, (string)n["runner"]!, (string)n["dir"]!, (string?)n["project"],
         [.. n["patterns"]!.AsArray().Select(p => (string)p!)], [.. n["covers"]!.AsArray().Select(c => (string)c!)]);
 
+    /// <summary>The repo root is written <c>.</c>.</summary>
+    public bool AtRoot => Dir is "." or "";
+
     /// <summary>A path the reproducer wrote: inside <see cref="Dir"/> and matching one of <see cref="Patterns"/>.</summary>
     public bool Allows(string relativeFile)
     {
-        var f = relativeFile.Replace('\\', '/');
-        if (f.Contains("../", StringComparison.Ordinal) || !f.StartsWith(Dir.TrimEnd('/') + "/", StringComparison.Ordinal)) return false;
+        var f = Normalize(relativeFile);
+        if (f.Length == 0 || f.StartsWith('/') || f.Split('/').Contains("..")) return false;
+        if (!AtRoot && !f.StartsWith(Dir.TrimEnd('/') + "/", StringComparison.Ordinal)) return false;
         var name = Path.GetFileName(f);
         return Patterns.Any(p => Regex.IsMatch(name, "^" + Regex.Escape(p).Replace("\\*", ".*") + "$", RegexOptions.IgnoreCase));
     }
+
+    /// <summary>A repo-relative path as the reproducer may write it: slashes forward, one leading <c>./</c> dropped.</summary>
+    public static string Normalize(string path)
+    {
+        var f = path.Replace('\\', '/');
+        while (f.StartsWith("./", StringComparison.Ordinal)) f = f[2..];
+        return f;
+    }
+
+    /// <summary>The edit rules for the driver (D60): each file pattern under the target's folder.</summary>
+    public IEnumerable<string> EditRules() => Patterns.Select(p => AtRoot ? $"Edit(**/{p})" : $"Edit({Dir.TrimEnd('/')}/**/{p})");
+
+    /// <summary>VSTest's --filter treats <c>\ ( ) &amp; | = ! ~</c> as syntax; a backslash makes them literal.</summary>
+    static string FilterEscape(string name) => System.Text.RegularExpressions.Regex.Replace(name, @"[\\()&|=!~]", m => "\\" + m.Value);
+
+    /// <summary>Jest's -t, Vitest's -t and Playwright's -g are regular expressions: a title is matched literally.</summary>
+    static string RegexEscape(string name) => System.Text.RegularExpressions.Regex.Replace(name, @"[\\^$.*+?()\[\]{}|/]", m => "\\" + m.Value);
+
+    static string Anchored(string name) => RegexEscape(name) + "$";
 
     static string Quote(string s) => "'" + s.Replace("'", "'\\''") + "'";
 }
@@ -83,7 +106,7 @@ public static partial class TestTargets
             foreach (var r in refs[test].ToList()) reached.UnionWith(refs.GetValueOrDefault(r) ?? []);
             var covers = projects.Where(reached.Contains).Order(StringComparer.Ordinal).ToList();
             if (covers.Count == 0) continue;
-            var dir = Path.GetDirectoryName(test)!.Replace('\\', '/');
+            var dir = Path.GetDirectoryName(test)!.Replace('\\', '/') is { Length: > 0 } d ? d : ".";
             targets.Add(new TestTarget("dotnet:" + test, TestTarget.Unit, "dotnet", dir, test, ["*.cs"], covers));
         }
 

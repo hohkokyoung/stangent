@@ -26,7 +26,8 @@
                 "doc": { "description": "fsd: the document id.", "type": "string" },
                 "section": { "description": "fsd: the section id.", "type": "string" },
                 "file": { "description": "file: a file the PR changed, relative to the repo root.", "type": "string" },
-                "field": { "description": "missing: the bug field that's missing (steps, expected, actual, version, environment).", "type": "string" }
+                "field": { "description": "missing: the bug field that's missing (steps, expected, actual, version, environment).", "type": "string" },
+                "outcome": { "description": "proof: the outcome the claim states, exactly as the input gives it.", "type": "string" }
               }
             }
           }

@@ -69,7 +69,7 @@ public static class BugProof
         var tools = new List<string> { "Read", "Glob", "Grep", $"Edit({paths.Relative(AiStep.Work(paths, StepSpec.Prove))}/**)" };
         foreach (var t in targets)
         {
-            tools.Add($"Edit({t.Dir}/**)");
+            tools.AddRange(t.EditRules());
             if (t.BuildCommand is { } build) tools.Add($"Bash({build}:*)");
             tools.Add(t.Runner switch
             {
@@ -80,11 +80,15 @@ public static class BugProof
             });
             if (t.Runner is "vitest" or "jest") tools.Add($"Bash(cd {t.Dir})");
         }
+        // What's left of the attempt's cap: a retry doesn't get a fresh one (D81).
         var budget = repo.Config.Tickets.ProveBudget;
+        var spent = Usage.FromJson(state["usage"]).CostUsd;
+        var turns = (int?)state["turns"] ?? 0;
         return new JsonObject
         {
             ["allowedTools"] = new JsonArray([.. tools.Distinct().Select(x => (JsonNode)x)]),
-            ["permissionMode"] = "dontAsk", ["maxTurns"] = budget.Turns, ["maxBudgetUsd"] = budget.Usd, ["multiTurn"] = true,
+            ["permissionMode"] = "dontAsk", ["maxTurns"] = Math.Max(1, budget.Turns - turns),
+            ["maxBudgetUsd"] = Math.Max(0.01, Math.Round(budget.Usd - spent, 2)), ["multiTurn"] = true,
         };
     }
 
@@ -142,20 +146,31 @@ public static class BugProof
         var paths = new TicketPaths(repo.Root, key);
         var step = StepSpec.Prove;
         var state = AiStep.State(paths, step);
-        var usage = claudeResult is null ? null : Usage.FromClaudeResult(claudeResult);
+        // The cap is per attempt (D81), first call and retry together, so the reproducer's own result is required.
+        if (claudeResult is not JsonObject result)
+            throw new StangentException("usage", "check --step prove needs --usage <Claude Code's JSON result>: the attempt's turn and cost cap is enforced from it (D81).", ExitCodes.Usage);
+        var usage = Usage.FromClaudeResult(result);
+        state["turns"] = ((int?)state["turns"] ?? 0) + (result["num_turns"] is JsonValue nt && nt.TryGetValue<int>(out var n) ? n : 0);
         var targets = state["targets"]!.AsArray().Select(t => TestTarget.FromJson(t!)).ToList();
         var attempt = new JsonObject { ["n"] = (int)state["attempt"]!, ["hint"] = state["hint"]?.DeepClone(), ["inputs"] = state["inputs"]!.DeepClone() };
 
         // D81: an attempt that stops at its cap is "not reproduced".
-        if (CapHit(repo, claudeResult) is { } cap)
+        if (CapHit(repo, (string?)result["subtype"], Usage.FromJson(state["usage"]).Add(usage).CostUsd, (int)state["turns"]!) is { } cap)
         {
-            state["usage"] = Usage.FromJson(state["usage"]).Add(usage ?? Usage.None).ToJson();
+            state["usage"] = Usage.FromJson(state["usage"]).Add(usage).ToJson();
             return Finish(repo, paths, state, attempt, "not-reproduced", cap, null);
         }
 
         var (output, errors) = AiStep.Read(paths, step, state, usage);
+        // Code found test targets, so "not provable" is the reproducer's judgment, not a fact: it gets the one retry, and
+        // if it says so again, it's recorded labelled as its judgment.
         if (output is not null && (string)output["outcome"]! == "not-provable")
-            return Finish(repo, paths, state, attempt, "not-provable", (string?)output["reason"] ?? "the reproducer found no way to reach it", null);
+        {
+            var reason = (string?)output["reason"] ?? "no reason given";
+            if (AiStep.Retry(paths, step, state, [$"Code found test targets ({string.Join(", ", targets.Select(t => t.Id))}). Write a test in one of them; answer not-provable again only if none can reach the behaviour, saying why. You said: {reason}"]) is { } again)
+                return again;
+            return Finish(repo, paths, state, attempt, "not-provable", $"the reproducer's judgment (code found test targets): {reason}", null);
+        }
 
         TestTarget? target = null;
         string? testFile = null;
@@ -167,9 +182,9 @@ public static class BugProof
             if (errors.Count == 0)
             {
                 target = targets.FirstOrDefault(t => t.Id == (string)output["target"]!);
-                testFile = ((string)output["testFile"]!).Replace('\\', '/').TrimStart('.', '/');
+                testFile = TestTarget.Normalize((string)output["testFile"]!);
                 if (target is null) errors.Add($"target `{output["target"]}` isn't one of the test targets in the input.");
-                else if (!target.Allows(testFile)) errors.Add($"`{testFile}` isn't a test file stangent lets you write: it must be under `{target.Dir}/` and match {string.Join(", ", target.Patterns)}.");
+                else if (!target.Allows(testFile)) errors.Add($"`{testFile}` isn't a test file stangent lets you write: it must be under `{(target.AtRoot ? "the repo" : target.Dir + "/")}`, without `..`, and match {string.Join(", ", target.Patterns)}.");
                 else if (!System.IO.File.Exists(Path.Combine(repo.Root, testFile))) errors.Add($"`{testFile}` doesn't exist.");
                 else
                 {
@@ -192,11 +207,18 @@ public static class BugProof
         {
             attempt["kind"] = target!.Kind;
             attempt["target"] = target.Id;
+            attempt["targetSpec"] = target.ToJson();
             attempt["testFile"] = testFile;
             attempt["testName"] = (string)output!["testName"]!;
             attempt["assertion"] = output["assertion"]!.DeepClone();
             attempt["expectedQuote"] = (string)output["expectedQuote"]!;
-            var results = await RunTest(repo, paths, target, testFile!, (string)output["testName"]!, span, runner, target.Kind == TestTarget.Playwright ? PlaywrightRuns : 1, ct);
+            List<JsonObject> results;
+            try { results = await RunTest(repo, paths, target, testFile!, (string)output["testName"]!, span, runner, target.Kind == TestTarget.Playwright ? PlaywrightRuns : 1, ct); }
+            catch (StangentException e) when (e.Code.StartsWith("app_", StringComparison.Ordinal))
+            {
+                // The app didn't build, start or seed: not the test's fault, and not something a retry fixes.
+                return Finish(repo, paths, state, attempt, "failed", e.Message, null);
+            }
             foreach (var r in results) runs.Add(r.DeepClone());
             var kinds = results.Select(r => (string)r["result"]!).ToList();
             if (kinds.All(k => k == "failed-on-assertion") && results.Select(r => (int?)r["line"]).Distinct().Count() == 1) outcome = "reproduced";
@@ -283,8 +305,8 @@ public static class BugProof
         var latest = Latest(proof)!;
         if ((string)proof["outcome"]! != "reproduced")
             throw new StangentException("not_reproduced", $"{key}'s proof is {(string)proof["outcome"]!}: there's no failing test to verify the fix with.", ExitCodes.Usage);
-        var state = AiStep.State(paths, StepSpec.Prove);
-        var target = state["targets"]!.AsArray().Select(t => TestTarget.FromJson(t!)).First(t => t.Id == (string)latest["target"]!);
+        var target = latest["targetSpec"] is JsonObject spec ? TestTarget.FromJson(spec)
+            : throw new StangentException("no_proof", $"{key}'s reproduced attempt has no recorded test target; prove it again.", ExitCodes.NotFound);
         var testFile = (string)latest["testFile"]!;
         var lines = System.IO.File.Exists(Path.Combine(repo.Root, testFile)) ? System.IO.File.ReadAllLines(Path.Combine(repo.Root, testFile)) : [];
         var line = (int)latest["assertion"]!["line"]!;
@@ -358,10 +380,17 @@ public static class BugProof
     };
 
     /// <summary>A report's name is the test's: the full name, or ends with its last part (NUnit and TRX vary).</summary>
-    static bool SameTest(string reported, string testName) =>
-        reported == testName || reported.StartsWith(testName + "(", StringComparison.Ordinal) || testName.EndsWith("." + reported, StringComparison.Ordinal)
-        || reported.EndsWith(" " + testName, StringComparison.Ordinal) || reported.EndsWith("." + testName.Split('.')[^1], StringComparison.Ordinal)
-        || reported.Contains(testName, StringComparison.Ordinal);
+    /// <summary>A report's name is the test's: the same full name, the same with a parameter list (<c>Name(1)</c>), the
+    /// same method name alone (some TRX writers), or a Jest/Playwright full title ending in it. Never a prefix:
+    /// <c>Rejects_over_1000</c> isn't <c>Rejects_over_100</c>.</summary>
+    public static bool SameTest(string reported, string testName)
+    {
+        static string Bare(string n) => n.Contains('(') ? n[..n.IndexOf('(')] : n;
+        var r = Bare(reported);
+        var last = testName.Split('.')[^1];
+        return r == testName || r == last || reported.EndsWith(" " + testName, StringComparison.Ordinal)
+            || (r.EndsWith("." + last, StringComparison.Ordinal) && testName.EndsWith(r, StringComparison.Ordinal));
+    }
 
     static async Task<List<string>> FailingTests(StangentRepo repo, TicketPaths paths, TestTarget target, ICommandRunner runner, CancellationToken ct)
     {
@@ -425,16 +454,14 @@ public static class BugProof
         return TicketText.From(pulled).Quotable + "\n\n" + string.Join("\n\n", parts);
     }
 
-    /// <summary>A capped attempt (D81): Claude Code stopped at its turn or budget limit, or spent past the budget.</summary>
-    static string? CapHit(StangentRepo repo, JsonNode? result)
+    /// <summary>A capped attempt (D81): Claude Code stopped at its turn or budget limit, or the attempt's calls together
+    /// went past the turns or dollars allowed.</summary>
+    static string? CapHit(StangentRepo repo, string? subtype, double spentUsd, int turns)
     {
-        if (result is not JsonObject o) return null;
         var budget = repo.Config.Tickets.ProveBudget;
-        var subtype = (string?)o["subtype"] ?? "";
-        var cost = Usage.FromClaudeResult(o).CostUsd;
-        var turns = o["num_turns"] is JsonValue t && t.TryGetValue<int>(out var n) ? n : 0;
-        if (subtype.Contains("max_turns", StringComparison.Ordinal) || turns > budget.Turns) return $"hit the cap: {Math.Max(turns, budget.Turns)} turns";
-        if (subtype.Contains("budget", StringComparison.Ordinal) || cost > budget.Usd) return $"hit the cap: ${cost:0.00} of ${budget.Usd:0.00}";
+        subtype ??= "";
+        if (subtype.Contains("max_turns", StringComparison.Ordinal) || turns > budget.Turns) return $"hit the cap: {turns} of {budget.Turns} turns";
+        if (subtype.Contains("budget", StringComparison.Ordinal) || spentUsd > budget.Usd) return $"hit the cap: ${spentUsd:0.00} of ${budget.Usd:0.00}";
         return null;
     }
 

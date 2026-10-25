@@ -225,3 +225,22 @@ the plugin's `/stangent:ticket` and `plugin/scripts/ticket-run.sh`, docs in `doc
 - **Step 6:** posting records who and when; a draft is never posted twice without `--again`.
 - **Left open:** a sign-in with only D82's Jira scopes, to confirm they're enough (the spike's grant had the full list).
 
+### Fresh review of steps 1–7 (D61) · 2026-10-25
+A separate agent with a fresh context reviewed `7b5526f..95dfe40` against this plan and D18, D60, D69–D82. All 13
+findings were checked against the code and fixed; none was rejected. Each has a test that fails without the fix.
+| # | Finding | Fix |
+|---|---|---|
+| 1 | A Jest/Vitest package (or test project) at the repo root could never accept a test file | `.` targets accept any relative path without `..`; only a leading `./` is dropped |
+| 2 | The $1 / 15-turn cap applied per call, so a retry got a fresh one (D81) | Turns and cost summed over the attempt; a retry gets what's left (`next.limits` on the retry) |
+| 3 | Interactively, the reproducer ran without the permission rules or caps | `/stangent:ticket` runs it through `ticket-run.sh`; `check --step prove` requires `--usage` |
+| 4 | An API token went to whatever `tickets.endpoint` a repo named | Only https Atlassian hosts are accepted, for both sign-ins |
+| 5 | Unmarked sentences and a false proof claim passed a draft's checks | Every sentence that states something needs a claim; a proof link names the outcome, checked |
+| 6 | The AI's "not provable" was final with no check, though code found targets | One retry first; if repeated, recorded labelled as the reproducer's judgment |
+| 7 | Playwright's own retries could turn a flaky test into "reproduced" | `--retries=0` |
+| 8 | Test names went unescaped into regex and VSTest filters | Escaped (`-t` anchored at the end) |
+| 9 | Name matching by substring (`…_100` matched `…_1000`) | Exact full name, parameter list or method name |
+| 10 | A moved issue's files went under one key and were looked up under another | Files stay under the key asked for; Jira's key is recorded as `jiraKey` |
+| 11 | Attachment ids from a replay folder could escape the ticket folder | Ids must be numeric |
+| 12 | Attachment downloads followed redirects anywhere | Redirects followed by hand, Atlassian hosts only |
+| 13 | `--verify` broke after a newer `--hint`; an app that didn't start left no record | The attempt keeps its target; app failures are recorded as `failed` |
+

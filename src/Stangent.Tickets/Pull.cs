@@ -46,6 +46,9 @@ public static partial class TicketPull
         // A live read replaces what was saved before; a replay may be reading this very folder, so it's left alone.
         if (!tracker.Replaying && Directory.Exists(paths.Raw)) Directory.Delete(paths.Raw, recursive: true);
         var ticket = await tracker.GetAsync(paths.Key, ct);
+        // A moved issue answers with its new key: files stay under the key asked for, and Jira's is recorded beside it.
+        var jiraKey = ticket.Key;
+        ticket = ticket with { Key = paths.Key };
         var settings = repo.Config.Tickets;
 
         var description = ticket.DescriptionFormat == "html" ? HtmlToText(ticket.Description) : ticket.Description;
@@ -61,6 +64,7 @@ public static partial class TicketPull
             ["schemaVersion"] = 1,
             ["key"] = ticket.Key,
             ["source"] = tracker.Source,
+            ["jiraKey"] = jiraKey == paths.Key ? null : jiraKey,
             ["site"] = settings.Site,
             ["raw"] = new JsonArray([.. ticket.Raw.Select(r => (JsonNode)new JsonObject { ["name"] = r.Name, ["hash"] = r.Hash })]),
             ["ticket"] = Without(ticket.ToJson(), "raw", "description", "comments"),

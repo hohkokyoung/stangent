@@ -39,6 +39,7 @@
           "commit": { "description": "The commit the test ran on (with -dirty when the working tree had changes beyond the test).", "type": "string" },
           "kind": { "enum": ["unit", "playwright"] },
           "target": { "type": "string" },
+          "targetSpec": { "description": "The test target as it was, so --verify runs the same commands.", "type": "object" },
           "testFile": { "type": "string" }, "testName": { "type": "string" },
           "assertion": { "type": "object" },
           "expectedQuote": { "type": "string" },

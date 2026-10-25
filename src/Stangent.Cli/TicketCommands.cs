@@ -67,6 +67,13 @@ static class TicketCommands
                 "points" => TicketPoints.Check(ctx.Repo, TicketContext.Load(ctx.Repo), key, usage, Who(ctx)),
                 _ => TicketSteps.Check(ctx, step, key, usage, claudeResult),
             };
+            // A reproducer's retry runs under what's left of the attempt's cap (D81).
+            if (step.Name == "prove" && run.Status == "retry")
+            {
+                var retry = run.ToJson(key);
+                retry["next"]!["limits"] = Stangent.Tickets.Proof.BugProof.DriverLimits(ctx.Repo, key);
+                throw new CheckFailed("check_failed", $"{key}: the code check failed; the reproducer gets one retry with the errors.", retry);
+            }
             return SpecCommands.Finish(run, key);
         }));
         ticket.Subcommands.Add(check);

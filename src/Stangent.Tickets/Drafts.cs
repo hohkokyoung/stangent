@@ -181,6 +181,9 @@ public static partial class TicketDrafts
         foreach (var id in ids.Where(i => !text.Contains($"[{i}]", StringComparison.Ordinal))) errors.Add($"claim {id} isn't marked in the text: put [{id}] where it's made.");
         foreach (Match m in Regex.Matches(text, @"\[(C\d+)\]"))
             if (!ids.Contains(m.Groups[1].Value)) errors.Add($"the text marks [{m.Groups[1].Value}] but there's no such claim.");
+        // Every sentence that states something carries a claim (D74): only questions and a short greeting are exempt.
+        foreach (var sentence in Sentences(text).Where(x => !x.EndsWith('?') && !Markers().IsMatch(x) && x.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length > 4))
+            errors.Add($"\"{Short(sentence)}\" states something without a claim: mark it with the claim that supports it, or leave it out.");
 
         var quotable = TicketText.From(pulled).Quotable + "\n\n" + string.Join("\n\n", TicketPull.BugParts.Select(p => (string?)pulled["bug"]?[p]).OfType<string>());
         var pages = facts["pages"]!.AsArray().Select(p => (string)p!).ToHashSet(StringComparer.Ordinal);
@@ -218,6 +221,7 @@ public static partial class TicketDrafts
                         break;
                     case "proof":
                         if (proof is null) errors.Add($"{at}: there's no bug proof to link to.");
+                        else if ((string?)link["outcome"] != proof) errors.Add($"{at}: the proof's outcome is {proof}, not {(string?)link["outcome"] ?? "(none given)"}: say what it was.");
                         break;
                     case "missing":
                         if (!missing.Contains((string?)link["field"] ?? "")) errors.Add($"{at}: `{link["field"]}` isn't a missing bug field.");
@@ -236,6 +240,12 @@ public static partial class TicketDrafts
         if ((string)facts["tone"]! == "client") errors.AddRange(ClientProblems(Markers().Replace(text, ""), ctx));
         return errors;
     }
+
+    /// <summary>The text's sentences: by line, then at a full stop, exclamation or question mark; list marks and headings dropped.</summary>
+    static IEnumerable<string> Sentences(string text) =>
+        text.Split('\n').Select(l => Regex.Replace(l.Trim(), @"^(#+|[-*]|\d+[.)])\s*", ""))
+            .SelectMany(l => Regex.Split(Url().Replace(l, "LINK"), @"(?<=[.!?](?:\s*\[C\d+\])*)\s+(?=[A-Z0-9])"))
+            .Select(x => x.Trim()).Where(x => x.Length > 0 && x != "---");
 
     [GeneratedRegex(@"https?://\S+")]
     private static partial Regex Url();

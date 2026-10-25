@@ -27,7 +27,8 @@ In Claude Code: `/stangent:ticket <KEY>` runs pull → points → bundle and off
 - Unattended runs: `stangent jira login --api-token --email <you>` prompts for an API token (or reads it from stdin) and
   keeps it in the keychain; CI sets `STANGENT_JIRA_API_TOKEN` instead. An organization admin must allow API tokens
   (Atlassian Administration → Connectors → Atlassian MCP server → Authentication).
-- Secrets never go on a command line, in a file or in an error message.
+- Secrets never go on a command line, in a file or in an error message, and only to an https Atlassian host:
+  `tickets.endpoint` elsewhere is refused (`untrusted_endpoint`).
 - `stangent jira tools | call <tool> --args <json> | download <attachment id> --cloud-id <site> --out <file>` are for
   debugging.
 - Calls used: `getJiraIssue` (`view: "full"`), `executeRead` → `listJiraIssueComments` (when more than the 20 embedded
@@ -77,7 +78,9 @@ inputs → the same bytes.
   or Vitest package holding their frontend files; Playwright when `tickets.app` says how to build, start and seed the
   app (`tickets.app.specDir`, default `e2e/stangent`). None: **not provable here**, recorded with no AI call.
 - **`stangent-bug-reproducer`** (multi-turn) may edit only in the targets' folders and run only their build and test
-  commands (permission rules in `result.next.limits`), within `tickets.proveBudget` (default $1, 15 turns).
+  commands (permission rules in `result.next.limits`), within `tickets.proveBudget` (default $1, 15 turns) **per attempt**:
+  a retry runs under what's left, and `check --step prove --usage <result>` sums both calls. In Claude Code,
+  `/stangent:ticket` runs it through `ticket-run.sh`, so the rules and caps always apply.
 - **Code checks:** the test file is in an allowed folder; the named assertion is on its line; the expected-result quote
   is in the ticket word for word; it compiles; and it **fails on that assertion** (TRX, Jest/Vitest and Playwright
   reports read by code; an exception in setup, a timeout or another assertion isn't proof). Playwright runs 3 times.

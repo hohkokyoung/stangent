@@ -86,8 +86,8 @@ run_step() {
       exit 255
     fi
     step="$($STANGENT ticket check "$key" --step "$name" --usage "$usage" || true)"
-    # A retry keeps the reproducer's limits from the first step; only its prompt changes.
-    [ "$name" = prove ] && first="$(jq -c --argjson s "$step" '.result.next.prompt = $s.result.next.prompt' <<<"$first")"
+    # A reproducer's retry runs under what's left of the attempt's cap: the check returns the new limits and prompt.
+    [ "$name" = prove ] && first="$step"
     action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   done
   rm -f "$usage"

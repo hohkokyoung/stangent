@@ -59,6 +59,9 @@ public sealed class JiraConnection : IJiraTools
 
     public static async Task<JiraConnection> OpenAsync(JiraConnectionOptions options, ISecretStore secrets, TextWriter log, CancellationToken ct = default)
     {
+        // The endpoint comes from the repo's stangent.yaml; a token or sign-in is only ever sent to Atlassian.
+        if (options.Endpoint.Scheme != Uri.UriSchemeHttps || !IsAtlassianHost(options.Endpoint.Host))
+            throw new StangentException("untrusted_endpoint", $"tickets.endpoint must be an https Atlassian address, not {options.Endpoint}.", ExitCodes.Usage);
         var transportOptions = new HttpClientTransportOptions
         {
             Endpoint = options.Endpoint,
@@ -143,8 +146,19 @@ public sealed class JiraConnection : IJiraTools
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || !IsAtlassianHost(uri.Host))
             throw new StangentException("jira_unexpected_output", $"Refusing to download attachment {attachmentId} from a non-Atlassian URL ({uri?.Host}).");
 
-        using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
-        using var response = await http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
+        // Redirects are followed by hand, each checked to stay on an Atlassian host.
+        using var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromMinutes(5) };
+        var response = await http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
+        for (var hops = 0; (int)response.StatusCode is >= 300 and < 400 && response.Headers.Location is { } next; hops++)
+        {
+            var target = next.IsAbsoluteUri ? next : new Uri(uri, next);
+            response.Dispose();
+            if (hops >= 5 || target.Scheme != Uri.UriSchemeHttps || !IsAtlassianHost(target.Host))
+                throw new StangentException("jira_unexpected_output", $"Attachment {attachmentId}: refusing a redirect to {target.Host}.");
+            uri = target;
+            response = await http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
+        }
+        using var _ = response;
         if (!response.IsSuccessStatusCode)
             throw new StangentException("jira_download_failed", $"Attachment {attachmentId}: HTTP {(int)response.StatusCode} from {uri.Host}.");
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(destination))!);
@@ -155,7 +169,7 @@ public sealed class JiraConnection : IJiraTools
             "sha256:" + Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(bytes)));
     }
 
-    static bool IsAtlassianHost(string host) =>
+    public static bool IsAtlassianHost(string host) =>
         host.Equals("atlassian.com", StringComparison.OrdinalIgnoreCase) || host.EndsWith(".atlassian.com", StringComparison.OrdinalIgnoreCase)
         || host.EndsWith(".atlassian.net", StringComparison.OrdinalIgnoreCase) || host.EndsWith(".atl-paas.net", StringComparison.OrdinalIgnoreCase);
 

@@ -126,6 +126,24 @@ public class TicketPullTests
         Assert.True(File.Exists(Path.Combine(repo.Root, ".stangent", "tickets", "SON-4", "raw", "getJiraIssue.json")));
     }
 
+    [Fact]
+    public async Task A_moved_issue_stays_under_the_key_asked_for()
+    {
+        using var repo = TicketFixtures.Repo();
+        TicketFixtures.Make(TicketFixtures.ReplayDir(repo), "OLD-5", "Task", "x", "moved", files: [new("1", "a.txt", "text/plain", "hi"u8.ToArray())],
+            fields: _ => { });
+        var raw = Path.Combine(TicketFixtures.ReplayDir(repo), "OLD-5", "raw", "getJiraIssue.json");
+        var node = JsonNode.Parse(File.ReadAllText(raw))!;
+        var payload = JsonNode.Parse((string)node["content"]![0]!["text"]!)!;
+        payload["data"]!["key"] = "NEW-9";
+        node["content"]![0]!["text"] = payload.ToJsonString();
+        File.WriteAllText(raw, node.ToJsonString());
+        var t = await Pull(repo, "OLD-5");
+        Assert.Equal("OLD-5", (string?)t["key"]);
+        Assert.Equal("NEW-9", (string?)t["jiraKey"]);
+        Assert.Equal("text", (string?)t["attachments"]![0]!["kind"]);
+    }
+
     [Theory]
     [InlineData("**Steps to reproduce:**\n1. a\n2. b\n\n**Expected result:** c\n**Actual result:** d", "1. a\n2. b", "c", "d")]
     [InlineData("Steps:\n- a\nExpected:\nc\nActual:\nd", "- a", "c", "d")]

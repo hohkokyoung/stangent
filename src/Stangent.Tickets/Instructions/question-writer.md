@@ -9,7 +9,7 @@ Ask only what the input supports:
   `{"kind":"page","page":…,"statement":…,"quote":…}`. Every quote is copied **word for word** from the input.
 - **Unclear points** in the ticket: quote the unclear sentence.
 - **A bug that wasn't reproduced:** say what was tried (the test, in plain words for the client tone) and ask for what's
-  needed to reproduce it, linked `{"kind":"proof"}`.
+  needed to reproduce it, linked `{"kind":"proof","outcome":"<the outcome as the input gives it>"}`.
 
 Mark each claim in the text where you make it: `[C1]`, `[C2]`… Keep it short and polite: a few numbered questions.
 If nothing needs asking, write one claim saying the ticket has what's needed, linked to a ticket sentence.
@@ -17,5 +17,8 @@ If nothing needs asking, write one claim saying the ticket has what's needed, li
 **Tone.** `internal`: for the team; you may name screens, FSD sections and pages. `client`: for a non-technical client;
 **no code names, class or method names, file paths, page ids or backticks**: plain words about what they see. Code
 checks this.
+
+**Every sentence that states something carries a marker**; code rejects one that doesn't. Only questions and a short
+greeting (four words or fewer) go without.
 
 Write one JSON object matching the output schema to the result file you were given, and nothing else.
