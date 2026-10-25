@@ -1,0 +1,22 @@
+{
+  "number": 8821,
+  "title": "View and Sorting are not being remembered",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\neverytime I open Sonarr, the view and sorting in series come back to \"table\" and \"added\".\n\n### Expected Behavior\n\nRemember previous choice\n\n### Steps To Reproduce\n\n_No response_\n\n### Environment\n\n```markdown\n- OS: Windows\n- Sonarr: 4.0.19.2991\n- Docker Install: No\n- Using Reverse Proxy: No\n- Browser: Chrome\n- Database:\n```\n\n### What branch are you running?\n\nDevelop\n\n### Trace Logs\n\n```\n2026-07-26 16:56:25.0|Info|DownloadDecisionMaker|Processing 396 releases\n2026-07-26 16:56:27.2|Info|RssSyncService|RSS Sync Completed. Reports found: 396, Reports grabbed: 0\n2026-07-26 17:11:46.0|Info|RssSyncService|Starting RSS Sync\n2026-07-26 17:11:55.6|Info|DownloadDecisionMaker|Processing 396 releases\n2026-07-26 17:11:57.6|Info|RssSyncService|RSS Sync Completed. Reports found: 396, Reports grabbed: 0\n2026-07-26 17:27:16.5|Info|RssSyncService|Starting RSS Sync\n2026-07-26 17:27:27.0|Info|DownloadDecisionMaker|Processing 396 releases\n2026-07-26 17:27:29.1|Info|RssSyncService|RSS Sync Completed. Reports found: 396, Reports grabbed: 0\n```\n\n### Anything else\n\n_No response_",
+  "author": "shifoc",
+  "createdAt": "2026-07-26T14:38:00Z",
+  "comments": [
+    {
+      "id": 5083962056,
+      "author": "augustuen",
+      "createdAt": "2026-07-26T14:41:44Z",
+      "body": "1. Those aren't trace logs\n2. Sonarr does remember your selection. And considering neither table nor added is the default option, it sounds like it has remembered your selection, but for some reason it's not able to update it. \n\nHave you tried disabling browser extensions and/or privacy features in your browser?"
+    },
+    {
+      "id": 5084013679,
+      "author": "mynameisbogdan",
+      "createdAt": "2026-07-26T14:55:31Z",
+      "body": "Sonarr uses LocalStorage to save your preferences."
+    }
+  ],
+  "attachments": []
+}

@@ -1,0 +1,9 @@
+{
+  "number": 7555,
+  "title": "Anilist Import List Clean Library Level Unmonitors All Series",
+  "body": "### Is there an existing issue for this?\r\n\r\n- [X] I have searched the existing open and closed issues\r\n\r\n### Current Behavior\r\n\r\nIf a series is removed from your list, the next import list run unmonitors all series instead of just the missing one.\r\n\r\n### Expected Behavior\r\n\r\nUnmonitor only the series that are missing.\r\n\r\n### Steps To Reproduce\r\n\r\n1. Add AniList import list to import a few series.\r\n2. Remove an anime from your AniList.\r\n3. During the next run for that import list, all series are unmonitored instead of just the missing one.\r\n\r\n### Environment\r\n\r\n```markdown\r\n- OS: TrueNAS ElectricEel-24.10.0\r\n- Sonarr: 4.0.11.2815\r\n- Docker Install: Yes\r\n- Using Reverse Proxy: Yes\r\n- Browser: Brave v1.73.104\r\n- Database: Sqlite 3.47.1\r\n```\r\n\r\n\r\n### What branch are you running?\r\n\r\nDevelop\r\n\r\n### Trace Logs?\r\n\r\nhttps://privatebin.net/?c1417d9ab90ae903#6vZQwCHejXfoMrYX9tPWoKh1h9VwQuaCizJ74C1YJrWF\r\n\r\n### Anything else?\r\n\r\nI just noticed in my main Sonarr instance that all my anime series were marked as unmonitored, even though I had only finished one of them. I tested this in my test instance to reproduce the issue and gathered trace logs from there. This feature wasn't functioning before PR #7521, so the issue might be related to that change.",
+  "author": "funforgiven",
+  "createdAt": "2025-01-07T20:21:03Z",
+  "comments": [],
+  "attachments": []
+}

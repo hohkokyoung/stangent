@@ -1,0 +1,285 @@
+2025-06-16 01:42:17.1|Debug|ImportDecisionMaker|File rejected for the following reasons: [Permanent] Not an upgrade for existing episode file(s). Existing quality: WEBDL-1080p. New Quality WEBRip-1080p.
+2025-06-16 01:42:17.1|Trace|TrackedDownloadAlreadyImported|Checking if all episodes for '[Reza] Please Put Them On, Takamine-san - S01E08 [WEBRip HEVC 1080p AAC UNCENSORED] | Haite Kudasai, Takamine-san' have been imported
+2025-06-16 01:42:17.1|Trace|TrackedDownloadAlreadyImported|Last event for episode: S01E08 [91410] is: Grabbed
+2025-06-16 01:42:17.1|Trace|TrackedDownloadAlreadyImported|All episodes for '[Reza] Please Put Them On, Takamine-san - S01E08 [WEBRip HEVC 1080p AAC UNCENSORED] | Haite Kudasai, Takamine-san' have been imported: False
+2025-06-16 01:42:17.1|Debug|CompletedDownloadService|Not all episodes have been imported for the release '[Reza] Please Put Them On, Takamine-san - S01E08 [WEBRip HEVC 1080p AAC UNCENSORED] | Haite Kudasai, Takamine-san'
+2025-06-16 01:42:17.1|Trace|EventAggregator|Publishing DownloadsProcessedEvent
+2025-06-16 01:42:17.1|Trace|EventAggregator|DownloadsProcessedEvent -> ExtraService
+2025-06-16 01:42:17.1|Trace|EventAggregator|DownloadsProcessedEvent <- ExtraService
+2025-06-16 01:42:17.1|Trace|EventAggregator|DownloadsProcessedEvent -> DownloadMonitoringService
+2025-06-16 01:42:17.1|Trace|EventAggregator|Publishing TrackedDownloadRefreshedEvent
+2025-06-16 01:42:17.1|Trace|EventAggregator|TrackedDownloadRefreshedEvent -> QueueService
+2025-06-16 01:42:17.1|Trace|EventAggregator|Publishing QueueUpdatedEvent
+2025-06-16 01:42:17.1|Trace|EventAggregator|QueueUpdatedEvent -> QueueController
+2025-06-16 01:42:17.1|Trace|EventAggregator|QueueUpdatedEvent <- QueueController
+2025-06-16 01:42:17.1|Trace|EventAggregator|QueueUpdatedEvent -> QueueDetailsController
+2025-06-16 01:42:17.1|Trace|EventAggregator|QueueUpdatedEvent <- QueueDetailsController
+2025-06-16 01:42:17.1|Trace|EventAggregator|QueueUpdatedEvent -> QueueStatusController
+2025-06-16 01:42:17.1|Trace|EventAggregator|QueueUpdatedEvent <- QueueStatusController
+2025-06-16 01:42:17.1|Trace|EventAggregator|TrackedDownloadRefreshedEvent <- QueueService
+2025-06-16 01:42:17.1|Trace|EventAggregator|DownloadsProcessedEvent <- DownloadMonitoringService
+2025-06-16 01:42:17.1|Trace|CommandQueueManager|Updating command status
+2025-06-16 01:42:17.1|Trace|EventAggregator|DownloadsProcessedEvent ~> NotificationService
+2025-06-16 01:42:17.1|Trace|Http|Req: 21526 [GET] /api/v3/queue?page=1&pageSize=20&sortDirection=ascending&sortKey=timeleft&includeUnknownSeriesItems=true (from 192.168.1.10 Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36)
+2025-06-16 01:42:17.1|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2025-06-16 01:42:17.1|Trace|EventAggregator|DownloadsProcessedEvent <~ NotificationService
+2025-06-16 01:42:17.1|Trace|Http|Res: 21526 [GET] /api/v3/queue?page=1&pageSize=20&sortDirection=ascending&sortKey=timeleft&includeUnknownSeriesItems=true: 200.OK (3 ms)
+2025-06-16 01:42:17.1|Debug|Api|[GET] /api/v3/queue?page=1&pageSize=20&sortDirection=ascending&sortKey=timeleft&includeUnknownSeriesItems=true: 200.OK (3 ms)
+2025-06-16 01:42:17.1|Trace|EventAggregator|Publishing CommandExecutedEvent
+2025-06-16 01:42:17.1|Trace|EventAggregator|CommandExecutedEvent -> TaskManager
+2025-06-16 01:42:17.1|Trace|EventAggregator|CommandExecutedEvent <- TaskManager
+2025-06-16 01:42:17.1|Trace|EventAggregator|CommandExecutedEvent -> TaskController
+2025-06-16 01:42:17.1|Trace|EventAggregator|CommandExecutedEvent <- TaskController
+2025-06-16 01:42:17.1|Trace|EventAggregator|CommandExecutedEvent -> QualityDefinitionController
+2025-06-16 01:42:17.1|Trace|EventAggregator|CommandExecutedEvent <- QualityDefinitionController
+2025-06-16 01:42:17.1|Trace|CommandExecutor|ProcessMonitoredDownloadsCommand <- DownloadProcessingService [00:00:00.1195617]
+2025-06-16 01:42:17.1|Trace|Http|Req: 21527 [GET] /api/v3/episode?episodeIds=91410 (from 192.168.1.10 Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36)
+2025-06-16 01:42:17.1|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2025-06-16 01:42:17.1|Trace|Http|Res: 21527 [GET] /api/v3/episode?episodeIds=91410: 200.OK (3 ms)
+2025-06-16 01:42:17.1|Trace|Http|Req: 21528 [GET] /api/v3/command (from 192.168.1.10 Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36)
+2025-06-16 01:42:17.1|Debug|Api|[GET] /api/v3/episode?episodeIds=91410: 200.OK (3 ms)
+2025-06-16 01:42:17.1|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2025-06-16 01:42:17.1|Trace|CommandQueueManager|Getting all commands
+2025-06-16 01:42:17.1|Trace|Http|Res: 21528 [GET] /api/v3/command: 200.OK (4 ms)
+2025-06-16 01:42:17.1|Debug|Api|[GET] /api/v3/command: 200.OK (4 ms)
+2025-06-16 01:42:21.7|Trace|Http|Req: 21529 [GET] /api/v3/manualimport?downloadId=CB3A3F7194123FD0851CB164067352319141EC35&filterExistingFiles=false (from 192.168.1.10 Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36)
+2025-06-16 01:42:21.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2025-06-16 01:42:21.7|Debug|Parser|Parsing string '[Reza] Please Put Them On, Takamine-san - S01E08.mkv'
+2025-06-16 01:42:21.7|Trace|Parser|^(?<title>.+?)(?:(?:[-_\W](?<![()\[!]))+S?(?<season>(?<!\d+)(?:\d{1,2})(?!\d+))(?:[ex]|\W[ex]){1,2}(?<episode>\d{2,3}(?!\d+))(?:(?:\-|[ex]|\W[ex]|_){1,2}(?<episode>\d{2,3}(?!\d+)))*)(?:[-_. ]|$)
+2025-06-16 01:42:21.7|Debug|Parser|Episode Parsed. Please Put Them On, Takamine-san - S01E08
+2025-06-16 01:42:21.7|Debug|Parser|Languages parsed: Unknown
+2025-06-16 01:42:21.7|Debug|QualityParser|Trying to parse quality for '[Reza] Please Put Them On, Takamine-san - S01E08.mkv'
+2025-06-16 01:42:21.7|Debug|Parser|Quality parsed: HDTV-720p v1
+2025-06-16 01:42:21.7|Debug|Parser|Release Group parsed: Reza
+2025-06-16 01:42:21.7|Debug|Parser|Parsing string '[Reza] Please Put Them On, Takamine-san - S01E08.mkv'
+2025-06-16 01:42:21.7|Trace|Parser|^(?<title>.+?)(?:(?:[-_\W](?<![()\[!]))+S?(?<season>(?<!\d+)(?:\d{1,2})(?!\d+))(?:[ex]|\W[ex]){1,2}(?<episode>\d{2,3}(?!\d+))(?:(?:\-|[ex]|\W[ex]|_){1,2}(?<episode>\d{2,3}(?!\d+)))*)(?:[-_. ]|$)
+2025-06-16 01:42:21.7|Debug|Parser|Episode Parsed. Please Put Them On, Takamine-san - S01E08
+2025-06-16 01:42:21.7|Debug|Parser|Languages parsed: Unknown
+2025-06-16 01:42:21.7|Debug|QualityParser|Trying to parse quality for '[Reza] Please Put Them On, Takamine-san - S01E08.mkv'
+2025-06-16 01:42:21.7|Debug|Parser|Quality parsed: HDTV-720p v1
+2025-06-16 01:42:21.7|Debug|Parser|Release Group parsed: Reza
+2025-06-16 01:42:21.8|Debug|ImportDecisionMaker|Analyzing 1/1 files.
+2025-06-16 01:42:21.8|Debug|Parser|Parsing string '[Reza] Please Put Them On, Takamine-san - S01E08 [WEBRip HEVC 1080p AAC UNCENSORED] | Haite Kudasai, Takamine-san'
+2025-06-16 01:42:21.8|Trace|Parser|^(?:\[(?<subgroup>.+?)\](?:_|-|\s|\.)?)(?<title>.+?)(?:[-_\W](?<![()\[!]))+(?:S?(?<season>(?<!\d+)\d{1,2}(?!\d+))(?:(?:[ex]|\W[ex]){1,2}(?<episode>\d{2}(?!\d+)))+)(?:v\d+)?(?:[_. ](?!\d+)).*?(?<hash>[(\[]\w{8}[)\]])?$
+2025-06-16 01:42:21.8|Debug|Parser|Episode Parsed. Please Put Them On, Takamine-san - S01E08
+2025-06-16 01:42:21.8|Debug|Parser|Languages parsed: Unknown
+2025-06-16 01:42:21.8|Debug|QualityParser|Trying to parse quality for '[Reza] Please Put Them On, Takamine-san - S01E08 [WEBRip HEVC 1080p AAC UNCENSORED] | Haite Kudasai, Takamine-san'
+2025-06-16 01:42:21.8|Debug|Parser|Quality parsed: WEBRip-1080p v1
+2025-06-16 01:42:21.8|Debug|Parser|Release Group parsed: Reza
+2025-06-16 01:42:21.8|Debug|VideoFileInfoReader|Getting media info from /Data/Downloads/completed/!sonarr/[Reza] Please Put Them On, Takamine-san - S01E08.mkv
+2025-06-16 01:42:21.8|Debug|DetectSample|[/Data/Downloads/completed/!sonarr/[Reza] Please Put Them On, Takamine-san - S01E08.mkv] does not appear to be a sample. Runtime 00:23:40.0620000 seconds is more than minimum of 300 seconds
+2025-06-16 01:42:21.8|Debug|Parser|Parsing string '[Reza] Please Put Them On, Takamine-san - S01E08.mkv'
+2025-06-16 01:42:21.8|Trace|Parser|^(?<title>.+?)(?:(?:[-_\W](?<![()\[!]))+S?(?<season>(?<!\d+)(?:\d{1,2})(?!\d+))(?:[ex]|\W[ex]){1,2}(?<episode>\d{2,3}(?!\d+))(?:(?:\-|[ex]|\W[ex]|_){1,2}(?<episode>\d{2,3}(?!\d+)))*)(?:[-_. ]|$)
+2025-06-16 01:42:21.8|Debug|Parser|Episode Parsed. Please Put Them On, Takamine-san - S01E08
+2025-06-16 01:42:21.8|Debug|Parser|Languages parsed: Unknown
+2025-06-16 01:42:21.8|Debug|QualityParser|Trying to parse quality for '[Reza] Please Put Them On, Takamine-san - S01E08.mkv'
+2025-06-16 01:42:21.8|Debug|Parser|Quality parsed: HDTV-720p v1
+2025-06-16 01:42:21.8|Debug|Parser|Release Group parsed: Reza
+2025-06-16 01:42:21.8|Debug|VideoFileInfoReader|Getting media info from /Data/Downloads/completed/!sonarr/[Reza] Please Put Them On, Takamine-san - S01E08.mkv
+2025-06-16 01:42:21.9|Debug|ParsingService|Using Scene to TVDB Mapping for: Please Put Them On, Takamine-san - Scene: 1x08 - TVDB: 1x08
+2025-06-16 01:42:21.9|Trace|AggregateLanguage|Considering Languages  (Filename) from FileName
+2025-06-16 01:42:21.9|Trace|AggregateLanguage|Considering Languages  (DownloadClientItem) from DownloadClientItem
+2025-06-16 01:42:21.9|Trace|AggregateLanguage|Considering Languages Japanese (MediaInfo) from MediaInfo
+2025-06-16 01:42:21.9|Debug|AggregateLanguage|Selected languages: Japanese
+2025-06-16 01:42:21.9|Trace|AggregateQuality|Considering Source Television (Fallback) Resolution 720 (Fallback) Revision v1 from FileName
+2025-06-16 01:42:21.9|Trace|AggregateQuality|Considering Source WebRip (Tag) Resolution 1080 (Tag) Revision v1 from DownloadClientItem
+2025-06-16 01:42:21.9|Trace|AugmentQualityFromMediaInfo|Resolution 1920x1080 considered 1080p
+2025-06-16 01:42:21.9|Trace|AggregateQuality|Considering Source Unknown (Default) Resolution 1080 (MediaInfo) Revision  from MediaInfo
+2025-06-16 01:42:21.9|Debug|QualityParser|Trying to parse quality for '[Reza] Please Put Them On, Takamine-san  - S01E08 [WEBRip HEVC 1080p AAC UNCENSORED] | Haite Kudasai, Takamine-san'
+2025-06-16 01:42:21.9|Trace|AggregateQuality|Considering Source WebRip (Tag) Resolution 1080 (Tag) Revision v1 from ReleaseName
+2025-06-16 01:42:21.9|Trace|AggregateQuality|Selected Source WebRip (Tag) Resolution 1080 (MediaInfo) Revision v1
+2025-06-16 01:42:21.9|Debug|AggregateQuality|Using quality: WEBRip-1080p v1
+2025-06-16 01:42:21.9|Debug|AbsoluteEpisodeNumberSpecification|File name format does not require absolute episode number, skipping check
+2025-06-16 01:42:21.9|Trace|AlreadyImportedSpecification|Episode file has not been imported
+2025-06-16 01:42:21.9|Debug|EpisodeTitleSpecification|File name format does not require episode title, skipping check
+2025-06-16 01:42:21.9|Debug|FreeSpaceSpecification|Skipping free space check when importing
+2025-06-16 01:42:21.9|Debug|MatchesFolderSpecification|No folder ParsedEpisodeInfo, skipping check
+2025-06-16 01:42:21.9|Debug|DetectSample|[/Data/Downloads/completed/!sonarr/[Reza] Please Put Them On, Takamine-san - S01E08.mkv] does not appear to be a sample. Runtime 00:23:40.0620000 seconds is more than minimum of 300 seconds
+2025-06-16 01:42:21.9|Trace|ConfigService|Using default config value for 'downloadclientworkingfolders' defaultValue:'_UNPACK_|_FAILED_'
+2025-06-16 01:42:21.9|Trace|ConfigService|Using default config value for 'downloadpropersandrepacks' defaultValue:'PreferAndUpgrade'
+2025-06-16 01:42:21.9|Debug|UpgradeSpecification|This file isn't a quality upgrade for all episodes. Existing quality: WEBDL-1080p. New Quality WEBRip-1080p. Skipping /Data/Downloads/completed/!sonarr/[Reza] Please Put Them On, Takamine-san - S01E08.mkv
+2025-06-16 01:42:21.9|Debug|ImportDecisionMaker|File rejected for the following reasons: [Permanent] Not an upgrade for existing episode file(s). Existing quality: WEBDL-1080p. New Quality WEBRip-1080p.
+2025-06-16 01:42:21.9|Trace|Http|Res: 21529 [GET] /api/v3/manualimport?downloadId=CB3A3F7194123FD0851CB164067352319141EC35&filterExistingFiles=false: 200.OK (174 ms)
+2025-06-16 01:42:21.9|Debug|Api|[GET] /api/v3/manualimport?downloadId=CB3A3F7194123FD0851CB164067352319141EC35&filterExistingFiles=false: 200.OK (174 ms)
+2025-06-16 01:42:23.8|Trace|Http|Req: 21530 [POST] /api/v3/command (from 192.168.1.10 Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36)
+2025-06-16 01:42:23.8|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2025-06-16 01:42:23.8|Trace|CommandQueueManager|Publishing ManualImport
+2025-06-16 01:42:23.8|Trace|CommandQueueManager|Checking if command is queued or started: ManualImport
+2025-06-16 01:42:23.8|Trace|CommandQueueManager|Inserting new command: ManualImport
+2025-06-16 01:42:23.8|Trace|CommandExecutor|ManualImportCommand -> ManualImportService
+2025-06-16 01:42:23.8|Trace|CommandQueueManager|Marking command as started: ManualImport
+2025-06-16 01:42:23.8|Trace|Http|Res: 21530 [POST] /api/v3/command: 201.Created (16 ms)
+2025-06-16 01:42:23.8|Debug|Api|[POST] /api/v3/command: 201.Created (16 ms)
+2025-06-16 01:42:23.8|Trace|EventAggregator|Publishing CommandUpdatedEvent
+2025-06-16 01:42:23.8|Trace|EventAggregator|CommandUpdatedEvent -> CommandController
+2025-06-16 01:42:23.9|Trace|EventAggregator|CommandUpdatedEvent <- CommandController
+2025-06-16 01:42:23.9|Trace|ManualImportService|Manually importing 1 files using mode Auto
+2025-06-16 01:42:23.9|Trace|EventAggregator|Publishing CommandUpdatedEvent
+2025-06-16 01:42:23.9|Trace|EventAggregator|CommandUpdatedEvent -> CommandController
+2025-06-16 01:42:23.9|Trace|EventAggregator|CommandUpdatedEvent <- CommandController
+2025-06-16 01:42:23.9|Trace|ManualImportService|Processing file 1 of 1
+2025-06-16 01:42:23.9|Trace|EventAggregator|Publishing CommandUpdatedEvent
+2025-06-16 01:42:23.9|Trace|EventAggregator|CommandUpdatedEvent -> CommandController
+2025-06-16 01:42:23.9|Trace|EventAggregator|CommandUpdatedEvent <- CommandController
+2025-06-16 01:42:23.9|Debug|Parser|Parsing string '[Reza] Please Put Them On, Takamine-san - S01E08.mkv'
+2025-06-16 01:42:23.9|Trace|Parser|^(?<title>.+?)(?:(?:[-_\W](?<![()\[!]))+S?(?<season>(?<!\d+)(?:\d{1,2})(?!\d+))(?:[ex]|\W[ex]){1,2}(?<episode>\d{2,3}(?!\d+))(?:(?:\-|[ex]|\W[ex]|_){1,2}(?<episode>\d{2,3}(?!\d+)))*)(?:[-_. ]|$)
+2025-06-16 01:42:23.9|Debug|Parser|Episode Parsed. Please Put Them On, Takamine-san - S01E08
+2025-06-16 01:42:23.9|Debug|Parser|Languages parsed: Unknown
+2025-06-16 01:42:23.9|Debug|QualityParser|Trying to parse quality for '[Reza] Please Put Them On, Takamine-san - S01E08.mkv'
+2025-06-16 01:42:23.9|Debug|Parser|Quality parsed: HDTV-720p v1
+2025-06-16 01:42:23.9|Debug|Parser|Release Group parsed: Reza
+2025-06-16 01:42:23.9|Debug|VideoFileInfoReader|Getting media info from /Data/Downloads/completed/!sonarr/[Reza] Please Put Them On, Takamine-san - S01E08.mkv
+2025-06-16 01:42:23.9|Trace|AggregateLanguage|Considering Languages  (Filename) from FileName
+2025-06-16 01:42:23.9|Trace|AggregateLanguage|Considering Languages  (DownloadClientItem) from DownloadClientItem
+2025-06-16 01:42:23.9|Trace|AggregateLanguage|Considering Languages Japanese (MediaInfo) from MediaInfo
+2025-06-16 01:42:23.9|Debug|AggregateLanguage|Selected languages: Japanese
+2025-06-16 01:42:23.9|Trace|AggregateQuality|Considering Source Television (Fallback) Resolution 720 (Fallback) Revision v1 from FileName
+2025-06-16 01:42:23.9|Trace|AggregateQuality|Considering Source WebRip (Tag) Resolution 1080 (Tag) Revision v1 from DownloadClientItem
+2025-06-16 01:42:23.9|Trace|AugmentQualityFromMediaInfo|Resolution 1920x1080 considered 1080p
+2025-06-16 01:42:23.9|Trace|AggregateQuality|Considering Source Unknown (Default) Resolution 1080 (MediaInfo) Revision  from MediaInfo
+2025-06-16 01:42:23.9|Debug|QualityParser|Trying to parse quality for '[Reza] Please Put Them On, Takamine-san  - S01E08 [WEBRip HEVC 1080p AAC UNCENSORED] | Haite Kudasai, Takamine-san'
+2025-06-16 01:42:23.9|Trace|AggregateQuality|Considering Source WebRip (Tag) Resolution 1080 (Tag) Revision v1 from ReleaseName
+2025-06-16 01:42:23.9|Trace|AggregateQuality|Selected Source WebRip (Tag) Resolution 1080 (MediaInfo) Revision v1
+2025-06-16 01:42:23.9|Debug|AggregateQuality|Using quality: WEBRip-1080p v1
+2025-06-16 01:42:23.9|Debug|UpgradeMediaFileService|Removing existing episode file: [1581964] Season 1/Please Put Them On Takamine-san - S01E08 - [h265 WEBDL-1080p].mkv
+2025-06-16 01:42:23.9|Debug|RecycleBinProvider|Attempting to send '/Data/Media/Anime/Please Put Them On Takamine-san 2025 [tmdbid-276880]/Season 1/Please Put Them On Takamine-san - S01E08 - [h265 WEBDL-1080p].mkv' to recycling bin
+2025-06-16 01:42:23.9|Trace|ConfigService|Using default config value for 'recyclebin' defaultValue:''
+2025-06-16 01:42:23.9|Info|RecycleBinProvider|Recycling Bin has not been configured, deleting permanently. /Data/Media/Anime/Please Put Them On Takamine-san 2025 [tmdbid-276880]/Season 1/Please Put Them On Takamine-san - S01E08 - [h265 WEBDL-1080p].mkv
+2025-06-16 01:42:23.9|Trace|DiskProviderBase|Deleting file: /Data/Media/Anime/Please Put Them On Takamine-san 2025 [tmdbid-276880]/Season 1/Please Put Them On Takamine-san - S01E08 - [h265 WEBDL-1080p].mkv
+2025-06-16 01:42:23.9|Debug|RecycleBinProvider|File has been permanently deleted: /Data/Media/Anime/Please Put Them On Takamine-san 2025 [tmdbid-276880]/Season 1/Please Put Them On Takamine-san - S01E08 - [h265 WEBDL-1080p].mkv
+2025-06-16 01:42:23.9|Trace|EventAggregator|Publishing EpisodeFileDeletedEvent
+2025-06-16 01:42:23.9|Trace|EventAggregator|EpisodeFileDeletedEvent -> EpisodeService
+2025-06-16 01:42:23.9|Debug|EpisodeService|Detaching episode 91410 from file.
+2025-06-16 01:42:23.9|Trace|ConfigService|Using default config value for 'autounmonitorpreviouslydownloadedepisodes' defaultValue:'False'
+2025-06-16 01:42:24.0|Trace|EventAggregator|Publishing ModelEvent<Episode>
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> -> CutoffController
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> <- CutoffController
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> -> MissingController
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> <- MissingController
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> -> EpisodeController
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> <- EpisodeController
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> -> CalendarController
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> <- CalendarController
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent <- EpisodeService
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent -> NotificationService
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent <- NotificationService
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent -> HistoryService
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent <- HistoryService
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent -> SubtitleFileService
+2025-06-16 01:42:24.0|Debug|SubtitleFileService|Deleting Extra from database for episode file: [1581964] Season 1/Please Put Them On Takamine-san - S01E08 - [h265 WEBDL-1080p].mkv
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent <- SubtitleFileService
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent -> OtherExtraFileService
+2025-06-16 01:42:24.0|Debug|OtherExtraFileService|Deleting Extra from database for episode file: [1581964] Season 1/Please Put Them On Takamine-san - S01E08 - [h265 WEBDL-1080p].mkv
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent <- OtherExtraFileService
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent -> MetadataFileService
+2025-06-16 01:42:24.0|Debug|MetadataFileService|Deleting Extra from database for episode file: [1581964] Season 1/Please Put Them On Takamine-san - S01E08 - [h265 WEBDL-1080p].mkv
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent <- MetadataFileService
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent -> CutoffController
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent <- CutoffController
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent -> MissingController
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent <- MissingController
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent -> SeriesController
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent <- SeriesController
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent -> EpisodeController
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent <- EpisodeController
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent -> EpisodeFileController
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent <- EpisodeFileController
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent -> CalendarController
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent <- CalendarController
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent -> MediaFileDeletionService
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileDeletedEvent <- MediaFileDeletionService
+2025-06-16 01:42:24.0|Debug|EpisodeFileMovingService|Attempting to hardlink episode file: /Data/Downloads/completed/!sonarr/[Reza] Please Put Them On, Takamine-san - S01E08.mkv to /Data/Media/Anime/Please Put Them On Takamine-san 2025 [tmdbid-276880]/Season 1/Please Put Them On Takamine-san - S01E08 - [x265 WEBRip-1080p].mkv
+2025-06-16 01:42:24.0|Trace|ConfigService|Using default config value for 'usescriptimport' defaultValue:'False'
+2025-06-16 01:42:24.0|Debug|DiskTransferService|HardLinkOrCopy [/Data/Downloads/completed/!sonarr/[Reza] Please Put Them On, Takamine-san - S01E08.mkv] > [/Data/Media/Anime/Please Put Them On Takamine-san 2025 [tmdbid-276880]/Season 1/Please Put Them On Takamine-san - S01E08 - [x265 WEBRip-1080p].mkv]
+2025-06-16 01:42:24.0|Trace|ConfigService|Using default config value for 'filedate' defaultValue:'None'
+2025-06-16 01:42:24.0|Trace|ConfigService|Using default config value for 'chowngroup' defaultValue:''
+2025-06-16 01:42:24.0|Debug|DiskProvider|Setting permissions: 777 on /Data/Media/Anime/Please Put Them On Takamine-san 2025 [tmdbid-276880]/Season 1/Please Put Them On Takamine-san - S01E08 - [x265 WEBRip-1080p].mkv
+2025-06-16 01:42:24.0|Trace|EventAggregator|Publishing EpisodeFileAddedEvent
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileAddedEvent -> EpisodeService
+2025-06-16 01:42:24.0|Trace|EventAggregator|Publishing ModelEvent<Episode>
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> -> CutoffController
+2025-06-16 01:42:24.0|Trace|CustomFormatCalculationService|Using original file path for release title: [Reza] Please Put Them On, Takamine-san - S01E08.mkv
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> <- CutoffController
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> -> MissingController
+2025-06-16 01:42:24.0|Trace|CustomFormatCalculationService|Using original file path for release title: [Reza] Please Put Them On, Takamine-san - S01E08.mkv
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> <- MissingController
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> -> EpisodeController
+2025-06-16 01:42:24.0|Trace|CustomFormatCalculationService|Using original file path for release title: [Reza] Please Put Them On, Takamine-san - S01E08.mkv
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> <- EpisodeController
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> -> CalendarController
+2025-06-16 01:42:24.0|Trace|CustomFormatCalculationService|Using original file path for release title: [Reza] Please Put Them On, Takamine-san - S01E08.mkv
+2025-06-16 01:42:24.0|Trace|EventAggregator|ModelEvent<Episode> <- CalendarController
+2025-06-16 01:42:24.0|Debug|EpisodeService|Linking [Season 1/Please Put Them On Takamine-san - S01E08 - [x265 WEBRip-1080p].mkv] > [[91410]You Two Seem Quite Intimate]
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileAddedEvent <- EpisodeService
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileAddedEvent -> EpisodeFileController
+2025-06-16 01:42:24.0|Trace|CustomFormatCalculationService|Using original file path for release title: [Reza] Please Put Them On, Takamine-san - S01E08.mkv
+2025-06-16 01:42:24.0|Trace|EventAggregator|EpisodeFileAddedEvent <- EpisodeFileController
+2025-06-16 01:42:24.0|Trace|ConfigService|Using default config value for 'uilanguage' defaultValue:'1'
+2025-06-16 01:42:24.1|Trace|EventAggregator|Publishing EpisodeImportedEvent
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent -> NotificationService
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent <- NotificationService
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent -> HistoryService
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent <- HistoryService
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent -> DownloadMonitoringService
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent <- DownloadMonitoringService
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent -> DownloadHistoryService
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent <- DownloadHistoryService
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent -> CutoffController
+2025-06-16 01:42:24.1|Trace|CustomFormatCalculationService|Using original file path for release title: [Reza] Please Put Them On, Takamine-san - S01E08.mkv
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent <- CutoffController
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent -> MissingController
+2025-06-16 01:42:24.1|Trace|CustomFormatCalculationService|Using original file path for release title: [Reza] Please Put Them On, Takamine-san - S01E08.mkv
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent <- MissingController
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent -> SeriesController
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent <- SeriesController
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent -> EpisodeController
+2025-06-16 01:42:24.1|Trace|CustomFormatCalculationService|Using original file path for release title: [Reza] Please Put Them On, Takamine-san - S01E08.mkv
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent <- EpisodeController
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent -> CalendarController
+2025-06-16 01:42:24.1|Trace|CustomFormatCalculationService|Using original file path for release title: [Reza] Please Put Them On, Takamine-san - S01E08.mkv
+2025-06-16 01:42:24.1|Trace|EventAggregator|EpisodeImportedEvent <- CalendarController
+2025-06-16 01:42:24.1|Trace|ManualImportService|Manually imported 1 files
+2025-06-16 01:42:24.1|Trace|EventAggregator|Publishing CommandUpdatedEvent
+2025-06-16 01:42:24.1|Trace|EventAggregator|CommandUpdatedEvent -> CommandController
+2025-06-16 01:42:24.1|Trace|EventAggregator|CommandUpdatedEvent <- CommandController
+2025-06-16 01:42:24.1|Trace|EventAggregator|Publishing UntrackedDownloadCompletedEvent
+2025-06-16 01:42:24.1|Trace|EventAggregator|UntrackedDownloadCompletedEvent -> NotificationService
+2025-06-16 01:42:24.1|Debug|NotificationService|No tags set for this notification.
+2025-06-16 01:42:24.1|Debug|PlexServer|Scheduling library update for series 1127 Please Put Them On, Takamine-san
+2025-06-16 01:42:24.1|Debug|NotificationService|Discord TV does not have any intersecting tags with Please Put Them On, Takamine-san. Notification will not be sent.
+2025-06-16 01:42:24.1|Debug|NotificationService|No tags set for this notification.
+2025-06-16 01:42:24.1|Debug|MediaBrowser|Scheduling library update for series 1127 Please Put Them On, Takamine-san
+2025-06-16 01:42:24.1|Debug|NotificationService|Notification and series have one or more intersecting tags.
+2025-06-16 01:42:24.1|Trace|HttpClient|Req: [POST] https://discord.com/api/webhooks/(removed)/(removed)
+2025-06-16 01:42:24.1|Trace|ConfigService|Using default config value for 'proxyenabled' defaultValue:'False'
+2025-06-16 01:42:24.4|Trace|HttpClient|Res: HTTP/2.0 [POST] https://discord.com/api/webhooks/(removed)/(removed): 204.NoContent (0 bytes) (312 ms)
+2025-06-16 01:42:24.4|Trace|EventAggregator|UntrackedDownloadCompletedEvent <- NotificationService
+2025-06-16 01:42:24.4|Trace|EventAggregator|Publishing DownloadCompletedEvent
+2025-06-16 01:42:24.4|Trace|EventAggregator|DownloadCompletedEvent -> NotificationService
+2025-06-16 01:42:24.4|Debug|NotificationService|No tags set for this notification.
+2025-06-16 01:42:24.4|Debug|PlexServer|Scheduling library update for series 1127 Please Put Them On, Takamine-san
+2025-06-16 01:42:24.5|Debug|NotificationService|Discord TV does not have any intersecting tags with Please Put Them On, Takamine-san. Notification will not be sent.
+2025-06-16 01:42:24.5|Debug|NotificationService|No tags set for this notification.
+2025-06-16 01:42:24.5|Debug|MediaBrowser|Scheduling library update for series 1127 Please Put Them On, Takamine-san
+2025-06-16 01:42:24.5|Debug|NotificationService|Notification and series have one or more intersecting tags.
+2025-06-16 01:42:24.5|Trace|HttpClient|Req: [POST] https://discord.com/api/webhooks/(removed)/(removed)
+2025-06-16 01:42:24.5|Trace|ConfigService|Using default config value for 'proxyenabled' defaultValue:'False'
+2025-06-16 01:42:24.7|Trace|HttpClient|Res: HTTP/2.0 [POST] https://discord.com/api/webhooks/(removed)/(removed): 204.NoContent (0 bytes) (235 ms)
+2025-06-16 01:42:24.7|Trace|EventAggregator|DownloadCompletedEvent <- NotificationService
+2025-06-16 01:42:24.7|Trace|EventAggregator|DownloadCompletedEvent -> DownloadEventHub
+2025-06-16 01:42:24.7|Debug|DownloadEventHub|[[Reza] Please Put Them On, Takamine-san - S01E08 [WEBRip HEVC 1080p AAC UNCENSORED] | Haite Kudasai, Takamine-san] Marking download as imported from qBittorent
+2025-06-16 01:42:24.7|Trace|EventAggregator|DownloadCompletedEvent <- DownloadEventHub
+2025-06-16 01:42:24.7|Trace|EventAggregator|DownloadCompletedEvent -> DownloadHistoryService
+2025-06-16 01:42:24.7|Trace|EventAggregator|DownloadCompletedEvent <- DownloadHistoryService
+2025-06-16 01:42:24.7|Trace|CommandQueueManager|Updating command status
+2025-06-16 01:42:24.7|Trace|EventAggregator|Publishing CommandUpdatedEvent
+2025-06-16 01:42:24.7|Trace|EventAggregator|CommandUpdatedEvent -> CommandController
+2025-06-16 01:42:24.7|Trace|EventAggregator|CommandUpdatedEvent <- CommandController
+2025-06-16 01:42:24.7|Trace|EventAggregator|Publishing CommandExecutedEvent
+2025-06-16 01:42:24.7|Trace|EventAggregator|CommandExecutedEvent -> TaskManager
+2025-06-16 01:42:24.7|Trace|EventAggregator|CommandExecutedEvent <- TaskManager
+2025-06-16 01:42:24.7|Trace|EventAggregator|CommandExecutedEvent -> TaskController
+2025-06-16 01:42:24.7|Trace|EventAggregator|CommandExecutedEvent <- TaskController
+2025-06-16 01:42:24.7|Trace|EventAggregator|CommandExecutedEvent -> QualityDefinitionController
+2025-06-16 01:42:24.7|Trace|EventAggregator|CommandExecutedEvent <- QualityDefinitionController
+2025-06-16 01:42:24.7|Trace|CommandExecutor|ManualImportCommand <- ManualImportService [00:00:00.8672903]

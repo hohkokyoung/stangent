@@ -1,0 +1,15 @@
+{
+  "number": 9102,
+  "title": "V5 Ignore Download actually removes from client",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nI'm using the new V5 and found that for downloads which are hung up on importing or did a partial import, if I manually select to \"Ignore Download\", it will actually remove from the client altogether just like \"Remove from download client\" would function. I believe it worked as expected on V4, I confirmed I have a seed time set for the tracker used (30 days), the seed time is applied in qbittorrent, the torrent itself is actively seeding, but when I click ignore download it immediately gets removed from qbittorrent. I specifically did this with a season release that had partial automatic imports for missing episodes.\n\n### Expected Behavior\n\nWhen clicking ignore download, it should be removed from the sonarr downloads view but remain in the download client, then sonarr depending on completed download handling settings it should eventually delete it once the seeding time has passed and it sonarr sees that it's in a stopped stated.\n\n### Steps To Reproduce\n\ndownload a release that is not an upgrade so it does not get automatically imported, ensure the seed time is set for past the testing period, click ignore download, watch it disappear from qbittorrent. In the logs this was reproduced with \"Spidey and His Amazing Friends S05 720p DSNP WEB H 264\"\n\n### Environment\n\n```markdown\n- OS: unraid\n- Sonarr: v5\n- Docker Install: linuxserver\n- Using Reverse Proxy: yes\n- Browser: chrome\n- Database:\n```\n\n### What branch are you running?\n\nDevelop\n\n### Trace Logs\n\n[sonarr.trace.txt](https://github.com/user-attachments/files/33403248/sonarr.trace.txt)\n\n### Anything else\n\n_No response_",
+  "author": "dRuEFFECT",
+  "createdAt": "2026-10-13T19:52:11Z",
+  "comments": [],
+  "attachments": [
+    {
+      "url": "https://github.com/user-attachments/files/33403248/sonarr.trace.txt",
+      "file": "attachments/01-sonarr.trace.txt",
+      "bytes": 3350665
+    }
+  ]
+}

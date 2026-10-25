@@ -1,0 +1,28 @@
+{
+  "number": 8771,
+  "title": "Randomly became inaccessible with high memory usage",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nWoke up today and Sonarr was inaccessible. The memory usage is at 90% of my total server. Here is what the container logs say, it just repeats this over and over:\n\n<img width=\"1320\" height=\"2274\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/8c8a73d1-8ae2-46cc-9bed-9ff8803bddc0\" />\n\nI rebooted the container but no dice\n\n### Expected Behavior\n\nTo be accessible with normal memory usage \n\n### Steps To Reproduce\n\n1. Start the container \n\n### Environment\n\n```markdown\n- OS: DSM 7.2.2-72806 Update 9 \n- Sonarr: 4.0.19.2979\n- Docker Install: yes\n- Using Reverse Proxy: yes\n- Browser: safari/arc\n- Database: yes\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n\nN/A\n\n### Anything else?\n\n_No response_",
+  "author": "fcpwiz",
+  "createdAt": "2026-07-09T12:13:56Z",
+  "comments": [
+    {
+      "id": 4926058401,
+      "author": "NeoTheOne",
+      "createdAt": "2026-07-09T14:24:17Z",
+      "body": "Same thing happening here."
+    },
+    {
+      "id": 4926141773,
+      "author": "NeoTheOne",
+      "createdAt": "2026-07-09T14:32:16Z",
+      "body": "@fcpwiz I had to add this:\nNO_COLOR=1\n\nand change TERM to this:\n\nTERM=dumb\n\nIn the environmental variables on the docker and after that it worked, was some weird issue with the colors from the migration not being able to be shown so it just crashed the migration process? Weird ass shit."
+    }
+  ],
+  "attachments": [
+    {
+      "url": "https://github.com/user-attachments/assets/8c8a73d1-8ae2-46cc-9bed-9ff8803bddc0",
+      "file": "attachments/01-8c8a73d1-8ae2-46cc-9bed-9ff8803bddc0",
+      "bytes": 499391
+    }
+  ]
+}

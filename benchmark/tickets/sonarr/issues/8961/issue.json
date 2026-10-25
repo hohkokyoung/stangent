@@ -1,0 +1,9 @@
+{
+  "number": 8961,
+  "title": "Library Import only works after second folder added",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nBrand new user.  I went to Library Import, added folder and nothing happens.  I'm only presented with a \"Choose Another Folder\" button.  Only after adding a second folder does the import start working, and only on the second folder.\n\n### Expected Behavior\n\nI expect that, after adding the first folder, that it should scan those folders and allow importing.\n\n### Steps To Reproduce\n\n_No response_\n\n### Environment\n\n```markdown\n- OS: Windows 64\n- Sonarr: Version 4.0.19.2979\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs\n\nDebug log only starts after new series starts importing, therefore no debug log.\n\n### Anything else\n\n_No response_",
+  "author": "we9v9v",
+  "createdAt": "2026-09-13T13:01:49Z",
+  "comments": [],
+  "attachments": []
+}

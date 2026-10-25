@@ -1,0 +1,22 @@
+{
+  "number": 9111,
+  "title": "Number of Activity Queue entries displayed in side panel does not match filtered count",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nIf there are entries in the activity queue then the number of entries is displayed next to the Activity Queue selector in the side panel.\nIn v4, if the filter was changed to exclude unknown series and some entries were filtered out then this number would change to reflect that. In v5 the number remains as the unfiltered count.\n\n\n### Expected Behavior\n\nThe count of entries in the activity queue matches the filter used.\n\n### Steps To Reproduce\n\nRequires entries in the activity queue - eg remove a show which still has episodes in the download client.\nSet filter to \"Exclude Unknown Series Items\"\nThose entries disappear from the queue\nThe count remains unchanged\n\n### Environment\n\n```markdown\n- OS: Windows\n- Sonarr: 5.0.0.2569\n- Docker Install: No\n- Using Reverse Proxy: No\n- Browser: Brave\n- Database: Standard\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs\n\n2026-10-14 09:09:46.9|Trace|Http|Req: 7009 [GET] /sonarr/api/v5/queue?page=1&pageSize=20&sortKey=time&sortDirection=descending (from 192.168.1.224 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36)\n2026-10-14 09:09:46.9|Trace|Http|Req: 7010 [GET] /sonarr/api/v5/series (from 192.168.1.224 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36)\n2026-10-14 09:09:46.9|Trace|Http|Req: 7011 [GET] /sonarr/api/v5/settings/ui (from 192.168.1.224 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36)\n2026-10-14 09:09:46.9|Trace|Http|Res: 7009 [GET] /sonarr/api/v5/queue?page=1&pageSize=20&sortKey=time&sortDirection=descending: 200.OK (14 ms)\n2026-10-14 09:09:46.9|Trace|ConfigService|Using default config value for 'timezone' defaultValue:''\n2026-10-14 09:09:46.9|Trace|ConfigService|Using default config value for 'showrelativedates' defaultValue:'True'\n2026-10-14 09:09:46.9|Trace|ConfigService|Using default config value for 'uilanguage' defaultValue:'1'\n2026-10-14 09:09:46.9|Trace|Http|Res: 7011 [GET] /sonarr/api/v5/settings/ui: 200.OK (5 ms)\n2026-10-14 09:09:47.3|Trace|Http|Res: 7010 [GET] /sonarr/api/v5/series: 200.OK (391 ms)\n\n\n### Anything else\n\n<img width=\"763\" height=\"266\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/2700ca75-b88a-4fd4-8e0f-e2bcc96224ff\" />\n",
+  "author": "UVRay",
+  "createdAt": "2026-10-14T08:16:38Z",
+  "comments": [
+    {
+      "id": 6166289040,
+      "author": "mynameisbogdan",
+      "createdAt": "2026-10-14T10:28:45Z",
+      "body": "I guess this would be one side-effect of 2d071eca9bca1128620e0dfa89f7901285bcce5b. \n\n"
+    }
+  ],
+  "attachments": [
+    {
+      "url": "https://github.com/user-attachments/assets/2700ca75-b88a-4fd4-8e0f-e2bcc96224ff",
+      "file": "attachments/01-2700ca75-b88a-4fd4-8e0f-e2bcc96224ff",
+      "bytes": 33903
+    }
+  ]
+}

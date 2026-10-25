@@ -114,3 +114,30 @@ Which repo proves what (D29, D32, D43): nopCommerce and eShop for C#; Kavita and
 history (Kavita has a usable `openapi.json`); CleanArchitecture for the hand-checked links in `expected/`.
 For 📜 history (Phase 1c): tuned on nopCommerce and Sonarr, judged on bitwarden/server (Kavita and eShop
 are reported but have too few fixes to count).
+
+## Phase 3: tickets on Sonarr (D77–D81)
+
+The frozen set is in `tickets/sonarr/`: `selection.json` (40 bugs, newest first, and 10 not-bugs, chosen by
+`--select-tickets`'s rule), `issues/<n>/issue.json` with the comments from before each fix (or closing) and their
+attachments, and `answer-key.json` (fix commits and files: read by the scoring only, never by the run).
+
+```bash
+B=$HOME/stangent-bench                           # stays outside temp folders: the run spans days
+git clone --filter=blob:limit=200k https://github.com/Sonarr/Sonarr.git $B/sonarr && git -C $B/sonarr checkout -q 0bffefe7c8b7804068ab0844af218376e58b1acb
+dotnet build src/Stangent.Cli && cp -R src/Stangent.Cli/bin/Debug/net10.0 $B/stangent-bin
+(cd $B/sonarr && dotnet $B/stangent-bin/stangent.dll init && cp $OLDPWD/benchmark/configs/sonarr.tickets.yaml stangent.yaml \
+  && cp $OLDPWD/benchmark/configs/sonarr.global.json global.json && cp -R $OLDPWD/benchmark/results/2026-10-24-phase2-sonarr/specs . \
+  && dotnet $B/stangent-bin/stangent.dll graph build)
+benchmark/tickets/sonarr/app/setup.sh $B/sonarr      # Playwright app setting: build, start offline with seeded series
+bench --select-tickets $B/sonarr --out-dir benchmark/tickets/sonarr   # done once; the result is committed
+bench --copy-to-jira benchmark/tickets/sonarr --site peachpersonal.atlassian.net --project SONB [--dry-run]   # asked first
+benchmark/tickets/run.sh $B/sonarr benchmark/tickets/sonarr points pages bundles drafts prove replay --model sonnet
+bench --score-tickets $B/sonarr benchmark/tickets/sonarr --out benchmark/results/<date>-phase3-sonarr-score.json
+```
+
+- The run uses product defaults (AI picks on, `fsd.findings` off, the cap) and no developer edits or hints (D79).
+- `prove` checks out each bug's fix parent (a not-bug's commit before it closed); a reproduction is run again on the fix
+  commit with `ticket prove --verify` ("proof is real"). Each phase resumes; `--only KEY,...` limits it.
+- Sonarr builds a single project only with `-p:SolutionDir=…/src/` (`tickets.dotnetArgs`), and serves the UI from
+  `_output/net10.0/UI` (`app/build.sh` copies it). The seed writes two series straight into the database, so no
+  metadata service is called.

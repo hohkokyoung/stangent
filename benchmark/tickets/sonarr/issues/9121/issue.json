@@ -1,0 +1,9 @@
+{
+  "number": 9121,
+  "title": "\"search for missing\" in calendar tab not doing anything",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\n\"search for missing\" in calendar tab is not doing anything\n\n### Expected Behavior\n\nwork as expected\n\n### Steps To Reproduce\n\n_No response_\n\n### Environment\n\n```markdown\n- OS: Windows 10\n- Sonarr: 5.0.0.2608\n- Docker Install: No\n- Using Reverse Proxy: No\n- Browser: Chrome\n```\n\n### What branch are you running?\n\nDevelop\n\n### Trace Logs\n\nN/A\n\n### Anything else\n\n_No response_",
+  "author": "shifoc",
+  "createdAt": "2026-10-15T03:15:51Z",
+  "comments": [],
+  "attachments": []
+}

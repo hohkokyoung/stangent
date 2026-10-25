@@ -1,0 +1,16 @@
+{
+  "number": 8006,
+  "title": "Sonarr does not recognize multi audio English / French",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nWhen a file is dual audio with French and English, Sonarr does not recognize both languages.\n\n### Expected Behavior\n\nSonarr recognizes both languages, allowing to use custom formats to prefer dual language\n\n### Steps To Reproduce\n\n1. Use the test parsing button at \"/settings/customformats\"\n2. Try with any show and episode number\n3. Put \"FR\", it recognizes French, put \"ENG\", it recognizes English, put \"FR ENG\", it only recognizes French\n\n### Environment\n\n```markdown\n- OS: AlmaLinux 9\n- Sonarr: 4.0.15.2941\n- Docker Install: Yes\n- Using Reverse Proxy: Yes\n- Browser: Firefox 141\n- Database: Sqlite 3.49.2\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n\nDoes this issue really need trace logs?\n\n### Anything else?\n\n_No response_",
+  "author": "diamkil",
+  "createdAt": "2025-08-05T20:32:03Z",
+  "comments": [
+    {
+      "id": 3156563819,
+      "author": "thezoggy",
+      "createdAt": "2025-08-05T20:38:51Z",
+      "body": "sonarr wouldnt know what the audio languages is used until it can actually probe the media. it only has the release name/file name to originally go off of. which means a supported naming scheme has to be used to be parsed for it to understand. you would need to provide examples of what is not working as well as logs...  "
+    }
+  ],
+  "attachments": []
+}

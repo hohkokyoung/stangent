@@ -1,0 +1,49 @@
+{
+  "number": 9113,
+  "title": "\"Enable Color-Impaired Mode\" Has No Effect, New UI Is Not CVD Friendly",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nTurning on \"Enable Color-Impaired Mode\" in Settings->UI->Style does not change the colors in the web UI. The default colour bars used underneath shows in Media->Series are very narrow and low-contrast, making it very hard for users with CVD (colourblindness) to differentiate between them.\n\n### Expected Behavior\n\nThis behaviour is new along with the new UI in the 5.0.0.2569 release, so I'm not sure how it's meant to look. Regardless, I would expect the \"Enable Color-Impaired Mode\" tickbox to make some difference to the colours used in the web UI, which it isn't doing.\n\n### Steps To Reproduce\n\n1. In Vivaldi browser, observe the colour style and colour of the indicator bars beneath each series, also the key at the bottom left of the series list\n2. Navigate to Settings->UI->Style and tick/clear the \"Enable Color-Impaired Mode\" box as appropriate\n3. Return to Media->Series and observe that the colour bars under the series and the key have not changed\n\n### Environment\n\n```markdown\n- OS: TrueNAS 25.10.7\n- Sonarr: 5.0.0.2569\n- Docker Install: Yes\n- Using Reverse Proxy: No\n- Browser: Vivaldi 8.2.4133.84\n- Database: Sqlite 3.53.4\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs\n\nI'm happy to provide \"logs from the development console\" if someone can explain how to do this; it doesn't appear to be covered in the linked wiki page.\n\n### Anything else\n\nHere are screenshots with Colour-Impaired Mode On:\n\n<img width=\"340\" height=\"272\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/3f13f14a-c223-4d11-9863-bcb9c143e37d\" />\n\n...and off:\n\n<img width=\"340\" height=\"272\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/61960c4e-1f82-4279-9386-6f08ba884156\" />\n\nI have had it confirmed by a friend with regular colour vision that the colours are identical in each image.\n\nThey have also commented that the thin colour bars are difficult for them to distinguish between unless they look very closely.",
+  "author": "WiteWulf",
+  "createdAt": "2026-10-14T10:54:44Z",
+  "comments": [
+    {
+      "id": 6166781551,
+      "author": "mynameisbogdan",
+      "createdAt": "2026-10-14T10:57:16Z",
+      "body": "> They have also commented that the thin colour bars are difficult for them to distinguish between unless they look very closely.\n\n<img width=\"500\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/2da38508-da44-4bbd-be0a-5730655437c5\" />\n\nDid they enabled `Detailed Progress Bar` in series index options?\n\n@markus101 I was thinking for some time to propose enabling this option by default. WDYT?"
+    },
+    {
+      "id": 6167533614,
+      "author": "WiteWulf",
+      "createdAt": "2026-10-14T11:43:02Z",
+      "body": "I've turned on \"Detailed Progress Bar\" and that certainly makes it a lot easier to see.\n\nHowever:\n- the \"Enable Color-Impaired Mode\" still has no effect\n- I can also now see that the colours used in the progress bar don't actually match the colours in the key\n\nExample of non-matching colours:\n\n<img width=\"340\" height=\"302\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/571edb1b-28d7-4efd-8baf-cc31533beda4\" />\n\nThe colour of the progress bar beneath the series in the screengrab does not match any of the colours in the key. I have had this confirmed by the same person with normal colour vision."
+    },
+    {
+      "id": 6167691793,
+      "author": "UVRay",
+      "createdAt": "2026-10-14T11:51:22Z",
+      "body": "I would add to this that the calendar view is even more of an issue with only a small block of colour (the line does not extend down the the whole show as it used to), and even if full colour events is turned on the background colour is very, very faint. It's especially (not) noticeable when using the dark theme. "
+    }
+  ],
+  "attachments": [
+    {
+      "url": "https://github.com/user-attachments/assets/3f13f14a-c223-4d11-9863-bcb9c143e37d",
+      "file": "attachments/01-3f13f14a-c223-4d11-9863-bcb9c143e37d",
+      "bytes": 42738
+    },
+    {
+      "url": "https://github.com/user-attachments/assets/61960c4e-1f82-4279-9386-6f08ba884156",
+      "file": "attachments/02-61960c4e-1f82-4279-9386-6f08ba884156",
+      "bytes": 42711
+    },
+    {
+      "url": "https://github.com/user-attachments/assets/2da38508-da44-4bbd-be0a-5730655437c5",
+      "file": "attachments/03-2da38508-da44-4bbd-be0a-5730655437c5",
+      "bytes": 36010
+    },
+    {
+      "url": "https://github.com/user-attachments/assets/571edb1b-28d7-4efd-8baf-cc31533beda4",
+      "file": "attachments/04-571edb1b-28d7-4efd-8baf-cc31533beda4",
+      "bytes": 45970
+    }
+  ]
+}

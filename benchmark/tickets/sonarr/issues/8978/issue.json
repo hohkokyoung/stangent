@@ -1,0 +1,9 @@
+{
+  "number": 8978,
+  "title": "Can't import anime from my simkl lists",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nWhen I set content type to anime it fails to import any anime titles\n\n### Expected Behavior\n\nTo work\n\n### Steps To Reproduce\n\n_No response_\n\n### Environment\n\n```markdown\n- OS: arch linux\n- Sonarr: 4.0.20.3014\n- Docker Install: yes (podman)\n- Using Reverse Proxy: no\n- Browser: \n- Database: Sqlite 3.53.4\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs\n\n```\n[Warn] SimklParser: Skipping info grabbing for 'Ghost in the Shell' because it is an unsupported content type.\n[Warn] SimklParser: Skipping info grabbing for 'Shingeki no Kyojin Season 3' because it is an unsupported content type.\n[Warn] SimklParser: Skipping info grabbing for 'Shingeki no Kyojin: TheFinal Season' because it is an unsupported content type.\n[Warn] SimklParser: Skipping info grabbing for 'Shingeki no Kyojin: TheFinal Season' because it is an unsupported content type.\n[Warn] SonarrErrorPipeline: Invalid request Validation failed:\n -- : No results were returned from your import list, please check yoursettings and the log for details.\n```\n\n### Anything else\n\n_No response_",
+  "author": "mu5taph4",
+  "createdAt": "2026-09-20T14:10:57Z",
+  "comments": [],
+  "attachments": []
+}

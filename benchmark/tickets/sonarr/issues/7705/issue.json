@@ -1,0 +1,15 @@
+{
+  "number": 7705,
+  "title": "Tooltips can be cut off when rendered near edge of screen",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\n![Image](https://github.com/user-attachments/assets/173080f0-049d-4f69-ae05-96d12f875934)\n\n### Expected Behavior\n\nnot be cut off\n\n### Steps To Reproduce\n\n_No response_\n\n### Environment\n\n```markdown\n- OS: windows 11\n- Sonarr: 4.0.13.2934\n- Docker Install: \n- Using Reverse Proxy: \n- Browser: chrome\n- Database:\n```\n\n### What branch are you running?\n\nDevelop\n\n### Trace Logs?\n\nn/a\n\n### Anything else?\n\n_No response_",
+  "author": "shifoc",
+  "createdAt": "2025-03-09T09:16:10Z",
+  "comments": [],
+  "attachments": [
+    {
+      "url": "https://github.com/user-attachments/assets/173080f0-049d-4f69-ae05-96d12f875934",
+      "file": "attachments/01-173080f0-049d-4f69-ae05-96d12f875934",
+      "bytes": 28930
+    }
+  ]
+}

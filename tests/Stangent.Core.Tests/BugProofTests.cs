@@ -338,6 +338,11 @@ public class BugProofTests
         Assert.Contains(@"-t 'shows total \(with tax\)$'", t.TestCommand("a.test.ts", "shows total (with tax)", "r.json"));
         var dotnet = new TestTarget("d", TestTarget.Unit, "dotnet", "T", "T/T.csproj", ["*.cs"], []);
         Assert.Contains(@"FullyQualifiedName~N.C.Case\(1\)", dotnet.TestCommand(null, "N.C.Case(1)", "r.trx"));
+        var sonarr = new TestTarget("d", TestTarget.Unit, "dotnet", "T", "T/T.csproj", ["*.cs"], []) { Args = "-p:SolutionDir=/r/src/", Filter = "TestCategory!=ManualTest" };
+        Assert.Equal("dotnet build 'T/T.csproj' -p:SolutionDir=/r/src/", sonarr.BuildCommand);
+        Assert.Contains("--filter 'TestCategory!=ManualTest'", sonarr.TestCommand(null, null, "all.trx"));      // a whole-project run
+        Assert.DoesNotContain("ManualTest", sonarr.TestCommand(null, "N.C.T", "one.trx"));                    // one test by name
+        Assert.Equal(sonarr, TestTarget.FromJson(sonarr.ToJson()) with { Patterns = sonarr.Patterns, Covers = sonarr.Covers });
         var pw = new TestTarget("p", TestTarget.Playwright, "playwright", "e2e", null, ["*.spec.ts"], []);
         Assert.Contains("--retries=0", pw.TestCommand("e2e/a.spec.ts", "a", "r.json"));
         Assert.True(BugProof.SameTest("Shop.Tests.OrderTests.Rejects_over_100", "Shop.Tests.OrderTests.Rejects_over_100"));

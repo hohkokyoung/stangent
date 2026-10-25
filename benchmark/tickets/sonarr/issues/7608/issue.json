@@ -1,0 +1,16 @@
+{
+  "number": 7608,
+  "title": "Drop-down fields of Conditions in Custom Formats flickering with maximized window",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nThe drop-down UI is flickering on a loop, kinda trying to refresh itself. Cannot make a screenshot since the frame is frozen then.\n\n### Expected Behavior\n\nThe drop-down UI is static.\n\n### Steps To Reproduce\n\n1. Go to Custom Formats.\n2. Add Custom Format.\n3. Add Condition\n4. Select any condition with a drop-down (i.e. Resolution).\n5. Click the drop-down to see the options (Resolution in this case).\n\n### Environment\n\n```markdown\n- OS: Windows 11\n- Sonarr: 4.0.12.2823\n- Browser: Chrome\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n\nNo log entry was created.\n\n### Anything else?\n\nThis behavior was not observed in Radarr 5.17.2.9580.",
+  "author": "4legom",
+  "createdAt": "2025-01-27T17:48:14Z",
+  "comments": [
+    {
+      "id": 2618675635,
+      "author": "mynameisbogdan",
+      "createdAt": "2025-01-28T11:03:07Z",
+      "body": "Looks like the same issue described here: https://old.reddit.com/r/sonarr/comments/1i509y0/adding_new_tv_show_freaks_out_flashes_when_trying/\n\nRelated piece of code: https://github.com/Sonarr/Sonarr/blob/ed1b17005f7dbb1d83b6f8db88764dbba8a5da42/frontend/src/Components/Form/Select/EnhancedSelectInput.tsx#L197-L202"
+    }
+  ],
+  "attachments": []
+}

@@ -1,0 +1,27 @@
+{
+  "number": 7874,
+  "title": "Trakt Lists no longer work after 24 hours",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nTrakt access tokens only last 24 hours due to a recent change made by Trakt to their API.\n\nAs a result, any import lists that use Trakt tokens don't work after 24 hours\n\nTrakt's instructions to app developers is as follows:\n\n```\n\"We're instead going with a much lower 24 hours and relying on apps to automatically use the refresh_token more often to obtain a new access_token.\"\n\nTokens should continue to work up until their expiration date. At that time, your app needs to refresh it and get a new access_token, then use the expires_in value so your app can dynamically handle when to refresh.\"\n```\n\n### Expected Behavior\n\nAccess tokens to be auto refreshed using the refresh_token call at the start of the import list job. This will auto refresh the token and allow trakt lists to work for longer than 24 hours\n\n### Steps To Reproduce\n\nRun any trakt based import lists for longer than 24 hours\n\n### Environment\n\n```markdown\nVersion: 4.0.14.2938\nPackage Version:4.0.14.2938-ls138 by [linuxserver.io](https://linuxserver.io/)\n.NET: Yes (6.0.13)\nDocker: Yes\nDatabase: Sqlite 3.48.0\nDatabase Migration: 217\nAppData Directory: /config\nStartup Directory: /app/sonarr/bin\nMode: Console\nUptime: 12d 07:51:17\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n\nAttached:\n- Auto import task\n- Manual import test and save\n\n[auto task.txt](https://github.com/user-attachments/files/20401698/auto.task.txt)\n[manual test.txt](https://github.com/user-attachments/files/20401699/manual.test.txt)\n\n### Anything else?\n\n_No response_",
+  "author": "antigravity83",
+  "createdAt": "2025-05-22T10:49:00Z",
+  "comments": [
+    {
+      "id": 2900973799,
+      "author": "Pengi123",
+      "createdAt": "2025-05-22T12:00:32Z",
+      "body": "I have same issue"
+    }
+  ],
+  "attachments": [
+    {
+      "url": "https://github.com/user-attachments/files/20401698/auto.task.txt",
+      "file": "attachments/01-auto.task.txt",
+      "bytes": 1025647
+    },
+    {
+      "url": "https://github.com/user-attachments/files/20401699/manual.test.txt",
+      "file": "attachments/02-manual.test.txt",
+      "bytes": 162204
+    }
+  ]
+}

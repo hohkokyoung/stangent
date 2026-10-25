@@ -1,0 +1,9 @@
+{
+  "number": 8969,
+  "title": "Major breaking change/bug - password required",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nafter going from linuxserver/sonarr:4.0.19 to 4.0.20, when trying to access it requests a username and password which i dont have.\nreverting to 4.0.19 solved the issue\nThis is either a bug or a massive breaking change that should not be on such a small jump\n\n### Expected Behavior\n\nNo auth required\n\n### Steps To Reproduce\n\n_No response_\n\n### Environment\n\n```markdown\n- OS: \n- Sonarr: \n- Docker Install: \n- Using Reverse Proxy: \n- Browser: \n- Database:\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs\n\n...\n\n### Anything else\n\n_No response_",
+  "author": "Dima-Kal",
+  "createdAt": "2026-09-17T14:37:08Z",
+  "comments": [],
+  "attachments": []
+}

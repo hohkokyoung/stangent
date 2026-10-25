@@ -1,0 +1,15 @@
+{
+  "number": 9018,
+  "title": "Interactive Search: Language Sorting",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nWhen searching for an episode or a season from the interactive search, sorting the results by languages does not work. (Other filters and ordering are applied). In the screenshot below, I sorted the results by languages in descending order, this should display as follow: ***Unknown -> Hindi -> English***.\n\n<img width=\"1294\" height=\"642\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/721cfcce-6f89-45b5-b8e0-9eca82a72748\" />\n\n### Expected Behavior\n\nWhen ordering by languages results should be ordered according to the language list.\n\n### Steps To Reproduce\n\n1. Go to an episode\n2. Run the interactive search\n3. Order by languages the results\n\n### Environment\n\n```markdown\n- OS: Linux\n- Sonarr: 4.0.20.3014\n- Docker Install: Yes\n- Using Reverse Proxy: Yes\n- Browser: Safari\n- Database: Sqlite 3.53.4\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs\n\nUI Issue. There are no relevant logs.\n\n### Anything else\n\n_No response_",
+  "author": "SebanDan",
+  "createdAt": "2026-10-05T08:38:33Z",
+  "comments": [],
+  "attachments": [
+    {
+      "url": "https://github.com/user-attachments/assets/721cfcce-6f89-45b5-b8e0-9eca82a72748",
+      "file": "attachments/01-721cfcce-6f89-45b5-b8e0-9eca82a72748",
+      "bytes": 249909
+    }
+  ]
+}

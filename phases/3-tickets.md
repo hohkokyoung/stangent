@@ -244,3 +244,23 @@ findings were checked against the code and fixed; none was rejected. Each has a 
 | 12 | Attachment downloads followed redirects anywhere | Redirects followed by hand, Atlassian hosts only |
 | 13 | `--verify` broke after a newer `--hint`; an app that didn't start left no record | The attempt keeps its target; app failures are recorded as `failed` |
 
+### Step 8 · preparation (code only, no AI) · 2026-10-26
+- **The frozen set** (`benchmark/tickets/sonarr/`, chosen by `--select-tickets`'s rule, D78): 40 bugs, newest first on
+  Sonarr's main line before 0bffefe7, each labelled `bug` and closed by exactly one main-line commit of ≤ 15 files (29
+  backend, 10 frontend, 1 both); 10 not-bugs filed with the bug template, closed as not planned, referenced by no commit,
+  not closed by a bot, with a maintainer's reply. `answer-key.json` (fix commits and files) is read by the scoring only.
+- *Plan detail, decided before any run:* each issue is frozen with only the comments from before its fix (or closing)
+  **and before the first maintainer comment**. A first version kept comments up to the closing, which put the
+  maintainer's verdict ("that's by design") into not-bugs' text; it was caught on reading the list and re-frozen.
+  39 comments kept, none after its cutoff (checked).
+- **Scoring** `--score-tickets` (D79 with D81: proof bars on the 30 newest bugs); **Jira copy** `--copy-to-jira`
+  (resumable; the GitHub number as a label `gh-<n>`, not in the text); **run** `benchmark/tickets/run.sh` in D79's order
+  (points → pages → bundles → drafts → prove → replay).
+- **Sonarr for Playwright** (`benchmark/tickets/sonarr/app/`): built at the checked-out commit, started offline with a
+  fresh data folder, no sign-in, two series seeded straight into the database (no metadata service); checked: the UI
+  loads, the API lists both series, and a Playwright spec run as the proof runs it passes.
+- New settings (plan detail): `tickets.dotnetArgs` (Sonarr builds a single test project only with `SolutionDir` set),
+  `tickets.testFilter` (the repo's unit-test filter for whole-project runs), `tickets.app.playwrightDir`.
+- **Flagged for the owner before the run:** not-bug #9004 ("Backport Trakt show-link fix to Sonarr v4") is a real bug
+  fixed in v5 and closed only as not backported; at the v4 commit it may well reproduce.
+

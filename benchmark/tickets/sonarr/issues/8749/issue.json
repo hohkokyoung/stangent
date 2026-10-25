@@ -1,0 +1,20 @@
+{
+  "number": 8749,
+  "title": "actual hdd capacity on sonarr wsl",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nI have installed Sonarr on wsl2 and it doesnt show the actual hdd capacity apart from virtual 1tb on system status\n\n\n\n\n### Expected Behavior\n\nshow actual hdd capacity\n\n### Steps To Reproduce\n\n_No response_\n\n### Environment\n\n```markdown\n- OS: wsl win10\n- Sonarr: 4.0.19.2979\n- Docker Install: yes\n- Using Reverse Proxy: no\n- Browser: chrome\n- Database:\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n\n.\n\n### Anything else?\n\n<img width=\"1920\" height=\"1080\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/a3790742-414f-41c5-be4b-a8e2217c15ea\" />\n<img width=\"1920\" height=\"1080\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/0f79feef-3d18-4e12-8555-2557dd5fdb34\" />",
+  "author": "ananias47",
+  "createdAt": "2026-06-27T10:31:27Z",
+  "comments": [],
+  "attachments": [
+    {
+      "url": "https://github.com/user-attachments/assets/a3790742-414f-41c5-be4b-a8e2217c15ea",
+      "file": "attachments/01-a3790742-414f-41c5-be4b-a8e2217c15ea",
+      "bytes": 192722
+    },
+    {
+      "url": "https://github.com/user-attachments/assets/0f79feef-3d18-4e12-8555-2557dd5fdb34",
+      "file": "attachments/02-0f79feef-3d18-4e12-8555-2557dd5fdb34",
+      "bytes": 180153
+    }
+  ]
+}

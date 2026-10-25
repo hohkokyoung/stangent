@@ -1,0 +1,195 @@
+2026-07-03 09:41:41.6|Trace|DiskProviderBase|Deleting file: C:\ProgramData\Sonarr-Anime\logs\sonarr.txt
+2026-07-03 09:41:41.6|Trace|CommandQueueManager|Updating command status
+2026-07-03 09:41:41.6|Trace|EventAggregator|Publishing CommandUpdatedEvent
+2026-07-03 09:41:41.6|Trace|EventAggregator|CommandUpdatedEvent -> CommandController
+2026-07-03 09:41:41.6|Trace|EventAggregator|CommandUpdatedEvent <- CommandController
+2026-07-03 09:41:41.6|Trace|EventAggregator|Publishing CommandExecutedEvent
+2026-07-03 09:41:41.6|Trace|EventAggregator|CommandExecutedEvent -> TaskManager
+2026-07-03 09:41:41.6|Trace|EventAggregator|CommandExecutedEvent <- TaskManager
+2026-07-03 09:41:41.6|Trace|EventAggregator|CommandExecutedEvent -> TaskController
+2026-07-03 09:41:41.6|Trace|EventAggregator|CommandExecutedEvent <- TaskController
+2026-07-03 09:41:41.6|Trace|EventAggregator|CommandExecutedEvent -> QualityDefinitionController
+2026-07-03 09:41:41.6|Trace|EventAggregator|CommandExecutedEvent <- QualityDefinitionController
+2026-07-03 09:41:41.6|Trace|CommandExecutor|DeleteLogFilesCommand <- DeleteLogFilesService [00:00:00.0278708]
+2026-07-03 09:41:41.6|Trace|Http|Req: 62431 [GET] /api/v3/command (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:41:41.6|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:41:41.6|Trace|CommandQueueManager|Getting all commands
+2026-07-03 09:41:41.6|Trace|Http|Res: 62431 [GET] /api/v3/command: 200.OK (1 ms)
+2026-07-03 09:41:41.6|Debug|Api|[GET] /api/v3/command: 200.OK (1 ms)
+2026-07-03 09:41:41.7|Trace|Http|Req: 62432 [GET] /api/v3/log/file (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:41:41.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:41:41.7|Trace|Http|Res: 62432 [GET] /api/v3/log/file: 200.OK (1 ms)
+2026-07-03 09:41:41.7|Debug|Api|[GET] /api/v3/log/file: 200.OK (1 ms)
+2026-07-03 09:41:53.0|Trace|Http|Req: 62433 [GET] /api/v3/customformat (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:41:53.0|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:41:53.0|Trace|Http|Res: 62433 [GET] /api/v3/customformat: 200.OK (1 ms)
+2026-07-03 09:41:53.0|Debug|Api|[GET] /api/v3/customformat: 200.OK (1 ms)
+2026-07-03 09:41:54.3|Trace|Scheduler|Pending Tasks: 0
+2026-07-03 09:41:56.2|Trace|Http|Req: 62434 [GET] /api/v3/customformat/schema (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:41:56.2|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:41:56.2|Trace|Http|Res: 62434 [GET] /api/v3/customformat/schema: 200.OK (1 ms)
+2026-07-03 09:41:56.2|Debug|Api|[GET] /api/v3/customformat/schema: 200.OK (1 ms)
+2026-07-03 09:42:05.1|Trace|Http|Req: 62435 [PUT] /api/v3/customformat/3?forceSave=true (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:42:05.1|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:05.1|Trace|SonarrErrorPipeline|Handling Exception
+2026-07-03 09:42:05.1|Warn|SonarrErrorPipeline|Invalid request Validation failed: 
+ -- Value: 'Value' must not be empty.
+2026-07-03 09:42:05.1|Trace|Http|Res: 62435 [PUT] /api/v3/customformat/3?forceSave=true: 400.BadRequest (3 ms)
+2026-07-03 09:42:05.1|Debug|Api|[PUT] /api/v3/customformat/3?forceSave=true: 400.BadRequest (3 ms)
+2026-07-03 09:42:11.7|Trace|Http|Res: 62424 [GET] /signalr/messages?access_token=(removed)&id=ZO_fGQzRaBYUG14l_liNdw: 101.SwitchingProtocols (42101 ms)
+2026-07-03 09:42:11.7|Trace|Http|Req: 62436 [POST] /signalr/messages/negotiate?access_token=(removed)&negotiateVersion=1 (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:42:11.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: SignalR was successfully authenticated.
+2026-07-03 09:42:11.7|Trace|Http|Res: 62436 [POST] /signalr/messages/negotiate?access_token=(removed)&negotiateVersion=1: 200.OK (0 ms)
+2026-07-03 09:42:11.7|Trace|Http|Req: 62437 [GET] /signalr/messages?access_token=(removed)&id=tyipvx50ganhRfNLCp1eHg (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:42:11.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: SignalR was successfully authenticated.
+2026-07-03 09:42:11.7|Trace|Http|Req: 62438 [GET] /api/v3/series (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:42:11.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:11.7|Trace|Http|Req: 62439 [GET] /api/v3/command (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:42:11.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:11.7|Trace|CommandQueueManager|Getting all commands
+2026-07-03 09:42:11.7|Trace|Http|Res: 62439 [GET] /api/v3/command: 200.OK (1 ms)
+2026-07-03 09:42:11.7|Debug|Api|[GET] /api/v3/command: 200.OK (1 ms)
+2026-07-03 09:42:11.7|Trace|Http|Req: 62440 [GET] /api/v3/queue/status (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:42:11.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:11.7|Trace|Http|Res: 62440 [GET] /api/v3/queue/status: 200.OK (1 ms)
+2026-07-03 09:42:11.7|Debug|Api|[GET] /api/v3/queue/status: 200.OK (1 ms)
+2026-07-03 09:42:11.7|Trace|Http|Req: 62441 [GET] /api/v3/health (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:42:11.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:11.7|Trace|Http|Res: 62441 [GET] /api/v3/health: 200.OK (1 ms)
+2026-07-03 09:42:11.7|Debug|Api|[GET] /api/v3/health: 200.OK (1 ms)
+2026-07-03 09:42:11.8|Trace|Http|Res: 62438 [GET] /api/v3/series: 200.OK (108 ms)
+2026-07-03 09:42:11.8|Debug|Api|[GET] /api/v3/series: 200.OK (108 ms)
+2026-07-03 09:42:14.7|Trace|Http|Req: 62442 [GET] /api/v3/health (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:42:14.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:14.7|Trace|Http|Req: 62443 [GET] /api/v3/diskspace (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:42:14.7|Trace|Http|Res: 62442 [GET] /api/v3/health: 200.OK (3 ms)
+2026-07-03 09:42:14.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:14.7|Debug|Api|[GET] /api/v3/health: 200.OK (3 ms)
+2026-07-03 09:42:14.7|Trace|Http|Req: 62444 [GET] /api/v3/system/status (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:42:14.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:14.7|Trace|Http|Res: 62444 [GET] /api/v3/system/status: 200.OK (4 ms)
+2026-07-03 09:42:14.7|Debug|Api|[GET] /api/v3/system/status: 200.OK (4 ms)
+2026-07-03 09:42:14.7|Trace|Http|Res: 62443 [GET] /api/v3/diskspace: 200.OK (24 ms)
+2026-07-03 09:42:14.7|Debug|Api|[GET] /api/v3/diskspace: 200.OK (24 ms)
+2026-07-03 09:42:16.0|Trace|Http|Req: 62445 [GET] /api/v3/log/file (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:42:16.0|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:16.0|Trace|Http|Res: 62445 [GET] /api/v3/log/file: 200.OK (1 ms)
+2026-07-03 09:42:16.0|Debug|Api|[GET] /api/v3/log/file: 200.OK (1 ms)
+2026-07-03 09:42:19.6|Trace|Http|Req: 62446 [GET] /logfile/sonarr.trace.txt (from ::1 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36)
+2026-07-03 09:42:19.6|Debug|Sonarr.Http.Authentication.BasicAuthenticationHandler|AuthenticationScheme: Basic was successfully authenticated.
+2026-07-03 09:42:19.6|Trace|Http|Res: 62446 [GET] /logfile/sonarr.trace.txt: 200.OK (7 ms)
+2026-07-03 09:42:24.3|Trace|Scheduler|Pending Tasks: 2
+2026-07-03 09:42:24.3|Trace|CommandQueueManager|Publishing RefreshMonitoredDownloads
+2026-07-03 09:42:24.3|Trace|CommandQueueManager|Checking if command is queued or started: RefreshMonitoredDownloads
+2026-07-03 09:42:24.3|Trace|CommandQueueManager|Inserting new command: RefreshMonitoredDownloads
+2026-07-03 09:42:24.3|Trace|CommandExecutor|RefreshMonitoredDownloadsCommand -> DownloadMonitoringService
+2026-07-03 09:42:24.3|Trace|CommandQueueManager|Publishing RssSync
+2026-07-03 09:42:24.3|Trace|CommandQueueManager|Checking if command is queued or started: RssSync
+2026-07-03 09:42:24.3|Trace|CommandQueueManager|Marking command as started: RefreshMonitoredDownloads
+2026-07-03 09:42:24.3|Trace|CommandQueueManager|Inserting new command: RssSync
+2026-07-03 09:42:24.4|Trace|HttpClient|Req: [POST] http://localhost:6789/jsonrpc: status()
+2026-07-03 09:42:24.4|Trace|ConfigService|Using default config value for 'proxyenabled' defaultValue:'False'
+2026-07-03 09:42:24.4|Trace|HttpClient|Res: HTTP/1.1 [POST] http://localhost:6789/jsonrpc: 200.OK (1469 bytes) (1 ms)
+2026-07-03 09:42:24.4|Trace|HttpClient|Response content (1469 bytes): {
+"version" : "1.1",
+"id" : "43f58545",
+"result" : {
+"RemainingSizeLo" : 0,
+"RemainingSizeHi" : 0,
+"RemainingSizeMB" : 0,
+"ForcedSizeLo" : 0,
+"ForcedSizeHi" : 0,
+"ForcedSizeMB" : 0,
+"DownloadedSizeLo" : 108604922,
+"DownloadedSizeHi" : 78,
+"DownloadedSizeMB" : 319591,
+"MonthSizeLo" : 4271848149,
+"MonthSizeHi" : 59,
+"MonthSizeMB" : 245737,
+"DaySizeLo" : 2142351260,
+"DaySizeHi" : 7,
+"DaySizeMB" : 30715,
+"ArticleCacheLo" : 0,
+"ArticleCacheHi" : 0,
+"ArticleCacheMB" : 0,
+"DownloadRate" : 0,
+"DownloadRateLo" : 0,
+"DownloadRateHi" : 0,
+"AverageDownloadRate" : 57550412,
+"AverageDownloadRateLo" : 57550412,
+"AverageDownloadRateHi" : 0,
+"DownloadLimit" : 0,
+"ThreadCount" : 8,
+"ParJobCount" : 0,
+"PostJobCount" : 0,
+"UrlCount" : 0,
+"UpTimeSec" : 257433,
+"DownloadTimeSec" : 5823,
+"ServerPaused" : false,
+"DownloadPaused" : false,
+"Download2Paused" : false,
+"ServerStandBy" : true,
+"PostPaused" : false,
+"ScanPaused" : false,
+"QuotaReached" : false,
+"FreeDiskSpaceLo" : 1707991040,
+"FreeDiskSpaceHi" : 506,
+"FreeDiskSpaceMB" : 2074204,
+"TotalDiskSpaceLo" : 20967424,
+"TotalDiskSpaceHi" : 1863,
+"TotalDiskSpaceMB" : 7630867,
+"FreeInterDiskSpaceLo" : 2843348992,
+"FreeInterDiskSpaceHi" : 359,
+"FreeInterDiskSpaceMB" : 1473175,
+"TotalInterDiskSpaceLo" : 4276088832,
+"TotalInterDiskSpaceHi" : 2793,
+"TotalInterDiskSpaceMB" : 11444205,
+"ServerTime" : 1783086144,
+"ResumeTime" : 0,
+"FeedActive" : false,
+"QueueScriptCount" : 0,
+"NewsServers" : [
+{
+"ID" : 1,
+"Active" : true
+}]
+}
+}
+2026-07-03 09:42:24.4|Trace|HttpClient|Req: [POST] http://localhost:6789/jsonrpc: listgroups()
+2026-07-03 09:42:24.4|Trace|ConfigService|Using default config value for 'proxyenabled' defaultValue:'False'
+2026-07-03 09:42:24.4|Trace|HttpClient|Res: HTTP/1.1 [POST] http://localhost:6789/jsonrpc: 200.OK (57 bytes) (0 ms)
+2026-07-03 09:42:24.4|Trace|HttpClient|Response content (57 bytes): {
+"version" : "1.1",
+"id" : "8f35ff5e",
+"result" : [
+
+]
+}
+2026-07-03 09:42:24.4|Trace|HttpClient|Req: [POST] http://localhost:6789/jsonrpc: history()
+2026-07-03 09:42:24.4|Trace|ConfigService|Using default config value for 'proxyenabled' defaultValue:'False'
+2026-07-03 09:42:24.4|Trace|CommandExecutor|RssSyncCommand -> RssSyncService
+2026-07-03 09:42:24.4|Trace|CommandQueueManager|Marking command as started: RssSync
+2026-07-03 09:42:24.4|Trace|EventAggregator|Publishing CommandUpdatedEvent
+2026-07-03 09:42:24.4|Trace|EventAggregator|CommandUpdatedEvent -> CommandController
+2026-07-03 09:42:24.4|Trace|EventAggregator|CommandUpdatedEvent <- CommandController
+2026-07-03 09:42:24.4|Info|RssSyncService|Starting RSS Sync
+2026-07-03 09:42:24.4|Trace|EventAggregator|Publishing CommandUpdatedEvent
+2026-07-03 09:42:24.4|Trace|EventAggregator|CommandUpdatedEvent -> CommandController
+2026-07-03 09:42:24.4|Trace|EventAggregator|CommandUpdatedEvent <- CommandController
+2026-07-03 09:42:24.4|Debug|FetchAndParseRssService|Available indexers 5
+2026-07-03 09:42:24.4|Debug|Newznab|Downloading Feed https://www.abnzb.com/api?t=tvsearch&cat=5020,5030,5040,5070,2010&extended=1&apikey=(removed)&offset=0&limit=100
+2026-07-03 09:42:24.4|Trace|HttpClient|Req: [GET] https://www.abnzb.com/api?t=tvsearch&cat=5020,5030,5040,5070,2010&extended=1&apikey=(removed)&offset=0&limit=100
+2026-07-03 09:42:24.4|Trace|ConfigService|Using default config value for 'proxyenabled' defaultValue:'False'
+2026-07-03 09:42:24.4|Debug|Newznab|Downloading Feed https://drunkenslug.com/api?t=tvsearch&cat=5020,5030,5040,5070,5999,2010,2999&extended=1&apikey=(removed)&offset=0&limit=100
+2026-07-03 09:42:24.4|Trace|HttpClient|Req: [GET] https://drunkenslug.com/api?t=tvsearch&cat=5020,5030,5040,5070,5999,2010,2999&extended=1&apikey=(removed)&offset=0&limit=100
+2026-07-03 09:42:24.4|Trace|ConfigService|Using default config value for 'proxyenabled' defaultValue:'False'
+2026-07-03 09:42:24.4|Debug|Newznab|Downloading Feed https://api.nzbgeek.info/api?t=tvsearch&cat=5020,5030,5040,5050,5070,2010&extended=1&apikey=(removed)&offset=0&limit=100
+2026-07-03 09:42:24.4|Trace|HttpClient|Req: [GET] https://api.nzbgeek.info/api?t=tvsearch&cat=5020,5030,5040,5050,5070,2010&extended=1&apikey=(removed)&offset=0&limit=100
+2026-07-03 09:42:24.4|Trace|ConfigService|Using default config value for 'proxyenabled' defaultValue:'False'
+2026-07-03 09:42:24.4|Debug|Newznab|Downloading Feed https://v2.nzbs.in/api?t=tvsearch&cat=5020,5030,5040,5070&extended=1&apikey=(removed)&offset=0&limit=100
+2026-07-03 09:42:24.4|Trace|HttpClient|Req: [GET] https://v2.nzbs.in/api?t=tvsearch&cat=5020,5030,5040,5070&extended=1&apikey=(removed)&offset=0&limit=100
+2026-07-03 09:42:24.4|Trace|ConfigService|Using default config value for 'proxyenabled' defaultValue:'False'
+2026-07-03 09:42:24.4|Debug|Newznab|Downloading Feed https://scenenzbs.com/api?t=tvsearch&cat=5020,5030,5040,5070,2010&extended=1&apikey=(removed)&offset=0&limit=100
+2026-07-03 09:42:24.4|Trace|HttpClient|Req: [GET] https://scenenzbs.com/api?t=tvsearch&cat=5020,5030,5040,5070,2010&extended=1&apikey=(removed)&offset=0&limit=100
+2026-07-03 09:42:24.4|Trace|ConfigService|Using default config value for 'proxyenabled' defaultValue:'False'
+2026-07-03 09:42:24.4|Trace|HttpClient|Res: HTTP/1.1 [POST] http://localhost:6789/jsonrpc: 200.OK (1104105 bytes) (24 ms)

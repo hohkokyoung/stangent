@@ -1,0 +1,33 @@
+2026-07-03 09:41:41.6|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:41:41.6|Debug|Api|[GET] /api/v3/command: 200.OK (1 ms)
+2026-07-03 09:41:41.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:41:41.7|Debug|Api|[GET] /api/v3/log/file: 200.OK (1 ms)
+2026-07-03 09:41:53.0|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:41:53.0|Debug|Api|[GET] /api/v3/customformat: 200.OK (1 ms)
+2026-07-03 09:41:56.2|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:41:56.2|Debug|Api|[GET] /api/v3/customformat/schema: 200.OK (1 ms)
+2026-07-03 09:42:05.1|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:05.1|Warn|SonarrErrorPipeline|Invalid request Validation failed: 
+ -- Value: 'Value' must not be empty.
+2026-07-03 09:42:05.1|Debug|Api|[PUT] /api/v3/customformat/3?forceSave=true: 400.BadRequest (3 ms)
+2026-07-03 09:42:11.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: SignalR was successfully authenticated.
+2026-07-03 09:42:11.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: SignalR was successfully authenticated.
+2026-07-03 09:42:11.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:11.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:11.7|Debug|Api|[GET] /api/v3/command: 200.OK (1 ms)
+2026-07-03 09:42:11.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:11.7|Debug|Api|[GET] /api/v3/queue/status: 200.OK (1 ms)
+2026-07-03 09:42:11.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:11.7|Debug|Api|[GET] /api/v3/health: 200.OK (1 ms)
+2026-07-03 09:42:11.8|Debug|Api|[GET] /api/v3/series: 200.OK (108 ms)
+2026-07-03 09:42:14.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:14.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:14.7|Debug|Api|[GET] /api/v3/health: 200.OK (3 ms)
+2026-07-03 09:42:14.7|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:14.7|Debug|Api|[GET] /api/v3/system/status: 200.OK (4 ms)
+2026-07-03 09:42:14.7|Debug|Api|[GET] /api/v3/diskspace: 200.OK (24 ms)
+2026-07-03 09:42:16.0|Debug|Sonarr.Http.Authentication.ApiKeyAuthenticationHandler|AuthenticationScheme: API was successfully authenticated.
+2026-07-03 09:42:16.0|Debug|Api|[GET] /api/v3/log/file: 200.OK (1 ms)
+2026-07-03 09:42:19.6|Debug|Sonarr.Http.Authentication.BasicAuthenticationHandler|AuthenticationScheme: Basic was successfully authenticated.
+2026-07-03 09:42:24.4|Info|RssSyncService|Starting RSS Sync
+

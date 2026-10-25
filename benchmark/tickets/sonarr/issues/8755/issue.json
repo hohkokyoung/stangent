@@ -1,0 +1,33 @@
+{
+  "number": 8755,
+  "title": "Pattern of 100% CPU since recent updates.",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nBeen running this in LXC for some time back to sept 2025.  A pattern has emerged where it's killing 100% CPU.  It can be correlated to some migrator process that keeps firing\n\n```2026-07-02 04:00:52.3|Info|FluentMigrator.Runner.MigrationRunner|DatabaseEngineVersionCheck migrated\n2026-07-02 04:00:52.3|Info|FluentMigrator.Runner.MigrationRunner|=> 0.0021451s\n```\n\n<img width=\"1628\" height=\"368\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/8ccbf6e8-c008-4426-b8ff-3edd6a69fcf9\" />\n\n### Expected Behavior\n\nCPU should not spike to 100% and migrator process continue firing.\n\n### Steps To Reproduce\n\nI believe this is an issue with the latest versions that have been pushed so may be able to easily reproduce or gather logs from others.\n\n### Environment\n\n```markdown\n- OS: Debian 13\n- Sonarr: 4.0.18.2971\n- Docker Install: No\n- Using Reverse Proxy: Yes\n- Browser: Chrome\n- Database: SQLite 3.46.1\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n\n[sonarr.txt](https://github.com/user-attachments/files/29612259/sonarr.txt)\n\n### Anything else?\n\n_No response_",
+  "author": "ChrisColotti",
+  "createdAt": "2026-07-02T20:01:28Z",
+  "comments": [
+    {
+      "id": 4870030280,
+      "author": "augustuen",
+      "createdAt": "2026-07-02T20:05:14Z",
+      "body": "Those aren't `trace` logs, which are required for bug reports. The migration runner seems to run every time Sonarr restarts, which is expected. "
+    },
+    {
+      "id": 4870053683,
+      "author": "ChrisColotti",
+      "createdAt": "2026-07-02T20:07:43Z",
+      "body": "> Those aren't `trace` logs, which are required for bug reports. The migration runner seems to run every time Sonarr restarts, which is expected.\n\nExcept it's restarting constantly...not by me...something happened the CPU graph is clear, it's been clean for months until recently."
+    }
+  ],
+  "attachments": [
+    {
+      "url": "https://github.com/user-attachments/assets/8ccbf6e8-c008-4426-b8ff-3edd6a69fcf9",
+      "file": "attachments/01-8ccbf6e8-c008-4426-b8ff-3edd6a69fcf9",
+      "bytes": 158585
+    },
+    {
+      "url": "https://github.com/user-attachments/files/29612259/sonarr.txt",
+      "file": "attachments/02-sonarr.txt",
+      "bytes": 640478
+    }
+  ]
+}

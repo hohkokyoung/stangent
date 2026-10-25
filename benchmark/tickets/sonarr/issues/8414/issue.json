@@ -1,0 +1,34 @@
+{
+  "number": 8414,
+  "title": "PMS library update sometimes causes TV show removal",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nIn Sonarr I have added Plex Media Server (PMS) as a connection to perform a Plex library update after Sonarr has succesfully imported a new episode. PMS runs on a Windows server that uses mounted network shares on a NAS for its libraries. For example, all TV-shows are on S:\\, which points to `\\\\<internal IP>\\TVshows`.\n\nI noticed that sometimes when Plex performs a partial library scan fired by Sonarr, that the TV-show would disappear entirely, until I perform a manual scan again. The root cause is found in the Plex log:\n\n`Feb 10, 2026 03:16:16.358 [18552] INFO - Part rename detected [S:\\<tv show>\\<season>\\<filename>.mkv] was renamed [S:\\\\<tv show>\\<season>\\<filename>.mkv]`\n\nNotice the double backslash. I posted this behaviour to the Plex forums, where they advised that this is probably caused by Sonarr, so I enabled Trace logging to see if that is true. It does seem that Sonarr is the culprit:\n\n```\n2026-02-16 13:30:04.2|Debug|PlexServer|Performing library update for 1 series\n2026-02-16 13:30:04.2|Debug|PlexServerService|Sending Update Request to Plex Server\n2026-02-16 13:30:04.2|Debug|PlexServerService|Getting version from Plex host: <plex server>\n2026-02-16 13:30:04.2|Debug|PlexServerProxy|Url: <plex server>/identity?X-Plex-Client-Identifier=(removed)&X-Plex-Product=Sonarr&X-Plex-Platform=Windows&X-Plex-Platform-Version=7&X-Plex-Device-Name=Sonarr&X-Plex-Version=4.0.16.2944&X-Plex-Token=(removed)\n2026-02-16 13:30:04.3|Debug|PlexServerService|Getting sections from Plex host: <plex server>\n2026-02-16 13:30:04.3|Debug|PlexServerProxy|Url: <plex server>/library/sections?X-Plex-Client-Identifier=(removed)&X-Plex-Product=Sonarr&X-Plex-Platform=Windows&X-Plex-Platform-Version=7&X-Plex-Device-Name=Sonarr&X-Plex-Version=4.0.16.2944&X-Plex-Token=(removed)\n2026-02-16 13:30:04.3|Debug|PlexServerService|Unable to find matching section location, updating all TV sections\n2026-02-16 13:30:04.3|Debug|PlexServerService|Updating section location, S:\\\n2026-02-16 13:30:04.3|Debug|PlexServerProxy|Url: <plex server>/library/sections/2/refresh?X-Plex-Client-Identifier=(removed)&X-Plex-Product=Sonarr&X-Plex-Platform=Windows&X-Plex-Platform-Version=7&X-Plex-Device-Name=Sonarr&X-Plex-Version=4.0.16.2944&X-Plex-Token=(removed)&path=S%3A%5C%5C<TV show>\n2026-02-16 13:30:04.3|Debug|PlexServerService|Finished sending Update Request to Plex Server (took 93 ms)\n```\nSonarr seems to be providing two backslashes to Plex:\n`&path=S%3A%5C%5C<TV show>`\n\n### Expected Behavior\n\nSonarr provides the right path to Plex (single backslash, instead of double)\n\n`&path=S%3A%5C<TV show>`\n\n### Steps To Reproduce\n\n1. Run PMS on Windows\n2. Mount a network share on S:\\ with TV shows\n3. Add S:\\ as a TV show library to Plex\n4. Connect PMS to Sonarr under Connections and check 'Update library' on episode import\n5. Observe TV show being removed from Plex library after partial scan initiated by Sonarr\n6. TV shows reappears when performing manual library scan from Plex\n\n### Environment\n\n```markdown\n- OS: Synology DSM, Plex running on Windows 11\n- Sonarr: 4.0.16.2944\n- Docker Install: Yes\n- Using Reverse Proxy: No \n- Browser: N/A\n- Database: Sqlite 3.49.2\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n\nSee above.\n\n### Anything else?\n\nPlex has intro detection, credits detected and voice activity data features, so when the entire show is removed it has to perform all these actions again for all episodes. For large shows this can be a major issue.",
+  "author": "TommiieeSV",
+  "createdAt": "2026-02-16T12:51:30Z",
+  "comments": [
+    {
+      "id": 3908483504,
+      "author": "mynameisbogdan",
+      "createdAt": "2026-02-16T13:22:46Z",
+      "body": "It's necessary to enable trace logs, reproduce the issue and then share the logs containing the detailed issue. \n\nRedacting the filename in `Part rename detected` might hide a possible issue too, so leave them redacted unless it's sensitive data."
+    },
+    {
+      "id": 3908504341,
+      "author": "TommiieeSV",
+      "createdAt": "2026-02-16T13:27:21Z",
+      "body": "Understood, do you only need Sonarr trace or also Plex logging?"
+    },
+    {
+      "id": 3908516111,
+      "author": "mynameisbogdan",
+      "createdAt": "2026-02-16T13:30:15Z",
+      "body": "Just Sonarr initially, we'll see if that's enough after we'll inspect them."
+    },
+    {
+      "id": 3908522827,
+      "author": "TommiieeSV",
+      "createdAt": "2026-02-16T13:31:52Z",
+      "body": "OK, I'll gather new trace logs. It'll probably take me some time because every time this happens Plex starts to analyze all seasons again which can take hours to days and I prefer to have Plex quiet when performing these tests. I'll report back and provide trace logs."
+    }
+  ],
+  "attachments": []
+}

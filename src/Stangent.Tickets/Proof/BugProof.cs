@@ -344,7 +344,7 @@ public static class BugProof
         {
             var report = Path.Combine(dir, $"run-{i}" + (target.Runner == "dotnet" ? ".trx" : ".json"));
             if (System.IO.File.Exists(report)) System.IO.File.Delete(report);
-            var fileArg = target.Runner is "vitest" or "jest" ? Path.GetRelativePath(Path.Combine(repo.Root, target.Dir), Path.Combine(repo.Root, testFile)).Replace('\\', '/') : testFile;
+            var fileArg = target.Runner is "vitest" or "jest" or "playwright" ? Path.GetRelativePath(target.WorkingDir(repo.Root), Path.Combine(repo.Root, testFile)).Replace('\\', '/') : testFile;
             var env = target.Kind == TestTarget.Playwright
                 ? new Dictionary<string, string> { ["PLAYWRIGHT_JSON_OUTPUT_NAME"] = report, ["BASE_URL"] = repo.Config.Tickets.App?.Url ?? "" } : null;
             var r = await runner.RunAsync(target.TestCommand(target.Runner == "dotnet" ? null : fileArg, testName, report, !UsesMtp(repo.Root)), target.WorkingDir(repo.Root), CommandTimeout, env, ct);

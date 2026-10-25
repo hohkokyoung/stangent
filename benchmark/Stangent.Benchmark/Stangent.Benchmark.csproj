@@ -9,5 +9,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Stangent.Graph\Stangent.Graph.csproj" />
     <ProjectReference Include="..\..\src\Stangent.Spec\Stangent.Spec.csproj" />
+    <ProjectReference Include="..\..\src\Stangent.Tickets\Stangent.Tickets.csproj" />
   </ItemGroup>
 </Project>

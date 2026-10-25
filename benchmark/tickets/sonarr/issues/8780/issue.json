@@ -1,0 +1,9 @@
+{
+  "number": 8780,
+  "title": "Queuing Bulk Moves by Root Folder",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nWhen you queue a bulk root folder move and select to have Sonarr move the files then queue another bulk move in the same way but to a different root folder, it completes the 2 bulk tasks but then moves everything from job 1 to the root folder in job 2. \nJob 1: Move 10 items from /media1 to /mediaA\nJob 2: Move 10 items from /media2 to /mediaB\nJob 1 completes 10 items are now in /mediaA\nJob 2 completes 10 items are now in /mediaB\nSome unknown job now runs and moves 10 items from /mediaA to /mediaB\n\n### Expected Behavior\n\nJobs should stop after successful completion of bulk move.\n\n### Steps To Reproduce\n\n1. Select multiple series\n2. Edit\n3. Change root folder\n4. Apply Changes\n5. Yes, Move the Files\n6. Select a different set of multiple series\n7. Edit\n8. Change root folder to a different destination\n9. Apply Changes\n10. Yes, Move the Files\n\nEverything will end up int he 2nd destination\n\n### Environment\n\n```markdown\n- OS: Ubuntu 24.04.4 LTS\n- Sonarr: 4.0.19.2979\n- Docker Install: Yes\n- Using Reverse Proxy: Yes\n- Browser: Brave 1.92.139 (Official Build) (64-bit) / Chromium: 150.0.7871.114\n- Database: Sqlite 3.51.2\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n\nI don't have trace logs.\n\n### Anything else?\n\n_No response_",
+  "author": "techmattr",
+  "createdAt": "2026-07-12T04:53:38Z",
+  "comments": [],
+  "attachments": []
+}

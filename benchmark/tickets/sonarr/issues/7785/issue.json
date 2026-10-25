@@ -1,0 +1,68 @@
+{
+  "number": 7785,
+  "title": "metadata fails to generate with: ExtraService failed while processing [SeriesScannedEvent]: Sequence contains more than one element",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nwas trying to figure out why sonarr fails to get generate metadata files, and found this error\n\n```\nSystem.InvalidOperationException: Sequence contains more than one element\n   at System.Linq.ThrowHelper.ThrowMoreThanOneElementException()\n   at System.Linq.Enumerable.TryGetSingle[TSource](IEnumerable`1 source, Boolean& found)\n   at System.Linq.Enumerable.SingleOrDefault[TSource](IEnumerable`1 source)\n   at NzbDrone.Core.Extras.Others.OtherExtraFileRenamer.RemoveOtherExtraFile(Series series, String path) in ./Sonarr.Core/Extras/Others/OtherExtraFileRenamer.cs:line 69\n   at NzbDrone.Core.Extras.Others.OtherExtraFileRenamer.RenameOtherExtraFile(Series series, String path) in ./Sonarr.Core/Extras/Others/OtherExtraFileRenamer.cs:line 38\n   at NzbDrone.Core.Extras.Metadata.MetadataService.ProcessEpisodeMetadata(IMetadata consumer, Series series, EpisodeFile episodeFile, List`1 existingMetadataFiles)\n   at NzbDrone.Core.Extras.Metadata.MetadataService.CreateAfterSeriesScan(Series series, List`1 episodeFiles) in ./Sonarr.Core/Extras/Metadata/MetadataService.cs:line 108\n   at NzbDrone.Core.Extras.ExtraService.Handle(SeriesScannedEvent message) in ./Sonarr.Core/Extras/ExtraService.cs:line 138\n   at NzbDrone.Core.Messaging.Events.EventAggregator.PublishEvent[TEvent](TEvent event)\n```\n\n### Expected Behavior\n\nmetadata is generated\n\n### Steps To Reproduce\n\nhappens when i click on a series and click \"Refresh and Scan\", however its selective on what fails and what doesn't\n\n### Environment\n\n```markdown\n- OS: archlinux\n- Sonarr: sonarr-bin-4.0.14.2939-1\n- Docker Install: No\n- Using Reverse Proxy: (not that i know of)\n- Browser: Firefox\n- Database: Sqlite 3.49.1\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n```\n[v4.0.14.2939] System.InvalidOperationException: Sequence contains more than one element\n   at System.Linq.ThrowHelper.ThrowMoreThanOneElementException()\n   at System.Linq.Enumerable.TryGetSingle[TSource](IEnumerable`1 source, Boolean& found)\n   at System.Linq.Enumerable.SingleOrDefault[TSource](IEnumerable`1 source)\n   at NzbDrone.Core.Extras.Others.OtherExtraFileRenamer.RemoveOtherExtraFile(Series series, String path) in ./Sonarr.Core/Extras/Others/OtherExtraFileRenamer.cs:line 69\n   at NzbDrone.Core.Extras.Others.OtherExtraFileRenamer.RenameOtherExtraFile(Series series, String path) in ./Sonarr.Core/Extras/Others/OtherExtraFileRenamer.cs:line 38\n   at NzbDrone.Core.Extras.Metadata.MetadataService.ProcessEpisodeMetadata(IMetadata consumer, Series series, EpisodeFile episodeFile, List`1 existingMetadataFiles)\n   at NzbDrone.Core.Extras.Metadata.MetadataService.CreateAfterSeriesScan(Series series, List`1 episodeFiles) in ./Sonarr.Core/Extras/Metadata/MetadataService.cs:line 108\n   at NzbDrone.Core.Extras.ExtraService.Handle(SeriesScannedEvent message) in ./Sonarr.Core/Extras/ExtraService.cs:line 138\n   at NzbDrone.Core.Messaging.Events.EventAggregator.PublishEvent[TEvent](TEvent event)\n```\n\n\n### Anything else?\n\nhonestly first thing i thought when metadata failed to generate was a permissions issue, so i went to the logs to confirm, and saw this instead",
+  "author": "9thyear2",
+  "createdAt": "2025-03-31T05:41:29Z",
+  "comments": [
+    {
+      "id": 2765558771,
+      "author": "mynameisbogdan",
+      "createdAt": "2025-03-31T08:47:23Z",
+      "body": "You need to provide proper trace logs as the bug report form recommends you too.\n\nFrom the stacktrace, looks like you have an extra file with the same relative path more than once."
+    },
+    {
+      "id": 2765720354,
+      "author": "9thyear2",
+      "createdAt": "2025-03-31T09:48:25Z",
+      "body": "i do have the actual trace log files, i removed them in an edit (and then proceeded to screw up step 5 and 6 like a dummy: [link](https://wiki.servarr.com/sonarr/troubleshooting#logging-and-log-files))\n\nhere are both files\n\n[sonarr.trace.0.txt](https://privatebin.net/?8f270b97db480278#7pFcSwHuQDyfmHhJHJcFWM6zxfTs9W5eN2RXLNZuTBuw)\n[sonarr.trace.txt](https://privatebin.net/?85987b1e23671752#AeQUnoaZkV3V4FdV1G8bhWZDeQA2dJt3Ak9Pa1pm2bN1)\n\nthe error is within sonarr.trace.txt"
+    },
+    {
+      "id": 2766338708,
+      "author": "mynameisbogdan",
+      "createdAt": "2025-03-31T14:00:47Z",
+      "body": "Are you importing .jpg files as extra files? Or as you using the downloads folder as root folder which have the `-thumb.jpg` and also using the XbmcMetadata to generate thumbnails?"
+    },
+    {
+      "id": 2767375196,
+      "author": "9thyear2",
+      "createdAt": "2025-03-31T20:54:09Z",
+      "body": "these are the root directories\n![Image](https://github.com/user-attachments/assets/bb1212b1-6403-43f0-b321-88d633710482)\n\nhowever the files themselves aren't there, its just shortcuts to where the files / folders can be found (which is downloads) as seen here, its a link\n\nin the directory for the show i create a link to the torrent download destination (in the case of it being a folder containing multiple episdoes), or link the downloaded file, in the case where it is one file\n\n![Image](https://github.com/user-attachments/assets/e23e9115-5504-41a9-a8f7-fa912e59dec9)\n\nso sonarr can only see what i link to it (i manage the files manually to ensure i get the right ones, while using sonnar to get the metadata)\n\nthe thumb.jpgs are from a previous installation of sonarr (when i was on popos, moved to arch for reasons), so i imported the shows back into sonarr once it was setup on arch (since the content for it was on a separate drive)"
+    },
+    {
+      "id": 2767380171,
+      "author": "9thyear2",
+      "createdAt": "2025-03-31T20:56:45Z",
+      "body": "> also using the XbmcMetadata to generate thumbnails?\n\nyes i believe so\n\n![Image](https://github.com/user-attachments/assets/43176e98-e43b-4c2d-82ca-dc74aa08a8c6)"
+    },
+    {
+      "id": 2767391139,
+      "author": "mynameisbogdan",
+      "createdAt": "2025-03-31T21:02:33Z",
+      "body": "What are those 2 errors from system > health? \n\nTo be honest, sounds like a messy setup and you should actually use the sonarr's import capability instead of symlinking from series path to download folders. \n"
+    },
+    {
+      "id": 2767419888,
+      "author": "9thyear2",
+      "createdAt": "2025-03-31T21:17:16Z",
+      "body": "1. RSS sync not available (i turned it off)\n2. download client not available (didn't set it up)\n\nreasons: when watching anime the dub releases have a delay / trail behind the sub releases (usually by a few weeks / episodes, if the show releases sub and dub on the day the dub usually has a few hour delay). so since sonarr gets the releases as soon as its available. it always pulls the sub releases. so i have to go delete those and replace them with the correct files. so i fixed it by not setting up the download client\n\nhowever then it was still queuing up downloads, and since it was queuing things with rss, it wouldn't detect the files i placed manually (as i had something queued, so i turned off rss\n\ni wanted to keep monitoring on so i could see what episodes are missing and where the seasons are incomplete, when monitoring is off, the season just shows green as if the episodes given are all the episodes available and there are no missing episodes\n\nTLDR last paragraph example: unmonitored would show 98/98 green, while monitored shows 98/100 red. i want to know if anything is missing at a glance"
+    }
+  ],
+  "attachments": [
+    {
+      "url": "https://github.com/user-attachments/assets/bb1212b1-6403-43f0-b321-88d633710482",
+      "file": "attachments/01-bb1212b1-6403-43f0-b321-88d633710482",
+      "bytes": 39578
+    },
+    {
+      "url": "https://github.com/user-attachments/assets/e23e9115-5504-41a9-a8f7-fa912e59dec9",
+      "file": "attachments/02-e23e9115-5504-41a9-a8f7-fa912e59dec9",
+      "bytes": 51222
+    },
+    {
+      "url": "https://github.com/user-attachments/assets/43176e98-e43b-4c2d-82ca-dc74aa08a8c6",
+      "file": "attachments/03-43176e98-e43b-4c2d-82ca-dc74aa08a8c6",
+      "bytes": 37757
+    }
+  ]
+}

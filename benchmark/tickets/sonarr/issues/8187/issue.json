@@ -1,0 +1,16 @@
+{
+  "number": 8187,
+  "title": "Testing Qbit connection reuses auth cookie after credentials change",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nWhen going to download clients and clicking a download client then click test to validate connection it shows as ✅.\nIf you then change username and password (to an incorrect value) and click test again it'll show up as ✅\n\n### Expected Behavior\n\nChanging the username or password to an invalid one should retest the connection with those credentials and show ❌\n\n### Steps To Reproduce\n\n1. Have a successful and valid connection to a download client\n2. Go to download clients\n3. Click a client\n4. Click test\n5. Change username/password to an incorrect value\n6. Save\n7. Click test again\n\n### Environment\n\n```markdown\n- OS: Ubuntu 24.04.2 LTS x86_64\n- Sonarr: 4.0.16.2944\n- Docker Install: Yes\n- Using Reverse Proxy: No\n- Browser: Brave\n- Database: Sqlite 3.49.2\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n\nhttps://privatebin.net/?244eb0ed113fd0aa#DGMLBgrs4zZwG6DwUXYjAPtvh1e1SPqUYKVKZE67HXeQ\n\n### Anything else?\n\nRunning qbittorrent 5.1.2",
+  "author": "coolbigbear",
+  "createdAt": "2025-11-16T13:52:17Z",
+  "comments": [
+    {
+      "id": 3538892662,
+      "author": "augustuen",
+      "createdAt": "2025-11-16T15:52:14Z",
+      "body": "Confirmed it's happening on 52972e7 and qBit 5.0.1. It even happens if you try to add a new instance of qBittorrent with bad credentials. It seems like it re-uses the cookie. Forcing a reauthentication during testing should sort it out."
+    }
+  ],
+  "attachments": []
+}

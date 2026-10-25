@@ -1,0 +1,338 @@
+{
+  "note": "Never read by the run: the scoring only (D77).",
+  "issues": {
+    "9149": {
+      "fixCommit": "b949ab09716649d25cb187553c4e91cff31d0cb7",
+      "parent": "69fd6f1344b560664cccea961842e0dbeb31cdeb",
+      "files": [
+        "src/Sonarr.Api.V3/Commands/CommandResource.cs",
+        "src/Sonarr.Api.V5/Commands/CommandResource.cs"
+      ]
+    },
+    "9051": {
+      "fixCommit": "69fd6f1344b560664cccea961842e0dbeb31cdeb",
+      "parent": "44c93b9a80780eb87465ecfabe210902d535c32a",
+      "files": [
+        "src/NzbDrone.Core/Download/CompletedDownloadService.cs",
+        "src/NzbDrone.Core/Download/DownloadCompletedEvent.cs",
+        "src/NzbDrone.Core/Download/History/DownloadHistoryService.cs",
+        "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs",
+        "src/NzbDrone.Core/Notifications/NotificationService.cs"
+      ]
+    },
+    "9128": {
+      "fixCommit": "90eab43f0b6a69bbb3a0e4727b8f3fb8dfa83081",
+      "parent": "5dc4c256d7727dc563d320be83a77c17da5e9afd",
+      "files": [
+        "frontend/src/Settings/CustomFormats/CustomFormats/CustomFormat.tsx",
+        "frontend/src/Settings/CustomFormats/CustomFormats/EditCustomFormatModalContent.tsx",
+        "frontend/src/Settings/CustomFormats/CustomFormats/ImportCustomFormatModalContent.tsx"
+      ]
+    },
+    "9127": {
+      "fixCommit": "e3dbe600f03cea3f0510d88d731ef83b3b2b16bd",
+      "parent": "4471c0ffaf4004c12075ad0d2b5190ccbf7e2ab7",
+      "files": [
+        "frontend/src/Components/Form/NumberInput.tsx",
+        "frontend/src/Settings/Profiles/Quality/QualityProfileItemSize.tsx"
+      ]
+    },
+    "9126": {
+      "fixCommit": "4471c0ffaf4004c12075ad0d2b5190ccbf7e2ab7",
+      "parent": "460022a72ee9430bf39cfe9a5f767ff3a563c650",
+      "files": [
+        "frontend/src/Settings/Profiles/Quality/QualityProfileItemSize.tsx"
+      ]
+    },
+    "9113": {
+      "fixCommit": "3e788b38caf26d16d4eaaacc603d636c864b4dbb",
+      "parent": "6100139f788a17c7ae791654df9da54f972faf68",
+      "files": [
+        "frontend/src/Calendar/Agenda/AgendaEvent.module.css",
+        "frontend/src/Calendar/Agenda/AgendaEvent.tsx",
+        "frontend/src/Calendar/Events/CalendarEvent.module.css",
+        "frontend/src/Calendar/Events/CalendarEventGroup.module.css",
+        "frontend/src/Calendar/Legend/LegendItem.module.css",
+        "frontend/src/Calendar/Legend/LegendItem.tsx",
+        "frontend/src/Components/ProgressBar.module.css",
+        "frontend/src/Series/Index/SeriesIndexFooter.module.css",
+        "frontend/src/Styles/Themes/themes.css"
+      ]
+    },
+    "9121": {
+      "fixCommit": "42359526c731b2d7d4b971dc46a7ba680d438b52",
+      "parent": "76c006b946c1e72e561a248e97a47f9de7d8da86",
+      "files": [
+        "frontend/src/Calendar/CalendarMissingEpisodeSearchButton.tsx",
+        "frontend/src/Calendar/useCalendar.ts"
+      ]
+    },
+    "9111": {
+      "fixCommit": "179ff26355373926a868058349d4860b6750e3ad",
+      "parent": "af34322ff627527309450ed142c2dde7b0556c67",
+      "files": [
+        "frontend/src/Activity/Queue/Status/useQueueStatus.ts"
+      ]
+    },
+    "9102": {
+      "fixCommit": "1f546e5e3fb3b96042cfee9513ab455b8d0c5a21",
+      "parent": "92736631010bb7320a0f2f381d636bd379c65211",
+      "files": [
+        "frontend/src/Activity/Queue/useQueue.ts",
+        "src/Sonarr.Api.V5/Queue/QueueBlocklistMethod.cs",
+        "src/Sonarr.Api.V5/Queue/QueueController.cs",
+        "src/Sonarr.Api.V5/Queue/QueueRemovalMethod.cs"
+      ]
+    },
+    "9018": {
+      "fixCommit": "4f63215b3d453dd2caa3b1348a6fcb90aa987fb7",
+      "parent": "155f3fd0f79137628d2794678f32b4fcf2a34279",
+      "files": [
+        "frontend/src/InteractiveSearch/useReleases.ts"
+      ]
+    },
+    "8978": {
+      "fixCommit": "76e436005ef7bc896e72009718071b7b3cc6faf4",
+      "parent": "4cfd439cbdcfdecb909da408110de492ee1fcb32",
+      "files": [
+        "src/NzbDrone.Core/ImportLists/Simkl/SimklParser.cs"
+      ]
+    },
+    "8929": {
+      "fixCommit": "7c4c81a41859952e1ea9619958a7cd224de5eb92",
+      "parent": "2ae9bc0946596b1eb873b62de69ab09338da3a3f",
+      "files": [
+        "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs"
+      ]
+    },
+    "8842": {
+      "fixCommit": "bcab4b0dab19c8cdce829f11b1a543fb725d0deb",
+      "parent": "3d0029e4c893cd1d90afb8b9a48a48baa7d744d1",
+      "files": [
+        "src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserProxy.cs"
+      ]
+    },
+    "8770": {
+      "fixCommit": "2f9e12a579540ba6d24fb53441dff59b309ac608",
+      "parent": "df2b0af4ec0c9139f564baba9f5be29a2d15f0d3",
+      "files": [
+        "src/NzbDrone.Core.Test/Download/TrackedDownloads/TrackedDownloadServiceFixture.cs",
+        "src/NzbDrone.Core/Download/TrackedDownloads/TrackedDownloadService.cs"
+      ]
+    },
+    "8757": {
+      "fixCommit": "f9e18a7c4475345f325237670d7e71ceac97038b",
+      "parent": "95c42a92b960e44748f43c40d8f2b44fc3e87196",
+      "files": [
+        "src/NzbDrone.Core/CustomFormats/Specifications/ResolutionSpecification.cs",
+        "src/NzbDrone.Core/CustomFormats/Specifications/SourceSpecification.cs"
+      ]
+    },
+    "8604": {
+      "fixCommit": "8ed9a3c532f927155b53ed1c82cd4de1367fd471",
+      "parent": "dfc37be76e061d321ef82e88bd4c82da416018d6",
+      "files": [
+        "src/NzbDrone.Core/Localization/LocalizationService.cs"
+      ]
+    },
+    "8574": {
+      "fixCommit": "931f8d5162609770a01a931233a353cc9b86b474",
+      "parent": "ef13265f446e5578bce3ffd8f5885e19b0274d2d",
+      "files": [
+        "src/NzbDrone.Core/ImportLists/Simkl/SimklAPI.cs",
+        "src/NzbDrone.Core/ImportLists/Simkl/SimklImportBase.cs"
+      ]
+    },
+    "8482": {
+      "fixCommit": "dfd5e4ba37db50edcaae4116d616e76660e64cf1",
+      "parent": "9a0e23a93faaa21ba2cc264b30603aff4d10216e",
+      "files": [
+        "src/NzbDrone.Core/Datastore/Converters/LanguageIntConverter.cs"
+      ]
+    },
+    "8414": {
+      "fixCommit": "d8698d1c28c393d4666af707bb806f687ae4c631",
+      "parent": "b94cf9b3b9835d2ade7948b32b07a05a25fdf740",
+      "files": [
+        "src/NzbDrone.Core/Notifications/Plex/Server/PlexServerService.cs"
+      ]
+    },
+    "8270": {
+      "fixCommit": "f94b3d8560246742d24fe9bce1d76b6104a5008b",
+      "parent": "6b479a5a10903c11c7dc2efbd19d0125045fcb8c",
+      "files": [
+        "src/NzbDrone.Core/Extras/Metadata/Consumers/Plex/PlexMetadata.cs"
+      ]
+    },
+    "8221": {
+      "fixCommit": "87892a1d0cd189d203f7930b856287988c6647ff",
+      "parent": "4e52b3c93e6ba159c83867b6d8fca498ca0873d1",
+      "files": [
+        "src/NzbDrone.Common.Test/DiskTests/DiskTransferServiceFixture.cs",
+        "src/NzbDrone.Common/Disk/DiskTransferService.cs"
+      ]
+    },
+    "8242": {
+      "fixCommit": "5542187f179f55a67969f7809919dd73de406e42",
+      "parent": "de0f1d461df8792857471746b81338203bf793f7",
+      "files": [
+        "src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs"
+      ]
+    },
+    "8187": {
+      "fixCommit": "ae18ad61bd9865755b4067709de47c1404fd4078",
+      "parent": "aac4760d30303c20bd896c451837a4cfa0a4e8f1",
+      "files": [
+        "src/NzbDrone.Common/Http/HttpRequestBuilder.cs",
+        "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV2.cs"
+      ]
+    },
+    "8105": {
+      "fixCommit": "813d7df643fb1b47221201e27a8b8039a4deaaf8",
+      "parent": "b04b9f900fc72c68df8dafd8980e0db5fcba0e1b",
+      "files": [
+        "src/NzbDrone.Core/Notifications/Discord/Discord.cs",
+        "src/NzbDrone.Core/Notifications/NotificationService.cs",
+        "src/NzbDrone.Core/Notifications/Slack/Slack.cs"
+      ]
+    },
+    "8006": {
+      "fixCommit": "f055e8a3e583fdf6daa096b854e622f631f9814f",
+      "parent": "8c697afa67405b7de15090deb93368575c68df7a",
+      "files": [
+        "src/NzbDrone.Core.Test/ParserTests/LanguageParserFixture.cs",
+        "src/NzbDrone.Core/Parser/LanguageParser.cs"
+      ]
+    },
+    "7989": {
+      "fixCommit": "e9c82078dacb14d6727e3bd2ecdc7756728b7a76",
+      "parent": "f0798550aff2bff3b8dd04eaad8b813f832d7571",
+      "files": [
+        "src/NzbDrone.Common/Extensions/DateTimeExtensions.cs",
+        "src/NzbDrone.Core.Test/MediaFiles/UpdateEpisodeFileServiceTests/ChangeFileDateForFileFixture.cs",
+        "src/NzbDrone.Core/MediaFiles/UpdateEpisodeFileService.cs"
+      ]
+    },
+    "7922": {
+      "fixCommit": "f9d0abada3d91400ada2319de2754309be31c5e9",
+      "parent": "4bdb0408f1bafa38b777a41babb1a775f99a94c1",
+      "files": [
+        "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs"
+      ]
+    },
+    "7879": {
+      "fixCommit": "b3d830c475f467aaf945f021c1260b9d26752724",
+      "parent": "a279240335758100af7f6ffb9d75dbd73b235e9f",
+      "files": [
+        "frontend/src/Utilities/Number/formatBitrate.ts"
+      ]
+    },
+    "7874": {
+      "fixCommit": "a279240335758100af7f6ffb9d75dbd73b235e9f",
+      "parent": "3eed84c67938fed308e562e69cf7bcd727063803",
+      "files": [
+        "src/NzbDrone.Core/ImportLists/Trakt/TraktAPI.cs"
+      ]
+    },
+    "7807": {
+      "fixCommit": "76b1130b6811454fa6b1e80e0b2012c24c4ae8fa",
+      "parent": "5be58249f8be0df43367fa29c95768e5132ec393",
+      "files": [
+        "src/NzbDrone.Core/Notifications/CustomScript/CustomScript.cs"
+      ]
+    },
+    "7780": {
+      "fixCommit": "ac1bb497efccc3b776dd4bf6eb6a35e943966b61",
+      "parent": "9bd619ccfe074abe396bbf043a36a5be18a7ba4b",
+      "files": [
+        "src/NzbDrone.Core.Test/MediaFiles/EpisodeImport/DetectSampleFixture.cs",
+        "src/NzbDrone.Core/MediaFiles/EpisodeImport/DetectSample.cs"
+      ]
+    },
+    "7785": {
+      "fixCommit": "dfbf12b711205cac79f6e24fc9500deae2a655b6",
+      "parent": "0ae07898ba6f85299e739d38ab1dd900c39e91d2",
+      "files": [
+        "src/NzbDrone.Core.Test/Housekeeping/Housekeepers/CleanupOrphanedExtraFilesFixture.cs",
+        "src/NzbDrone.Core.Test/Housekeeping/Housekeepers/CleanupOrphanedSubtitleFilesFixture.cs",
+        "src/NzbDrone.Core/Housekeeping/Housekeepers/CleanupOrphanedExtraFiles.cs",
+        "src/NzbDrone.Core/Housekeeping/Housekeepers/CleanupOrphanedSubtitleFiles.cs"
+      ]
+    },
+    "7759": {
+      "fixCommit": "bdd975da0f1587a058c9b44871dd62eaada02467",
+      "parent": "08d1bcb3510863d62c1fcec89fbecbdc818acb00",
+      "files": [
+        "src/NzbDrone.Core/ImportLists/Trakt/Popular/TraktPopularListType.cs",
+        "src/NzbDrone.Core/ImportLists/Trakt/Popular/TraktPopularRequestGenerator.cs",
+        "src/NzbDrone.Core/ImportLists/Trakt/Popular/TraktPopularSettings.cs"
+      ]
+    },
+    "7705": {
+      "fixCommit": "a6e6b7518d268950f4516a72370e615540ab98ab",
+      "parent": "38cd63ec04142eba19fbc4cb2ef577e6545cb534",
+      "files": [
+        "frontend/src/Activity/Queue/QueueDetails.tsx",
+        "frontend/src/App/ApplyTheme.tsx",
+        "frontend/src/Components/Tooltip/Tooltip.css",
+        "frontend/src/Components/Tooltip/Tooltip.css.d.ts",
+        "frontend/src/Components/Tooltip/Tooltip.tsx",
+        "frontend/src/Helpers/Hooks/useTheme.ts",
+        "package.json",
+        "yarn.lock"
+      ]
+    },
+    "7663": {
+      "fixCommit": "1fa532dd3eaaee01ac6a049e43fcdbd44357d617",
+      "parent": "350dea10ddc993b15a7282f313907d8505a23865",
+      "files": [
+        "src/NzbDrone.Core/Download/RejectedImportService.cs"
+      ]
+    },
+    "7608": {
+      "fixCommit": "3b024443c5447b7638a69a99809bf44b2419261f",
+      "parent": "4ba9b21bb7cc556b0e221bc0ba5b8f4ec956fe45",
+      "files": [
+        "frontend/src/Components/Form/Select/EnhancedSelectInput.tsx"
+      ]
+    },
+    "7589": {
+      "fixCommit": "ba22992265a0df2a2969c288dc6ee69a41c89b8c",
+      "parent": "963395b9695a28af6bc7dd398e9eea18c834c3c9",
+      "files": [
+        "src/NzbDrone.Core/IndexerSearch/ReleaseSearchService.cs"
+      ]
+    },
+    "7555": {
+      "fixCommit": "7d77500667b70a44d85984b585f58392efd0490d",
+      "parent": "ec73a1339632c1c41137ccf2c5bea0a4a7d8de58",
+      "files": [
+        "src/NzbDrone.Core.Test/ImportListTests/ImportListItemServiceFixture.cs",
+        "src/NzbDrone.Core.Test/ImportListTests/ImportListSyncServiceFixture.cs",
+        "src/NzbDrone.Core/Datastore/Migration/217_add_mal_and_anilist_ids.cs",
+        "src/NzbDrone.Core/ImportLists/ImportListItems/ImportListItemRepository.cs",
+        "src/NzbDrone.Core/ImportLists/ImportListItems/ImportListItemService.cs",
+        "src/NzbDrone.Core/ImportLists/ImportListSyncService.cs",
+        "src/NzbDrone.Core/MetadataSource/SkyHook/Resource/ShowResource.cs",
+        "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs",
+        "src/NzbDrone.Core/Tv/RefreshSeriesService.cs",
+        "src/NzbDrone.Core/Tv/Series.cs"
+      ]
+    },
+    "7527": {
+      "fixCommit": "4dcc015fb19ceb57d2e8f4985c5137e765829d1c",
+      "parent": "1969e0107f01843c9c3cddd98d85f366f27f403a",
+      "files": [
+        "src/NzbDrone.Core.Test/Download/DownloadClientTests/QBittorrentTests/QBittorrentFixture.cs",
+        "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrent.cs"
+      ]
+    },
+    "7518": {
+      "fixCommit": "fae24e98fb9230c2f3701caef457332952c6723f",
+      "parent": "c885fb81f9fe2395984ded8c0b275f9c675915cc",
+      "files": [
+        "src/NzbDrone.Common/Instrumentation/Sentry/SentryTarget.cs"
+      ]
+    }
+  }
+}

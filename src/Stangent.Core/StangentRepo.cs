@@ -126,6 +126,12 @@ public sealed class StangentConfig
         public string? Replay { get; set; }
         /// <summary>How to build, start and seed the app for Playwright reproductions (D76). None: unit proof only.</summary>
         public AppConfig? App { get; set; }
+        /// <summary>Extra arguments for every <c>dotnet build</c> and <c>dotnet test</c> the bug proof runs (a repo that builds
+        /// only from its solution, e.g. <c>-p:SolutionDir={root}/src/</c>); <c>{root}</c> is the repo's folder.</summary>
+        public string DotnetArgs { get; set; } = "";
+        /// <summary>The repo's own unit-test filter, for runs of a whole test project (the baseline and --verify): leaves out
+        /// tests that need a network, a database or a person.</summary>
+        public string? TestFilter { get; set; }
         /// <summary>The cap per reproduction attempt (D81).</summary>
         public ProveBudgetConfig ProveBudget { get; set; } = new();
 
@@ -141,6 +147,8 @@ public sealed class StangentConfig
         public int ReadySeconds { get; set; } = 120;
         /// <summary>Where new Playwright reproduction specs go, relative to the repo (D76).</summary>
         public string SpecDir { get; set; } = "e2e/stangent";
+        /// <summary>Where Playwright runs from (its package.json and config), relative to the repo; null: the repo root.</summary>
+        public string? PlaywrightDir { get; set; }
     }
 
     public sealed class ProveBudgetConfig

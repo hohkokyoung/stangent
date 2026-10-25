@@ -1,0 +1,16 @@
+{
+  "number": 7518,
+  "title": "Disabling analytics does not work",
+  "body": "### Is there an existing issue for this?\n\n- [X] I have searched the existing open and closed issues\n\n### Current Behavior\n\nWhen analytics is disabled, Sonarr still establishes a connection to sentry.sonarr.tv and sends analytics to it.\n\n### Expected Behavior\n\nWhen disabled, there should be no attempt to query, connect or send analytics to sentry.sonarr.tv.\n\n### Steps To Reproduce\n\n1. Disable analytics\r\n2. Restart Sonarr\r\n3. Monitor DNS queries\n\n### Environment\n\n```markdown\n- OS: Debian 12\r\n- Sonarr: 4.0.11.2680\r\n- Docker Install: Yes (hotio), but also tested this with the native version\r\n- Using Reverse Proxy: Yes, but not with the native version\r\n- Browser: Firefox 113\r\n- Database: Sqlite 3.44.2 (Docker) and Sqlite 3.40.1 (native)\n```\n\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n\nThis bug doesn't appear in the trace logs, but I used mitmproxy to verify that it is sending analytics based on the HTTP request below:\r\n\r\n```\r\nPOST /api/8/envelope/ HTTP/1.1\r\nHost: sentry.sonarr.tv\r\nX-Sentry-Auth: Sentry sentry_version=7,sentry_client=sentry.dotnet/4.0.2,sentry_key=e2adcbe52caf46aeaebb6b1dcdfe10a1\r\nAccept: application/json\r\nAccept-Encoding: gzip, deflate, br\r\nContent-Length: 438\r\n\r\n{\"sdk\":{\"name\":\"sentry.dotnet\",\"version\":\"4.0.2\"},\"sent_at\":\"2024-12-25T00:15:30.9632286+00:00\"}\r\n{\"type\":\"session\",\"length\":308}\r\n{\"sid\":\"b15c6dbbf8d9e7a2ca5bcdf77e3f4ba\",\"did\":\"057fddc4-2b45-4680-9313-89263179d7a9\",\"init\":false,\"started\":\"2024-12-25T00:13:13.6511561+00:00\",\"timestamp\":\"2024-12-25T00:14:38.6126016+00:00\",\"seq\":1,\"duration\":439,\"errors\":0,\"status\":\"abnormal\",\"attrs\":{\"release\":\"4.0.11.2680-main\",\"environment\":\"main\"}}\r\n```\n\n### Anything else?\n\nThis bug also occurs with Prowlarr, and most likely with every other *arr service if Sonarr is used as base.",
+  "author": "cohesive-flight",
+  "createdAt": "2024-12-25T13:41:58Z",
+  "comments": [
+    {
+      "id": 2561922403,
+      "author": "bakerboy448",
+      "createdAt": "2024-12-25T15:04:41Z",
+      "body": "url seems to tie to register sentry https://github.com/Sonarr/Sonarr/blob/1c30ecd66dd0fd1dafaf9ab0e41a11a54eaac132/src/NzbDrone.Common/Instrumentation/NzbDroneLogger.cs#L68\r\n\r\nnot technically analytics but probably nice to avoid if analytics is off"
+    }
+  ],
+  "attachments": []
+}

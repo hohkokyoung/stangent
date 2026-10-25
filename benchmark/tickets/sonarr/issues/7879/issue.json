@@ -1,0 +1,15 @@
+{
+  "number": 7879,
+  "title": "Video and audio bitrate units are incorrect",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nThe bitrate being shown on the media info modal is incorrect due to an incorrect usage of the `filesize` package. \n\nThe bits-per second value for audio & video returned from FFProbe is being passed as a value that is interpreted as a bytes count, resulting in an what often appears as an incorrect frame-rate units. k-bits vs kBytes per second. \n\nUpstreamed from Radarr issue [11027](https://github.com/Radarr/Radarr/issues/11027) and PR [11087](https://github.com/Radarr/Radarr/pull/11087).\n\n### Expected Behavior\n\nThe numeric value and accompanying units should be correct and mutally consistent. \n\n### Steps To Reproduce\n\n1. View the details of any given episode of any series for which a video is available. \n2. Mouse-over the `Media Info` icon and view the `Audio Bitrate` and `Video Bitrate`\n3. Click on the media info window and hover the mouse over the numeric bitrate values to see the raw bitrate in bps returned by FFProbe. \n4. Check the math... the raw bitrate does not convert to the displayed kB/s or MB/s value displayed. As shown below, 3761890 bits per second is not equal to 3.8 MB/s - it's closer to 470.2 kB/s. (however, 3.8 kb/s would have been correct)\n\n![Image](https://github.com/user-attachments/assets/67c4f545-76ef-4fae-b500-785ad9cbe162)\n\n### Environment\n\n```markdown\n- OS: Windows\n- Sonarr: v5-Develop build \n- Docker Install: No\n- Using Reverse Proxy: No\n- Browser: Firefox 138.0.4\n- Database: SQLite 3.36.0\n```\n\n### What branch are you running?\n\nDevelop\n\n### Trace Logs?\n\n`VideoFileInfoReader.GetMediaInfo` doesn't trace log the output of `FFProbe.GetStreamJson` or the resulting `MediaInfoModel`. \n\n### Anything else?\n\n_No response_",
+  "author": "Ghworg",
+  "createdAt": "2025-05-25T10:15:06Z",
+  "comments": [],
+  "attachments": [
+    {
+      "url": "https://github.com/user-attachments/assets/67c4f545-76ef-4fae-b500-785ad9cbe162",
+      "file": "attachments/01-67c4f545-76ef-4fae-b500-785ad9cbe162",
+      "bytes": 14171
+    }
+  ]
+}

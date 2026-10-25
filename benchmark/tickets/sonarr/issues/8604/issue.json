@@ -1,0 +1,9 @@
+{
+  "number": 8604,
+  "title": "There's no \"zh.json\" file. It's \"zh-CN\" or \"zh-TW\".json. The file \"zh_hans\" also can be deleted. Please correct. Thanks.",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\n\n[Error] LocalizationService: Missing translation/culture resource: /app/sonarr/bin/Localization/Core/zh.json \n\n### Expected Behavior\n\n\n[Error] LocalizationService: Missing translation/culture resource: /app/sonarr/bin/Localization/Core/zh.json \n\n### Steps To Reproduce\n\n_No response_\n\n### Environment\n\n```markdown\n- OS: docker\n- Sonarr: 4.0.17.2952\n- Docker Install: \n- services:\n  linuxserver_sonarr:\n    image: linuxserver/sonarr:latest\n    container_name: linuxserver_sonarr\n    restart: unless-stopped\n    network_mode: bridge\n\n    ports: \n      - \"8989:8989\"\n    environment:\n      - PUID=1000 \n      - PGID=1000\n      - TZ=Asia/Shanghai\n    volumes:\n      - ./sonarr/config:/config\n      - ./多媒体:/多媒体\n \n- Using Reverse Proxy: \n- Browser: Edge\n- Database:\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n\n\n[Error] LocalizationService: Missing translation/culture resource: /app/sonarr/bin/Localization/Core/zh.json \n\n### Anything else?\n\n_No response_",
+  "author": "phantasyleo",
+  "createdAt": "2026-05-10T12:17:40Z",
+  "comments": [],
+  "attachments": []
+}

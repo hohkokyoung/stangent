@@ -1,0 +1,32 @@
+# stangent.yaml for Phase 3 (tickets) on Sonarr: sonarr.spec.yaml (pages, FSD) plus the tickets settings (D77–D81).
+# Event and command handlers are entry points as in Phase 2 (D54), so pages and their FSD links are the same.
+version: 1
+store:
+  root: .stangent/store
+ai:
+  enabled: true
+detectors: []
+detectorSettings:
+  frontend-http:
+    # Sonarr's own API helpers (frontend/src/Helpers/Hooks, Utilities/Fetch): name:urlProperty[:verbProperty].
+    wrappers: ["useApiQuery:path", "usePagedApiQuery:path", "useApiMutation:path:method", "fetchJson:path:method", "createAjaxRequest:url:method"]
+  publish-handle:
+    # IHandle<TEvent> and IHandleAsync<TEvent> for events; IExecute<TCommand> for commands, which Sonarr's
+    # scheduler and its command API run (src/NzbDrone.Core/Messaging).
+    handlerInterfaces: ["NzbDrone.Core.Messaging.Events.IHandle`1", "NzbDrone.Core.Messaging.Events.IHandleAsync`1", "NzbDrone.Core.Messaging.Commands.IExecute`1"]
+tickets:
+  site: peachpersonal.atlassian.net
+  projects: [SONB]                  # the Jira project the frozen set is copied into (D77); set when it exists
+  bugTypes: [Bug]
+  # Sonarr builds a single project only with its solution folder set (StyleCop's settings come from it).
+  dotnetArgs: "-p:SolutionDir={root}/src/"
+  # Sonarr CI's own unit-test filter on macOS and Linux.
+  testFilter: "TestCategory!=ManualTest&TestCategory!=WINDOWS&TestCategory!=IntegrationTest&TestCategory!=AutomationTest"
+  app:                              # benchmark/tickets/sonarr/app/setup.sh installs these into the clone
+    build: ./.stangent-app/build.sh
+    start: ./.stangent-app/start.sh
+    url: http://127.0.0.1:8989/
+    readySeconds: 300
+    specDir: e2e/stangent
+    playwrightDir: e2e
+  proveBudget: { usd: 1, turns: 15 } # D81

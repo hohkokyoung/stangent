@@ -54,6 +54,29 @@ if (argList.Count >= 3 && argList[0] == "--score-fsd")
     Console.WriteLine(scoreText);
     return 0;
 }
+// Phase 3's frozen set (D78): `--select-tickets <clone> --out-dir benchmark/tickets/sonarr [--repo Sonarr/Sonarr] [--bugs 40] [--not-bugs 10]`.
+if (argList.Count >= 2 && argList[0] == "--select-tickets")
+{
+    string Arg(string name, string fallback) => argList.IndexOf(name) is var i and >= 0 && i + 1 < argList.Count ? argList[i + 1] : fallback;
+    return Stangent.Benchmark.Tickets.TicketSelection.Run(Path.GetFullPath(argList[1]), Path.GetFullPath(Arg("--out-dir", "benchmark/tickets/sonarr")),
+        Arg("--repo", "Sonarr/Sonarr"), int.Parse(Arg("--bugs", "40")), int.Parse(Arg("--not-bugs", "10")), Console.Error);
+}
+// Copies the frozen set into Jira (D77), asked for first: `--copy-to-jira <tickets dir> --site <site> --project <KEY> [--issue-type Bug] [--dry-run]`.
+if (argList.Count >= 2 && argList[0] == "--copy-to-jira")
+{
+    string Arg(string name, string fallback) => argList.IndexOf(name) is var i and >= 0 && i + 1 < argList.Count ? argList[i + 1] : fallback;
+    return await Stangent.Benchmark.Tickets.JiraCopy.RunAsync(Path.GetFullPath(argList[1]), Arg("--site", ""), Arg("--project", ""), Arg("--issue-type", "Bug"),
+        argList.Contains("--dry-run"), Console.Error);
+}
+// Phase 3's score (D79): `--score-tickets <clone> <tickets dir> [--out file]`.
+if (argList.Count >= 3 && argList[0] == "--score-tickets")
+{
+    var ticketScore = Stangent.Benchmark.Tickets.TicketScore.Run(Path.GetFullPath(argList[1]), Path.GetFullPath(argList[2]));
+    var ticketText = ticketScore.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+    if (argList.IndexOf("--out") is var to and >= 0) File.WriteAllText(argList[to + 1], ticketText + "\n");
+    Console.WriteLine(ticketText);
+    return 0;
+}
 // Picks 📜's defaults from tuning runs (D43): `--select-tuning <tune.json>... [--out file]`.
 if (argList.Count > 0 && argList[0] == "--select-tuning")
     return Tuning.Select([.. argList.Skip(1).TakeWhile(a => !a.StartsWith('-'))], argList.IndexOf("--out") is var o and >= 0 ? argList[o + 1] : null);

@@ -10,16 +10,23 @@ namespace Stangent.Tickets.Proof;
 /// </summary>
 public sealed record TestTarget(string Id, string Kind, string Runner, string Dir, string? Project, IReadOnlyList<string> Patterns, IReadOnlyList<string> Covers)
 {
+    /// <summary>Extra <c>dotnet</c> arguments (<c>tickets.dotnetArgs</c>, already with the repo's path in).</summary>
+    public string Args { get; init; } = "";
+    /// <summary>The repo's unit-test filter for whole-project runs (<c>tickets.testFilter</c>).</summary>
+    public string? Filter { get; init; }
+
     public const string Unit = "unit";
     public const string Playwright = "playwright";
 
-    public string? BuildCommand => Runner == "dotnet" ? $"dotnet build {Quote(Project!)}" : null;
+    public string? BuildCommand => Runner == "dotnet" ? $"dotnet build {Quote(Project!)}{Extra}" : null;
+
+    string Extra => Args.Length == 0 ? "" : " " + Args;
 
     /// <summary>The command that runs one test (or, with no name, the whole target), writing its report to <paramref name="report"/>.</summary>
     public string TestCommand(string? file, string? name, string report, bool vstest = true) => Runner switch
     {
         "dotnet" => vstest
-            ? $"dotnet test {Quote(Project!)}{(name is null ? "" : $" --filter {Quote("FullyQualifiedName~" + FilterEscape(name))}")} --logger {Quote("trx;LogFileName=" + report)}"
+            ? $"dotnet test {Quote(Project!)}{Extra}{(name is not null ? $" --filter {Quote("FullyQualifiedName~" + FilterEscape(name))}" : Filter is { Length: > 0 } f ? $" --filter {Quote(f)}" : "")} --logger {Quote("trx;LogFileName=" + report)}"
             : $"dotnet test --project {Quote(Project!)}{(name is null ? "" : $" --filter-method {Quote(name)}")} -- --report-trx --report-trx-filename {Quote(Path.GetFileName(report))} --results-directory {Quote(Path.GetDirectoryName(report)!)}",
         "vitest" => $"npx vitest run{(file is null ? "" : " " + Quote(file))}{(name is null ? "" : $" -t {Quote(Anchored(name))}")} --reporter=json --outputFile={Quote(report)}",
         "jest" => $"npx jest{(file is null ? "" : " " + Quote(file))}{(name is null ? "" : $" -t {Quote(Anchored(name))}")} --json --outputFile={Quote(report)}",
@@ -27,17 +34,20 @@ public sealed record TestTarget(string Id, string Kind, string Runner, string Di
         _ => throw new StangentException("usage", $"Unknown runner {Runner}."),
     };
 
-    /// <summary>Where commands run: the package folder for Jest and Vitest, the repo root otherwise.</summary>
-    public string WorkingDir(string root) => Runner is "vitest" or "jest" ? Path.Combine(root, Dir) : root;
+    /// <summary>Where commands run: the package folder for Jest and Vitest, Playwright's own folder (its <see cref="Project"/>),
+    /// the repo root otherwise.</summary>
+    public string WorkingDir(string root) => Runner is "vitest" or "jest" ? Path.Combine(root, Dir)
+        : Runner == "playwright" && Project is { Length: > 0 } p ? Path.Combine(root, p) : root;
 
     public JsonObject ToJson() => new()
     {
-        ["id"] = Id, ["kind"] = Kind, ["runner"] = Runner, ["dir"] = Dir, ["project"] = Project,
+        ["id"] = Id, ["kind"] = Kind, ["runner"] = Runner, ["dir"] = Dir, ["project"] = Project, ["args"] = Args, ["filter"] = Filter,
         ["patterns"] = new JsonArray([.. Patterns.Select(p => (JsonNode)p)]), ["covers"] = new JsonArray([.. Covers.Select(c => (JsonNode)c)]),
     };
 
     public static TestTarget FromJson(JsonNode n) => new((string)n["id"]!, (string)n["kind"]!, (string)n["runner"]!, (string)n["dir"]!, (string?)n["project"],
-        [.. n["patterns"]!.AsArray().Select(p => (string)p!)], [.. n["covers"]!.AsArray().Select(c => (string)c!)]);
+        [.. n["patterns"]!.AsArray().Select(p => (string)p!)], [.. n["covers"]!.AsArray().Select(c => (string)c!)])
+    { Args = (string?)n["args"] ?? "", Filter = (string?)n["filter"] };
 
     /// <summary>The repo root is written <c>.</c>.</summary>
     public bool AtRoot => Dir is "." or "";
@@ -107,7 +117,10 @@ public static partial class TestTargets
             var covers = projects.Where(reached.Contains).Order(StringComparer.Ordinal).ToList();
             if (covers.Count == 0) continue;
             var dir = Path.GetDirectoryName(test)!.Replace('\\', '/') is { Length: > 0 } d ? d : ".";
-            targets.Add(new TestTarget("dotnet:" + test, TestTarget.Unit, "dotnet", dir, test, ["*.cs"], covers));
+            targets.Add(new TestTarget("dotnet:" + test, TestTarget.Unit, "dotnet", dir, test, ["*.cs"], covers)
+            {
+                Args = repo.Config.Tickets.DotnetArgs.Replace("{root}", root.TrimEnd('/')), Filter = repo.Config.Tickets.TestFilter,
+            });
         }
 
         // Jest / Vitest: the nearest package.json above a starting point's frontend file that uses one of them.
@@ -127,7 +140,7 @@ public static partial class TestTargets
         var unit = targets.OrderByDescending(t => t.Covers.Count).ThenBy(t => t.Id, StringComparer.Ordinal).Take(MaxUnitTargets).ToList();
         // Playwright only when the repo says how to start and seed the app (D76).
         if (repo.Config.Tickets.App is { Start: not null, Url: not null } app)
-            unit.Add(new TestTarget("playwright:" + app.SpecDir, TestTarget.Playwright, "playwright", app.SpecDir.TrimEnd('/'), null, ["*.spec.ts", "*.spec.js"], []));
+            unit.Add(new TestTarget("playwright:" + app.SpecDir, TestTarget.Playwright, "playwright", app.SpecDir.TrimEnd('/'), app.PlaywrightDir?.TrimEnd('/'), ["*.spec.ts", "*.spec.js"], []));
         return unit;
     }
 

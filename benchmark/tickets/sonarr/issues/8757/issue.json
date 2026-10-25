@@ -1,0 +1,42 @@
+{
+  "number": 8757,
+  "title": "Cannot add \"Unknown\" resolution to a custom format",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nI have a fallback custom format. This includes SD resolutions which I don't necessarily want, but will accept if there's no HD releases found. I am trying to add \"unknown\" resolution to this fallback format. Unknown is listed as an option in the dropdown when I try to add a new resolution rule. However, when I try to save the format with the new unknown resolution rule in place, I get an error that says \"'Value' must not be empty.\"\n\n<img width=\"693\" height=\"438\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/5a50b847-0cf6-434f-93cd-752706f2e53e\" />\n\n<img width=\"1063\" height=\"737\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/5153432d-b51f-4a00-9321-3b5e0362e1a1\" />\n\n### Expected Behavior\n\nCustom format should accept an unknown resolution rule\n\n### Steps To Reproduce\n\nCreate a custom format and try to add a rule for unknown resolution\n\n### Environment\n\n```markdown\n- OS: Win10\n- Sonarr: 4.0.19.2979\n- Docker Install: no\n- Using Reverse Proxy: no\n- Browser: brave\n- Database: Sqlite 3.36.0\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n\n[sonarr.txt](https://github.com/user-attachments/files/29638331/sonarr.txt)\n[sonarr.debug.txt](https://github.com/user-attachments/files/29638330/sonarr.debug.txt)\n[sonarr.trace.txt](https://github.com/user-attachments/files/29638332/sonarr.trace.txt)\n\n### Anything else?\n\n_No response_",
+  "author": "candre23",
+  "createdAt": "2026-07-03T13:50:16Z",
+  "comments": [
+    {
+      "id": 4877123551,
+      "author": "mynameisbogdan",
+      "createdAt": "2026-07-03T14:11:56Z",
+      "body": "- #8758 will fix your issue. \uD83D\uDC4D "
+    }
+  ],
+  "attachments": [
+    {
+      "url": "https://github.com/user-attachments/assets/5a50b847-0cf6-434f-93cd-752706f2e53e",
+      "file": "attachments/01-5a50b847-0cf6-434f-93cd-752706f2e53e",
+      "bytes": 38273
+    },
+    {
+      "url": "https://github.com/user-attachments/assets/5153432d-b51f-4a00-9321-3b5e0362e1a1",
+      "file": "attachments/02-5153432d-b51f-4a00-9321-3b5e0362e1a1",
+      "bytes": 64780
+    },
+    {
+      "url": "https://github.com/user-attachments/files/29638331/sonarr.txt",
+      "file": "attachments/03-sonarr.txt",
+      "bytes": 780
+    },
+    {
+      "url": "https://github.com/user-attachments/files/29638330/sonarr.debug.txt",
+      "file": "attachments/04-sonarr.debug.txt",
+      "bytes": 3439
+    },
+    {
+      "url": "https://github.com/user-attachments/files/29638332/sonarr.trace.txt",
+      "file": "attachments/05-sonarr.trace.txt",
+      "bytes": 15970
+    }
+  ]
+}

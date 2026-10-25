@@ -1,0 +1,9 @@
+{
+  "number": 8270,
+  "title": "Plex Metadata  doesn't work for Specials",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nI noticed some odd entries for specials that Plex doesn't seem to be able to interpret no matter the settings. Specials seem to get marked with pattern that doesn't match anything documented by plex:\n\n```\nEpisode: S03E01: Season 3/Beyond Paradise S03E01 720p WEB H264-GRP.mkv\n[...]\nEpisode: S03E06: Season 3/Some.Show.S03E06.1080p.iP.WEB-DL.AAC2.0.HFR.H.264-GRP.mkv\nEpisode: SP[33104]Christmas Special 2025: Specials/Some.Show.S03E00.Christmas.Special.2025.1080p.HDTV.H264-GRP.mkv\n```\n\nit looks like for specials we're using the internal sonarr episode ID for specials, which doesn't make too much sense. See also https://github.com/Sonarr/Sonarr/blob/5eb18fe274b26353304c8cdeaae9fba4fe9fedb4/src/NzbDrone.Core/Extras/Metadata/Consumers/Plex/PlexMetadata.cs#L76. I'm also not sure where the `Christmas Special 2025` is coming from between the square bracket and the colon character.\n\nI use importing without renaming because I'd like to keep the original filenames, and relying on the plexmatch file to match in Plex. Which is why there's the odd S03E00 filename.\n\n### Expected Behavior\n\nThe plexmatch file should have a line with `Episode: SP04: Specials/Some.Show.S03E00.Christmas.Special.2025.1080p.HDTV.H264-GRP.mkv`\n\n### Steps To Reproduce\n\nno special steps required beyond enabling plex metadata \n\n### Environment\n\n```markdown\n- OS: Ubuntu 24.04\n- Sonarr: 4.0.16.2944\n- Docker Install: yes\n- Using Reverse Proxy:  no\n- Browser: n/a\n- Database: 217\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n\nn/a\n\n### Anything else?\n\n_No response_",
+  "author": "chkuendig",
+  "createdAt": "2025-12-22T08:34:14Z",
+  "comments": [],
+  "attachments": []
+}

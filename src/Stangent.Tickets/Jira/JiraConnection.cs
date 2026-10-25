@@ -169,6 +169,36 @@ public sealed class JiraConnection : IJiraTools
             "sha256:" + Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(bytes)));
     }
 
+    /// <summary>
+    /// Attaches a local file to an issue (used to copy the benchmark's frozen issues into Jira, D77): the MCP's
+    /// <c>uploadAttachmentToJiraIssue</c> mints an upload URL and token, code posts the bytes, then attaches the file id.
+    /// </summary>
+    public async Task<string> UploadAttachmentAsync(string cloudId, string key, string file, CancellationToken ct = default)
+    {
+        Dictionary<string, object?> Args(Dictionary<string, object?> inputs) => new()
+        {
+            ["cloudId"] = cloudId, ["name"] = "uploadAttachmentToJiraIssue", ["inputs"] = new Dictionary<string, object?>(inputs) { ["cloudId"] = cloudId, ["issueIdOrKey"] = key },
+        };
+        var phase1 = await CallAsync("executeWrite", Args(new() { ["filePath"] = Path.GetFullPath(file) }), ct);
+        var command = phase1.Json?["data"]?["uploadCommand"]?.GetValue<string>()
+            ?? throw new StangentException("jira_unexpected_output", "uploadAttachmentToJiraIssue returned no data.uploadCommand.");
+        var url = System.Text.RegularExpressions.Regex.Match(command, @"--location '([^']+)'").Groups[1].Value;
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || !IsAtlassianHost(uri.Host))
+            throw new StangentException("jira_unexpected_output", "uploadAttachmentToJiraIssue gave no Atlassian upload URL.");
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = new ByteArrayContent(await File.ReadAllBytesAsync(file, ct)) };
+        foreach (System.Text.RegularExpressions.Match h in System.Text.RegularExpressions.Regex.Matches(command, @"--header '([^:']+): ([^']*)'"))
+            request.Headers.TryAddWithoutValidation(h.Groups[1].Value, h.Groups[2].Value);
+        using var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromMinutes(5) };
+        using var response = await http.SendAsync(request, ct);
+        if (!response.IsSuccessStatusCode)
+            throw new StangentException("jira_upload_failed", $"Uploading {Path.GetFileName(file)}: HTTP {(int)response.StatusCode}.");
+        var fileId = JsonNode.Parse(await response.Content.ReadAsStringAsync(ct))?["data"]?["id"]?.GetValue<string>()
+            ?? throw new StangentException("jira_unexpected_output", "The upload returned no data.id.");
+        var phase2 = await CallAsync("executeWrite", Args(new() { ["fileId"] = fileId }), ct);
+        return phase2.Json?["data"]?["attachment"]?["attachmentId"]?.ToString()
+            ?? throw new StangentException("jira_unexpected_output", "uploadAttachmentToJiraIssue returned no attachment id.");
+    }
+
     public static bool IsAtlassianHost(string host) =>
         host.Equals("atlassian.com", StringComparison.OrdinalIgnoreCase) || host.EndsWith(".atlassian.com", StringComparison.OrdinalIgnoreCase)
         || host.EndsWith(".atlassian.net", StringComparison.OrdinalIgnoreCase) || host.EndsWith(".atl-paas.net", StringComparison.OrdinalIgnoreCase);

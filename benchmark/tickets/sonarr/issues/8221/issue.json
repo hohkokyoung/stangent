@@ -1,0 +1,22 @@
+{
+  "number": 8221,
+  "title": "Command-line data path causing backups to fail",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nIn my environment I run Sonarr specifying a data dir on the command line, for example `/usr/bin/open /Applications/Sonarr.app --args /nobrowser -data=$APP_HOME/appdata/Sonarr/`.\n\nWhen elements of my environment changed, $APP_HOME ended up expanding to a directory with a trailing slash, so the the parameter became `-data=/opt/example//appdata/Sonarr/`.\n\nMost Sonarr features work just fine, but I noticed that backups started failing, and looking at the debug logs, other file-handling features were too. The backups were trying to back up the non-existent config file `/opt/example/appdata/Sonarrr/config.xml`. Note the single slashes and three Rs in Sonarrr.\n\nPlease note this is a duplicate of [Radarr issue 11300](https://github.com/Radarr/Radarr/issues/11300).\n\n### Expected Behavior\n\nI'd expect Sonarr's backups to work with a config file path like /opt/example//appdata/Sonarr/config.xml\n\n### Steps To Reproduce\n\n1. Start Sonarr using a command-line parameter to specify the data dir with multiple slashes within the path (not the final path separator). For example, `-data=/opt/example///appdata/Sonarr/` but not `-data=/opt/example/appdata/Sonarr///`.\n2. In the System menu select the Backup page.\n3. Click 'Backup Now' to initiate a manual backup.\n\nThe backup will fail and the log/debug log will show that the backup file failed because the malformed config file path couldn't be found.\n\n### Environment\n\n```markdown\n- OS: macOS Sequoia 15.7.2\n- Sonarr: 4.0.16.2944\n- Docker Install: No\n- Using Reverse Proxy: No\n- Browser: n/a\n- Database: Sqlite 3.36.0\n```\n\n### What branch are you running?\n\nDevelop\n\n### Trace Logs\n\n[over-slashed-directory-trace-log-for-sonarr](https://gist.github.com/Touchstone64/adfdcdfaa433414a596dcb95062af410)\n\n### Anything else?\n\nPlease note this is a duplicate of [Radarr issue 11300](https://github.com/Radarr/Radarr/issues/11300).",
+  "author": "Touchstone64",
+  "createdAt": "2025-12-01T09:16:07Z",
+  "comments": [
+    {
+      "id": 3595439553,
+      "author": "Touchstone64",
+      "createdAt": "2025-12-01T09:17:49Z",
+      "body": "Please note, I've developed code and tests to resolve the issue so I expect to issue a PR soon. It'll be remarkably similar to the Radarr PR [Fixed: Command-line data path causing backups to fail](https://github.com/Radarr/Radarr/pull/11301)."
+    },
+    {
+      "id": 3597594629,
+      "author": "thezoggy",
+      "createdAt": "2025-12-01T16:38:48Z",
+      "body": "why not just sanitize the data argument + fail when users pass invalid paths. vs trying to chase down any path thats used down the line to do a hacky fixup? then your PR looks to contain unexpected changes unrelated to this issue"
+    }
+  ],
+  "attachments": []
+}

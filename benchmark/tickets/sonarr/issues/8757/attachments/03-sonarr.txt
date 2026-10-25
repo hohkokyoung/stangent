@@ -1,0 +1,11 @@
+2026-07-03 09:42:05.1|Warn|SonarrErrorPipeline|Invalid request Validation failed: 
+ -- Value: 'Value' must not be empty.
+2026-07-03 09:42:19.6|Info|Auth|Auth-Success ip ::1 username 'admin'
+2026-07-03 09:42:24.4|Info|RssSyncService|Starting RSS Sync
+2026-07-03 09:42:25.9|Info|DownloadDecisionMaker|Processing 500 releases
+2026-07-03 09:42:27.7|Info|RssSyncService|RSS Sync Completed. Reports found: 500, Reports grabbed: 0
+2026-07-03 09:43:06.2|Info|Auth|Auth-Success ip ::1 username 'admin'
+2026-07-03 09:43:11.3|Info|Auth|Auth-Success ip ::1 username 'admin'
+2026-07-03 09:43:30.7|Info|Auth|Auth-Success ip ::1 username 'admin'
+2026-07-03 09:43:38.9|Info|Auth|Auth-Success ip ::1 username 'admin'
+2026-07-03 09:43:49.4|Info|Auth|Auth-Success ip ::1 username 'admin'

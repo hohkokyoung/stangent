@@ -1,0 +1,15 @@
+{
+  "number": 9051,
+  "title": "Overridden Series On Manual Import fires Imported Webhook Multiple Times",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nSeries/Episode gets downloaded and flagged as Manual Interaction Required. If Series Name is overridden to the correct series (Auto Detection incorrectly identified series of download) during manual import, the Webhook Fires for both To Detected Series and the Series Selected as the override.\n\n1st Image is Overridden Series, 2nd is Original Detected Series (Both fired back to back)\n<img width=\"1009\" height=\"734\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/33acc48d-24ac-4bf9-9ddd-0206fb802e29\" />\n\nNote: the File is not imported into the detected Series at all, only the overridden series gets the file. it is merely a webhook handling issue.\n\n### Expected Behavior\n\nImport Complete Webhook should only fire on the Title Selected as the Override after the import completes.\n\n### Steps To Reproduce\n\nUnable to reproduce on demand. I cannot force a download into the manual interaction required state.\n\n### Environment\n\n```markdown\n- OS: Debian 13 LXC Container\n- Sonarr: 4.0.20.3012\n- Docker Install: No\n- Using Reverse Proxy: No\n- Browser: Brave 1.96.61 (Official Build) (64-bit)\n- Database: Sqlite 3.46.1\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs\n\nUnable to reproduce on demand. not sure how to guarantee capture of trace log as I cannot force a download into the manual interaction required state.\n\nIf there is a way to force it into manual interaction required state, please provide instructions and a trace log will be collected.\n\n### Anything else\n\n_No response_",
+  "author": "brad-charboneau",
+  "createdAt": "2026-10-10T15:05:12Z",
+  "comments": [],
+  "attachments": [
+    {
+      "url": "https://github.com/user-attachments/assets/33acc48d-24ac-4bf9-9ddd-0206fb802e29",
+      "file": "attachments/01-33acc48d-24ac-4bf9-9ddd-0206fb802e29",
+      "bytes": 124000
+    }
+  ]
+}

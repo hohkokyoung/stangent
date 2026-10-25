@@ -1,0 +1,28 @@
+{
+  "number": 7759,
+  "title": "Import Lists: Trakt: \"Recommended by Year\" results in \"Recommended by Weekly\" behavior",
+  "body": "### Is there an existing issue for this?\n\n- [x] I have searched the existing open and closed issues\n\n### Current Behavior\n\nSetting up an Import List for \"Trakt - Recommended by Year\" results in \"Recommended by Weekly\" behavior instead of yearly.\n\n### Expected Behavior\n\nSetting up an Import List for \"Trakt - Recommended by Year\" results in recommendations (most favorited Shows) from Trakt over the course of the past year.\n\n### Steps To Reproduce\n\n1. Go to \"Import Lists\" settings in Sonarr Web UI via Settings > Import Lists.\n2. Add new Import List by clicking the + button under \"Import Lists\" heading.\n3. Select \"Trakt Popular List\" under the \"Trakt List\" section.\n4. Under List Type, select \"Recommended Shows By Year\".\n5. Save the Import List.\n6. Wait for the next Import and compare the import results against the Trakt website for \"shows/recommended/weekly\" and \"shows/recommended/yearly\" (the latter of which doesn't actually work)\n\n### Environment\n\n```markdown\n- OS: Ubuntu 24.04.1 LTS\n- Sonarr: 4.0.14.2939\n- Docker Install: Yes\n- Using Reverse Proxy: No\n- Browser: Chrome 134.0.6998.118\n- Database: Sqlite 3.48.0\n```\n\n### What branch are you running?\n\nMain\n\n### Trace Logs?\n\n2025-03-24 14:51:16.9|Info|ImportListSyncService|Starting Import List Sync\n2025-03-24 14:51:16.9|Debug|FetchAndParseImportListService|Available import lists 3\n2025-03-24 14:51:16.9|Debug|TraktPopularImport|Downloading Feed https://api.trakt.tv/shows/recommended/yearly?years=&genres=&ratings=&limit=5\n2025-03-24 14:51:16.9|Debug|TraktUserImport|Downloading Feed https://api.trakt.tv/users/(removed)/watchlist/shows/rank?limit=100\n2025-03-24 14:51:17.3|Debug|FetchAndParseImportListService|Found 80 reports from Trakt User (Trakt - halfskye Watchlist)\n2025-03-24 14:51:21.0|Debug|FetchAndParseImportListService|Found 5 reports from Trakt Popular List (Trakt - Recommended by Year)\n2025-03-24 14:51:21.0|Debug|FetchAndParseImportListService|Found 85 total reports from 3 lists\n2025-03-24 14:51:21.0|Info|ImportListSyncService|Processing 85 list items\n\n### Anything else?\n\nThis seems to actually be an issue with Trakt since even when the API request for \"shows/recommended/yearly\" is used with a URL in a web browser, the results indicate \"the most favorited shows for **the last 7 days.**\":\n![Image](https://github.com/user-attachments/assets/16b419fa-9298-4cf3-a5de-a67fb69d0495)\n\nUsing the Movies equivalent \"movies/recommended/yearly\" results in the same weekly behavior.\n\nIt seems if the trailing period label isn't recognized (e.g., \"yearly\", \"year\", \"foo\"), the API defaults to \"weekly\".\n\nIf Trakt no longer supports the Yearly period, maybe this Import List option should be removed?",
+  "author": "halfskye",
+  "createdAt": "2025-03-24T20:43:28Z",
+  "comments": [
+    {
+      "id": 2749364926,
+      "author": "halfskye",
+      "createdAt": "2025-03-24T20:51:16Z",
+      "body": "It appears that the \"Recommended Shows Of All Time\" option is currently implemented to use the \"yearly\" period in its request link generation too so it seems likely this would result in the same weekly recommendations instead:\nhttps://github.com/Sonarr/Sonarr/blob/94f64435f558acd9c3e476eb55909998e1290e02/src/NzbDrone.Core/ImportLists/Trakt/Popular/TraktPopularRequestGenerator.cs#L55-L59"
+    },
+    {
+      "id": 2749407925,
+      "author": "thezoggy",
+      "createdAt": "2025-03-24T21:11:14Z",
+      "body": "looks like `/shows/recommended/yearly` is not valid, thus it defaults to last 7 days (so same as `/shows/recommended/weekly`)\nbut `/shows/recommended/all` is valid, so should just be updated to that\n"
+    }
+  ],
+  "attachments": [
+    {
+      "url": "https://github.com/user-attachments/assets/16b419fa-9298-4cf3-a5de-a67fb69d0495",
+      "file": "attachments/01-16b419fa-9298-4cf3-a5de-a67fb69d0495",
+      "bytes": 20824
+    }
+  ]
+}
