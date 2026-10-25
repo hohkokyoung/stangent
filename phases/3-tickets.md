@@ -261,6 +261,7 @@ findings were checked against the code and fixed; none was rejected. Each has a 
   loads, the API lists both series, and a Playwright spec run as the proof runs it passes.
 - New settings (plan detail): `tickets.dotnetArgs` (Sonarr builds a single test project only with `SolutionDir` set),
   `tickets.testFilter` (the repo's unit-test filter for whole-project runs), `tickets.app.playwrightDir`.
-- **Flagged for the owner before the run:** not-bug #9004 ("Backport Trakt show-link fix to Sonarr v4") is a real bug
-  fixed in v5 and closed only as not backported; at the v4 commit it may well reproduce.
+- **Not-bug #9004** ("Backport Trakt show-link fix to Sonarr v4") is a real bug fixed in v5, closed only as not
+  backported, so at the v4 commit it may reproduce. The owner's call (2026-10-26): keep it, since the rule picked it and
+  removing it after reading the list would be hand-picking; if it reproduces, the report says why.
 
