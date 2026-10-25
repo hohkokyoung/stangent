@@ -15,6 +15,9 @@ Interactive use goes through the Atlassian MCP.
 **Cost / to verify:** unattended runs (scheduled pulls, CI updates) need the Jira REST API with
 an API token, not an interactive MCP login. Whether the MCP can download attachment *files*
 is unverified — test before designing around it.
+- *Answered 2026-10-25 (D73):* the Atlassian MCP can download attachments (`downloadJiraIssueAttachment` returns a
+  short-lived URL), and it accepts an API token for unattended use once an organization admin enables it. The
+  stangent CLI itself is an MCP client (D73).
 
 ## D3 · PRs on GitHub — 2026-10-18
 CI/CD defaults to GitHub Actions.
@@ -842,7 +845,8 @@ toward the result).
   nothing is redone when the website arrives.
 - **Checked in CI:** the schema and allowed values; both quotes still match the current FSD and page (the D11 hash),
   otherwise the decision drops back to undecided; `decided_by` is filled from git (the PR's approver or merger), never typed.
-- "code-wrong" becomes a draft Jira ticket in Phase 3; until then it's listed.
+- "code-wrong" becomes a draft Jira ticket in Phase 3; until then it's listed. *Changed 2026-10-25 (D80): not in
+  Phase 3; it stays listed and a person creates the ticket.*
 Rejected: bot-opened review PRs with comment commands (machinery the dashboard replaces anyway); an early approval page
 (pulls Phase 8 and sign-in forward).
 **Why:** the simplest thing that keeps a checked, attributed record, and the website reuses it unchanged.
@@ -1042,12 +1046,242 @@ the agree checker's disputes to cut noise before re-measuring (tuning to the fro
 **Cost:** a project that wants the drift list must opt in and accept roughly one false alarm in three; the likely
 lever (the agree checker turning "partial" agreements into gaps, 25 of the 62 unplanted findings) is a follow-up.
 
+## D69 · Phase 3's bundle is read by a developer's Claude Code first; Phase 4 reads the same contract — 2026-10-25
+- A developer runs `/stangent:ticket PROJ-123` in their own Claude Code. The CLI builds the bundle (code, D18) as JSON
+  for the agent plus a short Markdown view for the developer; the bundle becomes that session's starting context.
+- Phase 4's planner later reads the same `ticket-bundle` contract unchanged.
+Rejected: a Phase 4-only input (nothing would show it helps until Phase 4 exists); a BA/PM summary as well (another
+audience to word for; BA/PM's view is the Phase 8 dashboard, D12).
+**Why:** useful from the day it ships, and a person using it shows what a bundle needs before agents depend on it.
+**Cost:** a developer's session isn't a measurement; the proof needs its own scored benchmark.
+
+## D70 · A ticket's starting points: code first, then AI from page titles, then the developer — 2026-10-25
+Answers the open question "how does the ticket's description become a starting point for the graph".
+1. **Code finds exact signals** in the ticket text: a stack-trace frame → its method (✅); a URL path
+   (`/series/12/edit`) → the route's page; a quoted screen name, page title or FSD section title → those pages (FSD
+   sections through `specs/trace.yaml`); a symbol name that exists in the graph.
+2. **If code finds none, AI picks** from the ticket and the **list of page titles only** (not the pages): up to 5
+   pages, each with a word-for-word quote from the ticket saying why. Code checks each page exists and each quote
+   matches; a failed check gets one retry (D60). Same shape as 2b's candidate finder.
+3. **The developer sees the picks** (with their reason: the signal or the quote) in the Markdown view and can add or
+   remove before work starts; the bundle records who changed what.
+- The impact answer starts from the chosen pages' cited symbols and any matched symbols.
+Rejected: the developer naming them by hand (the step a junior or a Phase 4 agent can't do, and no unattended runs); AI
+reading the whole reference (hundreds of pages per ticket, picks hard to check); embedding search (no word-for-word
+reason, close to the inferred links D10 rejects).
+**Why:** code takes the certain cases at no cost; the AI's step is small (~10k tokens) and checkable; a person corrects the rest.
+**Cost:** tickets that name nothing the code can match depend on page titles being good; a page list with titles only
+can't tell two similar screens apart.
+
+## D71 · The bundle carries pages and pointers, not source code, under a size cap — 2026-10-25
+Built by code (D18). In order:
+- **The ticket:** key, type, summary, description, comments, links, and its attachments (D72).
+- **Starting points** with their reasons (D70).
+- **The chosen reference pages** (statements with citations) and their **linked FSD sections' text** with each link's
+  state and whether a person decided it (D53). Findings only when `fsd.findings` is on (D68), marked unconfirmed.
+- **The impact answer** from the starting points within 2 lines, summary first (D27).
+- **Pointers:** the files and symbol ids behind the pages and the impact answer. No source code: the developer's
+  Claude Code opens the files it needs.
+- **Cap ~40k characters (~10k tokens)**, a setting. Over the cap, the lowest-ranked pages become pointers, and the
+  bundle says so.
+- **Missing or stale pages are flagged, never generated by the bundle** (a page costs $0.05–0.38, 2a); the developer
+  can run `/stangent:spec-generate` for them.
+Rejected: the source slices too (a screen's slice is ~53k characters median, up to 254k, paid on every turn of the
+session); pointers only (the agent re-reads code to learn what the pages already say).
+**Why:** the pages are Phase 2's checked summary of the code, so they're the cheapest grounded context there is.
+**Cost:** a page describes only its slice (D63), so an action's backend rules sit on the endpoint page, which may be
+a pointer; on a repo with few generated pages the bundle is mostly pointers.
+
+## D72 · Attachments: code converts text, keeps images as files, lists the rest — 2026-10-25
+- Code downloads every attachment (and images inline in the description) into the bundle's folder, each with its
+  content hash.
+- **Text** (`.txt`, `.log`, `.json`, `.csv`, `.xml`, and similar) goes into the bundle up to a per-file cap (the rest is
+  a pointer to the saved file); stack traces in them feed the starting points (D70).
+- **`.docx`** goes through 2b's converter (same file → same text).
+- **Images** are saved and listed by name, size and where they appear. The developer's Claude Code can look at them;
+  **no stangent AI step describes them**, since nothing could check the description (D18).
+- **PDF, Excel, video and anything else:** listed by name, type and size. Each gets a converter when a real ticket
+  needs one, as 2b did for FSD formats.
+Rejected: an AI describing each image into text (a call per image, unverifiable); text only (many bug tickets are a
+screenshot and one line).
+**Why:** everything deterministic is converted by code; what isn't stays in its original form for whoever reads it.
+**Cost:** an agent without vision (or a headless run) gets nothing from a screenshot but its name.
+
+## D73 · The stangent CLI reaches Jira as an MCP client, behind the issue-tracker adapter — 2026-10-25
+- The C# CLI talks to Atlassian's MCP server with the official C# MCP SDK, calling its tools from code (no AI in
+  the fetch path). Locally it signs in with its own browser login (OAuth 2.1) and keeps the refresh token in the OS
+  keychain; Claude Code's own MCP login can't be shared.
+- **Unattended runs** (CI, later phases) use the MCP server's API-token sign-in (email + token, Basic auth), which an
+  organization admin has to enable. Checked 2026-10-25 in Atlassian's docs; on the owner's personal sites the owner
+  is the admin.
+- **Behind the issue-tracker adapter (D24):** Jira through MCP now; a **file** backend reads tickets from JSON files,
+  for tests and the benchmark. Code reads only fields it names from the tool results and keeps the raw result's hash,
+  so a change in Atlassian's output shows up as a failing adapter test, not as a quietly different bundle.
+- Attachments: the `downloadJiraIssueAttachment` operation gives a short-lived URL that code downloads (D72).
+- **First step of the build is a spike:** sign in, read a ticket with comments and an attachment, and post a comment,
+  from C#, locally and with an API token. If any of that fails, the question comes back to the owner before more is built.
+- Answers D2's open question.
+Rejected (the owner's call, against the recommendation): Jira's versioned REST API with an API token (a fixed,
+versioned contract, the same path locally and in CI); the plugin fetching through the developer's MCP login (an AI
+session in the fetch path, no unattended runs).
+**Why:** one integration Atlassian maintains for AI tools, with OAuth sign-in locally instead of a token for every developer.
+**Cost:** the MCP server's tools are shaped for AI readers and aren't versioned like REST, so outputs can change
+under stangent (Atlassian already retired its `/v1/sse` endpoint on 30 June 2026); unattended use depends on a
+company admin enabling API tokens; the C# MCP SDK and an OAuth flow are new dependencies.
+
+## D74 · Write-back: AI drafts comments as files; a person reads and posts them — 2026-10-25
+Two kinds of comment, both drafted by an AI step (D60) into a file, never posted by it:
+1. **Questions at pull time,** when the ticket is unclear or clashes with the FSD or a page: "the ticket says at most 5
+   tags; FSD 4.2 says 3, which is right?". Each question quotes the ticket sentence and the FSD or page sentence word
+   for word, and code checks both (as D53).
+2. **A resolution summary after the work,** from the developer's merged PR: code supplies the diff's impact answer,
+   the pages and FSD sections it reaches; the AI words it.
+- **Tone per draft:** `internal` (technical: screens, FSD sections, PR) or `client` (plain words, no code names). A
+  project sets the default; the developer can switch it.
+- **Code checks every claim** links to a real page, FSD section, file, PR or ticket sentence (as D18's PR summary row);
+  a client draft is also checked for code names and file paths.
+- **A person posts it:** the developer reads the draft and runs `stangent ticket post`, which posts it under their
+  own Jira login. A fresh-agent check (D61) isn't added: the person reading it is the check.
+- **Nothing else is written in Phase 3:** no status transitions, no field edits.
+Rejected: internal comments posting automatically (a wrong comment is seen at once and can't be unsent); moving the
+ticket's status (workflows differ per project and a transition can set off the company's automations).
+**Why:** D18 says a person approves what goes to a client; the same review costs little for internal comments, and
+everything the comment claims is checked by code first.
+**Cost:** every comment waits for the developer; a summary for a ticket closed outside stangent isn't drafted.
+
+## D75 · A bug is proven before it's fixed, in Phase 3 — 2026-10-25
+Answers the open question "how is a bug verified before it's fixed". The owner chose proof in Phase 3 over recording
+the rule for Phases 4–5 (first recommended), because a wrongly reported bug should be caught before any fix is attempted.
+- **Spotted by code:** a bug ticket is one whose Jira issue type is a bug (the mapping is a setting). Its steps,
+  expected and actual result, version and environment go into the bundle; missing ones become a draft question (D74).
+- **Proof:** an AI step (D60) writes a reproduction test from the bundle. Code checks it compiles, **fails on an
+  assertion** (not a compile error, an exception in setup or a timeout), and the assertion checks the ticket's
+  expected result. The developer confirms the failure matches the reported actual result.
+- **Reproduced:** the test is kept with the ticket; the fix must make it pass, and nothing else may start failing (D18's
+  test row: fails without the fix, passes with it).
+- **Not reproduced** (the test passes): no fix starts. A draft comment says what was tried and asks for more (D74).
+  The developer reviews the test first, since a badly written test also passes.
+- How far the proof goes (which kinds of test) is D76.
+- **"Don't fix yet" is a label and a suggested next step in Phase 3,** not a lock: the developer can still fix. From
+  Phase 4, an agent doesn't start a fix on a not-reproduced ticket until a person says go.
+- **The developer can suggest another way to reproduce it** (`stangent ticket prove <KEY> --hint "set the server time
+  zone to UTC+10"`): a new attempt with the hint added to its input, checked the same way. Each attempt costs about
+  what the first did (~$0.50–2) and is recorded with its hint. *(Added 2026-10-25, the owner's idea.)*
+**Why:** a fix for a bug that isn't there costs a developer's or an agent's time and can break correct behaviour.
+**Cost:** Phase 3 takes on test writing and running, first planned for Phase 5; an AI-written test can be wrong in
+either direction, so a person confirms both outcomes.
+
+## D76 · Bug proof uses unit tests and Playwright — 2026-10-25
+The owner chose unit tests plus Playwright over unit tests only (recommended), so UI bugs can be proven too.
+- **Unit tests:** the reproduction test goes into the repo's existing unit-test project for the code it exercises
+  (xUnit/NUnit; Jest/Vitest for the frontend). No databases or services, as in 1d (D46).
+- **Playwright,** for bugs a unit test can't reach (a screen showing the wrong thing): the test drives the running app.
+  How to start the app and give it data is a **per-repo setting** (`tickets.app`: build and start commands, URL, a
+  seed step); stangent runs it, it doesn't invent environments. A repo without that setting gets unit proof only, and
+  a UI bug there is marked "not provable here" for the developer to reproduce by hand.
+- **Flakiness:** a Playwright reproduction counts only if it fails the same way on 3 runs in a row; a test that passes
+  once is "not reproduced, flaky", not proof.
+- Integration tests with databases or containers stay in Phase 5.
+**Why:** many bug tickets are about what a screen shows; unit tests alone would leave them all to a person.
+**Cost:** the app's start-and-seed setting is real work per repo (Sonarr has no Playwright tests, and its screens need
+series and episodes in its database); browser runs are slower and flakier; Phase 5's browser-test work partly moves here.
+
+## D77 · Phase 3 is proven on Sonarr issues copied into the owner's Jira, read through the MCP — 2026-10-25
+- **Tickets:** real Sonarr GitHub issues, frozen once. Sonarr has 289 main-line fixes since 2022 that close an issue
+  (`Closes #9126`), so each comes with its answer: the fix commit.
+- **Copied into a new project on the owner's Jira site** (`peachpersonal.atlassian.net`, connected through the
+  Atlassian MCP), attachments included, each ticket noting its original issue number. Creating them is a one-off,
+  asked for before it's done.
+- **Read through the MCP** by stangent, as in real use (D73). The first read saves each raw result; scoring replays the
+  saved results, so a re-score is repeatable when the network or Atlassian's output changes. A live re-read is its own check.
+- **The answer key is git history,** never put in a bundle: the fix's changed files, and whether a reproduction test
+  fails on the fix's parent and passes on the fix (D75).
+- Sonarr already has the graph, 113 reference pages and the FSD links (Phase 2). Closes D6's "no Jira" gap.
+Rejected: planted tickets (we'd grade tickets we wrote; real reporters write messier ones); the owner's own project
+first (no answer key; kept as a dry run afterwards, as D56).
+**Why:** real tickets with known fixes give a score by code; going through the MCP proves the path real use takes.
+**Cost:** a one-off copy into Jira; issues from before the pinned commit are scored against today's graph and pages
+(D28's approach, median agreement 1.0 for the graph).
+
+## D78 · The frozen set: 40 bugs and 10 not-bugs — 2026-10-25
+- **40 bug issues,** newest first before Sonarr's pinned commit, each closed by one main-line fix commit of at most 15
+  files (Test 2's cap); labelled by what the fix touched (backend → unit proof, frontend → Playwright, both).
+- **10 not-bugs:** issues closed as not a bug, by design or can't reproduce, with no fix. Their reproduction should
+  *not* reproduce: they test the reason bugs are proven first (D75).
+- Features are left out: they have no proof step, and the bundle is scored on the bugs.
+- The selection rule is code; the list is frozen and committed before the first run.
+- *Changed by D81:* the reproduction runs on the 30 newest bugs and the 10 not-bugs; bundles on all 50.
+Rejected: adding 10 feature issues (fewer bugs for the proof bars); bugs only (nothing tests a wrong report).
+**Why:** enough bugs for the bars, and the not-bugs measure what the proof is for.
+**Cost:** change requests, most of a company's tickets, aren't scored in Phase 3; 40 cases give wide ranges (as D47).
+
+## D79 · Phase 3's done-when: right place, real proof, grounded, repeatable — 2026-10-25
+Agreed before any run (as D44, D57), on the frozen set (D78). 95% ranges from 1,000 resamples, fixed seed, beside each share.
+| Check | Bar |
+|---|---|
+| **Bundle: right place** | ≥ 70% of the 40 bugs have at least one file the fix changed among the bundle's starting points' files |
+| **Bundle: beats a keyword search** | that hit rate beats a code-only keyword search (ticket words vs file paths and symbol names, top 5 files), with the 95% range of the gain above zero |
+| **Grounded** | every starting point, quote and draft claim passes the code checks; tests show a made-up quote and a non-existent page are rejected |
+| **Repeatable** | replaying the saved MCP results gives byte-identical bundles; a re-run with nothing changed makes zero AI calls |
+| **Proof is real** | of the bugs marked reproduced, ≥ 90% pass on the fix commit |
+| **Proof finds bugs** | ≥ 50% of the 40 bugs reproduced (unit and Playwright reported apart). *Changed by D81: of the 30 bugs the proof runs on* |
+| **Proof catches wrong reports** | at most 1 of the 10 not-bugs reproduced |
+| **Jira round trip** | live on the owner's site: read a ticket with comments and an attachment, post a comment |
+| Reported, no bar | how much of each fix the whole bundle covers; bundle size; cost and time per ticket and step |
+- **If "proof is real" or "catches wrong reports" fails:** the proof ships as **advice only**: the developer sees the
+  test, but it can't block or clear a fix.
+- **If "right place" or "beats a keyword search" fails:** the AI picks (D70 step 2) ship **off by default**; code
+  signals and the developer remain.
+- **If "proof finds bugs" fails** *(added 2026-10-25, before any run)*: "not reproduced" stays as information (the
+  attempt and its test are shown) but no longer means "don't fix yet" and no longer drafts a question to the reporter,
+  since with under half of real bugs reproduced it would usually be the tool missing. "Reproduced" still counts as proof.
+- The bar isn't moved after a run; the report states the result and what follows (D57).
+- **Expected cost of the run:** about $30–100, mostly the reproduction agent (~$0.50–2 per ticket); bundles and drafts
+  about $5. The run stops and asks the owner past $100. *Changed by D81: reproduction on 30 bugs, $1 cap per attempt,
+  ≈ $55–65 worst case including missing pages.*
+Rejected: stricter or looser bars.
+- *Clarified 2026-10-25, before any run (after a fresh check of the plan, D61):*
+  - **The run uses product defaults:** AI picks on, `fsd.findings` off, the cap; no developer edits to the starting
+    points. "Starting points' files" are the files of the symbols the starting pages' statements cite plus the files of
+    matched symbols.
+  - **Missing pages are generated first:** starting points are picked for all 50 (from page titles, which exist for
+    every page the graph calls for), then the picked pages with no written version are generated (~50–100 pages, about
+    $10–20 on top, reported apart), then bundles are built. A project in real use would have its reference generated.
+  - **No developer in the run:** a test that passes the code checks counts as reproduced; "proof is real" measures what
+    the developer's confirmation would catch. The 10 not-bugs have no fix commit: they run on the commit before the issue
+    was closed and are scored only on "catches wrong reports".
+  - **Drafts in the run:** a questions draft for all 50 and a resolution draft for each bug from its fix commit, so
+    "grounded" covers drafts.
+  - "Grounded", "repeatable" and "Jira round trip" are must-pass: a failure is a bug to fix and re-run, not a result.
+**Why:** a pre-agreed bar can't drift toward the result.
+**Cost:** with 40 bugs, one case moves a share by 2.5 points; a gain over the keyword search may be real but not clear zero.
+
+## D80 · "code-wrong" decisions don't become tickets in Phase 3 — 2026-10-25
+Changes D58's "code-wrong becomes a draft Jira ticket in Phase 3". Phase 2 already points them out in
+`specs/trace.yaml`; a person who decides "code-wrong" creates the ticket by hand. Later, an AI step can draft a ticket
+from a discrepancy on request; it's left out now.
+**Why:** these are discrepancies between the FSD and the reference pages, not confirmed bugs in the code, and Phase 2
+already lists them; few projects will have them while findings are off (D68).
+**Cost:** the step from a decision to a ticket stays manual.
+
+## D81 · The run's cost: reproduction on 30 bugs, each attempt capped — 2026-10-25
+Changes D78 and D79, before any run. The owner asked whether the run needs to cost $30–100; almost all of it is the
+reproduction agent.
+- **Bundles and drafts** still run on all 40 bugs and 10 not-bugs (~$5): the bundle bars keep 40 cases.
+- **Reproduction runs on 30 bugs** (the 30 newest of the 40, D78's order; D47's floor) **and the 10 not-bugs.** "Proof
+  finds bugs" becomes ≥ 50% **of those 30**; "proof is real" is judged on the reproductions among them.
+- **Each attempt is capped** at $1 and 15 turns; an attempt that hits the cap is "not reproduced". Real use needs a
+  per-ticket cost limit too (`tickets.proveBudget`), so the run tests the product as it ships.
+- **Worst case:** ~$40 for reproduction + ~$5 bundles and drafts + ~$10–20 for missing pages ≈ $55–65.
+Rejected: 20 bugs and 10 not-bugs throughout (saves ~$20, but one case moves a share by 5 points and "beats a keyword
+search" could hardly clear zero); running 5 tickets first to measure cost (the cap already bounds it).
+**Why:** cut where the money is, and keep the bundle bars on 40 cases.
+**Cost:** the proof's ranges are wide (about ±18 points around 50%); a result near a bar is reported with its range,
+judged on the plain share as before; 10 not-bugs catch only gross failure.
+
 ## Open questions
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
-- Bug tickets: how is a bug verified before it's fixed? Likely a test that fails because of the bug
-  (the D18 check), then the fix makes it pass. What happens when it can't be reproduced, and how does
-  the ticket's description become a starting point for the graph? (Phases 3–5)
 - Parallel subagents: should the orchestrator fix the contract first (API shapes, shared types), then run
   the sides in parallel against it? And if a subagent finds mid-task that the contract must change, does it
   stop and hand back, or change it and tell the others? Leading answer: contract first; stop and hand back.
