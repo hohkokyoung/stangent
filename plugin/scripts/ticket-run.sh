@@ -80,7 +80,9 @@ run_step() {
   action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   while [ "$action" != "none" ]; do
     if [ "$name" = prove ]; then multi_turn "$first" "$usage"; else single_turn "$step" "$usage"; fi
-    if ! jq -e '.type == "result"' "$usage" >/dev/null 2>&1; then
+    # Claude Code itself failed (a usage limit, an outage, no login): not the AI's fault, so nothing is recorded and
+    # the next run starts the step again. Only a reproducer that hit its own turn or dollar cap goes on to `check`.
+    if ! jq -e '.type == "result" and ((.is_error | not) or ((.subtype // "") | test("max_turns|budget")))' "$usage" >/dev/null 2>&1; then
       printf 'error\t%s\t%s\t%s\n' "$key" "$name" "$(jq -r '.result // .error // "claude exited without a result"' "$usage" 2>/dev/null | head -c 200 | tr '\n' ' ')"
       rm -f "$usage"
       exit 255
