@@ -47,16 +47,20 @@ public static class BugProof
             return new RunStep("recorded", "none", Errors: [reason]);
         }
 
-        var input = Input(repo, pulled, bundle, targets, hint, proof);
+        // Playwright: the repo's specs that open the ticket's screens, and the script the reproducer runs its own with (D86).
+        var related = targets.Any(t => t.Kind == TestTarget.Playwright) ? AppSession.RelatedSpecs(repo, bundle) : [];
+        if (targets.Any(t => t.Kind == TestTarget.Playwright)) AppSession.WriteScript(repo, paths, related);
+        var input = Input(repo, pulled, bundle, targets, related, hint, proof);
         // Earlier attempts are shown to the reproducer but aren't an input change: an unchanged ticket, bundle, targets
         // and hint make no new AI call (D18). A new hint does.
-        var hash = CanonicalJson.Hash(Input(repo, pulled, bundle, targets, hint, null));
+        var hash = CanonicalJson.Hash(Input(repo, pulled, bundle, targets, related, hint, null));
         if (Latest(proof) is { } latest && (string?)latest["inputs"] == hash && (string?)latest["outcome"] != "failed") return new RunStep("current", "none");
         AiPolicy.EnsureAllowed(repo.Config, "ticket prove");
         var n = (proof?["attempts"]?.AsArray().Count ?? 0) + 1;
         return AiStep.Start(paths, StepSpec.Prove, input, hash, new JsonObject
         {
             ["attempt"] = n, ["hint"] = hint, ["targets"] = new JsonArray([.. targets.Select(t => (JsonNode)t.ToJson())]),
+            ["related"] = new JsonArray([.. related.Select(r => (JsonNode)r)]),
         });
     }
 
@@ -66,7 +70,8 @@ public static class BugProof
         var paths = new TicketPaths(repo.Root, key);
         var state = AiStep.State(paths, StepSpec.Prove);
         var targets = state["targets"]!.AsArray().Select(t => TestTarget.FromJson(t!)).ToList();
-        var tools = new List<string> { "Read", "Glob", "Grep", $"Edit({paths.Relative(AiStep.Work(paths, StepSpec.Prove))}/**)" };
+        // Only its result file: state.json (targets, related specs, usage) is stangent's and drives the next run (D86).
+        var tools = new List<string> { "Read", "Glob", "Grep", $"Edit({paths.Relative(Path.Combine(AiStep.Work(paths, StepSpec.Prove), "output.json"))})" };
         foreach (var t in targets)
         {
             tools.AddRange(t.EditRules());
@@ -76,9 +81,18 @@ public static class BugProof
                 "dotnet" => $"Bash(dotnet test '{t.Project}':*)",
                 "vitest" => "Bash(npx vitest run:*)",
                 "jest" => "Bash(npx jest:*)",
-                _ => "Bash(npx playwright test --list:*)",
+                _ => $"Bash({paths.Relative(AppSession.ScriptPath(paths))}:*)",
             });
             if (t.Runner is "vitest" or "jest") tools.Add($"Bash(cd {t.Dir})");
+        }
+        // Playwright (D86): the app is served for the attempt; with no related spec, a browser to look at the screens.
+        JsonObject? app = null;
+        if (targets.Any(t => t.Kind == TestTarget.Playwright) && repo.Config.Tickets.App is { Url: { } url })
+        {
+            var browser = (state["related"]?.AsArray().Count ?? 0) == 0;
+            if (browser) tools.AddRange(BrowserTools.Select(b => "mcp__playwright__" + b));
+            var pw = repo.Config.Tickets.App.PlaywrightDir is { Length: > 0 } d ? Path.Combine(repo.Root, d) : repo.Root;
+            app = new JsonObject { ["serve"] = true, ["url"] = url, ["browser"] = browser, ["playwrightDir"] = pw };
         }
         // What's left of the attempt's cap: a retry doesn't get a fresh one (D81).
         var budget = repo.Config.Tickets.ProveBudget;
@@ -88,9 +102,14 @@ public static class BugProof
         {
             ["allowedTools"] = new JsonArray([.. tools.Distinct().Select(x => (JsonNode)x)]),
             ["permissionMode"] = "dontAsk", ["maxTurns"] = Math.Max(1, budget.Turns - turns),
-            ["maxBudgetUsd"] = Math.Max(0.01, Math.Round(budget.Usd - spent, 2)), ["multiTurn"] = true,
+            ["maxBudgetUsd"] = Math.Max(0.01, Math.Round(budget.Usd - spent, 2)), ["multiTurn"] = true, ["app"] = app,
         };
     }
+
+    /// <summary>The Playwright MCP tools the reproducer may use to look at the app (D86): reading and clicking, no files,
+    /// no code evaluation, no other tabs.</summary>
+    public static readonly string[] BrowserTools =
+        ["browser_navigate", "browser_snapshot", "browser_click", "browser_type", "browser_select_option", "browser_press_key", "browser_hover", "browser_wait_for"];
 
     static List<TestTarget> Targets(StangentRepo repo, TicketContext ctx, JsonObject bundle)
     {
@@ -101,7 +120,7 @@ public static class BugProof
         return TestTargets.Find(repo, projects, files);
     }
 
-    static string Input(StangentRepo repo, JsonObject pulled, JsonObject bundle, List<TestTarget> targets, string? hint, JsonObject? proof)
+    static string Input(StangentRepo repo, JsonObject pulled, JsonObject bundle, List<TestTarget> targets, List<string> related, string? hint, JsonObject? proof)
     {
         var paths = new TicketPaths(repo.Root, (string)pulled["key"]!);
         var sb = AiStep.Header(StepSpec.Prove);
@@ -119,12 +138,23 @@ public static class BugProof
         sb.Append("| target | kind | write in | files | build | run your test |\n|---|---|---|---|---|---|\n");
         foreach (var t in targets)
         {
-            var run = t.Kind == TestTarget.Playwright ? "stangent runs it (it starts the app)"
+            var run = t.Kind == TestTarget.Playwright ? $"`{paths.Relative(AppSession.ScriptPath(paths))} <spec, relative to the repo>` (the app is running)"
                 : $"`{(t.Runner is "vitest" or "jest" ? $"cd {t.Dir} && " : "")}{t.TestCommand("<file>", "<test name>", report + (t.Runner == "dotnet" ? ".trx" : ".json"), !mtp)}`";
             sb.Append($"| `{t.Id}` | {t.Kind} | `{t.Dir}/` | {string.Join(", ", t.Patterns)} | {(t.BuildCommand is { } b ? $"`{b}`" : "none")} | {run} |\n");
         }
-        if (repo.Config.Tickets.App is { } app)
-            sb.Append($"\nThe app for Playwright runs at `{app.Url}`, started and seeded by stangent with `{app.Seed ?? "(no seed step)"}`.\n");
+        if (targets.Any(t => t.Kind == TestTarget.Playwright) && repo.Config.Tickets.App is { } app)
+        {
+            sb.Append($"\n# The app while you work\n\nstangent started the app at `{app.Url}` before you began (seeded by its start step); it stays up until you finish.\n\n");
+            if (related.Count > 0)
+            {
+                sb.Append("**Related Playwright tests** open this ticket's screens. Read them and copy the closest: the way to the screen is already right.\n\n");
+                foreach (var r in related) sb.Append($"- `{r}`\n");
+                sb.Append($"\nThey were run against the app before you started; the results are in `{paths.Relative(AppSession.RelatedRunPath(paths))}`.\n");
+            }
+            else
+                sb.Append("No Playwright test opens these screens yet. You have a headless browser on the app (the `mcp__playwright__browser_*` tools): **look at the screen first** (navigate, snapshot, click your way to it), so your test clicks and reads what is really there.\n");
+            sb.Append("\n**Test first:** run your spec with the command in the table and hand it in only once it **fails on your assertion**. stangent then runs it itself, three times.\n");
+        }
         var budget = repo.Config.Tickets.ProveBudget;
         sb.Append($"\n# Your limits\n\n- Write and edit files only in the test targets' folders.\n- Run only the build and test commands above.\n");
         sb.Append($"- At most {budget.Turns} turns and ${budget.Usd:0.##}; stopping at the cap counts as not reproduced.\n");
@@ -401,28 +431,34 @@ public static class BugProof
         return [.. Parse(target, System.IO.File.ReadAllText(report)).Where(c => c.Status is "failed" or "timeout").Select(c => c.Name).Distinct().Order(StringComparer.Ordinal)];
     }
 
-    static async Task<IAsyncDisposable?> StartApp(StangentRepo repo, ICommandRunner runner, CancellationToken ct)
+    internal static async Task<IAsyncDisposable?> StartApp(StangentRepo repo, ICommandRunner runner, CancellationToken ct)
     {
         var app = repo.Config.Tickets.App!;
         if (app.Build is { } build && (await runner.RunAsync(build, repo.Root, CommandTimeout, null, ct)) is { ExitCode: not 0 } b)
             throw new StangentException("app_build_failed", $"tickets.app.build failed: {Errors(b.Output)}");
         var started = runner.Start(app.Start!, repo.Root);
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-        var deadline = DateTime.UtcNow.AddSeconds(app.ReadySeconds);
-        while (true)
+        try
         {
-            try { using var r = await http.GetAsync(app.Url, ct); if ((int)r.StatusCode < 500) break; }
-            catch (HttpRequestException) { }
-            catch (TaskCanceledException) when (!ct.IsCancellationRequested) { }
-            if (DateTime.UtcNow > deadline) { await started.DisposeAsync(); throw new StangentException("app_not_ready", $"The app didn't answer at {app.Url} within {app.ReadySeconds} s."); }
-            await Task.Delay(1000, ct);
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            var deadline = DateTime.UtcNow.AddSeconds(app.ReadySeconds);
+            while (true)
+            {
+                try { using var r = await http.GetAsync(app.Url, ct); if ((int)r.StatusCode < 500) break; }
+                catch (HttpRequestException) { }
+                catch (TaskCanceledException) when (!ct.IsCancellationRequested) { }
+                if (DateTime.UtcNow > deadline) throw new StangentException("app_not_ready", $"The app didn't answer at {app.Url} within {app.ReadySeconds} s.");
+                await Task.Delay(1000, ct);
+            }
+            if (app.Seed is { } seed && (await runner.RunAsync(seed, repo.Root, CommandTimeout, null, ct)) is { ExitCode: not 0 } s)
+                throw new StangentException("app_seed_failed", $"tickets.app.seed failed: {Errors(s.Output)}");
+            return started;
         }
-        if (app.Seed is { } seed && (await runner.RunAsync(seed, repo.Root, CommandTimeout, null, ct)) is { ExitCode: not 0 } s)
+        catch
         {
+            // Not ready, failed, or cancelled while starting: the app never outlives this call (D86).
             await started.DisposeAsync();
-            throw new StangentException("app_seed_failed", $"tickets.app.seed failed: {Errors(s.Output)}");
+            throw;
         }
-        return started;
     }
 
     static JsonObject Run(string result, string message, string? file, int? line, long ms) => new()

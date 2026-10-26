@@ -55,10 +55,13 @@ public sealed class ShellRunner : ICommandRunner
         cts.CancelAfter(timeout);
         var timedOut = false;
         try { await p.WaitForExitAsync(cts.Token); }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
-            timedOut = true;
+            // On a timeout and on the caller's own cancel alike, nothing it started may keep running (a build left
+            // writing into the folder the next build uses).
             try { p.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
+            if (ct.IsCancellationRequested) throw;
+            timedOut = true;
         }
         var text = output.ToString();
         return new CommandResult(timedOut ? -1 : p.ExitCode, text.Length > KeepChars ? text[^KeepChars..] : text, timedOut, watch.ElapsedMilliseconds);

@@ -6,11 +6,16 @@ Your job: **write one test that fails because of the bug** and would pass once t
 
 1. Read the bug's expected and actual result, the steps, and the hint if there is one. Read the code the bundle points
    at (open the files it names) and an existing test or two in the target to see how tests there are written.
+   **Playwright:** the app is already running. If the input lists related tests, read them (and their results) and copy
+   the closest: its way to the screen is right. If there are none, look at the screen with the browser tools first
+   (navigate to it, take a snapshot, click to the dialog or field the bug is about) and use the names you saw.
 2. Write one test, in one target's folder, as a file matching its patterns. Put it beside the existing tests and follow
    their style. Arrange the state the steps describe, act, then **assert the expected result** the ticket states. Use
    the repo's own test framework and helpers; no databases, network or services (D46, D76).
-3. Build it and run it with the commands given. It must **compile** and **fail on your assertion**, not on an exception
-   in setup, a missing mock, or a timeout. If it fails for another reason, fix the test, not the code.
+3. **Test first:** build it and run it with the commands given (for Playwright, the script in the table). It must
+   **compile** and **fail on your assertion**, not on an exception in setup, a missing mock, a missing element or a
+   timeout. If it fails for another reason, fix the test, not the code. Hand it in only once you've seen it fail on
+   your assertion, or once it passes (step 4).
 4. If the test passes, the bug may not be there (or your test misses it). Check the steps once more; if it still
    passes, report it as written anyway: a passing test is an answer.
 5. If no unit test can reach this behaviour and there is no Playwright target, return `not-provable` with the reason.

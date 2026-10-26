@@ -1372,9 +1372,20 @@ guessed the clicks (SONB-5 clicked a profile name that opens nothing and waited 
   the 50 tickets (the series list and the settings pages); the report says so.
 **Why:** a test that never saw the page fails on the wrong thing; existing tests already know the way to the screen, and
 the owner prefers test-first.
+- **Built with these guards** (after a fresh review, D61): the app never outlives `ticket serve` (stopped on a cancel
+  while it starts, a 90-minute cap, the driver's trap); a cancelled command's process tree is killed; when the app
+  doesn't come up, the AI isn't run (a setup failure, not the AI's); the reproducer runs with no user or project Claude
+  settings (their allow rules, such as `git push`, would widen its own) and may write only its result file, not the
+  attempt's state; its run script takes only a plain path in its folder or a related spec; proofs run one at a time
+  (the app's port); Sonarr's start script does its first, unseeded start on another port.
 **Cost:** every browser click or test run is a turn, so the 15-turn cap (D81) binds sooner (the cap is decided after
 these fixes); the app is built twice per attempt (for the AI and for the check); the seeded tests make Sonarr look a
-little better tested than it is.
+little better tested than it is. **Not a sandbox:** a spec the AI writes is code Node runs with the user's rights, as
+the unit tests it writes always were; the permission rules limit its tool calls, not that code. The browser server
+(`@playwright/mcp@0.0.83`) is fetched by version at run time and uses the repo's own Chromium; `--allowed-origins` isn't
+a security boundary, the tool subset is. Related specs are found by a literal `goto` path only (no template strings,
+no clicks through), and a kept reproduction stays in the reproducer's folder, so it's related to the next bug only once
+the developer moves it beside the other specs.
 
 ## Open questions
 - D83: when every part of a ticket is outside the code, is bug proof skipped outright (saves the $1 attempt), or does

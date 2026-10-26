@@ -293,6 +293,130 @@ public class BugProofTests
         Assert.Equal(["Shop.Tests.Billing.Charges"], broke["newFailures"]!.AsArray().Select(x => (string)x!));
     }
 
+    [Theory]
+    [InlineData("/orders", "/orders", true)]
+    [InlineData("/orders", "/orders/?tab=1", true)]
+    [InlineData("/orders", "http://127.0.0.1:8989/orders", true)]
+    [InlineData("/series/:titleSlug", "/series/the-test-show", true)]
+    [InlineData("/orders", "/orders/5", false)]
+    [InlineData("/settings/profiles", "/settings/general", false)]
+    public void A_spec_opens_a_screen_when_its_goto_path_matches_the_route(string route, string path, bool matches) =>
+        Assert.Equal(matches, AppSession.RouteMatches(route, path));
+
+    const string AppSetting = "  app: { start: ./run.sh, url: \"http://127.0.0.1:8989/\", playwrightDir: e2e }\n";
+
+    [Fact]
+    public void With_no_related_spec_the_reproducer_gets_the_running_app_its_own_runs_and_a_browser()
+    {
+        using var p = new Proof(AppSetting);
+        p.Prepare();
+        var input = File.ReadAllText(Path.Combine(p.Root, ".stangent", "tickets", Key, "prove", "input.md"));
+        Assert.Contains("# The app while you work", input);
+        Assert.Contains("No Playwright test opens these screens yet", input);
+        Assert.Contains($".stangent/tickets/{Key}/tools/playwright.sh <spec", input);
+
+        var limits = BugProof.DriverLimits(p.App.Repo, Key);
+        var tools = limits["allowedTools"]!.AsArray().Select(t => (string)t!).ToList();
+        Assert.Contains($"Bash(.stangent/tickets/{Key}/tools/playwright.sh:*)", tools);
+        Assert.Contains("mcp__playwright__browser_snapshot", tools);
+        Assert.DoesNotContain(tools, t => t.Contains("browser_evaluate") || t.Contains("browser_file_upload"));
+        Assert.True((bool)limits["app"]!["browser"]!);
+
+        // The script runs only the reproducer's own specs or a related one, never another file.
+        var script = File.ReadAllText(Path.Combine(p.Root, ".stangent", "tickets", Key, "tools", "playwright.sh"));
+        Assert.Contains("'e2e/stangent'/*.spec.ts", script);
+        Assert.Contains("only a spec in e2e/stangent/", script);
+    }
+
+    [Fact]
+    public void A_related_spec_is_offered_to_copy_and_then_no_browser_is_needed()
+    {
+        using var p = new Proof(AppSetting);
+        p.App.Write("e2e/tests/orders.spec.ts", "test('orders', async ({ page }) => { await page.goto('/orders'); });");
+        p.App.Write("e2e/tests/cart.spec.ts", "test('cart', async ({ page }) => { await page.goto('/cart'); });");
+        p.App.Write("e2e/stangent/old-attempt.spec.ts", "test('x', async ({ page }) => { await page.goto('/orders'); });");   // the reproducer's own folder: not related
+        var ctx = TicketContext.Load(p.App.Repo);
+        TicketPoints.Update(p.App.Repo, ctx, Key, ["page:/orders"], [], "Pat Developer");
+        TicketBundle.Build(p.App.Repo, ctx, Key);
+        p.Prepare();
+
+        var input = File.ReadAllText(Path.Combine(p.Root, ".stangent", "tickets", Key, "prove", "input.md"));
+        Assert.Contains("- `e2e/tests/orders.spec.ts`", input);
+        Assert.DoesNotContain("cart.spec.ts", input);
+        Assert.DoesNotContain("old-attempt.spec.ts", input);
+        var limits = BugProof.DriverLimits(p.App.Repo, Key);
+        Assert.False((bool)limits["app"]!["browser"]!);
+        Assert.DoesNotContain(limits["allowedTools"]!.AsArray(), t => ((string)t!).StartsWith("mcp__", StringComparison.Ordinal));
+        Assert.Contains("'e2e/tests/orders.spec.ts') ;;", File.ReadAllText(Path.Combine(p.Root, ".stangent", "tickets", Key, "tools", "playwright.sh")));
+    }
+
+    [Fact]
+    public async Task Serve_keeps_the_app_up_runs_the_related_specs_once_and_stops_when_told()
+    {
+        using var server = new TinyServer();
+        using var p = new Proof($"  app: {{ start: ./run.sh, url: \"{server.Url}\", playwrightDir: e2e }}\n");
+        p.App.Write("e2e/tests/orders.spec.ts", "test('orders', async ({ page }) => { await page.goto('/orders'); });");
+        var ctx = TicketContext.Load(p.App.Repo);
+        TicketPoints.Update(p.App.Repo, ctx, Key, ["page:/orders"], [], "Pat Developer");
+        TicketBundle.Build(p.App.Repo, ctx, Key);
+        p.Prepare();
+
+        using var stop = new CancellationTokenSource();
+        var serving = AppSession.ServeAsync(p.App.Repo, Key, p.Runner, stop.Token);
+        var ready = Path.Combine(p.Root, ".stangent", "tickets", Key, "tools", "app-ready.json");
+        for (var i = 0; i < 100 && !File.Exists(ready); i++) await Task.Delay(50, TestContext.Current.CancellationToken);
+        Assert.True(File.Exists(ready));
+        Assert.Equal(1, p.Runner.Started);
+        Assert.Contains(p.Runner.Commands, c => c.Contains("tests/orders.spec.ts", StringComparison.Ordinal));
+        Assert.Contains("passed", File.ReadAllText(Path.Combine(p.Root, ".stangent", "tickets", Key, "prove", "related-run.md")));
+
+        stop.Cancel();
+        var result = await serving;
+        Assert.True((bool)result["served"]!);
+        Assert.False(File.Exists(ready));
+    }
+
+    [Fact]
+    public async Task Serve_cancelled_while_the_app_starts_stops_the_app()
+    {
+        // Nothing answers at this URL, so serve is still waiting for the app when it's told to stop.
+        using var p = new Proof("  app: { start: ./run.sh, url: \"http://127.0.0.1:1/\", readySeconds: 60 }\n");
+        p.Prepare();
+        using var stop = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => AppSession.ServeAsync(p.App.Repo, Key, p.Runner, stop.Token));
+        Assert.Equal(1, p.Runner.Started);
+        Assert.Equal(1, p.Runner.Stopped);
+    }
+
+    [Fact]
+    public void The_reproducer_may_write_only_its_result_not_the_attempts_state()
+    {
+        using var p = new Proof(AppSetting);
+        p.Prepare();
+        var tools = BugProof.DriverLimits(p.App.Repo, Key)["allowedTools"]!.AsArray().Select(t => (string)t!).ToList();
+        Assert.Contains($"Edit(.stangent/tickets/{Key}/prove/output.json)", tools);
+        Assert.DoesNotContain(tools, t => t.Contains("prove/**", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("e2e/stangent/|.*.spec.ts")]       // a pattern that would match every spec
+    [InlineData("/etc/x.spec.ts")]                  // another folder
+    [InlineData("e2e/stangent/../../x.spec.ts")]
+    [InlineData("e2e/tests/cart.spec.ts")]          // a spec that isn't related
+    [InlineData("e2e/stangent/a b.spec.ts")]
+    public void The_run_script_refuses_anything_but_its_own_or_a_related_spec(string arg)
+    {
+        if (OperatingSystem.IsWindows()) return;
+        using var p = new Proof(AppSetting);
+        p.Prepare();
+        var psi = new System.Diagnostics.ProcessStartInfo("bash") { RedirectStandardError = true, RedirectStandardOutput = true, WorkingDirectory = p.Root };
+        psi.ArgumentList.Add(Path.Combine(p.Root, ".stangent", "tickets", Key, "tools", "playwright.sh"));
+        psi.ArgumentList.Add(arg);
+        using var run = System.Diagnostics.Process.Start(psi)!;
+        run.WaitForExit(10_000);
+        Assert.Equal(2, run.ExitCode);
+    }
+
     [Fact]
     public void A_Playwright_test_must_fail_the_same_way_three_times()
     {
@@ -390,6 +514,12 @@ public class BugProofTests
         public string? All { get; set; }
         public string? BuildFails { get; set; }
         public int Started { get; private set; }
+        public int Stopped { get; set; }
+
+        sealed class Stopper(FakeRunner runner) : IAsyncDisposable
+        {
+            public ValueTask DisposeAsync() { runner.Stopped++; return ValueTask.CompletedTask; }
+        }
 
         public Task<CommandResult> RunAsync(string command, string cwd, TimeSpan timeout, IReadOnlyDictionary<string, string>? env = null, CancellationToken ct = default)
         {
@@ -408,6 +538,8 @@ public class BugProofTests
                 File.WriteAllText(Regex.Match(command, "--outputFile='([^']+)'").Groups[1].Value, Vitest.Dequeue());
                 return Task.FromResult(new CommandResult(1, "", false, 10));
             }
+            if (command.StartsWith("npx playwright", StringComparison.Ordinal) && env?.ContainsKey("PLAYWRIGHT_JSON_OUTPUT_NAME") != true)
+                return Task.FromResult(new CommandResult(0, "  1 passed (0.9s)", false, 10));   // a related spec run by `ticket serve`
             if (command.StartsWith("npx playwright", StringComparison.Ordinal))
             {
                 File.WriteAllText(env!["PLAYWRIGHT_JSON_OUTPUT_NAME"], Playwright.Dequeue());
@@ -420,7 +552,7 @@ public class BugProofTests
         {
             Started++;
             Commands.Add("start: " + command);
-            return new Nothing();
+            return new Stopper(this);
         }
 
         sealed class Nothing : IAsyncDisposable { public ValueTask DisposeAsync() => ValueTask.CompletedTask; }

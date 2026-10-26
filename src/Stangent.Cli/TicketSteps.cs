@@ -36,6 +36,16 @@ static class TicketSteps
         }));
         ticket.Subcommands.Add(prove);
 
+        var serve = new Command("serve", "Keep the app up while the reproducer works on a Playwright proof: start it, run the related specs once, write tools/app-ready.json, stop on SIGTERM or Ctrl+C (D86).") { TicketCommands.KeyArg };
+        serve.SetAction(pr => Cli.Run(pr, "ticket serve", ctx => TicketCommands.Async(async () =>
+        {
+            using var stop = new CancellationTokenSource();
+            using var term = System.Runtime.InteropServices.PosixSignalRegistration.Create(System.Runtime.InteropServices.PosixSignal.SIGTERM, c => { c.Cancel = true; stop.Cancel(); });
+            using var interrupt = System.Runtime.InteropServices.PosixSignalRegistration.Create(System.Runtime.InteropServices.PosixSignal.SIGINT, c => { c.Cancel = true; stop.Cancel(); });
+            return (JsonNode)await AppSession.ServeAsync(ctx.Repo, pr.GetValue(TicketCommands.KeyArg)!, new ShellRunner(), stop.Token);
+        })));
+        ticket.Subcommands.Add(serve);
+
         var kindOption = new Option<string>("--kind") { Description = "questions (before work: missing details, clashes, a bug not reproduced) or resolution (from the merged PR).", Required = true };
         var toneOption = new Option<string?>("--tone") { Description = "internal or client (default: tickets.tone). Client drafts may hold no code names or file paths (D74)." };
         var prOption = new Option<string?>("--pr") { Description = "resolution: the merged PR's range, base..head." };
