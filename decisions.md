@@ -1387,6 +1387,31 @@ a security boundary, the tool subset is. Related specs are found by a literal `g
 no clicks through), and a kept reproduction stays in the reproducer's folder, so it's related to the next bug only once
 the developer moves it beside the other specs.
 
+## D87 · Starting points through a page index built by code; ranking orders pages, it never hides one — 2026-10-27
+Refines D70. On the Sonarr run code found starting points for 17 of 50 tickets; for the other 32 the point picker got
+the whole page list (718 pages, ~63k tokens written, ~$0.25 a pick) because tickets are written in plain words, not
+URLs, stack traces or quoted names. The picks were right; the missing piece was a way from the ticket's words to pages.
+- **A page index, built by code and kept current with the graph and pages:** each page's title, route or endpoint
+  split into words, code names split into words, its written statements (Phase 2), FSD sections, and the text the code
+  holds: messages in the code (exceptions, validation, logs), `.resx` resources, markup text (Razor, Blazor, HTML,
+  JSX/TSX), config keys. General to C# projects; a project's own text helpers (Sonarr's `translate()` + `en.json`,
+  react-i18next's `t()`) come in through a setting, as `detectorSettings` does today.
+- **Ranking is code:** the ticket's words against the index, exact multi-word phrases highest, rare words over common.
+- **A clear winner is picked by code** (no AI), with the matching phrase as evidence checked word for word, tagged
+  `code`; the next code-ranked pages are listed in the bundle as "also possibly".
+- **Otherwise the AI sees every page:** the top 20 in detail plus all pages as one compact line each (number, kind,
+  title: ~7k tokens on Sonarr instead of ~28k+), so a word mismatch can't hide the right page; cached across a batch.
+- **Low confidence is said:** the bundle says "no confident starting point" and the questions draft asks the reporter
+  which screen they were on, rather than a silent guess.
+- **Measured before it's relied on,** at no AI cost, on past bugs of Sonarr and bitwarden/server (backend only, no UI
+  text): a right page among the picks, "also possibly" or the top 20 for ≥ 95% of bugs, agreed before measuring; every
+  miss is looked at.
+**Why:** the owner: missing the right starting place is the worst outcome; and the whole-list pick was costly and didn't
+scale to one-off tickets.
+**Cost:** reading UI text is per stack (Razor, Blazor, Angular each need a reader); words that differ between ticket and
+code ("size editor" vs "Quality Profile") rank low and rely on the AI seeing the full list; meaning-based search
+(embeddings) is the next step only if the measure says word matching isn't enough.
+
 ## Open questions
 - D83: when every part of a ticket is outside the code, is bug proof skipped outright (saves the $1 attempt), or does
   the reproducer still get to try? Leading answer: skipped, marked "outside the code". (Phase 3)
