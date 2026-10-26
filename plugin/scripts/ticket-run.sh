@@ -60,7 +60,10 @@ single_turn() {
 
 # The reproducer: the plugin's agent, allowed only the tools and commands stangent named, with its caps.
 multi_turn() {
-  local step="$1" usage="$2" limits prompt agent tools=()
+  local step="$1" usage="$2" key="$3" limits prompt agent transcript tools=()
+  # The whole conversation is kept beside the attempt, to see where its turns went; the result line is the usage.
+  transcript=".stangent/tickets/$key/prove/transcript-$(date +%Y%m%d-%H%M%S).jsonl"
+  mkdir -p "$(dirname "$transcript")"
   limits="$(jq -c '.result.next.limits' <<<"$step")"
   prompt="$(jq -r '.result.next.prompt' <<<"$step")"
   agent="$(jq -r '.result.next.agent' <<<"$step")"
@@ -68,7 +71,8 @@ multi_turn() {
   $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" ${MODEL:+--model "$MODEL"} \
     --permission-mode "$(jq -r '.permissionMode' <<<"$limits")" --allowedTools "${tools[@]}" \
     --max-turns "$(jq -r '.maxTurns' <<<"$limits")" --max-budget-usd "$(jq -r '.maxBudgetUsd' <<<"$limits")" \
-    --no-session-persistence --output-format json "$prompt" >"$usage" 2>/dev/null || true
+    --no-session-persistence --output-format stream-json --verbose "$prompt" >"$transcript" 2>/dev/null || true
+  jq -c 'select(.type == "result")' "$transcript" 2>/dev/null | tail -n 1 >"$usage" || true
 }
 
 # Runs one AI step to the end: the subagent, then `ticket check`, again on a retry. A capped reproducer still has a
@@ -79,7 +83,7 @@ run_step() {
   first="$step"
   action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   while [ "$action" != "none" ]; do
-    if [ "$name" = prove ]; then multi_turn "$first" "$usage"; else single_turn "$step" "$usage"; fi
+    if [ "$name" = prove ]; then multi_turn "$first" "$usage" "$key"; else single_turn "$step" "$usage"; fi
     # Claude Code itself failed (a usage limit, an outage, no login): not the AI's fault, so nothing is recorded and
     # the next run starts the step again. Only a reproducer that hit its own turn or dollar cap goes on to `check`.
     if ! jq -e '.type == "result" and ((.is_error | not) or ((.subtype // "") | test("max_turns|budget")))' "$usage" >/dev/null 2>&1; then

@@ -19,7 +19,8 @@ tickets:
   projects: [SONB]                  # the Jira project the frozen set is copied into (D77); set when it exists
   bugTypes: [Bug]
   # Sonarr builds a single project only with its solution folder set (StyleCop's settings come from it).
-  dotnetArgs: "-p:SolutionDir={root}/src/"
+  # NuGetAudit off: old commits pin packages with advisories published since, and Sonarr turns warnings into errors.
+  dotnetArgs: "-p:SolutionDir={root}/src/ -p:NuGetAudit=false"
   # Sonarr CI's own unit-test filter on macOS and Linux.
   testFilter: "TestCategory!=ManualTest&TestCategory!=WINDOWS&TestCategory!=IntegrationTest&TestCategory!=AutomationTest"
   app:                              # benchmark/tickets/sonarr/app/setup.sh installs these into the clone
