@@ -1306,7 +1306,28 @@ existed stays until it is revoked.
   echoed it in its error, printing the tokens into the session. The owner revoked the grant; the code now uses the
   Security framework and its errors carry only a status code.
 
+## D83 · A ticket's parts can be marked "outside the code" (server, network, deployment, data), each tagged by who said so — 2026-10-26
+From the Sonarr run: a ticket about the server, the network or the deployment (a full disk, a load balancer timing out)
+got app pages picked for it, a bundle of app code, and a $1 proof attempt pushed to write a unit test that can't reach
+the problem. Tickets often mix both: a screen bug that only shows behind a proxy.
+- **Per part, not per ticket.** Alongside the starting points in the code, a ticket can have **outside-the-code parts**,
+  each with an area (server, network, deployment, data, third party, other) and the ticket's own words as evidence.
+- **Tagged by who said so,** as starting points are (D70): `ai` (the point picker may return them; its quote is checked
+  word for word, D18), `developer` (added or removed by hand). Code doesn't guess these.
+- **The bundle shows both** in separate sections, so the developer sees what's in the code and what isn't, and who
+  said each.
+- **Bug proof** runs for the code parts as before. When the AI answers "not provable" because of an outside-the-code
+  part, that's accepted without the push-back retry.
+- **The questions draft** asks for the environment details an outside-the-code part needs.
+**Why:** the owner's tickets often point at infra, sometimes alongside code; a bundle of app code for an infra problem
+misleads, and the proof attempt wastes money.
+**Cost:** `ticket-bundle` and the point picker's output change while Phase 3 is still in progress (v1 is not yet
+published); an extra kind of AI claim to check; infra that lives in the repo (Dockerfiles, workflows, Terraform) isn't in
+the code map yet, so it shows only as an outside-the-code part (mapping it is Phase 7's).
+
 ## Open questions
+- D83: when every part of a ticket is outside the code, is bug proof skipped outright (saves the $1 attempt), or does
+  the reproducer still get to try? Leading answer: skipped, marked "outside the code". (Phase 3)
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
 - Parallel subagents: should the orchestrator fix the contract first (API shapes, shared types), then run
