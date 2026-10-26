@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Spec.Pages;
 using Stangent.Tickets;
 using Stangent.Tickets.Secrets;
 
@@ -105,6 +106,23 @@ public class TicketPointsTests
     }
 
     [Fact]
+    public void Writing_a_picked_page_later_does_not_ask_for_a_new_pick()
+    {
+        using var app = App();
+        const string description = "When I try to buy something the total is wrong after I press the big button.";
+        Points(app, "SHOP-5", description);
+        var ctx = TicketContext.Load(app.Repo);
+        TicketPoints.Prepare(app.Repo, ctx, "SHOP-5");
+        Canned(app, "SHOP-5", $$"""{"pages":[{"page":"{{OrdersRoute}}","quote":"the total is wrong after I press the big button"}]}""");
+        Assert.Equal("recorded", TicketPoints.Check(app.Repo, ctx, "SHOP-5", null, "Pat Developer").Status);
+
+        WritePage(app, OrdersRoute, "Order checkout screen");   // the page gets its written title afterwards
+        var after = Points(app, "SHOP-5", description);
+        Assert.Equal("picked", (string?)after["ai"]!["status"]);
+        Assert.Equal("current", TicketPoints.Prepare(app.Repo, TicketContext.Load(app.Repo), "SHOP-5").Status);
+    }
+
+    [Fact]
     public void A_made_up_quote_or_a_page_that_does_not_exist_is_rejected_then_recorded_as_failed()
     {
         using var app = App();
@@ -160,6 +178,45 @@ public class TicketPointsTests
         var first = File.ReadAllText(path);
         Points(app, "SHOP-10", "");
         Assert.Equal(first, File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void A_changed_ticket_still_asks_for_a_new_pick()
+    {
+        using var app = App();
+        const string description = "When I try to buy something the total is wrong after I press the big button.";
+        Points(app, "SHOP-5", description);
+        var ctx = TicketContext.Load(app.Repo);
+        TicketPoints.Prepare(app.Repo, ctx, "SHOP-5");
+        Canned(app, "SHOP-5", $$"""{"pages":[{"page":"{{OrdersRoute}}","quote":"the total is wrong after I press the big button"}]}""");
+        Assert.Equal("recorded", TicketPoints.Check(app.Repo, ctx, "SHOP-5", null, "Pat Developer").Status);
+
+        Directory.Delete(Path.Combine(app.Root, "replay", "SHOP-5"), recursive: true);   // the ticket is pulled again, edited
+        var changed = Points(app, "SHOP-5", description + " It happens every time.");
+        Assert.Equal("needed", (string?)changed["ai"]!["status"]);
+    }
+
+    /// <summary>A written reference page with its own title, as Phase 2 records it.</summary>
+    static void WritePage(SpecApp app, string id, string title)
+    {
+        var set = app.Pages();
+        var def = set.Find(id)!;
+        var page = new JsonObject
+        {
+            ["schemaVersion"] = 1, ["id"] = def.Id, ["kind"] = def.Kind, ["entry"] = def.Entry, ["codeTitle"] = def.Title, ["title"] = title,
+            ["group"] = def.Group, ["unknowns"] = new JsonArray(),
+            ["sections"] = new JsonObject { ["shows"] = new JsonArray(), ["actions"] = new JsonArray(), ["rules"] = new JsonArray(), ["sideEffects"] = new JsonArray() },
+            ["verification"] = new JsonObject { ["findings"] = new JsonArray(), ["dropped"] = 0 },
+            ["generated"] = new JsonObject
+            {
+                ["commit"] = "c0ffee", ["bundleHash"] = Bundles.Build(set, def, null).InputHash,
+                ["slice"] = new JsonObject { ["depth"] = 6, ["points"] = 1, ["chars"] = 1, ["cutOff"] = 0 },
+                ["writer"] = new JsonObject { ["calls"] = 1 }, ["verifier"] = new JsonObject { ["calls"] = 1 }, ["checkRetries"] = 0,
+            },
+        };
+        var paths = new SpecPaths(app.Root);
+        Directory.CreateDirectory(Path.GetDirectoryName(paths.PageJson(def))!);
+        File.WriteAllText(paths.PageJson(def), CanonicalJson.Serialize(page));
     }
 
     static void Canned(SpecApp app, string key, string json) =>

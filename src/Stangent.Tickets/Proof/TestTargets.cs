@@ -110,12 +110,14 @@ public static partial class TestTargets
         // .NET: test projects referencing a starting point's project, directly or through one project in between.
         var csprojs = Files(root, "*.csproj").ToList();
         var refs = csprojs.ToDictionary(p => p, p => References(root, p), StringComparer.Ordinal);
-        foreach (var test in csprojs.Where(p => TestSdk().IsMatch(File.ReadAllText(Path.Combine(root, p)))))
+        var direct = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var test in csprojs)
         {
             var reached = new HashSet<string>(refs[test], StringComparer.Ordinal);
             foreach (var r in refs[test].ToList()) reached.UnionWith(refs.GetValueOrDefault(r) ?? []);
             var covers = projects.Where(reached.Contains).Order(StringComparer.Ordinal).ToList();
-            if (covers.Count == 0) continue;
+            if (covers.Count == 0 || !IsTestProject(repo, test)) continue;
+            direct["dotnet:" + test] = projects.Count(refs[test].Contains);
             var dir = Path.GetDirectoryName(test)!.Replace('\\', '/') is { Length: > 0 } d ? d : ".";
             targets.Add(new TestTarget("dotnet:" + test, TestTarget.Unit, "dotnet", dir, test, ["*.cs"], covers)
             {
@@ -137,11 +139,58 @@ public static partial class TestTargets
                 ["*.test.ts", "*.test.tsx", "*.test.js", "*.test.jsx", "*.spec.ts", "*.spec.tsx", "*.spec.js", "*.spec.jsx"], covers));
         }
 
-        var unit = targets.OrderByDescending(t => t.Covers.Count).ThenBy(t => t.Id, StringComparer.Ordinal).Take(MaxUnitTargets).ToList();
+        // Most covered projects referenced directly first: in Sonarr every test project reaches Core through a shared
+        // helper library, so reach alone would rank Automation.Test or Integration.Test above Core.Test.
+        // When some reference it directly, one that only reaches it through another project isn't offered.
+        if (targets.Any(t => direct.GetValueOrDefault(t.Id) > 0))
+            targets.RemoveAll(t => t.Id.StartsWith("dotnet:", StringComparison.Ordinal) && direct.GetValueOrDefault(t.Id) == 0);
+        var unit = targets.OrderByDescending(t => direct.GetValueOrDefault(t.Id)).ThenByDescending(t => t.Covers.Count)
+            .ThenBy(t => t.Id, StringComparer.Ordinal).Take(MaxUnitTargets).ToList();
         // Playwright only when the repo says how to start and seed the app (D76).
         if (repo.Config.Tickets.App is { Start: not null, Url: not null } app)
             unit.Add(new TestTarget("playwright:" + app.SpecDir, TestTarget.Playwright, "playwright", app.SpecDir.TrimEnd('/'), app.PlaywrightDir?.TrimEnd('/'), ["*.spec.ts", "*.spec.js"], []));
         return unit;
+    }
+
+    [GeneratedRegex(@"""(Microsoft\.NET\.Test\.Sdk|MSTest\.Sdk|MSTest\.TestAdapter|NUnit3TestAdapter|xunit\.runner\.visualstudio|MSTest|xunit\.v3|xunit\.v3\.mtp-v\d+|TUnit)""|""IsTestProject"":\s*""true""", RegexOptions.IgnoreCase)]
+    private static partial Regex TestRunner();
+
+    [GeneratedRegex(@"""IsTestProject"":\s*""false""", RegexOptions.IgnoreCase)]
+    private static partial Regex NotTestProject();
+
+    /// <summary>
+    /// A project that runs tests: what MSBuild evaluates it to (packages and properties from Directory.Build.props
+    /// included, as Sonarr adds its test packages there), with a test runner or <c>IsTestProject</c>. A helper library
+    /// that only references NUnit or xUnit has no runner, so it isn't one. When MSBuild can't evaluate it, the project
+    /// file's own text decides.
+    /// </summary>
+    static bool IsTestProject(StangentRepo repo, string project)
+    {
+        var evaluated = Evaluate(repo, project);
+        if (evaluated is null)
+        {
+            Console.Error.WriteLine($"stangent: couldn't evaluate {project} with dotnet msbuild; deciding from the project file's text.");
+            return TestSdk().IsMatch(File.ReadAllText(Path.Combine(repo.Root, project)));
+        }
+        return !NotTestProject().IsMatch(evaluated) && TestRunner().IsMatch(evaluated);
+    }
+
+    static string? Evaluate(StangentRepo repo, string project)
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo("dotnet") { WorkingDirectory = repo.Root, RedirectStandardOutput = true, RedirectStandardError = true };
+            foreach (var a in new[] { "msbuild", project, "-getItem:PackageReference", "-getProperty:IsTestProject", "-nologo" }) psi.ArgumentList.Add(a);
+            // Only the properties of tickets.dotnetArgs: switches like -c or --no-restore are dotnet build's, not msbuild's.
+            foreach (var a in repo.Config.Tickets.DotnetArgs.Replace("{root}", repo.Root.TrimEnd('/')).Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Where(a => a.StartsWith("-p:", StringComparison.Ordinal) || a.StartsWith("-property:", StringComparison.Ordinal))) psi.ArgumentList.Add(a);
+            using var p = System.Diagnostics.Process.Start(psi)!;
+            var stdout = p.StandardOutput.ReadToEndAsync();
+            _ = p.StandardError.ReadToEndAsync();
+            if (!p.WaitForExit(TimeSpan.FromSeconds(60))) { p.Kill(entireProcessTree: true); return null; }
+            return p.ExitCode == 0 && stdout.Wait(TimeSpan.FromSeconds(10)) ? stdout.Result : null;
+        }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { return null; }
     }
 
     static IEnumerable<string> Files(string root, string pattern)

@@ -55,6 +55,10 @@ timed() { local key="$1" step="$2"; shift 2; local t0 t1; t0=$(now_ms); "$@" || 
 # Back to the pinned commit with the SDK pin (D28's approach: past issues are judged against today's graph and pages).
 at() {
   git checkout -q -f "$1"
+  # Each attempt starts clean: an earlier attempt's test (untracked) would be read and copied by the next one.
+  # Ignored files (bin/, obj/, node_modules/) stay. A test to keep is copied back after this (the fix commit's check).
+  git clean -fdq -- src frontend
+  find e2e/stangent -type f -delete 2>/dev/null || true
   cp "$SDK" global.json
 }
 
@@ -103,6 +107,8 @@ phase_prove() {
   # The 30 newest bugs and every not-bug (D81).
   issues | awk '$2 == "bug" { if (++b <= 30) print; next } { print }' | while read -r n kind run key; do
     if [ -f ".stangent/tickets/$key/bug-proof.json" ] && [ "$(jq -r '.outcome' ".stangent/tickets/$key/bug-proof.json")" != failed ]; then
+      # Its bundle may still be the one built at the bug's commit by an earlier run: rebuild it at the pinned one.
+      at "$PINNED"; st ticket points "$key" >/dev/null || true; st ticket bundle "$key" >/dev/null || true
       log "prove $key: already recorded"; continue
     fi
     log "prove $key (#$n, $kind) at ${run:0:10}"
@@ -123,6 +129,10 @@ phase_prove() {
       log "  on the fix: $(jq -r '.verification.runs[0].result // "error"' "$proof")"
     fi
     at "$PINNED"
+    # ticket-run.sh rebuilt points and the bundle at the bug's own commit; build them again at the pinned one, so the
+    # replay compares bundles made at the same commit (no AI call: a recorded pick is reused).
+    st ticket points "$key" >/dev/null || true
+    st ticket bundle "$key" >/dev/null || true
   done
 }
 

@@ -363,7 +363,15 @@ public static class TicketPoints
         return sb.ToString();
     }
 
-    static string PickerInputHash(TicketContext ctx, TicketText text) => CanonicalJson.Hash(PickerInput(ctx, text));
+    /// <summary>What decides a pick: the instructions, the ticket and the pages with their code titles. Not the written
+    /// titles shown beside them: writing a page later (the pages it picked, say) doesn't ask for a new pick.</summary>
+    static string PickerInputHash(TicketContext ctx, TicketText text)
+    {
+        var sb = AiStep.Header(StepSpec.Points);
+        foreach (var (where, body) in text.Prose) sb.Append($"## {where}\n\n{body}\n\n");
+        foreach (var p in ctx.Set.Pages) sb.Append($"{p.Id}\t{p.Kind}\t{p.Title}\n");
+        return CanonicalJson.Hash(sb.ToString());
+    }
 
     public static RunStep Prepare(StangentRepo repo, TicketContext ctx, string key)
     {
@@ -381,7 +389,7 @@ public static class TicketPoints
         AiPolicy.EnsureAllowed(repo.Config, "ticket prepare --step points");
         var text = TicketText.From(TicketPull.LoadOrFail(repo.Root, key));
         var input = PickerInput(ctx, text);
-        return AiStep.Start(paths, StepSpec.Points, input, CanonicalJson.Hash(input));
+        return AiStep.Start(paths, StepSpec.Points, input, PickerInputHash(ctx, text));
     }
 
     public static RunStep Check(StangentRepo repo, TicketContext ctx, string key, Usage? usage, string who)

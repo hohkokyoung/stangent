@@ -37,6 +37,9 @@ public sealed record JiraConnectionOptions
     /// <summary>Opens the browser for the OAuth sign-in. Null: no browser (sign-in fails if a token is needed).</summary>
     public Action<Uri>? OpenBrowser { get; init; } = Browser.Open;
     public TimeSpan SignInTimeout { get; init; } = TimeSpan.FromMinutes(5);
+    /// <summary>The longest one tool call may take: a call that never answers fails instead of stopping a batch run. Longer
+    /// than the sign-in wait, as an expired sign-in is renewed in the browser inside a call.</summary>
+    public TimeSpan CallTimeout { get; init; } = TimeSpan.FromMinutes(7);
 
     public string OAuthAccount => "oauth:" + Endpoint.Host + Endpoint.AbsolutePath;
     public string TokenAccount => "token:" + Email;
@@ -55,7 +58,8 @@ public interface IJiraTools : IAsyncDisposable
 public sealed class JiraConnection : IJiraTools
 {
     readonly McpClient client;
-    JiraConnection(McpClient client) => this.client = client;
+    readonly TimeSpan callTimeout;
+    JiraConnection(McpClient client, TimeSpan callTimeout) => (this.client, this.callTimeout) = (client, callTimeout);
 
     public static async Task<JiraConnection> OpenAsync(JiraConnectionOptions options, ISecretStore secrets, TextWriter log, CancellationToken ct = default)
     {
@@ -102,7 +106,7 @@ public sealed class JiraConnection : IJiraTools
                 // The browser sign-in happens inside initialization, so the wait must cover a person at the consent page.
                 InitializationTimeout = options.SignInTimeout + TimeSpan.FromSeconds(30),
             }, cancellationToken: ct);
-            return new JiraConnection(client);
+            return new JiraConnection(client, options.CallTimeout);
         }
         catch (Exception e) when (e is not StangentException and not OperationCanceledException)
         {
@@ -118,7 +122,13 @@ public sealed class JiraConnection : IJiraTools
     public async Task<ToolResult> CallAsync(string tool, IReadOnlyDictionary<string, object?> args, CancellationToken ct = default)
     {
         CallToolResult result;
-        try { result = await client.CallToolAsync(tool, args, cancellationToken: ct); }
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(callTimeout);
+        try { result = await client.CallToolAsync(tool, args, cancellationToken: timeout.Token); }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested && !ct.IsCancellationRequested)
+        {
+            throw new StangentException("jira_call_timed_out", $"{tool}: no answer from Jira after {callTimeout.TotalSeconds:0} s.", ExitCodes.Failed);
+        }
         catch (Exception e) when (e is not OperationCanceledException)
         {
             throw new StangentException("jira_call_failed", $"{tool}: {e.Message}", ExitCodes.Failed, [.. Chain(e)]);

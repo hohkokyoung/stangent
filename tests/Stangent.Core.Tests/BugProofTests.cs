@@ -58,7 +58,7 @@ public class BugProofTests
             if (testProject)
                 App.Write("Tests/Shop.Tests.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
-                      <ItemGroup><PackageReference Include="xunit" /><ProjectReference Include="..\Core\Shop.Core.csproj" /></ItemGroup>
+                      <ItemGroup><PackageReference Include="Microsoft.NET.Test.Sdk" /><PackageReference Include="xunit" /><ProjectReference Include="..\Core\Shop.Core.csproj" /></ItemGroup>
                     </Project>
                     """);
             if (packageJson is not null) App.Write("package.json", packageJson);
@@ -114,6 +114,33 @@ public class BugProofTests
         Assert.DoesNotContain(tools, t => t.StartsWith("Edit(Core", StringComparison.Ordinal));
         Assert.Equal(15, (int)limits["maxTurns"]!);
         Assert.Equal(1.0, (double)limits["maxBudgetUsd"]!);
+    }
+
+    [Fact]
+    public void Test_packages_added_in_Directory_Build_props_count_and_a_helper_library_does_not()
+    {
+        // Sonarr's layout: the test runner comes from Directory.Build.props for projects named *.Tests, and a shared
+        // helper project references NUnit itself but runs no tests.
+        using var p = new Proof(testProject: false);
+        p.App.Write("Directory.Build.props", """
+            <Project>
+              <ItemGroup Condition="$(MSBuildProjectName.EndsWith('.Tests'))"><PackageReference Include="Microsoft.NET.Test.Sdk" /></ItemGroup>
+            </Project>
+            """);
+        p.App.Write("Common/Shop.Testing.csproj", """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup><PackageReference Include="NUnit" /><ProjectReference Include="..\Core\Shop.Core.csproj" /></ItemGroup>
+            </Project>
+            """);
+        p.App.Write("Tests/Shop.Tests.csproj", """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup><ProjectReference Include="..\Common\Shop.Testing.csproj" /><ProjectReference Include="..\Core\Shop.Core.csproj" /></ItemGroup>
+            </Project>
+            """);
+        p.Prepare();
+        var input = File.ReadAllText(Path.Combine(p.Root, ".stangent", "tickets", Key, "prove", "input.md"));
+        Assert.Contains("`dotnet:Tests/Shop.Tests.csproj`", input);
+        Assert.DoesNotContain("Shop.Testing.csproj", input);
     }
 
     [Fact]
