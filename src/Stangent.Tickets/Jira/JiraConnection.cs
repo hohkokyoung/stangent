@@ -37,9 +37,13 @@ public sealed record JiraConnectionOptions
     /// <summary>Opens the browser for the OAuth sign-in. Null: no browser (sign-in fails if a token is needed).</summary>
     public Action<Uri>? OpenBrowser { get; init; } = Browser.Open;
     public TimeSpan SignInTimeout { get; init; } = TimeSpan.FromMinutes(5);
-    /// <summary>The longest one tool call may take: a call that never answers fails instead of stopping a batch run. Longer
-    /// than the sign-in wait, as an expired sign-in is renewed in the browser inside a call.</summary>
+    /// <summary>The longest a write (a comment, an issue, an upload) may take. It isn't tried again: it might have landed.
+    /// Longer than the sign-in wait, as an expired sign-in is renewed in the browser inside a call.</summary>
     public TimeSpan CallTimeout { get; init; } = TimeSpan.FromMinutes(7);
+    /// <summary>The longest one try of a read may take. Atlassian's MCP server now and then takes a read and never answers
+    /// (about 1 in 40 issue reads on the Sonarr run, where it normally answers in a second), so a read is tried again.</summary>
+    public TimeSpan ReadTimeout { get; init; } = TimeSpan.FromSeconds(30);
+    public int ReadTries { get; init; } = 3;
 
     public string OAuthAccount => "oauth:" + Endpoint.Host + Endpoint.AbsolutePath;
     public string TokenAccount => "token:" + Email;
@@ -58,14 +62,28 @@ public interface IJiraTools : IAsyncDisposable
 public sealed class JiraConnection : IJiraTools
 {
     readonly McpClient client;
-    readonly TimeSpan callTimeout;
-    JiraConnection(McpClient client, TimeSpan callTimeout) => (this.client, this.callTimeout) = (client, callTimeout);
+    readonly JiraConnectionOptions options;
+    readonly TextWriter log;
+    readonly SignInGate signIn;
+    JiraConnection(McpClient client, JiraConnectionOptions options, TextWriter log, SignInGate signIn) =>
+        (this.client, this.options, this.log, this.signIn) = (client, options, log, signIn);
+
+    /// <summary>Tools known to only read: safe to try again. Any other may change Jira, so it's tried once. A list, not a
+    /// name pattern, so a new tool is never retried by accident. <c>executeRead</c> is Atlassian's read-only tier.</summary>
+    static readonly HashSet<string> Reads = new(StringComparer.Ordinal)
+    {
+        "getJiraIssue", "executeRead", "atlassianUserInfo", "getAccessibleAtlassianResources", "searchJiraIssuesUsingJql",
+        "search", "discover", "lookupJiraAccountId",
+    };
+
+    public static bool IsRead(string tool) => Reads.Contains(tool);
 
     public static async Task<JiraConnection> OpenAsync(JiraConnectionOptions options, ISecretStore secrets, TextWriter log, CancellationToken ct = default)
     {
         // The endpoint comes from the repo's stangent.yaml; a token or sign-in is only ever sent to Atlassian.
         if (options.Endpoint.Scheme != Uri.UriSchemeHttps || !IsAtlassianHost(options.Endpoint.Host))
             throw new StangentException("untrusted_endpoint", $"tickets.endpoint must be an https Atlassian address, not {options.Endpoint}.", ExitCodes.Usage);
+        var signIn = new SignInGate();
         var transportOptions = new HttpClientTransportOptions
         {
             Endpoint = options.Endpoint,
@@ -93,7 +111,12 @@ public sealed class JiraConnection : IJiraTools
                 DynamicClientRegistration = new DynamicClientRegistrationOptions { ClientName = "stangent" },
                 // The server offers every product's scopes (delete, Bitbucket, Loom…); stangent asks only for Jira's.
                 ScopeSelector = offered => offered?.Where(JiraScopes.Wanted).ToList(),
-                AuthorizationCallbackHandler = (context, token) => BrowserSignIn.RunAsync(context, options, log, token),
+                // A sign-in can happen inside a call (an expired sign-in); the read limit waits while a person signs in.
+                AuthorizationCallbackHandler = async (context, token) =>
+                {
+                    using var _ = signIn.Enter();
+                    return await BrowserSignIn.RunAsync(context, options, log, token);
+                },
             };
         }
 
@@ -106,7 +129,7 @@ public sealed class JiraConnection : IJiraTools
                 // The browser sign-in happens inside initialization, so the wait must cover a person at the consent page.
                 InitializationTimeout = options.SignInTimeout + TimeSpan.FromSeconds(30),
             }, cancellationToken: ct);
-            return new JiraConnection(client, options.CallTimeout);
+            return new JiraConnection(client, options, log, signIn);
         }
         catch (Exception e) when (e is not StangentException and not OperationCanceledException)
         {
@@ -122,12 +145,17 @@ public sealed class JiraConnection : IJiraTools
     public async Task<ToolResult> CallAsync(string tool, IReadOnlyDictionary<string, object?> args, CancellationToken ct = default)
     {
         CallToolResult result;
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        timeout.CancelAfter(callTimeout);
-        try { result = await client.CallToolAsync(tool, args, cancellationToken: timeout.Token); }
-        catch (OperationCanceledException) when (timeout.IsCancellationRequested && !ct.IsCancellationRequested)
+        var (limit, tries) = IsRead(tool) ? (options.ReadTimeout, options.ReadTries) : (options.CallTimeout, 1);
+        try
         {
-            throw new StangentException("jira_call_timed_out", $"{tool}: no answer from Jira after {callTimeout.TotalSeconds:0} s.", ExitCodes.Failed);
+            result = await TimedTries.RunAsync(t => client.CallToolAsync(tool, args, cancellationToken: t).AsTask(), limit, tries,
+                n => log.WriteLine($"jira: {tool} gave no answer in {limit.TotalSeconds:0} s; trying again ({n} of {tries})."), ct,
+                hold: () => signIn.Active);
+        }
+        catch (TimeoutException)
+        {
+            throw new StangentException("jira_call_timed_out",
+                $"{tool}: no answer from Jira after {(tries > 1 ? $"{tries} tries of " : "")}{limit.TotalSeconds:0} s.", ExitCodes.Failed);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
@@ -339,3 +367,59 @@ public static class JiraScopes
 }
 
 public sealed record DownloadedAttachment(string AttachmentId, string Path, long Bytes, string Hash);
+
+/// <summary>Whether a browser sign-in is under way (the time limits wait for a person at the consent page).</summary>
+public sealed class SignInGate
+{
+    int active;
+    public bool Active => Volatile.Read(ref active) > 0;
+    public IDisposable Enter()
+    {
+        Interlocked.Increment(ref active);
+        return new Exit(this);
+    }
+    sealed class Exit(SignInGate gate) : IDisposable
+    {
+        int done;
+        public void Dispose() { if (Interlocked.Exchange(ref done, 1) == 0) Interlocked.Decrement(ref gate.active); }
+    }
+}
+
+/// <summary>Runs a call under a time limit, again when it times out, up to a number of tries. Only for calls that are safe
+/// to repeat. Raises <see cref="TimeoutException"/> after the last try; the caller's own cancellation goes through. While
+/// <paramref name="hold"/> says so (a person signing in), the limit waits.</summary>
+public static class TimedTries
+{
+    public static async Task<T> RunAsync<T>(Func<CancellationToken, Task<T>> call, TimeSpan limit, int tries, Action<int>? retrying, CancellationToken ct,
+        Func<bool>? hold = null)
+    {
+        for (var n = 1; ; n++)
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            using var stop = new CancellationTokenSource();
+            var watch = Watch(timeout, stop.Token, limit, hold);
+            try { return await call(timeout.Token).WaitAsync(timeout.Token); }
+            catch (OperationCanceledException) when (timeout.IsCancellationRequested && !ct.IsCancellationRequested)
+            {
+                if (n >= tries) throw new TimeoutException();
+                retrying?.Invoke(n + 1);
+            }
+            finally
+            {
+                stop.Cancel();
+                await watch;
+            }
+        }
+    }
+
+    static async Task Watch(CancellationTokenSource timeout, CancellationToken stop, TimeSpan limit, Func<bool>? hold)
+    {
+        try
+        {
+            await Task.Delay(limit, stop);
+            while (hold?.Invoke() == true) await Task.Delay(TimeSpan.FromMilliseconds(250), stop);
+            timeout.Cancel();
+        }
+        catch (OperationCanceledException) { }
+    }
+}
