@@ -181,7 +181,8 @@ public static partial class TicketDrafts
         foreach (var id in ids.Where(i => !text.Contains($"[{i}]", StringComparison.Ordinal))) errors.Add($"claim {id} isn't marked in the text: put [{id}] where it's made.");
         foreach (Match m in Regex.Matches(text, @"\[(C\d+)\]"))
             if (!ids.Contains(m.Groups[1].Value)) errors.Add($"the text marks [{m.Groups[1].Value}] but there's no such claim.");
-        // Every sentence that states something carries a claim (D74): only questions and a short greeting are exempt.
+        // Every sentence that states something carries a claim (D74): questions, a short greeting, and framing lines (a short
+        // heading or lead-in, D84) are exempt.
         foreach (var sentence in Sentences(text).Where(x => !x.EndsWith('?') && !Markers().IsMatch(x) && x.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length > 4))
             errors.Add($"\"{Short(sentence)}\" states something without a claim: mark it with the claim that supports it, or leave it out.");
 
@@ -237,18 +238,44 @@ public static partial class TicketDrafts
             if (proof is "not-reproduced" or "not-reproduced-flaky" && !linked.Any(l => (string)l["kind"]! == "proof"))
                 errors.Add("the bug wasn't reproduced: say what was tried and ask for what's needed, in a claim linked {\"kind\":\"proof\"}.");
         }
+        if (AboutItsInput().Match(text) is { Success: true } about)
+            errors.Add($"the draft talks about \"{about.Value}\": it's read by people who never saw what you were given; say it without that.");
         if ((string)facts["tone"]! == "client") errors.AddRange(ClientProblems(Markers().Replace(text, ""), ctx));
         return errors;
     }
 
-    /// <summary>The text's sentences: by line, then at a full stop, exclamation or question mark; list marks and headings dropped.</summary>
+    /// <summary>The text's sentences: by line, then at a full stop, exclamation or question mark; list marks dropped.
+    /// Lines that only frame the text are left out (<see cref="IsFraming"/>, D84).</summary>
     static IEnumerable<string> Sentences(string text) =>
-        text.Split('\n').Select(l => Regex.Replace(l.Trim(), @"^(#+|[-*]|\d+[.)])\s*", ""))
+        text.Split('\n').Select(l => l.Trim()).Where(l => !IsFraming(l))
+            .Select(l => Regex.Replace(l, @"^([-*]|\d+[.)])\s*", ""))
             .SelectMany(l => Regex.Split(Url().Replace(l, "LINK"), @"(?<=[.!?](?:\s*\[C\d+\])*)\s+(?=[A-Z0-9])"))
             .Select(x => x.Trim()).Where(x => x.Length > 0 && x != "---");
 
     [GeneratedRegex(@"https?://\S+")]
     private static partial Regex Url();
+
+    /// <summary>A line that only frames the text (D84): one phrase of eight words or fewer, with no sentence end inside, that
+    /// is a heading (<c># …</c>), a whole line in bold, or a lead-in ending with a colon.</summary>
+    static bool IsFraming(string line)
+    {
+        if (Markers().IsMatch(line)) return false;
+        string inner;
+        if (Regex.Match(line, @"^#{1,6}\s+(.+)$") is { Success: true } h) inner = h.Groups[1].Value;
+        else if (Regex.Match(line, @"^\*\*([^*]+)\*\*:?$") is { Success: true } b) inner = b.Groups[1].Value;
+        else if (line.EndsWith(':')) inner = line[..^1];
+        else return false;
+        inner = inner.Trim().TrimEnd(':');
+        var words = inner.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+        return words is > 0 and <= MaxFramingWords && !Regex.IsMatch(inner, @"[.!?;]");
+    }
+
+    const int MaxFramingWords = 8;
+
+    /// <summary>Words that show a draft talks about its own prompt (D84): such a comment can't be posted.</summary>
+    /// "the input" alone isn't enough: a ticket may be about an input field.
+    [GeneratedRegex(@"\b(the input (I|you|holds|has|gives|contains|provided|doesn't|does not)\b|(in|from) the input(?! (box|field|area|element))\b|my input\b|these instructions|my instructions|I was given|I've been given|I have been given|the prompt\b)", RegexOptions.IgnoreCase)]
+    private static partial Regex AboutItsInput();
 
     [GeneratedRegex(@"(?<![\w])(?:[\w.-]+/)+[\w.-]+|\b[\w-]+\.(?:cs|ts|tsx|js|jsx|json|csproj|sln|sql|py|java|go|rb|cshtml|html|ya?ml|xml)\b")]
     private static partial Regex PathLike();

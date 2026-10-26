@@ -1325,6 +1325,36 @@ misleads, and the proof attempt wastes money.
 published); an extra kind of AI claim to check; infra that lives in the repo (Dockerfiles, workflows, Terraform) isn't in
 the code map yet, so it shows only as an outside-the-code part (mapping it is Phase 7's).
 
+## D84 · Drafts: framing lines need no claim, writers never talk about their input, and the run drafts after proof — 2026-10-26
+Refines D74. On the Sonarr run 21 of 50 questions drafts and 12 of 40 resolutions failed the check, many on lines that
+state nothing (*"Hi, a question before we start:"*, a bold heading), some on real problems (an unmarked cause, *"The
+input I have holds no proof"*).
+- **Exempt from the claim rule:** questions, a greeting of four words or fewer (as before), and now a heading (`# …` or
+  a whole line in bold) or a lead-in line ending with a colon: one phrase of eight words or fewer, with no full stop. A bold label followed by a
+  sentence (*"**Cause:** the scheduler runs twice"*) is still a claim.
+- **The writers are told:** never mention "the input", their instructions or what they were given; link
+  `missing` only to a field listed as missing; with no bug proof, say nothing about how the fix was checked.
+- **The benchmark runs drafts after proof** (points → pages → bundles → prove → drafts → replay), as in real use, where
+  the fix comes after the investigation. D79 didn't fix this order.
+**Why:** the checker should stop made-up claims, not greetings; a comment that talks about "the input" can't be posted.
+**Cost:** a short one-phrase lead-in ending with a colon can still state a small claim unmarked (*"The cause is the
+scheduler:"*), and so can a short heading; the eight-word, no-full-stop limit keeps that to a phrase. A check rejects a
+draft that talks about its own input (*"the input I have"*, *"these instructions"*), not about an input field. The change
+is tuned on the same 50 tickets it will be scored on, so the drafts' result flatters a little; the
+report says so (D57's rule: the bar doesn't move, the result is stated with what changed).
+
+## D85 · A Jira read that gets no answer is tried again, the last time on a new session — 2026-10-26
+Refines D82. On the Sonarr run about 1 in 40 `getJiraIssue` calls was taken by Atlassian's MCP server and never
+answered (seen live: the connection open, no reply; the same ticket answered in a second on the next try).
+- **Reads** (a fixed list: `getJiraIssue`, `executeRead`, `atlassianUserInfo`, …) get 30 s per try and 3 tries; the
+  third opens a new session in case the session itself is stuck. **Writes** get one try of 7 minutes: a retry could post
+  twice.
+- The time limits wait while the browser sign-in page is open inside a call (the token exchange after it isn't covered;
+  a sign-in inside a read is rare, as the saved sign-in normally renews without the browser).
+**Why:** a pull hung for an hour and stopped a batch run.
+**Cost:** a read that is really slow (over 30 s) fails after three tries instead of finishing; the new-session path has
+no test yet (it needs a stalling MCP server) and hasn't run live.
+
 ## Open questions
 - D83: when every part of a ticket is outside the code, is bug proof skipped outright (saves the $1 attempt), or does
   the reproducer still get to try? Leading answer: skipped, marked "outside the code". (Phase 3)

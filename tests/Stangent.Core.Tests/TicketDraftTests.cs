@@ -147,6 +147,57 @@ public class TicketDraftTests
     }
 
     [Fact]
+    public void A_heading_or_a_short_lead_in_needs_no_claim_but_a_claim_dressed_as_one_does()
+    {
+        using var d = new Draft();
+        d.Prepare();
+        // Framing lines state nothing: a heading, a bold heading, a lead-in ending with a colon (D84).
+        var framed = GoodQuestions.Replace("Thanks for the report. ", "## Questions\\n**Before we start**\\nHi, a few questions before we start:\\n");
+        Assert.Equal("recorded", d.Check(framed).Status);
+
+        using var e = new Draft();
+        e.Prepare();
+        var errors = e.Check(GoodQuestions.Replace("Thanks for the report. ",
+            "**Cause:** the order scheduler runs twice on every save.\\nThe scheduler, the queue and the order store each retry the same order on save, so:\\n")).Errors!;
+        Assert.Contains(errors, x => x.Contains("the order scheduler runs twice on every save.\" states something without a claim"));
+        Assert.Contains(errors, x => x.Contains("The scheduler, the queue and the order store") && x.Contains("states something without a claim"));
+    }
+
+    [Theory]
+    [InlineData("## The scheduler runs twice. Fix below")]                 // a sentence end inside a heading
+    [InlineData("Saving runs the scheduler twice. That is the cause:")]    // several sentences on a lead-in line
+    [InlineData("The root cause is the order scheduler running twice:")]   // nine words: past the limit
+    [InlineData("**The order scheduler runs twice on every single save**")] // a bold line of nine words
+    public void A_framing_line_is_one_short_phrase(string line)
+    {
+        using var d = new Draft();
+        d.Prepare();
+        var errors = d.Check(GoodQuestions.Replace("Thanks for the report. ", line + "\\n")).Errors!;
+        Assert.Contains(errors, x => x.Contains("states something without a claim"));
+    }
+
+    [Fact]
+    public void A_heading_of_up_to_eight_words_needs_no_claim()
+    {
+        using var d = new Draft();
+        d.Prepare();
+        Assert.Equal("recorded", d.Check(GoodQuestions.Replace("Thanks for the report. ", "## Unknown resolution rule in custom format editor\\n")).Status);
+    }
+
+    [Theory]
+    [InlineData("The input I have holds no proof outcome for this PR.", true)]
+    [InlineData("Nothing in the input says which version.", true)]
+    [InlineData("These instructions ask me to quote the ticket.", true)]
+    [InlineData("The size typed in the input field is reset.", false)]
+    public void A_draft_may_not_talk_about_its_own_input(string sentence, bool rejected)
+    {
+        using var d = new Draft();
+        d.Prepare();
+        var errors = d.Check(GoodQuestions.Replace("Thanks for the report.", sentence + " [C1]")).Errors ?? [];
+        Assert.Equal(rejected, errors.Any(x => x.Contains("the draft talks about")));
+    }
+
+    [Fact]
     public void A_client_draft_may_not_hold_code_names_paths_or_ids()
     {
         using var d = new Draft();

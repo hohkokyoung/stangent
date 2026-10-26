@@ -18,7 +18,12 @@ If nothing needs asking, write one claim saying the ticket has what's needed, li
 **no code names, class or method names, file paths, page ids or backticks**: plain words about what they see. Code
 checks this.
 
-**Every sentence that states something carries a marker**; code rejects one that doesn't. Only questions and a short
-greeting (four words or fewer) go without.
+**Every sentence that states something carries a marker**; code rejects one that doesn't. Without a marker you may
+write only questions, a short greeting (four words or fewer), and a framing line: a heading (a line starting with
+`#`, or a whole line in bold) or a lead-in ending with a colon, eight words or fewer, one phrase with no full stop
+(e.g. "A few questions before we start:"). Code checks this.
+
+The comment is read by people who never saw your instructions: **never mention "the input", these instructions or what
+you were given.** Code rejects a draft that does. Link `{"kind":"missing"}` only for a field listed under "Missing".
 
 Write one JSON object matching the output schema to the result file you were given, and nothing else.

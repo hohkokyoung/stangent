@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Phase 3's run on the frozen set (D77–D81), in the order D79 fixes. Each phase can run on its own and resumes:
+# Phase 3's run on the frozen set (D77–D81), in the order D79 and D84 give. Each phase can run on its own and resumes:
 #   points    pull (live, through the MCP), starting points (point picker when code finds none) and a first bundle, all 50
 #   pages     generate the picked pages that have no written version (spec-run.sh), reported apart
 #   bundles   build all 50 bundles again, now with those pages
-#   drafts    a questions draft for all 50; a resolution draft for each bug, from its fix commit (standing in for the PR)
 #   prove     the 30 newest bugs and the 10 not-bugs, each on its own commit (bug: the fix's parent; not-bug: the commit
 #             before it was closed); a reproduction is then run on the fix commit (`ticket prove --verify`): "proof is real"
+#   drafts    a questions draft for all 50; a resolution draft for each bug, from its fix commit (standing in for the PR).
+#             After prove (D84), as in real use: the drafts see the proof's outcome
 #   replay    pull, points and bundle again from the saved MCP results: byte-identical bundles, and no AI call
 # AI cost (D81, worst case): prove ≈ $40 (40 attempts × $1 cap), points + drafts ≈ $5, pages ≈ $10–20.
 #

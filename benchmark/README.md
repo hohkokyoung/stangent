@@ -131,7 +131,7 @@ dotnet build src/Stangent.Cli && cp -R src/Stangent.Cli/bin/Debug/net10.0 $B/sta
 benchmark/tickets/sonarr/app/setup.sh $B/sonarr      # Playwright app setting: build, start offline with seeded series
 bench --select-tickets $B/sonarr --out-dir benchmark/tickets/sonarr   # done once; the result is committed
 bench --copy-to-jira benchmark/tickets/sonarr --site peachpersonal.atlassian.net --project SONB [--dry-run]   # asked first
-benchmark/tickets/run.sh $B/sonarr benchmark/tickets/sonarr points pages bundles drafts prove replay --model sonnet
+benchmark/tickets/run.sh $B/sonarr benchmark/tickets/sonarr points pages bundles prove drafts replay --model sonnet
 bench --score-tickets $B/sonarr benchmark/tickets/sonarr --out benchmark/results/<date>-phase3-sonarr-score.json
 ```
 

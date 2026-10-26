@@ -50,7 +50,7 @@ public sealed record JiraConnectionOptions
 }
 
 /// <summary>
-/// One connection to Atlassian's MCP server. Code calls its tools by name with named arguments (no AI in the path, D73).
+/// One connection to Atlassian's MCP server. Not for concurrent calls: callers await each call before the next. Code calls its tools by name with named arguments (no AI in the path, D73).
 /// </summary>
 /// <summary>What the Jira backend needs from a connection: so tests can stand in for Atlassian with canned results.</summary>
 public interface IJiraTools : IAsyncDisposable
@@ -61,12 +61,13 @@ public interface IJiraTools : IAsyncDisposable
 
 public sealed class JiraConnection : IJiraTools
 {
-    readonly McpClient client;
+    McpClient client;
+    readonly Func<CancellationToken, Task<McpClient>> connect;
     readonly JiraConnectionOptions options;
     readonly TextWriter log;
     readonly SignInGate signIn;
-    JiraConnection(McpClient client, JiraConnectionOptions options, TextWriter log, SignInGate signIn) =>
-        (this.client, this.options, this.log, this.signIn) = (client, options, log, signIn);
+    JiraConnection(McpClient client, Func<CancellationToken, Task<McpClient>> connect, JiraConnectionOptions options, TextWriter log, SignInGate signIn) =>
+        (this.client, this.connect, this.options, this.log, this.signIn) = (client, connect, options, log, signIn);
 
     /// <summary>Tools known to only read: safe to try again. Any other may change Jira, so it's tried once. A list, not a
     /// name pattern, so a new tool is never retried by accident. <c>executeRead</c> is Atlassian's read-only tier.</summary>
@@ -120,16 +121,16 @@ public sealed class JiraConnection : IJiraTools
             };
         }
 
-        var transport = new HttpClientTransport(transportOptions);
+        // A new session each time: the first, and again when a read stalls twice (the session itself may be stuck).
+        async Task<McpClient> Connect(CancellationToken token) => await McpClient.CreateAsync(new HttpClientTransport(transportOptions), new McpClientOptions
+        {
+            ClientInfo = new Implementation { Name = "stangent", Version = typeof(JiraConnection).Assembly.GetName().Version?.ToString() ?? "0" },
+            // The browser sign-in happens inside initialization, so the wait must cover a person at the consent page.
+            InitializationTimeout = options.SignInTimeout + TimeSpan.FromSeconds(30),
+        }, cancellationToken: token);
         try
         {
-            var client = await McpClient.CreateAsync(transport, new McpClientOptions
-            {
-                ClientInfo = new Implementation { Name = "stangent", Version = typeof(JiraConnection).Assembly.GetName().Version?.ToString() ?? "0" },
-                // The browser sign-in happens inside initialization, so the wait must cover a person at the consent page.
-                InitializationTimeout = options.SignInTimeout + TimeSpan.FromSeconds(30),
-            }, cancellationToken: ct);
-            return new JiraConnection(client, options, log, signIn);
+            return new JiraConnection(await Connect(ct), Connect, options, log, signIn);
         }
         catch (Exception e) when (e is not StangentException and not OperationCanceledException)
         {
@@ -148,16 +149,24 @@ public sealed class JiraConnection : IJiraTools
         var (limit, tries) = IsRead(tool) ? (options.ReadTimeout, options.ReadTries) : (options.CallTimeout, 1);
         try
         {
-            result = await TimedTries.RunAsync(t => client.CallToolAsync(tool, args, cancellationToken: t).AsTask(), limit, tries,
-                n => log.WriteLine($"jira: {tool} gave no answer in {limit.TotalSeconds:0} s; trying again ({n} of {tries})."), ct,
-                hold: () => signIn.Active);
+            // The second try reuses the session; the last one opens a new session, in case the session is what's stuck.
+            var reconnect = false;
+            result = await TimedTries.RunAsync(async t =>
+            {
+                if (reconnect) await ReconnectAsync(t);
+                return await client.CallToolAsync(tool, args, cancellationToken: t);
+            }, limit, tries, n =>
+            {
+                reconnect = n == tries && n > 2;
+                log.WriteLine($"jira: {tool} gave no answer in {limit.TotalSeconds:0} s; trying again ({n} of {tries}{(reconnect ? ", new session" : "")}).");
+            }, ct, hold: () => signIn.Active);
         }
         catch (TimeoutException)
         {
             throw new StangentException("jira_call_timed_out",
                 $"{tool}: no answer from Jira after {(tries > 1 ? $"{tries} tries of " : "")}{limit.TotalSeconds:0} s.", ExitCodes.Failed);
         }
-        catch (Exception e) when (e is not OperationCanceledException)
+        catch (Exception e) when (e is not OperationCanceledException and not StangentException)
         {
             throw new StangentException("jira_call_failed", $"{tool}: {e.Message}", ExitCodes.Failed, [.. Chain(e)]);
         }
@@ -242,6 +251,21 @@ public sealed class JiraConnection : IJiraTools
         || host.EndsWith(".atlassian.net", StringComparison.OrdinalIgnoreCase) || host.EndsWith(".atl-paas.net", StringComparison.OrdinalIgnoreCase);
 
     public ValueTask DisposeAsync() => client.DisposeAsync();
+
+    /// <summary>Swaps in a new session. Calls on one connection are one at a time (every caller awaits each call), so the
+    /// swap needs no lock; a session opened after its try gave up is closed, not swapped in.</summary>
+    async Task ReconnectAsync(CancellationToken ct)
+    {
+        var fresh = await connect(ct);
+        if (ct.IsCancellationRequested)
+        {
+            _ = Task.Run(async () => { try { await fresh.DisposeAsync(); } catch (Exception) { } });
+            ct.ThrowIfCancellationRequested();
+        }
+        var old = client;
+        client = fresh;
+        _ = Task.Run(async () => { try { await old.DisposeAsync(); } catch (Exception) { } });   // a stuck session may not close cleanly
+    }
 
     static readonly JsonSerializerOptions McpJsonOptions = ModelContextProtocol.McpJsonUtilities.DefaultOptions;
 

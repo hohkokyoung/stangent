@@ -254,8 +254,8 @@ findings were checked against the code and fixed; none was rejected. Each has a 
   maintainer's verdict ("that's by design") into not-bugs' text; it was caught on reading the list and re-frozen.
   39 comments kept, none after its cutoff (checked).
 - **Scoring** `--score-tickets` (D79 with D81: proof bars on the 30 newest bugs); **Jira copy** `--copy-to-jira`
-  (resumable; the GitHub number as a label `gh-<n>`, not in the text); **run** `benchmark/tickets/run.sh` in D79's order
-  (points → pages → bundles → drafts → prove → replay).
+  (resumable; the GitHub number as a label `gh-<n>`, not in the text); **run** `benchmark/tickets/run.sh` in D79's and D84's order
+  (points → pages → bundles → prove → drafts → replay; drafts after prove, D84).
 - **Sonarr for Playwright** (`benchmark/tickets/sonarr/app/`): built at the checked-out commit, started offline with a
   fresh data folder, no sign-in, two series seeded straight into the database (no metadata service); checked: the UI
   loads, the API lists both series, and a Playwright spec run as the proof runs it passes.
