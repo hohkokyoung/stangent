@@ -1355,6 +1355,27 @@ answered (seen live: the connection open, no reply; the same ticket answered in 
 **Cost:** a read that is really slow (over 30 s) fails after three tries instead of finishing; the new-session path has
 no test yet (it needs a stalling MCP server) and hasn't run live.
 
+## D86 · Browser proof: the app runs while the AI works; it copies a related Playwright test, or looks with a browser when there is none — 2026-10-26
+Refines D76. On the Sonarr run the reproducer wrote Playwright tests blind: it never saw the page or ran its test, so it
+guessed the clicks (SONB-5 clicked a profile name that opens nothing and waited 30 s for a dialog).
+- **The app runs during the attempt.** Before the AI starts, stangent builds and starts the app (`tickets.app`) and
+  stops it after; stangent's own check still starts it fresh and runs the test 3 times (D76).
+- **Related Playwright tests first:** code finds the repo's existing specs that open one of the bundle's screens (their
+  `goto` path matches the screen's route) and runs them once against the app before the AI starts (free; the result is
+  in the AI's input). The AI copies the closest one, so the way to the screen is already right.
+- **No related test → a browser:** the AI gets a headless browser (Playwright MCP, only `http://127.0.0.1:<port>`) to
+  look at the screens before writing.
+- **Test first (the owner's TDD rule):** the AI runs its own test against the app and hands it in only once it fails on
+  the named assertion.
+- **The test is kept** for the developer to commit with the fix, so the next bug on that screen has a related test.
+- **Sonarr has no Playwright tests,** so two are written by hand for the benchmark, on screens chosen without looking at
+  the 50 tickets (the series list and the settings pages); the report says so.
+**Why:** a test that never saw the page fails on the wrong thing; existing tests already know the way to the screen, and
+the owner prefers test-first.
+**Cost:** every browser click or test run is a turn, so the 15-turn cap (D81) binds sooner (the cap is decided after
+these fixes); the app is built twice per attempt (for the AI and for the check); the seeded tests make Sonarr look a
+little better tested than it is.
+
 ## Open questions
 - D83: when every part of a ticket is outside the code, is bug proof skipped outright (saves the $1 attempt), or does
   the reproducer still get to try? Leading answer: skipped, marked "outside the code". (Phase 3)
