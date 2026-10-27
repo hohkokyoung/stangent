@@ -1426,6 +1426,35 @@ scale to one-off tickets.
 code ("size editor" vs "Quality Profile") rank low and rely on the AI seeing the full list; meaning-based search
 (embeddings) is the next step only if the measure says word matching isn't enough.
 
+## D88 · Impact answers say what they left out; no forward walk — 2026-10-28
+Prompted by an outside checklist (look both ways, check the diff separately, test entry points, report blind spots).
+Most of it is already covered: `graph impact --diff` (D27), the `tests`, `endpoints` and `pages` groups, ❓ listed one
+by one, the merged build and test (D65), bug proof (D75), ranking by code (D87). Two gaps remain where an answer looks
+complete but isn't:
+- **A depth limit cuts silently.** `--max-depth N` drops everything past N, and the ❓ past N go with it
+  (`ImpactAnalyzer.Analyze`). It will report, per group, how many items and how many ❓ it left out.
+- **Files the graph can't read are skipped, not flagged.** A change touching them will list each as ❓: D65's list
+  (Razor views, `.csproj` / `Directory.Build.props`, `using` edits) and what Phase 3's fix coverage missed (stylesheets,
+  migrations, `package.json` and lock files). A file the graph later learns (e.g. stylesheets) leaves the list.
+
+**No forward walk (what the changed code uses).** Phase 3 checked it before building: one step forward from the page
+reached no fix file, and the one "used, not dependent" miss (`SimklAPI.cs`) sits behind the impact layer, where a
+forward step would add to ~1,150 files. When an agent's diff is checked (Phase 4), the compiler and tests already cover
+the used side (D18). A point's outgoing lines stay available through `graph show`. Revisit only if a Phase 4 miss is
+traced to a file the change uses.
+
+**Ranking:** D87 covers bundles. Impact answers keep their order (distance, then label; 📜 by share); no ranking by
+meaning inside them (D18). Phase 3's hint that ordering may matter as much as new links is unmeasured until a run with
+written pages.
+
+Built with D65 in Phase 4, as `impact-report` v6 (consumers marked per D20).
+Rejected: a "calls" group in impact answers (drafted on main the same day, before Phase 3's check was seen); choosing
+the walk depth per ticket automatically (depth stays the caller's `--max-depth`).
+**Why:** D27 promised every ❓ is listed; a silent cut or an unread file breaks that promise. A forward walk had evidence
+against it and a list already too long.
+**Cost:** longer answers (mitigated by summary-first, D27); another contract bump for Phases 5 and 6; the ❓ list for
+unread files must be kept in step with what the graph learns.
+
 ## Open questions
 - D83: when every part of a ticket is outside the code, is bug proof skipped outright (saves the $1 attempt), or does
   the reproducer still get to try? Leading answer: skipped, marked "outside the code". (Phase 3)
