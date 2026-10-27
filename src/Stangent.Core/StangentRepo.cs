@@ -134,6 +134,10 @@ public sealed class StangentConfig
         public string? TestFilter { get; set; }
         /// <summary>The cap per reproduction attempt (D81).</summary>
         public ProveBudgetConfig ProveBudget { get; set; } = new();
+        /// <summary>The project's own files of UI texts for the page index (D87): a string in the code that is a key in one of
+        /// them (<c>translate('Key')</c>, <c>t("a.b")</c>, <c>Label = "Key"</c>) is indexed with its text. JSON (nested keys
+        /// joined with dots) or <c>.resx</c>, relative to the repo, e.g. <c>src/NzbDrone.Core/Localization/Core/en.json</c>.</summary>
+        public List<string> TextFiles { get; set; } = [];
 
         public bool IsBugType(string type) => BugTypes.Any(t => string.Equals(t, type, StringComparison.OrdinalIgnoreCase));
     }

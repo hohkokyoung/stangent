@@ -1406,6 +1406,20 @@ URLs, stack traces or quoted names. The picks were right; the missing piece was 
 - **Measured before it's relied on,** at no AI cost, on past bugs of Sonarr and bitwarden/server (backend only, no UI
   text): a right page among the picks, "also possibly" or the top 20 for ≥ 95% of bugs, agreed before measuring; every
   miss is looked at.
+  - *Agreed 2026-10-27:* **a right page** is one whose walk from its entry point, at the page's own depth plus 2 lines,
+    reaches a file the fix changed: a developer starting on the Import Lists page reaches the Simkl parser two calls
+    past what the page describes. The 95% counts only bugs that have a right page; the others are reported apart as
+    "no page covers this code", a gap in Phase 2's pages rather than the index, each one looked at (Sonarr: 6 of 40).
+    With a clear winner only the winner and its "also possibly" pages count; otherwise the top 20 the picker sees in
+    detail. A right page the AI could still find below 20 in the compact list isn't credited. Rejected: the page's own
+    slice only (9 of 40 Sonarr bugs unscored), a fixed depth 8 (a random 20 pages would hit 41%), every bug counted (a
+    coverage gap would fail the index).
+  - *Agreed 2026-10-27:* **bitwarden/server is a 5-bug check**, not a share: the 5 newest closed GitHub bug reports whose
+    merged server PR closes the issue or says it fixes it and changes non-test C# (31 such bugs exist; bitwarden tracks
+    most bugs in a private Jira). The ticket is the issue's title, description and comments posted before the fix; fix
+    files are traced through renames to the pinned commit. It passes when every scored bug hits; each miss is looked at.
+    Sonarr's 40 are where the ranking's settings were tuned; bitwarden is measured once, after they're frozen.
+    Rejected: all 31 or 41 (the owner: no need for that much).
 **Why:** the owner: missing the right starting place is the worst outcome; and the whole-list pick was costly and didn't
 scale to one-off tickets.
 **Cost:** reading UI text is per stack (Razor, Blazor, Angular each need a reader); words that differ between ticket and

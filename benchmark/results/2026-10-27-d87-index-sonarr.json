@@ -1,0 +1,1843 @@
+{
+  "schemaVersion": 1,
+  "clone": "sonarr",
+  "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+  "pages": 718,
+  "rightBy": "the page's depth + 2",
+  "units": 20812,
+  "buildSeconds": 0.5,
+  "rankMs": {
+    "median": 8.1,
+    "max": 36.8
+  },
+  "settings": {
+    "depthDecay": 0.35,
+    "phraseBoost": 2,
+    "winnerRatio": 1.5,
+    "summaryWeight": 2,
+    "lengthNorm": 0.1,
+    "alsoPossible": 4,
+    "detailed": 20
+  },
+  "bugs": 40,
+  "reachable": 34,
+  "hit": {
+    "n": 32,
+    "share": 0.8,
+    "range": [
+      0.675,
+      0.925
+    ]
+  },
+  "hitOfReachable": {
+    "n": 32,
+    "share": 0.941,
+    "range": [
+      0.853,
+      1
+    ]
+  },
+  "inTop20": 32,
+  "winners": {
+    "n": 5,
+    "right": 2,
+    "hit": 3
+  },
+  "cases": [
+    {
+      "id": "SONB-1/#9149",
+      "rightPages": 25,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/Command",
+          "score": 206.96,
+          "right": true,
+          "phrase": "NzbDrone.Common.Serializer.PolymorphicWriteOnlyJsonConverter"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Command",
+          "score": 202.06,
+          "right": true,
+          "phrase": "NzbDrone.Common.Serializer.PolymorphicWriteOnlyJsonConverter"
+        },
+        {
+          "page": "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandController.Handle(NzbDrone.Core.ProgressMessaging.CommandUpdatedEvent)",
+          "score": 190.13,
+          "right": true,
+          "phrase": "NzbDrone.Common.Serializer.PolymorphicWriteOnlyJsonConverter"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.CommandExecutor.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+          "score": 189.87,
+          "right": false,
+          "phrase": "NzbDrone.Common.Serializer.PolymorphicWriteOnlyJsonConverter"
+        },
+        {
+          "page": "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandController.Handle(NzbDrone.Core.ProgressMessaging.CommandUpdatedEvent)",
+          "score": 187.99,
+          "right": true,
+          "phrase": "NzbDrone.Common.Serializer.PolymorphicWriteOnlyJsonConverter"
+        }
+      ],
+      "firstRightPage": {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/Command",
+        "score": 206.96,
+        "phrase": "NzbDrone.Common.Serializer.PolymorphicWriteOnlyJsonConverter",
+        "words": "action application body client command common controller converter core created deserialize drone id implementation json"
+      }
+    },
+    {
+      "id": "SONB-2/#9051",
+      "rightPages": 32,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "score": 117,
+          "right": true,
+          "phrase": "Manual Import"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.ManualInteractionRequiredEvent)",
+          "score": 103.98,
+          "right": true,
+          "phrase": "Manual Interaction Required"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)",
+          "score": 102.79,
+          "right": true,
+          "phrase": "Import Complete"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "score": 102.68,
+          "right": true,
+          "phrase": "Import Complete"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)",
+          "score": 93.13,
+          "right": true,
+          "phrase": "Manual Interaction Required"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+        "score": 117,
+        "phrase": "Manual Import",
+        "words": "build detected detection download downloaded episode file handl import imported log manual name original override"
+      }
+    },
+    {
+      "id": "SONB-3/#9128",
+      "rightPages": 1,
+      "firstRight": 3,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.HandleAsync(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+          "score": 200.3,
+          "right": false,
+          "phrase": "HealthCheckService"
+        },
+        {
+          "page": "page:/settings/general",
+          "score": 193.91,
+          "right": false,
+          "phrase": "settings/general"
+        },
+        {
+          "page": "page:/settings/customformats",
+          "score": 180.39,
+          "right": true,
+          "phrase": "import fails"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)",
+          "score": 178.8,
+          "right": false,
+          "phrase": "ReconfigureLogging"
+        },
+        {
+          "page": "Sonarr.Api.V3|M:Sonarr.Api.V3.Health.HealthController.Handle(NzbDrone.Core.HealthCheck.HealthCheckCompleteEvent)",
+          "score": 161.33,
+          "right": false,
+          "phrase": "HealthCheckCompleteEvent"
+        }
+      ],
+      "firstRightPage": {
+        "page": "page:/settings/customformats",
+        "score": 180.39,
+        "phrase": "import fails",
+        "words": "added check clipboard condition custom default disabled enabled export exported fail false field format id"
+      }
+    },
+    {
+      "id": "SONB-4/#9127",
+      "rightPages": 9,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "page:/settings/profiles",
+          "score": 139.71,
+          "right": true,
+          "phrase": "Settings/Profiles"
+        },
+        {
+          "page": "page:/add/new",
+          "score": 117.62,
+          "right": false,
+          "phrase": "quality profile"
+        },
+        {
+          "page": "page:/settings/quality",
+          "score": 111.77,
+          "right": false,
+          "phrase": "Preferred or Maximum"
+        },
+        {
+          "page": "page:/add/import/:rootFolderId",
+          "score": 109.78,
+          "right": false,
+          "phrase": "quality profile"
+        },
+        {
+          "page": "page:/system/status",
+          "score": 109.67,
+          "right": false,
+          "phrase": "github.com/Sonarr/Sonarr"
+        }
+      ],
+      "firstRightPage": {
+        "page": "page:/settings/profiles",
+        "score": 139.71,
+        "phrase": "Settings/Profiles",
+        "words": "change changed edit error field id input item json markdown message minimum number open position"
+      }
+    },
+    {
+      "id": "SONB-5/#9126",
+      "rightPages": 1,
+      "firstRight": 6,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "endpoint:Sonarr.Api.V3|GET /api/v3/QualityDefinition/limits",
+          "score": 159.58,
+          "right": false,
+          "phrase": "QualityDefinitionLimits"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/QualityDefinition",
+          "score": 156.8,
+          "right": false,
+          "phrase": "Quality profile size"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/QualityDefinition",
+          "score": 155.94,
+          "right": false,
+          "phrase": "Quality profile size"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V5|PUT /api/v5/QualityDefinition",
+          "score": 143.37,
+          "right": false,
+          "phrase": "Quality profile size"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|PUT /api/v3/QualityDefinition/update",
+          "score": 142.97,
+          "right": false,
+          "phrase": "Quality profile size"
+        }
+      ],
+      "firstRightPage": {
+        "page": "page:/settings/profiles",
+        "score": 105.83,
+        "phrase": "Quality profile",
+        "words": "allow appear cap changed display edit error higher id input json limit markdown max message"
+      }
+    },
+    {
+      "id": "SONB-6/#9113",
+      "rightPages": 1,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "page:/calendar",
+          "score": 229.03,
+          "right": true,
+          "phrase": "Color-Impaired Mode"
+        },
+        {
+          "page": "page:/settings/ui",
+          "score": 206.87,
+          "right": false,
+          "phrase": "Enable Color-Impaired Mode"
+        },
+        {
+          "page": "page:/statistics",
+          "score": 156.91,
+          "right": false,
+          "phrase": "Enable Color-Impaired Mode"
+        },
+        {
+          "page": "page:/series",
+          "score": 117.61,
+          "right": false,
+          "phrase": "Detailed Progress Bar"
+        },
+        {
+          "page": "page:/settings",
+          "score": 105.27,
+          "right": false,
+          "phrase": "Color-Impaired"
+        }
+      ],
+      "firstRightPage": {
+        "page": "page:/calendar",
+        "score": 229.03,
+        "phrase": "Color-Impaired Mode",
+        "words": "add appear bar browser calendar change changed color default distinguish enable event full height image"
+      }
+    },
+    {
+      "id": "SONB-7/#9121",
+      "rightPages": 1,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "page:/calendar",
+          "score": 34.95,
+          "right": true,
+          "phrase": "search for missing"
+        },
+        {
+          "page": "page:/wanted/missing",
+          "score": 33.78,
+          "right": false,
+          "phrase": "search for missing"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)",
+          "score": 32.96,
+          "right": false,
+          "phrase": "search for missing"
+        },
+        {
+          "page": "page:/add/new",
+          "score": 32.7,
+          "right": false,
+          "phrase": "search for missing"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScannedEvent)",
+          "score": 32.2,
+          "right": false,
+          "phrase": "search for missing"
+        }
+      ],
+      "firstRightPage": {
+        "page": "page:/calendar",
+        "score": 34.95,
+        "phrase": "search for missing",
+        "words": "calendar miss search"
+      }
+    },
+    {
+      "id": "SONB-8/#9111",
+      "rightPages": 1,
+      "firstRight": 1,
+      "hit": true,
+      "winner": {
+        "page": "page:/activity/queue",
+        "right": true,
+        "phrase": "Activity Queue",
+        "unit": "/activity/queue"
+      },
+      "top5": [
+        {
+          "page": "page:/activity/queue",
+          "score": 230.01,
+          "right": true,
+          "phrase": "Activity Queue"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|GET /api/v3/Queue",
+          "score": 138.28,
+          "right": false,
+          "phrase": "sortDirection"
+        },
+        {
+          "page": "page:/activity/history",
+          "score": 129.5,
+          "right": false,
+          "phrase": "sortDirection"
+        },
+        {
+          "page": "page:/series",
+          "score": 104.4,
+          "right": false,
+          "phrase": "sortKey"
+        },
+        {
+          "page": "ts|frontend/src/Components/Form/FormInput.tsx#FormInput",
+          "score": 99.7,
+          "right": false,
+          "phrase": "sortDirection"
+        }
+      ],
+      "firstRightPage": {
+        "page": "page:/activity/queue",
+        "score": 230.01,
+        "phrase": "Activity Queue",
+        "words": "activity change changed client count default direction download episode exclude filter item key match next"
+      }
+    },
+    {
+      "id": "SONB-9/#9102",
+      "rightPages": 6,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/Queue",
+          "score": 119.36,
+          "right": true,
+          "phrase": "Ignore Download"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "score": 115.06,
+          "right": false,
+          "phrase": "removes from client"
+        },
+        {
+          "page": "page:/settings/downloadclients",
+          "score": 109.89,
+          "right": false,
+          "phrase": "completed download handling"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadProcessingService.Execute(NzbDrone.Core.Download.ProcessMonitoredDownloadsCommand)",
+          "score": 109.7,
+          "right": false,
+          "phrase": "completed download handling"
+        },
+        {
+          "page": "page:/activity/queue",
+          "score": 102.55,
+          "right": true,
+          "phrase": "Ignore Download"
+        }
+      ],
+      "firstRightPage": {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/Queue",
+        "score": 119.36,
+        "phrase": "Ignore Download",
+        "words": "automatically client delete download episode file found ignore imported log manually miss new release remove"
+      }
+    },
+    {
+      "id": "SONB-10/#9018",
+      "rightPages": 2,
+      "firstRight": 2,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)",
+          "score": 85.01,
+          "right": false,
+          "phrase": "Interactive Search"
+        },
+        {
+          "page": "page:/series/:titleSlug",
+          "score": 71.97,
+          "right": true,
+          "phrase": "Interactive Search"
+        },
+        {
+          "page": "page:/settings/indexers",
+          "score": 59.72,
+          "right": false,
+          "phrase": "Interactive Search"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Download.RedownloadFailedDownloadService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+          "score": 57.64,
+          "right": false,
+          "phrase": "Interactive Search"
+        },
+        {
+          "page": "ts|frontend/src/Episode/EpisodeDetailsModalContent.tsx#EpisodeDetailsModalContent",
+          "score": 57.4,
+          "right": true,
+          "phrase": "Interactive Search"
+        }
+      ],
+      "firstRightPage": {
+        "page": "page:/series/:titleSlug",
+        "score": 71.97,
+        "phrase": "Interactive Search",
+        "words": "applied descend episode filter go height image interactive language list markdown order response result run"
+      }
+    },
+    {
+      "id": "SONB-11/#8978",
+      "rightPages": 0,
+      "firstRight": null,
+      "hit": false,
+      "winner": null,
+      "top5": [
+        {
+          "page": "page:/settings/importlists",
+          "score": 55.31,
+          "right": false,
+          "phrase": "import list"
+        },
+        {
+          "page": "page:/system/updates",
+          "score": 54.64,
+          "right": false,
+          "phrase": "please check"
+        },
+        {
+          "page": "endpoint:Sonarr.Host|POST /profiler/results",
+          "score": 52.79,
+          "right": false,
+          "phrase": "SonarrErrorPipeline"
+        },
+        {
+          "page": "page:/settings/mediamanagement",
+          "score": 51.18,
+          "right": false,
+          "phrase": null
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/queue/details",
+          "score": 45.42,
+          "right": false,
+          "phrase": "results were returned"
+        }
+      ],
+      "firstRightPage": null
+    },
+    {
+      "id": "SONB-12/#8929",
+      "rightPages": 6,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "score": 353.15,
+          "right": true,
+          "phrase": "Manual Import"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DownloadedEpisodesCommandService.Execute(NzbDrone.Core.MediaFiles.Commands.DownloadedEpisodesScanCommand)",
+          "score": 285.28,
+          "right": false,
+          "phrase": "DownloadedEpisodesScan"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V5|GET /api/v5/ManualImport",
+          "score": 252.78,
+          "right": true,
+          "phrase": "Manual Import"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V5|POST /api/v5/ManualImport",
+          "score": 240.15,
+          "right": true,
+          "phrase": "Manual Import"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|GET /api/v3/ManualImport",
+          "score": 232.85,
+          "right": true,
+          "phrase": "Manual Import"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+        "score": 353.15,
+        "phrase": "Manual Import",
+        "words": "clean client completed core data download downloaded drone episode exist expected file folder id import"
+      }
+    },
+    {
+      "id": "SONB-13/#8842",
+      "rightPages": 10,
+      "firstRight": 2,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.HandleAsync(NzbDrone.Core.Download.DownloadsProcessedEvent)",
+          "score": 407.05,
+          "right": false,
+          "phrase": "Notification queue"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "score": 288.68,
+          "right": true,
+          "phrase": "Emby.MediaBrowser"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)",
+          "score": 268.13,
+          "right": true,
+          "phrase": "Emby / Jellyfin"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)",
+          "score": 216.53,
+          "right": true,
+          "phrase": "MediaBrowser/MediaBrowserService"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Tv.Events.SeriesAddCompletedEvent)",
+          "score": 208.6,
+          "right": true,
+          "phrase": "MediaBrowser/MediaBrowserService"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+        "score": 288.68,
+        "phrase": "Emby.MediaBrowser",
+        "words": "add browser byte client collection common complete config connect core develop drone emby enabled error"
+      }
+    },
+    {
+      "id": "SONB-14/#8770",
+      "rightPages": 24,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "score": 376.29,
+          "right": true,
+          "phrase": "imported download"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DownloadedEpisodesCommandService.Execute(NzbDrone.Core.MediaFiles.Commands.DownloadedEpisodesScanCommand)",
+          "score": 368.84,
+          "right": true,
+          "phrase": "imported download"
+        },
+        {
+          "page": "page:/activity/history",
+          "score": 360.96,
+          "right": false,
+          "phrase": "downloadFolderImported"
+        },
+        {
+          "page": "page:/activity/queue",
+          "score": 352.72,
+          "right": false,
+          "phrase": "Activity/Queue"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "score": 332.72,
+          "right": true,
+          "phrase": "DownloadEventHub"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+        "score": 376.29,
+        "phrase": "imported download",
+        "words": "add aggregator already available clean client common completed data database date decision delete deleted determine"
+      }
+    },
+    {
+      "id": "SONB-15/#8757",
+      "rightPages": 6,
+      "firstRight": 16,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "page:/settings/customformats",
+          "score": 64.14,
+          "right": false,
+          "phrase": "custom format"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag",
+          "score": 62.43,
+          "right": false,
+          "phrase": "error that says"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/Tag",
+          "score": 57.98,
+          "right": false,
+          "phrase": "error that says"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/DelayProfile",
+          "score": 54.5,
+          "right": false,
+          "phrase": "error that says"
+        },
+        {
+          "page": "ts|frontend/src/Components/Form/FormInput.tsx#FormInput",
+          "score": 51.69,
+          "right": false,
+          "phrase": "Value' must not be empty"
+        }
+      ],
+      "firstRightPage": {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/CustomFormat/schema",
+        "score": 41.64,
+        "phrase": "custom format",
+        "words": "custom format hd option release resolution sonarr value"
+      }
+    },
+    {
+      "id": "SONB-16/#8604",
+      "rightPages": 99,
+      "firstRight": 9,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "page:/settings/general",
+          "score": 81.65,
+          "right": false,
+          "phrase": "Reverse Proxy"
+        },
+        {
+          "page": "page:/system/updates",
+          "score": 59.56,
+          "right": false,
+          "phrase": "Missing translation"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.Execute(NzbDrone.Core.Update.Commands.ApplicationUpdateCommand)",
+          "score": 55.4,
+          "right": false,
+          "phrase": null
+        },
+        {
+          "page": "page:/settings/ui",
+          "score": 53.32,
+          "right": false,
+          "phrase": "Asia/Shanghai"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.Handle(NzbDrone.Core.Lifecycle.ApplicationStartingEvent)",
+          "score": 45.06,
+          "right": false,
+          "phrase": null
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.HandleAsync(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+        "score": 36.59,
+        "phrase": "LocalizationService",
+        "words": "app bin config container core docker environment error file install localization miss mode name please"
+      }
+    },
+    {
+      "id": "SONB-17/#8574",
+      "rightPages": 10,
+      "firstRight": 46,
+      "hit": false,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)",
+          "score": 168.13,
+          "right": false,
+          "phrase": "Import list"
+        },
+        {
+          "page": "page:/settings/importlists",
+          "score": 118.34,
+          "right": false,
+          "phrase": "Import list"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.HandleAsync(NzbDrone.Core.ThingiProvider.Events.ProviderDeletedEvent{NzbDrone.Core.ImportLists.IImportList})",
+          "score": 106.54,
+          "right": false,
+          "phrase": "Import list"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+          "score": 103.83,
+          "right": false,
+          "phrase": "nothing happens"
+        },
+        {
+          "page": "page:/add/new",
+          "score": 90.34,
+          "right": false,
+          "phrase": "Import list"
+        }
+      ],
+      "firstRightPage": {
+        "page": "endpoint:Sonarr.Api.V5|POST /api/v5/ImportList/action/{name}",
+        "score": 53.17,
+        "phrase": "Import list",
+        "words": "base core drone import list nzb result sett sonarr"
+      }
+    },
+    {
+      "id": "SONB-18/#8482",
+      "rightPages": 0,
+      "firstRight": null,
+      "hit": false,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "score": 112.8,
+          "right": false,
+          "phrase": "manual import"
+        },
+        {
+          "page": "page:/series/:titleSlug",
+          "score": 110.28,
+          "right": false,
+          "phrase": "Episode History"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.History.HistoryService.Handle(NzbDrone.Core.Download.EpisodeGrabbedEvent)",
+          "score": 92.27,
+          "right": false,
+          "phrase": "Episode History"
+        },
+        {
+          "page": "page:/activity/history",
+          "score": 90.95,
+          "right": false,
+          "phrase": "history entries"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V5|GET /api/v5/History/episode",
+          "score": 83.32,
+          "right": false,
+          "phrase": "Episode History"
+        }
+      ],
+      "firstRightPage": null
+    },
+    {
+      "id": "SONB-19/#8414",
+      "rightPages": 4,
+      "firstRight": 6,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "score": 176.27,
+          "right": false,
+          "phrase": "library update"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)",
+          "score": 174.47,
+          "right": false,
+          "phrase": "library update"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)",
+          "score": 156.41,
+          "right": false,
+          "phrase": "library update"
+        },
+        {
+          "page": "page:/settings/mediamanagement",
+          "score": 150.71,
+          "right": false,
+          "phrase": "running on Windows"
+        },
+        {
+          "page": "page:/add/import",
+          "score": 148.59,
+          "right": false,
+          "phrase": "TV show"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.HandleAsync(NzbDrone.Core.Download.DownloadsProcessedEvent)",
+        "score": 147.24,
+        "phrase": "library update",
+        "words": "add check client connect contain debug enabled episode every host import info library manual media"
+      }
+    },
+    {
+      "id": "SONB-20/#8270",
+      "rightPages": 5,
+      "firstRight": 10,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "page:/settings/mediamanagement",
+          "score": 69,
+          "right": false,
+          "phrase": null
+        },
+        {
+          "page": "page:/system/status",
+          "score": 58.76,
+          "right": false,
+          "phrase": "github.com/Sonarr/Sonarr"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Extras.ExtraService.Handle(NzbDrone.Core.MediaFiles.Events.SeriesRenamedEvent)",
+          "score": 57.44,
+          "right": false,
+          "phrase": "NzbDrone.Core/Extras"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Extras.ExtraService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeFolderCreatedEvent)",
+          "score": 54.26,
+          "right": false,
+          "phrase": "NzbDrone.Core/Extras"
+        },
+        {
+          "page": "page:/add/new",
+          "score": 53.45,
+          "right": false,
+          "phrase": null
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+        "score": 46.3,
+        "phrase": "Plex Metadata",
+        "words": "core drone episode file id import match metadata nzb plex season sett sonarr special without"
+      }
+    },
+    {
+      "id": "SONB-21/#8221",
+      "rightPages": 9,
+      "firstRight": 2,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "page:/add/import",
+          "score": 113.94,
+          "right": false,
+          "phrase": "trailing slash"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.Execute(NzbDrone.Core.Update.Commands.ApplicationUpdateCommand)",
+          "score": 106.54,
+          "right": true,
+          "phrase": "config.xml"
+        },
+        {
+          "page": "page:/system/backups",
+          "score": 104.45,
+          "right": false,
+          "phrase": "backup file"
+        },
+        {
+          "page": "page:/settings/general",
+          "score": 102.24,
+          "right": false,
+          "phrase": "Sonarr/` but not `-data"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.Handle(NzbDrone.Core.Lifecycle.ApplicationStartingEvent)",
+          "score": 100.98,
+          "right": true,
+          "phrase": "config.xml"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.Execute(NzbDrone.Core.Update.Commands.ApplicationUpdateCommand)",
+        "score": 106.54,
+        "phrase": "config.xml",
+        "words": "app application arg argument back backup change command config couldn data debug dir environment failed"
+      }
+    },
+    {
+      "id": "SONB-22/#8242",
+      "rightPages": 6,
+      "firstRight": 50,
+      "hit": false,
+      "winner": null,
+      "top5": [
+        {
+          "page": "page:/settings/mediamanagement",
+          "score": 156.69,
+          "right": false,
+          "phrase": "multi-episode"
+        },
+        {
+          "page": "page:/series/:titleSlug",
+          "score": 152.86,
+          "right": false,
+          "phrase": "Refresh & Scan"
+        },
+        {
+          "page": "page:/calendar",
+          "score": 126.48,
+          "right": false,
+          "phrase": "multiple episodes"
+        },
+        {
+          "page": "page:/add/import",
+          "score": 100.86,
+          "right": false,
+          "phrase": "make sure"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)",
+          "score": 100.62,
+          "right": false,
+          "phrase": "episode files"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+        "score": 59.91,
+        "phrase": "episode files",
+        "words": "correctly default emby episode fail file import jellyfin language metadata neither option parsed plex remove"
+      }
+    },
+    {
+      "id": "SONB-23/#8187",
+      "rightPages": 18,
+      "firstRight": 16,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "page:/settings/downloadclients",
+          "score": 67.95,
+          "right": false,
+          "phrase": "Click a client"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+          "score": 67.68,
+          "right": false,
+          "phrase": "username and password"
+        },
+        {
+          "page": "ts|frontend/src/Components/Form/FormInput.tsx#FormInput",
+          "score": 51.9,
+          "right": false,
+          "phrase": "add a new"
+        },
+        {
+          "page": "page:/settings/tags",
+          "score": 50.07,
+          "right": false,
+          "phrase": "download clients"
+        },
+        {
+          "page": "page:/settings/general",
+          "score": 49.29,
+          "right": false,
+          "phrase": "username and password"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+        "score": 37.34,
+        "phrase": "download clients",
+        "words": "add bit bittorrent change client download happen net new test"
+      }
+    },
+    {
+      "id": "SONB-24/#8105",
+      "rightPages": 31,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.ManualInteractionRequiredEvent)",
+          "score": 441.37,
+          "right": true,
+          "phrase": "ManualInteractionRequiredEvent"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadProcessingService.Execute(NzbDrone.Core.Download.ProcessMonitoredDownloadsCommand)",
+          "score": 430.15,
+          "right": false,
+          "phrase": "ProcessMonitoredDownloadsCommand"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "score": 343.8,
+          "right": true,
+          "phrase": "ManualInteractionRequired"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "score": 334.67,
+          "right": false,
+          "phrase": "ImportDecision"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DownloadedEpisodesCommandService.Execute(NzbDrone.Core.MediaFiles.Commands.DownloadedEpisodesScanCommand)",
+          "score": 325.58,
+          "right": false,
+          "phrase": "downloaded episode"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.ManualInteractionRequiredEvent)",
+        "score": 441.37,
+        "phrase": "ManualInteractionRequiredEvent",
+        "words": "attachment check client core definition download drone due enumerable episode error event executed file group"
+      }
+    },
+    {
+      "id": "SONB-25/#8006",
+      "rightPages": 14,
+      "firstRight": 17,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "page:/settings/customformats",
+          "score": 89.29,
+          "right": false,
+          "phrase": "settings/customformats"
+        },
+        {
+          "page": "page:/settings/mediamanagement",
+          "score": 87.19,
+          "right": false,
+          "phrase": "naming scheme"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V5|GET /api/v5/settings/naming/examples",
+          "score": 62.34,
+          "right": false,
+          "phrase": "episode number"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "score": 60.59,
+          "right": false,
+          "phrase": "episode number"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|GET /api/v3/config/naming/examples",
+          "score": 58.85,
+          "right": false,
+          "phrase": "episode number"
+        }
+      ],
+      "firstRightPage": {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/Parse",
+        "score": 38.95,
+        "phrase": "episode number",
+        "words": "custom english episode file format language media multi name number pars parsed release sonarr trace"
+      }
+    },
+    {
+      "id": "SONB-26/#7989",
+      "rightPages": 8,
+      "firstRight": 1,
+      "hit": true,
+      "winner": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.UpdateEpisodeFileService.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScannedEvent)",
+        "right": true,
+        "phrase": "Local air date",
+        "unit": "With the local air date setting the air date is converted to local time. With the UTC air date setting the UTC air date …"
+      },
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.UpdateEpisodeFileService.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScannedEvent)",
+          "score": 374.67,
+          "right": true,
+          "phrase": "Local air date"
+        },
+        {
+          "page": "page:/settings/mediamanagement",
+          "score": 193.29,
+          "right": false,
+          "phrase": "Media Management"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)",
+          "score": 152.75,
+          "right": false,
+          "phrase": "air date"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "score": 150.68,
+          "right": false,
+          "phrase": "air date"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)",
+          "score": 146.75,
+          "right": false,
+          "phrase": "air date"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.UpdateEpisodeFileService.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScannedEvent)",
+        "score": 374.67,
+        "phrase": "Local air date",
+        "words": "actual air base change changed common core database date debug disk drone episode file first"
+      }
+    },
+    {
+      "id": "SONB-27/#7922",
+      "rightPages": 6,
+      "firstRight": 5,
+      "hit": true,
+      "winner": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)",
+        "right": false,
+        "phrase": "UntrackedDownloadCompletedEvent",
+        "unit": "NotificationService.Handle(UntrackedDownloadCompletedEvent)"
+      },
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)",
+          "score": 360.08,
+          "right": false,
+          "phrase": "UntrackedDownloadCompletedEvent"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "score": 237.01,
+          "right": false,
+          "phrase": "DownloadCompletedEvent"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)",
+          "score": 191.88,
+          "right": false,
+          "phrase": "episode was imported"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Tv.Events.SeriesAddCompletedEvent)",
+          "score": 171.36,
+          "right": false,
+          "phrase": "CompletedEvent"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "score": 166.52,
+          "right": true,
+          "phrase": "manual import"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+        "score": 166.52,
+        "phrase": "manual import",
+        "words": "aggregator already client completed download episode event file format import imported item log manual manually"
+      }
+    },
+    {
+      "id": "SONB-28/#7879",
+      "rightPages": 1,
+      "firstRight": 10,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.MediaInfo.UpdateMediaInfoService.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScannedEvent)",
+          "score": 131.3,
+          "right": false,
+          "phrase": "VideoFileInfoReader"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|GET /api/v3/Episode",
+          "score": 121.83,
+          "right": false,
+          "phrase": "frame-rate"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|GET /api/v3/Calendar",
+          "score": 90.94,
+          "right": false,
+          "phrase": "audio & video"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|GET /api/v3/EpisodeFile",
+          "score": 87.04,
+          "right": false,
+          "phrase": "audio bitrate"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|PUT /api/v3/EpisodeFile/bulk",
+          "score": 85.16,
+          "right": false,
+          "phrase": "audio bitrate"
+        }
+      ],
+      "firstRightPage": {
+        "page": "ts|frontend/src/Episode/EpisodeDetailsModalContent.tsx#EpisodeDetailsModalContent",
+        "score": 70.35,
+        "phrase": "Video Bitrate",
+        "words": "audio bitrate byte click count detail episode equal exist file filesize icon info json media"
+      }
+    },
+    {
+      "id": "SONB-29/#7874",
+      "rightPages": 0,
+      "firstRight": null,
+      "hit": false,
+      "winner": {
+        "page": "page:/system/status",
+        "right": false,
+        "phrase": "Package Version",
+        "unit": "The About section lists Version, Package Version, .NET version, Docker, Database (title-cased type and version), Databas…"
+      },
+      "top5": [
+        {
+          "page": "page:/system/status",
+          "score": 181.52,
+          "right": false,
+          "phrase": "Package Version"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)",
+          "score": 102.2,
+          "right": false,
+          "phrase": "due to a recent"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "score": 99.5,
+          "right": false,
+          "phrase": "due to a recent"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V5|GET /api/v5/System/status",
+          "score": 96.52,
+          "right": false,
+          "phrase": "Package Version"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|GET /api/v3/System/status",
+          "score": 96.39,
+          "right": false,
+          "phrase": "Package Version"
+        }
+      ],
+      "firstRightPage": null
+    },
+    {
+      "id": "SONB-30/#7807",
+      "rightPages": 27,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.ManualInteractionRequiredEvent)",
+          "score": 325.9,
+          "right": true,
+          "phrase": "ManualInteractionRequiredEvent"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "score": 227.89,
+          "right": true,
+          "phrase": "environmentVariables"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)",
+          "score": 227.8,
+          "right": true,
+          "phrase": "environmentVariables"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)",
+          "score": 208.38,
+          "right": true,
+          "phrase": "environmentVariables"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Tv.Events.SeriesAddCompletedEvent)",
+          "score": 200.2,
+          "right": true,
+          "phrase": "NotificationService.Handle"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.ManualInteractionRequiredEvent)",
+        "score": 325.9,
+        "phrase": "ManualInteractionRequiredEvent",
+        "words": "add core custom drone enumerable episode error event handle import interaction join list manual message"
+      }
+    },
+    {
+      "id": "SONB-31/#7780",
+      "rightPages": 1,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "score": 207.77,
+          "right": true,
+          "phrase": "video file"
+        },
+        {
+          "page": "page:/settings/mediamanagement",
+          "score": 166.59,
+          "right": false,
+          "phrase": "video file"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.Execute(NzbDrone.Core.Tv.Commands.RefreshSeriesCommand)",
+          "score": 157.76,
+          "right": false,
+          "phrase": "aired within"
+        },
+        {
+          "page": "page:/series/:titleSlug",
+          "score": 148.51,
+          "right": false,
+          "phrase": "info and video"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)",
+          "score": 148.09,
+          "right": false,
+          "phrase": "DV HDR10Plus"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+        "score": 207.77,
+        "phrase": "video file",
+        "words": "add added air already attempt check completed core data decision detect disk download drone engine"
+      }
+    },
+    {
+      "id": "SONB-32/#7785",
+      "rightPages": 0,
+      "firstRight": null,
+      "hit": false,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Extras.ExtraService.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScannedEvent)",
+          "score": 452.64,
+          "right": false,
+          "phrase": "SeriesScannedEvent"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Extras.ExtraService.Handle(NzbDrone.Core.MediaFiles.Events.SeriesRenamedEvent)",
+          "score": 333.79,
+          "right": false,
+          "phrase": "ExtraService"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Extras.ExtraService.Handle(NzbDrone.Core.Download.DownloadsProcessedEvent)",
+          "score": 290.33,
+          "right": false,
+          "phrase": "ExtraService"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Extras.ExtraService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeFolderCreatedEvent)",
+          "score": 286.97,
+          "right": false,
+          "phrase": "ExtraService"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScannedEvent)",
+          "score": 281.09,
+          "right": false,
+          "phrase": "SeriesScannedEvent"
+        }
+      ],
+      "firstRightPage": null
+    },
+    {
+      "id": "SONB-33/#7759",
+      "rightPages": 0,
+      "firstRight": null,
+      "hit": false,
+      "winner": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)",
+        "right": false,
+        "phrase": "ImportListSyncService",
+        "unit": "ImportListSyncService.Execute(ImportListSyncCommand)"
+      },
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)",
+          "score": 307.84,
+          "right": false,
+          "phrase": "ImportListSyncService"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.HandleAsync(NzbDrone.Core.ThingiProvider.Events.ProviderDeletedEvent{NzbDrone.Core.ImportLists.IImportList})",
+          "score": 166.38,
+          "right": false,
+          "phrase": "ImportListSyncService"
+        },
+        {
+          "page": "page:/system/status",
+          "score": 147.62,
+          "right": false,
+          "phrase": "github.com/Sonarr/Sonarr"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "score": 145.27,
+          "right": false,
+          "phrase": "TraktPopularImport"
+        },
+        {
+          "page": "page:/series/:titleSlug",
+          "score": 142.2,
+          "right": false,
+          "phrase": "last 7 days"
+        }
+      ],
+      "firstRightPage": null
+    },
+    {
+      "id": "SONB-34/#7705",
+      "rightPages": 21,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip",
+          "score": 44.13,
+          "right": true,
+          "phrase": null
+        },
+        {
+          "page": "page:/settings/general",
+          "score": 37.95,
+          "right": false,
+          "phrase": "Reverse Proxy"
+        },
+        {
+          "page": "page:/system/updates",
+          "score": 37.03,
+          "right": false,
+          "phrase": null
+        },
+        {
+          "page": "page:/system/status",
+          "score": 27.13,
+          "right": false,
+          "phrase": null
+        },
+        {
+          "page": "page:/add/new",
+          "score": 26.06,
+          "right": true,
+          "phrase": null
+        }
+      ],
+      "firstRightPage": {
+        "page": "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip",
+        "score": 44.13,
+        "phrase": null,
+        "words": "closed open rendered tooltip"
+      }
+    },
+    {
+      "id": "SONB-35/#7663",
+      "rightPages": 0,
+      "firstRight": null,
+      "hit": false,
+      "winner": null,
+      "top5": [
+        {
+          "page": "endpoint:Sonarr.Api.V3|GET /api/v3/Queue",
+          "score": 138.66,
+          "right": false,
+          "phrase": "sortDirection"
+        },
+        {
+          "page": "page:/activity/queue",
+          "score": 103.41,
+          "right": false,
+          "phrase": "sortDirection"
+        },
+        {
+          "page": "page:/system/events",
+          "score": 98.76,
+          "right": false,
+          "phrase": "sortDirection"
+        },
+        {
+          "page": "page:/activity/history",
+          "score": 96.54,
+          "right": false,
+          "phrase": "sortDirection"
+        },
+        {
+          "page": "endpoint:Sonarr.Api.V3|GET /api/v3/History",
+          "score": 94.7,
+          "right": false,
+          "phrase": "sortDirection"
+        }
+      ],
+      "firstRightPage": null
+    },
+    {
+      "id": "SONB-36/#7608",
+      "rightPages": 17,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "ts|frontend/src/Components/Form/FormInput.tsx#FormInput",
+          "score": 97.56,
+          "right": true,
+          "phrase": "EnhancedSelectInput"
+        },
+        {
+          "page": "page:/settings/tags",
+          "score": 75.39,
+          "right": false,
+          "phrase": "fields of Conditions"
+        },
+        {
+          "page": "page:/settings/customformats",
+          "score": 70.19,
+          "right": true,
+          "phrase": "Custom Formats"
+        },
+        {
+          "page": "page:/settings/profiles",
+          "score": 69.94,
+          "right": true,
+          "phrase": "EnhancedSelectInput"
+        },
+        {
+          "page": "page:/settings/mediamanagement",
+          "score": 69.15,
+          "right": true,
+          "phrase": "EnhancedSelectInput"
+        }
+      ],
+      "firstRightPage": {
+        "page": "ts|frontend/src/Components/Form/FormInput.tsx#FormInput",
+        "score": 97.56,
+        "phrase": "EnhancedSelectInput",
+        "words": "add case click code component custom drop enhanced entry field form format input markdown new"
+      }
+    },
+    {
+      "id": "SONB-37/#7589",
+      "rightPages": 8,
+      "firstRight": 3,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScannedEvent)",
+          "score": 191.35,
+          "right": false,
+          "phrase": "episode monitored state"
+        },
+        {
+          "page": "page:/series/:titleSlug",
+          "score": 173.85,
+          "right": false,
+          "phrase": "episode monitored state"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)",
+          "score": 171.82,
+          "right": true,
+          "phrase": "episode monitored"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.SeriesSearchService.Execute(NzbDrone.Core.IndexerSearch.SeriesSearchCommand)",
+          "score": 168.47,
+          "right": true,
+          "phrase": "episode monitored"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.CommandExecutor.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+          "score": 143.48,
+          "right": true,
+          "phrase": "CommandQueueManager"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)",
+        "score": 171.82,
+        "phrase": "episode monitored",
+        "words": "active add client command de download episode file found indexer info key log monitor monitored"
+      }
+    },
+    {
+      "id": "SONB-38/#7555",
+      "rightPages": 196,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)",
+          "score": 198.72,
+          "right": true,
+          "phrase": "Clean Library"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.HandleAsync(NzbDrone.Core.ThingiProvider.Events.ProviderDeletedEvent{NzbDrone.Core.ImportLists.IImportList})",
+          "score": 144.46,
+          "right": true,
+          "phrase": "Clean Library"
+        },
+        {
+          "page": "page:/settings/importlists",
+          "score": 140.12,
+          "right": false,
+          "phrase": "Clean Library Level"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)",
+          "score": 88.1,
+          "right": true,
+          "phrase": "Clean Library"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.HandleAsync(NzbDrone.Core.Download.DownloadsProcessedEvent)",
+          "score": 73.37,
+          "right": true,
+          "phrase": "Clean Library"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)",
+        "score": 198.72,
+        "phrase": "Clean Library",
+        "words": "add ani anilist anime clean dur import instance instead level library list log miss next"
+      }
+    },
+    {
+      "id": "SONB-39/#7527",
+      "rightPages": 10,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "score": 147.64,
+          "right": true,
+          "phrase": "completed downloads"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "score": 134.17,
+          "right": false,
+          "phrase": "completed downloads"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.Execute(NzbDrone.Core.Tv.Commands.RefreshSeriesCommand)",
+          "score": 126.73,
+          "right": false,
+          "phrase": "return false"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadProcessingService.Execute(NzbDrone.Core.Download.ProcessMonitoredDownloadsCommand)",
+          "score": 126.41,
+          "right": false,
+          "phrase": "completed downloads"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)",
+          "score": 124.1,
+          "right": false,
+          "phrase": "trace log"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+        "score": 147.64,
+        "phrase": "completed downloads",
+        "words": "add bittorrent check client complete completed core data debug download drone enabled file handler level"
+      }
+    },
+    {
+      "id": "SONB-40/#7518",
+      "rightPages": 3,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)",
+          "score": 134.57,
+          "right": true,
+          "phrase": "Sentry sentry"
+        },
+        {
+          "page": "endpoint:Sonarr.Host|POST /profiler/results",
+          "score": 105.31,
+          "right": true,
+          "phrase": "Sentry sentry"
+        },
+        {
+          "page": "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureSentry.HandleAsync(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+          "score": 102.05,
+          "right": true,
+          "phrase": "Sentry sentry"
+        },
+        {
+          "page": "page:/system/status",
+          "score": 88.01,
+          "right": false,
+          "phrase": "github.com/Sonarr/Sonarr"
+        },
+        {
+          "page": "page:/settings/general",
+          "score": 84.56,
+          "right": false,
+          "phrase": "Restart Sonarr"
+        }
+      ],
+      "firstRightPage": {
+        "page": "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)",
+        "score": 134.57,
+        "phrase": "Sentry sentry",
+        "words": "analytic base common disabled drone environment error instrumentation log logger main name nzb send sentry"
+      }
+    }
+  ]
+}

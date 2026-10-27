@@ -1,0 +1,108 @@
+[
+ {
+  "id": "#8059",
+  "summary": "Unhandled exception. System.ArgumentException: Destination is too short. (Parameter 'destination')",
+  "description": "### Steps To Reproduce\n\nI just tried to update my Bitwarden instance, using the bitwarden.sh script, with the commands below:\n\n```\n./bitwarden.sh updateself\n./bitwarden.sh update\n```\n\nThe script started updating the container stack as it usually does, but in the end, I was left with the error below:\n\n```\nTotal reclaimed space: 2.259GB\nPausing 60 seconds for database to come online. Please wait...\n2026.7.0: Pulling from bitwarden/setup\ne6f31ffc071e: Already exists\n8a418d5a45fe: Already exists\n70849c676be3: Already exists\n6efbd18ae267: Already exists\n94b71fe049a1: Already exists\n6de0834e2230: Already exists\n457f92bc51ec: Pull complete\n149e46724363: Pull complete\n37c8981808be: Pull complete\n7e8397aec640: Pull complete\n6acefe684ec5: Pull complete\nDigest: sha256:a8a032d37b0e9278cf2db00e104e834e343b6572db65039b471391c29cc4bd1f\nStatus: Downloaded newer image for ghcr.io/bitwarden/setup:2026.7.0\nghcr.io/bitwarden/setup:2026.7.0\n\nUnhandled exception. System.ArgumentException: Destination is too short. (Parameter 'destination')\n   at System.Text.StringBuilder.AppendWithExpansion(Char& value, Int32 valueCount)\n   at System.Text.StringBuilder.AppendLine(String value)\n   at Bit.Setup.Helpers.<>c__DisplayClass4_0.<Exec>b__1(Object _, DataReceivedEventArgs e) in /source/util/Setup/Helpers.cs:line 138\n   at System.Diagnostics.AsyncStreamReader.FlushMessageQueue(Boolean rethrowInNewThread)\n--- End of stack trace from previous location ---\n   at System.Threading.ThreadPoolWorkQueue.Dispatch()\n   at System.Threading.PortableThreadPool.WorkerThread.WorkerThreadStart()\n   at System.Threading.Thread.StartCallback()\n```\n\nAny reason to concern?\n\n### Expected Result\n\nExpected results was not to get the error.\n\n### Actual Result\n\nI recived the error message:\n\n```\nUnhandled exception. System.ArgumentException: Destination is too short. (Parameter 'destination')\n   at System.Text.StringBuilder.AppendWithExpansion(Char& value, Int32 valueCount)\n   at System.Text.StringBuilder.AppendLine(String value)\n   at Bit.Setup.Helpers.<>c__DisplayClass4_0.<Exec>b__1(Object _, DataReceivedEventArgs e) in /source/util/Setup/Helpers.cs:line 138\n   at System.Diagnostics.AsyncStreamReader.FlushMessageQueue(Boolean rethrowInNewThread)\n--- End of stack trace from previous location ---\n   at System.Threading.ThreadPoolWorkQueue.Dispatch()\n   at System.Threading.PortableThreadPool.WorkerThread.WorkerThreadStart()\n   at System.Threading.Thread.StartCallback()\n```\n\n### Screenshots or Videos\n\n_No response_\n\n### Additional Context\n\n_No response_\n\n### Build Version\n\n2026.07.0\n\n### Environment\n\nSelf-Hosted\n\n### Environment Details\n\nLinux OS:\n\n```\nNAME=\"AlmaLinux\"\nVERSION=\"9.8 (Olive Jaguar)\"\nID=\"almalinux\"\nID_LIKE=\"rhel centos fedora\"\nVERSION_ID=\"9.8\"\nPLATFORM_ID=\"platform:el9\"\nPRETTY_NAME=\"AlmaLinux 9.8 (Olive Jaguar)\"\n\nALMALINUX_MANTISBT_PROJECT=\"AlmaLinux-9\"\nALMALINUX_MANTISBT_PROJECT_VERSION=\"9.8\"\nREDHAT_SUPPORT_PRODUCT=\"AlmaLinux\"\nREDHAT_SUPPORT_PRODUCT_VERSION=\"9.8\"\nSUPPORT_END=2032-06-01\n```\n\nDocker version:\n\n```\nClient: Docker Engine - Community\n Version:           29.6.2\n API version:       1.55\n Go version:        go1.26.5\n Git commit:        dfc4efb\n Built:             Thu Jul 16 16:16:37 2026\n OS/Arch:           linux/amd64\n Context:           default\n\nServer: Docker Engine - Community\n Engine:\n  Version:          29.6.2\n  API version:      1.55 (minimum version 1.40)\n  Go version:       go1.26.5\n  Git commit:       3d80467\n  Built:            Thu Jul 16 16:12:21 2026\n  OS/Arch:          linux/amd64\n  Experimental:     false\n containerd:\n  Version:          v2.2.6\n  GitCommit:        11ce9d5f3c68c941867e82890e93e815c1304f1b\n runc:\n  Version:          1.3.6\n  GitCommit:        v1.3.6-0-g491b69ba\n docker-init:\n  Version:          0.19.0\n  GitCommit:        de40ad0\n```\n\n### Issue Tracking Info\n\n- [x] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "comments": [
+   "Thank you for reporting this issue! We've added this to our internal tracking system.\nID: PM-40973\nLink (for internal use): https://bitwarden.atlassian.net/browse/PM-40973",
+   "> **Note:** the following analysis was produced by Claude Code (Opus 5) on my behalf.\n\nRoot cause looks like a **race condition on a non-thread-safe `StringBuilder`** in the Setup project, not a configuration problem.\n\nIn [`util/Setup/Helpers.cs`](https://github.com/bitwarden/server/blob/main/util/Setup/Helpers.cs), `Exec` shares one `StringBuilder` between both stream handlers:\n\n```csharp\nvar result = new StringBuilder();                       // not thread-safe\n\nprocess.OutputDataReceived += (_, e) => { ...; result.AppendLine(e.Data); };  // line 138\nprocess.ErrorDataReceived  += (_, e) => { ...; result.AppendLine(e.Data); };\n```\n\n.NET pumps stdout and stderr on separate threadpool threads, so when both are captured the two `AppendLine` calls race and corrupt the builder's internal chunk bookkeeping — which surfaces exactly as `ArgumentException: Destination is too short` from `StringBuilder.AppendWithExpansion`. It's thrown on the reader thread, hence unhandled.\n\nWhy it appears in 2026.7.0: #7942 added the legacy `identity.pfx` re-encryption step at the top of `Update()` and switched that call to `returnStderr: true`, making it the only call site capturing **both** streams. The thread-unsafe `Exec` itself came from the earlier refactor in #7494. Whether it crashes depends on thread interleaving, so it's intermittent.\n\nImpact: `run.sh` uses `set -e` and runs `updatebw` → `updateDatabase`. In my log the crash was in the second Setup run, so containers restarted on 2026.7.0 but the **database migration never ran**. `./bitwarden.sh updatedb` re-runs just that step (retry until it gets through).\n\nPossible fix: give stdout and stderr separate builders (or lock the appends).\n",
+   "Hi there,\n\nI am unable to reproduce this issue, it has been escalated for further investigation. If you have more information that can help us, please add it below. \n\nThanks!",
+   "Claude analysis matches what we see - threading issue on non-thread-safe StringBuilder (appending both stdout and stderr to the same builder). So it is matter of timing - harder to reproduce.",
+   "I'm seeing this exact same issue myself, intermittent. Started the day my self-hosted Docker instance upgraded to 2026.7.0.",
+   "Seen once (of many failures — the rest are all the line-138 AppendLine variant), same 2026.7.0, a second manifestation from the same Helpers.Exec:\n\n```\nSystem.ArgumentOutOfRangeException: ... (Parameter 'chunkLength')\n   at System.Text.StringBuilder.ToString()\n   at Bit.Setup.Helpers.Exec(...) in /source/util/Setup/Helpers.cs:line 148\n   at Bit.Setup.Program.Update(Application application) in /source/util/Setup/Program.cs:line 167\n```\n\nThis one crashed 7 seconds in, before any container work, so it's the first Exec call in Update rather than the migration phase. Worth noting the ToString() read is on the other side of the same StringBuilder from line 138's AppendLine — a fix guarding only the callback appends may not cover this path.",
+   "I have the same Issue on RHEL 9.8"
+  ],
+  "files": [
+   "util/Setup/Helpers.cs"
+  ],
+  "fix": {
+   "pr": 8141,
+   "mergeCommit": "21eeb7401687344da9ca1449385a4df4a193b908",
+   "mergedAt": "2026-08-10T16:34:03Z"
+  }
+ },
+ {
+  "id": "#7003",
+  "summary": "No longer getting Device Approval (Event 1010) logs from API",
+  "description": "### Steps To Reproduce\n\nSeems like we are missing the Device Approval (event code 1010) from the API logs.\n\nI get the email, but checking the API logs, I am not seeing anything for event code 1010.\n\nWe noticed that our webhook notification script stopped firing and looking into it, I do not see any 1010 event logs from the API response.\n\n### Expected Result\n\nPulling API logs\nget event code 1010 logs\n\n### Actual Result\n\nNo event code 1010 logs\n\n### Screenshots or Videos\n\nemail:\n\n<img width=\"936\" height=\"687\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/a4ed55e8-a05c-4c9b-be4b-188ceecd4938\" />\n\n\nAPI logs from last 90 mins:\n\n<img width=\"1209\" height=\"454\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/bdb89e0b-d8b1-4e62-a59e-3ea5dee1fdef\" />\n\n### Additional Context\n\n_No response_\n\n### Build Version\n\nBW Enterprise Cloud\n\n### Environment\n\nCloud (bitwarden.com)\n\n### Environment Details\n\n_No response_\n\n### Issue Tracking Info\n\n- [x] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "comments": [
+   "Thank you for reporting this issue! We've added this to our internal tracking system.\nID: PM-32260\nLink (for internal use): https://bitwarden.atlassian.net/browse/PM-32260",
+   "Hello,\n\nThank you for reporting this, it has been escalated for further investigation. If you have more information that can help us, please add it below. \n\nThanks!"
+  ],
+  "files": [
+   "src/Core/Auth/Services/Implementations/AuthRequestService.cs",
+   "src/Core/Dirt/Services/IEventService.cs",
+   "src/Core/Dirt/Services/Implementations/EventService.cs",
+   "src/Core/Dirt/Services/NoopImplementations/NoopEventService.cs",
+   "test/Core.Test/Auth/Services/AuthRequestServiceTests.cs",
+   "test/Core.Test/Dirt/Services/EventServiceTests.cs"
+  ],
+  "fix": {
+   "pr": 7247,
+   "mergeCommit": "0a8d6d426803ed5450ed957f1a54384158e84f38",
+   "mergedAt": "2026-04-01T13:34:26Z"
+  }
+ },
+ {
+  "id": "#6893",
+  "summary": "WebAuthn devices beyond previous max do not work as 2FA",
+  "description": "### Steps To Reproduce\n\n1. Register 6 or more WebAuthn devices at [vault.bitwarden.com](https://vault.bitwarden.com/#/settings/security/two-factor)\n2. Log out\n3. Attempt to login\n4. When prompted, attempt to use 6th or later device registered as 2FA security key\n\n\n### Expected Result\n\nWebsite accepts the key and user successfully logs in.\n\n### Actual Result\n\nGet an error \"Try a different security key. You're using a security key that's not registered with this website\".\n\n### Screenshots or Videos\n\n_No response_\n\n### Additional Context\n\nAll previously registered security keys (up to the previous limit of 5) work as expected still.\nBehavior is identical across Brave and firefox on macOS, Debian 13 and Windows 11. \nKeys register and save successfully but all keys past the former 5 key limit do not work as a second factor \nNot sure about passkey login, my hunch is the behavior is the same. \nHappy to test that hypothesis and work this issue if needed. Would love a chance to work on some FIDO2/WebAuthn stuff/contribute to one of my favorite OSS projects.\n\n### Build Version\n\nlatest\n\n### Environment\n\nCloud (bitwarden.com)\n\n### Environment Details\n\nN/A\n\n\nEDIT: Clarity/Accuracy\n### Issue Tracking Info\n\n- [x] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "comments": [
+   "Thank you for reporting this issue! We've added this to our internal tracking system.\nID: PM-31212\nLink (for internal use): https://bitwarden.atlassian.net/browse/PM-31212",
+   "Is your BW cloud account a free account?",
+   "Hello @jolness1,\n\nThank you for your report. I have flagged this report to the Engineering department; please feel free to post additional information, such as screenshots or a screen video recordings, if you wish.\n\nBy the way, does that individual Bitwarden account have an individual Premium subscription?\n\nThank you again,",
+   "@SergeantConfused I have it fixed. Looks like someone enabled checking premium accounts for adding more WebAuthn keys but not for login. Super minor change but wanted to run tests/do manual QA. \n\nPR is here:  [https://github.com/bitwarden/server/pull/6894](https://github.com/bitwarden/server/pull/6894)\n\nThanks for responding late on a Friday night by the way! \n\n——— Videos  demonstrating behavior ———\n\nPossible to add more than 5 keys on premium account(pre and post-fix):\n\nhttps://github.com/user-attachments/assets/adc406a8-266c-44c0-b538-698774fa77b2\n\n6th+ key does not work as 2nd factor: \n\nhttps://github.com/user-attachments/assets/ebd0fea4-0f34-407e-9fe3-42b68176f29a\n\nKey under the old 5 key limit:\n\nhttps://github.com/user-attachments/assets/7c1ecadf-ed48-408b-a690-cf1a1937423b\n\nBehavior after fix:\n\nhttps://github.com/user-attachments/assets/3d4141c2-cbcc-4f86-a187-1c45fa92dd7d\n\nFree account still limited to 5 key maximum:\n\nhttps://github.com/user-attachments/assets/6c123fcc-c87a-4e03-b1c4-242cd26667d1"
+  ],
+  "files": [
+   "src/Core/Auth/Identity/TokenProviders/WebAuthnTokenProvider.cs"
+  ],
+  "fix": {
+   "pr": 6894,
+   "mergeCommit": "b7923f5498cc031cd09c4c185e1e63184469cdb8",
+   "mergedAt": "2026-02-03T16:12:19Z"
+  }
+ },
+ {
+  "id": "#6292",
+  "summary": "OSS flag leads to runtime error",
+  "description": "### Steps To Reproduce\n\nHi,\n\nFinally compiling with `OSS` flag properly works thanks to #6278.\nThank you again 👍 \n\nBut then it leads to a runtime error in Api logs :\n```\n[Error] Unable to resolve service for type 'Bit.Core.Billing.Providers.Services.IBusinessUnitConverter' while attempting to activate 'Bit.Api.Billing.Controllers.OrganizationBillingController'.\nSystem.InvalidOperationException: Unable to resolve service for type 'Bit.Core.Billing.Providers.Services.IBusinessUnitConverter' while attempting to activate 'Bit.Api.Billing.Controllers.OrganizationBillingController'.\n   at Microsoft.Extensions.DependencyInjection.ActivatorUtilities.ThrowHelperUnableToResolveService(Type type, Type requiredBy)\n   at lambda_method68(Closure, IServiceProvider, Object[])\n   at Microsoft.AspNetCore.Mvc.Controllers.ControllerFactoryProvider.<>c__DisplayClass6_0.<CreateControllerFactory>g__CreateController|0(ControllerContext controllerContext)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()\n```\n\nCould you please have a look at this issue ?\n\nThank you very much 👍 \n\n### Expected Result\n\nNo runtime error.\n\n### Actual Result\n\nRuntime error.\n\n### Screenshots or Videos\n\n_No response_\n\n### Additional Context\n\n_No response_\n\n### Build Version\n\nLast one.\n\n### Environment\n\nSelf-Hosted\n\n### Environment Details\n\n_No response_\n\n### Issue Tracking Info\n\n- [x] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "comments": [
+   "Thank you for reporting this issue! We've added this to our internal tracking system.\nID: PM-25501",
+   "Hi there,\n\nThis issue has been escalated for further investigation. If you have more information that can help us, please add it below. \n\nThanks!",
+   "Thank you very much @daniellbw for the escalation 👍\n\nFor sure, container properly start.\nBut for example, as soon as you try to list members through the _Admin Console / Members_ section, requests hangs / fails, and the above exception triggers.\n\nThan you again !",
+   "`services.AddTransient<IBusinessUnitConverter, BusinessUnitConverter>();`\nis found in following _Commercial_ file :\n`bitwarden_license/src/Commercial.Core/Utilities/ServiceCollectionExtensions.cs`\n\nWhich could explain the above runtime error in `OSS` mode, as the `Commercial` code is not present there.",
+   "Hi @daniellbw, Bitwarden team,\nAny news regarding this issue ?\nThank you very much 👍"
+  ],
+  "files": [
+   "src/Core/Billing/Providers/Services/NoopImplementations/NoopBusinessUnitConverter.cs",
+   "src/SharedWeb/Utilities/ServiceCollectionExtensions.cs"
+  ],
+  "fix": {
+   "pr": 7245,
+   "mergeCommit": "9d60539c8e49c1a3d61a990f625139b678ddda6c",
+   "mergedAt": "2026-03-20T13:08:41Z"
+  }
+ },
+ {
+  "id": "#6273",
+  "summary": "Building with OSS flag does not work anymore",
+  "description": "### Steps To Reproduce\n\nTry to build using `-p:DefineConstants=\"OSS\"`.\nIt will fail as below :\n\n```\n# # dotnet build -c Release -p:DefineConstants=\"OSS\"\n  Determining projects to restore...\n  Restored /Users/mart/server/src/Api/Api.csproj (in 274 ms).\n  4 of 5 projects are up-to-date for restore.\n  776f9598\n  Core -> /Users/mart/server/src/Core/bin/Release/net8.0/Core.dll\n  776f9598\n  776f9598\n  Infrastructure.Dapper -> /Users/mart/server/src/Infrastructure.Dapper/bin/Release/net8.0/Infrastructure.Dapper.dll\n  Infrastructure.EntityFramework -> /Users/mart/server/src/Infrastructure.EntityFramework/bin/Release/net8.0/Infrastructure.EntityFramework.dll\n  776f9598\n  SharedWeb -> /Users/mart/server/src/SharedWeb/bin/Release/net8.0/SharedWeb.dll\n  776f9598\n/Users/mart/server/src/Api/Billing/Controllers/ProviderBillingController.cs(6,11): error CS0234: The type or namespace name 'Commercial' does not exist in the namespace 'Bit' (are you missing an assembly reference?) [/Users/mart/server/src/Api/Api.csproj]\n\nBuild FAILED.\n\n/Users/mart/server/src/Api/Billing/Controllers/ProviderBillingController.cs(6,11): error CS0234: The type or namespace name 'Commercial' does not exist in the namespace 'Bit' (are you missing an assembly reference?) [/Users/mart/server/src/Api/Api.csproj]\n    0 Warning(s)\n    1 Error(s)\n\nTime Elapsed 00:00:08.70\n```\n\n### Expected Result\n\nShould build properly.\n\n### Actual Result\n\nBuild fails.\n\n### Screenshots or Videos\n\n_No response_\n\n### Additional Context\n\n_No response_\n\n### Build Version\n\nLast one.\n\n### Environment\n\nSelf-Hosted\n\n### Environment Details\n\n_No response_\n\n### Issue Tracking Info\n\n- [x] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "comments": [
+   "Thank you for reporting this issue! We've added this to our internal tracking system.\nID: PM-25405",
+   "Hi there,\n\nThis issue has been escalated for further investigation. If you have more information that can help us, please add it below. \n\nThanks!"
+  ],
+  "files": [
+   "bitwarden_license/test/Commercial.Core.Test/Billing/Providers/Services/BusinessUnitConverterTests.cs",
+   "bitwarden_license/test/Commercial.Core.Test/Billing/Providers/Services/ProviderBillingServiceTests.cs",
+   "bitwarden_license/test/Commercial.Core.Test/Billing/Providers/Services/ProviderPriceAdapterTests.cs",
+   "src/Api/Billing/Controllers/ProviderBillingController.cs",
+   "src/Core/Billing/Providers/Services/ProviderPriceAdapter.cs",
+   "test/Api.Test/Billing/Controllers/ProviderBillingControllerTests.cs"
+  ],
+  "fix": {
+   "pr": 6278,
+   "mergeCommit": "93f4666df4b23e7292f456d656187c6dd587da06",
+   "mergedAt": "2025-09-03T18:42:19Z"
+  }
+ }
+]

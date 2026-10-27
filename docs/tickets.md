@@ -115,6 +115,7 @@ tickets:
   bundleChars: 40000
   attachmentChars: 8000
   aiPoints: true
+  textFiles: [src/App/Localization/en.json]   # UI texts: a string in the code that is a key here reads as its text (D87)
   replay: benchmark/tickets/x/raw   # read saved results instead of Jira
   app: { build: …, start: …, url: http://localhost:8989, seed: …, readySeconds: 120, specDir: e2e/stangent }
   proveBudget: { usd: 1, turns: 15 }

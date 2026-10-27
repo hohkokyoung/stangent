@@ -77,6 +77,19 @@ if (argList.Count >= 3 && argList[0] == "--score-tickets")
     Console.WriteLine(ticketText);
     return 0;
 }
+// The page index's measure (D87), no AI: `--score-index <clone> <tickets dir | cases.json> [--walk-depth N (default -2: the page's depth + 2, D87)] [--out file]`.
+if (argList.Count >= 3 && argList[0] == "--score-index")
+{
+    var walkDepth = argList.IndexOf("--walk-depth") is var wd and >= 0 ? int.Parse(argList[wd + 1], System.Globalization.CultureInfo.InvariantCulture) : -2;
+    double Knob(string name, double fallback) => argList.IndexOf(name) is var k and >= 0 ? double.Parse(argList[k + 1], System.Globalization.CultureInfo.InvariantCulture) : fallback;
+    var d = Stangent.Tickets.RankSettings.Default;
+    var knobs = new Stangent.Tickets.RankSettings(Knob("--depth-decay", d.DepthDecay), Knob("--phrase-boost", d.PhraseBoost), Knob("--winner-ratio", d.WinnerRatio),
+        Knob("--summary-weight", d.SummaryWeight), Knob("--length-norm", d.LengthNorm));
+    var indexScore = Stangent.Benchmark.Tickets.IndexScore.Run(Path.GetFullPath(argList[1]), Path.GetFullPath(argList[2]), Console.Error, walkDepth, knobs);
+    var indexText = indexScore.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+    if (argList.IndexOf("--out") is var io and >= 0) File.WriteAllText(argList[io + 1], indexText + "\n");
+    return 0;
+}
 // Picks 📜's defaults from tuning runs (D43): `--select-tuning <tune.json>... [--out file]`.
 if (argList.Count > 0 && argList[0] == "--select-tuning")
     return Tuning.Select([.. argList.Skip(1).TakeWhile(a => !a.StartsWith('-'))], argList.IndexOf("--out") is var o and >= 0 ? argList[o + 1] : null);

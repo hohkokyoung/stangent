@@ -1,0 +1,263 @@
+{
+  "schemaVersion": 1,
+  "clone": "bitwarden",
+  "commit": "9129efbd1531d5d8472345638efad7ef25a7337a",
+  "pages": 1183,
+  "rightBy": "the page's depth + 2",
+  "units": 14896,
+  "buildSeconds": 0.3,
+  "rankMs": {
+    "median": 9.2,
+    "max": 19.9
+  },
+  "settings": {
+    "depthDecay": 0.35,
+    "phraseBoost": 2,
+    "winnerRatio": 1.5,
+    "summaryWeight": 2,
+    "lengthNorm": 0.1,
+    "alsoPossible": 4,
+    "detailed": 20
+  },
+  "bugs": 5,
+  "reachable": 3,
+  "hit": {
+    "n": 3,
+    "share": 0.6,
+    "range": [
+      0.2,
+      1
+    ]
+  },
+  "hitOfReachable": {
+    "n": 3,
+    "share": 1,
+    "range": [
+      1,
+      1
+    ]
+  },
+  "inTop20": 3,
+  "winners": {
+    "n": 0,
+    "right": 0,
+    "hit": 0
+  },
+  "cases": [
+    {
+      "id": "#8059",
+      "rightPages": 0,
+      "firstRight": null,
+      "hit": false,
+      "winner": null,
+      "top5": [
+        {
+          "page": "page:/{controller}/Index/{id?}",
+          "score": 187.31,
+          "right": false,
+          "phrase": "github.com/bitwarden/server"
+        },
+        {
+          "page": "page:/Home/Index/{id?}",
+          "score": 129.23,
+          "right": false,
+          "phrase": "github.com/bitwarden/server"
+        },
+        {
+          "page": "page:/Organizations/Index/{id?}",
+          "score": 106.72,
+          "right": false,
+          "phrase": "Self-Hosted"
+        },
+        {
+          "page": "endpoint:Api|PUT /ciphers/{id}/share",
+          "score": 93,
+          "right": false,
+          "phrase": "minimum version"
+        },
+        {
+          "page": "page:/Users/Index/{id?}",
+          "score": 90.29,
+          "right": false,
+          "phrase": "Self-Hosted"
+        }
+      ],
+      "firstRightPage": null
+    },
+    {
+      "id": "#7003",
+      "rightPages": 151,
+      "firstRight": 2,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "page:/{controller}/Index/{id?}",
+          "score": 52.68,
+          "right": false,
+          "phrase": null
+        },
+        {
+          "page": "endpoint:Api|POST /auth-requests/admin-request",
+          "score": 48.88,
+          "right": true,
+          "phrase": "Device Approval"
+        },
+        {
+          "page": "endpoint:Api|POST /auth-requests",
+          "score": 46.36,
+          "right": true,
+          "phrase": "Device Approval"
+        },
+        {
+          "page": "endpoint:Api|POST /push/send",
+          "score": 35.67,
+          "right": false,
+          "phrase": null
+        },
+        {
+          "page": "endpoint:Api|GET /ciphers/{id}/events",
+          "score": 35.01,
+          "right": false,
+          "phrase": "event logs"
+        }
+      ],
+      "firstRightPage": {
+        "page": "endpoint:Api|POST /auth-requests/admin-request",
+        "score": 48.88,
+        "phrase": "Device Approval",
+        "words": "approval device email event id log notification response user"
+      }
+    },
+    {
+      "id": "#6893",
+      "rightPages": 0,
+      "firstRight": null,
+      "hit": false,
+      "winner": null,
+      "top5": [
+        {
+          "page": "page:/{controller}/Index/{id?}",
+          "score": 154.99,
+          "right": false,
+          "phrase": "github.com/bitwarden/server"
+        },
+        {
+          "page": "page:/Home/Index/{id?}",
+          "score": 128.68,
+          "right": false,
+          "phrase": "github.com/bitwarden/server"
+        },
+        {
+          "page": "endpoint:Api|POST /accounts/key-management/rotate-user-account-keys",
+          "score": 94.26,
+          "right": false,
+          "phrase": "WebAuthn"
+        },
+        {
+          "page": "endpoint:Api|POST /webauthn",
+          "score": 90.88,
+          "right": false,
+          "phrase": "WebAuthn"
+        },
+        {
+          "page": "page:/Users/Index/{id?}",
+          "score": 90.32,
+          "right": false,
+          "phrase": "WebAuthn"
+        }
+      ],
+      "firstRightPage": null
+    },
+    {
+      "id": "#6292",
+      "rightPages": 4,
+      "firstRight": 1,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "endpoint:Api|POST /organizations/{organizationId:guid}/billing/setup-business-unit",
+          "score": 115.07,
+          "right": true,
+          "phrase": "BusinessUnit"
+        },
+        {
+          "page": "endpoint:Admin|POST /organizations/billing/{organizationId:guid}/business-unit",
+          "score": 110.7,
+          "right": true,
+          "phrase": "BusinessUnit"
+        },
+        {
+          "page": "endpoint:Admin|POST /organizations/billing/{organizationId:guid}/business-unit/reset",
+          "score": 100.51,
+          "right": true,
+          "phrase": "BusinessUnit"
+        },
+        {
+          "page": "endpoint:Admin|POST /organizations/billing/{organizationId:guid}/business-unit/resend-invite",
+          "score": 99.93,
+          "right": true,
+          "phrase": "BusinessUnit"
+        },
+        {
+          "page": "endpoint:Api|POST /organizations/licenses/self-hosted/{id}",
+          "score": 88.09,
+          "right": false,
+          "phrase": "Self-Hosted"
+        }
+      ],
+      "firstRightPage": {
+        "page": "endpoint:Api|POST /organizations/{organizationId:guid}/billing/setup-business-unit",
+        "score": 115.07,
+        "phrase": "BusinessUnit",
+        "words": "admin async bill bit bitwarden business collection console context controller converter core display error found"
+      }
+    },
+    {
+      "id": "#6273",
+      "rightPages": 13,
+      "firstRight": 7,
+      "hit": true,
+      "winner": null,
+      "top5": [
+        {
+          "page": "endpoint:Api|POST /ciphers/{id}/attachment/v2",
+          "score": 72.83,
+          "right": false,
+          "phrase": "Infrastructure.Dapper"
+        },
+        {
+          "page": "endpoint:Api|DELETE /organization/sponsorship/self-hosted/{sponsoringOrgId}",
+          "score": 69.39,
+          "right": false,
+          "phrase": "Self-Hosted"
+        },
+        {
+          "page": "page:/{controller}/Index/{id?}",
+          "score": 68.39,
+          "right": false,
+          "phrase": "Self-Hosted"
+        },
+        {
+          "page": "endpoint:Api|POST /organizations/licenses/self-hosted/{id}/sync",
+          "score": 65.95,
+          "right": false,
+          "phrase": "Self-Hosted"
+        },
+        {
+          "page": "endpoint:Api|POST /organizations/licenses/self-hosted/{id}",
+          "score": 63.46,
+          "right": false,
+          "phrase": "Self-Hosted"
+        }
+      ],
+      "firstRightPage": {
+        "page": "endpoint:Api|POST /providers/{providerId:guid}/clients/existing",
+        "score": 56.93,
+        "phrase": "Infrastructure.EntityFramework",
+        "words": "add added bill bit constant controller core date entity error exist framework id infrastructure internal"
+      }
+    }
+  ]
+}

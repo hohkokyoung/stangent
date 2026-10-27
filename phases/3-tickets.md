@@ -265,3 +265,59 @@ findings were checked against the code and fixed; none was rejected. Each has a 
   backported, so at the v4 commit it may reproduce. The owner's call (2026-10-26): keep it, since the rule picked it and
   removing it after reading the list would be hand-picking; if it reproduces, the report says why.
 
+
+### Step 8 · the page index (D87) · 2026-10-27 · built and measured, not wired in yet
+- **Built** (`src/Stangent.Tickets/PageIndex.cs`, code only): for every page its titles, its routes and endpoints, the
+  names of the code in its slice, its written statements, its linked FSD sections, and the text its code holds: string
+  literals (C#, TS/JS), markup text (TSX/JSX, HTML, Angular templates, Razor views by convention), `.resx` values the
+  code names (`Resources.Key`) or look up by string (`localizer["Key"]`; the neutral file, else the English one), and the
+  texts of the project's own text files for strings that are their keys. Text
+  deeper in a slice counts less. Blazor `.razor` components aren't read: the graph has no points for them yet.
+  New setting `tickets.textFiles` (plan detail; D87 said "a setting"): one list of files, no call names, because a key
+  string is a key wherever it's written. Sonarr: `en.json`, which also covers `GetLocalizedString("Key")` (306 uses)
+  and `Label = "Key"` attributes.
+- **Ranking:** each ticket word counts by its rarity across pages × its best weight in the page; a run of 2+ ticket words
+  in the same order inside one piece of a page's text adds a phrase score; a phrase never crosses punctuation (`:` `,`
+  `(`, a full stop and a space). Template lines are dropped (markdown headings, ticked boxes, the keys of
+  `- Key: value` lines). Scores are scaled down a little for big pages. A **clear winner** shares a phrase and scores
+  1.5× the runner-up; the next 4 are "also possibly". Every page is ranked; ties by id. 0.4 s to build on 718 pages;
+  ~9 ms a ticket.
+- **Tuned on Sonarr, then frozen** (D87, agreed): depth discount 0.35, phrase boost 2, winner 1.5×, summary words 2×,
+  size scaling 0.1, chosen from a 54-setting grid by hits. Tried and dropped, since they gained nothing: matching a ticket
+  word to longer words it starts (`qbit` → `qbittorrent`). Then bitwarden was measured once.
+- **The measure** (`--score-index`, no AI; results `benchmark/results/2026-10-27-d87-index-*.json`). A right page's
+  walk, at its own depth + 2 and stopping where its slice stops (shared components; endpoints for screens and
+  components), reaches a fixed file (D87, agreed 2026-10-27):
+
+  | Repo | Bugs | Have a right page | Hit | Bar |
+  |---|---|---|---|---|
+  | Sonarr (tuned here) | 40 | 34 | **32 (94%)** | ≥ 95%: **missed by one bug** |
+  | bitwarden/server (once, frozen) | 5 | 3 | **3** | all scored bugs: **passed** |
+
+  A random 20 pages would hit about 27% of Sonarr's scored bugs (median 8 right pages of 718) and 40% of bitwarden's
+  (median 13 of 1,183; #7003 touches the event service, which 151 pages reach).
+- **Clear winners: a risk before wiring in.** 5 on Sonarr, only 2 right. The 3 on scored bugs all hit (2 the winner
+  itself, 1 through "also possibly"). The other 2 fell on bugs no page covers (Status page for "Package Version",
+  ImportListSync), and would go out with no AI and no "no confident starting point". None on bitwarden, so it was never
+  checked there.
+- **Every miss, looked at:**
+  - Sonarr #8574 "Simkl import list not syncing" (right page at rank 46). Rank 1 is `ImportListSyncService.Execute`,
+    the sensible place to start, but its walk stops before the Simkl files.
+  - Sonarr #8242 "NFO metadata writer for multi-episode files" (rank 50). The words differ: the ticket says "NFO", the
+    code `XbmcMetadata`. Media Management and series pages rank first on "multi-episode". This is D87's stated cost:
+    the AI's compact list of every page is the fallback.
+- **No page covers this code** (not counted; a gap in Phase 2's pages). Sonarr 6: plugin code reached only through
+  DI or past the depth cap (Simkl and Trakt import lists, housekeepers, a database converter, the rejected-import
+  service). In 4 of 6, rank 1 is still the right area (Import Lists twice, ExtraService, the Queue API). bitwarden 2: the
+  Setup command-line tool, and WebAuthn's 2FA token provider (DI only). On both, a generic `/{controller}/Index/{id?}`
+  screen ranks first.
+- **Fresh review (D61), same day:** an independent agent reproduced every number and found: plurals and "-ing" didn't
+  fold together ("setting" ≠ "settings"); the measure's walk didn't stop at shared components as the pages do;
+  `SharedResources.en.resx` (bitwarden's only resource file) was skipped and its keys are looked up by string; a test
+  passed without what it tested; bad JSON in a text file and a trace entry missing its section could crash. All fixed
+  and tested (12 index tests). Re-measured with the same frozen settings: the same hits (Sonarr 32/34, bitwarden 3/3).
+  Only the right-page counts shrank. Left as known: two neutral `.resx` classes of the same name in different
+  projects are merged; C# raw strings and `'"'` are read loosely (noise only); `select.py` finds renames with one
+  `git diff -M`.
+- **Not done yet:** wiring into `ticket points` (winner → a code point, top 20 + compact list for the picker,
+  "no confident starting point" in the bundle and the questions draft) waits for the owner's call on this result.
