@@ -285,6 +285,9 @@ findings were checked against the code and fixed; none was rejected. Each has a 
 - **Tuned on Sonarr, then frozen** (D87, agreed): depth discount 0.35, phrase boost 2, winner 1.5×, summary words 2×,
   size scaling 0.1, chosen from a 54-setting grid by hits. Tried and dropped, since they gained nothing: matching a ticket
   word to longer words it starts (`qbit` → `qbittorrent`). Then bitwarden was measured once.
+  *Tried after, 2026-10-27, and dropped:* reading 2 lines past each page's slice (the right-page rule's margin) at the
+  same depth discount. Sonarr stayed at 32/34 (Simkl #8574 moved into the top 20, #8757 fell to rank 24) and bitwarden
+  gained one wrong clear winner.
 - **The measure** (`--score-index`, no AI; results `benchmark/results/2026-10-27-d87-index-*.json`). A right page's
   walk, at its own depth + 2 and stopping where its slice stops (shared components; endpoints for screens and
   components), reaches a fixed file (D87, agreed 2026-10-27):
@@ -342,6 +345,9 @@ a layer and as the starting points of the impact walk.
   graph), and a tooltip bug (theme hook, a CSS file and its typings, `package.json`, `yarn.lock`). The others: 1 migration
   (`217_add_mal_and_anilist_ids.cs`) and 1 JSON DTO (`SimklAPI.cs`), which the fixed code *uses*: the impact walk goes
   back to what depends on the code, never forward to what it uses beyond the slice, so no depth would reach it.
+- **Looking one step forward wouldn't catch the DTO miss** (checked before building it): `SimklAPI.cs` is used by
+  `SimklImportBase.cs`, which is reached only through the impact walk, and the forward walk 2 lines past the page found no
+  fix file at all. Forward from the impact layer would add to a list that is already ~1,150 files.
 - **Reached is not shown.** The uncapped impact layer is a third of Sonarr's ~3,900 files (inflated here by starting
   from the whole slice), so a bundle lists only 5 per group and the top 10 📜. An estimate of what a bundle would show
   puts 17 reached fix files (in 13 bugs) among those cut, but it isn't a measurement: 47 of the 50 "shown" files are
