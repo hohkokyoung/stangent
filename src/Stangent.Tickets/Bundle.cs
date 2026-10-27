@@ -218,7 +218,7 @@ public static class TicketBundle
 
         md.Append("## Starting points\n\n");
         var points = b["points"]!.AsArray();
-        if (points.Count == 0) md.Append("None: code found no signal and no AI pick passed the checks. Add some with `stangent ticket points <KEY> --add <page|symbol>`.\n\n");
+        if (points.Count == 0) md.Append("**No confident starting point:** none was found in the ticket, picked, or kept. The questions draft asks the reporter where it happens. Add some with `stangent ticket points <KEY> --add <page|symbol>`.\n\n");
         else
         {
             md.Append("| | point | why | by |\n|---|---|---|---|\n");

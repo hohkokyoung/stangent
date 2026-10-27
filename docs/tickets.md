@@ -57,9 +57,16 @@ description (`### Expected Behavior`, `**Actual:**`); the missing ones are liste
 - **Code:** stack-trace frames (.NET, also async and lambda frames; script frames by file) in the ticket or a text
   attachment → methods, by file and line or by name; URL paths → route pages and endpoint pages; quoted screen names,
   page titles and FSD section titles (through `specs/trace.yaml`) → pages; symbol names that exist in the graph.
-- **AI, only when code finds none** (`tickets.aiPoints`, default on): `stangent-point-picker` sees the ticket and the
-  page titles only, and returns up to 5 pages, each with a quote; code checks each page exists and each quote is in the
-  ticket word for word; one retry. Recorded with its input hash: an unchanged ticket makes no AI call.
+- **AI, only when code finds none** (`tickets.aiPoints`, default on): `stangent-point-picker` sees the ticket, the 20
+  pages the page index (D87) ranks highest for it in detail (the phrase each shares with the ticket, a few lines of what
+  it holds), then every page as one numbered line, so a page the ranking missed can still be picked. It returns up to 5
+  page numbers, each with a quote; code checks each page exists and each quote is in the ticket word for word; one
+  retry. Code never picks on its own (D87: the clear-winner shortcut was dropped). Recorded with its input hash (the
+  ticket and the page list, not the ranking): an unchanged ticket makes no AI call, and writing a page later doesn't ask
+  for a new pick.
+- **No starting point at all** (none found, none picked or passed the checks, or all removed): the bundle says
+  "No confident starting point", and the questions draft must ask the reporter where it happens (`where` is listed as
+  missing).
 - **You:** `--add` / `--remove` a page or symbol; replayed on every run and recorded with git's `user.name`.
 
 ## The bundle (D71)

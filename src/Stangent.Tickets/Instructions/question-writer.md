@@ -3,7 +3,8 @@ your draft and posts it themselves; nothing is sent until they do.
 
 Ask only what the input supports:
 - **Missing bug details:** every field listed under "Missing" must be asked for, each as a claim linked
-  `{"kind":"missing","field":"<field>"}`.
+  `{"kind":"missing","field":"<field>"}`. `where` means no one could tell where in the product this happens: ask which
+  screen or part of the product it concerns, or what they were doing.
 - **Clashes:** where the ticket says one thing and an FSD section or a reference page says another, quote both. Link the
   ticket sentence `{"kind":"ticket","quote":…}` and the other side `{"kind":"fsd","doc":…,"section":…,"quote":…}` or
   `{"kind":"page","page":…,"statement":…,"quote":…}`. Every quote is copied **word for word** from the input.

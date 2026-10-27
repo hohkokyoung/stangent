@@ -8,8 +8,9 @@ using Stangent.Tickets;
 namespace Stangent.Benchmark.Tickets;
 
 /// <summary>
-/// The page index's measure (D87), no AI: for each past bug, is a right page among the clear winner and its "also possibly"
-/// pages, or (no clear winner) among the top <see cref="PageIndex.Detailed"/> the point picker would see in detail? A page
+/// The page index's measure (D87), no AI: for each past bug, is a right page among the top <see cref="PageIndex.Detailed"/>
+/// the point picker sees in detail? (Before 2026-10-28 a clear winner showed only itself and its "also possibly" pages;
+/// winners are still counted, as the record of why that shortcut was dropped.) A page
 /// is right when its slice's own walk reaches a file the fix changed. Bugs no page can be right for are reported apart.
 /// <c>--score-index &lt;clone&gt; &lt;cases&gt; [--out file]</c>: cases are a tickets dir (Sonarr's frozen set: the pulled Jira
 /// tickets in the clone and the answer key) or a JSON file of <c>{ id, summary, description, files }</c>.
@@ -44,7 +45,9 @@ public static class IndexScore
             rankTimes.Add(t.Elapsed.TotalMilliseconds);
             var order = ranking.Pages.Select(r => r.Page.Id).ToList();
             var firstRight = order.FindIndex(right.Contains);
-            var shown = ranking.Winner is not null ? 1 + ranking.AlsoPossibly.Count() : PageIndex.Detailed;
+            // The picker always sees the top 20 in detail (D87, 2026-10-28: no clear-winner shortcut). Winners are still
+            // counted below, as a record of why the shortcut was dropped.
+            var shown = PageIndex.Detailed;
             var isHit = firstRight >= 0 && firstRight < shown;
             if (right.Count > 0) reachable++;
             if (isHit) hit++;

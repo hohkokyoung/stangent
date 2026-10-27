@@ -133,7 +133,7 @@ bench --select-tickets $B/sonarr --out-dir benchmark/tickets/sonarr   # done onc
 bench --copy-to-jira benchmark/tickets/sonarr --site peachpersonal.atlassian.net --project SONB [--dry-run]   # asked first
 benchmark/tickets/run.sh $B/sonarr benchmark/tickets/sonarr points pages bundles prove drafts replay --model sonnet
 bench --score-tickets $B/sonarr benchmark/tickets/sonarr --out benchmark/results/<date>-phase3-sonarr-score.json
-# The page index (D87), no AI: a right page among the clear winner + "also possibly", else the top 20.
+# The page index (D87), no AI: a right page among the top 20 the picker sees in detail (results before 2026-10-28 counted a clear winner + "also possibly" instead).
 bench --score-index $B/sonarr benchmark/tickets/sonarr --out benchmark/results/<date>-d87-index-sonarr.json
 python3 -I benchmark/tickets/bitwarden/select.py $B/bitwarden > benchmark/tickets/bitwarden/index-cases.json   # 5 newest linked bugs
 bench --score-index $B/bitwarden benchmark/tickets/bitwarden/index-cases.json --out benchmark/results/<date>-d87-index-bitwarden.json

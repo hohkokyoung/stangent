@@ -4,7 +4,7 @@ using Stangent.Tickets;
 
 namespace Stangent.Core.Tests;
 
-/// <summary>The page index (D87) on the shop app: what it reads, how it ranks, when code picks a clear winner. No AI.</summary>
+/// <summary>The page index (D87) on the shop app: what it reads, how it ranks, when it finds a clear winner (measured only, D87). No AI.</summary>
 public class PageIndexTests
 {
     const string OrdersRoute = "page:/orders";

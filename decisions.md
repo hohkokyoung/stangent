@@ -1060,7 +1060,7 @@ Answers the open question "how does the ticket's description become a starting p
 1. **Code finds exact signals** in the ticket text: a stack-trace frame → its method (✅); a URL path
    (`/series/12/edit`) → the route's page; a quoted screen name, page title or FSD section title → those pages (FSD
    sections through `specs/trace.yaml`); a symbol name that exists in the graph.
-2. **If code finds none, AI picks** from the ticket and the **list of page titles only** (not the pages): up to 5
+2. **If code finds none, AI picks** (*refined by D87: from the ranked page list*) from the ticket and the **list of page titles only** (not the pages): up to 5
    pages, each with a word-for-word quote from the ticket saying why. Code checks each page exists and each quote
    matches; a failed check gets one retry (D60). Same shape as 2b's candidate finder.
 3. **The developer sees the picks** (with their reason: the signal or the quote) in the Markdown view and can add or
@@ -1397,8 +1397,8 @@ URLs, stack traces or quoted names. The picks were right; the missing piece was 
   JSX/TSX), config keys. General to C# projects; a project's own text helpers (Sonarr's `translate()` + `en.json`,
   react-i18next's `t()`) come in through a setting, as `detectorSettings` does today.
 - **Ranking is code:** the ticket's words against the index, exact multi-word phrases highest, rare words over common.
-- **A clear winner is picked by code** (no AI), with the matching phrase as evidence checked word for word, tagged
-  `code`; the next code-ranked pages are listed in the bundle as "also possibly".
+- *Dropped 2026-10-28, see the result below:* ~~**A clear winner is picked by code** (no AI), with the matching phrase as
+  evidence checked word for word, tagged `code`; the next code-ranked pages are listed in the bundle as "also possibly".~~
 - **Otherwise the AI sees every page:** the top 20 in detail plus all pages as one compact line each (number, kind,
   title: ~7k tokens on Sonarr instead of ~28k+), so a word mismatch can't hide the right page; cached across a batch.
 - **Low confidence is said:** the bundle says "no confident starting point" and the questions draft asks the reporter
@@ -1420,6 +1420,15 @@ URLs, stack traces or quoted names. The picks were right; the missing piece was 
     files are traced through renames to the pinned commit. It passes when every scored bug hits; each miss is looked at.
     Sonarr's 40 are where the ranking's settings were tuned; bitwarden is measured once, after they're frozen.
     Rejected: all 31 or 41 (the owner: no need for that much).
+  - *Result and decision, 2026-10-28:* **the bar failed by one bug.** Sonarr 32 of 34 (94%, bar 95%); bitwarden 3 of 3
+    (passed). Not softened. The clear winner measured worst (5 on Sonarr, 2 right; 2 fell on bugs no page covers and
+    would have gone out with no AI and no warning), so **the clear-winner shortcut is dropped:** whenever code finds
+    no starting point, the AI picker sees the top 20 in detail plus every page as one numbered line, and picks.
+    The ranking only orders pages; a low-ranked right page can still be picked from its line. The top 20 alone held a
+    right page for the same 32 of 34 and 3 of 3, so dropping the shortcut loses no hit; it costs an AI pick on the few
+    tickets that had a winner. Pages are given by their number in the list. Measured on 3 Sonarr tickets: ~11.5k tokens
+    a pick (top 20 ~2k, the full list ~8.5k), not the ~7k estimated above, against ~28k+ before. "No confident starting point" is said when the picker picks nothing: the bundle says so
+    and the questions draft must ask the reporter where it happens (`where` is listed as missing).
 **Why:** the owner: missing the right starting place is the worst outcome; and the whole-list pick was costly and didn't
 scale to one-off tickets.
 **Cost:** reading UI text is per stack (Razor, Blazor, Angular each need a reader); words that differ between ticket and

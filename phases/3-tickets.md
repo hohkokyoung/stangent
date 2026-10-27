@@ -67,7 +67,7 @@ before building on it.
 - **Code:** stack-trace frames (in the ticket or a text attachment) → methods (✅); URL paths → route pages; quoted screen names, page titles and FSD section
   titles → pages (sections through `specs/trace.yaml`); symbol names found in the graph. Each point records its signal.
 - **AI, only when code finds none:** `stangent ticket prepare <KEY> --step points` writes the ticket plus the list of
-  page titles (not the pages); `stangent-point-picker` returns up to 5 pages, each with a word-for-word ticket quote;
+  page titles (not the pages; since 2026-10-28 the D87 ranking, top 20 in detail plus every page numbered); `stangent-point-picker` returns up to 5 pages, each with a word-for-word ticket quote;
   `stangent ticket check` checks pages exist and quotes match; one retry.
 - **The developer:** `stangent ticket points <KEY> --add <page|symbol> --remove <page|symbol>`; changes are recorded.
 - Setting `tickets.aiPoints` (default on; off if D79's bundle bars fail).
@@ -322,8 +322,12 @@ findings were checked against the code and fixed; none was rejected. Each has a 
   Only the right-page counts shrank. Left as known: two neutral `.resx` classes of the same name in different
   projects are merged; C# raw strings and `'"'` are read loosely (noise only); `select.py` finds renames with one
   `git diff -M`.
-- **Not done yet:** wiring into `ticket points` (winner → a code point, top 20 + compact list for the picker,
-  "no confident starting point" in the bundle and the questions draft) waits for the owner's call on this result.
+- **Owner's call, 2026-10-28:** the bar failed by one bug, recorded as such (D87). The clear-winner shortcut is dropped
+  (it measured 2 right of 5 on Sonarr), and the index is wired in: whenever code finds no starting point, the picker
+  sees the top 20 in detail plus every page as a numbered line; the top 20 alone held a right page for the same 32/34
+  and 3/3. "No confident starting point" in the bundle, `where` asked in the questions draft. ~11.5k tokens a pick on
+  Sonarr (top 20 ~2k, list ~8.5k) against ~28k+ before. A fresh review (D61) found no bugs; its stale-text and test
+  findings were fixed. `--score-index` now scores the top 20 for every bug.
 
 ### Step 8 · what a bundle reaches of a fix (D87 follow-up) · 2026-10-27 · measured, no AI
 The owner asked: when a fix spans related parts (an API, its DTO, a migration, …), does the bundle miss them?

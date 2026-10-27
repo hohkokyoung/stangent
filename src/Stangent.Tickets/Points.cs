@@ -35,6 +35,11 @@ public sealed class TicketContext
 
     /// <summary>A page's title as people know it: the written page's title, else the one from the code.</summary>
     public string Title(PageDef p) => (string?)Index.Pages.GetValueOrDefault(p.Id)?["title"] ?? p.Title;
+
+    PageIndex? pageIndex;
+
+    /// <summary>The page index (D87), built on first use: only the point picker needs it.</summary>
+    public PageIndex PageIndexFor(StangentRepo repo) => pageIndex ??= PageIndex.Build(this, repo.Root, repo.Config);
 }
 
 /// <summary>A place in the code a ticket's work starts from (D70): a reference page or a graph symbol, and why.</summary>
@@ -265,7 +270,7 @@ public static partial class PointFinder
 
 /// <summary>
 /// <c>stangent ticket points</c> and the point picker (D70): code's points, then (only when code found none and
-/// <c>tickets.aiPoints</c> is on) the AI's picks from page titles, then the developer's additions and removals, replayed
+/// <c>tickets.aiPoints</c> is on) the AI's picks from the ranked page list (D87), then the developer's additions and removals, replayed
 /// in order and recorded with who made them. Written to <c>points.json</c>; same inputs → same file.
 /// </summary>
 public static class TicketPoints
@@ -350,21 +355,57 @@ public static class TicketPoints
         return new JsonObject { ["status"] = "needed", ["inputs"] = inputs };
     }
 
-    // ---- the point picker (D70 step 2) ----
+    // ---- the point picker (D70 step 2, D87) ----
 
-    public static string PickerInput(TicketContext ctx, TicketText text)
+    /// <summary>Page text lines shown per page in the picker's detail, and how long each may be.</summary>
+    const int DetailUnits = 3;
+    const int DetailChars = 160;
+
+    /// <summary>
+    /// The picker's input (D87): the ticket; the pages code ranked highest for it (at most
+    /// <see cref="PageIndex.Detailed"/>, only pages sharing a word with the ticket), each with the phrase it shares and
+    /// what it holds; then every page as one numbered line, so a page the ranking missed can still be picked. Numbers
+    /// are positions in the page list, the same for every ticket. No clear-winner shortcut: the AI always picks.
+    /// </summary>
+    public static string PickerInput(StangentRepo repo, TicketContext ctx, TicketText text)
     {
+        var index = ctx.PageIndexFor(repo);
+        var number = ctx.Set.Pages.Select((p, i) => (p.Id, N: i + 1)).ToDictionary(x => x.Id, x => x.N, StringComparer.Ordinal);
+        var top = index.Rank(text).Pages.Where(r => r.Score > 0).Take(PageIndex.Detailed).ToList();
+
         var sb = AiStep.Header(StepSpec.Points);
         sb.Append("# The ticket\n\n");
         foreach (var (where, body) in text.Prose) sb.Append($"## {where}\n\n````text\n{body}\n````\n\n");
-        sb.Append("# The pages\n\n| id | kind | title | from the code |\n|---|---|---|---|\n");
-        foreach (var p in ctx.Set.Pages)
-            sb.Append($"| `{p.Id}` | {p.Kind} | {ctx.Title(p).Replace("|", "\\|")} | {p.Title.Replace("|", "\\|")} |\n");
+        sb.Append("# The pages code ranked highest for this ticket\n\n");
+        if (top.Count == 0) sb.Append("No page shares a word with the ticket.\n\n");
+        foreach (var r in top)
+        {
+            var title = ctx.Title(r.Page);
+            sb.Append($"## {number[r.Page.Id]}. {OneLine(title)} ({r.Page.Kind})\n\n");
+            if (r.Page.Title != title) sb.Append($"- from the code: {OneLine(r.Page.Title)}\n");
+            if (r.Phrase is { } ph) sb.Append($"- shares \"{OneLine(ph.Quote)}\" (ticket {ph.Where}), in its {ph.Unit.Source}: {Clip(ph.Unit.Text)}\n");
+            foreach (var (unit, _) in index.UnitsOf(r.Page.Id).Where(u => u.Unit.Source != IndexSource.Title)
+                         .DistinctBy(u => Clip(u.Unit.Text), StringComparer.OrdinalIgnoreCase).Take(DetailUnits))
+                sb.Append($"- {unit.Source}: {Clip(unit.Text)}\n");
+            sb.Append('\n');
+        }
+        sb.Append($"# Every page ({ctx.Set.Pages.Count}), by number\n\n");
+        foreach (var p in ctx.Set.Pages) sb.Append($"{number[p.Id]}. {OneLine(ctx.Title(p))} ({p.Kind})\n");
         return sb.ToString();
     }
 
+    static string OneLine(string s) => Regex.Replace(s, @"\s+", " ").Trim();
+    static string Clip(string s) { var line = OneLine(s); return line.Length > DetailChars ? line[..DetailChars] + "…" : line; }
+
+    /// <summary>A pick's page: its number in the list, or (also accepted) its id.</summary>
+    static PageDef? PickedPage(TicketContext ctx, string page) =>
+        int.TryParse(page.Trim().TrimStart('#'), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var n)
+            ? (n >= 1 && n <= ctx.Set.Pages.Count ? ctx.Set.Pages[n - 1] : null)
+            : ctx.Set.Find(page);
+
     /// <summary>What decides a pick: the instructions, the ticket and the pages with their code titles. Not the written
-    /// titles shown beside them: writing a page later (the pages it picked, say) doesn't ask for a new pick.</summary>
+    /// titles or the ranking (which reads written statements): the ranking is a hint, and writing a page later (the
+    /// pages it picked, say) doesn't ask for a new pick.</summary>
     static string PickerInputHash(TicketContext ctx, TicketText text)
     {
         var sb = AiStep.Header(StepSpec.Points);
@@ -388,7 +429,7 @@ public static class TicketPoints
         if (status is "picked" or "none") return new RunStep("current", "none");
         AiPolicy.EnsureAllowed(repo.Config, "ticket prepare --step points");
         var text = TicketText.From(TicketPull.LoadOrFail(repo.Root, key));
-        var input = PickerInput(ctx, text);
+        var input = PickerInput(repo, ctx, text);
         return AiStep.Start(paths, StepSpec.Points, input, PickerInputHash(ctx, text));
     }
 
@@ -403,7 +444,7 @@ public static class TicketPoints
             foreach (var (pick, i) in output["pages"]!.AsArray().Select((p, i) => (p!, i)))
             {
                 var page = (string)pick["page"]!;
-                if (ctx.Set.Find(page) is null) errors.Add($"pages[{i}]: `{page}` isn't a page in the list. Copy ids exactly.");
+                if (PickedPage(ctx, page) is null) errors.Add($"pages[{i}]: `{page}` isn't a page in the list. Give the number before its title.");
                 if (!Quotes.InText((string)pick["quote"]!, text.Quotable))
                     errors.Add($"pages[{i}]: the quote \"{Short((string)pick["quote"]!)}\" isn't in the ticket word for word (at least 4 words, or a whole line).");
             }
@@ -415,7 +456,7 @@ public static class TicketPoints
             ["status"] = errors.Count > 0 ? "failed" : output!["pages"]!.AsArray().Count == 0 ? "none" : "picked",
             ["inputs"] = state["inputs"]!.DeepClone(), ["usage"] = state["usage"]!.DeepClone(), ["retries"] = (int?)state["retries"] ?? 0,
             ["picks"] = errors.Count > 0 ? new JsonArray() : new JsonArray([.. output!["pages"]!.AsArray()
-                .Select(p => (JsonNode)new JsonObject { ["page"] = ctx.Set.Find((string)p!["page"]!)!.Id, ["quote"] = (string)p["quote"]! })
+                .Select(p => (JsonNode)new JsonObject { ["page"] = PickedPage(ctx, (string)p!["page"]!)!.Id, ["quote"] = (string)p["quote"]! })
                 .DistinctBy(p => (string)p["page"]!)]),
         };
         if (errors.Count > 0) ai["errors"] = new JsonArray([.. errors.Take(10).Select(e => (JsonNode)e)]);

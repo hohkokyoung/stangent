@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "urn:stangent:schema:point-picker-output:v1",
   "title": "What stangent-point-picker returns (Phase 3, D70)",
-  "description": "Up to 5 reference pages a ticket is about, chosen from page titles only, each with a sentence quoted word for word from the ticket. Code checks every page exists and every quote is in the ticket.",
+  "description": "Up to 5 reference pages a ticket is about, chosen from the ranked page list (D87), each with a sentence quoted word for word from the ticket. Code checks every page exists and every quote is in the ticket.",
   "type": "object",
   "required": ["pages"],
   "additionalProperties": false,
@@ -15,7 +15,7 @@
         "required": ["page", "quote"],
         "additionalProperties": false,
         "properties": {
-          "page": { "description": "A page id from the list, copied exactly.", "type": "string", "minLength": 1 },
+          "page": { "description": "The page's number in the list (a page id is also accepted).", "type": "string", "minLength": 1 },
           "quote": { "description": "Words from the ticket, exactly as written there (at least 4 words, or a whole line), that say why.", "type": "string", "minLength": 3, "maxLength": 400 }
         }
       }

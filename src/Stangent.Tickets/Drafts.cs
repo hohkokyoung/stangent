@@ -63,11 +63,22 @@ public static partial class TicketDrafts
         var bundle = TicketBundle.LoadOrFail(repo.Root, key);
         return new JsonObject
         {
-            ["missing"] = pulled["bug"]?["missing"]?.DeepClone() ?? new JsonArray(),
+            ["missing"] = Missing(pulled, bundle),
             ["pages"] = new JsonArray([.. bundle["pages"]!.AsArray().Where(p => (string?)p!["state"] == "included").Select(p => (JsonNode)(string)p!["id"]!)]),
             ["sections"] = new JsonArray([.. bundle["sections"]!.AsArray().Select(s => (JsonNode)new JsonObject { ["doc"] = (string)s!["doc"]!, ["section"] = (string)s["id"]! })]),
             ["files"] = new JsonArray([.. bundle["pointers"]!.AsArray().Select(p => (string?)p!["file"]).OfType<string>().Distinct().Order(StringComparer.Ordinal).Select(f => (JsonNode)f)]),
         };
+    }
+
+    /// <summary>The missing bug fields, plus <c>where</c> when the bundle has no starting point (D87): the reporter is
+    /// asked where it happens rather than the work starting from a guess.</summary>
+    public const string Where = "where";
+
+    static JsonArray Missing(JsonObject pulled, JsonObject bundle)
+    {
+        var missing = pulled["bug"]?["missing"]?.AsArray().Select(m => (string)m!).ToList() ?? [];
+        if (bundle["points"]!.AsArray().Count == 0 && !missing.Contains(Where)) missing.Add(Where);
+        return new JsonArray([.. missing.Select(m => (JsonNode)m)]);
     }
 
     /// <summary>What a resolution may link to: the PR's changed files, the reference pages whose statements cite what the
@@ -234,7 +245,7 @@ public static partial class TicketDrafts
         if ((string)facts["kind"]! == "questions")
         {
             foreach (var m in missing.Where(m => !linked.Any(l => (string)l["kind"]! == "missing" && (string?)l["field"] == m)).Order(StringComparer.Ordinal))
-                errors.Add($"the bug's {m} is missing: ask for it in a claim linked {{\"kind\":\"missing\",\"field\":\"{m}\"}}.");
+                errors.Add($"{(m == Where ? "where it happens" : $"the bug's {m}")} is missing: ask for it in a claim linked {{\"kind\":\"missing\",\"field\":\"{m}\"}}.");
             if (proof is "not-reproduced" or "not-reproduced-flaky" && !linked.Any(l => (string)l["kind"]! == "proof"))
                 errors.Add("the bug wasn't reproduced: say what was tried and ask for what's needed, in a claim linked {\"kind\":\"proof\"}.");
         }

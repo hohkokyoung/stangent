@@ -114,7 +114,8 @@ public sealed record RankedPage(PageDef Page, double Score, PhraseMatch? Phrase,
 /// <summary>Ticket words that appear in a row, in this order, inside one unit of the page's text.</summary>
 public sealed record PhraseMatch(string Quote, string Where, string[] Terms, IndexUnit Unit);
 
-/// <summary>A ranking of every page for one ticket: never shorter than the page list, best first (D87).</summary>
+/// <summary>A ranking of every page for one ticket: never shorter than the page list, best first (D87). The clear
+/// <see cref="Winner"/> is measured only: since 2026-10-28 the point picker always picks (D87).</summary>
 public sealed record PageRanking(IReadOnlyList<RankedPage> Pages, RankedPage? Winner)
 {
     /// <summary>The pages listed after a clear winner: the next code-ranked pages.</summary>
@@ -130,9 +131,9 @@ public sealed record PageRanking(IReadOnlyList<RankedPage> Pages, RankedPage? Wi
 /// </summary>
 public sealed partial class PageIndex
 {
-    /// <summary>The pages listed as "also possibly" beside a clear winner.</summary>
+    /// <summary>The pages listed as "also possibly" beside a clear winner (measured only since 2026-10-28, D87).</summary>
     public const int AlsoPossible = 4;
-    /// <summary>How many pages the point picker sees in detail when there's no clear winner.</summary>
+    /// <summary>How many pages the point picker sees in detail (D87).</summary>
     public const int Detailed = 20;
 
     /// <summary>How much a source counts, before the slice depth discount.</summary>

@@ -105,7 +105,7 @@ public class TicketDraftTests
         var step = d.Prepare();
         Assert.Equal(StepSpec.QuestionWriter, step.Agent);
         var input = File.ReadAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "questions", "input.md"));
-        Assert.Contains("# Missing\n\nversion, environment", input);
+        Assert.Contains("# Missing\n\nversion, environment\n\n", input);   // starting points exist: `where` isn't asked
         Assert.Contains("Orders over 100 need approval from a manager.", input);
 
         Assert.Equal("recorded", d.Check(GoodQuestions).Status);
@@ -113,6 +113,23 @@ public class TicketDraftTests
         Assert.DoesNotContain("[C", (string)record["text"]!);
         Assert.Null(record["posted"]);
         Assert.Equal("current", d.Prepare().Status); // unchanged: no AI call
+    }
+
+    [Fact]
+    public void With_no_starting_point_the_bundle_says_so_and_the_questions_draft_must_ask_where_it_happens()
+    {
+        using var d = new Draft();
+        var ctx = d.Ctx;
+        var ids = TicketPoints.LoadOrFail(d.Root, Key)["points"]!.AsArray().Select(p => (string)p!["id"]!).ToList();
+        Assert.NotEmpty(ids);
+        TicketPoints.Update(d.App.Repo, ctx, Key, [], ids, "Pat Developer");
+        TicketBundle.Build(d.App.Repo, ctx, Key);
+        Assert.Contains("**No confident starting point:**", File.ReadAllText(new TicketPaths(d.Root, Key).BundleMarkdown));
+
+        d.Prepare();
+        var input = File.ReadAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "questions", "input.md"));
+        Assert.Contains("# Missing\n\nversion, environment, where", input);
+        Assert.Contains(d.Check(GoodQuestions).Errors!, e => e.Contains("where it happens is missing"));
     }
 
     [Fact]

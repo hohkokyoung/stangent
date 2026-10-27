@@ -91,10 +91,12 @@ public class TicketPointsTests
         var step = TicketPoints.Prepare(app.Repo, ctx, "SHOP-5");
         Assert.Equal(StepSpec.PointPicker, step.Agent);
         var input = File.ReadAllText(Path.Combine(app.Root, ".stangent", "tickets", "SHOP-5", "points", "input.md"));
-        Assert.Contains($"| `{OrdersRoute}` | screen |", input);
-        Assert.DoesNotContain("Orders over 100 need approval", input); // titles only, never the code
+        var orders = ctx.Set.Pages.Select(x => x.Id).ToList().IndexOf(OrdersRoute) + 1;
+        Assert.Contains("# The pages code ranked highest for this ticket", input);
+        Assert.Matches($@"(?m)^{orders}\. .+ \(screen\)$", input);   // every page, one numbered line (D87)
+        Assert.Equal(ctx.Set.Pages.Count, System.Text.RegularExpressions.Regex.Matches(input[input.IndexOf("# Every page", StringComparison.Ordinal)..], @"(?m)^\d+\. ").Count);
 
-        Canned(app, "SHOP-5", $$"""{"pages":[{"page":"{{OrdersRoute}}","quote":"the total is wrong after I press the big button"}]}""");
+        Canned(app, "SHOP-5", $$"""{"pages":[{"page":"{{orders}}","quote":"the total is wrong after I press the big button"}]}""");
         Assert.Equal("recorded", TicketPoints.Check(app.Repo, ctx, "SHOP-5", null, "Pat Developer").Status);
         var after = TicketPoints.LoadOrFail(app.Root, "SHOP-5");
         Assert.Equal([(StartingPoint.Page, OrdersRoute, "ai")], List(after));
@@ -103,6 +105,57 @@ public class TicketPointsTests
         var again = Points(app, "SHOP-5", description);
         Assert.Equal("picked", (string?)again["ai"]!["status"]);
         Assert.Equal("current", TicketPoints.Prepare(app.Repo, ctx, "SHOP-5").Status);
+    }
+
+    [Fact]
+    public void The_picker_sees_the_pages_ranked_for_the_ticket_in_detail_with_the_phrase_they_share()
+    {
+        using var app = App();
+        WritePage(app, OrdersRoute, "Order checkout screen");
+        Points(app, "SHOP-11", "Somehow the order checkout screen shows nothing for me today.");
+        var ctx = TicketContext.Load(app.Repo);
+        TicketPoints.Prepare(app.Repo, ctx, "SHOP-11");
+        var input = File.ReadAllText(Path.Combine(app.Root, ".stangent", "tickets", "SHOP-11", "points", "input.md"));
+        var orders = ctx.Set.Pages.Select(x => x.Id).ToList().IndexOf(OrdersRoute) + 1;
+        var detail = input[input.IndexOf("# The pages code ranked highest", StringComparison.Ordinal)..input.IndexOf("# Every page", StringComparison.Ordinal)];
+        Assert.StartsWith($"# The pages code ranked highest for this ticket\n\n## {orders}. Order checkout screen (screen)", detail);
+        Assert.Contains("- shares \"order checkout\" (ticket description), in its title: Order checkout screen\n", detail);
+        Assert.Contains("- route: /orders\n", detail);
+        Assert.DoesNotContain("- name: /orders\n", detail);   // the same text is said once
+        Assert.Contains("- from the code: ", detail);
+    }
+
+    [Fact]
+    public void Page_numbers_resolve_with_a_hash_or_spaces_and_out_of_range_ones_are_rejected()
+    {
+        using var app = App();
+        const string description = "When I try to buy something the total is wrong after I press the big button.";
+        Points(app, "SHOP-12", description);
+        var ctx = TicketContext.Load(app.Repo);
+        TicketPoints.Prepare(app.Repo, ctx, "SHOP-12");
+        var orders = ctx.Set.Pages.Select(x => x.Id).ToList().IndexOf(OrdersRoute) + 1;
+        const string quote = "the total is wrong after I press the big button";
+
+        Canned(app, "SHOP-12", $$"""{"pages":[{"page":"0","quote":"{{quote}}"},{"page":"-1","quote":"{{quote}}"}]}""");
+        var retry = TicketPoints.Check(app.Repo, ctx, "SHOP-12", null, "Pat Developer");
+        Assert.Equal("retry", retry.Status);
+        Assert.Contains(retry.Errors!, e => e.Contains("`0` isn't a page"));
+        Assert.Contains(retry.Errors!, e => e.Contains("`-1` isn't a page"));
+
+        // "#N" and " N " are the same page, and the same page by id: recorded once, by id.
+        Canned(app, "SHOP-12", $$"""{"pages":[{"page":"#{{orders}}","quote":"{{quote}}"},{"page":" {{orders}} ","quote":"{{quote}}"},{"page":"{{OrdersRoute}}","quote":"{{quote}}"}]}""");
+        Assert.Equal("recorded", TicketPoints.Check(app.Repo, ctx, "SHOP-12", null, "Pat Developer").Status);
+        Assert.Equal([(StartingPoint.Page, OrdersRoute, "ai")], List(TicketPoints.LoadOrFail(app.Root, "SHOP-12")));
+    }
+
+    [Fact]
+    public void The_picker_input_is_the_same_on_a_second_run_and_says_when_no_page_shares_a_word()
+    {
+        using var app = App();
+        var text = new TicketText([("summary", "Zzyzx"), ("description", "Qwerty plover.")], []);
+        var first = TicketPoints.PickerInput(app.Repo, TicketContext.Load(app.Repo), text);
+        Assert.Equal(first, TicketPoints.PickerInput(app.Repo, TicketContext.Load(app.Repo), text));
+        Assert.Contains("# The pages code ranked highest for this ticket\n\nNo page shares a word with the ticket.\n", first);
     }
 
     [Fact]
@@ -130,11 +183,12 @@ public class TicketPointsTests
         var ctx = TicketContext.Load(app.Repo);
         TicketPoints.Prepare(app.Repo, ctx, "SHOP-6");
 
-        Canned(app, "SHOP-6", $$"""{"pages":[{"page":"{{OrdersRoute}}","quote":"the checkout total is calculated wrongly"},{"page":"page:/nowhere","quote":"Something about buying is broken today"}]}""");
+        Canned(app, "SHOP-6", $$"""{"pages":[{"page":"{{OrdersRoute}}","quote":"the checkout total is calculated wrongly"},{"page":"page:/nowhere","quote":"Something about buying is broken today"},{"page":"9999","quote":"Something about buying is broken today"}]}""");
         var retry = TicketPoints.Check(app.Repo, ctx, "SHOP-6", null, "Pat Developer");
         Assert.Equal("retry", retry.Status);
         Assert.Contains(retry.Errors!, e => e.Contains("isn't in the ticket word for word"));
         Assert.Contains(retry.Errors!, e => e.Contains("`page:/nowhere` isn't a page"));
+        Assert.Contains(retry.Errors!, e => e.Contains("`9999` isn't a page"));
 
         Canned(app, "SHOP-6", $$"""{"pages":[{"page":"{{OrdersRoute}}","quote":"the checkout total is calculated wrongly"}]}""");
         Assert.Equal("failed", TicketPoints.Check(app.Repo, ctx, "SHOP-6", null, "Pat Developer").Status);
