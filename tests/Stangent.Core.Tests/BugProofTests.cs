@@ -112,7 +112,7 @@ public class BugProofTests
         Assert.Contains("Edit(Tests/**/*.cs)", tools);
         Assert.Contains("Bash(dotnet test 'Tests/Shop.Tests.csproj':*)", tools);
         Assert.DoesNotContain(tools, t => t.StartsWith("Edit(Core", StringComparison.Ordinal));
-        Assert.Equal(15, (int)limits["maxTurns"]!);
+        Assert.Equal(30, (int)limits["maxTurns"]!);
         Assert.Equal(1.0, (double)limits["maxBudgetUsd"]!);
     }
 
@@ -453,14 +453,14 @@ public class BugProofTests
         using var p = new Proof();
         p.Prepare();
         p.App.Write(TestFile, TestCode);
-        var retry = p.Check(Written(quote: "a sentence the ticket never says at all"), Proof.Ok(turns: 10, usd: 0.6));
+        var retry = p.Check(Written(quote: "a sentence the ticket never says at all"), Proof.Ok(turns: 20, usd: 0.6));
         Assert.Equal("retry", retry.Status);
         var left = BugProof.DriverLimits(p.App.Repo, Key);
-        Assert.Equal(5, (int)left["maxTurns"]!);
+        Assert.Equal(10, (int)left["maxTurns"]!);
         Assert.Equal(0.4, (double)left["maxBudgetUsd"]!, 2);
-        Assert.Equal("recorded", p.Check(Written(), Proof.Ok(turns: 6, usd: 0.3)).Status);
+        Assert.Equal("recorded", p.Check(Written(), Proof.Ok(turns: 11, usd: 0.3)).Status);
         Assert.Equal("not-reproduced", (string?)p.Record["outcome"]);
-        Assert.Equal("hit the cap: 16 of 15 turns", (string?)p.Record["attempts"]![0]!["reason"]);
+        Assert.Equal("hit the cap: 31 of 30 turns", (string?)p.Record["attempts"]![0]!["reason"]);
         Assert.Empty(p.Runner.Commands); // capped before anything ran
     }
 

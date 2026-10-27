@@ -158,7 +158,7 @@ public sealed class StangentConfig
     public sealed class ProveBudgetConfig
     {
         public double Usd { get; set; } = 1.0;
-        public int Turns { get; set; } = 15;
+        public int Turns { get; set; } = 30;
     }
 
     /// <summary>Reserved in Phase 0; each adapter is built by the phase that first needs it (D24).</summary>

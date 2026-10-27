@@ -135,7 +135,7 @@ before building on it.
   the cap), no developer edits to the starting points, no `--hint` retries. Starting points are picked for all 50
   first; the picked pages with no written version are then generated (~50–100 pages, ~$10–20, reported apart). "Starting points' files" are the files of the symbols the
   starting pages' statements cite plus the files of matched symbols.
-- **Proof runs** (D81) on the 30 newest bugs and the 10 not-bugs, each attempt capped at $1 and 15 turns (hitting the
+- **Proof runs** (D81) on the 30 newest bugs and the 10 not-bugs, each attempt capped at $1 and 15 turns (30 since 2026-10-28, D86) (hitting the
   cap = not reproduced). They check out each bug's fix parent; "proof is real" re-runs the test on the fix commit. The 10 not-bugs
   have no fix commit: they run on the commit before the issue was closed and are scored only on "catches wrong reports".
   With no developer in the run, a test that passes the code checks counts as reproduced; "proof is real" measures what
@@ -362,17 +362,26 @@ a layer and as the starting points of the impact walk.
   row that was mostly the slice, and an "ordering beats new links" conclusion), a median rounding, `.lock` and test-path
   labels, and that the slice should be what the page writer sees (walk + handlers). Fixed; counts unchanged.
 
-### Step 8 · paid pilot of browser proof (D86) on 2 bugs · 2026-10-28 · in progress
+### Step 8 · paid pilot of browser proof (D86) on 2 bugs · 2026-10-28 · both reproduced, both real
 The first proofs since D86 was built (the 2026-10-26 attempts, before it, are saved locally (untracked, like all of `run/`) in
 `benchmark/tickets/sonarr/run/pilot-before-d86/`). `run.sh … prove --only SONB-5,SONB-13 --model sonnet`.
 - **SONB-13 (#8842, unit): reproduced, and the test passes on the fix commit ("proof is real").** A unit test in
-  `MediaBrowserProxyFixture.cs` fails on the named assertion (the `Authorization` header). $0.13, one attempt. Before
-  D86 it ended "not reproduced".
+  `MediaBrowserProxyFixture.cs` fails on the named assertion (the `Authorization` header). $0.13, 12 turns, one attempt.
+  Before D86 it ended "not reproduced" because it hit the cap (16 of 15 turns).
   - Its first try never reached the AI: `tickets.app.build` failed with an empty message. Sonarr's restore turns package
-    advisories published after that commit into errors (`NU1902`/`NU1903`, as in 1d), and the benchmark's
+    advisories published after that commit into errors (`NU1902`/`NU1903`, as in 1d; seen by building that commit by
+    hand, since the old script kept no output), and the benchmark's
     `app/build.sh` hid its output. Fixed: `-p:NuGetAudit=false` (as `tickets.dotnetArgs` already had), and a failed
-    step's output now goes to stderr.
+    step's output now goes to stderr. With the fixed script in the clone, that commit built by hand, then the retry
+    reached the AI.
 - **SONB-5 (#9126, browser): not reproduced, the turn cap.** No related spec (Sonarr has none for Quality Profiles),
   so it looked with the browser: opened the profile, wrote a spec and ran it by turn 12, then spent 5 turns searching
   a saved page snapshot for the size inputs and hit 16 of 15 turns, at $0.23 of its $1. D86 expected this ("the
   15-turn cap binds sooner; the cap is decided after these fixes"): the owner's call.
+- **The owner's call: 30 turns per attempt, $1 kept** (D86, D81; `tickets.proveBudget` default and the Sonarr config).
+  **SONB-5 rerun: reproduced, and the test passes on the fix commit.** A Playwright spec
+  (`e2e/stangent/profile-size-max.spec.ts`) fails on the named assertion (the size editor's maximum stays below 750)
+  in all 3 of stangent's runs, and passes all 3 on the fix. 25 turns, $0.23. The 15-turn attempt is kept locally in
+  `run/pilot-d86-turns15/`.
+- **Pilot cost:** $0.59 for three AI attempts ($0.13 + $0.23 capped + $0.23). Both bugs reproduced and both proofs are
+  real; before D86 neither was (SONB-5's tests timed out, SONB-13 hit the turn cap). Two bugs say the steps work end to end, not how often; the full run (D81) measures that.

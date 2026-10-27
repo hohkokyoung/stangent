@@ -85,7 +85,7 @@ inputs → the same bytes.
   or Vitest package holding their frontend files; Playwright when `tickets.app` says how to build, start and seed the
   app (`tickets.app.specDir`, default `e2e/stangent`). None: **not provable here**, recorded with no AI call.
 - **`stangent-bug-reproducer`** (multi-turn) may edit only in the targets' folders and run only their build and test
-  commands (permission rules in `result.next.limits`), within `tickets.proveBudget` (default $1, 15 turns) **per attempt**:
+  commands (permission rules in `result.next.limits`), within `tickets.proveBudget` (default $1, 30 turns) **per attempt**:
   a retry runs under what's left, and `check --step prove --usage <result>` sums both calls. In Claude Code,
   `/stangent:ticket` runs it through `ticket-run.sh`, so the rules and caps always apply.
 - **Code checks:** the test file is in an allowed folder; the named assertion is on its line; the expected-result quote
@@ -125,5 +125,5 @@ tickets:
   textFiles: [src/App/Localization/en.json]   # UI texts: a string in the code that is a key here reads as its text (D87)
   replay: benchmark/tickets/x/raw   # read saved results instead of Jira
   app: { build: …, start: …, url: http://localhost:8989, seed: …, readySeconds: 120, specDir: e2e/stangent }
-  proveBudget: { usd: 1, turns: 15 }
+  proveBudget: { usd: 1, turns: 30 }
 ```

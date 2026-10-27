@@ -30,6 +30,6 @@ tickets:
     readySeconds: 300
     specDir: e2e/stangent
     playwrightDir: e2e
-  proveBudget: { usd: 1, turns: 15 } # D81
+  proveBudget: { usd: 1, turns: 30 } # D81; 30 turns since 2026-10-28 (D86)
   # Sonarr's UI texts (D87): translate('Key') in the frontend, GetLocalizedString("Key") and Label = "Key" in the backend.
   textFiles: [src/NzbDrone.Core/Localization/Core/en.json]

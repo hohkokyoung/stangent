@@ -1271,7 +1271,8 @@ reproduction agent.
 - **Bundles and drafts** still run on all 40 bugs and 10 not-bugs (~$5): the bundle bars keep 40 cases.
 - **Reproduction runs on 30 bugs** (the 30 newest of the 40, D78's order; D47's floor) **and the 10 not-bugs.** "Proof
   finds bugs" becomes ≥ 50% **of those 30**; "proof is real" is judged on the reproductions among them.
-- **Each attempt is capped** at $1 and 15 turns; an attempt that hits the cap is "not reproduced". Real use needs a
+- **Each attempt is capped** at $1 and 15 turns (*raised to 30 turns on 2026-10-28, $1 kept: see D86*); an attempt
+  that hits the cap is "not reproduced". Real use needs a
   per-ticket cost limit too (`tickets.proveBudget`), so the run tests the product as it ships.
 - **Worst case:** ~$40 for reproduction + ~$5 bundles and drafts + ~$10–20 for missing pages ≈ $55–65.
 Rejected: 20 bugs and 10 not-bugs throughout (saves ~$20, but one case moves a share by 5 points and "beats a keyword
@@ -1378,8 +1379,12 @@ the owner prefers test-first.
   settings (their allow rules, such as `git push`, would widen its own) and may write only its result file, not the
   attempt's state; its run script takes only a plain path in its folder or a related spec; proofs run one at a time
   (the app's port); Sonarr's start script does its first, unseeded start on another port.
-**Cost:** every browser click or test run is a turn, so the 15-turn cap (D81) binds sooner (the cap is decided after
-these fixes); the app is built twice per attempt (for the AI and for the check); the seeded tests make Sonarr look a
+- *Decided 2026-10-28, after the pilot:* **30 turns per attempt, $1 kept.** SONB-5 (browser) had looked at the page,
+  written its spec and run it by turn 12, then hit 16 of 15 turns at $0.23 of its $1; SONB-13 (unit) reproduced well
+  inside the cap ($0.13). The dollar cap is what bounds the run's cost (D81's worst case is unchanged); the turn cap was
+  cutting off attempts that were on track.
+**Cost:** every browser click or test run is a turn, so the 15-turn cap (D81) binds sooner (raised to 30, above);
+the app is built twice per attempt (for the AI and for the check); the seeded tests make Sonarr look a
 little better tested than it is. **Not a sandbox:** a spec the AI writes is code Node runs with the user's rights, as
 the unit tests it writes always were; the permission rules limit its tool calls, not that code. The browser server
 (`@playwright/mcp@0.0.83`) is fetched by version at run time and uses the repo's own Chromium; `--allowed-origins` isn't

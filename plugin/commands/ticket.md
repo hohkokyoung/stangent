@@ -23,7 +23,7 @@ Never judge a quote, a page or a test yourself, never write a comment to Jira yo
 6. Offer next steps: for a bug, **prove it** before any fix; for any ticket, a **questions** draft.
 
 **Prove a bug** (`<KEY> prove [hint]`): this runs an AI step that writes a test and runs commands; say it costs up to
-the `tickets.proveBudget` cap (default $1 and 15 turns per attempt) and get the user's yes before you start. Run it
+the `tickets.proveBudget` cap (default $1 and 30 turns per attempt) and get the user's yes before you start. Run it
 through the driver, which starts the reproducer headless under the permission rules and caps stangent sets (D60, D81);
 don't start `stangent-bug-reproducer` yourself:
 
