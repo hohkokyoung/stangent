@@ -361,3 +361,18 @@ a layer and as the starting points of the impact walk.
 - *Fresh check (D61), same day:* reproduced byte for byte; it found the first write-up overclaimed (a "shown today"
   row that was mostly the slice, and an "ordering beats new links" conclusion), a median rounding, `.lock` and test-path
   labels, and that the slice should be what the page writer sees (walk + handlers). Fixed; counts unchanged.
+
+### Step 8 · paid pilot of browser proof (D86) on 2 bugs · 2026-10-28 · in progress
+The first proofs since D86 was built (the 2026-10-26 attempts, before it, are saved locally (untracked, like all of `run/`) in
+`benchmark/tickets/sonarr/run/pilot-before-d86/`). `run.sh … prove --only SONB-5,SONB-13 --model sonnet`.
+- **SONB-13 (#8842, unit): reproduced, and the test passes on the fix commit ("proof is real").** A unit test in
+  `MediaBrowserProxyFixture.cs` fails on the named assertion (the `Authorization` header). $0.13, one attempt. Before
+  D86 it ended "not reproduced".
+  - Its first try never reached the AI: `tickets.app.build` failed with an empty message. Sonarr's restore turns package
+    advisories published after that commit into errors (`NU1902`/`NU1903`, as in 1d), and the benchmark's
+    `app/build.sh` hid its output. Fixed: `-p:NuGetAudit=false` (as `tickets.dotnetArgs` already had), and a failed
+    step's output now goes to stderr.
+- **SONB-5 (#9126, browser): not reproduced, the turn cap.** No related spec (Sonarr has none for Quality Profiles),
+  so it looked with the browser: opened the profile, wrote a spec and ran it by turn 12, then spent 5 turns searching
+  a saved page snapshot for the size inputs and hit 16 of 15 turns, at $0.23 of its $1. D86 expected this ("the
+  15-turn cap binds sooner; the cap is decided after these fixes"): the owner's call.
