@@ -321,3 +321,33 @@ findings were checked against the code and fixed; none was rejected. Each has a 
   `git diff -M`.
 - **Not done yet:** wiring into `ticket points` (winner → a code point, top 20 + compact list for the picker,
   "no confident starting point" in the bundle and the questions draft) waits for the owner's call on this result.
+
+### Step 8 · what a bundle reaches of a fix (D87 follow-up) · 2026-10-27 · measured, no AI
+The owner asked: when a fix spans related parts (an API, its DTO, a migration, …), does the bundle miss them?
+`--fix-coverage` (no AI; `benchmark/results/2026-10-27-d87-fix-coverage-sonarr.json`) starts each Sonarr bug from the
+index's best-ranked right page and puts every file the fix changed in the first layer that reaches it. **Upper bound:**
+the page's whole slice (its walk and the handlers it triggers) stands in for the written statements' citations, both as
+a layer and as the starting points of the impact walk.
+
+| Layer | Files it offers (median) | Fix files it reaches (82 in the 34 bugs with a right page) |
+|---|---|---|
+| The page's slice | 96 | 47 (57%) |
+| + what depends on it, 2 lines back (uncapped) | + 1,150 | + 19 |
+| + 📜 usually changes together | + 10.5 | + 1 |
+| **Missed** |  | **15 (18%), in 4 bugs** |
+
+- **30 of the 34 bugs have every fix file reached.** Sonarr's fixes are small (median 2 files; the frozen set caps them
+  at 15), so this says little about big, many-part changes.
+- **What was missed:** 13 of the 15 files are in 2 frontend bugs: 7 CSS files of a theme bug (styles aren't in the
+  graph), and a tooltip bug (theme hook, a CSS file and its typings, `package.json`, `yarn.lock`). The others: 1 migration
+  (`217_add_mal_and_anilist_ids.cs`) and 1 JSON DTO (`SimklAPI.cs`), which the fixed code *uses*: the impact walk goes
+  back to what depends on the code, never forward to what it uses beyond the slice, so no depth would reach it.
+- **Reached is not shown.** The uncapped impact layer is a third of Sonarr's ~3,900 files (inflated here by starting
+  from the whole slice), so a bundle lists only 5 per group and the top 10 📜. An estimate of what a bundle would show
+  puts 17 reached fix files (in 13 bugs) among those cut, but it isn't a measurement: 47 of the 50 "shown" files are
+  the slice itself, and a bundle started from citations fills the capped lists differently. Suggestive only: ordering
+  what's close to the ticket may matter as much as new links; a run with written pages would tell.
+- The 6 bugs no page covers, started from the index's first page: 8 of their 11 fix files are in its impact layer.
+- *Fresh check (D61), same day:* reproduced byte for byte; it found the first write-up overclaimed (a "shown today"
+  row that was mostly the slice, and an "ordering beats new links" conclusion), a median rounding, `.lock` and test-path
+  labels, and that the slice should be what the page writer sees (walk + handlers). Fixed; counts unchanged.

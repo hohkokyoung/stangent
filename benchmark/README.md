@@ -137,6 +137,7 @@ bench --score-tickets $B/sonarr benchmark/tickets/sonarr --out benchmark/results
 bench --score-index $B/sonarr benchmark/tickets/sonarr --out benchmark/results/<date>-d87-index-sonarr.json
 python3 -I benchmark/tickets/bitwarden/select.py $B/bitwarden > benchmark/tickets/bitwarden/index-cases.json   # 5 newest linked bugs
 bench --score-index $B/bitwarden benchmark/tickets/bitwarden/index-cases.json --out benchmark/results/<date>-d87-index-bitwarden.json
+bench --fix-coverage $B/sonarr benchmark/tickets/sonarr --out benchmark/results/<date>-d87-fix-coverage-sonarr.json   # what a bundle reaches of each fix
 ```
 
 - The run uses product defaults (AI picks on, `fsd.findings` off, the cap) and no developer edits or hints (D79).

@@ -1,0 +1,1240 @@
+{
+  "schemaVersion": 1,
+  "clone": "sonarr",
+  "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+  "history": "full",
+  "impactDepth": 2,
+  "bugs": 40,
+  "withRightPage": 34,
+  "fixFiles": 82,
+  "byLayer": {
+    "history": 1,
+    "impact": 19,
+    "missed": 15,
+    "page": 47
+  },
+  "shown": 50,
+  "offeredMedian": {
+    "page": 96,
+    "impact": 1150.5,
+    "history": 10.5,
+    "shown": 120
+  },
+  "missedByKind": {
+    "C#": 1,
+    "config / build": 2,
+    "frontend (not in graph)": 1,
+    "frontend code": 2,
+    "migration": 1,
+    "styles": 8
+  },
+  "meanShareReached": 0.937,
+  "meanShareReachedNoTests": 0.937,
+  "apart": {
+    "bugs": 6,
+    "byLayer": {
+      "impact": 8,
+      "missed": 3
+    }
+  },
+  "cases": [
+    {
+      "id": "SONB-1/#9149",
+      "start": "endpoint:Sonarr.Api.V5|ANY /api/v5/Command",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 2,
+      "of": 2,
+      "offered": {
+        "page": 42,
+        "impact": 624,
+        "history": 1,
+        "shown": 66
+      },
+      "files": [
+        {
+          "file": "src/Sonarr.Api.V3/Commands/CommandResource.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        },
+        {
+          "file": "src/Sonarr.Api.V5/Commands/CommandResource.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-2/#9051",
+      "start": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 5,
+      "of": 5,
+      "offered": {
+        "page": 96,
+        "impact": 1595,
+        "history": 8,
+        "shown": 120
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/Download/CompletedDownloadService.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/Download/DownloadCompletedEvent.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        },
+        {
+          "file": "src/NzbDrone.Core/Download/History/DownloadHistoryService.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        },
+        {
+          "file": "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        },
+        {
+          "file": "src/NzbDrone.Core/Notifications/NotificationService.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-3/#9128",
+      "start": "page:/settings/customformats",
+      "rank": 3,
+      "rightPage": true,
+      "reached": 3,
+      "of": 3,
+      "offered": {
+        "page": 76,
+        "impact": 661,
+        "history": 3,
+        "shown": 92
+      },
+      "files": [
+        {
+          "file": "frontend/src/Settings/CustomFormats/CustomFormats/CustomFormat.tsx",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        },
+        {
+          "file": "frontend/src/Settings/CustomFormats/CustomFormats/EditCustomFormatModalContent.tsx",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        },
+        {
+          "file": "frontend/src/Settings/CustomFormats/CustomFormats/ImportCustomFormatModalContent.tsx",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-4/#9127",
+      "start": "page:/settings/profiles",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 2,
+      "of": 2,
+      "offered": {
+        "page": 92,
+        "impact": 714,
+        "history": 16,
+        "shown": 114
+      },
+      "files": [
+        {
+          "file": "frontend/src/Components/Form/NumberInput.tsx",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        },
+        {
+          "file": "frontend/src/Settings/Profiles/Quality/QualityProfileItemSize.tsx",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-5/#9126",
+      "start": "page:/settings/profiles",
+      "rank": 6,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 92,
+        "impact": 714,
+        "history": 16,
+        "shown": 114
+      },
+      "files": [
+        {
+          "file": "frontend/src/Settings/Profiles/Quality/QualityProfileItemSize.tsx",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-6/#9113",
+      "start": "page:/calendar",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 2,
+      "of": 9,
+      "offered": {
+        "page": 128,
+        "impact": 674,
+        "history": 16,
+        "shown": 150
+      },
+      "files": [
+        {
+          "file": "frontend/src/Calendar/Agenda/AgendaEvent.module.css",
+          "layer": "missed",
+          "kind": "styles",
+          "shown": false
+        },
+        {
+          "file": "frontend/src/Calendar/Agenda/AgendaEvent.tsx",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        },
+        {
+          "file": "frontend/src/Calendar/Events/CalendarEvent.module.css",
+          "layer": "missed",
+          "kind": "styles",
+          "shown": false
+        },
+        {
+          "file": "frontend/src/Calendar/Events/CalendarEventGroup.module.css",
+          "layer": "missed",
+          "kind": "styles",
+          "shown": false
+        },
+        {
+          "file": "frontend/src/Calendar/Legend/LegendItem.module.css",
+          "layer": "missed",
+          "kind": "styles",
+          "shown": false
+        },
+        {
+          "file": "frontend/src/Calendar/Legend/LegendItem.tsx",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        },
+        {
+          "file": "frontend/src/Components/ProgressBar.module.css",
+          "layer": "missed",
+          "kind": "styles",
+          "shown": false
+        },
+        {
+          "file": "frontend/src/Series/Index/SeriesIndexFooter.module.css",
+          "layer": "missed",
+          "kind": "styles",
+          "shown": false
+        },
+        {
+          "file": "frontend/src/Styles/Themes/themes.css",
+          "layer": "missed",
+          "kind": "styles",
+          "shown": false
+        }
+      ]
+    },
+    {
+      "id": "SONB-7/#9121",
+      "start": "page:/calendar",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 2,
+      "of": 2,
+      "offered": {
+        "page": 128,
+        "impact": 674,
+        "history": 16,
+        "shown": 150
+      },
+      "files": [
+        {
+          "file": "frontend/src/Calendar/CalendarMissingEpisodeSearchButton.tsx",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        },
+        {
+          "file": "frontend/src/Calendar/useCalendar.ts",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-8/#9111",
+      "start": "page:/activity/queue",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 119,
+        "impact": 688,
+        "history": 16,
+        "shown": 143
+      },
+      "files": [
+        {
+          "file": "frontend/src/Activity/Queue/Status/useQueueStatus.ts",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-9/#9102",
+      "start": "endpoint:Sonarr.Api.V5|ANY /api/v5/Queue",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 4,
+      "of": 4,
+      "offered": {
+        "page": 62,
+        "impact": 1237,
+        "history": 8,
+        "shown": 86
+      },
+      "files": [
+        {
+          "file": "frontend/src/Activity/Queue/useQueue.ts",
+          "layer": "impact",
+          "kind": "frontend code",
+          "shown": false
+        },
+        {
+          "file": "src/Sonarr.Api.V5/Queue/QueueBlocklistMethod.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        },
+        {
+          "file": "src/Sonarr.Api.V5/Queue/QueueController.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        },
+        {
+          "file": "src/Sonarr.Api.V5/Queue/QueueRemovalMethod.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-10/#9018",
+      "start": "page:/series/:titleSlug",
+      "rank": 2,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 216,
+        "impact": 690,
+        "history": 22,
+        "shown": 237
+      },
+      "files": [
+        {
+          "file": "frontend/src/InteractiveSearch/useReleases.ts",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-11/#8978",
+      "start": "page:/settings/importlists",
+      "rank": 1,
+      "rightPage": false,
+      "reached": 0,
+      "of": 1,
+      "offered": {
+        "page": 139,
+        "impact": 662,
+        "history": 9,
+        "shown": 154
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/ImportLists/Simkl/SimklParser.cs",
+          "layer": "missed",
+          "kind": "C#",
+          "shown": false
+        }
+      ]
+    },
+    {
+      "id": "SONB-12/#8929",
+      "start": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 96,
+        "impact": 1595,
+        "history": 8,
+        "shown": 120
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-13/#8842",
+      "start": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+      "rank": 2,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 142,
+        "impact": 1501,
+        "history": 21,
+        "shown": 166
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserProxy.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        }
+      ]
+    },
+    {
+      "id": "SONB-14/#8770",
+      "start": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 2,
+      "of": 2,
+      "offered": {
+        "page": 96,
+        "impact": 1595,
+        "history": 8,
+        "shown": 120
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core.Test/Download/TrackedDownloads/TrackedDownloadServiceFixture.cs",
+          "layer": "impact",
+          "kind": "test",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/Download/TrackedDownloads/TrackedDownloadService.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-15/#8757",
+      "start": "endpoint:Sonarr.Api.V3|GET /api/v3/CustomFormat/schema",
+      "rank": 16,
+      "rightPage": true,
+      "reached": 2,
+      "of": 2,
+      "offered": {
+        "page": 26,
+        "impact": 909,
+        "history": 2,
+        "shown": 41
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/CustomFormats/Specifications/ResolutionSpecification.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        },
+        {
+          "file": "src/NzbDrone.Core/CustomFormats/Specifications/SourceSpecification.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-16/#8604",
+      "start": "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.HandleAsync(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+      "rank": 9,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 57,
+        "impact": 619,
+        "history": 2,
+        "shown": 82
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/Localization/LocalizationService.cs",
+          "layer": "page",
+          "kind": "ui text",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-17/#8574",
+      "start": "endpoint:Sonarr.Api.V5|POST /api/v5/ImportList/action/{name}",
+      "rank": 46,
+      "rightPage": true,
+      "reached": 1,
+      "of": 2,
+      "offered": {
+        "page": 26,
+        "impact": 900,
+        "history": 11,
+        "shown": 47
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/ImportLists/Simkl/SimklAPI.cs",
+          "layer": "missed",
+          "kind": "C#",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/ImportLists/Simkl/SimklImportBase.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        }
+      ]
+    },
+    {
+      "id": "SONB-18/#8482",
+      "start": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+      "rank": 1,
+      "rightPage": false,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 96,
+        "impact": 1595,
+        "history": 8,
+        "shown": 120
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/Datastore/Converters/LanguageIntConverter.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        }
+      ]
+    },
+    {
+      "id": "SONB-19/#8414",
+      "start": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.HandleAsync(NzbDrone.Core.Download.DownloadsProcessedEvent)",
+      "rank": 6,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 48,
+        "impact": 1099,
+        "history": 15,
+        "shown": 72
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/Notifications/Plex/Server/PlexServerService.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        }
+      ]
+    },
+    {
+      "id": "SONB-20/#8270",
+      "start": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+      "rank": 10,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 142,
+        "impact": 1202,
+        "history": 24,
+        "shown": 167
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/Extras/Metadata/Consumers/Plex/PlexMetadata.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-21/#8221",
+      "start": "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.Execute(NzbDrone.Core.Update.Commands.ApplicationUpdateCommand)",
+      "rank": 2,
+      "rightPage": true,
+      "reached": 2,
+      "of": 2,
+      "offered": {
+        "page": 44,
+        "impact": 652,
+        "history": 10,
+        "shown": 69
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Common.Test/DiskTests/DiskTransferServiceFixture.cs",
+          "layer": "impact",
+          "kind": "test",
+          "shown": true
+        },
+        {
+          "file": "src/NzbDrone.Common/Disk/DiskTransferService.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-22/#8242",
+      "start": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+      "rank": 50,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 142,
+        "impact": 1202,
+        "history": 24,
+        "shown": 167
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-23/#8187",
+      "start": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+      "rank": 16,
+      "rightPage": true,
+      "reached": 2,
+      "of": 2,
+      "offered": {
+        "page": 142,
+        "impact": 1202,
+        "history": 24,
+        "shown": 167
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Common/Http/HttpRequestBuilder.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV2.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        }
+      ]
+    },
+    {
+      "id": "SONB-24/#8105",
+      "start": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.ManualInteractionRequiredEvent)",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 3,
+      "of": 3,
+      "offered": {
+        "page": 135,
+        "impact": 1554,
+        "history": 21,
+        "shown": 159
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/Notifications/Discord/Discord.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        },
+        {
+          "file": "src/NzbDrone.Core/Notifications/NotificationService.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        },
+        {
+          "file": "src/NzbDrone.Core/Notifications/Slack/Slack.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-25/#8006",
+      "start": "endpoint:Sonarr.Api.V3|GET /api/v3/Parse",
+      "rank": 17,
+      "rightPage": true,
+      "reached": 2,
+      "of": 2,
+      "offered": {
+        "page": 64,
+        "impact": 1431,
+        "history": 6,
+        "shown": 89
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core.Test/ParserTests/LanguageParserFixture.cs",
+          "layer": "impact",
+          "kind": "test",
+          "shown": true
+        },
+        {
+          "file": "src/NzbDrone.Core/Parser/LanguageParser.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-26/#7989",
+      "start": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.UpdateEpisodeFileService.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScannedEvent)",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 3,
+      "of": 3,
+      "offered": {
+        "page": 49,
+        "impact": 1341,
+        "history": 7,
+        "shown": 73
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Common/Extensions/DateTimeExtensions.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        },
+        {
+          "file": "src/NzbDrone.Core.Test/MediaFiles/UpdateEpisodeFileServiceTests/ChangeFileDateForFileFixture.cs",
+          "layer": "impact",
+          "kind": "test",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/MediaFiles/UpdateEpisodeFileService.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-27/#7922",
+      "start": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+      "rank": 5,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 96,
+        "impact": 1595,
+        "history": 8,
+        "shown": 120
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-28/#7879",
+      "start": "ts|frontend/src/Episode/EpisodeDetailsModalContent.tsx#EpisodeDetailsModalContent",
+      "rank": 10,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 156,
+        "impact": 906,
+        "history": 21,
+        "shown": 183
+      },
+      "files": [
+        {
+          "file": "frontend/src/Utilities/Number/formatBitrate.ts",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-29/#7874",
+      "start": "page:/system/status",
+      "rank": 1,
+      "rightPage": false,
+      "reached": 0,
+      "of": 1,
+      "offered": {
+        "page": 51,
+        "impact": 624,
+        "history": 4,
+        "shown": 69
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/ImportLists/Trakt/TraktAPI.cs",
+          "layer": "missed",
+          "kind": "C#",
+          "shown": false
+        }
+      ]
+    },
+    {
+      "id": "SONB-30/#7807",
+      "start": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.ManualInteractionRequiredEvent)",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 135,
+        "impact": 1554,
+        "history": 21,
+        "shown": 159
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/Notifications/CustomScript/CustomScript.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-31/#7780",
+      "start": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 2,
+      "of": 2,
+      "offered": {
+        "page": 96,
+        "impact": 1595,
+        "history": 8,
+        "shown": 120
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core.Test/MediaFiles/EpisodeImport/DetectSampleFixture.cs",
+          "layer": "impact",
+          "kind": "test",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/MediaFiles/EpisodeImport/DetectSample.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-32/#7785",
+      "start": "Sonarr.Core|M:NzbDrone.Core.Extras.ExtraService.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScannedEvent)",
+      "rank": 1,
+      "rightPage": false,
+      "reached": 4,
+      "of": 4,
+      "offered": {
+        "page": 64,
+        "impact": 1263,
+        "history": 15,
+        "shown": 88
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core.Test/Housekeeping/Housekeepers/CleanupOrphanedExtraFilesFixture.cs",
+          "layer": "impact",
+          "kind": "test",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core.Test/Housekeeping/Housekeepers/CleanupOrphanedSubtitleFilesFixture.cs",
+          "layer": "impact",
+          "kind": "test",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/Housekeeping/Housekeepers/CleanupOrphanedExtraFiles.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/Housekeeping/Housekeepers/CleanupOrphanedSubtitleFiles.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        }
+      ]
+    },
+    {
+      "id": "SONB-33/#7759",
+      "start": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)",
+      "rank": 1,
+      "rightPage": false,
+      "reached": 2,
+      "of": 3,
+      "offered": {
+        "page": 49,
+        "impact": 1277,
+        "history": 6,
+        "shown": 73
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/ImportLists/Trakt/Popular/TraktPopularListType.cs",
+          "layer": "missed",
+          "kind": "C#",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/ImportLists/Trakt/Popular/TraktPopularRequestGenerator.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/ImportLists/Trakt/Popular/TraktPopularSettings.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        }
+      ]
+    },
+    {
+      "id": "SONB-34/#7705",
+      "start": "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 2,
+      "of": 8,
+      "offered": {
+        "page": 3,
+        "impact": 319,
+        "history": 0,
+        "shown": 8
+      },
+      "files": [
+        {
+          "file": "frontend/src/Activity/Queue/QueueDetails.tsx",
+          "layer": "impact",
+          "kind": "frontend code",
+          "shown": false
+        },
+        {
+          "file": "frontend/src/App/ApplyTheme.tsx",
+          "layer": "missed",
+          "kind": "frontend code",
+          "shown": false
+        },
+        {
+          "file": "frontend/src/Components/Tooltip/Tooltip.css",
+          "layer": "missed",
+          "kind": "styles",
+          "shown": false
+        },
+        {
+          "file": "frontend/src/Components/Tooltip/Tooltip.css.d.ts",
+          "layer": "missed",
+          "kind": "frontend (not in graph)",
+          "shown": false
+        },
+        {
+          "file": "frontend/src/Components/Tooltip/Tooltip.tsx",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        },
+        {
+          "file": "frontend/src/Helpers/Hooks/useTheme.ts",
+          "layer": "missed",
+          "kind": "frontend code",
+          "shown": false
+        },
+        {
+          "file": "package.json",
+          "layer": "missed",
+          "kind": "config / build",
+          "shown": false
+        },
+        {
+          "file": "yarn.lock",
+          "layer": "missed",
+          "kind": "config / build",
+          "shown": false
+        }
+      ]
+    },
+    {
+      "id": "SONB-35/#7663",
+      "start": "endpoint:Sonarr.Api.V3|GET /api/v3/Queue",
+      "rank": 1,
+      "rightPage": false,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 56,
+        "impact": 1220,
+        "history": 6,
+        "shown": 80
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/Download/RejectedImportService.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        }
+      ]
+    },
+    {
+      "id": "SONB-36/#7608",
+      "start": "ts|frontend/src/Components/Form/FormInput.tsx#FormInput",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 132,
+        "impact": 722,
+        "history": 14,
+        "shown": 153
+      },
+      "files": [
+        {
+          "file": "frontend/src/Components/Form/Select/EnhancedSelectInput.tsx",
+          "layer": "page",
+          "kind": "frontend code",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-37/#7589",
+      "start": "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)",
+      "rank": 3,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 66,
+        "impact": 1283,
+        "history": 9,
+        "shown": 90
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core/IndexerSearch/ReleaseSearchService.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-38/#7555",
+      "start": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 9,
+      "of": 10,
+      "offered": {
+        "page": 49,
+        "impact": 1277,
+        "history": 6,
+        "shown": 73
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core.Test/ImportListTests/ImportListItemServiceFixture.cs",
+          "layer": "impact",
+          "kind": "test",
+          "shown": true
+        },
+        {
+          "file": "src/NzbDrone.Core.Test/ImportListTests/ImportListSyncServiceFixture.cs",
+          "layer": "impact",
+          "kind": "test",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/Datastore/Migration/217_add_mal_and_anilist_ids.cs",
+          "layer": "missed",
+          "kind": "migration",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/ImportLists/ImportListItems/ImportListItemRepository.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/ImportLists/ImportListItems/ImportListItemService.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        },
+        {
+          "file": "src/NzbDrone.Core/ImportLists/ImportListSyncService.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        },
+        {
+          "file": "src/NzbDrone.Core/MetadataSource/SkyHook/Resource/ShowResource.cs",
+          "layer": "history",
+          "kind": "C#",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        },
+        {
+          "file": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs",
+          "layer": "impact",
+          "kind": "C#",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/Tv/Series.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-39/#7527",
+      "start": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 2,
+      "of": 2,
+      "offered": {
+        "page": 142,
+        "impact": 1202,
+        "history": 24,
+        "shown": 167
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Core.Test/Download/DownloadClientTests/QBittorrentTests/QBittorrentFixture.cs",
+          "layer": "impact",
+          "kind": "test",
+          "shown": false
+        },
+        {
+          "file": "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrent.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    },
+    {
+      "id": "SONB-40/#7518",
+      "start": "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)",
+      "rank": 1,
+      "rightPage": true,
+      "reached": 1,
+      "of": 1,
+      "offered": {
+        "page": 22,
+        "impact": 770,
+        "history": 7,
+        "shown": 43
+      },
+      "files": [
+        {
+          "file": "src/NzbDrone.Common/Instrumentation/Sentry/SentryTarget.cs",
+          "layer": "page",
+          "kind": "C#",
+          "shown": true
+        }
+      ]
+    }
+  ]
+}

@@ -90,6 +90,14 @@ if (argList.Count >= 3 && argList[0] == "--score-index")
     if (argList.IndexOf("--out") is var io and >= 0) File.WriteAllText(argList[io + 1], indexText + "\n");
     return 0;
 }
+// How much of each past fix a bundle could reach from a right starting page, and what it misses: `--fix-coverage <clone> <tickets dir | cases.json> [--out file]`.
+if (argList.Count >= 3 && argList[0] == "--fix-coverage")
+{
+    var coverage = Stangent.Benchmark.Tickets.FixCoverage.Run(Path.GetFullPath(argList[1]), Path.GetFullPath(argList[2]), Console.Error);
+    var coverageText = coverage.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+    if (argList.IndexOf("--out") is var co and >= 0) File.WriteAllText(argList[co + 1], coverageText + "\n");
+    return 0;
+}
 // Picks 📜's defaults from tuning runs (D43): `--select-tuning <tune.json>... [--out file]`.
 if (argList.Count > 0 && argList[0] == "--select-tuning")
     return Tuning.Select([.. argList.Skip(1).TakeWhile(a => !a.StartsWith('-'))], argList.IndexOf("--out") is var o and >= 0 ? argList[o + 1] : null);

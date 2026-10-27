@@ -30,17 +30,8 @@ public static class IndexScore
         var built = clock.Elapsed.TotalSeconds - loaded;
         log.WriteLine($"{ctx.Set.Pages.Count} pages, {index.UnitCount} units; graph {loaded:F1}s, index {built:F1}s");
 
-        var list = Directory.Exists(cases) ? Sonarr(clone, cases) : FromFile(cases);
-        // The walk stops where the page's own slice stops (PageList): at shared components, which have pages of their own,
-        // and, for screens and components, at endpoints.
-        IReadOnlySet<string>? endpoints = ctx.Set.Settings.SplitAtEndpoints ? new HashSet<string> { Stangent.Graph.NodeKind.Endpoint } : null;
-        var shared = ctx.Set.Pages.Where(p => p.Kind == PageKind.Component).Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
-        var walkFiles = ctx.Set.Pages.ToDictionary(p => p.Id, p =>
-            (walkDepth != 0 ? ctx.Set.Builder.Build(p.Entry, walkDepth > 0 ? walkDepth : OwnDepth(ctx, p) - walkDepth,
-                    shared, p.Kind == PageKind.Backend ? null : endpoints)
-                : ctx.Set.Slices.GetValueOrDefault(p.Id))?
-                .Nodes.Where(n => n.Role == "walk" && n.Node.File is not null).Select(n => n.Node.File!).ToHashSet(StringComparer.Ordinal) ?? [],
-            StringComparer.Ordinal);
+        var list = Load(clone, cases);
+        var walkFiles = WalkFiles(ctx, walkDepth);
 
         var rows = new JsonArray();
         int reachable = 0, hit = 0, top20 = 0, winners = 0, winnerRight = 0, winnerHit = 0;
@@ -110,10 +101,29 @@ public static class IndexScore
         };
     }
 
+    /// <summary>The past bugs: a tickets dir (Sonarr's frozen set) or a cases JSON file.</summary>
+    internal static List<Case> Load(string clone, string cases) => Directory.Exists(cases) ? Sonarr(clone, cases) : FromFile(cases);
+
+    /// <summary>Per page, the files its walk reaches: at <paramref name="walkDepth"/> (negative: the page's depth plus that
+    /// many lines; 0: its slice), stopping where its slice stops.</summary>
+    internal static Dictionary<string, HashSet<string>> WalkFiles(TicketContext ctx, int walkDepth)
+    {
+        // The walk stops where the page's own slice stops (PageList): at shared components, which have pages of their own,
+        // and, for screens and components, at endpoints.
+        IReadOnlySet<string>? endpoints = ctx.Set.Settings.SplitAtEndpoints ? new HashSet<string> { Stangent.Graph.NodeKind.Endpoint } : null;
+        var shared = ctx.Set.Pages.Where(p => p.Kind == PageKind.Component).Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
+        return ctx.Set.Pages.ToDictionary(p => p.Id, p =>
+            (walkDepth != 0 ? ctx.Set.Builder.Build(p.Entry, walkDepth > 0 ? walkDepth : OwnDepth(ctx, p) - walkDepth,
+                    shared, p.Kind == PageKind.Backend ? null : endpoints)
+                : ctx.Set.Slices.GetValueOrDefault(p.Id))?
+                .Nodes.Where(n => n.Role == "walk" && n.Node.File is not null).Select(n => n.Node.File!).ToHashSet(StringComparer.Ordinal) ?? [],
+            StringComparer.Ordinal);
+    }
+
     static JsonArray R((double, double) r) => [r.Item1, r.Item2];
 
     /// <summary>How deep the page's own slice goes (Phase 2, D54).</summary>
-    static int OwnDepth(TicketContext ctx, PageDef p) =>
+    internal static int OwnDepth(TicketContext ctx, PageDef p) =>
         p.Kind == PageKind.Backend && ctx.Set.Settings.SplitAtEndpoints ? ctx.Set.Settings.BackendDepth : ctx.Set.Settings.Depth;
 
     static string Short(string s) => s.Length > 120 ? s[..120] + "…" : s;

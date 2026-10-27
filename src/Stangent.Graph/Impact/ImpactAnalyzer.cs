@@ -142,6 +142,18 @@ public sealed class ImpactAnalyzer
     /// <summary>Every point declared in a repo-relative file.</summary>
     public IReadOnlyList<Node> InFile(string file) => [.. byFile[file]];
 
+    /// <summary>What an impact answer from these start points could list if nothing were cut: every point within
+    /// <paramref name="maxDepth"/> lines back, and every 📜 partner of the start points' files, strongest first. For
+    /// scoring (how much of a past fix a bundle could reach); answers themselves stay capped (D27, D40).</summary>
+    public (IReadOnlyList<Node> Reached, IReadOnlyList<string> History) Reach(IReadOnlyList<Node> starts, int maxDepth)
+    {
+        // The same start order as AnalyzeStarts: which line reaches a point first decides the event-chain rule.
+        starts = [.. starts.DistinctBy(n => n.Id).OrderBy(n => n.Id, StringComparer.Ordinal)];
+        var reached = Walk(starts).Values.Where(r => r.Depth <= maxDepth).Select(r => r.Node).ToList();
+        var files = starts.Where(n => n.File is not null).Select(n => n.File!).ToHashSet(StringComparer.Ordinal);
+        return (reached, [.. HistoryPartners(files, new Dictionary<string, Label>()).Select(p => p.Line.Source)]);
+    }
+
     /// <summary>Everything that can reach the start points by following lines backwards.</summary>
     Dictionary<string, Reached> Walk(IReadOnlyList<Node> starts)
     {
