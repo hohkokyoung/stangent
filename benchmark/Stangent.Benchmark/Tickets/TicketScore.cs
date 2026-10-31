@@ -77,6 +77,7 @@ public static class TicketScore
         {
             ["issue"] = (int)i["issue"]!, ["kind"] = (string)i["kind"]!, ["area"] = (string?)i["area"], ["outcome"] = (string?)Proof(i)?["outcome"] ?? "not run",
             ["test"] = Kind(Proof(i)), ["proofOnFix"] = (string?)Record(i)?["proofOnFix"],
+            ["outside"] = (bool?)Proof(i)?["attempts"]?.AsArray().LastOrDefault()?["outside"] == true,
         }).ToList();
 
         // Grounded and repeatable are must-pass (D79): read from the artifacts and the run's own records.

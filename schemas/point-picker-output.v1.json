@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "urn:stangent:schema:point-picker-output:v1",
   "title": "What stangent-point-picker returns (Phase 3, D70)",
-  "description": "Up to 5 reference pages a ticket is about, chosen from the ranked page list (D87), each with a sentence quoted word for word from the ticket. Code checks every page exists and every quote is in the ticket.",
+  "description": "Up to 5 reference pages a ticket is about, chosen from the ranked page list (D87), and up to 3 parts outside the code (D83), each with a sentence quoted word for word from the ticket. Code checks every page exists and every quote is in the ticket.",
   "type": "object",
   "required": ["pages"],
   "additionalProperties": false,
@@ -17,6 +17,20 @@
         "properties": {
           "page": { "description": "The page's number in the list (a page id is also accepted).", "type": "string", "minLength": 1 },
           "quote": { "description": "Words from the ticket, exactly as written there (at least 4 words, or a whole line), that say why.", "type": "string", "minLength": 3, "maxLength": 400 }
+        }
+      }
+    },
+    "outside": {
+      "description": "Parts of the ticket whose cause lives outside the code (D83): the server, network, deployment, live data or a third party. Never a screen, an API or the app's own behaviour.",
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["area", "quote"],
+        "additionalProperties": false,
+        "properties": {
+          "area": { "enum": ["server", "network", "deployment", "data", "third-party", "other"] },
+          "quote": { "description": "Words from the ticket, exactly as written there (at least 4 words, or a whole line), that say so.", "type": "string", "minLength": 3, "maxLength": 400 }
         }
       }
     }

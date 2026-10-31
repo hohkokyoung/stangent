@@ -27,11 +27,14 @@ static class TicketCommands
 
         var addOption = new Option<string[]>("--add") { Description = "Add a starting point: a page (id, path or entry point) or a symbol (graph id or unique name).", AllowMultipleArgumentsPerToken = false };
         var removeOption = new Option<string[]>("--remove") { Description = "Remove a starting point (recorded with who removed it)." };
-        var points = new Command("points", "The ticket's starting points: code's signals, the AI's picks when code finds none, your changes (D70).") { KeyArg, addOption, removeOption };
+        var addOutsideOption = new Option<string[]>("--add-outside") { Description = "Mark a part outside the code: '<area>: <what>', area server, network, deployment, data, third-party or other (D83)." };
+        var removeOutsideOption = new Option<string[]>("--remove-outside") { Description = "Remove the parts outside the code in an area, or all; with nothing left and no starting point, bug proof runs again (D83)." };
+        var points = new Command("points", "The ticket's starting points: code's signals, the AI's picks when code finds none, your changes (D70); parts outside the code (D83).") { KeyArg, addOption, removeOption, addOutsideOption, removeOutsideOption };
         points.SetAction(pr => Cli.Run(pr, "ticket points", ctx =>
         {
             var key = pr.GetValue(KeyArg)!;
-            var result = TicketPoints.Update(ctx.Repo, TicketContext.Load(ctx.Repo), key, pr.GetValue(addOption) ?? [], pr.GetValue(removeOption) ?? [], Who(ctx));
+            var result = TicketPoints.Update(ctx.Repo, TicketContext.Load(ctx.Repo), key, pr.GetValue(addOption) ?? [], pr.GetValue(removeOption) ?? [], Who(ctx),
+                pr.GetValue(addOutsideOption) ?? [], pr.GetValue(removeOutsideOption) ?? []);
             ctx.Span.Attributes["stangent.artifact.count"] = result["points"]!.AsArray().Count;
             if ((string?)result["ai"]?["status"] == "needed")
                 result["next"] = new JsonObject { ["action"] = "prepare", ["command"] = $"stangent ticket prepare {key} --step points" };

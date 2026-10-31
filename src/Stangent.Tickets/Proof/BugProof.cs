@@ -32,8 +32,23 @@ public static class BugProof
         if (!(bool)pulled["isBug"]!)
             throw new StangentException("not_a_bug", $"{key} is a {(string)pulled["ticket"]!["type"]!}, not one of tickets.bugTypes; only bugs are proven (D75).", ExitCodes.Usage);
         var bundle = TicketBundle.LoadOrFail(repo.Root, key);
-        var targets = Targets(repo, ctx, bundle);
         var proof = Load(paths);
+
+        // D83: every part is outside the code and nothing points into it: no test in the repo can reach it, so no attempt.
+        if (OutsidePart.OnlyOutside(bundle))
+        {
+            var reason = "every part of the ticket is outside the code (" + string.Join(", ", OutsidePart.Of(bundle).Select(o => o.Area).Distinct())
+                + ") and nothing points into it (D83); remove a wrong part with `stangent ticket points " + key + " --remove-outside <area>` to try the proof";
+            var outsideInputs = CanonicalJson.Hash(reason + CanonicalJson.Serialize(bundle["outside"]!) + (hint ?? ""));
+            if (Latest(proof) is { } last && (string?)last["inputs"] == outsideInputs) return new RunStep("current", "none");
+            Record(repo, paths, new JsonObject
+            {
+                ["outcome"] = "not-provable", ["outside"] = true, ["reason"] = reason, ["hint"] = hint, ["commit"] = Commit(repo.Root, null), ["inputs"] = outsideInputs,
+            });
+            return new RunStep("recorded", "none", Errors: [reason]);
+        }
+
+        var targets = Targets(repo, ctx, bundle);
 
         if (targets.Count == 0)
         {
@@ -61,6 +76,7 @@ public static class BugProof
         {
             ["attempt"] = n, ["hint"] = hint, ["targets"] = new JsonArray([.. targets.Select(t => (JsonNode)t.ToJson())]),
             ["related"] = new JsonArray([.. related.Select(r => (JsonNode)r)]),
+            ["outside"] = new JsonArray([.. OutsidePart.Of(bundle).Select(o => o.Area).Distinct().Select(a => (JsonNode)a)]),
         });
     }
 
@@ -197,6 +213,15 @@ public static class BugProof
         if (output is not null && (string)output["outcome"]! == "not-provable")
         {
             var reason = (string?)output["reason"] ?? "no reason given";
+            // D83: part of the ticket is outside the code (in the bundle this attempt was prepared with), so "not
+            // provable" may be right: accepted without the push-back.
+            var outside = state["outside"]?.AsArray().Select(a => (string)a!).ToList() ?? [];
+            if (outside.Count > 0)
+            {
+                attempt["outside"] = true;
+                return Finish(repo, paths, state, attempt, "not-provable",
+                    $"the reproducer's judgment (part of the ticket is outside the code: {string.Join(", ", outside)}): {reason}", null);
+            }
             if (AiStep.Retry(paths, step, state, [$"Code found test targets ({string.Join(", ", targets.Select(t => t.Id))}). Write a test in one of them; answer not-provable again only if none can reach the behaviour, saying why. You said: {reason}"]) is { } again)
                 return again;
             return Finish(repo, paths, state, attempt, "not-provable", $"the reproducer's judgment (code found test targets): {reason}", null);

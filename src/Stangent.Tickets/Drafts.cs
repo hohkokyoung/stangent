@@ -64,20 +64,21 @@ public static partial class TicketDrafts
         return new JsonObject
         {
             ["missing"] = Missing(pulled, bundle),
+            ["outside"] = bundle["outside"]?.DeepClone() ?? new JsonArray(),
             ["pages"] = new JsonArray([.. bundle["pages"]!.AsArray().Where(p => (string?)p!["state"] == "included").Select(p => (JsonNode)(string)p!["id"]!)]),
             ["sections"] = new JsonArray([.. bundle["sections"]!.AsArray().Select(s => (JsonNode)new JsonObject { ["doc"] = (string)s!["doc"]!, ["section"] = (string)s["id"]! })]),
             ["files"] = new JsonArray([.. bundle["pointers"]!.AsArray().Select(p => (string?)p!["file"]).OfType<string>().Distinct().Order(StringComparer.Ordinal).Select(f => (JsonNode)f)]),
         };
     }
 
-    /// <summary>The missing bug fields, plus <c>where</c> when the bundle has no starting point (D87): the reporter is
-    /// asked where it happens rather than the work starting from a guess.</summary>
+    /// <summary>The missing bug fields, plus <c>where</c> when the bundle has no starting point (D87) and no part outside
+    /// the code (D83): the reporter is asked where it happens rather than the work starting from a guess.</summary>
     public const string Where = "where";
 
     static JsonArray Missing(JsonObject pulled, JsonObject bundle)
     {
         var missing = pulled["bug"]?["missing"]?.AsArray().Select(m => (string)m!).ToList() ?? [];
-        if (bundle["points"]!.AsArray().Count == 0 && !missing.Contains(Where)) missing.Add(Where);
+        if (bundle["points"]!.AsArray().Count == 0 && OutsidePart.Of(bundle).Count == 0 && !missing.Contains(Where)) missing.Add(Where);
         return new JsonArray([.. missing.Select(m => (JsonNode)m)]);
     }
 
@@ -120,6 +121,13 @@ public static partial class TicketDrafts
         }
         var missing = facts["missing"]!.AsArray();
         if (missing.Count > 0) sb.Append($"# Missing\n\n{string.Join(", ", missing.Select(m => (string)m!))}\n\n");
+        if (facts["outside"] is JsonArray { Count: > 0 } outside)
+        {
+            sb.Append("# Outside the code\n\n");
+            foreach (var o in outside.Select(o => OutsidePart.FromJson(o!)))
+                sb.Append(o.By == "ai" ? $"- **{o.Area}**, the ticket says: {o.Quote.Replace("\n", " ")}\n" : $"- **{o.Area}**, a developer ({o.By}) notes: {o.Quote.Replace("\n", " ")}\n");
+            sb.Append('\n');
+        }
         if (facts["pr"] is JsonObject pr) sb.Append($"# The PR\n\n- range: `{pr["range"]}`{((string?)pr["url"] is { } url ? $"\n- link: {url}" : "")}\n\n");
         var files = facts["files"]!.AsArray();
         if (kind == "resolution") sb.Append("# Files the PR changed\n\n").Append(string.Concat(files.Select(f => $"- `{f}`\n"))).Append('\n');

@@ -271,6 +271,50 @@ public class BugProofTests
         Assert.Equal("not_a_bug", Assert.Throws<StangentException>(() => r.Prepare()).Code);
     }
 
+    /// <summary>Re-picks the points: every code point removed, outside parts added or removed; then the bundle again.</summary>
+    static void Outside(Proof p, string[]? add = null, string[]? remove = null, bool dropCode = true)
+    {
+        var ctx = TicketContext.Load(p.App.Repo);
+        var ids = dropCode ? TicketPoints.LoadOrFail(p.Root, Key)["points"]!.AsArray().Select(x => (string)x!["id"]!).ToArray() : [];
+        TicketPoints.Update(p.App.Repo, ctx, Key, [], ids, "Pat Developer", add ?? [], remove ?? []);
+        TicketBundle.Build(p.App.Repo, ctx, Key);
+    }
+
+    [Fact]
+    public void With_every_part_outside_the_code_proof_is_skipped_until_a_developer_removes_the_tag()
+    {
+        using var p = new Proof();
+        var code = TicketPoints.LoadOrFail(p.Root, Key)["points"]!.AsArray().Select(x => (string)x!["id"]!).ToArray();
+        Outside(p, add: ["network: the proxy in front of it times out"]);
+        var skipped = p.Prepare();
+        Assert.Equal("recorded", skipped.Status);
+        Assert.Equal("none", skipped.Action);                          // no AI call (D83)
+        Assert.Equal("not-provable", (string?)p.Record["outcome"]);
+        Assert.True((bool?)p.Record["attempts"]![0]!["outside"]);
+        Assert.Contains("outside the code (network)", (string?)p.Record["attempts"]![0]!["reason"]);
+        Assert.Equal("current", p.Prepare().Status);
+
+        // The developer says it's in the code after all: the tag goes, the method comes back, and the reproducer gets its attempt.
+        var ctx = TicketContext.Load(p.App.Repo);
+        TicketPoints.Update(p.App.Repo, ctx, Key, code, [], "Pat Developer", removeOutside: ["network"]);
+        TicketBundle.Build(p.App.Repo, ctx, Key);
+        Assert.Equal(StepSpec.Prove.Agent, p.Prepare().Agent);
+    }
+
+    [Fact]
+    public void With_a_code_part_and_an_outside_part_the_reproducer_tries_and_not_provable_is_accepted_at_once()
+    {
+        using var p = new Proof();
+        Outside(p, add: ["deployment: only on the server behind the load balancer"], dropCode: false);
+        Assert.Equal(StepSpec.Prove.Agent, p.Prepare().Agent);         // a code point is there: proof runs
+        Assert.Contains("## Outside the code", File.ReadAllText(Path.Combine(p.Root, ".stangent", "tickets", Key, "prove", "input.md")));
+
+        Assert.Equal("recorded", p.Check("""{"outcome":"not-provable","reason":"it only happens behind the load balancer"}""").Status); // no push-back
+        Assert.Equal("not-provable", (string?)p.Record["outcome"]);
+        Assert.True((bool?)p.Record["attempts"]![0]!["outside"]);
+        Assert.Contains("outside the code: deployment", (string?)p.Record["attempts"]![0]!["reason"]);
+    }
+
     [Fact]
     public async Task Verify_passes_on_the_fix_only_when_the_test_passes_and_nothing_new_fails()
     {

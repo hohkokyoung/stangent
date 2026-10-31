@@ -19,6 +19,8 @@ Your job: **write one test that fails because of the bug** and would pass once t
 4. If the test passes, the bug may not be there (or your test misses it). Check the steps once more; if it still
    passes, report it as written anyway: a passing test is an answer.
 5. If no unit test can reach this behaviour and there is no Playwright target, return `not-provable` with the reason.
+   If the bundle lists parts **outside the code** (server, network, deployment, live data, a third party) and the bug
+   lies in one of them, return `not-provable` naming that part. If the bug is in the code too, write the test for that.
 
 Report in the output schema: the target id, the test file (relative to the repo root), the test's full name, the line
 and exact code of the assertion that checks the expected result, and the ticket's sentence giving that expected result,

@@ -78,6 +78,7 @@ public static class TicketBundle
                 ["ticket"] = Ticket(pulled),
                 ["points"] = points["points"]!.DeepClone(),
                 ["changes"] = points["changes"]!.DeepClone(),
+                ["outside"] = points["outside"]?.DeepClone() ?? new JsonArray(),
                 ["pages"] = pages,
                 ["sections"] = Sections(repo, ctx, included.Select(d => d.Id).ToHashSet(StringComparer.Ordinal)),
                 ["impact"] = impact.DeepClone(),
@@ -218,12 +219,21 @@ public static class TicketBundle
 
         md.Append("## Starting points\n\n");
         var points = b["points"]!.AsArray();
-        if (points.Count == 0) md.Append("**No confident starting point:** none was found in the ticket, picked, or kept. The questions draft asks the reporter where it happens. Add some with `stangent ticket points <KEY> --add <page|symbol>`.\n\n");
+        var outside = OutsidePart.Of(b);
+        if (points.Count == 0 && outside.Count > 0) md.Append($"**None in the code:** every part of this ticket is outside the code (below){((bool)t["isBug"]! ? ", so bug proof is skipped" : "")}. If one is really in the code, remove it with `stangent ticket points <KEY> --remove-outside <area>` or add a page with `--add`.\n\n");
+        else if (points.Count == 0) md.Append("**No confident starting point:** none was found in the ticket, picked, or kept. The questions draft asks the reporter where it happens. Add some with `stangent ticket points <KEY> --add <page|symbol>`.\n\n");
         else
         {
             md.Append("| | point | why | by |\n|---|---|---|---|\n");
             foreach (var p in points)
                 md.Append($"| {p!["kind"]} | `{Cell((string)p["title"]!)}` | {p["signal"]}: {Cell(Inline((string)p["evidence"]!))} | {p["by"]} |\n");
+            md.Append('\n');
+        }
+
+        if (outside.Count > 0)
+        {
+            md.Append("## Outside the code\n\nParts whose cause lives where the repo doesn't: no code here can show or fix them (D83).\n\n| area | what | by |\n|---|---|---|\n");
+            foreach (var o in outside) md.Append($"| {o.Area} | {Cell(Inline(o.Quote))} | {o.By} |\n");
             md.Append('\n');
         }
 

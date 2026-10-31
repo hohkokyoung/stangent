@@ -68,6 +68,12 @@ description (`### Expected Behavior`, `**Actual:**`); the missing ones are liste
   "No confident starting point", and the questions draft must ask the reporter where it happens (`where` is listed as
   missing).
 - **You:** `--add` / `--remove` a page or symbol; replayed on every run and recorded with git's `user.name`.
+- **Outside the code (D83):** parts whose cause lives where the repo doesn't: `server`, `network`, `deployment`,
+  `data`, `third-party`, `other`. The point picker may return up to 3 (`outside`, each quoted from the ticket and checked
+  word for word, like its pages); you add one with `--add-outside "network: times out behind the proxy"` and remove an
+  area's with `--remove-outside network` (or `all`). Screens, APIs and app-level security bugs are in the code, never
+  outside. With some outside part and no starting point, the bundle says "None in the code" instead of "No confident
+  starting point", and `where` isn't asked.
 
 ## The bundle (D71)
 
@@ -84,6 +90,9 @@ inputs → the same bytes.
 - **Targets, by code:** .NET test projects (xUnit, NUnit, MSTest) referencing the starting points' projects; the Jest
   or Vitest package holding their frontend files; Playwright when `tickets.app` says how to build, start and seed the
   app (`tickets.app.specDir`, default `e2e/stangent`). None: **not provable here**, recorded with no AI call.
+- **Outside the code (D83):** with no starting point and some part outside the code, proof is skipped: `not-provable`,
+  `outside: true`, no AI call. Remove a wrong part (`ticket points --remove-outside`) and the next run tries. With a code
+  point too, the reproducer runs; its `not-provable` is then accepted without the push-back retry, marked `outside`.
 - **`stangent-bug-reproducer`** (multi-turn) may edit only in the targets' folders and run only their build and test
   commands (permission rules in `result.next.limits`), within `tickets.proveBudget` (default $1, 30 turns) **per attempt**:
   a retry runs under what's left, and `check --step prove --usage <result>` sums both calls. In Claude Code,

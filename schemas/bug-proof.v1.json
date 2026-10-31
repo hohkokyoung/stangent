@@ -36,6 +36,7 @@
           "hint": { "type": ["string", "null"] },
           "outcome": { "$ref": "#/properties/outcome" },
           "reason": { "type": "string" },
+          "outside": { "description": "Not provable because of a part outside the code (D83): skipped when every part is, or the reproducer's answer accepted without the retry.", "type": "boolean" },
           "commit": { "description": "The commit the test ran on (with -dirty when the working tree had changes beyond the test).", "type": "string" },
           "kind": { "enum": ["unit", "playwright"] },
           "target": { "type": "string" },

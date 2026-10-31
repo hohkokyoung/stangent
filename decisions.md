@@ -1325,6 +1325,14 @@ misleads, and the proof attempt wastes money.
 **Cost:** `ticket-bundle` and the point picker's output change while Phase 3 is still in progress (v1 is not yet
 published); an extra kind of AI claim to check; infra that lives in the repo (Dockerfiles, workflows, Terraform) isn't in
 the code map yet, so it shows only as an outside-the-code part (mapping it is Phase 7's).
+- *Settled 2026-10-31 (the open question):* **proof is skipped only when every part is outside the code and nothing
+  points into it** (no starting point by code, AI or developer). It's recorded `not-provable`, marked `outside`, with
+  no AI call. "Outside" means the cause lives where the repo doesn't: the server, network, deployment, live data, a
+  third party. UI, API and app-level security bugs (XSS, injection, a missing auth check) are in the code and always get
+  an attempt. A developer removes a wrong tag (`--remove-outside`) and the next run tries the proof. The questions draft
+  asks *where* only when there is neither a starting point nor an outside part.
+  **Why:** a wrong "outside" tag would quietly skip proof on a provable bug, the worst outcome; requiring no code point
+  at all keeps that rare, and a developer can undo it. **Cost:** a mixed ticket still pays for an attempt.
 
 ## D84 · Drafts: framing lines need no claim, writers never talk about their input, and the run drafts after proof — 2026-10-26
 Refines D74. On the Sonarr run 21 of 50 questions drafts and 12 of 40 resolutions failed the check, many on lines that
@@ -1470,8 +1478,6 @@ against it and a list already too long.
 unread files must be kept in step with what the graph learns.
 
 ## Open questions
-- D83: when every part of a ticket is outside the code, is bug proof skipped outright (saves the $1 attempt), or does
-  the reproducer still get to try? Leading answer: skipped, marked "outside the code". (Phase 3)
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
 - Parallel subagents: should the orchestrator fix the contract first (API shapes, shared types), then run

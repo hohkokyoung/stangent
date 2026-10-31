@@ -25,6 +25,15 @@
         "by": { "description": "code, ai, or the person who added it.", "type": "string" }
       }
     },
+    "outside": {
+      "description": "A part of the ticket whose cause lives outside the code (D83): the server, network, deployment, live data or a third party.",
+      "type": "object", "required": ["area", "quote", "by"], "additionalProperties": false,
+      "properties": {
+        "area": { "enum": ["server", "network", "deployment", "data", "third-party", "other"] },
+        "quote": { "description": "The ticket's words (an AI part, checked word for word) or the developer's note.", "type": "string" },
+        "by": { "description": "ai, or the person who added it.", "type": "string" }
+      }
+    },
     "statement": {
       "type": "object", "required": ["id", "section", "text", "cites"], "additionalProperties": false,
       "properties": {
@@ -87,6 +96,7 @@
     },
     "points": { "description": "The starting points with their reasons and who chose them (D70).", "type": "array", "items": { "$ref": "#/definitions/point" } },
     "changes": { "description": "Starting points the developer added or removed, in order.", "type": "array", "items": { "type": "object" } },
+    "outside": { "description": "Parts outside the code, each tagged by who said so (D83). None in the code and some here: bug proof is skipped.", "type": "array", "items": { "$ref": "#/definitions/outside" } },
     "pages": {
       "description": "The chosen reference pages, highest ranked first: whole, or a pointer when the cap cut them.",
       "type": "array",

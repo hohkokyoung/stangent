@@ -57,6 +57,36 @@ public sealed record StartingPoint(string Kind, string Id, string Title, string 
         (string)n["evidence"]!, (string)n["where"]!, (string)n["by"]!);
 }
 
+/// <summary>A part of a ticket whose cause lives outside the code (D83): the server, network, deployment, live data or a
+/// third party. <c>Quote</c> is the ticket's words (from the AI, checked word for word) or the developer's note.</summary>
+public sealed record OutsidePart(string Area, string Quote, string By)
+{
+    public static readonly string[] Areas = ["server", "network", "deployment", "data", "third-party", "other"];
+
+    public JsonObject ToJson() => new() { ["area"] = Area, ["quote"] = Quote, ["by"] = By };
+
+    public static OutsidePart FromJson(JsonNode n) => new((string)n["area"]!, (string)n["quote"]!, (string)n["by"]!);
+
+    /// <summary>The bundle's outside parts (none in a bundle built before D83).</summary>
+    public static List<OutsidePart> Of(JsonObject bundleOrPoints) =>
+        bundleOrPoints["outside"]?.AsArray().Select(o => FromJson(o!)).ToList() ?? [];
+
+    /// <summary>Every part is outside the code and nothing points into it: bug proof is skipped (D83, settled 2026-10-31).</summary>
+    public static bool OnlyOutside(JsonObject bundleOrPoints) =>
+        bundleOrPoints["points"]!.AsArray().Count == 0 && Of(bundleOrPoints).Count > 0;
+
+    /// <summary><c>--add-outside "network: times out behind the proxy"</c>.</summary>
+    public static (string Area, string Note) Parse(string text)
+    {
+        var colon = text.IndexOf(':');
+        var area = colon < 0 ? "" : text[..colon].Trim().ToLowerInvariant();
+        var note = colon < 0 ? "" : text[(colon + 1)..].Trim();
+        if (!Areas.Contains(area) || note.Length == 0)
+            throw new StangentException("usage", $"--add-outside takes '<area>: <what>', area one of {string.Join(", ", Areas)}; got '{text}'.", ExitCodes.Usage);
+        return (area, note);
+    }
+}
+
 /// <summary>The ticket's text, by where it came from: what code searches and what quotes must come from.</summary>
 public sealed record TicketText(IReadOnlyList<(string Where, string Text)> Prose, IReadOnlyList<(string Where, string Text)> Attachments)
 {
@@ -275,7 +305,8 @@ public static partial class PointFinder
 /// </summary>
 public static class TicketPoints
 {
-    public static JsonObject Update(StangentRepo repo, TicketContext ctx, string key, IReadOnlyList<string> add, IReadOnlyList<string> remove, string who)
+    public static JsonObject Update(StangentRepo repo, TicketContext ctx, string key, IReadOnlyList<string> add, IReadOnlyList<string> remove, string who,
+        IReadOnlyList<string>? addOutside = null, IReadOnlyList<string>? removeOutside = null)
     {
         var paths = new TicketPaths(repo.Root, key);
         var pulled = TicketPull.LoadOrFail(repo.Root, key);
@@ -285,6 +316,19 @@ public static class TicketPoints
         var changes = previous?["changes"]?.AsArray().Select(c => c!.DeepClone()).ToList() ?? [];
         foreach (var a in add) changes.Add(Change("add", Resolve(ctx, a), who));
         foreach (var r in remove) changes.Add(Change("remove", Resolve(ctx, r), who));
+        // Removals first, so one call can replace an area's parts with the developer's own.
+        foreach (var o in removeOutside ?? [])
+        {
+            var area = o.Trim().ToLowerInvariant();
+            if (area != "all" && !OutsidePart.Areas.Contains(area))
+                throw new StangentException("usage", $"--remove-outside takes an area ({string.Join(", ", OutsidePart.Areas)}) or all; got '{o}'.", ExitCodes.Usage);
+            changes.Add(new JsonObject { ["action"] = "remove", ["kind"] = Outside, ["id"] = area, ["by"] = who });
+        }
+        foreach (var o in addOutside ?? [])
+        {
+            var (area, note) = OutsidePart.Parse(o);
+            changes.Add(new JsonObject { ["action"] = "add", ["kind"] = Outside, ["id"] = area, ["note"] = note, ["by"] = who });
+        }
 
         var code = PointFinder.Find(text, ctx);
         var ai = AiSection(repo, ctx, paths, text, code.Count, previous?["ai"] as JsonObject);
@@ -292,12 +336,21 @@ public static class TicketPoints
             ? new StartingPoint(StartingPoint.Page, page.Id, ctx.Title(page), "ai", (string)p["quote"]!, "ticket", "ai") : null).OfType<StartingPoint>();
 
         var points = code.Concat(picked).ToList();
+        var outside = (ai["outside"] as JsonArray ?? []).Select(o => new OutsidePart((string)o!["area"]!, (string)o["quote"]!, "ai")).ToList();
         foreach (var c in changes)
         {
             var (action, kind, id) = ((string)c!["action"]!, (string)c["kind"]!, (string)c["id"]!);
+            if (kind == Outside)
+            {
+                if (action == "remove") outside.RemoveAll(o => id == "all" || o.Area == id);
+                else outside.Add(new OutsidePart(id, (string?)c["note"] ?? "", (string)c["by"]!));
+                continue;
+            }
             points.RemoveAll(p => p.Kind == kind && p.Id == id);
             if (action == "add") points.Add(new StartingPoint(kind, id, TitleOf(ctx, kind, id), "developer", "", "", (string)c["by"]!));
         }
+
+        outside = [.. outside.DistinctBy(o => (o.Area, o.Quote))];
 
         var result = new JsonObject
         {
@@ -305,10 +358,12 @@ public static class TicketPoints
             ["ticketHash"] = "sha256:" + CanonicalJson.Hash(CanonicalJson.Serialize(pulled)),
             ["commit"] = ctx.Graph.Commit,
             ["points"] = new JsonArray([.. points.Select(p => (JsonNode)p.ToJson())]),
+            ["outside"] = new JsonArray([.. outside.Select(o => (JsonNode)o.ToJson())]),
             ["counts"] = new JsonObject
             {
                 ["code"] = code.Count, ["ai"] = picked.Count(),
                 ["developer"] = points.Count(p => p.Signal == "developer"),
+                ["outside"] = outside.Count,
             },
             ["changes"] = new JsonArray([.. changes]),
             ["ai"] = ai,
@@ -319,6 +374,9 @@ public static class TicketPoints
 
     public static JsonObject LoadOrFail(string root, string key) => PageRun.LoadJson(new TicketPaths(root, key).PointsJson) as JsonObject
         ?? throw new StangentException("no_points", $"No starting points for {key} yet. Run `stangent ticket points {key}` first.", ExitCodes.NotFound);
+
+    /// <summary>The change kind for an outside-the-code part (D83); its id is the area, or <c>all</c> on a removal.</summary>
+    public const string Outside = "outside";
 
     static JsonObject Change(string action, (string Kind, string Id) target, string who) =>
         new() { ["action"] = action, ["kind"] = target.Kind, ["id"] = target.Id, ["by"] = who };
@@ -448,16 +506,23 @@ public static class TicketPoints
                 if (!Quotes.InText((string)pick["quote"]!, text.Quotable))
                     errors.Add($"pages[{i}]: the quote \"{Short((string)pick["quote"]!)}\" isn't in the ticket word for word (at least 4 words, or a whole line).");
             }
+        if (output is not null)
+            foreach (var (part, i) in (output["outside"]?.AsArray() ?? []).Select((p, i) => (p!, i)))
+                if (!Quotes.InText((string)part["quote"]!, text.Quotable))
+                    errors.Add($"outside[{i}]: the quote \"{Short((string)part["quote"]!)}\" isn't in the ticket word for word (at least 4 words, or a whole line).");
         if (errors.Count > 0 && AiStep.Retry(paths, step, state, errors) is { } retry) return retry;
 
         var points = LoadOrFail(repo.Root, key);
         var ai = new JsonObject
         {
-            ["status"] = errors.Count > 0 ? "failed" : output!["pages"]!.AsArray().Count == 0 ? "none" : "picked",
+            ["status"] = errors.Count > 0 ? "failed" : output!["pages"]!.AsArray().Count == 0 && (output["outside"]?.AsArray().Count ?? 0) == 0 ? "none" : "picked",
             ["inputs"] = state["inputs"]!.DeepClone(), ["usage"] = state["usage"]!.DeepClone(), ["retries"] = (int?)state["retries"] ?? 0,
             ["picks"] = errors.Count > 0 ? new JsonArray() : new JsonArray([.. output!["pages"]!.AsArray()
                 .Select(p => (JsonNode)new JsonObject { ["page"] = PickedPage(ctx, (string)p!["page"]!)!.Id, ["quote"] = (string)p["quote"]! })
                 .DistinctBy(p => (string)p["page"]!)]),
+            ["outside"] = errors.Count > 0 ? new JsonArray() : new JsonArray([.. (output!["outside"]?.AsArray() ?? [])
+                .Select(o => (JsonNode)new JsonObject { ["area"] = (string)o!["area"]!, ["quote"] = (string)o["quote"]! })
+                .DistinctBy(o => ((string)o["area"]!, (string)o["quote"]!))]),
         };
         if (errors.Count > 0) ai["errors"] = new JsonArray([.. errors.Take(10).Select(e => (JsonNode)e)]);
         points["ai"] = ai;

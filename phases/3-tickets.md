@@ -385,3 +385,21 @@ The first proofs since D86 was built (the 2026-10-26 attempts, before it, are sa
   `run/pilot-d86-turns15/`.
 - **Pilot cost:** $0.59 for three AI attempts ($0.13 + $0.23 capped + $0.23). Both bugs reproduced and both proofs are
   real; before D86 neither was (SONB-5's tests timed out, SONB-13 hit the turn cap). Two bugs say the steps work end to end, not how often; the full run (D81) measures that.
+
+### Step 8 · parts outside the code (D83) built before the full run · 2026-10-31 · no AI spent
+- **Why before the run:** the earlier Sonarr attempt gave infra tickets (a full disk, a proxy) app pages, an app-code
+  bundle and a $1 proof attempt that couldn't reach the problem. Running the paid set without D83 would score a known gap.
+- **The owner's rule (D83, settled):** proof is skipped only when every part is outside the code and nothing points
+  into it. UI, API and app-level security bugs always get an attempt; a developer removes a wrong tag to force one.
+- **Built:** the point picker may return up to 3 outside parts (area + the ticket's words, checked word for word);
+  `ticket points --add-outside / --remove-outside`; the bundle's "Outside the code" section (`ticket-bundle` v1 gains
+  an optional `outside`, not yet published, so no bump); proof's skip (`not-provable`, `outside: true`, no AI call) and
+  no push-back when some part is outside; the questions draft sees the parts and asks `where` only with neither; the
+  score lists `outside` per proof. 5 new tests, 275 green.
+- **Fresh review (D61), same day:** nothing serious. Six small fixes applied: one call's `--remove-outside` now runs
+  before its `--add-outside`; the outside count matches the de-duplicated list; the no-push-back decision reads the
+  bundle the attempt was prepared with (saved in the step state); the questions writer is told which parts are the
+  ticket's words and which a developer's notes; "proof is skipped" only shows on bugs; a stale picker line fixed.
+- **Expected on the next run:** the picker's, reproducer's and question writer's instructions changed, so their recorded
+  results are stale: every pick, proof attempt and draft runs again (inside the D81 budget).
+- **Not measured yet:** how often the picker marks a part outside, and whether any mark is wrong; the full run shows it.

@@ -9,6 +9,10 @@ Ask only what the input supports:
   ticket sentence `{"kind":"ticket","quote":…}` and the other side `{"kind":"fsd","doc":…,"section":…,"quote":…}` or
   `{"kind":"page","page":…,"statement":…,"quote":…}`. Every quote is copied **word for word** from the input.
 - **Unclear points** in the ticket: quote the unclear sentence.
+- **Outside the code:** for each part listed there, ask for what's needed to look into it: which environment, server
+  or proxy, the logs, the version deployed. Where the part is what "the ticket says", link that sentence
+  `{"kind":"ticket","quote":…}`; a developer's note isn't in the ticket, so ask about it as a question. Link `missing`
+  when the field is listed there (`environment`, say).
 - **A bug that wasn't reproduced:** say what was tried (the test, in plain words for the client tone) and ask for what's
   needed to reproduce it, linked `{"kind":"proof","outcome":"<the outcome as the input gives it>"}`.
 

@@ -133,6 +133,21 @@ public class TicketDraftTests
     }
 
     [Fact]
+    public void With_only_outside_parts_the_draft_shows_them_and_does_not_ask_where()
+    {
+        using var d = new Draft();
+        var ctx = d.Ctx;
+        var ids = TicketPoints.LoadOrFail(d.Root, Key)["points"]!.AsArray().Select(p => (string)p!["id"]!).ToList();
+        TicketPoints.Update(d.App.Repo, ctx, Key, [], ids, "Pat Developer", ["server: only on the production box"]);
+        TicketBundle.Build(d.App.Repo, ctx, Key);
+
+        d.Prepare();
+        var input = File.ReadAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "questions", "input.md"));
+        Assert.Contains("# Missing\n\nversion, environment\n\n", input);   // an outside part says where: `where` isn't asked
+        Assert.Contains("# Outside the code\n\n- **server**, a developer (Pat Developer) notes: only on the production box", input);
+    }
+
+    [Fact]
     public void Made_up_quotes_unknown_pages_and_unmarked_claims_are_rejected()
     {
         using var d = new Draft();

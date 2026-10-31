@@ -215,6 +215,61 @@ public class TicketPointsTests
     }
 
     [Fact]
+    public void The_picker_may_mark_parts_outside_the_code_and_their_quotes_are_checked_too()
+    {
+        using var app = App();
+        const string description = "Since Friday every request times out behind our nginx proxy, from all offices.";
+        Points(app, "SHOP-12", description);
+        var ctx = TicketContext.Load(app.Repo);
+        TicketPoints.Prepare(app.Repo, ctx, "SHOP-12");
+        Assert.Contains("**Outside the code.**", File.ReadAllText(Path.Combine(app.Root, ".stangent", "tickets", "SHOP-12", "points", "input.md")));
+
+        Canned(app, "SHOP-12", """{"pages":[],"outside":[{"area":"network","quote":"the proxy drops every request"}]}""");
+        var retry = TicketPoints.Check(app.Repo, ctx, "SHOP-12", null, "Pat Developer");
+        Assert.Equal("retry", retry.Status);
+        Assert.Contains(retry.Errors!, e => e.StartsWith("outside[0]: the quote"));
+
+        Canned(app, "SHOP-12", """{"pages":[],"outside":[{"area":"network","quote":"every request times out behind our nginx proxy"}]}""");
+        Assert.Equal("recorded", TicketPoints.Check(app.Repo, ctx, "SHOP-12", null, "Pat Developer").Status);
+        var after = TicketPoints.LoadOrFail(app.Root, "SHOP-12");
+        Assert.Equal("picked", (string?)after["ai"]!["status"]);       // only outside parts is still an answer: no re-pick
+        Assert.Empty(after["points"]!.AsArray());
+        var part = Assert.Single(after["outside"]!.AsArray())!;
+        Assert.Equal(("network", "every request times out behind our nginx proxy", "ai"), ((string)part["area"]!, (string)part["quote"]!, (string)part["by"]!));
+        Assert.True(OutsidePart.OnlyOutside(after));
+
+        var bundle = TicketBundle.Build(app.Repo, ctx, "SHOP-12");
+        var md = TicketBundle.Markdown(bundle);
+        Assert.Contains("**None in the code:**", md);
+        Assert.Contains("## Outside the code", md);
+        Assert.DoesNotContain("No confident starting point", md);
+    }
+
+    [Fact]
+    public void The_developer_adds_and_removes_outside_parts_by_area()
+    {
+        using var app = App();
+        Points(app, "SHOP-13", "Fails in `OrderService.Place` on \"Orders\".");
+        var ctx = TicketContext.Load(app.Repo);
+        TicketPoints.Update(app.Repo, ctx, "SHOP-13", [], [], "Pat Developer", ["server: disk full on prod", "Data: a corrupt order row"]);
+        var p = TicketPoints.Update(app.Repo, ctx, "SHOP-13", [], [], "Sam Lead", removeOutside: ["server"]);
+        var part = Assert.Single(p["outside"]!.AsArray())!;
+        Assert.Equal(("data", "a corrupt order row", "Pat Developer"), ((string)part["area"]!, (string)part["quote"]!, (string)part["by"]!));
+        Assert.Equal("Sam Lead", (string?)p["changes"]!.AsArray().Last()!["by"]);
+        Assert.False(OutsidePart.OnlyOutside(p));                       // code found points too
+
+        Assert.Empty(TicketPoints.Update(app.Repo, ctx, "SHOP-13", [], [], "Sam Lead", removeOutside: ["all"])["outside"]!.AsArray());
+
+        // Remove-then-add in one call replaces an area's parts; a duplicate is kept once and counted once.
+        var replaced = TicketPoints.Update(app.Repo, ctx, "SHOP-13", [], [], "Sam Lead", ["network: our proxy", "network: our proxy"], ["network"]);
+        Assert.Equal("our proxy", (string?)Assert.Single(replaced["outside"]!.AsArray())!["quote"]);
+        Assert.Equal(1, (int?)replaced["counts"]!["outside"]);
+        Assert.Equal("usage", Assert.Throws<StangentException>(() => TicketPoints.Update(app.Repo, ctx, "SHOP-13", [], [], "x", ["firewall: blocked"])).Code);
+        Assert.Equal("usage", Assert.Throws<StangentException>(() => TicketPoints.Update(app.Repo, ctx, "SHOP-13", [], [], "x", ["network:"])).Code);
+        Assert.Equal("usage", Assert.Throws<StangentException>(() => TicketPoints.Update(app.Repo, ctx, "SHOP-13", [], [], "x", removeOutside: ["dns"])).Code);
+    }
+
+    [Fact]
     public void The_picker_is_skipped_when_ai_points_or_ai_are_off()
     {
         using (var app = App("  aiPoints: false\n"))

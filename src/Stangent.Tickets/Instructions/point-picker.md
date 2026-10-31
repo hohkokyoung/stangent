@@ -13,8 +13,15 @@ the endpoint or handler behind the behaviour they describe. Give each page by it
 ticket** (copy them; at least 4 words, or a whole line). Code checks every number and every quote, and rejects the page
 if the quote isn't there.
 
+**Outside the code.** Some tickets are about something the code doesn't hold: the server (a full disk, memory),
+the network (a proxy, a firewall, DNS), the deployment (config, versions, TLS on the server), live data, or a third
+party being down. List each such part under `outside` with its area and the ticket's words, quoted the same way. A
+screen, an API, an error the app shows, or a security hole in the app (injection, a missing permission check) is
+**in** the code: give it as a page, not as outside. A ticket can have both. Mark a part outside only when the ticket
+says so; when unsure, leave it out.
+
 Use only what the list shows, never your own knowledge of the product. If nothing plausibly matches, return no pages:
-that is a valid answer. The bundle then says there's no confident starting point, and the reporter is asked where it
-happens.
+that is a valid answer. With no outside part either, the bundle then says there's no confident starting point, and the
+reporter is asked where it happens.
 
 Write one JSON object matching the output schema to the result file you were given, and nothing else.
