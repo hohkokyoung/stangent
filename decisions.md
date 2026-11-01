@@ -1843,6 +1843,25 @@ lands); designed without a real FSD so far (D56). Doesn't raise right place (Son
     approver via git, never typed (as D58). One PR per feature for big batches. `stangent spec approve <id>` (name not
     final) stays as a backup for developers. Needs the BA to have repo access; otherwise approval waits for Phase 8.
 
+## D100 · Held-out bugs come from bitwarden/server; Sonarr's 40 become the tuning set — 2026-11-02 (decided; set frozen)
+Every Phase 3 change so far (the page index, the picker, the bundle, the free checks) was judged on Sonarr's 40 bugs,
+so no half of them is unseen and a split of them would still flatter the result.
+- **Sonarr's 40 bugs (D78) are the tuning set** from now on: changes may be tried and compared on them.
+- **The held-out set is fresh bugs from bitwarden/server** (C#, graph already built, the D47 split check's repo),
+  picked by code with D78's rules where they apply (closed GitHub bug reports with one merged server fix, non-test C#,
+  at most 15 files), excluding the 5 issues D87 already measured. It is frozen and committed before anything is run on
+  it, and measured only to judge a finished change, never to tune one.
+- **Fallback:** if bitwarden has too few such bugs for the bars to mean anything, newer Sonarr bugs (after the frozen
+  set) instead, reported as same-repo (unseen, but no test of generality).
+**Why:** a measure that tuning has seen can't tell a real gain from fitting; a second repo also checks stangent isn't
+shaped around Sonarr (the owner wants any C#/TS repo).
+- *Frozen 2026-11-02:* `benchmark/tickets/bitwarden/heldout.json`, 24 bugs (`select.py --heldout`): of 281 closed bug
+  reports, 62 have a linked merged server PR, 29 fit (non-test C#, ≤ 15 files, merged before the pinned commit), less
+  the 5 D87 cases. Fixes merged 2020-06 to 2026. 24 is below Sonarr's 40, so ranges are wider; enough to tell a result
+  near the 70% bar from one far from it, so no fallback. No not-bugs (bitwarden's are not selected).
+**Cost:** bitwarden needs its own setup for what a run uses (tickets in Jira or replay files, reference pages for the
+page-based sources); bitwarden's bugs may be fewer and different in kind; the owner decided "your call".
+
 ## Open questions
 
 - **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that
@@ -1871,8 +1890,8 @@ lands); designed without a real FSD so far (D56). Doesn't raise right place (Son
   keep it only as labelled context beside the file pointers. The gaps are provider/plugin code dispatched by interface
   or name, and framework-run code (converters, migrations, housekeepers); also an undetected `IExecute<T>` command
   handler (SONB-32) and a hub made by test callers (SONB-35: slices count tests towards `spec.hubCallers`).
-- **Order of the next work (owner, 2026-11-02: agreed):** clean up the foundation only where a measured loss traces to
-  it: (1) the free checks first (the bundle-order fix and the nearby-page walk check; no weights, so nothing is tuned
+- **Order of the next work (owner, 2026-11-02: agreed; (1) done, (2) under way, held-out set: D100):** clean up the
+  foundation only where a measured loss traces to it: (1) the free checks first (the bundle-order fix and the nearby-page walk check; no weights, so nothing is tuned
   on the 40 bugs), whose dead ends aim the graph work; (2) the benchmark: a tuning/held-out split, a second repo, the
   strong agent baseline; (3) the graph: the missing entry-point links the walk check found, and a search over files and
   names; (4) Phase 3's retrieval redesign on top, re-measured on the held-out set; (5) D99 once a project with an FSD
@@ -1888,7 +1907,10 @@ lands); designed without a real FSD so far (D56). Doesn't raise right place (Son
   a confident, sourced, wrong verdict. To design before D99 is built.
 - **The not-bug bar on Sonarr (proposed 2026-11-02, not decided):** report D79's "catches wrong reports" as "can't be
   measured: no FSD covers these tickets" rather than failed, unless the planted FSD covers them (a free check: which of
-  the 10 not-bug tickets fall inside its 15 screens).
+  the 10 not-bug tickets fall inside its 15 screens). **Checked 2026-11-02: it covers none.** The 10 are about an
+  indexer, a required password, library import, anime parsing, table sort memory, bulk moves, memory, CPU and disk space;
+  the closest, SONB-42 (a Trakt link on series details), lands in §1.2, which never mentions links. So D99 can't be
+  measured on Sonarr's not-bugs; it needs a project with a real FSD, or FSD text written for those areas.
 - **Generality batch (2026-10-31):** fixed as D94 (2026-11-01), except Karma/Jasmine and Mocha test targets; still to
   check on a third repo of a different shape (CleanArchitecture).
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)

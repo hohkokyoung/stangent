@@ -577,3 +577,10 @@ changed the walk (below).
   code (dispatched by interface or name) and framework-run code (converters, migrations, housekeepers) are the gaps.
 - **Caveat:** SONB-4's page was written at a later commit than the fix, so it describes the fixed code: a benchmark
   artefact (pages from the pinned commit, bugs from older commits) that can flatter or mislead any page-based check.
+
+### Step 8 · does the planted FSD cover the not-bugs? · 2026-11-02 · no
+None of the 10 not-bug tickets (SONB-41–50) is about behaviour the planted FSD (`benchmark/fsd/sonarr/`, 15 screens)
+describes: an indexer's results, a required password, library import, anime episode parsing, table sort memory, bulk
+moves, memory, CPU and disk space. The nearest, SONB-42 (a Trakt link on series details), falls in §1.2, which says
+nothing about links; only its bundle carries FSD sections (§1, §1.2). D79's "catches wrong reports" can't be judged
+against an FSD on Sonarr, so D99 (and D96's FSD path) can't be measured here.
