@@ -69,6 +69,9 @@ public static class TicketScore
         var proofBugs = bugs.Take(ProofBugs).ToList();
         JsonObject? Proof(JsonObject i) => TryLoad(Path.Combine(Dir(i), "bug-proof.json"));
         JsonObject? Record(JsonObject i) => TryLoad(Path.Combine(ticketsDir, "run", Key(i) + ".json"));
+        // D89: an attempt our own permission rules blocked measures the setup, not the reproducer: still not reproduced,
+        // but counted apart so a score never hides it.
+        bool SetupBlocked(JsonObject i) => (bool?)Proof(i)?["attempts"]?.AsArray().LastOrDefault()?["setupBlocked"] == true;
         string Kind(JsonObject? proof) => (string?)proof?["attempts"]?.AsArray().LastOrDefault()?["kind"] ?? "none";
         var reproduced = proofBugs.Where(b => (string?)Proof(b)?["outcome"] == "reproduced").ToList();
         var real = reproduced.Count(b => (string?)Record(b)?["proofOnFix"] == "passed");
@@ -78,6 +81,7 @@ public static class TicketScore
             ["issue"] = (int)i["issue"]!, ["kind"] = (string)i["kind"]!, ["area"] = (string?)i["area"], ["outcome"] = (string?)Proof(i)?["outcome"] ?? "not run",
             ["test"] = Kind(Proof(i)), ["proofOnFix"] = (string?)Record(i)?["proofOnFix"],
             ["outside"] = (bool?)Proof(i)?["attempts"]?.AsArray().LastOrDefault()?["outside"] == true,
+            ["setupBlocked"] = SetupBlocked(i),
         }).ToList();
 
         // Grounded and repeatable are must-pass (D79): read from the artifacts and the run's own records.
@@ -117,7 +121,7 @@ public static class TicketScore
             {
                 ["share"] = Rate(proofBugs), ["range"] = R(Range([.. proofBugs.Select(b => (string?)Proof(b)?["outcome"] == "reproduced" ? 1.0 : 0.0)])), ["of"] = proofBugs.Count,
                 ["unit"] = new JsonObject { ["of"] = unit.Count, ["share"] = Rate(unit) }, ["playwright"] = new JsonObject { ["of"] = playwright.Count, ["share"] = Rate(playwright) },
-                ["bar"] = 0.5, ["passed"] = Rate(proofBugs) >= 0.5,
+                ["setupBlocked"] = proofBugs.Count(SetupBlocked), ["bar"] = 0.5, ["passed"] = Rate(proofBugs) >= 0.5,
             },
             ["catchesWrongReports"] = new JsonObject { ["reproduced"] = wrongReports, ["of"] = notBugs.Count, ["bar"] = "at most 1", ["passed"] = wrongReports <= 1 },
             ["grounded"] = new JsonObject { ["failedSteps"] = new JsonArray([.. failedSteps.Select(f => (JsonNode)f)]), ["note"] = "every recorded output passed its code check; tests show a made-up quote and a non-existent page are rejected" },
@@ -132,6 +136,8 @@ public static class TicketScore
                 ["fixCoverage"] = new JsonObject { ["mean"] = Share(coverage), ["range"] = R(Range([.. coverage])) },
                 ["bundleChars"] = Stats(cases.Select(c => (double?)(int?)c!["bundleChars"]).OfType<double>()),
                 ["cost"] = Cost(issues.Select(i => Dir(i)).ToList(), records),
+                // Where right place loses each fix, stage by stage (owner's request, 2026-11-01; no bar).
+                ["rightPlaceStages"] = PlaceStages.Run(clone, ticketsDir),
             },
             ["cases"] = cases,
             ["proofs"] = new JsonArray([.. outcomes]),

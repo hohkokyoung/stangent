@@ -9,3 +9,6 @@ detectorSettings:
   entity-tables:
     # nopCommerce maps entities with linq2db by convention: every BaseEntity subclass is a table.
     entityBaseTypes: [Nop.Core.BaseEntity]
+  publish-handle:
+    # nopCommerce's own event consumers (no longer built into stangent: only general libraries are).
+    handlerInterfaces: ["Nop.Services.Events.IConsumer`1"]
