@@ -584,3 +584,18 @@ describes: an indexer's results, a required password, library import, anime epis
 moves, memory, CPU and disk space. The nearest, SONB-42 (a Trakt link on series details), falls in §1.2, which says
 nothing about links; only its bundle carries FSD sections (§1, §1.2). D79's "catches wrong reports" can't be judged
 against an FSD on Sonarr, so D99 (and D96's FSD path) can't be measured here.
+
+### Step 8 · agent baseline pilot: 9 of 10 bugs we miss · 2026-11-02
+`benchmark/results/2026-11-02-agent-baseline-pilot.json` (+ transcripts), `benchmark/tickets/agent_baseline.py`.
+Headless Claude Code (Sonnet), given only the ticket's text and the code at the fix's parent commit (`git archive`, no
+history), Read/Grep/Glob only, reads of the stangent repo and benchmark folders denied, 30 turns / $1 cap (D86's), names
+up to 10 files. Run on the 10 newest of the 21 Sonarr bugs our pipeline misses (SONB-3, 4, 5, 11, 15, 17, 18, 19, 20, 22).
+- **9 of 10 hit, every hit at rank 1**; the one miss, SONB-18 (a database converter, the walk's dead end too), named
+  frontend language files. 4–7 turns each, **$0.40 in all ($0.02–0.09 a ticket)**, no read outside the export.
+- **It searched, it didn't guess:** each run greps the ticket's own words (error messages: "unsupported content type",
+  "Unable to find matching section location", "must not be empty"; names) and its top pick appears in its tool results.
+- **Caveats:** 6 of the 10 tickets name the fix file's class (information a real ticket carries; our pipeline still
+  missed them, mostly through D70's code-only shortcut or page coverage). Sonarr is public, so the model may know its
+  code; bitwarden is public too, so only a private repo rules that out. 10 bugs, the newest misses, not a random sample.
+- **What it means:** agent search finds what pages can't, cheaply. The full baseline (Sonarr's 40, bitwarden's 24
+  held out, about $3 at this rate) is the next measure.

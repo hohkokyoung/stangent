@@ -1880,7 +1880,9 @@ page-based sources); bitwarden's bugs may be fewer and different in kind; the ow
   (D68 noise). Open: whether a "nearby" FSD link may count toward "working as agreed" (recommended: no, context only,
   a person decides; asked 2026-11-02, not yet answered); a strong baseline first (headless coding agent and an Agentless-style narrowing on the 40 bugs,
   ~$10–20) to choose between our own search and an agent's; a held-out split or second repo before tuning; report files
-  handed over per bug next to recall. Free first checks: the bundle-order fix (14 → up to 19 shown), and the
+  handed over per bug next to recall. **Agent baseline pilot (2026-11-02, phases/3-tickets.md):** on 10 bugs our pipeline
+  misses, a headless coding agent with only the ticket and the code named a fix file first in 9, at $0.04 a ticket
+  (caveats: public repo the model may know; 6 tickets name the class; 10 bugs). Full baseline next. Free first checks: the bundle-order fix (14 → up to 19 shown), and the
   backward walk on the 12 page-gap bugs, started from each real fix file (so it tests explaining, not finding): code
   scores whether it reaches a page, how far, how many ties, and, where the bug has a D87 right page, whether it lands
   on one; where it has none, a fresh agent judges whether the page is about the ticket's feature. Each miss is
