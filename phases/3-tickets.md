@@ -599,3 +599,25 @@ up to 10 files. Run on the 10 newest of the 21 Sonarr bugs our pipeline misses (
   code; bitwarden is public too, so only a private repo rules that out. 10 bugs, the newest misses, not a random sample.
 - **What it means:** agent search finds what pages can't, cheaply. The full baseline (Sonarr's 40, bitwarden's 24
   held out, about $3 at this rate) is the next measure.
+
+### Step 8 · agent baseline, full: 36/40 on Sonarr, 23/24 on bitwarden held out · 2026-11-02
+`benchmark/results/2026-11-02-agent-baseline-{pilot,sonarr-rest,bitwarden-heldout}.json` (+ transcripts). Same set-up
+as the pilot. A fresh agent (D61) re-scored every case, checked each export was the fix's parent (all single-parent;
+no fixed lines present before), listed all 267 tool calls (no read outside an export: the 3 flagged paths were the
+agent's own folder mistyped, and failed) and found no answer key, stangent file, git history or fix diff in any result.
+- **Sonarr (tuning set): 36 of 40 (90%)**, 35 at rank 1; our pipeline: 19 (47.5%). Both find 18; the agent alone 18;
+  ours alone 1 (SONB-1); neither 3. Misses: SONB-18 (crash site vs a database converter), SONB-1 (named the command
+  serializer, fix in the API resource), SONB-21 (path helpers, fix in DiskTransferService), SONB-32 (the extra-files
+  code, fix in the housekeepers).
+- **bitwarden (held out, D100): 23 of 24 (96%)**, 21 at rank 1. Strict: 3 tickets link the fixing PR in a comment
+  (#5223, #2506, #1367; the agent had no web or git, so only the number); without them 20 of 21. #4801 and #3116 share
+  one fix.
+- **Files handed over:** median 4 named per bug (our bundle: 29 files shown, 18 starting files).
+- **Cost: $3.11 for 64 tickets** ($0.05 average, $0.145 most), 4–17 turns, all within the 30-turn / $1 cap.
+- **Caveats:** about half the hits come from tickets that name the file (Sonarr: 8 of 36 give the full path, 10 more
+  the file or class name; bitwarden: 10 of 23 the full path, 1 the name), which real tickets do and our pipeline still
+  missed. Both repos are public, so the model may know them; every hit file was found in its own search results, but
+  only a private repo rules prior knowledge out. Runner hardened after the run (reads of `~/.claude` and the session
+  temp folder denied; tool calls counted in full); neither was used in these runs.
+- **What it means:** the 70% bar passes by a wide margin on both sets with agent search alone, held-out included. Our
+  own search would need to close a 47.5% → 90% gap to compete; the agent costs about $0.05 a ticket.

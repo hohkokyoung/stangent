@@ -10,6 +10,10 @@ files, most likely first. Capped like a proof attempt (D86): 30 turns, $1. Score
 the named files (D79's right place, at the file level).
 
     python3 -I benchmark/tickets/agent_baseline.py <clone> <tickets dir> <out.json> KEY [KEY...]
+    python3 -I benchmark/tickets/agent_baseline.py --heldout <clone> <heldout.json> <out.json>   # D100's bitwarden set
+
+In held-out mode the ticket is the issue's title, body and the comments before the fix (select.py), the code is the
+merge commit's first parent, and the fix files are what the merge commit changed (its own paths, not traced forward).
 
 Env: CLAUDE (default `claude`), MODEL (default sonnet), WORK (export folder, default a temp folder; removed after).
 Transcripts are kept beside out.json (`<out>.transcripts/KEY.jsonl`) to check the agent only read the export.
@@ -45,33 +49,33 @@ def ticket_text(t):
     return "\n".join(parts).strip()
 
 
-def run_one(clone, tickets, key, number, answer, out_dir, work_root):
-    work = tempfile.mkdtemp(prefix=f"{key}-", dir=work_root)
+def run_one(clone, key, number, parent, fix, text, out_dir, work_root):
+    work = tempfile.mkdtemp(prefix=f"{key.strip('#')}-", dir=work_root)
     try:
-        archive = subprocess.run(["git", "-C", clone, "archive", answer["parent"]], capture_output=True, check=True).stdout
+        archive = subprocess.run(["git", "-C", clone, "archive", parent], capture_output=True, check=True).stdout
         subprocess.run(["tar", "-x", "-C", work], input=archive, check=True)
-        ticket = json.load(open(os.path.join(clone, ".stangent", "tickets", key, "ticket.json")))
         denied = [f"Read(/{p}/**)" for p in (os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")),
-                                             clone, os.path.join(HOME, "stangent-bench"), os.path.join(HOME, "Projects"))]
+                                             clone, os.path.join(HOME, "stangent-bench"), os.path.join(HOME, "Projects"),
+                                             os.path.join(HOME, ".claude"), "/private/tmp/claude-501")]
         args = [os.environ.get("CLAUDE", "claude"), "-p", "--model", os.environ.get("MODEL", "sonnet"),
                 "--tools", "Read,Grep,Glob", "--allowedTools", "Read", "Grep", "Glob", "--disallowedTools", *denied,
                 "--permission-mode", "dontAsk", "--setting-sources", "", "--strict-mcp-config", "--disable-slash-commands",
                 "--no-session-persistence", "--max-turns", str(TURNS), "--max-budget-usd", str(BUDGET),
                 "--json-schema", json.dumps(SCHEMA), "--output-format", "stream-json", "--verbose",
-                PROMPT.format(n=MAX_FILES, ticket=ticket_text(ticket))]
+                PROMPT.format(n=MAX_FILES, ticket=text)]
         proc = subprocess.run(args, cwd=work, capture_output=True, text=True)
-        transcript = os.path.join(out_dir, f"{key}.jsonl")
+        transcript = os.path.join(out_dir, f"{key.strip('#')}.jsonl")
         with open(transcript, "w") as f:
             f.write(proc.stdout)
         events = [json.loads(l) for l in proc.stdout.splitlines() if l.strip().startswith("{")]
         result = next((e for e in reversed(events) if e.get("type") == "result"), {})
-        named = [f["path"].lstrip("./") for f in (result.get("structured_output") or {}).get("files", [])][:MAX_FILES]
-        fix = answer["files"]
+        named = [f["path"].removeprefix("./") for f in (result.get("structured_output") or {}).get("files", [])][:MAX_FILES]
         # Every path the agent's tools touched must be inside the export (isolation check).
-        touched = []
+        touched, calls = [], 0
         for e in events:
             for c in (e.get("message") or {}).get("content") or []:
-                if isinstance(c, dict) and c.get("type") == "tool_use":
+                if isinstance(c, dict) and c.get("type") == "tool_use" and c.get("name") != "StructuredOutput":
+                    calls += 1
                     for k in ("file_path", "path"):
                         if isinstance(c.get("input", {}).get(k), str):
                             touched.append(c["input"][k])
@@ -80,22 +84,37 @@ def run_one(clone, tickets, key, number, answer, out_dir, work_root):
         return {
             "key": key, "issue": number, "hit": rank is not None, "rank": rank, "named": named, "fix": fix,
             "status": result.get("subtype"), "turns": result.get("num_turns"), "costUsd": result.get("total_cost_usd"),
-            "toolCalls": len(touched), "outsideExport": outside,
+            "toolCalls": calls, "outsideExport": outside,
         }
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
 
-def main(clone, tickets, out, keys):
+def sonarr_cases(clone, tickets, keys):
     answers = json.load(open(os.path.join(tickets, "answer-key.json")))["issues"]
     number_of = {v: k for k, v in json.load(open(os.path.join(tickets, "jira-keys.json"))).items()}
+    for key in keys:
+        n = number_of[key]
+        ticket = json.load(open(os.path.join(clone, ".stangent", "tickets", key, "ticket.json")))
+        yield key, int(n), answers[n]["parent"], answers[n]["files"], ticket_text(ticket)
+
+
+def heldout_cases(clone, heldout):
+    for c in json.load(open(heldout)):
+        merge = c["fix"]["mergeCommit"]
+        parent = subprocess.run(["git", "-C", clone, "rev-parse", merge + "^1"], capture_output=True, text=True, check=True).stdout.strip()
+        files = subprocess.run(["git", "-C", clone, "diff", "--name-only", parent, merge], capture_output=True, text=True, check=True).stdout.split()
+        text = "\n".join([f"Summary: {c['summary']}", "", c["description"], *[f"\nComment:\n{x}" for x in c["comments"]]]).strip()
+        yield c["id"], int(c["id"].strip("#")), parent, files, text
+
+
+def main(clone, out, cases):
     out_dir = out + ".transcripts"
     os.makedirs(out_dir, exist_ok=True)
     work_root = os.environ.get("WORK") or tempfile.mkdtemp(prefix="agent-baseline-")
     rows = []
-    for key in keys:
-        n = number_of[key]
-        row = run_one(clone, tickets, key, int(n), answers[n], out_dir, work_root)
+    for key, n, parent, fix, text in cases:
+        row = run_one(clone, key, n, parent, fix, text, out_dir, work_root)
         rows.append(row)
         print(f"{key}: hit={row['hit']} rank={row['rank']} turns={row['turns']} cost={row['costUsd']} outside={len(row['outsideExport'])}", file=sys.stderr)
     cost = sum(r["costUsd"] or 0 for r in rows)
@@ -110,4 +129,7 @@ def main(clone, tickets, out, keys):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4:])
+    if sys.argv[1] == "--heldout":
+        main(sys.argv[2], sys.argv[4], heldout_cases(sys.argv[2], sys.argv[3]))
+    else:
+        main(sys.argv[1], sys.argv[3], sonarr_cases(sys.argv[1], sys.argv[2], sys.argv[4:]))

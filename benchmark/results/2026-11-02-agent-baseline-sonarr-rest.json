@@ -1,0 +1,678 @@
+{
+ "what": "agent baseline: headless Claude Code, ticket text + code at the fix's parent (no history), Read/Grep/Glob only, up to 10 files",
+ "model": "sonnet",
+ "turns": 30,
+ "budgetUsd": 1.0,
+ "tickets": 30,
+ "hits": 27,
+ "costUsd": 1.5939,
+ "isolationBreaches": 2,
+ "cases": [
+  {
+   "key": "SONB-1",
+   "issue": 9149,
+   "hit": false,
+   "rank": null,
+   "named": [
+    "src/NzbDrone.Common/Serializer/System.Text.Json/PolymorphicWriteOnlyJsonConverter.cs",
+    "src/NzbDrone.Core/Messaging/Commands/Command.cs",
+    "src/Sonarr.Api.V3/Commands/CommandController.cs",
+    "src/Sonarr.Api.V5/Commands/CommandController.cs"
+   ],
+   "fix": [
+    "src/Sonarr.Api.V3/Commands/CommandResource.cs",
+    "src/Sonarr.Api.V5/Commands/CommandResource.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.030881399999999996,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-2",
+   "issue": 9051,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs",
+    "src/NzbDrone.Core/Notifications/NotificationService.cs",
+    "src/NzbDrone.Core/Download/CompletedDownloadService.cs",
+    "src/NzbDrone.Core/MediaFiles/EpisodeImport/ImportApprovedEpisodes.cs",
+    "src/NzbDrone.Core/Download/DownloadCompletedEvent.cs",
+    "src/NzbDrone.Core/Download/TrackedDownloads/DownloadMonitoringService.cs",
+    "src/NzbDrone.Core/Download/DownloadProcessingService.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/Download/CompletedDownloadService.cs",
+    "src/NzbDrone.Core/Download/DownloadCompletedEvent.cs",
+    "src/NzbDrone.Core/Download/History/DownloadHistoryService.cs",
+    "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs",
+    "src/NzbDrone.Core/Notifications/NotificationService.cs"
+   ],
+   "status": "success",
+   "turns": 7,
+   "costUsd": 0.0495352,
+   "toolCalls": 3,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-6",
+   "issue": 9113,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "frontend/src/Styles/Themes/themes.css",
+    "frontend/src/Series/Index/SeriesIndexFooter.module.css",
+    "frontend/src/Components/ProgressBar.module.css",
+    "frontend/src/Series/Index/Posters/SeriesIndexPoster.module.css",
+    "frontend/src/Series/Index/Overview/SeriesIndexOverview.module.css",
+    "frontend/src/Calendar/Events/CalendarEvent.module.css",
+    "frontend/src/Calendar/Legend/LegendItem.module.css",
+    "frontend/src/App/ApplyTheme.tsx",
+    "frontend/src/Settings/UI/UISettings.tsx",
+    "frontend/src/Series/Index/ProgressBar/SeriesIndexProgressBar.module.css"
+   ],
+   "fix": [
+    "frontend/src/Calendar/Agenda/AgendaEvent.module.css",
+    "frontend/src/Calendar/Agenda/AgendaEvent.tsx",
+    "frontend/src/Calendar/Events/CalendarEvent.module.css",
+    "frontend/src/Calendar/Events/CalendarEventGroup.module.css",
+    "frontend/src/Calendar/Legend/LegendItem.module.css",
+    "frontend/src/Calendar/Legend/LegendItem.tsx",
+    "frontend/src/Components/ProgressBar.module.css",
+    "frontend/src/Series/Index/SeriesIndexFooter.module.css",
+    "frontend/src/Styles/Themes/themes.css"
+   ],
+   "status": "success",
+   "turns": 17,
+   "costUsd": 0.08966199999999999,
+   "toolCalls": 13,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-7",
+   "issue": 9121,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "frontend/src/Calendar/CalendarMissingEpisodeSearchButton.tsx",
+    "frontend/src/Calendar/useCalendar.ts",
+    "frontend/src/Commands/useCommands.ts",
+    "frontend/src/Commands/CommandNames.ts",
+    "frontend/src/Calendar/CalendarPage.tsx"
+   ],
+   "fix": [
+    "frontend/src/Calendar/CalendarMissingEpisodeSearchButton.tsx",
+    "frontend/src/Calendar/useCalendar.ts"
+   ],
+   "status": "success",
+   "turns": 7,
+   "costUsd": 0.0414988,
+   "toolCalls": 5,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-8",
+   "issue": 9111,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "frontend/src/Activity/Queue/Status/useQueueStatus.ts",
+    "frontend/src/Activity/Queue/Status/QueueStatus.tsx",
+    "frontend/src/Activity/Queue/useQueue.ts",
+    "frontend/src/Components/Page/Sidebar/PageSidebar.tsx",
+    "frontend/src/Activity/Queue/Queue.tsx"
+   ],
+   "fix": [
+    "frontend/src/Activity/Queue/Status/useQueueStatus.ts"
+   ],
+   "status": "success",
+   "turns": 7,
+   "costUsd": 0.041101,
+   "toolCalls": 3,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-9",
+   "issue": 9102,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "frontend/src/Activity/Queue/useQueue.ts",
+    "src/Sonarr.Api.V5/Queue/QueueController.cs",
+    "frontend/src/Activity/Queue/RemoveQueueItemModal.tsx",
+    "frontend/src/Activity/Queue/queueOptionsStore.ts",
+    "src/NzbDrone.Core/Download/IgnoredDownloadService.cs",
+    "src/NzbDrone.Core/Download/TrackedDownloads/DownloadMonitoringService.cs"
+   ],
+   "fix": [
+    "frontend/src/Activity/Queue/useQueue.ts",
+    "src/Sonarr.Api.V5/Queue/QueueBlocklistMethod.cs",
+    "src/Sonarr.Api.V5/Queue/QueueController.cs",
+    "src/Sonarr.Api.V5/Queue/QueueRemovalMethod.cs"
+   ],
+   "status": "success",
+   "turns": 13,
+   "costUsd": 0.11637639999999999,
+   "toolCalls": 10,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-10",
+   "issue": 9018,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "frontend/src/InteractiveSearch/useReleases.ts",
+    "frontend/src/InteractiveSearch/InteractiveSearchTableHeader.tsx",
+    "frontend/src/InteractiveSearch/releaseOptionsStore.ts",
+    "frontend/src/InteractiveSearch/InteractiveSearchRow.tsx"
+   ],
+   "fix": [
+    "frontend/src/InteractiveSearch/useReleases.ts"
+   ],
+   "status": "success",
+   "turns": 7,
+   "costUsd": 0.050518,
+   "toolCalls": 5,
+   "outsideExport": [
+    "/private/var/folders/rj/7l1hprf17_37zzfchj9tyvw80000gn/T/agent-baseline_c_qs2528/SONB-10-_scignss/frontend/src/InteractiveSearch/useReleases.ts"
+   ]
+  },
+  {
+   "key": "SONB-12",
+   "issue": 8929,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs"
+   ],
+   "status": "success",
+   "turns": 3,
+   "costUsd": 0.020772399999999996,
+   "toolCalls": 0,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-13",
+   "issue": 8842,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserProxy.cs",
+    "src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserService.cs",
+    "src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowser.cs",
+    "src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserSettings.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserProxy.cs"
+   ],
+   "status": "success",
+   "turns": 4,
+   "costUsd": 0.0408762,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-14",
+   "issue": 8770,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/Download/TrackedDownloads/TrackedDownloadService.cs",
+    "src/NzbDrone.Core/Download/History/DownloadHistoryService.cs",
+    "src/NzbDrone.Core/Download/TrackedDownloads/TrackedDownloadAlreadyImported.cs",
+    "src/NzbDrone.Core/Download/TrackedDownloads/DownloadMonitoringService.cs",
+    "src/NzbDrone.Core/Download/History/DownloadHistoryRepository.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core.Test/Download/TrackedDownloads/TrackedDownloadServiceFixture.cs",
+    "src/NzbDrone.Core/Download/TrackedDownloads/TrackedDownloadService.cs"
+   ],
+   "status": "success",
+   "turns": 11,
+   "costUsd": 0.1012284,
+   "toolCalls": 9,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-16",
+   "issue": 8604,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/Localization/LocalizationService.cs",
+    "src/NzbDrone.Core/Parser/IsoLanguages.cs",
+    "src/NzbDrone.Core/Localization/Core/zh_Hans.json",
+    "src/NzbDrone.Core/Localization/Core/zh_CN.json",
+    "src/NzbDrone.Core/Localization/Core/zh_TW.json"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/Localization/LocalizationService.cs"
+   ],
+   "status": "success",
+   "turns": 7,
+   "costUsd": 0.039890999999999996,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-21",
+   "issue": 8221,
+   "hit": false,
+   "rank": null,
+   "named": [
+    "src/NzbDrone.Common/EnvironmentInfo/AppFolderInfo.cs",
+    "src/NzbDrone.Common/Extensions/PathExtensions.cs",
+    "src/NzbDrone.Core/Backup/BackupService.cs",
+    "src/NzbDrone.Common/EnvironmentInfo/StartupContext.cs",
+    "src/NzbDrone.Common/EnvironmentInfo/AppFolderFactory.cs",
+    "src/NzbDrone.Common.Test/PathExtensionFixture.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Common.Test/DiskTests/DiskTransferServiceFixture.cs",
+    "src/NzbDrone.Common/Disk/DiskTransferService.cs"
+   ],
+   "status": "success",
+   "turns": 10,
+   "costUsd": 0.0725172,
+   "toolCalls": 7,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-23",
+   "issue": 8187,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV2.cs",
+    "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV1.cs",
+    "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrent.cs",
+    "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxySelector.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Common/Http/HttpRequestBuilder.cs",
+    "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV2.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.036605399999999996,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-24",
+   "issue": 8105,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/Notifications/NotificationService.cs",
+    "src/NzbDrone.Core/Download/CompletedDownloadService.cs",
+    "src/NzbDrone.Core/Download/ManualInteractionRequiredEvent.cs",
+    "src/NzbDrone.Core/Download/TrackedDownloads/DownloadMonitoringService.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/Notifications/Discord/Discord.cs",
+    "src/NzbDrone.Core/Notifications/NotificationService.cs",
+    "src/NzbDrone.Core/Notifications/Slack/Slack.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.0409142,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-25",
+   "issue": 8006,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/Parser/LanguageParser.cs",
+    "src/NzbDrone.Core/Parser/Parser.cs",
+    "src/NzbDrone.Core.Test/ParserTests/LanguageParserFixture.cs",
+    "src/NzbDrone.Core/Download/Aggregation/Aggregators/AggregateLanguages.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core.Test/ParserTests/LanguageParserFixture.cs",
+    "src/NzbDrone.Core/Parser/LanguageParser.cs"
+   ],
+   "status": "success",
+   "turns": 6,
+   "costUsd": 0.0483618,
+   "toolCalls": 3,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-26",
+   "issue": 7989,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/MediaFiles/UpdateEpisodeFileService.cs",
+    "src/NzbDrone.Common/Disk/DiskProviderBase.cs",
+    "src/NzbDrone.Common/Disk/IDiskProvider.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Common/Extensions/DateTimeExtensions.cs",
+    "src/NzbDrone.Core.Test/MediaFiles/UpdateEpisodeFileServiceTests/ChangeFileDateForFileFixture.cs",
+    "src/NzbDrone.Core/MediaFiles/UpdateEpisodeFileService.cs"
+   ],
+   "status": "success",
+   "turns": 6,
+   "costUsd": 0.041743800000000005,
+   "toolCalls": 3,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-27",
+   "issue": 7922,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs",
+    "src/NzbDrone.Core/Notifications/NotificationService.cs",
+    "src/NzbDrone.Core/Download/CompletedDownloadService.cs",
+    "src/NzbDrone.Core/Download/UntrackedDownloadCompletedEvent.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.0448808,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-28",
+   "issue": 7879,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "frontend/src/Utilities/Number/formatBitrate.ts",
+    "frontend/src/Episode/Summary/MediaInfo.tsx"
+   ],
+   "fix": [
+    "frontend/src/Utilities/Number/formatBitrate.ts"
+   ],
+   "status": "success",
+   "turns": 6,
+   "costUsd": 0.0281602,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-29",
+   "issue": 7874,
+   "hit": true,
+   "rank": 10,
+   "named": [
+    "src/NzbDrone.Core/ImportLists/Trakt/TraktImportBase.cs",
+    "src/NzbDrone.Core/ImportLists/Trakt/TraktSettingsBase.cs",
+    "src/NzbDrone.Core/ImportLists/ImportListRepository.cs",
+    "src/NzbDrone.Core/ImportLists/HttpImportListBase.cs",
+    "src/NzbDrone.Core/ImportLists/FetchAndParseImportListService.cs",
+    "src/NzbDrone.Core/ImportLists/Trakt/User/TraktUserRequestGenerator.cs",
+    "src/NzbDrone.Core/ImportLists/Trakt/List/TraktListRequestGenerator.cs",
+    "src/NzbDrone.Core/ImportLists/Trakt/Popular/TraktPopularRequestGenerator.cs",
+    "src/NzbDrone.Core/ImportLists/ImportListFactory.cs",
+    "src/NzbDrone.Core/ImportLists/Trakt/TraktAPI.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/ImportLists/Trakt/TraktAPI.cs"
+   ],
+   "status": "success",
+   "turns": 12,
+   "costUsd": 0.10695460000000001,
+   "toolCalls": 8,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-30",
+   "issue": 7807,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/Notifications/CustomScript/CustomScript.cs",
+    "src/NzbDrone.Core/Notifications/Webhook/WebhookBase.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/Notifications/CustomScript/CustomScript.cs"
+   ],
+   "status": "success",
+   "turns": 3,
+   "costUsd": 0.0229904,
+   "toolCalls": 0,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-31",
+   "issue": 7780,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/MediaFiles/EpisodeImport/DetectSample.cs",
+    "src/NzbDrone.Core/DecisionEngine/Specifications/AcceptableSizeSpecification.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core.Test/MediaFiles/EpisodeImport/DetectSampleFixture.cs",
+    "src/NzbDrone.Core/MediaFiles/EpisodeImport/DetectSample.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.0365076,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-32",
+   "issue": 7785,
+   "hit": false,
+   "rank": null,
+   "named": [
+    "src/NzbDrone.Core/Extras/Files/ExtraFileRepository.cs",
+    "src/NzbDrone.Core/Extras/Others/OtherExtraFileRenamer.cs",
+    "src/NzbDrone.Core/Extras/Files/ExtraFileService.cs",
+    "src/NzbDrone.Core/Extras/Metadata/MetadataService.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core.Test/Housekeeping/Housekeepers/CleanupOrphanedExtraFilesFixture.cs",
+    "src/NzbDrone.Core.Test/Housekeeping/Housekeepers/CleanupOrphanedSubtitleFilesFixture.cs",
+    "src/NzbDrone.Core/Housekeeping/Housekeepers/CleanupOrphanedExtraFiles.cs",
+    "src/NzbDrone.Core/Housekeeping/Housekeepers/CleanupOrphanedSubtitleFiles.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.04352980000000001,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-33",
+   "issue": 7759,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/ImportLists/Trakt/Popular/TraktPopularRequestGenerator.cs",
+    "src/NzbDrone.Core/ImportLists/Trakt/Popular/TraktPopularListType.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/ImportLists/Trakt/Popular/TraktPopularListType.cs",
+    "src/NzbDrone.Core/ImportLists/Trakt/Popular/TraktPopularRequestGenerator.cs",
+    "src/NzbDrone.Core/ImportLists/Trakt/Popular/TraktPopularSettings.cs"
+   ],
+   "status": "success",
+   "turns": 4,
+   "costUsd": 0.0321042,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-34",
+   "issue": 7705,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "frontend/src/Components/Tooltip/Tooltip.tsx",
+    "frontend/src/Components/Tooltip/Popover.tsx",
+    "frontend/src/Components/Tooltip/Tooltip.css"
+   ],
+   "fix": [
+    "frontend/src/Activity/Queue/QueueDetails.tsx",
+    "frontend/src/App/ApplyTheme.tsx",
+    "frontend/src/Components/Tooltip/Tooltip.css",
+    "frontend/src/Components/Tooltip/Tooltip.css.d.ts",
+    "frontend/src/Components/Tooltip/Tooltip.tsx",
+    "frontend/src/Helpers/Hooks/useTheme.ts",
+    "package.json",
+    "yarn.lock"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.03296640000000001,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-35",
+   "issue": 7663,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/Download/RejectedImportService.cs",
+    "src/NzbDrone.Core/Download/CompletedDownloadService.cs",
+    "src/NzbDrone.Core/Download/TrackedDownloads/TrackedDownload.cs",
+    "src/Sonarr.Api.V3/Queue/QueueResource.cs",
+    "src/NzbDrone.Core/Queue/QueueService.cs",
+    "src/NzbDrone.Core/MediaFiles/EpisodeImport/Specifications/UpgradeSpecification.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/Download/RejectedImportService.cs"
+   ],
+   "status": "success",
+   "turns": 8,
+   "costUsd": 0.0508994,
+   "toolCalls": 4,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-36",
+   "issue": 7608,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "frontend/src/Components/Form/Select/EnhancedSelectInput.tsx",
+    "frontend/src/Components/Form/Select/EnhancedSelectInput.css",
+    "frontend/src/Components/Measure.tsx"
+   ],
+   "fix": [
+    "frontend/src/Components/Form/Select/EnhancedSelectInput.tsx"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.0317536,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-37",
+   "issue": 7589,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/IndexerSearch/ReleaseSearchService.cs",
+    "src/NzbDrone.Core/Indexers/Newznab/NewznabRequestGenerator.cs",
+    "src/NzbDrone.Core/Indexers/Nyaa/NyaaRequestGenerator.cs",
+    "src/NzbDrone.Core/IndexerSearch/Definitions/SpecialEpisodeSearchCriteria.cs",
+    "src/NzbDrone.Core/IndexerSearch/SeasonSearchService.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/IndexerSearch/ReleaseSearchService.cs"
+   ],
+   "status": "success",
+   "turns": 8,
+   "costUsd": 0.14468899999999998,
+   "toolCalls": 5,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-38",
+   "issue": 7555,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/ImportLists/ImportListSyncService.cs",
+    "src/NzbDrone.Core/ImportLists/ImportListItems/ImportListItemService.cs",
+    "src/NzbDrone.Core/ImportLists/ImportListItems/ImportListItemRepository.cs",
+    "src/NzbDrone.Core/ImportLists/ImportListStatus/ImportListStatusService.cs",
+    "src/NzbDrone.Core/ImportLists/ImportListFetcherAndParser.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core.Test/ImportListTests/ImportListItemServiceFixture.cs",
+    "src/NzbDrone.Core.Test/ImportListTests/ImportListSyncServiceFixture.cs",
+    "src/NzbDrone.Core/Datastore/Migration/217_add_mal_and_anilist_ids.cs",
+    "src/NzbDrone.Core/ImportLists/ImportListItems/ImportListItemRepository.cs",
+    "src/NzbDrone.Core/ImportLists/ImportListItems/ImportListItemService.cs",
+    "src/NzbDrone.Core/ImportLists/ImportListSyncService.cs",
+    "src/NzbDrone.Core/MetadataSource/SkyHook/Resource/ShowResource.cs",
+    "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs",
+    "src/NzbDrone.Core/Tv/RefreshSeriesService.cs",
+    "src/NzbDrone.Core/Tv/Series.cs"
+   ],
+   "status": "success",
+   "turns": 8,
+   "costUsd": 0.06587860000000001,
+   "toolCalls": 5,
+   "outsideExport": [
+    "/private/var/folders/rj/7l1hprf17-37zzfchj9tyvw80000gn/T/agent-baseline-c_qs2528/SONB-38-qw9h0js7/src/NzbDrone.Core/ImportLists/ImportListItems/ImportListItemService.cs"
+   ]
+  },
+  {
+   "key": "SONB-39",
+   "issue": 7527,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrent.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core.Test/Download/DownloadClientTests/QBittorrentTests/QBittorrentFixture.cs",
+    "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrent.cs"
+   ],
+   "status": "success",
+   "turns": 3,
+   "costUsd": 0.023908799999999997,
+   "toolCalls": 0,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-40",
+   "issue": 7518,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Common/Instrumentation/Sentry/SentryTarget.cs",
+    "src/NzbDrone.Common/Instrumentation/NzbDroneLogger.cs",
+    "src/NzbDrone.Core/Instrumentation/ReconfigureLogging.cs",
+    "src/NzbDrone.Core/Instrumentation/ReconfigureSentry.cs",
+    "src/NzbDrone.Core/Configuration/ConfigFileProvider.cs",
+    "src/NzbDrone.Common/Options/LogOptions.cs",
+    "src/NzbDrone.Common/Instrumentation/InitializeLogger.cs",
+    "src/NzbDrone.Core/Analytics/AnalyticsService.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Common/Instrumentation/Sentry/SentryTarget.cs"
+   ],
+   "status": "success",
+   "turns": 10,
+   "costUsd": 0.066221,
+   "toolCalls": 7,
+   "outsideExport": []
+  }
+ ]
+}

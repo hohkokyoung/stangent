@@ -1882,7 +1882,11 @@ page-based sources); bitwarden's bugs may be fewer and different in kind; the ow
   ~$10–20) to choose between our own search and an agent's; a held-out split or second repo before tuning; report files
   handed over per bug next to recall. **Agent baseline pilot (2026-11-02, phases/3-tickets.md):** on 10 bugs our pipeline
   misses, a headless coding agent with only the ticket and the code named a fix file first in 9, at $0.04 a ticket
-  (caveats: public repo the model may know; 6 tickets name the class; 10 bugs). Full baseline next. Free first checks: the bundle-order fix (14 → up to 19 shown), and the
+  (caveats: public repo the model may know; 6 tickets name the class; 10 bugs). **Full baseline (2026-11-02,
+  fresh-checked):** Sonarr 36 of 40 (90%; ours 19), bitwarden held out 23 of 24 (96%; strict 20 of 21), median 4 files
+  named, $3.11 for 64 tickets. **Recommended:** the agent searches, code checks every file it names exists in the graph
+  and expands from it, pages explain where they cover; D70's code-only shortcut and the page-based picker go. Not yet
+  decided. Free first checks: the bundle-order fix (14 → up to 19 shown), and the
   backward walk on the 12 page-gap bugs, started from each real fix file (so it tests explaining, not finding): code
   scores whether it reaches a page, how far, how many ties, and, where the bug has a D87 right page, whether it lands
   on one; where it has none, a fresh agent judges whether the page is about the ticket's feature. Each miss is
