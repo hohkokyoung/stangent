@@ -1111,6 +1111,15 @@ session); pointers only (the agent re-reads code to learn what the pages already
 **Why:** the pages are Phase 2's checked summary of the code, so they're the cheapest grounded context there is.
 **Cost:** a page describes only its slice (D63), so an action's backend rules sit on the endpoint page, which may be
 a pointer; on a repo with few generated pages the bundle is mostly pointers.
+- *Fixed 2026-11-02 (owner's OK):* a cut page's statements went, but so did the files it cites: the pointers listed only
+  the included pages' citations. On Sonarr that lost the fix file in 5 bugs whose starting files held it (SONB-6, 14,
+  27, 38, 39; 28 of 40 bundles cut a page). Now a cut page keeps its cited files and symbols among the pointers, as
+  "become pointers" meant. No contract change (`ticket-bundle` v1: pointers already carry `from`, the page id).
+  Result (re-made bundles, `2026-11-02-phase3-sonarr-score-bundle-fix.json`): the bundle shows a fix file in 19 bugs
+  (was 14). **Cost:** pointers no longer shrink as pages are cut (median 7k → 14k characters, 27 → 54 pointers for a
+  median 30 files), so the cap is missed in 19 of 50 bundles (was 5) and every page is cut in 25 (was 18): in those, page
+  statements are dropped and the cap still fails, while the impact answer (median 11k) is never cut. Open for the
+  owner: what gives way under the cap (see open questions).
 
 ## D72 · Attachments: code converts text, keeps images as files, lists the rest — 2026-10-25
 - Code downloads every attachment (and images inline in the description) into the bundle's folder, each with its
@@ -1852,14 +1861,28 @@ lands); designed without a real FSD so far (D56). Doesn't raise right place (Son
   (D68 noise). Open: whether a "nearby" FSD link may count toward "working as agreed" (recommended: no, context only,
   a person decides; asked 2026-11-02, not yet answered); a strong baseline first (headless coding agent and an Agentless-style narrowing on the 40 bugs,
   ~$10–20) to choose between our own search and an agent's; a held-out split or second repo before tuning; report files
-  handed over per bug next to recall. Free first checks: the bundle-order fix (14 → up to 19 shown), and how often
-  the backward walk lands on a D87 right page for the 12 page-gap bugs.
-- **Order of the next work (proposed 2026-11-02, not decided):** clean up the foundation only where a measured loss
-  traces to it: (1) the benchmark: a tuning/held-out split, a second repo, the strong agent baseline; (2) the graph:
-  missing entry-point links (scheduled jobs, name-dispatched commands) and a search over files and names; (3) Phase 3's
-  retrieval redesign on top, then re-measure; (4) D99 once a project with an FSD makes it measurable. Reference pages are
+  handed over per bug next to recall. Free first checks: the bundle-order fix (14 → up to 19 shown), and the
+  backward walk on the 12 page-gap bugs, started from each real fix file (so it tests explaining, not finding): code
+  scores whether it reaches a page, how far, how many ties, and, where the bug has a D87 right page, whether it lands
+  on one; where it has none, a fresh agent judges whether the page is about the ticket's feature. Each miss is
+  labelled dead end, right page not written, right page among the ties ranked lower, or wrong area.
+  **Measured 2026-11-02 (phases/3-tickets.md):** the nearby page explains the fix in 1 of 12 page-gap bugs (fresh agent:
+  helps 1, partly 7, no 1; 3 dead ends). It gives area context, rarely the mechanism, so gap (a) is not closed by it:
+  keep it only as labelled context beside the file pointers. The gaps are provider/plugin code dispatched by interface
+  or name, and framework-run code (converters, migrations, housekeepers); also an undetected `IExecute<T>` command
+  handler (SONB-32) and a hub made by test callers (SONB-35: slices count tests towards `spec.hubCallers`).
+- **Order of the next work (owner, 2026-11-02: agreed):** clean up the foundation only where a measured loss traces to
+  it: (1) the free checks first (the bundle-order fix and the nearby-page walk check; no weights, so nothing is tuned
+  on the 40 bugs), whose dead ends aim the graph work; (2) the benchmark: a tuning/held-out split, a second repo, the
+  strong agent baseline; (3) the graph: the missing entry-point links the walk check found, and a search over files and
+  names; (4) Phase 3's retrieval redesign on top, re-measured on the held-out set; (5) D99 once a project with an FSD
+  makes it measurable. Reference pages are
   not rewritten. Before starting: commit or set aside the Phase 3 worktree's uncommitted work (owner's OK), and apply
   D20 to any contract change.
+- **What gives way under the bundle cap (2026-11-02, after D71's fix):** pointers now never shrink, so 19 of 50 Sonarr
+  bundles miss the cap with every page cut. Options: cut the impact answer's details before pages (the agreed
+  retrieval order: files, then pages, then impact); group pointers by file to halve their size (a `ticket-bundle`
+  contract change); or let the cap be missed rather than cut pages that can't make it fit. Not decided.
 - **D99: matching a ticket to its requirement has no checker yet (2026-11-02):** "bug, per R-0042" needs a step that
   picks the scenario or requirement a ticket is about; it is an AI step with no check designed (D18). A wrong pick gives
   a confident, sourced, wrong verdict. To design before D99 is built.

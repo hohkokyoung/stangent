@@ -82,7 +82,9 @@ starting points with their reasons; the chosen pages' statements with citations 
 FSD sections linked to them with each link's state and whether a person decided it (findings only with
 `fsd.findings`, marked unconfirmed); the impact answer from the pages' cited symbols and the matched symbols within 2
 lines; pointers to files and symbols. **No source code.** Over `tickets.bundleChars` (compact JSON) the lowest-ranked
-page becomes a pointer. Missing and stale pages are flagged (`/stangent:spec-generate`), never generated here. Same
+page becomes a pointer: its statements go, the files and symbols it cites stay among the pointers (2026-11-02, D71).
+Pointers then don't shrink as pages are cut, so a bundle with many citations can stay over the cap with every page cut
+(`cap.over`). Missing and stale pages are flagged (`/stangent:spec-generate`), never generated here. Same
 inputs → the same bytes.
 
 ## The bug proof (D75, D76, D81)

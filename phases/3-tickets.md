@@ -542,3 +542,38 @@ agent (D61), all match.
   from a right start and adds nothing from a wrong one.
 - **What it means:** following the code further barely helps (20 vs 19). Fixing every ticket-side stage (5 skipped +
   2 missed) gives at most 26/40 = 65%; the 70% bar also needs the page side (1 unwritten, 3 not citing the fix).
+
+### Step 8 · the free checks: bundle keeps cut pages' files; the nearby-page walk · 2026-11-02
+`benchmark/results/2026-11-02-phase3-sonarr-score-bundle-fix.json` (bundles re-made, no AI; old bundles in
+`run/before-bundle-fix/`; drafts and replay records not re-run, so they predate these bundles) and
+`benchmark/results/2026-11-02-nearby-walk-judged.json`. Both checks were reviewed by fresh agents (D61), whose findings
+changed the walk (below).
+- **Bundle fix (D71, fixed):** a cut page now keeps its cited files among the pointers. The bundle shows a fix file in
+  **19 bugs (was 14)**: SONB-6, 14, 27, 38, 39. Right place unchanged (47.5%: it counts starting files). **Cost:** median
+  pointers 7k → 14k characters (27 → 54 pointers, median 30 files) and median files shown 15 → 29; the cap is missed in
+  19 of 50 bundles (was 5) and every page is cut in 25 (was 18), so in those bundles the page statements go and the cap
+  still fails, while the impact answer (median 11k) is never cut. What gives way under the cap is open for the owner.
+- **The nearby-page walk** (`NearbyWalk`, reported as `nearbyWalk`): on the 12 page-gap bugs, start from the real fix
+  files (tests explaining, not finding), walk the slice's own lines in reverse with the hub stop, take the nearest
+  written page, ties ranked by the D87 index. The first cut walked the impact walk's lines (including `triggered-by`,
+  which leads to downstream handlers) and scored "lands on a right page", which D87's +2 margin almost guarantees; the
+  fresh review caught both. Corrected: lands on a right page 5, right page not written 1, no right page 3, dead end 3.
+- **Does the page help? (fresh agent, all 9 picks; strict):** helps 1 (SONB-15), partly 7 (same area, nothing on the
+  mechanism the fix changes), no 1 (SONB-31, manual import for an automatic-import bug). With the 3 dead ends:
+  **the nearby page explains the fix in 1 of 12.** The import list sync page went to 4 bugs (SONB-11, 17, 29, 33) whose
+  fixes are all in Simkl/Trakt provider code it never describes.
+- **Only 3 of the 9 picks lie within their page's own slice depth** (SONB-4, 5, 31; `withinOwnDepth`): the walk has
+  no depth limit, so most picks are pages whose slices never reach the fix (SONB-11, 29, 33 at depth 9–10).
+- **Dead ends** (where the graph work should aim; a second fresh review rebuilt the walk independently and agreed):
+  - SONB-18: database converters, migrations and a static constructor: code only the framework runs, nothing calls it.
+  - SONB-32: `HousekeepingService.Execute(HousekeepingCommand)` has no `triggered-by` line (an `IExecute<T>` command
+    handler not detected), so the walk runs on to an unwritten handler page (`CommandExecutor.Handle(ApplicationStartedEvent)`,
+    depth 7) and the `IEventAggregator.PublishEvent` hub.
+  - SONB-35: stopped at `CompletedDownloadService.Import`, a "hub" only because 16 of its 17 callers are tests: slices
+    count test callers towards `spec.hubCallers` (Slice.cs). A walk without the hub stop reached the monitored-downloads
+    page, which a first judge rated "helps".
+- **What it means:** a nearby page gives area context, rarely the mechanism. For code no page covers, the file pointer
+  is the evidence and a nearby page is at best labelled context; it doesn't close the 12-bug gap. Provider and plugin
+  code (dispatched by interface or name) and framework-run code (converters, migrations, housekeepers) are the gaps.
+- **Caveat:** SONB-4's page was written at a later commit than the fix, so it describes the fixed code: a benchmark
+  artefact (pages from the pinned commit, bugs from older commits) that can flatter or mislead any page-based check.
