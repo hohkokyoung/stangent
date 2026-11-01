@@ -12,7 +12,8 @@ namespace Stangent.Tickets;
 /// <c>stangent ticket bundle</c> (plan step 4, D71): the pulled ticket, its starting points, the chosen reference pages
 /// (statements with citations), their linked FSD sections with each link's state, the impact answer from the starting
 /// points within 2 lines, and pointers to files and symbols. No source code. Over <c>tickets.bundleChars</c> the
-/// lowest-ranked pages become pointers. Missing and stale pages are flagged, never generated. Code only: the same
+/// lowest-ranked pages become pointers: their statements go, the files they cite stay among the pointers. Missing and
+/// stale pages are flagged, never generated. Code only: the same
 /// inputs give the same bytes, and the result is validated against <c>ticket-bundle.v1.json</c>.
 /// </summary>
 public static class TicketBundle
@@ -82,7 +83,8 @@ public static class TicketBundle
                 ["pages"] = pages,
                 ["sections"] = Sections(repo, ctx, included.Select(d => d.Id).ToHashSet(StringComparer.Ordinal)),
                 ["impact"] = impact.DeepClone(),
-                ["pointers"] = Pointers(ctx, included, list, impact),
+                // Every written page's citations, cut or not: cutting a page drops its statements, never the files it found.
+                ["pointers"] = Pointers(ctx, written, list, impact),
                 ["cap"] = new JsonObject { ["limit"] = repo.Config.Tickets.BundleChars, ["chars"] = 0, ["cut"] = new JsonArray([.. cut.Select(c => (JsonNode)c)]), ["over"] = false },
                 ["missingPages"] = new JsonArray([.. missing.Select(m => (JsonNode)m)]),
                 ["stalePages"] = new JsonArray([.. stale.Select(m => (JsonNode)m)]),
@@ -172,13 +174,13 @@ public static class TicketBundle
         return result;
     }
 
-    /// <summary>Files and symbols to open: what the included pages cite, the matched symbols, and the impact answer's
-    /// items, each once, by file and line.</summary>
-    static JsonArray Pointers(TicketContext ctx, List<PageDef> included, List<StartingPoint> points, JsonObject impact)
+    /// <summary>Files and symbols to open: what the written pages cite (cut ones too), the matched symbols, and the impact
+    /// answer's items, each once, by file and line.</summary>
+    static JsonArray Pointers(TicketContext ctx, List<PageDef> written, List<StartingPoint> points, JsonObject impact)
     {
         var from = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var p in points.Where(p => p.Kind == StartingPoint.Symbol)) from.TryAdd(p.Id, "point");
-        foreach (var d in included)
+        foreach (var d in written)
             foreach (var (_, _, s) in PageChecks.Statements(ctx.Index.Pages[d.Id]))
                 foreach (var c in s["cites"]!.AsArray().Select(c => (string)c!)) from.TryAdd(c, d.Id);
         foreach (var g in impact["groups"]!.AsArray())
@@ -244,7 +246,7 @@ public static class TicketBundle
             md.Append($"### {p["title"]} (`{p["id"]}`)\n\n");
             if (state == "missing") { md.Append("⚠️ No written page yet. Generate it with `/stangent:spec-generate`.\n\n"); continue; }
             if ((bool?)p["stale"] == true) md.Append("⚠️ Stale: the code changed since this page was written.\n\n");
-            if (state == "cut") { md.Append($"Cut to stay under the size cap: read [{p["path"]}]({p["path"]}).\n\n"); continue; }
+            if (state == "cut") { md.Append($"Cut to stay under the size cap: read [{p["path"]}]({p["path"]}). The files it cites are in the pointers.\n\n"); continue; }
             foreach (var s in p["statements"]!.AsArray()) md.Append($"- **{s!["id"]}** {s["text"]}\n");
             md.Append('\n');
         }

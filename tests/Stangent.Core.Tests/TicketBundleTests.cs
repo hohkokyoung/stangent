@@ -137,6 +137,24 @@ public class TicketBundleTests
     }
 
     [Fact]
+    public void A_cut_page_loses_its_statements_but_keeps_the_files_it_cites()
+    {
+        // On Sonarr, 5 bugs had the fix file among the starting files but lost it when its page was cut (2026-11-02).
+        using var app = App("  bundleChars: 100\n");
+        OrdersPage(app);
+        Ticket(app, "SHOP-9", "On /orders the total is wrong.");
+        var b = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-9");
+
+        var page = b["pages"]!.AsArray().Single()!;
+        Assert.Equal("cut", (string?)page["state"]);
+        Assert.Null(page["statements"]);
+        var pointers = b["pointers"]!.AsArray();
+        Assert.Contains(pointers, p => (string?)p!["id"] == SpecApp.Save && (string?)p["file"] == "web/src/Orders.tsx" && (string?)p["from"] == Orders);
+        Assert.Contains(pointers, p => (string?)p!["id"] == SpecApp.OrdersPage && (string?)p["from"] == Orders);
+        Assert.Contains("The files it cites are in the pointers.", File.ReadAllText(new TicketPaths(app.Root, "SHOP-9").BundleMarkdown));
+    }
+
+    [Fact]
     public void A_page_the_developer_adds_ranks_first_and_is_cut_last()
     {
         using var app = App("  bundleChars: 3000\n");
