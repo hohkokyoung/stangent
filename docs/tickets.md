@@ -87,8 +87,10 @@ inputs → the same bytes.
 
 ## The bug proof (D75, D76, D81)
 
-- **Targets, by code:** .NET test projects (xUnit, NUnit, MSTest) referencing the starting points' projects; the Jest
-  or Vitest package holding their frontend files; Playwright when `tickets.app` says how to build, start and seed the
+- **Targets, by code:** .NET test projects (xUnit, NUnit, MSTest) referencing the projects of the code at the
+  starting points, whatever their kind (D89: a page point counts as its entry, so a handler picked as a page is that
+  handler; when no unit test covers that code, the code the point pages run, from their slices, is tried next); the
+  Jest or Vitest package holding their frontend files; Playwright when `tickets.app` says how to build, start and seed the
   app (`tickets.app.specDir`, default `e2e/stangent`). None: **not provable here**, recorded with no AI call.
 - **Outside the code (D83):** with no starting point and some part outside the code, proof is skipped: `not-provable`,
   `outside: true`, no AI call. Remove a wrong part (`ticket points --remove-outside`) and the next run tries. With a code
@@ -96,13 +98,24 @@ inputs → the same bytes.
 - **`stangent-bug-reproducer`** (multi-turn) may edit only in the targets' folders and run only their build and test
   commands (permission rules in `result.next.limits`), within `tickets.proveBudget` (default $1, 30 turns) **per attempt**:
   a retry runs under what's left, and `check --step prove --usage <result>` sums both calls. In Claude Code,
-  `/stangent:ticket` runs it through `ticket-run.sh`, so the rules and caps always apply.
+  `/stangent:ticket` runs it through `ticket-run.sh`, so the rules and caps always apply. Rules use absolute paths and
+  each command starts back in the repo (D89), so a `cd` in the agent's shell doesn't change what they allow.
+- **Setup failures (D89):** when Claude Code refused something those rules allow (its `permission_denials`: a write they
+  allow, or a command line made only of allowed commands and `cd`s) and the test doesn't reproduce the bug, the attempt is `failed` with `setupBlocked: true`: no retry, `check` exits with
+  `setup_blocked`, and `ticket-run.sh` stops the batch. The next run tries the ticket again. An app whose start command
+  fails (exits non-zero) is reported at once with that command's error, not after `readySeconds`. A test runner that
+  can't run at all (D90: a run with no result, and the runner lists no tests for the project) is a setup failure the
+  same way (`runner-error`); if it lists tests, the test crashed the host or was misnamed, and the reproducer retries. The start command
+  should stay in the foreground: stangent stops the app by stopping it.
 - **Code checks:** the test file is in an allowed folder; the named assertion is on its line; the expected-result quote
   is in the ticket word for word; it compiles; and it **fails on that assertion** (TRX, Jest/Vitest and Playwright
-  reports read by code; an exception in setup, a timeout or another assertion isn't proof). Playwright runs 3 times.
+  reports read by code; an exception in setup, a timeout or another assertion isn't proof; a mock's own check, such
+  as Moq's `Verify`, is an assertion, D90). Playwright runs 3 times.
 - **Outcomes** (`bug-proof.json`): `reproduced` (with the other tests already failing at that commit, the baseline),
   `not-reproduced` (the test passes, or the attempt hit its cap), `not-reproduced-flaky`, `not-provable`, `failed` (no
-  valid test after one retry). `--hint "…"` makes a new attempt; every attempt is kept. `--confirm` records the developer
+  valid test after one retry). Every written test names the ticket's actual result word for word (`actualQuote`); a
+  reproduced one also names the words of its failure that show it (`shows`: in the whole message, not in the test's own
+  source). Code checks both are real; the developer judges the match with `--confirm` (D95). `--hint "…"` makes a new attempt; every attempt is kept. `--confirm` records the developer
   confirming the failure matches the reported actual result. `--verify` on the fix branch: the test passes and no test
   outside the baseline fails.
 
@@ -110,10 +123,15 @@ inputs → the same bytes.
 
 `stangent ticket draft <KEY> --kind questions|resolution [--tone internal|client] [--pr base..head --pr-url …]`: code
 gathers the facts (missing fields, clashes' candidates, the proof; or the PR's files, the pages and FSD sections it
-reaches, the proof); `stangent-question-writer` / `stangent-summary-writer` marks every claim `[Cn]` and links it. Code
-checks every link, quotes word for word, that a questions draft asks for every missing field and mentions a bug that
-wasn't reproduced, and that a `client` draft has no backticks, paths, ids or code names. Recorded in
-`drafts/<kind>-<tone>.json` (`ticket-update` v1) and `.md`. `stangent ticket post <KEY> <kind>[-<tone>]` posts the text
+reaches, the proof); `stangent-question-writer` / `stangent-summary-writer` returns the comment as parts
+(`draft-output` v2, D98): each part is one sentence or line with the ids of the claims it makes, and each claim is linked.
+Code checks every link, quotes word for word, that each part holds one sentence, that a questions draft asks for every
+missing field and mentions a bug that wasn't reproduced, and that a `client` draft has no backticks, paths, ids or code
+names, and that each claim backs one part. A part that states something with no claim is left out, not a failed draft
+(D97); a pure ask (a question or "Please …" with no reason or fact in it), a greeting that is nothing else and a short
+heading or lead-in need none. Code joins the kept parts into Markdown. Recorded in `drafts/<kind>-<tone>.json`
+(`ticket-update` v1: `dropped` lists what was left out, `unchecked` what was kept with no claim) and `.md` (under "Left
+out" and "Kept with no claim"). `stangent ticket post <KEY> <kind>[-<tone>]` posts the text
 under your own login and records who and when; never twice without `--again`.
 
 ## Settings (`stangent.yaml`)
@@ -133,6 +151,12 @@ tickets:
   aiPoints: true
   textFiles: [src/App/Localization/en.json]   # UI texts: a string in the code that is a key here reads as its text (D87)
   replay: benchmark/tickets/x/raw   # read saved results instead of Jira
-  app: { build: …, start: …, url: http://localhost:8989, seed: …, readySeconds: 120, specDir: e2e/stangent }
+  app: { build: …, start: …, url: http://localhost:8989, seed: …, readySeconds: 120, specDir: e2e/stangent, playwrightDir: e2e }
   proveBudget: { usd: 1, turns: 30 }
+  dotnetArgs: ""                    # added to the proof's dotnet build/test; SolutionDir, NuGetAudit and Windows targeting come from the repo unless set here (D94)
+  rank: { summaryWeight: 2, phraseBoost: 2, depthDecay: 0.35, winnerRatio: 1.5, lengthNorm: 0.1 }   # page ranking weights (D87, D94); unset keeps these
 ```
+
+Playwright runs with `.stangent.playwright.config.ts`, which stangent writes beside the repo's own config
+(`playwrightDir`) on every run: the repo's config as it is, with the base URL set to `app.url`, `specDir` reachable,
+and the repo's `webServer` off, since stangent starts the app (D94). `app.start` should stay in the foreground.

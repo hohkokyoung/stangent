@@ -87,6 +87,8 @@ symbols. Production code is not annotated.
 - Inferred-only links (embeddings/LLM guesses) are rejected: that is the hallucination leak.
 **Cost:** a refactor made outside stangent breaks links until CI catches it.
 - *Refined 2026-10-19 (D52):* the chain is FSD section → reference page → code symbols; every hop is checked.
+- *Refined 2026-11-02 (D99, not built):* the chain gains a finer first hop: requirement (from the FSD) ↔ page
+  statement ↔ code symbols. Tests carry scenario ids as well as requirement ids.
 
 ## D11 · A living spec of the whole system, owned by BA/PM — 2026-10-18
 The spec describes what the system does now, organised as features, journeys and
@@ -109,6 +111,9 @@ requirements).
   verification (the text hash) applies to each FSD section ↔ page link and each decision.
 **Cost:** existing code has no spec, and drafting one from code is the biggest hallucination
 risk in the project. How to write specs for existing code is still open.
+- *Revised 2026-11-02 (D99, not built):* the features / journeys / acceptance criteria structure returns, built on the
+  FSD from word-for-word quotes rather than replacing it; the BA approves each requirement. Spec for existing code with
+  no FSD: as-built drafts from the reference pages, context only, adopted by the BA one at a time.
 
 ## D12 · Specs are written in the codebase, BA/PM edit them through the dashboard — 2026-10-18
 - The spec is authored in the same monorepo as the code (`specs/` + `trace.yaml`), never in
@@ -121,6 +126,8 @@ risk in the project. How to write specs for existing code is still open.
 - Rejected: Confluence as the authoring surface, one-way or two-way (lock-in, two sources of truth).
 **Cost:** part of the dashboard (item 8) becomes early work, including sign-in, since a
 verification must record who approved.
+- *Refined 2026-11-02 (D99, not built):* until the dashboard, the BA approves requirements by ticking boxes in the
+  spec-only PR's description and approving the PR; `decided_by` comes from git.
 
 ## D13 · Spec sources: existing documents first, code as fallback, provenance on every requirement — 2026-10-18
 - Specs are built from existing documents where they exist (Word, Excel and similar); where
@@ -141,6 +148,9 @@ verification must record who approved.
   the spec comes from code alone.
 - *Revised 2026-10-19 (D52):* no merged requirement list. The FSD and a reference generated from code stay
   separate and are linked; the provenance labels become the states of those links.
+- *Revised 2026-11-02 (D99, not built):* requirements with provenance return as a layer built on the FSD (every item
+  quotes its source; a document or a change-request ticket). "Code as fallback" becomes as-built drafts from the
+  reference pages: context only, never judging bugs, adopted by the BA one at a time.
 
 ## D14 · One full audit upfront, then kept current per area — 2026-10-18
 On adoption, stangent builds the whole spec in one pass: it imports every existing document
@@ -177,6 +187,10 @@ between documents and code.
 - The archive lives in a separate repo — see D16.
 - *Deferred 2026-10-20 (Phase 2 plan):* versions and supersession wait for a project with several FSD versions;
   Phase 2 handles one version per document, `.docx` only.
+- *Picked up 2026-11-02 (D99, not built):* `fsd reconcile` carries out this entry. The version date is the one the
+  document states (`--effective`), not the file's own metadata (which changes when a file is copied); the BA confirms
+  it. Draft vs approved status is kept: only an approved document supersedes; a newer draft's differences show as
+  proposed changes.
 
 ## D16 · Original documents live in a separate archive repo — 2026-10-18
 - Originals (`.docx`, `.xlsx`, `.pdf`, ...) go in their own GitHub repo, with Git LFS for large files.
@@ -750,6 +764,10 @@ Rejected: one merged spec (D13 as first written): an LLM rewriting the FSD into 
 and it mixes "what was agreed" with "what was built".
 **Why:** less AI (nothing rewrites the client's words), each layer has its own check, and the only layer people write is small.
 **Cost:** two documents to read instead of one; an FSD section and a page rarely match one to one, so links are many-to-many.
+- *Revised 2026-11-02 (D99, not built):* the "Rejected: one merged spec" reason is answered rather than dropped: a
+  structured spec is built on top of the FSD, which stays the record byte for byte; every item quotes it word for word
+  (checked by code), a fresh agent checks each item says no more than its quotes, and the BA approves each one. The FSD,
+  the reference and the links stay separate layers.
 
 ## D53 · Links: code finds candidates, AI judges with quotes, code checks, a person approves — 2026-10-19
 How an FSD section ↔ reference page link and its state (D52) are decided:
@@ -855,6 +873,8 @@ Rejected: bot-opened review PRs with comment commands (machinery the dashboard r
   section or statement (each quote's hash is stored), not on any edit to the section: a typo fixed elsewhere in a long
   section shouldn't reopen every link in it. An entry's id is the hash of its link and quotes, so an edited quote is
   caught as a hand edit. On merge, CI fills `decided_by` and runs `trace check --fix` in the bot's spec PR.
+- *Refined 2026-11-02 (D99, not built):* requirements are approved by tick boxes in the spec-only PR's description,
+  not by editing YAML; `decided_by` still comes from git. Trace-link decisions keep this entry's YAML field.
 
 ## D59 · Phase 2 is split: 2a reference from code, then 2b FSD and discrepancies — 2026-10-20
 | Sub-phase | Delivers | Proven by |
@@ -1477,7 +1497,377 @@ against it and a list already too long.
 **Cost:** longer answers (mitigated by summary-first, D27); another contract bump for Phases 5 and 6; the ❓ list for
 unread files must be kept in step with what the graph learns.
 
+## D89 · Our own setup never counts against the AI: rules that don't depend on the shell's folder, setup failures recorded apart, fail fast, and unit targets for every starting point — 2026-10-31
+The first full Sonarr run (D79) was stopped at SONB-22. Of 19 proofs, 8 "hit the 30-turn cap" and 2 left no output, but
+reading the transcripts showed stangent, not the reproducer, caused most of it:
+- **Permission rules read from the shell's folder.** The rules were repo-relative (`Edit(e2e/stangent/**)`, the result
+  file). Claude Code reads such a rule from the agent's current folder, so after a `cd src` every allowed write was
+  refused. The first call ended with no result; the retry got the leftover 2–15 turns and hit the cap. SONB-1, 4, 5,
+  15, 16, 19 (and part of 17). Reproduced in a throwaway folder; both fixes below confirmed there.
+- **Backend points picked as pages offered no unit test.** AI picks (D87) and endpoint points are stored as pages, even
+  a C# handler (`ImportListSyncService.Execute`); test targets came only from symbol points, so only Playwright was
+  offered and the reproducer rightly said a browser can't reach server code (SONB-11, 14).
+- **A start command that died was waited out.** The benchmark's seed broke on older Sonarr (both series TvRageId 0, a
+  unique index then); the start script exited and serve waited 300 s to say only "didn't answer" (SONB-20 on).
+
+Decided, all general (no project's layout, no tuned numbers):
+1. **Absolute rules.** Edit rules and the result file are `//<absolute path>` (`ClaudeRules.Absolute`), and the driver
+   runs Claude Code with `CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1`, so each command starts back in the repo and the
+   repo-relative commands stay valid. Same for `spec-run.sh`'s agent mode.
+2. **Setup failures are recorded apart.** `ticket check` reads Claude Code's `permission_denials`. A refusal of what
+   stangent's own rules allow (a write the target allows, the result file, a command line made only of allowed
+   commands and `cd`s; anything piped, redirected or joined with another command doesn't count) means the attempt
+   measured the setup: unless the test still reproduces the bug (code checked that), it's `failed` with
+   `setupBlocked: true` (bug-proof v1, unpublished, no bump), no retry, status `blocked` (`setup_blocked`), and the
+   driver stops the batch. A refusal of anything else is the rules working. The next run tries the ticket again. The
+   score lists setup-blocked proofs apart.
+3. **Fail fast.** A started process reports whether it exited and its last output; the app start stops at once when
+   its command exits non-zero, with that command's own error. One that exits 0 (it may have put the app in the
+   background) is waited for as before; the start command should stay in the foreground.
+4. **Unit targets from the code at every starting point.** A point that is code is itself; a page point is its entry
+   (a handler's page: the handler). Only when no unit test covers that code is the code the point pages run (what
+   their slices walk: an endpoint's action and the services behind it) tried next, so it widens the search without
+   outranking the points' own projects (a fresh review found the wider set could push the right project out of the
+   top 3).
+
+**The 30-turn cap stays (D86).** Of the 8 "cap" tickets only 3 (SONB-6, 10, 18) really used their turns; the cap is
+judged again on a run without the setup failures, from where successful attempts' turns go, not by guessing a number.
+The seed fix is benchmark data, not stangent.
+**Why:** a score that mixes our setup bugs with the AI's misses can't tell anyone what to fix; the owner wants fixes
+that hold for any project, not numbers tuned to one.
+**Cost:** a failed attempt is re-run (its spend so far is lost); the driver depends on a Claude Code environment
+setting; a ticket whose targets change gets a new attempt on its next run (its input changed, D18), which also clears
+an earlier confirmation; a refusal reported by a different spelling of the repo's path (a symlink) isn't recognised and
+counts against the reproducer as before.
+
+## D90 · A test runner that can't run is the setup's failure; a mock's own check is an assertion — 2026-11-01
+The second full Sonarr run was stopped at SONB-27: from SONB-23 the commits target .NET 8 and the benchmark Mac had
+only the .NET 10 runtime, so `dotnet test` couldn't start the test host. stangent read the empty report as "no test
+named … ran" and blamed the reproducer (SONB-23 to 26, ~$1 lost). Once .NET 8 was there, a second machine-side cause
+showed: Sonarr builds all tests into one shared folder, and a newer commit's NUnit adapter left there finds no tests at
+all in an older commit's build. Separately, SONB-19's test failed through Moq's `Verify` and wasn't accepted.
+
+Decided (general; the machine fixes are the benchmark's):
+1. **A runner failure is a setup failure.** When a run has no test result (no test in the TRX with an error from the
+   run, or "no test named X ran"), stangent lists the project's tests (`dotnet test --list-tests --no-build`). Only if
+   the runner lists none at all (no adapter loaded, no runtime) is it `runner-error`; if it lists tests, a run that
+   stopped with an error is the test crashing the host (a stack overflow: the test's doing, it gets the retry) and a
+   missing name is the reproducer's. A `runner-error` is (bug-proof v1 run result; unpublished, no bump). The attempt is `failed` with `setupBlocked: true`,
+   no retry, and the batch stops (as D89).
+2. **A mock's own check is an assertion.** Moq's `MockException`, NSubstitute's `ReceivedCallsException` and
+   FakeItEasy's `ExpectationException` count as assertion failures: "expected this call once, got 0" is the test's
+   assertion, written against a mock instead of a value. A strict mock refusing a call it wasn't set up for ("with
+   mock behavior Strict", "unconfigured method of strict fake") is the code under test failing, not a check. NUnit's
+   own format counts too: it trims its frames from the stack, so a classic `Assert.AreEqual` shows only "Expected: 2 /
+   But was: 1" (SONB-23 was rejected for that).
+3. **Benchmark only:** a .NET for the benchmark with the 10 SDK and the 8 runtimes (`~/stangent-bench/dotnet`, from
+   Microsoft's `dotnet-install.sh`, no admin), used by `run.sh` when present; between commits `run.sh` also clears
+   Sonarr's shared build folders (`_tests`, `_output`), and the app scripts find the app's framework folder instead
+   of assuming `net10.0` (a fresh review found older commits' browser proofs had run another commit's app). `run.sh`
+   stops at the first setup failure (D89), a runner failure on the fix commit included.
+**Why:** a score must not count the machine against the AI; mocks are how most C# tests check side effects.
+**Cost:** one extra `--list-tests` run when a name isn't found; a full test build per commit in the benchmark.
+
+## D91 · A setup failure gets a plain reason and advice; stangent never installs anything itself — 2026-11-01
+In normal use a developer proves one ticket. When the machine can't run its tests (a missing .NET runtime, no Node,
+an app that won't start, a runner that finds no tests), D89/D90 record `failed` with `setupBlocked: true` and the raw
+error, which is hard to act on.
+Decided (owner, 2026-11-01): the attempt stays `failed` (setup, not the bug) and also carries **advice**, chosen by
+code from the error: the missing runtime and its version with where and how to install it, the app's start step and
+its error, Node/Playwright to install, a runner that lists no tests (clean rebuild, its adapter), or "a stangent bug,
+report it" for our own rules. Anything unrecognised: the raw error and "fix the environment, then prove again".
+`/stangent:ticket` shows it. **stangent never installs software or changes the machine on its own**: advice is text
+for the developer to act on. Batches are rare (the owner proves one ticket at a time); when one runs (CI, the
+benchmark) it still stops at the first setup failure (D89), since every later ticket would hit the same wall.
+Built 2026-11-01: `SetupAdvice` (bug-proof v1 attempt `advice`, unpublished, no bump); app build/start/seed
+failures are setup failures now too (they stop a batch with advice); `/stangent:ticket` shows the advice and doesn't
+install or change anything unless the user asks.
+**Why:** a developer needs to know what to do, not read a host error; installing without asking is the developer's
+call, not the tool's.
+**Cost:** a short list of known errors to keep in step with runners and platforms; unknown ones fall back to raw text.
+
+## D92 · Must-pass fixes after the Sonarr run: drafts that stay sourced, a keychain that survives parallel runs — 2026-11-01
+D79's grounded and repeatable failed on the scored run (phases/3-tickets.md): 18 of 90 drafts failed the claim check,
+one draft was lost to `keychain_failed`, and every failed draft re-calls the AI on a re-run. D79: a must-pass failure
+is a bug to fix and re-run. Decided with the owner ("fix the drafts now"), all general:
+1. **The claim check stays as strict.** Most failures were "Label: finding" lines ("Fix: dates were compared in the
+   wrong time zone"), restating the ticket without a link, or an id not copied as given. The question and summary
+   writers get those as examples (neutral ones, not from any benchmark ticket) and a check-every-line step; the
+   check's feedback names the "Label: finding" case, and a "Label: finding" line is no longer a framing line in bold
+   or as a heading either. After the first re-run (7 questions drafts still failing): the questions writer is told to
+   link what it repeats from the ticket or ask straight away, and a request ("Please send…", "Could you…", "We'd
+   like…"; not "Please note…") counts like a question: it asks for something, it states nothing.
+2. **One process at a time opens a Jira session with the shared sign-in** (a lock file under the user's local data
+   folder): the four parallel pulls had all found the access token expired and refreshed and saved it at once. The
+   token cache reads the keychain each time (another process's refresh is seen); a refreshed token that won't save is
+   a warning, not a failed call. Keychain calls also retry a passing failure (up to 5 tries; not "not found", a
+   refusal or a bad call). A failed pull now fails `ticket-run.sh` with its message (it used to return 0, so a draft
+   was lost silently).
+3. **Benchmark only:** `run.sh` passes page ids with spaces whole (they were never generated, so D79's "missing pages
+   first" didn't happen), and its replay also checks resolution drafts (it under-counted re-run calls) and keeps a
+   failed draft's output and feedback with the saved results before the check clears them.
+Then pages → points → bundles → drafts → replay again (no new proofs), and a new score.
+**Why:** D79 makes grounded and repeatable must-pass; loosening the check would hide unsourced claims (D18).
+**Cost:** longer writer instructions; a keychain call can wait up to ~1.5 s on a busy keychain.
+
+## D93 · A version given in the environment counts as the version — 2026-11-01
+The fresh check of the final drafts found `version` listed missing on 49 of 50 Sonarr tickets, though 41 give it among
+the environment lines ("- Sonarr: 4.0.11.2815"). So question drafts asked for a version the reporter had given, and a
+`missing:version` link could back "the version field is empty". Many issue templates do the same.
+Decided (owner, "fix version bug"): with no version field or heading, a "Label: value" line in the environment whose
+value holds a version number counts as the version (`from`: "environment: a line with a version number"). Lines naming
+the machine around the product (OS, browser, database, runtime, container, proxy, server…) don't count. General: no
+product name is assumed.
+**Why:** asking for what the reporter already wrote wastes their time and makes the draft wrong.
+**Cost:** a product-specific label that isn't the product (a plug-in's version) may be read as the version; the list of
+"around the product" labels is a heuristic.
+
+## D94 · The generality batch: nothing in stangent assumes the benchmark repos — 2026-11-01
+The audit after the Sonarr run (owner: "after the run", then "continue fixing others") found no hard-coded project names
+but assumptions copied from the benchmarks. Fixed, each general:
+1. **MTP repos:** the reproducer may run `dotnet test --project '<proj>'` (Microsoft.Testing.Platform's form) as well
+   as VSTest's; the allowed command and the one it's given now match.
+2. **Playwright config:** stangent runs Playwright with `.stangent.playwright.config.ts`, written beside the repo's own
+   config: the repo's config unchanged, then the base URL set to the served app (whatever the repo reads), the test
+   folder widened to take `tickets.app.specDir` and its `*.spec.ts|js`, and the repo's `webServer` off. Checked live on
+   Sonarr's config and on a layout with `testDir: ./tests`, `testMatch: **/*.e2e.ts`, a fixed `baseURL` and a
+   `webServer`.
+3. **The proof's build** gets the graph build's properties (the main solution's folder, NuGet audit off, Windows
+   targeting) unless `tickets.dotnetArgs` sets them.
+4. **Test projects** are found through any chain of project references (was two levels), paths compared ignoring case.
+5. **Ticket lines "- Key: value":** the key is dropped only before a short answer (two words or fewer).
+6. **Rank weights** (D87) are settable in `tickets.rank`; defaults unchanged.
+7. **Instruction examples** are neutral (no Sonarr words). Changing page-writer's marks existing reference pages out
+   of date; they're re-written only when the owner asks (a benchmark run doesn't).
+8. **Event handlers:** built-ins are general libraries only (MediatR, MassTransit; nopCommerce's interface moved to
+   its benchmark config); same-named events in other assemblies link only for `busInterfaces`.
+9. **Frontend API helpers:** `@VERB` and `#N` arguments in `wrappers`; the verb read off the name also knows
+   delete/remove, put/update and patch.
+After a fresh review (same day): the generated Playwright config leaves the repo's projects alone and adds one,
+`stangent` (run with `--project=stangent`), with the first ordinary project's settings and dependencies, so a login
+setup project still runs first and a reproduction runs once, not in every browser; spec globs use forward slashes
+(Windows); the file is added to `.git/info/exclude` and opens with `@ts-nocheck`/`eslint-disable`. MTP test runs use
+`--no-build` (the build with the args already ran). A frontend run that can't find Node or a Playwright browser is a
+setup failure with D91's advice. Version labels are judged word by word ("OS Version", "Chrome", ".NET Version",
+"Host" aren't the product) and an IP address isn't a version. A wrapper's verb is read off whole words of its name
+(`dispatch` isn't "patch"). The repo scan for build properties runs only when a .NET test target is found; values
+with shell characters are quoted. Bus linking has its own tests.
+Left open: Karma/Jasmine and Mocha test targets (a runner and report reader each).
+**Why:** stangent must work for most C# and TypeScript projects (owner); every one of these misbehaved on a plausible
+repo shape.
+**Cost:** a config file stangent writes into the repo's Playwright folder (untracked, regenerated each run); picks
+re-run where the picker's instructions changed.
+
+## D95 · A proof says which ticket sentence its failure shows; a developer confirms the match — 2026-11-01 (revised the same day; built, not yet run on Sonarr)
+On Sonarr, 5 of 22 "reproduced" tests still failed on the developers' fix (SONB-1, 11, 14, 30; SONB-2 a compile
+quirk): they tested the AI's guess at the cause, not the reported behaviour.
+- **First decided (owner, "require it"), then measured and dropped before building:** code would count a failure as
+  proof only when its message shares a value or a run of words with the ticket's actual result. On the saved run (no
+  AI) a loose match caught 2 of the 5 bad proofs but rejected 8 of the 17 good ones; a strict one (only the value the
+  test got) matched 3 of the 17. Tickets say what users see ("it fails to import any anime titles"), failures print
+  code values ("Expected collection {empty} to contain …"): code can't line them up.
+- **Decided instead (owner, "yes, go with that"):** the reproducer also returns `actualQuote` (the ticket's sentence
+  giving the actual result, word for word) and `shows` (the words of the failure message that show it). Code checks the
+  quote is in the ticket and that `shows` is in the whole failure message of every run, and not in the test's own source
+  (its expected value or "because" text says nothing about what the code did); either failing gets the one retry.
+  `shows` is stored only on a reproduced attempt, once checked. The developer sees "the ticket says … / the test got …" side by side and confirms with
+  `ticket prove --confirm` (D75). Until then the proof is advice (D79's fallback). No new outcome value.
+**Why:** a code-only match was wrong both ways; a checked side-by-side makes the developer's call quick and honest.
+**Cost:** a person decides whether the failure is the reported one; a reproducer that can't name the line costs the retry.
+
+## D96 · A failing test shows the code differs from what the reporter expects; only an FSD or a developer makes it a bug — 2026-11-01 (decided, not built)
+On Sonarr, 7 of 10 not-bugs were "reproduced": the test asserts the reporter's expectation (SONB-43 "no auth
+required", by design in v4), the code deliberately does otherwise, so it fails. D95 doesn't stop it: the failure does
+show what the reporter saw. Code alone can't tell intended from broken; only something people wrote says what should
+happen.
+Decided (owner, "unless we have FSD to back it up"):
+1. **Honest result.** A failing test (that passes D95) is recorded as "the code does Y, the reporter expected X", not
+   "bug proven". It becomes a bug when an FSD section backs the reporter's expectation (a confirmed FSD link that
+   agrees with the expected result: "bug, per FSD §…"), or when a developer confirms it (`ticket prove --confirm`).
+2. **Likely intended.** When an FSD section says the current behaviour is how it should work, the ticket is marked
+   "looks intended (FSD §…)" and the questions draft asks the reporter instead of proposing a fix.
+3. **No AI judge** of bug versus intended: nothing could check it (D18).
+The FSD is converted by code, word for word (Word only today; D13, D16); nothing about it is rewritten.
+**Why:** a proof that can't tell a bug from intended behaviour misleads; the people's written agreement decides.
+**Cost:** on a repo without an FSD (Sonarr) nearly every result stays "needs a person's call"; scoring D79's "catches
+wrong reports" needs the new result values.
+- *Revised 2026-11-02 (D99, not built):* "an FSD section" becomes **an approved requirement** (from a document or a change-request
+  ticket; never an as-built draft): "bug, per R-0042" / "looks intended (R-0042)". The matching scenario names which
+  requirement decides. Until D99 is built, FSD sections as above.
+
+## D97 · A draft leaves out a sentence no claim backs, instead of failing — 2026-11-01 (built; how sentences are found: D98)
+After D92 about 7 of 90 drafts still failed both tries per run (a different 7 each time): the AI adds one unsourced
+line ("Thanks for the detailed report.", "We couldn't reproduce this."), so grounded/repeatable passed by chance.
+Decided (owner, "drop the line"): code leaves such a sentence out of the draft (`Drafts.LeaveOut`) and records it
+(`ticket-update` v1 optional `dropped`, listed under the draft as "Left out"); everything left is still checked. A short
+greeting or thanks (8 words or fewer) needs no claim. A draft with nothing left gets the retry. Link and quote errors
+still fail the draft.
+**Why:** nothing unsourced reaches Jira either way; a draft lost to one stray line helps no one.
+**Cost:** a dropped line can leave the text reading abruptly; the person reading before posting sees what was dropped.
+
+## D98 · The writer hands over its draft as a list of sentences, each with its claims — 2026-11-01 (built)
+D97 first cut sentences out of the writer's free Markdown by guessing where sentences end. A fresh review (D61) found
+unsourced text still reaching Jira that way: a sentence after `[C1].` that starts lower-case, with `` ` ``, `**` or a
+`;` rode on its neighbour's claim; lines wrapped short escaped the check; the cut could hit the same words in another
+sentence; `**bold**` lost a `*` and could turn into a list item; greetings ("Hi team, the export drops rows.") and
+requests ("Please be advised …") let statements through.
+Decided (owner, "okay sure"): `draft-output` v2 is `{"parts":[{"text","claims":[ids],"start"}], "claims":[…]}`: each
+part is **one sentence or one framing line**, `start` says whether it begins a new line or paragraph. Code needs no
+sentence guessing: a part with a line break, or a sentence end (`.`, `!`, `?`, `;`) followed by more text, is an error
+(one retry); text inside quotes or backticks, "..." and a lower-case letter's full stop ("e.g.", "5 p.m.") don't
+count, but a quote closing on a sentence end does unless lower-case text goes on, and an initial ("J. Smith") costs the
+retry rather than let a second sentence through. A part
+with a claim is kept; a part without one is kept only if it states nothing; every other part is left out (D97).
+A second fresh review closed what still leaked (owner, "yes, close them"):
+- **A claimless question or request must be a pure ask:** it starts by asking (a question word, "Please", "Could
+  you", "Let us know"…) and holds no reason ("because", "as", "so we", "now that"), no `:`, `;`, dash, bracket or
+  "which", no "confirm"/"verify" and no "did you know". "The ticket says 40, but the FSD says 100: which is right?" needs
+  its claim. A greeting may come first ("Hi Sam, could you…?"). The writer instructions name the same words.
+- **Greetings, thanks and sign-offs** are kept only when they are nothing else; a name after "Hi" must be a name.
+- **A claim backs one part:** one `pr` link can't stand behind the whole comment.
+- **Every kept part with no claim is listed** in the record (`unchecked`) and the `.md` ("not checked, read them").
+- **`Join` keeps Markdown whole:** headings, list items and quotes start a new line, `---` a new paragraph, the line
+  after a heading or rule a new one, and a plain line after a list item or quote a new paragraph; top-level numbered
+  items are renumbered; a nested item keeps its indent; an empty part is an error, never a crash. No code blocks or
+  tables (a part is one line).
+- **Known limits, all but the last shown as "not checked":** a question that takes a fact for granted ("Why does the
+  cache corrupt every order?"), Title Case words after "Hi" read as a name, a comma splice inside an ask; and a writer
+  can make several claims with the same `pr` or `file` link (those links have no quote to check).
+The `ticket-update` record keeps its shape (`text`, `claims`, optional `dropped`, `unchecked`).
+**Why:** the writer knows its sentences; code checking a list is exact, guessing sentences in prose isn't (D18). Code
+can't tell whether a sentence says more than its source; the person posting reads it first (D74), now with the
+unchecked parts in front of them.
+**Cost:** "etc." or "vs." in a part costs the retry; a legit question with a reason in it is left out unless it has a
+claim; the writer instructions and output shape change (internal to the step, no contract bump); a short heading or
+lead-in can still state a finding (D84's trade-off, open, but now shown as "not checked").
+
+## D99 · The FSD becomes a structured spec, built from word-for-word quotes; the BA approves each requirement — 2026-11-02 (decided, not built)
+The imported FSD (D52) stays the record, byte for byte. On top of it, an AI step builds a structured spec: features,
+requirements (rule, validation, flow, data, permission, non-functional), acceptance criteria, journeys and data
+definitions, each with a stable id (D11's original aim). Then requirement ↔ page statement ↔ code are linked.
+- **Every item cites word-for-word FSD quotes** (section id + text); code checks each one, as for links (D53).
+- **A fresh AI checks each item says no more than its quotes** (D61, like the agree-checker).
+- **Ambiguities and clashes in the FSD become questions for the BA**; the AI never resolves them.
+- **The BA approves each requirement**, in a spec-only PR (D11). Until then it is `proposed`: shown as context, never
+  used to judge "bug or by design". Editing a requirement or its quoted FSD text drops it back to `proposed` (D11's hash).
+- **Reference pages stay:** they are the "does" side that requirements ("should") are compared with, and the checked,
+  stored reading of the code that linking would otherwise redo each time.
+Reopens D52's "Rejected: one merged spec": the FSD isn't rewritten, a checked layer is built on it, and a person owns it.
+**Why:** an agent can use a requirement with acceptance criteria; it can't reliably use a section of prose. The BA knows
+the business logic, so only their approval makes a requirement the truth; quotes and the checker keep the AI honest
+until then.
+**Cost:** the BA's time, requirement by requirement (the largest cost); one AI pass per FSD section on import, re-run
+when a section's text changes; a new contract beside `source-document` (D20: consumers marked `needs review` when it
+lands); designed without a real FSD so far (D56). Doesn't raise right place (Sonarr has no FSD); aims at not-bugs
+"proved" as bugs.
+- *2026-11-02, owner:* designed and first measured on the planted Sonarr FSD (`benchmark/fsd/sonarr/`, 2b): tidier than
+  a real FSD, so a pass there doesn't prove a real one; the real-FSD run (D56) stays owed. Its frozen answer key (30
+  planted items) gives a ready bar: requirement-level links should find as many planted items as 2b's section-level
+  links (27/30) with fewer false alarms (2b: 31.3%, bar ≤ 30%; 25 of 62 unplanted were agrees disputed because the
+  page covered only part of the section, which requirement-level links address).
+- *2026-11-02, owner — the spec's shape:*
+  - **Items:** features (one per FSD section) holding requirements (id, kind, statement, source quotes, acceptance
+    criteria, status, links); journeys (ordered steps, each pointing to requirements); scenarios per journey (happy,
+    alternate and error paths); data definitions; and, only when the FSD says something about them: scope / out of
+    scope, glossary, roles, states, messages and errors, outside systems (D83). Success criteria only when the FSD
+    states them. Left out: background prose, revision history, layout and images (no quote), build hints.
+  - **No bloat:** no quote, no item; one fact in one place (items refer to data, glossary and requirements by id;
+    journeys and scenarios add no statements); no empty sections; **every FSD sentence is either cited by an item or
+    marked `background`** (a code check; the BA reviews what was marked background).
+  - **Scenarios combine requirements, never add any:** every step and outcome points to a requirement; an alternate or
+    error path exists only if the FSD states it, otherwise it is a question for the BA. Tests carry scenario ids as
+    well as requirement ids (D10), so coverage shows which scenarios have a test.
+  - **Diagrams are drawn by code** (Mermaid) from journeys and states: a view, not a source, never written by the AI.
+  - **Files:** `specs/requirements/<doc>/` with `index.yaml` (one line per item, read first), `glossary.yaml`, one file
+    per feature (`F-<id>.yaml`) and `questions.yaml`; agents open only the features they need.
+  - **Acceptance criteria may add example values** ("Firefly", "10 selected"), **never an outcome the FSD doesn't
+    state**; an unstated outcome becomes a BA question (owner, 2026-11-02). The fresh checker treats an outcome with no
+    quote behind it as "says more than its quotes".
+  - **Big features (owner, 2026-11-02):** features follow the FSD's own section tree, split by code (a section with
+    sub-sections becomes a parent feature listing its children; no size limit to tune). Agents read one item by id
+    (a command like `stangent spec req <id>`, returning the item with its quotes, criteria and links), never a whole
+    file. A section with many requirements and no sub-headings is flagged to the BA as a question: the BA adds
+    headings to the FSD (the next import splits it), or approves AI-proposed sub-groups labelled as the AI's; the AI
+    never splits silently. A compound sentence ("a series, a season, or a single episode") becomes several atomic
+    requirements citing the same quote.
+  - **Ids (owner, 2026-11-02):** plain numbers assigned once and never reused (`R-0042`, `F-0007`, likewise journeys,
+    scenarios, data and questions); section and title are fields, never part of the id, so renumbering or renaming
+    the FSD changes no id (D11: stable for the requirement's life). On re-import, an item whose quotes are unchanged
+    keeps its id and status; a changed quote keeps the id and goes back to `proposed`; a removed quote retires the id.
+    People read the title (`R-0042 · Can't add a series twice`).
+  - **Reworded quotes in a new FSD version (owner, 2026-11-02):** code first matches by exact quote; for what's left
+    (old items with no match, new text with no item) the AI proposes pairs ("R-0042 was reworded as …"); code shows
+    the BA old and new text side by side; a confirmed pair keeps the id and goes back to `proposed`; a rejected pair
+    retires the old id and the new text gets a new one. Treating every rewording as new was rejected: each typo fix
+    would break test and link ids and force a fresh approval.
+  - **Several documents and a reconcile command (owner, 2026-11-02):** each document (FSD, change request, addendum) is
+    imported on its own with the effective date the document states (`fsd import … --effective <date>`, confirmed
+    by the BA) and a status, draft or approved (D15: only an approved document supersedes; a newer draft's
+    differences show as proposed changes); the same `--id` with a new file is a new version of that document, the old one stays in the archive. A requirement may cite
+    quotes from several documents (current and superseded); a change request touches only what it mentions. After
+    any import, `stangent fsd reconcile` (name not final) works out what changed, by code: unchanged items kept,
+    removed quotes → ids to retire, new text → items to extract, reworded quotes → pairs for the AI to propose, and
+    clashes between documents → the newest approved document proposed as the winner. The AI parts run as the usual prepare → AI → check
+    loop (D60). Each result is an entry with an empty `decision` (in a reconcile file beside the spec, plus a Markdown
+    view for the PR); **the BA confirms every clash**, reworded pair and retirement; `reconcile apply` then updates
+    ids and statuses. Until confirmed, affected items stay `proposed` (context only), never blocking other work.
+    **It runs automatically (owner, 2026-11-02):** when an import lands (a change under `specs/fsd/`), CI runs
+    reconcile and its AI steps and opens a spec-only PR for the BA, as D55 does for stale pages (`plugin/ci/`).
+  - **Jira tickets as sources (owner, 2026-11-02):** a change-request ticket (story or feature request; which issue
+    types count is a setting) may be a requirement's source: the requirement quotes the pulled ticket word for word,
+    code checks the quote, it is labelled with its key (`source: Jira SONB-41`) and the BA approves it like any other.
+    When a later document covers it, reconcile pairs them and the document becomes the main source. **A bug report
+    never creates a requirement:** its "expected" is the reporter's view, not an agreement (D96).
+  - **No FSD: as-built drafts (owner, 2026-11-02):** with no document, an AI step turns reference page statements into
+    draft requirements in the same shape, quoting the statement (`source: code (as built)`). They are context only and
+    never judge "bug or by design" (drawn from the code, they always agree with it). The BA adopts or corrects them one
+    at a time (no bulk approval for as-built drafts); an adopted one records "agreed by the BA from as-built"; a
+    corrected one that the code now disagrees with is a bug.
+  - **Testing without a BA (owner, 2026-11-02):** for benchmark runs only, until a testing project with a proper FSD is
+    found, approval is skipped: a setting (off by default, never in a user's config) treats `proposed` items as
+    approved, and every result made with it says so. **As-built drafts still never judge bugs in that mode** (owner):
+    with approval skipped they would mark every reported behaviour "by design", so the judging score would only
+    measure that loop. They are still scored for extraction, shape and links.
+  - **How the BA approves before the Phase 8 dashboard (owner, 2026-11-02):** the spec-only PR's description lists each
+    item as a tick box (title, quotes, acceptance criteria, any clash); the BA ticks what they approve, then approves the
+    PR; on merge, code marks ticked items approved and leaves the rest `proposed`; `decided_by` comes from the PR's
+    approver via git, never typed (as D58). One PR per feature for big batches. `stangent spec approve <id>` (name not
+    final) stays as a backup for developers. Needs the BA to have repo access; otherwise approval waits for Phase 8.
+
 ## Open questions
+
+- **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that
+  assert the current behaviour. Not decided. (The review's other new idea, right place reported per stage, is built:
+  `reported.rightPlaceStages`, D98's re-score.)
+- **Ticket retrieval redesign (owner, 2026-11-02; proposed, not decided):** right place can't pass with pages as the
+  retrieval unit: by the D98 stage table, the best case is 26/40 = 65%. Proposal: the ticket enters at the code graph,
+  not at pages. Stack traces, code search over files/names, and the AI picker all run (a match never switches the AI
+  off); candidates are merged, and code checks each one exists in the graph; the graph expands towards the bug; pages explain the
+  code; FSD links judge it. The bundle keeps candidate files first, then pages, then impact. Gaps it closes:
+  (a) **code no page cites:** the page is looked up in order: cites the file → its slice holds the file → walk the graph back
+  to the nearest entry points that have a page (same hub stop as page slices, `spec.hubCallers`; ties ranked by
+  ticket words; the bundle budget decides how many fit). Each page is labelled "describes this file", "includes this
+  file" or "nearby: covers the feature, not this file"; none found → the bundle says so (D88). (b) **FSD only hangs off
+  pages:** FSD links come with whatever page was found, carrying the same label; direct FSD↔code links stay out
+  (D68 noise). Open: whether a "nearby" FSD link may count toward "working as agreed" (recommended: no, context only,
+  a person decides; asked 2026-11-02, not yet answered); a strong baseline first (headless coding agent and an Agentless-style narrowing on the 40 bugs,
+  ~$10–20) to choose between our own search and an agent's; a held-out split or second repo before tuning; report files
+  handed over per bug next to recall. Free first checks: the bundle-order fix (14 → up to 19 shown), and how often
+  the backward walk lands on a D87 right page for the 12 page-gap bugs.
+- **Order of the next work (proposed 2026-11-02, not decided):** clean up the foundation only where a measured loss
+  traces to it: (1) the benchmark: a tuning/held-out split, a second repo, the strong agent baseline; (2) the graph:
+  missing entry-point links (scheduled jobs, name-dispatched commands) and a search over files and names; (3) Phase 3's
+  retrieval redesign on top, then re-measure; (4) D99 once a project with an FSD makes it measurable. Reference pages are
+  not rewritten. Before starting: commit or set aside the Phase 3 worktree's uncommitted work (owner's OK), and apply
+  D20 to any contract change.
+- **D99: matching a ticket to its requirement has no checker yet (2026-11-02):** "bug, per R-0042" needs a step that
+  picks the scenario or requirement a ticket is about; it is an AI step with no check designed (D18). A wrong pick gives
+  a confident, sourced, wrong verdict. To design before D99 is built.
+- **The not-bug bar on Sonarr (proposed 2026-11-02, not decided):** report D79's "catches wrong reports" as "can't be
+  measured: no FSD covers these tickets" rather than failed, unless the planted FSD covers them (a free check: which of
+  the 10 not-bug tickets fall inside its 15 screens).
+- **Generality batch (2026-10-31):** fixed as D94 (2026-11-01), except Karma/Jasmine and Mocha test targets; still to
+  check on a third repo of a different shape (CleanArchitecture).
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
 - Parallel subagents: should the orchestrator fix the contract first (API shapes, shared types), then run

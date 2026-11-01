@@ -103,11 +103,11 @@ them; list names to run only those; `[none]` runs none. Per-detector settings go
 |---|---|
 | `aspnetcore-routes` | — |
 | `microsoft-di` | — |
-| `publish-handle` | `handlerInterfaces: [Ns.IHandler`1]`, added to the built-ins (nopCommerce, eShop, MediatR, MassTransit) |
+| `publish-handle` | `handlerInterfaces: [Ns.IHandler`1]`, added to the built-ins (MediatR, MassTransit); `busInterfaces: [...]` for message buses that route by type name, whose same-named events in other assemblies also link (e.g. eShop's `IIntegrationEventHandler`1`) |
 | `entity-tables` | `entityBaseTypes: [Ns.BaseEntity]`, for ORMs mapped by convention |
 | `config-keys` | — |
 | `http-services` | `services: ["stock-api=Shop.Stock"]`, for service names without an Aspire AppHost |
-| `frontend-http` | `wrappers: ["useApiQuery:path", "useApiMutation:path:method"]`: in-house call helpers as `name:urlProperty[:verbProperty]` (a plain `name` takes the URL as its first argument) |
+| `frontend-http` | `wrappers: ["useApiQuery:path", "useApiMutation:path:method"]`: in-house call helpers as `name:urlProperty[:verbProperty][@VERB]` (a plain `name` takes the URL as its first argument; `#N` names the Nth argument instead of a property, e.g. `send:#1:#0`; `@VERB` gives the verb, else it's read off the name: delete/remove, put/update, patch, post/save/mutation, else GET) |
 
 `aspnetcore-routes` also takes `groupConventions: ["Ns.IEndpointGroup=/api/{type}"]` for route groups
 mapped by convention rather than in code (CleanArchitecture registers each `IEndpointGroup` at

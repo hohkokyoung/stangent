@@ -5,3 +5,6 @@ bin/
 obj/
 artifacts/
 benchmark/.cache/
+TestResults/
+# Run logs: read by the scorer in place, too big to commit; move them out before removing this worktree
+benchmark/tickets/*/run/

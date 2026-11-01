@@ -159,7 +159,7 @@ before building on it.
 - [ ] **Proof is real:** of the bugs marked reproduced, ≥ 90% pass on the fix commit.
 - [ ] **Proof finds bugs:** ≥ 50% of the 30 bugs the proof runs on reproduced (unit and Playwright reported apart, D81).
 - [ ] **Proof catches wrong reports:** at most 1 of the 10 not-bugs reproduced.
-- [ ] **Jira round trip** live on the owner's site: read a ticket with comments and an attachment, post a comment.
+- [x] **Jira round trip** live on the owner's site: read a ticket with comments and an attachment, post a comment (comment 10069, 2026-11-01).
 - [ ] Reported: how much of each fix the whole bundle covers; bundle size; cost and time per ticket and step.
 - [ ] If a bar fails, its rule applies (D79): "proof is real" or "catches wrong reports" → the proof is advice only;
       "right place" or "beats a keyword search" → AI picks off by default; "proof finds bugs" → "not reproduced" is
@@ -403,3 +403,142 @@ The first proofs since D86 was built (the 2026-10-26 attempts, before it, are sa
 - **Expected on the next run:** the picker's, reproducer's and question writer's instructions changed, so their recorded
   results are stale: every pick, proof attempt and draft runs again (inside the D81 budget).
 - **Not measured yet:** how often the picker marks a part outside, and whether any mark is wrong; the full run shows it.
+
+### Step 8 · full run stopped at SONB-22; our own setup caused most failures (D89) · 2026-10-31 · $5.82 spent
+- **What ran:** points, pages and bundles for all 50; proof on SONB-1 to 19 (6 reproduced, 8 "hit the cap", 2 no output,
+  2 not-provable, 1 test passes); SONB-20 to 22 never started the app. The owner stopped it to fix first.
+- **Read from the transcripts, not guessed:**
+  - 6 attempts (SONB-1, 4, 5, 15, 16, 19, part of 17): repo-relative permission rules stopped matching after the agent's
+    `cd`, so writes, the result file included, were refused; the retry then got only the leftover turns.
+  - SONB-11, 14: backend points stored as pages, so only Playwright was offered for server-side bugs.
+  - SONB-20 on: the benchmark's seed broke on older Sonarr (duplicate TvRageId, unique there); serve waited 300 s.
+  - SONB-6, 10, 18 really used their 30 turns (re-running their tests 5–9 times): the cap is judged on the next run.
+- **Fixed, all general (D89):** absolute rules plus each command back in the repo; refusals of what stangent allows
+  recorded as `setupBlocked` and the batch stopped; a dying start command reported at once with its error; unit targets
+  from the code behind every starting point. Benchmark only: the seed gives each series its own ids (checked at
+  SONB-22's commit: the app starts with both series).
+- **Fresh review (D61), same day:** six findings, all fixed: a refused command line counts as blocked only when all of
+  it is allowed (`dotnet test … && rm -rf x` refused for the `rm` is the rules working); code behind a page only
+  widens the test-target search when the points' own code has no unit test, so it can't push the right project out of
+  the top 3; a start command that exits 0 is waited for as before (fail fast only on a non-zero exit; the start command
+  should stay in the foreground); the plugin's instructions cover a setup-blocked proof; `spec-run.sh` uses the real
+  path; D89's cost names the re-run a target change causes. Its mutation check found 4 paths no test caught; tests
+  added for each. A second check found 3 small gaps (a single `&`, a `cd` out of the repo, one untested guard), fixed with tests. 17 new tests, 292 green.
+- **Next:** proof from SONB-20 on; if smooth, SONB-1 to 19 again; then drafts, replay, score.
+
+### Step 8 · run #2 stopped at SONB-27: the machine, not the AI (D90) · 2026-11-01 · $6.62 spent
+- **SONB-1 to 26 with D89:** 15 reproduced (SONB-1 to 22: 15 of 19, was 6). On the fix 4 don't pass (SONB-1, 11, 14
+  still fail; SONB-2 doesn't compile): to read before scoring.
+- **Stopped:** from SONB-23 the commits target .NET 8, missing on this Mac; the empty report read as "no test named …
+  ran" (SONB-23 to 26). A shared build folder also kept a newer NUnit adapter that finds no tests in older builds.
+  SONB-19's Moq `Verify` failure wasn't counted as an assertion.
+- **Fixed (D90):** runner failures are setup failures and stop the batch; mock checks are assertions. Benchmark: a .NET
+  with the 8 runtimes, shared build folders cleared between commits (checked: 308 tests run at SONB-27's commit).
+- **Fresh review (D61):** 5 findings, all fixed: the app scripts assumed `_output/net10.0`, so at .NET 8 commits the
+  browser proofs had served another commit's app (SONB-23 to 27, already set aside); a test that crashes the host
+  read as a runner failure (now confirmed by listing the project's tests); strict-mock refusals counted as
+  assertions; a runner failure on the fix commit was scored as "proof not real"; a two-framework edge case. 304 green.
+- **Trial SONB-19, 23 (setup clean):** SONB-19 reproduced (Moq `Verify`), real on the fix. SONB-23's correct NUnit
+  `Assert.AreEqual` test was rejected: NUnit trims its frames, so only "Expected: 2 / But was: 1" showed. Fixed
+  (D90), 306 green; SONB-23 set aside and proved again.
+- **Second fresh check (D61):** the runner check never fired on real output: VSTest prints its "available" header
+  even when it finds nothing, and the fakes lacked it; MTP with no runtime writes no report and wasn't checked. Fixed
+  (a test counts as listed only when a name follows the header; MTP's "Discovered 0 tests"; a no-report run is
+  checked too) and confirmed on saved real output (missing .NET 8, MTP, a normal project). The app scripts' "found N"
+  message now prints. 307 green. Run #3 keeps the binary it started with (no swap mid-run); the machine causes are
+  fixed, so the safety net isn't needed there: its results get a manual look for runner failures.
+
+### Step 8 · full Sonarr run scored (D79) · 2026-11-01 · ~$19 this run (+ ~$13 on stopped runs)
+Score: `benchmark/results/2026-11-01-phase3-sonarr-score.json`; every value re-derived from the raw files by a fresh
+agent (D61), all match.
+
+| Bar (D79) | Result | |
+|---|---|---|
+| Right place (starting files reach a fix file) | 18/40 = 45% (range 30–60%) | ❌ (≥70%) |
+| Beats a keyword search | 45% vs 10%, gain 0.35 (0.18–0.53) | ✅, fragile (below) |
+| Proof finds bugs | 22/30 = 73% (backend 17/21, frontend 5/8) | ✅ (≥50%) |
+| Proof is real (passes on the fix) | 17/22 = 77% | ❌ (≥90%) |
+| Catches wrong reports | 7/10 not-bugs "reproduced" | ❌ (≤1) |
+| Grounded (must-pass) | 19 of 90 drafts missing: 18 failed their claim check, SONB-4's pull hit `keychain_failed` | ❌ |
+| Repeatable (must-pass) | 50/50 bundles identical; 19 steps would re-call the AI (all failed drafts) | ❌ |
+
+- **Not-bugs:** the reproducer asserts the reporter's expectation (SONB-43 "no auth required", by design in v4); the
+  code does otherwise, so the test fails and counts as proof. A failing test shows the code differs from what the
+  reporter expects, not that it's a bug.
+- **Not real on the fix:** SONB-2 no longer compiles (the fix added a constructor parameter); SONB-1, 11, 14, 30 fail
+  the same way on the fix: they test something the fix didn't change.
+- **Right place misses:** SONB-1, 3, 4, 5, 11, 15, 17–23, 25, 28, 29, 31–33, 35, 37, 40. Missing pages were never
+  generated (run.sh passed page ids with spaces unquoted): 19 bugs had unwritten starting pages; by graph reach that
+  would add about one hit (≈47%), so the bar fails either way.
+- **Keyword baseline is weak:** one bag of all ticket words ranked by raw count; big files (FileNameBuilderFixture.cs
+  in 32 of 40 top 5s) win. A summary-only, IDF, no-tests baseline gets 16/40 and the gain's range crosses 0. Not
+  changed after the run (D57); stated as a caveat.
+- **Drafts:** most failures are headings or summary lines ("Fix: …", "Resolution: …") the claim check reads as
+  claims without a source; some are real unsupported statements; one invalid FSD link. `keychain_failed` on SONB-2/4
+  came from 4 parallel pulls reading the OS keychain.
+- **Harness fixes during the run:** drafts run 4 at a time (`--jobs`); the wait was in the wrong shell (replay began
+  before the last drafts ended; fixed, replay re-run); 28 stale Oct 26 draft files moved to `run/stale-drafts-oct26/`.
+- **What follows (D79, preset):** proof ships as **advice only** (can't block or clear a fix); AI starting-point picks
+  ship **off by default**. Grounded and repeatable are must-pass: bugs to fix and re-run, not results.
+
+### Step 8 · after D92: pages written, drafts re-run, re-scored · 2026-11-01
+`benchmark/results/2026-11-01-phase3-sonarr-score-d92.json` (no new proofs). 42 missing pages written (1 failed).
+- Right place 47.5% (range 32–62%), as expected: still ❌. Beats keywords ✅. Proof bars unchanged.
+- Drafts: resolution 30/30 pass (was 25); questions 43/50 (was 35/48). Replay: 50/50 identical; 7 re-run calls, all
+  the 7 failed questions drafts. Grounded and repeatable still ❌, by 7 drafts.
+- The 7: the questions writer still restates the ticket unlinked ("The ticket mentions…", "The environment lists…"),
+  and one polite request ("We'd also like the full logs") reads as a statement because it doesn't end in "?".
+- **Second draft fix (D92, same day):** the questions writer links what it repeats or asks straight away; a request
+  ("Please send…", "Could you…", "We'd like…") counts like a question. Drafts re-run: questions 50/50, resolution
+  30/30; replay 50/50 identical, **0 re-run AI calls**. Final score
+  `benchmark/results/2026-11-01-phase3-sonarr-score-final.json`: grounded ✅, repeatable ✅ (must-pass).
+- **Jira round trip (must-pass):** reading done live (all 50 pulled through `ticket pull`); posting was proven in the
+  step 0 spike (2026-10-25) but not yet through `stangent ticket post`, and the narrow-scope OAuth sign-in (D82) is
+  still unconfirmed. Both need the owner (posting writes to their Jira).
+- **Fresh check of the final must-pass bars (D61):** grounded ✅ (50 questions, 40 resolution drafts; 94 ticket quotes
+  verbatim; 114 file and 31 page links real) and repeatable ✅ (50/50, 0 calls) confirmed from the raw files. The
+  request rule let 3 sentences through, none false. **Found:** `bug.missing` lists `version` for 49 of 50 tickets,
+  though 41 give one under Environment ("Sonarr: 4.0.11.2815"): the pull doesn't read a version out of an environment
+  section, so drafts ask for a version already given, and a `missing:version` link backs "the version field is empty"
+  (SONB-17, 38). To fix (general: a version-like number in the environment counts as the version).
+- **Jira round trip ✅ (2026-11-01, owner's OK):** SCRUM-7 pulled live, its questions draft made and checked (one
+  claim linked to the ticket), shown to the owner, then `stangent ticket post SCRUM-7 questions` posted it as comment
+  10069 under the owner's login; a fresh pull reads it back. (The benchmark clone accepted SCRUM only for this; its
+  settings were restored.) Still open from step 0: a sign-in approved with only D82's Jira scopes.
+- **All three must-pass bars now pass** (grounded, repeatable, Jira round trip). The quality bars that failed take
+  D79's preset fallbacks: proof ships as advice only; AI starting-point picks ship off by default.
+
+### Step 8 · after D91, D93, D94: re-run (no new proofs) · 2026-11-01
+`benchmark/results/2026-11-01-phase3-sonarr-score-d94.json`. Pull re-run (D93: `version` now missing on 4 of 50, was
+49), picks re-run where the picker's example changed, bundles and drafts re-made, replay.
+- Right place 47.5%, beats keywords ✅, proof bars unchanged (no new proofs).
+- Drafts: 7 of 90 failed both tries this time (5 questions, 2 resolution), a different 7 from before (the run before
+  had 0): the AI often adds one unsourced line on its first try ("Thanks for the detailed report.", "We couldn't
+  reproduce this", a context sentence) and its retry usually, but not always, fixes it. So grounded/repeatable pass or
+  fail by chance with one retry. Open for the owner (below).
+- Other draft check failures seen on first tries: linking `missing:steps` when steps are given; FSD sections written
+  "§§2" instead of as listed.
+
+### Step 8 · after D97, D98: drafts re-run, re-scored, right place by stage · 2026-11-01
+`benchmark/results/2026-11-01-phase3-sonarr-score-d98.json` (no new proofs; old drafts in `run/before-d98/`).
+- **Drafts:** 90 of 90 recorded (the run before: 7 failed both tries), 5 retries in all. Grounded ✅, repeatable ✅
+  (50/50 identical, 0 re-run AI calls). 23 parts left out in 13 drafts, 166 kept with no claim (listed as unchecked).
+- **What was left out:** 17 plain section titles with no `##` ("What changed", "How it was checked"), so those drafts
+  lose their headings; 6 good questions ("Could you confirm …", "(press F12 …)", "… so we can see …", "Roughly how
+  many …?"); one unlinked "We have no questions before starting work.". Nothing false reached a draft.
+- **Kept with no claim:** headings and lead-ins ("## What changed", "A few questions before we start:"), greetings,
+  and pure asks.
+- **Right place by stage** (`reported.rightPlaceStages`, new, no AI; first stage each bug's fix is lost, of 40;
+  checked by a fresh agent, D61, who found the first cut mislabelled 5 bugs as picker misses):
+  hit 19 · no page covers the fix 8 (SONB-11, 17–19, 29, 32, 33, 35: fix files in the graph but in no page's slice) ·
+  right page not in the top 20: 2 (SONB-22 #57, 23 #95) · **code's own points skipped the picker** 5 (SONB-3, 25, 28,
+  37, 40: URL/title/symbol signals found points, so the AI never ran, D70; a right page was at #1–#11) · picker missed
+  it 2 (SONB-20, 21) · right page picked but not written 1 (SONB-15) · right page picked, its statements cite no fix
+  file 3 (SONB-4, 5, 31). The impact walk reaches a fix file in 20 bugs (the hits + SONB-21); the bundle shows one in 14.
+- **Recall by layer, and how much each layer offers** (median files per bug; a fix changes 2): starting files 47.5%
+  (19/40, 18 files) · the impact walk, 2 lines back + 📜, 50% (20/40, 158 files) · what the bundle shows (pointers) 35%
+  (14/40, 15 files): 5 hits have the fix file among the starting files but not among the pointers. From the best
+  right page instead (D87 fix coverage, 2026-10-27), the walk reached every fix file in 30 of 34 bugs: expansion works
+  from a right start and adds nothing from a wrong one.
+- **What it means:** following the code further barely helps (20 vs 19). Fixing every ticket-side stage (5 skipped +
+  2 missed) gives at most 26/40 = 65%; the 70% bar also needs the page side (1 unwritten, 3 not citing the fix).
