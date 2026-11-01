@@ -192,10 +192,51 @@ public static partial class TicketPull
             o[part] = value!.Trim();
             from[part] = source;
         }
+        // D93: many issue templates give the version inside the environment ("- Sonarr: 4.0.11.2815", "App: 2.3.1")
+        // rather than as a field of its own: with no version found, such a line counts. Lines naming the machine around
+        // the product (OS, browser, database, runtime) don't: their numbers aren't the product's version.
+        if (o["version"] is null && (string?)o["environment"] is { } env && VersionLines(env) is { Count: > 0 } found)
+        {
+            o["version"] = string.Join("; ", found);
+            from["version"] = "environment: a line with a version number";
+            missing = new JsonArray([.. missing.Select(m => (string)m!).Where(m => m != "version").Select(m => (JsonNode)m)]);
+        }
         o["from"] = from;
         o["missing"] = missing;
         return o;
     }
+
+    /// <summary>Words that name the machine around the product (its OS, browser, runtime, database, network), not the
+    /// product. A label with any of them ("OS Version", "Chrome", ".NET Version", "Host") isn't the product's version.</summary>
+    static readonly HashSet<string> AroundTheProduct = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "os", "operating", "system", "platform", "kernel", "distro", "distribution", "windows", "macos", "mac", "osx", "linux",
+        "ubuntu", "debian", "fedora", "centos", "rhel", "alpine", "arch", "unraid", "truenas", "synology", "ios", "android",
+        "browser", "chrome", "chromium", "firefox", "safari", "edge", "brave", "opera", "vivaldi", "webview",
+        "database", "db", "sqlite", "postgres", "postgresql", "mysql", "mariadb", "sql", "mssql", "redis", "mongodb",
+        "docker", "container", "podman", "kubernetes", "k8s", "helm", "compose", "install", "installation",
+        "node", "nodejs", "npm", "yarn", "pnpm", ".net", "dotnet", "net", "runtime", "framework", "mono", "sdk",
+        "python", "java", "jdk", "jre", "php", "ruby", "go", "rust", "device", "phone", "mobile", "hardware", "cpu", "ram",
+        "memory", "disk", "nginx", "apache", "iis", "caddy", "traefik", "reverse", "proxy", "nas", "server", "host", "ip",
+        "address", "url", "port", "network",
+    };
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^\s*(?:[-*•]\s*)?\**(?<label>[^:\n*]{1,40}?)\**\s*:\s*\**(?<value>[^\n]*?\bv?\d+(?:\.\d+){1,3}\b[^\n]*)$", System.Text.RegularExpressions.RegexOptions.Multiline)]
+    private static partial System.Text.RegularExpressions.Regex VersionLine();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\b(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\b")]
+    private static partial System.Text.RegularExpressions.Regex FourNumbers();
+
+    /// <summary>"Label: value" lines in an environment text whose value holds a version number and whose label names
+    /// the product rather than the machine around it (any word of the label, "version" itself aside). An IP address
+    /// (four numbers, each 255 or less) isn't a version.</summary>
+    static List<string> VersionLines(string environment) =>
+        [.. VersionLine().Matches(environment)
+            .Where(m => !System.Text.RegularExpressions.Regex.Split(m.Groups["label"].Value.Trim(), @"[\s/()_-]+")
+                .Where(w => w.Length > 0 && !w.Equals("version", StringComparison.OrdinalIgnoreCase) && !w.Equals("ver", StringComparison.OrdinalIgnoreCase))
+                .Any(AroundTheProduct.Contains))
+            .Where(m => !FourNumbers().Matches(m.Groups["value"].Value).Any(ip => Enumerable.Range(1, 4).All(i => int.Parse(ip.Groups[i].Value) <= 255)))
+            .Select(m => $"{m.Groups["label"].Value.Trim()}: {m.Groups["value"].Value.Trim()}")];
 
     /// <summary>The description cut at its labelled parts. A label is a Markdown heading, a bold label, or a short line
     /// ending in a colon, whose words name a part; its text runs to the next label or heading.</summary>

@@ -5,7 +5,7 @@ directly (no stack trace, URL, quoted screen name or class name).
 The pages come twice. First, the ones code ranked highest for this ticket's words, in detail: the phrase each shares
 with the ticket and some of what it holds. Then every page, one numbered line each. The ranking only matches words: it
 is a hint, not an answer. The right page can sit lower, or only in the full list, when the ticket and the code use
-different words (the ticket says "NFO", the code "metadata"). Read the full list before you decide.
+different words (the ticket says "receipt", the code "invoice"). Read the full list before you decide.
 
 List the pages (at most 5) where the work for this ticket most likely starts: the screen the reporter is looking at,
 the endpoint or handler behind the behaviour they describe. Give each page by its **number** from the list (e.g.

@@ -119,3 +119,31 @@ test("a page routes to every component its element renders, and index routes are
   assert.deepEqual(routes("/todo"), ["Guard", "Tasks"]);
   assert.deepEqual(routes("/"), ["Home"]);
 });
+
+test("configured wrappers: a fixed verb, the verb read off the name, and URL and verb taken from arguments", () => {
+  const root = project({
+    "src/api.ts": [
+      "declare function apiDelete(url: string): void; declare function send(verb: string, url: string): void; declare function updateItem(url: string): void;",
+      "export function a() { apiDelete('/items/1'); }",
+      "export function b() { send('PATCH', '/items/2'); }",
+      "export function c() { updateItem('/items/3'); }",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p",
+    settings: { "frontend-http": { wrappers: ["apiDelete", "send:#1:#0", "updateItem@PUT"] } } }).lines;
+  const calls = lines.filter((l) => l.t === "fact" && l.kind === "call").map((l) => l.t === "fact" ? `${l.data.verb} ${l.data.url}` : "").sort();
+  assert.deepEqual(calls, [`DELETE ${BASE}items/1`, `PATCH ${BASE}items/2`, `PUT ${BASE}items/3`]);
+});
+
+test("a verb is read off whole words of a wrapper's name, never part of one", () => {
+  const root = project({
+    "src/api.ts": [
+      "declare function dispatchQuery(url: string): void; declare function fetchUpdates(url: string): void; declare function useApiMutation(o: { path: string }): void;",
+      "export function a() { dispatchQuery('/a'); fetchUpdates('/b'); useApiMutation({ path: '/c' }); }",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p",
+    settings: { "frontend-http": { wrappers: ["dispatchQuery", "fetchUpdates", "useApiMutation:path"] } } }).lines;
+  const calls = lines.filter((l) => l.t === "fact" && l.kind === "call").map((l) => l.t === "fact" ? `${l.data.verb} ${l.data.url}` : "").sort();
+  assert.deepEqual(calls, [`GET ${BASE}a`, `GET ${BASE}b`, `POST ${BASE}c`]);
+});

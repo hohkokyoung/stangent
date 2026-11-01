@@ -10,9 +10,11 @@ namespace Stangent.Graph.Detectors;
 /// publisher is any method that creates an <c>E</c>. Each handler is 🟡 triggered by each publisher.
 /// </summary>
 /// <remarks>
-/// Built in: nopCommerce <c>IConsumer&lt;T&gt;</c>, eShop <c>IIntegrationEventHandler&lt;T&gt;</c>,
-/// MediatR notification and request handlers, MassTransit consumers. Others via
-/// <c>detectorSettings: { publish-handle: { handlerInterfaces: [Namespace.IHandler`1] } }</c>.
+/// Built in: MediatR notification and request handlers, MassTransit consumers (general libraries only; a project's own
+/// interfaces, such as nopCommerce's <c>IConsumer&lt;T&gt;</c>, go in its settings). Others via
+/// <c>detectorSettings: { publish-handle: { handlerInterfaces: [Namespace.IHandler`1], busInterfaces: [...] } }</c>.
+/// <c>busInterfaces</c> (a subset) are message buses that route between services by the event's type name, so a
+/// same-named event declared in another assembly reaches their handlers too; in-process handlers never link by name.
 /// </remarks>
 public sealed class PublishHandleDetector : IDetector
 {
@@ -20,8 +22,6 @@ public sealed class PublishHandleDetector : IDetector
 
     static readonly string[] BuiltInHandlers =
     [
-        "Nop.Services.Events.IConsumer`1",
-        "eShop.EventBus.Abstractions.IIntegrationEventHandler`1",
         "MediatR.INotificationHandler`1",
         "MediatR.IRequestHandler`1",
         "MediatR.IRequestHandler`2",
@@ -30,7 +30,8 @@ public sealed class PublishHandleDetector : IDetector
 
     public void Extract(ExtractContext ctx)
     {
-        var handlers = BuiltInHandlers.Concat(ctx.Settings.GetValueOrDefault("handlerInterfaces") ?? []).ToHashSet(StringComparer.Ordinal);
+        var buses = ctx.Settings.GetValueOrDefault("busInterfaces") ?? [];
+        var handlers = BuiltInHandlers.Concat(ctx.Settings.GetValueOrDefault("handlerInterfaces") ?? []).Concat(buses).ToHashSet(StringComparer.Ordinal);
         foreach (var file in ctx.Files)
             foreach (var decl in file.Tree.GetRoot().DescendantNodes().OfType<TypeDeclarationSyntax>())
             {
@@ -43,7 +44,8 @@ public sealed class PublishHandleDetector : IDetector
                     foreach (var member in iface.GetMembers().OfType<IMethodSymbol>())
                     {
                         if (type.FindImplementationForInterfaceMember(member) is not IMethodSymbol impl || ctx.NodeId(impl) is not { } handlerId) continue;
-                        ctx.AddFact(Name, "handle", handlerId, decl, ("event", eventId), ("interface", ExtractContext.FullName(iface.OriginalDefinition)));
+                        var name = ExtractContext.FullName(iface.OriginalDefinition);
+                        ctx.AddFact(Name, "handle", handlerId, decl, ("event", eventId), ("interface", name), ("bus", buses.Contains(name) ? "true" : "false"));
                     }
                 }
             }
@@ -54,14 +56,14 @@ public sealed class PublishHandleDetector : IDetector
         var handles = ctx.Facts(Name).Where(f => f.Kind == "handle").ToList();
         if (handles.Count == 0) return;
         var byEvent = handles.GroupBy(f => f["event"]).ToDictionary(g => g.Key, g => g.Select(f => f.Owner).Distinct().Order(StringComparer.Ordinal).ToList());
-        // Services often declare their own copy of an integration event and the bus routes by type
-        // name, so a publisher in one service reaches same-named handlers in others.
-        var byName = handles.GroupBy(f => SimpleName(f["event"])).ToDictionary(g => g.Key, g => g.ToList());
+        // On a message bus, services often declare their own copy of an integration event and the bus routes by type
+        // name, so a publisher in one service reaches same-named handlers in others. Only handlers of a bus interface.
+        var byName = handles.Where(f => f["bus"] == "true").GroupBy(f => SimpleName(f["event"])).ToDictionary(g => g.Key, g => g.ToList());
 
         var publishers = ctx.Graph.AllEdges
             .Where(e => e.Kind == EdgeKind.Calls)
             .Select(e => (e.Source, Event: DocIds.ConstructedType(e.Target)))
-            .Where(p => p.Event is not null && byName.ContainsKey(SimpleName(p.Event)))
+            .Where(p => p.Event is not null && (byEvent.ContainsKey(p.Event) || byName.ContainsKey(SimpleName(p.Event))))
             .Distinct()
             .OrderBy(p => p.Event, StringComparer.Ordinal).ThenBy(p => p.Source, StringComparer.Ordinal);
 
@@ -69,7 +71,7 @@ public sealed class PublishHandleDetector : IDetector
         {
             foreach (var handler in byEvent.GetValueOrDefault(evt!) ?? [])
                 ctx.AddEdge(handler, publisher, EdgeKind.TriggeredBy, Label.Guessed, Name);
-            foreach (var other in byName[SimpleName(evt!)].Where(f => f["event"] != evt && DocIds.Assembly(f["event"]) != DocIds.Assembly(evt!)))
+            foreach (var other in (byName.GetValueOrDefault(SimpleName(evt!)) ?? []).Where(f => f["event"] != evt && DocIds.Assembly(f["event"]) != DocIds.Assembly(evt!)))
                 ctx.AddEdge(other.Owner, publisher, EdgeKind.TriggeredBy, Label.Guessed, Name);
         }
     }

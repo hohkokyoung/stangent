@@ -103,6 +103,14 @@ public sealed record RankSettings(double DepthDecay = 0.35, double PhraseBoost =
     double LengthNorm = 0.1)
 {
     public static readonly RankSettings Default = new();
+
+    /// <summary>The defaults with what <c>tickets.rank</c> sets (generality audit item 6).</summary>
+    public static RankSettings From(StangentConfig config)
+    {
+        var r = config.Tickets.Rank;
+        return new(r.DepthDecay ?? Default.DepthDecay, r.PhraseBoost ?? Default.PhraseBoost, r.WinnerRatio ?? Default.WinnerRatio,
+            r.SummaryWeight ?? Default.SummaryWeight, r.LengthNorm ?? Default.LengthNorm);
+    }
 }
 
 /// <summary>One piece of text a page is known by: a title, a statement, a message in the code. Phrases match inside one unit.</summary>
@@ -180,7 +188,7 @@ public sealed partial class PageIndex
 
     public static PageIndex Build(TicketContext ctx, string repoRoot, StangentConfig config, RankSettings? settings = null)
     {
-        var index = new PageIndex([.. ctx.Set.Pages], settings ?? RankSettings.Default);
+        var index = new PageIndex([.. ctx.Set.Pages], settings ?? RankSettings.From(config));
         var text = new CodeText(repoRoot, ctx.Set.Source, config.Tickets.TextFiles);
         var fsdByPage = ctx.Trace.Where(e => (string?)e["page"]?["id"] is not null && (string?)e["fsd"]?["doc"] is not null && (string?)e["fsd"]?["section"] is not null)
             .GroupBy(e => (string)e["page"]!["id"]!, StringComparer.Ordinal)
@@ -343,7 +351,11 @@ public sealed partial class PageIndex
                 var line = raw.Trim();
                 if (line.StartsWith('#') || TemplateBox().IsMatch(line)) continue;
                 // A form field in a list ("- Using Reverse Proxy: No"): the key is the template's, the value the reporter's.
-                if (FormField().Match(line) is { Success: true } field) line = field.Groups["value"].Value;
+                // Only for a short answer: in "- Settings page: Save does nothing" the reporter wrote both parts, and the
+                // screen's name is the most useful words (generality audit, item 5).
+                if (FormField().Match(line) is { Success: true } field
+                    && field.Groups["value"].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length <= 2)
+                    line = field.Groups["value"].Value;
                 var tokens = Terms.Tokens(line);
                 if (tokens.Count > 0) lines.Add(new TicketLine(where, line, tokens, where == "summary" ? summaryWeight : 1.0));
             }

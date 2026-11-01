@@ -71,6 +71,28 @@ public class PageIndexTests
     }
 
     [Fact]
+    public void A_list_line_with_a_sentence_after_its_label_keeps_the_label()
+    {
+        // Generality audit item 5: "- Using Reverse Proxy: No" drops the template's key, but here the reporter wrote the
+        // screen's name before the colon, and it's what finds the page.
+        using var app = new SpecApp();
+        var kept = Index(app).Rank(Ticket("Checkout problem", "- Place order: it does nothing at all"));
+        Assert.Equal(OrdersRoute, kept.Pages[0].Page.Id);
+        var dropped = Index(app).Rank(Ticket("Checkout problem", "- Place order: No"));
+        Assert.NotEqual("place order", string.Join(' ', dropped.Pages[0].Phrase?.Terms ?? []));     // a short answer: key dropped
+    }
+
+    [Fact]
+    public void The_rank_weights_can_be_set_per_repo_and_unset_ones_keep_their_defaults()
+    {
+        using var app = new SpecApp("version: 1\ntickets:\n  rank: { summaryWeight: 3, lengthNorm: 0 }\n");
+        var s = RankSettings.From(app.Repo.Config);
+        Assert.Equal(3, s.SummaryWeight);
+        Assert.Equal(0, s.LengthNorm);
+        Assert.Equal(RankSettings.Default.PhraseBoost, s.PhraseBoost);
+    }
+
+    [Fact]
     public void A_key_into_the_projects_text_file_reads_as_its_text()
     {
         using var app = new SpecApp("version: 1\ntickets:\n  textFiles: [web/en.json]\n");

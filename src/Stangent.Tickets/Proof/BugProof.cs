@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Stangent.Core;
 using Stangent.Graph;
 using Stangent.Spec.Pages;
@@ -14,10 +15,12 @@ namespace Stangent.Tickets.Proof;
 /// ticket word for word, it compiles, and it fails on that assertion (a Playwright test the same way on 3 runs).
 /// Every attempt is recorded in <c>bug-proof.json</c> (contract bug-proof v1) with its hint and outcome.
 /// </summary>
-public static class BugProof
+public static partial class BugProof
 {
     public const string Schema = "bug-proof.v1.json";
     public const int PlaywrightRuns = 3;
+    /// <summary>A run where the test runner itself failed (D90): our setup, not the reproducer's test.</summary>
+    public const string RunnerError = "runner-error";
     public static readonly TimeSpan CommandTimeout = TimeSpan.FromMinutes(15);
 
     public static string File(TicketPaths paths) => Path.Combine(paths.Dir, "bug-proof.json");
@@ -64,7 +67,7 @@ public static class BugProof
 
         // Playwright: the repo's specs that open the ticket's screens, and the script the reproducer runs its own with (D86).
         var related = targets.Any(t => t.Kind == TestTarget.Playwright) ? AppSession.RelatedSpecs(repo, bundle) : [];
-        if (targets.Any(t => t.Kind == TestTarget.Playwright)) AppSession.WriteScript(repo, paths, related);
+        if (targets.Any(t => t.Kind == TestTarget.Playwright)) { AppSession.WriteScript(repo, paths, related); AppSession.WriteConfig(repo); }
         var input = Input(repo, pulled, bundle, targets, related, hint, proof);
         // Earlier attempts are shown to the reproducer but aren't an input change: an unchanged ticket, bundle, targets
         // and hint make no new AI call (D18). A new hint does.
@@ -87,18 +90,12 @@ public static class BugProof
         var state = AiStep.State(paths, StepSpec.Prove);
         var targets = state["targets"]!.AsArray().Select(t => TestTarget.FromJson(t!)).ToList();
         // Only its result file: state.json (targets, related specs, usage) is stangent's and drives the next run (D86).
-        var tools = new List<string> { "Read", "Glob", "Grep", $"Edit({paths.Relative(Path.Combine(AiStep.Work(paths, StepSpec.Prove), "output.json"))})" };
+        // Paths absolute (D89): a `cd` in the agent's shell mustn't change what a rule allows.
+        var tools = new List<string> { "Read", "Glob", "Grep", $"Edit({ClaudeRules.Absolute(OutputPath(paths))})" };
         foreach (var t in targets)
         {
-            tools.AddRange(t.EditRules());
-            if (t.BuildCommand is { } build) tools.Add($"Bash({build}:*)");
-            tools.Add(t.Runner switch
-            {
-                "dotnet" => $"Bash(dotnet test '{t.Project}':*)",
-                "vitest" => "Bash(npx vitest run:*)",
-                "jest" => "Bash(npx jest:*)",
-                _ => $"Bash({paths.Relative(AppSession.ScriptPath(paths))}:*)",
-            });
+            tools.AddRange(t.EditRules(repo.Root));
+            tools.AddRange(Commands(paths, t).Select(c => $"Bash({c}:*)"));
             if (t.Runner is "vitest" or "jest") tools.Add($"Bash(cd {t.Dir})");
         }
         // Playwright (D86): the app is served for the attempt; with no related spec, a browser to look at the screens.
@@ -122,18 +119,59 @@ public static class BugProof
         };
     }
 
+    static string OutputPath(TicketPaths paths) => Path.GetFullPath(Path.Combine(AiStep.Work(paths, StepSpec.Prove), "output.json"));
+
+    /// <summary>The commands a target lets the reproducer run, as the start of a command line: its build, its test run,
+    /// and for Playwright the script stangent wrote (by its repo-relative and its absolute path).</summary>
+    static IEnumerable<string> Commands(TicketPaths paths, TestTarget t)
+    {
+        if (t.BuildCommand is { } build) yield return build;
+        switch (t.Runner)
+        {
+            case "dotnet":
+                // Both platforms' forms: VSTest takes the project first, Microsoft.Testing.Platform takes --project.
+                yield return $"dotnet test '{t.Project}'";
+                yield return $"dotnet test --project '{t.Project}'";
+                break;
+            case "vitest": yield return "npx vitest run"; break;
+            case "jest": yield return "npx jest"; break;
+            default:
+                yield return paths.Relative(AppSession.ScriptPath(paths));
+                yield return Path.GetFullPath(AppSession.ScriptPath(paths));
+                break;
+        }
+    }
+
     /// <summary>The Playwright MCP tools the reproducer may use to look at the app (D86): reading and clicking, no files,
     /// no code evaluation, no other tabs.</summary>
     public static readonly string[] BrowserTools =
         ["browser_navigate", "browser_snapshot", "browser_click", "browser_type", "browser_select_option", "browser_press_key", "browser_hover", "browser_wait_for"];
 
+    /// <summary>
+    /// The test targets for the code at the starting points (D89), whatever kind of point: the bundle's pointers (but
+    /// impact's), a point that is code, and a page point's entry (a handler page is its handler, an endpoint page its
+    /// endpoint). When no unit test covers that code, the code the point pages run is tried next: what their slices walk
+    /// (an endpoint's action and the services behind it). That code only widens the search, never outranks the points'
+    /// own projects. Without it, a backend point picked as a page offered only Playwright, which can't reach server code.
+    /// </summary>
     static List<TestTarget> Targets(StangentRepo repo, TicketContext ctx, JsonObject bundle)
     {
-        var symbols = bundle["pointers"]!.AsArray().Where(p => (string?)p!["from"] != "impact").Select(p => ctx.Analyzer.Find((string)p!["id"]!)).OfType<Node>().ToList();
-        var projects = symbols.Select(s => s.Project).OfType<string>().Where(p => p.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
-            .Select(p => p["project:".Length..]).Distinct(StringComparer.Ordinal).ToList();
-        var files = symbols.Select(s => s.File).OfType<string>().Distinct(StringComparer.Ordinal).ToList();
-        return TestTargets.Find(repo, projects, files);
+        var points = (bundle["points"] as JsonArray ?? []).OfType<JsonObject>().Select(p => (string)p["id"]!).ToList();
+        var at = bundle["pointers"]!.AsArray().Where(p => (string?)p!["from"] != "impact").Select(p => (string)p!["id"]!).ToList();
+        foreach (var p in points) at.Add(ctx.Analyzer.Find(p) is not null ? p : ctx.Set.Find(p)?.Entry ?? p);
+        var targets = Find(at.Select(ctx.Analyzer.Find).OfType<Node>());
+        if (targets.Any(t => t.Kind == TestTarget.Unit)) return targets;
+        var behind = points.SelectMany(p => ctx.Set.Slices.TryGetValue(p, out var s) ? s.Nodes.Where(n => n.Role == "walk").Select(n => n.Node) : []);
+        return Find(at.Select(ctx.Analyzer.Find).OfType<Node>().Concat(behind));
+
+        List<TestTarget> Find(IEnumerable<Node> code)
+        {
+            var nodes = code.DistinctBy(n => n.Id).ToList();
+            var projects = nodes.Select(s => s.Project).OfType<string>().Where(p => p.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
+                .Select(p => p["project:".Length..]).Distinct(StringComparer.Ordinal).ToList();
+            var files = nodes.Select(s => s.File).OfType<string>().Distinct(StringComparer.Ordinal).ToList();
+            return TestTargets.Find(repo, projects, files);
+        }
     }
 
     static string Input(StangentRepo repo, JsonObject pulled, JsonObject bundle, List<TestTarget> targets, List<string> related, string? hint, JsonObject? proof)
@@ -200,18 +238,32 @@ public static class BugProof
         var targets = state["targets"]!.AsArray().Select(t => TestTarget.FromJson(t!)).ToList();
         var attempt = new JsonObject { ["n"] = (int)state["attempt"]!, ["hint"] = state["hint"]?.DeepClone(), ["inputs"] = state["inputs"]!.DeepClone() };
 
+        // D89: Claude Code refused something stangent's own rules allow. Unless the test still reproduces the bug (code
+        // checked that), the attempt says nothing about the reproducer: it's recorded as a setup failure, with no retry,
+        // and the batch stops so the next attempts don't hit the same wall.
+        var blocked = Blocked(repo, paths, targets, result);
+        RunStep SetupBlocked(string? why = null)
+        {
+            var reason = why ?? $"stangent's own permission rules blocked what they allow ({string.Join("; ", blocked.Take(3))}): a setup bug, not the reproducer's (D89)";
+            attempt["setupBlocked"] = true;
+            attempt["advice"] = SetupAdvice.For(reason, repo.Config.Tickets.App?.PlaywrightDir);
+            return Finish(repo, paths, state, attempt, "failed", reason, null) with { Status = "blocked" };
+        }
+
         // D81: an attempt that stops at its cap is "not reproduced".
         if (CapHit(repo, (string?)result["subtype"], Usage.FromJson(state["usage"]).Add(usage).CostUsd, (int)state["turns"]!) is { } cap)
         {
             state["usage"] = Usage.FromJson(state["usage"]).Add(usage).ToJson();
-            return Finish(repo, paths, state, attempt, "not-reproduced", cap, null);
+            return blocked.Count > 0 ? SetupBlocked() : Finish(repo, paths, state, attempt, "not-reproduced", cap, null);
         }
 
         var (output, errors) = AiStep.Read(paths, step, state, usage);
+        if (blocked.Count > 0 && output is null) return SetupBlocked();
         // Code found test targets, so "not provable" is the reproducer's judgment, not a fact: it gets the one retry, and
         // if it says so again, it's recorded labelled as its judgment.
         if (output is not null && (string)output["outcome"]! == "not-provable")
         {
+            if (blocked.Count > 0) return SetupBlocked();
             var reason = (string?)output["reason"] ?? "no reason given";
             // D83: part of the ticket is outside the code (in the bundle this attempt was prepared with), so "not
             // provable" may be right: accepted without the push-back.
@@ -232,7 +284,7 @@ public static class BugProof
         (int From, int To) span = (0, 0);
         if (output is not null)
         {
-            foreach (var field in new[] { "target", "testFile", "testName", "assertion", "expectedQuote" })
+            foreach (var field in new[] { "target", "testFile", "testName", "assertion", "expectedQuote", "actualQuote" })
                 if (output[field] is null) errors.Add($"A written test needs `{field}`.");
             if (errors.Count == 0)
             {
@@ -253,6 +305,8 @@ public static class BugProof
                 var quotable = Quotable(TicketPull.LoadOrFail(repo.Root, key));
                 if (!Quotes.InText((string)output["expectedQuote"]!, quotable))
                     errors.Add($"expectedQuote \"{Short((string)output["expectedQuote"]!)}\" isn't in the ticket word for word (at least 4 words, or a whole line).");
+                if (!Quotes.InText((string)output["actualQuote"]!, quotable))
+                    errors.Add($"actualQuote \"{Short((string)output["actualQuote"]!)}\" isn't in the ticket word for word (at least 4 words, or a whole line).");
             }
         }
 
@@ -267,22 +321,48 @@ public static class BugProof
             attempt["testName"] = (string)output!["testName"]!;
             attempt["assertion"] = output["assertion"]!.DeepClone();
             attempt["expectedQuote"] = (string)output["expectedQuote"]!;
+            attempt["actualQuote"] = (string)output["actualQuote"]!;
             List<JsonObject> results;
             try { results = await RunTest(repo, paths, target, testFile!, (string)output["testName"]!, span, runner, target.Kind == TestTarget.Playwright ? PlaywrightRuns : 1, ct); }
             catch (StangentException e) when (e.Code.StartsWith("app_", StringComparison.Ordinal))
             {
-                // The app didn't build, start or seed: not the test's fault, and not something a retry fixes.
-                return Finish(repo, paths, state, attempt, "failed", e.Message, null);
+                // The app didn't build, start or seed: not the test's fault, and not something a retry fixes (D91: a
+                // setup failure, with advice, that stops a batch).
+                return SetupBlocked(e.Message);
             }
-            foreach (var r in results) runs.Add(r.DeepClone());
+            foreach (var r in results) runs.Add(Stored(r));
+            // D90: the test runner itself failed (no .NET runtime for the target, an adapter that finds nothing): the
+            // attempt measured the machine, not the reproducer. No retry; the batch stops.
+            if (results.FirstOrDefault(r => (string)r["result"]! == RunnerError) is { } broken)
+            {
+                attempt["runs"] = runs;
+                return SetupBlocked($"{broken["message"]} (D90): a setup problem, not the reproducer's");
+            }
             var kinds = results.Select(r => (string)r["result"]!).ToList();
             if (kinds.All(k => k == "failed-on-assertion") && results.Select(r => (int?)r["line"]).Distinct().Count() == 1) outcome = "reproduced";
             else if (kinds.All(k => k == "passed")) outcome = "not-reproduced";
             else if (target.Kind == TestTarget.Playwright && kinds.All(k => k is "passed" or "failed-on-assertion")) outcome = "not-reproduced-flaky";
             else errors.AddRange(results.Where(r => (string)r["result"]! is not ("passed" or "failed-on-assertion"))
                 .Select(r => $"The test run gave {r["result"]}: {Short((string?)r["message"] ?? "", 600)}").Distinct());
+            // D95: a reproduced failure names the words of its message that show the ticket's actual result, so the
+            // developer can check the match side by side. Code checks only that those words are in what the test printed.
+            if (outcome == "reproduced")
+            {
+                var source = System.IO.File.ReadAllText(Path.Combine(repo.Root, testFile!));
+                if (ShowsProblem((string?)output!["shows"], results, source) is { } problem)
+                {
+                    errors.Add(problem);
+                    outcome = null;
+                }
+                else attempt["shows"] = (string)output["shows"]!;   // stored only once checked: what the side-by-side shows
+            }
         }
 
+        if (outcome != "reproduced" && blocked.Count > 0)
+        {
+            attempt["runs"] = runs;
+            return SetupBlocked();
+        }
         if (outcome is null)
         {
             if (AiStep.Retry(paths, step, state, errors) is { } retry) return retry;
@@ -300,6 +380,28 @@ public static class BugProof
             _ => null,
         }, baseline, testFile);
     }
+
+    /// <summary>
+    /// Why <paramref name="shows"/> doesn't stand for the failure (D95): missing, not in every run's whole message, or
+    /// words the test itself holds (its expected value, its own "because …" text), which say nothing about what the code
+    /// did. Colour codes, spacing, case and curly quotes don't count.
+    /// </summary>
+    public static string? ShowsProblem(string? shows, IReadOnlyList<JsonObject> results, string testSource = "")
+    {
+        string Message(JsonObject r) => (string?)r["full"] ?? (string?)r["message"] ?? "";
+        var message = results.Count == 0 ? "" : Message(results[0]);
+        if (string.IsNullOrWhiteSpace(shows))
+            return $"Say which words of the failure message show the ticket's actual result, in `shows`. The message was: {Short(Plain(message), 1500)}";
+        var want = Plain(shows);
+        if (!results.All(r => Plain(Message(r)).Contains(want, StringComparison.OrdinalIgnoreCase)))
+            return $"shows \"{Short(shows)}\" isn't in the failure message: copy the words from it. The message was: {Short(Plain(message), 1500)}";
+        if (Plain(testSource).Contains(want, StringComparison.OrdinalIgnoreCase))
+            return $"shows \"{Short(shows)}\" is written in your test (its expected value or its own message): give the words that show what the code did instead, e.g. what it found or returned. The message was: {Short(Plain(message), 1500)}";
+        return null;
+    }
+
+    static string Plain(string s) => Quotes.Normalize(Regex.Replace(s, @"\x1b\[[0-9;]*m|\[[0-9;]+m", ""))
+        .Replace('“', '"').Replace('”', '"').Replace('‘', '\'').Replace('’', '\'');
 
     static RunStep Finish(StangentRepo repo, TicketPaths paths, JsonObject state, JsonObject attempt, string outcome, string? reason, JsonArray? baseline, string? testFile = null)
     {
@@ -374,7 +476,7 @@ public static class BugProof
         proof["verification"] = new JsonObject
         {
             ["commit"] = Commit(repo.Root, null), ["passed"] = passed && fresh.Count == 0,
-            ["newFailures"] = new JsonArray([.. fresh.Select(f => (JsonNode)f)]), ["runs"] = new JsonArray([.. runs.Select(r => r.DeepClone())]),
+            ["newFailures"] = new JsonArray([.. fresh.Select(f => (JsonNode)f)]), ["runs"] = new JsonArray([.. runs.Select(r => (JsonNode)Stored(r))]),
         };
         Save(paths, proof);
         return proof;
@@ -393,6 +495,7 @@ public static class BugProof
             if (b.TimedOut) return [Run("timeout", "the build timed out", null, null, b.Ms)];
             if (b.ExitCode != 0) return [Run("compile-error", Errors(b.Output), null, null, b.Ms)];
         }
+        if (target.Kind == TestTarget.Playwright) AppSession.WriteConfig(repo);   // on a fix branch too
         await using var app = target.Kind == TestTarget.Playwright ? await StartApp(repo, runner, ct) : null;
         var results = new List<JsonObject>();
         for (var i = 1; i <= times; i++)
@@ -405,15 +508,44 @@ public static class BugProof
             var r = await runner.RunAsync(target.TestCommand(target.Runner == "dotnet" ? null : fileArg, testName, report, !UsesMtp(repo.Root)), target.WorkingDir(repo.Root), CommandTimeout, env, ct);
             results.Add(Classify(target, report, r, testFile, testName, span));
         }
+        // D90: the runner is broken only if it can't list the project's tests at all (an adapter that won't load, a
+        // missing runtime). Then "no test named X ran" isn't the reproducer's mistake; and a run with no result but an
+        // error is a runner failure only then, else the test crashed the host (its own doing, it gets the retry).
+        // A run with no report and a non-zero exit (MTP with no runtime writes none) is checked the same way.
+        if (results.Any(x => (string)x["result"]! is "not-found" or RunnerError or "error") && target.ListCommand(!UsesMtp(repo.Root)) is { } list)
+        {
+            var l = await runner.RunAsync(list, target.WorkingDir(repo.Root), CommandTimeout, null, ct);
+            // VSTest prints its "available" header even when it finds nothing: a test listed means a name under it.
+            var lists = ListedTest().IsMatch(l.Output);
+            var broken = !lists && (l.Output.Contains("No test is available in", StringComparison.Ordinal) || l.Output.Contains("You must install or update .NET", StringComparison.Ordinal)
+                || l.Output.Contains("Discovered 0 tests", StringComparison.Ordinal));
+            for (var i = 0; i < results.Count; i++)
+            {
+                var kind = (string)results[i]["result"]!;
+                if (broken && kind is "not-found" or "error")
+                    results[i] = Run(RunnerError, $"the test runner finds no tests at all in {target.Project}: {Short(RunnerLines(l.Output), 800)}", null, null, l.Ms);
+                else if (!broken && kind == RunnerError)
+                    results[i] = Run("error", $"the test run stopped before reporting a result (the test may have crashed the test host): {(string?)results[i]["message"]}", null, null, (long?)results[i]["ms"] ?? 0);
+            }
+        }
         return results;
     }
 
     static JsonObject Classify(TestTarget target, string report, CommandResult r, string testFile, string testName, (int From, int To) span)
     {
         if (r.TimedOut) return Run("timeout", "the test run timed out", null, null, r.Ms);
+        // The tools a frontend run needs aren't there (D94 review): the machine, not the test.
+        if (target.Runner != "dotnet" && MissingTool(r) is { } missing) return Run(RunnerError, missing, null, null, r.Ms);
         if (!System.IO.File.Exists(report)) return Run(r.ExitCode == 0 ? "not-found" : "error", r.ExitCode == 0 ? "no report: the test name matched nothing" : Errors(r.Output), null, null, r.Ms);
         List<TestCaseResult> cases;
-        try { cases = Parse(target, System.IO.File.ReadAllText(report)); }
+        try
+        {
+            if (target.Runner == "dotnet" && TestReports.TrxRunnerError(System.IO.File.ReadAllText(report)) is { } broken)
+                // A test can crash the host itself (a stack overflow, Environment.Exit): that's the test's doing, and
+                // RunTest confirms a runner failure by listing the project's tests before it's called one.
+                return Run(RunnerError, $"the test runner failed before any test ran: {broken}", null, null, r.Ms);
+            cases = Parse(target, System.IO.File.ReadAllText(report));
+        }
         catch (Exception e) when (e is JsonException or System.Xml.XmlException) { return Run("error", $"unreadable report: {e.Message}", null, null, r.Ms); }
         cases = [.. cases.Where(c => c.Status != "skipped" && SameTest(c.Name, testName))];
         if (cases.Count == 0) return Run("not-found", $"no test named \"{testName}\" ran", null, null, r.Ms);
@@ -471,7 +603,14 @@ public static class BugProof
                 try { using var r = await http.GetAsync(app.Url, ct); if ((int)r.StatusCode < 500) break; }
                 catch (HttpRequestException) { }
                 catch (TaskCanceledException) when (!ct.IsCancellationRequested) { }
-                if (DateTime.UtcNow > deadline) throw new StangentException("app_not_ready", $"The app didn't answer at {app.Url} within {app.ReadySeconds} s.");
+                // D89: the start command failed without the app answering (its seed failed, the port was taken): say so
+                // now, with its own error, rather than wait out the ready time. One that exits 0 may have started the
+                // app in the background (`docker compose up -d`): it's waited for as before, though stangent then can't
+                // stop it (the start command should stay in the foreground).
+                if (started.HasExited && started.ExitCode != 0)
+                    throw new StangentException("app_not_ready", $"tickets.app.start exited (code {started.ExitCode?.ToString() ?? "?"}) before the app answered at {app.Url}: {StartError(started.Output)}");
+                if (DateTime.UtcNow > deadline)
+                    throw new StangentException("app_not_ready", $"The app didn't answer at {app.Url} within {app.ReadySeconds} s.{(started.Output.Length > 0 ? " The start command's last output: " + StartError(started.Output) : "")}");
                 await Task.Delay(1000, ct);
             }
             if (app.Seed is { } seed && (await runner.RunAsync(seed, repo.Root, CommandTimeout, null, ct)) is { ExitCode: not 0 } s)
@@ -486,10 +625,51 @@ public static class BugProof
         }
     }
 
-    static JsonObject Run(string result, string message, string? file, int? line, long ms) => new()
+    /// <summary>Node or a Playwright browser missing, from a frontend run's output and exit code (127: not found).</summary>
+    static string? MissingTool(CommandResult r)
     {
-        ["result"] = result, ["message"] = Short(message, 2000), ["file"] = file, ["line"] = line, ["ms"] = ms,
-    };
+        var line = r.Output.Split('\n').Select(l => l.Trim()).FirstOrDefault(l =>
+            Regex.IsMatch(l, @"npx: (command )?not found|command not found: npx|node: (command )?not found|env: node|Executable doesn't exist|npx playwright install", RegexOptions.IgnoreCase));
+        if (line is not null) return $"the test runner couldn't start: {Short(line, 300)}";
+        return r.ExitCode == 127 ? $"the test runner couldn't start (exit 127, a command not found): {Short(r.Output.Trim(), 300)}" : null;
+    }
+
+    /// <summary>The lines of a runner's output that say why it couldn't run, the runtime's name and version included.</summary>
+    static string RunnerLines(string output)
+    {
+        var lines = output.Split('\n').Select(l => l.Trim())
+            .Where(l => Regex.IsMatch(l, @"error|fail|You must install|Framework:|No test is available|Discovered 0 tests", RegexOptions.IgnoreCase)).Distinct().Take(8).ToList();
+        return lines.Count > 0 ? string.Join(" | ", lines) : Short(output.Trim(), 600);
+    }
+
+    /// <summary>A start command's output, short: its error lines if any, else its last lines.</summary>
+    static string StartError(string output)
+    {
+        var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var errors = lines.Where(l => l.Contains("error", StringComparison.OrdinalIgnoreCase) || l.Contains("fail", StringComparison.OrdinalIgnoreCase)).Distinct().Take(5).ToList();
+        var text = string.Join(" | ", errors.Count > 0 ? errors : lines.TakeLast(5));
+        return text.Length == 0 ? "it printed nothing" : Short(text, 800);
+    }
+
+    /// <summary>A test name under VSTest's list header (indented 4; a stack frame is indented 3).</summary>
+    [System.Text.RegularExpressions.GeneratedRegex(@"(?m)^The following Tests are available:\r?\n {4}\S")]
+    private static partial System.Text.RegularExpressions.Regex ListedTest();
+
+    /// <summary>One run's result. A message is stored cut to 2,000 characters; the whole of it stays in memory as
+    /// <c>full</c> for the D95 check and is dropped before saving (<see cref="Stored"/>).</summary>
+    static JsonObject Run(string result, string message, string? file, int? line, long ms)
+    {
+        var run = new JsonObject { ["result"] = result, ["message"] = Short(message, 2000), ["file"] = file, ["line"] = line, ["ms"] = ms };
+        if (message.Length > 2000) run["full"] = message;
+        return run;
+    }
+
+    static JsonObject Stored(JsonObject run)
+    {
+        var copy = run.DeepClone().AsObject();
+        copy.Remove("full");
+        return copy;
+    }
 
     /// <summary>The lines an assertion statement spans from its first line: to the line ending in <c>;</c>, at most 8.</summary>
     public static (int From, int To) Span(string[] lines, int line)
@@ -513,6 +693,57 @@ public static class BugProof
         var bug = pulled["bug"] as JsonObject;
         var parts = TicketPull.BugParts.Select(p => (string?)bug?[p]).OfType<string>();
         return TicketText.From(pulled).Quotable + "\n\n" + string.Join("\n\n", parts);
+    }
+
+    /// <summary>
+    /// What Claude Code refused (its result's <c>permission_denials</c>) that stangent's rules allow: a write to the result
+    /// file or to a file a target allows, or a command line made only of allowed commands and <c>cd</c>s (D89).
+    /// Refusals of anything else are the rules working: the reproducer reached outside what it may do.
+    /// </summary>
+    public static List<string> Blocked(StangentRepo repo, TicketPaths paths, IReadOnlyList<TestTarget> targets, JsonObject claudeResult)
+    {
+        var found = new List<string>();
+        var output = OutputPath(paths);
+        var commands = targets.SelectMany(t => Commands(paths, t)).Distinct().ToList();
+        foreach (var d in (claudeResult["permission_denials"] as JsonArray ?? []).OfType<JsonObject>())
+        {
+            var tool = (string?)d["tool_name"] ?? "";
+            var input = d["tool_input"] as JsonObject;
+            if (tool is "Edit" or "Write" or "MultiEdit" or "NotebookEdit" && ((string?)input?["file_path"] ?? (string?)input?["notebook_path"]) is { Length: > 0 } file)
+            {
+                var full = Path.GetFullPath(Path.Combine(repo.Root, file));
+                var rel = Path.GetRelativePath(repo.Root, full).Replace('\\', '/');
+                if (full == output || (!rel.StartsWith("../", StringComparison.Ordinal) && rel != ".." && targets.Any(t => t.Allows(rel))))
+                    found.Add($"{tool} {rel}");
+            }
+            // A command line counts only when all of it is allowed: allowed commands and `cd`s, nothing piped or
+            // redirected. `dotnet test … && rm -rf x` refused for the `rm` is the rules working.
+            else if (tool == "Bash" && (string?)input?["command"] is { } command && AllAllowed(repo.Root, command, commands))
+                found.Add($"Bash {Short(command, 80)}");
+        }
+        return [.. found.Distinct()];
+    }
+
+    /// <summary>Every part is an allowed command or a <c>cd</c> that stays in the repo; nothing piped, redirected,
+    /// substituted or sent to the background.</summary>
+    static bool AllAllowed(string root, string command, List<string> allowed)
+    {
+        if (command.IndexOfAny(['|', '>', '<', '`', '$']) >= 0 || command.Replace("&&", "").Contains('&')) return false;
+        var parts = command.Split(["&&", ";", "\n"], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var here = Path.GetFullPath(root);
+        var inside = here.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var any = false;
+        foreach (var part in parts)
+        {
+            if (part.StartsWith("cd ", StringComparison.Ordinal))
+            {
+                here = Path.GetFullPath(Path.Combine(here, part[3..].Trim().Trim('\'', '"')));
+                if (here != Path.GetFullPath(root) && !here.StartsWith(inside, StringComparison.Ordinal)) return false;
+            }
+            else if (allowed.Any(c => part.StartsWith(c, StringComparison.Ordinal))) any = true;
+            else return false;
+        }
+        return any;
     }
 
     /// <summary>A capped attempt (D81): Claude Code stopped at its turn or budget limit, or the attempt's calls together

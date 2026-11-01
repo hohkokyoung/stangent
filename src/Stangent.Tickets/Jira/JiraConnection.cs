@@ -108,7 +108,7 @@ public sealed class JiraConnection : IJiraTools
             transportOptions.OAuth = new ClientOAuthOptions
             {
                 RedirectUri = redirect,
-                TokenCache = new KeychainTokenCache(secrets, JiraConnectionOptions.KeychainService, options.OAuthAccount),
+                TokenCache = new KeychainTokenCache(secrets, JiraConnectionOptions.KeychainService, options.OAuthAccount, log),
                 DynamicClientRegistration = new DynamicClientRegistrationOptions { ClientName = "stangent" },
                 // The server offers every product's scopes (delete, Bitbucket, Loom…); stangent asks only for Jira's.
                 ScopeSelector = offered => offered?.Where(JiraScopes.Wanted).ToList(),
@@ -122,12 +122,20 @@ public sealed class JiraConnection : IJiraTools
         }
 
         // A new session each time: the first, and again when a read stalls twice (the session itself may be stuck).
-        async Task<McpClient> Connect(CancellationToken token) => await McpClient.CreateAsync(new HttpClientTransport(transportOptions), new McpClientOptions
+        // D92: one stangent process at a time opens a session with the shared sign-in, so when the access token has
+        // expired, one refreshes it and saves it, and the next reads the new one instead of refreshing it again.
+        async Task<McpClient> Connect(CancellationToken token)
         {
-            ClientInfo = new Implementation { Name = "stangent", Version = typeof(JiraConnection).Assembly.GetName().Version?.ToString() ?? "0" },
-            // The browser sign-in happens inside initialization, so the wait must cover a person at the consent page.
-            InitializationTimeout = options.SignInTimeout + TimeSpan.FromSeconds(30),
-        }, cancellationToken: token);
+            await using var _ = options.Auth == JiraAuth.OAuth
+                ? await SignInLock.AcquireAsync(JiraConnectionOptions.KeychainService + "|" + options.OAuthAccount, options.SignInTimeout + TimeSpan.FromSeconds(60), token)
+                : null;
+            return await McpClient.CreateAsync(new HttpClientTransport(transportOptions), new McpClientOptions
+            {
+                ClientInfo = new Implementation { Name = "stangent", Version = typeof(JiraConnection).Assembly.GetName().Version?.ToString() ?? "0" },
+                // The browser sign-in happens inside initialization, so the wait must cover a person at the consent page.
+                InitializationTimeout = options.SignInTimeout + TimeSpan.FromSeconds(30),
+            }, cancellationToken: token);
+        }
         try
         {
             return new JiraConnection(await Connect(ct), Connect, options, log, signIn);
@@ -293,31 +301,52 @@ public sealed record ToolResult(string Tool, JsonObject Raw, string Text, JsonNo
 /// The SDK's token cache, kept in the OS keychain. The cached container holds the access and refresh tokens and the
 /// dynamically registered client, so a restart refreshes silently instead of registering and signing in again.
 /// </summary>
-public sealed class KeychainTokenCache(ISecretStore secrets, string service, string account) : ITokenCache
+public sealed class KeychainTokenCache(ISecretStore secrets, string service, string account, TextWriter? log = null) : ITokenCache
 {
     TokenContainer? current;
-    bool loaded;
 
+    /// <summary>Read from the keychain each time (D92): another stangent process may have refreshed the sign-in since;
+    /// a token this process holds but couldn't save is used when the keychain has none.</summary>
     public ValueTask<TokenContainer?> GetTokensAsync(CancellationToken cancellationToken)
     {
-        if (!loaded)
+        try
         {
-            loaded = true;
             if (secrets.Get(service, account) is { } json)
-            {
-                try { current = JsonSerializer.Deserialize<TokenContainer>(json, ModelContextProtocol.McpJsonUtilities.DefaultOptions); }
-                catch (JsonException) { current = null; }
-            }
+                current = JsonSerializer.Deserialize<TokenContainer>(json, ModelContextProtocol.McpJsonUtilities.DefaultOptions) ?? current;
         }
+        catch (JsonException) { }
+        catch (StangentException e) when (current is not null) { log?.WriteLine($"stangent: {e.Message} Using the sign-in this process already holds."); }
         return ValueTask.FromResult(current);
     }
 
+    /// <summary>The tokens are already in hand: a keychain that won't save them is a warning, not a failed call (D92).</summary>
     public ValueTask StoreTokensAsync(TokenContainer tokens, CancellationToken cancellationToken)
     {
         current = tokens;
-        loaded = true;
-        secrets.Set(service, account, JsonSerializer.Serialize(tokens, ModelContextProtocol.McpJsonUtilities.DefaultOptions));
+        try { secrets.Set(service, account, JsonSerializer.Serialize(tokens, ModelContextProtocol.McpJsonUtilities.DefaultOptions)); }
+        catch (StangentException e) { log?.WriteLine($"stangent: {e.Message} The new sign-in works for this run but wasn't saved; the next run may ask you to sign in."); }
         return ValueTask.CompletedTask;
+    }
+}
+
+/// <summary>
+/// A lock across stangent processes (D92): a file under the user's local data folder, held open without sharing. The OS
+/// drops it if the process dies. Waits up to <c>timeout</c> (a person may be signing in in the other process).
+/// </summary>
+public static class SignInLock
+{
+    public static async Task<IAsyncDisposable> AcquireAsync(string name, TimeSpan timeout, CancellationToken ct)
+    {
+        var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.Create), "stangent", "locks");
+        Directory.CreateDirectory(dir);
+        var file = Path.Combine(dir, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(name)))[..16] + ".lock");
+        var deadline = DateTime.UtcNow + timeout;
+        while (true)
+        {
+            try { return new FileStream(file, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); }
+            catch (IOException) when (DateTime.UtcNow < deadline) { await Task.Delay(200, ct); }
+            catch (IOException e) { throw new StangentException("jira_signin_busy", $"Another stangent process has held the Jira sign-in for {timeout.TotalSeconds:0} s: {e.Message}"); }
+        }
     }
 }
 

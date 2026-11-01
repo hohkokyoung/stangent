@@ -27,12 +27,18 @@ public sealed record TestTarget(string Id, string Kind, string Runner, string Di
     {
         "dotnet" => vstest
             ? $"dotnet test {Quote(Project!)}{Extra}{(name is not null ? $" --filter {Quote("FullyQualifiedName~" + FilterEscape(name))}" : Filter is { Length: > 0 } f ? $" --filter {Quote(f)}" : "")} --logger {Quote("trx;LogFileName=" + report)}"
-            : $"dotnet test --project {Quote(Project!)}{(name is null ? "" : $" --filter-method {Quote(name)}")} -- --report-trx --report-trx-filename {Quote(Path.GetFileName(report))} --results-directory {Quote(Path.GetDirectoryName(report)!)}",
+            // MTP: the build command already ran with the args (and dotnet test --project would rebuild without them).
+            : $"dotnet test --project {Quote(Project!)} --no-build{(name is null ? "" : $" --filter-method {Quote(name)}")} -- --report-trx --report-trx-filename {Quote(Path.GetFileName(report))} --results-directory {Quote(Path.GetDirectoryName(report)!)}",
         "vitest" => $"npx vitest run{(file is null ? "" : " " + Quote(file))}{(name is null ? "" : $" -t {Quote(Anchored(name))}")} --reporter=json --outputFile={Quote(report)}",
         "jest" => $"npx jest{(file is null ? "" : " " + Quote(file))}{(name is null ? "" : $" -t {Quote(Anchored(name))}")} --json --outputFile={Quote(report)}",
-        "playwright" => $"npx playwright test{(file is null ? "" : " " + Quote(file))}{(name is null ? "" : $" -g {Quote(RegexEscape(name))}")} --retries=0 --reporter=json",
+        "playwright" => $"npx playwright test --config {AppSession.ConfigFile} --project={AppSession.Project}{(file is null ? "" : " " + Quote(file))}{(name is null ? "" : $" -g {Quote(RegexEscape(name))}")} --retries=0 --reporter=json",
         _ => throw new StangentException("usage", $"Unknown runner {Runner}."),
     };
+
+    /// <summary>Lists the tests a .NET target's runner finds, without building (D90: a runner that finds none at all is
+    /// broken, whatever test name was asked for). Null for other runners.</summary>
+    public string? ListCommand(bool vstest = true) => Runner != "dotnet" ? null
+        : vstest ? $"dotnet test {Quote(Project!)}{Extra} --no-build --list-tests" : $"dotnet test --project {Quote(Project!)} --no-build --list-tests";
 
     /// <summary>Where commands run: the package folder for Jest and Vitest, Playwright's own folder (its <see cref="Project"/>),
     /// the repo root otherwise.</summary>
@@ -70,8 +76,9 @@ public sealed record TestTarget(string Id, string Kind, string Runner, string Di
         return f;
     }
 
-    /// <summary>The edit rules for the driver (D60): each file pattern under the target's folder.</summary>
-    public IEnumerable<string> EditRules() => Patterns.Select(p => AtRoot ? $"Edit(**/{p})" : $"Edit({Dir.TrimEnd('/')}/**/{p})");
+    /// <summary>The edit rules for the driver (D60): each file pattern under the target's folder, by absolute path (D89).</summary>
+    public IEnumerable<string> EditRules(string root) =>
+        Patterns.Select(p => $"Edit({ClaudeRules.Absolute(AtRoot ? root : Path.Combine(root, Dir))}/**/{p})");
 
     /// <summary>VSTest's --filter treats <c>\ ( ) &amp; | = ! ~</c> as syntax; a backslash makes them literal.</summary>
     static string FilterEscape(string name) => System.Text.RegularExpressions.Regex.Replace(name, @"[\\()&|=!~]", m => "\\" + m.Value);
@@ -82,6 +89,22 @@ public sealed record TestTarget(string Id, string Kind, string Runner, string Di
     static string Anchored(string name) => RegexEscape(name) + "$";
 
     static string Quote(string s) => "'" + s.Replace("'", "'\\''") + "'";
+}
+
+/// <summary>
+/// Claude Code permission paths (D89). A rule without a leading <c>//</c> is read from the agent's current folder, so
+/// once its shell runs <c>cd src</c>, <c>Edit(src/Tests/**)</c> means <c>src/src/Tests/**</c> and every allowed write
+/// is refused. <c>//</c> and an absolute path name the same folder wherever the shell is.
+/// </summary>
+public static class ClaudeRules
+{
+    /// <summary><c>/repo/x</c> → <c>//repo/x</c>; <c>C:\repo\x</c> → <c>//c/repo/x</c>.</summary>
+    public static string Absolute(string path)
+    {
+        var p = Path.GetFullPath(path).Replace('\\', '/').TrimEnd('/');
+        if (p.Length >= 2 && p[1] == ':') p = "/" + char.ToLowerInvariant(p[0]) + p[2..];
+        return "/" + p;
+    }
 }
 
 /// <summary>
@@ -107,21 +130,29 @@ public static partial class TestTargets
         var root = repo.Root;
         var targets = new List<TestTarget>();
 
-        // .NET: test projects referencing a starting point's project, directly or through one project in between.
+        // .NET: test projects referencing a starting point's project, directly or through any chain of references
+        // (audit: a Domain project reached only via Web → Infrastructure → Application had no target at two levels).
         var csprojs = Files(root, "*.csproj").ToList();
-        var refs = csprojs.ToDictionary(p => p, p => References(root, p), StringComparer.Ordinal);
+        // Paths compare ignoring case: a reference may spell a folder's case differently from the disk, and on Windows
+        // and macOS both name the same folder.
+        var refs = csprojs.ToDictionary(p => p, p => References(root, p), StringComparer.OrdinalIgnoreCase);
         var direct = new Dictionary<string, int>(StringComparer.Ordinal);
+        string? args = null;   // the graph build's properties, worked out only when a .NET test target is found
         foreach (var test in csprojs)
         {
-            var reached = new HashSet<string>(refs[test], StringComparer.Ordinal);
-            foreach (var r in refs[test].ToList()) reached.UnionWith(refs.GetValueOrDefault(r) ?? []);
+            var reached = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var queue = new Queue<string>(refs[test]);
+            while (queue.TryDequeue(out var r))
+                if (reached.Add(r)) foreach (var next in refs.GetValueOrDefault(r) ?? []) queue.Enqueue(next);
             var covers = projects.Where(reached.Contains).Order(StringComparer.Ordinal).ToList();
-            if (covers.Count == 0 || !IsTestProject(repo, test)) continue;
-            direct["dotnet:" + test] = projects.Count(refs[test].Contains);
+            if (covers.Count == 0) continue;
+            args ??= DotnetArgs(repo);
+            if (!IsTestProject(repo, test, args)) continue;
+            direct["dotnet:" + test] = projects.Count(p => refs[test].Contains(p, StringComparer.OrdinalIgnoreCase));
             var dir = Path.GetDirectoryName(test)!.Replace('\\', '/') is { Length: > 0 } d ? d : ".";
             targets.Add(new TestTarget("dotnet:" + test, TestTarget.Unit, "dotnet", dir, test, ["*.cs"], covers)
             {
-                Args = repo.Config.Tickets.DotnetArgs.Replace("{root}", root.TrimEnd('/')), Filter = repo.Config.Tickets.TestFilter,
+                Args = args, Filter = repo.Config.Tickets.TestFilter,
             });
         }
 
@@ -152,6 +183,26 @@ public static partial class TestTargets
         return unit;
     }
 
+    /// <summary>
+    /// The properties the graph build loads projects with (audit item 4): the main solution's folder (projects that
+    /// build relative to $(SolutionDir)), NuGet audit off (old commits pin packages with advisories published since)
+    /// and Windows-only projects loadable anywhere, each unless <c>tickets.dotnetArgs</c> sets it, then those args.
+    /// </summary>
+    static string DotnetArgs(StangentRepo repo)
+    {
+        var own = repo.Config.Tickets.DotnetArgs.Replace("{root}", repo.Root.TrimEnd('/'));
+        var props = new List<string>();
+        if (!own.Contains("SolutionDir", StringComparison.OrdinalIgnoreCase)
+            && Stangent.Graph.Loading.ProjectScanner.MainSolutionDir(repo.Root, Stangent.Graph.Loading.ProjectScanner.Find(repo.Root)) is { } dir)
+            props.Add(Quote("-p:SolutionDir=" + dir.TrimEnd('/', '\\') + "/"));
+        if (!own.Contains("NuGetAudit", StringComparison.OrdinalIgnoreCase)) props.Add("-p:NuGetAudit=false");
+        if (!own.Contains("EnableWindowsTargeting", StringComparison.OrdinalIgnoreCase)) props.Add("-p:EnableWindowsTargeting=true");
+        if (own.Length > 0) props.Add(own);
+        return string.Join(' ', props);
+    }
+
+    static string Quote(string s) => System.Text.RegularExpressions.Regex.IsMatch(s, @"^[A-Za-z0-9_./:=@+,-]+$") ? s : "'" + s.Replace("'", "'\\''") + "'";
+
     [GeneratedRegex(@"""(Microsoft\.NET\.Test\.Sdk|MSTest\.Sdk|MSTest\.TestAdapter|NUnit3TestAdapter|xunit\.runner\.visualstudio|MSTest|xunit\.v3|xunit\.v3\.mtp-v\d+|TUnit)""|""IsTestProject"":\s*""true""", RegexOptions.IgnoreCase)]
     private static partial Regex TestRunner();
 
@@ -164,9 +215,9 @@ public static partial class TestTargets
     /// that only references NUnit or xUnit has no runner, so it isn't one. When MSBuild can't evaluate it, the project
     /// file's own text decides.
     /// </summary>
-    static bool IsTestProject(StangentRepo repo, string project)
+    static bool IsTestProject(StangentRepo repo, string project, string args)
     {
-        var evaluated = Evaluate(repo, project);
+        var evaluated = Evaluate(repo, project, args);
         if (evaluated is null)
         {
             Console.Error.WriteLine($"stangent: couldn't evaluate {project} with dotnet msbuild; deciding from the project file's text.");
@@ -175,14 +226,17 @@ public static partial class TestTargets
         return !NotTestProject().IsMatch(evaluated) && TestRunner().IsMatch(evaluated);
     }
 
-    static string? Evaluate(StangentRepo repo, string project)
+    static string? Evaluate(StangentRepo repo, string project, string args)
     {
         try
         {
             var psi = new System.Diagnostics.ProcessStartInfo("dotnet") { WorkingDirectory = repo.Root, RedirectStandardOutput = true, RedirectStandardError = true };
             foreach (var a in new[] { "msbuild", project, "-getItem:PackageReference", "-getProperty:IsTestProject", "-nologo" }) psi.ArgumentList.Add(a);
             // Only the properties of tickets.dotnetArgs: switches like -c or --no-restore are dotnet build's, not msbuild's.
-            foreach (var a in repo.Config.Tickets.DotnetArgs.Replace("{root}", repo.Root.TrimEnd('/')).Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            // Only the properties of the proof's args (D94: the graph build's, then tickets.dotnetArgs): switches like -c or
+            // --no-restore are dotnet build's, not msbuild's. A quoted one loses its quotes here (no shell in between).
+            foreach (var a in System.Text.RegularExpressions.Regex.Matches(args, @"'(?:[^']|'\\'')*'|\S+").Select(m => m.Value)
+                         .Select(a => a.StartsWith('\'') && a.EndsWith('\'') && a.Length > 1 ? a[1..^1].Replace("'\\''", "'") : a)
                 .Where(a => a.StartsWith("-p:", StringComparison.Ordinal) || a.StartsWith("-property:", StringComparison.Ordinal))) psi.ArgumentList.Add(a);
             using var p = System.Diagnostics.Process.Start(psi)!;
             var stdout = p.StandardOutput.ReadToEndAsync();

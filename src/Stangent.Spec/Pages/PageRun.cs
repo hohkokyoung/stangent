@@ -47,7 +47,7 @@ public sealed record RunStep(string Status, string Action, string? Agent = null,
         // Phase 3's ticket steps (Stangent.Tickets.StepSpec).
         "stangent-point-picker" => "point-picker-output.v1.json",
         "stangent-bug-reproducer" => "bug-reproducer-output.v1.json",
-        "stangent-question-writer" or "stangent-summary-writer" => "draft-output.v1.json",
+        "stangent-question-writer" or "stangent-summary-writer" => "draft-output.v2.json",
         _ => null,
     };
 }

@@ -96,7 +96,8 @@ multi_turn() {
     fi
   fi
   # No user or project settings (their allow rules would widen the reproducer's), no MCP but the browser given here.
-  $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" ${MODEL:+--model "$MODEL"} ${mcp[@]+"${mcp[@]}"} \
+  # Each command starts back in the repo (D89): a `cd src` mustn't make the repo-relative commands it may run miss.
+  CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1 $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" ${MODEL:+--model "$MODEL"} ${mcp[@]+"${mcp[@]}"} \
     --setting-sources "" --strict-mcp-config \
     --permission-mode "$(jq -r '.permissionMode' <<<"$limits")" --allowedTools "${tools[@]}" \
     --max-turns "$(jq -r '.maxTurns' <<<"$limits")" --max-budget-usd "$(jq -r '.maxBudgetUsd' <<<"$limits")" \
@@ -129,13 +130,22 @@ run_step() {
   done
   rm -f "$usage"
   printf '%s\t%s\t%s\n' "$(jq -r '.result.status // .error.code' <<<"$step")" "$key" "$name"
+  # D89: stangent's own permission rules refused what they allow. Every later attempt would hit the same wall: stop.
+  if [ "$(jq -r '.error.code // ""' <<<"$step")" = setup_blocked ]; then
+    printf 'error\t%s\t%s\t%s\n' "$key" "$name" "$(jq -r '.error.message // ""' <<<"$step" | head -c 300)" >&2
+    exit 255
+  fi
 }
 
 run_ticket() {
   local key="$1" out
   out="$($STANGENT ticket pull "$key" || true)"
   printf '%s\t%s\tpull\n' "$(jq -r 'if .ok then "pulled" else .error.code end' <<<"$out")" "$key"
-  jq -e '.ok' <<<"$out" >/dev/null || return 0
+  # A failed pull leaves nothing to work on; say why and fail, so a batch sees it (D92: a draft was lost silently).
+  if ! jq -e '.ok' <<<"$out" >/dev/null 2>&1; then
+    printf 'error\t%s\tpull\t%s\n' "$key" "$(jq -r '.error.message // "no result"' <<<"$out" 2>/dev/null | head -c 300)" >&2
+    return 1
+  fi
   out="$($STANGENT ticket points "$key" || true)"
   if [ "$(jq -r '.result.ai.status // ""' <<<"$out")" = needed ]; then
     run_step "$key" points "$($STANGENT ticket prepare "$key" --step points || true)"

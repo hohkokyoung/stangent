@@ -15,8 +15,8 @@ public sealed record StepSpec(string Name, string Agent, string Schema, string I
 
     public static readonly StepSpec Points = new("points", PointPicker, "point-picker-output.v1.json", "point-picker.md");
     public static readonly StepSpec Prove = new("prove", BugReproducer, "bug-reproducer-output.v1.json", "bug-reproducer.md");
-    public static readonly StepSpec Questions = new("questions", QuestionWriter, "draft-output.v1.json", "question-writer.md");
-    public static readonly StepSpec Resolution = new("resolution", SummaryWriter, "draft-output.v1.json", "summary-writer.md");
+    public static readonly StepSpec Questions = new("questions", QuestionWriter, "draft-output.v2.json", "question-writer.md");
+    public static readonly StepSpec Resolution = new("resolution", SummaryWriter, "draft-output.v2.json", "summary-writer.md");
 
     public static StepSpec Named(string name) => name switch
     {

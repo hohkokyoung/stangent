@@ -138,6 +138,9 @@ public sealed class StangentConfig
         /// them (<c>translate('Key')</c>, <c>t("a.b")</c>, <c>Label = "Key"</c>) is indexed with its text. JSON (nested keys
         /// joined with dots) or <c>.resx</c>, relative to the repo, e.g. <c>src/NzbDrone.Core/Localization/Core/en.json</c>.</summary>
         public List<string> TextFiles { get; set; } = [];
+        /// <summary>The page ranking's weights (D87), tuned on Sonarr and checked on Bitwarden; a repo may tune its own.
+        /// Unset values keep the defaults.</summary>
+        public RankConfig Rank { get; set; } = new();
 
         public bool IsBugType(string type) => BugTypes.Any(t => string.Equals(t, type, StringComparison.OrdinalIgnoreCase));
     }
@@ -153,6 +156,15 @@ public sealed class StangentConfig
         public string SpecDir { get; set; } = "e2e/stangent";
         /// <summary>Where Playwright runs from (its package.json and config), relative to the repo; null: the repo root.</summary>
         public string? PlaywrightDir { get; set; }
+    }
+
+    public sealed class RankConfig
+    {
+        public double? DepthDecay { get; set; }
+        public double? PhraseBoost { get; set; }
+        public double? WinnerRatio { get; set; }
+        public double? SummaryWeight { get; set; }
+        public double? LengthNorm { get; set; }
     }
 
     public sealed class ProveBudgetConfig

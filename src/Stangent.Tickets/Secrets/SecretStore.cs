@@ -46,10 +46,33 @@ sealed class MacKeychain : ISecretStore
     const string CoreFoundation = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
     const int ItemNotFound = -25300;
 
+    const int DuplicateItem = -25299;
+    // Answers, not passing failures: the person said no, access is denied, or the call itself is wrong.
+    const int UserCanceled = -128, AuthFailed = -25293, BadParameter = -50;
+
+    /// <summary>
+    /// Runs a keychain call again when it fails for a passing reason (D92): several stangent processes reading and
+    /// saving the same sign-in at once (a batch, or two terminals) can see a busy keychain. Success, "not found", a refusal
+    /// (cancelled, denied) and a bad call aren't retried; after a few tries the last status stands.
+    /// </summary>
+    internal static int Retry(Func<int> call, Action<TimeSpan>? wait = null, int tries = 5)
+    {
+        wait ??= Thread.Sleep;
+        var status = call();
+        for (var i = 1; i < tries && status is not (0 or ItemNotFound or UserCanceled or AuthFailed or BadParameter); i++)
+        {
+            wait(TimeSpan.FromMilliseconds(50 << i));
+            status = call();
+        }
+        return status;
+    }
+
     public string? Get(string service, string account)
     {
         var (s, a) = (Encoding.UTF8.GetBytes(service), Encoding.UTF8.GetBytes(account));
-        var status = SecKeychainFindGenericPassword(IntPtr.Zero, (uint)s.Length, s, (uint)a.Length, a, out var length, out var data, out var item);
+        uint length = 0;
+        IntPtr data = IntPtr.Zero, item = IntPtr.Zero;
+        var status = Retry(() => SecKeychainFindGenericPassword(IntPtr.Zero, (uint)s.Length, s, (uint)a.Length, a, out length, out data, out item));
         if (status == ItemNotFound) return null;
         if (status != 0) throw Failed("read", status);
         try
@@ -68,16 +91,19 @@ sealed class MacKeychain : ISecretStore
     public void Set(string service, string account, string value)
     {
         var (s, a, v) = (Encoding.UTF8.GetBytes(service), Encoding.UTF8.GetBytes(account), Encoding.UTF8.GetBytes(value));
-        var status = SecKeychainFindGenericPassword(IntPtr.Zero, (uint)s.Length, s, (uint)a.Length, a, out _, IntPtr.Zero, out var item);
-        if (status == 0)
+        // Find, then change or add. Another process may add the item between the two: then it's found next time round.
+        var status = Retry(() =>
         {
-            try { status = SecKeychainItemModifyAttributesAndData(item, IntPtr.Zero, (uint)v.Length, v); }
-            finally { CFRelease(item); }
-        }
-        else if (status == ItemNotFound)
-        {
-            status = SecKeychainAddGenericPassword(IntPtr.Zero, (uint)s.Length, s, (uint)a.Length, a, (uint)v.Length, v, IntPtr.Zero);
-        }
+            var found = SecKeychainFindGenericPassword(IntPtr.Zero, (uint)s.Length, s, (uint)a.Length, a, out _, IntPtr.Zero, out var item);
+            if (found == 0)
+            {
+                try { return SecKeychainItemModifyAttributesAndData(item, IntPtr.Zero, (uint)v.Length, v); }
+                finally { CFRelease(item); }
+            }
+            if (found != ItemNotFound) return found;
+            var added = SecKeychainAddGenericPassword(IntPtr.Zero, (uint)s.Length, s, (uint)a.Length, a, (uint)v.Length, v, IntPtr.Zero);
+            return added;   // DuplicateItem: another process added it meanwhile; the next try finds it and changes it
+        });
         if (status != 0) throw Failed("save", status);
     }
 

@@ -26,5 +26,13 @@ Report in the output schema: the target id, the test file (relative to the repo 
 and exact code of the assertion that checks the expected result, and the ticket's sentence giving that expected result,
 **copied word for word** (code checks it). Code then builds and runs the test itself; your own runs don't count.
 
+**Say what your failure shows (D95).** Give `actualQuote`: the ticket's sentence saying what actually went wrong,
+copied word for word. Give `shows`: the words of your test's failure message that show that same thing, copied from
+the message you saw, showing what the code did (for example `but found 11`, `Received: "0"`, `Expected collection {empty}`),
+not your test's own expected value or "because" text (code rejects words that are in your test). Code checks both;
+a developer then reads "the ticket says … / the test got …" side by side and confirms it's the reported problem. Test
+the behaviour the ticket reports, the way a user or caller meets it, not your guess at the cause: a test of an internal
+step that fails for another reason proves nothing, and would wrongly fail a correct fix.
+
 Stay inside your limits: write only in the targets' folders, run only the commands given, and stop well before the turn
 and cost cap (hitting it counts as not reproduced).

@@ -20,7 +20,7 @@ whose source shows the fact. Cite nothing outside the table.
 - `actions`: what a user (or, for a backend page, a caller or an event) can do or trigger, and what that does. When
   the slice links an action to an endpoint, list the endpoint's id in `endpoints`.
 - `rules`: validations, limits, required fields, defaults, allowed values, permissions, ordering, conditions. Be exact:
-  give the numbers, values and conditions the code uses ("at most 3", "must be unique", "only when monitored").
+  give the numbers, values and conditions the code uses ("at most 3", "must be unique", "only when the item is active").
 - `sideEffects`: what changes elsewhere: records saved or deleted, events or commands sent (and the handlers the
   slice lists for them), files, notifications, messages, calls to other services.
 

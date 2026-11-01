@@ -32,11 +32,17 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/ticket-run.sh --prove [--hint "<hint>"] <KEY>
 ```
 
 Then report the outcome from `.stangent/tickets/<KEY>/bug-proof.json`:
-- **reproduced**: show the test and its failure; ask the user to confirm it matches the reported actual result
-  (`stangent ticket prove <KEY> --confirm`). The test is committed with the fix; after the fix,
+- **reproduced**: show the test, then the last attempt's `actualQuote` and `shows` side by side, as
+  **The ticket says:** … / **The test got:** … (with the full failure message below), and ask the user whether that's
+  the reported problem (D95). Only on their yes, run `stangent ticket prove <KEY> --confirm`; until then the proof is
+  advice. The test is committed with the fix; after the fix,
   `stangent ticket prove <KEY> --verify` checks it passes and nothing else broke.
 - **not reproduced** (or flaky): don't start a fix yet (D75); show the test for review, offer a `--hint` attempt and a
   questions draft.
+- **failed** with `setupBlocked: true` (D89–D91): the machine or stangent's setup stopped the attempt (a missing
+  runtime, the app didn't start, a runner that lists no tests, stangent's own rules), so it says nothing about the
+  bug. Show the reason and the attempt's `advice` as they are. **Don't install or change anything yourself** unless the
+  user asks you to; then prove again.
 - **not provable here** or **failed**: say why; the developer reproduces it by hand.
 
 **Drafts** (`<KEY> questions [client]` or `<KEY> resolution <base..head> [client]`): run
