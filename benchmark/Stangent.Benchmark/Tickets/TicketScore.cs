@@ -127,6 +127,7 @@ public static class TicketScore
             ["grounded"] = new JsonObject { ["failedSteps"] = new JsonArray([.. failedSteps.Select(f => (JsonNode)f)]), ["note"] = "every recorded output passed its code check; tests show a made-up quote and a non-existent page are rejected" },
             ["repeatable"] = new JsonObject { ["replayed"] = replayed, ["identical"] = identical, ["rerunAiCalls"] = rerunCalls, ["passed"] = replayed == issues.Count && identical == replayed && rerunCalls == 0 },
         };
+        var stages = PlaceStages.Run(clone, ticketsDir);
         return new JsonObject
         {
             ["schemaVersion"] = 1, ["clone"] = Path.GetFileName(clone), ["commit"] = graph.Commit, ["bugs"] = bugs.Count, ["notBugs"] = notBugs.Count,
@@ -137,7 +138,9 @@ public static class TicketScore
                 ["bundleChars"] = Stats(cases.Select(c => (double?)(int?)c!["bundleChars"]).OfType<double>()),
                 ["cost"] = Cost(issues.Select(i => Dir(i)).ToList(), records),
                 // Where right place loses each fix, stage by stage (owner's request, 2026-11-01; no bar).
-                ["rightPlaceStages"] = PlaceStages.Run(clone, ticketsDir),
+                ["rightPlaceStages"] = stages,
+                // Would the nearby-page rule explain fixes no page cites? (retrieval redesign, 2026-11-02; no bar)
+                ["nearbyWalk"] = NearbyWalk.Run(clone, ticketsDir, stages),
             },
             ["cases"] = cases,
             ["proofs"] = new JsonArray([.. outcomes]),
