@@ -25,7 +25,7 @@ static class TicketSteps
 
         var hintOption = new Option<string?>("--hint") { Description = "Another way to reproduce it, from the developer: a new attempt with this added (D75)." };
         var confirmOption = new Option<bool>("--confirm") { Description = "Confirm the reproduced failure is the reported problem and a bug, not the code working as meant (D75, D96)." };
-        var verifyOption = new Option<bool>("--verify") { Description = "On the fix branch: the test passes and nothing else started failing (D18)." };
+        var verifyOption = new Option<bool>("--verify") { Description = "On the fix branch: the test passes and nothing else started failing (D18); if not, what kind of failure it was (D105)." };
         var prove = new Command("prove", "Prove a bug before it's fixed: prepare the reproducer's input (D75, D76); --confirm or --verify afterwards.") { TicketCommands.KeyArg, hintOption, confirmOption, verifyOption };
         prove.SetAction(pr => Cli.Run(pr, "ticket prove", ctx =>
         {

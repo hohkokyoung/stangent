@@ -417,6 +417,197 @@ public class BugProofTests
         var broke = (await BugProof.VerifyAsync(p.App.Repo, Key, p.Runner, TestContext.Current.CancellationToken))["verification"]!;
         Assert.False((bool)broke["passed"]!);
         Assert.Equal(["Shop.Tests.Billing.Charges"], broke["newFailures"]!.AsArray().Select(x => (string)x!));
+        Assert.Equal("new-failures", (string?)broke["result"]);
+    }
+
+    /// <summary>A reproduced proof, ready for --verify on "the fix": its failure's named words are "No exception was thrown".</summary>
+    static Proof Reproduced()
+    {
+        var p = new Proof();
+        p.Prepare();
+        p.App.Write(TestFile, TestCode);
+        p.Runner.Tests.Enqueue(AssertFailure());
+        p.Check(Written());
+        Assert.Equal("reproduced", (string?)p.Record["outcome"]);
+        return p;
+    }
+
+    static string FailureOn(string message, int line = 8) => TestReportTests.Trx((TestName, "Failed", message,
+        $"   at Shop.Tests.OrderTests.Rejects_orders_over_100() in /home/ci/shop/{TestFile}:line {line}"));
+
+    static async Task<JsonNode> Verify(Proof p) => (await BugProof.VerifyAsync(p.App.Repo, Key, p.Runner, TestContext.Current.CancellationToken))["verification"]!;
+
+    [Fact]
+    public async Task On_the_fix_a_failure_with_the_proofs_words_is_the_same_failure()
+    {
+        using var p = Reproduced();
+        p.Runner.Tests.Enqueue(AssertFailure());
+        p.Runner.All = TestReportTests.Trx((TestName, "Failed", "Assert.Throws() Failure: No exception was thrown", ""));
+        var v = await Verify(p);
+        Assert.Equal("same-failure", (string?)v["result"]);
+        Assert.False((bool)v["passed"]!);
+        Assert.Empty(v["newFailures"]!.AsArray());   // the reproduction test is the result, not a new failure
+    }
+
+    [Fact]
+    public async Task On_the_fix_a_failure_without_the_proofs_words_is_a_different_failure()
+    {
+        using var p = Reproduced();
+        p.Runner.Tests.Enqueue(FailureOn("Assert.Throws() Failure: Expected ArgumentException, got NullReferenceException"));
+        var v = await Verify(p);
+        Assert.Equal("different-failure", (string?)v["result"]);
+        Assert.False((bool)v["passed"]!);
+        Assert.Contains("looks gone", (string?)v["reason"]);
+    }
+
+    [Fact]
+    public async Task On_the_fix_a_setup_exception_is_a_different_failure_too()
+    {
+        using var p = Reproduced();
+        p.Runner.Tests.Enqueue(FailureOn("System.InvalidOperationException: no database", line: 6));
+        Assert.Equal("different-failure", (string?)(await Verify(p))["result"]);
+    }
+
+    [Theory]
+    [InlineData("Tests/OrderTests.cs(9,1): error CS7036: no argument given for 'release'", "doesn't compile")]
+    [InlineData("Core/Order.cs(3,1): error CS1002: ; expected", "doesn't build")]
+    public async Task On_the_fix_a_build_failure_says_whether_the_test_is_why(string error, string reason)
+    {
+        using var p = Reproduced();
+        p.Runner.BuildFails = error;
+        p.Runner.Commands.Clear();
+        var v = await Verify(p);
+        Assert.Equal("not-compiled", (string?)v["result"]);
+        Assert.Contains(reason, (string?)v["reason"]);
+        Assert.DoesNotContain(p.Runner.Commands, c => c.StartsWith("dotnet test", StringComparison.Ordinal));   // nothing to run
+    }
+
+    [Fact]
+    public async Task On_the_fix_a_run_with_no_result_cant_be_judged()
+    {
+        using var p = Reproduced();
+        p.Runner.Tests.Enqueue(TestReportTests.Trx(("Shop.Tests.Other.Something", "Passed", null, null)));
+        var v = await Verify(p);
+        Assert.Equal("not-run", (string?)v["result"]);
+        Assert.Contains("not-found", (string?)v["reason"]);
+    }
+
+    [Fact]
+    public async Task Verify_says_when_the_test_was_edited_after_the_proof()
+    {
+        using var p = Reproduced();
+        p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+        Assert.False((bool?)(await Verify(p))["testChanged"]);
+
+        p.App.Write(TestFile, TestCode + "\n// weakened");
+        p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+        var v = await Verify(p);
+        Assert.Equal("passed", (string?)v["result"]);
+        Assert.True((bool?)v["testChanged"]);
+        Assert.Contains("isn't the test that was reproduced", (string?)v["reason"]);
+    }
+
+    [Fact]
+    public async Task A_test_that_passes_alone_but_fails_with_the_rest_is_a_new_failure()
+    {
+        using var p = Reproduced();
+        p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+        p.Runner.All = TestReportTests.Trx((TestName, "Failed", "order-dependent", ""));
+        var v = await Verify(p);
+        Assert.Equal("new-failures", (string?)v["result"]);
+        Assert.False((bool)v["passed"]!);
+        Assert.Equal([TestName], v["newFailures"]!.AsArray().Select(x => (string)x!));
+    }
+
+    [Fact]
+    public async Task A_test_file_not_on_the_branch_is_not_run_even_if_a_same_named_test_would_pass()
+    {
+        using var p = Reproduced();
+        File.Delete(Path.Combine(p.Root, TestFile));
+        p.Runner.Commands.Clear();
+        var v = await Verify(p);
+        Assert.Equal("not-run", (string?)v["result"]);
+        Assert.False((bool)v["passed"]!);
+        Assert.Contains("isn't on this branch", (string?)v["reason"]);
+        Assert.Null((bool?)v["testChanged"]);
+        Assert.Empty(p.Runner.Commands);
+    }
+
+    [Fact]
+    public async Task A_test_with_only_its_line_endings_changed_isnt_edited()
+    {
+        using var p = Reproduced();
+        var file = Path.Combine(p.Root, TestFile);
+        File.WriteAllText(file, File.ReadAllText(file).Replace("\n", "\r\n"));   // SpecApp.Write would strip them
+        Assert.Contains("\r\n", File.ReadAllText(file));
+        p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+        Assert.False((bool?)(await Verify(p))["testChanged"]);
+    }
+
+    [Fact]
+    public async Task A_pass_says_when_no_full_run_checked_the_other_tests()
+    {
+        using var p = Reproduced();
+        // No report; a crashed host's report with no results (a real one has exit 1 and 0 tests); a cut-off report.
+        foreach (var report in new[] { null, TestReportTests.Trx(), "<TestRun><Results>" })
+        {
+            p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+            p.Runner.All = report;
+            var v = await Verify(p);
+            Assert.Equal("passed", (string?)v["result"]);
+            Assert.False((bool?)v["othersChecked"]);
+            Assert.Contains("other tests weren't checked", (string?)v["reason"]);
+        }
+
+        p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+        p.Runner.All = TestReportTests.Trx(("Shop.Tests.Other.Fine", "Passed", null, null));
+        var checkedRun = await Verify(p);
+        Assert.True((bool?)checkedRun["othersChecked"]);
+        Assert.Contains("nothing new fails", (string?)checkedRun["reason"]);
+    }
+
+    [Fact]
+    public async Task A_build_error_in_the_test_is_found_past_ten_other_errors()
+    {
+        using var p = Reproduced();
+        p.Runner.BuildFails = string.Join('\n', Enumerable.Range(1, 12).Select(i => $"Core/Order{i}.cs(1,1): error CS1002: ; expected")) + "\nTests\\OrderTests.cs(9,1): error CS7036: no argument";
+        Assert.Contains("the test doesn't compile", (string?)(await Verify(p))["reason"]);
+    }
+
+    /// <summary>The saved Sonarr runs have no <c>shows</c> (before D95). SONB-30's exception differs, with a stack; the
+    /// second case is the same message with its stack's line moved; the third the same with colour around the stack.</summary>
+    [Theory]
+    [InlineData("Boom: ArgumentNullException\n   at A.B() in a.cs:line 421", "Boom: NullReferenceException\n   at A.C() in a.cs:line 472", "different-failure")]
+    [InlineData("found Imported\n   at A.B() in a.cs:line 10", "found Imported\n   at A.B() in a.cs:line 12", "same-failure")]
+    [InlineData("found Imported\n   at A.B() in a.cs:line 10", "found Imported\n\u001b[2m   at A.B() in a.cs:line 12\u001b[0m", "same-failure")]
+    public void A_proof_from_before_shows_compares_the_message_without_its_stack(string before, string after, string want)
+    {
+        var attempt = new JsonObject { ["runs"] = new JsonArray(new JsonObject { ["result"] = "failed-on-assertion", ["message"] = before }) };
+        Assert.Equal(want, BugProof.OnFixResult(attempt, [new JsonObject { ["result"] = "failed-on-assertion", ["message"] = after }], 0));
+    }
+
+    static JsonObject RunWith(string result, string message = "") => new() { ["result"] = result, ["message"] = message };
+
+    [Fact]
+    public void A_mixed_playwright_run_is_a_failure_not_a_pass()
+    {
+        var attempt = new JsonObject { ["shows"] = "found 3 rows" };
+        Assert.Equal("passed", BugProof.OnFixResult(attempt, [RunWith("passed"), RunWith("passed"), RunWith("passed")], 0));
+        Assert.Equal("same-failure", BugProof.OnFixResult(attempt, [RunWith("passed"), RunWith("failed-on-assertion", "Expected 2, found 3 rows"), RunWith("passed")], 0));
+        Assert.Equal("different-failure", BugProof.OnFixResult(attempt, [RunWith("passed"), RunWith("failed-on-assertion", "timeout on the click"), RunWith("passed")], 0));
+        // One run still showing the reported failure is enough: it isn't gone.
+        Assert.Equal("same-failure", BugProof.OnFixResult(attempt, [RunWith("failed-on-assertion", "timeout on the click"), RunWith("failed-on-assertion", "found 3 rows")], 0));
+    }
+
+    [Fact]
+    public void The_proofs_words_match_as_they_do_at_the_proof_whatever_the_colour_case_or_length()
+    {
+        var attempt = new JsonObject { ["shows"] = "Found Imported" };
+        Assert.Equal("same-failure", BugProof.OnFixResult(attempt, [RunWith("failed-on-assertion", "Expected x, \u001b[31mfound\u001b[0m imported")], 0));
+        // The words past the stored cut are in `full`, kept in memory while the check runs.
+        var cut = RunWith("failed-on-assertion", new string('x', 2000));
+        cut["full"] = new string('x', 3000) + " found imported";
+        Assert.Equal("same-failure", BugProof.OnFixResult(attempt, [cut], 0));
     }
 
     [Theory]

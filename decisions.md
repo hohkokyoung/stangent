@@ -1882,6 +1882,8 @@ shaped around Sonarr (the owner wants any C#/TS repo).
   that text: phases/3-tickets.md, 2026-11-02.)
 - *Measured 2026-11-02 (D101, phases/3-tickets.md):* right place 20 of 24 (83%, range 67–96%) ✅, $1.28; the agent
   baseline 23 of 24. Not tuned on: the gap goes to Sonarr first.
+- *Owner, 2026-11-02:* no proof run on bitwarden. Only the finder has run there (D101, D102), so the proof's bars stay
+  measured on Sonarr alone, the tuning set, and Phase 3's report says so.
 **Cost:** bitwarden needs its own setup for what a run uses (tickets in Jira or replay files, reference pages for the
 page-based sources); bitwarden's bugs may be fewer and different in kind; the owner decided "your call".
 
@@ -1994,6 +1996,38 @@ rounds, under $0.45). It also cut SONB-10's retry to 3 rounds when 12 were left.
 **Cost:** attempts use more of the turns they were given; expect few extra real proofs (of the 4 real bugs, SONB-29 would
 probably pass on its fix; SONB-6, 9, 18 probably wouldn't). D86's raise to 30 stands: its deciding case, SONB-5, was a real stop at 15 rounds.
 Nothing tests the driver's count in `dotnet test` (no test covers `ticket-run.sh`); a fresh check ran it on all 46 saved transcripts.
+
+## D105 · The on-fix check says what kind of failure it was; D79's bar stays as it is — 2026-11-02 (built; shows-based comparison not yet run on real proofs)
+The audit of the 40 proof results (phases/3-tickets.md): `--verify` knew only pass or fail, and a fail meant different
+things. SONB-30's reported `ArgumentNullException` is gone, and the test's own setup then throws a `NullReferenceException`;
+SONB-14 fails exactly as before, since the test never fires the event the fix relies on; SONB-2 can't compile, since the fix
+changed a constructor the test calls.
+Decided (owner, "of course lets go"): `verification.result`, by code:
+- **`passed`:** the test passes and nothing new fails. **`new-failures`:** it passes, other tests started failing.
+- **`same-failure`:** it still fails with the words its proof named (`shows`, D95). **`different-failure`:** it still fails,
+  those words gone: the reported failure looks gone and something else fails.
+- **`not-compiled`:** it can't build here; `reason` says whether the error is in the test. **`not-run`:** a timeout, no test
+  found, a runner error, or the test file isn't on the branch (nothing is run, so a same-named test elsewhere can't pass for it).
+- A proof with no `shows` (before D95) compares the whole message without its stack lines.
+- **Also:** `testChanged` when the test was edited after the proof (updating it is the normal answer to `not-compiled`, and a
+  pass then isn't on the test that was reproduced; recorded, not blocked); the reproduction test is listed in `newFailures`
+  only when it passes alone and fails with the rest, since otherwise it's the result itself; a failed build skips the full
+  test run; `othersChecked` is false when no full run judged the other tests, as on Playwright, which has none. Optional fields in `bug-proof` v1, as D95's; nothing outside Phase 3 reads it yet.
+- **D79's bar isn't moved:** only `passed`, by the proof's own test on the answer key's fix commit, counts (a hand-run
+  `--verify` elsewhere or on an edited test doesn't).
+  Everything but `same-failure` is reported as a range beside it (`shareIfUnclearReal`). A test that passes while others
+  newly fail isn't counted as a pass, which is stricter than the bar's wording; no saved proof has it.
+- **Re-scored on the saved run, no AI:** 17 of 22 pass (77%), up to 19 of 22 (86%): same-failure SONB-1, 11, 14;
+  different-failure SONB-30; not-compiled SONB-2. The bar stays failed.
+Rejected: an AI judging the failure on the fix (nothing could check it, D18); checking the test runs the lines the fix changed
+(SONB-26's false pass goes through the fix's own new early return, so it wouldn't catch it, and a proof has no fix to compare
+with); counting the unclear ones as real (moves the bar after seeing a result).
+**Why:** a person can't act on a bare "failed", and the score shouldn't hide what's behind it.
+**Cost:** code describes what happened, not why. SONB-14 reads the same as SONB-1 and 11, and SONB-26 stays a false pass, so
+a pass can still be for the wrong reason and a person reads the rest. A `shows` holding a value that changes per run (a time, a
+temp path) reads as `different-failure`; a very general one reads as `same-failure`. With bare test names (Sonarr's reports),
+two fixtures' tests with the same method name can't be told apart: an already-failing one dropped from the baseline can read as
+`new-failures`, and a newly failing one that shares a baseline test's name is missed. No saved baseline has either (all empty).
 
 ## Open questions
 

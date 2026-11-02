@@ -721,3 +721,8 @@ No AI and nothing run: a fresh agent read the raw records of the 2026-10-31 run 
 - **"Not planned" isn't "wrong report".** Of the 10: SONB-44 a real bug fixed later, SONB-42 probably real elsewhere, SONB-47 unknown, SONB-48 outside the code; of the 6 clear non-bugs, 5 "reproduced".
 - **"Not reproduced" says almost nothing:** true of a real passing test only on SONB-46, of 9. SONB-16's test reached the bug but passes when run alone (cause inferred). SONB-17 was offered only Playwright.
 - **Also:** bundles built at the pinned commit can name code from after the fix (SONB-17, 23, 25, 26, 29; no sign the AI relied on it). Seed and setup problems count against the AI (SONB-10, 18, 28, 46). Starting files don't separate good proofs from bad: the AI reached a fix file in all 17 good ones, 8 of them unnamed by the bundle.
+
+### Step 8 · D105: the on-fix check says what kind of failure it was · 2026-11-02
+No AI and nothing run: `--verify` now records `verification.result`, and the score reads it (a record from before D105 is classified from its saved runs). The saved run re-scored: 17 of 22 pass (77%, D79's bar, still failed), up to 19 of 22 (86%) if the unclear ones are real. `same-failure` SONB-1, 11, 14; `different-failure` SONB-30; `not-compiled` SONB-2. These saved proofs have no `shows`, so they compared whole messages; the `shows` comparison first meets real proofs in the re-run.
+- **Disagrees with the audit on SONB-14:** "mis-scored" was too kind. The failure it shows is real, but the test can't confirm the fix, which is this check's job, so it stays `same-failure`.
+- **Doesn't catch SONB-26:** the test sets no `AirDateUtc`, so the fixed code returns early and it passes for the wrong reason.

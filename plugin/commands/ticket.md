@@ -41,7 +41,10 @@ Then report the outcome from `.stangent/tickets/<KEY>/bug-proof.json`:
   **The reporter expected:** … / **The ticket says:** … / **The test got:** … (with the full failure message below), and
   ask the user whether that's the reported problem and a bug, not the code working as meant (D95, D96). Only on their
   yes, run `stangent ticket prove <KEY> --confirm`; until then the proof is advice. The test is committed with the fix; after the fix,
-  `stangent ticket prove <KEY> --verify` checks it passes and nothing else broke.
+  `stangent ticket prove <KEY> --verify` checks it passes and nothing else broke. Report `verification.result` and
+  `reason` as they are (D105). For `same-failure` or `different-failure`, show the proof's failure message beside the new
+  one; for `different-failure` don't say the bug is fixed, only that the reported failure looks gone. If `testChanged` is
+  true, say this isn't the test that was reproduced.
 - **not reproduced** (or flaky): don't start a fix yet (D75); show the test for review, offer a `--hint` attempt and a
   questions draft.
 - **failed** with `setupBlocked: true` (D89–D91): the machine or stangent's setup stopped the attempt (a missing

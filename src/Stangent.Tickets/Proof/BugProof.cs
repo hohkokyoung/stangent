@@ -377,7 +377,7 @@ public static partial class BugProof
         attempt["runs"] = runs;
         JsonArray? baseline = null;
         if (outcome == "reproduced" && target!.Kind == TestTarget.Unit)
-            baseline = new JsonArray([.. (await FailingTests(repo, paths, target, runner, ct)).Where(n => !SameTest(n, (string)output!["testName"]!)).Select(n => (JsonNode)n)]);
+            baseline = new JsonArray([.. (await FailingTests(repo, paths, target, runner, ct) ?? []).Where(n =>!SameTest(n, (string)output!["testName"]!)).Select(n => (JsonNode)n)]);
         return Finish(repo, paths, state, attempt, outcome, outcome switch
         {
             "not-reproduced" => "the test passes: the code already does what the ticket expects, or the test doesn't reach the reported behaviour",
@@ -405,7 +405,9 @@ public static partial class BugProof
         return null;
     }
 
-    static string Plain(string s) => Quotes.Normalize(Regex.Replace(s, @"\x1b\[[0-9;]*m|\[[0-9;]+m", ""))
+    static string NoColour(string s) => Regex.Replace(s, @"\x1b\[[0-9;]*m|\[[0-9;]+m", "");
+
+    static string Plain(string s) => Quotes.Normalize(NoColour(s))
         .Replace('“', '"').Replace('”', '"').Replace('‘', '\'').Replace('’', '\'');
 
     static RunStep Finish(StangentRepo repo, TicketPaths paths, JsonObject state, JsonObject attempt, string outcome, string? reason, JsonArray? baseline, string? testFile = null)
@@ -413,6 +415,7 @@ public static partial class BugProof
         attempt["outcome"] = outcome;
         if (reason is not null) attempt["reason"] = reason;
         if (baseline is not null) attempt["baseline"] = baseline;
+        if (outcome == "reproduced") attempt["testHash"] = TestHash(repo.Root, testFile!);
         attempt["commit"] = Commit(repo.Root, testFile);
         attempt["usage"] = state["usage"]!.DeepClone();
         attempt["retries"] = (int?)state["retries"] ?? 0;
@@ -459,7 +462,7 @@ public static partial class BugProof
     }
 
     /// <summary>On the fix branch (D18's test row): the reproduction test passes, and no other test in its target fails
-    /// that wasn't already failing when the bug was reproduced.</summary>
+    /// that wasn't already failing when the bug was reproduced. Anything else says what kind of failure it was (D105).</summary>
     public static async Task<JsonObject> VerifyAsync(StangentRepo repo, string key, ICommandRunner runner, CancellationToken ct = default)
     {
         var paths = new TicketPaths(repo.Root, key);
@@ -470,22 +473,84 @@ public static partial class BugProof
         var target = latest["targetSpec"] is JsonObject spec ? TestTarget.FromJson(spec)
             : throw new StangentException("no_proof", $"{key}'s reproduced attempt has no recorded test target; prove it again.", ExitCodes.NotFound);
         var testFile = (string)latest["testFile"]!;
-        var lines = System.IO.File.Exists(Path.Combine(repo.Root, testFile)) ? System.IO.File.ReadAllLines(Path.Combine(repo.Root, testFile)) : [];
+        // Not on this branch: nothing to run. A same-named test elsewhere passing mustn't read as this one (D105).
+        var there = System.IO.File.Exists(Path.Combine(repo.Root, testFile));
+        var lines = there ? System.IO.File.ReadAllLines(Path.Combine(repo.Root, testFile)) : [];
         var line = (int)latest["assertion"]!["line"]!;
-        var runs = await RunTest(repo, paths, target, testFile, (string)latest["testName"]!, lines.Length >= line ? Span(lines, line) : (line, line), runner,
-            target.Kind == TestTarget.Playwright ? PlaywrightRuns : 1, ct);
-        var passed = runs.All(r => (string)r["result"]! == "passed");
+        var testName = (string)latest["testName"]!;
+        List<JsonObject> runs = there
+            ? await RunTest(repo, paths, target, testFile, testName, lines.Length >= line ? Span(lines, line) : (line, line), runner, target.Kind == TestTarget.Playwright ? PlaywrightRuns : 1, ct)
+            : [];
         var baseline = (latest["baseline"]?.AsArray() ?? []).Select(b => (string)b!).ToHashSet(StringComparer.Ordinal);
-        var failing = target.Kind == TestTarget.Unit ? await FailingTests(repo, paths, target, runner, ct) : [];
-        var fresh = failing.Where(f => !baseline.Contains(f)).Order(StringComparer.Ordinal).ToList();
+        // A build that failed can't say what else broke.
+        var built = there && runs.All(r => (string)r["result"]! != "compile-error");
+        // Null: no full run judged the other tests (Playwright has none, or the run gave no results).
+        var failing = built && target.Kind == TestTarget.Unit ? await FailingTests(repo, paths, target, runner, ct) : null;
+        // The test failing on its own is `result`'s business, not a new failure. Passing alone and failing with the rest is one.
+        var ownFailed = runs.Any(r => (string)r["result"]! != "passed");
+        var fresh = (failing ?? []).Where(f => !baseline.Contains(f) && !(ownFailed && SameTest(f, testName))).Order(StringComparer.Ordinal).ToList();
+        var result = OnFixResult(latest, runs, fresh.Count);
+        // Editing the test is the normal answer to `not-compiled`; a pass then isn't on the test that was reproduced.
+        bool? changed = (string?)latest["testHash"] is { } hash && there ? TestHash(repo.Root, testFile) != hash : null;
         proof["verification"] = new JsonObject
         {
-            ["commit"] = Commit(repo.Root, null), ["passed"] = passed && fresh.Count == 0,
+            ["commit"] = Commit(repo.Root, null), ["result"] = result, ["reason"] = OnFixReason(result, testFile, runs, fresh.Count, failing is not null, changed == true),
+            ["passed"] = result == "passed", ["testChanged"] = changed, ["othersChecked"] = failing is not null,
             ["newFailures"] = new JsonArray([.. fresh.Select(f => (JsonNode)f)]), ["runs"] = new JsonArray([.. runs.Select(r => (JsonNode)Stored(r))]),
         };
         Save(paths, proof);
         return proof;
     }
+
+    /// <summary>
+    /// What the reproduction test did on the fix (D105). A test that still fails is <c>same-failure</c> when the words its
+    /// proof named (<c>shows</c>, D95) are still in the message, otherwise <c>different-failure</c>: the reported failure
+    /// looks gone and something else fails. A proof with no <c>shows</c> (from before D95) compares the whole message,
+    /// without its stack frames, whose line numbers move between commits. Code can't say which side is wrong, or that a
+    /// pass passed for the right reason: a person reads anything but a pass, and a pass can still be a false one.
+    /// </summary>
+    public static string OnFixResult(JsonObject attempt, IEnumerable<JsonObject> runs, int newFailures)
+    {
+        var all = runs.ToList();
+        if (all.Any(r => (string)r["result"]! == "compile-error")) return "not-compiled";
+        var failed = all.Where(r => (string)r["result"]! is "failed-on-assertion" or "failed-other").ToList();
+        if (failed.Count > 0) return failed.Any(r => SameFailure(attempt, r)) ? "same-failure" : "different-failure";
+        if (all.Count == 0 || all.Any(r => (string)r["result"]! != "passed")) return "not-run";
+        return newFailures > 0 ? "new-failures" : "passed";
+    }
+
+    static bool SameFailure(JsonObject attempt, JsonObject run)
+    {
+        var message = (string?)run["full"] ?? (string?)run["message"] ?? "";
+        if ((string?)attempt["shows"] is { Length: > 0 } shows) return Plain(message).Contains(Plain(shows), StringComparison.OrdinalIgnoreCase);
+        return WithoutStack((string?)attempt["runs"]?[0]?["message"] ?? "") == WithoutStack((string?)run["message"] ?? "");
+    }
+
+    static string WithoutStack(string message) =>
+        Plain(string.Join('\n', NoColour(message).Split('\n').Where(l => !l.TrimStart().StartsWith("at ", StringComparison.Ordinal))));
+
+    static string OnFixReason(string result, string testFile, List<JsonObject> runs, int newFailures, bool othersChecked, bool changed)
+    {
+        var what = result switch
+        {
+            "passed" => othersChecked ? "the test passes here and nothing new fails" : "the test passes here; other tests weren't checked (no full run, or it gave no results)",
+            "new-failures" => $"the test passes here, but {newFailures} test(s) failed when the whole target ran",
+            "same-failure" => "the test still fails the way the proof did: the fix may not work, or the test may not reach what the fix changed",
+            "different-failure" => "the test still fails, but not the way the proof did: the reported failure looks gone and something else fails, perhaps the test's own setup; compare the two messages",
+            "not-compiled" => runs.Any(r => InFile((string?)r["message"] ?? "", testFile))
+                ? "the test doesn't compile here: the fix may have changed what it calls; update it and verify again"
+                : "this branch doesn't build, and the errors shown aren't in the test: fix the build and verify again",
+            _ when runs.Count == 0 => $"the test file `{testFile}` isn't on this branch: commit it with the fix and verify again",
+            _ => $"the test couldn't be judged here ({string.Join(", ", runs.Select(r => (string)r["result"]!).Distinct())})",
+        };
+        return changed ? what + "; the test was edited after the proof, so this isn't the test that was reproduced" : what;
+    }
+
+    static bool InFile(string line, string file) => line.Replace('\\', '/').Contains(file, StringComparison.Ordinal);
+
+    /// <summary>The test as written, whatever line endings a checkout gave it (D105).</summary>
+    static string TestHash(string root, string testFile) =>
+        CanonicalJson.Hash(System.IO.File.ReadAllText(Path.Combine(root, testFile)).Replace("\r\n", "\n"));
 
     // ---- running ----
 
@@ -498,7 +563,7 @@ public static partial class BugProof
         {
             var b = await runner.RunAsync(build, repo.Root, CommandTimeout, null, ct);
             if (b.TimedOut) return [Run("timeout", "the build timed out", null, null, b.Ms)];
-            if (b.ExitCode != 0) return [Run("compile-error", Errors(b.Output), null, null, b.Ms)];
+            if (b.ExitCode != 0) return [Run("compile-error", Errors(b.Output, testFile), null, null, b.Ms)];
         }
         if (target.Kind == TestTarget.Playwright) AppSession.WriteConfig(repo);   // on a fix branch too
         await using var app = target.Kind == TestTarget.Playwright ? await StartApp(repo, runner, ct) : null;
@@ -584,13 +649,19 @@ public static partial class BugProof
             || (r.EndsWith("." + last, StringComparison.Ordinal) && testName.EndsWith(r, StringComparison.Ordinal));
     }
 
-    static async Task<List<string>> FailingTests(StangentRepo repo, TicketPaths paths, TestTarget target, ICommandRunner runner, CancellationToken ct)
+    /// <summary>The tests failing in the whole target; null when the run judged nothing (it timed out, left no report or
+    /// an unreadable one, or one with no results, as a crashed test host does), so nothing is known.</summary>
+    static async Task<List<string>?> FailingTests(StangentRepo repo, TicketPaths paths, TestTarget target, ICommandRunner runner, CancellationToken ct)
     {
         var report = Path.Combine(AiStep.Work(paths, StepSpec.Prove), "runs", "all" + (target.Runner == "dotnet" ? ".trx" : ".json"));
         if (System.IO.File.Exists(report)) System.IO.File.Delete(report);
-        await runner.RunAsync(target.TestCommand(null, null, report, !UsesMtp(repo.Root)), target.WorkingDir(repo.Root), CommandTimeout, null, ct);
-        if (!System.IO.File.Exists(report)) return [];
-        return [.. Parse(target, System.IO.File.ReadAllText(report)).Where(c => c.Status is "failed" or "timeout").Select(c => c.Name).Distinct().Order(StringComparer.Ordinal)];
+        var run = await runner.RunAsync(target.TestCommand(null, null, report, !UsesMtp(repo.Root)), target.WorkingDir(repo.Root), CommandTimeout, null, ct);
+        if (run.TimedOut || !System.IO.File.Exists(report)) return null;
+        List<TestCaseResult> cases;
+        try { cases = Parse(target, System.IO.File.ReadAllText(report)); }
+        catch (Exception e) when (e is JsonException or System.Xml.XmlException) { return null; }
+        if (cases.Count == 0) return null;
+        return [.. cases.Where(c => c.Status is "failed" or "timeout").Select(c => c.Name).Distinct().Order(StringComparer.Ordinal)];
     }
 
     internal static async Task<IAsyncDisposable?> StartApp(StangentRepo repo, ICommandRunner runner, CancellationToken ct)
@@ -687,9 +758,11 @@ public static partial class BugProof
         return (line, to);
     }
 
-    static string Errors(string output)
+    /// <summary>A failed command's error lines, at most 10: those in <paramref name="first"/> come first, so they survive the cut.</summary>
+    static string Errors(string output, string? first = null)
     {
-        var errors = output.Split('\n').Where(l => l.Contains(" error ", StringComparison.Ordinal) || l.Contains("error:", StringComparison.OrdinalIgnoreCase)).Distinct().Take(10).ToList();
+        var errors = output.Split('\n').Where(l => l.Contains(" error ", StringComparison.Ordinal) || l.Contains("error:", StringComparison.OrdinalIgnoreCase)).Distinct()
+            .OrderBy(l => first is not null && InFile(l, first) ? 0 : 1).Take(10).ToList();
         return errors.Count > 0 ? string.Join("\n", errors) : output.Length > 1500 ? output[^1500..] : output;
     }
 

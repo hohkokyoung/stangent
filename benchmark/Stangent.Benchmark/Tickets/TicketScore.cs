@@ -4,6 +4,7 @@ using Stangent.Graph;
 using Stangent.Spec.Fsd;
 using Stangent.Spec.Pages;
 using Stangent.Spec.Trace;
+using Stangent.Tickets.Proof;
 
 namespace Stangent.Benchmark.Tickets;
 
@@ -74,12 +75,12 @@ public static class TicketScore
         bool SetupBlocked(JsonObject i) => (bool?)Proof(i)?["attempts"]?.AsArray().LastOrDefault()?["setupBlocked"] == true;
         string Kind(JsonObject? proof) => (string?)proof?["attempts"]?.AsArray().LastOrDefault()?["kind"] ?? "none";
         var reproduced = proofBugs.Where(b => (string?)Proof(b)?["outcome"] == "reproduced").ToList();
-        var real = reproduced.Count(b => (string?)Record(b)?["proofOnFix"] == "passed");
+        string? OnFix(JsonObject i) => TicketScore.OnFix(Proof(i), (string?)key[((int)i["issue"]!).ToString(System.Globalization.CultureInfo.InvariantCulture)]?["fixCommit"]);
         var wrongReports = notBugs.Count(n => (string?)Proof(n)?["outcome"] == "reproduced");
         var outcomes = proofBugs.Concat(notBugs).Select(i => new JsonObject
         {
             ["issue"] = (int)i["issue"]!, ["kind"] = (string)i["kind"]!, ["area"] = (string?)i["area"], ["outcome"] = (string?)Proof(i)?["outcome"] ?? "not run",
-            ["test"] = Kind(Proof(i)), ["proofOnFix"] = (string?)Record(i)?["proofOnFix"],
+            ["test"] = Kind(Proof(i)), ["proofOnFix"] = OnFix(i),
             ["outside"] = (bool?)Proof(i)?["attempts"]?.AsArray().LastOrDefault()?["outside"] == true,
             ["setupBlocked"] = SetupBlocked(i),
         }).ToList();
@@ -111,12 +112,7 @@ public static class TicketScore
                 ["stangent"] = rightPlace, ["keywords"] = Share(baseline), ["gain"] = Share(gain), ["gainRange"] = R(gainRange),
                 ["passed"] = rightPlace > Share(baseline) && gainRange.Item1 > 0,
             },
-            ["proofIsReal"] = new JsonObject
-            {
-                ["reproduced"] = reproduced.Count, ["passOnFix"] = real, ["share"] = reproduced.Count == 0 ? 0 : Math.Round((double)real / reproduced.Count, 3),
-                ["range"] = R(Range([.. reproduced.Select(b => (string?)Record(b)?["proofOnFix"] == "passed" ? 1.0 : 0.0)])), ["bar"] = 0.9,
-                ["passed"] = reproduced.Count > 0 && (double)real / reproduced.Count >= 0.9,
-            },
+            ["proofIsReal"] = ProofIsReal([.. reproduced.Select(b => (Key(b), OnFix(b)))]),
             ["proofFindsBugs"] = new JsonObject
             {
                 ["share"] = Rate(proofBugs), ["range"] = R(Range([.. proofBugs.Select(b => (string?)Proof(b)?["outcome"] == "reproduced" ? 1.0 : 0.0)])), ["of"] = proofBugs.Count,
@@ -144,6 +140,34 @@ public static class TicketScore
             },
             ["cases"] = cases,
             ["proofs"] = new JsonArray([.. outcomes]),
+        };
+    }
+
+    /// <summary>What the test did on the fix (D105), or null if that wasn't the proof's own test on the answer key's fix
+    /// commit: a hand-run --verify elsewhere, or on an edited test, says nothing about it. A record from before D105 is
+    /// classified from its saved runs.</summary>
+    public static string? OnFix(JsonObject? proof, string? fixCommit)
+    {
+        if (proof?["verification"] is not JsonObject v || fixCommit is null) return null;
+        if (((string?)v["commit"])?.StartsWith(fixCommit, StringComparison.Ordinal) != true || (bool?)v["testChanged"] == true) return null;
+        return (string?)v["result"] ?? BugProof.OnFixResult(proof["attempts"]!.AsArray()[^1]!.AsObject(), (v["runs"]?.AsArray() ?? []).OfType<JsonObject>(), v["newFailures"]?.AsArray().Count ?? 0);
+    }
+
+    /// <summary>D79's "proof is real": only <c>passed</c> counts towards the bar. Code can't tell whether the unclear ones
+    /// are real, so they're the top of a range beside it, never part of it (D105). <c>same-failure</c> is neither.</summary>
+    public static JsonObject ProofIsReal(IReadOnlyList<(string Key, string? OnFix)> reproduced)
+    {
+        var real = reproduced.Count(r => r.OnFix == "passed");
+        var unclear = reproduced.Count(r => r.OnFix is not ("passed" or "same-failure"));
+        var groups = reproduced.GroupBy(r => r.OnFix ?? "none").OrderBy(g => g.Key, StringComparer.Ordinal);
+        var range = Range([.. reproduced.Select(r => r.OnFix == "passed" ? 1.0 : 0.0)]);
+        return new JsonObject
+        {
+            ["reproduced"] = reproduced.Count, ["passOnFix"] = real, ["share"] = reproduced.Count == 0 ? 0 : Math.Round((double)real / reproduced.Count, 3),
+            ["range"] = new JsonArray(range.Item1, range.Item2), ["bar"] = 0.9,
+            ["passed"] = reproduced.Count > 0 && (double)real / reproduced.Count >= 0.9,
+            ["shareIfUnclearReal"] = reproduced.Count == 0 ? 0 : Math.Round((double)(real + unclear) / reproduced.Count, 3),
+            ["onFix"] = new JsonObject([.. groups.Select(g => new KeyValuePair<string, JsonNode?>(g.Key, new JsonArray([.. g.Select(r => (JsonNode)r.Key)])))]),
         };
     }
 

@@ -26,7 +26,7 @@ The build order (decisions.md D19) and how phases stay in step with each other (
 - **Built and measured:** the foundation (0), the code graph (1a–1c), reference pages (2a), FSD import and links (2b,
   findings off), and Phase 3's ticket bundle: pull, the file finder with code checks, pages, impact, drafts.
 - **Not passing yet:** bug proof (advice only); catching wrong reports (needs D99); 1d part 2 (deferred).
-- **The saved proof numbers are out of date:** they predate the finder, D95 and D104, and an audit found their checks wrong both ways (phases/3-tickets.md, step 8). The on-fix check is the next proof work.
+- **The saved proof numbers are out of date:** they predate the finder, D95 and D104, and an audit found their checks wrong both ways (phases/3-tickets.md, step 8). The on-fix check now says what kind of failure it was (D105, built): on the saved run 17 of 22 pass (77%), up to 19 of 22 (86%) if the unclear ones are real; D79's bar is unchanged and still failed.
 - **Next, in order (owner, 2026-11-02):** the finder naming fewer files than the agent
   baseline; D99, starting with the ticket → requirement checker and scored on the planted FSD's 30-item key; then the
   D95 proof re-run on Sonarr (≈ $30–60, budget to confirm); Phase 3's end-of-phase report; then Phase 4. No private-repo

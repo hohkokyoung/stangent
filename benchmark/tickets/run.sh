@@ -188,10 +188,10 @@ phase_prove() {
       at "$(jq -r --arg n "$n" '.issues[$n].fixCommit' "$TICKETS/answer-key.json")"
       mkdir -p "$(dirname "$file")"; cp ".stangent/tickets/$key/prove/kept/$(basename "$file")" "$file"
       st ticket prove "$key" --verify >/dev/null || true
-      record "$key" ".proofOnFix = ($(jq '.verification.runs[0].result // "error"' "$proof"))"
+      record "$key" ".proofOnFix = ($(jq '.verification.result // "error"' "$proof"))"
       # The machine, not the test (D90): never scored as "proof not real".
       [ "$(jq -r '.verification.runs[0].result // ""' "$proof")" = runner-error ] && stop "verify $key: the test runner failed on the fix commit: $(jq -r '.verification.runs[0].message' "$proof" | head -c 300)"
-      log "  on the fix: $(jq -r '.verification.runs[0].result // "error"' "$proof")"
+      log "  on the fix: $(jq -r '.verification.result // "error"' "$proof")"
     fi
     at "$PINNED"
     # ticket-run.sh rebuilt points and the bundle at the bug's own commit; build them again at the pinned one, so the

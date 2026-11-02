@@ -134,8 +134,14 @@ same bytes.
   source). Code checks both are real. `reproduced` shows the code differs from what the reporter expected, not that it's
   a bug (D96): code can't tell a bug from intended behaviour, so it stays a person's call. `--confirm` records the
   developer confirming the failure is the reported problem and a bug (D95, D96); until then the proof is advice, and
-  the question writer is told not to call it a bug (an instruction, not a code check). A later attempt clears it. `--hint "…"` makes a new attempt; every attempt is kept. `--verify` on the fix branch: the test passes and no test
-  outside the baseline fails.
+  the question writer is told not to call it a bug (an instruction, not a code check). A later attempt clears it. `--hint "…"` makes a new attempt; every attempt is kept.
+- **`--verify` on the fix branch (D105):** `verification.result` says what the test did: `passed` (it passes, no test
+  outside the baseline fails), `new-failures` (it passes, others started failing), `same-failure` (it fails with the words
+  its proof named in `shows`; a proof with no `shows` compares the message without its stack), `different-failure` (it
+  fails, those words gone: the reported failure looks gone and something else fails), `not-compiled` (`reason` says whether
+  the error is in the test) or `not-run` (a timeout, no test found, a runner error, the test file not on the branch). `testChanged` says the test was edited
+  after the proof; `othersChecked` is false when no full run judged the other tests (Playwright has none). Code describes what happened, not why: a person reads anything but a pass, and a pass can still be for the
+  wrong reason (SONB-26).
 
 ## Drafts and posting (D74)
 
