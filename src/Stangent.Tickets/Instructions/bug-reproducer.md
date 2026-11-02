@@ -30,7 +30,7 @@ and exact code of the assertion that checks the expected result, and the ticket'
 copied word for word. Give `shows`: the words of your test's failure message that show that same thing, copied from
 the message you saw, showing what the code did (for example `but found 11`, `Received: "0"`, `Expected collection {empty}`),
 not your test's own expected value or "because" text (code rejects words that are in your test). Code checks both;
-a developer then reads "the ticket says … / the test got …" side by side and confirms it's the reported problem. Test
+a developer then reads "the ticket says … / the test got …" side by side and confirms it's the reported problem and a bug. Test
 the behaviour the ticket reports, the way a user or caller meets it, not your guess at the cause: a test of an internal
 step that fails for another reason proves nothing, and would wrongly fail a correct fix.
 

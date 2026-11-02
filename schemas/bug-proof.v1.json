@@ -22,7 +22,7 @@
     "schemaVersion": { "const": 1 },
     "key": { "type": "string" },
     "outcome": {
-      "description": "reproduced: fails on the named assertion (the developer confirms it matches the reported actual result); not-reproduced: the test passes, or the attempt hit its cap; not-reproduced-flaky: a Playwright test that passed on one of its 3 runs; not-provable: no unit or Playwright test can reach it here; failed: no valid test after the one retry.",
+      "description": "reproduced: fails on the named assertion (the code differs from what the reporter expected; the developer confirms it is the reported problem and a bug, D96); not-reproduced: the test passes, or the attempt hit its cap; not-reproduced-flaky: a Playwright test that passed on one of its 3 runs; not-provable: no unit or Playwright test can reach it here; failed: no valid test after the one retry.",
       "enum": ["reproduced", "not-reproduced", "not-reproduced-flaky", "not-provable", "failed"]
     },
     "attempts": {
@@ -56,7 +56,7 @@
         }
       }
     },
-    "confirmedBy": { "description": "The developer who confirmed the failure matches the reported actual result.", "type": ["string", "null"] },
+    "confirmedBy": { "description": "The developer who confirmed the failure is the reported problem and a bug. Until then a reproduced outcome only shows the code differs from what the reporter expected (D96).", "type": ["string", "null"] },
     "verification": {
       "description": "On the fix branch (stangent ticket prove --verify): the test passes and nothing else started failing (D18).",
       "type": ["object", "null"],

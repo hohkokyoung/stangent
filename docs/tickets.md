@@ -111,7 +111,8 @@ same bytes.
   `outside: true`, no AI call. Remove a wrong part (`ticket points --remove-outside`) and the next run tries. With a code
   point too, the reproducer runs; its `not-provable` is then accepted without the push-back retry, marked `outside`.
 - **`stangent-bug-reproducer`** (multi-turn) may edit only in the targets' folders and run only their build and test
-  commands (permission rules in `result.next.limits`), within `tickets.proveBudget` (default $1, 30 turns) **per attempt**:
+  commands (permission rules in `result.next.limits`), within `tickets.proveBudget` (default $1, 30 turns) **per attempt**
+  (a turn is a model round, what Claude Code's `--max-turns` limits; the driver counts them, D104):
   a retry runs under what's left, and `check --step prove --usage <result>` sums both calls. In Claude Code,
   `/stangent:ticket` runs it through `ticket-run.sh`, so the rules and caps always apply. Rules use absolute paths and
   each command starts back in the repo (D89), so a `cd` in the agent's shell doesn't change what they allow.
@@ -130,8 +131,10 @@ same bytes.
   `not-reproduced` (the test passes, or the attempt hit its cap), `not-reproduced-flaky`, `not-provable`, `failed` (no
   valid test after one retry). Every written test names the ticket's actual result word for word (`actualQuote`); a
   reproduced one also names the words of its failure that show it (`shows`: in the whole message, not in the test's own
-  source). Code checks both are real; the developer judges the match with `--confirm` (D95). `--hint "…"` makes a new attempt; every attempt is kept. `--confirm` records the developer
-  confirming the failure matches the reported actual result. `--verify` on the fix branch: the test passes and no test
+  source). Code checks both are real. `reproduced` shows the code differs from what the reporter expected, not that it's
+  a bug (D96): code can't tell a bug from intended behaviour, so it stays a person's call. `--confirm` records the
+  developer confirming the failure is the reported problem and a bug (D95, D96); until then the proof is advice, and
+  the question writer is told not to call it a bug (an instruction, not a code check). A later attempt clears it. `--hint "…"` makes a new attempt; every attempt is kept. `--verify` on the fix branch: the test passes and no test
   outside the baseline fails.
 
 ## Drafts and posting (D74)

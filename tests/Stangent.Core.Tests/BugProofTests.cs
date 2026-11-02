@@ -73,7 +73,7 @@ public class BugProofTests
         public RunStep Prepare(string? hint = null) => BugProof.Prepare(App.Repo, TicketContext.Load(App.Repo), Key, hint);
 
         public static JsonNode Ok(int turns = 3, double usd = 0.1) =>
-            JsonNode.Parse($$"""{"type":"result","subtype":"success","num_turns":{{turns}},"total_cost_usd":{{usd.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}""")!;
+            JsonNode.Parse($$"""{"type":"result","subtype":"success","num_turns":{{turns}},"rounds":{{turns}},"total_cost_usd":{{usd.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}""")!;
 
         public RunStep Check(string output, JsonNode? claude = null)
         {
@@ -326,7 +326,7 @@ public class BugProofTests
         var claude = JsonNode.Parse("""{"subtype":"error_max_turns","num_turns":16,"total_cost_usd":0.62,"usage":{"input_tokens":1000,"output_tokens":100}}""");
         Assert.Equal("recorded", p.Check("", claude).Status);
         Assert.Equal("not-reproduced", (string?)p.Record["outcome"]);
-        Assert.StartsWith("hit the cap", (string?)p.Record["attempts"]![0]!["reason"]);
+        Assert.Equal("hit the cap: Claude Code stopped at its turn limit", (string?)p.Record["attempts"]![0]!["reason"]);
         var over = JsonNode.Parse("""{"subtype":"success","num_turns":9,"total_cost_usd":1.40}""");
         p.Prepare("try harder");
         p.Check(Written(), over);
@@ -609,6 +609,31 @@ public class BugProofTests
         Assert.Equal("not-reproduced", (string?)p.Record["outcome"]);
         Assert.Equal("hit the cap: 31 of 30 turns", (string?)p.Record["attempts"]![0]!["reason"]);
         Assert.Empty(p.Runner.Commands); // capped before anything ran
+    }
+
+    [Fact]
+    public void A_run_inside_its_rounds_is_not_capped_however_many_tool_calls_it_made()
+    {
+        using var p = new Proof();
+        p.Prepare();
+        p.App.Write(TestFile, TestCode);
+        p.Runner.Tests.Enqueue(AssertFailure());
+        p.Runner.All = TestReportTests.Trx((TestName, "Failed", "Assert.Throws() Failure", ""));
+        var finished = JsonNode.Parse("""{"type":"result","subtype":"success","num_turns":48,"rounds":29,"total_cost_usd":0.43}""");
+        Assert.Equal("recorded", p.Check(Written(), finished).Status);
+        Assert.Equal("reproduced", (string?)p.Record["outcome"]);
+        Assert.NotEmpty(p.Runner.Commands); // code built and ran the test
+    }
+
+    [Fact]
+    public void A_retry_gets_the_rounds_left_not_what_num_turns_left()
+    {
+        using var p = new Proof();
+        p.Prepare();
+        p.App.Write(TestFile, TestCode);
+        var first = JsonNode.Parse("""{"type":"result","subtype":"success","num_turns":27,"rounds":18,"total_cost_usd":0.2}""");
+        Assert.Equal("retry", p.Check(Written(quote: "a sentence the ticket never says at all"), first).Status);
+        Assert.Equal(12, (int)BugProof.DriverLimits(p.App.Repo, Key)["maxTurns"]!);
     }
 
     static JsonObject Refused(string tool, string field, string value) =>

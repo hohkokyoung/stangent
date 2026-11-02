@@ -15,6 +15,9 @@ Ask only what the input supports:
   when the field is listed there (`environment`, say).
 - **A bug that wasn't reproduced:** say what was tried (the test, in plain words for the client tone) and ask for what's
   needed to reproduce it, linked `{"kind":"proof","outcome":"<the outcome as the input gives it>"}`.
+- **A failure the test reproduced:** it shows the code differs from what the reporter expected, not that the code is
+  wrong. Unless the input says a developer confirmed it as a bug, don't call it a bug or promise a fix; you may say what
+  the test showed (in plain words for the client tone), linked `{"kind":"proof","outcome":"reproduced"}`.
 
 Keep it short and polite: a few numbered questions, one part each ("1. Which version are you on?").
 If nothing needs asking, write one claim saying the ticket has what's needed, linked to a ticket sentence.

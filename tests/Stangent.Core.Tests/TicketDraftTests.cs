@@ -364,17 +364,78 @@ public class TicketDraftTests
     }
 
     [Fact]
-    public void A_reproduced_proof_shows_the_writer_both_sides_and_that_no_developer_has_confirmed_it()
+    public void A_reproduced_proof_shows_the_writer_what_was_expected_and_got_and_that_no_developer_has_confirmed_a_bug()
     {
         using var d = new Draft();
         File.WriteAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "bug-proof.json"), """
             {"schemaVersion":1,"key":"SHOP-1","outcome":"reproduced","confirmedBy":null,"verification":null,
              "attempts":[{"n":1,"outcome":"reproduced","commit":"abc","testName":"T","testFile":"Tests/T.cs",
+               "expectedQuote":"Orders over 100 need approval.","actualQuote":"The order of 150 goes through.","shows":"but found Placed"}]}
+            """);
+        d.Prepare();
+        var input = File.ReadAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "questions", "input.md"));
+        Assert.Contains("- the reporter expected: Orders over 100 need approval.\n- the ticket says: The order of 150 goes through.\n- the test got: but found Placed\n- no developer has confirmed this is a bug", input);
+    }
+
+    [Fact]
+    public void A_proof_a_developer_confirmed_tells_the_writer_it_is_a_bug()
+    {
+        using var d = new Draft();
+        File.WriteAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "bug-proof.json"), """
+            {"schemaVersion":1,"key":"SHOP-1","outcome":"reproduced","confirmedBy":"Pat","verification":null,
+             "attempts":[{"n":1,"outcome":"reproduced","commit":"abc","testName":"T","testFile":"Tests/T.cs",
                "actualQuote":"The order of 150 goes through.","shows":"but found Placed"}]}
             """);
         d.Prepare();
         var input = File.ReadAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "questions", "input.md"));
-        Assert.Contains("- the ticket says: The order of 150 goes through.\n- the test got: but found Placed\n- not confirmed by a developer yet", input);
+        Assert.Contains("- confirmed by Pat as the reported problem and a bug", input);
+        Assert.DoesNotContain("no developer has confirmed", input);
+    }
+
+    [Fact]
+    public void An_older_proof_with_no_actual_quote_still_shows_the_writer_what_was_expected()
+    {
+        using var d = new Draft();
+        File.WriteAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "bug-proof.json"), """
+            {"schemaVersion":1,"key":"SHOP-1","outcome":"reproduced","confirmedBy":null,"verification":null,
+             "attempts":[{"n":1,"outcome":"reproduced","commit":"abc","testName":"T","testFile":"Tests/T.cs","expectedQuote":"Orders over 100 need approval."}]}
+            """);
+        d.Prepare();
+        var input = File.ReadAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "questions", "input.md"));
+        Assert.Contains("- the reporter expected: Orders over 100 need approval.\n- no developer has confirmed this is a bug", input);
+    }
+
+    [Fact]
+    public void A_proof_that_was_not_reproduced_says_nothing_about_a_developers_call()
+    {
+        using var d = new Draft();
+        File.WriteAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "bug-proof.json"), """
+            {"schemaVersion":1,"key":"SHOP-1","outcome":"not-reproduced","confirmedBy":null,"verification":null,
+             "attempts":[{"n":1,"outcome":"not-reproduced","commit":"abc","testName":"T","testFile":"Tests/T.cs","expectedQuote":"Orders over 100 need approval."}]}
+            """);
+        d.Prepare();
+        var input = File.ReadAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "questions", "input.md"));
+        Assert.DoesNotContain("- the reporter expected:", input);
+        Assert.DoesNotContain("no developer has confirmed", input);
+    }
+
+    [Fact]
+    public void Confirming_a_proof_makes_the_questions_draft_run_again_and_a_reproduced_link_passes()
+    {
+        using var d = new Draft();
+        var file = Path.Combine(d.Root, ".stangent", "tickets", Key, "bug-proof.json");
+        var proof = """
+            {"schemaVersion":1,"key":"SHOP-1","outcome":"reproduced","confirmedBy":null,"verification":null,
+             "attempts":[{"n":1,"outcome":"reproduced","commit":"abc","testName":"T","testFile":"Tests/T.cs"}]}
+            """;
+        File.WriteAllText(file, proof);
+        d.Prepare();
+        var withProof = WithParts([Part("Thanks for the report."), Part("Our test of an order of 150 failed.", "line", "C4")],
+            new JsonObject { ["id"] = "C4", ["links"] = new JsonArray(new JsonObject { ["kind"] = "proof", ["outcome"] = "reproduced" }) });
+        Assert.Equal("recorded", d.Check(withProof).Status);
+        Assert.Equal("current", d.Prepare().Status);
+        File.WriteAllText(file, proof.Replace("\"confirmedBy\":null", "\"confirmedBy\":\"Pat\""));
+        Assert.Equal("prepared", d.Prepare().Status);
     }
 
     [Fact]
@@ -419,6 +480,35 @@ public class TicketDraftTests
         Assert.Equal("recorded", d.Check(output, "resolution").Status);
         Assert.Contains(d.Check(output.Replace("\"file\":\"Core/OrderService.cs\"", "\"file\":\"Core/Other.cs\""), "resolution") is var r && r.Status == "current" ? [] : r.Errors ?? [],
             e => e.Contains("isn't one of the files"));
+    }
+
+    [Fact]
+    public void A_resolution_is_written_after_the_fix_so_it_keeps_the_plain_note_about_an_unconfirmed_proof()
+    {
+        using var d = new Draft();
+        Git(d.Root, "init -q -b main");
+        Git(d.Root, "-c user.name=t -c user.email=t@t add -A");
+        Git(d.Root, "-c user.name=t -c user.email=t@t commit -q -m base");
+        var file = Path.Combine(d.Root, "Core", "OrderService.cs");
+        File.WriteAllText(file, File.ReadAllText(file).Replace("total > 100", "total > 50"));
+        Git(d.Root, "-c user.name=t -c user.email=t@t commit -q -am fix");
+        File.WriteAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "bug-proof.json"), """
+            {"schemaVersion":1,"key":"SHOP-1","outcome":"reproduced","confirmedBy":null,"verification":null,
+             "attempts":[{"n":1,"outcome":"reproduced","commit":"abc","testName":"T","testFile":"Tests/T.cs","expectedQuote":"Orders over 100 need approval."}]}
+            """);
+        d.Prepare("resolution", pr: "HEAD~1..HEAD");
+        var input = File.ReadAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "resolution", "input.md"));
+        Assert.Contains("- not confirmed by a developer yet: the failure may not be the reported one (D95)", input);
+        Assert.DoesNotContain("no developer has confirmed", input);
+        Assert.DoesNotContain("- the reporter expected:", input);
+
+        File.WriteAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "bug-proof.json"), """
+            {"schemaVersion":1,"key":"SHOP-1","outcome":"reproduced","confirmedBy":"Pat","verification":null,
+             "attempts":[{"n":1,"outcome":"reproduced","commit":"abc","testName":"T","testFile":"Tests/T.cs"}]}
+            """);
+        d.Prepare("resolution", pr: "HEAD~1..HEAD");
+        input = File.ReadAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "resolution", "input.md"));
+        Assert.Contains("- confirmed by Pat as the reported problem\n", input);
     }
 
     [Fact]

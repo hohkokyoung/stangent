@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "urn:stangent:schema:bug-reproducer-output:v1",
   "title": "What stangent-bug-reproducer returns (Phase 3, D75, D76)",
-  "description": "A reproduction test it wrote, or why the bug can't be reproduced here. Code then builds and runs the test: it must fail on the named assertion, the quoted expected and actual results must be in the ticket word for word, and `shows` must be in the failure message (D95). A developer confirms the failure is the reported one.",
+  "description": "A reproduction test it wrote, or why the bug can't be reproduced here. Code then builds and runs the test: it must fail on the named assertion, the quoted expected and actual results must be in the ticket word for word, and `shows` must be in the failure message (D95). A developer confirms the failure is the reported problem and a bug.",
   "type": "object",
   "required": ["outcome"],
   "additionalProperties": false,

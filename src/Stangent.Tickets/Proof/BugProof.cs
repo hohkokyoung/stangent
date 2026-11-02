@@ -235,9 +235,11 @@ public static partial class BugProof
         var state = AiStep.State(paths, step);
         // The cap is per attempt (D81), first call and retry together, so the reproducer's own result is required.
         if (claudeResult is not JsonObject result)
-            throw new StangentException("usage", "check --step prove needs --usage <Claude Code's JSON result>: the attempt's turn and cost cap is enforced from it (D81).", ExitCodes.Usage);
+            throw new StangentException("usage", "check --step prove needs --usage <Claude Code's JSON result, with the driver's rounds>: the attempt's turn and cost cap is enforced from it (D81, D104).", ExitCodes.Usage);
         var usage = Usage.FromClaudeResult(result);
-        state["turns"] = ((int?)state["turns"] ?? 0) + (result["num_turns"] is JsonValue nt && nt.TryGetValue<int>(out var n) ? n : 0);
+        // D104: turns are what `--max-turns` limits, the model's rounds, which the driver counts. `num_turns` also counts
+        // parallel tool calls, so a run well inside its limit could read as over it.
+        state["turns"] = ((int?)state["turns"] ?? 0) + (result["rounds"] is JsonValue rounds && rounds.TryGetValue<int>(out var n) ? n : 0);
         var targets = state["targets"]!.AsArray().Select(t => TestTarget.FromJson(t!)).ToList();
         var attempt = new JsonObject { ["n"] = (int)state["attempt"]!, ["hint"] = state["hint"]?.DeepClone(), ["inputs"] = state["inputs"]!.DeepClone() };
 
@@ -444,13 +446,13 @@ public static partial class BugProof
 
     // ---- confirm and verify ----
 
-    /// <summary>The developer confirms the failure matches the reported actual result (D75).</summary>
+    /// <summary>The developer confirms the failure is the reported problem and a bug, not the code working as meant (D75, D96).</summary>
     public static JsonObject Confirm(StangentRepo repo, string key, string who)
     {
         var paths = new TicketPaths(repo.Root, key);
         var proof = Load(paths) ?? throw new StangentException("no_proof", $"{key} has no proof yet. Run `stangent ticket prove {key}`.", ExitCodes.NotFound);
         if ((string)proof["outcome"]! != "reproduced")
-            throw new StangentException("not_reproduced", $"{key}'s proof is {(string)proof["outcome"]!}; only a reproduced bug is confirmed.", ExitCodes.Usage);
+            throw new StangentException("not_reproduced", $"{key}'s proof is {(string)proof["outcome"]!}; only a reproduced failure is confirmed.", ExitCodes.Usage);
         proof["confirmedBy"] = who;
         Save(paths, proof);
         return proof;
@@ -755,6 +757,7 @@ public static partial class BugProof
     {
         var budget = repo.Config.Tickets.ProveBudget;
         subtype ??= "";
+        if (subtype.Contains("max_turns", StringComparison.Ordinal) && turns == 0) return "hit the cap: Claude Code stopped at its turn limit";   // a result with no rounds (D104)
         if (subtype.Contains("max_turns", StringComparison.Ordinal) || turns > budget.Turns) return $"hit the cap: {turns} of {budget.Turns} turns";
         if (subtype.Contains("budget", StringComparison.Ordinal) || spentUsd > budget.Usd) return $"hit the cap: ${spentUsd:0.00} of ${budget.Usd:0.00}";
         return null;

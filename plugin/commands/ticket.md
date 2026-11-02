@@ -36,10 +36,11 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/ticket-run.sh --prove [--hint "<hint>"] <KEY>
 ```
 
 Then report the outcome from `.stangent/tickets/<KEY>/bug-proof.json`:
-- **reproduced**: show the test, then the last attempt's `actualQuote` and `shows` side by side, as
-  **The ticket says:** … / **The test got:** … (with the full failure message below), and ask the user whether that's
-  the reported problem (D95). Only on their yes, run `stangent ticket prove <KEY> --confirm`; until then the proof is
-  advice. The test is committed with the fix; after the fix,
+- **reproduced**: this shows the code differs from what the reporter expected, not that it's a bug (D96), so don't say
+  the bug is proven. Show the test, then the last attempt's `expectedQuote`, `actualQuote` and `shows`, as
+  **The reporter expected:** … / **The ticket says:** … / **The test got:** … (with the full failure message below), and
+  ask the user whether that's the reported problem and a bug, not the code working as meant (D95, D96). Only on their
+  yes, run `stangent ticket prove <KEY> --confirm`; until then the proof is advice. The test is committed with the fix; after the fix,
   `stangent ticket prove <KEY> --verify` checks it passes and nothing else broke.
 - **not reproduced** (or flaky): don't start a fix yet (D75); show the test for review, offer a `--hint` attempt and a
   questions draft.

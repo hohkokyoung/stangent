@@ -148,7 +148,17 @@ public static partial class TicketDrafts
             sb.Append($"## {s["doc"]} §{s["section"]} {(string)section["title"]!}\n\n````text\n{(string)section["text"]!}\n````\n\n");
         }
         if (proof?["attempts"]?.AsArray().LastOrDefault() is JsonObject a)
-            sb.Append($"# The bug proof\n\n- outcome: **{proof["outcome"]}**{((string?)a["reason"] is { } r ? $"\n- why: {r}" : "")}{((string?)a["testName"] is { } tn ? $"\n- test: `{tn}` in `{a["testFile"]}`" : "")}{((string?)proof["outcome"] == "reproduced" && (string?)a["actualQuote"] is { } aq && (string?)a["shows"] is { } sh ? $"\n- the ticket says: {aq}\n- the test got: {sh}" : "")}{((string?)proof["outcome"] != "reproduced" ? "" : proof["confirmedBy"] is null ? "\n- not confirmed by a developer yet: the failure may not be the reported one (D95)" : $"\n- confirmed by {proof["confirmedBy"]} as the reported problem")}{((string?)a["hint"] is { } h ? $"\n- hint tried: {h}" : "")}\n");
+        {
+            // D96: before work starts, a reproduced failure is a difference for a person to judge; a resolution comes after the fix.
+            var reproduced = (string?)proof["outcome"] == "reproduced";
+            var questions = kind == "questions";
+            var expected = reproduced && questions && (string?)a["expectedQuote"] is { } eq ? $"\n- the reporter expected: {eq}" : "";
+            var call = !reproduced ? ""
+                : proof["confirmedBy"] is not null ? $"\n- confirmed by {proof["confirmedBy"]} as the reported problem{(questions ? " and a bug" : "")}"
+                : questions ? "\n- no developer has confirmed this is a bug: the code differs from what the reporter expected, which may be how it's meant to work, and the failure may not be the reported one (D95, D96)"
+                : "\n- not confirmed by a developer yet: the failure may not be the reported one (D95)";
+            sb.Append($"# The bug proof\n\n- outcome: **{proof["outcome"]}**{((string?)a["reason"] is { } r ? $"\n- why: {r}" : "")}{((string?)a["testName"] is { } tn ? $"\n- test: `{tn}` in `{a["testFile"]}`" : "")}{expected}{(reproduced && (string?)a["actualQuote"] is { } aq && (string?)a["shows"] is { } sh ? $"\n- the ticket says: {aq}\n- the test got: {sh}" : "")}{call}{((string?)a["hint"] is { } h ? $"\n- hint tried: {h}" : "")}\n");
+        }
         return sb.ToString();
     }
 

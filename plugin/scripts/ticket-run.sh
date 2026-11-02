@@ -176,7 +176,9 @@ multi_turn() {
     --permission-mode "$(jq -r '.permissionMode' <<<"$limits")" --allowedTools "${tools[@]}" \
     --max-turns "$(jq -r '.maxTurns' <<<"$limits")" --max-budget-usd "$(jq -r '.maxBudgetUsd' <<<"$limits")" \
     --no-session-persistence --output-format stream-json --verbose "$prompt" >"$transcript" 2>/dev/null || true
-  jq -c 'select(.type == "result")' "$transcript" 2>/dev/null | tail -n 1 >"$usage" || true
+  # D104: the rounds `--max-turns` limits, one per model message. The result's `num_turns` also counts parallel tool calls.
+  rounds="$(jq -r 'select(.type == "assistant") | .message.id' "$transcript" 2>/dev/null | sort -u | wc -l | tr -d ' ')" || true
+  jq -c --argjson rounds "${rounds:-0}" 'select(.type == "result") | . + {rounds: $rounds}' "$transcript" 2>/dev/null | tail -n 1 >"$usage" || true
   # Stop the app before stangent's own check starts it again on the same port.
   if [ -n "$serve_pid" ]; then kill -TERM "$serve_pid" 2>/dev/null || true; wait "$serve_pid" 2>/dev/null || true; trap - EXIT INT TERM; fi
 }
