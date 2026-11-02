@@ -454,6 +454,114 @@ public class TicketDraftTests
         Assert.Equal("recorded", d.Check(withProof).Status);
     }
 
+    const string RanOut = """
+        {"schemaVersion":1,"key":"SHOP-1","outcome":"not-reproduced","confirmedBy":null,"verification":null,
+         "attempts":[{"n":1,"outcome":"not-reproduced","noProof":"ran-out","commit":"abc","reason":"hit the cap: 30 of 30 turns"}]}
+        """;
+
+    /// <summary>D106: running out says nothing about the bug, so the reporter isn't asked about it.</summary>
+    [Fact]
+    public void An_attempt_that_only_ran_out_isnt_the_reporters_to_answer()
+    {
+        using var d = new Draft();
+        File.WriteAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "bug-proof.json"), RanOut);
+        d.Prepare();
+        var input = File.ReadAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "questions", "input.md"));
+        Assert.Contains("this attempt only ran out of its limit", input);   // the fact; the instructions only say what to do with it
+        var linked = WithParts([Part("Thanks for the report."), Part("We couldn't reproduce this.", "line", "C4")],
+            new JsonObject { ["id"] = "C4", ["links"] = new JsonArray(new JsonObject { ["kind"] = "proof", ["outcome"] = "not-reproduced" }) });
+        Assert.Contains(d.Check(linked).Errors!, e => e.Contains("only ran out of its limit"));
+        Assert.Equal("recorded", d.Check(GoodQuestions).Status);
+    }
+
+    [Fact]
+    public async Task A_draft_whose_inputs_changed_isnt_posted_unless_asked()
+    {
+        using var d = new Draft();
+        d.Prepare();
+        d.Check(GoodQuestions);
+        var tracker = new RecordingTracker();
+        var time = new FixedTime(new DateTimeOffset(2026, 10, 25, 12, 0, 0, TimeSpan.Zero));
+        // A proof appeared after the draft was checked: what it says may no longer hold.
+        File.WriteAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "bug-proof.json"), RanOut);
+        var refused = await Assert.ThrowsAsync<StangentException>(() =>
+            TicketDrafts.PostAsync(d.App.Repo, tracker, Key, "questions", "Pat", false, time, TestContext.Current.CancellationToken));
+        Assert.Equal("draft_stale", refused.Code);
+        Assert.Contains("--stale", refused.Message);
+        Assert.Contains("--kind questions --tone internal`", refused.Message);
+        Assert.Empty(tracker.Posted);
+
+        var record = await TicketDrafts.PostAsync(d.App.Repo, tracker, Key, "questions", "Pat", false, time, TestContext.Current.CancellationToken, stale: true);
+        Assert.Single(tracker.Posted);
+        Assert.NotNull(record["posted"]);
+    }
+
+    [Fact]
+    public async Task A_client_draft_compares_as_client_and_says_how_to_remake_it()
+    {
+        using var d = new Draft();
+        d.Prepare(tone: "client");
+        d.Check(GoodQuestions);
+        var tracker = new RecordingTracker();
+        File.WriteAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "bug-proof.json"), RanOut);
+        var refused = await Assert.ThrowsAsync<StangentException>(() =>
+            TicketDrafts.PostAsync(d.App.Repo, tracker, Key, "questions-client", "Pat", false, TimeProvider.System, TestContext.Current.CancellationToken));
+        Assert.Contains("--tone client`", refused.Message);
+        File.Delete(Path.Combine(d.Root, ".stangent", "tickets", Key, "bug-proof.json"));
+        await TicketDrafts.PostAsync(d.App.Repo, tracker, Key, "questions-client", "Pat", false, TimeProvider.System, TestContext.Current.CancellationToken);
+        Assert.Single(tracker.Posted);   // current again: a default-tone comparison wouldn't match
+    }
+
+    [Fact]
+    public async Task A_resolution_compares_with_its_PR_and_a_later_commit_can_move_the_range()
+    {
+        using var d = new Draft();
+        Git(d.Root, "init -q -b main");
+        Git(d.Root, "-c user.name=t -c user.email=t@t add -A");
+        Git(d.Root, "-c user.name=t -c user.email=t@t commit -q -m base");
+        var file = Path.Combine(d.Root, "Core", "OrderService.cs");
+        File.WriteAllText(file, File.ReadAllText(file).Replace("total > 100", "total > 50"));
+        Git(d.Root, "-c user.name=t -c user.email=t@t commit -q -am fix");
+        TicketDrafts.Prepare(d.App.Repo, TicketContext.Load(d.App.Repo), Key, "resolution", null, "HEAD~1..HEAD", "https://example.com/pr/9");
+        d.Check("""
+            {"parts":[{"text":"Fixed in the PR: the approval limit in Core/OrderService.cs is now 50.","claims":["C1","C2"]}],
+             "claims":[{"id":"C1","links":[{"kind":"pr"}]},{"id":"C2","links":[{"kind":"file","file":"Core/OrderService.cs"}]}]}
+            """, "resolution");
+        var tracker = new RecordingTracker();
+        await TicketDrafts.PostAsync(d.App.Repo, tracker, Key, "resolution", "Pat", false, TimeProvider.System, TestContext.Current.CancellationToken);
+        Assert.Single(tracker.Posted);   // current, with its range and URL
+
+        // The later commit touches another file, so the same range now names different files.
+        File.WriteAllText(Path.Combine(d.Root, "Core", "Later.cs"), "namespace Shop;\n");
+        Git(d.Root, "-c user.name=t -c user.email=t@t add -A");
+        Git(d.Root, "-c user.name=t -c user.email=t@t commit -q -m later");
+        var refused = await Assert.ThrowsAsync<StangentException>(() =>
+            TicketDrafts.PostAsync(d.App.Repo, tracker, Key, "resolution", "Pat", true, TimeProvider.System, TestContext.Current.CancellationToken));
+        Assert.Equal("draft_stale", refused.Code);
+        Assert.Contains("--pr HEAD~1..HEAD --pr-url https://example.com/pr/9`, with the PR's own commits", refused.Message);
+    }
+
+    [Fact]
+    public async Task A_draft_that_cant_be_compared_isnt_posted_unless_asked()
+    {
+        using var d = new Draft();
+        d.Prepare();
+        d.Check(GoodQuestions);
+        File.WriteAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "bug-proof.json"), "{ damaged");
+        Assert.Contains("Can't tell", (await Assert.ThrowsAsync<StangentException>(() =>
+            TicketDrafts.PostAsync(d.App.Repo, new RecordingTracker(), Key, "questions", "Pat", false, TimeProvider.System, TestContext.Current.CancellationToken))).Message);
+        File.Delete(Path.Combine(d.Root, ".stangent", "tickets", Key, "bug-proof.json"));
+        // Valid JSON with fields missing fails in another way, not as a stangent error.
+        File.WriteAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "ticket.json"), "{}");
+        Assert.Contains("Can't tell", (await Assert.ThrowsAsync<StangentException>(() =>
+            TicketDrafts.PostAsync(d.App.Repo, new RecordingTracker(), Key, "questions", "Pat", false, TimeProvider.System, TestContext.Current.CancellationToken))).Message);
+        File.Delete(Path.Combine(d.Root, ".stangent", "tickets", Key, "ticket.json"));
+        var refused = await Assert.ThrowsAsync<StangentException>(() =>
+            TicketDrafts.PostAsync(d.App.Repo, new RecordingTracker(), Key, "questions", "Pat", false, TimeProvider.System, TestContext.Current.CancellationToken));
+        Assert.Equal("draft_stale", refused.Code);
+        Assert.Contains("Can't tell", refused.Message);
+    }
+
     [Fact]
     public void A_resolution_links_the_PRs_files_the_pages_it_reaches_and_the_PR()
     {

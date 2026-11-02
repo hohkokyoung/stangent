@@ -346,7 +346,9 @@ public static class TicketBundle
 
     // ---- the developer's view ----
 
-    public static string Markdown(JsonObject b)
+    /// <param name="forProof">For the reproducer's input (D107): leaves out the finder's reasons. They are a guess at the
+    /// cause from reading the code, nothing has run yet, and the test should check what the ticket reports, not that guess.</param>
+    public static string Markdown(JsonObject b, bool forProof = false)
     {
         var t = b["ticket"]!;
         var md = new StringBuilder($"# {b["key"]}: {t["summary"]}\n\n");
@@ -370,7 +372,7 @@ public static class TicketBundle
             md.Append("| | point | why | by |\n|---|---|---|---|\n");
             foreach (var p in points)
                 md.Append((string)p!["kind"]! == StartingPoint.File && p["line"] is not null
-                    ? $"| file | `{Cell((string)p["id"]!)}` | {Cell(Inline((string?)p["why"] ?? ""))} The ticket: \"{Cell(Inline((string)p["evidence"]!))}\" · the code: `{Cell(Inline((string)p["line"]!))}` | {p["by"]} |\n"
+                    ? $"| file | `{Cell((string)p["id"]!)}` | {(forProof || (string?)p["why"] is not { Length: > 0 } why ? "" : $"The finder's guess, not checked: {Cell(Inline(why))} ")}The ticket: \"{Cell(Inline((string)p["evidence"]!))}\" · the code: `{Cell(Inline((string)p["line"]!))}` | {p["by"]} |\n"
                     : (string)p["kind"]! == StartingPoint.File ? $"| file | `{Cell((string)p["id"]!)}` | added by hand | {p["by"]} |\n"
                     : $"| {p["kind"]} | `{Cell((string)p["title"]!)}` | {p["signal"]}: {Cell(Inline((string)p["evidence"]!))} | {p["by"]} |\n");
             md.Append('\n');

@@ -187,7 +187,7 @@ public static partial class BugProof
             sb.Append($"- **{part}:** {((string?)bug[part] is { } v ? v.Replace("\n", "\n  ") : "_not given_")}\n");
         sb.Append("\n# The ticket\n\n");
         foreach (var (where, text) in TicketText.From(pulled).Prose) sb.Append($"## {where}\n\n````text\n{text}\n````\n\n");
-        sb.Append("# Where the work starts (the bundle)\n\n").Append(TicketBundle.Markdown(bundle)).Append('\n');
+        sb.Append("# Where the work starts (the bundle)\n\n").Append(TicketBundle.Markdown(bundle, forProof: true)).Append('\n');
 
         var mtp = UsesMtp(repo.Root);
         var report = paths.Relative(Path.Combine(AiStep.Work(paths, StepSpec.Prove), "your-run"));
@@ -259,6 +259,7 @@ public static partial class BugProof
         if (CapHit(repo, (string?)result["subtype"], Usage.FromJson(state["usage"]).Add(usage).CostUsd, (int)state["turns"]!) is { } cap)
         {
             state["usage"] = Usage.FromJson(state["usage"]).Add(usage).ToJson();
+            attempt["noProof"] = "ran-out";
             return blocked.Count > 0 ? SetupBlocked() : Finish(repo, paths, state, attempt, "not-reproduced", cap, null);
         }
 
@@ -413,6 +414,9 @@ public static partial class BugProof
     static RunStep Finish(StangentRepo repo, TicketPaths paths, JsonObject state, JsonObject attempt, string outcome, string? reason, JsonArray? baseline, string? testFile = null)
     {
         attempt["outcome"] = outcome;
+        if (outcome == "failed") attempt.Remove("noProof");   // a setup failure says nothing either way
+        else if (outcome == "not-reproduced") attempt["noProof"] ??= "test-passed";
+        else if (outcome == "not-reproduced-flaky") attempt["noProof"] = "flaky";
         if (reason is not null) attempt["reason"] = reason;
         if (baseline is not null) attempt["baseline"] = baseline;
         if (outcome == "reproduced") attempt["testHash"] = TestHash(repo.Root, testFile!);
@@ -460,6 +464,16 @@ public static partial class BugProof
         Save(paths, proof);
         return proof;
     }
+
+    /// <summary>Why a not-reproduced attempt has no proof (D106): it <c>ran-out</c> of its cap, which says nothing about
+    /// the bug, its <c>test-passed</c>, or it was <c>flaky</c>. Null for any other outcome. A record from before D106 is read
+    /// from its reason.</summary>
+    public static string? NoProof(JsonObject attempt) => (string?)attempt["noProof"] ?? (string?)attempt["outcome"] switch
+    {
+        "not-reproduced" => ((string?)attempt["reason"] ?? "").StartsWith("hit the cap", StringComparison.Ordinal) ? "ran-out" : "test-passed",
+        "not-reproduced-flaky" => "flaky",
+        _ => null,
+    };
 
     /// <summary>On the fix branch (D18's test row): the reproduction test passes, and no other test in its target fails
     /// that wasn't already failing when the bug was reproduced. Anything else says what kind of failure it was (D105).</summary>

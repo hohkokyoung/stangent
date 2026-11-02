@@ -36,6 +36,7 @@
           "hint": { "type": ["string", "null"] },
           "outcome": { "$ref": "#/properties/outcome" },
           "reason": { "type": "string" },
+          "noProof": { "description": "Why a not-reproduced attempt has no proof (D106): ran-out, its cap, which says nothing about the bug; test-passed; flaky. Absent on records from before it.", "enum": ["ran-out", "test-passed", "flaky"] },
           "outside": { "description": "Not provable because of a part outside the code (D83): skipped when every part is, or the reproducer's answer accepted without the retry.", "type": "boolean" },
           "advice": { "description": "What the developer can do about a setup failure (D91), chosen by code; stangent never installs anything itself.", "type": "string" },
           "setupBlocked": { "description": "Failed because of the setup, not the reproducer (D89–D91): Claude Code refused something stangent's own rules allow, the test runner couldn't run (a missing runtime or tool), or the app didn't build or start. See `advice`; the next run tries again.", "type": "boolean" },

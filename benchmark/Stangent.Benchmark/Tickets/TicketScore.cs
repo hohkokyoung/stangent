@@ -83,6 +83,7 @@ public static class TicketScore
             ["test"] = Kind(Proof(i)), ["proofOnFix"] = OnFix(i),
             ["outside"] = (bool?)Proof(i)?["attempts"]?.AsArray().LastOrDefault()?["outside"] == true,
             ["setupBlocked"] = SetupBlocked(i),
+            ["noProof"] = Proof(i)?["attempts"]?.AsArray().LastOrDefault() is JsonObject last ? BugProof.NoProof(last) : null,
         }).ToList();
 
         // Grounded and repeatable are must-pass (D79): read from the artifacts and the run's own records.

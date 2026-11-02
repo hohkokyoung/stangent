@@ -194,7 +194,11 @@ public class TicketBundleTests
         // The impact answer starts from the file's own code, not from everything the explaining page cites.
         Assert.Equal("starting-points", (string?)b["impact"]!["change"]!["kind"]);
         var md = File.ReadAllText(new TicketPaths(app.Root, "SHOP-20").BundleMarkdown);
-        Assert.Contains("| file | `web/src/Orders.tsx` | The Place order button's save call. The ticket: \"When I press Place order nothing is saved\"", md);
+        // D107: the finder's reason is a guess from reading the code. People see it labelled; the reproducer doesn't get it.
+        Assert.Contains("| file | `web/src/Orders.tsx` | The finder's guess, not checked: The Place order button's save call. The ticket: \"When I press Place order nothing is saved\"", md);
+        var forProof = TicketBundle.Markdown(TicketBundle.LoadOrFail(app.Root, "SHOP-20"), forProof: true);
+        Assert.Contains("| file | `web/src/Orders.tsx` | The ticket: \"When I press Place order nothing is saved\"", forProof);
+        Assert.DoesNotContain("The Place order button's save call", forProof);
         Assert.Contains("Explains `web/src/Orders.tsx` (its statements cite it).", md);
     }
 

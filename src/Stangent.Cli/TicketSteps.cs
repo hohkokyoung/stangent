@@ -61,11 +61,12 @@ static class TicketSteps
 
         var draftArg = new Argument<string>("draft") { Description = "The draft: questions or resolution (with the default tone), questions-client, or a path to its .json." };
         var againOption = new Option<bool>("--again") { Description = "Post a draft that was already posted." };
-        var post = new Command("post", "Post a checked draft under your own Jira login, and record it (D74). Nothing else is written to the ticket.") { TicketCommands.KeyArg, draftArg, againOption };
+        var staleOption = new Option<bool>("--stale") { Description = "Post a draft whose inputs have changed since it was checked (D108)." };
+        var post = new Command("post", "Post a checked draft under your own Jira login, and record it (D74). Nothing else is written to the ticket.") { TicketCommands.KeyArg, draftArg, againOption, staleOption };
         post.SetAction(pr => Cli.Run(pr, "ticket post", ctx => TicketCommands.Async(async () =>
         {
             await using var tracker = TicketCommands.Tracker(ctx);
-            return (JsonNode)await TicketDrafts.PostAsync(ctx.Repo, tracker, pr.GetValue(TicketCommands.KeyArg)!, pr.GetValue(draftArg)!, TicketCommands.Who(ctx), pr.GetValue(againOption), TimeProvider.System);
+            return (JsonNode)await TicketDrafts.PostAsync(ctx.Repo, tracker, pr.GetValue(TicketCommands.KeyArg)!, pr.GetValue(draftArg)!, TicketCommands.Who(ctx), pr.GetValue(againOption), TimeProvider.System, stale: pr.GetValue(staleOption));
         })));
         ticket.Subcommands.Add(post);
     }

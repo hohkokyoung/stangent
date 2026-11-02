@@ -420,6 +420,61 @@ public class BugProofTests
         Assert.Equal("new-failures", (string?)broke["result"]);
     }
 
+    /// <summary>D107: nothing has run when the finder gives its reason, so the test isn't to start from that guess.</summary>
+    [Fact]
+    public void The_reproducers_input_doesnt_hold_the_finders_guess()
+    {
+        using var p = new Proof();
+        var file = new TicketPaths(p.Root, Key).BundleJson;
+        var bundle = JsonNode.Parse(File.ReadAllText(file))!.AsObject();
+        bundle["points"]!.AsArray().Add(new JsonObject
+        {
+            ["kind"] = "file", ["id"] = "Core/Order.cs", ["title"] = "Order.cs", ["signal"] = "ai", ["evidence"] = "An order of 150 is placed",
+            ["where"] = "ticket", ["by"] = "ai", ["line"] = "public void Place(int total)", ["why"] = "Place recurses forever",
+        });
+        File.WriteAllText(file, bundle.ToJsonString());
+        p.Prepare();
+        var input = File.ReadAllText(Path.Combine(p.Root, ".stangent", "tickets", Key, "prove", "input.md"));
+        Assert.Contains("`Core/Order.cs`", input);
+        Assert.Contains("public void Place(int total)", input);
+        Assert.DoesNotContain("Place recurses forever", input);
+    }
+
+    [Fact]
+    public void An_attempt_that_ran_out_says_so_and_a_passing_test_says_that()
+    {
+        using var capped = new Proof();
+        capped.Prepare();
+        capped.Check("{}", JsonNode.Parse("""{"type":"result","subtype":"error_max_turns","num_turns":30,"rounds":30,"total_cost_usd":0.5}"""));
+        Assert.Equal("not-reproduced", (string?)capped.Record["outcome"]);
+        Assert.Equal("ran-out", (string?)capped.Record["attempts"]![0]!["noProof"]);
+
+        using var passing = new Proof();
+        passing.Prepare();
+        passing.App.Write(TestFile, TestCode);
+        passing.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+        passing.Check(Written());
+        Assert.Equal("test-passed", (string?)passing.Record["attempts"]![0]!["noProof"]);
+
+        // Capped and blocked by our own rules: a setup failure says nothing about the bug, so it carries no reason of this kind.
+        using var blocked = new Proof();
+        blocked.Prepare();
+        var claude = JsonNode.Parse("""{"type":"result","subtype":"error_max_turns","num_turns":30,"rounds":30,"total_cost_usd":0.5}""")!;
+        claude["permission_denials"] = new JsonArray(Refused("Edit", "file_path", TestFile));
+        blocked.Check("{}", claude);
+        Assert.Equal("failed", (string?)blocked.Record["outcome"]);
+        Assert.Null(blocked.Record["attempts"]![0]!["noProof"]);
+    }
+
+    [Theory]
+    [InlineData("not-reproduced", "hit the cap: 31 of 30 turns", "ran-out")]
+    [InlineData("not-reproduced", "the test passes: …", "test-passed")]
+    [InlineData("not-reproduced-flaky", "the test failed on some runs", "flaky")]
+    [InlineData("reproduced", null, null)]
+    [InlineData("failed", "hit the cap: it isn't a not-reproduced", null)]
+    public void A_record_from_before_no_proof_is_read_from_its_reason(string outcome, string? reason, string? want) =>
+        Assert.Equal(want, BugProof.NoProof(new JsonObject { ["outcome"] = outcome, ["reason"] = reason }));
+
     /// <summary>A reproduced proof, ready for --verify on "the fix": its failure's named words are "No exception was thrown".</summary>
     static Proof Reproduced()
     {
@@ -775,6 +830,7 @@ public class BugProofTests
         foreach (var r in new[] { Fail(), Pass(), Fail() }) p.Runner.Playwright.Enqueue(r);
         p.Check(output);
         Assert.Equal("not-reproduced-flaky", (string?)p.Record["outcome"]);
+        Assert.Equal("flaky", (string?)p.Record["attempts"]![0]!["noProof"]);
         Assert.Equal(1, p.Runner.Started);
         Assert.Contains(p.Runner.Commands, c => c == "./seed.sh");
 

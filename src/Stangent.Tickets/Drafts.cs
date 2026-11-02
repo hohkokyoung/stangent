@@ -40,20 +40,29 @@ public static partial class TicketDrafts
         var step = Step(kind);
         tone ??= repo.Config.Tickets.Tone;
         if (tone is not ("internal" or "client")) throw new StangentException("usage", $"--tone must be internal or client, not '{tone}'.", ExitCodes.Usage);
-        var pulled = TicketPull.LoadOrFail(repo.Root, key);
-        var proof = BugProof.Load(paths);
-        var facts = kind == "questions" ? Questions(repo, ctx, key, pulled) : Resolution(repo, ctx, prRange
-            ?? throw new StangentException("usage", "A resolution draft needs --pr <base..head>: the merged PR's range.", ExitCodes.Usage));
-        facts["proof"] = proof?["outcome"]?.DeepClone();
-        facts["pr"] = prRange is null ? null : new JsonObject { ["range"] = prRange, ["url"] = prUrl };
-
-        var input = Input(step, kind, tone, pulled, facts, proof, ctx);
+        var (facts, input) = Inputs(repo, ctx, key, kind, tone, prRange, prUrl);
         var hash = CanonicalJson.Hash(input);
         if (PageRun.LoadJson(JsonPath(paths, kind, tone)) is JsonObject existing && (string?)existing["inputs"] == hash) return new RunStep("current", "none");
         AiPolicy.EnsureAllowed(repo.Config, $"ticket draft --kind {kind}");
         facts["kind"] = kind;
         facts["tone"] = tone;
         return AiStep.Start(paths, step, input, hash, facts);
+    }
+
+    /// <summary>What a draft is made from: the facts it may link to, and the input the writer reads, whose hash says
+    /// whether a recorded draft is still current.</summary>
+    static (JsonObject Facts, string Input) Inputs(StangentRepo repo, TicketContext ctx, string key, string kind, string tone, string? prRange, string? prUrl)
+    {
+        var paths = new TicketPaths(repo.Root, key);
+        var pulled = TicketPull.LoadOrFail(repo.Root, key);
+        var proof = BugProof.Load(paths);
+        var facts = kind == "questions" ? Questions(repo, ctx, key, pulled) : Resolution(repo, ctx, prRange
+            ?? throw new StangentException("usage", "A resolution draft needs --pr <base..head>: the merged PR's range.", ExitCodes.Usage));
+        facts["proof"] = proof?["outcome"]?.DeepClone();
+        // D106: an attempt that only ran out says nothing about the bug, so it isn't the reporter's to answer.
+        if (proof?["attempts"]?.AsArray().LastOrDefault() is JsonObject last && BugProof.NoProof(last) == "ran-out") facts["proofRanOut"] = true;
+        facts["pr"] = prRange is null ? null : new JsonObject { ["range"] = prRange, ["url"] = prUrl };
+        return (facts, Input(Step(kind), kind, tone, pulled, facts, proof, ctx));
     }
 
     /// <summary>What a questions draft may link to: the bundle's included pages and FSD sections, the missing bug fields,
@@ -157,7 +166,7 @@ public static partial class TicketDrafts
                 : proof["confirmedBy"] is not null ? $"\n- confirmed by {proof["confirmedBy"]} as the reported problem{(questions ? " and a bug" : "")}"
                 : questions ? "\n- no developer has confirmed this is a bug: the code differs from what the reporter expected, which may be how it's meant to work, and the failure may not be the reported one (D95, D96)"
                 : "\n- not confirmed by a developer yet: the failure may not be the reported one (D95)";
-            sb.Append($"# The bug proof\n\n- outcome: **{proof["outcome"]}**{((string?)a["reason"] is { } r ? $"\n- why: {r}" : "")}{((string?)a["testName"] is { } tn ? $"\n- test: `{tn}` in `{a["testFile"]}`" : "")}{expected}{(reproduced && (string?)a["actualQuote"] is { } aq && (string?)a["shows"] is { } sh ? $"\n- the ticket says: {aq}\n- the test got: {sh}" : "")}{call}{((string?)a["hint"] is { } h ? $"\n- hint tried: {h}" : "")}\n");
+            sb.Append($"# The bug proof\n\n- outcome: **{proof["outcome"]}**{((string?)a["reason"] is { } r ? $"\n- why: {r}" : "")}{((string?)a["testName"] is { } tn ? $"\n- test: `{tn}` in `{a["testFile"]}`" : "")}{expected}{(reproduced && (string?)a["actualQuote"] is { } aq && (string?)a["shows"] is { } sh ? $"\n- the ticket says: {aq}\n- the test got: {sh}" : "")}{call}{((string?)a["hint"] is { } h ? $"\n- hint tried: {h}" : "")}{((bool?)facts["proofRanOut"] == true ? "\n- this attempt only ran out of its limit, which says nothing about the bug: don't mention it, and don't ask for anything because of it" : "")}\n");
         }
         return sb.ToString();
     }
@@ -235,6 +244,7 @@ public static partial class TicketDrafts
         var files = facts["files"]!.AsArray().Select(f => (string)f!).ToHashSet(StringComparer.Ordinal);
         var missing = facts["missing"]!.AsArray().Select(m => (string)m!).ToHashSet(StringComparer.Ordinal);
         var proof = (string?)facts["proof"];
+        var ranOut = (bool?)facts["proofRanOut"] == true;
         foreach (var c in claims)
             foreach (var (link, i) in c["links"]!.AsArray().OfType<JsonObject>().Select((l, i) => (l, i)))
             {
@@ -265,6 +275,7 @@ public static partial class TicketDrafts
                         break;
                     case "proof":
                         if (proof is null) errors.Add($"{at}: there's no bug proof to link to.");
+                        else if (ranOut) errors.Add($"{at}: the attempt only ran out of its limit, which says nothing about the bug: leave it out.");
                         else if ((string?)link["outcome"] != proof) errors.Add($"{at}: the proof's outcome is {proof}, not {(string?)link["outcome"] ?? "(none given)"}: say what it was.");
                         break;
                     case "missing":
@@ -278,7 +289,7 @@ public static partial class TicketDrafts
         {
             foreach (var m in missing.Where(m => !linked.Any(l => (string)l["kind"]! == "missing" && (string?)l["field"] == m)).Order(StringComparer.Ordinal))
                 errors.Add($"{(m == Where ? "where it happens" : $"the bug's {m}")} is missing: ask for it in a claim linked {{\"kind\":\"missing\",\"field\":\"{m}\"}}.");
-            if (proof is "not-reproduced" or "not-reproduced-flaky" && !linked.Any(l => (string)l["kind"]! == "proof"))
+            if (proof is "not-reproduced" or "not-reproduced-flaky" && !ranOut && !linked.Any(l => (string)l["kind"]! == "proof"))
                 errors.Add("the bug wasn't reproduced: say what was tried and ask for what's needed, in a claim linked {\"kind\":\"proof\"}.");
         }
         if (AboutItsInput().Match(text) is { Success: true } about)
@@ -499,9 +510,10 @@ public static partial class TicketDrafts
 
     /// <summary>
     /// Posts a checked draft under the signed-in person's own login (D74) and records who posted it and when. Nothing
-    /// else is ever written to the ticket. A draft already posted isn't posted again unless <paramref name="again"/>.
+    /// else is ever written to the ticket. A draft already posted isn't posted again unless <paramref name="again"/>, and a
+    /// draft whose inputs have changed since it was checked isn't posted unless <paramref name="stale"/> (D108).
     /// </summary>
-    public static async Task<JsonObject> PostAsync(StangentRepo repo, IIssueTracker tracker, string key, string draft, string who, bool again, TimeProvider time, CancellationToken ct = default)
+    public static async Task<JsonObject> PostAsync(StangentRepo repo, IIssueTracker tracker, string key, string draft, string who, bool again, TimeProvider time, CancellationToken ct = default, bool stale = false)
     {
         var paths = new TicketPaths(repo.Root, key);
         var file = draft.EndsWith(".json", StringComparison.Ordinal) ? Path.GetFullPath(Path.Combine(repo.Root, draft))
@@ -511,10 +523,33 @@ public static partial class TicketDrafts
         if ((string?)record["key"] != paths.Key) throw new StangentException("wrong_ticket", $"That draft is for {record["key"]}, not {paths.Key}.", ExitCodes.Usage);
         if (record["posted"] is not null && !again)
             throw new StangentException("already_posted", $"This draft was posted by {record["posted"]!["by"]} at {record["posted"]!["at"]} (comment {record["posted"]!["commentId"]}). Use --again to post it twice.", ExitCodes.Usage);
+        if (!stale && NotCurrent(repo, paths, record) is { } why)
+        {
+            var pr = (string?)record["pr"]?["range"] is { } range ? $" --pr {range}{((string?)record["pr"]?["url"] is { } url ? $" --pr-url {url}" : "")}" : "";
+            // The range as given may be relative: repeated as it is, it would now mean other commits.
+            var fixedRange = (string?)record["pr"]?["range"] is not { } given || Regex.IsMatch(given, "^[0-9a-f]{7,40}\\.\\.[0-9a-f]{7,40}$");
+            throw new StangentException("draft_stale", $"{why} Make it again with `stangent ticket draft {paths.Key} --kind {record["kind"]} --tone {record["tone"]}{pr}`{(fixedRange ? "" : ", with the PR's own commits in place of that range")}, or use --stale to post it as it is.", ExitCodes.Usage);
+        }
         var posted = await tracker.PostCommentAsync(paths.Key, (string)record["text"]!, ct);
         record["posted"] = new JsonObject { ["by"] = who, ["at"] = time.GetUtcNow().ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture), ["commentId"] = posted.CommentId };
         Save(paths, record);
         return record;
+    }
+
+    /// <summary>Why a recorded draft can't be called current (D108): what it was made from has changed (the ticket, its
+    /// bundle, the proof, the PR's range, the writer's instructions), or that can't be worked out any more.</summary>
+    static string? NotCurrent(StangentRepo repo, TicketPaths paths, JsonObject record)
+    {
+        try
+        {
+            var (_, input) = Inputs(repo, TicketContext.Load(repo), paths.Key, (string)record["kind"]!, (string)record["tone"]!, (string?)record["pr"]?["range"], (string?)record["pr"]?["url"]);
+            return CanonicalJson.Hash(input) == (string?)record["inputs"] ? null : "What this draft was made from has changed since it was checked (the ticket, its bundle, the proof, the PR's range, which a later commit can move, or the writer's instructions).";
+        }
+        // Anything that stops the comparison, a damaged file too, means it can't be called current; refusing is the safe side.
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return $"Can't tell whether this draft is still current: {e.Message}.";
+        }
     }
 
     static string Short(string? s) => s is null ? "(no quote)" : s.Length > 80 ? s[..80] + "…" : s;
