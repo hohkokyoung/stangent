@@ -60,7 +60,7 @@ description (`### Expected Behavior`, `**Actual:**`); the missing ones are liste
   inside the repo, never `.stangent/` or `.git/` (permission rules the driver passes; an allow rule on the repo bounds
   Grep and Glob too). It returns up to 10 files, most likely first, each with a quote from the ticket, a line copied
   from the file and a one-sentence reason. Code checks each file is in the repo, each quote is in the ticket word for
-  word (at least 4 words, or a whole line) and each line is in its file (at least 12 characters and two words); one
+  word (at least 4 words, or a whole line) and each line is in its file (at least 12 characters, and two words or a whole line, D103); one
   retry with the errors. After it, files that pass are kept and the rest are listed under `ai.rejected`, never dropped
   silently, and shown in the bundle ("Named, not shown in code"). An import or namespace line is no evidence. Capped by
   `tickets.findBudget` (30 turns, $1; a retry gets what's left). The driver runs it in a throwaway git worktree of the

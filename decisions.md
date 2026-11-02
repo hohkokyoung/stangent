@@ -1948,6 +1948,22 @@ finder and for code's own signals (backticked names).
 **Cost:** the text of HTML tickets changes, so their ticket hash does: their finder answers are marked changed and are
 found again (≈ $1 for the 16). No contract changes shape. Measured on Sonarr's 5 first (D100), then bitwarden's 11.
 
+## D103 · A code quote may be one whole line, even with no space — 2026-11-02 (decided, built)
+Code checks every line the file finder (D101) and the page checks (D53) quote from code: at least 12 characters and
+two words, so a bare name proves nothing. Real lines are often one token: `model.ValidateEdit();`,
+`app.UseForwardedHeaders(options);`. On record, all 5 rejected code lines were one token, and 4 of them were whole
+lines of their file (BWB-9 lost `ServiceCollectionExtensions.cs` that way). A fresh check (D61) counted every
+rejection on record, retries included: 13, of which 10 were whole lines (SONB-1, 6 ×2, 18, 42's first try; BWB-9 ×2,
+11, 18) and 3 were rightly refused (a string fragment, a bare name twice).
+- **A quote with no space counts when it is a whole line** (after trimming), as a ticket quote counts when it is 4
+  words or a whole line (D53). A piece of a line still needs two words (SONB-42's string fragment stays rejected).
+  The 12-character floor stays. Owner: "fix that rule" (2026-11-02).
+- The finder's instructions still say "two words" and are left as they are: they are part of its input hash, so
+  editing them would drop every saved answer. The retry message says "two words, or a whole line"; the instruction
+  text follows at its next real change.
+**Why:** a whole line is as specific as two words; the rule existed to stop fragments, not statements.
+**Cost:** none measured: it changes only which answers pass the check, so it is seen on the next finder run.
+
 ## Open questions
 
 - **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that
