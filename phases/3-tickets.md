@@ -673,3 +673,21 @@ copied Sonarr's).
   - Smaller: an interrupted copy can leave an issue short of comments (the key is saved first); the score's timing has
     no finder step (`ms.points` is the pull). Fixed: `freeze.py` splits paths by line; `run.sh` logs a missing SDK pin.
 - Seen, not fixed (held-out): bitwarden's "Build Version" heading isn't read as the version (D93).
+
+### Step 8 · D102: HTML tickets read as Markdown; re-run · 2026-11-02
+`benchmark/results/2026-11-02-phase3-sonarr-score-d102.json`, `…-bitwarden-heldout-score-d102.json`. The pull now turns a
+body Jira sent as HTML into Markdown (`JiraHtml.ToMarkdown`) instead of plain text: links, images, list numbers, task
+ticks and code marks kept. 16 tickets are HTML-format (Sonarr 5 of 51, bitwarden 11 of 24); both clones re-pulled, and
+`run.sh files` re-searched exactly those (their finder input changed), $0.84.
+- **Right place: Sonarr 36 of 40 (90%), unchanged** (the 5 kept their hit or miss); **bitwarden 21 of 24 (88%, range
+  75–100%)**, was 20: BWB-18 miss → hit. Its text only gained step numbers, image links and italic marks, and its
+  earlier search had already seen the controller; its first attempt this time named it: run-to-run variation, not D102.
+  So D102 fixes lost text (BWB-3's fixing-PR link, 45 links, 121 code marks) without moving right place.
+- **Fresh checks (D61):** a code review before the run (no word or URL lost on the 93 real bodies; its findings fixed:
+  D102's note) and a check after it: exactly the 16 changed; no word lost in any; every new answer at its run commit
+  with its files, quotes and lines verified; transcripts confined to their worktree; re-score matches. It found the
+  loosened quote check rejected a short quote that copies the line's own mark ("1. Save it"): fixed, both forms accepted.
+- **Noted, not changed:** re-running `points` at the pinned commit marks every kept answer `stale` (benchmark only:
+  the finder runs at each bug's own commit; scoring unaffected); Sonarr's 45 kept answers still record `+dirty`
+  (from before that fix); the code-line rule ("two words") rejects one-token lines such as `model.ValidateEdit();`,
+  which caused all 3 retries and cost BWB-9 one file (still a hit).

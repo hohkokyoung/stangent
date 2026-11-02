@@ -45,8 +45,9 @@ pull gives the same `ticket.json`, byte for byte, as the live one. `tickets.proj
 
 ## Pull (D72, D75)
 
-`.stangent/tickets/<KEY>/ticket.json` (git-ignored): the ticket's fields, the description and comments (HTML bodies
-converted to text by code), and every attachment saved with its hash. Text files go in up to `tickets.attachmentChars`;
+`.stangent/tickets/<KEY>/ticket.json` (git-ignored): the ticket's fields, the description and comments (a body Jira
+sends as HTML is turned by code into the Markdown it would otherwise have sent: links, images, list numbers, task ticks
+and code marks kept, D102), and every attachment saved with its hash. Text files go in up to `tickets.attachmentChars`;
 `.docx` goes through 2b's converter; images and anything else are listed with where they're mentioned; files over
 100 MB are listed, not downloaded. For a bug (`tickets.bugTypes`): steps, expected, actual, version and environment from
 the field `tickets.fields` names, Jira's own environment and affects-version fields, or a labelled part of the

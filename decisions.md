@@ -1921,6 +1921,33 @@ need to close 47.5% → 90%.
 before trusting the rate; about half the hits come from tickets that name the file; `ticket-bundle` and the points
 record change shape (D20: Phase 4 consumes the bundle and hasn't started, so no consumer to mark).
 
+## D102 · A ticket Jira sends as HTML reads as the same Markdown as any other — 2026-11-02 (decided)
+The pull asks Jira for Markdown; Jira sends HTML instead when an issue holds what Markdown can't (media, panels). The
+pull flattened that HTML to plain text, losing link and image addresses, list numbers, task-list ticks and code marks:
+BWB-3's fixing-PR link reached the finder as "PR up". 5 of 51 Sonarr tickets and 11 of 24 bitwarden ones came as HTML
+(45 links, 121 code marks).
+- **The pull turns HTML into the Markdown Jira would have sent** (owner, 2026-11-02): links `[text](url)` (a bare URL when
+  the text is the URL), images `![alt](src)`, numbered lists keep their numbers, task items `- [x]`, inline code in
+  backticks, code blocks fenced with their language, quotes `>`, headings `#`, bold/italic/strike, rules, tables as
+  `|` rows; Jira's media blocks stay `[attachment: name]`. Our own code (Jira's HTML is a small, known set of tags), no
+  new library; tests built from the saved real tickets.
+- Rejected: only adding each link's URL after its text (code marks and numbers stay lost).
+- *After a fresh review (D61), same day:* it lost no word or URL on the 93 real HTML bodies. Fixed: a list keeps
+  children that aren't items (Jira nests task lists directly); tags are read in linear time; an unquoted URL ending in
+  "/" isn't a self-closing tag; a tick doesn't eat a line break; tables keep captions and count only their own rows. The
+  output is Jira's Markdown shape *without* its backslash escapes (better for code's own signals). Two readers learned
+  Markdown marks, which Markdown tickets already needed: the quote check's whole-line rule (D53) ignores a line's
+  quote, heading, bullet, number and tick marks; a label may be `_Label:_`. A quoted heading is never a label (a quoted
+  error page mustn't end the part it is in). All 93 bodies' Markdown is pinned in `tests/fixtures/tickets/html/`.
+- *Measured 2026-11-02 (phases/3-tickets.md):* the 16 HTML tickets re-pulled and searched again ($0.84): right place
+  Sonarr 36 of 40 (unchanged), bitwarden 21 of 24 (one flip, run-to-run variation). It fixes lost text, not the rate.
+  The quote check accepts a short whole line with or without its marks (a fresh check found the marks-only form
+  rejected "1. Save it").
+**Why:** the same ticket should read the same whichever format Jira picked; links and code marks are leads for the
+finder and for code's own signals (backticked names).
+**Cost:** the text of HTML tickets changes, so their ticket hash does: their finder answers are marked changed and are
+found again (≈ $1 for the 16). No contract changes shape. Measured on Sonarr's 5 first (D100), then bitwarden's 11.
+
 ## Open questions
 
 - **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that
