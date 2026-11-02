@@ -691,3 +691,33 @@ ticks and code marks kept. 16 tickets are HTML-format (Sonarr 5 of 51, bitwarden
   the finder runs at each bug's own commit; scoring unaffected); Sonarr's 45 kept answers still record `+dirty`
   (from before that fix); the code-line rule ("two words") rejects one-token lines such as `model.ValidateEdit();`,
   which caused all 3 retries and cost BWB-9 one file (still a hit).
+
+### Step 8 · D96: the honest result · 2026-11-02
+No AI and no run. `reproduced` now reads as "the code differs from what the reporter expected, a person decides";
+`--confirm` means the reported problem and a bug; a questions draft gets the expected result and is told not to call an
+unconfirmed proof a bug (an instruction, not a code check). Document verdicts wait for D99. Scoring is unchanged:
+`catchesWrongReports` still counts not-bugs reproduced (7/10 on the saved run).
+
+### Step 8 · does naming fewer files cost the finder anything on Sonarr? · 2026-11-02
+No AI: the saved D102 finder answers against the saved agent baseline, on the tuning set only (D100). Not fresh-checked.
+- **Same 4 misses** (SONB-1, 18, 21, 32); neither finds a bug the other misses. The baseline's hits are at rank 1 in 35 of 36.
+- **Files named:** median 1.5 vs 4. **Wrong files per ticket:** 0.62 vs 2.75. **Share of the fix named:** 66% vs 72%; on the
+  21 multi-file fixes, 40% vs 52%.
+- On bitwarden, 2 of the finder's 3 misses are ones the baseline reached (BWB-4, 5); BWB-16 both miss (the earlier "3" counted BWB-18, since a hit).
+
+### Step 8 · why the finder misses; git history as extra evidence · 2026-11-02
+No AI. The 5 misses D101 names (SONB-1, 18, 21, 32; bitwarden BWB-16); BWB-4 and 5 left unread, to keep the held-out set unspent (D100).
+- **On most, the finder names a place near the symptom and the fix is elsewhere.** Far from the symptom: SONB-18 (a frontend error; the fix is a backend converter), SONB-32 (a crash on duplicate rows; the fix is new cleanup jobs). A choice of where to fix: SONB-1 (the converter that recurses; the fix is the API resource), SONB-21 (the unsanitised path, as a ticket comment also proposes; the fix is the disk transfer service); SONB-18 and 32 could count here too. Wrong reason: BWB-16 (it blames the import not filling the folders; the code fills them, and the fix is two queries computing the value the ticket is about). The grouping is a judgement, not a measure.
+- **SONB-32 can't be hit:** all 4 fix files are created by the fix, so they don't exist at the commit searched. Sonarr's realistic maximum is 39, not 40.
+- **Whole-bundle coverage is 0 on all 5.** Across Sonarr's 40 the bundle covers 71%, but it points at a median of 14.5 files, not the finder's 1.5 or the baseline's 4, and uses the graph and pages at the pinned commit, after the fixes. So 66%, 71% and 72% aren't like for like; the gain comes from 4 tickets and rescues no miss.
+- **Git history, one crude code-only probe:** the top 10 files from past commits sharing at least 2 title words, at each bug's parent. Sonarr: right file in 13 of 40, all bugs the finder already finds, 0 of its 4 misses, about 8 wrong files per ticket; BWB-16 not found. Too crude to judge history by: 46% of its files no longer exist, and filtering those out gives 18 of 40 and finds SONB-21 (7.58 wrong per ticket). Real precedents are invisible to it (BWB-16's fix files were touched by "fix ef query joins"). History stays untested, not ruled out.
+- **Fresh check (D61):** the numbers reproduce (probe re-implemented: 13 of 40, 8.25 wrong); its corrections are above. The finder's wrong-files and share-of-fix figures also hold.
+
+### Step 8 · audit of all 40 proof results · 2026-11-02
+No AI and nothing run: a fresh agent read the raw records of the 2026-10-31 run (before the finder and without D95's checks). Inferred where it says "would". Corrects earlier notes here, including "they test something the fix didn't change" and "really used their 30 turns".
+- **The cap compares two units.** `--max-turns` limits model rounds; `num_turns` on a normal finish is tool results + 1, so parallel calls inflate it. `BugProof.CapHit` threw out 6 finished answers unrun: SONB-6, 9, 18, 29, 46, 47 (22-29 real rounds, `success`). Only SONB-28 really ran out; SONB-10's retry was cut to 3 rounds by the same count. Fixed by D104; the saved results don't change until a re-run.
+- **Rescuing them adds few real proofs:** SONB-29 would pass on its fix; SONB-6, 9, 18 would still fail. About 26/30 reproduced, 18/26 passing on the fix.
+- **The on-fix check is wrong both ways.** Of the 5 "bad" proofs: SONB-1, 11 test the wrong thing; SONB-14, 30 are mis-scored (SONB-30's reported exception is gone, a different one fails); SONB-2 never compiled on the fix. One "good" proof, SONB-26, passes for an unrelated reason. By reading, 18-21 of the 22 are real (82-95%), which straddles the 90% bar.
+- **"Not planned" isn't "wrong report".** Of the 10: SONB-44 a real bug fixed later, SONB-42 probably real elsewhere, SONB-47 unknown, SONB-48 outside the code; of the 6 clear non-bugs, 5 "reproduced".
+- **"Not reproduced" says almost nothing:** true of a real passing test only on SONB-46, of 9. SONB-16's test reached the bug but passes when run alone (cause inferred). SONB-17 was offered only Playwright.
+- **Also:** bundles built at the pinned commit can name code from after the fix (SONB-17, 23, 25, 26, 29; no sign the AI relied on it). Seed and setup problems count against the AI (SONB-10, 18, 28, 46). Starting files don't separate good proofs from bad: the AI reached a fix file in all 17 good ones, 8 of them unnamed by the bundle.

@@ -1684,7 +1684,7 @@ quirk): they tested the AI's guess at the cause, not the reported behaviour.
 **Why:** a code-only match was wrong both ways; a checked side-by-side makes the developer's call quick and honest.
 **Cost:** a person decides whether the failure is the reported one; a reproducer that can't name the line costs the retry.
 
-## D96 · A failing test shows the code differs from what the reporter expects; only an FSD or a developer makes it a bug — 2026-11-01 (decided, not built)
+## D96 · A failing test shows the code differs from what the reporter expects; only an FSD or a developer makes it a bug — 2026-11-01 (honest result and developer's call built; document verdicts wait for D99)
 On Sonarr, 7 of 10 not-bugs were "reproduced": the test asserts the reporter's expectation (SONB-43 "no auth
 required", by design in v4), the code deliberately does otherwise, so it fails. D95 doesn't stop it: the failure does
 show what the reporter saw. Code alone can't tell intended from broken; only something people wrote says what should
@@ -1703,6 +1703,14 @@ wrong reports" needs the new result values.
 - *Revised 2026-11-02 (D99, not built):* "an FSD section" becomes **an approved requirement** (from a document or a change-request
   ticket; never an as-built draft): "bug, per R-0042" / "looks intended (R-0042)". The matching scenario names which
   requirement decides. Until D99 is built, FSD sections as above.
+- *Split 2026-11-02 (owner):* FSD links join a page to a section (D53), so `agree` says the code matches the FSD, never
+  the reporter's expectation, and nothing checked can pick the section a ticket is about (D99's open question). So
+  "until D99, FSD sections" is dropped: **built now:** `reproduced` stays the test's outcome and reads as a difference to
+  decide; `--confirm` means "the reported problem and a bug", not only "the reported failure"; a questions draft gets the
+  expected result and isn't to call an unconfirmed proof a bug (an instruction, no code check); a resolution draft, after
+  the fix, is as before. **With D99:** "bug, per R-0042" and
+  "looks intended (R-0042)". Until then a person makes every bug-or-not call. No new outcome value and no contract
+  version change: the fields stay the same, `confirmedBy` means more.
 
 ## D97 · A draft leaves out a sentence no claim backs, instead of failing — 2026-11-01 (built; how sentences are found: D98)
 After D92 about 7 of 90 drafts still failed both tries per run (a different 7 each time): the AI adds one unsourced
@@ -1842,6 +1850,13 @@ lands); designed without a real FSD so far (D56). Doesn't raise right place (Son
     PR; on merge, code marks ticked items approved and leaves the rest `proposed`; `decided_by` comes from the PR's
     approver via git, never typed (as D58). One PR per feature for big batches. `stangent spec approve <id>` (name not
     final) stays as a backup for developers. Needs the BA to have repo access; otherwise approval waits for Phase 8.
+  - **A confirmed bug the spec doesn't cover (owner, 2026-11-02):** refines "a bug report never creates a requirement".
+    The report alone still doesn't, and nothing reaches the spec automatically. When a developer confirms a bug
+    they also say whether it exposes a gap in the spec, default no: most bugs are code mistakes, and a question for each
+    would bloat the spec and waste the BA's time. A yes opens a BA question quoting the ticket. The BA chooses: an
+    acceptance criterion on a requirement, a scenario, a new requirement (source: the ticket), or no change, which is
+    recorded. The proof's test then carries the new id. **Why:** otherwise each repeat is a person's call again.
+    **Cost:** a developer can miss a real gap; the spec is then no worse than before.
 
 ## D100 · Held-out bugs come from bitwarden/server; Sonarr's 40 become the tuning set — 2026-11-02 (decided; set frozen)
 Every Phase 3 change so far (the page index, the picker, the bundle, the free checks) was judged on Sonarr's 40 bugs,
@@ -1912,13 +1927,13 @@ in 1 of 12 bugs.
     unwritten page whose slice holds a file no written page explains is listed as missing.
   - **Measured on Sonarr (2026-11-02, phases/3-tickets.md):** right place **36 of 40 (90%) ✅**, was 19; no bundle over
     the cap (was 19 of 50); $2.68 for 50 tickets. D79's fallback "AI picks off by default" no longer applies: the
-    finder is on by default (`tickets.aiPoints: true`). Owed: a private repo.
+    finder is on by default (`tickets.aiPoints: true`). A private repo was owed; dropped by the owner 2026-11-02.
   - **Held out (bitwarden, D100, 2026-11-02):** right place **20 of 24 (83%, range 67–96%) ✅**, $1.28; the agent baseline
     23. The finder names fewer files (median 2 vs 4); 3 of its 4 misses the baseline reached lower in a longer list.
 **Why:** measured, on a held-out repo: the agent finds what our own search can't, cheaply; building our own search would
 need to close 47.5% → 90%.
-**Cost:** an AI call on every ticket (about $0.05 on these repos); both repos are public, so a private repo is owed
-before trusting the rate; about half the hits come from tickets that name the file; `ticket-bundle` and the points
+**Cost:** an AI call on every ticket (about $0.05 on these repos); both repos are public, so the rate may lean on what
+the model already knows (no private-repo check: dropped by the owner 2026-11-02); about half the hits come from tickets that name the file; `ticket-bundle` and the points
 record change shape (D20: Phase 4 consumes the bundle and hasn't started, so no consumer to mark).
 
 ## D102 · A ticket Jira sends as HTML reads as the same Markdown as any other — 2026-11-02 (decided)
@@ -1964,6 +1979,22 @@ rejection on record, retries included: 13, of which 10 were whole lines (SONB-1,
 **Why:** a whole line is as specific as two words; the rule existed to stop fragments, not statements.
 **Cost:** none measured: it changes only which answers pass the check, so it is seen on the next finder run.
 
+## D104 · The proof's turn cap counts model rounds, what `--max-turns` limits — 2026-11-02 (built; not yet run)
+The audit of the 40 proof results (phases/3-tickets.md): `--max-turns` limits model rounds, while Claude Code's `num_turns`
+on a normal finish is tool results + 1, so parallel tool calls inflate it. `BugProof` summed `num_turns` and compared it
+with the limit before reading the answer, and threw out 6 finished answers unrun (SONB-6, 9, 18, 29, 46, 47: 22-29 real
+rounds, under $0.45). It also cut SONB-10's retry to 3 rounds when 12 were left.
+- **The driver counts rounds** (one per model message id in the transcript) and adds `rounds` to the result given to
+  `check`. Claude Code's own stop, the attempt's rounds and the dollars still cap an attempt (D81); the 30 is unchanged.
+- **With no `rounds`** (a result passed by hand), only Claude Code's own stop and the dollars apply, and a retry gets the
+  whole limit. `num_turns` isn't a fallback: it would bring the bug back.
+- *Observed, not read from Claude Code's source:* the pattern holds on all 46 saved transcripts; a stopped run ended at
+  exactly its limit (SONB-28 at 30, SONB-10's retry at 3).
+**Why:** a cap that throws out finished work measures our own bookkeeping, not the reproducer; D81's money bound is the dollar cap.
+**Cost:** attempts use more of the turns they were given; expect few extra real proofs (of the 4 real bugs, SONB-29 would
+probably pass on its fix; SONB-6, 9, 18 probably wouldn't). D86's raise to 30 stands: its deciding case, SONB-5, was a real stop at 15 rounds.
+Nothing tests the driver's count in `dotnet test` (no test covers `ticket-run.sh`); a fresh check ran it on all 46 saved transcripts.
+
 ## Open questions
 
 - **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that
@@ -2004,6 +2035,10 @@ rejection on record, retries included: 13, of which 10 were whole lines (SONB-1,
   makes it measurable. Reference pages are
   not rewritten. Before starting: commit or set aside the Phase 3 worktree's uncommitted work (owner's OK), and apply
   D20 to any contract change.
+- **What comes before the D95 re-run (owner, 2026-11-02):** D96's honest result (built; it changes what a proof says, not
+  what it records), the finder naming fewer files than the agent baseline, and D99, in that order. **The private-repo check is dropped**
+  (owner): D101's rates stay measured on public repos only, and Phase 3's report says so. The threads deferred on
+  2026-10-28 stay deferred.
 - **What gives way under the bundle cap (2026-11-02, after D71's fix):** pointers now never shrink, so 19 of 50 Sonarr
   bundles miss the cap with every page cut. Options: cut the impact answer's details before pages (the agreed
   retrieval order: files, then pages, then impact); group pointers by file to halve their size (a `ticket-bundle`
