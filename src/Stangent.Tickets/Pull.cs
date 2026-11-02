@@ -51,8 +51,8 @@ public static partial class TicketPull
         ticket = ticket with { Key = paths.Key };
         var settings = repo.Config.Tickets;
 
-        var description = ticket.DescriptionFormat == "html" ? HtmlToText(ticket.Description) : ticket.Description;
-        var comments = ticket.Comments.Select(c => (c, Text: c.Format == "html" ? HtmlToText(c.Body) : c.Body)).ToList();
+        var description = ticket.DescriptionFormat == "html" ? HtmlToMarkdown(ticket.Description) : ticket.Description;
+        var comments = ticket.Comments.Select(c => (c, Text: c.Format == "html" ? HtmlToMarkdown(c.Body) : c.Body)).ToList();
 
         var files = new JsonArray();
         foreach (var a in ticket.Attachments.OrderBy(a => a.Id, StringComparer.Ordinal))
@@ -268,19 +268,20 @@ public static partial class TicketPull
         return found;
     }
 
-    /// <summary>A line's label, if it has the shape of one: <c>## Label</c>, <c>**Label:** rest</c>, <c>**Label**: rest</c> or
-    /// <c>Label: rest</c> (a label of letters and spaces, at most 40 characters).</summary>
+    /// <summary>A line's label, if it has the shape of one: <c>## Label</c>, <c>**Label:** rest</c>, <c>**Label**: rest</c>,
+    /// <c>_Label:_ rest</c> or <c>Label: rest</c> (a label of letters and spaces, at most 40 characters). A quoted line is
+    /// never a label: a quoted error page's own heading mustn't end the part it is quoted in.</summary>
     static (bool Heading, string? Label, string After) SplitLabel(string line)
     {
         var l = line.Trim();
         var heading = l.StartsWith('#');
         if (heading) l = l.TrimStart('#').Trim();
-        foreach (var marker in new[] { "**", "__" })
+        foreach (var marker in new[] { "**", "__", "*", "_" })
         {
-            if (!l.StartsWith(marker, StringComparison.Ordinal)) continue;
-            var close = l.IndexOf(marker, 2, StringComparison.Ordinal);
+            if (!l.StartsWith(marker, StringComparison.Ordinal) || l.StartsWith(marker + " ", StringComparison.Ordinal)) continue;
+            var close = l.IndexOf(marker, marker.Length, StringComparison.Ordinal);
             if (close < 0) break;
-            return (heading, l[2..close].Trim().TrimEnd(':'), l[(close + 2)..].TrimStart().TrimStart(':').TrimStart());
+            return (heading, l[marker.Length..close].Trim().TrimEnd(':'), l[(close + marker.Length)..].TrimStart().TrimStart(':').TrimStart());
         }
         var colon = l.IndexOf(':');
         if (colon > 0 && colon <= 40 && l[..colon].All(c => char.IsLetter(c) || c is ' ' or '/' or '\''))
@@ -301,20 +302,7 @@ public static partial class TicketPull
 
     // ---- HTML bodies (Jira returns HTML for what Markdown can't hold) ----
 
-    /// <summary>A plain-text view of an HTML body, by code: block elements become line breaks, list items "- ", headings
-    /// "#", embedded media "[attachment: name]"; other tags are dropped and entities decoded.</summary>
-    public static string HtmlToText(string html)
-    {
-        var s = Regex.Replace(html, @"<div[^>]*data-type=""media""[^>]*>(.*?)</div>", m => $"\n[attachment: {StripTags(m.Groups[1].Value).Trim()}]\n", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-        s = Regex.Replace(s, @"<h([1-6])[^>]*>", m => "\n" + new string('#', int.Parse(m.Groups[1].Value)) + " ", RegexOptions.IgnoreCase);
-        s = Regex.Replace(s, @"<li[^>]*>", "\n- ", RegexOptions.IgnoreCase);
-        s = Regex.Replace(s, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase);
-        s = Regex.Replace(s, @"<(p|ul|ol|pre|blockquote|table)(\s[^>]*)?>", "\n", RegexOptions.IgnoreCase);
-        s = Regex.Replace(s, @"</(p|div|h[1-6]|ul|ol|pre|blockquote|tr|table)>", "\n", RegexOptions.IgnoreCase);
-        s = WebUtility.HtmlDecode(StripTags(s));
-        s = Regex.Replace(s, @"[ \t]+\n", "\n");
-        return Regex.Replace(s, @"\n{3,}", "\n\n").Trim();
-    }
-
-    static string StripTags(string s) => Regex.Replace(s, "<[^>]+>", "");
+    /// <summary>The Markdown Jira would have sent for an HTML body (D102): links, images, list numbers, task ticks and
+    /// code marks kept; media blocks "[attachment: name]".</summary>
+    public static string HtmlToMarkdown(string html) => Jira.JiraHtml.ToMarkdown(html);
 }

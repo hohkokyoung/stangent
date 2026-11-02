@@ -1,0 +1,3 @@
+_dwbit wrote:_
+
+Hey @spiezmaestro for this particular issue, some community members have been able to resolve the issue by re-sycning or manually re-uploading the license again, can you let me know if either of those steps worked for you?

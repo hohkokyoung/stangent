@@ -1,0 +1,10 @@
+<h3>Steps To Reproduce</h3><ol><li><p>Follow the Bitwarden On-Premise installation manual. <a href="https://bitwarden.com/help/install-on-premise-linux/#install-bitwarden" data-card-appearance="inline">https://bitwarden.com/help/install-on-premise-linux/#install-bitwarden</a></p></li><li><p>./bitwarden.sh install</p></li></ol><h3>Expected Result</h3><p>Setup should correctly handle situations like mine and provide more detailed information about error that occured.</p><h3>Actual Result</h3><p>In my case, setup shows an unclear error message, that tells about Bitwarden server contacting problem, when the actual error message is &quot;The given key was not present in the dictionary.&quot;.</p><h3>Screenshots or Videos</h3><p><em>No response</em></p><h3>Additional Context</h3><p>When i cURL the Bitwarden API with my <code>InstallationId</code> i get JSON response with lowercased property names.
+</p><figure data-type="media-single" data-layout="center"><img src="https://user-images.githubusercontent.com/30056636/153204205-6b7421e2-35ea-46a1-ae5f-7a1edde43188.png" alt="image"></figure><p>
+The response on screenshot is from my host machine. in the setup container i get same behavior.
+Actually, Setup tries to get the <code>Enabled</code> property, but fails because the key name is <code>enabled</code>&#039;.
+When i replaced property name in the source, rebuilt Setup project and Docker image and did some modifications to shell scripts, to use my modified image, InstallationId validation went successfully.</p><h3>Build Version</h3><p>1.45.2</p><h3>Environment</h3><p>Self-Hosted</p><h3>Environment Details</h3><pre><code>root@westdev:~/server/util/Setup# uname -a
+Linux westdev 5.4.0-77-generic #86-Ubuntu SMP Thu Jun 17 02:35:03 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux</code></pre><pre><code>root@westdev:~/server/util/Setup# cat /etc/lsb-release
+DISTRIB_ID=Ubuntu
+DISTRIB_RELEASE=20.04
+DISTRIB_CODENAME=focal
+DISTRIB_DESCRIPTION=&quot;Ubuntu 20.04.3 LTS&quot;</code></pre>

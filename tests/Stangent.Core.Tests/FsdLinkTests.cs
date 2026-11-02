@@ -283,6 +283,17 @@ public class FsdLinkTests
         Assert.False(Quotes.InText("over", "Orders over 50 need approval."));
         Assert.True(Quotes.InText("Orders over 50 need", "Orders over 50 need approval."));
         Assert.True(Quotes.InText("at most 100", "| Total | at most 100 |"));
+        // A whole line without its Markdown marks (D102): numbered and task items, quotes, headings.
+        Assert.True(Quotes.InText("Login", "1. Login\n2. Look"));
+        Assert.True(Quotes.InText("I understand", "- [x] I understand"));
+        Assert.True(Quotes.InText("Error: invalid", "> # Error: invalid"));
+        Assert.True(Quotes.InText("Steps", "### Steps"));
+        Assert.False(Quotes.InText("Login", "1. Login twice"));
+        Assert.True(Quotes.InText("1. Save it", "1. Save it\n2. Go"));
+        Assert.True(Quotes.InText("### Steps", "### Steps\nx"));
+        Assert.True(Quotes.InText("> quoted", "> quoted"));
+        Assert.False(Quotes.InText("5 GB", "1.5 GB"));
+        Assert.False(Quotes.InText("it", "1. Save it"));
     }
 
     [Fact]

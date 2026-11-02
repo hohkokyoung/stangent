@@ -1,0 +1,4 @@
+<p><em>c4539 wrote:</em></p><p>Have you checked the <code>./bwdata/env/global.override.env</code> for these entries?</p><pre><code>globalSettings__attachment__baseDirectory=/etc/bitwarden/core/attachments
+globalSettings__attachment__baseUrl=https://vault.example.net/attachments
+globalSettings__send__baseDirectory=/etc/bitwarden/core/attachments/send
+globalSettings__send__baseUrl=https://vault.example.net/attachments/send</code></pre><p>That should override the typo you found in <code>server/src/Core/Settings/GlobalSettings.cs</code>.</p>

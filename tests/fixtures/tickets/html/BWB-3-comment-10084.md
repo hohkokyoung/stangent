@@ -1,0 +1,3 @@
+_mklitzn wrote:_
+
+Same here,  with all versions after 2024.12.0-beta (that is the last one working) - including 2025.1.1-beta

@@ -197,9 +197,18 @@ public class TicketPullTests
     }
 
     [Fact]
-    public void An_HTML_body_becomes_plain_text_with_its_media_named()
+    public void Labels_in_single_emphasis_and_quoted_headings_that_end_nothing()
     {
-        var text = TicketPull.HtmlToText("<h2>Steps</h2><ol><li>Open</li><li>Save &amp; close</li></ol><p>See</p><div data-type=\"media\" data-id=\"x\">screen.png</div>");
-        Assert.Equal("## Steps\n\n- Open\n- Save & close\n\nSee\n\n[attachment: screen.png]", text);
+        Assert.Equal("it saves", TicketPull.DescriptionSections("_Expected result:_ it saves")["expected"].Text);
+        var s = TicketPull.DescriptionSections("### Actual Result\n\nAn error page:\n> # Error: invalid_request\n> Request ID: 1\n\n### Expected Result\n\nSigns in");
+        Assert.Equal("An error page:\n> # Error: invalid_request\n> Request ID: 1", s["actual"].Text);
+        Assert.Equal("Signs in", s["expected"].Text);
+    }
+
+    [Fact]
+    public void An_HTML_body_becomes_Markdown_with_its_media_named()
+    {
+        var text = TicketPull.HtmlToMarkdown("<h2>Steps</h2><ol><li>Open</li><li>Save &amp; close</li></ol><p>See</p><div data-type=\"media\" data-id=\"x\">screen.png</div>");
+        Assert.Equal("## Steps\n\n1. Open\n2. Save & close\n\nSee\n\n[attachment: screen.png]", text);
     }
 }

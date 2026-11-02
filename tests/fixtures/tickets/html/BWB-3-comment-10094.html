@@ -1,0 +1,9 @@
+<p><em>mklitzn wrote:</em></p><p>Still the same in 2025.4.1-beta :-(</p><pre><code>2025-04-23 20:51:34.166 +02:00 [ERR] Unable to resolve service for type &#039;Bit.Core.Billing.Repositories.IOrganizationInstallationRepository&#039; while attempting to activate &#039;Bit.Api.Billing.Controllers.OrganizationsController&#039;.
+System.InvalidOperationException: Unable to resolve service for type &#039;Bit.Core.Billing.Repositories.IOrganizationInstallationRepository&#039; while attempting to activate &#039;Bit.Api.Billing.Controllers.OrganizationsController&#039;.
+   at Microsoft.Extensions.DependencyInjection.ActivatorUtilities.ThrowHelperUnableToResolveService(Type type, Type requiredBy)
+   at lambda_method1491(Closure, IServiceProvider, Object[])
+   at Microsoft.AspNetCore.Mvc.Controllers.ControllerFactoryProvider.&lt;&gt;c__DisplayClass6_0.&lt;CreateControllerFactory&gt;g__CreateController|0(ControllerContext controllerContext)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State&amp; next, Scope&amp; scope, Object&amp; state, Boolean&amp; isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.&lt;InvokeNextExceptionFilterAsync&gt;g__Awaited|26_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)</code></pre><p>Thinking about switching to a more reliable product ...</p>

@@ -1,0 +1,4 @@
+<p><em>JensSpanier wrote:</em></p><p>I got it working with these settings:</p><pre><code>globalSettings__attachment__baseDirectory=/etc/bitwarden/core/attachments
+globalSettings__attachment__baseUrl=https://bitwarden.XXXX.de/attachments
+globalSettings__send__baseDirectory=/etc/bitwarden/bwdata/core/attachments/send
+globalSettings__send__baseUrl=https://bitwarden.XXXX.de/attachments/send</code></pre><p>Don&#039;t change <code>globalSettings__attachment__baseDirectory</code> and <code>globalSettings__send__baseDirectory</code>. You just need to adjust <code>globalSettings__attachment__baseUrl</code> and <code>globalSettings__send__baseUrl</code>.</p><p><code>globalSettings__attachment__baseDirectory</code> and <code>globalSettings__send__baseDirectory</code> are the paths inside the docker container.</p><p>So your paths must start with <code>/etc/bitwarden/core</code> because this volume gets mapped to <code>../core</code> (see <code>docker-compose.yml</code>)</p>
