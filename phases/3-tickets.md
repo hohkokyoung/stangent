@@ -164,7 +164,7 @@ before building on it.
 - [x] If a bar fails, its rule applies (D79): "proof is real" or "catches wrong reports" → the proof is advice only;
       "right place" or "beats a keyword search" → AI picks off by default; "proof finds bugs" → "not reproduced" is
       information only, not "don't fix yet". The report says which and why.
-- [ ] Tests run without an LLM or a network (canned subagent outputs, the file backend); CI green. *Tests pass locally; CI hasn't run this branch, which isn't pushed.*
+- [x] Tests run without an LLM or a network (canned subagent outputs, the file backend); CI green ([PR #2's run](https://github.com/hohkokyoung/stangent/actions/runs/41470150180)).
 - [x] End-of-phase report written; its claims checked against the results files by a fresh agent (D61).
 
 ## Contracts
@@ -732,7 +732,7 @@ No AI and nothing run. `noProof` on the saved run: 8 `ran-out`, 1 `test-passed`.
 
 ## End-of-phase report
 
-*2026-11-02 · first report (D109).* Phase 3 is **done with two bars failed**, so the proof ships as **advice only** (D79). All three must-pass bars passed when last measured (below). The branch isn't pushed or merged, so CI hasn't run it.
+*2026-11-02 · first report (D109).* Phase 3 is **done with two bars failed**, so the proof ships as **advice only** (D79). All three must-pass bars passed when last measured (below). CI green; merged as [#2](https://github.com/hohkokyoung/stangent/pull/2).
 
 ### What was built
 - **Commands:** `stangent ticket pull | points | bundle | prove | draft | post | check`, `stangent jira login`; `/stangent:ticket`; `plugin/scripts/ticket-run.sh`. See `docs/tickets.md`.
@@ -779,8 +779,7 @@ D69–D109, above all: D79 (bars), D81 (cost), D89–D91 (setup failures), D95, 
 Phase 4 consumes `ticket-bundle` v2 and `bug-proof` v1; it hasn't started, so no phase goes `needs review`. D99 becomes phase 2c, before Phase 4; it adds a contract Phase 3 consumes, so Phase 3 goes `needs review` when it lands (D20).
 
 ### Follow-ups
-1. Merge the branch and let CI run, on the owner's OK.
-2. **Phase 2c, D99,** before Phase 4 (D109), starting with its ticket → requirement checker.
-3. **The proof re-run on Sonarr** (at most about $45, the $40 cap plus about $4 of drafts; last time's recorded cost was $13, held down by D104's bug; owner's OK; remove `bug-proof.json` first; re-sync the benchmark binary), with the drafts phase and replay after it, to re-confirm grounded and repeatable; then the smaller proof issues if they still matter.
-4. **Phase 4's first question:** does the bundle help? The fix agent with and without it on the same bugs (Open questions).
-5. **Phase 4:** the graph gaps; recording what a failing test ran as evidence; an agent waits for a person's go on a ticket with no proof (D75).
+1. **Phase 2c, D99,** before Phase 4 (D109), starting with its ticket → requirement checker.
+2. **The proof re-run on Sonarr** (at most about $45, the $40 cap plus about $4 of drafts; last time's recorded cost was $13, held down by D104's bug; owner's OK; remove `bug-proof.json` first; re-sync the benchmark binary), with the drafts phase and replay after it, to re-confirm grounded and repeatable; then the smaller proof issues if they still matter.
+3. **Phase 4's first question:** does the bundle help? The fix agent on the same bugs three ways (Open questions).
+4. **Phase 4:** the graph gaps; recording what a failing test ran as evidence; an agent waits for a person's go on a ticket with no proof (D75).
