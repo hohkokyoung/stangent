@@ -578,7 +578,7 @@ public static class TicketPoints
                 if (path is not null && Boilerplate((string)f["line"]!))
                     errors.Add($"files[{i}]: the line \"{Short((string)f["line"]!)}\" is an import or namespace line, found in almost any file: give the code that connects the file to the ticket.");
                 else if (path is not null && !Quotes.InSource((string)f["line"]!, FileLines(repo.Root, path)))
-                    errors.Add($"files[{i}]: the line \"{Short((string)f["line"]!)}\" isn't in {path} as written (copy at least {Quotes.MinSourceChars} characters and two words exactly).");
+                    errors.Add($"files[{i}]: the line \"{Short((string)f["line"]!)}\" isn't in {path} as written (copy at least {Quotes.MinSourceChars} characters exactly: two words, or a whole line).");
                 if (errors.Count == before && files.All(x => (string)x!["path"]! != path))
                     files.Add(new JsonObject { ["path"] = path, ["quote"] = (string)f["quote"]!, ["line"] = (string)f["line"]!, ["why"] = (string)f["why"]! });
             }

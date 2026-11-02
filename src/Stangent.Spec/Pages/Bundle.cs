@@ -136,15 +136,18 @@ public static partial class Quotes
 
     public static string Normalize(string s) => System.Text.RegularExpressions.Regex.Replace(s, @"\s+", " ").Trim();
 
-    /// <summary>Evidence from code: at least this many non-space characters and two tokens, so a fragment like
-    /// <c>return</c> (found almost anywhere) isn't evidence of anything.</summary>
+    /// <summary>Evidence from code: at least this many non-space characters, and two tokens or a whole line (D103), so a
+    /// fragment like <c>return</c> (found almost anywhere) isn't evidence of anything.</summary>
     public const int MinSourceChars = 12;
 
-    /// <summary>The quote, normalised, is part of one source line, or of consecutive lines joined by a space.</summary>
+    /// <summary>The quote, normalised, is part of one source line, or of consecutive lines joined by a space; at least
+    /// <see cref="MinSourceChars"/> characters, and two words or a whole line (D103: <c>model.ValidateEdit();</c> is a
+    /// line; a piece of one with no space proves little).</summary>
     public static bool InSource(string quote, IReadOnlyList<string> lines)
     {
         var q = Normalize(quote);
-        if (q.Count(c => c != ' ') < MinSourceChars || !q.Contains(' ')) return false;
+        if (q.Count(c => c != ' ') < MinSourceChars) return false;
+        if (!q.Contains(' ')) return lines.Any(l => l == q);
         var parts = q.Split(" ").Length;
         for (var i = 0; i < lines.Count; i++)
         {
