@@ -3,7 +3,7 @@ phase: 3
 name: tickets
 status: in progress
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 5, reference-page: 1, source-document: 1, trace-links: 1 }
-provides: { ticket-bundle: 1, ticket-update: 1, bug-proof: 1 }
+provides: { ticket-bundle: 2, ticket-update: 1, bug-proof: 1 }
 ---
 
 # Phase 3 · Tickets
@@ -67,7 +67,7 @@ before building on it.
 - **Code:** stack-trace frames (in the ticket or a text attachment) → methods (✅); URL paths → route pages; quoted screen names, page titles and FSD section
   titles → pages (sections through `specs/trace.yaml`); symbol names found in the graph. Each point records its signal.
 - **AI, only when code finds none:** `stangent ticket prepare <KEY> --step points` writes the ticket plus the list of
-  page titles (not the pages; since 2026-10-28 the D87 ranking, top 20 in detail plus every page numbered); `stangent-point-picker` returns up to 5 pages, each with a word-for-word ticket quote;
+  page titles (not the pages; since 2026-10-28 the D87 ranking, top 20 in detail plus every page numbered); `stangent-point-picker` returns up to 5 pages, each with a word-for-word ticket quote; *Replaced 2026-11-02 (D101): the file finder searches the repo and returns files; code's signals only with it off.*
   `stangent ticket check` checks pages exist and quotes match; one retry.
 - **The developer:** `stangent ticket points <KEY> --add <page|symbol> --remove <page|symbol>`; changes are recorded.
 - Setting `tickets.aiPoints` (default on; off if D79's bundle bars fail).
@@ -81,7 +81,7 @@ before building on it.
 - **Cap** ~40k characters (`tickets.bundleChars`): over it, the lowest-ranked pages become pointers and the bundle says
   so. Missing and stale pages are flagged, not generated; the developer can run `/stangent:spec-generate` for them.
   Findings only when `fsd.findings` is on, marked unconfirmed.
-- Same inputs → byte-identical bundle. Validated against `schemas/ticket-bundle.v1.json`.
+- Same inputs → byte-identical bundle. Validated against `schemas/ticket-bundle.v1.json` (*v2 since 2026-11-02, D101: file points, pages that explain them, impact lists cut first*).
 
 ### 5. The bug proof (D75, D76)
 - `stangent ticket prove <KEY>` prepares the input: the bundle, the repo's test projects for the code at the starting
@@ -118,7 +118,7 @@ before building on it.
 
 ### 7. Plugin
 - `/stangent:ticket <KEY>`: pull → points → bundle, shown to the developer; offers `prove` for bugs and `draft`.
-- Subagents: `stangent-point-picker`, `stangent-bug-reproducer`, `stangent-question-writer`, `stangent-summary-writer`.
+- Subagents: `stangent-point-picker` (*replaced by `stangent-file-finder`, D101*), `stangent-bug-reproducer`, `stangent-question-writer`, `stangent-summary-writer`.
   Batch and benchmark runs use the single-turn driver where the step allows it (D66); the reproducer is multi-turn,
   since it builds and runs tests.
 
@@ -621,3 +621,26 @@ agent's own folder mistyped, and failed) and found no answer key, stangent file,
   temp folder denied; tool calls counted in full); neither was used in these runs.
 - **What it means:** the 70% bar passes by a wide margin on both sets with agent search alone, held-out included. Our
   own search would need to close a 47.5% → 90% gap to compete; the agent costs about $0.05 a ticket.
+
+### Step 8 · D101 built: the file finder; right place 90% · 2026-11-02
+`benchmark/results/2026-11-02-phase3-sonarr-score-d101.json`. Built (owner, asleep: "go with the most optimal option"):
+`stangent-file-finder` replaces the page picker; `ticket-bundle` v2; `ticket-run.sh` runs the finder in a throwaway
+git worktree; run.sh's `files` phase searches each ticket at its run commit (bugs: the fix's parent). Three fresh
+reviews (D61) before and after the paid run; every finding fixed (cache key, isolation, subfolder roots, cleanup,
+bundle cost, status, retry budget, boilerplate lines, rejected files shown, stale answers shown).
+- **Right place 36 of 40 (90%, 95% range 80–97.5%) ✅** (was 19, 47.5%). The misses are the agent baseline's own: SONB-1,
+  18, 21, 32. The bundle shows a fix file in 36 (was 19); the impact walk from the found files reaches one in 37.
+- **Bundles:** none over the 40k cap (was 19 of 50); median 29k characters (was 39k); impact lists left out in 25;
+  median 14.5 files shown (was 29). Pages that only explain a file left out under the cap: median 0, most 17. Missing
+  pages listed: median 0, most 4.
+- **The finder:** all 50 searched (status found), $2.68 in all (most $0.13 a ticket), 8 needed a retry, 4 tickets kept
+  a rejected file (SONB-1, 6, 18, 42), listed in their bundles.
+- **Unchanged here:** proof bars (no new proofs: 77% real, 7/10 wrong reports "reproduced"), and the drafts and replay
+  records, which predate these bundles (so "repeatable" is from the earlier run).
+- **Final fresh check (D61):** re-scored 36/40 from the clone independently; every search ran at the bug's run commit;
+  every named file existed there; 61 transcripts: all worked in a worktree, none touched `.stangent`, 5 reads mistyped
+  outside the worktree were refused. Fixed after it: auto memory off for every headless call (it was on, its folder
+  empty), the commit recorded without `+dirty`, two test transcripts removed. Re-scored after: unchanged.
+- **Owed:** the full pipeline on bitwarden's held-out 24 (D100; only the bare agent baseline ran there: 23/24), which
+  needs bitwarden set up for tickets (replay files, graph, pages); a private repo before trusting the rate outside
+  public code; the misses grouped by cause (crash site vs root cause, framework-run code).

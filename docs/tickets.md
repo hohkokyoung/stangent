@@ -52,40 +52,52 @@ converted to text by code), and every attachment saved with its hash. Text files
 the field `tickets.fields` names, Jira's own environment and affects-version fields, or a labelled part of the
 description (`### Expected Behavior`, `**Actual:**`); the missing ones are listed.
 
-## Starting points (D70)
+## Starting points (D101; D70 as the fallback)
 
-- **Code:** stack-trace frames (.NET, also async and lambda frames; script frames by file) in the ticket or a text
-  attachment → methods, by file and line or by name; URL paths → route pages and endpoint pages; quoted screen names,
-  page titles and FSD section titles (through `specs/trace.yaml`) → pages; symbol names that exist in the graph.
-- **AI, only when code finds none** (`tickets.aiPoints`, default on): `stangent-point-picker` sees the ticket, the 20
-  pages the page index (D87) ranks highest for it in detail (the phrase each shares with the ticket, a few lines of what
-  it holds), then every page as one numbered line, so a page the ranking missed can still be picked. It returns up to 5
-  page numbers, each with a quote; code checks each page exists and each quote is in the ticket word for word; one
-  retry. Code never picks on its own (D87: the clear-winner shortcut was dropped). Recorded with its input hash (the
-  ticket and the page list, not the ranking): an unchanged ticket makes no AI call, and writing a page later doesn't ask
-  for a new pick.
-- **No starting point at all** (none found, none picked or passed the checks, or all removed): the bundle says
-  "No confident starting point", and the questions draft must ask the reporter where it happens (`where` is listed as
-  missing).
-- **You:** `--add` / `--remove` a page or symbol; replayed on every run and recorded with git's `user.name`.
+- **The file finder** (`tickets.aiPoints`, default on): `stangent-file-finder`, a headless coding agent, gets the
+  ticket (summary, description, comments, text attachments) and searches the repo itself, read-only: Read, Grep and Glob
+  inside the repo, never `.stangent/` or `.git/` (permission rules the driver passes; an allow rule on the repo bounds
+  Grep and Glob too). It returns up to 10 files, most likely first, each with a quote from the ticket, a line copied
+  from the file and a one-sentence reason. Code checks each file is in the repo, each quote is in the ticket word for
+  word (at least 4 words, or a whole line) and each line is in its file (at least 12 characters and two words); one
+  retry with the errors. After it, files that pass are kept and the rest are listed under `ai.rejected`, never dropped
+  silently, and shown in the bundle ("Named, not shown in code"). An import or namespace line is no evidence. Capped by
+  `tickets.findBudget` (30 turns, $1; a retry gets what's left). The driver runs it in a throwaway git worktree of the
+  commit checked out, so it never sees `.stangent/`, untracked files or build output; code checks paths against the
+  files git tracks there (exact case) and lines against git's copy. Recorded with its input hash (the instructions and
+  the ticket) and the commit it searched: an unchanged ticket makes no AI call, and once the code moves on the answer is
+  kept and marked `stale`; `stangent ticket points <KEY> --refind` searches again.
+- **Code's signals, when the finder is off** (`tickets.aiPoints: false` or `ai.enabled: false`): stack-trace frames
+  (.NET, also async and lambda frames; script frames by file) in the ticket or a text attachment → methods, by file and
+  line or by name; URL paths → route pages and endpoint pages; quoted screen names, page titles and FSD section titles
+  (through `specs/trace.yaml`) → pages; symbol names that exist in the graph. With the finder on they're only leads in
+  the ticket it reads.
+- **No starting point at all** (none found, none passed the checks, or all removed): the bundle says "No confident
+  starting point", and the questions draft must ask the reporter where it happens (`where` is listed as missing).
+- **You:** `--add` / `--remove` a page, a symbol or a file (its path in the repo); replayed on every run and recorded
+  with git's `user.name`.
 - **Outside the code (D83):** parts whose cause lives where the repo doesn't: `server`, `network`, `deployment`,
-  `data`, `third-party`, `other`. The point picker may return up to 3 (`outside`, each quoted from the ticket and checked
-  word for word, like its pages); you add one with `--add-outside "network: times out behind the proxy"` and remove an
-  area's with `--remove-outside network` (or `all`). Screens, APIs and app-level security bugs are in the code, never
-  outside. With some outside part and no starting point, the bundle says "None in the code" instead of "No confident
-  starting point", and `where` isn't asked.
+  `data`, `third-party`, `other`. The file finder may return up to 3 (`outside`, each quoted from the ticket and
+  checked word for word); you add one with `--add-outside "network: times out behind the proxy"` and remove an area's
+  with `--remove-outside network` (or `all`). Screens, APIs and app-level security bugs are in the code, never outside.
+  With some outside part and no starting point, the bundle says "None in the code" instead of "No confident starting
+  point", and `where` isn't asked.
 
-## The bundle (D71)
+## The bundle (D71, D101)
 
-`bundle.json` (validated against `schemas/ticket-bundle.v1.json`) and `bundle.md`: the ticket and attachments; the
-starting points with their reasons; the chosen pages' statements with citations (your own additions rank first); the
-FSD sections linked to them with each link's state and whether a person decided it (findings only with
-`fsd.findings`, marked unconfirmed); the impact answer from the pages' cited symbols and the matched symbols within 2
-lines; pointers to files and symbols. **No source code.** Over `tickets.bundleChars` (compact JSON) the lowest-ranked
-page becomes a pointer: its statements go, the files and symbols it cites stay among the pointers (2026-11-02, D71).
-Pointers then don't shrink as pages are cut, so a bundle with many citations can stay over the cap with every page cut
-(`cap.over`). Missing and stale pages are flagged (`/stangent:spec-generate`), never generated here. Same
-inputs → the same bytes.
+`bundle.json` (validated against `schemas/ticket-bundle.v2.json`) and `bundle.md`: the ticket and attachments; the
+starting points with their reasons (a found file with its ticket quote and its line); the reference pages that explain
+them, each saying which found files it explains (its statements cite code in the file, or the file is in its slice),
+after your own and code's page points; the FSD sections linked to the included pages with each link's state and
+whether a person decided it (findings only with `fsd.findings`, marked unconfirmed); the impact answer from the
+starting points within 2 lines (the found files' code, symbol points, page points' citations); pointers to files and
+symbols, the found files first. **No source code.** Over `tickets.bundleChars` (compact JSON): first the impact
+answer's item lists go (counts kept, `cap.impactTrimmed`; `stangent graph impact` lists them), then the lowest-ranked
+page becomes a pointer (a page point keeps its cited files as pointers; a page that only explains a file doesn't). The
+starting points are never cut; a bundle still over with every page cut says so (`cap.over`). Missing and stale pages
+are flagged (`/stangent:spec-generate`), never generated here. `finder` records the commit the finder searched and
+whether HEAD has moved on since (judged when the bundle is built). Same inputs and the same commit checked out → the
+same bytes.
 
 ## The bug proof (D75, D76, D81)
 

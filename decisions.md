@@ -1862,6 +1862,55 @@ shaped around Sonarr (the owner wants any C#/TS repo).
 **Cost:** bitwarden needs its own setup for what a run uses (tickets in Jira or replay files, reference pages for the
 page-based sources); bitwarden's bugs may be fewer and different in kind; the owner decided "your call".
 
+## D101 · A coding agent finds the ticket's files; code checks them; the graph is the checker and the map — 2026-11-02 (decided; built, uncommitted)
+Replaces D70's starting points and D87's page picker as the way into the code. The agent baseline (phases/3-tickets.md,
+2026-11-02, fresh-checked): a headless coding agent with only the ticket and the code, Read/Grep/Glob, named a fix file
+in 36 of 40 Sonarr bugs (ours: 19) and 23 of 24 held-out bitwarden bugs (D100; strict 20 of 21), median 4 files, about
+$0.05 a ticket. Pages as the way in cap right place at 65% (D98's stage table), and a nearby page explains uncovered code
+in 1 of 12 bugs.
+- **The agent searches the repo** for each ticket, read-only, capped (D86's 30 turns / $1 as a start), and names files.
+- **Code checks every file it names** (D18). *Settled 2026-11-02 (owner):* for each file the agent returns the path,
+  a word-for-word quote from the ticket (the part this file explains) and a word-for-word line from the file (the
+  code that connects to it); code checks the file exists at the commit worked on and both quotes match. A failed check
+  gets one retry with the reason (D60); a file that still fails is listed as "named, not shown in code", not dropped.
+- **The graph stops being a way in.** It checks what the agent named, expands from it (impact, D27), links across
+  boundaries (HTTP, events, tables), picks tests (Phase 5) and splits work (Phase 4). Pages explain the named files
+  where they cover them; a nearby page is at most labelled context.
+- **Removed:** D70's code-only shortcut (a text match skipping the AI) and the page-title / page-index picker as the
+  source of starting points. The page index (D87) may stay as a hint; to be decided in the design.
+- **Misses** (SONB-1, 18, 21, 32; bitwarden #2506) are grouped by cause; only repeated causes get a fix, tried on Sonarr's
+  40 and judged on bitwarden's 24.
+- *Design settled 2026-11-02 (owner: "go with the most optimal option"; built, uncommitted):*
+  - **Under the cap** (closes the open question after D71's fix): the starting points are never cut; the impact
+    answer's item lists go first (counts kept; `stangent graph impact` lists them); then the lowest-ranked pages. A
+    cut page that is a starting point keeps its citations as pointers; a cut page that only explains a file doesn't.
+  - **Pages explain found files:** the written pages whose statements cite code in a found file, most files first;
+    for a file no page cites, the pages whose slice holds it. No nearby page (1 of 12).
+  - **Impact starts from the starting points:** the found files' code, symbol points, page points' citations.
+  - **Code's signals stay as the fallback,** not a gate: with `tickets.aiPoints` false or `ai.enabled` false they are
+    the starting points (no AI); with the finder on they are only the ticket's text the finder reads.
+  - **The page index (D87)** is no longer an input to starting points; it stays for the benchmark's measures.
+  - **The finder's input is the ticket only** (prose and text attachments), as in the baseline; it searches the repo
+    at the commit checked out, read-only, never `.stangent/` or `.git/` (permission rules; tested 2026-11-02 that an
+    allow rule on the repo bounds Grep and Glob too). Its cap: `tickets.findBudget` (30 turns, $1 a call).
+  - **Contract:** `ticket-bundle` v2 (file points with `line` and `why`; pages' `explains`; `rejected`;
+    `cap.impactTrimmed`, `cap.dropped`). D20: Phase 4 consumes it and hasn't started; Phase 3's own readers updated.
+  - *After a fresh review (D61), same day:* the finder's answer is kept while the ticket is unchanged and marked
+    `stale` when the code moves on (a new search would see the half-done fix); `--refind` searches again. It searches
+    a throwaway git worktree of the commit (no `.stangent/`, pages, build output or untracked files), and code checks
+    files against git (tracked at HEAD, exact case) and lines against HEAD's text. An import or namespace line is no
+    evidence. Files that failed their checks are shown in the bundle, and a ticket with them isn't "only outside the
+    code". A retry gets what's left of the cap. Pages that only explain a file are left out (counted) when cut; an
+    unwritten page whose slice holds a file no written page explains is listed as missing.
+  - **Measured on Sonarr (2026-11-02, phases/3-tickets.md):** right place **36 of 40 (90%) ✅**, was 19; no bundle over
+    the cap (was 19 of 50); $2.68 for 50 tickets. D79's fallback "AI picks off by default" no longer applies: the
+    finder is on by default (`tickets.aiPoints: true`). Owed: the pipeline on bitwarden's held-out set, a private repo.
+**Why:** measured, on a held-out repo: the agent finds what our own search can't, cheaply; building our own search would
+need to close 47.5% → 90%.
+**Cost:** an AI call on every ticket (about $0.05 on these repos); both repos are public, so a private repo is owed
+before trusting the rate; about half the hits come from tickets that name the file; `ticket-bundle` and the points
+record change shape (D20: Phase 4 consumes the bundle and hasn't started, so no consumer to mark).
+
 ## Open questions
 
 - **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that
@@ -1884,9 +1933,7 @@ page-based sources); bitwarden's bugs may be fewer and different in kind; the ow
   misses, a headless coding agent with only the ticket and the code named a fix file first in 9, at $0.04 a ticket
   (caveats: public repo the model may know; 6 tickets name the class; 10 bugs). **Full baseline (2026-11-02,
   fresh-checked):** Sonarr 36 of 40 (90%; ours 19), bitwarden held out 23 of 24 (96%; strict 20 of 21), median 4 files
-  named, $3.11 for 64 tickets. **Recommended:** the agent searches, code checks every file it names exists in the graph
-  and expands from it, pages explain where they cover; D70's code-only shortcut and the page-based picker go. Not yet
-  decided. Free first checks: the bundle-order fix (14 → up to 19 shown), and the
+  named, $3.11 for 64 tickets. **Decided as D101** (owner, 2026-11-02). Free first checks: the bundle-order fix (14 → up to 19 shown), and the
   backward walk on the 12 page-gap bugs, started from each real fix file (so it tests explaining, not finding): code
   scores whether it reaches a page, how far, how many ties, and, where the bug has a D87 right page, whether it lands
   on one; where it has none, a fresh agent judges whether the page is about the ticket's feature. Each miss is
