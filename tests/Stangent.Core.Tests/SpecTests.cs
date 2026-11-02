@@ -381,6 +381,11 @@ public class SpecTests
         var final = PageRun.Check(app.Pages(), page, app.Repo, null);
         Assert.True(final.Status == "recorded", string.Join("; ", final.Errors ?? []));   // "return" is no evidence: dropped
         Assert.False(Quotes.InSource("return", ["return new Order { Total = total };"]));
+        // D103: a whole one-token line counts; a piece of a line with no space doesn't.
+        Assert.True(Quotes.InSource("model.ValidateEdit();", ["if (x)", "model.ValidateEdit();"]));
+        Assert.True(Quotes.InSource("  app.UseForwardedHeaders(options);", ["app.UseForwardedHeaders(options);"]));
+        Assert.False(Quotes.InSource("[Trakt](https://trakt.tv/x)", ["var s = $\"[Trakt](https://trakt.tv/x)\";"]));
+        Assert.False(Quotes.InSource("short();", ["short();"]));
     }
 
     [Fact]

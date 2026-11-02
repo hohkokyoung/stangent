@@ -60,6 +60,46 @@ public class TicketPullTests
     }
 
     [Fact]
+    public async Task A_version_given_in_the_environment_counts_but_the_machines_versions_do_not()
+    {
+        // D93: issue templates often list the product's version among the environment lines.
+        const string Template = """
+            ### Current Behavior
+
+            The export misses archived rows.
+
+            ### Expected Behavior
+
+            The export includes archived rows.
+
+            ### Environment
+
+            ```markdown
+            - OS: Ubuntu 22.04
+            - OS Version: 22.04
+            - Shop: 3.2.1
+            - Browser: Firefox v128.0.3
+            - Chrome: 120.0.6099
+            - .NET Version: 8.0.1
+            - Host: 192.168.1.5:8989
+            - Database: Postgres 16.2
+            ```
+            """;
+        using var repo = TicketFixtures.Repo();
+        TicketFixtures.Make(TicketFixtures.ReplayDir(repo), "SON-9", "Bug", "Export misses rows", Template);
+        var bug = (await Pull(repo, "SON-9"))["bug"]!;
+        Assert.Equal("Shop: 3.2.1", (string?)bug["version"]);
+        Assert.Equal("environment: a line with a version number", (string?)bug["from"]!["version"]);
+        Assert.DoesNotContain("version", bug["missing"]!.AsArray().Select(m => (string)m!));
+
+        // Only the machine's versions: the product's version is still missing.
+        TicketFixtures.Make(TicketFixtures.ReplayDir(repo), "SON-10", "Bug", "Export misses rows", Template.Replace("- Shop: 3.2.1\n", ""));
+        var other = (await Pull(repo, "SON-10"))["bug"]!;
+        Assert.Null((string?)other["version"]);
+        Assert.Contains("version", other["missing"]!.AsArray().Select(m => (string)m!));
+    }
+
+    [Fact]
     public async Task Jira_fields_named_in_the_settings_win_over_the_description()
     {
         using var repo = TicketFixtures.Repo("  fields: { expected: Expected Result }\n");
@@ -157,9 +197,18 @@ public class TicketPullTests
     }
 
     [Fact]
-    public void An_HTML_body_becomes_plain_text_with_its_media_named()
+    public void Labels_in_single_emphasis_and_quoted_headings_that_end_nothing()
     {
-        var text = TicketPull.HtmlToText("<h2>Steps</h2><ol><li>Open</li><li>Save &amp; close</li></ol><p>See</p><div data-type=\"media\" data-id=\"x\">screen.png</div>");
-        Assert.Equal("## Steps\n\n- Open\n- Save & close\n\nSee\n\n[attachment: screen.png]", text);
+        Assert.Equal("it saves", TicketPull.DescriptionSections("_Expected result:_ it saves")["expected"].Text);
+        var s = TicketPull.DescriptionSections("### Actual Result\n\nAn error page:\n> # Error: invalid_request\n> Request ID: 1\n\n### Expected Result\n\nSigns in");
+        Assert.Equal("An error page:\n> # Error: invalid_request\n> Request ID: 1", s["actual"].Text);
+        Assert.Equal("Signs in", s["expected"].Text);
+    }
+
+    [Fact]
+    public void An_HTML_body_becomes_Markdown_with_its_media_named()
+    {
+        var text = TicketPull.HtmlToMarkdown("<h2>Steps</h2><ol><li>Open</li><li>Save &amp; close</li></ol><p>See</p><div data-type=\"media\" data-id=\"x\">screen.png</div>");
+        Assert.Equal("## Steps\n\n1. Open\n2. Save & close\n\nSee\n\n[attachment: screen.png]", text);
     }
 }

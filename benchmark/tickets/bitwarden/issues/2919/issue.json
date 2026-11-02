@@ -1,0 +1,28 @@
+{
+  "number": 2919,
+  "title": "SCIM Group POST and PUT member changes are hardcoded to only support Okta",
+  "body": "### Steps To Reproduce\r\n\r\n1. In Bitwarden, set up a SCIM provider that isn't Okta\r\n2. The SCIM provider sends a group PUT request with \"Members\"\r\n3. In Bitwarden, the \"Members\" bit is ignored because of: https://github.com/bitwarden/server/blob/5a850f48e2adf309a05741a43eb45eb390354677/bitwarden_license/src/Scim/Groups/PutGroupCommand.cs#L46\r\n\r\nThe initial POST has a similar issue.\r\n\r\nIt's possible that PATCH works, but the SCIM provider I'm using scans the SCIM endpoint for metadata on setup, and only uses PATCH for those providers that explicitly support it. It appears Bitwarden doesn't host metadata at the endpoint.\r\n\r\n### Expected Result\r\n\r\nBoth POST of a new group and PUT updates of a group would update membership.\r\n\r\n### Actual Result\r\n\r\nBoth POST of a new group and PUT updates of a group do not update membership.\r\n\r\n### Screenshots or Videos\r\n\r\n_No response_\r\n\r\n### Additional Context\r\n\r\n_No response_\r\n\r\n### Build Version\r\n\r\n2023.4.3\r\n\r\n### Environment\r\n\r\nSelf-Hosted\r\n\r\n### Environment Details\r\n\r\nOS: Docker host is Ubuntu 22.04\r\nEnvironment: Docker self-hosted:beta and :dev\r\nHardware: VM on Epyc 7402 ~64GB allocated mem ~1TB allocated NVMe\r\n\r\n### Issue Tracking Info\r\n\r\n- [X] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "author": "obrienmd",
+  "createdAt": "2023-05-10T00:27:36Z",
+  "comments": [
+    {
+      "id": 1541623111,
+      "author": "Krychaz",
+      "createdAt": "2023-05-10T09:01:49Z",
+      "body": "Hello there,\r\n\r\nIt does indeed look like something worth taking a look at. I will pass this to our QA team. "
+    },
+    {
+      "id": 1542907161,
+      "author": "eliykat",
+      "createdAt": "2023-05-10T22:53:39Z",
+      "body": "As far as I can tell from the commit history, we support these operations primarily via the [PATCH operation](https://github.com/bitwarden/server/blob/5a850f48e2adf309a05741a43eb45eb390354677/bitwarden_license/src/Scim/Controllers/v2/GroupsController.cs#L95-L102) (which you've already spotted), and PUT/POST were only added to support Okta. Our other [supported providers](https://bitwarden.com/help/about-scim/) don't appear to use them.\r\n\r\nThat said, I'm not sure that we need to actively block the endpoint for other providers if they want to use it.\r\n\r\nI'm not familiar with endpoint metadata, are you referring to the [schemas endpoint](https://learn.microsoft.com/en-us/azure/active-directory/app-provisioning/use-scim-to-provision-users-and-groups#schemas-schema-discovery)? That seems like a helpful thing for us to add. I'll pass your feedback on to the team."
+    },
+    {
+      "id": 1543346414,
+      "author": "obrienmd",
+      "createdAt": "2023-05-11T05:10:59Z",
+      "body": "Right - I'd love the option. I know it's commonly a PATCH op, and with ServiceProviderConfig, I think Authentik would likely use PATCH.\r\n\r\nRe: the metadata endpoint, see Section 4 of SCIM RFC: https://datatracker.ietf.org/doc/html/rfc7644#section-4. ServiceProviderConfig is what I'm talking about here - it will explicitly tell SCIM clients that you support things like PATCH, which is an optional part of the spec (though, as you said, widely used and assumed)."
+    }
+  ],
+  "attachments": []
+}

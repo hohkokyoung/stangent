@@ -129,19 +129,25 @@ public static class Bundles
 }
 
 /// <summary>How quotes are matched (D18): whitespace runs collapse to one space, ends trimmed, case kept.</summary>
-public static class Quotes
+public static partial class Quotes
 {
+    [System.Text.RegularExpressions.GeneratedRegex(@"^(?:>\s*)*(?:#{1,6}\s+)?(?:(?:[-*+]|\d+[.)])\s+)?(?:\[[ xX]\]\s+)?")]
+    private static partial System.Text.RegularExpressions.Regex LineMark();
+
     public static string Normalize(string s) => System.Text.RegularExpressions.Regex.Replace(s, @"\s+", " ").Trim();
 
-    /// <summary>Evidence from code: at least this many non-space characters and two tokens, so a fragment like
-    /// <c>return</c> (found almost anywhere) isn't evidence of anything.</summary>
+    /// <summary>Evidence from code: at least this many non-space characters, and two tokens or a whole line (D103), so a
+    /// fragment like <c>return</c> (found almost anywhere) isn't evidence of anything.</summary>
     public const int MinSourceChars = 12;
 
-    /// <summary>The quote, normalised, is part of one source line, or of consecutive lines joined by a space.</summary>
+    /// <summary>The quote, normalised, is part of one source line, or of consecutive lines joined by a space; at least
+    /// <see cref="MinSourceChars"/> characters, and two words or a whole line (D103: <c>model.ValidateEdit();</c> is a
+    /// line; a piece of one with no space proves little).</summary>
     public static bool InSource(string quote, IReadOnlyList<string> lines)
     {
         var q = Normalize(quote);
-        if (q.Count(c => c != ' ') < MinSourceChars || !q.Contains(' ')) return false;
+        if (q.Count(c => c != ' ') < MinSourceChars) return false;
+        if (!q.Contains(' ')) return lines.Any(l => l == q);
         var parts = q.Split(" ").Length;
         for (var i = 0; i < lines.Count; i++)
         {
@@ -158,14 +164,16 @@ public static class Quotes
     }
 
     /// <summary>A sentence quoted from prose (an FSD section, a page statement), D53: word for word, and either at
-    /// least 4 words or a whole line of the text (a table cell, a short list item). A fragment proves nothing.</summary>
+    /// least 4 words or a whole line of the text (a table cell, a short list item). A fragment proves nothing. A line's
+    /// Markdown marks (quote, heading, bullet, number, task tick) aren't part of the line.</summary>
     public static bool InText(string quote, string text)
     {
         var q = Normalize(quote);
         var t = Normalize(text);
         if (q.Length == 0 || !t.Contains(q, StringComparison.Ordinal)) return false;
         if (q.Split(' ').Length >= 4) return true;
-        return text.Split('\n').Select(l => Normalize(l).TrimStart('-', ' ').Trim('|', ' '))
+        // The line as written, or without its Markdown marks: either may be what was quoted.
+        return text.Split('\n').SelectMany(l => new[] { Normalize(l).TrimStart('-', ' ').Trim('|', ' '), LineMark().Replace(Normalize(l), "").TrimStart('-', ' ').Trim('|', ' ') })
             .Any(l => l == q || l.Split('|').Select(c => c.Trim()).Contains(q));
     }
 

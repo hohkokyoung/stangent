@@ -9,6 +9,12 @@ commit, so a file that moved and also changed a lot can be missed; a PR with mor
 
     python3 -I benchmark/tickets/bitwarden/select.py <bitwarden clone> > benchmark/tickets/bitwarden/index-cases.json
 
+The held-out set (D100): every such bug whose fix changes at most 15 files and merged before the pinned commit, minus
+the D87 cases, frozen before anything runs on it:
+
+    python3 -I benchmark/tickets/bitwarden/select.py <clone> --heldout benchmark/tickets/bitwarden/index-cases.json \
+        > benchmark/tickets/bitwarden/heldout.json
+
 Needs `gh` signed in (read-only GitHub API calls) and a full-history clone.
 """
 import json
@@ -19,6 +25,7 @@ import sys
 REPO = "bitwarden/server"
 PINNED = "9129efbd1531d5d8472345638efad7ef25a7337a"  # benchmark/repos.tsv
 COUNT = 5
+MAX_FILES = 15  # D78's cap (Test 2's)
 
 ISSUES = """query($c:String){repository(owner:"bitwarden",name:"server"){issues(first:50,after:$c,states:CLOSED,labels:["bug"],
 orderBy:{field:CREATED_AT,direction:DESC}){pageInfo{hasNextPage endCursor} nodes{number title createdAt stateReason body
@@ -74,12 +81,16 @@ def renames(clone, commit):
     return moved
 
 
-def main(clone):
+def main(clone, exclude=None):
+    """exclude: None for the D87 cases (the COUNT newest); else the held-out set (D100): all eligible bugs whose fix
+    changes at most MAX_FILES files and merged before the pinned commit, leaving out the ids in `exclude`."""
+    heldout = exclude is not None
+    pinned = subprocess.run(["git", "-C", clone, "show", "-s", "--format=%cI", PINNED], capture_output=True, text=True, check=True).stdout.strip()
     cases, cursor = [], None
-    while len(cases) < COUNT:
+    while heldout or len(cases) < COUNT:
         page = gh(ISSUES, **({"c": cursor} if cursor else {}))["repository"]["issues"]
         for issue in page["nodes"]:
-            if len(cases) == COUNT or issue["stateReason"] != "COMPLETED":
+            if (not heldout and len(cases) == COUNT) or issue["stateReason"] != "COMPLETED" or (heldout and f"#{issue['number']}" in exclude):
                 continue
             for number, closes in fixes(issue):
                 pr = gh(PR, n=number)["repository"]["pullRequest"]
@@ -89,6 +100,8 @@ def main(clone):
                 if pr["changedFiles"] > len(files):
                     sys.exit(f"PR #{pr['number']} changes {pr['changedFiles']} files; only {len(files)} were read")
                 if not (closes or says) or not code_files(files):
+                    continue
+                if heldout and (pr["changedFiles"] > MAX_FILES or not pr["mergedAt"] or pr["mergedAt"] > pinned):
                     continue
                 moved = renames(clone, pr["mergeCommit"]["oid"])
                 before = [c["body"] for c in issue["comments"]["nodes"] if c["createdAt"] < pr["mergedAt"]]
@@ -106,4 +119,7 @@ def main(clone):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    if len(sys.argv) == 4 and sys.argv[2] == "--heldout":
+        main(sys.argv[1], {c["id"] for c in json.load(open(sys.argv[3]))})
+    else:
+        main(sys.argv[1])

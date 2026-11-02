@@ -51,8 +51,8 @@ public static partial class TicketPull
         ticket = ticket with { Key = paths.Key };
         var settings = repo.Config.Tickets;
 
-        var description = ticket.DescriptionFormat == "html" ? HtmlToText(ticket.Description) : ticket.Description;
-        var comments = ticket.Comments.Select(c => (c, Text: c.Format == "html" ? HtmlToText(c.Body) : c.Body)).ToList();
+        var description = ticket.DescriptionFormat == "html" ? HtmlToMarkdown(ticket.Description) : ticket.Description;
+        var comments = ticket.Comments.Select(c => (c, Text: c.Format == "html" ? HtmlToMarkdown(c.Body) : c.Body)).ToList();
 
         var files = new JsonArray();
         foreach (var a in ticket.Attachments.OrderBy(a => a.Id, StringComparer.Ordinal))
@@ -192,10 +192,51 @@ public static partial class TicketPull
             o[part] = value!.Trim();
             from[part] = source;
         }
+        // D93: many issue templates give the version inside the environment ("- Sonarr: 4.0.11.2815", "App: 2.3.1")
+        // rather than as a field of its own: with no version found, such a line counts. Lines naming the machine around
+        // the product (OS, browser, database, runtime) don't: their numbers aren't the product's version.
+        if (o["version"] is null && (string?)o["environment"] is { } env && VersionLines(env) is { Count: > 0 } found)
+        {
+            o["version"] = string.Join("; ", found);
+            from["version"] = "environment: a line with a version number";
+            missing = new JsonArray([.. missing.Select(m => (string)m!).Where(m => m != "version").Select(m => (JsonNode)m)]);
+        }
         o["from"] = from;
         o["missing"] = missing;
         return o;
     }
+
+    /// <summary>Words that name the machine around the product (its OS, browser, runtime, database, network), not the
+    /// product. A label with any of them ("OS Version", "Chrome", ".NET Version", "Host") isn't the product's version.</summary>
+    static readonly HashSet<string> AroundTheProduct = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "os", "operating", "system", "platform", "kernel", "distro", "distribution", "windows", "macos", "mac", "osx", "linux",
+        "ubuntu", "debian", "fedora", "centos", "rhel", "alpine", "arch", "unraid", "truenas", "synology", "ios", "android",
+        "browser", "chrome", "chromium", "firefox", "safari", "edge", "brave", "opera", "vivaldi", "webview",
+        "database", "db", "sqlite", "postgres", "postgresql", "mysql", "mariadb", "sql", "mssql", "redis", "mongodb",
+        "docker", "container", "podman", "kubernetes", "k8s", "helm", "compose", "install", "installation",
+        "node", "nodejs", "npm", "yarn", "pnpm", ".net", "dotnet", "net", "runtime", "framework", "mono", "sdk",
+        "python", "java", "jdk", "jre", "php", "ruby", "go", "rust", "device", "phone", "mobile", "hardware", "cpu", "ram",
+        "memory", "disk", "nginx", "apache", "iis", "caddy", "traefik", "reverse", "proxy", "nas", "server", "host", "ip",
+        "address", "url", "port", "network",
+    };
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^\s*(?:[-*•]\s*)?\**(?<label>[^:\n*]{1,40}?)\**\s*:\s*\**(?<value>[^\n]*?\bv?\d+(?:\.\d+){1,3}\b[^\n]*)$", System.Text.RegularExpressions.RegexOptions.Multiline)]
+    private static partial System.Text.RegularExpressions.Regex VersionLine();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\b(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\b")]
+    private static partial System.Text.RegularExpressions.Regex FourNumbers();
+
+    /// <summary>"Label: value" lines in an environment text whose value holds a version number and whose label names
+    /// the product rather than the machine around it (any word of the label, "version" itself aside). An IP address
+    /// (four numbers, each 255 or less) isn't a version.</summary>
+    static List<string> VersionLines(string environment) =>
+        [.. VersionLine().Matches(environment)
+            .Where(m => !System.Text.RegularExpressions.Regex.Split(m.Groups["label"].Value.Trim(), @"[\s/()_-]+")
+                .Where(w => w.Length > 0 && !w.Equals("version", StringComparison.OrdinalIgnoreCase) && !w.Equals("ver", StringComparison.OrdinalIgnoreCase))
+                .Any(AroundTheProduct.Contains))
+            .Where(m => !FourNumbers().Matches(m.Groups["value"].Value).Any(ip => Enumerable.Range(1, 4).All(i => int.Parse(ip.Groups[i].Value) <= 255)))
+            .Select(m => $"{m.Groups["label"].Value.Trim()}: {m.Groups["value"].Value.Trim()}")];
 
     /// <summary>The description cut at its labelled parts. A label is a Markdown heading, a bold label, or a short line
     /// ending in a colon, whose words name a part; its text runs to the next label or heading.</summary>
@@ -227,19 +268,20 @@ public static partial class TicketPull
         return found;
     }
 
-    /// <summary>A line's label, if it has the shape of one: <c>## Label</c>, <c>**Label:** rest</c>, <c>**Label**: rest</c> or
-    /// <c>Label: rest</c> (a label of letters and spaces, at most 40 characters).</summary>
+    /// <summary>A line's label, if it has the shape of one: <c>## Label</c>, <c>**Label:** rest</c>, <c>**Label**: rest</c>,
+    /// <c>_Label:_ rest</c> or <c>Label: rest</c> (a label of letters and spaces, at most 40 characters). A quoted line is
+    /// never a label: a quoted error page's own heading mustn't end the part it is quoted in.</summary>
     static (bool Heading, string? Label, string After) SplitLabel(string line)
     {
         var l = line.Trim();
         var heading = l.StartsWith('#');
         if (heading) l = l.TrimStart('#').Trim();
-        foreach (var marker in new[] { "**", "__" })
+        foreach (var marker in new[] { "**", "__", "*", "_" })
         {
-            if (!l.StartsWith(marker, StringComparison.Ordinal)) continue;
-            var close = l.IndexOf(marker, 2, StringComparison.Ordinal);
+            if (!l.StartsWith(marker, StringComparison.Ordinal) || l.StartsWith(marker + " ", StringComparison.Ordinal)) continue;
+            var close = l.IndexOf(marker, marker.Length, StringComparison.Ordinal);
             if (close < 0) break;
-            return (heading, l[2..close].Trim().TrimEnd(':'), l[(close + 2)..].TrimStart().TrimStart(':').TrimStart());
+            return (heading, l[marker.Length..close].Trim().TrimEnd(':'), l[(close + marker.Length)..].TrimStart().TrimStart(':').TrimStart());
         }
         var colon = l.IndexOf(':');
         if (colon > 0 && colon <= 40 && l[..colon].All(c => char.IsLetter(c) || c is ' ' or '/' or '\''))
@@ -260,20 +302,7 @@ public static partial class TicketPull
 
     // ---- HTML bodies (Jira returns HTML for what Markdown can't hold) ----
 
-    /// <summary>A plain-text view of an HTML body, by code: block elements become line breaks, list items "- ", headings
-    /// "#", embedded media "[attachment: name]"; other tags are dropped and entities decoded.</summary>
-    public static string HtmlToText(string html)
-    {
-        var s = Regex.Replace(html, @"<div[^>]*data-type=""media""[^>]*>(.*?)</div>", m => $"\n[attachment: {StripTags(m.Groups[1].Value).Trim()}]\n", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-        s = Regex.Replace(s, @"<h([1-6])[^>]*>", m => "\n" + new string('#', int.Parse(m.Groups[1].Value)) + " ", RegexOptions.IgnoreCase);
-        s = Regex.Replace(s, @"<li[^>]*>", "\n- ", RegexOptions.IgnoreCase);
-        s = Regex.Replace(s, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase);
-        s = Regex.Replace(s, @"<(p|ul|ol|pre|blockquote|table)(\s[^>]*)?>", "\n", RegexOptions.IgnoreCase);
-        s = Regex.Replace(s, @"</(p|div|h[1-6]|ul|ol|pre|blockquote|tr|table)>", "\n", RegexOptions.IgnoreCase);
-        s = WebUtility.HtmlDecode(StripTags(s));
-        s = Regex.Replace(s, @"[ \t]+\n", "\n");
-        return Regex.Replace(s, @"\n{3,}", "\n\n").Trim();
-    }
-
-    static string StripTags(string s) => Regex.Replace(s, "<[^>]+>", "");
+    /// <summary>The Markdown Jira would have sent for an HTML body (D102): links, images, list numbers, task ticks and
+    /// code marks kept; media blocks "[attachment: name]".</summary>
+    public static string HtmlToMarkdown(string html) => Jira.JiraHtml.ToMarkdown(html);
 }

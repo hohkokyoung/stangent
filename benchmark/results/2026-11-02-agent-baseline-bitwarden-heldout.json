@@ -1,0 +1,528 @@
+{
+ "what": "agent baseline: headless Claude Code, ticket text + code at the fix's parent (no history), Read/Grep/Glob only, up to 10 files",
+ "model": "sonnet",
+ "turns": 30,
+ "budgetUsd": 1.0,
+ "tickets": 24,
+ "hits": 23,
+ "costUsd": 1.1104,
+ "isolationBreaches": 1,
+ "cases": [
+  {
+   "key": "#5828",
+   "issue": 5828,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/Core/Models/Business/OrganizationLicense.cs",
+    "src/Core/Billing/Licenses/LicenseConstants.cs",
+    "src/Core/Billing/Licenses/Services/Implementations/OrganizationLicenseClaimsFactory.cs",
+    "test/Core.Test/Models/Business/OrganizationLicenseTests.cs",
+    "test/Core.Test/Models/Business/OrganizationLicenseFileFixtures.cs"
+   ],
+   "fix": [
+    "src/Core/Models/Business/OrganizationLicense.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.041747,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "#5808",
+   "issue": 5808,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/Infrastructure.EntityFramework/Vault/Repositories/CipherRepository.cs",
+    "src/Core/Vault/Services/Implementations/CipherService.cs",
+    "src/Api/Vault/Controllers/CiphersController.cs",
+    "src/Infrastructure.Dapper/Vault/Repositories/CipherRepository.cs"
+   ],
+   "fix": [
+    "src/Infrastructure.EntityFramework/Vault/Repositories/CipherRepository.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.035977999999999996,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "#5223",
+   "issue": 5223,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/Infrastructure.EntityFramework/EntityFrameworkServiceCollectionExtensions.cs",
+    "src/Api/Billing/Controllers/OrganizationsController.cs",
+    "src/Infrastructure.EntityFramework/Billing/Repositories/OrganizationInstallationRepository.cs",
+    "src/Infrastructure.Dapper/DapperServiceCollectionExtensions.cs",
+    "src/Core/Billing/Extensions/ServiceCollectionExtensions.cs"
+   ],
+   "fix": [
+    "src/Infrastructure.EntityFramework/EntityFrameworkServiceCollectionExtensions.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.048228400000000005,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "#5075",
+   "issue": 5075,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/Infrastructure.EntityFramework/Repositories/OrganizationDomainRepository.cs",
+    "src/Core/AdminConsole/Services/Implementations/OrganizationDomainService.cs",
+    "src/Sql/dbo/Stored Procedures/OrganizationDomain_DeleteIfExpired.sql",
+    "src/Infrastructure.Dapper/Repositories/OrganizationDomainRepository.cs",
+    "src/Core/AdminConsole/OrganizationFeatures/OrganizationDomains/VerifyOrganizationDomainCommand.cs",
+    "src/Core/Repositories/IOrganizationDomainRepository.cs"
+   ],
+   "fix": [
+    "src/Infrastructure.EntityFramework/Repositories/OrganizationDomainRepository.cs"
+   ],
+   "status": "success",
+   "turns": 11,
+   "costUsd": 0.1004592,
+   "toolCalls": 6,
+   "outsideExport": [
+    "/private/var/folders/rj/7l1hprf17-37zzfchj9tyvw80000gn/T/agent-baseline-fcioq5bq/5075-jjvio126/src/Admin/Jobs/DeleteUnverifiedOrganizationDomainsJob.cs"
+   ]
+  },
+  {
+   "key": "#4845",
+   "issue": 4845,
+   "hit": true,
+   "rank": 3,
+   "named": [
+    "src/Core/MailTemplates/Handlebars/Auth/EmergencyAccessInvited.text.hbs",
+    "src/Core/MailTemplates/Handlebars/Auth/EmergencyAccessConfirmed.text.hbs",
+    "src/Core/Platform/Mail/HandlebarsMailService.cs",
+    "src/Core/MailTemplates/Handlebars/Auth/EmergencyAccessInvited.html.hbs",
+    "src/Core/MailTemplates/Handlebars/Auth/EmergencyAccessConfirmed.html.hbs",
+    "src/Core/Auth/UserFeatures/EmergencyAccess/EmergencyAccessService.cs",
+    "src/Core/Auth/Models/Mail/EmergencyAccessInvitedViewModel.cs",
+    "src/Core/Auth/Models/Mail/EmergencyAccessConfirmedViewModel.cs"
+   ],
+   "fix": [
+    "src/Core/Platform/Mail/HandlebarsMailService.cs",
+    "test/Core.Test/Services/HandlebarsMailServiceTests.cs"
+   ],
+   "status": "success",
+   "turns": 7,
+   "costUsd": 0.051856200000000005,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "#4801",
+   "issue": 4801,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/SharedWeb/Utilities/ServiceCollectionExtensions.cs",
+    "src/Core/Settings/GlobalSettings.cs",
+    "src/Core/Settings/IGlobalSettings.cs",
+    "src/Api/Startup.cs",
+    "src/Identity/Startup.cs"
+   ],
+   "fix": [
+    "src/Core/Settings/GlobalSettings.cs",
+    "src/Core/Settings/IGlobalSettings.cs",
+    "src/SharedWeb/Utilities/ServiceCollectionExtensions.cs"
+   ],
+   "status": "success",
+   "turns": 3,
+   "costUsd": 0.030418600000000004,
+   "toolCalls": 0,
+   "outsideExport": []
+  },
+  {
+   "key": "#4034",
+   "issue": 4034,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "bitwarden_license/src/Scim/Users/GetUsersListQuery.cs",
+    "bitwarden_license/src/Scim/Controllers/v2/UsersController.cs",
+    "bitwarden_license/src/Scim/Models/ScimListResponseModel.cs",
+    "bitwarden_license/src/Scim/Groups/GetGroupsListQuery.cs",
+    "bitwarden_license/src/Scim/Controllers/v2/GroupsController.cs"
+   ],
+   "fix": [
+    "bitwarden_license/src/Scim/Controllers/v2/UsersController.cs",
+    "bitwarden_license/src/Scim/Models/GetUserQueryParamModel.cs",
+    "bitwarden_license/src/Scim/Users/GetUsersListQuery.cs",
+    "bitwarden_license/src/Scim/Users/Interfaces/IGetUsersListQuery.cs",
+    "bitwarden_license/test/Scim.IntegrationTest/Controllers/v2/UsersControllerTests.cs",
+    "bitwarden_license/test/Scim.Test/Users/GetUsersListQueryTests.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.0333384,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "#3722",
+   "issue": 3722,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/Infrastructure.EntityFramework/Repositories/OrganizationDomainRepository.cs",
+    "src/Core/AdminConsole/Services/Implementations/OrganizationDomainService.cs",
+    "src/Infrastructure.Dapper/Repositories/OrganizationDomainRepository.cs"
+   ],
+   "fix": [
+    "src/Infrastructure.EntityFramework/Repositories/OrganizationDomainRepository.cs",
+    "test/Infrastructure.IntegrationTest/AdminConsole/Repositories/OrganizationDomainRepositoryTests.cs"
+   ],
+   "status": "success",
+   "turns": 4,
+   "costUsd": 0.029332200000000003,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "#3116",
+   "issue": 3116,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/SharedWeb/Utilities/ServiceCollectionExtensions.cs",
+    "src/Core/Settings/GlobalSettings.cs",
+    "src/Core/Settings/IGlobalSettings.cs",
+    "src/Identity/Startup.cs",
+    "src/Api/Startup.cs",
+    "util/Nginx/proxy.conf",
+    "src/Admin/Startup.cs",
+    "bitwarden_license/src/Sso/Startup.cs"
+   ],
+   "fix": [
+    "src/Core/Settings/GlobalSettings.cs",
+    "src/Core/Settings/IGlobalSettings.cs",
+    "src/SharedWeb/Utilities/ServiceCollectionExtensions.cs"
+   ],
+   "status": "success",
+   "turns": 4,
+   "costUsd": 0.030476800000000002,
+   "toolCalls": 0,
+   "outsideExport": []
+  },
+  {
+   "key": "#2919",
+   "issue": 2919,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "bitwarden_license/src/Scim/Groups/PutGroupCommand.cs",
+    "bitwarden_license/src/Scim/Groups/PostGroupCommand.cs",
+    "bitwarden_license/src/Scim/Context/ScimContext.cs",
+    "bitwarden_license/src/Scim/Controllers/v2/GroupsController.cs"
+   ],
+   "fix": [
+    "bitwarden_license/src/Scim/Groups/PostGroupCommand.cs",
+    "bitwarden_license/src/Scim/Groups/PutGroupCommand.cs",
+    "bitwarden_license/test/Scim.Test/Groups/PostGroupCommandTests.cs",
+    "bitwarden_license/test/Scim.Test/Groups/PutGroupCommandTests.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.0327076,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "#2908",
+   "issue": 2908,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/SharedWeb/Utilities/ServiceCollectionExtensions.cs",
+    "src/Identity/Startup.cs",
+    "src/Core/Settings/GlobalSettings.cs",
+    "src/Core/Utilities/CoreHelpers.cs",
+    "src/Identity/appsettings.json",
+    "src/Core/Settings/IGlobalSettings.cs",
+    "src/Api/Startup.cs",
+    "util/Setup/Templates/NginxConfig.hbs",
+    "util/Setup/NginxConfigBuilder.cs",
+    "util/Setup/Configuration.cs"
+   ],
+   "fix": [
+    "bitwarden_license/src/Scim/Startup.cs",
+    "src/Events/Startup.cs",
+    "src/Icons/Startup.cs",
+    "src/Notifications/Startup.cs",
+    "src/SharedWeb/Utilities/ServiceCollectionExtensions.cs"
+   ],
+   "status": "success",
+   "turns": 4,
+   "costUsd": 0.0380632,
+   "toolCalls": 0,
+   "outsideExport": []
+  },
+  {
+   "key": "#2815",
+   "issue": 2815,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/Infrastructure.EntityFramework/Repositories/CollectionRepository.cs",
+    "src/Infrastructure.EntityFramework/Repositories/Queries/UserCollectionDetailsQuery.cs"
+   ],
+   "fix": [
+    "src/Infrastructure.EntityFramework/Repositories/CollectionRepository.cs"
+   ],
+   "status": "success",
+   "turns": 4,
+   "costUsd": 0.057979,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "#2750",
+   "issue": 2750,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/Infrastructure.EntityFramework/Repositories/CollectionRepository.cs",
+    "src/Api/Controllers/CollectionsController.cs"
+   ],
+   "fix": [
+    "src/Infrastructure.EntityFramework/Repositories/CollectionRepository.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.04744179999999999,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "#2615",
+   "issue": 2615,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/Infrastructure.EntityFramework/Repositories/CipherRepository.cs",
+    "src/Infrastructure.EntityFramework/Repositories/DatabaseContextExtensions.cs",
+    "src/Infrastructure.EntityFramework/Repositories/Queries/UserBumpAccountRevisionDateByCipherIdQuery.cs"
+   ],
+   "fix": [
+    "src/Infrastructure.EntityFramework/Repositories/CipherRepository.cs",
+    "src/Infrastructure.EntityFramework/Repositories/DatabaseContextExtensions.cs",
+    "src/Infrastructure.EntityFramework/Repositories/Queries/UserBumpAccountRevisionDateByCipherIdQuery.cs",
+    "test/Infrastructure.EFIntegration.Test/Repositories/CipherRepositoryTests.cs"
+   ],
+   "status": "success",
+   "turns": 7,
+   "costUsd": 0.0518402,
+   "toolCalls": 4,
+   "outsideExport": []
+  },
+  {
+   "key": "#2561",
+   "issue": 2561,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/Infrastructure.EntityFramework/Vault/Repositories/CipherRepository.cs",
+    "src/Infrastructure.EntityFramework/Repositories/Queries/UserCipherDetailsQuery.cs",
+    "src/Infrastructure.EntityFramework/Vault/Repositories/Queries/CipherDetailsQuery.cs",
+    "src/Infrastructure.EntityFramework/Vault/Repositories/FolderRepository.cs"
+   ],
+   "fix": [
+    "src/Infrastructure.EntityFramework/Repositories/Queries/UserCipherDetailsQuery.cs",
+    "src/Infrastructure.EntityFramework/Vault/Repositories/CipherRepository.cs",
+    "test/Infrastructure.IntegrationTest/Vault/Repositories/CipherRepositoryTests.cs"
+   ],
+   "status": "success",
+   "turns": 6,
+   "costUsd": 0.09216780000000001,
+   "toolCalls": 4,
+   "outsideExport": []
+  },
+  {
+   "key": "#2506",
+   "issue": 2506,
+   "hit": false,
+   "rank": null,
+   "named": [
+    "src/Core/Services/Implementations/CipherService.cs",
+    "src/Infrastructure.EntityFramework/Repositories/CipherRepository.cs"
+   ],
+   "fix": [
+    "src/Infrastructure.EntityFramework/Repositories/Queries/CipherDetailsQuery.cs",
+    "src/Infrastructure.EntityFramework/Repositories/Queries/UserCipherDetailsQuery.cs"
+   ],
+   "status": "success",
+   "turns": 10,
+   "costUsd": 0.0487804,
+   "toolCalls": 5,
+   "outsideExport": []
+  },
+  {
+   "key": "#2500",
+   "issue": 2500,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "docker-unified/nginx/proxy.conf",
+    "docker-unified/hbs/nginx-config.hbs",
+    "util/Nginx/proxy.conf"
+   ],
+   "fix": [
+    "docker-unified/nginx/proxy.conf",
+    "src/Core/Utilities/CoreHelpers.cs",
+    "util/Nginx/proxy.conf"
+   ],
+   "status": "success",
+   "turns": 4,
+   "costUsd": 0.043954400000000005,
+   "toolCalls": 0,
+   "outsideExport": []
+  },
+  {
+   "key": "#2317",
+   "issue": 2317,
+   "hit": true,
+   "rank": 2,
+   "named": [
+    "src/Api/Models/Request/SendRequestModel.cs",
+    "src/Api/Controllers/SendsController.cs",
+    "test/Api.Test/Models/Request/SendRequestModelTests.cs",
+    "src/Core/Services/Implementations/SendService.cs",
+    "test/Core.Test/Services/SendServiceTests.cs"
+   ],
+   "fix": [
+    "src/Api/Controllers/SendsController.cs",
+    "test/Api.Test/Controllers/SendsControllerTests.cs"
+   ],
+   "status": "success",
+   "turns": 8,
+   "costUsd": 0.0580452,
+   "toolCalls": 5,
+   "outsideExport": []
+  },
+  {
+   "key": "#2146",
+   "issue": 2146,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/Admin/Controllers/HomeController.cs",
+    "src/Admin/Views/Home/Index.cshtml"
+   ],
+   "fix": [
+    "src/Admin/Controllers/HomeController.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.032180600000000004,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "#1891",
+   "issue": 1891,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/Core/Services/Implementations/CipherService.cs",
+    "src/Api/Controllers/CiphersController.cs",
+    "src/Api/Models/Request/CipherRequestModel.cs"
+   ],
+   "fix": [
+    "src/Core/Services/Implementations/CipherService.cs",
+    "test/Core.Test/Services/CipherServiceTests.cs"
+   ],
+   "status": "success",
+   "turns": 8,
+   "costUsd": 0.0384862,
+   "toolCalls": 3,
+   "outsideExport": []
+  },
+  {
+   "key": "#1849",
+   "issue": 1849,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "util/Setup/Program.cs"
+   ],
+   "fix": [
+    "util/Setup/Program.cs"
+   ],
+   "status": "success",
+   "turns": 4,
+   "costUsd": 0.025397,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "#1811",
+   "issue": 1811,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "util/MsSql/entrypoint.sh",
+    "util/MsSql/backup-db.sql",
+    "util/MsSql/backup-db.sh",
+    "util/MsSql/Dockerfile"
+   ],
+   "fix": [
+    "util/MsSql/entrypoint.sh",
+    "util/Setup/EnvironmentFileBuilder.cs"
+   ],
+   "status": "success",
+   "turns": 7,
+   "costUsd": 0.055071800000000004,
+   "toolCalls": 3,
+   "outsideExport": []
+  },
+  {
+   "key": "#1367",
+   "issue": 1367,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/Core/Settings/GlobalSettings.cs",
+    "src/Core/Services/Implementations/LocalSendStorageService.cs",
+    "src/Core/Services/Implementations/AzureSendFileStorageService.cs"
+   ],
+   "fix": [
+    "src/Core/Settings/GlobalSettings.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.041181600000000006,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "#802",
+   "issue": 802,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/Core/Services/Implementations/StripePaymentService.cs",
+    "src/Core/Services/Implementations/OrganizationService.cs",
+    "src/Billing/Controllers/StripeController.cs"
+   ],
+   "fix": [
+    "src/Core/Services/Implementations/OrganizationService.cs",
+    "src/Core/Services/Implementations/StripePaymentService.cs"
+   ],
+   "status": "success",
+   "turns": 7,
+   "costUsd": 0.0452856,
+   "toolCalls": 4,
+   "outsideExport": []
+  }
+ ]
+}

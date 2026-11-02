@@ -1,0 +1,206 @@
+{
+ "what": "agent baseline: headless Claude Code, ticket text + code at the fix's parent (no history), Read/Grep/Glob only, up to 10 files",
+ "model": "sonnet",
+ "turns": 30,
+ "budgetUsd": 1.0,
+ "tickets": 10,
+ "hits": 9,
+ "costUsd": 0.4022,
+ "isolationBreaches": 0,
+ "cases": [
+  {
+   "key": "SONB-3",
+   "issue": 9128,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "frontend/src/Settings/CustomFormats/CustomFormats/ImportCustomFormatModalContent.tsx",
+    "frontend/src/Settings/CustomFormats/CustomFormats/useCustomFormats.ts",
+    "frontend/src/Settings/CustomFormats/CustomFormats/EditCustomFormatModalContent.tsx",
+    "frontend/src/Settings/CustomFormats/CustomFormats/ImportCustomFormatModal.tsx"
+   ],
+   "fix": [
+    "frontend/src/Settings/CustomFormats/CustomFormats/CustomFormat.tsx",
+    "frontend/src/Settings/CustomFormats/CustomFormats/EditCustomFormatModalContent.tsx",
+    "frontend/src/Settings/CustomFormats/CustomFormats/ImportCustomFormatModalContent.tsx"
+   ],
+   "status": "success",
+   "turns": 7,
+   "costUsd": 0.09104680000000001,
+   "toolCalls": 3,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-4",
+   "issue": 9127,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "frontend/src/Settings/Profiles/Quality/QualityProfileItemSize.tsx"
+   ],
+   "fix": [
+    "frontend/src/Components/Form/NumberInput.tsx",
+    "frontend/src/Settings/Profiles/Quality/QualityProfileItemSize.tsx"
+   ],
+   "status": "success",
+   "turns": 4,
+   "costUsd": 0.030948,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-5",
+   "issue": 9126,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "frontend/src/Settings/Profiles/Quality/QualityProfileItemSize.tsx"
+   ],
+   "fix": [
+    "frontend/src/Settings/Profiles/Quality/QualityProfileItemSize.tsx"
+   ],
+   "status": "success",
+   "turns": 4,
+   "costUsd": 0.0283024,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-11",
+   "issue": 8978,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/ImportLists/Simkl/SimklParser.cs",
+    "src/NzbDrone.Core/ImportLists/Simkl/SimklAPI.cs",
+    "src/NzbDrone.Core/ImportLists/Simkl/User/SimklUserRequestGenerator.cs",
+    "src/NzbDrone.Core/ImportLists/Simkl/User/SimklUserImport.cs",
+    "src/NzbDrone.Core/ImportLists/Simkl/User/SimklUserSettings.cs",
+    "src/NzbDrone.Core/ImportLists/Simkl/SimklImportBase.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/ImportLists/Simkl/SimklParser.cs"
+   ],
+   "status": "success",
+   "turns": 6,
+   "costUsd": 0.041155,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-15",
+   "issue": 8757,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/CustomFormats/Specifications/ResolutionSpecification.cs",
+    "src/NzbDrone.Core/CustomFormats/Specifications/SourceSpecification.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/CustomFormats/Specifications/ResolutionSpecification.cs",
+    "src/NzbDrone.Core/CustomFormats/Specifications/SourceSpecification.cs"
+   ],
+   "status": "success",
+   "turns": 6,
+   "costUsd": 0.0305354,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-17",
+   "issue": 8574,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/ImportLists/Simkl/SimklImportBase.cs",
+    "src/NzbDrone.Core/ImportLists/Simkl/SimklAPI.cs",
+    "src/NzbDrone.Core/ImportLists/Simkl/User/SimklUserImport.cs",
+    "src/NzbDrone.Core/ImportLists/Simkl/SimklParser.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/ImportLists/Simkl/SimklAPI.cs",
+    "src/NzbDrone.Core/ImportLists/Simkl/SimklImportBase.cs"
+   ],
+   "status": "success",
+   "turns": 4,
+   "costUsd": 0.029292600000000002,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-18",
+   "issue": 8482,
+   "hit": false,
+   "rank": null,
+   "named": [
+    "frontend/src/Episode/EpisodeLanguages.tsx",
+    "frontend/src/Series/History/SeriesHistoryRow.tsx",
+    "frontend/src/Episode/History/EpisodeHistoryRow.tsx",
+    "src/NzbDrone.Core/History/HistoryService.cs",
+    "src/Sonarr.Api.V3/History/HistoryResource.cs",
+    "src/Sonarr.Api.V5/History/HistoryResource.cs",
+    "src/NzbDrone.Core/History/EpisodeHistory.cs",
+    "frontend/src/Activity/History/HistoryRow.tsx"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/Datastore/Converters/LanguageIntConverter.cs"
+   ],
+   "status": "success",
+   "turns": 5,
+   "costUsd": 0.0408252,
+   "toolCalls": 2,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-19",
+   "issue": 8414,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/Notifications/Plex/Server/PlexServerService.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/Notifications/Plex/Server/PlexServerService.cs"
+   ],
+   "status": "success",
+   "turns": 4,
+   "costUsd": 0.0289776,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-20",
+   "issue": 8270,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/Extras/Metadata/Consumers/Plex/PlexMetadata.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/Extras/Metadata/Consumers/Plex/PlexMetadata.cs"
+   ],
+   "status": "success",
+   "turns": 4,
+   "costUsd": 0.0237232,
+   "toolCalls": 1,
+   "outsideExport": []
+  },
+  {
+   "key": "SONB-22",
+   "issue": 8242,
+   "hit": true,
+   "rank": 1,
+   "named": [
+    "src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs"
+   ],
+   "fix": [
+    "src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs"
+   ],
+   "status": "success",
+   "turns": 6,
+   "costUsd": 0.057358400000000004,
+   "toolCalls": 2,
+   "outsideExport": []
+  }
+ ]
+}

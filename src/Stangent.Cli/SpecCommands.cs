@@ -127,6 +127,9 @@ static class SpecCommands
             throw new CheckFailed("check_failed", $"{id}: the code check failed; the subagent gets one retry with the errors.", json);
         if (step.Status == "failed")
             throw new CheckFailed("step_failed", $"{id} failed: {step.Errors?.FirstOrDefault()}", json);
+        // D89: stangent's own setup refused what it allows; a batch stops here rather than repeat it on every ticket.
+        if (step.Status == "blocked")
+            throw new CheckFailed("setup_blocked", $"{id}: {step.Errors?.FirstOrDefault()}", json);
         return json;
     }
 

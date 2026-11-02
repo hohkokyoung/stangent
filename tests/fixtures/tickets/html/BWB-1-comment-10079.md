@@ -1,0 +1,3 @@
+_joshooaj wrote:_
+
+I was also impacted by this. Downloading a new license json and importing it solved the problem for me. I couldn't work out why I got the email about my subscription being expired. Everything worked fine until today when I could no longer enter TOTP codes. If I had used my self-hosted bw server to store a TOTP code for my cloud bw account, it would have made it a big pain to download a fresh copy of my license json.

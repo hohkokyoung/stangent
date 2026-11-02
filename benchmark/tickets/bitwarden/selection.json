@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "repo": "bitwarden/server",
+  "pinned": "9129efbd1531d5d8472345638efad7ef25a7337a",
+  "rule": "D100; benchmark/tickets/bitwarden/select.py --heldout, laid out by freeze.py",
+  "maxFixFiles": 15,
+  "issues": [
+    {
+      "issue": 5828,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "a36db639984e7eb3b55952fe5a7b49c5756f827b",
+      "title": "Family subscriptions “expired” after upgrade to 2025.5.0 (self-hosted)",
+      "createdAt": "2025-05-16T14:16:31Z",
+      "frozenBefore": "2025-05-19T14:54:11Z"
+    },
+    {
+      "issue": 5808,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "a7fc89a5bb5a85855251fdd34ca2886621099c4f",
+      "title": "Can't delete items from Collection/Organization",
+      "createdAt": "2025-05-12T09:19:32Z",
+      "frozenBefore": "2025-08-25T21:00:42Z"
+    },
+    {
+      "issue": 5223,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "706d7a5768be5ba40dec5c9bc64f2030a4f0a20e",
+      "title": "error 500 in Billing > Subscription",
+      "createdAt": "2025-01-07T09:56:50Z",
+      "frozenBefore": "2025-05-01T17:39:05Z"
+    },
+    {
+      "issue": 5075,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "697fa6fdbc220173319fdee091c2b2fbf8296d99",
+      "title": "Domain Verification disappears with no indication why",
+      "createdAt": "2024-11-25T08:21:58Z",
+      "frozenBefore": "2025-09-02T14:52:23Z"
+    },
+    {
+      "issue": 4845,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "8ba1421d4fc2a1949c02cb21403575b87b1e527d",
+      "title": "Emergency Access E-Mails use Wrong Encoding for Names",
+      "createdAt": "2024-10-03T06:33:11Z",
+      "frozenBefore": "2026-07-13T14:52:52Z"
+    },
+    {
+      "issue": 4801,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "85af9fe71d6b7264ee9443f866637a94976cc886",
+      "title": "Wrong source IP with deployment via Helm",
+      "createdAt": "2024-09-24T20:08:47Z",
+      "frozenBefore": "2026-03-02T14:51:40Z"
+    },
+    {
+      "issue": 4034,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "7a509d20daf2f609eec7e1942c6ea40a3beacaa6",
+      "title": "SCIM /Users listing does not return any users unless the `startIndex` and `count` is specified",
+      "createdAt": "2024-04-30T15:34:15Z",
+      "frozenBefore": "2024-10-17T14:03:26Z"
+    },
+    {
+      "issue": 3722,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "2a6abb928d70e3b28ff3df8709101819705a8cf4",
+      "title": "Organization domain maintenance failed because of untranslated query",
+      "createdAt": "2024-01-30T16:37:38Z",
+      "frozenBefore": "2025-01-07T15:01:29Z"
+    },
+    {
+      "issue": 3116,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "85af9fe71d6b7264ee9443f866637a94976cc886",
+      "title": "Incorrect IP Addresss in logon alerts due to loss of X-Real-IP Header",
+      "createdAt": "2023-07-18T12:01:20Z",
+      "frozenBefore": "2026-03-02T14:51:40Z"
+    },
+    {
+      "issue": 2919,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "5d3294c3768aea9312b97691e6216464f496795a",
+      "title": "SCIM Group POST and PUT member changes are hardcoded to only support Okta",
+      "createdAt": "2023-05-10T00:27:36Z",
+      "frozenBefore": "2025-02-13T10:30:50Z"
+    },
+    {
+      "issue": 2908,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "73c721ede3fbe37772f98e7ad8113b89d992be5c",
+      "title": "Wrong IP behind reverse proxy",
+      "createdAt": "2023-05-05T11:32:30Z",
+      "frozenBefore": "2023-06-14T14:33:27Z"
+    },
+    {
+      "issue": 2815,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "09f86f23feb5864f012ca02a0fceb0522d59d9a5",
+      "title": "Login entries disappear after adding Organization when using SQLite",
+      "createdAt": "2023-03-20T17:39:15Z",
+      "frozenBefore": "2023-05-01T12:07:24Z"
+    },
+    {
+      "issue": 2750,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "5e3f4c9bbec0f1e4206115545ad36a2e50b466a0",
+      "title": "Collections cannot be managed in family organization",
+      "createdAt": "2023-02-27T19:17:19Z",
+      "frozenBefore": "2023-03-07T13:35:39Z"
+    },
+    {
+      "issue": 2615,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "28a3d4ad925818b834d633cafea8819b4873eca7",
+      "title": "account revision date not bumped with EntityFramework DBs",
+      "createdAt": "2023-01-23T19:33:27Z",
+      "frozenBefore": "2023-02-02T14:33:36Z"
+    },
+    {
+      "issue": 2561,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "49e849deb9a8517e57b93fb848a9b61900815959",
+      "title": "Cannot see items in vault",
+      "createdAt": "2023-01-10T16:52:03Z",
+      "frozenBefore": "2023-06-30T22:41:11Z"
+    },
+    {
+      "issue": 2506,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "6f04298e178681ec74b982f1388acb0ec648b569",
+      "title": "After Data import, Item binding to Folder missing (only with PostgreSQL Database)",
+      "createdAt": "2022-12-19T11:45:31Z",
+      "frozenBefore": "2023-01-19T15:15:38Z"
+    },
+    {
+      "issue": 2500,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "85099307227d0703cef34d70d8567973546cf300",
+      "title": "SSO: Invalid redirect URI when using Azure OIDC or SAML 2.0",
+      "createdAt": "2022-12-15T16:16:28Z",
+      "frozenBefore": "2023-04-13T14:58:03Z"
+    },
+    {
+      "issue": 2317,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "c6fbe8cc4402e9cef901eca648a89f5360508947",
+      "title": "Can create a send that delete in ten years, but editing it says the date is too far in the future",
+      "createdAt": "2022-09-30T08:57:43Z",
+      "frozenBefore": "2022-12-13T19:30:02Z"
+    },
+    {
+      "issue": 2146,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "13d1e74d6960cf0d042620b72d85bf583a4236f7",
+      "title": "Reported Web Version Discrepancy",
+      "createdAt": "2022-07-25T22:30:38Z",
+      "frozenBefore": "2022-08-23T09:31:29Z"
+    },
+    {
+      "issue": 1891,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "19d5817f8f7d5b95cef9e03a628ecdd85f298649",
+      "title": "Moving more than 1 item into a Free organization makes for the Attachment check to fail",
+      "createdAt": "2022-02-22T09:01:13Z",
+      "frozenBefore": "2022-03-02T22:37:36Z"
+    },
+    {
+      "issue": 1849,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "a8ebab4c6bd5bad3c2eca0aed6d4222232f7733d",
+      "title": "[setup] JSON property name case mismatch when validating InstallationId",
+      "createdAt": "2022-02-09T13:06:15Z",
+      "frozenBefore": "2022-02-09T16:11:21Z"
+    },
+    {
+      "issue": 1811,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "0bdc4c3902dc8346e8cceb2da77b22efb4393ffa",
+      "title": "Self hosted: MSSQL nightly backup isn't create for non-default DB name",
+      "createdAt": "2022-01-17T10:40:07Z",
+      "frozenBefore": "2023-05-25T20:57:48Z"
+    },
+    {
+      "issue": 1367,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "10e85e018125a3f55a6d0f2d01b08b1978578be1",
+      "title": "Self-hosted Send files cannot be downloaded",
+      "createdAt": "2021-05-30T20:36:15Z",
+      "frozenBefore": "2021-06-02T16:12:18Z"
+    },
+    {
+      "issue": 802,
+      "kind": "bug",
+      "area": "backend",
+      "runCommit": "130c3e4748d264f174d8f86839576e289844e15f",
+      "title": "Subscription changes not auto-billing on next cycle",
+      "createdAt": "2020-06-29T21:29:32Z",
+      "frozenBefore": "2020-06-30T00:29:20Z"
+    }
+  ]
+}

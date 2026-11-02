@@ -1,0 +1,24 @@
+<h3>Is there an existing issue for this?</h3><ul data-local-id="808fdeaa-3640-4653-bfd4-a9470bb19a5b" data-type="task-list"><li data-local-id="88b887dd-df7e-460a-97d8-6b7c8cbacbea" data-type="task-item"><input type="checkbox" checked> I have searched the existing open and closed issues</li></ul><h3>Current Behavior</h3><p>was trying to figure out why sonarr fails to get generate metadata files, and found this error</p><pre><code>System.InvalidOperationException: Sequence contains more than one element
+   at System.Linq.ThrowHelper.ThrowMoreThanOneElementException()
+   at System.Linq.Enumerable.TryGetSingle[TSource](IEnumerable`1 source, Boolean&amp; found)
+   at System.Linq.Enumerable.SingleOrDefault[TSource](IEnumerable`1 source)
+   at NzbDrone.Core.Extras.Others.OtherExtraFileRenamer.RemoveOtherExtraFile(Series series, String path) in ./Sonarr.Core/Extras/Others/OtherExtraFileRenamer.cs:line 69
+   at NzbDrone.Core.Extras.Others.OtherExtraFileRenamer.RenameOtherExtraFile(Series series, String path) in ./Sonarr.Core/Extras/Others/OtherExtraFileRenamer.cs:line 38
+   at NzbDrone.Core.Extras.Metadata.MetadataService.ProcessEpisodeMetadata(IMetadata consumer, Series series, EpisodeFile episodeFile, List`1 existingMetadataFiles)
+   at NzbDrone.Core.Extras.Metadata.MetadataService.CreateAfterSeriesScan(Series series, List`1 episodeFiles) in ./Sonarr.Core/Extras/Metadata/MetadataService.cs:line 108
+   at NzbDrone.Core.Extras.ExtraService.Handle(SeriesScannedEvent message) in ./Sonarr.Core/Extras/ExtraService.cs:line 138
+   at NzbDrone.Core.Messaging.Events.EventAggregator.PublishEvent[TEvent](TEvent event)</code></pre><h3>Expected Behavior</h3><p>metadata is generated</p><h3>Steps To Reproduce</h3><p>happens when i click on a series and click &quot;Refresh and Scan&quot;, however its selective on what fails and what doesn&#039;t</p><h3>Environment</h3><pre><code class="language-markdown">- OS: archlinux
+- Sonarr: sonarr-bin-4.0.14.2939-1
+- Docker Install: No
+- Using Reverse Proxy: (not that i know of)
+- Browser: Firefox
+- Database: Sqlite 3.49.1</code></pre><h3>What branch are you running?</h3><p>Main</p><h3>Trace Logs?</h3><pre><code>[v4.0.14.2939] System.InvalidOperationException: Sequence contains more than one element
+   at System.Linq.ThrowHelper.ThrowMoreThanOneElementException()
+   at System.Linq.Enumerable.TryGetSingle[TSource](IEnumerable`1 source, Boolean&amp; found)
+   at System.Linq.Enumerable.SingleOrDefault[TSource](IEnumerable`1 source)
+   at NzbDrone.Core.Extras.Others.OtherExtraFileRenamer.RemoveOtherExtraFile(Series series, String path) in ./Sonarr.Core/Extras/Others/OtherExtraFileRenamer.cs:line 69
+   at NzbDrone.Core.Extras.Others.OtherExtraFileRenamer.RenameOtherExtraFile(Series series, String path) in ./Sonarr.Core/Extras/Others/OtherExtraFileRenamer.cs:line 38
+   at NzbDrone.Core.Extras.Metadata.MetadataService.ProcessEpisodeMetadata(IMetadata consumer, Series series, EpisodeFile episodeFile, List`1 existingMetadataFiles)
+   at NzbDrone.Core.Extras.Metadata.MetadataService.CreateAfterSeriesScan(Series series, List`1 episodeFiles) in ./Sonarr.Core/Extras/Metadata/MetadataService.cs:line 108
+   at NzbDrone.Core.Extras.ExtraService.Handle(SeriesScannedEvent message) in ./Sonarr.Core/Extras/ExtraService.cs:line 138
+   at NzbDrone.Core.Messaging.Events.EventAggregator.PublishEvent[TEvent](TEvent event)</code></pre><h3>Anything else?</h3><p>honestly first thing i thought when metadata failed to generate was a permissions issue, so i went to the logs to confirm, and saw this instead</p>

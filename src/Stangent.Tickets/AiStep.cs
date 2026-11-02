@@ -8,15 +8,16 @@ namespace Stangent.Tickets;
 /// <summary>One of Phase 3's AI steps (D60): which subagent, its output schema, and its files in the ticket's folder.</summary>
 public sealed record StepSpec(string Name, string Agent, string Schema, string Instructions)
 {
-    public const string PointPicker = "stangent-point-picker";
+    public const string FileFinder = "stangent-file-finder";
     public const string BugReproducer = "stangent-bug-reproducer";
     public const string QuestionWriter = "stangent-question-writer";
     public const string SummaryWriter = "stangent-summary-writer";
 
-    public static readonly StepSpec Points = new("points", PointPicker, "point-picker-output.v1.json", "point-picker.md");
+    /// <summary>The file finder (D101): multi-turn, read-only search of the repo; its answer comes back as structured output.</summary>
+    public static readonly StepSpec Points = new("points", FileFinder, "file-finder-output.v1.json", "file-finder.md");
     public static readonly StepSpec Prove = new("prove", BugReproducer, "bug-reproducer-output.v1.json", "bug-reproducer.md");
-    public static readonly StepSpec Questions = new("questions", QuestionWriter, "draft-output.v1.json", "question-writer.md");
-    public static readonly StepSpec Resolution = new("resolution", SummaryWriter, "draft-output.v1.json", "summary-writer.md");
+    public static readonly StepSpec Questions = new("questions", QuestionWriter, "draft-output.v2.json", "question-writer.md");
+    public static readonly StepSpec Resolution = new("resolution", SummaryWriter, "draft-output.v2.json", "summary-writer.md");
 
     public static StepSpec Named(string name) => name switch
     {

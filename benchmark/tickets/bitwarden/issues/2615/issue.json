@@ -1,0 +1,9 @@
+{
+  "number": 2615,
+  "title": "account revision date not bumped with EntityFramework DBs",
+  "body": "### Steps To Reproduce\n\n1. setup the mariadb sample\r\n2. connect a desktop client and an android client\r\n3. create a new password(cipher) using desktop\n\n### Expected Result\n\nAndroid will see the new entry. If not automatically it should at least show up after a manual sync.\n\n### Actual Result\n\nThe entry will not show up until logging out and back in again. A manual sync doesn't help.\n\n### Screenshots or Videos\n\n_No response_\n\n### Additional Context\n\nI took look at the communication using tcpdump+wireshark and it looks like the only thing Android ever does is poll `GET /accounts/revision-date`.\r\nThat date does not change after creating a new password though.\r\n\r\nI assume that unlike desktop, Android uses the date exclusively to decide if a sync is needed. So since that's never being updated by the server you'll never see any updates until you log out and back in again.\n\n### Githash Version\n\n3997defe-dirty\n\n### Environment Details\n\n- Operating System: Fedora CoreOS\r\n- Container runtime: podman\r\n- Hardware: RK3399 SBC (arm64)\r\n\r\nmariadb container: https://github.com/M1cha/homeserver/blob/284054030b76e8faf4a3b5749e491157b6623c55/files/containers/bitwarden-mariadb.container\r\nbitwarden container: https://github.com/M1cha/homeserver/blob/284054030b76e8faf4a3b5749e491157b6623c55/files/containers/bitwarden.container\n\n### Database Image\n\ndocker.io/mariadb:10\n\n### Issue-Link\n\nhttps://github.com/bitwarden/server/issues/2480\r\n\n\n### Issue Tracking Info\n\n- [x] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "author": "M1cha",
+  "createdAt": "2023-01-23T19:33:27Z",
+  "comments": [],
+  "attachments": []
+}

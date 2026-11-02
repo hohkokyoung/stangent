@@ -1,0 +1,5 @@
+<p><em>JensSpanier wrote:</em></p><p>I have the same problem so I tried setting these entries:</p><pre><code>globalSettings__attachment__baseDirectory=/etc/bitwarden/bwdata/core/attachments
+globalSettings__attachment__baseUrl=https://bitwarden.XXXX.de/attachments
+globalSettings__send__baseDirectory=/etc/bitwarden/bwdata/core/attachments/send
+globalSettings__send__baseUrl=https://bitwarden.XXXX.de/attachments/send</code></pre><p>First thing I noticed after uploading a file was that no attachment and no send file appears in <code>/etc/bitwarden/bwdata/core/attachments</code> or <code>/etc/bitwarden/bwdata/core/attachments/send</code>. I couldn&#039;t find theme anywhere.</p><p>When I try to download a file this error pops up:
+</p><figure data-type="media-single" data-layout="center"><img src="https://user-images.githubusercontent.com/42373861/120381241-78ec7980-c322-11eb-9268-ba35e6b24fe7.png" alt="image"></figure><p>By the way - are these variables documented somewhere? I just found <a href="https://bitwarden.com/help/article/environment-variables/">this</a> and <a href="https://bitwarden.com/help/article/send-hosting/">this</a>.</p>

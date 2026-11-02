@@ -4,6 +4,7 @@ using Stangent.Graph;
 using Stangent.Spec.Fsd;
 using Stangent.Spec.Pages;
 using Stangent.Spec.Trace;
+using Stangent.Tickets.Proof;
 
 namespace Stangent.Benchmark.Tickets;
 
@@ -69,14 +70,20 @@ public static class TicketScore
         var proofBugs = bugs.Take(ProofBugs).ToList();
         JsonObject? Proof(JsonObject i) => TryLoad(Path.Combine(Dir(i), "bug-proof.json"));
         JsonObject? Record(JsonObject i) => TryLoad(Path.Combine(ticketsDir, "run", Key(i) + ".json"));
+        // D89: an attempt our own permission rules blocked measures the setup, not the reproducer: still not reproduced,
+        // but counted apart so a score never hides it.
+        bool SetupBlocked(JsonObject i) => (bool?)Proof(i)?["attempts"]?.AsArray().LastOrDefault()?["setupBlocked"] == true;
         string Kind(JsonObject? proof) => (string?)proof?["attempts"]?.AsArray().LastOrDefault()?["kind"] ?? "none";
         var reproduced = proofBugs.Where(b => (string?)Proof(b)?["outcome"] == "reproduced").ToList();
-        var real = reproduced.Count(b => (string?)Record(b)?["proofOnFix"] == "passed");
+        string? OnFix(JsonObject i) => TicketScore.OnFix(Proof(i), (string?)key[((int)i["issue"]!).ToString(System.Globalization.CultureInfo.InvariantCulture)]?["fixCommit"]);
         var wrongReports = notBugs.Count(n => (string?)Proof(n)?["outcome"] == "reproduced");
         var outcomes = proofBugs.Concat(notBugs).Select(i => new JsonObject
         {
             ["issue"] = (int)i["issue"]!, ["kind"] = (string)i["kind"]!, ["area"] = (string?)i["area"], ["outcome"] = (string?)Proof(i)?["outcome"] ?? "not run",
-            ["test"] = Kind(Proof(i)), ["proofOnFix"] = (string?)Record(i)?["proofOnFix"],
+            ["test"] = Kind(Proof(i)), ["proofOnFix"] = OnFix(i),
+            ["outside"] = (bool?)Proof(i)?["attempts"]?.AsArray().LastOrDefault()?["outside"] == true,
+            ["setupBlocked"] = SetupBlocked(i),
+            ["noProof"] = Proof(i)?["attempts"]?.AsArray().LastOrDefault() is JsonObject last ? BugProof.NoProof(last) : null,
         }).ToList();
 
         // Grounded and repeatable are must-pass (D79): read from the artifacts and the run's own records.
@@ -106,22 +113,18 @@ public static class TicketScore
                 ["stangent"] = rightPlace, ["keywords"] = Share(baseline), ["gain"] = Share(gain), ["gainRange"] = R(gainRange),
                 ["passed"] = rightPlace > Share(baseline) && gainRange.Item1 > 0,
             },
-            ["proofIsReal"] = new JsonObject
-            {
-                ["reproduced"] = reproduced.Count, ["passOnFix"] = real, ["share"] = reproduced.Count == 0 ? 0 : Math.Round((double)real / reproduced.Count, 3),
-                ["range"] = R(Range([.. reproduced.Select(b => (string?)Record(b)?["proofOnFix"] == "passed" ? 1.0 : 0.0)])), ["bar"] = 0.9,
-                ["passed"] = reproduced.Count > 0 && (double)real / reproduced.Count >= 0.9,
-            },
+            ["proofIsReal"] = ProofIsReal([.. reproduced.Select(b => (Key(b), OnFix(b)))]),
             ["proofFindsBugs"] = new JsonObject
             {
                 ["share"] = Rate(proofBugs), ["range"] = R(Range([.. proofBugs.Select(b => (string?)Proof(b)?["outcome"] == "reproduced" ? 1.0 : 0.0)])), ["of"] = proofBugs.Count,
                 ["unit"] = new JsonObject { ["of"] = unit.Count, ["share"] = Rate(unit) }, ["playwright"] = new JsonObject { ["of"] = playwright.Count, ["share"] = Rate(playwright) },
-                ["bar"] = 0.5, ["passed"] = Rate(proofBugs) >= 0.5,
+                ["setupBlocked"] = proofBugs.Count(SetupBlocked), ["bar"] = 0.5, ["passed"] = Rate(proofBugs) >= 0.5,
             },
             ["catchesWrongReports"] = new JsonObject { ["reproduced"] = wrongReports, ["of"] = notBugs.Count, ["bar"] = "at most 1", ["passed"] = wrongReports <= 1 },
-            ["grounded"] = new JsonObject { ["failedSteps"] = new JsonArray([.. failedSteps.Select(f => (JsonNode)f)]), ["note"] = "every recorded output passed its code check; tests show a made-up quote and a non-existent page are rejected" },
+            ["grounded"] = new JsonObject { ["failedSteps"] = new JsonArray([.. failedSteps.Select(f => (JsonNode)f)]), ["note"] = "every recorded output passed its code check; tests show a made-up quote, a line not in its file and a file not in the repo are rejected" },
             ["repeatable"] = new JsonObject { ["replayed"] = replayed, ["identical"] = identical, ["rerunAiCalls"] = rerunCalls, ["passed"] = replayed == issues.Count && identical == replayed && rerunCalls == 0 },
         };
+        var stages = PlaceStages.Run(clone, ticketsDir);
         return new JsonObject
         {
             ["schemaVersion"] = 1, ["clone"] = Path.GetFileName(clone), ["commit"] = graph.Commit, ["bugs"] = bugs.Count, ["notBugs"] = notBugs.Count,
@@ -131,25 +134,59 @@ public static class TicketScore
                 ["fixCoverage"] = new JsonObject { ["mean"] = Share(coverage), ["range"] = R(Range([.. coverage])) },
                 ["bundleChars"] = Stats(cases.Select(c => (double?)(int?)c!["bundleChars"]).OfType<double>()),
                 ["cost"] = Cost(issues.Select(i => Dir(i)).ToList(), records),
+                // Where right place loses each fix, stage by stage (owner's request, 2026-11-01; no bar).
+                ["rightPlaceStages"] = stages,
+                // Would the nearby-page rule explain fixes no page cites? (retrieval redesign, 2026-11-02; no bar)
+                ["nearbyWalk"] = NearbyWalk.Run(clone, ticketsDir, stages),
             },
             ["cases"] = cases,
             ["proofs"] = new JsonArray([.. outcomes]),
         };
     }
 
-    /// <summary>"Starting points' files" (D79, clarified): the files of the symbols the starting pages' statements cite, plus
-    /// the files of matched symbols.</summary>
+    /// <summary>What the test did on the fix (D105), or null if that wasn't the proof's own test on the answer key's fix
+    /// commit: a hand-run --verify elsewhere, or on an edited test, says nothing about it. A record from before D105 is
+    /// classified from its saved runs.</summary>
+    public static string? OnFix(JsonObject? proof, string? fixCommit)
+    {
+        if (proof?["verification"] is not JsonObject v || fixCommit is null) return null;
+        if (((string?)v["commit"])?.StartsWith(fixCommit, StringComparison.Ordinal) != true || (bool?)v["testChanged"] == true) return null;
+        return (string?)v["result"] ?? BugProof.OnFixResult(proof["attempts"]!.AsArray()[^1]!.AsObject(), (v["runs"]?.AsArray() ?? []).OfType<JsonObject>(), v["newFailures"]?.AsArray().Count ?? 0);
+    }
+
+    /// <summary>D79's "proof is real": only <c>passed</c> counts towards the bar. Code can't tell whether the unclear ones
+    /// are real, so they're the top of a range beside it, never part of it (D105). <c>same-failure</c> is neither.</summary>
+    public static JsonObject ProofIsReal(IReadOnlyList<(string Key, string? OnFix)> reproduced)
+    {
+        var real = reproduced.Count(r => r.OnFix == "passed");
+        var unclear = reproduced.Count(r => r.OnFix is not ("passed" or "same-failure"));
+        var groups = reproduced.GroupBy(r => r.OnFix ?? "none").OrderBy(g => g.Key, StringComparer.Ordinal);
+        var range = Range([.. reproduced.Select(r => r.OnFix == "passed" ? 1.0 : 0.0)]);
+        return new JsonObject
+        {
+            ["reproduced"] = reproduced.Count, ["passOnFix"] = real, ["share"] = reproduced.Count == 0 ? 0 : Math.Round((double)real / reproduced.Count, 3),
+            ["range"] = new JsonArray(range.Item1, range.Item2), ["bar"] = 0.9,
+            ["passed"] = reproduced.Count > 0 && (double)real / reproduced.Count >= 0.9,
+            ["shareIfUnclearReal"] = reproduced.Count == 0 ? 0 : Math.Round((double)(real + unclear) / reproduced.Count, 3),
+            ["onFix"] = new JsonObject([.. groups.Select(g => new KeyValuePair<string, JsonNode?>(g.Key, new JsonArray([.. g.Select(r => (JsonNode)r.Key)])))]),
+        };
+    }
+
+    /// <summary>"Starting points' files" (D79, clarified; D101): the file points themselves, the files of the symbols the
+    /// starting pages' statements cite, and the files of matched symbols.</summary>
     public static HashSet<string> StartingFiles(JsonNode points, SpecIndex index, IReadOnlyDictionary<string, Node> nodes)
     {
         var ids = new HashSet<string>(StringComparer.Ordinal);
+        var direct = new HashSet<string>(StringComparer.Ordinal);
         foreach (var p in points["points"]!.AsArray())
         {
             var id = (string)p!["id"]!;
-            if ((string)p["kind"]! == "symbol") ids.Add(id);
+            if ((string)p["kind"]! == "file") direct.Add(id);
+            else if ((string)p["kind"]! == "symbol") ids.Add(id);
             else if (index.Pages.TryGetValue(id, out var page))
                 foreach (var (_, _, s) in PageChecks.Statements(page)) ids.UnionWith(s["cites"]!.AsArray().Select(c => (string)c!));
         }
-        return [.. ids.Select(i => nodes.GetValueOrDefault(i)?.File).OfType<string>()];
+        return [.. ids.Select(i => nodes.GetValueOrDefault(i)?.File).OfType<string>().Concat(direct)];
     }
 
     public static HashSet<string> TicketWords(JsonNode ticket) =>

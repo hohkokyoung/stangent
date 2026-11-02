@@ -19,7 +19,9 @@ cat > "$data/config.xml" <<XML
   <LaunchBrowser>False</LaunchBrowser>
 </Config>
 XML
-bin="_output/net10.0/Sonarr.dll"
+bins=(); for f in _output/net*/Sonarr.dll; do [ -e "$f" ] && [[ "$f" != *-windows/* ]] && bins+=("$f"); done
+[ ${#bins[@]} -eq 1 ] || { echo "start failed: expected one _output/net*/Sonarr.dll, found ${#bins[@]}" >&2; exit 1; }
+bin="${bins[0]}"
 dotnet "$bin" -nobrowser -data="$data" >/dev/null 2>&1 &
 first=$!
 for _ in $(seq 1 120); do

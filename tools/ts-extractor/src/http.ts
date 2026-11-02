@@ -25,12 +25,36 @@ export function httpFacts(ctx: Context, sf: ts.SourceFile) {
 
 interface Wrapper { fn: string; urlProp: string | null; verbProp: string | null; verb: string }
 
-/** "useApiQuery:path" (object argument with a `path` property), "useApiMutation:path:method", "api.get" (URL as first argument). */
+/**
+ * "useApiQuery:path" (object argument with a `path` property), "useApiMutation:path:method", "api.get" (URL as first
+ * argument). A property written `#N` is the call's Nth argument instead ("send:#1:#0": `send('POST', '/orders')`).
+ * `@VERB` gives the verb when the call doesn't ("apiDelete@DELETE"); without it the verb is read off the name
+ * (delete/remove → DELETE, put/update → PUT, patch → PATCH, post/save/mutation → POST, else GET).
+ */
 function parseWrappers(specs: string[]): Wrapper[] {
   return specs.map((s) => {
-    const [fn, urlProp = null, verbProp = null] = s.split(":");
-    return { fn, urlProp, verbProp, verb: /mutation|post|save/i.test(fn) ? "POST" : "GET" };
+    const [spec, fixed] = s.split("@");
+    const [fn, urlProp = null, verbProp = null] = spec.split(":");
+    return { fn, urlProp, verbProp, verb: fixed ? fixed.toUpperCase() : verbFromName(fn) };
   });
+}
+
+/** Whole words of the name (camelCase, snake_case, dots): `dispatch` isn't "patch", `fetchUpdates` isn't "update". */
+function verbFromName(fn: string): string {
+  const words = new Set(fn.replace(/([a-z0-9])([A-Z])/g, "$1 $2").split(/[\s._$-]+/).map((w) => w.toLowerCase()));
+  const has = (...ws: string[]) => ws.some((w) => words.has(w));
+  if (has("delete", "remove", "del")) return "DELETE";
+  if (has("patch")) return "PATCH";
+  if (has("put", "update")) return "PUT";
+  if (has("mutation", "post", "save")) return "POST";   // not "create": createAjaxRequest names a factory
+  return "GET";
+}
+
+/** `#N` → the call's Nth argument; anything else → that property of the object in the first argument. */
+function wrapperValue(n: ts.CallExpression, prop: string, checker: ts.TypeChecker): string | null {
+  if (/^#\d+$/.test(prop)) return stringValue(n.arguments[Number(prop.slice(1))], checker);
+  const arg = n.arguments[0];
+  return arg && ts.isObjectLiteralExpression(arg) ? stringValue(objProp(arg, prop) ?? undefined, checker) : null;
 }
 
 function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
@@ -45,16 +69,10 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
   // In-house wrappers named in stangent.yaml.
   const w = wrappers.find((x) => x.fn === name || x.fn === callee.getText());
   if (w) {
-    const arg = n.arguments[0];
-    let url: string | null = null;
-    let verb = w.verb;
-    if (w.urlProp && arg && ts.isObjectLiteralExpression(arg)) {
-      url = stringValue(objProp(arg, w.urlProp) ?? undefined, checker);
-      const v = w.verbProp ? stringValue(objProp(arg, w.verbProp) ?? undefined, checker) : null;
-      if (v) verb = v.toUpperCase();
-    } else if (!w.urlProp) {
-      url = stringValue(arg, checker);
-    }
+    const url0 = w.urlProp ? wrapperValue(n, w.urlProp, checker) : stringValue(n.arguments[0], checker);
+    let url: string | null = url0;
+    const v = w.verbProp ? wrapperValue(n, w.verbProp, checker) : null;
+    const verb = v ? v.toUpperCase() : w.verb;
     // Wrappers add the API root themselves (Sonarr: getQueryPath(path) = urlBase + apiRoot + path),
     // so a relative path is matched against the end of endpoint paths.
     if (url !== null && !/^(https?:|\{base\})/.test(url)) url = BASE + url.replace(/^\//, "");

@@ -42,6 +42,17 @@ public class TestReportTests
     [InlineData("TypeError: Cannot read properties of undefined (reading 'total')", "at src/order.ts:4:10", false)]
     [InlineData("Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8989/", "at e2e/series.spec.ts:5:14", false)]
     [InlineData("Error: expect(locator).toHaveText(expected) failed", "at e2e/series.spec.ts:9:31", true)]
+    // D90: NUnit trims its frames; a classic Assert.AreEqual shows only its message (SONB-23).
+    [InlineData("  Expected: 2\n  But was:  1\n", "   at NzbDrone.Api.Test.QBittorrentAuthCookieFixture.should_reauthenticate() in ./QBittorrentAuthCookieFixture.cs:line 41", true)]
+    [InlineData("System.InvalidOperationException : Expected: a value\n  But was: none", "at Shop.Core.Load()", false)]
+    // D90: a mock's own check is the test's assertion (SONB-19: Moq's Verify).
+    [InlineData("Moq.MockException : \nExpected invocation on the mock once, but was 0 times: v => v.Update(2, \"S:\\Show\")", "at Moq.Mock.Verify(Mock mock)\n   at Sonarr.Tests.PlexFixture.should_update() in /r/PlexFixture.cs:line 40", true)]
+    [InlineData("NSubstitute.Exceptions.ReceivedCallsException : Expected to receive exactly 1 call matching: Send(\"receipt\")", "at NSubstitute.Core.ReceivedCallsExceptionThrower.Throw", true)]
+    [InlineData("FakeItEasy.ExpectationException : \n  Assertion failed for the following call: IMail.Send(\"receipt\")", "at FakeItEasy.Core.FakeAsserter.AssertWasCalled", true)]
+    [InlineData("System.ArgumentException : Value does not fall within the expected range.", "at Moq.Mock.Setup", false)]
+    // A strict mock refusing an unset call is the code under test failing, not a check.
+    [InlineData("Moq.MockException : IFoo.Bar() invocation failed with mock behavior Strict.\nAll invocations on the mock must have a corresponding setup.", "at Moq.FailForStrictMock.Handle", false)]
+    [InlineData("FakeItEasy.ExpectationException : Call to unconfigured method of strict fake: IMail.Send(\"x\").", "at FakeItEasy.Core.StrictFakeRule.Apply", false)]
     public void An_assertion_failure_is_told_apart_from_a_crash(string message, string stack, bool assertion) =>
         Assert.Equal(assertion, TestReports.IsAssertion(new TestCaseResult("t", "failed", message, stack)));
 

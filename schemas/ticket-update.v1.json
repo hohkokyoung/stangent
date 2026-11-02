@@ -27,6 +27,8 @@
         "retries": { "type": "integer" }
       }
     },
+    "dropped": { "description": "Sentences left out of the draft because no claim backed them (D97).", "type": "array", "items": { "type": "string" } },
+    "unchecked": { "description": "Parts kept with no claim (questions, requests, greetings, headings): code didn't check them, the person posting reads them (D98).", "type": "array", "items": { "type": "string" } },
     "posted": {
       "description": "Null until a person posts it with `stangent ticket post`.",
       "type": ["object", "null"],

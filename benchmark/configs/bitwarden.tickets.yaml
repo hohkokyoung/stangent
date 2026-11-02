@@ -1,0 +1,32 @@
+# stangent.yaml for Phase 3 (tickets) on bitwarden/server's held-out set (D100): the clone's graph settings as
+# `stangent init` wrote them, plus the tickets settings. No reference pages are written: the file finder (D101) reads
+# the ticket and the code only. Product defaults otherwise (D79): no repo-specific hints.
+version: 1
+store:
+  root: .stangent/store
+ai:
+  enabled: true
+detectors: []
+detectorSettings: {}
+history:
+  enabled: false
+  window: 10
+  minShared: 3
+  minShare: 0.2
+  maxFiles: 50
+  botAuthors: []
+  followRenames: true
+spec:
+  depth: 6
+  backendDepth: 4
+  splitAtEndpoints: true
+  hubCallers: 10
+  maxBundleChars: 260000
+fsd:
+  archive:
+  scope: []
+  findings: false
+tickets:
+  site: peachpersonal.atlassian.net
+  projects: [BWB]                   # the Jira project the held-out set is copied into (D100)
+  bugTypes: [Bug]

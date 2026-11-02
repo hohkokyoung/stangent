@@ -142,7 +142,8 @@ bench --fix-coverage $B/sonarr benchmark/tickets/sonarr --out benchmark/results/
 
 - The run uses product defaults (AI picks on, `fsd.findings` off, the cap) and no developer edits or hints (D79).
 - `prove` checks out each bug's fix parent (a not-bug's commit before it closed); a reproduction is run again on the fix
-  commit with `ticket prove --verify` ("proof is real"). Each phase resumes; `--only KEY,...` limits it.
+  commit with `ticket prove --verify` ("proof is real": only `passed` counts; the other results are listed in `onFix`, and
+  `shareIfUnclearReal` is the top of the range, D105). Each phase resumes; `--only KEY,...` limits it.
 - Sonarr builds a single project only with `-p:SolutionDir=…/src/` (`tickets.dotnetArgs`), and serves the UI from
   `_output/net10.0/UI` (`app/build.sh` copies it). The seed writes two series straight into the database, so no
   metadata service is called.

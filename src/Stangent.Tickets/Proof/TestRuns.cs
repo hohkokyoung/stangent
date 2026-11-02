@@ -13,7 +13,16 @@ public interface ICommandRunner
 {
     Task<CommandResult> RunAsync(string command, string cwd, TimeSpan timeout, IReadOnlyDictionary<string, string>? env = null, CancellationToken ct = default);
     /// <summary>Starts a long-running process (the app for Playwright, D76); disposing it stops the whole process tree.</summary>
-    IAsyncDisposable Start(string command, string cwd, IReadOnlyDictionary<string, string>? env = null);
+    IRunningProcess Start(string command, string cwd, IReadOnlyDictionary<string, string>? env = null);
+}
+
+/// <summary>A started process: whether it has already exited, and the end of what it printed (D89: a start command that
+/// dies is reported at once, with its own error, instead of waiting out the app's ready time).</summary>
+public interface IRunningProcess : IAsyncDisposable
+{
+    bool HasExited { get; }
+    int? ExitCode { get; }
+    string Output { get; }
 }
 
 /// <summary>Commands through <c>/bin/sh -c</c> (or <c>cmd /c</c>), output kept to its last 20,000 characters, the process tree killed on timeout.</summary>
@@ -67,18 +76,36 @@ public sealed class ShellRunner : ICommandRunner
         return new CommandResult(timedOut ? -1 : p.ExitCode, text.Length > KeepChars ? text[^KeepChars..] : text, timedOut, watch.ElapsedMilliseconds);
     }
 
-    public IAsyncDisposable Start(string command, string cwd, IReadOnlyDictionary<string, string>? env = null)
+    public IRunningProcess Start(string command, string cwd, IReadOnlyDictionary<string, string>? env = null)
     {
         var p = Process.Start(Info(command, cwd, env))!;
-        p.OutputDataReceived += (_, _) => { };
-        p.ErrorDataReceived += (_, _) => { };
+        var running = new Running(p);
+        p.OutputDataReceived += (_, e) => running.Add(e.Data);
+        p.ErrorDataReceived += (_, e) => running.Add(e.Data);
         p.BeginOutputReadLine();
         p.BeginErrorReadLine();
-        return new Running(p);
+        return running;
     }
 
-    sealed class Running(Process p) : IAsyncDisposable
+    sealed class Running(Process p) : IRunningProcess
     {
+        const int Keep = 4000;
+        readonly StringBuilder output = new();
+
+        public void Add(string? line)
+        {
+            if (line is null) return;
+            lock (output)
+            {
+                output.Append(line).Append('\n');
+                if (output.Length > Keep * 2) output.Remove(0, output.Length - Keep);
+            }
+        }
+
+        public bool HasExited { get { try { return p.HasExited; } catch (InvalidOperationException) { return true; } } }
+        public int? ExitCode => HasExited ? p.ExitCode : null;
+        public string Output { get { lock (output) return output.Length > Keep ? output.ToString(output.Length - Keep, Keep) : output.ToString(); } }
+
         public ValueTask DisposeAsync()
         {
             try { if (!p.HasExited) p.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
@@ -95,6 +122,20 @@ public sealed record TestCaseResult(string Name, string Status, string? Message,
 public static partial class TestReports
 {
     static readonly XNamespace Trx = "http://microsoft.com/schemas/VisualStudio/TeamTest/2010";
+
+    /// <summary>
+    /// The runner itself failed, not a test (D90): a TRX with no test run and an error from the run (the test host
+    /// couldn't start: a missing .NET runtime, an adapter that won't load). Null when tests ran.
+    /// </summary>
+    public static string? TrxRunnerError(string xml)
+    {
+        var doc = XDocument.Parse(xml);
+        var total = (int?)doc.Descendants(Trx + "Counters").FirstOrDefault()?.Attribute("total") ?? 0;
+        if (total > 0 || doc.Descendants(Trx + "UnitTestResult").Any()) return null;
+        var errors = doc.Descendants(Trx + "RunInfo").Where(r => (string?)r.Attribute("outcome") == "Error")
+            .Select(r => r.Element(Trx + "Text")?.Value.Trim()).OfType<string>().Where(t => t.Length > 0).ToList();
+        return errors.Count == 0 ? null : string.Join(" | ", errors);
+    }
 
     public static List<TestCaseResult> ParseTrx(string xml)
     {
@@ -147,6 +188,9 @@ public static partial class TestReports
 
     // ---- what a failure was ----
 
+    [GeneratedRegex(@"(?m)^\s*Expected:.*\r?\n\s*But was:")]
+    private static partial Regex NUnitExpected();
+
     [GeneratedRegex(@"^\s*(?:[\w.]+\.)?(?<type>\w*(?:Exception|Error))\b")]
     private static partial Regex LeadingException();
 
@@ -154,10 +198,17 @@ public static partial class TestReports
     [
         "Xunit.Sdk.", "Xunit.Assert", "Assert.", "NUnit.Framework.", "AssertionException", "AssertFailedException", "FluentAssertions",
         "Shouldly", "ShouldAssertException", "expect(", "AssertionError", "toBe", "toEqual", "toHave", "toMatch", "toContain", "toThrow",
+        // A mock's own check (D90): Moq's Verify, NSubstitute's Received, FakeItEasy's MustHaveHappened. "Expected this
+        // call once, got 0" is the test's assertion, written against a mock instead of a value.
+        "Moq.MockException", "NSubstitute.Exceptions.ReceivedCallsException", "FakeItEasy.ExpectationException",
     ];
 
+    static readonly string[] StrictMock =
+        ["with mock behavior Strict", "All invocations on the mock must have a corresponding setup", "unconfigured method of strict fake"];
+
     static readonly HashSet<string> AssertionTypes = ["AssertionError", "AssertionException", "AssertFailedException", "ShouldAssertException",
-        "EqualException", "TrueException", "FalseException", "NullException", "NotNullException", "ContainsException", "XunitException", "JestAssertionError"];
+        "EqualException", "TrueException", "FalseException", "NullException", "NotNullException", "ContainsException", "XunitException", "JestAssertionError",
+        "MockException", "ReceivedCallsException", "ExpectationException"];
 
     /// <summary>A failure on an assertion (D75), not a crash in setup or the code: an assertion library's mark in the
     /// message or stack, and the message doesn't start with another exception type.</summary>
@@ -168,8 +219,12 @@ public static partial class TestReports
         // Jest and Playwright report a failed expect as a plain "Error: expect(received)…"; TypeError and the like are crashes.
         var plainExpect = lead.Success && lead.Groups["type"].Value == "Error" && message.Contains("expect(", StringComparison.Ordinal);
         if (lead.Success && !plainExpect && !AssertionTypes.Contains(lead.Groups["type"].Value)) return false;
+        // A strict mock refusing a call it wasn't set up for is the code under test failing, not a check (D90).
+        if (StrictMock.Any(m => message.Contains(m, StringComparison.Ordinal))) return false;
         var both = message + "\n" + (t.Stack ?? "");
-        return AssertionMarks.Any(m => both.Contains(m, StringComparison.Ordinal));
+        // NUnit trims its own frames from the stack, so a classic `Assert.AreEqual` failure shows only its message:
+        // "Expected: 2 / But was: 1" is NUnit's assertion format (D90).
+        return AssertionMarks.Any(m => both.Contains(m, StringComparison.Ordinal)) || NUnitExpected().IsMatch(message);
     }
 
     [GeneratedRegex(@"(?:in\s+(?<f>[^\n]+?):line\s+(?<l>\d+))|(?:\(?(?<f>[^\s()]+?):(?<l>\d+):\d+\)?)")]

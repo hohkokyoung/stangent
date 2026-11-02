@@ -53,7 +53,7 @@ code 4 (D24); `spec stale`, `fsd import`, `fsd candidates`, `fsd undocumented` a
   and `sideEffects`; every statement cites symbol ids. Code numbers them S1…, A1…, R1…, E1….
 - **The verifier** (`stangent-page-verifier`, fresh context, bundle and finished page only) flags statements the slice
   doesn't support: `contradicted` (with the contradicting line, which code checks is in the slice: at least 12
-  characters and two tokens, so a fragment like `return` is no evidence; otherwise the finding is dropped) or
+  characters, and two tokens or a whole line (D103), so a fragment like `return` is no evidence; otherwise the finding is dropped) or
   `unsupported`. It gets one retry when its output is missing or breaks the schema. The writer then fixes or rejects each finding once; a "fixed" statement must
   change, a rejected `unsupported` finding needs the supporting line. Findings and outcomes are recorded on the page.
 - **Recorded:** the page JSON (`schemas/reference-page.v1.json`) and its Markdown, rendered by code: the commit, the

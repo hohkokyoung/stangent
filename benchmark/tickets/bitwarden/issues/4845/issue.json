@@ -1,0 +1,28 @@
+{
+  "number": 4845,
+  "title": "Emergency Access E-Mails use Wrong Encoding for Names",
+  "body": "### Steps To Reproduce\n\n1. Configure a name for your account using special characters like a German umlaut\r\n2. Invite someone for emergency access\r\n3. Confirm the invatation on both sides\r\n\n\n### Expected Result\n\nThe e-mails should display the special characters correctly.\n\n### Actual Result\n\nThe actual e-mails look like:\r\n\r\n```\r\nYou have been invited to become an emergency contact for Stephan Windm&#252;ller.\r\nIf you do not wish to become an emergency contact for Stephan Windm&#252;ller, you can safely ignore this email.\r\n```\r\n\r\nand\r\n\r\n```\r\nThis email is to notify you that you have been confirmed as an emergency access contact for Stephan Windm&#252;ller.\r\n```\n\n### Screenshots or Videos\n\n_No response_\n\n### Additional Context\n\n_No response_\n\n### Build Version\n\n2024.9.2\n\n### Environment\n\nCloud (bitwarden.com)\n\n### Environment Details\n\n_No response_\n\n### Issue Tracking Info\n\n- [X] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "author": "windmueller",
+  "createdAt": "2024-10-03T06:33:11Z",
+  "comments": [
+    {
+      "id": 2391232310,
+      "author": "Krychaz",
+      "createdAt": "2024-10-03T11:56:23Z",
+      "body": "Hi there,\r\n\r\nThank you for your report! \r\n\r\nI was able to reproduce this issue, and I have flagged this to our engineering team.\r\n\r\nIf you wish to add any further information/screenshots/recordings etc., please feel free to do so at any time - our engineering team will be happy to review these.\r\n\r\nThanks once again!"
+    },
+    {
+      "id": 3357261099,
+      "author": "closebot-bw",
+      "createdAt": "2025-10-01T16:49:42Z",
+      "body": "⚠️ **Stale Issue Notice**\n\nThis issue has been automatically marked as stale due to inactivity. It will be closed in **2 weeks** (October 15, 2025) if no further activity occurs.\n\nIf this issue is still relevant and you would like to keep it open, please:\n- Comment on this issue to show continued interest\n- Provide any additional information or updates\n- Confirm that the issue still exists in the latest version\n\nThank you for your contribution to this project! 🙏"
+    },
+    {
+      "id": 3358010876,
+      "author": "windmueller",
+      "createdAt": "2025-10-01T20:24:16Z",
+      "body": "This issue has been reproduced and I would still like to see it fixed."
+    }
+  ],
+  "attachments": []
+}

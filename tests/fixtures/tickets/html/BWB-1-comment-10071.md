@@ -1,0 +1,3 @@
+_spiezmaestro wrote:_
+
+Sorry, but did you read my issue at all? My license is running until September, but straight after upgrading to 2025.5.0 it was listed as expired. This has nothing to do with the license itself (and mind you, 3 licenses all at once), but with the upgrade to 2025.5.0. Instead of posting some generic text as soon as you read license, maybe this time it is worth looking into it.

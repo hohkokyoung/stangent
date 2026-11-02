@@ -53,7 +53,7 @@ public class BugProofTests
 
         public Proof(string extra = "", bool testProject = true, string type = "Bug", string description = Description, string? packageJson = null)
         {
-            App = new SpecApp($"version: 1\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n{extra}");
+            App = new SpecApp($"version: 1\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n  aiPoints: false\n{extra}");
             App.Write("Core/Shop.Core.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\" />");
             if (testProject)
                 App.Write("Tests/Shop.Tests.csproj", """
@@ -73,7 +73,7 @@ public class BugProofTests
         public RunStep Prepare(string? hint = null) => BugProof.Prepare(App.Repo, TicketContext.Load(App.Repo), Key, hint);
 
         public static JsonNode Ok(int turns = 3, double usd = 0.1) =>
-            JsonNode.Parse($$"""{"type":"result","subtype":"success","num_turns":{{turns}},"total_cost_usd":{{usd.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}""")!;
+            JsonNode.Parse($$"""{"type":"result","subtype":"success","num_turns":{{turns}},"rounds":{{turns}},"total_cost_usd":{{usd.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}""")!;
 
         public RunStep Check(string output, JsonNode? claude = null)
         {
@@ -87,12 +87,17 @@ public class BugProofTests
     }
 
     static string Written(int line = 8, string text = "Assert.Throws<ArgumentException>(() => new OrderService().Place(150));",
-        string quote = "Orders over 100 are rejected until someone approves them.", string file = TestFile, string target = "dotnet:Tests/Shop.Tests.csproj") =>
-        new JsonObject
+        string quote = "Orders over 100 are rejected until someone approves them.", string file = TestFile, string target = "dotnet:Tests/Shop.Tests.csproj",
+        string actual = "An order of 150 is placed without approval.", string? shows = "No exception was thrown")
+    {
+        var o = new JsonObject
         {
             ["outcome"] = "test-written", ["target"] = target, ["testFile"] = file, ["testName"] = TestName,
-            ["assertion"] = new JsonObject { ["line"] = line, ["text"] = text }, ["expectedQuote"] = quote,
-        }.ToJsonString();
+            ["assertion"] = new JsonObject { ["line"] = line, ["text"] = text }, ["expectedQuote"] = quote, ["actualQuote"] = actual,
+        };
+        if (shows is not null) o["shows"] = shows;
+        return o.ToJsonString();
+    }
 
     static string AssertFailure(int line = 8) => TestReportTests.Trx((TestName, "Failed", "Assert.Throws() Failure: No exception was thrown",
         $"   at Shop.Tests.OrderTests.Rejects_orders_over_100() in /home/ci/shop/{TestFile}:line {line}"));
@@ -109,9 +114,11 @@ public class BugProofTests
         Assert.Contains("Orders over 100 are rejected until someone approves them.", input);
         var limits = BugProof.DriverLimits(p.App.Repo, Key);
         var tools = limits["allowedTools"]!.AsArray().Select(t => (string)t!).ToList();
-        Assert.Contains("Edit(Tests/**/*.cs)", tools);
+        Assert.Contains($"Edit({ClaudeRules.Absolute(Path.Combine(p.Root, "Tests"))}/**/*.cs)", tools);
         Assert.Contains("Bash(dotnet test 'Tests/Shop.Tests.csproj':*)", tools);
-        Assert.DoesNotContain(tools, t => t.StartsWith("Edit(Core", StringComparison.Ordinal));
+        Assert.Contains("Bash(dotnet test --project 'Tests/Shop.Tests.csproj':*)", tools);   // MTP's form (audit item 1)
+        Assert.DoesNotContain(tools, t => t.StartsWith($"Edit({ClaudeRules.Absolute(Path.Combine(p.Root, "Core"))}", StringComparison.Ordinal));
+        Assert.All(tools.Where(t => t.StartsWith("Edit(", StringComparison.Ordinal)), t => Assert.StartsWith("Edit(//", t));   // D89: absolute, whatever the shell's folder
         Assert.Equal(30, (int)limits["maxTurns"]!);
         Assert.Equal(1.0, (double)limits["maxBudgetUsd"]!);
     }
@@ -157,11 +164,86 @@ public class BugProofTests
         var attempt = proof["attempts"]![0]!;
         Assert.Equal("failed-on-assertion", (string?)attempt["runs"]![0]!["result"]);
         Assert.Equal(["Shop.Tests.Other.AlreadyBroken"], attempt["baseline"]!.AsArray().Select(b => (string)b!));
+        Assert.Equal("An order of 150 is placed without approval.", (string?)attempt["actualQuote"]);   // D95: side by side
+        Assert.Equal("No exception was thrown", (string?)attempt["shows"]);
         Assert.Contains(p.Runner.Commands, c => c.StartsWith("dotnet build", StringComparison.Ordinal));
 
         Assert.Equal("Pat Developer", (string?)BugProof.Confirm(p.App.Repo, Key, "Pat Developer")["confirmedBy"]);
         Assert.Equal("current", p.Prepare().Status); // nothing changed: no AI call
         Assert.Equal("prepared", p.Prepare("set the total to exactly 100.01").Status); // a hint is a new attempt
+    }
+
+    [Fact]
+    public void A_reproduction_names_the_tickets_actual_result_and_the_words_of_its_failure_that_show_it()
+    {
+        // D95: the quote must be in the ticket, and `shows` in the message the test really printed; each gets the retry.
+        using var p = new Proof();
+        p.Prepare();
+        p.App.Write(TestFile, TestCode);
+        p.Runner.Tests.Enqueue(AssertFailure());
+        var made = p.Check(Written(actual: "An order of 150 goes straight through to shipping."));
+        Assert.Equal("retry", made.Status);
+        Assert.Contains(made.Errors!, e => e.StartsWith("actualQuote") && e.Contains("isn't in the ticket word for word"));
+
+        p.Runner.Tests.Enqueue(AssertFailure());
+        p.App.Write(TestFile, TestCode);
+        var wrong = p.Check(Written(shows: "but found 150"));
+        Assert.Equal("failed", wrong.Status);   // the retry was used: a second miss is recorded as failed
+        Assert.Contains(wrong.Errors!, e => e.Contains("shows \"but found 150\" isn't in the failure message") && e.Contains("No exception was thrown"));
+    }
+
+    [Fact]
+    public void A_reproduction_without_shows_is_asked_for_it_with_the_message()
+    {
+        using var p = new Proof();
+        p.Prepare();
+        p.App.Write(TestFile, TestCode);
+        p.Runner.Tests.Enqueue(AssertFailure());
+        var step = p.Check(Written(shows: null));
+        Assert.Equal("retry", step.Status);
+        Assert.Contains(step.Errors!, e => e.StartsWith("Say which words of the failure message") && e.Contains("No exception was thrown"));
+    }
+
+    [Fact]
+    public void Shows_is_checked_against_every_run_the_whole_message_and_not_the_tests_own_words()
+    {
+        JsonObject R(string m) => new() { ["message"] = m };
+        // A Playwright proof runs 3 times: every run must show it.
+        Assert.NotNull(BugProof.ShowsProblem("Received: \"0\"", [R("Received: \"0\""), R("Received: \"0\""), R("Received: \"5\"")]));
+        // A message cut for storage is still checked whole.
+        var longMessage = new string('x', 2100) + " to contain \"English\"";
+        Assert.Null(BugProof.ShowsProblem("to contain \"English\"", [new JsonObject { ["message"] = longMessage[..2000], ["full"] = longMessage }]));
+        // Words the test itself holds (its expected value, its "because" text) say nothing about what the code did.
+        const string source = "result.Should().Be(2, \"because Jellyfin needs one episode per file\");";
+        Assert.Contains("is written in your test",
+            BugProof.ShowsProblem("because Jellyfin needs one episode per file", [R("Expected value to be 2 because Jellyfin needs one episode per file, but found 4.")], source));
+        Assert.Null(BugProof.ShowsProblem("but found 4", [R("Expected value to be 2 because Jellyfin needs one episode per file, but found 4.")], source));
+    }
+
+    [Fact]
+    public void Shows_is_kept_only_on_a_reproduced_attempt()
+    {
+        using var p = new Proof();
+        p.Prepare();
+        p.App.Write(TestFile, TestCode);
+        p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", "", "")));
+        Assert.Equal("recorded", p.Check(Written()).Status);
+        var attempt = p.Record["attempts"]![0]!;
+        Assert.Equal("not-reproduced", (string?)p.Record["outcome"]);
+        Assert.Null(attempt["shows"]);   // never checked against a failure, so never shown as "the test got"
+        Assert.Equal("An order of 150 is placed without approval.", (string?)attempt["actualQuote"]);
+    }
+
+    [Theory]
+    [InlineData("found 11", "Expected value to be less than or equal to 1, but found 11 (difference of 10).", true)]
+    [InlineData("FOUND  11", "Expected value to be less than or equal to 1, but found 11.", true)]                // case, spacing
+    [InlineData("toBeVisible() failed", "Error: \u001b[2mexpect(\u001b[22mlocator).toBeVisible() failed", true)]
+    [InlineData("expect(locator).toBeVisible() failed", "Error: \u001b[2mexpect(\u001b[22mlocator).toBeVisible() failed", true)]
+    [InlineData("but found 12", "Expected value to be 1, but found 11.", false)]
+    public void Shows_must_be_in_the_failure_message(string shows, string message, bool ok)
+    {
+        var problem = BugProof.ShowsProblem(shows, [new JsonObject { ["message"] = message }]);
+        Assert.Equal(ok, problem is null);
     }
 
     [Fact]
@@ -244,7 +326,7 @@ public class BugProofTests
         var claude = JsonNode.Parse("""{"subtype":"error_max_turns","num_turns":16,"total_cost_usd":0.62,"usage":{"input_tokens":1000,"output_tokens":100}}""");
         Assert.Equal("recorded", p.Check("", claude).Status);
         Assert.Equal("not-reproduced", (string?)p.Record["outcome"]);
-        Assert.StartsWith("hit the cap", (string?)p.Record["attempts"]![0]!["reason"]);
+        Assert.Equal("hit the cap: Claude Code stopped at its turn limit", (string?)p.Record["attempts"]![0]!["reason"]);
         var over = JsonNode.Parse("""{"subtype":"success","num_turns":9,"total_cost_usd":1.40}""");
         p.Prepare("try harder");
         p.Check(Written(), over);
@@ -271,6 +353,50 @@ public class BugProofTests
         Assert.Equal("not_a_bug", Assert.Throws<StangentException>(() => r.Prepare()).Code);
     }
 
+    /// <summary>Re-picks the points: every code point removed, outside parts added or removed; then the bundle again.</summary>
+    static void Outside(Proof p, string[]? add = null, string[]? remove = null, bool dropCode = true)
+    {
+        var ctx = TicketContext.Load(p.App.Repo);
+        var ids = dropCode ? TicketPoints.LoadOrFail(p.Root, Key)["points"]!.AsArray().Select(x => (string)x!["id"]!).ToArray() : [];
+        TicketPoints.Update(p.App.Repo, ctx, Key, [], ids, "Pat Developer", add ?? [], remove ?? []);
+        TicketBundle.Build(p.App.Repo, ctx, Key);
+    }
+
+    [Fact]
+    public void With_every_part_outside_the_code_proof_is_skipped_until_a_developer_removes_the_tag()
+    {
+        using var p = new Proof();
+        var code = TicketPoints.LoadOrFail(p.Root, Key)["points"]!.AsArray().Select(x => (string)x!["id"]!).ToArray();
+        Outside(p, add: ["network: the proxy in front of it times out"]);
+        var skipped = p.Prepare();
+        Assert.Equal("recorded", skipped.Status);
+        Assert.Equal("none", skipped.Action);                          // no AI call (D83)
+        Assert.Equal("not-provable", (string?)p.Record["outcome"]);
+        Assert.True((bool?)p.Record["attempts"]![0]!["outside"]);
+        Assert.Contains("outside the code (network)", (string?)p.Record["attempts"]![0]!["reason"]);
+        Assert.Equal("current", p.Prepare().Status);
+
+        // The developer says it's in the code after all: the tag goes, the method comes back, and the reproducer gets its attempt.
+        var ctx = TicketContext.Load(p.App.Repo);
+        TicketPoints.Update(p.App.Repo, ctx, Key, code, [], "Pat Developer", removeOutside: ["network"]);
+        TicketBundle.Build(p.App.Repo, ctx, Key);
+        Assert.Equal(StepSpec.Prove.Agent, p.Prepare().Agent);
+    }
+
+    [Fact]
+    public void With_a_code_part_and_an_outside_part_the_reproducer_tries_and_not_provable_is_accepted_at_once()
+    {
+        using var p = new Proof();
+        Outside(p, add: ["deployment: only on the server behind the load balancer"], dropCode: false);
+        Assert.Equal(StepSpec.Prove.Agent, p.Prepare().Agent);         // a code point is there: proof runs
+        Assert.Contains("## Outside the code", File.ReadAllText(Path.Combine(p.Root, ".stangent", "tickets", Key, "prove", "input.md")));
+
+        Assert.Equal("recorded", p.Check("""{"outcome":"not-provable","reason":"it only happens behind the load balancer"}""").Status); // no push-back
+        Assert.Equal("not-provable", (string?)p.Record["outcome"]);
+        Assert.True((bool?)p.Record["attempts"]![0]!["outside"]);
+        Assert.Contains("outside the code: deployment", (string?)p.Record["attempts"]![0]!["reason"]);
+    }
+
     [Fact]
     public async Task Verify_passes_on_the_fix_only_when_the_test_passes_and_nothing_new_fails()
     {
@@ -291,6 +417,252 @@ public class BugProofTests
         var broke = (await BugProof.VerifyAsync(p.App.Repo, Key, p.Runner, TestContext.Current.CancellationToken))["verification"]!;
         Assert.False((bool)broke["passed"]!);
         Assert.Equal(["Shop.Tests.Billing.Charges"], broke["newFailures"]!.AsArray().Select(x => (string)x!));
+        Assert.Equal("new-failures", (string?)broke["result"]);
+    }
+
+    /// <summary>D107: nothing has run when the finder gives its reason, so the test isn't to start from that guess.</summary>
+    [Fact]
+    public void The_reproducers_input_doesnt_hold_the_finders_guess()
+    {
+        using var p = new Proof();
+        var file = new TicketPaths(p.Root, Key).BundleJson;
+        var bundle = JsonNode.Parse(File.ReadAllText(file))!.AsObject();
+        bundle["points"]!.AsArray().Add(new JsonObject
+        {
+            ["kind"] = "file", ["id"] = "Core/Order.cs", ["title"] = "Order.cs", ["signal"] = "ai", ["evidence"] = "An order of 150 is placed",
+            ["where"] = "ticket", ["by"] = "ai", ["line"] = "public void Place(int total)", ["why"] = "Place recurses forever",
+        });
+        File.WriteAllText(file, bundle.ToJsonString());
+        p.Prepare();
+        var input = File.ReadAllText(Path.Combine(p.Root, ".stangent", "tickets", Key, "prove", "input.md"));
+        Assert.Contains("`Core/Order.cs`", input);
+        Assert.Contains("public void Place(int total)", input);
+        Assert.DoesNotContain("Place recurses forever", input);
+    }
+
+    [Fact]
+    public void An_attempt_that_ran_out_says_so_and_a_passing_test_says_that()
+    {
+        using var capped = new Proof();
+        capped.Prepare();
+        capped.Check("{}", JsonNode.Parse("""{"type":"result","subtype":"error_max_turns","num_turns":30,"rounds":30,"total_cost_usd":0.5}"""));
+        Assert.Equal("not-reproduced", (string?)capped.Record["outcome"]);
+        Assert.Equal("ran-out", (string?)capped.Record["attempts"]![0]!["noProof"]);
+
+        using var passing = new Proof();
+        passing.Prepare();
+        passing.App.Write(TestFile, TestCode);
+        passing.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+        passing.Check(Written());
+        Assert.Equal("test-passed", (string?)passing.Record["attempts"]![0]!["noProof"]);
+
+        // Capped and blocked by our own rules: a setup failure says nothing about the bug, so it carries no reason of this kind.
+        using var blocked = new Proof();
+        blocked.Prepare();
+        var claude = JsonNode.Parse("""{"type":"result","subtype":"error_max_turns","num_turns":30,"rounds":30,"total_cost_usd":0.5}""")!;
+        claude["permission_denials"] = new JsonArray(Refused("Edit", "file_path", TestFile));
+        blocked.Check("{}", claude);
+        Assert.Equal("failed", (string?)blocked.Record["outcome"]);
+        Assert.Null(blocked.Record["attempts"]![0]!["noProof"]);
+    }
+
+    [Theory]
+    [InlineData("not-reproduced", "hit the cap: 31 of 30 turns", "ran-out")]
+    [InlineData("not-reproduced", "the test passes: …", "test-passed")]
+    [InlineData("not-reproduced-flaky", "the test failed on some runs", "flaky")]
+    [InlineData("reproduced", null, null)]
+    [InlineData("failed", "hit the cap: it isn't a not-reproduced", null)]
+    public void A_record_from_before_no_proof_is_read_from_its_reason(string outcome, string? reason, string? want) =>
+        Assert.Equal(want, BugProof.NoProof(new JsonObject { ["outcome"] = outcome, ["reason"] = reason }));
+
+    /// <summary>A reproduced proof, ready for --verify on "the fix": its failure's named words are "No exception was thrown".</summary>
+    static Proof Reproduced()
+    {
+        var p = new Proof();
+        p.Prepare();
+        p.App.Write(TestFile, TestCode);
+        p.Runner.Tests.Enqueue(AssertFailure());
+        p.Check(Written());
+        Assert.Equal("reproduced", (string?)p.Record["outcome"]);
+        return p;
+    }
+
+    static string FailureOn(string message, int line = 8) => TestReportTests.Trx((TestName, "Failed", message,
+        $"   at Shop.Tests.OrderTests.Rejects_orders_over_100() in /home/ci/shop/{TestFile}:line {line}"));
+
+    static async Task<JsonNode> Verify(Proof p) => (await BugProof.VerifyAsync(p.App.Repo, Key, p.Runner, TestContext.Current.CancellationToken))["verification"]!;
+
+    [Fact]
+    public async Task On_the_fix_a_failure_with_the_proofs_words_is_the_same_failure()
+    {
+        using var p = Reproduced();
+        p.Runner.Tests.Enqueue(AssertFailure());
+        p.Runner.All = TestReportTests.Trx((TestName, "Failed", "Assert.Throws() Failure: No exception was thrown", ""));
+        var v = await Verify(p);
+        Assert.Equal("same-failure", (string?)v["result"]);
+        Assert.False((bool)v["passed"]!);
+        Assert.Empty(v["newFailures"]!.AsArray());   // the reproduction test is the result, not a new failure
+    }
+
+    [Fact]
+    public async Task On_the_fix_a_failure_without_the_proofs_words_is_a_different_failure()
+    {
+        using var p = Reproduced();
+        p.Runner.Tests.Enqueue(FailureOn("Assert.Throws() Failure: Expected ArgumentException, got NullReferenceException"));
+        var v = await Verify(p);
+        Assert.Equal("different-failure", (string?)v["result"]);
+        Assert.False((bool)v["passed"]!);
+        Assert.Contains("looks gone", (string?)v["reason"]);
+    }
+
+    [Fact]
+    public async Task On_the_fix_a_setup_exception_is_a_different_failure_too()
+    {
+        using var p = Reproduced();
+        p.Runner.Tests.Enqueue(FailureOn("System.InvalidOperationException: no database", line: 6));
+        Assert.Equal("different-failure", (string?)(await Verify(p))["result"]);
+    }
+
+    [Theory]
+    [InlineData("Tests/OrderTests.cs(9,1): error CS7036: no argument given for 'release'", "doesn't compile")]
+    [InlineData("Core/Order.cs(3,1): error CS1002: ; expected", "doesn't build")]
+    public async Task On_the_fix_a_build_failure_says_whether_the_test_is_why(string error, string reason)
+    {
+        using var p = Reproduced();
+        p.Runner.BuildFails = error;
+        p.Runner.Commands.Clear();
+        var v = await Verify(p);
+        Assert.Equal("not-compiled", (string?)v["result"]);
+        Assert.Contains(reason, (string?)v["reason"]);
+        Assert.DoesNotContain(p.Runner.Commands, c => c.StartsWith("dotnet test", StringComparison.Ordinal));   // nothing to run
+    }
+
+    [Fact]
+    public async Task On_the_fix_a_run_with_no_result_cant_be_judged()
+    {
+        using var p = Reproduced();
+        p.Runner.Tests.Enqueue(TestReportTests.Trx(("Shop.Tests.Other.Something", "Passed", null, null)));
+        var v = await Verify(p);
+        Assert.Equal("not-run", (string?)v["result"]);
+        Assert.Contains("not-found", (string?)v["reason"]);
+    }
+
+    [Fact]
+    public async Task Verify_says_when_the_test_was_edited_after_the_proof()
+    {
+        using var p = Reproduced();
+        p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+        Assert.False((bool?)(await Verify(p))["testChanged"]);
+
+        p.App.Write(TestFile, TestCode + "\n// weakened");
+        p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+        var v = await Verify(p);
+        Assert.Equal("passed", (string?)v["result"]);
+        Assert.True((bool?)v["testChanged"]);
+        Assert.Contains("isn't the test that was reproduced", (string?)v["reason"]);
+    }
+
+    [Fact]
+    public async Task A_test_that_passes_alone_but_fails_with_the_rest_is_a_new_failure()
+    {
+        using var p = Reproduced();
+        p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+        p.Runner.All = TestReportTests.Trx((TestName, "Failed", "order-dependent", ""));
+        var v = await Verify(p);
+        Assert.Equal("new-failures", (string?)v["result"]);
+        Assert.False((bool)v["passed"]!);
+        Assert.Equal([TestName], v["newFailures"]!.AsArray().Select(x => (string)x!));
+    }
+
+    [Fact]
+    public async Task A_test_file_not_on_the_branch_is_not_run_even_if_a_same_named_test_would_pass()
+    {
+        using var p = Reproduced();
+        File.Delete(Path.Combine(p.Root, TestFile));
+        p.Runner.Commands.Clear();
+        var v = await Verify(p);
+        Assert.Equal("not-run", (string?)v["result"]);
+        Assert.False((bool)v["passed"]!);
+        Assert.Contains("isn't on this branch", (string?)v["reason"]);
+        Assert.Null((bool?)v["testChanged"]);
+        Assert.Empty(p.Runner.Commands);
+    }
+
+    [Fact]
+    public async Task A_test_with_only_its_line_endings_changed_isnt_edited()
+    {
+        using var p = Reproduced();
+        var file = Path.Combine(p.Root, TestFile);
+        File.WriteAllText(file, File.ReadAllText(file).Replace("\n", "\r\n"));   // SpecApp.Write would strip them
+        Assert.Contains("\r\n", File.ReadAllText(file));
+        p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+        Assert.False((bool?)(await Verify(p))["testChanged"]);
+    }
+
+    [Fact]
+    public async Task A_pass_says_when_no_full_run_checked_the_other_tests()
+    {
+        using var p = Reproduced();
+        // No report; a crashed host's report with no results (a real one has exit 1 and 0 tests); a cut-off report.
+        foreach (var report in new[] { null, TestReportTests.Trx(), "<TestRun><Results>" })
+        {
+            p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+            p.Runner.All = report;
+            var v = await Verify(p);
+            Assert.Equal("passed", (string?)v["result"]);
+            Assert.False((bool?)v["othersChecked"]);
+            Assert.Contains("other tests weren't checked", (string?)v["reason"]);
+        }
+
+        p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+        p.Runner.All = TestReportTests.Trx(("Shop.Tests.Other.Fine", "Passed", null, null));
+        var checkedRun = await Verify(p);
+        Assert.True((bool?)checkedRun["othersChecked"]);
+        Assert.Contains("nothing new fails", (string?)checkedRun["reason"]);
+    }
+
+    [Fact]
+    public async Task A_build_error_in_the_test_is_found_past_ten_other_errors()
+    {
+        using var p = Reproduced();
+        p.Runner.BuildFails = string.Join('\n', Enumerable.Range(1, 12).Select(i => $"Core/Order{i}.cs(1,1): error CS1002: ; expected")) + "\nTests\\OrderTests.cs(9,1): error CS7036: no argument";
+        Assert.Contains("the test doesn't compile", (string?)(await Verify(p))["reason"]);
+    }
+
+    /// <summary>The saved Sonarr runs have no <c>shows</c> (before D95). SONB-30's exception differs, with a stack; the
+    /// second case is the same message with its stack's line moved; the third the same with colour around the stack.</summary>
+    [Theory]
+    [InlineData("Boom: ArgumentNullException\n   at A.B() in a.cs:line 421", "Boom: NullReferenceException\n   at A.C() in a.cs:line 472", "different-failure")]
+    [InlineData("found Imported\n   at A.B() in a.cs:line 10", "found Imported\n   at A.B() in a.cs:line 12", "same-failure")]
+    [InlineData("found Imported\n   at A.B() in a.cs:line 10", "found Imported\n\u001b[2m   at A.B() in a.cs:line 12\u001b[0m", "same-failure")]
+    public void A_proof_from_before_shows_compares_the_message_without_its_stack(string before, string after, string want)
+    {
+        var attempt = new JsonObject { ["runs"] = new JsonArray(new JsonObject { ["result"] = "failed-on-assertion", ["message"] = before }) };
+        Assert.Equal(want, BugProof.OnFixResult(attempt, [new JsonObject { ["result"] = "failed-on-assertion", ["message"] = after }], 0));
+    }
+
+    static JsonObject RunWith(string result, string message = "") => new() { ["result"] = result, ["message"] = message };
+
+    [Fact]
+    public void A_mixed_playwright_run_is_a_failure_not_a_pass()
+    {
+        var attempt = new JsonObject { ["shows"] = "found 3 rows" };
+        Assert.Equal("passed", BugProof.OnFixResult(attempt, [RunWith("passed"), RunWith("passed"), RunWith("passed")], 0));
+        Assert.Equal("same-failure", BugProof.OnFixResult(attempt, [RunWith("passed"), RunWith("failed-on-assertion", "Expected 2, found 3 rows"), RunWith("passed")], 0));
+        Assert.Equal("different-failure", BugProof.OnFixResult(attempt, [RunWith("passed"), RunWith("failed-on-assertion", "timeout on the click"), RunWith("passed")], 0));
+        // One run still showing the reported failure is enough: it isn't gone.
+        Assert.Equal("same-failure", BugProof.OnFixResult(attempt, [RunWith("failed-on-assertion", "timeout on the click"), RunWith("failed-on-assertion", "found 3 rows")], 0));
+    }
+
+    [Fact]
+    public void The_proofs_words_match_as_they_do_at_the_proof_whatever_the_colour_case_or_length()
+    {
+        var attempt = new JsonObject { ["shows"] = "Found Imported" };
+        Assert.Equal("same-failure", BugProof.OnFixResult(attempt, [RunWith("failed-on-assertion", "Expected x, \u001b[31mfound\u001b[0m imported")], 0));
+        // The words past the stored cut are in `full`, kept in memory while the check runs.
+        var cut = RunWith("failed-on-assertion", new string('x', 2000));
+        cut["full"] = new string('x', 3000) + " found imported";
+        Assert.Equal("same-failure", BugProof.OnFixResult(attempt, [cut], 0));
     }
 
     [Theory]
@@ -326,6 +698,26 @@ public class BugProofTests
         var script = File.ReadAllText(Path.Combine(p.Root, ".stangent", "tickets", Key, "tools", "playwright.sh"));
         Assert.Contains("'e2e/stangent'/*.spec.ts", script);
         Assert.Contains("only a spec in e2e/stangent/", script);
+    }
+
+    [Fact]
+    public void Playwright_runs_with_a_config_beside_the_repos_own_that_points_at_the_served_app()
+    {
+        // Generality audit items 2 and 3: the repo's config may fix its baseURL, test folder and file pattern.
+        using var p = new Proof(AppSetting);
+        p.App.Write("e2e/playwright.config.ts", "export default { testDir: './tests', testMatch: '**/*.e2e.ts', webServer: { command: 'npm start' } };");
+        p.Prepare();
+        var config = File.ReadAllText(Path.Combine(p.Root, "e2e", AppSession.ConfigFile));
+        Assert.Contains("import * as own from \"./playwright.config.ts\"", config);
+        Assert.Contains("baseURL: process.env.BASE_URL", config);
+        Assert.Contains("webServer: undefined", config);
+        Assert.Contains(System.Text.Json.JsonSerializer.Serialize(Path.Combine(p.Root, "e2e", "stangent")), config);
+        Assert.Contains("name,", config);                                                          // one project of stangent's own
+        Assert.Contains("dependencies: like.dependencies", config);                               // after the repo's login setup
+        Assert.StartsWith("// @ts-nocheck", config);
+        var run = $"--config {AppSession.ConfigFile} --project={AppSession.Project}";
+        Assert.Contains(run, File.ReadAllText(Path.Combine(p.Root, ".stangent", "tickets", Key, "tools", "playwright.sh")));
+        Assert.Contains(run, new TestTarget("p", TestTarget.Playwright, "playwright", "e2e/stangent", "e2e", ["*.spec.ts"], []).TestCommand("stangent/a.spec.ts", "a", "r.json"));
     }
 
     [Fact]
@@ -394,7 +786,7 @@ public class BugProofTests
         using var p = new Proof(AppSetting);
         p.Prepare();
         var tools = BugProof.DriverLimits(p.App.Repo, Key)["allowedTools"]!.AsArray().Select(t => (string)t!).ToList();
-        Assert.Contains($"Edit(.stangent/tickets/{Key}/prove/output.json)", tools);
+        Assert.Contains($"Edit({ClaudeRules.Absolute(Path.Combine(p.Root, ".stangent", "tickets", Key, "prove", "output.json"))})", tools);
         Assert.DoesNotContain(tools, t => t.Contains("prove/**", StringComparison.Ordinal));
     }
 
@@ -432,11 +824,13 @@ public class BugProofTests
             ["outcome"] = "test-written", ["target"] = "playwright:e2e/stangent", ["testFile"] = spec, ["testName"] = "orders rejects big totals",
             ["assertion"] = new JsonObject { ["line"] = 4, ["text"] = "await expect(page.getByText('Needs approval')).toBeVisible();" },
             ["expectedQuote"] = "Orders over 100 are rejected until someone approves them.",
+            ["actualQuote"] = "An order of 150 is placed without approval.", ["shows"] = "toBeVisible() failed",
         }.ToJsonString();
 
         foreach (var r in new[] { Fail(), Pass(), Fail() }) p.Runner.Playwright.Enqueue(r);
         p.Check(output);
         Assert.Equal("not-reproduced-flaky", (string?)p.Record["outcome"]);
+        Assert.Equal("flaky", (string?)p.Record["attempts"]![0]!["noProof"]);
         Assert.Equal(1, p.Runner.Started);
         Assert.Contains(p.Runner.Commands, c => c == "./seed.sh");
 
@@ -465,18 +859,389 @@ public class BugProofTests
     }
 
     [Fact]
+    public void A_run_inside_its_rounds_is_not_capped_however_many_tool_calls_it_made()
+    {
+        using var p = new Proof();
+        p.Prepare();
+        p.App.Write(TestFile, TestCode);
+        p.Runner.Tests.Enqueue(AssertFailure());
+        p.Runner.All = TestReportTests.Trx((TestName, "Failed", "Assert.Throws() Failure", ""));
+        var finished = JsonNode.Parse("""{"type":"result","subtype":"success","num_turns":48,"rounds":29,"total_cost_usd":0.43}""");
+        Assert.Equal("recorded", p.Check(Written(), finished).Status);
+        Assert.Equal("reproduced", (string?)p.Record["outcome"]);
+        Assert.NotEmpty(p.Runner.Commands); // code built and ran the test
+    }
+
+    [Fact]
+    public void A_retry_gets_the_rounds_left_not_what_num_turns_left()
+    {
+        using var p = new Proof();
+        p.Prepare();
+        p.App.Write(TestFile, TestCode);
+        var first = JsonNode.Parse("""{"type":"result","subtype":"success","num_turns":27,"rounds":18,"total_cost_usd":0.2}""");
+        Assert.Equal("retry", p.Check(Written(quote: "a sentence the ticket never says at all"), first).Status);
+        Assert.Equal(12, (int)BugProof.DriverLimits(p.App.Repo, Key)["maxTurns"]!);
+    }
+
+    static JsonObject Refused(string tool, string field, string value) =>
+        new() { ["tool_name"] = tool, ["tool_use_id"] = "toolu_1", ["tool_input"] = new JsonObject { [field] = value } };
+
+    static RunStep CheckRefused(Proof p, string? output, params JsonObject[] refused)
+    {
+        var file = Path.Combine(p.Root, ".stangent", "tickets", Key, "prove", "output.json");
+        if (output is null) File.Delete(file); else File.WriteAllText(file, output);
+        var claude = Proof.Ok(turns: 12);
+        claude["permission_denials"] = new JsonArray([.. refused]);
+        return BugProof.CheckAsync(p.App.Repo, Key, claude, p.Runner).GetAwaiter().GetResult();
+    }
+
+    [Fact]
+    public void When_Claude_Code_refuses_what_stangents_rules_allow_the_attempt_is_a_setup_failure_and_tried_again_later()
+    {
+        // D89: the reproducer ran `cd Tests`, and Claude Code then refused its write to a file the target allows and the
+        // run of an allowed command; it ended with no result. That says nothing about the reproducer.
+        using var p = new Proof();
+        p.Prepare();
+        var step = CheckRefused(p, null,
+            Refused("Write", "file_path", Path.Combine(p.Root, TestFile)),
+            Refused("Bash", "command", $"cd {p.Root} && dotnet test 'Tests/Shop.Tests.csproj' --filter x"),
+            Refused("Bash", "command", "curl https://example.com"));                       // outside the rules: not the setup's fault
+        Assert.Equal("blocked", step.Status);
+        var attempt = p.Record["attempts"]![0]!;
+        Assert.Equal("failed", (string?)attempt["outcome"]);
+        Assert.True((bool)attempt["setupBlocked"]!);
+        Assert.Contains($"Write {TestFile}", (string?)attempt["reason"]);
+        Assert.Contains("Bash cd ", (string?)attempt["reason"]);
+        Assert.DoesNotContain("curl", (string?)attempt["reason"]);
+        Assert.Empty(p.Runner.Commands);                                                       // no retry, nothing run
+        Assert.Equal(StepSpec.BugReproducer, p.Prepare().Agent);                               // the next run tries again
+    }
+
+    [Fact]
+    public void Refusals_of_what_the_rules_do_not_allow_are_the_rules_working()
+    {
+        using var p = new Proof();
+        p.Prepare();
+        var step = CheckRefused(p, null,
+            Refused("Edit", "file_path", Path.Combine(p.Root, "Core", "OrderService.cs")),     // the code under test
+            Refused("Write", "file_path", Path.Combine(p.Root, "..", "elsewhere", "OrderTests.cs")),
+            Refused("Bash", "command", "rm -rf Tests"));
+        Assert.Equal("retry", step.Status);                                                    // the usual push-back
+        Assert.Empty(BugProof.Blocked(p.App.Repo, new TicketPaths(p.Root, Key), [], new JsonObject()));
+    }
+
+    [Fact]
+    public void A_test_that_reproduces_the_bug_counts_even_when_something_allowed_was_refused_on_the_way()
+    {
+        using var p = new Proof();
+        p.Prepare();
+        p.App.Write(TestFile, TestCode);
+        p.Runner.Tests.Enqueue(AssertFailure());
+        var step = CheckRefused(p, Written(), Refused("Edit", "file_path", Path.Combine(p.Root, TestFile)));
+        Assert.Equal("recorded", step.Status);
+        Assert.Equal("reproduced", (string?)p.Record["outcome"]);
+        Assert.Null(p.Record["attempts"]![0]!["setupBlocked"]);
+    }
+
+    [Fact]
+    public async Task A_start_command_that_exits_is_reported_at_once_with_its_own_error()
+    {
+        // D89: Sonarr's seed failed on old commits, its start script exited, and serve waited 300 s to say "didn't answer".
+        using var p = new Proof("  app: { start: ./run.sh, url: \"http://127.0.0.1:1/\", readySeconds: 120 }\n");
+        p.Prepare();
+        p.Runner.StartExits = "Runtime error near line 4: UNIQUE constraint failed: Series.TvRageId (19)\n";
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var e = await Assert.ThrowsAsync<StangentException>(() => AppSession.ServeAsync(p.App.Repo, Key, p.Runner, CancellationToken.None));
+        Assert.Equal("app_not_ready", e.Code);
+        Assert.Contains("tickets.app.start exited (code 1)", e.Message);
+        Assert.Contains("UNIQUE constraint failed", e.Message);
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(30), $"took {watch.Elapsed}");
+        Assert.Equal(1, p.Runner.Stopped);
+    }
+
+    [Fact]
+    public void A_backend_point_picked_as_a_page_offers_the_unit_tests_that_reach_the_code_behind_it()
+    {
+        // D89: the only point is the POST /api/orders endpoint's page, not a symbol. Its slice runs through the action
+        // into Shop.Core, which Tests/Shop.Tests.csproj covers, so the unit target is offered, not just "no project covers".
+        using var p = new Proof(description: Description.Replace("Call `OrderService.Place` with 150.", "Place an order of 150."));
+        var ctx = TicketContext.Load(p.App.Repo);
+        var existing = TicketPoints.Update(p.App.Repo, ctx, Key, [], [], "Pat Developer")["points"]!.AsArray().Select(x => (string)x!["id"]!).ToList();
+        TicketPoints.Update(p.App.Repo, ctx, Key, [SpecApp.Post], existing, "Pat Developer");
+        var bundle = TicketBundle.Build(p.App.Repo, ctx, Key);
+        Assert.Equal([SpecApp.Post], bundle["points"]!.AsArray().Select(x => (string)x!["id"]!).ToList());
+        Assert.Equal(StepSpec.BugReproducer, p.Prepare().Agent);
+        var target = AiStep.State(new TicketPaths(p.Root, Key), StepSpec.Prove)["targets"]!.AsArray().Select(t => TestTarget.FromJson(t!)).Single();
+        Assert.Equal("dotnet:Tests/Shop.Tests.csproj", target.Id);
+        Assert.Contains("Core/Shop.Core.csproj", target.Covers);
+    }
+
+    [Theory]
+    [InlineData("dotnet test 'Tests/Shop.Tests.csproj' && rm -rf Core")]       // refused for the rm
+    [InlineData("dotnet test 'Tests/Shop.Tests.csproj'; curl https://example.com")]
+    [InlineData("dotnet test 'Tests/Shop.Tests.csproj' > /etc/x")]
+    [InlineData("dotnet test 'Tests/Shop.Tests.csproj' 2>&1 | tail -20")]
+    [InlineData("cd Tests")]
+    [InlineData("dotnet test 'Tests/Shop.Tests.csproj' & rm -rf Core")]        // one & sends it to the background
+    [InlineData("cd /etc && dotnet test 'Tests/Shop.Tests.csproj'")]            // a cd out of the repo
+    [InlineData("cd .. && dotnet test 'Tests/Shop.Tests.csproj'")]
+    public void A_command_line_counts_as_blocked_only_when_all_of_it_is_allowed(string command)
+    {
+        using var p = new Proof();
+        p.Prepare();
+        var paths = new TicketPaths(p.Root, Key);
+        var targets = AiStep.State(paths, StepSpec.Prove)["targets"]!.AsArray().Select(t => TestTarget.FromJson(t!)).ToList();
+        JsonObject Result(string c) => new() { ["permission_denials"] = new JsonArray(Refused("Bash", "command", c)) };
+        Assert.Empty(BugProof.Blocked(p.App.Repo, paths, targets, Result(command)));
+        Assert.Single(BugProof.Blocked(p.App.Repo, paths, targets, Result($"cd {p.Root} && dotnet test 'Tests/Shop.Tests.csproj' --filter x")));
+        Assert.Single(BugProof.Blocked(p.App.Repo, paths, targets, Result("cd Tests && cd .. && dotnet test 'Tests/Shop.Tests.csproj' --filter x")));
+    }
+
+    [Fact]
+    public async Task A_blocked_attempt_is_a_setup_failure_whether_it_hit_the_cap_said_not_provable_or_wrote_a_test_that_passes()
+    {
+        var write = Refused("Write", "file_path", "Tests/OrderTests.cs");                    // a relative path, from the repo
+        using (var p = new Proof())
+        {
+            p.Prepare();
+            var claude = Proof.Ok(turns: 31);
+            claude["permission_denials"] = new JsonArray(write.DeepClone());
+            File.Delete(Path.Combine(p.Root, ".stangent", "tickets", Key, "prove", "output.json"));
+            Assert.Equal("blocked", (await BugProof.CheckAsync(p.App.Repo, Key, claude, p.Runner, TestContext.Current.CancellationToken)).Status);
+            Assert.True((bool)p.Record["attempts"]![0]!["setupBlocked"]!);
+        }
+        using (var p = new Proof())
+        {
+            p.Prepare();
+            Assert.Equal("blocked", CheckRefused(p, """{"outcome":"not-provable","reason":"only a browser test is offered"}""", (JsonObject)write.DeepClone()).Status);
+            Assert.Equal("failed", (string?)p.Record["outcome"]);
+        }
+        using (var p = new Proof())
+        {
+            p.Prepare();
+            p.App.Write(TestFile, TestCode);
+            p.Runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Passed", null, null)));
+            Assert.Equal("blocked", CheckRefused(p, Written(), (JsonObject)write.DeepClone()).Status);
+            Assert.True((bool)p.Record["attempts"]![0]!["setupBlocked"]!);
+            Assert.NotEmpty(p.Record["attempts"]![0]!["runs"]!.AsArray());                     // what ran is kept
+        }
+    }
+
+    [Fact]
+    public async Task A_start_command_that_exits_0_is_waited_for_as_before()
+    {
+        // It may have started the app in the background (docker compose up -d): not a failure by itself.
+        using var p = new Proof("  app: { start: ./run.sh, url: \"http://127.0.0.1:1/\", readySeconds: 2 }\n");
+        p.Prepare();
+        p.Runner.StartExits = "started in the background\n";
+        p.Runner.StartExitCode = 0;
+        var e = await Assert.ThrowsAsync<StangentException>(() => AppSession.ServeAsync(p.App.Repo, Key, p.Runner, CancellationToken.None));
+        Assert.Contains("didn't answer at http://127.0.0.1:1/ within 2 s", e.Message);
+        Assert.Contains("started in the background", e.Message);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]    // without the split the screen's slice walks through the endpoint into Shop.Api
+    public void Code_behind_a_page_widens_the_search_only_when_the_points_own_code_has_no_unit_test(bool split)
+    {
+        // D89 review: with Shop.Core's OrderService.Place as a point and the /orders screen too, the screen's slice reaches
+        // the Api endpoint. Counting that would score Api.Tests (Api and Core) above Tests (Core) by reach alone.
+        using var p = new Proof(split ? "" : "spec: { splitAtEndpoints: false }\n");
+        p.App.Write("Api/Shop.Api.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><ItemGroup><ProjectReference Include=\"..\\Core\\Shop.Core.csproj\" /></ItemGroup></Project>");
+        p.App.Write("ApiTests/Shop.Api.Tests.csproj", """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup><PackageReference Include="Microsoft.NET.Test.Sdk" /><PackageReference Include="xunit" /><ProjectReference Include="..\Api\Shop.Api.csproj" /><ProjectReference Include="..\Core\Shop.Core.csproj" /></ItemGroup>
+            </Project>
+            """);
+        var ctx = TicketContext.Load(p.App.Repo);
+        TicketPoints.Update(p.App.Repo, ctx, Key, ["page:/orders"], [], "Pat Developer");
+        TicketBundle.Build(p.App.Repo, ctx, Key);
+        p.Prepare();
+        var targets = AiStep.State(new TicketPaths(p.Root, Key), StepSpec.Prove)["targets"]!.AsArray().Select(t => TestTarget.FromJson(t!)).ToList();
+        Assert.All(targets.Where(t => t.Kind == TestTarget.Unit), t => Assert.Equal(["Core/Shop.Core.csproj"], t.Covers));
+        Assert.Contains(targets, t => t.Id == "dotnet:Tests/Shop.Tests.csproj");
+    }
+
+    const string NoRuntimeTrx = """
+        <?xml version="1.0" encoding="utf-8"?>
+        <TestRun id="1" name="run" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+          <ResultSummary outcome="Failed">
+            <Counters total="0" executed="0" passed="0" failed="0" error="0" />
+            <RunInfos>
+              <RunInfo computerName="ci" outcome="Error" timestamp="2026-11-01T00:38:10">
+                <Text>Testhost process for source(s) 'Tests.dll' exited with error: You must install or update .NET to run this application. Framework: 'Microsoft.NETCore.App', version '8.0.29'</Text>
+              </RunInfo>
+            </RunInfos>
+          </ResultSummary>
+        </TestRun>
+        """;
+
+    [Fact]
+    public void A_test_runner_that_cannot_start_is_a_setup_failure_not_the_reproducers()
+    {
+        // D90: on an old commit the tests need .NET 8 and the machine has only 10. The TRX holds no test, only the host's
+        // error; it used to read as "no test named … ran", the reproducer's fault.
+        using var p = new Proof();
+        p.Prepare();
+        p.App.Write(TestFile, TestCode);
+        p.Runner.Tests.Enqueue(NoRuntimeTrx);
+        // Real VSTest output: the header comes first even when the host can't start (D90 recheck).
+        p.Runner.ListOutput = "The following Tests are available:\nTestPlatformException: Testhost process for source(s) 'Tests.dll' exited with error: You must install or update .NET to run this application.";
+        Assert.Equal("blocked", p.Check(Written()).Status);
+        var attempt = p.Record["attempts"]![0]!;
+        Assert.Equal("failed", (string?)attempt["outcome"]);
+        Assert.True((bool)attempt["setupBlocked"]!);
+        Assert.Contains("You must install or update .NET", (string?)attempt["reason"]);
+        Assert.Equal(BugProof.RunnerError, (string?)attempt["runs"]![0]!["result"]);
+        Assert.Contains("the .NET 8.0 runtime", (string?)attempt["advice"]);                    // D91
+    }
+
+    static string RunInfoTrx(string outcome, string text) => $"""
+        <?xml version="1.0" encoding="utf-8"?>
+        <TestRun id="1" name="run" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+          <ResultSummary outcome="Failed"><Counters total="0" executed="0" />
+            <RunInfos><RunInfo computerName="ci" outcome="{outcome}" timestamp="2026-11-01T00:38:10"><Text>{text}</Text></RunInfo></RunInfos>
+          </ResultSummary>
+        </TestRun>
+        """;
+
+    [Theory]
+    // The test crashed the host itself (a stack overflow in the code under test): the runner lists tests fine, so it's
+    // the test's doing and it gets the retry, not a stopped batch.
+    [InlineData("Error", "The active test run was aborted. Reason: Test host process crashed : Stack overflow.", "The following Tests are available:\n    Rejects_orders_over_100\n")]
+    // An ordinary wrong name: VSTest's RunInfo is a Warning.
+    [InlineData("Warning", "No test matches the given testcase filter `FullyQualifiedName~X` in /r/Tests.dll", "The following Tests are available:\n    Rejects_orders_over_100\n")]
+    // Two target frameworks, one runtime missing: the runner still lists tests from the other, so it isn't broken.
+    [InlineData("Warning", "No test matches the given testcase filter", "The following Tests are available:\n    Rejects_orders_over_100\nTesthost exited with error: You must install or update .NET to run this application.")]
+    public void A_run_with_no_result_is_the_runners_failure_only_when_the_runner_lists_no_tests(string outcome, string text, string list)
+    {
+        using var p = new Proof();
+        p.Prepare();
+        p.App.Write(TestFile, TestCode);
+        p.Runner.Tests.Enqueue(RunInfoTrx(outcome, text));
+        p.Runner.ListOutput = list;
+        Assert.Equal("retry", p.Check(Written()).Status);
+    }
+
+    [Fact]
+    public void Under_MTP_a_run_with_no_report_is_checked_by_listing_too()
+    {
+        // MTP with no runtime for the target exits non-zero and writes no report; its list says "Discovered 0 tests".
+        using var p = new Proof();
+        p.App.Write("global.json", """{"test":{"runner":"Microsoft.Testing.Platform"}}""");
+        p.Prepare();
+        p.App.Write(TestFile, TestCode);
+        p.Runner.Tests.Enqueue(null!);                                                         // no report written
+        p.Runner.ListOutput = "You must install or update .NET to run this application.\nDiscovered 0 tests";
+        Assert.Equal("blocked", p.Check(Written()).Status);
+        Assert.Contains(p.Runner.Commands, c => c == "dotnet test --project 'Tests/Shop.Tests.csproj' --no-build --list-tests");
+    }
+
+    [Fact]
+    public void The_list_command_lists_without_building_in_either_test_platform()
+    {
+        var t = new TestTarget("d", TestTarget.Unit, "dotnet", "T", "T/T.csproj", ["*.cs"], []) { Args = "-p:SolutionDir=/r/src/" };
+        Assert.Equal("dotnet test 'T/T.csproj' -p:SolutionDir=/r/src/ --no-build --list-tests", t.ListCommand(vstest: true));
+        Assert.Equal("dotnet test --project 'T/T.csproj' --no-build --list-tests", t.ListCommand(vstest: false));
+        Assert.Null(new TestTarget("v", TestTarget.Unit, "vitest", ".", null, ["*.test.ts"], []).ListCommand());
+    }
+
+    [Fact]
+    public void No_test_by_that_name_is_the_reproducers_mistake_only_if_the_runner_finds_tests_at_all()
+    {
+        // A runner whose adapter won't load (another commit's newer adapter left in a shared output folder) finds no
+        // tests at all: that's the setup. One that lists tests but not this one: the reproducer named it wrong.
+        const string Empty = """<?xml version="1.0" encoding="utf-8"?><TestRun id="1" name="run" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><ResultSummary outcome="Completed"><Counters total="0" /></ResultSummary></TestRun>""";
+        using (var p = new Proof())
+        {
+            p.Prepare();
+            p.App.Write(TestFile, TestCode);
+            p.Runner.Tests.Enqueue(Empty);
+            p.Runner.ListOutput = "The following Tests are available:\nNo test is available in /r/_tests/net8.0/Shop.Tests.dll. Make sure that test discoverer & executors are registered";
+            Assert.Equal("blocked", p.Check(Written()).Status);
+            Assert.Contains("finds no tests at all", (string?)p.Record["attempts"]![0]!["reason"]);
+            Assert.Contains(p.Runner.Commands, c => c.Contains("--list-tests", StringComparison.Ordinal));
+        }
+        using (var p = new Proof())
+        {
+            p.Prepare();
+            p.App.Write(TestFile, TestCode);
+            p.Runner.Tests.Enqueue(Empty);
+            Assert.Equal("retry", p.Check(Written()).Status);                                  // the usual push-back
+        }
+    }
+
+    [Fact]
+    public void The_proofs_build_gets_the_graph_builds_properties_unless_the_settings_give_them()
+    {
+        // Audit item 4: a project that builds only with $(SolutionDir) set builds for the graph, so it should for the proof.
+        using var p = new Proof();
+        p.App.Write("Shop.sln", "Project(\"x\") = \"Shop.Core\", \"Core\\Shop.Core.csproj\"\nProject(\"x\") = \"Shop.Tests\", \"Tests\\Shop.Tests.csproj\"\n");
+        p.Prepare();
+        var target = AiStep.State(new TicketPaths(p.Root, Key), StepSpec.Prove)["targets"]!.AsArray().Select(t => TestTarget.FromJson(t!)).Single();
+        Assert.Contains("-p:SolutionDir=" + p.Root.TrimEnd('/') + "/", target.Args);
+        Assert.Contains("-p:NuGetAudit=false", target.Args);
+
+        using var own = new Proof("  dotnetArgs: \"-p:SolutionDir={root}/src/ -p:NuGetAudit=true\"\n");
+        own.Prepare();
+        var mine = AiStep.State(new TicketPaths(own.Root, Key), StepSpec.Prove)["targets"]!.AsArray().Select(t => TestTarget.FromJson(t!)).Single();
+        Assert.Equal("-p:EnableWindowsTargeting=true -p:SolutionDir=" + own.Root.TrimEnd('/') + "/src/ -p:NuGetAudit=true", mine.Args);   // the settings win
+    }
+
+    [Fact]
+    public void A_test_project_reaching_the_code_through_a_long_chain_of_references_is_offered()
+    {
+        // Audit item 9: Tests → Web → Infrastructure → Application → Core. Two levels used to find nothing.
+        using var p = new Proof(testProject: false);
+        p.App.Write("App/App.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><ItemGroup><ProjectReference Include=\"..\\Core\\Shop.Core.csproj\" /></ItemGroup></Project>");
+        p.App.Write("Infra/Infra.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><ItemGroup><ProjectReference Include=\"..\\App\\App.csproj\" /></ItemGroup></Project>");
+        p.App.Write("Web/Web.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><ItemGroup><ProjectReference Include=\"..\\Infra\\Infra.csproj\" /></ItemGroup></Project>");
+        p.App.Write("Tests/Web.Tests.csproj", """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup><PackageReference Include="Microsoft.NET.Test.Sdk" /><PackageReference Include="xunit" /><ProjectReference Include="..\Web\Web.csproj" /></ItemGroup>
+            </Project>
+            """);
+        // (On macOS "Web/" lands in the fixture's existing "web/" folder: paths must match ignoring case.)
+        Assert.Equal(StepSpec.BugReproducer, p.Prepare().Agent);
+        var target = AiStep.State(new TicketPaths(p.Root, Key), StepSpec.Prove)["targets"]!.AsArray().Select(t => TestTarget.FromJson(t!)).Single();
+        Assert.Equal("dotnet:Tests/Web.Tests.csproj", target.Id);
+    }
+
+    [Fact]
+    public void Under_MTP_the_test_run_uses_the_build_that_just_ran()
+    {
+        var t = new TestTarget("d", TestTarget.Unit, "dotnet", "T", "T/T.csproj", ["*.cs"], []) { Args = "-p:NuGetAudit=false" };
+        Assert.Contains("dotnet test --project 'T/T.csproj' --no-build", t.TestCommand(null, "N.C.T", "/r/one.trx", vstest: false));
+    }
+
+    [Fact]
+    public void A_frontend_run_without_node_is_a_setup_failure_with_advice()
+    {
+        using var p = new Proof(testProject: false, description: Description.Replace("Call `OrderService.Place` with 150.", "Press save in `OrdersPage.save` with 150."),
+            packageJson: """{"devDependencies":{"vitest":"3.2.4"}}""");
+        p.Prepare();
+        const string file = "web/src/orders.test.ts";
+        p.App.Write(file, "import { test, expect } from 'vitest';\ntest('rejects big orders', () => {\n  expect(place(150)).toBe('needs approval');\n});");
+        p.Runner.FrontendFails = "bash: npx: command not found";
+        var output = Written(line: 3, text: "expect(place(150)).toBe('needs approval');", file: file, target: "vitest:.").Replace(TestName, "rejects big orders");
+        Assert.Equal("blocked", p.Check(output).Status);
+        Assert.Contains("Node.js isn't on the PATH", (string?)p.Record["attempts"]![0]!["advice"]);
+    }
+
+    [Fact]
     public void A_Vitest_package_at_the_repo_root_takes_a_test_anywhere_in_it()
     {
         using var p = new Proof(testProject: false, description: Description.Replace("Call `OrderService.Place` with 150.", "Press save in `OrdersPage.save` with 150."),
             packageJson: """{"devDependencies":{"vitest":"3.2.4"}}""");
         p.Prepare();
         var tools = BugProof.DriverLimits(p.App.Repo, Key)["allowedTools"]!.AsArray().Select(t => (string)t!).ToList();
-        Assert.Contains("Edit(**/*.test.ts)", tools);
+        Assert.Contains($"Edit({ClaudeRules.Absolute(p.Root)}/**/*.test.ts)", tools);
         const string file = "web/src/orders.test.ts";
         p.App.Write(file, "import { test, expect } from 'vitest';\ntest('rejects big orders', () => {\n  expect(place(150)).toBe('needs approval');\n});");
         p.Runner.Vitest.Enqueue("""{"testResults":[{"assertionResults":[{"fullName":"rejects big orders","status":"failed","failureMessages":["Error: expect(received).toBe(expected)\n    at /repo/web/src/orders.test.ts:3:21"]}]}]}""");
         p.Runner.Vitest.Enqueue("""{"testResults":[{"assertionResults":[{"fullName":"rejects big orders","status":"failed","failureMessages":["x"]}]}]}""");
-        var output = Written(line: 3, text: "expect(place(150)).toBe('needs approval');", file: "./" + file, target: "vitest:.").Replace(TestName, "rejects big orders");
+        var output = Written(line: 3, text: "expect(place(150)).toBe('needs approval');", file: "./" + file, target: "vitest:.", shows: "toBe(expected)").Replace(TestName, "rejects big orders");
         Assert.Equal("recorded", p.Check(output).Status);
         Assert.Equal("reproduced", (string?)p.Record["outcome"]);
         Assert.Contains(p.Runner.Commands, c => c.Contains("-t 'rejects big orders$'", StringComparison.Ordinal));
@@ -516,14 +1281,27 @@ public class BugProofTests
         public int Started { get; private set; }
         public int Stopped { get; set; }
 
-        sealed class Stopper(FakeRunner runner) : IAsyncDisposable
+        /// <summary>When set, the start command "exits" at once with this output (a seed that failed, D89).</summary>
+        public string? StartExits { get; set; }
+        /// <summary>When set, every npx run fails at once with this output and exit 127 (Node missing).</summary>
+        public string? FrontendFails { get; set; }
+        /// <summary>What `dotnet test --list-tests` prints.</summary>
+        public string ListOutput { get; set; } = "The following Tests are available:\n    Rejects_orders_over_100\n";
+        public int StartExitCode { get; set; } = 1;
+
+        sealed class Stopper(FakeRunner runner, string? exited) : IRunningProcess
         {
+            public bool HasExited => exited is not null;
+            public int? ExitCode => exited is null ? null : runner.StartExitCode;
+            public string Output => exited ?? "";
             public ValueTask DisposeAsync() { runner.Stopped++; return ValueTask.CompletedTask; }
         }
 
         public Task<CommandResult> RunAsync(string command, string cwd, TimeSpan timeout, IReadOnlyDictionary<string, string>? env = null, CancellationToken ct = default)
         {
             Commands.Add(command);
+            if (command.Contains("--list-tests", StringComparison.Ordinal))
+                return Task.FromResult(new CommandResult(0, ListOutput, false, 5));
             if (command.StartsWith("dotnet build", StringComparison.Ordinal))
                 return Task.FromResult(BuildFails is null ? new CommandResult(0, "Build succeeded.", false, 5) : new CommandResult(1, BuildFails, false, 5));
             if (command.StartsWith("dotnet test", StringComparison.Ordinal))
@@ -533,6 +1311,8 @@ public class BugProofTests
                 if (content is not null) File.WriteAllText(report, content);
                 return Task.FromResult(new CommandResult(1, "", false, 10));
             }
+            if (FrontendFails is not null && command.StartsWith("npx ", StringComparison.Ordinal))
+                return Task.FromResult(new CommandResult(127, FrontendFails, false, 1));
             if (command.StartsWith("npx vitest", StringComparison.Ordinal))
             {
                 File.WriteAllText(Regex.Match(command, "--outputFile='([^']+)'").Groups[1].Value, Vitest.Dequeue());
@@ -548,11 +1328,11 @@ public class BugProofTests
             return Task.FromResult(new CommandResult(0, "", false, 1));
         }
 
-        public IAsyncDisposable Start(string command, string cwd, IReadOnlyDictionary<string, string>? env = null)
+        public IRunningProcess Start(string command, string cwd, IReadOnlyDictionary<string, string>? env = null)
         {
             Started++;
             Commands.Add("start: " + command);
-            return new Stopper(this);
+            return new Stopper(this, StartExits);
         }
 
         sealed class Nothing : IAsyncDisposable { public ValueTask DisposeAsync() => ValueTask.CompletedTask; }

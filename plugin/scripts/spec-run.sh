@@ -68,8 +68,9 @@ run_page() {
     agent="$(jq -r '.result.next.agent' <<<"$step")"
     prompt="$(jq -r '.result.next.prompt' <<<"$step")"
     if [ -n "$AGENTS" ]; then
-      $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" ${MODEL:+--model "$MODEL"} \
-        --permission-mode dontAsk --allowedTools "Read(.stangent/**)" "Edit(.stangent/**)" --output-format json "$prompt" >"$usage" 2>/dev/null || true
+      # Absolute rules and each command back in the repo (D89): a `cd` mustn't change what the rules allow.
+      CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1 $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" ${MODEL:+--model "$MODEL"} \
+        --permission-mode dontAsk --allowedTools "Read(/$(pwd -P)/.stangent/**)" "Edit(/$(pwd -P)/.stangent/**)" --output-format json "$prompt" >"$usage" 2>/dev/null || true
     else
       single_turn "$step" "$usage"
     fi

@@ -24,8 +24,8 @@ static class TicketSteps
         ticket.Subcommands.Add(bundle);
 
         var hintOption = new Option<string?>("--hint") { Description = "Another way to reproduce it, from the developer: a new attempt with this added (D75)." };
-        var confirmOption = new Option<bool>("--confirm") { Description = "Confirm the reproduced failure matches the reported actual result (D75)." };
-        var verifyOption = new Option<bool>("--verify") { Description = "On the fix branch: the test passes and nothing else started failing (D18)." };
+        var confirmOption = new Option<bool>("--confirm") { Description = "Confirm the reproduced failure is the reported problem and a bug, not the code working as meant (D75, D96)." };
+        var verifyOption = new Option<bool>("--verify") { Description = "On the fix branch: the test passes and nothing else started failing (D18); if not, what kind of failure it was (D105)." };
         var prove = new Command("prove", "Prove a bug before it's fixed: prepare the reproducer's input (D75, D76); --confirm or --verify afterwards.") { TicketCommands.KeyArg, hintOption, confirmOption, verifyOption };
         prove.SetAction(pr => Cli.Run(pr, "ticket prove", ctx =>
         {
@@ -61,11 +61,12 @@ static class TicketSteps
 
         var draftArg = new Argument<string>("draft") { Description = "The draft: questions or resolution (with the default tone), questions-client, or a path to its .json." };
         var againOption = new Option<bool>("--again") { Description = "Post a draft that was already posted." };
-        var post = new Command("post", "Post a checked draft under your own Jira login, and record it (D74). Nothing else is written to the ticket.") { TicketCommands.KeyArg, draftArg, againOption };
+        var staleOption = new Option<bool>("--stale") { Description = "Post a draft whose inputs have changed since it was checked (D108)." };
+        var post = new Command("post", "Post a checked draft under your own Jira login, and record it (D74). Nothing else is written to the ticket.") { TicketCommands.KeyArg, draftArg, againOption, staleOption };
         post.SetAction(pr => Cli.Run(pr, "ticket post", ctx => TicketCommands.Async(async () =>
         {
             await using var tracker = TicketCommands.Tracker(ctx);
-            return (JsonNode)await TicketDrafts.PostAsync(ctx.Repo, tracker, pr.GetValue(TicketCommands.KeyArg)!, pr.GetValue(draftArg)!, TicketCommands.Who(ctx), pr.GetValue(againOption), TimeProvider.System);
+            return (JsonNode)await TicketDrafts.PostAsync(ctx.Repo, tracker, pr.GetValue(TicketCommands.KeyArg)!, pr.GetValue(draftArg)!, TicketCommands.Who(ctx), pr.GetValue(againOption), TimeProvider.System, stale: pr.GetValue(staleOption));
         })));
         ticket.Subcommands.Add(post);
     }

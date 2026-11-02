@@ -1,0 +1,9 @@
+{
+  "number": 1891,
+  "title": "Moving more than 1 item into a Free organization makes for the Attachment check to fail",
+  "body": "### Steps To Reproduce\r\n\r\n1. Go to https://vault.bitwarden.com/#/vault\r\n2. Select at least 2 items to move, one of them with an Attachment\r\n3. Move all of them to a Free organization\r\n4. The item with an attachment gets moved to a Free organization:\r\n\r\n![image](https://user-images.githubusercontent.com/5418577/155098218-a999cf27-d219-4135-958a-58b2abfcf30a.png)\r\n\r\n### Expected Result\r\n\r\nThe item with the attachment should remain in your personal vault and throw the following error:\r\n\r\n![image](https://user-images.githubusercontent.com/5418577/155097661-03716a2d-f0b9-4a0b-8756-d510f70636c7.png)\r\n\r\n\r\n### Actual Result\r\n\r\nThe item with an attachment gets moved to a Free organization, which renders the attachment inaccessible.\r\n\r\n### Operating System\r\n\r\nLinux\r\n\r\n### Web Browser\r\n\r\nChrome\r\n\r\n### Build Version\r\n\r\n2.26.1",
+  "author": "Greenderella",
+  "createdAt": "2022-02-22T09:01:13Z",
+  "comments": [],
+  "attachments": []
+}

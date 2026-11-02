@@ -1,0 +1,5 @@
+<p><em>dlrudie wrote:</em></p><p>Thanks. That worked now.
+So for mine to work it really needed all four of those lines as @c4539 called out.</p><pre><code>globalSettings__attachment__baseDirectory=/etc/bitwarden/core/attachments
+globalSettings__attachment__baseUrl=https://site.com/attachments
+globalSettings__send__baseDirectory=/etc/bitwarden/core/attachments/send
+globalSettings__send__baseUrl=https://site.com/attachments/send</code></pre><p>I just got confused about the /etc/bitwarden path and was trying to change it to /root/bwdata instead.</p><p>Will these settings be future-proof or if the typo gets fixed in the source will I need to undo these?</p><p>Thanks, @c4539 @Virinum</p>

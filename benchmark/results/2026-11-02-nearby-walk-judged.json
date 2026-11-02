@@ -1,0 +1,135 @@
+{
+  "date": "2026-11-02",
+  "what": "The nearby-page rule on Sonarr's 12 page-gap bugs (fix file findable, no picked page cites it): where the walk from the real fix files lands, and a fresh agent's verdict (D61) on whether that page helps a developer understand the code the fix is in. Walk: NearbyWalk (reverse slice lines, hub stop). Verdicts: helps / partly (same area, nothing on the mechanism the fix changes) / no.",
+  "score": "benchmark/results/2026-11-02-phase3-sonarr-score-bundle-fix.json (reported.nearbyWalk)",
+  "tally": {
+    "helps": 1,
+    "partly": 7,
+    "no": 1,
+    "deadEnd": 3
+  },
+  "pattern": "The import list sync page was handed out for 4 bugs (SONB-11, 17, 29, 33); all 4 fixes are in provider code (Simkl, Trakt) that page never describes. Dead ends: SONB-18 (database converters, migrations, a static constructor), SONB-32 (housekeepers run through command dispatch), SONB-35 (stopped at a hub; an earlier walk without the hub stop reached a page that helps).",
+  "judge": "fresh agent, read ticket, page and fix files; strict on topical overlap",
+  "cases": [
+    {
+      "key": "SONB-4",
+      "stage": "right page picked, no cited fix file",
+      "outcome": "lands on a right page",
+      "nearestDepth": 2,
+      "pick": "ts|frontend/src/Components/Form/FormInput.tsx#FormInput",
+      "pickTitle": "Form Input (generic form field)",
+      "judged": "partly",
+      "reason": "Generic FormInput wrapper; one rule covers NumberInput clamping, nothing on the size editor's linked-field logic (the core of the bug). The page was written at a later commit than the fix, so R3 describes the fixed behaviour."
+    },
+    {
+      "key": "SONB-5",
+      "stage": "right page picked, no cited fix file",
+      "outcome": "lands on a right page",
+      "nearestDepth": 5,
+      "pick": "page:/settings/profiles",
+      "pickTitle": "Profiles settings",
+      "judged": "partly",
+      "reason": "Whole Settings > Profiles screen; the size editor gets one mention, nothing on size limits or MAX (the fix: 400 → 1000)."
+    },
+    {
+      "key": "SONB-11",
+      "stage": "no page covers the fix",
+      "outcome": "no right page: judge the pick",
+      "nearestDepth": 10,
+      "pick": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)",
+      "pickTitle": "Import List Sync (command handler)",
+      "judged": "partly",
+      "reason": "Import list sync orchestration; nothing on any list's parser or Simkl (fix in SimklParser)."
+    },
+    {
+      "key": "SONB-15",
+      "stage": "right page picked, not written",
+      "outcome": "lands on a right page",
+      "nearestDepth": 5,
+      "pick": "endpoint:Sonarr.Api.V3|ANY /api/v3/CustomFormat",
+      "pickTitle": "Custom Format API (create, update, delete)",
+      "judged": "helps",
+      "reason": "Custom format create/update: every specification is validated and an error aborts the save, which leads straight to the per-spec validators the fix changes (borderline)."
+    },
+    {
+      "key": "SONB-17",
+      "stage": "no page covers the fix",
+      "outcome": "right page not written",
+      "nearestDepth": 7,
+      "pick": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)",
+      "pickTitle": "Import List Sync (command handler)",
+      "judged": "partly",
+      "reason": "Same sync page; nothing on checking whether a list changed or Simkl (fix in SimklAPI/SimklImportBase)."
+    },
+    {
+      "key": "SONB-18",
+      "stage": "no page covers the fix",
+      "outcome": "dead end",
+      "nearestDepth": null,
+      "pick": null,
+      "pickTitle": null,
+      "judged": null,
+      "reason": "dead end: no page reached"
+    },
+    {
+      "key": "SONB-19",
+      "stage": "no page covers the fix",
+      "outcome": "lands on a right page",
+      "nearestDepth": 5,
+      "pick": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.HandleAsync(NzbDrone.Core.Download.DownloadsProcessedEvent)",
+      "pickTitle": "Process notification queues after downloads processed",
+      "judged": "partly",
+      "reason": "Library updates to Emby/Plex/Kodi after downloads; nothing on how the Plex partial-scan path is built (fix in PlexServerService)."
+    },
+    {
+      "key": "SONB-29",
+      "stage": "no page covers the fix",
+      "outcome": "no right page: judge the pick",
+      "nearestDepth": 9,
+      "pick": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)",
+      "pickTitle": "Import List Sync (command handler)",
+      "judged": "partly",
+      "reason": "Same sync page; nothing on Trakt authentication or token refresh (fix in TraktAPI)."
+    },
+    {
+      "key": "SONB-31",
+      "stage": "right page picked, no cited fix file",
+      "outcome": "lands on a right page",
+      "nearestDepth": 3,
+      "pick": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+      "pickTitle": "Manual import of episode files",
+      "judged": "no",
+      "reason": "Manual import command; the ticket is automatic import and the fix is in DetectSample, which manual import doesn't run; the page's sample rule could mislead."
+    },
+    {
+      "key": "SONB-32",
+      "stage": "no page covers the fix",
+      "outcome": "dead end",
+      "nearestDepth": null,
+      "pick": null,
+      "pickTitle": null,
+      "judged": null,
+      "reason": "dead end: no page reached"
+    },
+    {
+      "key": "SONB-33",
+      "stage": "no page covers the fix",
+      "outcome": "no right page: judge the pick",
+      "nearestDepth": 9,
+      "pick": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)",
+      "pickTitle": "Import List Sync (command handler)",
+      "judged": "partly",
+      "reason": "Same sync page; nothing on how a list builds its request or Trakt list types (fix in TraktPopular*)."
+    },
+    {
+      "key": "SONB-35",
+      "stage": "no page covers the fix",
+      "outcome": "dead end",
+      "nearestDepth": null,
+      "pick": null,
+      "pickTitle": null,
+      "judged": null,
+      "reason": "dead end: no page reached"
+    }
+  ]
+}

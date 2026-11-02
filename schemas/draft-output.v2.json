@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:draft-output:v2",
+  "title": "What stangent-question-writer and stangent-summary-writer return (Phase 3, D74, D98)",
+  "description": "A comment for the ticket as a list of parts, each one sentence or one framing line with the claims that back it, every claim linked to what supports it. Code checks every link (quotes word for word, pages, FSD sections, files, the PR, the proof), leaves out a part that states something with no claim (D97), and, for the client tone, checks that no code names or file paths appear.",
+  "type": "object",
+  "required": ["parts", "claims"],
+  "additionalProperties": false,
+  "properties": {
+    "parts": {
+      "description": "The comment in order. Each part is one sentence (or one list item, heading, bold line or lead-in); code joins them.",
+      "type": "array", "minItems": 1, "maxItems": 60,
+      "items": {
+        "type": "object", "required": ["text"], "additionalProperties": false,
+        "properties": {
+          "text": { "description": "One sentence or one line, in Markdown, with no claim markers and no line break.", "type": "string", "minLength": 1, "maxLength": 600 },
+          "claims": { "description": "The ids of the claims this sentence makes (C1, C2…). Empty or left out only for a question, a request, a greeting or a heading.", "type": "array", "items": { "type": "string", "pattern": "^C[0-9]+$" } },
+          "start": { "description": "Where the part begins: on a new line, in a new paragraph, or (left out) on the same line after the one before.", "enum": ["line", "paragraph"] }
+        }
+      }
+    },
+    "claims": {
+      "type": "array", "minItems": 1, "maxItems": 20,
+      "items": {
+        "type": "object", "required": ["id", "links"], "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^C[0-9]+$" },
+          "links": {
+            "type": "array", "minItems": 1,
+            "items": {
+              "type": "object", "required": ["kind"], "additionalProperties": false,
+              "properties": {
+                "kind": { "enum": ["ticket", "page", "fsd", "file", "pr", "proof", "missing"] },
+                "quote": { "description": "ticket, page, fsd: the sentence, word for word.", "type": "string" },
+                "page": { "description": "page: the page id.", "type": "string" },
+                "statement": { "description": "page: the statement id (S1, A2…).", "type": "string" },
+                "doc": { "description": "fsd: the document id.", "type": "string" },
+                "section": { "description": "fsd: the section id.", "type": "string" },
+                "file": { "description": "file: a file the PR changed, relative to the repo root.", "type": "string" },
+                "field": { "description": "missing: the bug field that's missing (steps, expected, actual, version, environment).", "type": "string" },
+                "outcome": { "description": "proof: the outcome the claim states, exactly as the input gives it.", "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

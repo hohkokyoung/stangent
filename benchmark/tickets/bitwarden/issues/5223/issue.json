@@ -1,0 +1,94 @@
+{
+  "number": 5223,
+  "title": "error 500 in Billing > Subscription",
+  "body": "### Steps To Reproduce\r\n\r\n1. Go to self-hosted instance\r\n2. Click on 'Admin Console'\r\n3. Then, go to 'Billing' > 'Subscription'\r\n\r\n### Expected Result\r\n\r\nWebpage to renew/upload new license\r\n\r\n### Actual Result\r\n\r\nLoading spinner, nothing more.\r\n500 error page.\r\n\r\n### Screenshots or Videos\r\n\r\n<img width=\"1166\" alt=\"Screenshot 2025-01-07 at 10 52 22\" src=\"https://github.com/user-attachments/assets/8225d30e-870a-4124-adf5-cdd0bb677497\" />\r\n\r\n\r\n\r\n### Additional Context\r\n\r\nFrom `api.log`\r\n\r\n```\r\n2025-01-07 09:42:59.263 +00:00 [ERR] Unable to resolve service for type 'Bit.Core.Billing.Repositories.IOrganizationInstallationRepository' while attempting to activate 'Bit.Api.Billing.Controllers.OrganizationsController'.\r\nSystem.InvalidOperationException: Unable to resolve service for type 'Bit.Core.Billing.Repositories.IOrganizationInstallationRepository' while attempting to activate 'Bit.Api.Billing.Controllers.OrganizationsController'.\r\n   at Microsoft.Extensions.DependencyInjection.ActivatorUtilities.ThrowHelperUnableToResolveService(Type type, Type requiredBy)\r\n   at lambda_method600(Closure, IServiceProvider, Object[])\r\n   at Microsoft.AspNetCore.Mvc.Controllers.ControllerFactoryProvider.<>c__DisplayClass6_0.<CreateControllerFactory>g__CreateController|0(ControllerContext controllerContext)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()\r\n--- End of stack trace from previous location ---\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextExceptionFilterAsync>g__Awaited|26_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\r\n```\r\n\r\n### Githash Version\r\n\r\ned090c8e-dirty\r\n\r\n### Environment Details\r\n\r\nbitwarden.sh version 2024.12.1\r\nDocker version 27.2.0\r\nDocker Compose version v2.20.3\r\nUbuntu Linux\r\n\r\n### Database Image\r\n\r\nmariadb:10\r\n\r\n### Issue-Link\r\n\r\nhttps://github.com/bitwarden/server/issues/2480\r\n\r\n\r\n### Issue Tracking Info\r\n\r\n- [X] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "author": "rsulzenbacher",
+  "createdAt": "2025-01-07T09:56:50Z",
+  "comments": [
+    {
+      "id": 2589704364,
+      "author": "EugenVau",
+      "createdAt": "2025-01-14T11:46:32Z",
+      "body": "I've got the exactly same issue on bitwarden unified docker compose setup."
+    },
+    {
+      "id": 2610691714,
+      "author": "mklitzn",
+      "createdAt": "2025-01-23T18:42:50Z",
+      "body": "Same here,  with all versions after 2024.12.0-beta (that is the last one working) - including 2025.1.1-beta"
+    },
+    {
+      "id": 2610843660,
+      "author": "thesnallygaster",
+      "createdAt": "2025-01-23T19:29:32Z",
+      "body": "Exactly the same issue here on 2025.1.3 :|\n~~In case it helps anyone I got these errors in the logs around the time I updated from 2024.12.1 to 2025.1.2\nI think it may be related to this PR #5088 and may be fixed by this PR #5283~~\nYou can scratch that, the error I got appears to have gotten there before a database migration that added the missing/required table, that same query executes fine now but the error in Billing > Subscription is still the same"
+    },
+    {
+      "id": 2645750091,
+      "author": "mklitzn",
+      "createdAt": "2025-02-08T14:47:43Z",
+      "body": "still the same in bitwarden/self-host:2025.1.3-beta\n\n```\n2025-02-08 15:42:43.830 +01:00 [ERR] Unable to resolve service for type 'Bit.Core.Billing.Repositories.IOrganizationInstallationRepository' while attempting to activate 'Bit.Api.Billing.Controllers.OrganizationsController'.\nSystem.InvalidOperationException: Unable to resolve service for type 'Bit.Core.Billing.Repositories.IOrganizationInstallationRepository' while attempting to activate 'Bit.Api.Billing.Controllers.OrganizationsController'.\n   at Microsoft.Extensions.DependencyInjection.ActivatorUtilities.ThrowHelperUnableToResolveService(Type type, Type requiredBy)\n   at lambda_method1125(Closure, IServiceProvider, Object[])\n   at Microsoft.AspNetCore.Mvc.Controllers.ControllerFactoryProvider.<>c__DisplayClass6_0.<CreateControllerFactory>g__CreateController|0(ControllerContext controllerContext)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()\n--- End of stack trace from previous location ---\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextExceptionFilterAsync>g__Awaited|26_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\n```"
+    },
+    {
+      "id": 2645778757,
+      "author": "maxkreja",
+      "createdAt": "2025-02-08T15:18:35Z",
+      "body": "For everyone that is having issues with renewing their licenses because of this issue, there is an easy workaround: we can skip the broken web interface and access the API to upload our new license.\n\n> **DISCLAIMER:** I have used AI to quickly search through the code and figure out this workaround and to generate the following instructions. It worked for me, but it might not work for you, and you should carefully review the following information before making any changes to productive installations.\n\n# Manual License Renewal for Self-Hosted Bitwarden Organizations\n\nThis is a workaround for the broken subscription management in the web interface. The API endpoint is the same one the web interface would use, we're just bypassing the broken UI.\n\n## Prerequisites\n- Your new license file (JSON format) from Bitwarden\n- Your organization ID (can be found in the URL when viewing your organization in the web vault)\n- A valid authentication token\n\n## Step-by-Step Instructions\n\n### 1. Get an Authentication Token\n1. Log into your Bitwarden web vault\n2. Open browser developer tools (F12)\n3. Go to Network tab\n4. Make any action in the vault\n5. Find any request to your Bitwarden instance\n6. Copy the full `Authorization` header value (starts with \"Bearer \")\n\n### 2. Upload the License\nUse the following curl command:\n```bash\ncurl -X POST \"https://YOUR_BITWARDEN_DOMAIN/api/organizations/licenses/self-hosted/YOUR_ORG_ID\" \\\n  -H \"Authorization: Bearer YOUR_TOKEN\" \\\n  -F \"License=@path/to/your/license.json\"\n```\n\nReplace:\n- `YOUR_BITWARDEN_DOMAIN` with your instance's domain\n- `YOUR_ORG_ID` with your organization ID\n- `YOUR_TOKEN` with the Bearer token from step 1\n- `path/to/your/license.json` with the path to your license file\n\nNo restart is required. The changes should take effect immediately and premium features should be available again. You might lock- and unlock your vault once, if the client doesn't immediately recognize the renewed license. "
+    },
+    {
+      "id": 2703212550,
+      "author": "deuko",
+      "createdAt": "2025-03-06T08:58:35Z",
+      "body": "Still not working in 2025.2.2.\nVery frustrating.\n\n![Image](https://github.com/user-attachments/assets/9fbc5e48-5fdb-4c56-ab8f-a8d69d3bacca)\n\nEDIT: At least the workaround is working, thanks @maxkreja "
+    },
+    {
+      "id": 2703231162,
+      "author": "rsulzenbacher",
+      "createdAt": "2025-03-06T09:06:11Z",
+      "body": "> Still not working in 2025.2.2. Very frustrating.\n> \n> ![Image](https://github.com/user-attachments/assets/9fbc5e48-5fdb-4c56-ab8f-a8d69d3bacca)\n\ncan confirm, UI is still not working..."
+    },
+    {
+      "id": 2723506052,
+      "author": "kmatasfp",
+      "createdAt": "2025-03-14T04:59:41Z",
+      "body": "Same here, unified beta, fresh setup. Have organization subscription"
+    },
+    {
+      "id": 2742444838,
+      "author": "holow29",
+      "createdAt": "2025-03-21T06:18:22Z",
+      "body": "Believe it or not, still not working in 2025.3.0."
+    },
+    {
+      "id": 2773071955,
+      "author": "MichaelKirgus",
+      "createdAt": "2025-04-02T16:07:16Z",
+      "body": "Same issue, still not working.\n@maxkreja Thanks for the workaround!"
+    },
+    {
+      "id": 2786614679,
+      "author": "syntegris-sec",
+      "createdAt": "2025-04-08T14:18:51Z",
+      "body": "We experience the same problem. We have a payed account.\nWe get an HTTP 500 on the billing/subscription page.\nThis occured after an updateself follow by update.\n\n**Our instance:**\n- self hosted on Debian 12.10\n- Docker version 27.5.1\n- MS SQL database\n\n**Docker images in use:** \nghcr.io/bitwarden/nginx:2025.3.3          \nghcr.io/bitwarden/admin:2025.3.3          \nghcr.io/bitwarden/attachments:2025.3.3    \nghcr.io/bitwarden/identity:2025.3.3       \nghcr.io/bitwarden/icons:2025.3.3          \nghcr.io/bitwarden/notifications:2025.3.3  \nghcr.io/bitwarden/api:2025.3.3            \nghcr.io/bitwarden/mssql:2025.3.3          \nghcr.io/bitwarden/sso:2025.3.3            \nghcr.io/bitwarden/events:2025.3.3         \nghcr.io/bitwarden/web:2025.3.1\n\n**Error details (chrome devtools):**\n\napi.service.ts:1571 \n GET https://bw.syntegris.de/api/organizations/1bd12345-9e2a-41e7-813f-ae9100a12345/subscription 500 (Internal Server Error)\nnativeFetch\t@\tapi.service.ts:1571\n(anonymous)\t@\tapi.service.ts:1567\no\t@\tmain.7751503….js:3\nonInvoke\t@\tng_zone.ts:470\nonInvokeTask\t@\tng_zone.ts:447\n\nA fix would be highly appreciated."
+    },
+    {
+      "id": 2825230194,
+      "author": "mklitzn",
+      "createdAt": "2025-04-23T18:56:00Z",
+      "body": "Still the same in 2025.4.1-beta :-(\n\n```\n2025-04-23 20:51:34.166 +02:00 [ERR] Unable to resolve service for type 'Bit.Core.Billing.Repositories.IOrganizationInstallationRepository' while attempting to activate 'Bit.Api.Billing.Controllers.OrganizationsController'.\nSystem.InvalidOperationException: Unable to resolve service for type 'Bit.Core.Billing.Repositories.IOrganizationInstallationRepository' while attempting to activate 'Bit.Api.Billing.Controllers.OrganizationsController'.\n   at Microsoft.Extensions.DependencyInjection.ActivatorUtilities.ThrowHelperUnableToResolveService(Type type, Type requiredBy)\n   at lambda_method1491(Closure, IServiceProvider, Object[])\n   at Microsoft.AspNetCore.Mvc.Controllers.ControllerFactoryProvider.<>c__DisplayClass6_0.<CreateControllerFactory>g__CreateController|0(ControllerContext controllerContext)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()\n--- End of stack trace from previous location ---\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextExceptionFilterAsync>g__Awaited|26_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\n```\nThinking about switching to a more reliable product ..."
+    },
+    {
+      "id": 2827608021,
+      "author": "lxne",
+      "createdAt": "2025-04-24T13:18:18Z",
+      "body": "and not working with :latest 👎 "
+    },
+    {
+      "id": 2839185200,
+      "author": "amorask-bitwarden",
+      "createdAt": "2025-04-29T14:39:17Z",
+      "body": "HI all, apologies for the delay here. We've got a [PR up](https://github.com/bitwarden/server/pull/5751) to resolve this issue that's now going through internal QA. I'll reach back out here once it passes QA and is slated for release. Greatly appreciate your patience."
+    }
+  ],
+  "attachments": []
+}

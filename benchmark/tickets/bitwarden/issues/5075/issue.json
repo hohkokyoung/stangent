@@ -1,0 +1,9 @@
+{
+  "number": 5075,
+  "title": "Domain Verification disappears with no indication why",
+  "body": "### Steps To Reproduce\n\nSet up domain verification, set up the TXT record, see how it says \"verified\" in the UI.\r\n\r\nWait a few days.\r\n\r\nSee how the domain is no longer in the UI and Bitwarden asks for an SSO identifier again.\r\nNo log entries, nothing in the event log.\n\n### Expected Result\n\nDomain verification _either_ stays (because the TXT record is still present) _or_ an error is logged, explaining why the domain is being removed.\n\n### Actual Result\n\nThe domain vanishes without a trace, no error is logged, and we have to set it up again, from scratch.\n\n### Screenshots or Videos\n\n_No response_\n\n### Additional Context\n\n_No response_\n\n### Githash Version\n\nad8aec9-dirty\n\n### Environment Details\n\n- Unified self-host\r\n- OpenShift\n\n### Database Image\n\nPostgres: 16.4\n\n### Issue-Link\n\nhttps://github.com/bitwarden/server/issues/2480\r\n\n\n### Issue Tracking Info\n\n- [X] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "author": "KramNamez",
+  "createdAt": "2024-11-25T08:21:58Z",
+  "comments": [],
+  "attachments": []
+}

@@ -19,10 +19,20 @@ Your job: **write one test that fails because of the bug** and would pass once t
 4. If the test passes, the bug may not be there (or your test misses it). Check the steps once more; if it still
    passes, report it as written anyway: a passing test is an answer.
 5. If no unit test can reach this behaviour and there is no Playwright target, return `not-provable` with the reason.
+   If the bundle lists parts **outside the code** (server, network, deployment, live data, a third party) and the bug
+   lies in one of them, return `not-provable` naming that part. If the bug is in the code too, write the test for that.
 
 Report in the output schema: the target id, the test file (relative to the repo root), the test's full name, the line
 and exact code of the assertion that checks the expected result, and the ticket's sentence giving that expected result,
 **copied word for word** (code checks it). Code then builds and runs the test itself; your own runs don't count.
+
+**Say what your failure shows (D95).** Give `actualQuote`: the ticket's sentence saying what actually went wrong,
+copied word for word. Give `shows`: the words of your test's failure message that show that same thing, copied from
+the message you saw, showing what the code did (for example `but found 11`, `Received: "0"`, `Expected collection {empty}`),
+not your test's own expected value or "because" text (code rejects words that are in your test). Code checks both;
+a developer then reads "the ticket says … / the test got …" side by side and confirms it's the reported problem and a bug. Test
+the behaviour the ticket reports, the way a user or caller meets it, not your guess at the cause: a test of an internal
+step that fails for another reason proves nothing, and would wrongly fail a correct fix.
 
 Stay inside your limits: write only in the targets' folders, run only the commands given, and stop well before the turn
 and cost cap (hitting it counts as not reproduced).

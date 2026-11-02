@@ -1,0 +1,1242 @@
+{
+  "schemaVersion": 1,
+  "clone": "sonarr",
+  "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+  "bugs": 40,
+  "notBugs": 10,
+  "bars": {
+    "rightPlace": {
+      "share": 0.475,
+      "range": [
+        0.325,
+        0.625
+      ],
+      "bar": 0.7,
+      "passed": false,
+      "of": 40
+    },
+    "beatsKeywords": {
+      "stangent": 0.475,
+      "keywords": 0.1,
+      "gain": 0.375,
+      "gainRange": [
+        0.175,
+        0.55
+      ],
+      "passed": true
+    },
+    "proofIsReal": {
+      "reproduced": 22,
+      "passOnFix": 17,
+      "share": 0.773,
+      "range": [
+        0.591,
+        0.909
+      ],
+      "bar": 0.9,
+      "passed": false
+    },
+    "proofFindsBugs": {
+      "share": 0.733,
+      "range": [
+        0.567,
+        0.867
+      ],
+      "of": 30,
+      "unit": {
+        "of": 18,
+        "share": 0.944
+      },
+      "playwright": {
+        "of": 5,
+        "share": 1
+      },
+      "setupBlocked": 0,
+      "bar": 0.5,
+      "passed": true
+    },
+    "catchesWrongReports": {
+      "reproduced": 7,
+      "of": 10,
+      "bar": "at most 1",
+      "passed": false
+    },
+    "grounded": {
+      "failedSteps": [],
+      "note": "every recorded output passed its code check; tests show a made-up quote and a non-existent page are rejected"
+    },
+    "repeatable": {
+      "replayed": 50,
+      "identical": 50,
+      "rerunAiCalls": 7,
+      "passed": false
+    }
+  },
+  "reported": {
+    "fixCoverage": {
+      "mean": 0.26,
+      "range": [
+        0.127,
+        0.396
+      ]
+    },
+    "bundleChars": {
+      "n": 40,
+      "median": 35620,
+      "max": 52869,
+      "mean": 32746.8
+    },
+    "cost": {
+      "points": {
+        "calls": 35,
+        "inputTokens": 70,
+        "outputTokens": 5545,
+        "cacheReadTokens": 34848,
+        "cacheWriteTokens": 787044,
+        "costUsd": 3.210742,
+        "ms": 105441,
+        "model": "claude-sonnet-5-5"
+      },
+      "prove": {
+        "calls": 46,
+        "inputTokens": 1196,
+        "outputTokens": 199336,
+        "cacheReadTokens": 14454327,
+        "cacheWriteTokens": 1208307,
+        "costUsd": 9.719847,
+        "ms": 3303008,
+        "model": "claude-sonnet-5-5"
+      },
+      "drafts": {
+        "calls": 129,
+        "inputTokens": 334,
+        "outputTokens": 89452,
+        "cacheReadTokens": 314333,
+        "cacheWriteTokens": 910447,
+        "costUsd": 4.599841,
+        "ms": 738456,
+        "model": "claude-sonnet-5-5"
+      },
+      "totalUsd": 17.53,
+      "ms": {
+        "pull": {
+          "n": 0
+        },
+        "points": {
+          "n": 50,
+          "median": 3269,
+          "max": 5616,
+          "mean": 3509.7
+        },
+        "bundle": {
+          "n": 50,
+          "median": 1172,
+          "max": 1495,
+          "mean": 1189.6
+        },
+        "prove": {
+          "n": 40,
+          "median": 154742,
+          "max": 276522,
+          "mean": 155348
+        },
+        "questions": {
+          "n": 50,
+          "median": 18425,
+          "max": 28374,
+          "mean": 18161.7
+        },
+        "resolution": {
+          "n": 40,
+          "median": 19588,
+          "max": 30988,
+          "mean": 19407.4
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "issue": 9149,
+      "key": "SONB-1",
+      "area": "backend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 6,
+      "pointsBy": {
+        "ai": 0,
+        "code": 6,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 18,
+      "bundleChars": 38807,
+      "fixCoverage": 0.5
+    },
+    {
+      "issue": 9051,
+      "key": "SONB-2",
+      "area": "backend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 4,
+      "pointsBy": {
+        "ai": 4,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 51,
+      "bundleChars": 26825,
+      "fixCoverage": 0.2
+    },
+    {
+      "issue": 9128,
+      "key": "SONB-3",
+      "area": "frontend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 12,
+      "pointsBy": {
+        "ai": 0,
+        "code": 12,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 60,
+      "bundleChars": 52869,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 9127,
+      "key": "SONB-4",
+      "area": "frontend",
+      "hit": false,
+      "keywordHit": true,
+      "points": 1,
+      "pointsBy": {
+        "ai": 1,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 17,
+      "bundleChars": 29694,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 9126,
+      "key": "SONB-5",
+      "area": "frontend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 2,
+      "pointsBy": {
+        "ai": 2,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 18,
+      "bundleChars": 30698,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 9113,
+      "key": "SONB-6",
+      "area": "frontend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 5,
+      "pointsBy": {
+        "ai": 5,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 68,
+      "bundleChars": 35845,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 9121,
+      "key": "SONB-7",
+      "area": "frontend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 2,
+      "pointsBy": {
+        "ai": 2,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 29,
+      "bundleChars": 35248,
+      "fixCoverage": 1
+    },
+    {
+      "issue": 9111,
+      "key": "SONB-8",
+      "area": "frontend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 3,
+      "pointsBy": {
+        "ai": 3,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 21,
+      "bundleChars": 37237,
+      "fixCoverage": 1
+    },
+    {
+      "issue": 9102,
+      "key": "SONB-9",
+      "area": "both",
+      "hit": true,
+      "keywordHit": false,
+      "points": 4,
+      "pointsBy": {
+        "ai": 4,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 27,
+      "bundleChars": 33484,
+      "fixCoverage": 0.25
+    },
+    {
+      "issue": 9018,
+      "key": "SONB-10",
+      "area": "frontend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 3,
+      "pointsBy": {
+        "ai": 3,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 46,
+      "bundleChars": 28559,
+      "fixCoverage": 1
+    },
+    {
+      "issue": 8978,
+      "key": "SONB-11",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 3,
+      "pointsBy": {
+        "ai": 3,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 35,
+      "bundleChars": 25190,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 8929,
+      "key": "SONB-12",
+      "area": "backend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 9,
+      "pointsBy": {
+        "ai": 0,
+        "code": 9,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 30,
+      "bundleChars": 36988,
+      "fixCoverage": 1
+    },
+    {
+      "issue": 8842,
+      "key": "SONB-13",
+      "area": "backend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 8,
+      "pointsBy": {
+        "ai": 0,
+        "code": 8,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 6,
+      "bundleChars": 23727,
+      "fixCoverage": 1
+    },
+    {
+      "issue": 8770,
+      "key": "SONB-14",
+      "area": "backend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 4,
+      "pointsBy": {
+        "ai": 0,
+        "code": 4,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 28,
+      "bundleChars": 47388,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 8757,
+      "key": "SONB-15",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 3,
+      "pointsBy": {
+        "ai": 3,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 25,
+      "bundleChars": 36296,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 8604,
+      "key": "SONB-16",
+      "area": "backend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 4,
+      "pointsBy": {
+        "ai": 4,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 13,
+      "bundleChars": 35326,
+      "fixCoverage": 1
+    },
+    {
+      "issue": 8574,
+      "key": "SONB-17",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 3,
+      "pointsBy": {
+        "ai": 0,
+        "code": 3,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 9,
+      "bundleChars": 31619,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 8482,
+      "key": "SONB-18",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 1,
+      "pointsBy": {
+        "ai": 0,
+        "code": 1,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 1,
+      "bundleChars": 11137,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 8414,
+      "key": "SONB-19",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 2,
+      "pointsBy": {
+        "ai": 2,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 30,
+      "bundleChars": 25298,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 8270,
+      "key": "SONB-20",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 3,
+      "pointsBy": {
+        "ai": 3,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 18,
+      "bundleChars": 35777,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 8221,
+      "key": "SONB-21",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": true,
+      "points": 2,
+      "pointsBy": {
+        "ai": 2,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 12,
+      "bundleChars": 38803,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 8242,
+      "key": "SONB-22",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 3,
+      "pointsBy": {
+        "ai": 3,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 18,
+      "bundleChars": 37875,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 8187,
+      "key": "SONB-23",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 4,
+      "pointsBy": {
+        "ai": 4,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 33,
+      "bundleChars": 32099,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 8105,
+      "key": "SONB-24",
+      "area": "backend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 7,
+      "pointsBy": {
+        "ai": 0,
+        "code": 7,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 10,
+      "bundleChars": 31247,
+      "fixCoverage": 0.333
+    },
+    {
+      "issue": 8006,
+      "key": "SONB-25",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 1,
+      "pointsBy": {
+        "ai": 0,
+        "code": 1,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 15,
+      "bundleChars": 31663,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 7989,
+      "key": "SONB-26",
+      "area": "backend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 2,
+      "pointsBy": {
+        "ai": 2,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 20,
+      "bundleChars": 38257,
+      "fixCoverage": 1
+    },
+    {
+      "issue": 7922,
+      "key": "SONB-27",
+      "area": "backend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 4,
+      "pointsBy": {
+        "ai": 4,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 52,
+      "bundleChars": 36293,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 7879,
+      "key": "SONB-28",
+      "area": "frontend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 1,
+      "pointsBy": {
+        "ai": 0,
+        "code": 1,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 1,
+      "bundleChars": 13831,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 7874,
+      "key": "SONB-29",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 3,
+      "pointsBy": {
+        "ai": 3,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 35,
+      "bundleChars": 43727,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 7807,
+      "key": "SONB-30",
+      "area": "backend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 2,
+      "pointsBy": {
+        "ai": 0,
+        "code": 2,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 2,
+      "bundleChars": 14958,
+      "fixCoverage": 1
+    },
+    {
+      "issue": 7780,
+      "key": "SONB-31",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 2,
+      "pointsBy": {
+        "ai": 2,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 24,
+      "bundleChars": 37618,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 7785,
+      "key": "SONB-32",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 6,
+      "pointsBy": {
+        "ai": 0,
+        "code": 6,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 4,
+      "bundleChars": 23954,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 7759,
+      "key": "SONB-33",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 4,
+      "pointsBy": {
+        "ai": 0,
+        "code": 4,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 15,
+      "bundleChars": 38905,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 7705,
+      "key": "SONB-34",
+      "area": "frontend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 2,
+      "pointsBy": {
+        "ai": 2,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 3,
+      "bundleChars": 13261,
+      "fixCoverage": 0.125
+    },
+    {
+      "issue": 7663,
+      "key": "SONB-35",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 3,
+      "pointsBy": {
+        "ai": 0,
+        "code": 3,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 18,
+      "bundleChars": 35620,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 7608,
+      "key": "SONB-36",
+      "area": "frontend",
+      "hit": true,
+      "keywordHit": false,
+      "points": 3,
+      "pointsBy": {
+        "ai": 3,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 47,
+      "bundleChars": 36238,
+      "fixCoverage": 1
+    },
+    {
+      "issue": 7589,
+      "key": "SONB-37",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 2,
+      "pointsBy": {
+        "ai": 0,
+        "code": 2,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 6,
+      "bundleChars": 47446,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 7555,
+      "key": "SONB-38",
+      "area": "backend",
+      "hit": true,
+      "keywordHit": true,
+      "points": 2,
+      "pointsBy": {
+        "ai": 2,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 28,
+      "bundleChars": 22708,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 7527,
+      "key": "SONB-39",
+      "area": "backend",
+      "hit": true,
+      "keywordHit": true,
+      "points": 3,
+      "pointsBy": {
+        "ai": 3,
+        "code": 0,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 32,
+      "bundleChars": 37533,
+      "fixCoverage": 0
+    },
+    {
+      "issue": 7518,
+      "key": "SONB-40",
+      "area": "backend",
+      "hit": false,
+      "keywordHit": false,
+      "points": 4,
+      "pointsBy": {
+        "ai": 0,
+        "code": 4,
+        "developer": 0,
+        "outside": 0
+      },
+      "startingFiles": 38,
+      "bundleChars": 39823,
+      "fixCoverage": 0
+    }
+  ],
+  "proofs": [
+    {
+      "issue": 9149,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "failed-on-assertion",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 9051,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "compile-error",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 9128,
+      "kind": "bug",
+      "area": "frontend",
+      "outcome": "reproduced",
+      "test": "playwright",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 9127,
+      "kind": "bug",
+      "area": "frontend",
+      "outcome": "reproduced",
+      "test": "playwright",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 9126,
+      "kind": "bug",
+      "area": "frontend",
+      "outcome": "reproduced",
+      "test": "playwright",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 9113,
+      "kind": "bug",
+      "area": "frontend",
+      "outcome": "not-reproduced",
+      "test": "none",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 9121,
+      "kind": "bug",
+      "area": "frontend",
+      "outcome": "reproduced",
+      "test": "playwright",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 9111,
+      "kind": "bug",
+      "area": "frontend",
+      "outcome": "reproduced",
+      "test": "playwright",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 9102,
+      "kind": "bug",
+      "area": "both",
+      "outcome": "not-reproduced",
+      "test": "none",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 9018,
+      "kind": "bug",
+      "area": "frontend",
+      "outcome": "not-reproduced",
+      "test": "none",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8978,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "failed-on-assertion",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8929,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8842,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8770,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "failed-on-assertion",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8757,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8604,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "not-reproduced",
+      "test": "unit",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8574,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "not-provable",
+      "test": "none",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8482,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "not-reproduced",
+      "test": "none",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8414,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8270,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8221,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8242,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8187,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8105,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8006,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 7989,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 7922,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "passed",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 7879,
+      "kind": "bug",
+      "area": "frontend",
+      "outcome": "not-reproduced",
+      "test": "none",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 7874,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "not-reproduced",
+      "test": "none",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 7807,
+      "kind": "bug",
+      "area": "backend",
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": "failed-on-assertion",
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 9030,
+      "kind": "not-bug",
+      "area": null,
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 9004,
+      "kind": "not-bug",
+      "area": null,
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8969,
+      "kind": "not-bug",
+      "area": null,
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8961,
+      "kind": "not-bug",
+      "area": null,
+      "outcome": "reproduced",
+      "test": "playwright",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8922,
+      "kind": "not-bug",
+      "area": null,
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8821,
+      "kind": "not-bug",
+      "area": null,
+      "outcome": "not-reproduced",
+      "test": "none",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8780,
+      "kind": "not-bug",
+      "area": null,
+      "outcome": "not-reproduced",
+      "test": "none",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8771,
+      "kind": "not-bug",
+      "area": null,
+      "outcome": "not-provable",
+      "test": "none",
+      "proofOnFix": null,
+      "outside": true,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8755,
+      "kind": "not-bug",
+      "area": null,
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    },
+    {
+      "issue": 8749,
+      "kind": "not-bug",
+      "area": null,
+      "outcome": "reproduced",
+      "test": "unit",
+      "proofOnFix": null,
+      "outside": false,
+      "setupBlocked": false
+    }
+  ]
+}
