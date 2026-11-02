@@ -1859,10 +1859,18 @@ shaped around Sonarr (the owner wants any C#/TS repo).
   reports, 62 have a linked merged server PR, 29 fit (non-test C#, ≤ 15 files, merged before the pinned commit), less
   the 5 D87 cases. Fixes merged 2020-06 to 2026. 24 is below Sonarr's 40, so ranges are wider; enough to tell a result
   near the 70% bar from one far from it, so no fallback. No not-bugs (bitwarden's are not selected).
+- *Tickets through Jira (owner, 2026-11-02):* the 24 are copied into their own Jira project (`--copy-to-jira`, as
+  Sonarr's SONB) and pulled from there, so the held-out run tests the pull too; local files that skip Jira were
+  rejected (a benchmark-only path real use never takes). `freeze.py` lays `heldout.json` out as Sonarr's set is
+  (text unchanged; authors and dates read from GitHub; answer key = the merge commit's own files, as the agent
+  baseline's). Images are not downloaded: the finder reads text only (D101). (The pull drops link and image URLs from
+  that text: phases/3-tickets.md, 2026-11-02.)
+- *Measured 2026-11-02 (D101, phases/3-tickets.md):* right place 20 of 24 (83%, range 67–96%) ✅, $1.28; the agent
+  baseline 23 of 24. Not tuned on: the gap goes to Sonarr first.
 **Cost:** bitwarden needs its own setup for what a run uses (tickets in Jira or replay files, reference pages for the
 page-based sources); bitwarden's bugs may be fewer and different in kind; the owner decided "your call".
 
-## D101 · A coding agent finds the ticket's files; code checks them; the graph is the checker and the map — 2026-11-02 (decided; built, uncommitted)
+## D101 · A coding agent finds the ticket's files; code checks them; the graph is the checker and the map — 2026-11-02 (decided; built, committed)
 Replaces D70's starting points and D87's page picker as the way into the code. The agent baseline (phases/3-tickets.md,
 2026-11-02, fresh-checked): a headless coding agent with only the ticket and the code, Read/Grep/Glob, named a fix file
 in 36 of 40 Sonarr bugs (ours: 19) and 23 of 24 held-out bitwarden bugs (D100; strict 20 of 21), median 4 files, about
@@ -1904,7 +1912,9 @@ in 1 of 12 bugs.
     unwritten page whose slice holds a file no written page explains is listed as missing.
   - **Measured on Sonarr (2026-11-02, phases/3-tickets.md):** right place **36 of 40 (90%) ✅**, was 19; no bundle over
     the cap (was 19 of 50); $2.68 for 50 tickets. D79's fallback "AI picks off by default" no longer applies: the
-    finder is on by default (`tickets.aiPoints: true`). Owed: the pipeline on bitwarden's held-out set, a private repo.
+    finder is on by default (`tickets.aiPoints: true`). Owed: a private repo.
+  - **Held out (bitwarden, D100, 2026-11-02):** right place **20 of 24 (83%, range 67–96%) ✅**, $1.28; the agent baseline
+    23. The finder names fewer files (median 2 vs 4); 3 of its 4 misses the baseline reached lower in a longer list.
 **Why:** measured, on a held-out repo: the agent finds what our own search can't, cheaply; building our own search would
 need to close 47.5% → 90%.
 **Cost:** an AI call on every ticket (about $0.05 on these repos); both repos are public, so a private repo is owed

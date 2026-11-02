@@ -644,3 +644,32 @@ bundle cost, status, retry budget, boilerplate lines, rejected files shown, stal
 - **Owed:** the full pipeline on bitwarden's held-out 24 (D100; only the bare agent baseline ran there: 23/24), which
   needs bitwarden set up for tickets (replay files, graph, pages); a private repo before trusting the rate outside
   public code; the misses grouped by cause (crash site vs root cause, framework-run code).
+
+### Step 8 · D101 on the held-out set: bitwarden 20/24 · 2026-11-02
+`benchmark/results/2026-11-02-phase3-bitwarden-heldout-score-d101.json`. The first full-pipeline run on D100's frozen 24
+(owner's OK, $1.28). `freeze.py` laid `heldout.json` out as Sonarr's set (text unchanged; authors and dates from GitHub;
+key = the merge commit's own files, equal to the agent baseline's on all 24); `--copy-to-jira` put them in project BWB
+(owner: refused layouts send only the refused lines as code: BWB-17's description, one BWB-22 comment); `run.sh points`
+pulled them, `files` ran the finder (Sonnet) at each fix's parent. Config `benchmark/configs/bitwarden.tickets.yaml`:
+product defaults, no pages, no repo hints. `run.sh` now copies an SDK pin only for a repo that has one (it always
+copied Sonarr's).
+- **Right place 20 of 24 (83%, 95% range 67–96%) ✅** (bar 70%); keyword search 3 of 24 (gain 71 points, range 50–88).
+  Every hit at rank 1. Strict (3 tickets link the fixing PR: BWB-3, 16, 23): 18 of 21 (86%). Proof, drafts and replay
+  not run here.
+- **Below the agent baseline's 23 of 24.** The finder names fewer files (median 2; the baseline 4): in BWB-4, 5 and 18
+  the baseline reached the fix file at rank 1–3 in a longer list; the finder stopped at the service layer (BWB-4), the
+  templates (BWB-5) or the validation (BWB-18). BWB-16 (#2506) both miss with the same two files. Likely cause: the
+  instructions' "fewer is better when you are sure" plus the per-file quote and line; on Sonarr the two matched (36 each),
+  so the gap showed only here. Not changed: per D100 a fix is tried on Sonarr first.
+- **Fresh check (D61):** re-scored 20/24 independently (scorer output byte-identical); layout, key and Jira mapping
+  correct for all 24; every search at its run commit, every named file, quote and line verified; 27 transcripts (3
+  retries) used only Glob/Grep/Read in their own worktree, none touched `.stangent`, `.git`, the benchmark or the key;
+  3 mistyped absolute reads refused. It found:
+  - **Jira silently dropped a comment's words** (BWB-3 comment 7: a quote holding an image; only "rsulzenbacher wrote:"
+    is left). No error, so the copy's fallback never saw it; the copy has no read-back. BWB-3 was a hit.
+  - **The pull drops link URLs** (and image sources, list numbers, checkbox marks, code-fence languages) when it turns
+    Jira's HTML into text: the raw MCP result holds `pull/5751`, the finder reads "PR up". Reference links were lost in
+    BWB-9, 13, 19, 21, 23 too. Product behaviour, so Sonarr's tickets are affected the same way.
+  - Smaller: an interrupted copy can leave an issue short of comments (the key is saved first); the score's timing has
+    no finder step (`ms.points` is the pull). Fixed: `freeze.py` splits paths by line; `run.sh` logs a missing SDK pin.
+- Seen, not fixed (held-out): bitwarden's "Build Version" heading isn't read as the version (D93).
