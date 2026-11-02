@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Phase 3's run on the frozen set (D77–D81), in the order D79 and D84 give. Each phase can run on its own and resumes:
-#   points    pull (live, through the MCP), starting points (point picker when code finds none) and a first bundle, all 50
+#   points    pull (live, through the MCP), starting points (the file finder, D101) and a first bundle, all 50; at the
+#             pinned commit, so for a benchmark run `files` searches again at each ticket's own commit
+#   files     the file finder again (D101, --refind), from the tickets already pulled, each at its run commit (a bug:
+#             the fix's parent), so it never reads the fix: points and a first bundle per ticket. Later phases keep its
+#             answer (marked stale at the pinned commit) and don't search again
 #   pages     generate the picked pages that have no written version (spec-run.sh), reported apart
 #   bundles   build all 50 bundles again, now with those pages
 #   prove     the 30 newest bugs and the 10 not-bugs, each on its own commit (bug: the fix's parent; not-bug: the commit
@@ -81,8 +85,25 @@ phase_points() {
   at "$PINNED"
   issues | while read -r n kind run key; do
     log "points $key (#$n)"
-    timed "$key" points "$HERE/plugin/scripts/ticket-run.sh" ${MODEL:+--model "$MODEL"} "$key" >>"$TICKETS/run/run.log"
+    # No finder here: at the pinned commit it would read the fixes; `files` searches at each ticket's own commit.
+    timed "$key" points "$HERE/plugin/scripts/ticket-run.sh" --no-find ${MODEL:+--model "$MODEL"} "$key" >>"$TICKETS/run/run.log"
   done
+}
+
+phase_files() {
+  # The finder searches a git worktree of each run commit (ticket-run.sh), so the pages (written at the pinned commit,
+  # after every fix), .stangent/ and build output are never in what it reads.
+  issues | while read -r n kind run key; do
+    # Resumes: a ticket already searched at its own commit (found, none or failed) isn't searched again.
+    if jq -e --arg run "$run" '.ai.commit // "" | startswith($run)' ".stangent/tickets/$key/points.json" >/dev/null 2>&1 \
+       && jq -e '.ai.status | IN("found", "none", "failed")' ".stangent/tickets/$key/points.json" >/dev/null 2>&1; then
+      log "files $key: already searched at ${run:0:9}"; continue
+    fi
+    at "$run"
+    log "files $key (#$n) at ${run:0:9}"
+    timed "$key" files "$HERE/plugin/scripts/ticket-run.sh" --no-pull --refind ${MODEL:+--model "$MODEL"} "$key" >>"$TICKETS/run/run.log"
+  done
+  at "$PINNED"
 }
 
 phase_pages() {
@@ -172,7 +193,7 @@ phase_prove() {
     fi
     at "$PINNED"
     # ticket-run.sh rebuilt points and the bundle at the bug's own commit; build them again at the pinned one, so the
-    # replay compares bundles made at the same commit (no AI call: a recorded pick is reused).
+    # replay compares bundles made at the same commit (no AI call: the finder's recorded answer is kept, D101).
     st ticket points "$key" >/dev/null || true
     st ticket bundle "$key" >/dev/null || true
   done

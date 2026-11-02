@@ -124,7 +124,7 @@ public static class TicketScore
                 ["setupBlocked"] = proofBugs.Count(SetupBlocked), ["bar"] = 0.5, ["passed"] = Rate(proofBugs) >= 0.5,
             },
             ["catchesWrongReports"] = new JsonObject { ["reproduced"] = wrongReports, ["of"] = notBugs.Count, ["bar"] = "at most 1", ["passed"] = wrongReports <= 1 },
-            ["grounded"] = new JsonObject { ["failedSteps"] = new JsonArray([.. failedSteps.Select(f => (JsonNode)f)]), ["note"] = "every recorded output passed its code check; tests show a made-up quote and a non-existent page are rejected" },
+            ["grounded"] = new JsonObject { ["failedSteps"] = new JsonArray([.. failedSteps.Select(f => (JsonNode)f)]), ["note"] = "every recorded output passed its code check; tests show a made-up quote, a line not in its file and a file not in the repo are rejected" },
             ["repeatable"] = new JsonObject { ["replayed"] = replayed, ["identical"] = identical, ["rerunAiCalls"] = rerunCalls, ["passed"] = replayed == issues.Count && identical == replayed && rerunCalls == 0 },
         };
         var stages = PlaceStages.Run(clone, ticketsDir);
@@ -147,19 +147,21 @@ public static class TicketScore
         };
     }
 
-    /// <summary>"Starting points' files" (D79, clarified): the files of the symbols the starting pages' statements cite, plus
-    /// the files of matched symbols.</summary>
+    /// <summary>"Starting points' files" (D79, clarified; D101): the file points themselves, the files of the symbols the
+    /// starting pages' statements cite, and the files of matched symbols.</summary>
     public static HashSet<string> StartingFiles(JsonNode points, SpecIndex index, IReadOnlyDictionary<string, Node> nodes)
     {
         var ids = new HashSet<string>(StringComparer.Ordinal);
+        var direct = new HashSet<string>(StringComparer.Ordinal);
         foreach (var p in points["points"]!.AsArray())
         {
             var id = (string)p!["id"]!;
-            if ((string)p["kind"]! == "symbol") ids.Add(id);
+            if ((string)p["kind"]! == "file") direct.Add(id);
+            else if ((string)p["kind"]! == "symbol") ids.Add(id);
             else if (index.Pages.TryGetValue(id, out var page))
                 foreach (var (_, _, s) in PageChecks.Statements(page)) ids.UnionWith(s["cites"]!.AsArray().Select(c => (string)c!));
         }
-        return [.. ids.Select(i => nodes.GetValueOrDefault(i)?.File).OfType<string>()];
+        return [.. ids.Select(i => nodes.GetValueOrDefault(i)?.File).OfType<string>().Concat(direct)];
     }
 
     public static HashSet<string> TicketWords(JsonNode ticket) =>

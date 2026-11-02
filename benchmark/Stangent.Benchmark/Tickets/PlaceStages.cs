@@ -22,6 +22,7 @@ namespace Stangent.Benchmark.Tickets;
 /// <item><c>right page picked, no cited fix file</c>: a right page was picked, but its statements cite no file the fix
 /// changed (D79's "starting points' files" are the cited ones).</item>
 /// <item><c>hit</c>: D79's right place.</item>
+/// <item>With the file finder (D101): <c>file finder missed it</c> (it named no fix file) or <c>file finder failed</c>.</item>
 /// </list>
 /// Beside the stage: whether the bundle's impact walk from those starting points (2 lines back, uncapped, and 📜) reaches a
 /// fix file, and whether the bundle shows one (its pointers).
@@ -30,7 +31,9 @@ public static class PlaceStages
 {
     public static readonly string[] Stages =
         ["no page covers the fix", "right page not in the top 20", "code's points skipped the picker", "picker missed it",
-         "right page picked, not written", "right page picked, no cited fix file", "hit"];
+         "right page picked, not written", "right page picked, no cited fix file", "hit",
+         // With the file finder (D101) the pages aren't the way in: a miss is the finder's, or it failed.
+         "file finder missed it", "file finder failed"];
 
     public static JsonObject Run(string clone, string ticketsDir)
     {
@@ -63,7 +66,9 @@ public static class PlaceStages
             var hit = TicketScore.StartingFiles(points, ctx.Index, nodes).Overlaps(fix);
             var pickerRan = (string?)points["ai"]?["status"] is not (null or "not-needed");
             var pickedRight = picked.Where(right.Contains).ToList();
+            var finder = (string?)points["ai"]?["status"] is "found" or "none" or "failed" && points["ai"]?["files"] is not null;
             var stage = hit ? "hit"
+                : finder ? ((string)points["ai"]!["status"]! == "failed" ? Stages[8] : Stages[7])
                 : right.Count == 0 ? Stages[0]
                 : pickedRight.Count == 0 && firstRight is < 0 or >= PageIndex.Detailed ? Stages[1]
                 : pickedRight.Count == 0 ? (pickerRan ? Stages[3] : Stages[2])
@@ -71,11 +76,14 @@ public static class PlaceStages
                 : Stages[5];
             counts[stage]++;
 
-            // The impact walk as the bundle starts it (TicketBundle): what the written picked pages cite, and the symbols.
+            // The impact walk as the bundle starts it (TicketBundle): what the written picked pages cite, the symbols, the files.
             var starts = picked.Where(ctx.Index.Pages.ContainsKey)
                 .SelectMany(id => PageChecks.Statements(ctx.Index.Pages[id]).SelectMany(s => s.Statement["cites"]!.AsArray().Select(c => (string)c!)))
                 .Concat(list.Where(p => (string)p["kind"]! == "symbol").Select(p => (string)p["id"]!))
-                .Distinct(StringComparer.Ordinal).Select(id => nodes.GetValueOrDefault(id)).OfType<Node>().ToList();
+                .Distinct(StringComparer.Ordinal).Select(id => nodes.GetValueOrDefault(id)).OfType<Node>()
+                // File points (D101): the walk starts from the code in the file, as the bundle's impact answer does.
+                .Concat(list.Where(p => (string)p["kind"]! == "file").SelectMany(p => ctx.Analyzer.InFile((string)p["id"]!)))
+                .DistinctBy(n => n.Id).ToList();
             var (walk, history) = starts.Count == 0 ? ([], []) : ctx.Analyzer.Reach(starts, TicketBundle.ImpactDepth);
             var reachedFiles = walk.Select(n => n.File).OfType<string>().Concat(history).Concat(starts.Select(n => n.File).OfType<string>())
                 .ToHashSet(StringComparer.Ordinal);
