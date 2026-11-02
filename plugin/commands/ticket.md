@@ -12,13 +12,17 @@ Never judge a quote, a page or a test yourself, never write a comment to Jira yo
 
 1. `stangent ticket pull <KEY>`. If it fails with `jira_not_signed_in`, tell the user to run `stangent jira login`
    (it opens the browser) and stop.
-2. `stangent ticket points <KEY>`. If `result.next.action` is `prepare`: run `stangent ticket prepare <KEY> --step points`,
-   start the subagent in `result.next.agent` (`stangent-point-picker`) with exactly `result.next.prompt`, then run
-   `stangent ticket check <KEY> --step points`; follow `result.next` until it's `none`.
+2. Find the ticket's files (D101) through the driver, which starts `stangent-file-finder` headless, read-only and
+   inside the repo, under the limits stangent sets, checks its answer and builds the bundle; don't start the finder
+   yourself. It is an AI step capped by `tickets.findBudget` (default 30 turns, $1; usually a few cents):
+
+   ```bash
+   ${CLAUDE_PLUGIN_ROOT}/scripts/ticket-run.sh --no-pull <KEY>
+   ```
 3. `stangent ticket bundle <KEY> --format md`, and read `.stangent/tickets/<KEY>/bundle.json` too.
 4. Show the user the Markdown view: the starting points with their reasons, the pages, FSD sections, impact and
-   attachments. Ask whether to add or remove starting points (`stangent ticket points <KEY> --add <page|symbol>
-   --remove <page|symbol>`, then build the bundle again). Missing pages: suggest `/stangent:spec-generate <page>`.
+   attachments. Ask whether to add or remove starting points (`stangent ticket points <KEY> --add <file|page|symbol>
+   --remove <file|page|symbol>`, then build the bundle again). Missing pages: suggest `/stangent:spec-generate <page>`.
 5. The bundle is now this session's starting context: open the files its pointers name when the work needs them.
 6. Offer next steps: for a bug, **prove it** before any fix; for any ticket, a **questions** draft.
 

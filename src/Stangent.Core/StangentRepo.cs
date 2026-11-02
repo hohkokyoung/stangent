@@ -119,7 +119,8 @@ public sealed class StangentConfig
         public int BundleChars { get; set; } = 40_000;
         /// <summary>How much of one text attachment goes into the bundle (D72); the rest is a pointer to the file.</summary>
         public int AttachmentChars { get; set; } = 8_000;
-        /// <summary>AI picks starting points when code finds none (D70). Off if D79's bundle bars fail.</summary>
+        /// <summary>The file finder (D101): an agent searches the repo for the ticket's files. Off (or <c>ai.enabled</c>
+        /// false): code's own signals (D70) are the starting points instead.</summary>
         public bool AiPoints { get; set; } = true;
         /// <summary>A folder of saved MCP results (<c>&lt;KEY&gt;/raw</c>, <c>&lt;KEY&gt;/attachments</c>): tickets are read from it
         /// instead of Jira, so a score replays exactly what was read (D77). Relative to the repo.</summary>
@@ -134,6 +135,8 @@ public sealed class StangentConfig
         public string? TestFilter { get; set; }
         /// <summary>The cap per reproduction attempt (D81).</summary>
         public ProveBudgetConfig ProveBudget { get; set; } = new();
+        /// <summary>The file finder's cap per call (D101): turns and dollars; its one retry gets the same again.</summary>
+        public ProveBudgetConfig FindBudget { get; set; } = new();
         /// <summary>The project's own files of UI texts for the page index (D87): a string in the code that is a key in one of
         /// them (<c>translate('Key')</c>, <c>t("a.b")</c>, <c>Label = "Key"</c>) is indexed with its text. JSON (nested keys
         /// joined with dots) or <c>.resx</c>, relative to the repo, e.g. <c>src/NzbDrone.Core/Localization/Core/en.json</c>.</summary>

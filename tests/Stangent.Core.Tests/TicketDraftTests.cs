@@ -34,7 +34,7 @@ public class TicketDraftTests
 
         public Draft(string extra = "")
         {
-            App = new SpecApp($"version: 1\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n{extra}");
+            App = new SpecApp($"version: 1\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n  aiPoints: false\n{extra}");
             Page(App, Orders, ("shows", "The orders screen shows a Place order button.", [SpecApp.OrdersPage]));
             Page(App, SpecApp.Post, ("rules", "An order over 100 is refused until it is approved.", [SpecApp.Create]));
             var dir = Path.Combine(Root, "specs", "fsd", "shop");

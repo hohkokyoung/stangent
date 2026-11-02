@@ -25,16 +25,17 @@ static class TicketCommands
         })));
         ticket.Subcommands.Add(pull);
 
-        var addOption = new Option<string[]>("--add") { Description = "Add a starting point: a page (id, path or entry point) or a symbol (graph id or unique name).", AllowMultipleArgumentsPerToken = false };
+        var addOption = new Option<string[]>("--add") { Description = "Add a starting point: a page (id, path or entry point), a symbol (graph id or unique name) or a file (its path in the repo).", AllowMultipleArgumentsPerToken = false };
         var removeOption = new Option<string[]>("--remove") { Description = "Remove a starting point (recorded with who removed it)." };
         var addOutsideOption = new Option<string[]>("--add-outside") { Description = "Mark a part outside the code: '<area>: <what>', area server, network, deployment, data, third-party or other (D83)." };
         var removeOutsideOption = new Option<string[]>("--remove-outside") { Description = "Remove the parts outside the code in an area, or all; with nothing left and no starting point, bug proof runs again (D83)." };
-        var points = new Command("points", "The ticket's starting points: code's signals, the AI's picks when code finds none, your changes (D70); parts outside the code (D83).") { KeyArg, addOption, removeOption, addOutsideOption, removeOutsideOption };
+        var refindOption = new Option<bool>("--refind") { Description = "Search for the ticket's files again (D101): the finder's answer is kept while the ticket is unchanged, and marked stale when the code moved on." };
+        var points = new Command("points", "The ticket's starting points: the files the file finder found and code checked (D101; code's signals when it's off, D70), your changes; parts outside the code (D83).") { KeyArg, addOption, removeOption, addOutsideOption, removeOutsideOption, refindOption };
         points.SetAction(pr => Cli.Run(pr, "ticket points", ctx =>
         {
             var key = pr.GetValue(KeyArg)!;
             var result = TicketPoints.Update(ctx.Repo, TicketContext.Load(ctx.Repo), key, pr.GetValue(addOption) ?? [], pr.GetValue(removeOption) ?? [], Who(ctx),
-                pr.GetValue(addOutsideOption) ?? [], pr.GetValue(removeOutsideOption) ?? []);
+                pr.GetValue(addOutsideOption) ?? [], pr.GetValue(removeOutsideOption) ?? [], pr.GetValue(refindOption));
             ctx.Span.Attributes["stangent.artifact.count"] = result["points"]!.AsArray().Count;
             if ((string?)result["ai"]?["status"] == "needed")
                 result["next"] = new JsonObject { ["action"] = "prepare", ["command"] = $"stangent ticket prepare {key} --step points" };
@@ -53,7 +54,10 @@ static class TicketCommands
                 "points" => TicketPoints.Prepare(ctx.Repo, TicketContext.Load(ctx.Repo), key),
                 _ => TicketSteps.Prepare(ctx, step, key, pr),
             };
-            return SpecCommands.Finish(run, key);
+            var json = SpecCommands.Finish(run, key);
+            // The file finder searches the repo itself (D101): the driver runs it under these limits.
+            if (step.Name == "points" && run.Agent is not null) json["next"]!["limits"] = TicketPoints.DriverLimits(ctx.Repo, key);
+            return json;
         }));
         ticket.Subcommands.Add(prepare);
 
@@ -70,6 +74,12 @@ static class TicketCommands
                 "points" => TicketPoints.Check(ctx.Repo, TicketContext.Load(ctx.Repo), key, usage, Who(ctx)),
                 _ => TicketSteps.Check(ctx, step, key, usage, claudeResult),
             };
+            if (step.Name == "points" && run.Status == "retry")
+            {
+                var retry = run.ToJson(key);
+                retry["next"]!["limits"] = TicketPoints.DriverLimits(ctx.Repo, key);
+                throw new CheckFailed("check_failed", $"{key}: the code check failed; the file finder gets one retry with the errors.", retry);
+            }
             // A reproducer's retry runs under what's left of the attempt's cap (D81).
             if (step.Name == "prove" && run.Status == "retry")
             {

@@ -156,9 +156,12 @@ public static partial class BugProof
     /// </summary>
     static List<TestTarget> Targets(StangentRepo repo, TicketContext ctx, JsonObject bundle)
     {
-        var points = (bundle["points"] as JsonArray ?? []).OfType<JsonObject>().Select(p => (string)p["id"]!).ToList();
+        var all = (bundle["points"] as JsonArray ?? []).OfType<JsonObject>().ToList();
+        var points = all.Where(p => (string)p["kind"]! != StartingPoint.File).Select(p => (string)p["id"]!).ToList();
         var at = bundle["pointers"]!.AsArray().Where(p => (string?)p!["from"] != "impact").Select(p => (string)p!["id"]!).ToList();
         foreach (var p in points) at.Add(ctx.Analyzer.Find(p) is not null ? p : ctx.Set.Find(p)?.Entry ?? p);
+        // A file point (D101): the code declared in that file.
+        foreach (var f in all.Where(p => (string)p["kind"]! == StartingPoint.File)) at.AddRange(ctx.Analyzer.InFile((string)f["id"]!).Select(n => n.Id));
         var targets = Find(at.Select(ctx.Analyzer.Find).OfType<Node>());
         if (targets.Any(t => t.Kind == TestTarget.Unit)) return targets;
         var behind = points.SelectMany(p => ctx.Set.Slices.TryGetValue(p, out var s) ? s.Nodes.Where(n => n.Role == "walk").Select(n => n.Node) : []);

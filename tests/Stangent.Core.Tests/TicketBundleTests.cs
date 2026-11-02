@@ -13,7 +13,7 @@ public class TicketBundleTests
     const string Orders = "page:/orders";
     const string Cart = "page:/cart";
 
-    static SpecApp App(string extra = "") => new($"version: 1\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n{extra}");
+    static SpecApp App(string extra = "") => new($"version: 1\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n  aiPoints: false\n{extra}");
 
     /// <summary>Pull and points for a made-up ticket.</summary>
     static void Ticket(SpecApp app, string key, string description, string[]? add = null)
@@ -151,7 +151,78 @@ public class TicketBundleTests
         var pointers = b["pointers"]!.AsArray();
         Assert.Contains(pointers, p => (string?)p!["id"] == SpecApp.Save && (string?)p["file"] == "web/src/Orders.tsx" && (string?)p["from"] == Orders);
         Assert.Contains(pointers, p => (string?)p!["id"] == SpecApp.OrdersPage && (string?)p["from"] == Orders);
-        Assert.Contains("The files it cites are in the pointers.", File.ReadAllText(new TicketPaths(app.Root, "SHOP-9").BundleMarkdown));
+    }
+
+    /// <summary>A ticket whose starting point is one file the finder named (D101), checked like a real run.</summary>
+    static SpecApp Found(string key, string extra = "")
+    {
+        var app = new SpecApp($"version: 1\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n{extra}");
+        Ticket(app, key, "When I press Place order nothing is saved and the orders page just shows Orders.");
+        var ctx = TicketContext.Load(app.Repo);
+        TicketPoints.Prepare(app.Repo, ctx, key);
+        File.WriteAllText(Path.Combine(app.Root, ".stangent", "tickets", key, "points", "output.json"), new JsonObject
+        {
+            ["files"] = new JsonArray(new JsonObject
+            {
+                ["path"] = "web/src/Orders.tsx", ["quote"] = "When I press Place order nothing is saved",
+                ["line"] = "const save = () => fetch('/api/orders', { method: 'POST' });", ["why"] = "The Place order button's save call.",
+            }),
+        }.ToJsonString());
+        Assert.Equal("recorded", TicketPoints.Check(app.Repo, ctx, key, null, "Pat Developer").Status);
+        return app;
+    }
+
+    [Fact]
+    public void A_found_file_comes_first_and_the_pages_that_cite_it_explain_it()
+    {
+        using var app = Found("SHOP-20");
+        OrdersPage(app);
+        Page(app, Cart, false, ("shows", "The cart screen lists what the user is about to buy, with a total.", ["ts|web/src/Other.tsx#CartPage"]));
+        var b = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-20");
+
+        Assert.Equal(2, (int)b["schemaVersion"]!);
+        var point = Assert.Single(b["points"]!.AsArray())!;
+        Assert.Equal(("file", "web/src/Orders.tsx"), ((string)point["kind"]!, (string)point["id"]!));
+        var first = b["pointers"]![0]!;
+        Assert.Equal(("file", "web/src/Orders.tsx", "point"), ((string)first["kind"]!, (string)first["file"]!, (string)first["from"]!));
+
+        // The orders page cites code in the file, so it explains it; the cart page doesn't, so it isn't in the bundle.
+        var page = Assert.Single(b["pages"]!.AsArray())!;
+        Assert.Equal(Orders, (string?)page["id"]);
+        Assert.Equal(("web/src/Orders.tsx", "cites"), ((string)page["explains"]![0]!["file"]!, (string)page["explains"]![0]!["how"]!));
+
+        // The impact answer starts from the file's own code, not from everything the explaining page cites.
+        Assert.Equal("starting-points", (string?)b["impact"]!["change"]!["kind"]);
+        var md = File.ReadAllText(new TicketPaths(app.Root, "SHOP-20").BundleMarkdown);
+        Assert.Contains("| file | `web/src/Orders.tsx` | The Place order button's save call. The ticket: \"When I press Place order nothing is saved\"", md);
+        Assert.Contains("Explains `web/src/Orders.tsx` (its statements cite it).", md);
+    }
+
+    [Fact]
+    public void Over_the_cap_the_impact_lists_go_first_then_pages_and_the_found_file_always_stays()
+    {
+        using var app = Found("SHOP-21", "  bundleChars: 100\n");
+        OrdersPage(app);
+        var b = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-21");
+        Assert.True((bool)b["cap"]!["impactTrimmed"]!);
+        // The orders page only explains the file: under the cap it's left out and counted, not listed as cut.
+        Assert.Empty(b["cap"]!["cut"]!.AsArray());
+        Assert.Equal(1, (int)b["cap"]!["dropped"]!);
+        Assert.Empty(b["pages"]!.AsArray());
+        Assert.True((bool)b["cap"]!["over"]!);
+        Assert.Contains(b["pointers"]!.AsArray(), p => (string?)p!["file"] == "web/src/Orders.tsx" && (string?)p["from"] == "point");
+        Assert.All(b["impact"]!["groups"]!.AsArray(), g => Assert.Empty(g!["items"]!.AsArray()));
+        // A cut page that only explains the file takes its citations with it: the file is a pointer of its own.
+        Assert.DoesNotContain(b["pointers"]!.AsArray(), p => (string?)p!["from"] == Orders);
+        var md21 = File.ReadAllText(new TicketPaths(app.Root, "SHOP-21").BundleMarkdown);
+        Assert.Contains("The impact answer's lists were left out", md21);
+        Assert.Contains("1 more page(s) that explain the found files were left out", md21);
+
+        using var roomy = Found("SHOP-22", "  bundleChars: 400000\n");
+        OrdersPage(roomy);
+        var r = TicketBundle.Build(roomy.Repo, TicketContext.Load(roomy.Repo), "SHOP-22");
+        Assert.False((bool)r["cap"]!["impactTrimmed"]!);
+        Assert.Empty(r["cap"]!["cut"]!.AsArray());
     }
 
     [Fact]

@@ -53,7 +53,7 @@ public class BugProofTests
 
         public Proof(string extra = "", bool testProject = true, string type = "Bug", string description = Description, string? packageJson = null)
         {
-            App = new SpecApp($"version: 1\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n{extra}");
+            App = new SpecApp($"version: 1\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n  aiPoints: false\n{extra}");
             App.Write("Core/Shop.Core.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\" />");
             if (testProject)
                 App.Write("Tests/Shop.Tests.csproj", """

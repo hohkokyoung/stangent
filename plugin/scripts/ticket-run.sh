@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
 # Runs Phase 3 for tickets through headless Claude Code (D60), for CI and batch runs such as the benchmark:
-#   pull → points (→ stangent-point-picker when code finds none) → bundle
+#   pull → points (→ stangent-file-finder, D101: searches the repo read-only) → bundle
 #   [--prove]      bugs: stangent ticket prove → stangent-bug-reproducer (multi-turn, under limits) → ticket check --step prove
 #   [--questions]  stangent ticket draft --kind questions → stangent-question-writer → ticket check --step questions
 #   [--resolution <base..head>]  stangent ticket draft --kind resolution → stangent-summary-writer → check
 # The logic lives in `stangent ticket`; this only runs the subagent each step names and hands its result back.
 #
-# usage: ticket-run.sh [--jobs N] [--model M] [--prove] [--hint TEXT] [--questions] [--resolution RANGE] [--tone T] <KEY>...
-# One turn per call for the picker and the writers (D66, as spec-run.sh). The reproducer is multi-turn (it builds and runs
-# tests): the plugin's agent with the permission rules, turn and dollar caps `stangent ticket prove` returns (D81).
+# usage: ticket-run.sh [--jobs N] [--model M] [--no-pull] [--refind] [--no-find] [--prove] [--hint TEXT] [--questions] [--resolution RANGE] [--tone T] <KEY>...
+# --no-pull works from the ticket already pulled (a benchmark re-run, no Jira call). --refind searches for the ticket's
+# files again although the ticket is unchanged (its answer is otherwise kept, marked stale once the code moves on).
+# --no-find skips the file finder (a benchmark searches at each ticket's own commit later, in its `files` phase).
+# One turn per call for the writers (D66, as spec-run.sh). The file finder is multi-turn and read-only (D101): Read, Grep
+# and Glob in the repo only, its answer as structured output, under the limits `stangent ticket prepare` returns. The
+# reproducer is multi-turn too (it builds and runs tests): the plugin's agent with the permission rules, turn and dollar
+# caps `stangent ticket prove` returns (D81).
 # env:   STANGENT (default: stangent), PLUGIN_DIR (default: this plugin), CLAUDE (default: claude)
 # out:   one line per ticket and step: <status>\t<key>\t<step>
 set -euo pipefail
@@ -18,6 +23,9 @@ MODEL=""
 PROVE=""
 HINT=""
 QUESTIONS=""
+NOPULL=""
+REFIND=""
+NOFIND=""
 RESOLUTION=""
 TONE=""
 KEYS=()
@@ -26,6 +34,9 @@ while [ $# -gt 0 ]; do
     --jobs) JOBS="$2"; shift 2 ;;
     --model) MODEL="$2"; shift 2 ;;
     --prove) PROVE=1; shift ;;
+    --no-pull) NOPULL=1; shift ;;
+    --refind) REFIND=1; shift ;;
+    --no-find) NOFIND=1; shift ;;
     --hint) HINT="$2"; shift 2 ;;
     --questions) QUESTIONS=1; shift ;;
     --resolution) RESOLUTION="$2"; shift 2 ;;
@@ -34,11 +45,12 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-export STANGENT="${STANGENT:-stangent}" CLAUDE="${CLAUDE:-claude}" MODEL PROVE HINT QUESTIONS RESOLUTION TONE
+export STANGENT="${STANGENT:-stangent}" CLAUDE="${CLAUDE:-claude}" MODEL PROVE HINT QUESTIONS RESOLUTION TONE NOPULL REFIND NOFIND
 export PLUGIN_DIR="${PLUGIN_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 # One call with no tools (D66): the step's input files go into the prompt, the output schema is enforced, and the
-# structured answer is written where the step wants it.
+# structured answer is written where the step wants it. Every call here has auto memory off: no AI step may see notes an
+# earlier session left about this repo (a benchmark clone's could hold its fixes).
 single_turn() {
   local step="$1" usage="$2" out schema input label f
   out="$(jq -r '.result.next.output' <<<"$step")"
@@ -48,11 +60,73 @@ single_turn() {
     input+="# $label"$'\n\n'"$(cat "$f")"$'\n\n'
   done < <(jq -r '.result.next.prompt' <<<"$step" | grep -E ': \.stangent/' | grep -v '^Write' | sed -E 's/^(.*): (\.stangent\/.*)$/\1\t\2/')
   rm -f "$out"
-  printf '%s' "$input" | $CLAUDE -p ${MODEL:+--model "$MODEL"} --tools "" --setting-sources "" --disable-slash-commands \
+  printf '%s' "$input" | $CLAUDE -p ${MODEL:+--model "$MODEL"} --tools "" --setting-sources "" --settings '{"autoMemoryEnabled":false}' --disable-slash-commands \
     --strict-mcp-config --exclude-dynamic-system-prompt-sections --no-session-persistence --output-format json \
     --json-schema "$schema" \
     --system-prompt "You are one of stangent's AI steps. The input holds your instructions, the only evidence you may use, and on a retry your previous attempt and what to fix. Where the instructions say to write a result file, return that JSON as your structured output instead. Reply with nothing else." \
     >"$usage" 2>/dev/null || true
+  if jq -e '.type == "result" and (.is_error | not)' "$usage" >/dev/null 2>&1; then
+    jq -c '.structured_output // empty' "$usage" >"$out" || true
+  fi
+}
+
+# The file finder (D101): the step's input files go in on stdin (it may not read stangent's folder), it searches a
+# throwaway git worktree of the commit checked out (no .stangent/, specs, build output or untracked files) under
+# stangent's limits with the repo folder swapped for the same folder in the worktree, and its structured answer is
+# written where the step wants it. In a git repo whose worktree can't be made it stops (exit 255) rather than search
+# the repo itself; outside git it searches the repo under the same rules. The conversation is kept.
+agent_search() {
+  local step="$1" usage="$2" key="$3" out schema input label f limits transcript root prefix dir tmp="" allowed=() denied=()
+  out="$(jq -r '.result.next.output' <<<"$step")"
+  schema="$($STANGENT spec schema "$(jq -r '.result.next.schema' <<<"$step")")"
+  limits="$(jq -c '.result.next.limits' <<<"$step")"
+  root="$(jq -r '.root' <<<"$limits")"
+  dir="$PWD"
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    prefix="$(git rev-parse --show-prefix)"
+    tmp="$(cd "$(mktemp -d)" && pwd -P)"
+    if ! git worktree add --detach -q "$tmp/repo" HEAD 2>"$tmp/error"; then
+      printf 'error\t%s\tpoints\tno worktree for the file finder: %s\n' "$key" "$(head -c 300 "$tmp/error" | tr '\n' ' ')" >&2
+      rm -rf "$tmp"
+      : >"$usage"
+      return 0
+    fi
+    # From here on, however this ends, the worktree goes (the claude call below has its own trap too).
+    trap 'git worktree remove --force "'"$tmp"'/repo" >/dev/null 2>&1; rm -rf "'"$tmp"'"; trap - INT TERM' INT TERM
+    # Stangent's folder may be a subfolder of the git repo: the same subfolder in the worktree.
+    dir="$tmp/repo/${prefix%/}"; dir="${dir%/}"
+    if [ ! -d "$dir" ]; then
+      printf 'error\t%s\tpoints\tthe repo folder %s is not in what git tracks, so the file finder has nothing to search\n' "$key" "${prefix:-.}" >&2
+      git worktree remove --force "$tmp/repo" >/dev/null 2>&1; rm -rf "$tmp"; trap - INT TERM
+      : >"$usage"
+      return 0
+    fi
+    # Rules name the folder as //<absolute path> (D89): the worktree's, from here on.
+    limits="$(jq -c --arg root "$root" --arg wt "/$dir" 'walk(if type == "string" then (if startswith("Read(" + $root) then "Read(" + $wt + ltrimstr("Read(" + $root) else . end) else . end)' <<<"$limits")"
+  fi
+  while IFS= read -r f; do allowed+=("$f"); done < <(jq -r '.allowedTools[]' <<<"$limits")
+  while IFS= read -r f; do denied+=("$f"); done < <(jq -r '.disallowedTools[]?' <<<"$limits")
+  input=""
+  while IFS=$'\t' read -r label f; do
+    input+="# $label"$'\n\n'"$(cat "$f")"$'\n\n'
+  done < <(jq -r '.result.next.prompt' <<<"$step" | grep -E ': \.stangent/' | grep -v '^Write' | sed -E 's/^(.*): (\.stangent\/.*)$/\1\t\2/')
+  # Beside the step's work folder, which a new run clears: every attempt's conversation is kept.
+  mkdir -p ".stangent/tickets/$key/transcripts"
+  transcript="$PWD/.stangent/tickets/$key/transcripts/points-$(date +%Y%m%d-%H%M%S).jsonl"
+  rm -f "$out"
+  # In a subshell with its own trap: the worktree goes however this ends (Ctrl+C, a timeout, a kill).
+  (
+    if [ -n "$tmp" ]; then trap 'git worktree remove --force "'"$tmp"'/repo" >/dev/null 2>&1; rm -rf "'"$tmp"'"' EXIT INT TERM; fi
+    printf '%s' "$input" | (cd "$dir" && $CLAUDE -p ${MODEL:+--model "$MODEL"} --tools "$(jq -r '.tools' <<<"$limits")" --allowedTools "${allowed[@]}" \
+      ${denied[@]+--disallowedTools "${denied[@]}"} --permission-mode "$(jq -r '.permissionMode' <<<"$limits")" \
+      --setting-sources "" --settings '{"autoMemoryEnabled":false}' --strict-mcp-config --disable-slash-commands --no-session-persistence \
+      --max-turns "$(jq -r '.maxTurns' <<<"$limits")" --max-budget-usd "$(jq -r '.maxBudgetUsd' <<<"$limits")" \
+      --json-schema "$schema" --output-format stream-json --verbose \
+      --append-system-prompt "You are one of stangent's AI steps: the stangent-file-finder. Your prompt holds your instructions, the ticket and your output schema, and on a retry your previous attempt and what to fix. The repo is your current folder. Return the JSON as your structured output.") \
+      >"$transcript" 2>/dev/null || true
+  )
+  [ -n "$tmp" ] && trap - INT TERM
+  jq -c 'select(.type == "result")' "$transcript" 2>/dev/null | tail -n 1 >"$usage" || true
   if jq -e '.type == "result" and (.is_error | not)' "$usage" >/dev/null 2>&1; then
     jq -c '.structured_output // empty' "$usage" >"$out" || true
   fi
@@ -98,7 +172,7 @@ multi_turn() {
   # No user or project settings (their allow rules would widen the reproducer's), no MCP but the browser given here.
   # Each command starts back in the repo (D89): a `cd src` mustn't make the repo-relative commands it may run miss.
   CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1 $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" ${MODEL:+--model "$MODEL"} ${mcp[@]+"${mcp[@]}"} \
-    --setting-sources "" --strict-mcp-config \
+    --setting-sources "" --settings '{"autoMemoryEnabled":false}' --strict-mcp-config \
     --permission-mode "$(jq -r '.permissionMode' <<<"$limits")" --allowedTools "${tools[@]}" \
     --max-turns "$(jq -r '.maxTurns' <<<"$limits")" --max-budget-usd "$(jq -r '.maxBudgetUsd' <<<"$limits")" \
     --no-session-persistence --output-format stream-json --verbose "$prompt" >"$transcript" 2>/dev/null || true
@@ -115,9 +189,11 @@ run_step() {
   first="$step"
   action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   while [ "$action" != "none" ]; do
-    if [ "$name" = prove ]; then multi_turn "$first" "$usage" "$key"; else single_turn "$step" "$usage"; fi
+    if [ "$name" = prove ]; then multi_turn "$first" "$usage" "$key"
+    elif [ "$name" = points ]; then agent_search "$step" "$usage" "$key"
+    else single_turn "$step" "$usage"; fi
     # Claude Code itself failed (a usage limit, an outage, no login): not the AI's fault, so nothing is recorded and
-    # the next run starts the step again. Only a reproducer that hit its own turn or dollar cap goes on to `check`.
+    # the next run starts the step again. Only a reproducer or file finder that hit its own turn or dollar cap goes on to `check`.
     if ! jq -e '.type == "result" and ((.is_error | not) or ((.subtype // "") | test("max_turns|budget")))' "$usage" >/dev/null 2>&1; then
       printf 'error\t%s\t%s\t%s\n' "$key" "$name" "$(jq -r '.result // .error // "claude exited without a result"' "$usage" 2>/dev/null | head -c 200 | tr '\n' ' ')"
       rm -f "$usage"
@@ -139,15 +215,17 @@ run_step() {
 
 run_ticket() {
   local key="$1" out
-  out="$($STANGENT ticket pull "$key" || true)"
-  printf '%s\t%s\tpull\n' "$(jq -r 'if .ok then "pulled" else .error.code end' <<<"$out")" "$key"
-  # A failed pull leaves nothing to work on; say why and fail, so a batch sees it (D92: a draft was lost silently).
-  if ! jq -e '.ok' <<<"$out" >/dev/null 2>&1; then
-    printf 'error\t%s\tpull\t%s\n' "$key" "$(jq -r '.error.message // "no result"' <<<"$out" 2>/dev/null | head -c 300)" >&2
-    return 1
+  if [ -z "$NOPULL" ]; then
+    out="$($STANGENT ticket pull "$key" || true)"
+    printf '%s\t%s\tpull\n' "$(jq -r 'if .ok then "pulled" else .error.code end' <<<"$out")" "$key"
+    # A failed pull leaves nothing to work on; say why and fail, so a batch sees it (D92: a draft was lost silently).
+    if ! jq -e '.ok' <<<"$out" >/dev/null 2>&1; then
+      printf 'error\t%s\tpull\t%s\n' "$key" "$(jq -r '.error.message // "no result"' <<<"$out" 2>/dev/null | head -c 300)" >&2
+      return 1
+    fi
   fi
-  out="$($STANGENT ticket points "$key" || true)"
-  if [ "$(jq -r '.result.ai.status // ""' <<<"$out")" = needed ]; then
+  out="$($STANGENT ticket points "$key" ${REFIND:+--refind} || true)"
+  if [ -z "$NOFIND" ] && [ "$(jq -r '.result.ai.status // ""' <<<"$out")" = needed ]; then
     run_step "$key" points "$($STANGENT ticket prepare "$key" --step points || true)"
   fi
   out="$($STANGENT ticket bundle "$key" || true)"
@@ -162,9 +240,11 @@ run_ticket() {
     run_step "$key" resolution "$($STANGENT ticket draft "$key" --kind resolution --pr "$RESOLUTION" ${TONE:+--tone "$TONE"} || true)"
   fi
 }
-export -f run_ticket run_step single_turn multi_turn
+export -f run_ticket run_step single_turn multi_turn agent_search
 
 [ ${#KEYS[@]} -gt 0 ] || exit 0
+# File finder worktrees an interrupted run left behind (their folders are gone): forget them.
+git worktree prune 2>/dev/null || true
 # A Playwright proof keeps the app on its one port for the whole attempt: proofs run one at a time (D86).
 if [ -n "$PROVE" ] && [ "$JOBS" -gt 1 ]; then echo "note: --prove runs one ticket at a time (the app's port)" >&2; JOBS=1; fi
 printf '%s\0' "${KEYS[@]}" | xargs -0 -n 1 -P "$JOBS" bash -c 'run_ticket "$1"' _
