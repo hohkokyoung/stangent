@@ -1194,6 +1194,7 @@ the rule for Phases 4–5 (first recommended), because a wrongly reported bug sh
 - How far the proof goes (which kinds of test) is D76.
 - **"Don't fix yet" is a label and a suggested next step in Phase 3,** not a lock: the developer can still fix. From
   Phase 4, an agent doesn't start a fix on a not-reproduced ticket until a person says go.
+  *Changed by D106 (2026-11-02): Phase 3 now says "no proof yet" and why, not "don't fix yet". The Phase 4 rule stands.*
 - **The developer can suggest another way to reproduce it** (`stangent ticket prove <KEY> --hint "set the server time
   zone to UTC+10"`): a new attempt with the hint added to its input, checked the same way. Each attempt costs about
   what the first did (~$0.50–2) and is recorded with its hint. *(Added 2026-10-25, the owner's idea.)*
@@ -1858,6 +1859,8 @@ lands); designed without a real FSD so far (D56). Doesn't raise right place (Son
     recorded. The proof's test then carries the new id. **Why:** otherwise each repeat is a person's call again.
     **Cost:** a developer can miss a real gap; the spec is then no worse than before.
 
+- *Placed 2026-11-02 (D109, owner):* built before Phase 4, as phase 2c on the roadmap.
+
 ## D100 · Held-out bugs come from bitwarden/server; Sonarr's 40 become the tuning set — 2026-11-02 (decided; set frozen)
 Every Phase 3 change so far (the page index, the picker, the bundle, the free checks) was judged on Sonarr's 40 bugs,
 so no half of them is unseen and a split of them would still flatter the result.
@@ -2029,6 +2032,61 @@ temp path) reads as `different-failure`; a very general one reads as `same-failu
 two fixtures' tests with the same method name can't be told apart: an already-failing one dropped from the baseline can read as
 `new-failures`, and a newly failing one that shares a baseline test's name is missed. No saved baseline has either (all empty).
 
+## D106 · "Not reproduced" stops saying "don't fix" and says why — 2026-11-02 (built; not yet run)
+Changes D75. In the saved run, 7 of the 9 not-reproduced tickets are real bugs with real fixes, and 8 of the 9 only hit the
+cap (6 of those through D104's bug); only SONB-16 ran a test that passed. So "don't fix yet" mostly held back real bugs, and a
+questions draft had to tell the reporter what was tried and ask for more when the tool had only run out. D79's own fallback
+applies only when "proof finds bugs" fails, and it passed (73%), so this is the owner's call (owner, "ur call, just go ahead").
+- **Why, by code:** `noProof` on the attempt: `ran-out`, `test-passed` or `flaky`. Outcome values are unchanged; a record
+  from before reads it from its reason. Optional field, `bug-proof` v1.
+- **Phase 3 says "no proof yet, the developer decides".** **Phase 4's rule stands:** an agent waits for a person's go,
+  since with no failing test it has nothing to check its own fix against. That's a limit on the agent, not the proof blocking a
+  fix, which D79's advice-only forbids: a person's go always clears it. To confirm when Phase 4 is grilled.
+- **Drafts:** a questions draft must cover the attempt only if a test ran. For `ran-out`, the writer is told to leave it out and
+  code refuses a claim linked to the proof, so an unlinked "we couldn't reproduce this" is left out (D97).
+**Why:** a label that holds back real bugs and misleads reporters costs more than the 2 not-bugs it would have caught.
+**Cost:** a developer may fix a wrong report with no warning from the proof; the Phase 4 rule is the guard for agents.
+
+## D107 · The finder's reason is a guess: labelled for people, hidden from the proof — 2026-11-02 (built; not yet run)
+The owner objected to the finder naming a cause at the start. It only reads code (Read, Grep, Glob) and nothing has run, so its
+one-line `why` ("recursing infinitely") is a guess no code checks, yet it went into the bundle and into the reproducer's input.
+- **The reproducer's input leaves it out;** the files, quotes and lines stay. **People see it as "The finder's guess, not
+  checked:"** in `bundle.md`. `bundle.json` keeps it. No finder re-run: `file-finder.md` is unchanged.
+- **Root cause isn't Phase 3's job.** A developer reproduces, then traces. A cause found before anything runs has no checker
+  (D18). The evidence comes in Phase 4, when a fix turns the failing test green.
+Rejected: a root-cause step at the start (the same guess in more words); dropping `why` entirely (it's useful reading once
+labelled); recording what a failing test ran as evidence (left for Phase 4).
+**Why:** a test should check what the ticket reports; SONB-1's bad proof tested exactly this kind of guess.
+**Cost:** probably small: SONB-1 and 11 tested the wrong thing with no finder at all, so the agent can still guess on its
+own. It can't be measured: no finder-era proof ran with the reason visible. Only the input leaves it out: the reproducer may
+Read any file, so it could open `bundle.md` (none of 46 saved transcripts read such a file).
+
+## D108 · `ticket post` refuses a draft whose inputs changed — 2026-11-02 (built; no AI needed)
+`post` never compared a draft with what it was made from, so a draft saying "not confirmed" could be posted after a developer
+confirmed. It now recomputes the draft's input hash: changed (the ticket, the bundle, the proof, the writer's instructions), or
+impossible to work out, gives `draft_stale`, unless `--stale`. It's the only step that writes to Jira. The error gives the exact
+command to make it again (kind, tone, PR). A relative range such as `HEAD~1..HEAD` moves with a later commit, so pass fixed commits; the error says so when it repeats one.
+Rejected: a warning only (the output is JSON, easily missed); a word filter for "don't call it a bug" (stays an instruction).
+**Why:** a person reads the draft, but can't see that its facts moved.
+**Cost:** posting loads the graph and pages to recompute, and an instructions change makes every saved draft stale.
+
+## D109 · Phase 3 closes on what we have; the proof ships as advice only — 2026-11-02 (owner: "do whatever we have for now, and get ready for p4, ur call, just go ahead")
+D79 already says what follows when the proof's bars fail, so they aren't a reason to stay in Phase 3, and more Phase 3 work can't
+show whether the bundle helps anyone fix a bug. Only a fix agent can.
+- **No proof re-run now:** the report uses the saved numbers and says they predate the finder, D95, D104, D106 and D107.
+  The re-run (at most about $45: the $40 cap plus about $4 of drafts; Sonarr only) is owed after 2c, before Phase 4 is built, on the owner's OK.
+- **Moved to Phase 4:** the graph gaps (`IExecute<T>` handlers, a hub made by test callers, code dispatched by interface or name,
+  framework-run code). No Phase 3 bar depends on them. **After the re-run:** SONB-17 offered only Playwright; SONB-16 passing
+  alone; setup problems counted against the AI (SONB-10, 18, 28, 46).
+- **D99 comes first, before Phase 4 (owner: "before"), as its own phase, 2c, on the roadmap.** I recommended after Phase 4's
+  first experiment; the owner chose before: it's core architecture, and Phase 4's agents should check their work against
+  requirements from the start. It's still scored on the planted FSD's key and can't move the proof bars on Sonarr.
+- **Dropped:** the finder naming more files (no gain on Sonarr; the 4 misses are 2 choices of where to fix, 1 that can't be hit
+  and 1 real one). **Not run:** bitwarden's proof (D100) and a private repo: rates stay public-code only.
+**Why:** the phase's job is a checked starting position; what's left either needs Phase 4 or doesn't change a bar.
+**Cost:** Phase 3 closes with two bars failed and its proof numbers out of date; a person makes every bug-or-not call until D99,
+and Phase 4 starts later.
+
 ## Open questions
 
 - **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that
@@ -2069,14 +2127,20 @@ two fixtures' tests with the same method name can't be told apart: an already-fa
   makes it measurable. Reference pages are
   not rewritten. Before starting: commit or set aside the Phase 3 worktree's uncommitted work (owner's OK), and apply
   D20 to any contract change.
-- **What comes before the D95 re-run (owner, 2026-11-02):** D96's honest result (built; it changes what a proof says, not
-  what it records), the finder naming fewer files than the agent baseline, and D99, in that order. **The private-repo check is dropped**
-  (owner): D101's rates stay measured on public repos only, and Phase 3's report says so. The threads deferred on
-  2026-10-28 stay deferred.
-- **What gives way under the bundle cap (2026-11-02, after D71's fix):** pointers now never shrink, so 19 of 50 Sonarr
-  bundles miss the cap with every page cut. Options: cut the impact answer's details before pages (the agreed
-  retrieval order: files, then pages, then impact); group pointers by file to halve their size (a `ticket-bundle`
-  contract change); or let the cap be missed rather than cut pages that can't make it fit. Not decided.
+- **Does the bundle help a fix, or skew it? (owner's questions, 2026-11-02, for Phase 4):** every Phase 3 bar checks a piece (a
+  right file, a real quote, a failing test); none shows the bundle helps anyone fix a bug. On the finder's 4 Sonarr misses it
+  covers none of the fix's files. The owner's worry: a wrong lead skews every later step, and a scoped input invites a less clean
+  fix (SONB-18: a null check on the screen turns a test green and leaves the bad data). Recommended: the fix agent on the same bugs three ways
+  (the ticket alone; plus the failing test; plus the whole bundle), scored on the tests passing and on a read of each diff against the developer's fix, wrong leads
+  counted apart; if there's no difference, cut it to the finder's files and the failing test. Recommended rules: named files are
+  leads, never a limit on what an agent reads or edits; it traces from the failing test before it edits. A green test can't show
+  a fix is clean, so that stays a person's review (Phase 6). To grill with Phase 4.
+- **Where does security review go? (2026-11-02):** the owner's brief lists it in the pipeline; no decision or phase holds it.
+  Recommended: a checked step in Phase 6's review package, grilled with that phase.
+- **Who runs the D14 audit now? (2026-11-02):** D14's full audit on adoption predates D51–D52 and isn't built. To re-decide when
+  2c is grilled, with `fsd reconcile` and as-built drafts in view.
+- **Flakiness of the proof (2026-11-02):** only one full run, and a unit test runs once. Running a test more than once per proof
+  needs no AI. Not decided. The Sonarr re-run gives a second result to compare.
 - **D99: matching a ticket to its requirement has no checker yet (2026-11-02):** "bug, per R-0042" needs a step that
   picks the scenario or requirement a ticket is about; it is an AI step with no check designed (D18). A wrong pick gives
   a confident, sourced, wrong verdict. To design before D99 is built.

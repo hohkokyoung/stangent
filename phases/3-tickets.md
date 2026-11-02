@@ -1,7 +1,7 @@
 ---
 phase: 3
 name: tickets
-status: in progress
+status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 5, reference-page: 1, source-document: 1, trace-links: 1 }
 provides: { ticket-bundle: 2, ticket-update: 1, bug-proof: 1 }
 ---
@@ -99,7 +99,7 @@ before building on it.
   result); not reproduced (the test passes: no fix starts, a questions draft says what was tried; the developer reviews
   the test first); not reproduced, flaky (a Playwright test that passed on one of its 3 runs, D76); not provable here
   (no way to reach it); or failed (*plan detail:* no valid test after the one retry).
-- **"Don't fix yet"** after "not reproduced" is a label and a suggested next step, not a lock (D75). The developer can
+- **"Don't fix yet"** after "not reproduced" is a label and a suggested next step, not a lock (D75; *replaced by D106: "no proof yet", and why*). The developer can
   ask for another attempt with a hint: `stangent ticket prove <KEY> --hint "set the server time zone to UTC+10"`,
   checked the same way and recorded with its hint (~$0.50–2 per attempt).
 - Later, the fix must make the test pass and break nothing else (D18's test row). *Plan detail:* Phase 3 checks that
@@ -150,22 +150,22 @@ before building on it.
 
 ## Done when (D79's bars)
 - [x] **Spike:** OAuth and API-token sign-in, read, attachment download and posting work from C# (D73, D82).
-- [ ] **Bundle: right place:** ≥ 70% of the 40 bugs have a file the fix changed among the starting points' files.
-- [ ] **Bundle: beats a keyword search:** that hit rate beats the baseline, the 95% range of the gain above zero.
-- [ ] **Grounded:** every starting point, quote and draft claim passes the code checks; tests show a made-up quote and
+- [x] **Bundle: right place:** ≥ 70% of the 40 bugs have a file the fix changed among the starting points' files.
+- [x] **Bundle: beats a keyword search:** that hit rate beats the baseline, the 95% range of the gain above zero.
+- [x] **Grounded:** every starting point, quote and draft claim passes the code checks; tests show a made-up quote and
       a non-existent page are rejected.
-- [ ] **Repeatable:** replaying saved MCP results gives byte-identical bundles; a re-run with nothing changed makes
+- [x] **Repeatable:** replaying saved MCP results gives byte-identical bundles; a re-run with nothing changed makes
       zero AI calls.
-- [ ] **Proof is real:** of the bugs marked reproduced, ≥ 90% pass on the fix commit.
-- [ ] **Proof finds bugs:** ≥ 50% of the 30 bugs the proof runs on reproduced (unit and Playwright reported apart, D81).
-- [ ] **Proof catches wrong reports:** at most 1 of the 10 not-bugs reproduced.
+- [ ] **Proof is real:** of the bugs marked reproduced, ≥ 90% pass on the fix commit. *Failed: 77%; the proof is advice only.*
+- [x] **Proof finds bugs:** ≥ 50% of the 30 bugs the proof runs on reproduced (unit and Playwright reported apart, D81).
+- [ ] **Proof catches wrong reports:** at most 1 of the 10 not-bugs reproduced. *Failed: 7 of 10; the proof is advice only.*
 - [x] **Jira round trip** live on the owner's site: read a ticket with comments and an attachment, post a comment (comment 10069, 2026-11-01).
-- [ ] Reported: how much of each fix the whole bundle covers; bundle size; cost and time per ticket and step.
-- [ ] If a bar fails, its rule applies (D79): "proof is real" or "catches wrong reports" → the proof is advice only;
+- [x] Reported: how much of each fix the whole bundle covers; bundle size; cost and time per ticket and step.
+- [x] If a bar fails, its rule applies (D79): "proof is real" or "catches wrong reports" → the proof is advice only;
       "right place" or "beats a keyword search" → AI picks off by default; "proof finds bugs" → "not reproduced" is
       information only, not "don't fix yet". The report says which and why.
-- [ ] Tests run without an LLM or a network (canned subagent outputs, the file backend); CI green.
-- [ ] End-of-phase report written; its claims checked against the results files by a fresh agent (D61).
+- [ ] Tests run without an LLM or a network (canned subagent outputs, the file backend); CI green. *Tests pass locally; CI hasn't run this branch, which isn't pushed.*
+- [x] End-of-phase report written; its claims checked against the results files by a fresh agent (D61).
 
 ## Contracts
 | Contract | v1 holds |
@@ -726,3 +726,61 @@ No AI and nothing run: a fresh agent read the raw records of the 2026-10-31 run 
 No AI and nothing run: `--verify` now records `verification.result`, and the score reads it (a record from before D105 is classified from its saved runs). The saved run re-scored: 17 of 22 pass (77%, D79's bar, still failed), up to 19 of 22 (86%) if the unclear ones are real. `same-failure` SONB-1, 11, 14; `different-failure` SONB-30; `not-compiled` SONB-2. These saved proofs have no `shows`, so they compared whole messages; the `shows` comparison first meets real proofs in the re-run.
 - **Disagrees with the audit on SONB-14:** "mis-scored" was too kind. The failure it shows is real, but the test can't confirm the fix, which is this check's job, so it stays `same-failure`.
 - **Doesn't catch SONB-26:** the test sets no `AirDateUtc`, so the fixed code returns early and it passes for the wrong reason.
+
+### Step 8 · D106, D107, D108: not reproduced says why; the finder's guess; stale drafts · 2026-11-02
+No AI and nothing run. `noProof` on the saved run: 8 `ran-out`, 1 `test-passed`. The finder's reason no longer reaches the reproducer and is labelled for people. `ticket post` refuses a draft whose inputs changed. Saved questions drafts are stale now, so they would be made again before posting.
+
+## End-of-phase report
+
+*2026-11-02 · first report (D109).* Phase 3 is **done with two bars failed**, so the proof ships as **advice only** (D79). All three must-pass bars passed when last measured (below). The branch isn't pushed or merged, so CI hasn't run it.
+
+### What was built
+- **Commands:** `stangent ticket pull | points | bundle | prove | draft | post | check`, `stangent jira login`; `/stangent:ticket`; `plugin/scripts/ticket-run.sh`. See `docs/tickets.md`.
+- **Contracts:** `ticket-bundle` v2, `bug-proof` v1 (optional fields added by D95, D105, D106), `ticket-update` v1.
+- **In one line:** a Jira ticket becomes a checked starting position: where to look (D101), the context around it, for a bug a failing test, and comments a person posts.
+
+### Benchmark results
+Sonarr's 40 bugs and 10 not-bugs (D78; the tuning set since D100), with bitwarden's 24 bugs held out for the finder only. `benchmark/results/2026-11-02-phase3-sonarr-score-d102.json`, `2026-11-02-phase3-bitwarden-heldout-score-d102.json`. D6's three repos aren't the measure here (D77).
+
+| Bar (D79) | Result | |
+|---|---|---|
+| Right place | Sonarr 36/40 = 90% (range 80–97.5%); bitwarden 21/24 = 88% (75–100%) | ✅ |
+| Beats a keyword search | Sonarr 90% vs 10%, gain 80 points (65–92.5); bitwarden 88% vs 12.5%, gain 75 (58–92) | ✅ |
+| Grounded (must-pass) | no failed step; 90 of 90 drafts recorded, as last measured | ✅ |
+| Repeatable (must-pass) | 50/50 bundles identical, 0 re-run AI calls, as last measured | ✅ |
+| Jira round trip (must-pass) | comment 10069 posted and read back, 2026-11-01 | ✅ |
+| Proof finds bugs | 22/30 = 73% (57–87%): 17 of 18 with a unit test, 5 of 5 with Playwright, 7 with no test recorded | ✅ |
+| Proof is real | 17/22 = 77% (59–91%), up to 19/22 = 86% if the unclear ones are real (D105) | ❌ |
+| Catches wrong reports | 7 of 10 not-bugs reproduced | ❌ |
+
+Reported, no bar: the bundle covers 71% of each fix on average (range 59–82%), median 14.5 files shown; median bundle 29k characters, the most 39.5k, all under the 40k cap; recorded AI cost on Sonarr $16.00 (finder $2.68, proof $9.72, drafts $3.60), not counting pages or stopped runs. **Per ticket:** finder about $0.05 and 10 s; bundle 1.2 s (median); proof about $0.24 and 2.6 min (median), capped at $1; each draft about $0.04 and 14 s (median).
+
+**How far to trust these:**
+- **The proof numbers are out of date.** They come from one run, before the finder, D95, D104, D106 and D107. D95's `shows` check hasn't met a real proof on Sonarr, so it's built, not measured. The re-run is owed (D109).
+- **The proof was measured on Sonarr only,** the tuning set (D100). It never ran on bitwarden.
+- **Both repos are public,** so the finder's rate may lean on what the model already knows, and no private repo was tried. About half the plain agent's hits come from tickets that name the file or class.
+- **A plain agent finds as well:** 36/40 and 23/24, with the same 4 misses on Sonarr. The finder is behind on bitwarden (21 vs 23) and names less of each fix (Sonarr 66% vs 72%; on fixes of several files 40% vs 52%). It names fewer files (median 1.5 vs 4 on Sonarr) and fewer wrong ones (0.62 vs 2.75), and adds checked evidence and a saved answer.
+- **By reading, not measured:** 18 to 20 of the 22 proofs look real, so the true figure may sit on either side of the 90% bar. SONB-26's pass is for the wrong reason, and code can't catch that.
+- **Grounded and repeatable are as last measured,** on the drafts and replay of 2026-11-01, before the finder's bundles, D96 and D106. On a scratch copy today, 45 of 50 rebuilt `bundle.json` files are identical and 5 differ (SONB-28, 32, 33, 34, 37; SONB-33 in `stale` and `chars`, cause not traced), and 82 of 90 saved drafts are stale, so a replay would make AI calls until they're made again (about $3.30). `bundle.md` changes with D107's label. Re-confirming both is part of the re-run.
+
+### Decisions made or changed
+D69–D109, above all: D79 (bars), D81 (cost), D89–D91 (setup failures), D95, D96 (what a proof means), D100 (held-out set), D101 (the finder replaces the page picker), D104 (the turn cap), D105 (on-fix results), D106 (not reproduced), D107 (the finder's guess), D108 (stale drafts), D109 (closing the phase).
+
+### Known gaps
+- **Nothing shows the bundle helps a fix.** Every bar checks a piece. On the finder's 4 misses it covers none of the fix's files, and its gain over the finder comes from 4 tickets.
+- **Bug or intended:** only a person can tell (D96). D99 is meant to help, and can't be shown on Sonarr: its planted FSD covers none of the 10 not-bugs.
+- **No root cause:** by design (D107). Code describes what a test did, not why (D105).
+- **Proof:** only one full run, so its flakiness is unknown; a unit test runs once. SONB-17 was offered only Playwright; SONB-16 passes alone though it reached the bug in its fixture (cause inferred); setup problems count against the AI (SONB-10, 18, 28, 46). Bare test names can't tell two fixtures apart.
+- **Graph:** `IExecute<T>` handlers, a hub made by test callers, code dispatched by interface or name, framework-run code.
+- **Pull and Jira:** the copy into Jira has no read-back (BWB-3 lost a comment's words); bitwarden's "Build Version" heading isn't read as the version; a sign-in approved with only D82's scopes is unconfirmed.
+- **Not checked:** Karma/Jasmine and Mocha test targets; a third repo of another shape; a real FSD (D56).
+
+### Impact on other phases
+Phase 4 consumes `ticket-bundle` v2 and `bug-proof` v1; it hasn't started, so no phase goes `needs review`. D99 becomes phase 2c, before Phase 4; it adds a contract Phase 3 consumes, so Phase 3 goes `needs review` when it lands (D20).
+
+### Follow-ups
+1. Merge the branch and let CI run, on the owner's OK.
+2. **Phase 2c, D99,** before Phase 4 (D109), starting with its ticket → requirement checker.
+3. **The proof re-run on Sonarr** (at most about $45, the $40 cap plus about $4 of drafts; last time's recorded cost was $13, held down by D104's bug; owner's OK; remove `bug-proof.json` first; re-sync the benchmark binary), with the drafts phase and replay after it, to re-confirm grounded and repeatable; then the smaller proof issues if they still matter.
+4. **Phase 4's first question:** does the bundle help? The fix agent with and without it on the same bugs (Open questions).
+5. **Phase 4:** the graph gaps; recording what a failing test ran as evidence; an agent waits for a person's go on a ticket with no proof (D75).

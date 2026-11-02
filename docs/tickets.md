@@ -87,7 +87,8 @@ description (`### Expected Behavior`, `**Actual:**`); the missing ones are liste
 ## The bundle (D71, D101)
 
 `bundle.json` (validated against `schemas/ticket-bundle.v2.json`) and `bundle.md`: the ticket and attachments; the
-starting points with their reasons (a found file with its ticket quote and its line); the reference pages that explain
+starting points with their reasons (a found file with its ticket quote, its line and the finder's reason, labelled as an
+unchecked guess and left out of the reproducer's input, D107); the reference pages that explain
 them, each saying which found files it explains (its statements cite code in the file, or the file is in its slice),
 after your own and code's page points; the FSD sections linked to the included pages with each link's state and
 whether a person decided it (findings only with `fsd.findings`, marked unconfirmed); the impact answer from the
@@ -128,7 +129,8 @@ same bytes.
   reports read by code; an exception in setup, a timeout or another assertion isn't proof; a mock's own check, such
   as Moq's `Verify`, is an assertion, D90). Playwright runs 3 times.
 - **Outcomes** (`bug-proof.json`): `reproduced` (with the other tests already failing at that commit, the baseline),
-  `not-reproduced` (the test passes, or the attempt hit its cap), `not-reproduced-flaky`, `not-provable`, `failed` (no
+  `not-reproduced` (the test passes, or the attempt hit its cap; `noProof` says which, D106: `ran-out`, `test-passed`, `flaky`),
+  `not-reproduced-flaky`, `not-provable`, `failed` (no
   valid test after one retry). Every written test names the ticket's actual result word for word (`actualQuote`); a
   reproduced one also names the words of its failure that show it (`shows`: in the whole message, not in the test's own
   source). Code checks both are real. `reproduced` shows the code differs from what the reporter expected, not that it's
@@ -150,13 +152,15 @@ gathers the facts (missing fields, clashes' candidates, the proof; or the PR's f
 reaches, the proof); `stangent-question-writer` / `stangent-summary-writer` returns the comment as parts
 (`draft-output` v2, D98): each part is one sentence or line with the ids of the claims it makes, and each claim is linked.
 Code checks every link, quotes word for word, that each part holds one sentence, that a questions draft asks for every
-missing field and mentions a bug that wasn't reproduced, and that a `client` draft has no backticks, paths, ids or code
+missing field and mentions a bug that wasn't reproduced when a test really ran (an attempt that only ran out can't be linked, D106), and that a `client` draft has no backticks, paths, ids or code
 names, and that each claim backs one part. A part that states something with no claim is left out, not a failed draft
 (D97); a pure ask (a question or "Please …" with no reason or fact in it), a greeting that is nothing else and a short
 heading or lead-in need none. Code joins the kept parts into Markdown. Recorded in `drafts/<kind>-<tone>.json`
 (`ticket-update` v1: `dropped` lists what was left out, `unchecked` what was kept with no claim) and `.md` (under "Left
 out" and "Kept with no claim"). `stangent ticket post <KEY> <kind>[-<tone>]` posts the text
-under your own login and records who and when; never twice without `--again`.
+under your own login and records who and when; never twice without `--again`, and not if what the draft was made from has
+changed or can't be worked out (`draft_stale`, which gives the command to make it again) without `--stale` (D108). A resolution
+compares with its PR's range, so pass fixed commits: a relative range moves with a later commit.
 
 ## Settings (`stangent.yaml`)
 
