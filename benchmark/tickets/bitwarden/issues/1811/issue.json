@@ -1,0 +1,112 @@
+{
+  "number": 1811,
+  "title": "Self hosted: MSSQL nightly backup isn't create for non-default DB name",
+  "body": "### Steps To Reproduce\n\n1. Install Bitwarden with the help of [bitwarden.sh](https://github.com/bitwarden/server/blob/56ee3bd290043de0cb8f58a57a9e79bc807d6ac3/scripts/bitwarden.sh)/[run.sh](https://github.com/bitwarden/server/blob/56ee3bd290043de0cb8f58a57a9e79bc807d6ac3/scripts/run.sh).\r\n2. Choose a non default database name. e.g. `bitwarden`.\r\n3. Wait 24h for the [nightly backup](https://bitwarden.com/help/article/backup-on-premise/#nightly-database-backups)/\r\n\n\n### Expected Result\n\nBackup is created every ~24h.\n\n### Actual Result\n\nNo backup is created\n\n### Screenshots or Videos\n\n```\r\n$ ls -la /opt/bitwarden/bwdata/mssql/backups/\r\ntotal 8\r\ndrwxrwxr-x 2 bitwarden bitwarden 4096 Jan 14 09:34 .\r\ndrwxrwxr-x 4 bitwarden bitwarden 4096 Jan 14 09:34 ..\r\n```\r\n\r\n(This is the state of the MSSQL backups directory after a full weekend where it was running.)\n\n### Additional Context\n\nThe problem seems to be that the database name is still hardcode:\r\n\r\n* https://github.com/bitwarden/server/blob/56ee3bd290043de0cb8f58a57a9e79bc807d6ac3/util/MsSql/backup-db.sh#L17\r\n* https://github.com/bitwarden/server/blob/56ee3bd290043de0cb8f58a57a9e79bc807d6ac3/util/MsSql/backup-db.sql#L3\n\n### Build Version\n\n1.45.2 / 2.25.0\n\n### Environment\n\nSelf-Hosted\n\n### Environment Details\n\n- Operating system: Ubuntu 18.04\r\n- Environment: Docker\r\n- Hardware: QEMU VM",
+  "author": "baurmatt",
+  "createdAt": "2022-01-17T10:40:07Z",
+  "comments": [
+    {
+      "id": 1033432600,
+      "author": "anhnvme",
+      "createdAt": "2022-02-09T07:31:34Z",
+      "body": "I have same issue. +1"
+    },
+    {
+      "id": 1036600251,
+      "author": "notnamed",
+      "createdAt": "2022-02-11T20:35:29Z",
+      "body": "The issue is not that the database name is hardcoded, because it is replaced in this script:\r\n\r\nhttps://github.com/bitwarden/server/blob/master/util/MsSql/entrypoint.sh#L43\r\n\r\nBut for some reason, that `$DATABASE` variable is not making it through the setup container, where it is set here:\r\n\r\nhttps://github.com/bitwarden/server/blob/master/scripts/run.sh#L98\r\n\r\nInto the mssql container in order for the substitution to occur properly.\r\n\r\nAs a temporary fix, you can set:\r\n\r\n`DATABASE=yourdbname`\r\n\r\nin the file: `./bwdata/env/mssql.override.env`. This seems to resolve the issue until a fix can be released."
+    },
+    {
+      "id": 1379661877,
+      "author": "venu2062",
+      "createdAt": "2023-01-12T00:39:54Z",
+      "body": "That, unfortunately, is not a complete solution. The script entrypoint.sh replaces the string “vault” with the database name provided in the overrides file. If the custom name contains vault as a substring such as “my-vault” the embedded vault gets replaced every time update script is run to update Bitwarden. In this case, it becomes “my-my-vault” followed by “my-my-my-vault” and so on.\r\n\r\nThe workaround is to remove the data base name override from the overrides file after the first time."
+    },
+    {
+      "id": 1380180959,
+      "author": "bradd3ls",
+      "createdAt": "2023-01-12T11:20:08Z",
+      "body": "\r\n\r\n\r\n\r\n> That, unfortunately, is not a complete solution. The script entrypoint.sh replaces the string “vault” with the database name provided in the overrides file. If the custom name contains vault as a substring such as “my-vault” the embedded vault gets replaced every time update script is run to update Bitwarden. In this case, it becomes “my-my-vault” followed by “my-my-my-vault” and so on.\r\n> \r\n> The workaround is to remove the data base name override from the overrides file after the first time.\r\n\r\nHi There,\r\n\r\nWhen you say \"after the first time\" -- could you please elaborate? \r\n\r\nDo you mean after rebuilding the configuraion via ./bitwarden.sh rebuild or are you talking after the first database backup after adding the custom DATABASE name to ./bwdata/env/mssql.override.env file?\r\n\r\n"
+    },
+    {
+      "id": 1380188454,
+      "author": "Athanasius",
+      "createdAt": "2023-01-12T11:26:53Z",
+      "body": "> When you say \"after the first time\" -- could you please elaborate?\r\n> \r\n> Do you mean after rebuilding the configuraion via ./bitwarden.sh rebuild or are you talking after the first database backup after adding the custom DATABASE name to ./bwdata/env/mssql.override.env file?\r\n\r\nIt can't be \"after the first database backup is made\", because I correctly have:\r\n```\r\nbw_vault_FULL_20230108_000000.BAK\r\nbw_vault_FULL_20230109_000000.BAK\r\nbw_vault_FULL_20230110_000000.BAK\r\n```\r\nafter I'd made the change/rebuild/restart, and have only *just* commented out the `DATABASE=bw_vault` from my file (without doing anything else, so no rebuild etc)."
+    },
+    {
+      "id": 1380264827,
+      "author": "venu2062",
+      "createdAt": "2023-01-12T12:36:00Z",
+      "body": "> > When you say \"after the first time\" -- could you please elaborate?\r\n> > Do you mean after rebuilding the configuraion via ./bitwarden.sh rebuild or are you talking after the first database backup after adding the custom DATABASE name to ./bwdata/env/mssql.override.env file?\r\n> \r\n> It can't be \"after the first database backup is made\", because I correctly have:\r\n> \r\n> ```\r\n> bw_vault_FULL_20230108_000000.BAK\r\n> bw_vault_FULL_20230109_000000.BAK\r\n> bw_vault_FULL_20230110_000000.BAK\r\n> ```\r\n> \r\n> after I'd made the change/rebuild/restart, and have only _just_ commented out the `DATABASE=bw_vault` from my file (without doing anything else, so no rebuild etc).\r\n\r\nIt can be any time between rebuild and first update. I have done that after rebuild and first backup is successful - just to ensure that backups are working."
+    },
+    {
+      "id": 1382700420,
+      "author": "Athanasius",
+      "createdAt": "2023-01-14T09:31:26Z",
+      "body": "However it's now several days later and I have no *more* backups.  Last container restart was 6 days ago (so the 8th, when I started getting backups).  It feels like, somehow, something has picked up on me commenting out that DATABASE= line.\r\n\r\n```bash\r\ndocker compose logs mssql\r\n2023-01-11 00:00:00.94 Backup      Error: 3041, Severity: 16, State: 1.\r\n2023-01-11 00:00:00.94 Backup      BACKUP failed to complete the command BACKUP DATABASE bw_bw_vault. Check the backup application log for detailed messages.\r\n2023-01-12 00:00:01.02 Backup      Error: 3041, Severity: 16, State: 1.\r\n2023-01-12 00:00:01.02 Backup      BACKUP failed to complete the command BACKUP DATABASE bw_bw_vault. Check the backup application log for detailed messages.\r\n2023-01-13 00:00:00.14 Backup      Error: 3041, Severity: 16, State: 1.\r\n2023-01-13 00:00:00.14 Backup      BACKUP failed to complete the command BACKUP DATABASE bw_bw_vault. Check the backup application log for detailed messages.\r\n2023-01-14 00:00:00.24 Backup      Error: 3041, Severity: 16, State: 1.\r\n2023-01-14 00:00:00.24 Backup      BACKUP failed to complete the command BACKUP DATABASE bw_bw_vault. Check the backup application log for detailed messages.\r\n```\r\n\r\nReally we need the root cause of this fixed.  If we specified a custom database name it needs to propagate fully to everything."
+    },
+    {
+      "id": 1382716598,
+      "author": "Athanasius",
+      "createdAt": "2023-01-14T11:18:10Z",
+      "body": "And, yes, that logging shows it trying to use `bw_bw_vault`, despite my setting having been `bw_vault` on setup and in `env/mssql.override.env` when uncommented.  So that's not even the \"it keeps adding `_vault` to the end\" that @venu2062 reported."
+    },
+    {
+      "id": 1382743089,
+      "author": "venu2062",
+      "createdAt": "2023-01-14T13:45:23Z",
+      "body": "> And, yes, that logging shows it trying to use `bw_bw_vault`, despite my setting having been `bw_vault` on setup and in `env/mssql.override.env` when uncommented. So that's not even the \"it keeps adding `_vault` to the end\" that @venu2062 reported.\r\n\r\nYes. Same thing is happening for me too. I completely removed the DATABASE setting line from the overrides file. But after a machine restart which restarts Bitwarden, the data base name used in the backup got modified, vault was substituted with the full data base name again and the backup now fails.\r\n\r\nIt looks like the data base name is copied somewhere else while bitwarden rebuild is run and used for restart, update, etc. I am wondering why this script is being updated repeatedly.\r\n\r\nThis requires more exploration into various scripts for the fix/workaround, looks like.\r\n\r\nHopefully, someone else has some ideas."
+    },
+    {
+      "id": 1403535973,
+      "author": "venu2062",
+      "createdAt": "2023-01-25T12:30:10Z",
+      "body": "> And, yes, that logging shows it trying to use `bw_bw_vault`, despite my setting having been `bw_vault` on setup and in `env/mssql.override.env` when uncommented. So that's not even the \"it keeps adding `_vault` to the end\" that @venu2062 reported.\r\n\r\nIf you are still looking for a solution, the following may be what is causing the issue. Value set to DATABASE from the overrides file is assigned as an environment variable in the mssql container. The entrypoint script uses it to update the backup script. In most instances, this backup script is reset when the container restarts and hence the problem does not occur. Only time the problem reoccurs in my tests is when the machine is restarted. For some reason, in this case the already updated backup script remains in the container and entrypoint script is updating it again. It is possible that docker stores container state on shutdown and is restoring it on restart - not sure of this.\r\n\r\nSo, removing the setting from the overrides file is not a solution. In fact, you should leave it there and restart bitwarden using “bitwarden.sh restart” command when the backup fails. This, unfortunately, has to be done manually. As of now, this is needed only after a machine restart, as far as i can tell.\r\n\r\nHope that helps."
+    },
+    {
+      "id": 1414557874,
+      "author": "mr-kek",
+      "createdAt": "2023-02-03T00:41:09Z",
+      "body": "Having the same problem, and can verify the restarting of the machine triggers the issue.\r\nI think I'm just going the backup my vault, rebuild the whole VM and install bitwarden again, and just use the default name of vault to avoid the issue, then upload my vault.\r\nI don't want to go through the issue of having to do the, log into the vm, do the \"bitwarden.sh restart\" after a machine rebuild.\r\nJust using the default db name seems simpler instead of remembering to \"bitwarden.sh restart\" each time."
+    },
+    {
+      "id": 1415595203,
+      "author": "Athanasius",
+      "createdAt": "2023-02-03T10:13:28Z",
+      "body": "Just to note that it's not only a machine restart that causes the issue.  It's any restart of the docker ~~containers~~ *services* ~~that's not mediated by the bitwarden.sh script~~.  I've had the 'doubling up' happen on two separate \"new docker packages\" upgrades (I'm using the docker.com APT repository)."
+    },
+    {
+      "id": 1415798181,
+      "author": "venu2062",
+      "createdAt": "2023-02-03T12:20:02Z",
+      "body": "I always use bitwarden.sh script. So, in my case it appears that restart of the machine is the only case the problem appears. I seem to have fixed that by adding the line: “@restart sleep 30 && bitwarden.sh restart >/dev/null 2>&1 ” to crontab for the user bitwarden. I haven’t seen the issue after multiple restarts in more than a week."
+    },
+    {
+      "id": 1415844181,
+      "author": "mr-kek",
+      "createdAt": "2023-02-03T13:04:34Z",
+      "body": "> Just to note that it's not only a machine restart that causes the issue. It's any restart of the docker containers that's not mediated by the bitwarden.sh script. I've had the 'doubling up' happen on two separate \"new docker packages\" upgrades (I'm using the docker.com APT repository).\r\n\r\nRestarting the containers with the DATABASE=yourdbname override in the ./bwdata/env/mssql.override.env file worked fine. The issue only occurred when the VM was restarted.\r\n\r\nI just created a new VM, installed Bitwarden using vault as the db name, imported my vault, and tested a manual backup, and it works fine. It's just after midnight here, and the auto backup worked.\r\nI found this just easier to do instead of troubleshooting and trying to resolve this issue. I'm just hosting it for myself, so I understand it might not be as easy for others who have lots of users, but if you're just doing this for yourself, just redo it and use db name, vault, it's just easier than trying to jump through hoops.\r\n"
+    },
+    {
+      "id": 1415859243,
+      "author": "Athanasius",
+      "createdAt": "2023-02-03T13:17:04Z",
+      "body": "To be clearer, what I really meant was \"any restart of the docker services\", not the docker *containers*.\r\n\r\nI just:\r\n\r\n1. Confirmed that I had, e.g. `SET @DatabaseName = 'bw_vault'` in the mssql container `/backup-db.sql` file.\r\n2. `systemctl stop docker.service`\r\n3. `systemctl stop containerd.service`\r\n4. `systemctl start docker.service` (which also brought `containerd.service` back up).\r\n5. Checked mssql container `/backup-db.sql` file again, and now that line is `SET @DatabaseName = 'bw_bw_vault'`.\r\n\r\nBasically \"restart the machine/VM\" is just a specific case of \"restart the docker services\".  I commented mostly so anyone else experiencing this will have in mind that any upgrade, or restart otherwise, of their docker services, *will also cause this issue*.\r\n\r\n@mr-kek I'm probably just going to follow your lead and redo things with the default database name as well.  I too am only utilising this for personal use, and it'll be easier than putting up with this headache.\r\n\r\n**But that absolutely doesn't mean that the bitwarden developers should consider this solved**.  Either fix this or stop offering the option to have a custom database name at install time.  The latter option at least needs to outline, or link to an explanation of, both the actual reasons you might want to do this, and this bug.\r\n\r\nFor my part I was unaware of the bitwarden docker setup at the time, i.e. that it uses mssql for the database, and was planning ahead in case I ever shifted the database over to, e.g. my already running postgresql instance (which I now realise was never an option).  Alternatively ... the default database name could be changed to something less generic than `vault`, but I can see that then causing issues for all the uses who took the current default.  Really, this bug just needs fixing."
+    },
+    {
+      "id": 1562043261,
+      "author": "JasmeowTheCat",
+      "createdAt": "2023-05-24T23:16:40Z",
+      "body": "Why hasn't this been solved yet honestly - This is giving me a bit of a headache where I am having to manually update the SET line for the backup to complete... I don't know what else is broken by not using the default \"vault\" database name and made it a different name."
+    },
+    {
+      "id": 1562120685,
+      "author": "venu2062",
+      "createdAt": "2023-05-25T01:06:39Z",
+      "body": "When you notice that backup is failing fixing it is as simple as running “bitwarden.sh restart”. Of course, you may not notice it for many days/weeks. A brute force method is to put the restart command in cron and run everyday an hour or so before the backup is supposed to happen if it is not too disruptive.\r\n\r\nBTW, the problem occurs many times when the OS is updated - could be because some docker components are updated."
+    }
+  ],
+  "attachments": []
+}

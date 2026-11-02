@@ -1,0 +1,46 @@
+{
+  "number": 3116,
+  "title": "Incorrect IP Addresss in logon alerts due to loss of X-Real-IP Header",
+  "body": "### Steps To Reproduce\n\n1. Login with new device\r\n2. Examine email notification of new device IP Address feld\n\n### Expected Result\n\nReal IP of logged on device is displayed\n\n### Actual Result\n\nIP of internal reverse proxy is displayed\n\n### Screenshots or Videos\n\n![image](https://github.com/bitwarden/server/assets/533249/51f66b67-3474-440c-9daf-5d8e02faa6b0)\r\n\n\n### Additional Context\n\nPreviously we were able to get this IP reported correctly due to utilisaiton of the `X-Real-IP` header, however this appears to have been broken by the changes in https://github.com/bitwarden/server/pull/2847.\r\n\r\nAs I understand it the solution would now be to set the `KnownProxies` config option, however this is not very easily achievable in our environment as the proxies IP addresses are dynamically allocated in a dedicated 'reverse proxy' subnet and can be added to and removed dynamically.\r\n\r\nAs per my understanding of the .net side, the ideal solution would be to implement the ability to set [KnownNetworks](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.builder.forwardedheadersoptions.knownnetworks?view=aspnetcore-7.0)  as well as KnownProxies, so we could allocate the entire subnet as proxied.\r\n\r\nAlternatively restore the ability to allow us to continue setting a header like `X-Real-IP` as trusted as this is a regression in functionality.\n\n### Build Version\n\n2023.7.0 \n\n### Environment\n\nSelf-Hosted\n\n### Environment Details\n\nDocker-swarm based deployment with a caddy-based reverse proxy terminating TLS to the containers.\n\n### Issue Tracking Info\n\n- [X] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "author": "danpoltawski",
+  "createdAt": "2023-07-18T12:01:20Z",
+  "comments": [
+    {
+      "id": 1866097986,
+      "author": "Javed-Patel-wohlig",
+      "createdAt": "2023-12-21T11:33:37Z",
+      "body": "hey, if this is not fixed yet I can contribute by fixing this."
+    },
+    {
+      "id": 1866116310,
+      "author": "danpoltawski",
+      "createdAt": "2023-12-21T11:48:56Z",
+      "body": "I don't believe its fixed"
+    },
+    {
+      "id": 2590265118,
+      "author": "SergeantConfused",
+      "createdAt": "2025-01-14T15:34:44Z",
+      "body": "Hello @danpoltawski,\r\n\r\nIn testing, `X-Real-IP` header is working as expected with Server 2025.1.0 and is relaying the client's IP address. Could you please let me know if you're still experiencing this behaviour in more recent versions of the server?\r\n\r\nThank you in advance,"
+    },
+    {
+      "id": 2590292487,
+      "author": "danpoltawski",
+      "createdAt": "2025-01-14T15:44:02Z",
+      "body": "> In testing, `X-Real-IP` header is working as expected with Server 2025.1.0 and is relaying the client's IP address. Could you please let me know if you're still experiencing this behaviour in more recent versions of the server?\n\nI will wait for that release to be included in https://github.com/bitwarden/self-host and then re-test"
+    },
+    {
+      "id": 2590347165,
+      "author": "SergeantConfused",
+      "createdAt": "2025-01-14T16:03:23Z",
+      "body": "Hi @danpoltawski,\r\n\r\nTo be clear, are you still encountering this in server 2024.11.X or 2024.12.X?\r\n\r\nThank you,"
+    },
+    {
+      "id": 2590481545,
+      "author": "danpoltawski",
+      "createdAt": "2025-01-14T16:32:39Z",
+      "body": "Yes, still experiencing on 2024.12.1. Please see my additional context for an explanation of why we're seeing this."
+    }
+  ],
+  "attachments": []
+}

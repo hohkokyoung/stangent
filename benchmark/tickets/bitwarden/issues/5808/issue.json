@@ -1,0 +1,22 @@
+{
+  "number": 5808,
+  "title": "Can't delete items from Collection/Organization",
+  "body": "### Steps To Reproduce\n\n1. Go to 'an item belonging to Orgnization/Collection'\n2. Click on 'Delete'\n\n\n\n### Expected Result\n\nItem gets moved to Trash\n\n### Actual Result\n\nNothing happens\n\n### Screenshots or Videos\n\n_No response_\n\n### Additional Context\n\nSnippet below appears in web console\n```\n[HTTP/2 500  279ms]\nObject { response: {…}, message: \"An unhandled server error has occurred.\", validationErrors: null, captchaSiteKey: undefined, captchaRequired: false, statusCode: 500 }\nmain.cce87d4a5909f265782e.js:1056:340055\n```\n\nThis appears in api.log\n```\n2025-05-12 11:05:49.236 +02:00 [ERR] Nullable object must have a value.\nSystem.InvalidOperationException: Nullable object must have a value.\n   at System.Nullable`1.get_Value()\n   at Bit.Infrastructure.EntityFramework.Vault.Repositories.CipherRepository.ReplaceAsync(CipherDetails cipher) in /home/runner/work/server/server/src/Infrastructure.EntityFramework/Vault/Repositories/CipherRepository.cs:line 573\n   at Bit.Infrastructure.EntityFramework.Vault.Repositories.CipherRepository.UpsertAsync(CipherDetails cipher) in /home/runner/work/server/server/src/Infrastructure.EntityFramework/Vault/Repositories/CipherRepository.cs:line 966\n   at Bit.Core.Vault.Services.CipherService.SoftDeleteAsync(CipherDetails cipherDetails, Guid deletingUserId, Boolean orgAdmin) in /home/runner/work/server/server/src/Core/Vault/Services/Implementations/CipherService.cs:line 725\n   at Bit.Api.Vault.Controllers.CiphersController.PutDelete(Guid id) in /home/runner/work/server/server/src/Api/Vault/Controllers/CiphersController.cs:line 896\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Logged|12_1(ControllerActionInvoker invoker)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextExceptionFilterAsync>g__Awaited|26_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\n```\n\nI suspect this is related to recently merged [#5543](https://github.com/bitwarden/server/pull/5543) because moving items to Organizations/Collections started working but deleting them broke\n\n### Build Version\n\n2025.4.3\n\n### Environment\n\nSelf-Hosted\n\n### Environment Details\n\nDocker, using postgresql\n\n### Issue Tracking Info\n\n- [x] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "author": "thesnallygaster",
+  "createdAt": "2025-05-12T09:19:32Z",
+  "comments": [
+    {
+      "id": 2879352870,
+      "author": "daniellbw",
+      "createdAt": "2025-05-14T08:47:43Z",
+      "body": "Hi there,\n\nThis issue has been escalated for further investigation. If you have more information that can help us, please add it below. \n\nThanks!"
+    },
+    {
+      "id": 3137101760,
+      "author": "schuettecarsten",
+      "createdAt": "2025-07-30T16:42:42Z",
+      "body": "The issue is still there - two month later."
+    }
+  ],
+  "attachments": []
+}

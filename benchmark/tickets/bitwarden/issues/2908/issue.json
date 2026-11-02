@@ -1,0 +1,76 @@
+{
+  "number": 2908,
+  "title": "Wrong IP behind reverse proxy",
+  "body": "### Steps To Reproduce\r\n\r\n1. Login in with wrong credentials\r\n2. Look at `logs/identity/Identity/20230505.txt`\r\n\r\n\r\n### Expected Result\r\n\r\nExpected to find my real IP logged in the identity logs.\r\n\r\n### Actual Result\r\n\r\nInstead the following is logged:\r\n```\r\n2023-05-05 11:26:02.733 +00:00 [Warning] Failed login attempt. ::ffff:172.29.60.10\r\n```\r\nBut my reverse proxy and nginx are properly configured, since I see in `logs/nginx/access.log`:\r\n```\r\nxxx.xxx.xxx.xxx - - [05/May/2023:11:28:20 +0000] \"POST /identity/accounts/prelogin HTTP/1.1\" 200 86 \"https://url/\" \"Mozilla/5.0 (Android 13; Mobile; rv:109.0) Gecko/112.0 Firefox/112.0\" \"xxx.xxx.xxx.xxx \"\r\n```\r\nwhere `xxx.xxx.xxx.xxx` is my actual IP.\r\n\r\n### Screenshots or Videos\r\n\r\n_No response_\r\n\r\n### Additional Context\r\n\r\nI run Bitwarden behind a Traefik server that correctly sets the headers and I configured bitwardens nginx to trust the reverse proxy in the `config.yml`:\r\n```\r\nreal_ips:\r\n- 172.16.0.0/12\r\n```\r\n\r\n### Build Version\r\n\r\n2023.4.3\r\n\r\n### Environment\r\n\r\nSelf-Hosted\r\n\r\n### Environment Details\r\n\r\n- Linux\r\n- Docker & Docker Compose via the official `bitwarden.sh`\r\n\r\n### Issue Tracking Info\r\n\r\n- [X] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "author": "taaem",
+  "createdAt": "2023-05-05T11:32:30Z",
+  "comments": [
+    {
+      "id": 1536152605,
+      "author": "Krychaz",
+      "createdAt": "2023-05-05T11:58:47Z",
+      "body": "Hello there,\r\n\r\nLooks like the header may not being properly passed through to the Bitwarden server. \r\n\r\nHave you  tried adding `TrustedProxy` to your config.yml?"
+    },
+    {
+      "id": 1536205863,
+      "author": "taaem",
+      "createdAt": "2023-05-05T12:42:44Z",
+      "body": "@Krychaz I don't see `TrustedProxy` in https://github.com/bitwarden/server/blob/master/util/Setup/Configuration.cs, I configured `RealIps` as noted in my original post. Is there another place to configure this?"
+    },
+    {
+      "id": 1536211137,
+      "author": "taaem",
+      "createdAt": "2023-05-05T12:47:00Z",
+      "body": "If I check `<url>/api/ip` I can see:\r\n```json\r\n{\r\n  \"ip\": \"::ffff:172.29.60.10\",\r\n  \"headers\": {\r\n    \"X-Forwarded-For\": {\r\n      \"key\": \"X-Forwarded-For\",\r\n      \"value\": [\r\n        \"xxx.xxx.xxx.xxx, xxx.xxx.xxx.xxx\"\r\n      ]\r\n    }\r\n  }\r\n}\r\n```\r\nwhere `xxx.xxx.xxx.xxx` is again my real ip, but twice, maybe that's the issue?"
+    },
+    {
+      "id": 1538023271,
+      "author": "Krychaz",
+      "createdAt": "2023-05-08T09:06:50Z",
+      "body": "Yes, this could be the issue. What is your reverse proxy solution? You can try and modify the configuration of your reverse proxy to only send a single IP address in the header."
+    },
+    {
+      "id": 1542367040,
+      "author": "taaem",
+      "createdAt": "2023-05-10T15:01:05Z",
+      "body": "If I see it correctly, I only send one IP in that address but the second one gets added by the bitwarden nginx. This is the behavior described in https://github.com/bitwarden/server/pull/486#issuecomment-487144227, so I guess its the correct behavior. If I understand the comment afterwards, bitwarden should use the first IP in that header as the originating IP address. I don't know if anything after this PR changed, breaking that functionality."
+    },
+    {
+      "id": 1542375931,
+      "author": "taaem",
+      "createdAt": "2023-05-10T15:05:51Z",
+      "body": "According to https://github.com/bitwarden/server/blob/5a850f48e2adf309a05741a43eb45eb390354677/src/Identity/appsettings.json#L72 the client IP is set from the `CF-Connecting-IP` and not `X-Forwarded-For` or `X-Real-IP` headers. But for selfhosted instances the `CF-Connecting-IP` header is not set."
+    },
+    {
+      "id": 1542395779,
+      "author": "patrikgrill",
+      "createdAt": "2023-05-10T15:18:21Z",
+      "body": "I have the same problem since I upgraded to version 2023.4.3. As a reverse proxy solution I use NetScaler, which sends the client IP as `X-Forwarded-For`."
+    },
+    {
+      "id": 1542400203,
+      "author": "taaem",
+      "createdAt": "2023-05-10T15:21:33Z",
+      "body": "Please ignore my comment before, I think the issue is, that I would need to configure `globalSettings__knownProxies=::ffff:172.29.0.10`, but I my reverse proxy doesn't actually have a static IP, instead I would like to allow the whole subnet. According to https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer?view=aspnetcore-7.0 I would need to be able to configure the `KnownNetworks`, to allow my whole docker subnet to be used as a proxy IP. "
+    },
+    {
+      "id": 1544333974,
+      "author": "GeoCookie",
+      "createdAt": "2023-05-11T16:49:20Z",
+      "body": "I have the same problem. The logs still show the nginx container ip address, even if I access bitwarden directly (not through my reverse prox)\r\n![image](https://github.com/bitwarden/server/assets/43962716/c0895085-5adc-4a1d-9653-4758455e8065)\r\n![image](https://github.com/bitwarden/server/assets/43962716/0d7e1018-cc13-42e6-9ee5-9147b7d836b3)\r\n\r\nIt was working with previous version. I can't tell from which version the problem appeared"
+    },
+    {
+      "id": 1545466538,
+      "author": "Krychaz",
+      "createdAt": "2023-05-12T09:38:30Z",
+      "body": "Thank you everyone for your feedback. \r\n\r\nWe are currently looking into this. We will update you as soon as possible. "
+    },
+    {
+      "id": 1555101178,
+      "author": "vinnyperella",
+      "createdAt": "2023-05-19T18:59:15Z",
+      "body": "Just wanted to note I'm seeing the same thing I'm using Bitwarden without a reverse proxy I think it has something to do with the \"::ffff:\" prefix which appears to be an \"IPv6 prefix for an IPv4 address mapped into IPv6 space.\" This is breaking fail2ban integration for failed logins because it's not forwarding the actual client IP.\n\nI don't know when this stopped working I only noticed it recently but I have not changed anything on my end other than upgrading Bitwarden and I have old fail2ban emails banning failed logins so I know it used to work.\n\nA bit more detail in the issue I opened in the self-host repo linked above this comment and also here: https://github.com/bitwarden/self-host/issues/104"
+    }
+  ],
+  "attachments": []
+}

@@ -1,0 +1,76 @@
+{
+  "number": 5828,
+  "title": "Family subscriptions “expired” after upgrade to 2025.5.0 (self-hosted)",
+  "body": "### Steps To Reproduce\n\nAm self-hosting Bitwarden and upgraded to 2025.5.0 this morning. At 12:00 PM mails where sent out for my 3 family organizations that the licenses had expired. They are however valid for several months more. I could however indeed not access organization items and premium feature like TOTP.\n\nMessage in web vault:\n\n![Image](https://github.com/user-attachments/assets/d6d10996-f37b-48d3-9b0e-0473eb3874cc)\n\nLicense info:\n\n![Image](https://github.com/user-attachments/assets/1b6e4929-c673-47f0-8bea-b00d5ba4e351)\n\nI reverted back to a snapshot made directly before the upgrade, but this is a serious issue. Not sure if this is only my instance, but I really suspect this is not.\n\n### Expected Result\n\nNo \"expiration\" and therefore suspension of features\n\n### Actual Result\n\n\"Fake\" license expiration\n\n### Screenshots or Videos\n\n_No response_\n\n### Additional Context\n\n_No response_\n\n### Build Version\n\n2025.5.0\n\n### Environment\n\nSelf-Hosted\n\n### Environment Details\n\nUbuntu 24.04\nOfficial Docker Container\n\n### Issue Tracking Info\n\n- [x] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "author": "spiezmaestro",
+  "createdAt": "2025-05-16T14:16:31Z",
+  "comments": [
+    {
+      "id": 2886927492,
+      "author": "Neonwarden",
+      "createdAt": "2025-05-16T14:43:26Z",
+      "body": "Hi there,\n\nTo update your license file, log in to the Bitwarden web application at https://vault.bitwarden.com or https://vault.bitwarden.eu, depending on your server's geographical location. For additional details on server geography, please check here: https://bitwarden.com/help/server-geographies/ \n\nNavigate to Admin Console > {YOUR ORG NAME} > Billing > Subscription, where you can download your new license file. To generate this file, you will need your Installation ID, which can be found in the ./bwdata/env/global.override.env configuration file on your server. Alternatively, you can retrieve it from the Bitwarden System Administration Portal at https://{YOUR URL}/admin\n\nOnce you have obtained the new license file, log in to your self-hosted web application and go to Admin Console > {YOUR ORG NAME} > Billing > Subscription to apply the update. After applying the new license, log out and then log back in to ensure the changes take effect.\n\nIf you encounter an error stating “Version X not supported”, verify that your server is running the latest version. If an update is required, ensure you have a backup, clone, or full copy of the bwdata directory before proceeding. You can follow the official update procedure outlined here: https://bitwarden.com/help/updating-on-premise/\n\nWe use GitHub issues as a place to track bugs and other development related issues. If your issue persists, please write us back using our “Contact support” form located on our Help Center (https://bitwarden.com/help/).\n\nYou can include a link to this issue in the message content.\n\nAlternatively, you can also search for an answer in our help documentation or get help from other Bitwarden users on our community forums (https://community.bitwarden.com/c/support/). \n\nThe issue here will be closed.\n\nThanks!"
+    },
+    {
+      "id": 2886941794,
+      "author": "spiezmaestro",
+      "createdAt": "2025-05-16T14:48:17Z",
+      "body": "Sorry, but did you read my issue at all? My license is running until September, but straight after upgrading to 2025.5.0 it was listed as expired. This has nothing to do with the license itself (and mind you, 3 licenses all at once), but with the upgrade to 2025.5.0. Instead of posting some generic text as soon as you read license, maybe this time it is worth looking into it."
+    },
+    {
+      "id": 2886943873,
+      "author": "spiezmaestro",
+      "createdAt": "2025-05-16T14:49:03Z",
+      "body": "Since I can't re-open the issue, I guess more people with run into this issue. Not sure if this is the experience you want to give your users."
+    },
+    {
+      "id": 2887443616,
+      "author": "dwbit",
+      "createdAt": "2025-05-16T18:44:50Z",
+      "body": "Hey @spiezmaestro for this particular issue, some community members have been able to resolve the issue by re-sycning or manually re-uploading the license again, can you let me know if either of those steps worked for you?"
+    },
+    {
+      "id": 2888430810,
+      "author": "joshuabeny1999",
+      "createdAt": "2025-05-17T14:34:03Z",
+      "body": "Me and my colleague had same issue on our instance. Yeah it could be resolved by downloading and reuploading the license again. But still it should not happen that an upgrade disable all premium features long before the license expired. Confusing was it showed license as valid until xx date in the web app but still was disabled. \n\nThis should be investigated! "
+    },
+    {
+      "id": 2888688153,
+      "author": "CirnoT",
+      "createdAt": "2025-05-18T01:06:25Z",
+      "body": "```\n2025-05-18 00:30:00.432 +00:00 [Information] Validating licenses for 1 organizations.\n2025-05-18 00:30:00.515 +00:00 [Information] Organization a049ecd1-7035-41b6-ad65-b20e00d23e80 (\"i32.pl\") has an invalid license and is being disabled. Reason: \"Invalid signature.\"\n2025-05-18 00:30:07.749 +00:00 [Information] Finished job \"ValidateOrganizationsJob\" at 05/18/2025 00:30:07.\n```\n\nThe likely cause is https://github.com/bitwarden/server/pull/5569 which introduces new property `UseAdminSponsoredFamilies` without updating license version hence making all legacy property-based licenses invalid. @Neonwarden as I understand it, the agreement on introducing claim-based licenses was that legacy licenses still continue to function?\n\nPinging @cyprain-okeke as author and @cturnbull-bitwarden as reviewer of PR in question. Also pinging @BTreston because their recent PR https://github.com/bitwarden/server/pull/5834 bumps version.\n\n---\n\nFor reference, the above log comes from instance running license that was generated on `2024-10-19T12:27:45.6010386Z` (version 14)."
+    },
+    {
+      "id": 2888841008,
+      "author": "SergeantConfused",
+      "createdAt": "2025-05-18T07:59:44Z",
+      "body": "Hello everyone,\n\nThank you all for your input. This matter has been raised internally, and I will now reopen this GitHub report for the time being whilst it is being examined. Please feel free to post additional information, such as screenshots or a screen video recordings, if you wish.\n\nThank you all again,"
+    },
+    {
+      "id": 2889038021,
+      "author": "grafnull",
+      "createdAt": "2025-05-18T15:00:38Z",
+      "body": "I have exactly the same issue. Reuploading the license fixed it for now.\n\nbitwarden.sh version 2025.5.0\nDocker version 28.1.1, build 4eba377\nDocker Compose version v2.35.1\n"
+    },
+    {
+      "id": 2889170081,
+      "author": "spiezmaestro",
+      "createdAt": "2025-05-18T19:36:14Z",
+      "body": "More info can maybe be found in the community issue I created as this issue got closed previously.\n\nhttps://community.bitwarden.com/t/family-subscriptions-expired-after-upgrade-to-2025-5-0-self-hosted/84857"
+    },
+    {
+      "id": 2889446281,
+      "author": "joshooaj",
+      "createdAt": "2025-05-19T02:36:12Z",
+      "body": "I was also impacted by this. Downloading a new license json and importing it solved the problem for me. I couldn't work out why I got the email about my subscription being expired. Everything worked fine until today when I could no longer enter TOTP codes. If I had used my self-hosted bw server to store a TOTP code for my cloud bw account, it would have made it a big pain to download a fresh copy of my license json."
+    },
+    {
+      "id": 2889861924,
+      "author": "keliansb",
+      "createdAt": "2025-05-19T07:07:55Z",
+      "body": "We also faced the same issue, but we have an Enterprise subscription, not a Family one.\nDownloading and reapplying the license also fixed the issue for us."
+    }
+  ],
+  "attachments": []
+}

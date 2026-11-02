@@ -36,7 +36,8 @@ export PLUGIN_DIR="${PLUGIN_DIR:-$HERE/plugin}"
 # dotnet-install.sh (the system one has only 10, and adding 8 there needs an admin). Used when present.
 BENCH_DOTNET="${BENCH_DOTNET:-$HOME/stangent-bench/dotnet}"
 if [ -x "$BENCH_DOTNET/dotnet" ]; then export DOTNET_ROOT="$BENCH_DOTNET" PATH="$BENCH_DOTNET:$PATH"; fi
-SDK="$HERE/benchmark/configs/sonarr.global.json"
+# The repo's SDK pin for old commits, when the benchmark has one (benchmark/configs/<tickets dir name>.global.json).
+SDK="$HERE/benchmark/configs/$(basename "$TICKETS").global.json"
 mkdir -p "$TICKETS/run"
 cd "$CLONE"
 PINNED="$(jq -r .pinned "$TICKETS/selection.json")"
@@ -68,7 +69,7 @@ timed() {
 }
 stop() { log "STOPPED: $*"; exit 1; }
 
-# Back to the pinned commit with the SDK pin (D28's approach: past issues are judged against today's graph and pages).
+# Back to a commit with the SDK pin (D28's approach: past issues are judged against today's graph and pages).
 at() {
   git checkout -q -f "$1"
   # Each attempt starts clean: an earlier attempt's test (untracked) would be read and copied by the next one.
@@ -78,7 +79,7 @@ at() {
   # Sonarr builds every project into shared folders (_tests/<tfm>, _output). Another commit's newer files stay there
   # (a 5.x NUnit adapter beside a 3.x commit's tests finds no tests at all), so they go too; builds fill them again.
   rm -rf _tests _output
-  cp "$SDK" global.json
+  if [ -f "$SDK" ]; then cp "$SDK" global.json; else log "no SDK pin for this repo ($(basename "$SDK")): the commit's own global.json is used"; fi
 }
 
 phase_points() {

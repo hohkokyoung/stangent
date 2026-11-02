@@ -1,0 +1,88 @@
+{
+  "number": 2500,
+  "title": "SSO: Invalid redirect URI when using Azure OIDC or SAML 2.0",
+  "body": "### Steps To Reproduce\r\n\r\n1. Start up Bitwarden from `image: bitwarden/self-host:dev` with SSO enabled.  \r\n  (The same issue was also encountered using the `beta` tag.)\r\n   The internal port of the Bitwarden container is `8080`.  \r\n   An Nginx termination proxy is in front of it; you can access the Bitwarden web client at https://bitwarden.domain.com (i.e., port `443`).\r\n3. Create an organization in Bitwarden and activate an Enterprise licence.\r\n4. Follow [Azure OIDC Implementation](https://bitwarden.com/help/oidc-azure/) or [Azure SAML Implementation](https://bitwarden.com/help/saml-azure/#identity-provider-configuration) to set up OIDC or SAML 2.0 with Microsoft Azure.\r\n5. Sign in from your Bitwarden web client using enterprise single sign-on (e.g., at https://bitwarden.domain.com/#/sso).\r\n6. Before seeing any Microsoft login screen, you will see an error page similar to:  \r\n    > # Error: invalid_request\r\n    > \r\n    > There was an unexpected error during single sign-on.\r\n    > **Request ID:** `0HMMUM26RJOQ9:00000002`\r\n\r\nThe same error will have appeared regardless of whether you used SAML or OIDC.  \r\nRedirect behaviour and binding type also do not matter.\r\n\r\n### Expected Result\r\n\r\nEnterprise sign-in with Azure OIDC / Azure SAML 2.0 works as expected, bringing you to a Microsoft AAD log-in screen and signing you into the Bitwarden server.\r\n\r\n### Actual Result\r\n\r\nEnterprise sign-in with Azure OIDC / Azure SAML 2.0 fails. Before seeing a Microsoft AAD login screen, you see the above error message at https://bitwarden.domain.com/sso/Error?errorId=REDACTED\r\n\r\n### Screenshots or Videos\r\n\r\n1. \r\n<img width=\"433\" alt=\"Screenshot 2022-12-15 at 10 56 39 AM\" src=\"https://user-images.githubusercontent.com/1473776/207907463-03fbc8dd-1c07-4cee-89e6-46be1399a47b.png\">\r\n\r\n2. \r\n<img width=\"799\" alt=\"Screenshot 2022-12-15 at 10 54 37 AM\" src=\"https://user-images.githubusercontent.com/1473776/207907031-852d72d5-9341-45e7-84a7-14412edbf6af.png\">\r\n\r\n\r\n### Additional Context\r\n\r\n~~I tried contacting Bitwarden's [technical support team](https://bitwarden.com/contact/) regarding this, but the confirmation email never showed up.~~ Nvm; the site says there's a confirmation email but it goes through anyway without one.\r\n\r\nThese requests appear in the Nginx server logs after clicking the \"Log in\" button shown above.\r\n\r\n```console\r\n\"GET /identity/account/prevalidate?domainHint=foo HTTP/1.1\" 200 328 \"https://bitwarden.domain.com/\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36\" \"-\"\r\n\"GET /identity/connect/authorize?client_id=web&redirect_uri=https%3A%2F%2Fbitwarden.domain.com%2Fsso-connector.html&response_type=code&scope=api%20offline_access&state=REDACTEDx_identifier=foo&code_challenge=REDACTED&code_challenge_method=S256&response_mode=query&domain_hint=foo&ssoToken=BWUserPrefix_REDACTED HTTP/1.1\" 302 0 \"https://bitwarden.domain.com/\"\r\n\"GET /identity/Account/Login?ReturnUrl=%2Fidentity%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3Dweb%26redirect_uri%3Dhttps%253A%252F%252Fbitwarden.domain.com%252Fsso-connector.html%26response_type%3Dcode%26scope%3Dapi%2520offline_access%26state%3DREDACTEDx_identifier%253Dfoo%26code_challenge%3DREDACTED%26code_challenge_method%3DS256%26response_mode%3Dquery%26domain_hint%3Dfoo%26ssoToken%3DBWUserPrefix_REDACTED HTTP/1.1\" 302 0 \"-\"\r\n\"GET /identity/account/ExternalChallenge?domainHint=foo&returnUrl=%2Fidentity%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3Dweb%26redirect_uri%3Dhttps%253A%252F%252Fbitwarden.domain.com%252Fsso-connector.html%26response_type%3Dcode%26scope%3Dapi%2520offline_access%26state%3DREDACTEDx_identifier%253Dfoo%26code_challenge%3DREDACTED%26code_challenge_method%3DS256%26response_mode%3Dquery%26domain_hint%3Dfoo%26ssoToken%3DBWUserPrefix_REDACTED&ssoToken=BWUserPrefix_REDACTED HTTP/1.1\" 302 0 \"-\"\r\n\"GET /sso/connect/authorize?client_id=oidc-identity&redirect_uri=http%3A%2F%2Fbitwarden.domain.com%2Fidentity%2Fsignin-oidc&response_type=code&scope=openid%20profile&code_challenge=REDACTED&code_challenge_method=S256&response_mode=form_post&nonce=REDACTED&domain_hint=foo&organizationId=REDACTED&ssoToken=BWUserPrefix_REDACTED&state=REDACTED&x-client-SKU=ID_NETSTANDARD2_0&x-client-ver=6.10.0.0 HTTP/1.1\" 302 0 \"-\"\r\n\"GET /sso/Error?errorId=REDACTED HTTP/1.1\" 200 764 \"-\"\r\n```\r\n\r\nI'm not really sure what the issue is here. At one point it's using the HTTPS URI and at another point it's using the HTTPS URI, but it's a 302 so maybe it's redirecting correctly. The URL encoded characters could also be causing issues? Not sure. In Azure, my redirect URL is `https://bitwarden.domain.com/sso/oidc-signin`, with HTTPS. I've taken a look at the code in [bitwarden/clients](https://github.com/bitwarden/clients), but I'm not sure what I'm doing wrong.\r\n\r\n*****\r\n\r\n* Every other feature seems to work without issue.\r\n* `BW_ENABLE_SSO` is set to `\"true\"` and the organization has an active Bitwarden Enterprise licence.\r\n* My `BW_DOMAIN` is of the format: `bitwarden.domain.com`  \r\n* For OIDC, my redirect URL is the same that automatically appears when setting up OIDC through the web client: `https://bitwarden.domain.com/sso/oidc-signin`\r\n\r\n*****\r\n\r\nPlease let me know if this issue may not be unique to Bitwarden Unified and is instead an issue with [bitwarden/clients](https://github.com/bitwarden/clients) or my configuration.\r\n\r\n### Githash Version\r\n\r\n7cbc4a89-dirty\r\n\r\n### Environment Details\r\n\r\n- Operating System: Ubuntu 22.04\r\n- Environment: Docker\r\n- Hardware: Intel(R) Xeon(R) CPU E5-2673 v3 @ 2.40GHz, 4 GiB RAM (`Standard_B2s` Azure virtual machine)\r\n- Bitwarden behind Nginx TLS termination proxy\r\n\r\n### Database Image\r\n\r\n`postgres:14.6-alpine`\r\n\r\n### Issue-Link\r\n\r\nhttps://github.com/bitwarden/server/issues/2480\r\n\r\n\r\n### Issue Tracking Info\r\n\r\n- [X] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "author": "ErikHumphrey",
+  "createdAt": "2022-12-15T16:16:28Z",
+  "comments": [
+    {
+      "id": 1353399877,
+      "author": "Rezkmike",
+      "createdAt": "2022-12-15T16:57:09Z",
+      "body": "I think I got the same error like this before, the internal redirection from ```identity``` to ```sso``` is wrongly configured as by default is ```sso:5000```. Since I deployed the application in Kubernetes. I changed that value to Kubernetes service address at environment variable ```globalSettings__baseServiceUri__internalSso```. \r\n\r\nIn your case it might be need to change to ```localhost```? since you using the unified image"
+    },
+    {
+      "id": 1353447297,
+      "author": "ErikHumphrey",
+      "createdAt": "2022-12-15T17:24:45Z",
+      "body": "Hmm, I could see it being something like that that. I tried setting `globalSettings__baseServiceUri__internalSso` to `localhost` and the `sso` module errored out and stopped. Does the unified container support all the same environment variables as the regular deployment? I didn't see that one listed.\r\n\r\nI also tried setting it to: `bitwarden` (the service/container name), with ports, etc.; the `sso` service always crashes and stops.\r\n\r\nIs there any other way I can change the redirect URI on the application side? Can't/shouldn't change `BW_DOMAIN`, of course. Could be a red herring too?"
+    },
+    {
+      "id": 1353543983,
+      "author": "kspearrin",
+      "createdAt": "2022-12-15T18:40:32Z",
+      "body": "@ErikHumphrey Any errors logged from the SSO or Identity application under /etc/bitwarden/logs?"
+    },
+    {
+      "id": 1353553260,
+      "author": "ErikHumphrey",
+      "createdAt": "2022-12-15T18:49:16Z",
+      "body": "@kspearrin `identity.log` has nothing for this one. Here's what `sso.log` has:\r\n\r\n```console\r\n2022-12-15 18:44:51.616 +00:00 [ERR] Invalid redirect_uri: http://bitwarden.dev.rcgtconsulting.io/identity/signin-oidc\r\n{\"ClientId\":\"oidc-identity\",\"ClientName\":null,\"RedirectUri\":null,\"AllowedRedirectUris\":[\"https://bitwarden.domain.com/identity/signin-oidc\"],\"SubjectId\":\"anonymous\",\"ResponseType\":null,\"ResponseMode\":null,\"GrantType\":null,\"RequestedScopes\":\"\",\"State\":null,\"UiLocales\":null,\"Nonce\":null,\"AuthenticationContextReferenceClasses\":null,\"DisplayMode\":null,\"PromptMode\":\"\",\"MaxAge\":null,\"LoginHint\":null,\"SessionId\":null,\"Raw\":{\"client_id\":\"oidc-identity\",\"redirect_uri\":\"http://bitwarden.domain.com/identity/signin-oidc\",\"response_type\":\"code\",\"scope\":\"openid profile\",\"code_challenge\":\"redacted\",\"code_challenge_method\":\"S256\",\"response_mode\":\"form_post\",\"nonce\":\"redacted\",\"domain_hint\":\"foo\",\"organizationId\":\"redacted\",\"ssoToken\":\"BWUserPrefix_redacted\",\"state\":\"redacted\",\"x-client-SKU\":\"ID_NETSTANDARD2_0\",\"x-client-ver\":\"6.10.0.0\"},\"$type\":\"AuthorizeRequestValidationLog\"}\r\n2022-12-15 18:44:51.616 +00:00 [ERR] Request validation failed\r\n```\r\n\r\nLooks like the `redirect_uri` it's using with `http://` doesn't match the only `AllowedRedirectUris` which uses `https://`.\r\n\r\n**Edit:** Thanks for the replies; I'll investigate this more next week or two."
+    },
+    {
+      "id": 1353564040,
+      "author": "kspearrin",
+      "createdAt": "2022-12-15T18:59:08Z",
+      "body": "Hmm, we need to figure out how to get Identity to redirect to SSO with https. I imagine this is happening because somewhere is not respecting your proxied protocol. Maybe something can be set in your nginx proxy to properly forward the protocol? I am not an expert with Nginx."
+    },
+    {
+      "id": 1354135317,
+      "author": "Rezkmike",
+      "createdAt": "2022-12-16T03:18:45Z",
+      "body": "@ErikHumphrey , After I checked in the container, its whether like the SSO not enable by default (need to add sso env enable yes or something) or just the NGINX routing is not there. If you go to ```/etc/nginx/http.d/bitwarden.conf``` there is no SSO location configured, you may need to add the sso block inside this file. \r\n"
+    },
+    {
+      "id": 1354142250,
+      "author": "kspearrin",
+      "createdAt": "2022-12-16T03:27:17Z",
+      "body": "@Rezkmike you just need to set BW_ENABLE_SSO to true to get that going. @ErikHumphrey mentioned that he already did that. "
+    },
+    {
+      "id": 1360240393,
+      "author": "ErikHumphrey",
+      "createdAt": "2022-12-20T21:03:48Z",
+      "body": "Wasn't able to pull off anything with the Nginx configuration, I don't see any issues there. It likely needs a change on the Bitwarden end & is web server/proxy-agnostic. Assuming it's unique to Unified, I'll try the main deployment in the meantime."
+    },
+    {
+      "id": 1384694956,
+      "author": "sniper7kills",
+      "createdAt": "2023-01-17T00:26:02Z",
+      "body": "I was having the same issue and was able to resolve it by:\r\n1) Enabling SSL\r\n2) Ensuring my load balancer was sending traffic to the SSL port\r\n\r\nIt would be nice to not need to enable SSL on the container when my load balancer is already doing SSL termination.\r\n\r\n---\r\n\r\nI also had to edit `/etc/nginx/http.d/bitwarden.conf` and add a `/` after sso\r\n```\r\nlocation /sso/ {\r\n    proxy_pass http://localhost:5007;\r\n    include /etc/nginx/security-headers-ssl.conf;\r\n    include /etc/nginx/security-headers.conf;\r\n    add_header X-Frame-Options SAMEORIGIN;\r\n  }\r\n  ```\r\n  \r\n  Otherwise, the sso-connector.html file didn't load properly."
+    },
+    {
+      "id": 1396638615,
+      "author": "wizpresso-steve-cy-fan",
+      "createdAt": "2023-01-19T08:57:23Z",
+      "body": "@sniper7kills Although enabling SSL did work, but some of us are hosting Bitwarden behind an IIS proxy, and IIS does not support SSL passthrough. \r\n\r\nWe also had leveraged our IIS infrastructure as our SSL offloading proxy.\r\n\r\nWe tried disabling SSL on unified and set X-Forwarded-Proto but it still doesn't help. The redirect URL generated by Bitwarden is still http. We tried to set redirect URL in Azure AD to also allow http, but that is not allowed because Azure AD required https for redirect URIs unless it is localhost"
+    },
+    {
+      "id": 1504068639,
+      "author": "kspearrin",
+      "createdAt": "2023-04-11T20:47:02Z",
+      "body": "I have reproduced this and traced the issue back to our proxy.conf file here:\r\nhttps://github.com/bitwarden/server/blob/master/docker-unified/nginx/proxy.conf#L6\r\n\r\nSetting the following values manually to `https` solves the issue:\r\n\r\n```\r\nproxy_set_header        X-Url-Scheme      https;\r\nproxy_set_header        X-Forwarded-Proto https;\r\n```\r\n\r\nThis is because in order to properly handle redirects, ASP.NET Core requires that `X-Forwarded-Proto` be properly set. See docs here: https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer?view=aspnetcore-7.0\r\n\r\nWe already do all of this. The problem seems to manifest itself whenever using more than one proxy server. Internally, the Bitwarden unified container is already running a nginx proxy and is directing traffic to various ASP.NET Core applications running at http://localhost:5xxx. In front of that, I have another nginx proxy that terminates SSL and is directing traffic from the public host to the unified container. So you end up with a chain that looks something like this:\r\n\r\n```\r\n1. https://bitwarden.mydomain.com/identity (public nginx proxy)\r\n2.    => http://bitwarden:8080/identity (unified nginx proxy)\r\n3.          => http://localhost:5005 (ASP.NET Core Identity application)\r\n```\r\n\r\nWith this chain, you can see the `$scheme` that is forwarded from step 2 to 3 is `http`, which is what ASP.NET Core then interprets as the protocol of the running application and is used for these SSO redirects. This is also why things start working when configuring `BW_ENABLE_SSL=true`, because you are changing the protocol from `http` => `https` in step 2 and `$scheme` now matches the upstream public `$scheme`.\r\n\r\nAs I mentioned earlier, you could just hardcode the `https` value rather than using the upstream `$scheme`. I don't particularly like this solution since it's not very dynamic.\r\n\r\nI am not a nginx expert, but does anyone know of a way to handle this dynamically? We need some way to see what the original upstream host and protocol is to properly pass through the chain of proxies."
+    },
+    {
+      "id": 1504109251,
+      "author": "ErikHumphrey",
+      "createdAt": "2023-04-11T21:21:58Z",
+      "body": "I'm not an Nginx expert either and can't test this at the moment, but would work if we set `X-Forwarded-Proto` to the upstream public Nginx proxy value (if set) and `$scheme` otherwise?\r\n\r\nUpstream public proxy:\r\n\r\n```nginx\r\nproxy_set_header X-Forwarded-Proto $scheme;\r\n```\r\n\r\nBitwarden Unified proxy:\r\n\r\n```nginx\r\nproxy_set_header X-Forwarded-Proto $scheme; # Normally empty by default, but set upstream\r\n```\r\n\r\nThat could cause issues if you don't have an upstream proxy as it needs to be set, as you said. So something like:\r\n\r\n```nginx\r\nproxy_set_header X-Forwarded-Proto $scheme;\r\nif ($http_x_forwarded_proto) {\r\n  proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;\r\n}\r\n```\r\n\r\nor something similar to that effect:\r\n\r\n```nginx\r\nset $forwarded_proto $http_x_forwarded_proto;\r\nif ($forwarded_proto = '') {\r\n    set $forwarded_proto $scheme;\r\n}\r\nproxy_set_header X-Forwarded-Proto $forwarded_proto;\r\n```"
+    },
+    {
+      "id": 1504116091,
+      "author": "kspearrin",
+      "createdAt": "2023-04-11T21:29:57Z",
+      "body": "I think I got this working with something like\r\n\r\n```\r\nmap $http_x_forwarded_proto $proto_scheme {\r\n    default \"$scheme\";\r\n    ~. \"$http_x_forwarded_proto\";  # Regular expression to match any value\r\n}\r\n\r\nproxy_set_header        X-Url-Scheme      $proto_scheme;\r\nproxy_set_header        X-Forwarded-Proto $proto_scheme;\r\n```\r\n\r\nThis null coalesces the upstream `X-Forwarded-Proto` header and defaults back to `$scheme` if not set."
+    }
+  ],
+  "attachments": []
+}

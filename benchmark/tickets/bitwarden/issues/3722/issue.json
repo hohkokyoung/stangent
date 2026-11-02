@@ -1,0 +1,28 @@
+{
+  "number": 3722,
+  "title": "Organization domain maintenance failed because of untranslated query",
+  "body": "### Steps To Reproduce\r\n\r\n1. Deploy docker/self-host:[v2024.1.2](https://hub.docker.com/layers/bitwarden/self-host/2024.1.2-beta/images/sha256-10ccff66668ef6c40c7dbb53b9e12145dadbbb349d17bbf0e56067fe20b74802?context=explore)\r\n2. Create organization with user (maybe not required - unsure)\r\n\r\nOther steps may be required, but I am unsure how to trigger Organization Domain Maintenance.\r\n\r\n### Expected Result\r\n\r\nNo errors in admin.log\r\n\r\n### Actual Result\r\n\r\nError in admin.log:\r\n```c#\r\nfail: Bit.Core.Services.OrganizationDomainService[0]\r\n      Organization domain maintenance failed\r\n      System.InvalidOperationException: The LINQ expression 'DbSet<OrganizationDomain>()\r\n          .Where(o => (DateTime.UtcNow - o.CreationDate).Days == 4 && o.VerifiedDate == null)' could not be translated. Either rewrite the query in a form that can be translated, or switch to client evaluation explicitly by inserting a call to 'AsEnumerable', 'AsAsyncEnumerable', 'ToList', or 'ToListAsync'. See https://go.microsoft.com/fwlink/?linkid=2101038 for more information.\r\n         at Microsoft.EntityFrameworkCore.Query.QueryableMethodTranslatingExpressionVisitor.<VisitMethodCall>g__CheckTranslated|15_0(ShapedQueryExpression translated, <>c__DisplayClass15_0& )\r\n         at Microsoft.EntityFrameworkCore.Query.QueryableMethodTranslatingExpressionVisitor.VisitMethodCall(MethodCallExpression methodCallExpression)\r\n         at Microsoft.EntityFrameworkCore.Query.RelationalQueryableMethodTranslatingExpressionVisitor.VisitMethodCall(MethodCallExpression methodCallExpression)\r\n         at Microsoft.EntityFrameworkCore.Query.QueryCompilationContext.CreateQueryExecutor[TResult](Expression query)\r\n         at Microsoft.EntityFrameworkCore.Storage.Database.CompileQuery[TResult](Expression query, Boolean async)\r\n         at Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.CompileQueryCore[TResult](IDatabase database, Expression query, IModel model, Boolean async)\r\n         at Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.<>c__DisplayClass12_0`1.<ExecuteAsync>b__0()\r\n         at Microsoft.EntityFrameworkCore.Query.Internal.CompiledQueryCache.GetOrAddQuery[TResult](Object cacheKey, Func`1 compiler)\r\n         at Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.ExecuteAsync[TResult](Expression query, CancellationToken cancellationToken)\r\n         at Microsoft.EntityFrameworkCore.Query.Internal.EntityQueryProvider.ExecuteAsync[TResult](Expression expression, CancellationToken cancellationToken)\r\n         at Microsoft.EntityFrameworkCore.Query.Internal.EntityQueryable`1.GetAsyncEnumerator(CancellationToken cancellationToken)\r\n         at System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1.GetAsyncEnumerator()\r\n         at Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync[TSource](IQueryable`1 source, CancellationToken cancellationToken)\r\n         at Bit.Infrastructure.EntityFramework.Repositories.OrganizationDomainRepository.GetExpiredOrganizationDomainsAsync() in /source/src/Infrastructure.EntityFramework/Repositories/OrganizationDomainRepository.cs:line 126\r\n         at Bit.Core.Services.OrganizationDomainService.OrganizationDomainMaintenanceAsync() in /source/src/Core/Services/Implementations/OrganizationDomainService.cs:line 101\r\n```\r\n\r\n### Screenshots or Videos\r\n\r\n_No response_\r\n\r\n### Additional Context\r\n\r\nAppears to have been reported a few months ago: #3416\r\n\r\n### Githash Version\r\n\r\ndca8d00\r\n\r\n### Environment Details\r\n\r\nDocker\r\n\r\n### Database Image\r\n\r\nmariadb:11\r\n\r\n### Issue-Link\r\n\r\nhttps://github.com/bitwarden/server/issues/2480\r\n\r\n\r\n### Issue Tracking Info\r\n\r\n- [X] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "author": "holow29",
+  "createdAt": "2024-01-30T16:37:38Z",
+  "comments": [
+    {
+      "id": 1919424124,
+      "author": "Greenderella",
+      "createdAt": "2024-01-31T16:09:26Z",
+      "body": "Hi @holow29 \r\n\r\nCan you confirm if after clearing the logs as suggested [here ](https://github.com/bitwarden/server/issues/3416#issuecomment-1798821204)solves the issue?"
+    },
+    {
+      "id": 1919448524,
+      "author": "holow29",
+      "createdAt": "2024-01-31T16:21:37Z",
+      "body": "@Greenderella I have cleared the logs once but the issue came back; it appears to be intermittent - as I said, I am unsure when organization domain maintenance is triggered. Regardless, it is clear the query is not being translated by EF correctly for MySQL/mariadb and that should probably be resolved."
+    },
+    {
+      "id": 2565795886,
+      "author": "Neonwarden",
+      "createdAt": "2024-12-30T18:30:27Z",
+      "body": "Hi there,\r\n\r\nThis has been escalated for further investigation. If you have more information that can help us, please add it below. \r\n\r\nThanks!"
+    }
+  ],
+  "attachments": []
+}

@@ -1,0 +1,9 @@
+{
+  "number": 802,
+  "title": "Subscription changes not auto-billing on next cycle",
+  "body": "Likely caused by: https://github.com/bitwarden/server/pull/727\r\n\r\n## Issue\r\nWhen customers' renewals come up, after making subscription changes (adding seats, storage, etc.) where a prorated amount was adjusted/billed during the prior cycle, the next cycle is never automatically billed/paid, instead it is marked as \"send_invoice\" however no invoice is ever sent to the customer, leaving the account to corrode w/o notice into an unpaid status.\r\n\r\n**Expected Behavior**\r\nThe next billing cycle will result in a customer being automatically charged when their subscription renews and their subscription status to remain in good standing.\r\n\r\n**Actual Behavior**\r\nThe next billing cycle generates an invoice and marks it as open, however does not automatically charge it and instead waits for customer action (which the customer doesn't know this and isn't notified), and then slides into Past Due, then Not Paid, in which our customer success team must manually charge and recreate the subscription.",
+  "author": "cscharf",
+  "createdAt": "2020-06-29T21:29:32Z",
+  "comments": [],
+  "attachments": []
+}

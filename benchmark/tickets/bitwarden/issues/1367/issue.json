@@ -1,0 +1,76 @@
+{
+  "number": 1367,
+  "title": "Self-hosted Send files cannot be downloaded",
+  "body": "## Describe the Bug\r\n\r\nSelf-hosted Send files cannot be downloaded.\r\n\r\n## Steps To Reproduce\r\n\r\n1. Create a new send to share a file.\r\n2. Open link to the file.\r\n3. Click download.\r\n4. The button will change to a spinning icon but nothing happens.\r\n\r\n## Expected Result\r\n\r\nFile should download.\r\n\r\n## Actual Result\r\n\r\nFile does not download.\r\n\r\n## Screenshots or Videos\r\n\r\nN/A\r\n\r\n## Environment\r\n\r\n- Operating system: Ubuntu 18.04.5 LTS\r\n- Build Version: 1.41.3\r\n- Self Hosted: true\r\n- Environment: Cloud\r\n- Hardware: Hosted VPS\r\n\r\n## Additional Context\r\n\r\nDoing some digging through various logs led to nothing.\r\nAfter browsing the bwdata directory I stumbled upon something that may or may not have anything to do with the problem.\r\nIn _~/bwdata/core_ I see two directories. One is named _**attachments**_ while the other is named _**attchments**_. The file I uploaded is stored within _attchments_ while the _attachments_ directory is empty. In _~/bwdata/nginx/default.conf_ the location there points to _attachments_.\r\nI see that in server/src/Core/Settings/GlobalSettings.cs on lines 13 and 14 it mentions _attchments_.\r\nI don't know if this is intentional, by design, or a typo.",
+  "author": "dlrudie",
+  "createdAt": "2021-05-30T20:36:15Z",
+  "comments": [
+    {
+      "id": 851061834,
+      "author": "dlrudie",
+      "createdAt": "2021-05-30T21:10:12Z",
+      "body": "Opened inspector in the browser and see some errors pop up as soon as you click download. So it probably isn't related to the directory layout I mentioned above.\r\n\r\n![Untitled](https://user-images.githubusercontent.com/1780069/120120195-5bbc7d00-c161-11eb-9b8a-66ecd9aa592f.png)\r\n"
+    },
+    {
+      "id": 852366768,
+      "author": "c4539",
+      "createdAt": "2021-06-01T18:55:19Z",
+      "body": "Have you checked the `./bwdata/env/global.override.env` for these entries?\r\n\r\n```\r\nglobalSettings__attachment__baseDirectory=/etc/bitwarden/core/attachments\r\nglobalSettings__attachment__baseUrl=https://vault.example.net/attachments\r\nglobalSettings__send__baseDirectory=/etc/bitwarden/core/attachments/send\r\nglobalSettings__send__baseUrl=https://vault.example.net/attachments/send\r\n```\r\nThat should override the typo you found in `server/src/Core/Settings/GlobalSettings.cs`."
+    },
+    {
+      "id": 852401636,
+      "author": "JensSpanier",
+      "createdAt": "2021-06-01T19:49:14Z",
+      "body": "I have the same problem so I tried setting these entries:\r\n\r\n```\r\nglobalSettings__attachment__baseDirectory=/etc/bitwarden/bwdata/core/attachments\r\nglobalSettings__attachment__baseUrl=https://bitwarden.XXXX.de/attachments\r\nglobalSettings__send__baseDirectory=/etc/bitwarden/bwdata/core/attachments/send\r\nglobalSettings__send__baseUrl=https://bitwarden.XXXX.de/attachments/send\r\n```\r\n\r\nFirst thing I noticed after uploading a file was that no attachment and no send file appears in `/etc/bitwarden/bwdata/core/attachments` or `/etc/bitwarden/bwdata/core/attachments/send`. I couldn't find theme anywhere.\r\n\r\nWhen I try to download a file this error pops up:\r\n![image](https://user-images.githubusercontent.com/42373861/120381241-78ec7980-c322-11eb-9268-ba35e6b24fe7.png)\r\n\r\nBy the way - are these variables documented somewhere? I just found [this](https://bitwarden.com/help/article/environment-variables/) and [this](https://bitwarden.com/help/article/send-hosting/)."
+    },
+    {
+      "id": 852436084,
+      "author": "dlrudie",
+      "createdAt": "2021-06-01T20:50:06Z",
+      "body": "@c4539 Thanks for giving me an idea where to start looking around.\r\n\r\nI added the lines to my global override file and adjusted the paths accordingly.\r\n\r\nIt still doesn't appear to work. Now as soon as I click Save it logs me out instantly. The errors in the inspector are 401 which has to do with authorization. The file never gets saved. I triple-checked the paths I added and they are correct. Permissions on the directories are also correct.\r\n\r\nThere is a CSP error at the bottom that appears even before I hit save so I'm not sure if that's the whole cause of the problem either.\r\n\r\n```\r\nglobalSettings__baseServiceUri__vault=https://site.org\r\nglobalSettings__sqlServer__connectionString=\"Data Source=tcp:mssql,1433;Initial Catalog=vault;Persist Security Info=False;User ID=sa;Password=...;MultipleActiveResultSets=False;Connect Timeout=30;Encrypt=True;TrustServerCertificate=True\"\r\nglobalSettings__identityServer__certificatePassword=...\r\nglobalSettings__internalIdentityKey=...\r\nglobalSettings__oidcIdentityClientKey=...\r\nglobalSettings__duo__aKey=...\r\nglobalSettings__installation__id=...\r\nglobalSettings__installation__key=...\r\nglobalSettings__mail__replyToEmail=no-reply@site.org\r\nglobalSettings__mail__smtp__host=smtp.gmail.com\r\nglobalSettings__mail__smtp__port=587\r\nglobalSettings__mail__smtp__ssl=false\r\nglobalSettings__mail__smtp__username=no-reply@site.org\r\nglobalSettings__mail__smtp__password=...\r\nglobalSettings__disableUserRegistration=false\r\nadminSettings__admins=...\r\nglobalSettings__attachment__baseDirectory=/root/bwdata/core/attachments\r\nglobalSettings__attachment__baseUrl=https://site.org/attachments\r\nglobalSettings__send__baseDirectory=/root/bwdata/core/attachments/send\r\nglobalSettings__send__baseUrl=https://site.org/attachments/send\r\n```\r\n\r\n\r\n![image](https://user-images.githubusercontent.com/1780069/120387225-3bbac400-c2ef-11eb-915c-8bf84a35fe65.png)\r\n\r\n\r\n![image](https://user-images.githubusercontent.com/1780069/120387562-b257c180-c2ef-11eb-8fb4-39f9e42573da.png)\r\n\r\n\r\n\r\n\r\n**Update:**\r\nI decided to test it out using the CLI client hoping it would provide more information.\r\n\r\nIf I do not add the four lines above send will save the file successfully but it ends up in the **attchments** directory and can't be downloaded.\r\n![image](https://user-images.githubusercontent.com/1780069/120398847-9577ba00-c300-11eb-89c9-fa2aa9f16abe.png)\r\n\r\nIf I add any of the lines above it will log me out from the CLI client as well as say a token not found. I tried to eliminate the settings one by one. Using just this one setting, globalSettings__send__baseDirectory, then send will fail on upload and log me out.\r\n![image](https://user-images.githubusercontent.com/1780069/120398975-c821b280-c300-11eb-8169-bf59ea0249ff.png)\r\n\r\nI'm not sure why changing one override would cause the whole thing to fail but it does."
+    },
+    {
+      "id": 852850556,
+      "author": "JensSpanier",
+      "createdAt": "2021-06-02T09:02:32Z",
+      "body": "I got it working with these settings:\r\n\r\n```\r\nglobalSettings__attachment__baseDirectory=/etc/bitwarden/core/attachments\r\nglobalSettings__attachment__baseUrl=https://bitwarden.XXXX.de/attachments\r\nglobalSettings__send__baseDirectory=/etc/bitwarden/bwdata/core/attachments/send\r\nglobalSettings__send__baseUrl=https://bitwarden.XXXX.de/attachments/send\r\n```\r\n\r\nDon't change `globalSettings__attachment__baseDirectory` and `globalSettings__send__baseDirectory`. You just need to adjust `globalSettings__attachment__baseUrl` and `globalSettings__send__baseUrl`.\r\n\r\n`globalSettings__attachment__baseDirectory` and `globalSettings__send__baseDirectory` are the paths inside the docker container.\r\n\r\nSo your paths must start with `/etc/bitwarden/core` because this volume gets mapped to `../core` (see `docker-compose.yml`)"
+    },
+    {
+      "id": 853011921,
+      "author": "dlrudie",
+      "createdAt": "2021-06-02T13:07:32Z",
+      "body": "They don't have to start with /etc/bitwarden/*. In docker-compose.yml it specificies either \"../core/attachments\" or \"/etc/bitwarden/core/attachments\". I don't have a /etc/bitwarden at all. Everything is contained within /root/bwdata and the rest of the directories work just fine.\r\n\r\nThe ../core/attachments is valid on mine. I think my problem comes from the fact that the source has a typo for the directory and it's messing with everything else. The URL's are fine on mine and I don't see any reason to change the baseUrl settings.\r\n\r\nIf I don't add those four lines, whenever I create a file send it will end up in bwdata/core/attchments with the typo. I can delete the send and it will properly delete the file too. I just can't download it. I've tried renaming bwdata/core/attachments and creating a symlink in its place that points to attchments but it still didn't work."
+    },
+    {
+      "id": 853032184,
+      "author": "JensSpanier",
+      "createdAt": "2021-06-02T13:33:55Z",
+      "body": "> In docker-compose.yml it specificies either \"../core/attachments\" or \"/etc/bitwarden/core/attachments\".\r\n\r\nYou are talking about this line in `docker-compose.yml`, right?\r\n`../core/attachments:/etc/bitwarden/core/attachments`\r\n\r\n`../core/attachments` is the source path on your host relative to your `docker-compose.yml` (so in your case it's `/root/bwdata/core/attachments`)\r\n`/etc/bitwarden/core/attachments` is the target path inside the docker container\r\n\r\nSo you do have `/etc/bitwarden`, but only inside your containers (it's like a separate virtual linux host).\r\n\r\nThe only thing you can change with `globalSettings__attachment__baseDirectory` and `globalSettings__send__baseDirectory` is the path where it gets mounted inside your docker container. Which doesn't make much sense for me. But because there is this typo, you have to set this."
+    },
+    {
+      "id": 853053170,
+      "author": "dlrudie",
+      "createdAt": "2021-06-02T14:00:17Z",
+      "body": "Okay, that makes sense on that. I tried setting the /etc/bitwarden/core/attachments and send one in the global override but it still doesn't work for downloads.\r\n\r\nAs soon as I click the download button I get the same javascript error as in my original screenshot.\r\n\r\n\"Refused to connect to 'http://localhost:4000/sendfiles//.../...' because it violates the following Content Security Policy directive: \"connect-src 'self' wss://site.com https://api.pwnedpasswords.com https://2fa.directory\"."
+    },
+    {
+      "id": 853055979,
+      "author": "JensSpanier",
+      "createdAt": "2021-06-02T14:03:47Z",
+      "body": "I had the same error message. But setting these entries fixed it for me:\r\n\r\n```\r\nglobalSettings__attachment__baseUrl=https://bitwarden.XXXX.de/attachments\r\nglobalSettings__send__baseUrl=https://bitwarden.XXXX.de/attachments/send\r\n```"
+    },
+    {
+      "id": 853061485,
+      "author": "dlrudie",
+      "createdAt": "2021-06-02T14:10:30Z",
+      "body": "Thanks. That worked now.\r\nSo for mine to work it really needed all four of those lines as @c4539 called out.\r\n\r\n```\r\nglobalSettings__attachment__baseDirectory=/etc/bitwarden/core/attachments\r\nglobalSettings__attachment__baseUrl=https://site.com/attachments\r\nglobalSettings__send__baseDirectory=/etc/bitwarden/core/attachments/send\r\nglobalSettings__send__baseUrl=https://site.com/attachments/send\r\n```\r\n\r\nI just got confused about the /etc/bitwarden path and was trying to change it to /root/bwdata instead.\r\n\r\nWill these settings be future-proof or if the typo gets fixed in the source will I need to undo these?\r\n\r\nThanks, @c4539 @Virinum "
+    },
+    {
+      "id": 853073280,
+      "author": "JensSpanier",
+      "createdAt": "2021-06-02T14:24:50Z",
+      "body": "As far as I can tell from looking at the code, you can remove `globalSettings__attachment__baseDirectory` and `globalSettings__send__baseDirectory` once my pull request (#1374) gets merged and the new release is deployed on your server.\r\nBut keeping these entries shouldn't have any disadvantages."
+    }
+  ],
+  "attachments": []
+}

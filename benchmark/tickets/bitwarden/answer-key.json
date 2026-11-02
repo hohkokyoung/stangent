@@ -1,0 +1,227 @@
+{
+  "note": "Never read by the run: the scoring only (D77).",
+  "issues": {
+    "5828": {
+      "fixCommit": "b2c8c0230f2df6540cc75c41abcb2d856a70f793",
+      "parent": "a36db639984e7eb3b55952fe5a7b49c5756f827b",
+      "pr": 5832,
+      "files": [
+        "src/Core/Models/Business/OrganizationLicense.cs"
+      ]
+    },
+    "5808": {
+      "fixCommit": "a4c4d0157bff55cc665518cda6afec53943e89c5",
+      "parent": "a7fc89a5bb5a85855251fdd34ca2886621099c4f",
+      "pr": 6176,
+      "files": [
+        "src/Infrastructure.EntityFramework/Vault/Repositories/CipherRepository.cs"
+      ]
+    },
+    "5223": {
+      "fixCommit": "0fa6962d1784a39734bc41264761eaf75708ae94",
+      "parent": "706d7a5768be5ba40dec5c9bc64f2030a4f0a20e",
+      "pr": 5751,
+      "files": [
+        "src/Infrastructure.EntityFramework/EntityFrameworkServiceCollectionExtensions.cs"
+      ]
+    },
+    "5075": {
+      "fixCommit": "101e29b3541248982ad18f60c56bd790dfaca949",
+      "parent": "697fa6fdbc220173319fdee091c2b2fbf8296d99",
+      "pr": 6261,
+      "files": [
+        "src/Infrastructure.EntityFramework/Repositories/OrganizationDomainRepository.cs"
+      ]
+    },
+    "4845": {
+      "fixCommit": "6d1e6e4b31913062810215f5e78c55416c9f10f9",
+      "parent": "8ba1421d4fc2a1949c02cb21403575b87b1e527d",
+      "pr": 7652,
+      "files": [
+        "src/Core/Platform/Mail/HandlebarsMailService.cs",
+        "test/Core.Test/Services/HandlebarsMailServiceTests.cs"
+      ]
+    },
+    "4801": {
+      "fixCommit": "0c9b97b2943a4decfd7d937240988121aafe656c",
+      "parent": "85af9fe71d6b7264ee9443f866637a94976cc886",
+      "pr": 5921,
+      "files": [
+        "src/Core/Settings/GlobalSettings.cs",
+        "src/Core/Settings/IGlobalSettings.cs",
+        "src/SharedWeb/Utilities/ServiceCollectionExtensions.cs"
+      ]
+    },
+    "4034": {
+      "fixCommit": "da0421890fb76ee1b7c58d60ac4105443ef86603",
+      "parent": "7a509d20daf2f609eec7e1942c6ea40a3beacaa6",
+      "pr": 4812,
+      "files": [
+        "bitwarden_license/src/Scim/Controllers/v2/UsersController.cs",
+        "bitwarden_license/src/Scim/Models/GetUserQueryParamModel.cs",
+        "bitwarden_license/src/Scim/Users/GetUsersListQuery.cs",
+        "bitwarden_license/src/Scim/Users/Interfaces/IGetUsersListQuery.cs",
+        "bitwarden_license/test/Scim.IntegrationTest/Controllers/v2/UsersControllerTests.cs",
+        "bitwarden_license/test/Scim.Test/Users/GetUsersListQueryTests.cs"
+      ]
+    },
+    "3722": {
+      "fixCommit": "0e801ca622f31fa1c82105aabed31f85997c22a2",
+      "parent": "2a6abb928d70e3b28ff3df8709101819705a8cf4",
+      "pr": 5170,
+      "files": [
+        "src/Infrastructure.EntityFramework/Repositories/OrganizationDomainRepository.cs",
+        "test/Infrastructure.IntegrationTest/AdminConsole/Repositories/OrganizationDomainRepositoryTests.cs"
+      ]
+    },
+    "3116": {
+      "fixCommit": "0c9b97b2943a4decfd7d937240988121aafe656c",
+      "parent": "85af9fe71d6b7264ee9443f866637a94976cc886",
+      "pr": 5921,
+      "files": [
+        "src/Core/Settings/GlobalSettings.cs",
+        "src/Core/Settings/IGlobalSettings.cs",
+        "src/SharedWeb/Utilities/ServiceCollectionExtensions.cs"
+      ]
+    },
+    "2919": {
+      "fixCommit": "459c91a5a95b882c9eb6dd39979c05cc39035304",
+      "parent": "5d3294c3768aea9312b97691e6216464f496795a",
+      "pr": 5231,
+      "files": [
+        "bitwarden_license/src/Scim/Groups/PostGroupCommand.cs",
+        "bitwarden_license/src/Scim/Groups/PutGroupCommand.cs",
+        "bitwarden_license/test/Scim.Test/Groups/PostGroupCommandTests.cs",
+        "bitwarden_license/test/Scim.Test/Groups/PutGroupCommandTests.cs"
+      ]
+    },
+    "2908": {
+      "fixCommit": "bdd5e0916ea95e92f825af10694850ed2f8cfb48",
+      "parent": "73c721ede3fbe37772f98e7ad8113b89d992be5c",
+      "pr": 3012,
+      "files": [
+        "bitwarden_license/src/Scim/Startup.cs",
+        "src/Events/Startup.cs",
+        "src/Icons/Startup.cs",
+        "src/Notifications/Startup.cs",
+        "src/SharedWeb/Utilities/ServiceCollectionExtensions.cs"
+      ]
+    },
+    "2815": {
+      "fixCommit": "0e55862b3cd6aafd97d44d36ddafb56ee76e6be5",
+      "parent": "09f86f23feb5864f012ca02a0fceb0522d59d9a5",
+      "pr": 2862,
+      "files": [
+        "src/Infrastructure.EntityFramework/Repositories/CollectionRepository.cs"
+      ]
+    },
+    "2750": {
+      "fixCommit": "2c9df6d1ff3098ce164bbd53db92ca6ccc18fca1",
+      "parent": "5e3f4c9bbec0f1e4206115545ad36a2e50b466a0",
+      "pr": 2765,
+      "files": [
+        "src/Infrastructure.EntityFramework/Repositories/CollectionRepository.cs"
+      ]
+    },
+    "2615": {
+      "fixCommit": "e019f0191d6cfd0c8ffec1183326074b10da72b8",
+      "parent": "28a3d4ad925818b834d633cafea8819b4873eca7",
+      "pr": 2634,
+      "files": [
+        "src/Infrastructure.EntityFramework/Repositories/CipherRepository.cs",
+        "src/Infrastructure.EntityFramework/Repositories/DatabaseContextExtensions.cs",
+        "src/Infrastructure.EntityFramework/Repositories/Queries/UserBumpAccountRevisionDateByCipherIdQuery.cs",
+        "test/Infrastructure.EFIntegration.Test/Repositories/CipherRepositoryTests.cs"
+      ]
+    },
+    "2561": {
+      "fixCommit": "b0214ae1be310a4fa2b8a70c475e5ffeebdb22bb",
+      "parent": "49e849deb9a8517e57b93fb848a9b61900815959",
+      "pr": 2856,
+      "files": [
+        "src/Infrastructure.EntityFramework/Repositories/Queries/UserCipherDetailsQuery.cs",
+        "src/Infrastructure.EntityFramework/Vault/Repositories/CipherRepository.cs",
+        "test/Infrastructure.IntegrationTest/Vault/Repositories/CipherRepositoryTests.cs"
+      ]
+    },
+    "2506": {
+      "fixCommit": "9e75f65a2d4e10bbf70254915bde8244a0def97d",
+      "parent": "6f04298e178681ec74b982f1388acb0ec648b569",
+      "pr": 2512,
+      "files": [
+        "src/Infrastructure.EntityFramework/Repositories/Queries/CipherDetailsQuery.cs",
+        "src/Infrastructure.EntityFramework/Repositories/Queries/UserCipherDetailsQuery.cs"
+      ]
+    },
+    "2500": {
+      "fixCommit": "4673e3bbc9c4fcec3bf7f7c0b878fed7e96f0421",
+      "parent": "85099307227d0703cef34d70d8567973546cf300",
+      "pr": 2847,
+      "files": [
+        "docker-unified/nginx/proxy.conf",
+        "src/Core/Utilities/CoreHelpers.cs",
+        "util/Nginx/proxy.conf"
+      ]
+    },
+    "2317": {
+      "fixCommit": "456cc6773e4b59bba4392979f3b1cc078a25332a",
+      "parent": "c6fbe8cc4402e9cef901eca648a89f5360508947",
+      "pr": 2342,
+      "files": [
+        "src/Api/Controllers/SendsController.cs",
+        "test/Api.Test/Controllers/SendsControllerTests.cs"
+      ]
+    },
+    "2146": {
+      "fixCommit": "c36d6fa3ba30c9d5cf498159df7d134ae1947404",
+      "parent": "13d1e74d6960cf0d042620b72d85bf583a4236f7",
+      "pr": 2207,
+      "files": [
+        "src/Admin/Controllers/HomeController.cs"
+      ]
+    },
+    "1891": {
+      "fixCommit": "17b22ca5a99f4f0523ac01a473281aab39c43522",
+      "parent": "19d5817f8f7d5b95cef9e03a628ecdd85f298649",
+      "pr": 1890,
+      "files": [
+        "src/Core/Services/Implementations/CipherService.cs",
+        "test/Core.Test/Services/CipherServiceTests.cs"
+      ]
+    },
+    "1849": {
+      "fixCommit": "3c7786cea76e7ed8843cef7b5c7e5a0bd902cb5d",
+      "parent": "a8ebab4c6bd5bad3c2eca0aed6d4222232f7733d",
+      "pr": 1853,
+      "files": [
+        "util/Setup/Program.cs"
+      ]
+    },
+    "1811": {
+      "fixCommit": "b55d086c9ebc096c7fb0b9d8c1ec28959919a6f4",
+      "parent": "0bdc4c3902dc8346e8cceb2da77b22efb4393ffa",
+      "pr": 2962,
+      "files": [
+        "util/MsSql/entrypoint.sh",
+        "util/Setup/EnvironmentFileBuilder.cs"
+      ]
+    },
+    "1367": {
+      "fixCommit": "58954f161e5557a8205ed2ffbd402b272804be09",
+      "parent": "10e85e018125a3f55a6d0f2d01b08b1978578be1",
+      "pr": 1374,
+      "files": [
+        "src/Core/Settings/GlobalSettings.cs"
+      ]
+    },
+    "802": {
+      "fixCommit": "d7b00f6c2779948816e888c40937de36336d6e52",
+      "parent": "130c3e4748d264f174d8f86839576e289844e15f",
+      "pr": 803,
+      "files": [
+        "src/Core/Services/Implementations/OrganizationService.cs",
+        "src/Core/Services/Implementations/StripePaymentService.cs"
+      ]
+    }
+  }
+}

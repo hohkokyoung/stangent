@@ -1,0 +1,22 @@
+{
+  "number": 2317,
+  "title": "Can create a send that delete in ten years, but editing it says the date is too far in the future",
+  "body": "### Steps To Reproduce\n\nOn any desktop client / web client / mobile client\r\n\r\n1. Go to 'Send'\r\n2. Click on 'Create new send'\r\n3. Select file type\r\n4. Create a Send with a deletion date far in the future for example : 31/12/2050 23:59\r\n5. Save it\r\n6. Open the send to edit the name or whatever (except the deletion date)\r\n7. Save it\r\n\n\n### Expected Result\n\nEither you can create or edit a send with a deletion date far in the future, restrict the date at the creation already.\n\n### Actual Result\n\nCreation goes fine, then the edit is cancelled because deletion date too far in the future\n\n### Screenshots or Videos\n\n1. ![image](https://user-images.githubusercontent.com/22454094/193232443-75e473e2-03c6-4509-a450-285cd972130b.png)\r\n\r\n2. ![image](https://user-images.githubusercontent.com/22454094/193232571-ebc7bd61-8915-437f-a36e-bc3e3a602dc2.png)\r\n\r\n3. ![image](https://user-images.githubusercontent.com/22454094/193232739-ad718833-7235-4de1-927f-5a3c8f0ab20e.png)\r\n\n\n### Additional Context\n\nWay back (maybe 1 year ago) I was able to add AND edit file sends with a really far deletion date.\n\n### Build Version\n\nWeb 2022.9.2 / Mobile 2022.9.1 (5047) / Desktop 2022.9.1\n\n### Environment\n\nCloud (bitwarden.com)\n\n### Environment Details\n\n_No response_",
+  "author": "loic2665",
+  "createdAt": "2022-09-30T08:57:43Z",
+  "comments": [
+    {
+      "id": 1278020023,
+      "author": "federicom09",
+      "createdAt": "2022-10-13T18:30:40Z",
+      "body": "Hello @loic2665, how are you?\r\n\r\nThank you for reporting this! \r\nWe were able to reproduce the issue and a new ticket was created in our internal bug-tracking system.\r\n\r\nHopefully this is going to be fixed soon.\r\n\r\nThanks!"
+    },
+    {
+      "id": 1293187196,
+      "author": "loic2665",
+      "createdAt": "2022-10-27T08:39:27Z",
+      "body": "Hi, I'm fine thanks I hope you too, \r\n\r\nThat's super cool, thanks for taking into consideration community feedback, that's beautiful to see.\r\n\r\nHave a nice day. :-) "
+    }
+  ],
+  "attachments": []
+}

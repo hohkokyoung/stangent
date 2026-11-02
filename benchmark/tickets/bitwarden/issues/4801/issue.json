@@ -1,0 +1,40 @@
+{
+  "number": 4801,
+  "title": "Wrong source IP with deployment via Helm",
+  "body": "### Steps To Reproduce\n\n1. Checkout the Bitwarden demo repository containing the config files:  \r\n  https://github.com/julianhindenberg/bitwarden-demo\r\n2. **(On K3s host)** Create a K3s cluster (or use an existing K8s cluster):  \r\n  `curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC=\"server\" sh -s - --disable=traefik`\r\n3. Copy `kubeconfig` file located in `/etc/rancher/k3s/k3s.yaml`, see [https://docs.k3s.io/quick-start#install-script](https://docs.k3s.io/quick-start#install-script)\r\n4. **(On K3s host)** Create directories for persistent volumes:  \r\n  `mkdir -p /data/Bitwarden/volume{1,2,3,4,5,6,7}`\r\n5. **(On K3s host)** Set ownership for MSSQL volumes:  \r\n  `chown 10001:10001 /data/Bitwarden/volume{5,6,7}`\r\n6. Install ingress nginx:\r\n  ```shell\r\n  helm upgrade --install ingress-nginx ingress-nginx \\\r\n  --repo https://kubernetes.github.io/ingress-nginx \\\r\n  --namespace ingress-nginx \\\r\n  --create-namespace \\\r\n  --set controller.service.externalTrafficPolicy=Local\r\n  ```\r\n7. Create namespace:  \r\n  `kubectl create namespace bitwarden`\r\n8. Apply additional manifests:  \r\n  `kubectl apply -f secrets.yaml -f persistent-volumes.yaml`\r\n9. Install Bitwarden:  \r\n  `helm upgrade bitwarden bitwarden/self-host --install --namespace bitwarden --values my-values.yaml`\r\n10. Configure domain override in `/etc/hosts` file\r\n11. Execute request against the IP endpoint:  \r\n  `curl --insecure https://bitwarden.example.com/api/ip`\n\n### Expected Result\n\nThe resolved IP address should be `192.168.1.20`, as forwarded by the Ingress Controller.\r\n`{\"ip\":\"192.168.1.20\",\"headers\":{\"X-Forwarded-For\":{\"key\":\"X-Forwarded-For\",\"value\":[\"192.168.1.20\"]}}}`\n\n### Actual Result\n\nThe resolved IP address is an IPv4-mapped IPv6 address containing the internal IPv4 address of the Ingress Controller, even though the forwarded IP address is set properly.\r\n`{\"ip\":\"::ffff:10.42.0.10\",\"headers\":{\"X-Forwarded-For\":{\"key\":\"X-Forwarded-For\",\"value\":[\"192.168.1.20\"]}}}`\n\n### Screenshots or Videos\n\n_No response_\n\n### Additional Context\n\nAn IPv4-mapped IPv6 address is displayed as the source IP (e.g. `::ffff:10.42.0.10`; address of the Ingress Controller), both in the `/api/ip` endpoint and in the emails (new device logged in).\r\nThis happens both when calling via IPv4 and via IPv6 (not reproducible in this example; I can also reproduce this behavior in my productive cluster via IPv6, whereby I get the same IPv4-mapped IPv6 address displayed via IPv4 and IPv6).\r\n\r\nBitwarden runs in a K3s cluster with the Nginx Ingress Controller. In other containers in the same cluster, the source IP is resolved correctly.\n\n### Build Version\n\n2024.9.1\n\n### Environment\n\nSelf-Hosted\n\n### Environment Details\n\nEnvironment:\r\n- Debian (Bookworm) VM\r\n- Single Node K3s cluster without Traefik\r\n- Ingress Nginx as Ingress Controller\r\n  - Set `externalTrafficPolicy` to `Local` to properly pass the source IP\r\n- IPv4 only setup in this example, but reproducible with a Dual Stack setup as well\r\n- Bitwarden was installed via Helm\n\n### Issue Tracking Info\n\n- [X] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "author": "julianhindenberg",
+  "createdAt": "2024-09-24T20:08:47Z",
+  "comments": [
+    {
+      "id": 2374567152,
+      "author": "Neonwarden",
+      "createdAt": "2024-09-25T16:31:07Z",
+      "body": "Hi there,\r\n\r\nThis has been escalated for further investigation. If you have more information that can help us, please add it below. \r\n\r\nThanks!"
+    },
+    {
+      "id": 2523257153,
+      "author": "gertjanvg",
+      "createdAt": "2024-12-06T13:27:34Z",
+      "body": "Experiencing the same issue with version 2024.11.0. I think issues #2908 and #3116 are related. \r\n\r\nIt's possible to define exact trusted proxy IPs using the `globalSettings__knownProxies`, but that's obviously not realistic in Kubernetes, as IPs can and will change all the time. I think this is the relevant piece of code:\r\nhttps://github.com/bitwarden/server/blob/092b0b8bd2ad8a335e5f5af52bab4046017517cc/src/SharedWeb/Utilities/ServiceCollectionExtensions.cs#L588-L603\r\n\r\nOne solution would be to be supply a trusted proxy subnet as described in #2908."
+    },
+    {
+      "id": 3357261326,
+      "author": "closebot-bw",
+      "createdAt": "2025-10-01T16:49:47Z",
+      "body": "⚠️ **Stale Issue Notice**\n\nThis issue has been automatically marked as stale due to inactivity. It will be closed in **2 weeks** (October 15, 2025) if no further activity occurs.\n\nIf this issue is still relevant and you would like to keep it open, please:\n- Comment on this issue to show continued interest\n- Provide any additional information or updates\n- Confirm that the issue still exists in the latest version\n\nThank you for your contribution to this project! 🙏"
+    },
+    {
+      "id": 3369213294,
+      "author": "julianhindenberg",
+      "createdAt": "2025-10-05T17:46:10Z",
+      "body": "Hi,\n\nthe error in question still exists, even in the latest Helm app version 2025.9.2.\n\nThe `/api/ip` endpoint no longer exists. However, the incorrectly resolved IPv6 address appears in the API pod logs:\n```\nDeviceType: Origin: ClientVersion:\n      Unknown proxy: [::ffff:10.42.0.28]:41432\n```\n\nThanks 🙂"
+    },
+    {
+      "id": 3573075273,
+      "author": "r3m8",
+      "createdAt": "2025-11-24T23:01:58Z",
+      "body": "Hello,\n\nThis error still exists even in the latest Helm Chart 1.0.9 and Application 2025.11.0.\n\nI find a workaround for Kubernetes clusters, you can set `ASPNETCORE_FORWARDEDHEADERS_ENABLED` to `true` :\n\n```bash\nkubectl create secret generic bitwarden-secret -n bitwarden \\\n    --from-literal=globalSettings__[...]...\n    --from-literal=ASPNETCORE_FORWARDEDHEADERS_ENABLED=true\n```\n\nIf Bitwarden is already deployed, you can patch the secret and rollout :\n\n```bash\nkubectl patch secret bitwarden-secret -n bitwarden --type='json' -p='[{\"op\":\"add\",\"path\":\"/data/ASPNETCORE_FORWARDEDHEADERS_ENABLED\",\"value\":\"dHJ1ZQ==\"}]'\nkubectl rollout restart deployment -n bitwarden\n```\n\nYou don't see `Unknown proxy` but you still have slow application, especially in /admin."
+    }
+  ],
+  "attachments": []
+}

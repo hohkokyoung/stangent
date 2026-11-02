@@ -1,0 +1,52 @@
+{
+  "number": 2146,
+  "title": "Reported Web Version Discrepancy",
+  "body": "### Steps To Reproduce\r\n\r\n1. Check the Web Installed version on the admin dashboard\r\n2. Run 'docker ps' on the server\r\n3. Compare the bitwarden/web version to the Web Installed version\r\n\r\n### Expected Result\r\n\r\nThe bitwarden/web version from 'docker ps' should match the Web Installed version on the admin dashboard.\r\n\r\n### Actual Result\r\n\r\nWeb Installed shows 2022.6.1 while 'docker ps' shows bitwarden/web:2022.6.2\r\n\r\n### Screenshots or Videos\r\n\r\n![image](https://user-images.githubusercontent.com/50854322/180883871-a2b33113-d823-4bcd-baaf-6dab402b12d3.png)\r\n\r\n\r\n### Additional Context\r\n\r\ndocker ps\r\nCONTAINER ID   IMAGE                              COMMAND            CREATED         STATUS                   PORTS                                                                                    NAMES\r\n5cfe1900db5c   bitwarden/nginx:2022.6.2           \"/entrypoint.sh\"   2 minutes ago   Up 2 minutes (healthy)   80/tcp, 0.0.0.0:80->8080/tcp, :::80->8080/tcp, 0.0.0.0:443->8443/tcp, :::443->8443/tcp   bitwarden-nginx\r\n768b8627dd14   bitwarden/admin:2022.6.2           \"/entrypoint.sh\"   2 minutes ago   Up 2 minutes (healthy)   5000/tcp                                                                                 bitwarden-admin\r\n606ad4d6fd0d   bitwarden/mssql:2022.6.2           \"/entrypoint.sh\"   2 minutes ago   Up 2 minutes (healthy)                                                                                            bitwarden-mssql\r\n8834ab70469e   bitwarden/identity:2022.6.2        \"/entrypoint.sh\"   2 minutes ago   Up 2 minutes (healthy)   5000/tcp                                                                                 bitwarden-identity\r\nb3fdc2b00614   bitwarden/sso:2022.6.2             \"/entrypoint.sh\"   2 minutes ago   Up 2 minutes (healthy)   5000/tcp                                                                                 bitwarden-sso\r\n38a4030fb3b5   bitwarden/events:2022.6.2          \"/entrypoint.sh\"   2 minutes ago   Up 2 minutes (healthy)   5000/tcp                                                                                 bitwarden-events\r\n898de4c5e4d2   bitwarden/attachments:2022.6.2     \"/entrypoint.sh\"   2 minutes ago   Up 2 minutes (healthy)                                                                                            bitwarden-attachments\r\n9d022f01a65a   bitwarden/notifications:2022.6.2   \"/entrypoint.sh\"   2 minutes ago   Up 2 minutes (healthy)   5000/tcp                                                                                 bitwarden-notifications\r\nff78ab89feb2   bitwarden/web:2022.6.2             \"/entrypoint.sh\"   2 minutes ago   Up 2 minutes (healthy)                                                                                            bitwarden-web\r\n2c9daf6c66fa   bitwarden/api:2022.6.2             \"/entrypoint.sh\"   2 minutes ago   Up 2 minutes (healthy)   5000/tcp                                                                                 bitwarden-api\r\n22bc773477ca   bitwarden/icons:2022.6.2           \"/entrypoint.sh\"   2 minutes ago   Up 2 minutes (healthy)   5000/tcp                                                                                 bitwarden-icons\r\n\r\n### Build Version\r\n\r\n2022.6.2\r\n\r\n### Environment\r\n\r\nSelf-Hosted\r\n\r\n### Environment Details\r\n\r\n- Operating System: RHEL 8.6\r\n- Docker Engine: 20.10.17\r\n- Docker Compose: 2.6.0",
+  "author": "jmcmahel",
+  "createdAt": "2022-07-25T22:30:38Z",
+  "comments": [
+    {
+      "id": 1195335283,
+      "author": "dbosompem",
+      "createdAt": "2022-07-26T11:01:51Z",
+      "body": "Hi @jmcmahel , thank you for bringing this up. We will reproduce this at our end, and take a look at it. Appreciate this!"
+    },
+    {
+      "id": 1197340778,
+      "author": "Ayitaka",
+      "createdAt": "2022-07-27T20:37:29Z",
+      "body": "See also [this issue on the self-hosted repository](https://github.com/bitwarden/self-host/issues/35)"
+    },
+    {
+      "id": 1204597854,
+      "author": "jmcmahel",
+      "createdAt": "2022-08-04T00:02:51Z",
+      "body": "![image](https://user-images.githubusercontent.com/50854322/182734510-8d1a8f34-f199-4982-b529-ddb7cfb9aeaf.png)\r\n\r\nThe admin dashboard is now showing 2022.8.0 as the latest version, while bitwarden/server shows 2022.6.2 as the latest."
+    },
+    {
+      "id": 1204631127,
+      "author": "Ayitaka",
+      "createdAt": "2022-08-04T00:43:51Z",
+      "body": "> ![image](https://user-images.githubusercontent.com/50854322/182734510-8d1a8f34-f199-4982-b529-ddb7cfb9aeaf.png)\r\n> \r\n> The admin dashboard is now showing 2022.8.0 as the latest version, while bitwarden/server shows 2022.6.2 as the latest.\r\n\r\nThis is because the [Bitwarden/server](https://github.com/bitwarden/server) version was bumped to 2022.8.0, for the new month. But that is not the [Bitwarden/self-host](https://github.com/bitwarden/self-host). self-host has its own versions, which always lag behind Bitwarden/server so that a release can be tested before being pushed to self-host clients.\r\n\r\nHaving said that, maybe the admin dashboard for self-host should only show the latest version for self-host, not for server, because that can be confusing... case in point."
+    },
+    {
+      "id": 1206373292,
+      "author": "Hinton",
+      "createdAt": "2022-08-05T12:07:51Z",
+      "body": "We've improved the version detection in this release, and it should no longer announce a newer version before it is released. https://github.com/bitwarden/server/pull/2006"
+    },
+    {
+      "id": 1215914464,
+      "author": "adam-olson",
+      "createdAt": "2022-08-15T22:09:30Z",
+      "body": "Looks like the version #'s might be backwards, Server version appears where the web version is and vis versa, \r\n![image](https://user-images.githubusercontent.com/45909856/184726793-095d26e0-c135-405a-892c-232fb4f67edc.png)\r\n"
+    },
+    {
+      "id": 1223774728,
+      "author": "Hinton",
+      "createdAt": "2022-08-23T09:02:42Z",
+      "body": "Thanks for letting us know @adam-olson. This will be resolved in the next release."
+    }
+  ],
+  "attachments": []
+}

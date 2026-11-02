@@ -1,0 +1,16 @@
+{
+  "number": 4034,
+  "title": "SCIM /Users listing does not return any users unless the `startIndex` and `count` is specified",
+  "body": "### Steps To Reproduce\n\n1. Enable SCIM Provisioning on an account\r\n2. Request the users listing using the provided SCIM Url and add `/Users` to the end (i.e.: `https://scim.bitwarden.com/v2/<Tenant ID>/Users`\r\n\n\n### Expected Result\n\nYou should get a list of users, unfiltered.\n\n### Actual Result\n\nNo data is returned\n\n### Screenshots or Videos\n\n_No response_\n\n### Additional Context\n\nI believe this is a bug, but it may be intentional, based on the third check on line 58 in [GetUsersListQuery](https://github.com/bitwarden/server/blob/ccaee0b719158ff0d983ffe11f9ae827e2b353a9/bitwarden_license/src/Scim/Users/GetUsersListQuery.cs#L37-L67), it requires the `startIndex` and `count` to be set, these are defined as [optional parameters](https://datatracker.ietf.org/doc/html/rfc7644#section-3.4.2.4) in the SCIM Paginaiton RFC, and should default to `startIndex` of 1 and the server defined `count`\r\n\r\n[Query Resources](https://datatracker.ietf.org/doc/html/rfc7644#section-3.4.2) does not state that `startIndex` and `count` are required query variables, and the example given:\r\n\r\n```\r\nGET /Users?attributes=userName\r\nHost: example.com\r\nAccept: application/scim+json\r\nAuthorization: Bearer h480djs93hd8\r\n```\r\n\r\nAlso does not work with the BitWarden API.\r\n\r\nI believe the fix here is to add an:\r\n\r\n```c#\r\nelse\r\n{\r\n  userList = orgUsers.OrderBy(ou => ou.Email)\r\n    .Take(10) # I am unsure what the real default should be here\r\n    .ToList();\r\n  totalResults = orgUsers.Count;\r\n}\r\n```\n\n### Build Version\n\n2024.4.1\n\n### Environment\n\nCloud (bitwarden.com)\n\n### Environment Details\n\n_No response_\n\n### Issue Tracking Info\n\n- [X] I understand that work is tracked outside of Github. A PR will be linked to this issue should one be opened to address it, but Bitwarden doesn't use fields like \"assigned\", \"milestone\", or \"project\" to track progress.",
+  "author": "dougedey-sf",
+  "createdAt": "2024-04-30T15:34:15Z",
+  "comments": [
+    {
+      "id": 2087289980,
+      "author": "cbbit",
+      "createdAt": "2024-04-30T20:59:57Z",
+      "body": "Hi there,\r\n\r\nThank you for your report!\r\n\r\nI have flagged this to our engineering team.\r\n\r\nIf you wish to add any further information/screenshots/recordings etc., please feel free to do so at any time - our engineering team will be happy to review these.\r\n\r\nThanks once again!"
+    }
+  ],
+  "attachments": []
+}
