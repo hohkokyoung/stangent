@@ -79,7 +79,8 @@ at() {
   # Sonarr builds every project into shared folders (_tests/<tfm>, _output). Another commit's newer files stay there
   # (a 5.x NUnit adapter beside a 3.x commit's tests finds no tests at all), so they go too; builds fill them again.
   rm -rf _tests _output
-  if [ -f "$SDK" ]; then cp "$SDK" global.json; else log "no SDK pin for this repo ($(basename "$SDK")): the commit's own global.json is used"; fi
+  if [ -f "$SDK" ]; then cp "$SDK" global.json
+  elif [ -z "${SDK_NOTED:-}" ]; then SDK_NOTED=1; log "no SDK pin for this repo ($(basename "$SDK")): each commit's own global.json is used"; fi
 }
 
 phase_points() {
