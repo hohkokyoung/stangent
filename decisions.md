@@ -1913,6 +1913,10 @@ lands); designed without a real FSD so far (D56). Doesn't raise right place (Son
   definitions it uses are in the hash, and any answer from the checker but `ok` drops approval too. **Why it isn't finished:** D99 says unchanged quotes keep id and status, and also that editing a requirement
   drops it back, and an AI re-run rewords freely. Step 6 settles it at the root: code carries forward every item whose quotes are still in the text, and only new or
   changed sentences go to the AI (D18). Also step 6: a changed quote keeps its id, a renumbered section keeps its ids, and retiring waits for the BA.
+- *Requirement-level links, first measured (2026-11-03, sonnet):* worse than 2b on both bars: 24/30 found (2b 27), false alarms 44%, range 29–59% (2b 31.3%), from a fresh agent's hand check of 20
+  (`benchmark/results/2026-11-03-phase2c-sonarr-links-score.json`). All 20 planted gaps and conflicts were found; 6 of 7 undocumented behaviours weren't. 11 of the 12 false alarms are gaps where the code does what the FSD says
+  and the summary page left it out, so the hope above, that a finer grain gives fewer false alarms, was wrong: a page saying less doesn't show the code lacks it. **Open, for the owner:** 56 of 109 requirements read "no code found", and only 10 of those
+  are really unbuilt; proposed: "the page doesn't mention this", with gaps naming a page at the ticket's code in the main candidate list. Bigger option: check each gap against the code. Findings stay off (D68).
 - *A clash between sections (same check, no owner decision yet):* D99 says clashes become BA questions, but one pass per section can't see one: on the planted FSD,
   R-0014 lists 3 things tags link to and R-0001 lists 6, both `confirmed`. Added to step 6 as one AI pass over a document's requirements, proposing questions.
 
