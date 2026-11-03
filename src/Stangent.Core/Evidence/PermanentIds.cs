@@ -8,9 +8,10 @@ namespace Stangent.Core.Evidence;
 /// <summary>
 /// Permanent ids (D113): per scope, ids in one format, never given twice. A removed id stays on the file, marked
 /// removed, so it can't come back. Every call reads the file under a lock and writes it whole, so parallel drivers
-/// share one ledger; the lock is <c>&lt;file&gt;.lock</c> beside it.
+/// share one ledger; the lock is <c>&lt;file&gt;.lock</c> beside it, or the lock file named, for a ledger committed in a
+/// folder a lock shouldn't sit in.
 /// </summary>
-public sealed partial class PermanentIds(string path)
+public sealed partial class PermanentIds(string path, string? lockPath = null)
 {
     static readonly TimeSpan LockWait = TimeSpan.FromSeconds(30);
 
@@ -33,6 +34,17 @@ public sealed partial class PermanentIds(string path)
             return (Text(format, next), true);
         });
     }
+
+    /// <summary>Takes over a counter kept elsewhere: the scope's last number becomes at least <paramref name="last"/>, and never
+    /// goes down, so doing it twice or after ids were issued is safe.</summary>
+    public void Raise(string scope, string format, int last) => Locked(ledger =>
+    {
+        var entry = ledger[scope]?.AsObject();
+        if (entry is null) ledger[scope] = entry = new JsonObject { ["format"] = format, ["last"] = 0, ["removed"] = new JsonArray() };
+        if ((int)entry["last"]! >= last) return (last, false);
+        entry["last"] = last;
+        return (last, true);
+    });
 
     /// <summary>Marks an issued id removed. Removing it again changes nothing.</summary>
     public void Remove(string scope, string id) => Locked(ledger =>
@@ -66,6 +78,7 @@ public sealed partial class PermanentIds(string path)
     T Locked<T>(Func<JsonObject, (T Value, bool Changed)> body)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(lockPath ?? path))!);
         using var held = TakeLock();
         var doc = Load();
         var (value, changed) = body(doc["scopes"]!.AsObject());
@@ -78,7 +91,7 @@ public sealed partial class PermanentIds(string path)
         var waited = System.Diagnostics.Stopwatch.StartNew();
         while (true)
         {
-            try { return new FileStream(path + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); }
+            try { return new FileStream(lockPath ?? path + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); }
             catch (IOException) when (waited.Elapsed < LockWait) { Thread.Sleep(20); }
         }
     }

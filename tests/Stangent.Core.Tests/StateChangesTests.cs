@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Stangent.Core.State;
+using Stangent.Spec.Requirements;
 
 namespace Stangent.Core.Tests;
 
@@ -222,5 +223,40 @@ public partial class StateChangesTests
         Assert.Matches(LifecycleWrite(), """e["decision"] = "agree";""");
         Assert.Matches(LifecycleWrite(), """new JsonObject { ["stage"]="done" }""");
         Assert.DoesNotMatch(LifecycleWrite(), """if ((string)e["stage"] == "done")""");
+    }
+
+    // ---- Requirement ids on the ledger ----
+
+    [Fact]
+    public void Requirement_ids_are_numbered_as_before_and_never_twice_in_parallel()
+    {
+        using var temp = new TempRepo();
+        Assert.Equal("R-0001", RequirementFile.NextId(temp.Root, "R"));
+        Assert.Equal("F-0001", RequirementFile.NextId(temp.Root, "F"));
+        Assert.Equal("R-0002", RequirementFile.NextId(temp.Root, "R"));
+
+        var ids = Enumerable.Range(0, 200).AsParallel().Select(_ => RequirementFile.NextId(temp.Root, "Q")).ToList();
+        Assert.Equal(200, ids.Distinct().Count());
+        Assert.Contains("Q-0200", ids);
+        // The ledger is committed; its lock stays out of specs/.
+        Assert.Equal(["ids.json"], Directory.EnumerateFiles(RequirementFile.Dir(temp.Root)).Select(Path.GetFileName));
+    }
+
+    [Fact]
+    public void A_repo_with_the_old_counter_goes_on_from_its_numbers()
+    {
+        using var temp = new TempRepo();
+        var old = Path.Combine(RequirementFile.Dir(temp.Root), "ids.yaml");
+        Directory.CreateDirectory(RequirementFile.Dir(temp.Root));
+        File.WriteAllText(old, "# The last id given out per kind (D99): assigned once, never reused.\nF: \"3\"\nR: \"41\"\n");
+
+        Assert.Equal("R-0042", RequirementFile.NextId(temp.Root, "R"));
+        Assert.False(File.Exists(old));
+        Assert.Equal("F-0004", RequirementFile.NextId(temp.Root, "F"));
+
+        // The old file back from a merge can raise the numbers, never lower them.
+        File.WriteAllText(old, "R: \"2\"\nF: \"9\"\n");
+        Assert.Equal("R-0043", RequirementFile.NextId(temp.Root, "R"));
+        Assert.Equal("F-0010", RequirementFile.NextId(temp.Root, "F"));
     }
 }

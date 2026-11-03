@@ -1,14 +1,16 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.Evidence;
 using Stangent.Spec.Pages;
 using Stangent.Spec.Trace;
 
 namespace Stangent.Spec.Requirements;
 
 /// <summary>
-/// The structured spec's files (D99, contract <c>requirements</c> v1). Under <c>specs/requirements/</c>: <c>ids.yaml</c>
-/// (each kind's last number, so an id is assigned once and never reused) and <c>runs.json</c>; under <c>&lt;doc&gt;/</c>:
+/// The structured spec's files (D99, contract <c>requirements</c> v1). Under <c>specs/requirements/</c>: <c>ids.json</c>
+/// (the permanent-id ledger, so an id is assigned once and never reused), <c>history.jsonl</c> (every status move, D114)
+/// and <c>runs.json</c>; under <c>&lt;doc&gt;/</c>:
 /// one <c>F-&lt;id&gt;.yaml</c> per section, <c>questions.yaml</c>, and two views written by code from those:
 /// <c>index.yaml</c> (one line per item, read first) and <c>glossary.yaml</c>. Code writes them all; people change them
 /// through approval and the BA's decisions.
@@ -19,7 +21,8 @@ public static class RequirementFile
 
     public static string Dir(string root) => Path.Combine(root, "specs", "requirements");
     public static string DocDir(string root, string doc) => Path.Combine(Dir(root), doc);
-    static string IdsFile(string root) => Path.Combine(Dir(root), "ids.yaml");
+    static string IdsFile(string root) => Path.Combine(Dir(root), "ids.json");
+    static string OldIdsFile(string root) => Path.Combine(Dir(root), "ids.yaml");
     public static string RunsFile(string root) => Path.Combine(Dir(root), "runs.json");
     static string FeatureFile(string root, string doc, string id) => Path.Combine(DocDir(root, doc), id + ".yaml");
     static string QuestionsFile(string root, string doc) => Path.Combine(DocDir(root, doc), "questions.yaml");
@@ -56,15 +59,27 @@ public static class RequirementFile
             YamlForm.Write(feature, "A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR."));
     }
 
-    /// <summary>Hands out the next id of a kind; the last number is saved at once, so it's never given twice.</summary>
+    /// <summary>Hands out the next id of a kind from the ledger, under its lock, so parallel runs can't get the same one (D113, D114).</summary>
     public static string NextId(string root, string kind)
     {
-        var ids = File.Exists(IdsFile(root)) ? YamlForm.Parse(File.ReadAllText(IdsFile(root)), "ids.yaml") : new JsonObject();
-        var next = (int.TryParse((string?)ids[kind], out var n) ? n : 0) + 1;
-        ids[kind] = next.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        var sorted = new JsonObject(ids.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p => KeyValuePair.Create(p.Key, p.Value?.DeepClone())));
-        Quotes.WriteAtomic(IdsFile(root), YamlForm.Write(sorted, "The last id given out per kind (D99): assigned once, never reused."));
-        return $"{kind}-{next:D4}";
+        // The lock stays out of specs/, which is committed.
+        var ledger = new PermanentIds(IdsFile(root), Path.Combine(root, ".stangent", "req", "ids.lock"));
+        TakeOverOldIds(root, ledger);
+        return ledger.Issue(kind, Format(kind));
+    }
+
+    static string Format(string kind) => kind + "-{0:D4}";
+
+    /// <summary>A repo from before the ledger kept each kind's last number in <c>ids.yaml</c>. Raising only goes up, so two runs
+    /// doing this at once, or an old file coming back in a merge, can't give an id out twice.</summary>
+    static void TakeOverOldIds(string root, PermanentIds ledger)
+    {
+        string text;
+        try { text = File.ReadAllText(OldIdsFile(root)); }
+        catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException) { return; }
+        foreach (var (kind, last) in YamlForm.Parse(text, "ids.yaml"))
+            if (int.TryParse((string?)last, out var n)) ledger.Raise(kind, Format(kind), n);
+        File.Delete(OldIdsFile(root));
     }
 
     /// <summary>The section's feature, creating it and its parents as needed: the feature tree follows the FSD's own
