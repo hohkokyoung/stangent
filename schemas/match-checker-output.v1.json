@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:match-checker-output:v1",
+  "title": "What stangent-match-checker returns (Phase 2c, D99, D61)",
+  "description": "Whether this requirement decides the ticket's situation, seen from a fresh start. Code checks both quotes word for word.",
+  "type": "object",
+  "required": ["decides", "reporter", "why"],
+  "additionalProperties": false,
+  "properties": {
+    "decides": { "type": "boolean" },
+    "reporter": { "enum": ["agrees", "against", "unclear"] },
+    "ticketQuote": { "type": "string" },
+    "requirementQuote": { "type": "string" },
+    "why": { "type": "string", "minLength": 1, "maxLength": 800 }
+  }
+}

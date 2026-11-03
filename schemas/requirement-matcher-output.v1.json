@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:requirement-matcher-output:v1",
+  "title": "What stangent-requirement-matcher returns (Phase 2c, D99)",
+  "description": "The one requirement that decides the ticket's situation, or none. Code checks the id and both quotes word for word.",
+  "type": "object",
+  "required": ["pick", "why"],
+  "additionalProperties": false,
+  "properties": {
+    "pick": { "description": "A candidate's id, or null.", "type": ["string", "null"] },
+    "ticketQuote": { "type": "string" },
+    "requirementQuote": { "type": "string" },
+    "why": { "type": "string", "minLength": 1, "maxLength": 800 }
+  }
+}

@@ -49,6 +49,8 @@ public sealed record RunStep(string Status, string Action, string? Agent = null,
         Stangent.Spec.Requirements.RequirementRun.Checker => "requirement-checker-output.v1.json",
         // Phase 3's ticket steps (Stangent.Tickets.StepSpec).
         "stangent-file-finder" => "file-finder-output.v1.json",
+        "stangent-requirement-matcher" => "requirement-matcher-output.v1.json",
+        "stangent-match-checker" => "match-checker-output.v1.json",
         "stangent-bug-reproducer" => "bug-reproducer-output.v1.json",
         "stangent-question-writer" or "stangent-summary-writer" => "draft-output.v2.json",
         _ => null,

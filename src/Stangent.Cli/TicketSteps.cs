@@ -23,6 +23,11 @@ static class TicketSteps
         });
         ticket.Subcommands.Add(bundle);
 
+        var match = new Command("match", "Which approved requirement says what should happen here, if any (D99): an AI picks one or none, a fresh AI checks, a person confirms.") { TicketCommands.KeyArg };
+        match.SetAction(pr => Cli.Run(pr, "ticket match", ctx =>
+            SpecCommands.Finish(TicketMatch.Prepare(ctx.Repo, TicketContext.Load(ctx.Repo), pr.GetValue(TicketCommands.KeyArg)!), pr.GetValue(TicketCommands.KeyArg)!)));
+        ticket.Subcommands.Add(match);
+
         var hintOption = new Option<string?>("--hint") { Description = "Another way to reproduce it, from the developer: a new attempt with this added (D75)." };
         var confirmOption = new Option<bool>("--confirm") { Description = "Confirm the reproduced failure is the reported problem and a bug, not the code working as meant (D75, D96)." };
         var verifyOption = new Option<bool>("--verify") { Description = "On the fix branch: the test passes and nothing else started failing (D18); if not, what kind of failure it was (D105)." };
@@ -83,6 +88,7 @@ static class TicketSteps
     public static RunStep Prepare(CliContext ctx, StepSpec step, string key, ParseResult pr) => step.Name switch
     {
         "prove" => BugProof.Prepare(ctx.Repo, TicketContext.Load(ctx.Repo), key, null),
+        "match" => TicketMatch.Prepare(ctx.Repo, TicketContext.Load(ctx.Repo), key),
         "questions" => TicketDrafts.Prepare(ctx.Repo, TicketContext.Load(ctx.Repo), key, "questions", null, null, null),
         _ => throw new Stangent.Core.StangentException("usage", $"--step {step.Name} isn't built yet.", Stangent.Core.ExitCodes.Usage),
     };
@@ -90,6 +96,7 @@ static class TicketSteps
     public static RunStep Check(CliContext ctx, StepSpec step, string key, Usage? usage, JsonNode? claudeResult) => step.Name switch
     {
         "prove" => TicketCommands.Async(() => BugProof.CheckAsync(ctx.Repo, key, claudeResult, new ShellRunner())),
+        "match" => TicketMatch.Check(ctx.Repo, TicketContext.Load(ctx.Repo), key, usage),
         "questions" or "resolution" => TicketDrafts.Check(ctx.Repo, TicketContext.Load(ctx.Repo), key, step.Name, usage),
         _ => throw new Stangent.Core.StangentException("usage", $"--step {step.Name} isn't built yet.", Stangent.Core.ExitCodes.Usage),
     };

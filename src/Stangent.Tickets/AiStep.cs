@@ -21,8 +21,8 @@ public sealed record StepSpec(string Name, string Agent, string Schema, string I
 
     public static StepSpec Named(string name) => name switch
     {
-        "points" => Points, "prove" => Prove, "questions" => Questions, "resolution" => Resolution,
-        _ => throw new StangentException("usage", $"Unknown step '{name}'. Steps: points, prove, questions, resolution.", ExitCodes.Usage),
+        "points" => Points, "prove" => Prove, "questions" => Questions, "resolution" => Resolution, "match" => TicketMatch.Step,
+        _ => throw new StangentException("usage", $"Unknown step '{name}'. Steps: points, match, prove, questions, resolution.", ExitCodes.Usage),
     };
 
     public string InputFile => "input.md";

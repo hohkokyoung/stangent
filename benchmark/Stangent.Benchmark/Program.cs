@@ -54,6 +54,20 @@ if (argList.Count >= 3 && argList[0] == "--score-fsd")
     Console.WriteLine(scoreText);
     return 0;
 }
+// Phase 2c's frozen key (D99): `--match-seed <clone> <match-key.json>` writes its tickets into the clone, printing keys only;
+// `--score-match <clone> <match-key.json> [--out file]` scores them by the key's own rule.
+if (argList.Count >= 3 && argList[0] == "--match-seed")
+{
+    foreach (var key in await Stangent.Benchmark.Tickets.MatchScore.SeedAsync(Path.GetFullPath(argList[1]), argList[2])) Console.WriteLine(key);
+    return 0;
+}
+if (argList.Count >= 3 && argList[0] == "--score-match")
+{
+    var matchText = Stangent.Benchmark.Tickets.MatchScore.Run(Path.GetFullPath(argList[1]), argList[2]).ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+    if (argList.IndexOf("--out") is var mo and >= 0) File.WriteAllText(argList[mo + 1], matchText + "\n");
+    Console.WriteLine(matchText);
+    return 0;
+}
 // Phase 3's frozen set (D78): `--select-tickets <clone> --out-dir benchmark/tickets/sonarr [--repo Sonarr/Sonarr] [--bugs 40] [--not-bugs 10]`.
 if (argList.Count >= 2 && argList[0] == "--select-tickets")
 {

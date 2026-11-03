@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:ticket-match:v1",
+  "title": "A ticket matched to its requirement: .stangent/tickets/<KEY>/match.json (Phase 2c, D99)",
+  "description": "suggested reads 'suggested: R-0042' until a person confirms. Only an approved requirement judges anything; approvalSkipped says a benchmark's setting treated proposed ones as approved.",
+  "type": "object",
+  "required": ["schemaVersion", "key", "inputs", "outcome", "approvalSkipped", "candidates", "considered", "confirmed", "why", "usage"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "key": { "type": "string" },
+    "inputs": { "type": "string" },
+    "outcome": { "enum": ["suggested", "none", "failed"] },
+    "approvalSkipped": { "type": "boolean" },
+    "candidates": {
+      "type": "object",
+      "required": ["linked", "noCode"],
+      "additionalProperties": false,
+      "properties": { "linked": { "type": "integer" }, "noCode": { "type": "integer" } }
+    },
+    "considered": { "description": "The requirement ids the AI could pick from.", "type": "array", "items": { "type": "string" } },
+    "confirmed": { "description": "Who confirmed the match, from git; null until a person does.", "type": ["string", "null"] },
+    "why": { "type": ["string", "null"] },
+    "requirement": {
+      "type": "object",
+      "required": ["id", "title", "statement", "quotes", "status", "codeFound"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^R-[0-9]{4,}$" },
+        "title": { "type": "string" },
+        "statement": { "type": "string" },
+        "quotes": { "type": "array" },
+        "status": { "enum": ["proposed", "approved"] },
+        "codeFound": { "description": "False: no page statement covers it, so it may not be built.", "type": "boolean" }
+      }
+    },
+    "reading": { "type": "string" },
+    "reporter": { "enum": ["agrees", "against", "unclear"] },
+    "quotes": {
+      "type": "object",
+      "required": ["ticket", "requirement"],
+      "additionalProperties": false,
+      "properties": { "ticket": { "type": "string" }, "requirement": { "type": "string" } }
+    },
+    "refused": {
+      "description": "The AI's pick the fresh check disagreed with: no match, kept for a person to see.",
+      "type": "object",
+      "required": ["pick", "why"],
+      "additionalProperties": false,
+      "properties": { "pick": { "type": "string" }, "why": { "type": "string" } }
+    },
+    "usage": {
+      "type": "object",
+      "required": ["matcher", "checker"],
+      "additionalProperties": false,
+      "properties": { "matcher": { "type": "object" }, "checker": { "type": "object" } }
+    }
+  }
+}

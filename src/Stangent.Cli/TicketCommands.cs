@@ -43,7 +43,7 @@ static class TicketCommands
         }));
         ticket.Subcommands.Add(points);
 
-        var stepOption = new Option<string>("--step") { Description = "The AI step: points, prove, questions or resolution.", Required = true };
+        var stepOption = new Option<string>("--step") { Description = "The AI step: points, match, prove, questions or resolution.", Required = true };
         var prepare = new Command("prepare", "Write an AI step's input and name the subagent to run (D60).") { KeyArg, stepOption };
         prepare.SetAction(pr => Cli.Run(pr, "ticket prepare", ctx =>
         {
