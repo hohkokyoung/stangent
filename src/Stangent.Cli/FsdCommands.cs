@@ -103,7 +103,7 @@ static class FsdCommands
 
         var chapterArg = new Argument<string>("chapter") { Description = "A section id: the chapter and everything under it." };
         var approve = new Command("approve", "Bulk approval (D53): decision agree on every confirmed agree link under a chapter. Commit it in a PR.") { docArg, chapterArg };
-        approve.SetAction(pr => Cli.Run(pr, "trace approve", ctx => new JsonObject { ["approved"] = TraceCheck.ApproveChapter(ctx.Repo.Root, pr.GetValue(docArg)!, pr.GetValue(chapterArg)!) }));
+        approve.SetAction(pr => Cli.Run(pr, "trace approve", ctx => new JsonObject { ["approved"] = TraceCheck.ApproveChapter(ctx.Repo.Root, pr.GetValue(docArg)!, pr.GetValue(chapterArg)!, TicketCommands.Who(ctx)) }));
         trace.Subcommands.Add(approve);
 
         var byOption = new Option<string>("--by") { Description = "Who approved or merged the PR, from the code host (D24): CI passes it.", Required = true };

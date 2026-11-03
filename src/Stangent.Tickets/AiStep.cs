@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.State;
 using Stangent.Spec.Pages;
 
 namespace Stangent.Tickets;
@@ -85,6 +86,13 @@ public static class AiStep
 
     public static void SaveState(TicketPaths paths, StepSpec step, JsonObject state) =>
         Quotes.WriteAtomic(Path.Combine(Work(paths, step), "state.json"), CanonicalJson.Serialize(state));
+
+    /// <summary>Ends the run: the stage moves (D114) and the state is saved.</summary>
+    public static void Finish(TicketPaths paths, StepSpec step, JsonObject state, string to, string reason)
+    {
+        StateChanges.Apply(paths.Root, state, StateKinds.TicketStep, $"{paths.Key}/{step.Name}", to, StateActor.Code("stangent ticket"), reason);
+        SaveState(paths, step, state);
+    }
 
     /// <summary>Adds the call's usage to the state and reads the output: parsed and schema-checked, or the errors.</summary>
     public static (JsonObject? Output, List<string> Errors) Read(TicketPaths paths, StepSpec step, JsonObject state, Usage? usage)

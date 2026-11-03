@@ -614,8 +614,7 @@ public static class TicketPoints
         points["ai"] = ai;
         Quotes.WriteAtomic(paths.PointsJson, CanonicalJson.Serialize(points));
         Update(repo, ctx, key, [], [], who);
-        state["stage"] = "done";
-        AiStep.SaveState(paths, step, state);
+        AiStep.Finish(paths, step, state, "done", "recorded");
         return (string)ai["status"]! == "failed" ? new RunStep("failed", "none", Errors: errors) : new RunStep("recorded", "none", Errors: errors.Count > 0 ? errors : null);
     }
 

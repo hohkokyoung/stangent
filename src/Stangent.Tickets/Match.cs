@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.State;
 using Stangent.Spec.Pages;
 using Stangent.Spec.Requirements;
 
@@ -105,10 +106,12 @@ public static class TicketMatch
             return new RunStep("recorded", "none");
         }
         AiPolicy.EnsureAllowed(repo.Config, "ticket match");
-        return AiStep.Start(paths, Step, input, hash, new JsonObject
+        var extra = new JsonObject
         {
-            ["stage"] = "pick", ["candidates"] = new JsonArray([.. candidates.Select(c => (JsonNode)(string)c.Requirement["id"]!)]), ["counts"] = counts, ["finder"] = finder,
-        });
+            ["candidates"] = new JsonArray([.. candidates.Select(c => (JsonNode)(string)c.Requirement["id"]!)]), ["counts"] = counts, ["finder"] = finder,
+        };
+        Stage(paths, extra, "pick", "prepared");
+        return AiStep.Start(paths, Step, input, hash, extra);
     }
 
     public static RunStep Check(StangentRepo repo, TicketContext ctx, string key, Usage? usage)
@@ -144,7 +147,7 @@ public static class TicketMatch
             return new RunStep("recorded", "none");
         }
         // The fresh check, told nothing of why it was picked.
-        state["stage"] = "confirm";
+        Stage(paths, state, "confirm", "the pick passed the code check");
         state["retryUsed"] = false;
         state["pick"] = (string)requirement["id"]!;
         state["pickOutput"] = output!.DeepClone();
@@ -239,9 +242,12 @@ public static class TicketMatch
         return new RunStep("failed", "none", Errors: errors);
     }
 
+    static void Stage(TicketPaths paths, JsonObject state, string to, string reason) =>
+        StateChanges.Apply(paths.Root, state, StateKinds.TicketMatch, $"{paths.Key}/{Step.Name}", to, StateActor.Code("stangent ticket match"), reason);
+
     static void MarkDone(TicketPaths paths, JsonObject state)
     {
-        state["stage"] = "done";
+        Stage(paths, state, "done", "recorded");
         AiStep.SaveState(paths, Step, state);
     }
 

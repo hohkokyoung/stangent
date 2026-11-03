@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.State;
 using Stangent.Spec.Pages;
 using Stangent.Spec.Trace;
 
@@ -18,6 +19,11 @@ public static class RequirementRun
     public const string Checker = "stangent-requirement-checker";
 
     public static string Key(string doc, string section) => $"{doc}#{section}";
+
+    internal static readonly StateActor Who = StateActor.Code("stangent req");
+
+    static void Stage(string root, JsonObject state, string to, string reason) =>
+        StateChanges.Apply(root, state, StateKinds.ReqRun, Key((string)state["doc"]!, (string)state["section"]!), to, Who, reason);
     static string Work(string root, string doc, string section) =>
         Path.Combine(root, ".stangent", "req", doc, PageList.Slug(section, Key(doc, section)));
 
@@ -42,7 +48,9 @@ public static class RequirementRun
         AiPolicy.EnsureAllowed(repo.Config, "req prepare");
         var work = Fresh(repo.Root, doc, sectionId);
         File.WriteAllText(Path.Combine(work, "writer.md"), bundle);
-        Save(work, new JsonObject { ["doc"] = doc, ["section"] = sectionId, ["stage"] = "write", ["inputs"] = inputs, ["textHash"] = CanonicalJson.Hash((string)section["text"]!), ["retryUsed"] = false, ["usage"] = new JsonObject() });
+        var fresh = new JsonObject { ["doc"] = doc, ["section"] = sectionId, ["inputs"] = inputs, ["textHash"] = CanonicalJson.Hash((string)section["text"]!), ["retryUsed"] = false, ["usage"] = new JsonObject() };
+        Stage(repo.Root, fresh, "write", "prepared");
+        Save(work, fresh);
         return Step(repo.Root, work, Writer, "writer.md", "writer.json", "FSD section");
     }
 
@@ -109,7 +117,7 @@ public static class RequirementRun
                 var disputed = checks.Where(c => (string)c["verdict"]! != "ok").ToList();
                 if (stage == "reconfirm" || disputed.Count == 0) return Finish(repo.Root, work, state, section, doc, checks);
                 // Back to the writer once, with what the checker found.
-                state["stage"] = "fix";
+                Stage(repo.Root, state, "fix", "the checker disputed items");
                 state["retryUsed"] = true;
                 state["checks"] = new JsonArray([.. checks.Select(c => (JsonNode)c.DeepClone())]);
                 state["fixes"] = disputed.Count;
@@ -135,7 +143,7 @@ public static class RequirementRun
 
     static RunStep ToChecker(string root, string work, JsonObject state, JsonObject section, string doc, string stage)
     {
-        state["stage"] = stage;
+        Stage(root, state, stage, "the writer's output passed the code check");
         state["retryUsed"] = false; // the checker gets its own one retry
         state.Remove("flagged");
         // Never read an earlier round's verdicts: a checker that writes nothing leaves its items unchecked.
@@ -169,7 +177,7 @@ public static class RequirementRun
                 r["unchecked"] = items.Keys.Count(k => !verdicts.ContainsKey(k));
             });
         }
-        state["stage"] = "done";
+        Stage(root, state, "done", "recorded");
         Save(work, state);
         var noAnswer = RequirementChecks.Items(output).Keys.Count(k => !verdicts.ContainsKey(k));
         return new RunStep("recorded", "none", Errors: noAnswer > 0 ? [$"{noAnswer} item(s) have no answer from the checker (--retry-failed tries again)"] : null);
@@ -198,7 +206,7 @@ public static class RequirementRun
 
     static RunStep Failed(string root, string work, JsonObject state, List<string> errors)
     {
-        state["stage"] = "failed";
+        Stage(root, state, "failed", "failed its checks");
         Save(work, state);
         using (RequirementFile.Lock(root))
             UpdateRun(root, Key((string)state["doc"]!, (string)state["section"]!), r =>
@@ -516,8 +524,9 @@ public static class RequirementRecord
             {
                 ["id"] = id, ["title"] = (string)r["title"]!, ["kind"] = (string)r["kind"]!, ["statement"] = (string)r["statement"]!, ["quotes"] = quotes, ["acceptance"] = acceptance,
                 ["refers"] = refers,
-                ["status"] = keeps ? (string?)was?["status"] ?? "proposed" : "proposed",
             };
+            StateChanges.Apply(root, item, StateKinds.Requirement, id, keeps ? (string?)was?["status"] ?? "proposed" : "proposed", RequirementRun.Who,
+                was is null ? "first written" : "changed, or the checker didn't answer ok", previous: was);
             Checked(item, (string)r["key"]!);
             item["hash"] = hash;
             if (keeps && (string?)was?["decided_by"] is { } by) item["decided_by"] = by;
@@ -547,6 +556,8 @@ public static class RequirementRecord
         }
 
         Retire(oldDefs, "name");
+        foreach (var gone in oldReqs.Unclaimed())
+            StateChanges.Move(root, StateKinds.Requirement, (string)gone["id"]!, (string?)gone["status"], "retired", RequirementRun.Who, "its quotes are gone");
         Retire(oldReqs, "title");
         Retire(oldJourneys, "title");
         Retire(oldScenarios, "title");
@@ -576,13 +587,19 @@ public static class RequirementRecord
             var was = earlier.FirstOrDefault(o => Quotes.Normalize((string)o["text"]!) == Quotes.Normalize((string)q["text"]!)
                 && o["quotes"]!.AsArray().Select(x => (string)x!["text"]!).Order(StringComparer.Ordinal).SequenceEqual(q["quotes"]!.AsArray().Select(x => Quotes.Normalize((string)x!)).Order(StringComparer.Ordinal)));
             if (was is not null) earlier.Remove(was);
-            kept.Add(new JsonObject
-            {
-                ["id"] = (string?)was?["id"] ?? RequirementFile.NextId(root, "Q"), ["section"] = sectionId, ["text"] = (string)q["text"]!, ["quotes"] = QuotesOf(q),
-                ["status"] = (string?)was?["status"] is null or "dropped" ? "open" : (string)was!["status"]!, ["answer"] = was?["answer"]?.DeepClone(),
-            });
+            var id = (string?)was?["id"] ?? RequirementFile.NextId(root, "Q");
+            var question = new JsonObject { ["id"] = id, ["section"] = sectionId, ["text"] = (string)q["text"]!, ["quotes"] = QuotesOf(q) };
+            StateChanges.Apply(root, question, StateKinds.Question, id, (string?)was?["status"] is null or "dropped" ? "open" : (string)was!["status"]!, RequirementRun.Who,
+                was is null ? "first raised" : "raised again", previous: was);
+            question["answer"] = was?["answer"]?.DeepClone();
+            kept.Add(question);
         }
-        foreach (var gone in earlier) { var copy = (JsonObject)gone.DeepClone(); copy["status"] = "dropped"; kept.Add(copy); }
+        foreach (var gone in earlier)
+        {
+            var copy = (JsonObject)gone.DeepClone();
+            StateChanges.Apply(root, copy, StateKinds.Question, (string)copy["id"]!, "dropped", RequirementRun.Who, "not raised any more");
+            kept.Add(copy);
+        }
         RequirementFile.SaveQuestions(root, doc, kept.OrderBy(q => (string)q["id"]!, StringComparer.Ordinal));
         RequirementFile.WriteViews(root, doc);
     }

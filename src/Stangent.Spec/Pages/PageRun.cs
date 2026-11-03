@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.State;
 
 namespace Stangent.Spec.Pages;
 
@@ -90,10 +91,11 @@ public static class PageRun
         File.WriteAllText(Path.Combine(work, "bundle.md"), bundle.Text);
         var state = new JsonObject
         {
-            ["page"] = page.Id, ["inputHash"] = bundle.InputHash, ["stage"] = "write", ["attempts"] = 0,
+            ["page"] = page.Id, ["inputHash"] = bundle.InputHash, ["attempts"] = 0,
             ["checkRetryUsed"] = false, ["fixUsed"] = false, ["checkRetries"] = 0,
             ["writer"] = Usage.None.ToJson(), ["verifier"] = Usage.None.ToJson(),
         };
+        Stage(paths, page, state, "write", "prepared");
         Save(work, state);
         return WriteStep(paths, page, state, null);
     }
@@ -132,7 +134,7 @@ public static class PageRun
                 }
                 state["staged"] = output!.DeepClone();
                 if (stage == "fix") return Record(set, paths, page, state, work, bundle);
-                state["stage"] = "verify";
+                Stage(paths, page, state, "verify", "the writer's output passed the code check");
                 Save(work, state);
                 File.WriteAllText(Path.Combine(work, "verify.md"), VerifyPage(page, (JsonObject)output));
                 return new RunStep("verify", "verify", Verifier,
@@ -165,7 +167,7 @@ public static class PageRun
                 state["dropped"] = dropped;
                 state["findings"] = new JsonArray([.. kept.Select(f => (JsonNode)FindingJson(f))]);
                 if (kept.Count == 0) return Record(set, paths, page, state, work, bundle);
-                state["stage"] = "fix";
+                Stage(paths, page, state, "fix", "the verifier found problems");
                 state["fixUsed"] = true;
                 Save(work, state);
                 return WriteStep(paths, page, state, Feedback([], kept)) with { Status = "fix" };
@@ -283,15 +285,18 @@ public static class PageRun
         Quotes.WriteAtomic(paths.PageJson(page), CanonicalJson.Serialize(record));
         Quotes.WriteAtomic(paths.PageMarkdown(page), PageRender.Markdown(record, id => set.Find(id) is { } p && p.Id == id ? p.Path : null));
         ClearFailed(paths, page);
-        state["stage"] = "done";
+        Stage(paths, page, state, "done", "recorded");
         Save(work, state);
         return new RunStep("recorded", "none");
     }
 
+    static void Stage(SpecPaths paths, PageDef page, JsonObject state, string to, string reason) =>
+        StateChanges.Apply(paths.Root, state, StateKinds.PageRun, page.Id, to, StateActor.Code("stangent spec"), reason);
+
     static RunStep Fail(SpecPaths paths, PageDef page, JsonObject state, string work, string reason, IReadOnlyList<string> errors)
     {
         MarkFailed(paths, page, (string)state["inputHash"]!, reason, errors);
-        state["stage"] = "failed";
+        Stage(paths, page, state, "failed", reason);
         Save(work, state);
         return new RunStep("failed", "none", Errors: errors);
     }

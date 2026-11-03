@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Stangent.Core;
+using Stangent.Core.State;
 using Stangent.Graph;
 using Stangent.Graph.Impact;
 using Stangent.Spec.Pages;
@@ -183,8 +184,7 @@ public static partial class TicketDrafts
         if (errors.Count > 0)
         {
             if (AiStep.Retry(paths, step, state, errors) is { } retry) return retry;
-            state["stage"] = "failed";
-            AiStep.SaveState(paths, step, state);
+            AiStep.Finish(paths, step, state, "failed", "failed its checks");
             return new RunStep("failed", "none", Errors: errors);
         }
         var tone = (string)state["tone"]!;
@@ -203,9 +203,11 @@ public static partial class TicketDrafts
         };
         if (dropped.Count > 0) record["dropped"] = new JsonArray([.. dropped.Select(d => (JsonNode)d)]);
         if (notChecked.Count > 0) record["unchecked"] = new JsonArray([.. notChecked.Select(d => (JsonNode)d)]);
+        // Made again: the new draft hasn't been posted, whatever the last one was.
+        if (PageRun.LoadJson(JsonPath(paths, kind, tone)) is JsonObject earlier && earlier["posted"] is not null)
+            StateChanges.Move(repo.Root, StateKinds.DraftPosted, DraftId(paths, record), "posted", "unposted", StateActor.Code("stangent ticket"), "the draft was made again");
         Save(paths, record);
-        state["stage"] = "done";
-        AiStep.SaveState(paths, step, state);
+        AiStep.Finish(paths, step, state, "done", "recorded");
         return new RunStep("recorded", "none");
     }
 
@@ -475,6 +477,8 @@ public static partial class TicketDrafts
         return [.. problems.Distinct().Take(20)];
     }
 
+    static string DraftId(TicketPaths paths, JsonObject record) => $"{paths.Key}/{record["kind"]}-{record["tone"]}";
+
     static void Save(TicketPaths paths, JsonObject record)
     {
         var errors = SchemaRegistry.Embedded.Validate(Schema, record.ToJsonString());
@@ -531,6 +535,7 @@ public static partial class TicketDrafts
             throw new StangentException("draft_stale", $"{why} Make it again with `stangent ticket draft {paths.Key} --kind {record["kind"]} --tone {record["tone"]}{pr}`{(fixedRange ? "" : ", with the PR's own commits in place of that range")}, or use --stale to post it as it is.", ExitCodes.Usage);
         }
         var posted = await tracker.PostCommentAsync(paths.Key, (string)record["text"]!, ct);
+        StateChanges.Move(repo.Root, StateKinds.DraftPosted, DraftId(paths, record), record["posted"] is null ? null : "posted", "posted", StateActor.Person(who), "posted to the ticket");
         record["posted"] = new JsonObject { ["by"] = who, ["at"] = time.GetUtcNow().ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture), ["commentId"] = posted.CommentId };
         Save(paths, record);
         return record;

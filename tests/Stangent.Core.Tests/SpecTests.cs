@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Stangent.Core.State;
 using Stangent.Graph;
 using Stangent.Spec;
 using Stangent.Spec.Pages;
@@ -278,6 +279,23 @@ public class SpecTests
         var rerun = PageRun.Prepare(app.Pages(), page, app.Repo);
         Assert.Equal("write", rerun.Action);
         Assert.Contains("Orders over 100 are refused", File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(rerun.Output!)!, "bundle.md")));
+    }
+
+    [Fact]
+    public void A_page_run_s_stages_are_in_the_history_and_a_restart_is_a_new_run()
+    {
+        using var app = new SpecApp();
+        var page = app.Pages().Find(SpecApp.Post)!;
+        var step = PageRun.Prepare(app.Pages(), page, app.Repo);
+        WriteOutput(app, step, GoodEndpointPage());
+        PageRun.Check(app.Pages(), page, app.Repo, null);
+        PageRun.Prepare(app.Pages(), page, app.Repo);
+        PageRun.Check(app.Pages(), page, app.Repo, null);
+        PageRun.Check(app.Pages(), page, app.Repo, null);
+
+        Assert.Equal([((string?)null, "write"), ("write", "verify"), (null, "write"), ("write", "failed")],
+            StateChanges.History(app.Root, StateKinds.PageRun, SpecApp.Post).Select(m => (m.From, m.To)));
+        Assert.Equal("failed the code check twice", StateChanges.History(app.Root, StateKinds.PageRun, SpecApp.Post).Last().Reason);
     }
 
     [Fact]

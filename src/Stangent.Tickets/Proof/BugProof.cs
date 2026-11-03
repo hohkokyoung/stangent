@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Stangent.Core;
+using Stangent.Core.State;
 using Stangent.Graph;
 using Stangent.Spec.Pages;
 
@@ -424,8 +425,7 @@ public static partial class BugProof
         attempt["usage"] = state["usage"]!.DeepClone();
         attempt["retries"] = (int?)state["retries"] ?? 0;
         Record(repo, paths, attempt);
-        state["stage"] = "done";
-        AiStep.SaveState(paths, StepSpec.Prove, state);
+        AiStep.Finish(paths, StepSpec.Prove, state, "done", "attempt recorded");
         return outcome == "failed" ? new RunStep("failed", "none", Errors: [reason ?? "failed"]) : new RunStep("recorded", "none");
     }
 
@@ -436,7 +436,10 @@ public static partial class BugProof
         var attempts = proof["attempts"]!.AsArray();
         attempt["n"] = attempts.Count + 1;
         attempts.Add(attempt);
-        proof["outcome"] = (string)attempt["outcome"]!;
+        var who = StateActor.Code("stangent ticket prove");
+        StateChanges.Apply(repo.Root, proof, StateKinds.Proof, paths.Key, (string)attempt["outcome"]!, who, $"attempt {attempts.Count}");
+        if (proof["confirmedBy"] is not null)
+            StateChanges.Move(repo.Root, StateKinds.ProofConfirmation, paths.Key, "confirmed", "unconfirmed", who, $"attempt {attempts.Count} replaced the proof");
         proof["confirmedBy"] = null;
         proof["verification"] = null;
         Save(paths, proof);
@@ -460,6 +463,7 @@ public static partial class BugProof
         var proof = Load(paths) ?? throw new StangentException("no_proof", $"{key} has no proof yet. Run `stangent ticket prove {key}`.", ExitCodes.NotFound);
         if ((string)proof["outcome"]! != "reproduced")
             throw new StangentException("not_reproduced", $"{key}'s proof is {(string)proof["outcome"]!}; only a reproduced failure is confirmed.", ExitCodes.Usage);
+        StateChanges.Move(repo.Root, StateKinds.ProofConfirmation, key, proof["confirmedBy"] is null ? null : "confirmed", "confirmed", StateActor.Person(who), "a developer confirmed the reproduced failure");
         proof["confirmedBy"] = who;
         Save(paths, proof);
         return proof;

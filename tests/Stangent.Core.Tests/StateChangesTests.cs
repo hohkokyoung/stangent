@@ -1,10 +1,11 @@
 using System.Diagnostics;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Stangent.Core.State;
 
 namespace Stangent.Core.Tests;
 
-/// <summary>The state module (D114): every table, and the history.</summary>
+/// <summary>The state module (D114): every table, the history, and the scan that keeps writes on the module.</summary>
 public partial class StateChangesTests
 {
     public static TheoryData<string, string, string, string> EveryMove()
@@ -159,5 +160,67 @@ public partial class StateChangesTests
         check.WaitForExit();
         var committed = name is StateKinds.Requirement or StateKinds.Question or StateKinds.TraceDecision;
         Assert.Equal(committed ? 1 : 0, check.ExitCode);   // check-ignore: 0 ignored, 1 not
+    }
+
+    // ---- Writes stay on the module ----
+
+    [GeneratedRegex("""\["(status|decision|decided_by|confirmedBy|stage|posted|outcome)"\]\s*=(?!=)""")]
+    private static partial Regex LifecycleWrite();
+
+    /// <summary>Every write of these field names outside the module, per file and field. A new one fails the test until it's
+    /// moved onto the module or sorted here with its reason, and a count that's gone stale fails too.</summary>
+    static readonly Dictionary<(string File, string Field), (int Count, string Why)> Exceptions = new()
+    {
+        // Result fields: what one command returned, or a copy of someone else's value. Not lifecycles.
+        [("src/Stangent.Core/Phases/PhaseCheck.cs", "status")] = (1, "the report copies what roadmap.md and a phase file say; people edit those"),
+        [("src/Stangent.Core/Telemetry/TelemetryWriter.cs", "status")] = (1, "the event's result"),
+        [("src/Stangent.Graph/GraphStore.cs", "status")] = (1, "how much git history the build could read, set once per build"),
+        [("src/Stangent.Graph/Impact/ImpactAnalyzer.cs", "status")] = (2, "a report's field"),
+        [("src/Stangent.Spec/Trace/FsdImpact.cs", "status")] = (1, "a report's field"),
+        [("src/Stangent.Spec/Fsd/FsdImport.cs", "status")] = (2, "what this import did: imported, replaced, unchanged"),
+        [("src/Stangent.Spec/Pages/PageRun.cs", "status")] = (1, "RunStep's JSON: what this command returned"),
+        [("src/Stangent.Spec/Pages/PageRun.cs", "outcome")] = (1, "a copy into a page's record of what the step returned"),
+        [("src/Stangent.Spec/Requirements/RequirementFile.cs", "status")] = (3, "views: copies of the feature file's status"),
+        [("src/Stangent.Tickets/Ticket.cs", "status")] = (2, "Jira's status, copied at pull; Jira owns it"),
+        [("src/Stangent.Tickets/Bundle.cs", "status")] = (1, "a copy of Jira's status"),
+        [("src/Stangent.Tickets/Bundle.cs", "decision")] = (1, "a copy of the trace decision into a bundle"),
+        [("src/Stangent.Tickets/Points.cs", "status")] = (5, "the file finder's last answer, worked out again from its inputs on every pull; its run's stage is the lifecycle"),
+        [("src/Stangent.Tickets/Match.cs", "status")] = (2, "copies of the finder's answer and a requirement's status"),
+        [("src/Stangent.Tickets/Match.cs", "outcome")] = (1, "what this match found; a new match writes a new record"),
+        [("src/Stangent.Tickets/Proof/BugProof.cs", "outcome")] = (3, "one attempt's result, appended and never changed; the proof's own outcome is on the module"),
+
+        // Lifecycle fields written beside the module, because the value isn't the state or it isn't a move.
+        [("src/Stangent.Spec/Fsd/LinkRun.cs", "decision")] = (2, "a new entry starts undecided, and a rebuilt entry carries its decision: neither is a move"),
+        [("src/Stangent.Spec/Fsd/LinkRun.cs", "decided_by")] = (2, "the same two, for who decided"),
+        [("src/Stangent.Spec/Requirements/RequirementRun.cs", "decided_by")] = (1, "a rebuilt item that kept its approval keeps who gave it: not a move"),
+        [("src/Stangent.Spec/Trace/TraceCheck.cs", "decided_by")] = (1, "holds a name from git, not a state (D58); Attribute moves the decision on the module first"),
+        [("src/Stangent.Tickets/Drafts.cs", "posted")] = (2, "null in a new draft; then who, when and the comment, right after the move on the module"),
+        [("src/Stangent.Tickets/Proof/BugProof.cs", "confirmedBy")] = (2, "holds who confirmed, not a state; both follow a move on the module"),
+    };
+
+    [Fact]
+    public void Lifecycle_fields_are_written_only_through_the_module()
+    {
+        var root = RepoRoot.Find();
+        var found = new Dictionary<(string, string), int>();
+        foreach (var file in Directory.EnumerateFiles(Path.Combine(root, "src"), "*.cs", SearchOption.AllDirectories))
+        {
+            var rel = Path.GetRelativePath(root, file).Replace('\\', '/');
+            if (rel.Contains("/bin/", StringComparison.Ordinal) || rel.Contains("/obj/", StringComparison.Ordinal) || rel.StartsWith("src/Stangent.Core/State/", StringComparison.Ordinal)) continue;
+            foreach (var line in File.ReadLines(file).Where(l => !l.TrimStart().StartsWith("//", StringComparison.Ordinal)))
+                foreach (Match m in LifecycleWrite().Matches(line))
+                    found[(rel, m.Groups[1].Value)] = found.GetValueOrDefault((rel, m.Groups[1].Value)) + 1;
+        }
+        var wrong = found.Where(f => !Exceptions.TryGetValue(f.Key, out var e) || e.Count != f.Value).Select(f => $"{f.Key}: {f.Value} write(s)")
+            .Concat(Exceptions.Where(e => !found.ContainsKey(e.Key)).Select(e => $"{e.Key}: listed, no write left")).ToList();
+        Assert.True(wrong.Count == 0, "Move these onto StateChanges, or sort them in Exceptions with a reason:\n" + string.Join("\n", wrong));
+    }
+
+    [Fact]
+    public void The_scan_sees_a_write_and_not_a_comparison()
+    {
+        Assert.Matches(LifecycleWrite(), """e["decision"] = "agree";""");
+        Assert.Matches(LifecycleWrite(), """new JsonObject { ["stage"]="done" }""");
+        Assert.DoesNotMatch(LifecycleWrite(), """if ((string)e["stage"] == "done")""");
     }
 }

@@ -1,3 +1,4 @@
+using Stangent.Core.State;
 using System.Text.Json.Nodes;
 using Stangent.Spec.Fsd;
 using Stangent.Spec.Pages;
@@ -321,6 +322,39 @@ public class RequirementTests
         Assert.Equal("retry", step.Status);
         Assert.Equal("recorded", Give(app, step, Verdicts(("r1", "ok", null))).Status);
         Assert.Equal("unchecked", (string)Item(Feature(app), 1)["check"]!);
+    }
+
+    [Fact]
+    public void Status_moves_and_the_run_s_stages_are_in_the_history()
+    {
+        using var app = App();
+        Record(app, Two(), AllOk());
+        var feature = Feature(app);
+        Assert.Equal([(null, "proposed")], StateChanges.History(app.Root, StateKinds.Requirement, "R-0002").Select(m => (m.From, m.To)));
+        Assert.Equal(["write", "confirm", "done"], StateChanges.History(app.Root, StateKinds.ReqRun, RequirementRun.Key("shop", "1")).Select(m => m.To));
+        Item(feature, 1)["status"] = "approved";
+        RequirementFile.Save(app.Root, feature);
+
+        Import(app, Fsd.Replace("Orders over 50 need approval.", "Orders over 50 need approval.\nGuests can't order."));
+        var again = Two();
+        again["requirements"]![1]!["statement"] = "Orders above 50 are approved first.";
+        again["requirements"]!.AsArray().Add((JsonNode)Req("r3", "Guests can't order.", "No guest orders", "Guests can't order."));
+        Record(app, again, Verdicts(("r1", "ok", null), ("r2", "ok", null), ("r3", "ok", null)));
+
+        var dropped = StateChanges.History(app.Root, StateKinds.Requirement, "R-0002").Last();
+        Assert.Equal(("approved", "proposed", StateActor.CodeKind), (dropped.From, dropped.To, dropped.Who.Kind));
+        Assert.Single(StateChanges.History(app.Root, StateKinds.Requirement, "R-0001"));   // unchanged: no line
+
+        // An item whose quotes are gone is retired, in the history as in the feature's list.
+        Import(app, Fsd.Replace("Orders over 50 need approval.", "Only managers approve."));
+        var gone = new JsonObject
+        {
+            ["requirements"] = new JsonArray((JsonNode)Req("r1", Button, "The button", Button)), ["definitions"] = new JsonArray(), ["journeys"] = new JsonArray(),
+            ["questions"] = new JsonArray(), ["background"] = Q("Only managers approve."),
+        };
+        Record(app, gone, Verdicts(("r1", "ok", null), ("b1", "ok", null)));
+        Assert.Contains(Feature(app)["retired"]!.AsArray(), r => (string)r!["id"]! == "R-0002");
+        Assert.Equal("retired", StateChanges.History(app.Root, StateKinds.Requirement, "R-0002").Last().To);
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using Stangent.Core.State;
 using System.Text.Json.Nodes;
 using Stangent.Graph;
 using Stangent.Spec.Fsd;
@@ -232,6 +233,73 @@ public class FsdLinkTests
         Assert.Contains(stale["problems"]!.AsArray(), p => ((string)p!).Contains("must drop back to undecided"));
         Assert.True((bool)TraceCheck.Run(app.Root, graph, null, fix: true)["ok"]!);
         Assert.Null(TraceFile.Load(app.Root)["entries"]![0]!["decision"]);
+    }
+
+    [Fact]
+    public void Decisions_moves_are_in_the_history_and_the_file_is_the_same_without_it()
+    {
+        using var app = App();
+        var graph = GraphStore.Load(GraphStore.PathFor(app.Repo))!;
+        LinkRun.ApplyEntries(app.Root, "shop", "1", [LinkRun.Entry("agree", "shop", SpecIndex.Load(app.Root).Sections[("shop", "1")],
+            "Every order sends a receipt.", SpecApp.Post, "E1", "which sends a receipt", "judge", "confirmed", null)]);
+        var baseTrace = TraceFile.Load(app.Root);
+        var id = (string)baseTrace["entries"]![0]!["id"]!;
+
+        TraceCheck.ApproveChapter(app.Root, "shop", "1", "Pat");
+        Assert.Equal(1, TraceCheck.Attribute(app.Root, baseTrace, "pm-anna"));
+        var moves = StateChanges.History(app.Root, StateKinds.TraceDecision, id);
+        Assert.Equal([("undecided", "agree", "Pat"), ("undecided", "agree", "pm-anna")], moves.Select(m => (m.From, m.To, m.Who.Name)));
+        Assert.All(moves, m => Assert.Equal(StateActor.PersonKind, m.Who.Kind));
+
+        // The history is no part of the file or of a check.
+        var bytes = File.ReadAllBytes(TraceFile.PathIn(app.Root));
+        File.Delete(Path.Combine(app.Root, StateKinds.Get(StateKinds.TraceDecision).HistoryFile));
+        TraceFile.Save(app.Root, TraceFile.Load(app.Root));
+        Assert.Equal(bytes, File.ReadAllBytes(TraceFile.PathIn(app.Root)));
+        Assert.True((bool)TraceCheck.Run(app.Root, graph, null, false)["ok"]!);
+
+        // A quote that changed drops the decision, by code.
+        var archive = Path.Combine(app.Root, "shop.docx");
+        File.WriteAllBytes(archive, DocxWriter.Write(Fsd.Replace("Every order sends a receipt.", "Receipts are optional.")));
+        FsdImport.Import(app.Repo, archive);
+        Assert.True((bool)TraceCheck.Run(app.Root, graph, null, fix: true)["ok"]!);
+        var dropped = Assert.Single(StateChanges.History(app.Root, StateKinds.TraceDecision, id));
+        Assert.Equal(("agree", "undecided", StateActor.CodeKind), (dropped.From, dropped.To, dropped.Who.Kind));
+    }
+
+    [Fact]
+    public void A_decision_removed_by_hand_is_seen_at_the_merge_and_a_bad_value_is_refused()
+    {
+        using var app = App();
+        LinkRun.ApplyEntries(app.Root, "shop", "1", [LinkRun.Entry("agree", "shop", SpecIndex.Load(app.Root).Sections[("shop", "1")],
+            "Every order sends a receipt.", SpecApp.Post, "E1", "which sends a receipt", "judge", "confirmed", null)]);
+        TraceCheck.ApproveChapter(app.Root, "shop", "1", "Pat");
+        var baseTrace = TraceFile.Load(app.Root);
+        var id = (string)baseTrace["entries"]![0]!["id"]!;
+
+        var edited = TraceFile.Load(app.Root);
+        edited["entries"]![0]!["decision"] = null;
+        TraceFile.Save(app.Root, edited);
+        Assert.Equal(0, TraceCheck.Attribute(app.Root, baseTrace, "pm-anna"));
+        var removed = StateChanges.History(app.Root, StateKinds.TraceDecision, id).Last();
+        Assert.Equal(("agree", "undecided", "pm-anna"), (removed.From, removed.To, removed.Who.Name));
+
+        edited["entries"]![0]!["decision"] = "maybe";
+        TraceFile.Save(app.Root, edited);
+        Assert.Equal("illegal_transition", Assert.Throws<StangentException>(() => TraceCheck.Attribute(app.Root, baseTrace, "pm-anna")).Code);
+    }
+
+    [Fact]
+    public void A_decided_link_that_a_rebuild_does_not_find_again_leaves_a_line()
+    {
+        using var app = App();
+        var section = SpecIndex.Load(app.Root).Sections[("shop", "1")];
+        LinkRun.ApplyEntries(app.Root, "shop", "1", [LinkRun.Entry("agree", "shop", section, "Every order sends a receipt.", SpecApp.Post, "E1", "which sends a receipt", "judge", "confirmed", null)]);
+        var id = (string)TraceFile.Load(app.Root)["entries"]![0]!["id"]!;
+        TraceCheck.ApproveChapter(app.Root, "shop", "1", "Pat");
+
+        LinkRun.ApplyEntries(app.Root, "shop", "1", []);
+        Assert.Equal(("agree", "undecided"), StateChanges.History(app.Root, StateKinds.TraceDecision, id).Select(m => (m.From, m.To)).Last());
     }
 
     [Fact]

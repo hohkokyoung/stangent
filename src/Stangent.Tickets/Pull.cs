@@ -12,6 +12,7 @@ namespace Stangent.Tickets;
 public sealed class TicketPaths(string root, string key)
 {
     public string Key { get; } = TicketKeys.Check(key);
+    public string Root => root;
     public static string TicketsDir(string root) => Path.Combine(root, ".stangent", "tickets");
     public string Dir => Path.Combine(TicketsDir(root), Key);
     public string Raw => Path.Combine(Dir, "raw");

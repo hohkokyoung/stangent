@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.State;
 using Stangent.Graph;
 using Stangent.Spec.Pages;
 using Stangent.Spec.Requirements;
@@ -76,7 +77,9 @@ public static class LinkRun
                 AiPolicy.EnsureAllowed(repo.Config, "fsd prepare");
                 var work = Fresh(repo.Root, doc, sectionId);
                 File.WriteAllText(Path.Combine(work, "finder.md"), finderBundle);
-                Save(work, new JsonObject { ["doc"] = doc, ["section"] = sectionId, ["stage"] = "find", ["finderInputs"] = finderHash, ["retryUsed"] = false });
+                var finding = new JsonObject { ["doc"] = doc, ["section"] = sectionId, ["finderInputs"] = finderHash, ["retryUsed"] = false };
+                Stage(repo.Root, finding, "find", "prepared");
+                Save(work, finding);
                 return Step(repo.Root, work, Finder, "finder.md", "finder.json", "Section and page list");
             }
         }
@@ -116,11 +119,12 @@ public static class LinkRun
         File.WriteAllText(Path.Combine(work, "judge.md"), judgeBundle);
         var state = new JsonObject
         {
-            ["doc"] = doc, ["section"] = sectionId, ["stage"] = "judge", ["inputs"] = inputs, ["retryUsed"] = false,
+            ["doc"] = doc, ["section"] = sectionId, ["inputs"] = inputs, ["retryUsed"] = false,
             ["level"] = requirements is null ? "section" : "requirement",
             ["candidates"] = new JsonArray([.. candidates.Select(c => (JsonNode)new JsonObject { ["page"] = c.Page, ["why"] = c.Why })]),
             ["candidatesBy"] = by, ["usage"] = carried?.DeepClone() ?? new JsonObject(),
         };
+        Stage(repo.Root, state, "judge", "prepared");
         Save(work, state);
         return Step(repo.Root, work, requirements is null ? Judge : RequirementJudge, "judge.md", "judge.json", "Section and candidate pages");
     }
@@ -191,7 +195,7 @@ public static class LinkRun
                 state["links"] = new JsonArray([.. kept.Select(l => (JsonNode)l.DeepClone())]);
                 var agrees = kept.Where(l => (string)l["state"]! == "agree").ToList();
                 if (agrees.Count == 0) return Finish(repo.Root, work, state, doc, section, [], repo.Config.Fsd.Findings);
-                state["stage"] = "confirm";
+                Stage(repo.Root, state, "confirm", "the judge's output passed the code check");
                 state["retryUsed"] = false; // the checker gets its own one retry
                 Save(work, state);
                 File.WriteAllText(Path.Combine(work, "checker.md"), CheckerBundle(section, doc, candidates, index, agrees, byRequirement ? Requirements(repo.Root, doc, section) : null));
@@ -268,7 +272,7 @@ public static class LinkRun
             r["disputed"] = disputed;
             r["unchecked"] = unchecked_;
         });
-        state["stage"] = "done";
+        Stage(root, state, "done", "recorded");
         Save(work, state);
         return new RunStep("recorded", "none");
     }
@@ -296,7 +300,7 @@ public static class LinkRun
 
     static RunStep Failed(string root, string work, JsonObject state, List<string> errors)
     {
-        state["stage"] = "failed";
+        Stage(root, state, "failed", "failed its checks");
         Save(work, state);
         UpdateRun(root, Key((string)state["doc"]!, (string)state["section"]!), r => { r["failed"] = string.Join("; ", errors.Take(3)); MergeInto(r, state["usage"] as JsonObject); });
         return new RunStep("failed", "none", Errors: errors);
@@ -328,6 +332,11 @@ public static class LinkRun
     }
 
     /// <summary>Replaces a section's entries; an entry that comes back with the same id keeps its decision.</summary>
+    static readonly StateActor Who = StateActor.Code("stangent fsd");
+
+    static void Stage(string root, JsonObject state, string to, string reason) =>
+        StateChanges.Apply(root, state, StateKinds.LinkRun, Key((string)state["doc"]!, (string)state["section"]!), to, Who, reason);
+
     public static void ApplyEntries(string root, string doc, string? sectionId, IEnumerable<JsonObject> entries, Func<JsonObject, bool>? replaces = null)
     {
         using var _ = Lock(root);
@@ -342,6 +351,10 @@ public static class LinkRun
             if (keepDecisions.TryGetValue((string)e["id"]!, out var was)) { copy["decision"] = was["decision"]?.DeepClone(); copy["decided_by"] = was["decided_by"]?.DeepClone(); }
             list.Add(copy);
         }
+        // A decided link that didn't come back took its decision with it: its id is the hash of its quotes (D58).
+        var back = entries.Select(e => (string)e["id"]!).ToHashSet(StringComparer.Ordinal);
+        foreach (var (id, gone) in keepDecisions.Where(k => k.Value["decision"] is not null && !back.Contains(k.Key)))
+            StateChanges.Move(root, StateKinds.TraceDecision, id, (string?)gone["decision"], "undecided", Who, "a new build didn't find this link again");
         trace["entries"] = new JsonArray([.. list]);
         TraceFile.Save(root, trace);
     }

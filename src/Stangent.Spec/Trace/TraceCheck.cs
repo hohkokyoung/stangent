@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.State;
 using Stangent.Graph;
 using Stangent.Spec.Fsd;
 using Stangent.Spec.Pages;
@@ -89,7 +90,7 @@ public static class TraceCheck
             if (!quotesMatch)
             {
                 stale.Add(id);
-                if (fix) { e["decision"] = null; e["decided_by"] = null; }
+                if (fix) StateChanges.Apply(root, e, StateKinds.TraceDecision, id, "undecided", StateActor.Code("stangent trace check"), "a quote no longer matches");
             }
 
             if (baseTrace is not null && (string?)e["decided_by"] is { } by && (!typedBefore.TryGetValue(id, out var before) || before != by))
@@ -121,7 +122,8 @@ public static class TraceCheck
     }
 
     /// <summary>Bulk approval (D53): every confirmed "agree" link under a chapter gets <c>decision: agree</c>, in one edit.</summary>
-    public static int ApproveChapter(string root, string doc, string chapter)
+    /// <param name="who">The person running it, for the history only; <c>decided_by</c> still comes from git after the merge (D58).</param>
+    public static int ApproveChapter(string root, string doc, string chapter, string who = "developer")
     {
         var trace = TraceFile.Load(root);
         var n = 0;
@@ -130,7 +132,7 @@ public static class TraceCheck
             var section = (string?)e["fsd"]?["section"];
             if ((string?)e["state"] != "agree" || (string?)e["check"] != "confirmed" || e["decision"] is not null) continue;
             if ((string?)e["fsd"]?["doc"] != doc || section is null || !(section == chapter || section.StartsWith(chapter + ".", StringComparison.Ordinal) || section.StartsWith(chapter + " / ", StringComparison.Ordinal))) continue;
-            e["decision"] = "agree";
+            StateChanges.Apply(root, e, StateKinds.TraceDecision, (string)e["id"]!, "agree", StateActor.Person(who), $"approved chapter {chapter}");
             n++;
         }
         if (n > 0) TraceFile.Save(root, trace);
@@ -147,7 +149,12 @@ public static class TraceCheck
         foreach (var e in trace["entries"]!.AsArray().OfType<JsonObject>())
         {
             var decision = (string?)e["decision"];
-            if (decision is null || (before.TryGetValue((string)e["id"]!, out var old) && old == decision)) continue;
+            before.TryGetValue((string)e["id"]!, out var old);
+            if (decision == old) continue;
+            // The person's edit is already in the file: this is where it's seen, checked and put in the history.
+            if ((string?)e["decided_by"] != by || decision is null)
+                StateChanges.Move(root, StateKinds.TraceDecision, (string)e["id"]!, old, decision ?? "undecided", StateActor.Person(by), "merged in a PR");
+            if (decision is null) continue;
             e["decided_by"] = by;
             n++;
         }

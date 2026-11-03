@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.State;
 using Stangent.Spec.Fsd;
 using Stangent.Spec.Pages;
 using Stangent.Tickets;
@@ -494,6 +495,21 @@ public class TicketDraftTests
         var record = await TicketDrafts.PostAsync(d.App.Repo, tracker, Key, "questions", "Pat", false, time, TestContext.Current.CancellationToken, stale: true);
         Assert.Single(tracker.Posted);
         Assert.NotNull(record["posted"]);
+    }
+
+    [Fact]
+    public async Task Posting_a_draft_is_a_person_s_move_in_the_history()
+    {
+        using var d = new Draft();
+        d.Prepare();
+        d.Check(GoodQuestions);
+        var tracker = new RecordingTracker();
+        var id = $"{Key}/questions-internal";
+        await TicketDrafts.PostAsync(d.App.Repo, tracker, Key, "questions", "Pat", false, TimeProvider.System, TestContext.Current.CancellationToken);
+        await TicketDrafts.PostAsync(d.App.Repo, tracker, Key, "questions", "Lee", true, TimeProvider.System, TestContext.Current.CancellationToken);
+        Assert.Equal([("unposted", "posted", "Pat"), ("posted", "posted", "Lee")],
+            StateChanges.History(d.Root, StateKinds.DraftPosted, id).Select(m => (m.From, m.To, m.Who.Name)));
+        Assert.Equal("done", StateChanges.History(d.Root, StateKinds.TicketStep, $"{Key}/{StepSpec.Questions.Name}").Last().To);
     }
 
     [Fact]
