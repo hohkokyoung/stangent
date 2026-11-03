@@ -27,6 +27,17 @@ public class TelemetryTests
     }
 
     [Fact]
+    public void A_command_with_a_hyphen_still_writes_its_event()
+    {
+        using var temp = new TempRepo();
+        var writer = new TelemetryWriter(temp.Repo.TelemetryDir, SchemaRegistry.Embedded, new FixedTime(Now), new StringWriter());
+        var span = writer.Start(TelemetryWriter.SpanName("graph screen-tests"));
+        span.Attributes["stangent.command"] = "graph screen-tests";
+
+        Assert.NotNull(writer.End(span, ok: true));
+    }
+
+    [Fact]
     public void An_event_carrying_anything_outside_the_contract_is_dropped()
     {
         using var temp = new TempRepo();

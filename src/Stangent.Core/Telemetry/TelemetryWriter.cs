@@ -33,6 +33,9 @@ public sealed class TelemetryWriter(string dir, SchemaRegistry schemas, TimeProv
 
     public Span Start(string name) => new(name, Nanos());
 
+    /// <summary>A command's event name. The contract allows no hyphen in one, so a command like <c>graph screen-tests</c> gets an underscore.</summary>
+    public static string SpanName(string command) => "stangent." + command.Replace(' ', '.').Replace('-', '_');
+
     /// <summary>Validates and appends the event; returns it, or null if it was rejected.</summary>
     public JsonObject? End(Span span, bool ok)
     {

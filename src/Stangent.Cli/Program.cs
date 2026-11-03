@@ -337,7 +337,7 @@ static class Cli
     public static int Run(ParseResult pr, string command, Func<CliContext, JsonNode?> body, Func<JsonNode?, string>? render)
     {
         var repoPath = pr.GetValue<string?>("--repo");
-        var span = DefaultTelemetry().Start("stangent." + command.Replace(' ', '.'));
+        var span = DefaultTelemetry().Start(TelemetryWriter.SpanName(command));
         span.Attributes["stangent.command"] = command;
         var ctx = new CliContext(repoPath, DefaultTelemetry(), span);
         int exit;

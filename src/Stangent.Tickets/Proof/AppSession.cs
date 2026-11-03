@@ -31,7 +31,10 @@ public static partial class AppSession
         foreach (var file in PlaywrightSpecs.Files(dir))
         {
             if (file.StartsWith(own, StringComparison.Ordinal)) continue;
-            var paths = PlaywrightSpecs.LiteralGotos(File.ReadAllText(file));
+            string text;
+            try { text = File.ReadAllText(file); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { continue; } // a link with no target, or no permission
+            var paths = PlaywrightSpecs.LiteralGotos(text);
             if (paths.Any(p => routes.Any(r => RouteMatches(r, p))))
                 found.Add(Path.GetRelativePath(repo.Root, file).Replace('\\', '/'));
         }
