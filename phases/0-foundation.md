@@ -3,7 +3,7 @@ phase: 0
 name: foundation
 status: done
 consumes: {}
-provides: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1 }
+provides: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, evidence: 1 }
 ---
 
 # Phase 0 · Foundation
@@ -136,3 +136,14 @@ None yet. All contracts are new at v1 and nothing consumes them. Phase 1 will be
   `configs/<name>.global.json` (SDK override; nopCommerce pins SDK 10.0.401, which neither this
   machine nor CI has) are applied after `stangent init`.
 
+## Overhaul (2026-11-04)
+
+Slices 0.1, 0.3, 0.4 and 0.5 of `roadmap.md`'s overhaul order (D112, D113). 0.2 is built separately.
+
+### What was built
+- **0.1 Evidence shape:** a new contract, `schemas/evidence.v1.json`, with `EvidenceRecord` and `EvidenceValidator` in
+  `src/Stangent.Core/Evidence/`. `PermanentIds` is the id ledger. See `docs/foundation.md`.
+
+### Impact on other phases
+`evidence` is a new contract at v1 and nothing consumes it yet, so no version bump and no `needs review` (D20).
+Consumers move onto it when each is rebuilt (2.3, 2.4).

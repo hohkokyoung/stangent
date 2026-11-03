@@ -16,7 +16,7 @@ Here's the full list, grouped by area. Each section ends with a line on why it's
 ## 1. Explaining how the app works today
 
 - 🟡 Every fact has proof. Each statement gets a permanent id and a code citation (`repo/path:lines`).  
-  *Every statement cites symbols, checked by code. The ids aren't permanent and there's no `path:lines`. Recommend: do.*
+  *Every statement cites symbols, checked by code. The ids aren't permanent and there's no `path:lines` yet. The shared shape exists: contract `evidence` v1 and the `PermanentIds` ledger (D113); pages move onto them in 2.3. Recommend: do.*
 - ⬜ Ids are never renumbered or reused, so links from findings, answers and the FSD stay valid.  
   *Statement ids are renumbered on every write (`PageChecks.cs`). Recommend: do.*
 - ⬜ Pages follow how people use the app. Journeys are cut by step ("what happens at step 4" lives in one place), alongside list, report and admin pages. The team switched to this after a pilot.  
@@ -151,8 +151,8 @@ Ahead of Stangent because Stangent has designed approval states but not a workin
   *Links quote the FSD and page statements only (D53).*
 - ✅ A script checks every citation: the id must really be on the cited page, and in the right part of it.  
   *Quotes and ids are checked word for word (D53, `trace check`).*
-- ⬜ Every finding is stamped and weighed. It records which code commit it was checked against, and how strong the evidence is: backed by a test, by code only, or weak.  
-  *No commit per finding and no evidence strength. Recommend: do, as the shared evidence rule.*
+- 🟡 Every finding is stamped and weighed. It records which code commit it was checked against, and how strong the evidence is: backed by a test, by code only, or weak.  
+  *The contract is built: `evidence` v1 has a commit and a strength (`ran`, `stated`, `read`, `guess`, D113). No finding uses it yet, so this stays partly done until 2.4 moves findings onto it.*
 - 🟡 Findings stay marked "unverified" until code confirms them. Nothing is overstated.  
   *Unverified until a person approves (D53); findings are off by default (D68). No code confirmation step.*
 - 🟡 The BA decides each finding, and can say "the reference is wrong", which sends it back to the reference's owner.  

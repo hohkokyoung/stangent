@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:evidence:v1",
+  "title": "Stangent evidence (contract v1)",
+  "description": "One claim's proof: what it cites, at which version of the source, how strong it is, and who or what checked it (D113). The rules JSON Schema can't say are in EvidenceValidator: lines in order, checkedBy not empty unless a guess, `ran` needs more than an agent.",
+  "type": "object",
+  "required": ["id", "citation", "strength", "checkedBy"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "Permanent: never renumbered or reused (see PermanentIds).",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "citation": {
+      "type": "object",
+      "required": ["kind", "ref"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["code", "document", "page", "test", "url"] },
+        "ref": { "description": "repo/path, or a document id.", "type": "string", "minLength": 1 },
+        "lines": {
+          "type": "object",
+          "required": ["start", "end"],
+          "additionalProperties": false,
+          "properties": {
+            "start": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+            "end": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+          }
+        },
+        "symbol": { "type": "string", "minLength": 1 },
+        "quote": { "type": "string", "minLength": 1 }
+      }
+    },
+    "commit": {
+      "description": "The commit read: required for code and test citations.",
+      "type": "string",
+      "minLength": 40,
+      "maxLength": 40,
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "contentHash": {
+      "description": "SHA-256 of the document read: required for document citations.",
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "strength": {
+      "description": "ran: a test or run shows it. stated: a person or the FSD said it. read: read in the code only. guess: nothing backs it yet.",
+      "enum": ["ran", "stated", "read", "guess"]
+    },
+    "checkedBy": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "enum": ["code", "agent", "person"] },
+          "name": { "type": "string", "minLength": 1 },
+          "inputsHash": { "type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    }
+  },
+  "anyOf": [
+    { "required": ["commit"], "properties": { "citation": { "properties": { "kind": { "enum": ["code", "test"] } } } } },
+    { "required": ["contentHash"], "properties": { "citation": { "properties": { "kind": { "enum": ["document"] } } } } },
+    { "properties": { "citation": { "properties": { "kind": { "enum": ["page", "url"] } } } } }
+  ]
+}

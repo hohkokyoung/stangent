@@ -2219,6 +2219,14 @@ The order is in `roadmap.md`, "The overhaul: order of work", and it replaces D10
 **Why:** the owner handed over the roadmap's order; all of this is reversible.
 **Cost:** Phase 3's proof re-run and 2c's scored run wait longer, so the numbers stay stale.
 
+## D113 · The foundation's shapes: evidence, permanent ids, the client-data check — 2026-11-04 (assistant's call, owner asleep)
+- **Evidence is its own contract, `evidence` v1** (D112): `id`, `citation` (`kind`: `code`, `document`, `page`, `test`, `url`; `ref`; optional `lines`, `symbol`, `quote`), `commit` (required for `code` and `test`), `contentHash` (required for `document`, in place of a commit), `strength`, `checkedBy` (each `{kind: code|agent|person, name, inputsHash?}`).
+- **Strength has four values:** `ran` (a test or run shows it), `stated` (a person or the FSD said it), `read` (read in the code only), `guess`. They join the list's "backed by a test, by code only, or weak" with the open proposal to label context by source. Severity stays separate (2.4).
+- **Rules code holds beyond the schema (D18):** `lines.start <= lines.end`; `checkedBy` is empty only for a `guess`; `ran` needs a checker of kind `code` or `person`, because an agent saying a test passed isn't a test passing.
+- **Permanent ids: `PermanentIds`,** a ledger in a file the caller names. Per scope, one format holding one number (`R-{0:D4}`), a counter that only goes up, and a list of removed ids. Every call takes a lock, so parallel drivers can't get the same id. A damaged file stops the call rather than starting over. Nothing moves onto it yet; requirements' `ids.yaml` has the same counter shape, so it can move in 2.3.
+**Why:** every later item needs one proof shape and one id rule; building them per product means doing them twice.
+**Cost:** nothing uses them until 2.3 and 2.4, so until then this is a contract with tests and no consumers.
+
 ## Open questions
 
 - **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that

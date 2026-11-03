@@ -12,6 +12,7 @@ software-engineering pipeline: requirements → code → tests → PR → deploy
 | `roadmap.md` | Phases, their dependencies, contract versions, status, and the end-of-phase report format. |
 | `phases/` | One file per started phase: its plan and end-of-phase report. |
 | `docs/cli-conventions.md` | What every `stangent` command prints and returns. |
+| `docs/foundation.md` | The evidence contract, the permanent-id ledger, the client-data check, coverage, driver tests. |
 | `docs/code-graph.md` | The code graph: points, lines, labels, detectors, impact answers. |
 | `docs/spec.md` | The spec: reference pages, the FSD import, links, findings and decisions (Phase 2). |
 | `docs/tickets.md` | Tickets: Jira through the MCP, pull, starting points, the bundle, bug proof, drafts (Phase 3). |
