@@ -143,6 +143,11 @@ Slices 0.1, 0.3, 0.4 and 0.5 of `roadmap.md`'s overhaul order (D112, D113). 0.2 
 ### What was built
 - **0.1 Evidence shape:** a new contract, `schemas/evidence.v1.json`, with `EvidenceRecord` and `EvidenceValidator` in
   `src/Stangent.Core/Evidence/`. `PermanentIds` is the id ledger. See `docs/foundation.md`.
+- **0.3 Client-data check:** `stangent data check`, in CI. On this repo it flagged one file,
+  `benchmark/fsd/sonarr/sonarr-fsd.docx`, the planted FSD, now in `.stangent-data-allow` with its reason.
+
+### Known gaps
+- The data check reads the current tree, not git history. It doesn't look inside documents, and CI has no terms file.
 
 ### Impact on other phases
 `evidence` is a new contract at v1 and nothing consumes it yet, so no version bump and no `needs review` (D20).

@@ -36,7 +36,7 @@ Here's the full list, grouped by area. Each section ends with a line on why it's
 - 🟡 Scripts generate navigation and numbering, so agents can't break links or page order.  
   *Code numbers statements and renders pages (`PageRender.cs`). No generated navigation. Recommend: do, small.*
 - 🟡 Script checks on every output: coverage (`doc-check`), broken links (`docs-lint`), plan order (`plan-check`), and that no client data leaks into the tool (`prompt-lint`).  
-  *`spec check`, `trace check`, `req check` and `phases check` exist. No client-data check. Recommend: add it before any real client document.*
+  *`spec check`, `trace check`, `req check`, `phases check` and `data check` (client data, D113) exist. Coverage, broken-link and plan-order checks of this kind are per product.*
 - 🟡 The client's code is read-only, enforced by a hook (`guard-app.js`), not just by instructions. Agents can't edit, build, run or use git in the app repo.  
   *Headless runs are limited by permission rules (D60, D86), with no hook. Bug proof has to build and run the app (D75). Recommend: not as written; read-only for analysis steps only.*
 - ⬜ Runs are reproducible, and that was measured. A fresh session with no access to the first run found 9 of 10 key findings again. Runs are compared by the code lines they cite and their wording, not by id.  
@@ -183,8 +183,8 @@ Ahead of Stangent because Stangent's discrepancy check failed its bar, with abou
   *Tests carrying ids in target projects are decided for Phase 5 (D10). Not done for Stangent's own code. Recommend: decide with Phase 5.*
 - 🟡 The test suite is strong: a 90% coverage floor, tests against real tools (git, pandoc, Office files) and end-to-end ingest tests.  
   *Real git and Office files are used. No coverage is measured. Recommend: measure first, then set a floor (D28).*
-- ⬜ No client data goes into the tool's repo, and that is checked.  
-  *Same item as the client-data check in section 1. Recommend: do before any real client document.*
+- ✅ No client data goes into the tool's repo, and that is checked.  
+  *`stangent data check` runs in CI (D113): tracked documents need a reason in `.stangent-data-allow`; client terms stay outside the repo. It reads the current tree, not git history, and CI has no terms file, so CI checks documents only.*
 - ✅ Honest pilot notes record misses and what was changed because of them.  
   *End-of-phase reports and `decisions.md`.*
 - ⬜ Hooks never block Claude, and that is tested.  

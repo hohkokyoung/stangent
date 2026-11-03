@@ -44,3 +44,29 @@ same id. Commit the ledger; ignore the lock. A damaged file stops the call, beca
 Nothing uses it yet. Requirement ids (`RequirementFile.NextId`) have the same shape: a last number per kind, so the move in
 2.3 is `{"format": "R-{0:D4}", "last": <n>, "removed": […]}` per kind. That code reads and writes without a lock, so two
 parallel runs can be given the same id today.
+
+## The client-data check
+
+`stangent data check [--terms <file>]` looks through the files `git ls-files` lists. Exit 1 on any finding.
+
+**Tracked documents.** `.docx .doc .pdf .xlsx .xls .pptx .ppt .msg .eml` are flagged. A path is allowed only by an entry in
+`.stangent-data-allow`, one per line: `<path> # <reason>`. Exact paths, and a reason is required. The file counts only when
+git tracks it, so it can't pass here and fail in CI. An entry with no reason, or for a file that's gone, is a finding too.
+
+**Client terms.** Any line holding a term from the terms file is flagged, in any case. The file is `--terms`, else
+`$STANGENT_CLIENT_TERMS`, else `~/.config/stangent/client-terms.txt`. One term per line; `#` starts a comment.
+- A terms file inside the repo is refused, even through a link or from another worktree of the repo.
+- A file you named must exist. Only the default may be absent.
+- With no terms, the result says `termsChecked: false`, and the documents part still decides.
+
+**Nothing leaks.** Findings hold `file`, `line`, `column` and `termLine` (the term's line in the terms file), never a term or
+the text around it. A path that holds a term is hidden as well: `fileIndex` is its place in `git ls-files`.
+
+Binary files (a NUL byte in the first 8,000) aren't searched; `skippedBinary` counts them. `skippedOther` counts links,
+submodules, deleted files and unreadable files.
+
+**Known gaps.**
+- It reads the current tree, not git history. Something committed and later removed is still in the history.
+- It doesn't look inside documents or other binary files, so an allowed `.docx` isn't searched, and UTF-16 text counts as binary.
+- A term split across two lines isn't found.
+- CI has no terms file, so CI runs the documents part only.

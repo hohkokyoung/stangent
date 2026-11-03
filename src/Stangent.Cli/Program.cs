@@ -2,6 +2,7 @@ using System.CommandLine;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.DataCheck;
 using Stangent.Core.Phases;
 using Stangent.Core.Store;
 using Stangent.Core.Telemetry;
@@ -124,6 +125,19 @@ check.SetAction(pr => Cli.Run(pr, "phases check", ctx =>
     throw new CheckFailed("phases_need_attention", "Some phases need attention; see result.problems.", report);
 }));
 phases.Subcommands.Add(check);
+
+var data = new Command("data", "Client data in the repo (D56, D113).");
+root.Subcommands.Add(data);
+var termsOption = new Option<string?>("--terms") { Description = $"Terms file outside the repo (default: ${ClientDataCheck.TermsVariable}, then ~/.config/stangent/client-terms.txt)." };
+var dataCheck = new Command("check", "Flag tracked documents and lines holding a client term. Never prints a term.") { termsOption };
+dataCheck.SetAction(pr => Cli.Run(pr, "data check", _ =>
+{
+    var report = ClientDataCheck.Run(pr.GetValue(repoOption) ?? Directory.GetCurrentDirectory(), pr.GetValue(termsOption),
+        Environment.GetEnvironmentVariable(ClientDataCheck.TermsVariable), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+    if (report["ok"]!.GetValue<bool>()) return report;
+    throw new CheckFailed("client_data_found", "Client data found; see result.findings.", report);
+}));
+data.Subcommands.Add(dataCheck);
 
 var graph = new Command("graph", "The code graph (D25–D27): build it, then ask what a change affects.");
 root.Subcommands.Add(graph);

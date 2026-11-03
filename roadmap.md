@@ -40,7 +40,7 @@ The one place for what comes next (D112). From the foundation up, applying `impr
 |---|---|---|---|---|
 | 0.1 ✅ | Evidence shape | One `evidence` contract, a Core type and validator: permanent id, citation, commit, strength, who or what checked it. Consumers move in 2.x | D18, D53, D62 | no |
 | 0.2 | State changes | One Core module: a table of legal moves per kind, rejects the rest, keeps a history. Real lifecycles move onto it; result fields don't | D18, D58, D60 | no |
-| 0.3 | Client-data check | `stangent check client-data`: terms kept outside the repo, tracked documents, run in CI | D56, D16 | no |
+| 0.3 ✅ | Client-data check | `stangent data check`: terms kept outside the repo, tracked documents, run in CI | D56, D16 | no |
 | 0.4 | Coverage measured | A script and a recorded number, no floor (D28) | D28 | a floor, later |
 | 0.5 | Driver tests | The bash drivers tested from xUnit with fake `claude` and `stangent` on the path | D110 | no |
 | 1.1 | Line citations | The graph answers symbol → `path:lines` at a commit, for 2.3 | D17, D25 | no |
