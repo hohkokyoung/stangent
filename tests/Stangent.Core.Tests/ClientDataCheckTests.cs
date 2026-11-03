@@ -230,6 +230,49 @@ public sealed class ClientDataCheckTests : IDisposable
     }
 
     [Fact]
+    public void A_git_that_cannot_list_files_is_an_error_not_a_pass()
+    {
+        Track("a.pdf", "x");
+        File.WriteAllText(Path.Combine(repo, ".git", "index"), "not an index");
+        var thrown = Assert.Throws<StangentException>(() => Check(Terms()));
+        Assert.Equal("git_list_failed", thrown.Code);
+        Assert.Equal(ExitCodes.Failed, thrown.ExitCode);
+    }
+
+    const string Nfc = "Caf\u00e9";
+    const string Nfd = "Cafe\u0301";
+
+    [Theory]
+    [InlineData(Nfc)]
+    [InlineData("CAF\u00c9")]
+    [InlineData(Nfd)]
+    public void A_path_in_another_unicode_form_is_flagged_and_hidden(string term)
+    {
+        Git("config", "core.precomposeunicode", "false");
+        Track(Nfd + " Co.docx", "x");
+        var report = Check(Terms(term + "\n"));
+        var findings = Findings(report);
+        Assert.Equal(["term-in-path", "document"], findings.Select(f => (string)f["kind"]!));
+        Assert.All(findings, f => Assert.Equal(1, (int)f["fileIndex"]!));
+        Assert.DoesNotContain("Caf", report.ToJsonString(), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Co.docx", report.ToJsonString());
+    }
+
+    [Theory]
+    [InlineData(Nfc, Nfd)]
+    [InlineData(Nfd, Nfc)]
+    [InlineData("CAF\u00c9", Nfd)]
+    public void A_line_in_another_unicode_form_is_found_and_stays_out_of_the_report(string term, string text)
+    {
+        Track("notes.md", "for " + text + " only\n");
+        var report = Check(Terms(term + "\n"));
+        var finding = Assert.Single(Findings(report));
+        Assert.Equal("term", (string)finding["kind"]!);
+        Assert.Equal(5, (int)finding["column"]!);
+        Assert.DoesNotContain("Caf", report.ToJsonString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Outside_a_git_repo_is_a_usage_error()
     {
         var thrown = Assert.Throws<StangentException>(() => ClientDataCheck.Run(outside, null, null, outside));

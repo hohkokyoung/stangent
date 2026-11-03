@@ -7,6 +7,7 @@ namespace Stangent.Core.DataCheck;
 /// Keeps client data out of the repo (D56, D113): flags tracked documents, and lines holding a term from a terms file
 /// kept outside the repo. Reads the current tree, not git history. Its output never holds a term or the text around one:
 /// printing it would be its own leak. A path holding a term is hidden too, shown by its place in <c>git ls-files</c>.
+/// Terms, paths and lines are compared in Unicode NFC: the same name can reach git in either form.
 /// </summary>
 public static class ClientDataCheck
 {
@@ -27,14 +28,14 @@ public static class ClientDataCheck
     {
         var root = Git(folder, "rev-parse", "--show-toplevel")?.TrimEnd('\n')
             ?? throw new StangentException("not_a_git_repo", "This check reads what git tracks, and this is not a git repo.", ExitCodes.Usage);
-        var tracked = (Git(root, "ls-files", "-z") ?? "").Split('\0', StringSplitOptions.RemoveEmptyEntries);
+        var tracked = (Git(root, "ls-files", "-z") ?? throw GitFailed("list the tracked files")).Split('\0', StringSplitOptions.RemoveEmptyEntries);
         var terms = LoadTerms(root, termsOption, termsVariable, home);
 
         var findings = new List<JsonObject>();
         var hidden = new bool[tracked.Length];
         for (var i = 0; i < tracked.Length; i++)
             foreach (var (termLine, term) in terms)
-                if (tracked[i].Contains(term, StringComparison.OrdinalIgnoreCase))
+                if (tracked[i].Normalize().Contains(term, StringComparison.OrdinalIgnoreCase))
                 {
                     hidden[i] = true;
                     findings.Add(new JsonObject { ["kind"] = "term-in-path", ["file"] = HiddenPath, ["fileIndex"] = i + 1, ["termLine"] = termLine });
@@ -105,7 +106,7 @@ public static class ClientDataCheck
         foreach (var raw in File.ReadLines(path))
         {
             number++;
-            var term = raw.Trim();
+            var term = raw.Trim().Normalize();
             if (term.Length > 0 && !term.StartsWith('#')) terms.Add((number, term));
         }
         return terms;
@@ -115,8 +116,9 @@ public static class ClientDataCheck
     static bool InSameRepo(string root, string file)
     {
         var real = File.ResolveLinkTarget(file, returnFinalTarget: true)?.FullName ?? file;
-        var theirs = Git(Path.GetDirectoryName(real)!, "rev-parse", "--path-format=absolute", "--git-common-dir");
-        return theirs is not null && theirs == Git(root, "rev-parse", "--path-format=absolute", "--git-common-dir");
+        var ours = Git(root, "rev-parse", "--path-format=absolute", "--git-common-dir") ?? throw GitFailed("find this repo's folder");
+        // No answer here is the normal case: the file isn't in any repo.
+        return ours == Git(Path.GetDirectoryName(real)!, "rev-parse", "--path-format=absolute", "--git-common-dir");
     }
 
     /// <summary>Lines of <c>&lt;path&gt; # &lt;reason&gt;</c>, exact paths only. Honoured only when committed or staged:
@@ -155,12 +157,14 @@ public static class ClientDataCheck
         return Array.IndexOf(head, (byte)0, 0, read) >= 0;
     }
 
+    /// <summary>A column counts characters of the line in NFC.</summary>
     static void ScanLines(string path, List<(int Line, string Term)> terms, Action<int, int, int> found)
     {
         var number = 0;
-        foreach (var line in File.ReadLines(path))
+        foreach (var raw in File.ReadLines(path))
         {
             number++;
+            var line = raw.Normalize();
             foreach (var (termLine, term) in terms)
             {
                 var at = line.IndexOf(term, StringComparison.OrdinalIgnoreCase);
@@ -168,6 +172,10 @@ public static class ClientDataCheck
             }
         }
     }
+
+    /// <summary>A check that couldn't ask git has checked nothing, so it must not read as a pass.</summary>
+    static StangentException GitFailed(string what) =>
+        new("git_list_failed", $"git couldn't {what}, so nothing was checked. Run `git status` here to see why.");
 
     static string? Git(string folder, params string[] args)
     {
