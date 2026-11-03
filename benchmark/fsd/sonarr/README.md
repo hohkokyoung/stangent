@@ -16,4 +16,9 @@
 The clone's `stangent.yaml` needs `fsd: { findings: true, archive: …, scope: <the key's scope> }`: findings are
 off by default (D68), and the benchmark measures them. The pages scored are in `page-set.json` (`benchmark/sonarr-page-set.py`).
 
+- `match-key.json` (Phase 2c, D99): 30 tickets for matching a ticket to its requirement: 15 where a sentence decides it and code exists,
+  5 where a sentence decides it and no code exists, 10 where the FSD is silent. Written by a fresh agent before any of 2c was built, checked
+  by a second fresh agent judging each ticket blind (30 of 30), then frozen, with its scoring rule and bars inside. The builder never reads the
+  tickets: it holds the answers, and only scoring commands read it. It's our own test set, so a real FSD stays the judge (D56).
+
 Scoring: `dotnet run --project benchmark/Stangent.Benchmark -- --score-fsd <sonarr clone> benchmark/fsd/sonarr/answer-key.json [--hand-check <file>] --out <file>`.
