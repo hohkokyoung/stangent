@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Stangent.Graph;
 using Stangent.Spec.Fsd;
 using Stangent.Spec.Pages;
+using Stangent.Spec.Requirements;
 using Stangent.Spec.Trace;
 
 namespace Stangent.Core.Tests;
@@ -306,5 +307,145 @@ public class FsdLinkTests
         Assert.Equal("failed", step.Status);
         Assert.Contains("no candidate page has been recorded yet", step.Errors![0]);
         Assert.Empty(TraceFile.Load(app.Root)["entries"]!.AsArray());
+    }
+
+    static void Extract(SpecApp app, string section, JsonObject output, JsonObject verdicts)
+    {
+        var step = RequirementRun.Prepare(app.Repo, "shop", section);
+        Write(app, step, output);
+        step = RequirementRun.Check(app.Repo, "shop", section, null);
+        Write(app, step, verdicts);
+        Assert.Equal("recorded", RequirementRun.Check(app.Repo, "shop", section, null).Status);
+    }
+
+    static JsonObject Req(string key, string statement, string quote) => new()
+    {
+        ["key"] = key, ["kind"] = "rule", ["title"] = statement, ["statement"] = statement, ["quotes"] = new JsonArray((JsonNode)quote), ["acceptance"] = new JsonArray(),
+    };
+
+    static JsonObject ReqLink(string state, string? requirement, string? page = null, string? statement = null, string? pageQuote = null)
+    {
+        var o = new JsonObject { ["state"] = state, ["note"] = "n" };
+        if (requirement is not null) o["requirement"] = requirement;
+        if (page is not null) o["page"] = page;
+        if (statement is not null) o["statement"] = statement;
+        if (pageQuote is not null) o["pageQuote"] = pageQuote;
+        return o;
+    }
+
+    /// <summary>The section's three sentences as R-0001 to R-0003.</summary>
+    static SpecApp WithRequirements(bool findings = true)
+    {
+        var app = App(findings: findings);
+        Extract(app, "1", new JsonObject
+        {
+            ["requirements"] = new JsonArray(
+                (JsonNode)Req("r1", "The orders screen has a Place order button.", "The orders screen has a Place order button."),
+                (JsonNode)Req("r2", "Orders over 50 need approval.", "Orders over 50 need approval."),
+                (JsonNode)Req("r3", "Every order sends a receipt.", "Every order sends a receipt.")),
+            ["definitions"] = new JsonArray(), ["journeys"] = new JsonArray(), ["questions"] = new JsonArray(), ["background"] = new JsonArray(),
+        }, new JsonObject { ["checks"] = new JsonArray([.. new[] { "r1", "r2", "r3" }.Select(k => (JsonNode)new JsonObject { ["item"] = k, ["verdict"] = "ok", ["note"] = "n" })]) });
+        return app;
+    }
+
+    static JsonObject ReqLinks(params JsonObject[] links) => new() { ["links"] = new JsonArray(links) };
+
+    [Fact]
+    public void With_requirements_built_links_are_judged_one_requirement_at_a_time()
+    {
+        using var app = WithRequirements();
+        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
+        Assert.Equal(LinkRun.RequirementJudge, step.Agent);
+        var input = File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output)!, "judge.md"));
+        Assert.Contains("**R-0002** Orders over 50 need approval.", input);
+
+        Write(app, step, ReqLinks(
+            ReqLink("agree", "R-0001", "page:/orders", "A1", "The Place order button posts the order."),
+            ReqLink("conflict", "R-0002", SpecApp.Post, "R1", "Orders over 100 are refused"),
+            ReqLink("agree", "R-0003", SpecApp.Post, "E1", "Placing an order publishes OrderPlaced, which sends a receipt.")));
+        step = LinkRun.Check(app.Pages(), app.Repo, app.Graph, "shop", "1", null);
+        Assert.Equal(LinkRun.Checker, step.Agent);
+        var checker = File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output)!, "checker.md"));
+        Assert.Contains("R-0001 \"The orders screen has a Place order button.\"", checker);
+        Assert.Contains("judge the requirement's own words", checker);
+
+        Write(app, step, new JsonObject { ["checks"] = new JsonArray(
+            (JsonNode)new JsonObject { ["link"] = "K1", ["verdict"] = "confirm", ["note"] = "n" },
+            (JsonNode)new JsonObject { ["link"] = "K2", ["verdict"] = "dispute", ["state"] = "gap", ["note"] = "n" }) });
+        Assert.Equal("recorded", LinkRun.Check(app.Pages(), app.Repo, app.Graph, "shop", "1", null).Status);
+
+        var entries = TraceFile.Load(app.Root)["entries"]!.AsArray().OfType<JsonObject>().ToList();
+        var r1 = entries.Single(e => (string?)e["fsd"]?["requirement"] == "R-0001");
+        Assert.Equal(("agree", "confirmed", "The orders screen has a Place order button."), ((string)r1["state"]!, (string?)r1["check"], (string?)r1["fsd"]!["quote"]));
+        Assert.Equal("conflict", (string)entries.Single(e => (string?)e["fsd"]?["requirement"] == "R-0002")["state"]!);
+        // A dispute that raises a finding keeps its requirement.
+        Assert.Equal("gap", (string)entries.Single(e => (string?)e["fsd"]?["requirement"] == "R-0003")["state"]!);
+
+        // A requirement shows its links, from trace.yaml.
+        Assert.Equal("agree", (string)RequirementFile.Show(app.Root, "R-0001")!["links"]![0]!["state"]!);
+        Assert.Empty(TraceCheck.Run(app.Root, app.Graph, null, false)["problems"]!.AsArray());
+    }
+
+    [Fact]
+    public void Every_requirement_needs_a_link_and_an_unknown_one_is_refused()
+    {
+        using var app = WithRequirements();
+        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
+        Write(app, step, ReqLinks(ReqLink("gap", "R-0001"), ReqLink("gap", "R-0099"), ReqLink("agree", null, "page:/orders", "A1", "The Place order button posts the order.")));
+        step = LinkRun.Check(app.Pages(), app.Repo, app.Graph, "shop", "1", null);
+        Assert.Equal("retry", step.Status);
+        Assert.Equal(LinkRun.RequirementJudge, step.Agent);
+        Assert.Contains(step.Errors!, e => e.Contains("R-0002 has no link", StringComparison.Ordinal));
+        Assert.Contains(step.Errors!, e => e.Contains("R-0099 isn't one", StringComparison.Ordinal));
+        Assert.Contains(step.Errors!, e => e.Contains("needs its requirement", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Two_requirements_from_one_sentence_each_get_their_own_entry()
+    {
+        using var app = App();
+        const string sentence = "The orders screen has a Place order button.";
+        Extract(app, "1", new JsonObject
+        {
+            ["requirements"] = new JsonArray((JsonNode)Req("r1", "There's a button.", sentence), (JsonNode)Req("r2", "It's on the orders screen.", sentence)),
+            ["definitions"] = new JsonArray(), ["journeys"] = new JsonArray(), ["questions"] = new JsonArray(),
+            ["background"] = new JsonArray((JsonNode)"Orders over 50 need approval.", (JsonNode)"Every order sends a receipt."),
+        }, new JsonObject { ["checks"] = new JsonArray([.. new[] { "r1", "r2", "b1", "b2" }.Select(k => (JsonNode)new JsonObject { ["item"] = k, ["verdict"] = "ok", ["note"] = "n" })]) });
+        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
+        Write(app, step, ReqLinks(ReqLink("gap", "R-0001"), ReqLink("gap", "R-0002")));
+        Assert.Equal("recorded", LinkRun.Check(app.Pages(), app.Repo, app.Graph, "shop", "1", null).Status);
+        Assert.Equal(2, TraceFile.Load(app.Root)["entries"]!.AsArray().Count);
+    }
+
+    [Fact]
+    public void A_section_whose_text_changed_since_extraction_is_judged_by_sentence()
+    {
+        using var app = WithRequirements();
+        var file = Path.Combine(app.Root, "shop.docx");
+        File.WriteAllBytes(file, DocxWriter.Write(Fsd.Replace("Orders over 50", "Orders over 80")));
+        FsdImport.Import(app.Repo, file);
+        Assert.Equal(LinkRun.Judge, LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1").Agent);
+    }
+
+    [Fact]
+    public void A_section_of_only_background_has_nothing_to_link()
+    {
+        using var app = App();
+        Extract(app, "2", new JsonObject
+        {
+            ["requirements"] = new JsonArray(), ["definitions"] = new JsonArray(), ["journeys"] = new JsonArray(), ["questions"] = new JsonArray(),
+            ["background"] = new JsonArray((JsonNode)"Customers earn one point per dollar."),
+        }, new JsonObject { ["checks"] = new JsonArray((JsonNode)new JsonObject { ["item"] = "b1", ["verdict"] = "ok", ["note"] = "n" }) });
+        Assert.Equal("skipped", LinkRun.Prepare(app.Pages(), app.Repo, "shop", "2").Status);
+    }
+
+    [Fact]
+    public void Trace_files_written_by_v1_still_read_and_new_ones_are_v2()
+    {
+        using var app = App();
+        File.WriteAllText(TraceFile.PathIn(app.Root), "version: 1\nentries: []\n");
+        Assert.Empty(TraceCheck.Run(app.Root, app.Graph, null, false)["problems"]!.AsArray());
+        TraceFile.Save(app.Root, TraceFile.Empty());
+        Assert.StartsWith("version: 2", File.ReadAllLines(TraceFile.PathIn(app.Root)).First(l => l.StartsWith("version", StringComparison.Ordinal)));
     }
 }

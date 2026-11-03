@@ -15,8 +15,8 @@
         "additionalProperties": false,
         "properties": {
           "item": { "type": "string", "pattern": "^[rdjsb][0-9]+$" },
-          "verdict": { "enum": ["ok", "says-more", "needs-item"] },
-          "extra": { "description": "For says-more: the item's own words, copied exactly, that its quotes don't support.", "type": "string" },
+          "verdict": { "enum": ["ok", "says-more", "padded", "needs-item"] },
+          "extra": { "description": "For says-more: the item's own words, copied exactly, that its quotes don't support. For padded: the quote, copied exactly, that the item doesn't use.", "type": "string" },
           "note": { "type": "string", "maxLength": 600 }
         }
       }

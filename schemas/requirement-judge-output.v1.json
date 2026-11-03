@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:requirement-judge-output:v1",
+  "title": "What stangent-requirement-judge returns (Phase 2c, D99, D53, D60)",
+  "description": "Links between one FSD section's requirements and its candidate pages. Code takes the FSD quote from the requirement and checks the page quote word for word.",
+  "type": "object",
+  "required": [
+    "links"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "state",
+          "note"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "enum": [
+              "agree",
+              "gap",
+              "conflict",
+              "undocumented"
+            ]
+          },
+          "requirement": {
+            "description": "The requirement's id (agree, conflict, gap).",
+            "type": "string",
+            "pattern": "^R-[0-9]{4,}$"
+          },
+          "page": {
+            "description": "A candidate page's id (agree, conflict, undocumented; optional for gap).",
+            "type": "string"
+          },
+          "statement": {
+            "description": "The page statement's id, e.g. R3.",
+            "type": "string",
+            "pattern": "^[SARE][0-9]+$"
+          },
+          "pageQuote": {
+            "description": "Copied exactly from that statement (agree, conflict, undocumented).",
+            "type": "string"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 600
+          }
+        }
+      }
+    }
+  }
+}

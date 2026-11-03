@@ -157,7 +157,12 @@ public static class RequirementFile
                 foreach (var (list, type) in new[] { ("requirements", "requirement"), ("definitions", "definition"), ("journeys", "journey") })
                     foreach (var item in f[list]!.AsArray().OfType<JsonObject>())
                     {
-                        if ((string)item["id"]! == id) return Found(type, doc, f, item);
+                        if ((string)item["id"]! == id)
+                        {
+                            var found = Found(type, doc, f, item);
+                            if (type == "requirement") found["links"] = new JsonArray([.. Links(root, id).Select(l => l.DeepClone())]);
+                            return found;
+                        }
                         foreach (var s in item["scenarios"]?.AsArray().OfType<JsonObject>() ?? [])
                             if ((string)s["id"]! == id) return Found("scenario", doc, f, s);
                     }
@@ -170,4 +175,8 @@ public static class RequirementFile
     {
         ["type"] = type, ["doc"] = doc, ["feature"] = (string)feature["id"]!, ["section"] = (string)feature["section"]!, ["item"] = item.DeepClone(),
     };
+
+    /// <summary>A requirement's links live in <c>specs/trace.yaml</c>, with their decisions: one fact in one place.</summary>
+    public static IEnumerable<JsonObject> Links(string root, string id) =>
+        TraceFile.Load(root)["entries"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["fsd"]?["requirement"] == id);
 }

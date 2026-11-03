@@ -11,12 +11,13 @@ helps you read the quotes; it can't support an item its quotes don't.
   scenario's order, kind or steps go too far if its quotes don't state them. An outcome with no quote behind it is always
   says-more, and so is stating as settled what a question for the BA leaves open. Put the item's own words that go too far
   in `extra`, copied exactly, and say why in `note`.
+- **padded:** one of its quotes has nothing to do with what it says. Quotes must back the item, and a rule hidden in an
+  unrelated item's quotes is read by nobody. Put that quote in `extra`, copied exactly, and say why in `note`.
 
 For each sentence marked background (`b1`, `b2`, …) ask: **is it really background?**
 - **ok:** nothing the system must do or allow.
 - **needs-item:** it states a rule, field, limit or behaviour, however minor, so it should have an item. Say why in `note`.
 
-Judge only by what's written here. Don't use what you know about the product, and don't dispute an item for leaving
-something out: a sentence the items miss is what the background check is for. Answer everything once, in `checks`.
+Judge only by what's written here. Don't use what you know about the product. Answer everything once, in `checks`.
 
 Write one JSON object matching the output schema to the result file you were given, and nothing else.

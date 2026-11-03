@@ -8,13 +8,13 @@ public sealed record Sentence(string Text, IReadOnlyList<string>? Cells = null);
 
 /// <summary>
 /// The sentences of an FSD section, by code (D99): every one must be cited by an item or marked <c>background</c>.
-/// Rules and images aren't sentences. A table's first row is one: Word doesn't say whether it's a header, and a row of
+/// Table rules and images aren't sentences. A table's first row is one: Word doesn't say whether it's a header, and a row of
 /// labels costs one background line, where skipping it could lose a rule. A wrong split only asks for one more citation,
 /// since a sentence counts as cited only when quotes cover all its words.
 /// </summary>
 public static partial class Sentences
 {
-    [GeneratedRegex(@"^(?:>\s*)*(?:#{1,6}\s+)?(?:(?:[-*+]|\d+[.)])\s+)?")]
+    [GeneratedRegex(@"^(?:>\s*)*(?:#{1,6}\s+)?(?:(?:[-*+]|\d+[.)])\s+)*")]
     private static partial Regex LineMark();
 
     [GeneratedRegex(@"(?<=[.!?。！？])\s+(?=[\p{Lu}0-9""'(“‘])")]
@@ -41,17 +41,17 @@ public static partial class Sentences
     }
 
     /// <summary>
-    /// Whether quotes cite a sentence: together they cover every word of it, matching whole words. A fragment leaves the
-    /// rest unread ("Orders over 50 need" hides "unless the customer is a VIP"). A row's first cell may stay uncovered,
-    /// as it's only the label. A piece under 4 words counts only if it's the whole sentence or row: "3" or "Yes" appears
-    /// in too many rows to be evidence of one.
+    /// Whether quotes cite a sentence. A sentence: it's one of the quotes' own sentences, or quotes of at least 4 words
+    /// together cover every word of it, matching whole words. A fragment leaves the rest unread ("Orders over 50 need"
+    /// hides "unless the customer is a VIP"), and a short sentence inside a longer one isn't that sentence. A table row:
+    /// a quote holds it whole, cell by cell. Any one cell could be the rule ("Refunds need a director's sign-off | ✓"), and
+    /// a cell's words can be in another row too.
     /// </summary>
     public static bool Cited(Sentence s, IEnumerable<string> quotes)
     {
+        if (s.Cells is not null) return quotes.Any(q => $" | {Trimmed(q)} | ".Contains($" | {s.Text} | ", StringComparison.Ordinal));
         var pieces = quotes.SelectMany(Pieces).Distinct(StringComparer.Ordinal).ToList();
-        if (quotes.Any(q => WholeWordsAt(Trimmed(q), s.Text).Any())) return true;
-        var parts = s.Cells is { Count: > 1 } cells ? cells.Skip(1).ToList() : (IReadOnlyList<string>)[s.Text];
-        return parts.All(part => Covered(part, pieces.Where(p => p.Split(' ').Length >= 4)));
+        return pieces.Contains(s.Text, StringComparer.Ordinal) || Covered(s.Text, pieces.Where(p => p.Split(' ').Length >= 4));
     }
 
     /// <summary>Background is one whole sentence as listed, so nothing else can be hidden in it.</summary>

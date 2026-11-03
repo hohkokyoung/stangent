@@ -1904,12 +1904,13 @@ lands); designed without a real FSD so far (D56). Doesn't raise right place (Son
 - *What "cited or background" means (found by a fresh check of the first build, 2026-11-03):* a loose check let a rule leave through either exit: `Orders
   over 50 need` covered "Orders over 50 need approval unless the customer is a VIP", and a rule marked background was seen by nobody. So: **cited** means the
   quotes of requirements, criteria and definitions together cover every word of the sentence, whole words only; journey and question quotes don't count, a
-  row's label may stay uncovered, and a piece under 4 words counts only as a whole sentence or row. **Background** is one sentence exactly as listed; the
-  fresh checker sees it and can say it needs an item, and the BA sees it in the approval list. A table's first row is a sentence, since Word doesn't say
+  piece under 4 words counts only as a whole sentence, and a table row must be quoted whole, since any cell could be the rule ("Refunds need a sign-off | ✓"). The
+  fresh checker also rejects a quote added to an item it has nothing to do with, which code can't tell. **Background** is one sentence exactly as listed; the
+  checker sees it and can say it needs an item, and the BA will see it in the approval list (step 4). A table's first row is a sentence, since Word doesn't say
   whether it's a header. **Cost:** more retries, and one more thing for the checker and the BA to read.
 - *Ids on a re-run, until reconcile (same check):* items with the same quotes and words keep their id; reworded items keep it only when there's one old and one new
-  item on those quotes. With several, a guess could swap two ids and carry links and approvals to the wrong rule, so they get new ids. Title and `refers` are in
-  the hash, and a dispute drops approval too. **Why it isn't finished:** D99 says unchanged quotes keep id and status, and also that editing a requirement
+  item on those quotes. With several, a guess could swap two ids and carry links and approvals to the wrong rule, so they get new ids. The title and the words of
+  definitions it uses are in the hash, and any answer from the checker but `ok` drops approval too. **Why it isn't finished:** D99 says unchanged quotes keep id and status, and also that editing a requirement
   drops it back, and an AI re-run rewords freely. Step 6 settles it at the root: code carries forward every item whose quotes are still in the text, and only new or
   changed sentences go to the AI (D18). Also step 6: a changed quote keeps its id, a renumbered section keeps its ids, and retiring waits for the BA.
 - *A clash between sections (same check, no owner decision yet):* D99 says clashes become BA questions, but one pass per section can't see one: on the planted FSD,

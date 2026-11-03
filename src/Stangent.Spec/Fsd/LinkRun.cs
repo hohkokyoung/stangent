@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Stangent.Core;
 using Stangent.Graph;
 using Stangent.Spec.Pages;
+using Stangent.Spec.Requirements;
 using Stangent.Spec.Trace;
 
 namespace Stangent.Spec.Fsd;
@@ -17,6 +18,7 @@ public static class LinkRun
 {
     public const string Finder = "stangent-candidate-finder";
     public const string Judge = "stangent-link-judge";
+    public const string RequirementJudge = "stangent-requirement-judge";
     public const string Checker = "stangent-agree-checker";
 
     public static string Key(string doc, string section) => $"{doc}#{section}";
@@ -27,6 +29,16 @@ public static class LinkRun
     static JsonObject? Parent(SpecIndex index, string doc, JsonObject section) =>
         (string?)section["parent"] is { } parent ? index.Sections.GetValueOrDefault((doc, parent)) : null;
 
+    /// <summary>The section's requirements (D99), when they were built from its current text: links are then judged one
+    /// requirement at a time, so a page covering part of a section can agree with part of it. Null: judge the section's
+    /// sentences, as before.</summary>
+    public static List<JsonObject>? Requirements(string root, string doc, JsonObject section) =>
+        RequirementFile.Features(root, doc).FirstOrDefault(f => (string)f["section"]! == (string)section["id"]!) is { } feature
+        && (string?)feature["textHash"] == CanonicalJson.Hash((string)section["text"]!)
+            ? [.. feature["requirements"]!.AsArray().OfType<JsonObject>()] : null;
+
+    static string FirstQuote(JsonObject requirement) => (string)requirement["quotes"]![0]!["text"]!;
+
     public static RunStep Prepare(PageSet set, StangentRepo repo, string doc, string sectionId)
     {
         var index = SpecIndex.Load(repo.Root);
@@ -36,6 +48,13 @@ public static class LinkRun
         var runs = LoadRuns(repo.Root);
         var key = Key(doc, sectionId);
         var run = runs[key] as JsonObject;
+        var requirements = Requirements(repo.Root, doc, section);
+        // Every sentence is background: nothing here to link.
+        if (requirements is { Count: 0 })
+        {
+            ApplyEntries(repo.Root, doc, sectionId, []);
+            return new RunStep("skipped", "none", Errors: ["the section has no requirements"]);
+        }
 
         var found = Candidates.ForSection(section, set, index.Pages, Parent(index, doc, section));
         var candidates = found.Where(c => index.Pages.ContainsKey(c.Page)).ToList();
@@ -73,19 +92,22 @@ public static class LinkRun
             // Nothing in the code matches this section, by name or by the finder: a gap, found by code.
             var quote = FirstSentence((string)section["text"]!);
             var unrecorded = set.Pages.Count(p => !index.Pages.ContainsKey(p.Id));
-            var gap = Entry("gap", doc, section, quote, null, null, null, "code", null,
-                "no reference page matches this section (by name, field labels, or the candidate finder)"
-                + (unrecorded > 0 ? $"; {unrecorded} page(s) have no recorded version, so it may be among them" : ""));
+            var why = "no reference page matches this section (by name, field labels, or the candidate finder)"
+                + (unrecorded > 0 ? $"; {unrecorded} page(s) have no recorded version, so it may be among them" : "");
+            List<JsonObject> gaps = Requirements(repo.Root, doc, section) is { } reqs
+                ? [.. reqs.Select(r => Entry("gap", doc, section, FirstQuote(r), null, null, null, "code", null, why, (string)r["id"]!))]
+                : [Entry("gap", doc, section, quote, null, null, null, "code", null, why)];
             var existing = TraceFile.Load(repo.Root)["entries"]!.AsArray().OfType<JsonObject>()
                 .Where(e => (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId).Select(e => (string)e["id"]!).ToList();
-            List<JsonObject> recorded = repo.Config.Fsd.Findings ? [gap] : [];
+            List<JsonObject> recorded = repo.Config.Fsd.Findings ? gaps : [];
             if (carried is null && existing.SequenceEqual(recorded.Select(e => (string)e["id"]!))) return new RunStep("current", "none");
             ApplyEntries(repo.Root, doc, sectionId, recorded);
             UpdateRun(repo.Root, key, r => { MergeInto(r, carried); r["inputs"] = null; r["candidates"] = new JsonArray(); r["candidatesBy"] = by; r["links"] = 1; });
             return new RunStep("recorded", "none");
         }
-        var judgeBundle = JudgeBundle(section, doc, candidates.Select(c => c.Page), index);
-        var inputs = CanonicalJson.Hash(judgeBundle + Bundles.Instructions("agree-checker.md") + SchemaRegistry.EmbeddedText("agree-checker-output.v1.json"));
+        var requirements = Requirements(repo.Root, doc, section);
+        var judgeBundle = requirements is null ? JudgeBundle(section, doc, candidates.Select(c => c.Page), index) : RequirementJudgeBundle(section, doc, candidates.Select(c => c.Page), index, requirements);
+        var inputs = CanonicalJson.Hash(judgeBundle + Bundles.Instructions(requirements is null ? "agree-checker.md" : "requirement-agree-checker.md") + SchemaRegistry.EmbeddedText("agree-checker-output.v1.json"));
         // Turning findings off (or on) changes what a section records, so it runs again; with them on the hash is unchanged.
         if (!repo.Config.Fsd.Findings) inputs = CanonicalJson.Hash(inputs + "\nfindings off");
         if ((string?)run?["inputs"] == inputs) return new RunStep("current", "none");
@@ -95,11 +117,12 @@ public static class LinkRun
         var state = new JsonObject
         {
             ["doc"] = doc, ["section"] = sectionId, ["stage"] = "judge", ["inputs"] = inputs, ["retryUsed"] = false,
+            ["level"] = requirements is null ? "section" : "requirement",
             ["candidates"] = new JsonArray([.. candidates.Select(c => (JsonNode)new JsonObject { ["page"] = c.Page, ["why"] = c.Why })]),
             ["candidatesBy"] = by, ["usage"] = carried?.DeepClone() ?? new JsonObject(),
         };
         Save(work, state);
-        return Step(repo.Root, work, Judge, "judge.md", "judge.json", "Section and candidate pages");
+        return Step(repo.Root, work, requirements is null ? Judge : RequirementJudge, "judge.md", "judge.json", "Section and candidate pages");
     }
 
     public static RunStep Check(PageSet set, StangentRepo repo, CodeGraph graph, string doc, string sectionId, Usage? usage)
@@ -116,6 +139,8 @@ public static class LinkRun
         state["usage"] = usageAll;
         var errors = new List<string>();
         var nodes = graph.AllNodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
+        var byRequirement = (string?)state["level"] == "requirement";
+        var judge = byRequirement ? RequirementJudge : Judge;
 
         switch (stage)
         {
@@ -141,14 +166,24 @@ public static class LinkRun
             {
                 var candidates = state["candidates"]!.AsArray().Select(c => (string)c!["page"]!).ToHashSet(StringComparer.Ordinal);
                 var output = PageChecks.Parse(Read(work, "judge.json"), errors);
-                if (errors.Count == 0) errors.AddRange(SchemaRegistry.Embedded.Validate("link-judge-output.v1.json", output!.ToJsonString()).Select(e => $"Schema: {e}"));
+                if (errors.Count == 0) errors.AddRange(SchemaRegistry.Embedded.Validate(byRequirement ? "requirement-judge-output.v1.json" : "link-judge-output.v1.json", output!.ToJsonString()).Select(e => $"Schema: {e}"));
                 var links = new List<(JsonObject Link, List<string> Errors)>();
+                var missing = new List<string>();
                 if (errors.Count == 0)
-                    links = [.. output!["links"]!.AsArray().OfType<JsonObject>().Select(l => (l, LinkChecks.Check(l, section, candidates, index, nodes)))];
-                var linkErrors = links.SelectMany((l, i) => l.Errors.Select(e => $"links[{i}]: {e}")).ToList();
+                {
+                    var requirements = byRequirement ? Requirements(repo.Root, doc, section) ?? [] : null;
+                    links = [.. output!["links"]!.AsArray().OfType<JsonObject>().Select(l =>
+                    {
+                        var own = requirements is null ? [] : FromRequirement(l, requirements);
+                        return (l, (List<string>)[.. own, .. LinkChecks.Check(l, section, candidates, index, nodes)]);
+                    })];
+                    if (requirements is not null)
+                        missing = [.. requirements.Select(r => (string)r["id"]!).Where(id => !links.Any(l => (string?)l.Link["requirement"] == id)).Select(id => $"{id} has no link: give every requirement one, or a gap")];
+                }
+                var linkErrors = links.SelectMany((l, i) => l.Errors.Select(e => $"links[{i}]: {e}")).Concat(missing).ToList();
                 if (errors.Count > 0 || linkErrors.Count > 0)
                 {
-                    if (Retry(repo.Root, work, state, [.. errors, .. linkErrors], Judge, "judge.md", "judge.json") is { } retry) return retry;
+                    if (Retry(repo.Root, work, state, [.. errors, .. linkErrors], judge, "judge.md", "judge.json") is { } retry) return retry;
                     if (errors.Count > 0) return Failed(repo.Root, work, state, errors);
                 }
                 var kept = links.Where(l => l.Errors.Count == 0).Select(l => l.Link).ToList();
@@ -159,7 +194,7 @@ public static class LinkRun
                 state["stage"] = "confirm";
                 state["retryUsed"] = false; // the checker gets its own one retry
                 Save(work, state);
-                File.WriteAllText(Path.Combine(work, "checker.md"), CheckerBundle(section, doc, candidates, index, agrees));
+                File.WriteAllText(Path.Combine(work, "checker.md"), CheckerBundle(section, doc, candidates, index, agrees, byRequirement ? Requirements(repo.Root, doc, section) : null));
                 return Step(repo.Root, work, Checker, "checker.md", "checker.json", "Section, pages and the links to check");
             }
             case "confirm":
@@ -207,13 +242,15 @@ public static class LinkRun
                         ["page"] = (verdict["page"] ?? link["page"])?.DeepClone(), ["statement"] = (verdict["statement"] ?? link["statement"])?.DeepClone(),
                         ["pageQuote"] = (verdict["pageQuote"] ?? link["pageQuote"])?.DeepClone(), ["note"] = $"Disputed by the second check: {(string)verdict["note"]!}",
                     };
+                    // A requirement's link keeps its requirement and the quote code took from it.
+                    if (link["requirement"] is not null) { raised["requirement"] = link["requirement"]!.DeepClone(); raised["fsdQuote"] = link["fsdQuote"]!.DeepClone(); }
                     if ((string)raised["state"]! == "gap") { raised.Remove("pageQuote"); raised.Remove("statement"); }
                     if (LinkChecks.Check(raised, section, candidates!, index!, nodes).Count == 0) final = raised;
                     else final = (JsonObject)link.DeepClone(); // its evidence failed: stays "agree", disputed, never bulk-approved
                 }
             }
             entries.Add(Entry((string)final["state"]!, doc, section, (string?)final["fsdQuote"], (string?)final["page"], (string?)final["statement"],
-                (string?)final["pageQuote"], "judge", check, (string?)final["note"]));
+                (string?)final["pageQuote"], "judge", check, (string?)final["note"], (string?)link["requirement"]));
         }
         // With findings off (D57, D68) only links are recorded: a disputed "agree" that became a finding is left out too.
         if (!findings) entries = [.. entries.Where(e => (string)e["state"]! == "agree")];
@@ -266,20 +303,21 @@ public static class LinkRun
     }
 
     static RunStep Step(string root, string work, string agent, string bundle, string output, string label) =>
-        new(agent == Judge ? "judge" : agent == Finder ? "find" : "confirm", agent == Judge ? "judge" : agent == Finder ? "find" : "confirm", agent,
+        new(agent is Judge or RequirementJudge ? "judge" : agent == Finder ? "find" : "confirm", agent is Judge or RequirementJudge ? "judge" : agent == Finder ? "find" : "confirm", agent,
             $"{label}: {Rel(root, Path.Combine(work, bundle))}\nWrite your JSON to: {Rel(root, Path.Combine(work, output))}", Rel(root, Path.Combine(work, output)));
 
     public static JsonObject Entry(string state, string doc, JsonObject? section, string? fsdQuote, string? page, string? statement, string? pageQuote,
-        string by, string? check, string? note)
+        string by, string? check, string? note, string? requirement = null)
     {
         JsonNode? fsd = section is null ? null : new JsonObject { ["doc"] = doc, ["section"] = (string)section["id"]!, ["title"] = (string)section["title"]! };
+        if (fsd is JsonObject r && requirement is not null) r["requirement"] = requirement;
         if (fsd is JsonObject f && fsdQuote is not null) { f["quote"] = fsdQuote; f["quoteHash"] = TraceFile.QuoteHash(fsdQuote); }
         JsonNode? pg = page is null ? null : new JsonObject { ["id"] = page };
         if (pg is JsonObject p && statement is not null) p["statement"] = statement;
         if (pg is JsonObject p2 && pageQuote is not null) { p2["quote"] = pageQuote; p2["quoteHash"] = TraceFile.QuoteHash(pageQuote); }
         var e = new JsonObject
         {
-            ["id"] = TraceFile.EntryId(state, section is null ? null : doc, (string?)section?["id"], page, fsdQuote, pageQuote),
+            ["id"] = TraceFile.EntryId(state, section is null ? null : doc, (string?)section?["id"], page, fsdQuote, pageQuote, requirement),
             ["state"] = state, ["fsd"] = fsd, ["page"] = pg, ["by"] = by,
         };
         if (check is not null) e["check"] = check;
@@ -382,13 +420,42 @@ public static class LinkRun
         return sb.ToString();
     }
 
-    static string CheckerBundle(JsonObject section, string doc, IEnumerable<string> pages, SpecIndex index, List<JsonObject> agrees)
+    static string RequirementJudgeBundle(JsonObject section, string doc, IEnumerable<string> pages, SpecIndex index, List<JsonObject> requirements)
     {
-        var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions("agree-checker.md"));
+        var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions("requirement-judge.md"));
+        sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText("requirement-judge-output.v1.json").TrimEnd('\n')).Append("\n```\n\n");
+        sb.Append(SectionBlock(section, doc)).Append("\n# The requirements\n\n");
+        foreach (var r in requirements) sb.Append(RequirementLine(r));
+        sb.Append(PagesBlock(pages, index));
+        return sb.ToString();
+    }
+
+    static string RequirementLine(JsonObject r) => $"- **{(string)r["id"]!}** {(string)r["statement"]!} (from: \"{FirstQuote(r)}\")\n";
+
+    /// <summary>A requirement's link takes its FSD quote from the requirement, so the judge can't misquote it.</summary>
+    static List<string> FromRequirement(JsonObject link, List<JsonObject> requirements)
+    {
+        var state = (string)link["state"]!;
+        var id = (string?)link["requirement"];
+        if (state == "undocumented") return id is null ? [] : ["an undocumented link has no requirement"];
+        if (id is null) return [$"a {state} link needs its requirement"];
+        var requirement = requirements.FirstOrDefault(r => (string)r["id"]! == id);
+        if (requirement is null) return [$"{id} isn't one of this section's requirements"];
+        link["fsdQuote"] = FirstQuote(requirement);
+        return [];
+    }
+
+    static string CheckerBundle(JsonObject section, string doc, IEnumerable<string> pages, SpecIndex index, List<JsonObject> agrees, List<JsonObject>? requirements = null)
+    {
+        var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions(requirements is null ? "agree-checker.md" : "requirement-agree-checker.md"));
         sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText("agree-checker-output.v1.json").TrimEnd('\n')).Append("\n```\n\n");
         sb.Append(SectionBlock(section, doc)).Append(PagesBlock(pages, index)).Append("\n# The links to check\n\n");
         for (var i = 0; i < agrees.Count; i++)
-            sb.Append($"- **K{i + 1}**: FSD \"{(string?)agrees[i]["fsdQuote"]}\" ↔ `{(string?)agrees[i]["page"]}` {(string?)agrees[i]["statement"]} \"{(string?)agrees[i]["pageQuote"]}\"\n");
+        {
+            var requirement = requirements?.FirstOrDefault(r => (string)r["id"]! == (string?)agrees[i]["requirement"]);
+            var left = requirement is null ? $"FSD \"{(string?)agrees[i]["fsdQuote"]}\"" : $"{(string)requirement["id"]!} \"{(string)requirement["statement"]!}\" (from FSD \"{FirstQuote(requirement)}\")";
+            sb.Append($"- **K{i + 1}**: {left} ↔ `{(string?)agrees[i]["page"]}` {(string?)agrees[i]["statement"]} \"{(string?)agrees[i]["pageQuote"]}\"\n");
+        }
         return sb.ToString();
     }
 

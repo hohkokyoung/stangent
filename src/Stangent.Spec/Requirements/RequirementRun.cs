@@ -42,7 +42,7 @@ public static class RequirementRun
         AiPolicy.EnsureAllowed(repo.Config, "req prepare");
         var work = Fresh(repo.Root, doc, sectionId);
         File.WriteAllText(Path.Combine(work, "writer.md"), bundle);
-        Save(work, new JsonObject { ["doc"] = doc, ["section"] = sectionId, ["stage"] = "write", ["inputs"] = inputs, ["retryUsed"] = false, ["usage"] = new JsonObject() });
+        Save(work, new JsonObject { ["doc"] = doc, ["section"] = sectionId, ["stage"] = "write", ["inputs"] = inputs, ["textHash"] = CanonicalJson.Hash((string)section["text"]!), ["retryUsed"] = false, ["usage"] = new JsonObject() });
         return Step(repo.Root, work, Writer, "writer.md", "writer.json", "FSD section");
     }
 
@@ -53,6 +53,9 @@ public static class RequirementRun
             throw new StangentException("not_prepared", $"No run for {doc} §{sectionId}. Run `stangent req prepare` first.", ExitCodes.Usage);
         var section = SpecIndex.Load(repo.Root).Sections.GetValueOrDefault((doc, sectionId))
             ?? throw new StangentException("not_found", $"No section {sectionId} in FSD {doc} any more. Run `stangent req prepare` for what's there now.", ExitCodes.NotFound);
+        // Imported again while this ran: its quotes were checked against text that's gone.
+        if ((string?)state["textHash"] != CanonicalJson.Hash((string)section["text"]!))
+            throw new StangentException("section_changed", $"{doc} §{sectionId}'s text changed during this run. Run `stangent req prepare` to start again.", ExitCodes.Usage);
         var stage = (string)state["stage"]!;
         var role = stage is "write" or "fix" ? "writer" : "checker";
         var usageAll = state["usage"] as JsonObject ?? new JsonObject();
@@ -89,18 +92,20 @@ public static class RequirementRun
                 var output = PageChecks.Parse(Read(work, "checker.json"), errors);
                 var items = RequirementChecks.Items((JsonObject)state["output"]!);
                 if (errors.Count == 0 && output is null) errors.Add("The output is empty.");
-                if (errors.Count == 0) errors.AddRange(RequirementChecks.CheckVerdicts(output!, items));
-                var raw = errors.Count == 0 || (output is not null && SchemaRegistry.Embedded.Validate("requirement-checker-output.v1.json", output.ToJsonString()).Count == 0)
-                    ? output!["checks"]!.AsArray().OfType<JsonObject>().ToList() : [];
+                var itemQuotes = RequirementChecks.ItemQuotes((JsonObject)state["output"]!);
+                if (errors.Count == 0) errors.AddRange(RequirementChecks.CheckVerdicts(output!, items, itemQuotes));
+                var raw = output is not null && SchemaRegistry.Embedded.Validate("requirement-checker-output.v1.json", output.ToJsonString()).Count == 0
+                    ? output["checks"]!.AsArray().OfType<JsonObject>().ToList() : [];
                 if (errors.Count > 0)
                 {
-                    // A dispute it couldn't back up, then dropped when asked to: not a confirmation.
+                    // A dispute it couldn't back up, then dropped when asked to: not a confirmation. Read loosely, since
+                    // an answer that broke the schema can still hold a dispute.
                     var flagged = state["flagged"] as JsonArray ?? [];
-                    foreach (var c in raw.Where(c => (string)c["verdict"]! != "ok")) flagged.Add((string)c["item"]!);
+                    foreach (var item in RequirementChecks.DisputedLoosely(output)) flagged.Add(item);
                     state["flagged"] = flagged.DeepClone();
                     if (Retry(repo.Root, work, state, errors, Checker, "checker.md", "checker.json", "Section and items") is { } retry) return retry;
                 }
-                var checks = RequirementChecks.FinalVerdicts(raw, items, state["flagged"]?.AsArray().Select(f => (string)f!).ToHashSet(StringComparer.Ordinal) ?? []);
+                var checks = RequirementChecks.FinalVerdicts(raw, items, itemQuotes, state["flagged"]?.AsArray().Select(f => (string)f!).ToHashSet(StringComparer.Ordinal) ?? []);
                 var disputed = checks.Where(c => (string)c["verdict"]! != "ok").ToList();
                 if (stage == "reconfirm" || disputed.Count == 0) return Finish(repo.Root, work, state, section, doc, checks);
                 // Back to the writer once, with what the checker found.
@@ -110,11 +115,14 @@ public static class RequirementRun
                 state["fixes"] = disputed.Count;
                 Save(work, state);
                 var sb = new StringBuilder("# The checker disputed these\n\nA fresh agent looked at your items. Fix each one: say only what the quotes say, ");
-                sb.Append("raise a question for the BA instead, or give a background sentence that holds a rule an item of its own. Return the whole output again.\n\n");
+                sb.Append("raise a question for the BA instead, give a sentence that holds a rule an item of its own, or remove a quote the item doesn't use. Return the whole output again.\n\n");
                 foreach (var c in disputed)
-                    sb.Append((string)c["verdict"]! == "needs-item"
-                        ? $"- `{(string)c["item"]!}` was marked background, but needs an item: {(string)c["note"]!}\n"
-                        : $"- `{(string)c["item"]!}` goes too far with \"{(string?)c["extra"]}\": {(string)c["note"]!}\n");
+                    sb.Append((string)c["verdict"]! switch
+                    {
+                        "needs-item" => $"- `{(string)c["item"]!}` was marked background, but needs an item: {(string)c["note"]!}\n",
+                        "padded" => $"- `{(string)c["item"]!}` cites \"{(string?)c["extra"]}\", which it says nothing about: {(string)c["note"]!}\n",
+                        _ => $"- `{(string)c["item"]!}` goes too far with \"{(string?)c["extra"]}\": {(string)c["note"]!}\n",
+                    });
                 File.WriteAllText(Path.Combine(work, "feedback.md"), sb.ToString());
                 File.Move(Path.Combine(work, "writer.json"), Path.Combine(work, "previous-writer.json"), overwrite: true);
                 var step = Step(repo.Root, work, Writer, "writer.md", "writer.json", "FSD section");
@@ -327,7 +335,7 @@ public static class RequirementChecks
             foreach (var q in o["quotes"]!.AsArray().Select(x => (string)x!))
             {
                 if (cites) citing.Add(q);
-                if (!Quotes.InText(q, text)) errors.Add($"{where}: the quote \"{Short(q)}\" isn't from the section's text, word for word (at least 4 words, or a whole table cell or list item)");
+                if (!Quotes.InText(q, text) && !Sentences.Of(text).Any(s => Sentences.IsExactly(q, s))) errors.Add($"{where}: the quote \"{Short(q)}\" isn't from the section's text, word for word (at least 4 words, or a whole sentence, table cell or list item)");
             }
         }
         foreach (var r in reqs)
@@ -345,7 +353,7 @@ public static class RequirementChecks
             if (!sentences.Any(s => Sentences.IsExactly(b, s))) errors.Add($"background \"{Short(b)}\" isn't one of the sentences listed, copied exactly");
         foreach (var s in sentences)
             if (!Sentences.Cited(s, citing) && !background.Any(b => Sentences.IsExactly(b, s)))
-                errors.Add($"this sentence isn't fully covered by the quotes of a requirement, criterion or definition, and isn't in background: \"{Short(s.Text)}\"");
+                errors.Add($"this sentence isn't fully covered by the quotes of a requirement, criterion or definition that says what it says, and isn't in background: \"{Short(s.Text)}\" (quote it whole; never add a quote to an item it has nothing to do with)");
         return errors;
     }
 
@@ -354,21 +362,44 @@ public static class RequirementChecks
     {
         var items = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var r in output["requirements"]!.AsArray().OfType<JsonObject>())
-            items[(string)r["key"]!] = string.Join(' ', [(string)r["title"]!, (string)r["statement"]!, .. r["acceptance"]!.AsArray().Select(a => (string)a!["text"]!)]);
+            items[(string)r["key"]!] = string.Join(' ', [(string)r["kind"]!, (string)r["title"]!, (string)r["statement"]!, .. r["acceptance"]!.AsArray().Select(a => (string)a!["text"]!)]);
         foreach (var d in output["definitions"]!.AsArray().OfType<JsonObject>())
-            items[(string)d["key"]!] = $"{(string)d["name"]!} {(string)d["text"]!}";
+            items[(string)d["key"]!] = $"{(string)d["kind"]!} {(string)d["name"]!} {(string)d["text"]!}";
         foreach (var j in output["journeys"]!.AsArray().OfType<JsonObject>())
         {
             items[(string)j["key"]!] = $"{(string)j["title"]!} {string.Join(" → ", j["steps"]!.AsArray().Select(x => (string)x!))}";
             foreach (var s in j["scenarios"]!.AsArray().OfType<JsonObject>())
-                items[(string)s["key"]!] = $"{(string)s["kind"]!} {(string)s["title"]!} {string.Join(" → ", s["steps"]!.AsArray().Select(x => (string)x!))}";
+                items[(string)s["key"]!] = $"{(string)s["kind"]!} path of {(string)j["key"]!} {(string)s["title"]!} {string.Join(" → ", s["steps"]!.AsArray().Select(x => (string)x!))}";
         }
         var i = 0;
         foreach (var b in output["background"]!.AsArray()) items[$"b{++i}"] = (string)b!;
         return items;
     }
 
-    public static List<string> CheckVerdicts(JsonNode output, Dictionary<string, string> items)
+    /// <summary>Each item's quotes, as a dispute of "padded" must name one of them.</summary>
+    public static Dictionary<string, string[]> ItemQuotes(JsonObject output)
+    {
+        var quotes = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        void Add(JsonObject o) => quotes[(string)o["key"]!] = [.. o["quotes"]!.AsArray().Select(q => Quotes.Normalize((string)q!))];
+        foreach (var o in output["requirements"]!.AsArray().OfType<JsonObject>().Concat(output["definitions"]!.AsArray().OfType<JsonObject>())) Add(o);
+        foreach (var j in output["journeys"]!.AsArray().OfType<JsonObject>())
+        {
+            Add(j);
+            foreach (var s in j["scenarios"]!.AsArray().OfType<JsonObject>()) Add(s);
+        }
+        return quotes;
+    }
+
+    /// <summary>The items an answer disputes, read without trusting its shape.</summary>
+    public static IEnumerable<string> DisputedLoosely(JsonNode? output)
+    {
+        if (output is not JsonObject o || o["checks"] is not JsonArray checks) yield break;
+        foreach (var c in checks.OfType<JsonObject>())
+            if (c["item"] is JsonValue item && item.TryGetValue<string>(out var id) && !(c["verdict"] is JsonValue v && v.TryGetValue<string>(out var verdict) && verdict == "ok"))
+                yield return id;
+    }
+
+    public static List<string> CheckVerdicts(JsonNode output, Dictionary<string, string> items, Dictionary<string, string[]> quotes)
     {
         var errors = SchemaRegistry.Embedded.Validate("requirement-checker-output.v1.json", output.ToJsonString()).Select(e => $"Schema: {e}").ToList();
         if (errors.Count > 0) return errors;
@@ -377,10 +408,12 @@ public static class RequirementChecks
         {
             var item = (string)c["item"]!;
             if (!items.ContainsKey(item)) errors.Add($"`{item}` isn't an item here");
-            else if (!UsableVerdict(c, items))
+            else if (!UsableVerdict(c, items, quotes))
                 errors.Add(item.StartsWith('b') != ((string)c["verdict"]! == "needs-item")
-                    ? $"`{item}`: `needs-item` is for background sentences (b1, b2…), `says-more` for items"
-                    : $"`{item}`: `extra` must copy the item's own words that go too far, exactly");
+                    ? $"`{item}`: `needs-item` is for background sentences (b1, b2…), `says-more` and `padded` for items"
+                    : (string)c["verdict"]! == "padded"
+                        ? $"`{item}`: `extra` must copy the quote the item doesn't use, exactly"
+                        : $"`{item}`: `extra` must copy the item's own words that go too far, exactly");
         }
         foreach (var twice in checks.GroupBy(c => (string)c["item"]!).Where(g => g.Count() > 1)) errors.Add($"`{twice.Key}` is answered twice: answer every item once");
         foreach (var k in items.Keys.Where(k => !checks.Any(c => (string)c["item"]! == k))) errors.Add($"`{k}` has no answer");
@@ -388,19 +421,20 @@ public static class RequirementChecks
     }
 
     /// <summary>A dispute must point at the item's own words (D18); one that doesn't leaves the item unchecked.</summary>
-    public static bool UsableVerdict(JsonObject check, Dictionary<string, string> items)
+    public static bool UsableVerdict(JsonObject check, Dictionary<string, string> items, Dictionary<string, string[]> quotes)
     {
         var item = (string)check["item"]!;
         if (!items.TryGetValue(item, out var text)) return false;
         var verdict = (string)check["verdict"]!;
         if (verdict == "ok") return true;
         if (verdict == "needs-item") return item.StartsWith('b');
-        return !item.StartsWith('b') && (string?)check["extra"] is { Length: > 0 } extra && Quotes.Normalize(text).Contains(Quotes.Normalize(extra), StringComparison.Ordinal);
+        if (item.StartsWith('b') || Quotes.Normalize((string?)check["extra"] ?? "") is not { Length: > 0 } extra) return false;
+        return verdict == "padded" ? quotes.GetValueOrDefault(item)?.Contains(extra, StringComparer.Ordinal) == true : Quotes.Normalize(text).Contains(extra, StringComparison.Ordinal);
     }
 
     /// <summary>One verdict per item at most. A dispute outranks an "ok" for the same item; a dispute that couldn't be
     /// backed up, now or on the try before, leaves the item unchecked, never confirmed.</summary>
-    public static List<JsonObject> FinalVerdicts(List<JsonObject> raw, Dictionary<string, string> items, IReadOnlySet<string> flagged)
+    public static List<JsonObject> FinalVerdicts(List<JsonObject> raw, Dictionary<string, string> items, Dictionary<string, string[]> quotes, IReadOnlySet<string> flagged)
     {
         var final = new List<JsonObject>();
         foreach (var g in raw.Where(c => items.ContainsKey((string)c["item"]!)).GroupBy(c => (string)c["item"]!))
@@ -408,7 +442,7 @@ public static class RequirementChecks
             var disputes = g.Where(c => (string)c["verdict"]! != "ok").ToList();
             if (disputes.Count > 0)
             {
-                if (disputes.FirstOrDefault(c => UsableVerdict(c, items)) is { } usable) final.Add(usable);
+                if (disputes.FirstOrDefault(c => UsableVerdict(c, items, quotes)) is { } usable) final.Add(usable);
             }
             else if (!flagged.Contains(g.Key)) final.Add(g.First());
         }
@@ -435,10 +469,11 @@ public static class RequirementRecord
             item["note"] = v is null ? "the checker gave no usable answer"
                 : (string)v["verdict"]! == "ok" ? null
                 : (string)v["verdict"]! == "needs-item" ? $"Marked background, but the checker says it needs an item: {(string)v["note"]!}"
+                : (string)v["verdict"]! == "padded" ? $"Cites a quote it says nothing about (\"{(string?)v["extra"]}\"): {(string)v["note"]!}"
                 : $"Goes further than its quotes (\"{(string?)v["extra"]}\"): {(string)v["note"]!}";
         }
 
-        bool IsDisputed(string key) => verdicts.TryGetValue(key, out var v) && (string)v["verdict"]! != "ok";
+        bool IsOk(string key) => verdicts.TryGetValue(key, out var v) && (string)v["verdict"]! == "ok";
 
         var retired = feature["retired"]!.AsArray().Select(r => r!.DeepClone()).ToList();
         void Retire(Matcher m, string titleKey)
@@ -471,9 +506,12 @@ public static class RequirementRecord
             var acceptance = new JsonArray([.. r["acceptance"]!.AsArray().OfType<JsonObject>().Select(a => (JsonNode)new JsonObject { ["text"] = (string)a["text"]!, ["quotes"] = QuotesOf(a) })]);
             var quotes = QuotesOf(r);
             var refers = new JsonArray([.. (r["refers"]?.AsArray().Select(x => defIds[(string)x!]) ?? []).Select(x => (JsonNode)x)]);
-            var hash = ItemHash((string)r["kind"]!, (string)r["title"]!, (string)r["statement"]!, quotes, acceptance, refers);
-            // Editing a requirement or its quoted text drops it back to proposed (D11), and so does a dispute.
-            var keeps = (string?)was?["hash"] == hash && !IsDisputed((string)r["key"]!);
+            var usedWords = new JsonArray([.. (r["refers"]?.AsArray().Select(x => (string)x!) ?? [])
+                .Select(k => (JsonNode)(string)output["definitions"]!.AsArray().First(d => (string)d!["key"]! == k)!["text"]!)]);
+            var hash = ItemHash((string)r["kind"]!, (string)r["title"]!, (string)r["statement"]!, quotes, acceptance, usedWords);
+            // Editing a requirement, its quoted text or a definition it uses drops it back to proposed (D11). So does any
+            // answer from the checker but "ok": an approved item must have been checked as it stands.
+            var keeps = (string?)was?["hash"] == hash && IsOk((string)r["key"]!);
             var item = new JsonObject
             {
                 ["id"] = id, ["title"] = (string)r["title"]!, ["kind"] = (string)r["kind"]!, ["statement"] = (string)r["statement"]!, ["quotes"] = quotes, ["acceptance"] = acceptance,
@@ -483,7 +521,6 @@ public static class RequirementRecord
             Checked(item, (string)r["key"]!);
             item["hash"] = hash;
             if (keeps && (string?)was?["decided_by"] is { } by) item["decided_by"] = by;
-            item["links"] = was?["links"]?.DeepClone() ?? new JsonArray();
             reqs.Add((JsonNode)item);
         }
 
@@ -532,20 +569,20 @@ public static class RequirementRecord
         // A question that comes back keeps its id and any answer; one that doesn't is closed, never deleted.
         var questions = RequirementFile.Questions(root, doc);
         var kept = questions.Where(q => (string)q["section"]! != sectionId).ToList();
-        var open = questions.Where(q => (string)q["section"]! == sectionId && (string)q["status"]! != "dropped").ToList();
+        var earlier = questions.Where(q => (string)q["section"]! == sectionId).ToList();
         foreach (var q in output["questions"]!.AsArray().OfType<JsonObject>())
         {
-            // The same words only: a BA's answer must never move to another question on the same sentence.
-            var was = open.FirstOrDefault(o => Quotes.Normalize((string)o["text"]!) == Quotes.Normalize((string)q["text"]!));
-            if (was is not null) open.Remove(was);
+            // The same words on the same text only: a BA's answer must never move to another question.
+            var was = earlier.FirstOrDefault(o => Quotes.Normalize((string)o["text"]!) == Quotes.Normalize((string)q["text"]!)
+                && o["quotes"]!.AsArray().Select(x => (string)x!["text"]!).Order(StringComparer.Ordinal).SequenceEqual(q["quotes"]!.AsArray().Select(x => Quotes.Normalize((string)x!)).Order(StringComparer.Ordinal)));
+            if (was is not null) earlier.Remove(was);
             kept.Add(new JsonObject
             {
                 ["id"] = (string?)was?["id"] ?? RequirementFile.NextId(root, "Q"), ["section"] = sectionId, ["text"] = (string)q["text"]!, ["quotes"] = QuotesOf(q),
-                ["status"] = (string?)was?["status"] ?? "open", ["answer"] = was?["answer"]?.DeepClone(),
+                ["status"] = (string?)was?["status"] is null or "dropped" ? "open" : (string)was!["status"]!, ["answer"] = was?["answer"]?.DeepClone(),
             });
         }
-        foreach (var gone in open) { var copy = (JsonObject)gone.DeepClone(); copy["status"] = "dropped"; kept.Add(copy); }
-        kept.AddRange(questions.Where(q => (string)q["section"]! == sectionId && (string)q["status"]! == "dropped"));
+        foreach (var gone in earlier) { var copy = (JsonObject)gone.DeepClone(); copy["status"] = "dropped"; kept.Add(copy); }
         RequirementFile.SaveQuestions(root, doc, kept.OrderBy(q => (string)q["id"]!, StringComparer.Ordinal));
         RequirementFile.WriteViews(root, doc);
     }

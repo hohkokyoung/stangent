@@ -122,17 +122,35 @@ public class RequirementTests
     }
 
     [Fact]
-    public void A_rows_label_alone_cites_nothing_and_a_short_cell_is_no_evidence_of_one_row()
+    public void A_table_row_must_be_quoted_whole_since_any_cell_could_be_the_rule()
     {
         Sentence Row(string line) => Sentences.Of(line)[0];
         var row = Row("| Root Folder | The folder it is stored in. |");
         Assert.False(Sentences.Cited(row, ["Root Folder"]));
-        Assert.True(Sentences.Cited(row, ["The folder it is stored in."]));
+        Assert.False(Sentences.Cited(row, ["The folder it is stored in."]));
         Assert.True(Sentences.Cited(row, ["| Root Folder | The folder it is stored in. |"]));
-        var retries = Row("| Password retries | 3 |");
-        Assert.False(Sentences.Cited(retries, ["3"]));
-        Assert.False(Sentences.Cited(retries, ["Password retries"]));
-        Assert.True(Sentences.Cited(retries, ["| Password retries | 3 |"]));
+        Assert.True(Sentences.Cited(row, ["Root Folder | The folder it is stored in."]));
+        Assert.False(Sentences.Cited(Row("| Delete orders | ✓ |"), []));
+        Assert.False(Sentences.Cited(Row("| Refunds need a director's sign-off | — |"), ["Refunds need a director's sign-off"]));
+        // Another row's cell isn't this row.
+        Assert.False(Sentences.Cited(Row("| Backup Folder | The folder it is stored in. |"), ["| Root Folder | The folder it is stored in. |"]));
+    }
+
+    [Fact]
+    public void A_list_numbered_with_a_bracket_gives_the_sentence_without_its_marks()
+    {
+        var s = Sentences.Of("- 1) Orders over 50 need approval.");
+        Assert.Equal("Orders over 50 need approval.", Assert.Single(s).Text);
+        Assert.True(Sentences.Cited(s[0], ["Orders over 50 need approval."]));
+        Assert.True(Sentences.IsExactly("Orders over 50 need approval.", s[0]));
+    }
+
+    [Fact]
+    public void A_short_sentence_counts_as_itself_not_as_part_of_a_longer_one()
+    {
+        Assert.False(Sentences.Cited(new Sentence("Delete orders"), ["Delete orders that are old."]));
+        Assert.True(Sentences.Cited(new Sentence("Retries stop."), ["Retries stop."]));
+        Assert.True(Sentences.Cited(new Sentence("Retries stop."), ["They try three times. Retries stop."]));
     }
 
     [Fact]
@@ -736,5 +754,132 @@ public class RequirementTests
         RequirementFile.Save(app.Root, parent);
         RequirementFile.Ensure(app.Root, "shop", Stangent.Spec.Trace.SpecIndex.Load(app.Root).Sections[("shop", "1.1")], Stangent.Spec.Trace.SpecIndex.Load(app.Root));
         Assert.Equal((string)Feature(app, "1.1")["id"]!, (string)Feature(app, "1")["children"]![0]!);
+    }
+
+    [Fact]
+    public void A_whole_short_sentence_in_a_paragraph_can_be_quoted()
+    {
+        using var app = App("""
+            #! Orders
+            Retries stop. Everything else keeps going until it's done.
+            """);
+        var output = Output([Req("r1", "Retries stop.", "Retries", "Retries stop."), Req("r2", "The rest keeps going.", "The rest", "Everything else keeps going until it's done.")]);
+        var step = Give(app, RequirementRun.Prepare(app.Repo, "shop", "1"), output);
+        Assert.Equal(RequirementRun.Checker, step.Agent);
+    }
+
+    [Fact]
+    public void A_quote_padded_onto_an_unrelated_item_can_be_disputed()
+    {
+        using var app = App();
+        var padded = Output([Req("r1", "There's a button.", "Button", Button, Over50)]);
+        var step = Give(app, RequirementRun.Prepare(app.Repo, "shop", "1"), padded);
+        Assert.Equal(RequirementRun.Checker, step.Agent);
+        step = Give(app, step, new JsonObject { ["checks"] = new JsonArray((JsonNode)new JsonObject { ["item"] = "r1", ["verdict"] = "padded", ["extra"] = Over50, ["note"] = "nothing about approval" }) });
+        Assert.Equal(RequirementRun.Writer, step.Agent);
+        Assert.Contains("says nothing about", File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output)!, "feedback.md")));
+        step = Give(app, step, padded);
+        step = Give(app, step, new JsonObject { ["checks"] = new JsonArray((JsonNode)new JsonObject { ["item"] = "r1", ["verdict"] = "padded", ["extra"] = "A quote it doesn't have.", ["note"] = "n" }) });
+        Assert.Equal("retry", step.Status);
+    }
+
+    [Fact]
+    public void A_dispute_in_an_answer_that_broke_the_schema_still_counts_when_it_flips()
+    {
+        using var app = App();
+        var step = Give(app, RequirementRun.Prepare(app.Repo, "shop", "1"), Two());
+        step = Give(app, step, new JsonObject { ["checks"] = new JsonArray(
+            (JsonNode)new JsonObject { ["item"] = "r1", ["verdict"] = "ok", ["note"] = "n", ["extra"] = null },
+            (JsonNode)new JsonObject { ["item"] = "r2", ["verdict"] = "says-more", ["extra"] = "approval", ["note"] = "n" }) });
+        Assert.Equal("retry", step.Status);
+        Assert.Equal("recorded", Give(app, step, AllOk()).Status);
+        Assert.Equal("unchecked", (string)Item(Feature(app), 1)["check"]!);
+        Assert.Equal("confirmed", (string)Item(Feature(app), 0)["check"]!);
+    }
+
+    [Fact]
+    public void An_extra_of_only_spaces_backs_up_nothing()
+    {
+        var items = new Dictionary<string, string> { ["r1"] = "Words here." };
+        Assert.False(RequirementChecks.UsableVerdict(new JsonObject { ["item"] = "r1", ["verdict"] = "says-more", ["extra"] = "   " }, items, []));
+    }
+
+    [Fact]
+    public void An_answer_goes_with_its_words_and_its_quotes_and_a_question_coming_back_gets_its_id_again()
+    {
+        using var app = App();
+        JsonObject Asked(params (string Text, string Quote)[] qs)
+        {
+            var o = Two();
+            o["background"] = Q("Another line.");
+            o["questions"] = new JsonArray([.. qs.Select(q => (JsonNode)new JsonObject { ["text"] = q.Text, ["quotes"] = Q(q.Quote) })]);
+            return o;
+        }
+        var fsd = Fsd.Replace(Over50, Over50 + "\nAnother line.");
+        Import(app, fsd);
+        Record(app, Asked(("Who approves?", Over50)), Verdicts(("r1", "ok", null), ("r2", "ok", null), ("b1", "ok", null)));
+        var questions = RequirementFile.Questions(app.Root, "shop");
+        questions[0]["answer"] = "A manager.";
+        RequirementFile.SaveQuestions(app.Root, "shop", questions);
+
+        // The same words about another sentence are another question.
+        Import(app, fsd + "\n");
+        Import(app, Fsd.Replace(Over50, Over50 + "\nAnother line.\nOne more."));
+        var other = Asked(("Who approves?", Button));
+        other["background"] = Q("Another line.", "One more.");
+        Record(app, other, Verdicts(("r1", "ok", null), ("r2", "ok", null), ("b1", "ok", null), ("b2", "ok", null)));
+        questions = RequirementFile.Questions(app.Root, "shop");
+        Assert.Null(questions.Single(q => (string)q["quotes"]![0]!["text"]! == Button)["answer"]);
+        var first = questions.Single(q => (string)q["quotes"]![0]!["text"]! == Over50);
+        Assert.Equal("dropped", (string)first["status"]!);
+
+        // It comes back: the same id, its answer, open again.
+        Import(app, Fsd.Replace(Over50, Over50 + "\nAnother line.\nOne more.\nAnd more."));
+        var back = Asked(("Who approves?", Over50));
+        back["background"] = Q("Another line.", "One more.", "And more.");
+        Record(app, back, Verdicts(("r1", "ok", null), ("r2", "ok", null), ("b1", "ok", null), ("b2", "ok", null), ("b3", "ok", null)));
+        var again = RequirementFile.Questions(app.Root, "shop").Single(q => (string)q["id"]! == (string)first["id"]!);
+        Assert.Equal(("open", "A manager."), ((string)again["status"]!, (string?)again["answer"]));
+    }
+
+    [Fact]
+    public void Rewording_a_definition_drops_the_approval_of_a_requirement_using_it_and_no_answer_drops_it_too()
+    {
+        using var app = App();
+        JsonObject With(string definition)
+        {
+            var o = Two();
+            o["requirements"]![0]!["refers"] = Q("d1");
+            o["definitions"] = new JsonArray((JsonNode)new JsonObject { ["key"] = "d1", ["kind"] = "glossary", ["name"] = "Order", ["text"] = definition, ["quotes"] = Q(Button) });
+            return o;
+        }
+        var all = Verdicts(("r1", "ok", null), ("r2", "ok", null), ("d1", "ok", null));
+        var step = Give(app, RequirementRun.Prepare(app.Repo, "shop", "1"), With("A thing."));
+        Assert.Equal("recorded", Give(app, step, all).Status);
+        var feature = Feature(app);
+        Item(feature, 0)["status"] = "approved";
+        Item(feature, 1)["status"] = "approved";
+        RequirementFile.Save(app.Root, feature);
+
+        Import(app, Fsd.Replace(Over50, Over50 + "\nAnother line."));
+        var again = With("Something else.");
+        again["background"] = Q("Another line.");
+        step = Give(app, RequirementRun.Prepare(app.Repo, "shop", "1"), again);
+        var some = Verdicts(("r1", "ok", null), ("d1", "ok", null), ("b1", "ok", null));
+        step = Give(app, step, some);
+        Assert.Equal("recorded", Give(app, step, some).Status);
+        feature = Feature(app);
+        Assert.Equal("proposed", (string)Item(feature, 0)["status"]!); // the definition changed
+        Assert.Equal("proposed", (string)Item(feature, 1)["status"]!); // the checker gave no answer
+    }
+
+    [Fact]
+    public void A_section_imported_again_during_its_run_starts_over_rather_than_recording()
+    {
+        using var app = App();
+        var step = RequirementRun.Prepare(app.Repo, "shop", "1");
+        File.WriteAllText(Path.Combine(app.Root, step.Output!), Two().ToJsonString());
+        Import(app, Fsd.Replace("Orders over 50", "Orders over 80"));
+        Assert.Equal("section_changed", Assert.Throws<StangentException>(() => RequirementRun.Check(app.Repo, "shop", "1", null)).Code);
     }
 }

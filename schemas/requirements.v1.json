@@ -35,7 +35,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "title", "kind", "statement", "quotes", "acceptance", "refers", "status", "check", "note", "hash", "links"],
+        "required": ["id", "title", "kind", "statement", "quotes", "acceptance", "refers", "status", "check", "note", "hash"],
         "additionalProperties": false,
         "properties": {
           "id": { "type": "string", "pattern": "^R-[0-9]{4,}$" },
@@ -57,8 +57,7 @@
           "check": { "$ref": "#/definitions/check" },
           "note": { "$ref": "#/definitions/note" },
           "hash": { "description": "Over the title, statement, kind, quotes, criteria and definitions it refers to: a change drops an approved item back to proposed (D11).", "type": "string" },
-          "decided_by": { "description": "From git after merge, never typed (D58).", "type": ["string", "null"] },
-          "links": { "description": "Requirement ↔ page statement links.", "type": "array" }
+          "decided_by": { "description": "From git after merge, never typed (D58).", "type": ["string", "null"] }
         }
       }
     },

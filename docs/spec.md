@@ -112,16 +112,17 @@ The FSD stays the record. On top of it, one AI pass per section builds items, ea
   scenarios made of requirement keys, questions for the BA, and background.
 - **Code checks, one retry:** the schema; keys unique and pointing at something; no statement twice; every quote from the section word
   for word; every sentence cited or background. **Cited** means the quotes of requirements, criteria and definitions cover every word of it,
-  whole words only (a row's label may stay uncovered; a piece under 4 words counts only as a whole sentence or row). **Background** is one sentence
+  whole words only (a piece under 4 words counts only as a whole sentence), and a table row must be quoted whole. **Background** is one sentence
   exactly as listed. A second failure fails the section; `--retry-failed` tries again.
 - **`stangent-requirement-checker`** (fresh context, sees the section, the items, the background and the questions) says whether each item goes further than
-  its quotes, naming the words (code checks they're in the item), and whether each background sentence holds a rule. Disputed ones go back to the writer once, then
-  to the checker again; what's still disputed is recorded `disputed`. A dispute it couldn't back up and then dropped leaves the item `unchecked`, never `confirmed`.
+  its quotes, naming the words (code checks they're in the item), whether each item cites a quote it has nothing to do with, and whether each background sentence holds
+  a rule. Disputed ones go back to the writer once, then to the checker again; what's still disputed is recorded `disputed`. A dispute it couldn't back up and then dropped
+  leaves the item `unchecked`.
 - **Files,** committed, under `specs/requirements/`: `ids.yaml` (each kind's last number: an id is given once), `runs.json` (cost, retries, counts), and per document
   `F-<id>.yaml` (one per section, following the FSD's section tree, parents listing children), `questions.yaml`, and two views written by code: `index.yaml` (one line per
   item, read first) and `glossary.yaml`. Working files are in `.stangent/req/`.
 - **Ids** are plain numbers, assigned once: `F-`, `R-`, `D-` (definitions), `J-`, `S-`, `Q-`. On a re-run an item with the same quotes and words keeps its id, as does one reworded
-  item alone on its quotes; ids whose quotes are gone are retired. A change to the title, statement, kind, quotes, criteria or `refers`, or a dispute, drops an approved item to
+  item alone on its quotes; ids whose quotes are gone are retired. A change to the title, statement, kind, quotes, criteria or the definitions it uses, or any answer from the checker but `ok`, drops an approved item to
   `proposed`. Reconcile (not built) replaces this with carrying items forward by code.
 - **Not built yet:** approval, links, reconcile across documents and renumbering, a pass for clashes between sections, Jira and as-built sources, diagrams. Journeys are within one
   section, since extraction sees one section at a time.

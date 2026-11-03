@@ -8,20 +8,20 @@ using YamlDotNet.RepresentationModel;
 namespace Stangent.Spec.Trace;
 
 /// <summary>
-/// <c>specs/trace.yaml</c> (D58, contract <c>trace-links</c> v1): one entry per link or finding between an FSD section
+/// <c>specs/trace.yaml</c> (D58, contract <c>trace-links</c> v2): one entry per link or finding between an FSD section
 /// and a reference page, with both quotes, the state, and the decision a person makes by editing the file in a PR.
 /// Written by code in one fixed form, so a re-run with the same content gives the same bytes; the dashboard (Phase 8)
 /// will edit the same file.
 /// </summary>
 public static class TraceFile
 {
-    public const string Schema = "trace-links.v1.json";
+    public const string Schema = "trace-links.v2.json";
     public static readonly string[] States = ["agree", "gap", "conflict", "undocumented"];
     public static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "defer"];
 
     public static string PathIn(string root) => Path.Combine(root, "specs", "trace.yaml");
 
-    public static JsonObject Empty() => new() { ["version"] = 1, ["entries"] = new JsonArray() };
+    public static JsonObject Empty() => new() { ["version"] = 2, ["entries"] = new JsonArray() };
 
     public static JsonObject Load(string root) => File.Exists(PathIn(root)) ? Parse(File.ReadAllText(PathIn(root))) : Empty();
 
@@ -49,9 +49,9 @@ public static class TraceFile
     public static string Write(JsonObject trace)
     {
         var sb = new StringBuilder();
-        sb.Append("# FSD ↔ reference page links and findings (trace-links v1, D58). Edit `decision` only:\n");
+        sb.Append("# FSD ↔ reference page links and findings (trace-links v2, D58, D99). Edit `decision` only:\n");
         sb.Append("# agree, code-wrong, fsd-wrong or defer. `decided_by` is filled from git after merge, never typed.\n");
-        sb.Append("version: 1\nentries:");
+        sb.Append("version: 2\nentries:");
         var entries = Sorted(trace["entries"]?.AsArray() ?? []).ToList();
         if (entries.Count == 0) sb.Append(" []");
         sb.Append('\n');
@@ -63,7 +63,7 @@ public static class TraceFile
             {
                 if (e[end] is not JsonObject o) { sb.Append($"    {end}: null\n"); continue; }
                 sb.Append($"    {end}:\n");
-                foreach (var k in end == "fsd" ? new[] { "doc", "section", "title", "quote", "quoteHash" } : ["id", "statement", "quote", "quoteHash"])
+                foreach (var k in end == "fsd" ? new[] { "doc", "section", "title", "requirement", "quote", "quoteHash" } : ["id", "statement", "quote", "quoteHash"])
                     if (o[k] is not null) sb.Append($"      {k}: {S(o[k])}\n");
             }
             sb.Append($"    by: {S(e["by"])}\n");
@@ -96,8 +96,8 @@ public static class TraceFile
     static readonly JsonSerializerOptions Json = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     /// <summary>An entry's id: the same link and quotes always get the same id, so decisions survive a re-run.</summary>
-    public static string EntryId(string state, string? doc, string? section, string? page, string? fsdQuote, string? pageQuote) =>
-        "L" + CanonicalJson.Hash(string.Join("\u0001", state, doc ?? "", section ?? "", page ?? "", Quotes.Normalize(fsdQuote ?? ""), Quotes.Normalize(pageQuote ?? "")))[..10];
+    public static string EntryId(string state, string? doc, string? section, string? page, string? fsdQuote, string? pageQuote, string? requirement = null) =>
+        "L" + CanonicalJson.Hash(string.Join("\u0001", [state, doc ?? "", section ?? "", page ?? "", Quotes.Normalize(fsdQuote ?? ""), Quotes.Normalize(pageQuote ?? ""), .. requirement is null ? Array.Empty<string>() : [requirement]]))[..10];
 
     public static string QuoteHash(string quote) => CanonicalJson.Hash(Quotes.Normalize(quote));
 }

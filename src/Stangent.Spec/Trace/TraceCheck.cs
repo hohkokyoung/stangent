@@ -52,14 +52,18 @@ public static class TraceCheck
         var typedBefore = (baseTrace?["entries"]?.AsArray() ?? []).OfType<JsonObject>().ToDictionary(e => (string)e["id"]!, e => (string?)e["decided_by"]);
         var stale = new List<string>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
+        var requirements = new Lazy<HashSet<string>>(() => [.. Stangent.Spec.Requirements.RequirementFile.Docs(root).SelectMany(d => Stangent.Spec.Requirements.RequirementFile.Features(root, d))
+            .SelectMany(f => f["requirements"]!.AsArray().Select(r => (string)r!["id"]!))]);
         foreach (var e in trace["entries"]!.AsArray().OfType<JsonObject>())
         {
             var id = (string)e["id"]!;
             if (!seen.Add(id)) problems.Add($"{id}: the id is used twice");
             var fsd = e["fsd"] as JsonObject;
             var page = e["page"] as JsonObject;
-            var expected = TraceFile.EntryId((string)e["state"]!, (string?)fsd?["doc"], (string?)fsd?["section"], (string?)page?["id"], (string?)fsd?["quote"], (string?)page?["quote"]);
+            var expected = TraceFile.EntryId((string)e["state"]!, (string?)fsd?["doc"], (string?)fsd?["section"], (string?)page?["id"], (string?)fsd?["quote"], (string?)page?["quote"], (string?)fsd?["requirement"]);
             if (id != expected) problems.Add($"{id}: the state, an end or a quote was edited by hand (only `decision` is edited; the id would be {expected})");
+            if ((string?)fsd?["requirement"] is { } requirement && !requirements.Value.Contains(requirement))
+                problems.Add($"{id}: requirement {requirement} doesn't exist any more");
 
             var quotesMatch = true;
             if (fsd is not null)

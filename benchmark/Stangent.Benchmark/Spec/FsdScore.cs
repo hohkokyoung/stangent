@@ -99,6 +99,7 @@ public static class FsdScore
                 ["aiFoundNone"] = sections.Count(s => (string?)s["candidatesBy"] == "ai" && s["candidates"]!.AsArray().Count == 0),
             },
             ["cost"] = Cost(sections),
+            ["requirements"] = Requirements(root, doc, items, findings),
             ["items"] = results,
             ["handCheckSample"] = new JsonArray([.. handSample.Select(f => (JsonNode)new JsonObject
             {
@@ -106,6 +107,31 @@ public static class FsdScore
                 ["fsdQuote"] = f["fsd"]?["quote"]?.DeepClone(), ["page"] = f["page"]?["id"]?.DeepClone(),
                 ["pageQuote"] = f["page"]?["quote"]?.DeepClone(), ["note"] = f["note"]?.DeepClone(),
             })]),
+        };
+    }
+
+    /// <summary>Extraction (D99): what was built from the FSD, whether the planted sentences became requirements rather
+    /// than background, the checker's verdicts, the BA's load, and what it cost across every attempt.</summary>
+    static JsonObject Requirements(string root, string doc, List<JsonObject> items, List<JsonObject> findings)
+    {
+        var features = Stangent.Spec.Requirements.RequirementFile.Features(root, doc);
+        var reqs = features.SelectMany(f => f["requirements"]!.AsArray().OfType<JsonObject>()).ToList();
+        var background = features.SelectMany(f => f["background"]!.AsArray().OfType<JsonObject>()).ToList();
+        var quotes = reqs.SelectMany(r => r["quotes"]!.AsArray().Select(q => Quotes.Normalize((string)q!["text"]!))).ToList();
+        var planted = items.Where(i => (string)i["kind"]! is "gap" or "conflict").Select(i => Quotes.Normalize((string)i["text"]!)).ToList();
+        var missed = planted.Where(p => !quotes.Any(q => q.Contains(p, StringComparison.Ordinal) || p.Contains(q, StringComparison.Ordinal))).ToList();
+        var runs = Stangent.Spec.Requirements.RequirementRun.LoadRuns(root).Where(r => r.Key.StartsWith(doc + "#", StringComparison.Ordinal)).Select(r => r.Value!.AsObject()).ToList();
+        return new JsonObject
+        {
+            ["features"] = features.Count, ["requirements"] = reqs.Count,
+            ["withAcceptance"] = reqs.Count(r => r["acceptance"]!.AsArray().Count > 0),
+            ["byCheck"] = new JsonObject(new[] { "confirmed", "disputed", "unchecked" }.Select(c => KeyValuePair.Create(c, (JsonNode?)reqs.Count(r => (string)r["check"]! == c)))),
+            ["background"] = background.Count, ["backgroundDisputed"] = background.Count(b => (string)b["check"]! != "confirmed"),
+            ["questions"] = Stangent.Spec.Requirements.RequirementFile.Questions(root, doc).Count(q => (string)q["status"]! == "open"),
+            ["plantedCited"] = new JsonObject { ["cited"] = planted.Count - missed.Count, ["of"] = planted.Count, ["missed"] = new JsonArray([.. missed.Select(m => (JsonNode)m)]) },
+            ["findingsWithRequirement"] = findings.Count(f => f["fsd"]?["requirement"] is not null),
+            ["failedSections"] = runs.Count(r => r["failed"] is not null), ["retries"] = runs.Sum(r => (int?)r["retries"] ?? 0), ["fixes"] = runs.Sum(r => (int?)r["fixes"] ?? 0),
+            ["spentUsd"] = Math.Round(runs.Sum(r => (double?)r["spentUsd"] ?? 0), 3),
         };
     }
 

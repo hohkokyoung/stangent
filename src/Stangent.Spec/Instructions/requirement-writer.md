@@ -25,15 +25,15 @@ Return:
   pick a reading.
 - **background:** every sentence no item needs: an introduction with nothing to check, a caption, a remark on layout, a row
   of column headings. Never a rule: anything the system must do or allow gets an item, however minor. Copy each sentence
-  exactly as listed, one per entry.
+  exactly as listed (without the list's `- `), one per entry.
 
 Rules:
 - **Every sentence listed under "The sentences" is either fully covered by the quotes of your requirements, criteria and
   definitions, or copied into `background`.** Code checks this, whole words only. Quoting part of a sentence leaves the rest
   uncovered, so quote whole sentences, and quote a table row whole, with its `|` marks. Journey and question quotes don't
-  count.
-- Quotes are copied exactly from the section's text, and are at least 4 words, or a whole table cell or list item. Never
-  paraphrase in a quote. No quote, no item.
+  count. Each quote must back what its item says: a separate agent rejects a quote added to an item it has nothing to do with.
+- Quotes are copied exactly from the section's text, and are at least 4 words, or a whole sentence, table cell or list item.
+  Never paraphrase in a quote. No quote, no item.
 - One fact in one place. Don't give the same fact as two items, or as an item and a definition.
 - Only what's written here. Don't use what you know about the product, and don't add what would be sensible.
 - Keys: `r1`, `r2`… for requirements, `d1`… for definitions, `j1`… for journeys, `s1`… for scenarios. Code gives the real
