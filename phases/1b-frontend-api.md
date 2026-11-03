@@ -1,7 +1,7 @@
 ---
 phase: 1b
 name: frontend-api
-status: done
+status: needs review
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3 }
 provides: {}
 ---
@@ -255,3 +255,41 @@ the v2 layout (the frontend extractor writes fragments, which are unchanged), th
 `FrontendScanner`, `frontend-http`, `ApiShapes`); fragments are stored as before; all tests pass on v3. Kavita's
 OpenAPI answer key, re-run on the v3 graph, gives byte-identical results (endpoints and fields 1.00 / 1.00, 405
 callers linked). 1b now consumes `code-graph: 3` and is `done` again.
+
+### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
+v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.
+
+### Reopened 2026-11-04 by the overhaul, 1.2 · Playwright as evidence (D115)
+
+**What was built.** The `playwright-specs` detector, `stangent graph screen-tests`, and `PlaywrightSpecs` in `Stangent.Graph`, the one
+place that finds specs and matches a path to a route. Bug proof calls it, and keeps its own looser read of `goto` so its results don't
+change. Details: `docs/code-graph.md`, "Screen tests".
+
+**Results, no AI.** Measured once, with nothing tuned afterwards except the wording of one ❓ reason.
+
+| Repo (commit) | Screens | Specs | `goto`s read | Resolved | ❓ `goto`s | ❓ specs with no `goto` |
+|---|---|---|---|---|---|---|
+| eShop (913acea) | Blazor, no `page` points | 3 | 5 | 0 | 5, no screen on the map | 0 |
+| Actual (288bf88) | React Router | 32 | 39 | 27 | 12: 6 other receivers, 3 built URLs, 3 no screen | 4 |
+| bonds (9862157) | React Router | 32 | 205 | 96, on 20 routes | 109, all built URLs | 0 |
+| **Total** | | **67** | **249** | **123 (49%)** | **126** | **4** |
+
+**Hand-check of 10 links.** Every 9th link on bonds, read against the spec line and `web/src/App.tsx`: 10 of 10 are right (`/register`, `/admin/settings`
+twice, `/login`, `/vaults`, `/auth/callback`, `/settings/personalize`, `/settings/users`, `/settings`, and one more `/register`). A
+query string was dropped correctly on `/auth/callback?link_token=…`.
+
+Beyond those ten:
+- All 27 of Actual's links go to `/`, which is `<StartPageRedirect />`. Each is right as written, and says little: its tests land there and click on. That's the redirect gap.
+- eShop's three paths (`/`, `/cart`, `/user/orders`) are real `@page` routes in Razor files. ❓ is the right answer until Razor has `page` points (D65); no link was guessed.
+- Actual's 6 "other receivers" are real `Page`s named `leader`, `follower` and so on. They stay ❓: a name can't tell them from a page object.
+- bonds has 159 test files and 32 count; the other runner's tests were left alone.
+
+**Byte check.** Against the code before these slices, on the shop fixture (334 lines) and Sonarr at 0bffefe7c8 (228,617 lines; `global.json` removed in a scratch copy, for lack of the SDK it pins), a repo with no specs exports the same bytes, apart from the fragment fingerprints, which change with every new stangent build on purpose.
+
+**Known gaps.** `docs/code-graph.md` lists them. Found while moving the finder, left alone so results stay the same:
+- A route two frontends share has the page id `page:<frontend>|<route>`, which `RelatedSpecs` never matches.
+- Bug proof reads only `*.spec.ts` and `*.spec.js`, so it finds none of Actual's `*.test.ts`, which the graph does find.
+- It also reads a `goto` in a comment, and `"/a" + id` as `/a`.
+
+**Impact on other phases.** Nothing reads these lines yet. A later step can cite `read`; a step that runs the spec can cite `ran`.
+Follow-ups: show them beside an impact answer when a consumer needs it (a new field means `impact-report` v6), and read helper files.

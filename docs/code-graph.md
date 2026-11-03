@@ -1,15 +1,16 @@
-# Code graph (contract `code-graph` v3)
+# Code graph (contract `code-graph` v4)
 
 The map of the code that impact analysis walks (decisions D25–D28, frontends D30–D32, history D34–D42).
 It's built by code from the code and its git history; it's never committed and has no AI in it. v2
 (Phase 1b) added frontends: components, templates, pages, and the `renders` and `maps-field` lines.
-v3 (Phase 1c) adds 📜 `changes-with` lines from git history and `meta.history`.
+v3 (Phase 1c) adds 📜 `changes-with` lines from git history and `meta.history`. v4 (the overhaul, 1.1 and 1.2) adds
+`opens-screen` lines from Playwright specs and `meta.dirtyFiles`.
 
 ## Where it lives
 
 - `.stangent/graph.sqlite`, git-ignored and tagged with the commit it was built from (D25). Its
-  file layout has its own version (`meta.schemaVersion`, now 3). An older layout is rebuilt rather
-  than migrated.
+  file layout has its own version (`meta.schemaVersion`, still 3: v4 added two optional `meta` values and no
+  table). An older layout is rebuilt rather than migrated.
 - `stangent graph export <file>` / `import <file>` write and read one gzip'd, canonical JSON-lines
   file. Two exports of the same graph are byte-identical; this is the unit CI will share.
 
@@ -54,6 +55,7 @@ everything that can reach X by following lines backwards.
 | `renders` | component → its template; template or JSX → a child component | yes |
 | `maps-field` | frontend property → the backend property with the same JSON name | yes |
 | `contains` | project → file → type → member, table → column | no (structure) |
+| `opens-screen` | a Playwright spec's `goto` → the screen it opens; stored apart (below) | no, and no other reader sees it |
 
 ### Labels
 
@@ -94,6 +96,35 @@ impact walk never follows them.
     aren't. A blobless clone (`blob:none`) would fetch over the network on every build (34 s on nopCommerce),
     so there renames aren't followed and the build warns (`history_renames_skipped`).
 
+## Screen tests: 🟡 `opens-screen` (D115)
+
+An existing Playwright spec whose `goto` matches a screen's route is a line from the spec and line to the `page` point. It says a
+test exists: evidence strength `read`. Only a real run can make it `ran`, and the graph never runs anything.
+
+`stangent graph screen-tests [--screen <route or page id>]` lists `links` (with `spec`, `line`, `goto`, `route`, `label`, `strength`
+and a `test` citation) and `unresolved`, plus counts: `specs`, `gotosResolved`, `blindSpots`. `PlaywrightLinks.Answer` is the same in
+code. An unknown screen is `not_found`.
+
+- **Which files:** `*.spec.*` and `*.test.*`, Playwright's own default names, that git tracks or doesn't ignore. A file counts if it imports
+  Playwright, or has a `playwright.config.*` in its folder or above. Another runner's tests are left alone.
+- **Which calls:** `goto` on a receiver named exactly `page` (`page.goto`, `this.page.goto`), not in a comment or a string, whose whole
+  argument is one string. `http://localhost` and other loopback addresses count as the app.
+- **Which screens:** the same segments as a route (`:param` and `*` match any one). The fewest wild segments win, so `/settings` isn't
+  also `/:id`. The spec's own frontend wins, if it sits in one with a match; otherwise every frontend with that route is linked.
+- **Everything else is ❓,** with `detector: playwright-specs`, and is never guessed: a built URL, another receiver (it may be a page
+  object), another address, a hash route, a relative URL, a route no screen has, and a Playwright spec with no `goto`.
+
+**Kept apart.** The lines are `CodeGraph.ScreenTests` (`meta.screenTests`), not edges, and specs aren't points. So the impact walk,
+scoring, reference pages, ticket starting points and the 1d splitter can't see them, the same way 📜 lines are kept from the walk. An
+impact answer doesn't list them yet. A repo with no specs exports the same bytes as before.
+
+**Known gaps.**
+- `goto` in a helper or setup file (`cart-helpers.ts`, `login.setup.ts`) isn't read.
+- A link says where a test lands first. It doesn't follow redirects (a `/` that redirects stays `/`) or the clicks after.
+- A real `Page` named anything but `page` (`leader`, `adminPage`) is ❓.
+- Razor and Blazor screens have no `page` points (D65), so specs on those apps are all ❓.
+- Screens are matched without the app's base path, and the runner's `baseURL` isn't read.
+
 ## Detectors (D17)
 
 Detectors are switched on per repo in `stangent.yaml`. `detectors: []` (the default) runs all of
@@ -107,6 +138,7 @@ them; list names to run only those; `[none]` runs none. Per-detector settings go
 | `entity-tables` | `entityBaseTypes: [Ns.BaseEntity]`, for ORMs mapped by convention |
 | `config-keys` | — |
 | `http-services` | `services: ["stock-api=Shop.Stock"]`, for service names without an Aspire AppHost |
+| `playwright-specs` | — (below) |
 | `frontend-http` | `wrappers: ["useApiQuery:path", "useApiMutation:path:method"]`: in-house call helpers as `name:urlProperty[:verbProperty][@VERB]` (a plain `name` takes the URL as its first argument; `#N` names the Nth argument instead of a property, e.g. `send:#1:#0`; `@VERB` gives the verb, else it's read off the name: delete/remove, put/update, patch, post/save/mutation, else GET) |
 
 `aspnetcore-routes` also takes `groupConventions: ["Ns.IEndpointGroup=/api/{type}"]` for route groups

@@ -194,6 +194,8 @@ public sealed class LinkContext(CodeGraph graph, IReadOnlyDictionary<string, Lis
 {
     public CodeGraph Graph { get; } = graph;
     public IReadOnlyDictionary<string, List<string>> Settings { get; set; } = settings;
+    /// <summary>The repo's folder, for a detector that reads files the compiler never saw (Playwright specs).</summary>
+    public string Root { get; init; } = "";
     readonly HashSet<string> nodeIds = [.. graph.AllNodes.Select(n => n.Id)];
     readonly HashSet<(string, string, string, string)> edgeKeys = [];
 

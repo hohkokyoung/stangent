@@ -58,6 +58,8 @@ public static class GraphStore
                 Exec(db, "INSERT INTO meta VALUES ('history', $h)", ("$h", CanonicalJson.SerializeCompact(HistoryJson(history))));
             if (graph.DirtyFiles is { } dirty)
                 Exec(db, "INSERT INTO meta VALUES ('dirtyFiles', $d)", ("$d", CanonicalJson.SerializeCompact(DirtyJson(dirty))));
+            if (graph.ScreenTests.Count > 0)
+                Exec(db, "INSERT INTO meta VALUES ('screenTests', $s)", ("$s", CanonicalJson.SerializeCompact(ScreenTestsJson(graph.ScreenTests))));
             foreach (var l in SortHistory(graph.HistoryLines))
                 Exec(db, "INSERT INTO history_lines VALUES ($s, $t, $n, $of)", ("$s", l.Source), ("$t", l.Target), ("$n", l.Shared), ("$of", l.Of));
             Exec(db, """
@@ -106,6 +108,8 @@ public static class GraphStore
             graph.History = HistoryFrom(JsonNode.Parse(history)!.AsObject());
         if (Scalar(db, "SELECT value FROM meta WHERE key = 'dirtyFiles'") is { } dirty)
             graph.DirtyFiles = DirtyFrom(JsonNode.Parse(dirty)!.AsArray());
+        if (Scalar(db, "SELECT value FROM meta WHERE key = 'screenTests'") is { } tests)
+            graph.ScreenTests.AddRange(ScreenTestsFrom(JsonNode.Parse(tests)!.AsArray()));
         foreach (var r in Rows(db, "SELECT source, target, shared, of FROM history_lines ORDER BY target, source"))
             graph.HistoryLines.Add(new HistoryLine(r.GetString(0), r.GetString(1), r.GetInt32(2), r.GetInt32(3)));
         return graph;
@@ -141,6 +145,7 @@ public static class GraphStore
                     graph.Commit = (string)o["commit"]!;
                     if (o["history"] is JsonObject h) graph.History = HistoryFrom(h);
                     graph.DirtyFiles = o["dirtyFiles"] is JsonArray d ? DirtyFrom(d) : []; // written only when there are some
+                    if (o["screenTests"] is JsonArray st) graph.ScreenTests.AddRange(ScreenTestsFrom(st));
                     break;
                 case "history":
                     graph.HistoryLines.Add(new HistoryLine((string)o["source"]!, (string)o["target"]!, (int)o["shared"]!, (int)o["of"]!));
@@ -183,6 +188,7 @@ public static class GraphStore
         };
         // Only when there's something to say, so a clean tree's export has the same bytes as before these existed.
         if (graph.DirtyFiles is { Count: > 0 } dirty) meta["dirtyFiles"] = DirtyJson(dirty);
+        if (graph.ScreenTests.Count > 0) meta["screenTests"] = ScreenTestsJson(graph.ScreenTests);
         yield return Line(meta);
         foreach (var f in graph.Fragments.Values)
             yield return Line(new() { ["t"] = "fragment", ["project"] = f.ProjectId, ["fingerprint"] = f.Fingerprint });
@@ -223,6 +229,13 @@ public static class GraphStore
     static JsonArray DirtyJson(IEnumerable<string> files) => new([.. files.Order(StringComparer.Ordinal).Select(f => (JsonNode)f)]);
 
     static List<string> DirtyFrom(JsonArray files) => [.. files.Select(f => (string)f!)];
+
+    static JsonArray ScreenTestsJson(IEnumerable<ScreenTest> tests) => new([.. tests
+        .OrderBy(t => t.Spec, StringComparer.Ordinal).ThenBy(t => t.Line).ThenBy(t => t.Page, StringComparer.Ordinal)
+        .Select(t => (JsonNode)new JsonObject { ["spec"] = t.Spec, ["line"] = t.Line, ["goto"] = t.Goto, ["page"] = t.Page, ["label"] = (int)t.Label })]);
+
+    static IEnumerable<ScreenTest> ScreenTestsFrom(JsonArray tests) => tests.Select(t =>
+        new ScreenTest((string)t!["spec"]!, (int)t["line"]!, (string)t["goto"]!, (string)t["page"]!, (Label)(int)t["label"]!));
 
     static IEnumerable<HistoryLine> SortHistory(IEnumerable<HistoryLine> lines) =>
         lines.OrderBy(l => l.Target, StringComparer.Ordinal).ThenBy(l => l.Source, StringComparer.Ordinal);

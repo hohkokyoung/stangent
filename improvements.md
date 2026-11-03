@@ -32,7 +32,7 @@ Here's the full list, grouped by area. Each section ends with a line on why it's
 - 🟡 The call graph handles real C#. It resolves interface calls and DI registrations, and shows every entry point (endpoint, page, job, handler) that reaches a method.  
   *Roslyn graph with DI and impact answers, scored on real repos. Known gaps: code dispatched by interface or name, and framework-run code (D109). Recommend: close them in Phase 4 as decided.*
 - 🟡 Adapters for the actual stack: Playwright tests, Svelte screens, Razor pages, .NET code and SQL seed data.  
-  *.NET, Angular and React are in. Playwright is used only for bug proof (D86). Razor is a blind spot (D65). Svelte is out until a repo needs it (D31). No SQL seed data. Recommend: Playwright as evidence, the rest when a repo needs them.*
+  *.NET, Angular and React are in. Playwright is used for bug proof (D86), and existing specs now link to screens in the graph as evidence of strength `read` (1.2, D115). Razor is a blind spot (D65). Svelte is out until a repo needs it (D31). No SQL seed data. Recommend: the rest when a repo needs them.*
 - 🟡 Scripts generate navigation and numbering, so agents can't break links or page order.  
   *Code numbers statements and renders pages (`PageRender.cs`). No generated navigation. Recommend: do, small.*
 - 🟡 Script checks on every output: coverage (`doc-check`), broken links (`docs-lint`), plan order (`plan-check`), and that no client data leaks into the tool (`prompt-lint`).  

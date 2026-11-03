@@ -1,7 +1,7 @@
 ---
 phase: 2a
 name: reference
-status: done
+status: needs review
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 5 }
 provides: { reference-page: 1 }
 ---
@@ -276,3 +276,6 @@ check (it judges statement content). With 2 wrong in 88, Sonnet stays the writer
 - A person's hand-read before pages are relied on in a real project (D67's cost).
 - The verifier: how it reads conditions whose names invert their meaning (S8), and whether it should also check each
   action's endpoint links (A3); code checks only that each is an endpoint in the slice.
+
+### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
+v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.

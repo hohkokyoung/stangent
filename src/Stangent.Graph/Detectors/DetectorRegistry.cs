@@ -15,6 +15,7 @@ public static class DetectorRegistry
         new ConfigKeysDetector(),
         new HttpServicesDetector(), // after routes: it links calls to their endpoints
         new FrontendHttpDetector(), // after routes too: frontend calls → endpoints, fields → properties
+        new PlaywrightDetector(), // existing specs' goto → screens, stored apart and never walked (D115)
     ];
 
     /// <summary>Empty list → all built-ins; <c>[none]</c> → none; otherwise the named ones (D17).</summary>

@@ -1,7 +1,7 @@
 ---
 phase: 1c
 name: git-history
-status: done
+status: needs review
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3 }
 provides: {}
 ---
@@ -299,3 +299,6 @@ How to read it:
 - ~~1b's `needs review`: confirm nothing in 1b depends on the v2 layout, then move it to `code-graph: 3`.~~ Done.
 - Next time 📜 is tuned, make the eligibility rule all of Gate 2's checks.
 - A person checks the Test 2 hand-check sample once (D28).
+
+### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
+v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.

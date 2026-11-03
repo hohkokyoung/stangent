@@ -1,7 +1,7 @@
 ---
 phase: 3
 name: tickets
-status: done
+status: needs review
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 5, reference-page: 1, source-document: 1, trace-links: 1 }
 provides: { ticket-bundle: 2, ticket-update: 1, bug-proof: 1 }
 ---
@@ -783,3 +783,8 @@ Phase 4 consumes `ticket-bundle` v2 and `bug-proof` v1; it hasn't started, so no
 2. **The proof re-run on Sonarr** (at most about $45, the $40 cap plus about $4 of drafts; last time's recorded cost was $13, held down by D104's bug; owner's OK; remove `bug-proof.json` first; re-sync the benchmark binary), with the drafts phase and replay after it, to re-confirm grounded and repeatable; then the smaller proof issues if they still matter.
 3. **Phase 4's first question:** does the bundle help? The fix agent on the same bugs three ways (Open questions).
 4. **Phase 4:** the graph gaps; recording what a failing test ran as evidence; an agent waits for a person's go on a ticket with no proof (D75).
+
+### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
+v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.
+
+The code that finds related specs moved from `AppSession` to `PlaywrightSpecs` in `Stangent.Graph`, with the same behaviour; `AppSession.RelatedSpecs` and `RouteMatches` stay, and bug proof's tests pass unchanged.

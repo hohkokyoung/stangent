@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Stangent.Core;
+using Stangent.Graph;
 
 namespace Stangent.Tickets.Proof;
 
@@ -12,11 +13,6 @@ namespace Stangent.Tickets.Proof;
 /// </summary>
 public static partial class AppSession
 {
-    static readonly string[] Skip = ["node_modules", "test-results", "playwright-report", ".git", ".claude", ".stangent", "bin", "obj"];
-
-    [GeneratedRegex(@"\.goto\(\s*['""`]([^'""`$]+)['""`]")]
-    private static partial Regex GotoPath();
-
     /// <summary>
     /// Specs outside the reproducer's own folder whose <c>goto</c> path is one of the bundle's screens (a screen page's
     /// id is <c>page:&lt;route&gt;</c>; <c>:param</c> segments match any segment). Repo-relative, sorted.
@@ -32,41 +28,18 @@ public static partial class AppSession
         if (!Directory.Exists(dir)) return [];
         var own = Path.GetFullPath(Path.Combine(repo.Root, app.SpecDir)).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         var found = new List<string>();
-        foreach (var file in Specs(dir))
+        foreach (var file in PlaywrightSpecs.Files(dir))
         {
             if (file.StartsWith(own, StringComparison.Ordinal)) continue;
-            var paths = GotoPath().Matches(File.ReadAllText(file)).Select(m => m.Groups[1].Value);
+            var paths = PlaywrightSpecs.LiteralGotos(File.ReadAllText(file));
             if (paths.Any(p => routes.Any(r => RouteMatches(r, p))))
                 found.Add(Path.GetRelativePath(repo.Root, file).Replace('\\', '/'));
         }
         return [.. found.Order(StringComparer.Ordinal)];
     }
 
-    static IEnumerable<string> Specs(string dir)
-    {
-        var stack = new Stack<string>([dir]);
-        while (stack.Count > 0)
-        {
-            var d = stack.Pop();
-            foreach (var f in Directory.EnumerateFiles(d))
-                if (Regex.IsMatch(Path.GetFileName(f), @"\.spec\.(ts|js)$")) yield return Path.GetFullPath(f);
-            // Not into links (another checkout, a loop) or tooling folders.
-            foreach (var sub in Directory.EnumerateDirectories(d)
-                         .Where(s => !Skip.Contains(Path.GetFileName(s)) && !new DirectoryInfo(s).Attributes.HasFlag(FileAttributes.ReparsePoint)))
-                stack.Push(sub);
-        }
-    }
-
-    /// <summary>A spec's <c>goto</c> path against a screen's route: the same segments, a route's <c>:param</c> or <c>*</c> matching any.</summary>
-    public static bool RouteMatches(string route, string path)
-    {
-        if (Uri.TryCreate(path, UriKind.Absolute, out var abs) && abs.Scheme.StartsWith("http", StringComparison.Ordinal)) path = abs.AbsolutePath;
-        path = path.Split('?', '#')[0].TrimEnd('/');
-        route = route.TrimEnd('/');
-        var a = route.Split('/');
-        var b = path.Split('/');
-        return a.Length == b.Length && a.Zip(b).All(x => x.First.StartsWith(':') || x.First == "*" || string.Equals(x.First, x.Second, StringComparison.OrdinalIgnoreCase));
-    }
+    /// <summary>A spec's <c>goto</c> path against a screen's route (<see cref="PlaywrightSpecs.RouteMatches"/>).</summary>
+    public static bool RouteMatches(string route, string path) => PlaywrightSpecs.RouteMatches(route, path);
 
     /// <summary>The script the reproducer runs its own spec with: only a spec in its folder or a related one, against the
     /// running app. Outside the folders it may edit, so it can't change what the script runs.</summary>

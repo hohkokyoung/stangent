@@ -1,7 +1,7 @@
 ---
 phase: 2c
 name: spec
-status: in progress
+status: needs review
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 5, reference-page: 1, source-document: 1, trace-links: 1, ticket-bundle: 2, bug-proof: 1 }
 provides: {}
 ---
@@ -54,3 +54,6 @@ The core comes first and is scored before the rest, since matching can ship off 
 
 ## Contracts
 Provides a new contract beside `source-document` (name not decided). Phase 3 goes `needs review` when it lands (D20).
+
+### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
+v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.

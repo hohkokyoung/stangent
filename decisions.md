@@ -636,6 +636,7 @@ context to a slice, **(3) check** what a change may have broken (roughly Test 2)
 - **Job 2 next:** the same task given to a subagent with and without its graph slice; tokens, build/tests, misses.
 - The bar is agreed before any run (as D44). A failure reshapes Phase 4 before Phases 2–3 are built on it.
 - End-to-end test links (Playwright `goto` → pages) wait until the pilot reports.
+  *Changed 2026-11-04 (D115):* built in 1.2, as separate lines nothing walks, so they can't affect what the pilot measures.
 **Why:** the graph's accuracy doesn't show it makes agents safer or cheaper; 1c's gains were already small
 (+2 to +6 points), and a bad split makes parallel subagents break each other.
 - *Changed 2026-10-20:* Phase 2 may be **built** before the split check reports. The verdict decides Phase 4's
@@ -2241,8 +2242,13 @@ The order is in `roadmap.md`, "The overhaul: order of work", and it replaces D10
 ## D115 · Line citations and Playwright as evidence: the read paths, and lines kept out of the walk — 2026-11-04 (assistant's call, owner asleep)
 - **Line citations (1.1):** every point already stored its file and lines, so nothing was rebuilt. `SymbolLines.Where` and `stangent graph where <symbol>` read them, and shape the answer to fill an `evidence` citation. Overloads all come back. A missing line stays null.
 - **A dirty tree says so.** A build records the files on the map that differ from its commit. A symbol in one of them has `linesMatchCommit: false` and no citation; a symbol in an untouched file still cites, because its lines are right.
+- **Playwright as evidence (1.2):** a `goto` whose whole URL is a string and matches a screen's route is a 🟡 `opens-screen` line from the `playwright-specs` detector, read by `stangent graph screen-tests`. Anything else is ❓, never a guess. Strength is `read`; only a real run makes it `ran`.
+- **Kept out of the walk, and out of every other reader:** not edges with a kind the walk skips, but `CodeGraph.ScreenTests`, apart like 📜. Scoring, the splitter, reference pages and ticket starting points read `AllNodes` and `AllEdges` directly, so skipping a kind in the walk alone wouldn't have protected them. An impact answer doesn't list them yet.
+- **`code-graph` went to v4; the file layout stayed 3.** Only optional `meta` values were added, so a clean repo with no specs exports the same bytes apart from build fingerprints. Checked against the code before these slices on the shop fixture and on Sonarr (228,617 export lines the same; its `global.json` removed in a scratch copy, for lack of the SDK it pins).
+- **One finder.** `PlaywrightSpecs` holds it; bug proof calls it and keeps its looser read of `goto`, so its results don't change.
 **Why:** 2.3 needs `repo/path:lines`, and a citation that doesn't match its commit is worse than none. Refusing per file keeps a stray edit from blocking every citation, and leaving off-map files out keeps a lock file the build's own restore wrote from marking the tree dirty, and so keeps a clean repo's export bytes the same.
-**Cost:** a partial type answers with its first part, plus the files its other members are in. A part with no members isn't seen.
+An AI step can trust a line only if a test really opens that screen, and a guessed route would be worse than a blind spot. Measured on three public repos (`phases/1b-frontend-api.md`): 123 of 249 `goto`s resolved, 10 of 10 hand-checked links right.
+**Cost:** a partial type answers with its first part, plus the files its other members are in, and a part with no members isn't seen. About half of `goto`s stay ❓ (mostly built URLs), and a link says where a test lands first, not what it goes on to click. Seven phases go to `needs review`, though none reads the new values.
 
 ## Open questions
 

@@ -1,7 +1,7 @@
 ---
 phase: 2b
 name: fsd
-status: done
+status: needs review
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 5, reference-page: 1 }
 provides: { source-document: 1, trace-links: 1 }
 ---
@@ -230,3 +230,6 @@ unsupported or misleading, all fixed: a "judgement call" remark with no evidence
 writer-model decision missing from decisions.md (D66 refined), what most false alarms are (6 of 9 are disputed
 agrees, not "a field without its meaning"), the hand-read's verifier comparison (A3's error is an endpoint link,
 which the verifier isn't asked to judge), and 0.70 × 9/20 written for 62/89 × 9/20. It also confirmed 121 tests pass.
+
+### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
+v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.

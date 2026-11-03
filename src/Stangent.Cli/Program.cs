@@ -217,6 +217,16 @@ where.SetAction(pr => Cli.Run(pr, "graph where", ctx =>
 }));
 graph.Subcommands.Add(where);
 
+var screenOption = new Option<string?>("--screen") { Description = "Only this screen: a route like /orders/:id, or a page id." };
+var screenTests = new Command("screen-tests", "Existing Playwright specs that open a screen, and the goto calls the code couldn't resolve (D115).") { screenOption };
+screenTests.SetAction(pr => Cli.Run(pr, "graph screen-tests", ctx =>
+{
+    var answer = PlaywrightLinks.Answer(Cli.LoadGraph(ctx), SymbolLines.RepoName(ctx.Repo.Root), pr.GetValue(screenOption));
+    ctx.Span.Attributes["stangent.artifact.count"] = answer["links"]!.AsArray().Count;
+    return answer;
+}));
+graph.Subcommands.Add(screenTests);
+
 var exportArg = new Argument<string>("path") { Description = "File to write (gzip'd JSON lines)." };
 var export = new Command("export", "Write the graph to one file, the unit CI shares (D25).") { exportArg };
 export.SetAction(pr => Cli.Run(pr, "graph export", ctx =>

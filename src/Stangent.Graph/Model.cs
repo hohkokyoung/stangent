@@ -64,6 +64,11 @@ public static class EdgeKind
     /// as <see cref="HistoryLine"/>s, so the impact walk never follows them (D40).
     /// </summary>
     public const string ChangesWith = "changes-with";
+    /// <summary>
+    /// 🟡 A Playwright spec's <c>goto</c> opens a screen (code-graph v4). Stored apart from the other lines, as
+    /// <see cref="ScreenTest"/>s, so nothing that reads the graph's lines ever follows them (D115).
+    /// </summary>
+    public const string OpensScreen = "opens-screen";
 
     /// <summary>Lines a change travels back along: behaviour flows through these.</summary>
     public static readonly HashSet<string> Propagating =
@@ -101,6 +106,12 @@ public sealed record HistoryLine(string Source, string Target, int Shared, int O
 public sealed record HistoryInfo(
     string Status, string Commit, string Oldest, int CommitsRead, int CommitsUsed,
     IReadOnlyDictionary<string, int> Dropped, bool RenamesFollowed, string Fingerprint, string? Note = null);
+
+/// <summary>
+/// 🟡 The <c>goto</c> at <see cref="Spec"/>:<see cref="Line"/> opens the screen <see cref="Page"/> (a <c>page</c> point). Like every
+/// line, it points from the dependent (the test) to what it depends on (the screen). It says a test exists, not that it ran.
+/// </summary>
+public sealed record ScreenTest(string Spec, int Line, string Goto, string Page, Label Label = Label.Guessed);
 
 /// <summary>❓ A place where a line couldn't be resolved (D17).</summary>
 public sealed record BlindSpot(string Owner, string File, int Line, string Reason, string Detector = "compiler");
@@ -142,6 +153,8 @@ public sealed class CodeGraph
     /// clean tree. Null: not known (no git, or a graph from before this was recorded).
     /// </summary>
     public IReadOnlyList<string>? DirtyFiles { get; set; }
+    /// <summary>🟡 <c>opens-screen</c> lines (code-graph v4): kept apart from <see cref="AllEdges"/>, as 📜 lines are (D115).</summary>
+    public List<ScreenTest> ScreenTests { get; } = [];
 
     public IEnumerable<Node> AllNodes => Fragments.Values.SelectMany(f => f.Nodes).Concat(LinkedNodes);
     public IEnumerable<Edge> AllEdges => Fragments.Values.SelectMany(f => f.Edges).Concat(LinkedEdges);

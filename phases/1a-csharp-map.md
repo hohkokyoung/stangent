@@ -3,7 +3,7 @@ phase: 1a
 name: csharp-map
 status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1 }
-provides: { code-graph: 3, impact-report: 5 }
+provides: { code-graph: 4, impact-report: 5 }
 ---
 
 # Phase 1a · C# map
@@ -290,8 +290,15 @@ The line-level table above and the exact check were re-run after these fixes. eS
 - **What each kind of symbol answers,** and the gaps: `docs/code-graph.md`, "Line citations".
 - **Results:** tests on the shop fixture cover a C# method, a TypeScript method, a real partial type across two files, a dirty tree
   and the same tree committed. A citation fills an `evidence` record that passes its validator.
-- **Contract:** `code-graph` is bumped once for 1.1 and 1.2 together; see the 1.2 note.
+- **Contract:** `code-graph` is bumped once for 1.1 and 1.2 together; see the next note.
 - **Impact on other phases:** 2.3 reads this for `repo/path:lines`. Nothing else changes: `BuildStats` only gains a field.
+
+### Reopened 2026-11-04 by the overhaul, 1.2 · `code-graph` v3 → v4 (D115)
+- **`code-graph` v4:** the `opens-screen` line kind, stored apart (`meta.screenTests`), the `playwright-specs` detector and its ❓, and
+  `meta.dirtyFiles` from 1.1. `meta.schemaVersion` stays 3: no table changed, and both values are written only when there's something in them.
+- **Details and measurements:** `phases/1b-frontend-api.md`.
+- **Consumers (D20):** `phases check` lists 1b, 1c, 1d, 2a, 2b, 2c and 3 on v3. All are marked `needs review` with a follow-up
+  in `roadmap.md`. None of their code changed for the contract. `impact-report` is unchanged: v5.
 
 ### Reopened 2026-10-20 by Phase 2b · `impact-report` v4 → v5
 - **`impact-report` v5:** the reserved `requirements` array became `fsdSections`: the FSD sections a change reaches

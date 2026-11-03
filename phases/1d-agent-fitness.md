@@ -1,7 +1,7 @@
 ---
 phase: 1d
 name: agent-fitness
-status: in progress
+status: needs review
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3 }
 provides: {}
 ---
@@ -255,3 +255,6 @@ How to read it:
   use `--groups-only` on these runs' cases for a fair baseline.
 - **Trace the missed link** (a deleted interface still used as a parameter type, commit c40a93e144) when Phase 4
   works on the graph.
+
+### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
+v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.

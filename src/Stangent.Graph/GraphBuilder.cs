@@ -154,7 +154,7 @@ public static class GraphBuilder
         }
 
         var link = Stopwatch.StartNew();
-        var linkCtx = new LinkContext(graph, new Dictionary<string, List<string>>());
+        var linkCtx = new LinkContext(graph, new Dictionary<string, List<string>>()) { Root = repo.Root };
         foreach (var detector in detectors)
         {
             linkCtx.Settings = DetectorRegistry.Settings(repo.Config, detector.Name);
@@ -169,7 +169,7 @@ public static class GraphBuilder
 
         // After reading everything, so an edit made during the build counts. Only files the graph holds lines for: elsewhere (a
         // README, or the lock file this build's own restore wrote) nothing it says can be wrong.
-        var onMap = graph.AllNodes.Select(n => n.File).Concat(graph.AllBlindSpots.Select(b => b.File)).OfType<string>().Select(f => f.Normalize()).ToHashSet(StringComparer.Ordinal);
+        var onMap = graph.AllNodes.Select(n => n.File).Concat(graph.AllBlindSpots.Select(b => b.File)).Concat(graph.ScreenTests.Select(t => t.Spec)).OfType<string>().Select(f => f.Normalize()).ToHashSet(StringComparer.Ordinal);
         graph.DirtyFiles = Git.ChangedFiles(repo.Root)?.Where(onMap.Contains).ToList();
         if (graph.DirtyFiles is { Count: > 0 } dirty)
             log.WriteLine($"stangent: {dirty.Count} file(s) differ from {graph.Commit}; `graph where` won't cite their lines.");
