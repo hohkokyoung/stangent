@@ -41,9 +41,10 @@ Three rules live in the validator, not the schema:
 Every call reads the file under a lock (`<file>.lock`, beside it) and writes it whole, so parallel drivers can't get the
 same id. Commit the ledger; ignore the lock. A damaged file stops the call, because starting over would give out old ids again.
 
-Nothing uses it yet. Requirement ids (`RequirementFile.NextId`) have the same shape: a last number per kind, so the move in
-2.3 is `{"format": "R-{0:D4}", "last": <n>, "removed": […]}` per kind. That code reads and writes without a lock, so two
-parallel runs can be given the same id today.
+Requirement ids use it (D114): `RequirementFile.NextId` issues `F-`, `R-`, `D-`, `J-`, `S-` and `Q-` from
+`specs/requirements/ids.json`. The lock is `.stangent/req/ids.lock`, passed in, so it stays out of the committed folder. A repo
+with the old `ids.yaml` carries on from its numbers: the counter is taken over once and the file removed. `Raise` only goes up,
+so two runs doing this together can't give an id out twice. A retired requirement isn't marked `Remove`d yet; that's 2.3.
 
 ## The client-data check
 
@@ -81,6 +82,48 @@ There's no floor and no CI gate (D28). It's a number to watch; a floor is the ow
 
 `Stangent.Cli` shows as "not loaded" and isn't in the total: no test project loads it, so its commands are covered only
 through the Core, Graph, Spec and Tickets code they call.
+
+## State changes
+
+A lifecycle is a stored thing moving between states over time, with code or a person deciding the move. What one command
+returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds every lifecycle's table (D114).
+
+`StateChanges.Move(root, kind, id, from, to, who, reason)` is the one entry point.
+- A move the table doesn't list is refused: `illegal_transition`, with the legal moves in its details.
+- `from` null means a new item, which only code can start. `who` is `{kind: code|person|agent, name}`. No table lets an agent move anything (D18, D60).
+- Staying in the same state does nothing and adds no line, unless the table lists it.
+- A legal move adds one line to the kind's history.
+
+`StateChanges.Apply` does the same for an item whose field holds the state: it reads the field, moves, and writes it.
+
+| Kind | States | Who | History |
+|---|---|---|---|
+| `requirement` | `proposed`, `approved`, `retired` | a person approves; code drops back and retires | `specs/requirements/history.jsonl` |
+| `question` | `open`, `dropped` | code | same |
+| `trace-decision` | `undecided`, `agree`, `code-wrong`, `fsd-wrong`, `defer` | a person decides; code only drops back | `specs/trace-history.jsonl` |
+| `proof` | the proof's outcome values | code | `.stangent/tickets/state-history.jsonl` |
+| `proof-confirmation` | `unconfirmed`, `confirmed` | a person confirms; code clears | same |
+| `draft-posted` | `unposted`, `posted` | a person posts; code starts over when a draft is remade | same |
+| `ticket-step`, `ticket-match` | a ticket AI step's run | code | same |
+| `page-run` | `write`, `verify`, `fix`, `done`, `failed` | code | `.stangent/spec/state-history.jsonl` |
+| `link-run` | `find`, `judge`, `confirm`, `done`, `failed` | code | `.stangent/fsd/state-history.jsonl` |
+| `req-run` | `write`, `confirm`, `fix`, `reconfirm`, `done`, `failed` | code | `.stangent/req/state-history.jsonl` |
+
+**History.** Append-only JSONL, one move per line: `at`, `kind`, `id`, `from`, `to`, `who`, `reason`. It sits beside the state:
+committed state has committed history, and CI adds `specs/trace-history.jsonl` to the bot's PR. No input hash and no artifact
+reads it, so its timestamps change nothing else. An append holds the file under an OS lock, with no lock file beside it.
+
+`stangent state history <kind> <id>` prints one item's moves, oldest first.
+
+**The rule is a test.** `StateChangesTests` scans `src/**/*.cs` for writes of `status`, `decision`, `decided_by`, `confirmedBy`,
+`stage`, `posted` and `outcome` outside the module. A new write fails until it moves onto the module or is listed there with
+its reason. A count that's gone stale fails too.
+
+**Known gaps.**
+- The line is written before the file is saved, so a crash between them leaves a line for a move that wasn't saved.
+- A person's YAML edit is seen only when `trace attribute` runs. A `requirement` approval has no code path yet (D99), so a hand edit leaves no line.
+- Two branches appending to a committed history can conflict in git. `merge=union` in `.gitattributes` would fix it; it isn't set.
+- Agents may edit `.stangent/**` (D60), history included, as they already may `state.json`.
 
 ## Driver tests
 

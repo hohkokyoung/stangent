@@ -125,7 +125,7 @@ code 4 (D24); `spec stale`, `fsd import`, `fsd candidates`, `fsd undocumented` a
   `fsd-wrong`, `defer`) in a PR. `stangent trace approve <doc> <chapter>` sets `agree` on every confirmed agree link
   under a chapter in one edit. `stangent trace check [--base <ref>] [--fix]` is the CI check: schema, ids, both quotes
   still in the FSD and the page (otherwise the decision drops back to undecided), cited symbols, and `decided_by` never
-  typed. After a merge, `stangent trace attribute --base <ref> --by <who>` fills `decided_by` from the code host.
+  typed. After a merge, `stangent trace attribute --base <ref> --by <who>` fills `decided_by` from the code host. Every decision's move goes in `specs/trace-history.jsonl`.
 - Impact answers reach FSD sections through the links (`impact-report` v5, `docs/code-graph.md`).
 
 ## Requirements (2c, D99; contract `requirements` v1, being built)
@@ -146,7 +146,7 @@ The FSD stays the record. On top of it, one AI pass per section builds items, ea
   its quotes, naming the words (code checks they're in the item), whether each item cites a quote it has nothing to do with, and whether each background sentence holds
   a rule. Disputed ones go back to the writer once, then to the checker again; what's still disputed is recorded `disputed`. A dispute it couldn't back up and then dropped
   leaves the item `unchecked`.
-- **Files,** committed, under `specs/requirements/`: `ids.yaml` (each kind's last number: an id is given once), `runs.json` (cost, retries, counts), and per document
+- **Files,** committed, under `specs/requirements/`: `ids.json` (the permanent-id ledger: an id is given once), `history.jsonl` (every status move, `docs/foundation.md`), `runs.json` (cost, retries, counts), and per document
   `F-<id>.yaml` (one per section, following the FSD's section tree, parents listing children), `questions.yaml`, and two views written by code: `index.yaml` (one line per
   item, read first) and `glossary.yaml`. Working files are in `.stangent/req/`.
 - **Ids** are plain numbers, assigned once: `F-`, `R-`, `D-` (definitions), `J-`, `S-`, `Q-`. On a re-run an item with the same quotes and words keeps its id, as does one reworded

@@ -175,8 +175,8 @@ Ahead of Stangent because Stangent's discrepancy check failed its bar, with abou
 
 - ✅ Scripts handle everything exact; agents only judge. Agents never decide state.  
   *D18, D60: `check` records results, never the agent.*
-- ⬜ All state changes go through one module that rejects illegal transitions and keeps a history.  
-  *Status is written across 14 files. Recommend: do before Phase 4.*
+- ✅ All state changes go through one module that rejects illegal transitions and keeps a history.  
+  *`src/Stangent.Core/State/`, eleven lifecycles (D114). What one command returned stays a plain field. A test scans the source, so a new write can't slip past it.*
 - ✅ Stuck locks are never broken automatically. A person clears them after being asked.  
   *Stangent's locks are OS file locks, released when a process ends, so none get stuck. A hung process still blocks until its timeout.*
 - ⬜ Every requirement is traced to a test. The build fails if a scenario has no test, or a test names no scenario.  

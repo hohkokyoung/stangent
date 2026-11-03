@@ -2228,6 +2228,16 @@ The order is in `roadmap.md`, "The overhaul: order of work", and it replaces D10
 **Why:** every later item needs one proof shape and one id rule; building them per product means doing them twice. Client data has to be stopped before the first real client document, and a check that prints what it found would be its own leak.
 **Cost:** nothing uses evidence or the ledger until 2.3 and 2.4, so until then they're contracts with tests and no consumers. The data check reads the current tree, not git history, doesn't look inside documents, and in CI has no terms unless the owner adds a secret; a finding names only a position, so a person has to open the file to see what matched.
 
+## D114 · One module for state changes: which things are lifecycles, and where history lives — 2026-11-04 (assistant's call, owner asleep)
+- **A lifecycle** is a stored thing moving between states over time, with code or a person deciding. Eleven are on the module: `requirement`, `question`, `trace-decision`, `proof`, `proof-confirmation`, `draft-posted`, and the AI runs' stages (`page-run`, `link-run`, `req-run`, `ticket-match`, `ticket-step`). What one command returned (`imported`, `retry`, `recorded`, an attempt's outcome, the finder's answer) stays a plain field. The sorted table is in `phases/0-foundation.md`.
+- **The table holds who may move:** a person approves, decides, confirms and posts; code starts items, drops back and runs steps; no table lets an agent move anything (D18, D60). `decided_by` still comes from git (D58). The history's `who` for `trace approve` is git's user name, and `decided_by` is unchanged by it.
+- **History sits beside the state,** append-only JSONL. Committed state has committed history: `specs/requirements/history.jsonl`, `specs/trace-history.jsonl`, the latter in CI's bot commit. Run state's is in `.stangent/`, ignored. Nothing hashes it, and no artifact holds it. A move to the same state adds no line unless the table lists it.
+- **A person's YAML edit** is checked and recorded when `trace attribute` sees it, because the file is the contract (D58) and the edit happens outside stangent.
+- **Enforced by a test** that scans `src/**/*.cs` for writes of the lifecycle fields; each exception is listed with its reason and count.
+- **Requirement ids moved onto the permanent-id ledger now,** not in 2.3 as D113 said: `NextId` had no lock, and numbering stays the same. `ids.yaml` becomes `ids.json`, read only by `RequirementFile`; an old file is taken over on first use.
+**Why:** a lifecycle's rules were spread through the code that happened to write it, with nothing to read back. One table per lifecycle can be read in a minute, and a test keeps new writes on it. Keeping result fields off it stops the tables filling with values nothing moves between.
+**Cost:** `proof` and `ticket-step` tables allow nearly everything, because real code does; they add a history and little refusal. History is written just before the file is saved, so a crash can leave a line for an unsaved move. Committed history files can conflict across branches. Four moves are allowed and questionable, listed in the phase file for the owner.
+
 ## Open questions
 
 - **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that
