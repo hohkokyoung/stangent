@@ -188,6 +188,7 @@ between documents and code.
 - The archive lives in a separate repo — see D16.
 - *Deferred 2026-10-20 (Phase 2 plan):* versions and supersession wait for a project with several FSD versions;
   Phase 2 handles one version per document, `.docx` only.
+- *Changed 2026-11-03 (D111):* PDF and Excel are to be imported as well.
 - *Picked up 2026-11-02 (D99, not built):* `fsd reconcile` carries out this entry. The version date is the one the
   document states (`--effective`), not the file's own metadata (which changes when a file is copied); the BA confirms
   it. Draft vs approved status is kept: only an approved document supersedes; a newer draft's differences show as
@@ -833,6 +834,9 @@ reopens its links (mitigated if regeneration reuses the old page when its inputs
 - **Also measured:** tokens and time per page, the D18 check failure rate, and the share of candidate pairs found by
   code vs by the AI (D53).
 - After Sonarr, a dry run on a real FSD from one of the owner's projects (summarised, nothing committed).
+  *2026-11-03 (owner):* `Documentation.pdf` from the owner's `cyberbullying-detection-system` is treated as a spec agreed with a client
+  for import and extraction tests. Its code is Python and JavaScript, so links through the graph can't run on it; those still need
+  a C# project with a real FSD.
 Rejected: a company FSD first (no answer key, and not cleared yet).
 **Why:** an answer key turns "it found 40 discrepancies" into a score; the same reason 1a–1c used compilers and history.
 **Cost:** a planted test is tidier than a real FSD (vague wording, one section covering five screens), so it overstates
@@ -923,6 +927,9 @@ the criteria and the evidence, not the author's reasoning or conversation.
 reasoning. A fresh context judges only what's on the page, as a second engineer would (the owner's rule,
 in line with evaluator/reviewer patterns from agent builders).
 **Cost:** more tokens and time per check; the evaluator needs a brief good enough to judge without the history.
+- *Capped 2026-11-04 (owner: "yes cap it", after PDF import took about 1.8M subagent tokens over five checks):* by default each build gets
+  **one fresh check and one fix round**, on Sonnet with a narrow brief, with a cost estimate first. What's left is recorded as a known gap or brought to
+  the owner; no further round starts on the builder's own call. **Cost:** more edge cases get through, as listed gaps rather than fixes.
 
 ## D62 · Phase 2 applies D61: a fresh verifier for pages and for "agree" links — 2026-10-20
 Where Phase 2 has an AI step judging whether work is right, a separate subagent with a fresh context does it, after the
@@ -1131,7 +1138,7 @@ a pointer; on a repo with few generated pages the bundle is mostly pointers.
 - **Images** are saved and listed by name, size and where they appear. The developer's Claude Code can look at them;
   **no stangent AI step describes them**, since nothing could check the description (D18).
 - **PDF, Excel, video and anything else:** listed by name, type and size. Each gets a converter when a real ticket
-  needs one, as 2b did for FSD formats.
+  needs one, as 2b did for FSD formats. *D111 (2026-11-03) adds PDF and Excel import; whether attachments use it is still to grill.*
 Rejected: an AI describing each image into text (a call per image, unverifiable); text only (many bug tickets are a
 screenshot and one line).
 **Why:** everything deterministic is converted by code; what isn't stays in its original form for whoever reads it.
@@ -2145,6 +2152,63 @@ show whether the bundle helps anyone fix a bug. Only a fix agent can.
 **Why:** the phase's job is a checked starting position; what's left either needs Phase 4 or doesn't change a bar.
 **Cost:** Phase 3 closes with two bars failed and its proof numbers out of date; a person makes every bug-or-not call until D99,
 and Phase 4 starts later.
+
+## D110 · The core stays C#; no port to Python — 2026-11-03 (owner: "Stay on C#")
+The owner asked whether the core should run from Python while the analysed code stays C#. Reconfirms D9 and D23.
+- **Roslyn stays C# either way** (10 files, 1,884 lines, 6 of the 8 detector files), so a Python core means Python, C# and Node
+  on every developer machine, not one language swapped for another.
+- **Measured, the reasons to move don't hold:** real commands take about 150 ms (debug build); a self-contained macOS arm64 build
+  ran `req sections` with no .NET on the machine (139 MB; building the graph still needs the SDK; Windows untested); the Word
+  importer's gaps are elements it doesn't handle, not limits of C#.
+- **No failing bar traces to the language.**
+- **A new product may still use its natural language through the CLI (D9, D23).** Spec and Tickets are in-process libraries today,
+  so moving either out would need a CLI boundary first.
+- The untested bash drivers (752 lines) are a real weakness, but not a reason to change language. How to fix them isn't decided here.
+Rejected: a full port; Python for everything but the Roslyn parts (three runtimes, and D23's "two copies drift" unless the
+boundary is clean).
+**Why:** a port costs re-verification, and input hashes are built from C#-generated text (`Bundle.cs`), so saved AI outputs would
+need byte-identical text or be paid for again. Done during the overhaul, a score change couldn't be traced to the port or the redesign.
+**Cost:** contributing to the core still needs .NET (D23); a non-developer install is a large self-contained build.
+Reopen only if a measured failure traces to the language, and then as a port-only step with identical hashes as its bar.
+
+## D111 · Stangent imports PDF and Excel as well as Word — 2026-11-03 (owner: "i want our stangent able to handle pdf and xlsx also"; PDF built 2026-11-04, uncommitted; Excel not built)
+Changes "`.docx` only" (D15's deferral, 2b) and "a converter when a real FSD or ticket needs one" (D72).
+- **The same rules as Word (D13, D16, D18):** code only, no AI; the same file gives the same text; the original is archived; what can't
+  be brought in exactly is listed, never dropped silently.
+- **A PDF's sections (owner, 2026-11-03, "okay"):** bookmarks first; otherwise the printed contents page, each entry checked by code
+  against the page it points to; otherwise, or when entries fail, the import stops and explains, and `--flat` imports the whole
+  document as one labelled section. Headings are never guessed from fonts. Measured with Python tools on `Documentation.pdf`: all 340
+  bookmark titles are on their pages; all 163 printed entries with page numbers check out, but the printed list has 167 entries against
+  340 bookmarks, so sections from it are coarser. A title on a page doesn't prove it's the heading there.
+- **Tables and the library (owner, 2026-11-03, "build it"):** PdfPig reads the PDF; our own table reader builds cells from the drawn
+  lines. A code check requires every cell word for word in the page's own text; a table that fails is kept as plain text and listed as
+  "not brought in exactly". Implemented by an agent on Opus 5.5 at medium effort (owner).
+- **PDF as built (2026-11-04), read directly with no conversion to Word; Stangent still writes its own text (`document.md`), which quotes are matched against:**
+  - **Text:** a false sentence is worse than a broken one, and a listed problem is better than either. So it joins across a page only on strong
+    evidence, keeps text in other directions apart, removes only text never painted (render mode 3, off-page; an OCR layer stays, listed), and
+    keeps white text, listed. Running lines must be identical or follow the page number (Arabic or Roman, odd and even pages apart).
+  - **Tables:** only ruled grids become tables. Fill-only rectangles are shading, not rules. A word crossing a cell boundary or sitting in an open cell fails the
+    table, which then stays plain text and is listed. Order is checked by position against the content stream.
+  - **Errors:** any encryption gives `pdf_locked`, even with no password needed. Also `invalid_pdf`, `invalid_docx`, `no_text`, and `no_structure` for a PDF or a `.docx`
+    with no headings (`--flat` overrides); the `.docx` rule is the assistant's call, not asked of the owner. `source-document` stays v1.
+  - **Measured on `Documentation.pdf`:** 340 sections, 321 tables, 0 fell back, 99.93% of words kept against `pdfplumber`, 77 problems; 718 tests pass; a Word document
+    that already imported gives byte-identical text (Sonarr's FSD, run 2026-11-04). The "encryp" / "t" cause: PdfPig's glyph box is wrong for some letters, so positions come from baselines.
+  - **Checked by:** four fresh agents with fixes between. A fifth, on the last four small fixes, was cut off by a usage limit; those rest on the tests and the re-import above.
+  - **Known gaps (`docs/spec.md`):** all checks rest on PdfPig's own letters; borderless tables; a table row drawn apart loses its columns, its words stay in order (39 such rows,
+    1.6% of the words); two columns drawn row by row; a capitalised sentence over a page; a body-size footnote can join a next page (joins are listed); near-white text; a 100,000-level
+    page tree kills the process (hostile file, nothing written); images unread. An earlier check judged all 13 "possible table" listings on this file false: noise, not lost text.
+- **To grill before building Excel:** hidden sheets, formulas and merged cells; whether ticket attachments (D72) use the same converters.
+- **C# libraries, first measured on `Documentation.pdf` against Python's `pypdf` and `pdfplumber` (2026-11-03, scratch code, not fresh-checked):**
+  PdfPig 0.1.14 (Apache-2.0) gave identical bookmarks (340), the same word counts but for one word in 111,971, every sentence of 6+ words on
+  table-free pages word for word (2,024, headers and footers stripped), the same 379 images, identical output on two runs, about 3 s; it
+  reports no bookmarks and refuses a locked file with its own exception. **Tables aren't solved:** Tabula 1.0.1 drops letters ("tweet"
+  became "twet"); a grid built from the drawn lines found 330 tables of 2×2 or more against 329, but only 70% of cells of 4+ words match, a
+  page border reads as one cell, and a letter at a line's end can land in the next column ("encryp" / "t"; traced, see below). The
+  Python result is a comparison, not proven right.
+- **Test files:** the owner's `Documentation.pdf` (D56) for PDF. No real Excel file yet.
+**Why:** the owner's documents come in these formats.
+**Cost:** a PDF holds no reliable structure, so its import is weaker than Word's and quote checks depend on extraction; at least one
+new dependency; two more formats to keep byte-identical across versions.
 
 ## Open questions
 

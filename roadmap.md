@@ -47,6 +47,7 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 | `/stangent:adopt` sets a project up in one run (replaces D14's audit); a stale page's links are judged again | D99 | 2c |
 | Several documents with effective dates; `fsd reconcile`, run by CI when an import lands; items carried forward by code; clashes between sections become BA questions | D99, D15 | 2c |
 | Jira change requests as sources; as-built drafts when there's no FSD (context only) | D99 | 2c |
+| Excel import, by code, listing what can't be brought in exactly (PDF is built, uncommitted) | D111, D15, D72 | not placed; the overhaul's importer work |
 | "bug, per R-0042" and "looks intended (R-0042)"; a developer flags a spec gap when confirming a bug | D96, D99 | 2c |
 | The graph's blind spots, a smarter split rule, `impact-report` v6 | D65, D88, D109 | 4 |
 | Parallel work is merged and built together before it counts | D49 | 4 |
