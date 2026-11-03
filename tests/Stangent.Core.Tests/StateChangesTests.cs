@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Stangent.Core.Evidence;
 using Stangent.Core.State;
 using Stangent.Spec.Requirements;
 
@@ -165,7 +166,7 @@ public partial class StateChangesTests
 
     // ---- Writes stay on the module ----
 
-    [GeneratedRegex("""\["(status|decision|decided_by|confirmedBy|stage|posted|outcome)"\]\s*=(?!=)""")]
+    [GeneratedRegex("""\["(?<field>status|decision|decided_by|confirmedBy|stage|posted|outcome)"\]\s*(?:\?\?)?=(?!=)|\.Add\(\s*"(?<field>status|decision|decided_by|confirmedBy|stage|posted|outcome)"\s*,""")]
     private static partial Regex LifecycleWrite();
 
     /// <summary>Every write of these field names outside the module, per file and field. A new one fails the test until it's
@@ -210,7 +211,7 @@ public partial class StateChangesTests
             if (rel.Contains("/bin/", StringComparison.Ordinal) || rel.Contains("/obj/", StringComparison.Ordinal) || rel.StartsWith("src/Stangent.Core/State/", StringComparison.Ordinal)) continue;
             foreach (var line in File.ReadLines(file).Where(l => !l.TrimStart().StartsWith("//", StringComparison.Ordinal)))
                 foreach (Match m in LifecycleWrite().Matches(line))
-                    found[(rel, m.Groups[1].Value)] = found.GetValueOrDefault((rel, m.Groups[1].Value)) + 1;
+                    found[(rel, m.Groups["field"].Value)] = found.GetValueOrDefault((rel, m.Groups["field"].Value)) + 1;
         }
         var wrong = found.Where(f => !Exceptions.TryGetValue(f.Key, out var e) || e.Count != f.Value).Select(f => $"{f.Key}: {f.Value} write(s)")
             .Concat(Exceptions.Where(e => !found.ContainsKey(e.Key)).Select(e => $"{e.Key}: listed, no write left")).ToList();
@@ -224,6 +225,20 @@ public partial class StateChangesTests
         Assert.Matches(LifecycleWrite(), """new JsonObject { ["stage"]="done" }""");
         Assert.DoesNotMatch(LifecycleWrite(), """if ((string)e["stage"] == "done")""");
     }
+
+    [Theory]
+    [InlineData("""e["status"] ??= "open";""", "status")]
+    [InlineData("""e["decided_by"]??="Pat";""", "decided_by")]
+    [InlineData("""e.Add("outcome", "passed");""", "outcome")]
+    [InlineData("""e.Add( "confirmedBy" , who);""", "confirmedBy")]
+    public void The_scan_sees_the_other_write_shapes(string line, string field) =>
+        Assert.Equal(field, LifecycleWrite().Match(line).Groups["field"].Value);
+
+    [Theory]
+    [InlineData("""e["status"] ?? "open";""")]
+    [InlineData("""names.Add("status");""")]
+    [InlineData("""string[] keys = ["status", "stage"];""")]
+    public void The_scan_leaves_reads_and_lists_alone(string line) => Assert.DoesNotMatch(LifecycleWrite(), line);
 
     // ---- Requirement ids on the ledger ----
 
@@ -258,5 +273,57 @@ public partial class StateChangesTests
         File.WriteAllText(old, "R: \"2\"\nF: \"9\"\n");
         Assert.Equal("R-0043", RequirementFile.NextId(temp.Root, "R"));
         Assert.Equal("F-0010", RequirementFile.NextId(temp.Root, "F"));
+    }
+
+    /// <summary>Writes a feature and a questions file as the real writers do, holding the ids named.</summary>
+    static void WriteLiveIds(string root)
+    {
+        var doc = RequirementFile.DocDir(root, "fsd");
+        Directory.CreateDirectory(doc);
+        File.WriteAllText(Path.Combine(doc, "F-0002.yaml"), YamlForm.Write(new JsonObject
+        {
+            ["version"] = 1, ["id"] = "F-0002", ["doc"] = "fsd", ["title"] = "id: R-0099",
+            ["requirements"] = new JsonArray(new JsonObject { ["id"] = "R-0007", ["title"] = "Pay" }),
+            ["definitions"] = new JsonArray(new JsonObject { ["id"] = "D-0003", ["name"] = "Fee" }),
+            ["journeys"] = new JsonArray(new JsonObject { ["id"] = "J-0004", ["scenarios"] = new JsonArray(new JsonObject { ["id"] = "S-0005", ["title"] = "Happy" }) }),
+            ["retired"] = new JsonArray(new JsonObject { ["id"] = "R-0009", ["title"] = "Gone" }),
+        }, "A feature."));
+        RequirementFile.SaveQuestions(root, "fsd", [new JsonObject { ["id"] = "Q-0006", ["text"] = "Which?" }]);
+    }
+
+    [Fact]
+    public void A_deleted_ledger_never_gives_out_a_live_id_again()
+    {
+        using var temp = new TempRepo();
+        Assert.Equal("R-0001", RequirementFile.NextId(temp.Root, "R"));
+        WriteLiveIds(temp.Root);
+        var path = Path.Combine(RequirementFile.Dir(temp.Root), "ids.json");
+        File.Delete(path);
+
+        Assert.Equal("R-0010", RequirementFile.NextId(temp.Root, "R"));
+
+        // The recreated ledger holds every kind's live ids, not only the kind asked for.
+        var ledger = new PermanentIds(path);
+        Assert.Contains("F-0002", ledger.Active("F"));
+        Assert.Contains("D-0003", ledger.Active("D"));
+        Assert.Contains("J-0004", ledger.Active("J"));
+        Assert.Contains("S-0005", ledger.Active("S"));
+        Assert.Contains("Q-0006", ledger.Active("Q"));
+        Assert.Contains("R-0009", ledger.Active("R"));
+        Assert.Equal("F-0003", RequirementFile.NextId(temp.Root, "F"));
+        Assert.Equal("Q-0007", RequirementFile.NextId(temp.Root, "Q"));
+    }
+
+    [Fact]
+    public void A_ledger_behind_the_feature_files_catches_up_and_one_ahead_stays()
+    {
+        using var temp = new TempRepo();
+        Assert.Equal("R-0001", RequirementFile.NextId(temp.Root, "R"));
+        WriteLiveIds(temp.Root);
+        Assert.Equal("R-0010", RequirementFile.NextId(temp.Root, "R"));
+
+        var path = Path.Combine(RequirementFile.Dir(temp.Root), "ids.json");
+        new PermanentIds(path).Raise("S", "S-{0:D4}", 40);
+        Assert.Equal("S-0041", RequirementFile.NextId(temp.Root, "S"));
     }
 }

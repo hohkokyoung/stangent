@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Stangent.Core;
 using Stangent.Core.Evidence;
 using Stangent.Spec.Pages;
@@ -15,7 +16,7 @@ namespace Stangent.Spec.Requirements;
 /// <c>index.yaml</c> (one line per item, read first) and <c>glossary.yaml</c>. Code writes them all; people change them
 /// through approval and the BA's decisions.
 /// </summary>
-public static class RequirementFile
+public static partial class RequirementFile
 {
     public const string Schema = "requirements.v1.json";
 
@@ -59,12 +60,14 @@ public static class RequirementFile
             YamlForm.Write(feature, "A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR."));
     }
 
-    /// <summary>Hands out the next id of a kind from the ledger, under its lock, so parallel runs can't get the same one (D113, D114).</summary>
+    /// <summary>Hands out the next id of a kind from the ledger, under its lock, so parallel runs can't get the same one (D113, D114).
+    /// A ledger deleted or behind catches up with the feature files first, so a live id is never given again.</summary>
     public static string NextId(string root, string kind)
     {
         // The lock stays out of specs/, which is committed.
         var ledger = new PermanentIds(IdsFile(root), Path.Combine(root, ".stangent", "req", "ids.lock"));
         TakeOverOldIds(root, ledger);
+        RaiseToLiveIds(root, ledger);
         return ledger.Issue(kind, Format(kind));
     }
 
@@ -81,6 +84,22 @@ public static class RequirementFile
             if (int.TryParse((string?)last, out var n)) ledger.Raise(kind, Format(kind), n);
         File.Delete(OldIdsFile(root));
     }
+
+    /// <summary>Raising only goes up, so a ledger already ahead doesn't change, and numbering with it. Called for every id, so it reads
+    /// the text rather than parsing each file: code writes these files, one <c>id:</c> per line, and other text is quoted on its key's line.</summary>
+    static void RaiseToLiveIds(string root, PermanentIds ledger)
+    {
+        var highest = new Dictionary<string, int>();
+        foreach (var doc in Docs(root))
+            foreach (var file in Directory.EnumerateFiles(DocDir(root, doc), "F-*.yaml").Append(QuestionsFile(root, doc)).Where(File.Exists))
+                foreach (Match m in LiveId().Matches(File.ReadAllText(file)))
+                    if (int.TryParse(m.Groups["number"].Value, out var n) && n > highest.GetValueOrDefault(m.Groups["kind"].Value))
+                        highest[m.Groups["kind"].Value] = n;
+        foreach (var (kind, last) in highest) ledger.Raise(kind, Format(kind), last);
+    }
+
+    [GeneratedRegex("""^[ \t]*(?:- )?id: ["']?(?<kind>[FRDJSQ])-(?<number>[0-9]+)["']?[ \t\r]*$""", RegexOptions.Multiline)]
+    private static partial Regex LiveId();
 
     /// <summary>The section's feature, creating it and its parents as needed: the feature tree follows the FSD's own
     /// section tree, by code (D99).</summary>
