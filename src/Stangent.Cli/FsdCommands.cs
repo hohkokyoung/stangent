@@ -13,12 +13,13 @@ static class FsdCommands
         var fsd = new Command("fsd", "The agreed FSD: import it (code only) and link it to the reference pages (D52, D53).");
         root.Subcommands.Add(fsd);
 
-        var fileArg = new Argument<string>("file") { Description = "The .docx to import." };
+        var fileArg = new Argument<string>("file") { Description = "The .docx or .pdf to import." };
         var idOption = new Option<string?>("--id") { Description = "The document's id (default: from its file name)." };
-        var import = new Command("import", "Convert a .docx to Markdown by code, archive the original (D16) and record its sections (source-document v1).") { fileArg, idOption };
+        var flatOption = new Option<bool>("--flat") { Description = "Import the whole document as one labelled section with no structure, for a document with no headings or bookmarks." };
+        var import = new Command("import", "Convert a .docx or .pdf to Markdown by code, archive the original (D16) and record its sections (source-document v1).") { fileArg, idOption, flatOption };
         import.SetAction(pr => Cli.Run(pr, "fsd import", ctx =>
         {
-            var result = FsdImport.Import(ctx.Repo, pr.GetValue(fileArg)!, pr.GetValue(idOption));
+            var result = FsdImport.Import(ctx.Repo, pr.GetValue(fileArg)!, pr.GetValue(idOption), pr.GetValue(flatOption));
             ctx.Span.Attributes["stangent.artifact.count"] = (int?)result["sections"] ?? 0;
             return result;
         }));

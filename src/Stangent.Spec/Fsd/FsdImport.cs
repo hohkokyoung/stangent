@@ -3,11 +3,12 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Stangent.Core;
 using Stangent.Graph;
+using Stangent.Spec.Trace;
 
 namespace Stangent.Spec.Fsd;
 
 /// <summary>
-/// <c>stangent fsd import</c> (Phase 2b step 1): converts a <c>.docx</c> to Markdown by code, archives the original
+/// <c>stangent fsd import</c> (Phase 2b step 1, D111): converts a <c>.docx</c> or <c>.pdf</c> to Markdown by code, archives the original
 /// (D16) and records the document's sections as a <c>source-document</c> (v1) in <c>specs/fsd/&lt;doc-id&gt;/</c>.
 /// The same file always gives the same bytes; a file already imported (same content hash) is left alone.
 /// </summary>
@@ -20,11 +21,16 @@ public static class FsdImport
     public static string DefaultId(string file) =>
         Regex.Replace(Path.GetFileNameWithoutExtension(file).ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-') is { Length: > 0 } s ? s : "document";
 
-    public static JsonObject Import(StangentRepo repo, string file, string? id = null)
+    public static JsonObject Import(StangentRepo repo, string file, string? id = null, bool flat = false)
     {
         if (!File.Exists(file)) throw new StangentException("not_found", $"No file at {file}.", ExitCodes.NotFound);
-        if (!file.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
-            throw new StangentException("unsupported_format", "Only .docx is imported for now (Phase 2b); other formats get their own converter when a real FSD needs one.", ExitCodes.Usage);
+        Func<byte[], bool, ConvertedDocument> convert = Path.GetExtension(file).ToLowerInvariant() switch
+        {
+            ".docx" => DocxConverter.Convert,
+            ".pdf" => PdfConverter.Convert,
+            ".xlsx" => throw new StangentException("unsupported_format", "Excel import is decided (D111) but isn't built yet. Only .docx and .pdf are imported for now.", ExitCodes.Usage),
+            _ => throw new StangentException("unsupported_format", "Only .docx and .pdf are imported; other formats get their own converter when a real FSD needs one.", ExitCodes.Usage),
+        };
         var archive = repo.Config.Fsd.Archive is { Name.Length: > 0, Path.Length: > 0 } a ? a
             : throw new StangentException("archive_not_set", "Set fsd.archive in stangent.yaml first: { name: <archive name>, path: <folder outside this repo>, git: false } (D16).", ExitCodes.Usage);
         id ??= DefaultId(file);
@@ -35,11 +41,14 @@ public static class FsdImport
         var hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
         var dir = DocDir(repo.Root, id);
         var jsonPath = Path.Combine(dir, "document.json");
-        if (File.Exists(jsonPath) && JsonNode.Parse(File.ReadAllText(jsonPath))?["original"]?["hash"]?.GetValue<string>() == hash)
+        // The same file is imported once, unless --flat asks for a different shape than what's recorded.
+        if (File.Exists(jsonPath) && JsonNode.Parse(File.ReadAllText(jsonPath)) is { } existing && existing["original"]?["hash"]?.GetValue<string>() == hash
+            && flat == (existing["sections"]?.AsArray() is { Count: 1 } only && only[0]?["id"]?.GetValue<string>() == FsdSections.FlatId))
             return new JsonObject { ["id"] = id, ["status"] = "unchanged", ["hash"] = hash };
         var replaced = File.Exists(jsonPath);
 
-        var converted = DocxConverter.Convert(bytes);
+        var converted = convert(bytes, flat);
+        var left = replaced ? SectionsThatLeft(repo.Root, id, jsonPath, converted) : null;
         var archivedPath = ArchiveOriginal(repo, archive, id, file, bytes, hash);
 
         if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
@@ -78,12 +87,25 @@ public static class FsdImport
         var errors = SchemaRegistry.Embedded.Validate(Schema, doc.ToJsonString());
         if (errors.Count > 0) throw new StangentException("invalid_document", "The imported document broke source-document v1 (a stangent bug).", ExitCodes.Failed, errors);
         File.WriteAllText(jsonPath, CanonicalJson.Serialize(doc));
-        return new JsonObject
+        var result = new JsonObject
         {
             ["id"] = id, ["status"] = replaced ? "replaced" : "imported", ["hash"] = hash, ["sections"] = converted.Sections.Count,
             ["images"] = converted.Images.Count, ["problems"] = doc["problems"]!.DeepClone(),
             ["archive"] = new JsonObject { ["name"] = archive.Name, ["path"] = archivedPath },
         };
+        if (left is not null) result["replacedSections"] = left;
+        return result;
+    }
+
+    /// <summary>On a re-import: the section ids that are gone, and how many trace entries point at them, because `trace check --fix` clears their decisions.</summary>
+    static JsonObject SectionsThatLeft(string root, string id, string jsonPath, ConvertedDocument converted)
+    {
+        var kept = converted.Sections.Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
+        var gone = (JsonNode.Parse(File.ReadAllText(jsonPath))?["sections"]?.AsArray() ?? []).Select(s => (string)s!["id"]!).Where(s => !kept.Contains(s)).ToList();
+        var goneSet = gone.ToHashSet(StringComparer.Ordinal);
+        var entries = (TraceFile.Load(root)["entries"]?.AsArray() ?? [])
+            .Count(e => e?["fsd"] is JsonObject fsd && (string?)fsd["doc"] == id && (string?)fsd["section"] is { } section && goneSet.Contains(section));
+        return new JsonObject { ["sectionsGone"] = new JsonArray([.. gone.Select(s => (JsonNode)s)]), ["traceEntriesPointingAtThem"] = entries };
     }
 
     /// <summary>Copies the original into the archive as <c>&lt;doc-id&gt;/&lt;hash 12&gt;-&lt;file name&gt;</c>; a git archive also commits it.</summary>

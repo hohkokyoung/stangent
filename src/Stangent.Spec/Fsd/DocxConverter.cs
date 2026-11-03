@@ -23,36 +23,40 @@ public sealed record ConvertedDocument(string Markdown, IReadOnlyList<FsdSection
 /// </summary>
 public static partial class DocxConverter
 {
-    [GeneratedRegex(@"^(\d+(?:\.\d+)*)\.?\s+(\S.*)$")]
-    private static partial Regex TypedNumber();
-
     [GeneratedRegex(@"^heading\s*([1-9])$", RegexOptions.IgnoreCase)]
     private static partial Regex HeadingStyle();
 
-    public static ConvertedDocument Convert(byte[] docx)
+    public static ConvertedDocument Convert(byte[] docx, bool flat = false)
     {
-        using var stream = new MemoryStream(docx);
-        using var doc = WordprocessingDocument.Open(stream, false);
-        var main = doc.MainDocumentPart ?? throw new Core.StangentException("invalid_docx", "The file has no document body.");
-        var ctx = new Context(main);
-        foreach (var block in main.Document?.Body?.ChildElements ?? Enumerable.Empty<OpenXmlElement>())
-            ctx.Block(block);
-        return ctx.Finish();
+        try
+        {
+            using var stream = new MemoryStream(docx);
+            using var doc = WordprocessingDocument.Open(stream, false);
+            var main = doc.MainDocumentPart ?? throw new Core.StangentException("invalid_docx", "The file has no document body.");
+            var ctx = new Context(main, flat);
+            foreach (var block in main.Document?.Body?.ChildElements ?? Enumerable.Empty<OpenXmlElement>())
+                ctx.Block(block);
+            return ctx.Finish();
+        }
+        catch (Exception e) when (e is FileFormatException or OpenXmlPackageException or InvalidDataException or System.Xml.XmlException)
+        {
+            // A password-protected Word file is an OLE container, not a zip, and lands here too.
+            throw new Core.StangentException("invalid_docx", "This .docx can't be opened: it may be damaged or password-protected. Supply an unprotected copy.", Core.ExitCodes.Failed, [e.Message]);
+        }
     }
 
-    sealed class Context(MainDocumentPart main)
+    sealed class Context(MainDocumentPart main, bool flat)
     {
         readonly Dictionary<string, Style> styles = main.StyleDefinitionsPart?.Styles?.Elements<Style>()
             .Where(s => s.StyleId?.Value is not null).GroupBy(s => s.StyleId!.Value!).ToDictionary(g => g.Key, g => g.First()) ?? [];
         readonly Numbering? numbering = main.NumberingDefinitionsPart?.Numbering;
         readonly Dictionary<int, int[]> counters = [];
-        readonly StringBuilder md = new();
-        readonly List<(string? Number, string Title, int Level, int Line, int Start, int TextStart, bool Typed, string Full)> headings = [];
+        readonly MarkdownText md = new();
+        readonly List<FsdHeading> headings = [];
         readonly HashSet<int> instancesSeen = [];
         readonly List<FsdImage> images = [];
         readonly List<string> problems = [];
         string? title;
-        int line = 1;
         string? pendingImage;
 
         public void Block(OpenXmlElement block)
@@ -88,7 +92,7 @@ public static partial class DocxConverter
             }
             pendingImage = null;
 
-            var level = HeadingLevel(p, styleId);
+            var level = flat ? 0 : HeadingLevel(p, styleId);
             var (label, listLevel, bullet) = NumberLabel(p, styleId);
             if (level > 0)
             {
@@ -97,10 +101,10 @@ public static partial class DocxConverter
                 var shown = text;
                 var typed = false;
                 // A number typed into the heading is a candidate only; Finish keeps it when it fits the numbering.
-                if (number is null && TypedNumber().Match(text) is { Success: true } m) { number = m.Groups[1].Value; shown = m.Groups[2].Value; typed = true; }
+                if (number is null && FsdSections.Typed(text) is { Number: not null } t) { (number, shown) = t; typed = true; }
                 var start = md.Length;
                 Emit($"{new string('#', level)} {(number is null || typed ? "" : number + " ")}{(typed ? text : shown)}");
-                headings.Add((number, shown, level, line, start, md.Length, typed, text));
+                headings.Add(new FsdHeading(number, shown, level, md.Line, start, md.Length, typed, text));
                 return;
             }
             if (label is not null || bullet)
@@ -134,15 +138,7 @@ public static partial class DocxConverter
             Emit(sb.ToString().TrimEnd('\n'));
         }
 
-        /// <summary>Paragraphs are separated by a blank line; list items by a single line break.</summary>
-        bool lastTight;
-        void Emit(string block, bool tight = false)
-        {
-            if (md.Length > 0) { md.Append(tight && lastTight ? "\n" : "\n\n"); line += tight && lastTight ? 1 : 2; }
-            md.Append(block);
-            line += block.Count(c => c == '\n');
-            lastTight = tight;
-        }
+        void Emit(string block, bool tight = false) => md.Emit(block, tight);
 
         static string Text(OpenXmlElement p)
         {
@@ -265,61 +261,16 @@ public static partial class DocxConverter
 
         public ConvertedDocument Finish()
         {
-            var text = md.ToString() + "\n";
-            var sections = new List<FsdSection>();
-            var path = new List<(int Level, string Title, string Id)>();
-            var seen = new Dictionary<string, int>(StringComparer.Ordinal);
-            string? lastTop = null;
-            for (var i = 0; i < headings.Count; i++)
+            var body = md.ToString();
+            if (flat)
             {
-                var h = headings[i];
-                if (h.Typed)
-                {
-                    // "4.2 Tags" under chapter 4 is a number; "2023 Roadmap" or "24 hour clock" isn't. A typed number
-                    // must have one part per heading level and continue its parent's (or the previous chapter's) number.
-                    var parts = h.Number!.Split('.');
-                    var parentNumber = path.Where(x => x.Level < h.Level).Select(x => x.Id).LastOrDefault();
-                    var fits = parts.Length == h.Level && (h.Level == 1
-                        ? (lastTop is null ? parts[0] == "1" : int.TryParse(lastTop, out var t) && parts[0] == (t + 1).ToString())
-                        : parentNumber is not null && string.Join(".", parts[..^1]) == parentNumber);
-                    if (!fits)
-                    {
-                        problems.Add($"line {h.Line}: heading \"{h.Full}\" starts with {h.Number}, which doesn't fit the numbering around it; read as a plain heading");
-                        h = (null, h.Full, h.Level, h.Line, h.Start, h.TextStart, false, h.Full);
-                    }
-                }
-                if (h.Level == 1 && h.Number is not null) lastTop = h.Number;
-                while (path.Count > 0 && path[^1].Level >= h.Level) path.RemoveAt(path.Count - 1);
-                var parent = path.Count > 0 ? path[^1].Id : null;
-                var (id, kind) = h.Number is not null ? (h.Number, "number") : (string.Join(" / ", path.Select(x => x.Title).Append(h.Title)), "path");
-                if (seen.TryGetValue(id, out var count))
-                {
-                    problems.Add($"line {h.Line}: section id \"{id}\" is used again (first at line {sections.First(s => s.Id == id).Line}); this one is \"{id} ({count + 1})\"");
-                    seen[id] = count + 1;
-                    id = $"{id} ({count + 1})";
-                }
-                else seen[id] = 1;
-                var end = i + 1 < headings.Count ? headings[i + 1].Start : md.Length;
-                var body = md.ToString(h.TextStart, end - h.TextStart).Trim('\n');
-                sections.Add(new FsdSection(id, kind, h.Title, h.Level, parent, body, h.Line));
-                path.Add((h.Level, h.Title, id));
+                var (markdown, whole) = FsdSections.Flat(body, problems);
+                return new ConvertedDocument(markdown, whole, images, problems, title);
             }
-            // A plain heading among numbered siblings inside a numbered chapter: its number is missing, and it isn't
-            // guessed. Plain chapters beside numbered ones are fine: FSDs follow no standard (D56).
-            var numbered = sections.Where(s => s.IdKind == "number").Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
-            foreach (var group in sections.Where(s => s.Parent is not null && numbered.Contains(s.Parent))
-                         .GroupBy(s => (s.Parent, s.Level)).Where(g => g.Any(s => s.IdKind == "number")))
-                foreach (var s in group.Where(s => s.IdKind == "path"))
-                    problems.Add($"line {s.Line}: heading \"{s.Title}\" has no number among numbered headings; its id is its heading path");
-            // Numbers out of order within a chapter (4.1 then 4.3): reported, never renumbered.
-            foreach (var group in sections.Where(s => s.IdKind == "number").GroupBy(s => s.Parent ?? ""))
-            {
-                var nums = group.Select(s => s.Id.Split('.')[^1]).Select(n => int.TryParse(n, out var v) ? v : -1).ToList();
-                for (var k = 1; k < nums.Count; k++)
-                    if (nums[k] != nums[k - 1] + 1 && nums[k] > 0 && nums[k - 1] > 0)
-                        problems.Add($"section {group.ElementAt(k).Id} follows {group.ElementAt(k - 1).Id}: a number is skipped or out of order");
-            }
-            return new ConvertedDocument(text, sections, images, problems, title);
+            if (headings.Count == 0)
+                throw new Core.StangentException("no_structure", $"This .docx has no headings, so it has no sections. Apply heading styles, {FsdSections.NoStructureAdvice}.");
+            var sections = FsdSections.Build(body, headings, problems);
+            return new ConvertedDocument(body + "\n", sections, images, problems, title);
         }
     }
 }

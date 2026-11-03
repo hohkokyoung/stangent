@@ -2,6 +2,8 @@
   <ItemGroup>
     <!-- .docx → Markdown in C#, no external tool (Phase 2b, D13). -->
     <PackageReference Include="DocumentFormat.OpenXml" />
+    <!-- .pdf → Markdown in C#, code only (D111). -->
+    <PackageReference Include="PdfPig" />
     <ProjectReference Include="..\Stangent.Core\Stangent.Core.csproj" />
     <ProjectReference Include="..\Stangent.Graph\Stangent.Graph.csproj" />
   </ItemGroup>

@@ -47,6 +47,6 @@
         "properties": { "file": { "type": "string" }, "caption": { "type": "string" } }
       }
     },
-    "problems": { "description": "Duplicate, missing or out-of-order section numbers: reported, never guessed.", "type": "array", "items": { "type": "string" } }
+    "problems": { "description": "What couldn't be brought in exactly, in people's words: duplicate, missing or out-of-order section numbers; for a PDF also pages with no text, removed running headers and footers, tables kept as plain text, section titles not found, unread images. Reported, never guessed.", "type": "array", "items": { "type": "string" } }
   }
 }
