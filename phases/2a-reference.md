@@ -1,8 +1,8 @@
 ---
 phase: 2a
 name: reference
-status: needs review
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 5 }
+status: done
+consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5 }
 provides: { reference-page: 1 }
 ---
 
@@ -279,3 +279,4 @@ check (it judges statement content). With 2 wrong in 88, Sonnet stays the writer
 
 ### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
 v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.
+Checked 2026-11-04 (D20): by grep, `Stangent.Spec` reads none of the new values, and page slices walk only `AllEdges`. All tests pass, so this now consumes `code-graph: 4`.

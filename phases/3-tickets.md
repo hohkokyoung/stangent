@@ -1,8 +1,8 @@
 ---
 phase: 3
 name: tickets
-status: needs review
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 5, reference-page: 1, source-document: 1, trace-links: 1 }
+status: done
+consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 1, trace-links: 1 }
 provides: { ticket-bundle: 2, ticket-update: 1, bug-proof: 1 }
 ---
 
@@ -786,5 +786,6 @@ Phase 4 consumes `ticket-bundle` v2 and `bug-proof` v1; it hasn't started, so no
 
 ### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
 v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.
+Checked 2026-11-04 (D20): by grep, `Stangent.Tickets` reads none of the new values; bug proof calls `PlaywrightSpecs.Files(dir)` and `LiteralGotos`, unchanged on a readable tree. All tests pass, so this now consumes `code-graph: 4`.
 
 The code that finds related specs moved from `AppSession` to `PlaywrightSpecs` in `Stangent.Graph`, with the same behaviour; `AppSession.RelatedSpecs` and `RouteMatches` stay, and bug proof's tests pass unchanged.

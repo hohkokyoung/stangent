@@ -1,8 +1,8 @@
 ---
 phase: 1b
 name: frontend-api
-status: needs review
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3 }
+status: done
+consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4 }
 provides: {}
 ---
 
@@ -258,6 +258,7 @@ callers linked). 1b now consumes `code-graph: 3` and is `done` again.
 
 ### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
 v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.
+Checked 2026-11-04 (D20): by grep, nothing outside `Stangent.Graph`'s own new detector reads the new values; its extractor and fragments are unchanged. All tests pass, so this now consumes `code-graph: 4`.
 
 ### Reopened 2026-11-04 by the overhaul, 1.2 · Playwright as evidence (D115)
 
@@ -273,6 +274,8 @@ change. Details: `docs/code-graph.md`, "Screen tests".
 | Actual (288bf88) | React Router | 32 | 39 | 27 | 12: 6 other receivers, 3 built URLs, 3 no screen | 4 |
 | bonds (9862157) | React Router | 32 | 205 | 96, on 20 routes | 109, all built URLs | 0 |
 | **Total** | | **67** | **249** | **123 (49%)** | **126** | **4** |
+
+**Re-measured 2026-11-04, after the frontend rule tightened and percent-encoded paths went to ❓.** The same on all three: eShop 0 of 5, Actual 27 of 39, bonds 96 of 205 on 20 routes, 123 of 249 in all, with the same ❓ reasons and every link citing. Each repo has one frontend with screens, so none of these three tests the new rule; the tests do. `notInCommit` is empty on all three.
 
 **Hand-check of 10 links.** Every 9th link on bonds, read against the spec line and `web/src/App.tsx`: 10 of 10 are right (`/register`, `/admin/settings`
 twice, `/login`, `/vaults`, `/auth/callback`, `/settings/personalize`, `/settings/users`, `/settings`, and one more `/register`). A
