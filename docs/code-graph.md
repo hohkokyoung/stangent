@@ -177,3 +177,37 @@ A project that can't be loaded is listed in `loadErrors` and its code is ❓. MS
 - Every answer is validated against `schemas/impact-report.v5.json` before it's printed (v1–v4 are kept for history).
 
 `stangent graph show <id or Type.Member>` lists a point's lines in and out, and its blind spots.
+
+## Line citations (1.1)
+
+`stangent graph where <id or Type.Member>` gives a symbol's file and lines at the commit the graph was built from. In code,
+`SymbolLines.Where(graph, symbol)`. The lines are the ones the extractors already stored, so nothing is read again.
+
+Each match has `id`, `kind`, `name`, `file`, `startLine`, `endLine`, `commit`, `linesMatchCommit`, `generated`, `alsoIn`, `note`
+and `citation`. `citation` fills `citation` in an `evidence` record (`docs/foundation.md`); the match's `commit` fills `commit`.
+The answer around them has `commit`, `head`, `repo`, `dirty`, `dirtyFiles` and `ambiguous`. `repo` is the origin's name, else the folder's.
+
+| Asked for | Answer |
+|---|---|
+| A method, property, field or type | Its declaration's first and last lines (attributes and modifiers included in C#). |
+| Overloads, or a file compiled into several projects | Every match, `ambiguous: true`. None is picked; ask by id for one. |
+| A partial type | The first part only: the first file by name, as the graph stores it. `alsoIn` lists files holding members outside those lines, and `note` says so. Each member has its own lines. |
+| A TypeScript symbol | The same, from the TypeScript extractor. |
+| An endpoint, page, table, column or config key found in code | The one line it was found on, so `startLine` equals `endLine`. |
+| A file or project, or a config key with no declaration | `startLine` and `endLine` null. A file still cites, without lines; a point with no file doesn't. |
+| Code in a checked-in generated file | Its real lines, `generated: true`, judged by file name (`.g.cs`, `.Designer.cs`, `.generated.`, `.gen.`). Source generators' output isn't on the map, so it's not found. |
+| Nothing matches | `not_found`, exit 3. |
+
+**Dirty trees.** A build records the files on the map that differ from the commit, tracked or untracked (`meta.dirtyFiles`, and
+a count in the build's stats). The answer's `dirty` is true when there are any, and a match in one of them has
+`linesMatchCommit: false` and `citation: null`. A match in an untouched file still cites: its lines do match. A change off the map
+(a README, or a lock file the build's own restore wrote) isn't recorded, because no line the graph holds can be wrong for it. An
+export holds `dirtyFiles` only when there are some, so a clean tree's export has the same bytes as before. A graph built outside
+git, or saved before this existed, has `dirty: null` and cites nothing until it's rebuilt.
+
+**Known gaps.**
+- A partial part with no members leaves no trace, so `alsoIn` misses it.
+- A partial method or property holds its first part only, with no `alsoIn`. A TypeScript overload holds one signature's lines.
+- A generated file with a plain name isn't marked.
+- An export from before this existed has no `dirtyFiles` and reads as clean.
+- A file edited and put back during a build isn't seen. A changed project file can change the graph, not its lines, and isn't recorded.

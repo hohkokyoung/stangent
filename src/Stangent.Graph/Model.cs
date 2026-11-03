@@ -137,6 +137,11 @@ public sealed class CodeGraph
     /// <summary>📜 lines (code-graph v3): kept apart from <see cref="AllEdges"/>, so the walk never sees them.</summary>
     public List<HistoryLine> HistoryLines { get; } = [];
     public HistoryInfo? History { get; set; }
+    /// <summary>
+    /// Files that differed from <see cref="Commit"/> when the graph was built, so their lines don't match it (1.1). Empty: a
+    /// clean tree. Null: not known (no git, or a graph from before this was recorded).
+    /// </summary>
+    public IReadOnlyList<string>? DirtyFiles { get; set; }
 
     public IEnumerable<Node> AllNodes => Fragments.Values.SelectMany(f => f.Nodes).Concat(LinkedNodes);
     public IEnumerable<Edge> AllEdges => Fragments.Values.SelectMany(f => f.Edges).Concat(LinkedEdges);

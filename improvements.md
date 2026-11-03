@@ -16,7 +16,7 @@ Here's the full list, grouped by area. Each section ends with a line on why it's
 ## 1. Explaining how the app works today
 
 - 🟡 Every fact has proof. Each statement gets a permanent id and a code citation (`repo/path:lines`).  
-  *Every statement cites symbols, checked by code. The ids aren't permanent and there's no `path:lines` yet. The shared shape exists: contract `evidence` v1 and the `PermanentIds` ledger (D113); pages move onto them in 2.3. Recommend: do.*
+  *Every statement cites symbols, checked by code. The ids aren't permanent and there's no `path:lines` yet. The shared shape exists: contract `evidence` v1 and the `PermanentIds` ledger (D113); pages move onto them in 2.3. `stangent graph where` now answers symbol → `path:lines` at a commit, and refuses a citation for a file that differed from the commit (1.1); statements start using it in 2.3. Recommend: do.*
 - ⬜ Ids are never renumbered or reused, so links from findings, answers and the FSD stay valid.  
   *Statement ids are renumbered on every write (`PageChecks.cs`). Recommend: do.*
 - ⬜ Pages follow how people use the app. Journeys are cut by step ("what happens at step 4" lives in one place), alongside list, report and admin pages. The team switched to this after a pilot.  

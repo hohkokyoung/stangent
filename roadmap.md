@@ -43,7 +43,7 @@ The one place for what comes next (D112). From the foundation up, applying `impr
 | 0.3 ✅ | Client-data check | `stangent data check`: terms kept outside the repo, tracked documents, run in CI | D56, D16 | no |
 | 0.4 ✅ | Coverage measured | A script and a recorded number, no floor (D28) | D28 | a floor, later |
 | 0.5 ✅ | Driver tests | The bash drivers tested from xUnit with fake `claude` and `stangent` on the path | D110 | no |
-| 1.1 | Line citations | The graph answers symbol → `path:lines` at a commit, for 2.3 | D17, D25 | no |
+| 1.1 ✅ | Line citations | The graph answers symbol → `path:lines` at a commit, for 2.3 | D17, D25 | no |
 | 1.2 | Playwright as evidence | Specs that open a screen become labelled links in the graph; `code-graph` bump if the shape changes | D45, D76, D86 | no |
 | 2.1 | Word fails loudly | Tracked changes, moves, hidden text, comments, footnotes, embedded files, nested tables and vertical merges each stop the import or are listed | D52, D111 | no |
 | 2.2 | Stable section ids | Ids that survive edits and moves; a new version comes in as a candidate with a section diff; doubtful matches go to a person; removed ids kept | D15, D99 | no |

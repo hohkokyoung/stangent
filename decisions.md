@@ -2238,6 +2238,12 @@ The order is in `roadmap.md`, "The overhaul: order of work", and it replaces D10
 **Why:** a lifecycle's rules were spread through the code that happened to write it, with nothing to read back. One table per lifecycle can be read in a minute, and a test keeps new writes on it. Keeping result fields off it stops the tables filling with values nothing moves between.
 **Cost:** `proof` and `ticket-step` tables allow nearly everything, because real code does; they add a history and little refusal. History is written just before the file is saved, so a crash can leave a line for an unsaved move. Committed history files can conflict across branches. Four moves are allowed and questionable, listed in the phase file for the owner.
 
+## D115 · Line citations and Playwright as evidence: the read paths, and lines kept out of the walk — 2026-11-04 (assistant's call, owner asleep)
+- **Line citations (1.1):** every point already stored its file and lines, so nothing was rebuilt. `SymbolLines.Where` and `stangent graph where <symbol>` read them, and shape the answer to fill an `evidence` citation. Overloads all come back. A missing line stays null.
+- **A dirty tree says so.** A build records the files on the map that differ from its commit. A symbol in one of them has `linesMatchCommit: false` and no citation; a symbol in an untouched file still cites, because its lines are right.
+**Why:** 2.3 needs `repo/path:lines`, and a citation that doesn't match its commit is worse than none. Refusing per file keeps a stray edit from blocking every citation, and leaving off-map files out keeps a lock file the build's own restore wrote from marking the tree dirty, and so keeps a clean repo's export bytes the same.
+**Cost:** a partial type answers with its first part, plus the files its other members are in. A part with no members isn't seen.
+
 ## Open questions
 
 - **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that

@@ -196,6 +196,27 @@ var show = new Command("show", "A point and the lines in and out of it.") { idAr
 show.SetAction(pr => Cli.Run(pr, "graph show", ctx => Cli.Show(ctx, pr.GetValue(idArg)!)));
 graph.Subcommands.Add(show);
 
+var whereArg = new Argument<string>("symbol") { Description = "A graph id, or a name like OrderProcessingService.PlaceOrderAsync." };
+var where = new Command("where", "A symbol's file and lines at the commit the graph was built from, ready to cite.") { whereArg };
+where.SetAction(pr => Cli.Run(pr, "graph where", ctx =>
+{
+    var g = Cli.LoadGraph(ctx);
+    var symbol = pr.GetValue(whereArg)!;
+    var matches = SymbolLines.Where(g, symbol);
+    if (matches.Count == 0) throw new StangentException("not_found", $"Nothing in the graph matches '{symbol}'.", ExitCodes.NotFound);
+    ctx.Span.Attributes["stangent.artifact.count"] = matches.Count;
+    var repoName = SymbolLines.RepoName(ctx.Repo.Root);
+    return new JsonObject
+    {
+        ["symbol"] = symbol, ["commit"] = SymbolLines.CommitOf(g), ["head"] = Cli.Head(ctx), ["repo"] = repoName,
+        ["dirty"] = g.DirtyFiles is null ? null : g.DirtyFiles.Count > 0,
+        ["dirtyFiles"] = new JsonArray([.. (g.DirtyFiles ?? []).Select(f => (JsonNode)f)]),
+        ["ambiguous"] = matches.Count > 1,
+        ["matches"] = new JsonArray([.. matches.Select(m => (JsonNode)m.ToJson(repoName))]),
+    };
+}));
+graph.Subcommands.Add(where);
+
 var exportArg = new Argument<string>("path") { Description = "File to write (gzip'd JSON lines)." };
 var export = new Command("export", "Write the graph to one file, the unit CI shares (D25).") { exportArg };
 export.SetAction(pr => Cli.Run(pr, "graph export", ctx =>

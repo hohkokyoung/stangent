@@ -284,6 +284,15 @@ The line-level table above and the exact check were re-run after these fixes. eS
 - **Consumers:** 1b (consumes `code-graph` v2), marked `needs review` per D20; 1c, which made the change.
   No phase consumes `impact-report` yet; the `/stangent:impact` command shows its Markdown and was updated with it.
 
+### Reopened 2026-11-04 by the overhaul, 1.1 · line citations (D115)
+- **Built:** `stangent graph where <symbol>` and `SymbolLines.Where`. The lines were already stored for every point, so nothing was
+  rebuilt. Builds now record the files on the map that differ from the commit (`meta.dirtyFiles`), and a citation is refused for those files.
+- **What each kind of symbol answers,** and the gaps: `docs/code-graph.md`, "Line citations".
+- **Results:** tests on the shop fixture cover a C# method, a TypeScript method, a real partial type across two files, a dirty tree
+  and the same tree committed. A citation fills an `evidence` record that passes its validator.
+- **Contract:** `code-graph` is bumped once for 1.1 and 1.2 together; see the 1.2 note.
+- **Impact on other phases:** 2.3 reads this for `repo/path:lines`. Nothing else changes: `BuildStats` only gains a field.
+
 ### Reopened 2026-10-20 by Phase 2b · `impact-report` v4 → v5
 - **`impact-report` v5:** the reserved `requirements` array became `fsdSections`: the FSD sections a change reaches
   through the reference pages whose statements cite a changed or affected symbol, with their link states and whether

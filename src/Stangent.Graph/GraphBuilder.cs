@@ -14,7 +14,7 @@ public sealed record BuildOptions(bool Restore = true, bool Full = false, TextWr
 public sealed record BuildStats(
     string Commit, int Projects, int Frontends, int Extracted, int Reused, int Nodes, int Edges, int BlindSpots,
     IReadOnlyList<string> LoadErrors, IReadOnlyList<string> LoadWarnings, IReadOnlyList<string> Detectors, long LoadMs, long ExtractMs, long LinkMs, long TotalMs,
-    int HistoryLines = 0, string HistoryStatus = "", long HistoryMs = 0);
+    int HistoryLines = 0, string HistoryStatus = "", long HistoryMs = 0, int DirtyFiles = 0);
 
 /// <summary>
 /// Builds the graph (D25): scan projects, re-extract only those whose fingerprint changed, then
@@ -167,6 +167,13 @@ public static class GraphBuilder
         HistoryStep.Apply(repo, graph, previous, () => GraphStore.Load(GraphStore.PathFor(repo)), warnings);
         history.Stop();
 
+        // After reading everything, so an edit made during the build counts. Only files the graph holds lines for: elsewhere (a
+        // README, or the lock file this build's own restore wrote) nothing it says can be wrong.
+        var onMap = graph.AllNodes.Select(n => n.File).Concat(graph.AllBlindSpots.Select(b => b.File)).OfType<string>().Select(f => f.Normalize()).ToHashSet(StringComparer.Ordinal);
+        graph.DirtyFiles = Git.ChangedFiles(repo.Root)?.Where(onMap.Contains).ToList();
+        if (graph.DirtyFiles is { Count: > 0 } dirty)
+            log.WriteLine($"stangent: {dirty.Count} file(s) differ from {graph.Commit}; `graph where` won't cite their lines.");
+
         GraphStore.Save(graph, GraphStore.PathFor(repo));
         total.Stop();
         var stats = new BuildStats(graph.Commit, projects.Count, frontends.Count, changed.Count + frontendChanged.Count,
@@ -174,7 +181,7 @@ public static class GraphBuilder
             graph.AllNodes.Count(), graph.AllEdges.Count(), graph.AllBlindSpots.Count(),
             [.. graph.LoadErrors.Distinct().Order(StringComparer.Ordinal)], warnings, [.. detectors.Select(d => d.Name)],
             loadMs, extract.ElapsedMilliseconds, link.ElapsedMilliseconds, total.ElapsedMilliseconds,
-            graph.HistoryLines.Count, graph.History?.Status ?? "", history.ElapsedMilliseconds);
+            graph.HistoryLines.Count, graph.History?.Status ?? "", history.ElapsedMilliseconds, graph.DirtyFiles?.Count ?? 0);
         return (graph, stats);
     }
 
@@ -234,6 +241,18 @@ public static class GraphBuilder
 public static class Git
 {
     public static string Head(string root) => Run(root, "rev-parse HEAD")?.Trim() ?? "";
+
+    /// <summary>
+    /// Files under <paramref name="root"/> that differ from HEAD, tracked or untracked, relative to it and in NFC. Null when git can't say.
+    /// </summary>
+    public static IReadOnlyList<string>? ChangedFiles(string root)
+    {
+        if (Run(root, "status --porcelain=v1 -z --no-renames --untracked-files=all -- .") is not { } status) return null;
+        var prefix = Run(root, "rev-parse --show-prefix")?.Trim() ?? "";
+        return [.. status.Split('\0', StringSplitOptions.RemoveEmptyEntries).Select(e => e[3..])
+            .Where(path => path.StartsWith(prefix, StringComparison.Ordinal))
+            .Select(path => path[prefix.Length..].Normalize()).Order(StringComparer.Ordinal)];
+    }
 
     public static string? Run(string root, string args)
     {
