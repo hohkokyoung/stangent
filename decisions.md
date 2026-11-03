@@ -169,6 +169,7 @@ between documents and code.
 - Dry-run on nopCommerce first to measure tokens, time and false-discrepancy rate before
   pointing it at company code.
 **Cost:** the biggest single LLM spend in the project, and a large review backlog on day one.
+- *Replaced 2026-11-03 (D99):* `/stangent:adopt` runs the existing steps in order; there's no separate audit.
 
 ## D15 · Source documents: many formats, latest wins, every version kept — 2026-10-18
 - Expect many documents in many formats (Word, Excel, PDF, others). Support the common ones
@@ -1860,6 +1861,46 @@ lands); designed without a real FSD so far (D56). Doesn't raise right place (Son
     **Cost:** a developer can miss a real gap; the spec is then no worse than before.
 
 - *Placed 2026-11-02 (D109, owner):* built before Phase 4, as phase 2c on the roadmap.
+- *Matching a ticket to its requirement (owner, 2026-11-02, "yeah sure"):* code limits the candidates to requirements linked, through
+  page statements, to the code at the ticket's starting points; no link means "no requirement covers this". An AI picks one or none,
+  quoting both word for word, and code checks the quotes. A fresh AI, without seeing the pick, checks that the requirement says what
+  should happen in this situation; if it disagrees there's no match. **A person always confirms:** until then it reads "suggested:
+  R-0042", and only then "bug, per R-0042" or "looks intended (R-0042)", for an approved requirement only. Rejected: automatic when
+  the checks agree (both AI steps can share a misreading, and there's no data on how often). May loosen later on measured numbers.
+- *Scoring the match (owner, 2026-11-02, "lets go"):* only 7 of Sonarr's 50 tickets reach any FSD section, 1 of them a not-bug, and
+  reaching one doesn't mean the ticket is about it (SONB-46 reaches only the Library chapter); the 27/30 bar scores requirements and
+  links, not this step. So a fresh agent writes a key on the planted FSD before anything is built, frozen: tickets that clearly fit a
+  requirement and tickets that clearly don't. **Cost:** it's our own test set, so a real FSD (D56) stays the judge.
+- *A requirement no page statement covers (owner, 2026-11-02, "yes, labelled"):* it can still match, second after linked ones. The AI
+  sees such requirements' titles and FSD sections; the same checks and a person's confirmation apply; it reads "no code found for
+  this rule", so it says the feature may not be built, not that existing code is wrong. **Why:** a feature that was never built is
+  what a spec is best at catching ("the episode list can be exported as a CSV file"), and links alone would say nothing covers it.
+  **Cost:** more candidates, so more wrong picks; the key tests this case.
+- *Bars for the match (owner, 2026-11-02: strict, since an agent acts on the business logic it's given):* on the frozen key of 30 tickets
+  (15 a requirement with code covers, 5 one with no code, 10 none): at least 90% of suggestions name the right requirement; at least 8 of
+  the 10 say "none"; at least 14 of the 20 find it. If either of the first two fails, matching ships off and requirements stay context; if
+  only the third fails, it ships on and the report says so. Agreed before any run; not moved after one.
+- *A fix that goes against an approved requirement (owner, 2026-11-02, "stop and ask"):* an agent trusts the spec, so a wrong approved rule
+  gets implemented faithfully and every check passes. An approved requirement outranks a ticket: the match says "looks intended", no fix
+  starts, and a rule that's wrong changes through the BA first (D11). A diff touching code linked to an approved requirement is flagged;
+  code can tell it touched that code, not that it broke the rule, so a person judges. Details with Phase 4. **Cost:** no check can show a BA
+  read carefully; D53's telemetry idea (approvals later reopened, time per approval) applies here too, as a follow-up.
+- *Recheck triggers (owner, 2026-11-02, "as recommended"):* when a page goes stale (D55), its links are judged again, in 2c; a broken link stops
+  saying `agree` and shows as a conflict for a person, and the BA's approval stands, since the FSD's text hasn't changed. A code PR listing the
+  requirements it reaches with no test waits for tests that carry ids (Phases 5–6). No trigger after a failed proof: 8 of the 9 saved
+  `not-reproduced` only ran out of turns, and a developer already flags a spec gap when confirming a bug. **Cost:** an AI step per merge
+  that changes a page's links; small, not yet measured, reported.
+- *Adoption replaces D14's audit (owner, 2026-11-03):* no separate audit. `/stangent:adopt`, with a driver script behind it as for tickets and
+  pages (names not final), runs the existing steps in order: graph, pages, FSD import, extraction, links, spec-only PRs. Each skips what
+  its inputs say is done, so it resumes, and the pages step asks before spending. The difference list appears only if 2c's links pass the noise
+  bar and findings go on. After day one the triggers keep it current. **Why:** a separate audit would repeat steps needed anyway, and could
+  drift from them. **Cost:** no single report; still the largest AI spend and a large BA backlog on day one.
+- *Phase 3's follow-up when 2c lands (owner, 2026-11-03, "as recommended"; D20):* `ticket match` is its own step after the bundle; `ticket-bundle`
+  v3 adds the linked requirements and keeps FSD sections; `bug-proof` v2 records the verdict, and `--confirm` also confirms the match; drafts may
+  link a requirement, and "looks intended" asks the reporter. The finder doesn't change. Verdict: the requirement agrees with the reporter and a
+  test fails → bug; it agrees with the code and a test fails → looks intended, no fix starts; no code found → may not be built; no match → a
+  person decides, as today. Skipping the proof when a match says "intended" waits for numbers. **Cost:** saved drafts go stale; two contract
+  bumps, with no consumer yet; one more AI step and its fresh check per ticket.
 
 ## D100 · Held-out bugs come from bitwarden/server; Sonarr's 40 become the tuning set — 2026-11-02 (decided; set frozen)
 Every Phase 3 change so far (the page index, the picker, the bundle, the free checks) was judged on Sonarr's 40 bugs,
@@ -2135,15 +2176,20 @@ and Phase 4 starts later.
   counted apart; if there's no difference, cut it to the finder's files and the failing test. Recommended rules: named files are
   leads, never a limit on what an agent reads or edits; it traces from the failing test before it edits. A green test can't show
   a fix is clean, so that stays a person's review (Phase 6). To grill with Phase 4.
+  **Proposed on top (recorded on the owner's "ok yes", 2026-11-02; not decided):**
+  (a) **Start without the bundle:** the fix agent gets the ticket and the code until a test shows the bundle helps. Reference pages
+  are generated from code, so they can describe a bug as how the feature works; the ticket and the agent can skew a fix too (SONB-18's
+  title invites the null check), so this is measured against them, not assumed.
+  (b) **Label context by source:** something that ran; something a person or the FSD said; something read in the code; a guess. No fix
+  rests on a guess until a run or a person backs it up.
+  (c) **Plant wrong leads:** the fix agent on the 17 Sonarr bugs whose saved test passes on the developer's fix, with and without a deliberately
+  wrong file or cause. Code runs the tests; a person reads only the fixes that go green, since a green test can still be a wrong fix. About $8–34
+  for 34 runs, estimated from the proof's cost (no fix agent has run), on the owner's OK. The saved tests predate the finder and may need rechecking.
+  Sonarr is public, so the result may look better than on a private repo.
 - **Where does security review go? (2026-11-02):** the owner's brief lists it in the pipeline; no decision or phase holds it.
   Recommended: a checked step in Phase 6's review package, grilled with that phase.
-- **Who runs the D14 audit now? (2026-11-02):** D14's full audit on adoption predates D51–D52 and isn't built. To re-decide when
-  2c is grilled, with `fsd reconcile` and as-built drafts in view.
 - **Flakiness of the proof (2026-11-02):** only one full run, and a unit test runs once. Running a test more than once per proof
   needs no AI. Not decided. The Sonarr re-run gives a second result to compare.
-- **D99: matching a ticket to its requirement has no checker yet (2026-11-02):** "bug, per R-0042" needs a step that
-  picks the scenario or requirement a ticket is about; it is an AI step with no check designed (D18). A wrong pick gives
-  a confident, sourced, wrong verdict. To design before D99 is built.
 - **The not-bug bar on Sonarr (proposed 2026-11-02, not decided):** report D79's "catches wrong reports" as "can't be
   measured: no FSD covers these tickets" rather than failed, unless the planted FSD covers them (a free check: which of
   the 10 not-bug tickets fall inside its 15 screens). **Checked 2026-11-02: it covers none.** The 10 are about an
