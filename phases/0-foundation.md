@@ -207,7 +207,16 @@ Lines are as of the slice's commit. A field holds a lifecycle if it stays on dis
 
 **Fixed while here.** `.stangent/fsd/` and `.stangent/req/` weren't in what `stangent init` ignores, so their run files could be committed. History lives there, so they're added now. `specs/trace-history.jsonl` is added to the CI bot's commit.
 
+### Fresh check of 0.1 to 0.5
+Found, and fixed in this round:
+- A deleted `ids.json` gave out live ids again. `NextId` now raises the ledger to the highest id in the feature and question files.
+- `stangent data check` passed with `trackedFiles: 0` when `git ls-files` failed (a corrupt index). It now stops with `git_list_failed`, exit 1. `InSameRepo` fails the same way when git can't answer for this repo.
+- A term in NFC missed a path or line in NFD, so the finding printed the file name. Terms, paths and lines are now compared in NFC.
+- The write scan missed `["status"] ??= x` and `.Add("status", x)`. It now sees both; it found no such write in `src/`, so nothing moved.
+
 ### Known gaps
+- Write scan: it still misses a key held in a variable or `Field`, and `=` on the next line, and it matches excepted files by count only, so a new write can replace an old one unseen.
+- Ids: `NextId` reads the feature files as code writes them, one `id:` per line, so an id hand-edited into a flow mapping isn't seen. A removed id can't be recovered once the ledger is deleted.
 - 0.2: the line is written just before the file is saved; a person's YAML edit is seen only at `trace attribute`; requirement approval has no code path until D99, so a hand edit leaves no line; two branches can conflict on a committed history (no `merge=union` yet); agents may edit `.stangent/**`, history included (D60). `ApproveChapter`, `Attribute` and `trace check --fix` still save `trace.yaml` without the trace lock.
 - 0.2: a retired requirement's id isn't marked `Remove`d on the ledger yet (2.3). `.stangent/graph.sqlite` isn't in what `init` ignores.
 - `spec-run.sh` and `ticket-run.sh`: a page or step stangent *refuses* (an error envelope) is a status line holding its code, and the batch still exits 0. Tests pin this. Changing it could stop a paid benchmark on one ticket, so it's the owner's call.

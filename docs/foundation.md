@@ -46,6 +46,11 @@ Requirement ids use it (D114): `RequirementFile.NextId` issues `F-`, `R-`, `D-`,
 with the old `ids.yaml` carries on from its numbers: the counter is taken over once and the file removed. `Raise` only goes up,
 so two runs doing this together can't give an id out twice. A retired requirement isn't marked `Remove`d yet; that's 2.3.
 
+`PermanentIds` itself starts fresh when its file is absent. `NextId` guards against that: before each id it raises every kind to
+the highest id in the feature and question files, retired ones included, so a new id is beyond them and a recreated ledger records
+them. An id removed from all of those files can't be recovered when the ledger is deleted, and may be given again, as can any
+number above the highest left. Don't delete the ledger.
+
 ## The client-data check
 
 `stangent data check [--terms <file>]` looks through the files `git ls-files` lists. Exit 1 on any finding.
@@ -59,6 +64,12 @@ git tracks it, so it can't pass here and fail in CI. An entry with no reason, or
 - A terms file inside the repo is refused, even through a link or from another worktree of the repo.
 - A file you named must exist. Only the default may be absent.
 - With no terms, the result says `termsChecked: false`, and the documents part still decides.
+
+**Either Unicode form.** Terms, paths and lines are compared in NFC, in any case, so `Café` matches a file name git holds in
+NFD. A finding's `column` counts characters of the line in NFC.
+
+**A failed git is a failure.** If git can't list the files, the check stops with `git_list_failed` and exit 1; it never passes
+having checked nothing.
 
 **Nothing leaks.** Findings hold `file`, `line`, `column` and `termLine` (the term's line in the terms file), never a term or
 the text around it. A path that holds a term is hidden as well: `fileIndex` is its place in `git ls-files`.
