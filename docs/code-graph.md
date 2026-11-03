@@ -4,7 +4,7 @@ The map of the code that impact analysis walks (decisions D25–D28, frontends D
 It's built by code from the code and its git history; it's never committed and has no AI in it. v2
 (Phase 1b) added frontends: components, templates, pages, and the `renders` and `maps-field` lines.
 v3 (Phase 1c) adds 📜 `changes-with` lines from git history and `meta.history`. v4 (the overhaul, 1.1 and 1.2) adds
-`opens-screen` lines from Playwright specs and `meta.dirtyFiles`.
+`opens-screen` lines from Playwright specs, `meta.dirtyFiles` and `meta.notInCommit`.
 
 ## Where it lives
 
@@ -101,22 +101,27 @@ impact walk never follows them.
 An existing Playwright spec whose `goto` matches a screen's route is a line from the spec and line to the `page` point. It says a
 test exists: evidence strength `read`. Only a real run can make it `ran`, and the graph never runs anything.
 
-`stangent graph screen-tests [--screen <route or page id>]` lists `links` (with `spec`, `line`, `goto`, `route`, `label`, `strength`
-and a `test` citation) and `unresolved`, plus counts: `specs`, `gotosResolved`, `blindSpots`. `PlaywrightLinks.Answer` is the same in
+`stangent graph screen-tests [--screen <route or page id>]` lists `links` (with `spec`, `line`, `goto`, `route`, `label`, `strength`,
+`linesMatchCommit`, a `note` saying why when that's false, and a `test` citation) and `unresolved`, plus counts: `specs`, `gotosResolved`, `blindSpots`. `PlaywrightLinks.Answer` is the same in
 code. An unknown screen is `not_found`.
 
 - **Which files:** `*.spec.*` and `*.test.*`, Playwright's own default names, that git tracks or doesn't ignore. A file counts if it imports
   Playwright, or has a `playwright.config.*` in its folder or above. Another runner's tests are left alone.
 - **Which calls:** `goto` on a receiver named exactly `page` (`page.goto`, `this.page.goto`), not in a comment or a string, whose whole
   argument is one string. `http://localhost` and other loopback addresses count as the app.
-- **Which screens:** the same segments as a route (`:param` and `*` match any one). The fewest wild segments win, so `/settings` isn't
-  also `/:id`. The spec's own frontend wins, if it sits in one with a match; otherwise every frontend with that route is linked.
+- **Which screens:** the same segments as a route (`:param` and `*` match any one). Within a frontend the fewest wild segments win, so
+  `/settings` isn't also `/:id`.
+- **Which frontend:** a spec inside a frontend links only to that frontend (the nearest around it that has screens; one at the repo's
+  root holds everything). A spec outside every frontend links only when exactly one frontend matches, and a `:param` match counts, so
+  `/orders/new` with React `/orders/new` and Angular `/orders/:id` is ❓. A link never crosses apps on a guess.
 - **Everything else is ❓,** with `detector: playwright-specs`, and is never guessed: a built URL, another receiver (it may be a page
-  object), another address, a hash route, a relative URL, a route no screen has, and a Playwright spec with no `goto`.
+  object), another address, a hash route, a relative URL, a percent-encoded path (a router decodes it and this read doesn't; one in the
+  query is fine), a route no screen has, only another frontend's screen, several frontends' screens, a Playwright spec with no `goto`,
+  and a spec or folder that can't be read (a link with no target, no permission).
 
 **Kept apart.** The lines are `CodeGraph.ScreenTests` (`meta.screenTests`), not edges, and specs aren't points. So the impact walk,
 scoring, reference pages, ticket starting points and the 1d splitter can't see them, the same way 📜 lines are kept from the walk. An
-impact answer doesn't list them yet. A repo with no specs exports the same bytes as before.
+impact answer doesn't list them yet. A repo with no specs exports no `screenTests`.
 
 **Known gaps.**
 - `goto` in a helper or setup file (`cart-helpers.ts`, `login.setup.ts`) isn't read.
@@ -124,6 +129,7 @@ impact answer doesn't list them yet. A repo with no specs exports the same bytes
 - A real `Page` named anything but `page` (`leader`, `adminPage`) is ❓.
 - Razor and Blazor screens have no `page` points (D65), so specs on those apps are all ❓.
 - Screens are matched without the app's base path, and the runner's `baseURL` isn't read.
+- Ports are ignored: `http://localhost:4200/x` and `http://localhost:3000/x` are the same `/x`, so a port can't choose between frontends.
 
 ## Detectors (D17)
 
@@ -233,13 +239,18 @@ The answer around them has `commit`, `head`, `repo`, `dirty`, `dirtyFiles` and `
 **Dirty trees.** A build records the files on the map that differ from the commit, tracked or untracked (`meta.dirtyFiles`, and
 a count in the build's stats). The answer's `dirty` is true when there are any, and a match in one of them has
 `linesMatchCommit: false` and `citation: null`. A match in an untouched file still cites: its lines do match. A change off the map
-(a README, or a lock file the build's own restore wrote) isn't recorded, because no line the graph holds can be wrong for it. An
-export holds `dirtyFiles` only when there are some, so a clean tree's export has the same bytes as before. A graph built outside
-git, or saved before this existed, has `dirty: null` and cites nothing until it's rebuilt.
+(a README, or a lock file the build's own restore wrote) isn't recorded, because no line the graph holds can be wrong for it.
+
+**Files the commit doesn't contain.** A file on the map that isn't in the commit (`git ls-tree`), such as a gitignored generated file
+that's compiled in, can't match it. It's in `meta.notInCommit`, not `dirtyFiles`, so `dirty` stays false; a match in one has
+`linesMatchCommit: false`, `citation: null`, and a `note` saying why.
+
+**Clean or don't know.** An export always writes both keys: `[]` is none, `null` is not known. A graph built outside git, or an export
+or database from before a key existed, loads, has `linesMatchCommit: false` and no citation with a `note` saying to rebuild, and
+`dirty: null` if `dirtyFiles` is what's missing.
 
 **Known gaps.**
 - A partial part with no members leaves no trace, so `alsoIn` misses it.
 - A partial method or property holds its first part only, with no `alsoIn`. A TypeScript overload holds one signature's lines.
 - A generated file with a plain name isn't marked.
-- An export from before this existed has no `dirtyFiles` and reads as clean.
 - A file edited and put back during a build isn't seen. A changed project file can change the graph, not its lines, and isn't recorded.

@@ -30,6 +30,18 @@ public sealed record SymbolLines(
     public static string? CommitOf(CodeGraph graph) =>
         graph.Commit.Length == 40 && graph.Commit.All(Uri.IsHexDigit) ? graph.Commit.ToLowerInvariant() : null;
 
+    /// <summary>Why a file's lines can't be said to match the graph's commit, or null when they can.</summary>
+    public static string? NotAtCommit(CodeGraph graph, string? file)
+    {
+        if (CommitOf(graph) is null) return "the graph wasn't built at a git commit";
+        var name = file?.Normalize();
+        if (name is not null && graph.DirtyFiles?.Contains(name, StringComparer.Ordinal) == true)
+            return "this file differed from the commit when the graph was built, so its lines don't match the commit";
+        if (name is not null && graph.NotInCommit?.Contains(name, StringComparer.Ordinal) == true)
+            return "the commit doesn't contain this file (git ignores it, or a build generated it), so its lines can't match the commit";
+        return graph.DirtyFiles is null || graph.NotInCommit is null ? "the graph doesn't say whether its tree was clean; rebuild it" : null;
+    }
+
     /// <summary>A repo's name for <c>repo/path</c>: its origin's last path part, else its folder.</summary>
     public static string RepoName(string root)
     {
@@ -68,17 +80,15 @@ public sealed record SymbolLines(
         var commit = CommitOf(graph);
         var start = n.File is not null && n.Line > 0 ? n.Line : (int?)null;
         var end = start is not null && n.EndLine >= n.Line ? n.EndLine : (int?)null;
-        var dirty = n.File is not null && graph.DirtyFiles?.Contains(n.File.Normalize(), StringComparer.Ordinal) == true;
         var notes = new List<string>();
         if (n.File is null) notes.Add("this point has no place in a file");
         else if (start is null) notes.Add("the graph holds this point's file, not its lines");
         else if (end is null) notes.Add("the graph holds only this point's first line, so no lines are cited");
-        if (commit is null) notes.Add("the graph wasn't built at a git commit");
-        else if (dirty) notes.Add("this file differed from the commit when the graph was built, so its lines don't match the commit");
-        else if (graph.DirtyFiles is null) notes.Add("the graph doesn't say whether its tree was clean; rebuild it");
+        var notAtCommit = NotAtCommit(graph, n.File);
+        if (notAtCommit is not null) notes.Add(notAtCommit);
         if (alsoIn.Count > 0) notes.Add("a partial type: these lines are its first part, and it has members outside them");
         return new SymbolLines(n.Id, n.Kind, n.Name, n.File, start, end, commit,
-            commit is not null && !dirty && graph.DirtyFiles is not null, n.File is not null && LooksGenerated(n.File), alsoIn,
+            notAtCommit is null, n.File is not null && LooksGenerated(n.File), alsoIn,
             notes.Count == 0 ? null : string.Join("; ", notes));
     }
 

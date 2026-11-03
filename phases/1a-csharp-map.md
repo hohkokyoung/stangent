@@ -293,12 +293,20 @@ The line-level table above and the exact check were re-run after these fixes. eS
 - **Contract:** `code-graph` is bumped once for 1.1 and 1.2 together; see the next note.
 - **Impact on other phases:** 2.3 reads this for `repo/path:lines`. Nothing else changes: `BuildStats` only gains a field.
 
+### Fresh check of 1.1 and 1.2, and the fix round, 2026-11-04 (D115)
+- **Found: an export with no `dirtyFiles` read as clean, citing wrong lines.** Fixed: the key is always written, and missing means don't know, with no citation.
+- **Found: a gitignored compiled file was cited as matching the commit.** Fixed: `meta.notInCommit` from `git ls-tree`, no citation, a `note` saying why.
+- **Found: a tracked `*.spec.ts` link with no target crashed `graph build`.** Fixed: an unreadable spec or folder is ❓; a folder named `.spec.ts` was already fine, now tested.
+- **Found: a spec could link to a screen in another app.** Fixed: inside a frontend only that frontend; outside, only when exactly one matches; ports stay ignored, a known gap.
+- **Found: `/series/%61dd` linked to `/series/:id`.** Fixed: a percent-encoded path is ❓.
+- **Found, not fixed:** bug proof's own read (`AppSession.cs:34`) still throws on such a link (no consumer code changes in this round); the `graph screen-tests` span name has a hyphen, so telemetry drops its event.
+
 ### Reopened 2026-11-04 by the overhaul, 1.2 · `code-graph` v3 → v4 (D115)
 - **`code-graph` v4:** the `opens-screen` line kind, stored apart (`meta.screenTests`), the `playwright-specs` detector and its ❓, and
-  `meta.dirtyFiles` from 1.1. `meta.schemaVersion` stays 3: no table changed, and both values are written only when there's something in them.
+  `meta.dirtyFiles` from 1.1, and `meta.notInCommit`. `meta.schemaVersion` stays 3: no table changed. `screenTests` is written only when it has something in it; the other two always are.
 - **Details and measurements:** `phases/1b-frontend-api.md`.
-- **Consumers (D20):** `phases check` lists 1b, 1c, 1d, 2a, 2b, 2c and 3 on v3. All are marked `needs review` with a follow-up
-  in `roadmap.md`. None of their code changed for the contract. `impact-report` is unchanged: v5.
+- **Consumers (D20):** 1b, 1c, 1d, 2a, 2b, 2c and 3 were marked `needs review`, then checked and moved to v4 (each phase file says so).
+  None of their code changed for the contract. `impact-report` is unchanged: v5.
 
 ### Reopened 2026-10-20 by Phase 2b · `impact-report` v4 → v5
 - **`impact-report` v5:** the reserved `requirements` array became `fsdSections`: the FSD sections a change reaches

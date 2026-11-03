@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text.Json.Nodes;
 using Stangent.Core.Evidence;
 using Stangent.Graph;
@@ -11,7 +12,7 @@ public class SymbolLinesTests(ShopGraph shop) : IClassFixture<ShopGraph>
 
     static CodeGraph Graph(IReadOnlyList<string>? dirty, params Node[] nodes)
     {
-        var graph = new CodeGraph { Commit = Commit, DirtyFiles = dirty };
+        var graph = new CodeGraph { Commit = Commit, DirtyFiles = dirty, NotInCommit = dirty is null ? null : [] };
         graph.LinkedNodes.AddRange(nodes);
         return graph;
     }
@@ -123,10 +124,11 @@ public class SymbolLinesTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
-    public void An_export_says_dirty_only_when_it_is_and_keeps_it_through_import()
+    public void An_export_says_clean_or_dirty_and_keeps_it_through_import()
     {
         var clean = Graph([]);
-        Assert.DoesNotContain("dirtyFiles", GraphStore.CanonicalLines(clean).First());
+        Assert.Contains("\"dirtyFiles\":[]", GraphStore.CanonicalLines(clean).First());
+        Assert.Contains("\"notInCommit\":[]", GraphStore.CanonicalLines(clean).First());
 
         var path = Path.GetTempFileName();
         try
@@ -145,6 +147,55 @@ public class SymbolLinesTests(ShopGraph shop) : IClassFixture<ShopGraph>
             File.Delete(path);
             File.Delete(path + ".sqlite");
         }
+    }
+
+    [Fact]
+    public void An_old_export_with_no_dirty_files_is_dont_know_not_clean()
+    {
+        var node = new Node("A|M:T.Run", NodeKind.Method, "T.Run", "p", "T.cs", 3, 5);
+        var meta = JsonNode.Parse(GraphStore.CanonicalLines(Graph([], node)).First())!.AsObject();
+        meta.Remove("dirtyFiles");
+        meta.Remove("notInCommit");
+        var lines = GraphStore.CanonicalLines(Graph([], node)).Skip(1).Prepend(meta.ToJsonString());
+        var path = Path.GetTempFileName();
+        try
+        {
+            using (var gzip = new GZipStream(File.Create(path), CompressionLevel.Fastest))
+            using (var writer = new StreamWriter(gzip)) foreach (var line in lines) writer.WriteLine(line);
+
+            var graph = GraphStore.Import(path);
+            Assert.Null(graph.DirtyFiles);
+            var hit = Assert.Single(SymbolLines.Where(graph, node.Id));
+            Assert.False(hit.LinesMatchCommit);
+            Assert.Null(hit.ToCitation("r"));
+            Assert.Contains("rebuild", hit.Note);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task A_gitignored_compiled_file_isnt_in_the_commit_so_nothing_cites_it()
+    {
+        var root = ShopCopy.Create();
+        try
+        {
+            var ct = TestContext.Current.CancellationToken;
+            await File.WriteAllTextAsync(Path.Combine(root, ".gitignore"), "Gen/\n", ct);
+            ShopCopy.Git(root, "add -A");
+            ShopCopy.Git(root, "-c user.name=test -c user.email=test@example.invalid commit -q -m ignore");
+            Directory.CreateDirectory(Path.Combine(root, "Shop.Core", "Gen"));
+            await File.WriteAllTextAsync(Path.Combine(root, "Shop.Core", "Gen", "Client.cs"), "namespace Shop.Core;\n\npublic class GenClient\n{\n}\n", ct);
+
+            var (graph, _) = await GraphBuilder.BuildAsync(StangentRepo.Discover(root), new BuildOptions(Restore: false), ct);
+            Assert.DoesNotContain("Shop.Core/Gen/Client.cs", graph.DirtyFiles!);
+            Assert.Contains("Shop.Core/Gen/Client.cs", graph.NotInCommit!);
+            var hit = Assert.Single(SymbolLines.Where(graph, "Shop.Core|T:Shop.Core.GenClient"));
+            Assert.False(hit.LinesMatchCommit);
+            Assert.Null(hit.ToCitation("shop"));
+            Assert.Contains("doesn't contain this file", hit.Note);
+            Assert.True(Assert.Single(SymbolLines.Where(graph, PlaceOrder)).LinesMatchCommit);
+        }
+        finally { Directory.Delete(root, recursive: true); }
     }
 
     [Fact]

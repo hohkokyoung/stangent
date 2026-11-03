@@ -153,6 +153,11 @@ public sealed class CodeGraph
     /// clean tree. Null: not known (no git, or a graph from before this was recorded).
     /// </summary>
     public IReadOnlyList<string>? DirtyFiles { get; set; }
+    /// <summary>
+    /// Files on the map that <see cref="Commit"/> doesn't contain, such as a gitignored generated file, so their lines can't match it.
+    /// Empty: none. Null: not known.
+    /// </summary>
+    public IReadOnlyList<string>? NotInCommit { get; set; }
     /// <summary>🟡 <c>opens-screen</c> lines (code-graph v4): kept apart from <see cref="AllEdges"/>, as 📜 lines are (D115).</summary>
     public List<ScreenTest> ScreenTests { get; } = [];
 

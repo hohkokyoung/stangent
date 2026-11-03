@@ -171,6 +171,7 @@ public static class GraphBuilder
         // README, or the lock file this build's own restore wrote) nothing it says can be wrong.
         var onMap = graph.AllNodes.Select(n => n.File).Concat(graph.AllBlindSpots.Select(b => b.File)).Concat(graph.ScreenTests.Select(t => t.Spec)).OfType<string>().Select(f => f.Normalize()).ToHashSet(StringComparer.Ordinal);
         graph.DirtyFiles = Git.ChangedFiles(repo.Root)?.Where(onMap.Contains).ToList();
+        graph.NotInCommit = Git.FilesAt(repo.Root, graph.Commit) is { } committed ? [.. onMap.Where(f => f.Length > 0 && !committed.Contains(f)).Order(StringComparer.Ordinal)] : null;
         if (graph.DirtyFiles is { Count: > 0 } dirty)
             log.WriteLine($"stangent: {dirty.Count} file(s) differ from {graph.Commit}; `graph where` won't cite their lines.");
 
@@ -252,6 +253,13 @@ public static class Git
         return [.. status.Split('\0', StringSplitOptions.RemoveEmptyEntries).Select(e => e[3..])
             .Where(path => path.StartsWith(prefix, StringComparison.Ordinal))
             .Select(path => path[prefix.Length..].Normalize()).Order(StringComparer.Ordinal)];
+    }
+
+    /// <summary>The files a commit contains under <paramref name="root"/>, relative to it and in NFC. Null when git can't say.</summary>
+    public static IReadOnlySet<string>? FilesAt(string root, string commit)
+    {
+        if (commit.Length == 0 || Run(root, $"ls-tree -r -z --name-only {commit}") is not { } tree) return null;
+        return tree.Split('\0', StringSplitOptions.RemoveEmptyEntries).Select(path => path.Normalize()).ToHashSet(StringComparer.Ordinal);
     }
 
     public static string? Run(string root, string args)

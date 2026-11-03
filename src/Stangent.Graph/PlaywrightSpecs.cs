@@ -23,18 +23,31 @@ public static partial class PlaywrightSpecs
     /// <summary>Spec files under a folder, by the name bug proof has always looked for: <c>*.spec.ts</c> and <c>*.spec.js</c>.</summary>
     public static IEnumerable<string> Files(string dir) => Files(dir, name => Regex.IsMatch(name, @"\.spec\.(ts|js)$"));
 
-    /// <summary>Files under a folder whose name passes, as full paths. Not into links (another checkout, a loop) or tooling folders.</summary>
-    public static IEnumerable<string> Files(string dir, Func<string, bool> name)
+    /// <summary>
+    /// Files under a folder whose name passes, as full paths. Not into links (another checkout, a loop) or tooling folders. A folder
+    /// that can't be read is skipped and passed to <paramref name="unreadable"/>.
+    /// </summary>
+    public static IEnumerable<string> Files(string dir, Func<string, bool> name, Action<string>? unreadable = null)
     {
         var stack = new Stack<string>([dir]);
         while (stack.Count > 0)
         {
             var d = stack.Pop();
-            foreach (var f in Directory.EnumerateFiles(d))
+            string[] files, subs;
+            try
+            {
+                files = [.. Directory.EnumerateFiles(d)];
+                subs = [.. Directory.EnumerateDirectories(d)
+                    .Where(s => !Skip.Contains(Path.GetFileName(s)) && !new DirectoryInfo(s).Attributes.HasFlag(FileAttributes.ReparsePoint))];
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                unreadable?.Invoke(d);
+                continue;
+            }
+            foreach (var f in files)
                 if (name(Path.GetFileName(f))) yield return Path.GetFullPath(f);
-            foreach (var sub in Directory.EnumerateDirectories(d)
-                         .Where(s => !Skip.Contains(Path.GetFileName(s)) && !new DirectoryInfo(s).Attributes.HasFlag(FileAttributes.ReparsePoint)))
-                stack.Push(sub);
+            foreach (var sub in subs) stack.Push(sub);
         }
     }
 

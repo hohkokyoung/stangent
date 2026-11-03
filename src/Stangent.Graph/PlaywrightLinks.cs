@@ -26,7 +26,7 @@ public static class PlaywrightLinks
             ["specs"] = graph.ScreenTests.Select(t => t.Spec).Concat(blind.Select(b => b.File)).Distinct(StringComparer.Ordinal).Count(),
             ["gotosResolved"] = graph.ScreenTests.Select(t => (t.Spec, t.Line)).Distinct().Count(),
             ["blindSpots"] = blind.Count,
-            ["links"] = new JsonArray([.. links.Select(t => (JsonNode)Link(graph, t, pages.GetValueOrDefault(t.Page), repoName, commit))]),
+            ["links"] = new JsonArray([.. links.Select(t => (JsonNode)Link(graph, t, pages.GetValueOrDefault(t.Page), repoName))]),
             ["unresolved"] = screen is not null ? new JsonArray() : new JsonArray([.. blind
                 .OrderBy(b => b.File, StringComparer.Ordinal).ThenBy(b => b.Line).ThenBy(b => b.Reason, StringComparer.Ordinal)
                 .Select(b => (JsonNode)new JsonObject { ["file"] = b.File, ["line"] = b.Line, ["reason"] = b.Reason })]),
@@ -35,15 +35,15 @@ public static class PlaywrightLinks
 
     static bool Is(Node page, string screen) => page.Id == screen || page.Name == screen;
 
-    static JsonObject Link(CodeGraph graph, ScreenTest t, Node? page, string repoName, string? commit)
+    static JsonObject Link(CodeGraph graph, ScreenTest t, Node? page, string repoName)
     {
-        var matches = commit is not null && graph.DirtyFiles?.Contains(t.Spec.Normalize(), StringComparer.Ordinal) == false;
+        var why = SymbolLines.NotAtCommit(graph, t.Spec);
         return new JsonObject
         {
             ["kind"] = EdgeKind.OpensScreen, ["label"] = t.Label == Label.Certain ? "certain" : "guessed", ["detector"] = PlaywrightDetector.Detector,
             ["spec"] = t.Spec, ["line"] = t.Line, ["goto"] = t.Goto, ["page"] = t.Page, ["route"] = page?.Name,
-            ["strength"] = "read", ["linesMatchCommit"] = matches,
-            ["citation"] = !matches ? null : SymbolLines.CitationJson(new Citation
+            ["strength"] = "read", ["linesMatchCommit"] = why is null, ["note"] = why,
+            ["citation"] = why is not null ? null : SymbolLines.CitationJson(new Citation
             {
                 Kind = CitationKind.Test, Ref = $"{repoName}/{t.Spec}", Lines = new LineRange(t.Line, t.Line),
             }),

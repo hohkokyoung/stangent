@@ -29,7 +29,7 @@ public class PlaywrightTests : IDisposable
 
     CodeGraph Link(params Node[] pages)
     {
-        var graph = new CodeGraph { Commit = "0123456789abcdef0123456789abcdef01234567", DirtyFiles = [] };
+        var graph = new CodeGraph { Commit = "0123456789abcdef0123456789abcdef01234567", DirtyFiles = [], NotInCommit = [] };
         graph.LinkedNodes.AddRange(pages);
         new PlaywrightDetector().Link(new LinkContext(graph, new Dictionary<string, List<string>>()) { Root = root });
         return graph;
@@ -134,10 +134,95 @@ public class PlaywrightTests : IDisposable
     }
 
     [Fact]
-    public void Outside_any_frontend_every_frontend_with_the_route_is_linked()
+    public void Outside_every_frontend_several_with_the_route_is_a_blind_spot()
     {
         Write("e2e/a.spec.ts", Import + "await page.goto('/settings');\n");
-        Assert.Equal(2, Link(Page("/settings"), Page("/settings", "admin/tsconfig.json")).ScreenTests.Count);
+        var graph = Link(Page("/settings"), Page("/settings", "admin/tsconfig.json"));
+        Assert.Empty(graph.ScreenTests);
+        Assert.Contains("2 frontends (admin, web)", Assert.Single(graph.AllBlindSpots).Reason);
+    }
+
+    [Fact]
+    public void Outside_every_frontend_a_param_route_in_another_still_counts_as_a_match()
+    {
+        Write("e2e/a.spec.ts", Import + "await page.goto('/orders/new');\n");
+        var graph = Link(Page("/orders/new", "react-app/tsconfig.json"), Page("/orders/:id", "ng-app/tsconfig.json"));
+        Assert.Empty(graph.ScreenTests);
+        Assert.Contains("2 frontends", Assert.Single(graph.AllBlindSpots).Reason);
+    }
+
+    [Fact]
+    public void Outside_every_frontend_one_frontend_matching_links()
+    {
+        Write("e2e/a.spec.ts", Import + "await page.goto('/settings');\n");
+        var graph = Link(Page("/settings"), Page("/other", "admin/tsconfig.json"));
+        Assert.Equal("page:web/tsconfig.json|/settings", Assert.Single(graph.ScreenTests).Page);
+    }
+
+    [Fact]
+    public void Inside_a_frontend_another_frontends_screen_is_never_linked()
+    {
+        Write("react-app/e2e/a.spec.ts", Import + "await page.goto('/orders/12');\n");
+        var graph = Link(Page("/home", "react-app/tsconfig.json"), Page("/orders/:id", "ng-app/tsconfig.json"));
+        Assert.Empty(graph.ScreenTests);
+        Assert.Contains("only another frontend's", Assert.Single(graph.AllBlindSpots).Reason);
+    }
+
+    [Fact]
+    public void Inside_a_frontend_with_no_screens_at_all_nothing_is_linked()
+    {
+        Write("react-app/e2e/a.spec.ts", Import + "await page.goto('/orders/12');\n");
+        var ownProject = new Node("project:react-app/tsconfig.json", NodeKind.Project, "react-app", "project:react-app/tsconfig.json");
+        var graph = Link(ownProject, Page("/orders/:id", "ng-app/tsconfig.json"));
+        Assert.Empty(graph.ScreenTests);
+        Assert.Contains("sits in react-app", Assert.Single(graph.AllBlindSpots).Reason);
+    }
+
+    [Fact]
+    public void A_frontend_at_the_repo_root_holds_a_spec_a_nested_one_doesnt()
+    {
+        Write("e2e/a.spec.ts", Import + "await page.goto('/admin');\n");
+        var graph = Link(Page("/home", "tsconfig.json"), Page("/admin", "admin/tsconfig.json"));
+        Assert.Empty(graph.ScreenTests);
+        Assert.Contains("only another frontend's", Assert.Single(graph.AllBlindSpots).Reason);
+    }
+
+    [Fact]
+    public void A_percent_encoded_path_is_a_blind_spot_and_one_in_the_query_isnt()
+    {
+        Write("web/e2e/a.spec.ts", Import + "await page.goto('/series/%61dd');\nawait page.goto('/series/1?next=%2Fhome');\n");
+        var graph = Link(Page("/series/:id"));
+        Assert.Equal(3, Assert.Single(graph.ScreenTests).Line);
+        Assert.Contains("percent-encoded", Assert.Single(graph.AllBlindSpots).Reason);
+    }
+
+    [Fact]
+    public void A_spec_with_no_target_or_no_permission_is_a_blind_spot_not_a_crash()
+    {
+        if (OperatingSystem.IsWindows() || Environment.UserName == "root") return;
+        Directory.CreateDirectory(Path.Combine(root, "web"));
+        File.CreateSymbolicLink(Path.Combine(root, "web/dangling.spec.ts"), "nowhere.ts");
+        File.CreateSymbolicLink(Path.Combine(root, "web/loop.spec.ts"), "loop.spec.ts");
+        Write("web/locked.spec.ts", Import + "await page.goto('/orders');\n");
+        File.SetUnixFileMode(Path.Combine(root, "web/locked.spec.ts"), UnixFileMode.None);
+        Write("web/shut/a.spec.ts", Import + "await page.goto('/orders');\n");
+        var shut = Path.Combine(root, "web/shut");
+        File.SetUnixFileMode(shut, UnixFileMode.None);
+        try
+        {
+            var graph = Link(Page("/orders"));
+            Assert.Empty(graph.ScreenTests);
+            Assert.Equal(["web/dangling.spec.ts", "web/locked.spec.ts", "web/loop.spec.ts", "web/shut"], graph.AllBlindSpots.Select(b => b.File).Order(StringComparer.Ordinal));
+            Assert.All(graph.AllBlindSpots, b => Assert.Contains("can't be read", b.Reason));
+        }
+        finally { File.SetUnixFileMode(shut, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); }
+    }
+
+    [Fact]
+    public void A_folder_named_like_a_spec_is_a_folder()
+    {
+        Write("web/odd.spec.ts/inner.spec.ts", Import + "await page.goto('/orders');\n");
+        Assert.Equal("web/odd.spec.ts/inner.spec.ts", Assert.Single(Link(Page("/orders")).ScreenTests).Spec);
     }
 
     [Fact]
@@ -238,6 +323,22 @@ public class PlaywrightTests : IDisposable
         var link = PlaywrightLinks.Answer(graph, "shop")["links"]!.AsArray().Single()!;
         Assert.False((bool)link["linesMatchCommit"]!);
         Assert.Null(link["citation"]);
+    }
+
+    [Fact]
+    public async Task On_a_real_build_a_tracked_link_with_no_target_doesnt_stop_it()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var repo = ShopCopy.Create();
+        try
+        {
+            File.CreateSymbolicLink(Path.Combine(repo, "gone.spec.ts"), "nowhere.ts");
+            ShopCopy.Git(repo, "add -A");
+            ShopCopy.Git(repo, "-c user.name=test -c user.email=test@example.invalid commit -q -m link");
+            var (graph, _) = await GraphBuilder.BuildAsync(StangentRepo.Discover(repo), new BuildOptions(), TestContext.Current.CancellationToken);
+            Assert.Contains(graph.AllBlindSpots, b => b.File == "gone.spec.ts" && b.Detector == PlaywrightDetector.Detector);
+        }
+        finally { Directory.Delete(repo, recursive: true); }
     }
 
     [Fact]

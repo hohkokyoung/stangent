@@ -30,11 +30,22 @@ public sealed partial class PlaywrightDetector : IDetector
         if (ctx.Root.Length == 0) return;
         var pages = ctx.Graph.AllNodes.Where(n => n.Kind == NodeKind.Page).DistinctBy(n => n.Id).ToList();
         var listed = Git.Run(ctx.Root, "ls-files --cached --others --exclude-standard -z")?.Split('\0').ToHashSet(StringComparer.Ordinal);
-        foreach (var full in PlaywrightSpecs.Files(ctx.Root, name => TestName().IsMatch(name)).Order(StringComparer.Ordinal))
+        var frontends = ctx.Graph.AllNodes.Where(n => n.Kind == NodeKind.Project && Path.GetFileName(n.Id) is "tsconfig.json" or "tsconfig.app.json").Select(n => n.Id)
+            .Concat(pages.Select(p => p.Project).OfType<string>()).Distinct(StringComparer.Ordinal).ToList();
+        foreach (var full in PlaywrightSpecs.Files(ctx.Root, name => TestName().IsMatch(name), dir => BlindFolder(ctx, listed, dir)).Order(StringComparer.Ordinal))
         {
             var spec = Path.GetRelativePath(ctx.Root, full).Replace('\\', '/');
             if (listed?.Contains(spec) == false) continue; // built output or anything else git ignores
-            var text = File.ReadAllText(full);
+            string text;
+            try
+            {
+                text = File.ReadAllText(full);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                ctx.AddBlindSpot("browser-test:" + spec, spec, 1, "possible playwright spec: the file can't be read (a link with no target, or no permission), so the screens it opens aren't known", Detector);
+                continue;
+            }
             var imports = PlaywrightImport().IsMatch(text);
             if (!imports && !HasConfigAbove(ctx.Root, full)) continue; // another runner's test
             var gotos = PlaywrightSpecs.Gotos(text);
@@ -48,12 +59,19 @@ public sealed partial class PlaywrightDetector : IDetector
                     ctx.AddBlindSpot(owner, spec, call.Line, why, Detector);
                     continue;
                 }
-                var screens = Screens(pages, spec, Local(call.Path!));
-                if (screens.Count == 0)
-                    ctx.AddBlindSpot(owner, spec, call.Line, $"playwright goto: no screen on the map has the route {call.Path}", Detector);
+                var (screens, none) = Screens(pages, frontends, spec, Local(call.Path!), call.Path!);
+                if (none is not null) ctx.AddBlindSpot(owner, spec, call.Line, none, Detector);
                 foreach (var page in screens) ctx.Graph.ScreenTests.Add(new ScreenTest(spec, call.Line, call.Path!, page.Id));
             }
         }
+    }
+
+    /// <summary>A folder that can't be read is a blind spot only if git says something in it counts.</summary>
+    static void BlindFolder(LinkContext ctx, HashSet<string>? listed, string full)
+    {
+        var dir = Path.GetRelativePath(ctx.Root, full).Replace('\\', '/');
+        if (listed?.Any(f => f.StartsWith(dir + "/", StringComparison.Ordinal)) == false) return;
+        ctx.AddBlindSpot("browser-test:" + dir, dir, 1, "possible playwright specs: this folder can't be read, so any specs in it aren't known", Detector);
     }
 
     /// <summary>Why a call can't be matched to a route, or null when its URL can be.</summary>
@@ -66,6 +84,7 @@ public sealed partial class PlaywrightDetector : IDetector
         var local = Local(path);
         if (local.Contains("#/", StringComparison.Ordinal) || local.Contains("#!/", StringComparison.Ordinal))
             return $"playwright goto: {path} is a hash route";
+        if (local.Split('?', '#')[0].Contains('%')) return $"playwright goto: {path} has a percent-encoded path, which a router decodes and this read doesn't";
         return local.StartsWith('/') ? null : $"playwright goto: {path} is relative to a base URL the spec doesn't show";
     }
 
@@ -75,26 +94,45 @@ public sealed partial class PlaywrightDetector : IDetector
     static string Local(string path) => HasScheme().IsMatch(path) && Uri.TryCreate(path, UriKind.Absolute, out var u) ? u.PathAndQuery + u.Fragment : path;
 
     /// <summary>
-    /// The screens a path opens: the spec's own frontend's if it sits inside one with a match, else any frontend's. A route with
-    /// fewer <c>:param</c> and <c>*</c> parts beats one with more, as routers do: <c>/settings</c> isn't also <c>/:id</c>.
+    /// The screens a path opens, or why none. A spec inside a frontend links only to that frontend: the nearest around it that has
+    /// screens. A spec outside every frontend links only when exactly one frontend matches. Ports aren't read, so the app can't be
+    /// told any other way. Within a frontend a route with fewer <c>:param</c> and <c>*</c> parts beats one with more, as routers
+    /// do: <c>/settings</c> isn't also <c>/:id</c>.
     /// </summary>
-    static List<Node> Screens(List<Node> pages, string spec, string path)
+    static (List<Node> Screens, string? None) Screens(List<Node> pages, List<string> frontends, string spec, string path, string written)
     {
         var matches = pages.Where(p => PlaywrightSpecs.RouteMatches(p.Name, path)).ToList();
-        var own = matches.Where(p => InFrontend(p, spec)).ToList();
-        if (own.Count > 0) matches = own;
-        if (matches.Count == 0) return matches;
+        var noScreen = $"playwright goto: no screen on the map has the route {written}";
+        var around = frontends.Where(f => Contains(f, spec)).OrderByDescending(f => Dir(f).Length).ToList();
+        if (around.Count > 0)
+        {
+            if (matches.Count == 0) return ([], noScreen);
+            var own = around.FirstOrDefault(f => pages.Any(p => p.Project == f));
+            var mine = matches.Where(p => p.Project == own).ToList();
+            return mine.Count > 0 ? (Fewest(mine), null)
+                : ([], $"playwright goto: {written} matches only another frontend's screen, and this spec sits in {Dir(own ?? around[0])}");
+        }
+        if (matches.Count == 0) return ([], noScreen);
+        var apps = matches.Select(p => p.Project ?? "").Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        return apps.Count == 1 ? (Fewest(matches), null)
+            : ([], $"playwright goto: {written} matches screens in {apps.Count} frontends ({string.Join(", ", apps.Select(Dir))}), and this spec sits in none of them");
+    }
+
+    static List<Node> Fewest(List<Node> matches)
+    {
         var fewest = matches.Min(Wild);
         return [.. matches.Where(p => Wild(p) == fewest).OrderBy(p => p.Id, StringComparer.Ordinal)];
     }
 
     static int Wild(Node page) => page.Name.Split('/').Count(s => s.StartsWith(':') || s == "*");
 
-    static bool InFrontend(Node page, string spec)
+    /// <summary>A frontend's folder from its project id; empty at the repo's root.</summary>
+    static string Dir(string project) => Path.GetDirectoryName(project.Replace("project:", "", StringComparison.Ordinal))?.Replace('\\', '/') ?? "";
+
+    static bool Contains(string project, string spec)
     {
-        var config = page.Project?.Replace("project:", "", StringComparison.Ordinal) ?? "";
-        var dir = Path.GetDirectoryName(config)?.Replace('\\', '/') ?? "";
-        return dir.Length > 0 && spec.StartsWith(dir + "/", StringComparison.Ordinal);
+        var dir = Dir(project);
+        return dir.Length == 0 || spec.StartsWith(dir + "/", StringComparison.Ordinal);
     }
 
     static bool HasConfigAbove(string root, string file)

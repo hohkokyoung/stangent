@@ -57,7 +57,9 @@ public static class GraphStore
             if (graph.History is { } history)
                 Exec(db, "INSERT INTO meta VALUES ('history', $h)", ("$h", CanonicalJson.SerializeCompact(HistoryJson(history))));
             if (graph.DirtyFiles is { } dirty)
-                Exec(db, "INSERT INTO meta VALUES ('dirtyFiles', $d)", ("$d", CanonicalJson.SerializeCompact(DirtyJson(dirty))));
+                Exec(db, "INSERT INTO meta VALUES ('dirtyFiles', $d)", ("$d", CanonicalJson.SerializeCompact(FilesJson(dirty))));
+            if (graph.NotInCommit is { } notInCommit)
+                Exec(db, "INSERT INTO meta VALUES ('notInCommit', $n)", ("$n", CanonicalJson.SerializeCompact(FilesJson(notInCommit))));
             if (graph.ScreenTests.Count > 0)
                 Exec(db, "INSERT INTO meta VALUES ('screenTests', $s)", ("$s", CanonicalJson.SerializeCompact(ScreenTestsJson(graph.ScreenTests))));
             foreach (var l in SortHistory(graph.HistoryLines))
@@ -107,7 +109,9 @@ public static class GraphStore
         if (Scalar(db, "SELECT value FROM meta WHERE key = 'history'") is { } history)
             graph.History = HistoryFrom(JsonNode.Parse(history)!.AsObject());
         if (Scalar(db, "SELECT value FROM meta WHERE key = 'dirtyFiles'") is { } dirty)
-            graph.DirtyFiles = DirtyFrom(JsonNode.Parse(dirty)!.AsArray());
+            graph.DirtyFiles = FilesFrom(JsonNode.Parse(dirty)!.AsArray());
+        if (Scalar(db, "SELECT value FROM meta WHERE key = 'notInCommit'") is { } notInCommit)
+            graph.NotInCommit = FilesFrom(JsonNode.Parse(notInCommit)!.AsArray());
         if (Scalar(db, "SELECT value FROM meta WHERE key = 'screenTests'") is { } tests)
             graph.ScreenTests.AddRange(ScreenTestsFrom(JsonNode.Parse(tests)!.AsArray()));
         foreach (var r in Rows(db, "SELECT source, target, shared, of FROM history_lines ORDER BY target, source"))
@@ -144,7 +148,9 @@ public static class GraphStore
                         throw new StangentException("unsupported_graph", $"{path}: graph schema v{(int)o["schemaVersion"]!} (expected v{SchemaVersion}).");
                     graph.Commit = (string)o["commit"]!;
                     if (o["history"] is JsonObject h) graph.History = HistoryFrom(h);
-                    graph.DirtyFiles = o["dirtyFiles"] is JsonArray d ? DirtyFrom(d) : []; // written only when there are some
+                    // Missing or null: an export from before these were always written, which can't tell clean from don't know.
+                    graph.DirtyFiles = o["dirtyFiles"] is JsonArray d ? FilesFrom(d) : null;
+                    graph.NotInCommit = o["notInCommit"] is JsonArray n ? FilesFrom(n) : null;
                     if (o["screenTests"] is JsonArray st) graph.ScreenTests.AddRange(ScreenTestsFrom(st));
                     break;
                 case "history":
@@ -186,8 +192,9 @@ public static class GraphStore
             ["t"] = "meta", ["schemaVersion"] = SchemaVersion, ["commit"] = graph.Commit,
             ["history"] = graph.History is { } history ? HistoryJson(history) : null,
         };
-        // Only when there's something to say, so a clean tree's export has the same bytes as before these existed.
-        if (graph.DirtyFiles is { Count: > 0 } dirty) meta["dirtyFiles"] = DirtyJson(dirty);
+        // Always: an empty list is a clean tree, null is don't know, and an import has to tell them apart.
+        meta["dirtyFiles"] = graph.DirtyFiles is { } dirty ? FilesJson(dirty) : null;
+        meta["notInCommit"] = graph.NotInCommit is { } notInCommit ? FilesJson(notInCommit) : null;
         if (graph.ScreenTests.Count > 0) meta["screenTests"] = ScreenTestsJson(graph.ScreenTests);
         yield return Line(meta);
         foreach (var f in graph.Fragments.Values)
@@ -226,9 +233,9 @@ public static class GraphStore
             yield return Line(new() { ["t"] = "loadError", ["message"] = e });
     }
 
-    static JsonArray DirtyJson(IEnumerable<string> files) => new([.. files.Order(StringComparer.Ordinal).Select(f => (JsonNode)f)]);
+    static JsonArray FilesJson(IEnumerable<string> files) => new([.. files.Order(StringComparer.Ordinal).Select(f => (JsonNode)f)]);
 
-    static List<string> DirtyFrom(JsonArray files) => [.. files.Select(f => (string)f!)];
+    static List<string> FilesFrom(JsonArray files) => [.. files.Select(f => (string)f!)];
 
     static JsonArray ScreenTestsJson(IEnumerable<ScreenTest> tests) => new([.. tests
         .OrderBy(t => t.Spec, StringComparer.Ordinal).ThenBy(t => t.Line).ThenBy(t => t.Page, StringComparer.Ordinal)
