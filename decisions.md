@@ -2210,6 +2210,15 @@ Changes "`.docx` only" (D15's deferral, 2b) and "a converter when a real FSD or 
 **Cost:** a PDF holds no reliable structure, so its import is weaker than Word's and quote checks depend on extraction; at least one
 new dependency; two more formats to keep byte-identical across versions.
 
+## D112 · The overhaul's order: foundation first, stopping before Phase 4 — 2026-11-04 (assistant's call, owner asleep; owner: "continue from the foundation again")
+The order is in `roadmap.md`, "The overhaul: order of work", and it replaces D109's "next" list until the owner changes it.
+- **Foundation before features,** because every later item in `improvements.md` needs the same evidence shape and the same rule for changing state; doing them per product means doing them twice.
+- **Challenged from the handoff:** evidence as its own `evidence` contract, not a bump of `artifact-base`. Only `ArtifactStore` uses `artifact-base` today; the products write their own files against their own schemas, so a bump would mark every phase `needs review` (D20) and change nothing they do. Consumers move when each is rebuilt (2.x).
+- **Also challenged:** "27 status writes across 14 files" counts result fields (`imported`, `found`, `retry`) as well as lifecycles. Only real lifecycles go on the state module; result fields stay. The agent building it lists which is which.
+- **Driver tests stay xUnit,** with fake `claude` and `stangent` on the path: `bats` isn't installed, and D110 leaves the drivers in bash. Moving their logic into C# is a later choice.
+**Why:** the owner handed over the roadmap's order; all of this is reversible.
+**Cost:** Phase 3's proof re-run and 2c's scored run wait longer, so the numbers stay stale.
+
 ## Open questions
 
 - **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that

@@ -17,22 +17,42 @@ The build order (decisions.md D19) and how phases stay in step with each other (
 | **2c. Structured spec** ([plan](phases/2c-spec.md), D99, D109) | the FSD becomes checked requirements with stable ids: features, requirements, acceptance criteria, journeys, scenarios, data; every item quotes the FSD word for word; requirement ↔ page statement ↔ code links; the BA approves each in a spec-only PR; `fsd reconcile` across documents; Jira change requests and as-built drafts as sources; verdicts "bug, per R-0042" and "looks intended"; scored on the planted FSD's 30-item key (27/30 or better, false alarms ≤ 30%) | 0, 1a, 2a, 2b, 3 | a new contract beside `source-document` (name not decided) | in progress, paused for an overhaul the owner wants (2026-11-03): key frozen; extraction run on the planted FSD; links run, **both bars failed** (24/30, false alarms 44%); `ticket match` built, not scored; **comes before Phase 4** (owner). Phase 3 goes `needs review` when it lands |
 | **4. Agents** | ticket → task breakdown, bounded parallel subagents, D18 checks on every output; graph work from D65, D88 and D109 | 0, 1a, 2, 2c, 3 | `task-plan`, `agent-run` | not started; to be grilled first (Where we are) |
 | **5. Testing** | unit, integration, Playwright tests chosen from the graph, tagged with requirement and scenario IDs (D10, D99) | 0, 1a, 2, 2c, 4 | `test-result` | not started |
-| **6. PR** | review package for seniors, senior comment layer | 0, 1a, 2, 4, 5 | `pr-review` | not started |
+| **6. PR** | review package for seniors, senior comment layer | 0, 1a, 2, 2c, 4, 5 | `pr-review` | not started |
 | **7. CI/CD** | deployment on GitHub Actions: simple, monitorable, retryable | 0, 5, 6 | `deployment` | not started |
 | **8. Dashboard** | BA/PM spec view (D12), then the links between everything | all | — | not started |
 | **Demo** (any time) | quick interactive prototypes | 0, 2 | `prototype` | not started |
 
-## Where we are (2026-11-02)
+## Where we are (2026-11-04)
 
 - **Built and measured:** the foundation (0), the code graph (1a–1c), reference pages (2a), FSD import and links (2b,
-  findings off), and Phase 3: pull, the file finder with code checks, the bundle, the bug proof (advice only), drafts.
-- **Not passing:** proof is real, catches wrong reports (needs 2c and a project whose FSD covers those tickets); 1d part 2 (deferred).
+  findings off; PDF import added by D111), and Phase 3: pull, the file finder with code checks, the bundle, the bug proof (advice only), drafts.
+- **Not passing:** proof is real, catches wrong reports (needs 2c and a project whose FSD covers those tickets); 2c's links, both bars
+  failed (24/30, 44% false alarms); 1d part 2 (deferred).
 - **Out of date:** the saved proof numbers predate the finder, D95, D104, D106 and D107 (D109).
-- **Next, in order (D109):**
-  1. **Phase 2c:** grilled (D22), build order approved (owner); being built, in its plan's order.
-  2. The proof re-run on Sonarr, with drafts and replay after it to re-confirm grounded and repeatable (at most about $45, owner's OK).
-  3. **Phase 4:** grill it, first "does the bundle help a fix?" (the fix agent on the same bugs three ways), then build it.
+- **Paused:** 2c, for the overhaul the owner asked for on 2026-11-03. Its order is below and replaces D109's "next" list until the owner says otherwise.
 - No private-repo check and no proof run on bitwarden (owner): Phase 3's report says so.
+
+## The overhaul: order of work
+
+The one place for what comes next (D112). From the foundation up, applying `improvements.md`. Stops before Phase 4. ✅ when landed.
+
+| # | Slice | What | Decisions | Needs the owner? |
+|---|---|---|---|---|
+| 0.1 | Evidence shape | One `evidence` contract, a Core type and validator: permanent id, citation, commit, strength, who or what checked it. Consumers move in 2.x | D18, D53, D62 | no |
+| 0.2 | State changes | One Core module: a table of legal moves per kind, rejects the rest, keeps a history. Real lifecycles move onto it; result fields don't | D18, D58, D60 | no |
+| 0.3 | Client-data check | `stangent check client-data`: terms kept outside the repo, tracked documents, run in CI | D56, D16 | no |
+| 0.4 | Coverage measured | A script and a recorded number, no floor (D28) | D28 | a floor, later |
+| 0.5 | Driver tests | The bash drivers tested from xUnit with fake `claude` and `stangent` on the path | D110 | no |
+| 1.1 | Line citations | The graph answers symbol → `path:lines` at a commit, for 2.3 | D17, D25 | no |
+| 1.2 | Playwright as evidence | Specs that open a screen become labelled links in the graph; `code-graph` bump if the shape changes | D45, D76, D86 | no |
+| 2.1 | Word fails loudly | Tracked changes, moves, hidden text, comments, footnotes, embedded files, nested tables and vertical merges each stop the import or are listed | D52, D111 | no |
+| 2.2 | Stable section ids | Ids that survive edits and moves; a new version comes in as a candidate with a section diff; doubtful matches go to a person; removed ids kept | D15, D99 | no |
+| 2.3 | Stable statement ids | Ids never renumbered or reused; `path:lines` citations; commit stamped | D62, D54 | no |
+| 2.4 | Findings carry evidence | Findings use 0.1 and 0.2; severity from one scale | D53, D68 | no |
+| 2.5 | Disprove step | A second agent tries to refute every finding, reversing D62's "rejected"; page gaps go to developers; a "page is wrong" decision | D62, D99, D58 | **the re-score is paid: prepared, not run** |
+| 2.6 | 2c's leftovers | Only if they still apply after 2.5: `LinkRun.cs` review items, "no code found" on 56 of 109 | D99 | scored run is paid |
+
+Stop there. Phase 4 needs the owner: the order after 2.x, and the questions under "Open questions" in `decisions.md`.
 
 ## Decided, not built
 
@@ -47,7 +67,7 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 | `/stangent:adopt` sets a project up in one run (replaces D14's audit); a stale page's links are judged again | D99 | 2c |
 | Several documents with effective dates; `fsd reconcile`, run by CI when an import lands; items carried forward by code; clashes between sections become BA questions | D99, D15 | 2c |
 | Jira change requests as sources; as-built drafts when there's no FSD (context only) | D99 | 2c |
-| Excel import, by code, listing what can't be brought in exactly (PDF is built, uncommitted) | D111, D15, D72 | not placed; the overhaul's importer work |
+| Excel import, by code, listing what can't be brought in exactly (PDF is built) | D111, D15, D72 | not placed; after 2.1, once its questions are grilled |
 | "bug, per R-0042" and "looks intended (R-0042)"; a developer flags a spec gap when confirming a bug | D96, D99 | 2c |
 | The graph's blind spots, a smarter split rule, `impact-report` v6 | D65, D88, D109 | 4 |
 | Parallel work is merged and built together before it counts | D49 | 4 |
@@ -72,6 +92,72 @@ checks on 1b, 1c (D28), 2a, 2b (D67); a third repo of another shape (D94); a sig
 
 Status values: `not started` · `planned` · `in progress` · `done` · `needs review` (an upstream contract changed after this phase was done).
 
+## Proposed, not decided
+
+Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner hasn't confirmed the list, so nothing here is a commitment until it moves to the order above or to "Decided, not built". "Slice" points at the order of work. "Owner" means it waits on a question only the owner can settle.
+
+| § | Item | Mark | Touches | Slice |
+|---|---|---|---|---|
+| 1 | Permanent id and `path:lines` per statement | 🟡 | 2a, D62 | 1.1, 2.3 |
+| 1 | Ids never renumbered or reused | ⬜ | 2a, D62 | 2.3 |
+| 1 | Pages follow journeys | ⬜ | 2a, D54, D63 | Owner |
+| 1 | Shared behaviour written once | 🟡 | 2a, D54 | Owner, with page shape |
+| 1 | Today, required and findings kept apart, with ids | 🟡 | 2a, 2b, D52 | 2.4 |
+| 1 | Severity from one scale | ⬜ | 2b, D68 | 2.4 |
+| 1 | Second agent disproves findings; gap finders | ⬜ | 2b, D62 | 2.5 |
+| 1 | Call graph: every entry point on real C# | 🟡 | 1a, 4, D109 | Phase 4 (decided) |
+| 1 | Adapters: Playwright, Razor, Svelte, SQL seed | 🟡 | 1b, D31, D65, D86 | 1.2 for Playwright; rest when a repo needs them |
+| 1 | Generated navigation and numbering | 🟡 | 2a | after 2.3 |
+| 1 | Script checks, including client data | 🟡 | 0, D18 | 0.3 |
+| 1 | Client code read-only by hook | 🟡 | 3, D60, D75, D86 | not placed; analysis steps only |
+| 1 | Runs reproducible, measured by a fresh session | ⬜ | 2a, D57, D79 | after 2.3; paid |
+| 2 | Updates by overlapping lines | 🟡 | 2a, D55 | after 2.3 |
+| 2 | Changed code no page covers is listed | ⬜ | 2a, D55 | after 2.3 |
+| 2 | Stamp per repo for split apps | 🟡 | D4 | only if a real target is split |
+| 3 | Fails loudly | 🟡 | 2b, D111 | 2.1 |
+| 3 | Messy Word files (parent item) | 🟡 | 2b, D111 | 2.1 |
+| 3 | Tracked changes including moves | 🟡 | 2b | 2.1 |
+| 3 | Vertical merges expanded | 🟡 | 2b | 2.1 |
+| 3 | Embedded Excel per sheet | ⬜ | 2b, D111 | with Excel; listed by 2.1 |
+| 3 | PDF and PowerPoint | 🟡 | D111 | PowerPoint not decided |
+| 3 | EMF to PNG | ⬜ | 2b | if a real document needs it |
+| 3 | draw.io sources | ⬜ | 2b | if a real document needs it |
+| 3 | Word cross-references as links | ⬜ | 2b | later |
+| 3 | Lists everything not brought in exactly | 🟡 | 2b, D111 | 2.1 |
+| 3 | Word comments become BA questions | ⬜ | 2b, D58 | 2.1 lists them; questions with 2.5 |
+| 4 | Section ids survive edits | ⬜ | 2b, 2c, D15, D99 | 2.2 |
+| 4 | Candidate versions with a section diff | ⬜ | 2b, D15 | 2.2 |
+| 4 | Proven on a real version change | ⬜ | D56 | needs a document with two versions |
+| 4 | First-run errors pinned as tests | ⬜ | 2b | 2.2 |
+| 5 | BAs change the FSD through Claude | ⬜ | D52, D12 | Owner |
+| 5 | BAs never touch git | ⬜ | D99, D12 | Owner |
+| 5 | A branch per BA, every edit a commit | ⬜ | D12 | Owner |
+| 5 | Done is one step | ⬜ | D12 | Owner |
+| 5 | Lead BA approves or sends back | 🟡 | D99 | Owner |
+| 5 | Approval safety rules (parent item) | 🟡 | D99, D58 | Owner |
+| 5 | Can't approve your own change | ⬜ | D99 | Owner |
+| 5 | Approval never overwrites a later change | 🟡 | D58 | Owner |
+| 5 | Approving asks for confirmation | ⬜ | D99 | Owner |
+| 5 | Audit trail: who asked, who approved | 🟡 | D58 | Owner |
+| 5 | Clashes between BAs | ⬜ | D12 | Owner |
+| 5 | One command for what's next | ⬜ | plugin | Owner |
+| 5 | One-line installer, pinned version | ⬜ | D1 | when BAs become users |
+| 6 | Check against code or against the reference | ⬜ | 2b, D99 | 2.5, code first |
+| 6 | Finder never verifies; fresh re-check | ⬜ | D62 | 2.5 |
+| 6 | Stamped with commit and evidence strength | ⬜ | D53, 0 | 0.1, 2.4 |
+| 6 | Unverified until code confirms | 🟡 | D53, D68 | 2.5 |
+| 6 | "The reference is wrong" decision | 🟡 | D58 | 2.5 |
+| 6 | Only what changed is re-checked | 🟡 | D18, D58, D99 | 2.6 |
+| 6 | Reference gaps go to a developer | ⬜ | D99 | 2.5 |
+| 6 | Per-chapter report | ⬜ | 2b | after 2.4 |
+| 6 | Alias map for names | ⬜ | 2b | if real documents need it |
+| 6 | Trial result (12 of 12) | ⬜ | D99 | a result, not a feature; the owner's denominator is open |
+| 7 | All state changes through one module | ⬜ | 0, 2, 3, D18 | 0.2 |
+| 7 | Every requirement traced to a test | ⬜ | 5, D10 | Phase 5 |
+| 7 | Coverage floor, real tools | 🟡 | 0, D28 | 0.4 for measuring |
+| 7 | No client data in the tool's repo | ⬜ | 0 | 0.3 |
+| 7 | Hooks never block, tested | ⬜ | plugin | only if hooks are added |
+
 ## Phase files
 
 Each phase gets `phases/<n>-<name>.md` when it starts. Front matter declares the contract
@@ -94,7 +180,7 @@ The body holds the phase's plan and, once it ends, its **end-of-phase report**.
 Written when a phase ends, and again whenever the phase is reopened and changed:
 
 1. **What was built.** Commands, files, contracts (with versions).
-2. **Benchmark results.** On nopCommerce, eShop and CleanArchitecture (D6), compared with the last report.
+2. **Benchmark results.** On the repos the phase is measured on, from D6's six (nopCommerce, eShop, CleanArchitecture, Kavita, bitwarden/server, Sonarr), compared with the last report.
 3. **Decisions made or changed.** With links to `decisions.md` entries.
 4. **Known gaps.** What doesn't work yet, and the blind spots.
 5. **Impact on other phases.** Contracts that changed, and which phases consume them.
