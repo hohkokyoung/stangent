@@ -2,10 +2,11 @@
 # Runs stangent's AI steps through headless Claude Code (D60), for CI and long batch runs:
 #   pages:    stangent spec prepare → stangent-page-writer → stangent spec check → stangent-page-verifier → …
 #   sections: stangent fsd prepare → candidate finder / link judge / agree checker → stangent fsd check → …
-# The logic lives in `stangent spec` and `stangent fsd`; this only runs the subagent each step names, then hands its
-# result back.
+#   items:    stangent req prepare → requirement writer → stangent req check → requirement checker → …
+# The logic lives in `stangent spec`, `stangent fsd` and `stangent req`; this only runs the subagent each step names,
+# then hands its result back.
 #
-# usage: spec-run.sh [--jobs N] [--model M] [--retry-failed] [--agents] (<page id>... | --all | --stale | --fsd <doc>)
+# usage: spec-run.sh [--jobs N] [--model M] [--retry-failed] [--agents] (<page id>... | --all | --stale | --fsd <doc> | --req <doc>)
 # Default (D66): one turn per call. The step's input files go into the prompt, Claude Code runs with no tools and none of
 # the user's settings, skills or MCP servers, and the answer comes back as structured output (--json-schema) that this
 # script writes to the step's output file; `check` is unchanged. Far fewer tokens than a session that reads files.
@@ -20,6 +21,7 @@ MODEL=""
 AGENTS=""
 RETRY=""
 PAGES=()
+ONLY=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --jobs) JOBS="$2"; shift 2 ;;
@@ -28,10 +30,21 @@ while [ $# -gt 0 ]; do
     --agents) AGENTS=1; shift ;;
     --all) while IFS= read -r p; do PAGES+=("$p"); done < <(${STANGENT:-stangent} spec pages | jq -r '.result.pages[].id'); shift ;;
     --fsd) MODE=fsd; while IFS= read -r p; do PAGES+=("$p"); done < <(${STANGENT:-stangent} fsd sections --doc "$2" | jq -r '.result[] | .doc + "\t" + .section'); shift 2 ;;
+    --req) MODE=req; while IFS= read -r p; do PAGES+=("$p"); done < <(${STANGENT:-stangent} req sections --doc "$2" | jq -r '.result[] | .doc + "\t" + .section'); shift 2 ;;
     --stale) while IFS= read -r p; do PAGES+=("$p"); done < <(${STANGENT:-stangent} spec stale | jq -r '.result.stale[].id, .result.new[].id'); shift ;;
+    --only) ONLY+=("$2"); shift 2 ;;
     *) PAGES+=("$1"); shift ;;
   esac
 done
+
+# --only <section> (repeatable), with --fsd or --req: just these sections.
+if [ ${#ONLY[@]} -gt 0 ]; then
+  KEPT=()
+  for p in ${PAGES[@]+"${PAGES[@]}"}; do
+    for o in "${ONLY[@]}"; do [ "${p#*$'\t'}" = "$o" ] && KEPT+=("$p"); done
+  done
+  PAGES=(${KEPT[@]+"${KEPT[@]}"})
+fi
 
 export STANGENT="${STANGENT:-stangent}" CLAUDE="${CLAUDE:-claude}" MODEL RETRY MODE AGENTS
 export PLUGIN_DIR="${PLUGIN_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
@@ -60,9 +73,13 @@ single_turn() {
 run_page() {
   local page="$1" step action agent prompt usage args
   usage="$(mktemp)"
-  if [ "$MODE" = fsd ]; then args=("${page%%$'\t'*}" "${page#*$'\t'}"); else args=("$page"); fi
+  if [ "$MODE" = spec ]; then args=("$page"); else args=("${page%%$'\t'*}" "${page#*$'\t'}"); fi
   # prepare/check exit 1 when a check fails; the next step is still in the envelope.
-  if [ "$MODE" = fsd ]; then step="$($STANGENT fsd prepare "${args[@]}" || true)"; else step="$($STANGENT spec prepare "${args[@]}" $RETRY || true)"; fi
+  case "$MODE" in
+    fsd) step="$($STANGENT fsd prepare "${args[@]}" || true)" ;;
+    req) step="$($STANGENT req prepare "${args[@]}" $RETRY || true)" ;;
+    *) step="$($STANGENT spec prepare "${args[@]}" $RETRY || true)" ;;
+  esac
   action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   while [ "$action" != "none" ]; do
     agent="$(jq -r '.result.next.agent' <<<"$step")"

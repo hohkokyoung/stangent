@@ -44,6 +44,8 @@ public sealed record RunStep(string Status, string Action, string? Agent = null,
         Stangent.Spec.Fsd.LinkRun.Finder => "candidate-finder-output.v1.json",
         Stangent.Spec.Fsd.LinkRun.Judge => "link-judge-output.v1.json",
         Stangent.Spec.Fsd.LinkRun.Checker => "agree-checker-output.v1.json",
+        Stangent.Spec.Requirements.RequirementRun.Writer => "requirement-writer-output.v1.json",
+        Stangent.Spec.Requirements.RequirementRun.Checker => "requirement-checker-output.v1.json",
         // Phase 3's ticket steps (Stangent.Tickets.StepSpec).
         "stangent-file-finder" => "file-finder-output.v1.json",
         "stangent-bug-reproducer" => "bug-reproducer-output.v1.json",

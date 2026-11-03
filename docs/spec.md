@@ -99,3 +99,29 @@ code 4 (D24); `spec stale`, `fsd import`, `fsd candidates`, `fsd undocumented` a
   still in the FSD and the page (otherwise the decision drops back to undecided), cited symbols, and `decided_by` never
   typed. After a merge, `stangent trace attribute --base <ref> --by <who>` fills `decided_by` from the code host.
 - Impact answers reach FSD sections through the links (`impact-report` v5, `docs/code-graph.md`).
+
+## Requirements (2c, D99; contract `requirements` v1, being built)
+
+The FSD stays the record. On top of it, one AI pass per section builds items, each quoting the FSD word for word. Status starts
+`proposed`; only a person approves.
+
+- `stangent req prepare|check <doc> <section>`, the usual loop. `spec-run.sh --req <doc> [--only <section>]` runs it in batches.
+  `stangent req sections` lists sections with text; `stangent req show <id>` prints one item, never a whole file.
+- **`stangent-requirement-writer`** returns requirements (kind, title, statement, quotes, acceptance criteria), definitions (glossary,
+  data, roles, states, messages, outside systems, scope, success criteria, only when the FSD says something about them), journeys and
+  scenarios made of requirement keys, questions for the BA, and background.
+- **Code checks, one retry:** the schema; keys unique and pointing at something; no statement twice; every quote from the section word
+  for word; every sentence cited or background. **Cited** means the quotes of requirements, criteria and definitions cover every word of it,
+  whole words only (a row's label may stay uncovered; a piece under 4 words counts only as a whole sentence or row). **Background** is one sentence
+  exactly as listed. A second failure fails the section; `--retry-failed` tries again.
+- **`stangent-requirement-checker`** (fresh context, sees the section, the items, the background and the questions) says whether each item goes further than
+  its quotes, naming the words (code checks they're in the item), and whether each background sentence holds a rule. Disputed ones go back to the writer once, then
+  to the checker again; what's still disputed is recorded `disputed`. A dispute it couldn't back up and then dropped leaves the item `unchecked`, never `confirmed`.
+- **Files,** committed, under `specs/requirements/`: `ids.yaml` (each kind's last number: an id is given once), `runs.json` (cost, retries, counts), and per document
+  `F-<id>.yaml` (one per section, following the FSD's section tree, parents listing children), `questions.yaml`, and two views written by code: `index.yaml` (one line per
+  item, read first) and `glossary.yaml`. Working files are in `.stangent/req/`.
+- **Ids** are plain numbers, assigned once: `F-`, `R-`, `D-` (definitions), `J-`, `S-`, `Q-`. On a re-run an item with the same quotes and words keeps its id, as does one reworded
+  item alone on its quotes; ids whose quotes are gone are retired. A change to the title, statement, kind, quotes, criteria or `refers`, or a dispute, drops an approved item to
+  `proposed`. Reconcile (not built) replaces this with carrying items forward by code.
+- **Not built yet:** approval, links, reconcile across documents and renumbering, a pass for clashes between sections, Jira and as-built sources, diagrams. Journeys are within one
+  section, since extraction sees one section at a time.

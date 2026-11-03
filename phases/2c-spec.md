@@ -37,9 +37,9 @@ The core comes first and is scored before the rest, since matching can ship off 
 1. **Extraction:** requirements from the planted FSD, with quotes checked by code, every sentence cited or `background`, and a fresh checker.
 2. **Links:** requirement ↔ page statement, scored on the 30-item key (the bar below).
 3. **Matching:** `ticket match`, scored on the frozen key.
-4. **Approval:** tick boxes in a spec-only PR; `decided_by` from git; the setting benchmarks use to skip it.
+4. **Approval:** tick boxes in a spec-only PR, listing each section's background sentences too; `decided_by` from git; the setting benchmarks use to skip it.
 5. **Phase 3's follow-up** (D20): `ticket-bundle` v3, `bug-proof` v2, drafts; Phase 3 goes `needs review`, then its tests pass again.
-6. **Staying current:** a stale page's links judged again; ids kept across imports; `fsd reconcile` and its CI run.
+6. **Staying current:** a stale page's links judged again; code carries items forward across imports, so ids and approvals hold; `fsd reconcile` and its CI run; one pass over a document for clashes between sections.
 7. **Other sources:** Jira change requests; as-built drafts.
 8. **`/stangent:adopt`,** with the driver script.
 

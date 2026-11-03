@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:requirements:v1",
+  "title": "A feature file of the structured spec: specs/requirements/<doc>/F-<id>.yaml (Phase 2c, D99)",
+  "description": "One FSD section as a feature, holding the items built from it. Every item cites the FSD word for word. Status starts proposed; only a person approves.",
+  "type": "object",
+  "required": ["version", "id", "doc", "section", "title", "parent", "children", "textHash", "requirements", "definitions", "journeys", "background", "retired"],
+  "additionalProperties": false,
+  "definitions": {
+    "quote": {
+      "type": "object",
+      "required": ["doc", "section", "text", "hash"],
+      "additionalProperties": false,
+      "properties": {
+        "doc": { "type": "string" },
+        "section": { "type": "string" },
+        "text": { "type": "string", "minLength": 1 },
+        "hash": { "type": "string" }
+      }
+    },
+    "quotes": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/quote" } },
+    "check": { "description": "The fresh checker's verdict: says no more than its quotes, goes further, or gave no answer.", "enum": ["confirmed", "disputed", "unchecked"] },
+    "note": { "type": ["string", "null"] }
+  },
+  "properties": {
+    "version": { "const": 1 },
+    "id": { "type": "string", "pattern": "^F-[0-9]{4,}$" },
+    "doc": { "type": "string" },
+    "section": { "type": "string" },
+    "title": { "type": "string" },
+    "parent": { "type": ["string", "null"], "pattern": "^F-[0-9]{4,}$" },
+    "children": { "type": "array", "items": { "type": "string", "pattern": "^F-[0-9]{4,}$" } },
+    "textHash": { "description": "The section's text when these items were built; null for a section with no text of its own.", "type": ["string", "null"] },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "kind", "statement", "quotes", "acceptance", "refers", "status", "check", "note", "hash", "links"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^R-[0-9]{4,}$" },
+          "title": { "type": "string" },
+          "kind": { "enum": ["rule", "validation", "flow", "data", "permission", "non-functional"] },
+          "statement": { "type": "string" },
+          "quotes": { "$ref": "#/definitions/quotes" },
+          "acceptance": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["text", "quotes"],
+              "additionalProperties": false,
+              "properties": { "text": { "type": "string" }, "quotes": { "$ref": "#/definitions/quotes" } }
+            }
+          },
+          "refers": { "type": "array", "items": { "type": "string", "pattern": "^D-[0-9]{4,}$" } },
+          "status": { "enum": ["proposed", "approved"] },
+          "check": { "$ref": "#/definitions/check" },
+          "note": { "$ref": "#/definitions/note" },
+          "hash": { "description": "Over the title, statement, kind, quotes, criteria and definitions it refers to: a change drops an approved item back to proposed (D11).", "type": "string" },
+          "decided_by": { "description": "From git after merge, never typed (D58).", "type": ["string", "null"] },
+          "links": { "description": "Requirement ↔ page statement links.", "type": "array" }
+        }
+      }
+    },
+    "definitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "name", "text", "quotes", "check", "note"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^D-[0-9]{4,}$" },
+          "kind": { "enum": ["glossary", "data", "role", "state", "message", "outside-system", "scope", "out-of-scope", "success-criterion"] },
+          "name": { "type": "string" },
+          "text": { "type": "string" },
+          "quotes": { "$ref": "#/definitions/quotes" },
+          "check": { "$ref": "#/definitions/check" },
+          "note": { "$ref": "#/definitions/note" }
+        }
+      }
+    },
+    "journeys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "steps", "quotes", "check", "note", "scenarios"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^J-[0-9]{4,}$" },
+          "title": { "type": "string" },
+          "steps": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^R-[0-9]{4,}$" } },
+          "quotes": { "$ref": "#/definitions/quotes" },
+          "check": { "$ref": "#/definitions/check" },
+          "note": { "$ref": "#/definitions/note" },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "kind", "title", "steps", "quotes", "check", "note"],
+              "additionalProperties": false,
+              "properties": {
+                "id": { "type": "string", "pattern": "^S-[0-9]{4,}$" },
+                "kind": { "enum": ["happy", "alternate", "error"] },
+                "title": { "type": "string" },
+                "steps": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^R-[0-9]{4,}$" } },
+                "quotes": { "$ref": "#/definitions/quotes" },
+                "check": { "$ref": "#/definitions/check" },
+                "note": { "$ref": "#/definitions/note" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "background": {
+      "description": "Sentences marked as needing no item; the fresh checker sees them, and the BA reviews them.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["text", "check", "note"],
+        "additionalProperties": false,
+        "properties": { "text": { "type": "string" }, "check": { "$ref": "#/definitions/check" }, "note": { "$ref": "#/definitions/note" } }
+      }
+    },
+    "retired": {
+      "description": "Ids whose quotes are gone. Never reused.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title"],
+        "additionalProperties": false,
+        "properties": { "id": { "type": "string" }, "title": { "type": "string" } }
+      }
+    }
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:requirement-writer-output:v1",
+  "title": "What stangent-requirement-writer returns (Phase 2c, D99)",
+  "description": "One FSD section as items, each citing the section word for word, and the sentences that are only background. Code checks every quote and that every sentence is cited or background.",
+  "type": "object",
+  "required": ["requirements", "definitions", "journeys", "questions", "background"],
+  "additionalProperties": false,
+  "definitions": {
+    "quotes": {
+      "description": "Copied exactly from the section's text.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "properties": {
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "kind", "title", "statement", "quotes", "acceptance"],
+        "additionalProperties": false,
+        "properties": {
+          "key": { "type": "string", "pattern": "^r[0-9]+$" },
+          "kind": { "enum": ["rule", "validation", "flow", "data", "permission", "non-functional"] },
+          "title": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "statement": { "type": "string", "minLength": 1 },
+          "quotes": { "$ref": "#/definitions/quotes" },
+          "acceptance": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["text", "quotes"],
+              "additionalProperties": false,
+              "properties": { "text": { "type": "string", "minLength": 1 }, "quotes": { "$ref": "#/definitions/quotes" } }
+            }
+          },
+          "refers": { "description": "Keys of the definitions this requirement uses.", "type": "array", "items": { "type": "string", "pattern": "^d[0-9]+$" } }
+        }
+      }
+    },
+    "definitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "kind", "name", "text", "quotes"],
+        "additionalProperties": false,
+        "properties": {
+          "key": { "type": "string", "pattern": "^d[0-9]+$" },
+          "kind": { "enum": ["glossary", "data", "role", "state", "message", "outside-system", "scope", "out-of-scope", "success-criterion"] },
+          "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "text": { "type": "string", "minLength": 1 },
+          "quotes": { "$ref": "#/definitions/quotes" }
+        }
+      }
+    },
+    "journeys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "title", "steps", "quotes", "scenarios"],
+        "additionalProperties": false,
+        "properties": {
+          "key": { "type": "string", "pattern": "^j[0-9]+$" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "steps": { "description": "Keys of requirements, in order.", "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^r[0-9]+$" } },
+          "quotes": { "$ref": "#/definitions/quotes" },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["key", "kind", "title", "steps", "quotes"],
+              "additionalProperties": false,
+              "properties": {
+                "key": { "type": "string", "pattern": "^s[0-9]+$" },
+                "kind": { "enum": ["happy", "alternate", "error"] },
+                "title": { "type": "string", "minLength": 1, "maxLength": 100 },
+                "steps": { "description": "Keys of requirements, in order.", "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^r[0-9]+$" } },
+                "quotes": { "$ref": "#/definitions/quotes" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "questions": {
+      "description": "Ambiguities, clashes and unstated outcomes, for the BA. Never resolved here.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["text", "quotes"],
+        "additionalProperties": false,
+        "properties": { "text": { "description": "One question, ending in a question mark.", "type": "string", "pattern": "\\?$" }, "quotes": { "$ref": "#/definitions/quotes" } }
+      }
+    },
+    "background": {
+      "description": "Sentences no item needs, each copied exactly as listed under The sentences, one per entry.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

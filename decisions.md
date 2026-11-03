@@ -1901,6 +1901,19 @@ lands); designed without a real FSD so far (D56). Doesn't raise right place (Son
   test fails → bug; it agrees with the code and a test fails → looks intended, no fix starts; no code found → may not be built; no match → a
   person decides, as today. Skipping the proof when a match says "intended" waits for numbers. **Cost:** saved drafts go stale; two contract
   bumps, with no consumer yet; one more AI step and its fresh check per ticket.
+- *What "cited or background" means (found by a fresh check of the first build, 2026-11-03):* a loose check let a rule leave through either exit: `Orders
+  over 50 need` covered "Orders over 50 need approval unless the customer is a VIP", and a rule marked background was seen by nobody. So: **cited** means the
+  quotes of requirements, criteria and definitions together cover every word of the sentence, whole words only; journey and question quotes don't count, a
+  row's label may stay uncovered, and a piece under 4 words counts only as a whole sentence or row. **Background** is one sentence exactly as listed; the
+  fresh checker sees it and can say it needs an item, and the BA sees it in the approval list. A table's first row is a sentence, since Word doesn't say
+  whether it's a header. **Cost:** more retries, and one more thing for the checker and the BA to read.
+- *Ids on a re-run, until reconcile (same check):* items with the same quotes and words keep their id; reworded items keep it only when there's one old and one new
+  item on those quotes. With several, a guess could swap two ids and carry links and approvals to the wrong rule, so they get new ids. Title and `refers` are in
+  the hash, and a dispute drops approval too. **Why it isn't finished:** D99 says unchanged quotes keep id and status, and also that editing a requirement
+  drops it back, and an AI re-run rewords freely. Step 6 settles it at the root: code carries forward every item whose quotes are still in the text, and only new or
+  changed sentences go to the AI (D18). Also step 6: a changed quote keeps its id, a renumbered section keeps its ids, and retiring waits for the BA.
+- *A clash between sections (same check, no owner decision yet):* D99 says clashes become BA questions, but one pass per section can't see one: on the planted FSD,
+  R-0014 lists 3 things tags link to and R-0001 lists 6, both `confirmed`. Added to step 6 as one AI pass over a document's requirements, proposing questions.
 
 ## D100 · Held-out bugs come from bitwarden/server; Sonarr's 40 become the tuning set — 2026-11-02 (decided; set frozen)
 Every Phase 3 change so far (the page index, the picker, the bundle, the free checks) was judged on Sonarr's 40 bugs,
