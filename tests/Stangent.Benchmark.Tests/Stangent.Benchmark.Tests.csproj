@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
     <ProjectReference Include="..\..\benchmark\Stangent.Benchmark\Stangent.Benchmark.csproj" />
   </ItemGroup>
   <ItemGroup>

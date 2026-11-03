@@ -182,7 +182,7 @@ Ahead of Stangent because Stangent's discrepancy check failed its bar, with abou
 - ⬜ Every requirement is traced to a test. The build fails if a scenario has no test, or a test names no scenario.  
   *Tests carrying ids in target projects are decided for Phase 5 (D10). Not done for Stangent's own code. Recommend: decide with Phase 5.*
 - 🟡 The test suite is strong: a 90% coverage floor, tests against real tools (git, pandoc, Office files) and end-to-end ingest tests.  
-  *Real git and Office files are used. No coverage is measured. Recommend: measure first, then set a floor (D28).*
+  *Real git and Office files are used. Coverage is measured now (`scripts/coverage.sh`: 69.7% of lines, 2026-11-04) and recorded in `phases/0-foundation.md`. No floor yet: the owner's call (D28).*
 - ✅ No client data goes into the tool's repo, and that is checked.  
   *`stangent data check` runs in CI (D113): tracked documents need a reason in `.stangent-data-allow`; client terms stay outside the repo. It reads the current tree, not git history, and CI has no terms file, so CI checks documents only.*
 - ✅ Honest pilot notes record misses and what was changed because of them.  

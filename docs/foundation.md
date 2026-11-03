@@ -70,3 +70,14 @@ submodules, deleted files and unreadable files.
 - It doesn't look inside documents or other binary files, so an allowed `.docx` isn't searched, and UTF-16 text counts as binary.
 - A term split across two lines isn't found.
 - CI has no terms file, so CI runs the documents part only.
+
+## Coverage
+
+`scripts/coverage.sh` runs each test project with Microsoft's coverage extension and prints line coverage per `Stangent.*`
+assembly and a total. Test assemblies are left out. A line counts as covered if any test project ran it. The reports stay in
+`artifacts/coverage/`, which git ignores.
+
+There's no floor and no CI gate (D28). It's a number to watch; a floor is the owner's call, later.
+
+`Stangent.Cli` shows as "not loaded" and isn't in the total: no test project loads it, so its commands are covered only
+through the Core, Graph, Spec and Tickets code they call.

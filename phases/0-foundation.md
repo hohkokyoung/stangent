@@ -145,8 +145,20 @@ Slices 0.1, 0.3, 0.4 and 0.5 of `roadmap.md`'s overhaul order (D112, D113). 0.2 
   `src/Stangent.Core/Evidence/`. `PermanentIds` is the id ledger. See `docs/foundation.md`.
 - **0.3 Client-data check:** `stangent data check`, in CI. On this repo it flagged one file,
   `benchmark/fsd/sonarr/sonarr-fsd.docx`, the planted FSD, now in `.stangent-data-allow` with its reason.
+- **0.4 Coverage measured:** `scripts/coverage.sh`, with no floor and no gate (D28). First numbers, by line:
+
+  | Assembly | Line coverage | Lines |
+  |---|---|---|
+  | `Stangent.Benchmark` | 25.8% | 1167/4532 |
+  | `Stangent.Cli` | not loaded by any test | |
+  | `Stangent.Core` | 94.3% | 895/949 |
+  | `Stangent.Graph` | 82.3% | 2226/2706 |
+  | `Stangent.Spec` | 89.7% | 5128/5718 |
+  | `Stangent.Tickets` | 71.6% | 10528/14713 |
+  | **Total** | **69.7%** | 19944/28618 |
 
 ### Known gaps
+- No test project loads `Stangent.Cli`, so its wiring is outside the coverage number.
 - The data check reads the current tree, not git history. It doesn't look inside documents, and CI has no terms file.
 
 ### Impact on other phases
