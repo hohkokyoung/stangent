@@ -15,27 +15,45 @@
 # out:   one line per page or section: <status>\t<id>
 set -euo pipefail
 
+usage() { sed -n 's/^# usage: //p' "$0" >&2; exit 2; }
+
+# Adds the ids a list command gives. A list that fails stops here: an empty list would look like nothing to do.
+add_ids() {
+  local filter="$1" out p; shift
+  if ! out="$(${STANGENT:-stangent} "$@")"; then
+    printf 'error\tstangent %s\t%s\n' "$*" "$(jq -r '.error.code // "no result"' <<<"$out" 2>/dev/null | head -c 200)" >&2
+    exit 1
+  fi
+  while IFS= read -r p; do PAGES+=("$p"); done < <(jq -r "$filter" <<<"$out")
+  NAMED=1
+}
+
 JOBS=1
 MODE=spec
 MODEL=""
 AGENTS=""
 RETRY=""
+NAMED=""
 PAGES=()
 ONLY=()
 while [ $# -gt 0 ]; do
+  case "$1" in --jobs|--model|--fsd|--req|--only) [ $# -ge 2 ] || usage ;; esac
   case "$1" in
     --jobs) JOBS="$2"; shift 2 ;;
     --model) MODEL="$2"; shift 2 ;;
     --retry-failed) RETRY="--retry-failed"; shift ;;
     --agents) AGENTS=1; shift ;;
-    --all) while IFS= read -r p; do PAGES+=("$p"); done < <(${STANGENT:-stangent} spec pages | jq -r '.result.pages[].id'); shift ;;
-    --fsd) MODE=fsd; while IFS= read -r p; do PAGES+=("$p"); done < <(${STANGENT:-stangent} fsd sections --doc "$2" | jq -r '.result[] | .doc + "\t" + .section'); shift 2 ;;
-    --req) MODE=req; while IFS= read -r p; do PAGES+=("$p"); done < <(${STANGENT:-stangent} req sections --doc "$2" | jq -r '.result[] | .doc + "\t" + .section'); shift 2 ;;
-    --stale) while IFS= read -r p; do PAGES+=("$p"); done < <(${STANGENT:-stangent} spec stale | jq -r '.result.stale[].id, .result.new[].id'); shift ;;
+    --all) add_ids '.result.pages[].id' spec pages; shift ;;
+    --fsd) MODE=fsd; add_ids '.result[] | .doc + "\t" + .section' fsd sections --doc "$2"; shift 2 ;;
+    --req) MODE=req; add_ids '.result[] | .doc + "\t" + .section' req sections --doc "$2"; shift 2 ;;
+    --stale) add_ids '.result.stale[].id, .result.new[].id' spec stale; shift ;;
     --only) ONLY+=("$2"); shift 2 ;;
-    *) PAGES+=("$1"); shift ;;
+    -*) usage ;;
+    *) PAGES+=("$1"); NAMED=1; shift ;;
   esac
 done
+[ -n "$NAMED" ] || usage
+case "$JOBS" in ''|0|*[!0-9]*) usage ;; esac
 
 # --only <section> (repeatable), with --fsd or --req: just these sections.
 if [ ${#ONLY[@]} -gt 0 ]; then
@@ -70,6 +88,9 @@ single_turn() {
   fi
 }
 
+# stangent crashed: no envelope, so no next step to read. Without this the loop below would call Claude on nothing, forever.
+no_envelope() { ! jq -e 'type == "object" and has("ok")' <<<"$1" >/dev/null 2>&1; }
+
 run_page() {
   local page="$1" step action agent prompt usage args
   usage="$(mktemp)"
@@ -80,6 +101,11 @@ run_page() {
     req) step="$($STANGENT req prepare "${args[@]}" $RETRY || true)" ;;
     *) step="$($STANGENT spec prepare "${args[@]}" $RETRY || true)" ;;
   esac
+  if no_envelope "$step"; then
+    printf 'error\t%s\tstangent prepare gave no result\n' "$page"
+    rm -f "$usage"
+    exit 255
+  fi
   action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   while [ "$action" != "none" ]; do
     agent="$(jq -r '.result.next.agent' <<<"$step")"
@@ -94,17 +120,24 @@ run_page() {
     # Claude Code itself failed (a usage limit, an outage, no login): not the page's fault. Leave the page's run where
     # it is, report it, and stop the batch (exit 255 stops xargs); `prepare` starts it again on the next run.
     if ! jq -e '.type == "result" and (.is_error | not)' "$usage" >/dev/null 2>&1; then
-      printf 'error\t%s\t%s\n' "$page" "$(jq -r '.result // .error // "claude exited without a result"' "$usage" 2>/dev/null | head -c 200 | tr '\n' ' ')"
+      local why
+      why="$(jq -r '.result // .error // empty' "$usage" 2>/dev/null | head -c 200 | tr '\n' ' ')"
+      printf 'error\t%s\t%s\n' "$page" "${why:-claude exited without a result}"
       rm -f "$usage"
       exit 255
     fi
     step="$($STANGENT "$MODE" check "${args[@]}" --usage "$usage" || true)"
+    if no_envelope "$step"; then
+      printf 'error\t%s\tstangent check gave no result\n' "$page"
+      rm -f "$usage"
+      exit 255
+    fi
     action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   done
   rm -f "$usage"
   printf '%s\t%s\n' "$(jq -r '.result.status // .error.code' <<<"$step")" "$page"
 }
-export -f run_page single_turn
+export -f run_page single_turn no_envelope
 
 [ ${#PAGES[@]} -gt 0 ] || exit 0
 printf '%s\0' "${PAGES[@]}" | xargs -0 -n 1 -P "$JOBS" bash -c 'run_page "$1"' _

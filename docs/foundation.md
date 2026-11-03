@@ -81,3 +81,26 @@ There's no floor and no CI gate (D28). It's a number to watch; a floor is the ow
 
 `Stangent.Cli` shows as "not loaded" and isn't in the total: no test project loads it, so its commands are covered only
 through the Core, Graph, Spec and Tickets code they call.
+
+## Driver tests
+
+The bash drivers stay in bash (D110) and are tested from xUnit (D112): `DriverRig` runs a script with fake `claude` and
+`stangent` executables first on the path, and each fake logs its calls for the test to read.
+
+**Safety.** The environment is built from nothing: `PATH` is the fake folder plus `/usr/bin:/bin`, `HOME` is a temp folder, and
+`ANTHROPIC_API_KEY` isn't there. Two tests assert the fake is what a driver reaches. `benchmark/run.sh` runs from a copy, because
+its real list names real repos and its results would land in this repo.
+
+| Driver | Tested |
+|---|---|
+| `plugin/scripts/spec-run.sh` | Normal path, retry, `--retry-failed`, `--all`, `--jobs`, `--stale`, `--fsd`, `--req`, `--only`, `--agents`, no AI call when nothing is needed, Claude failing, stangent crashing, a failed list, usage |
+| `plugin/scripts/ticket-run.sh` | Normal path, `--no-pull`, `--refind`, `--no-find`, the file finder's worktree, `--prove`, a capped reproducer, `--match`, `--questions`, `--resolution`, `--jobs`, a failed pull or bundle, Claude failing, a blocked setup, an app that won't start, usage |
+| `benchmark/run.sh` | Normal path, `BENCH_ONLY`, a repo's config, a failing command recorded, a failing init, usage |
+| `benchmark/tickets/run.sh` | `points`, `files` resuming, `pages`, `bundles`, `drafts` (also in parallel), `prove`, `replay`, `--only`, a failed step, a missing Jira key, a bad phase, usage |
+
+**Not tested.**
+- `benchmark/sonarr-run-batch.sh`: a one-off with hard-coded paths to a scratch folder that no longer exists.
+- `benchmark/tickets/sonarr/app/{build,setup,start}.sh`: a few commands against Sonarr, proved by the benchmark's own runs.
+
+**Known gap.** A page or step stangent refuses (an error envelope) comes out as a status line holding its code, and the batch
+exits 0. Tests pin this. A crash, a failed Claude call, a failed pull and a failed bundle all exit nonzero.

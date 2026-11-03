@@ -156,8 +156,21 @@ Slices 0.1, 0.3, 0.4 and 0.5 of `roadmap.md`'s overhaul order (D112, D113). 0.2 
   | `Stangent.Spec` | 89.7% | 5128/5718 |
   | `Stangent.Tickets` | 71.6% | 10528/14713 |
   | **Total** | **69.7%** | 19944/28618 |
+- **0.5 Driver tests:** `spec-run.sh`, `ticket-run.sh`, `benchmark/run.sh` and `benchmark/tickets/run.sh` run from xUnit with
+  fake `claude` and `stangent` first on the path. The environment is built from nothing, so no test can reach the real `claude`.
+- **Bugs the driver tests found, each fixed with the smallest change:**
+  - `spec-run.sh`, `ticket-run.sh`: a stangent crash (no envelope) read as "there's a next step", so they called Claude in an endless loop. This could have spent real money. They now stop and name the page or step.
+  - `spec-run.sh`: `--all`, `--stale`, `--fsd` and `--req` took a failed list for an empty one and exited 0. They now fail and say which list.
+  - `spec-run.sh`, `ticket-run.sh`: an unknown flag was taken for an id, and no arguments exited 0. Both now give usage, as does a bad `--jobs`.
+  - `spec-run.sh`, `ticket-run.sh`: when Claude failed with no JSON, the reason came out blank.
+  - `ticket-run.sh`: a failed bundle printed its code, went on to the paid steps and exited 0. It now fails, as a failed pull does.
+  - `benchmark/tickets/run.sh`: a typo in a phase name surfaced only after the phases before it had run and been paid for. Phases are now checked first. It also has a usage message now.
+  - `benchmark/tickets/run.sh`: `pages` died silently, exit 2, when the last ticket had no bundle yet.
+  - `benchmark/run.sh`: a failed step stopped the run with no word of where. It now names the line and command.
 
 ### Known gaps
+- `spec-run.sh` and `ticket-run.sh`: a page or step stangent *refuses* (an error envelope) is a status line holding its code, and the batch still exits 0. Tests pin this. Changing it could stop a paid benchmark on one ticket, so it's the owner's call.
+- Not tested: `benchmark/sonarr-run-batch.sh` (a one-off with paths to a scratch folder that no longer exists; a candidate for deleting) and `benchmark/tickets/sonarr/app/{build,setup,start}.sh` (a few commands against Sonarr, proved by the benchmark's own runs).
 - No test project loads `Stangent.Cli`, so its wiring is outside the coverage number.
 - The data check reads the current tree, not git history. It doesn't look inside documents, and CI has no terms file.
 

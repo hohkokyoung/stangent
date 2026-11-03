@@ -9,6 +9,7 @@
 # BENCH_CACHE where clones live (default: benchmark/.cache, git-ignored)
 # BENCH_ONLY  run only this repo name
 set -euo pipefail
+trap 'echo "run.sh stopped at line $LINENO: $BASH_COMMAND" >&2' ERR
 
 here=$(cd "$(dirname "$0")" && pwd)
 label=${1:?usage: run.sh <label> <stangent args...>}; shift

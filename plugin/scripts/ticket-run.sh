@@ -19,6 +19,8 @@
 # out:   one line per ticket and step: <status>\t<key>\t<step>
 set -euo pipefail
 
+usage() { sed -n 's/^# usage: //p' "$0" >&2; exit 2; }
+
 JOBS=1
 MODEL=""
 PROVE=""
@@ -32,6 +34,7 @@ RESOLUTION=""
 TONE=""
 KEYS=()
 while [ $# -gt 0 ]; do
+  case "$1" in --jobs|--model|--hint|--resolution|--tone) [ $# -ge 2 ] || usage ;; esac
   case "$1" in
     --jobs) JOBS="$2"; shift 2 ;;
     --model) MODEL="$2"; shift 2 ;;
@@ -44,9 +47,12 @@ while [ $# -gt 0 ]; do
     --questions) QUESTIONS=1; shift ;;
     --resolution) RESOLUTION="$2"; shift 2 ;;
     --tone) TONE="$2"; shift 2 ;;
+    -*) usage ;;
     *) KEYS+=("$1"); shift ;;
   esac
 done
+[ ${#KEYS[@]} -gt 0 ] || usage
+case "$JOBS" in ''|0|*[!0-9]*) usage ;; esac
 
 export STANGENT="${STANGENT:-stangent}" CLAUDE="${CLAUDE:-claude}" MODEL PROVE MATCH HINT QUESTIONS RESOLUTION TONE NOPULL REFIND NOFIND
 export PLUGIN_DIR="${PLUGIN_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
@@ -186,12 +192,21 @@ multi_turn() {
   if [ -n "$serve_pid" ]; then kill -TERM "$serve_pid" 2>/dev/null || true; wait "$serve_pid" 2>/dev/null || true; trap - EXIT INT TERM; fi
 }
 
+# stangent crashed: no envelope, so no next step to read. Without this the loop below would call Claude on nothing, forever.
+stop_if_no_envelope() {
+  jq -e 'type == "object" and has("ok")' <<<"$1" >/dev/null 2>&1 && return 0
+  printf 'error\t%s\t%s\tstangent gave no result\n' "$2" "$3"
+  rm -f "$4"
+  exit 255
+}
+
 # Runs one AI step to the end: the subagent, then `ticket check`, again on a retry. A capped reproducer still has a
 # result: `check` records it as not reproduced (D81).
 run_step() {
   local key="$1" name="$2" step="$3" usage action first
   usage="$(mktemp)"
   first="$step"
+  stop_if_no_envelope "$step" "$key" "$name" "$usage"
   action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   while [ "$action" != "none" ]; do
     if [ "$name" = prove ]; then multi_turn "$first" "$usage" "$key"
@@ -200,11 +215,14 @@ run_step() {
     # Claude Code itself failed (a usage limit, an outage, no login): not the AI's fault, so nothing is recorded and
     # the next run starts the step again. Only a reproducer or file finder that hit its own turn or dollar cap goes on to `check`.
     if ! jq -e '.type == "result" and ((.is_error | not) or ((.subtype // "") | test("max_turns|budget")))' "$usage" >/dev/null 2>&1; then
-      printf 'error\t%s\t%s\t%s\n' "$key" "$name" "$(jq -r '.result // .error // "claude exited without a result"' "$usage" 2>/dev/null | head -c 200 | tr '\n' ' ')"
+      local why
+      why="$(jq -r '.result // .error // empty' "$usage" 2>/dev/null | head -c 200 | tr '\n' ' ')"
+      printf 'error\t%s\t%s\t%s\n' "$key" "$name" "${why:-claude exited without a result}"
       rm -f "$usage"
       exit 255
     fi
     step="$($STANGENT ticket check "$key" --step "$name" --usage "$usage" || true)"
+    stop_if_no_envelope "$step" "$key" "$name" "$usage"
     # A reproducer's retry runs under what's left of the attempt's cap: the check returns the new limits and prompt.
     [ "$name" = prove ] && first="$step"
     action="$(jq -r '.result.next.action // "none"' <<<"$step")"
@@ -235,6 +253,11 @@ run_ticket() {
   fi
   out="$($STANGENT ticket bundle "$key" || true)"
   printf '%s\t%s\tbundle\n' "$(jq -r 'if .ok then "built" else .error.code end' <<<"$out")" "$key"
+  # No bundle, nothing for the paid steps below to work from: fail, as a failed pull does (D92).
+  if ! jq -e '.ok' <<<"$out" >/dev/null 2>&1; then
+    printf 'error\t%s\tbundle\t%s\n' "$key" "$(jq -r '.error.message // "no result"' <<<"$out" 2>/dev/null | head -c 300)" >&2
+    return 1
+  fi
   if [ -n "$MATCH" ]; then
     run_step "$key" match "$($STANGENT ticket match "$key" || true)"
   fi
@@ -248,9 +271,8 @@ run_ticket() {
     run_step "$key" resolution "$($STANGENT ticket draft "$key" --kind resolution --pr "$RESOLUTION" ${TONE:+--tone "$TONE"} || true)"
   fi
 }
-export -f run_ticket run_step single_turn multi_turn agent_search
+export -f run_ticket run_step single_turn multi_turn agent_search stop_if_no_envelope
 
-[ ${#KEYS[@]} -gt 0 ] || exit 0
 # File finder worktrees an interrupted run left behind (their folders are gone): forget them.
 git worktree prune 2>/dev/null || true
 # A Playwright proof keeps the app on its one port for the whole attempt: proofs run one at a time (D86).

@@ -19,6 +19,8 @@
 # out:   <tickets dir>/run/<KEY>.json per ticket (times, replay checks) and run.log lines
 set -euo pipefail
 
+usage() { sed -n 's/^# usage: //p' "$0" >&2; exit 2; }
+[ $# -ge 3 ] || usage
 CLONE="$(cd "$1" && pwd)"; TICKETS="$(cd "$2" && pwd)"; shift 2
 PHASES=(); MODEL=""; JOBS=1; ONLY=""
 while [ $# -gt 0 ]; do
@@ -113,7 +115,7 @@ phase_pages() {
   local pages=() p list
   # Page ids may hold spaces (an endpoint's "ANY /api/v3/Command"): one per line, passed as whole arguments. The list
   # is built first, so a broken ticket list stops the run (pipefail) instead of quietly giving fewer pages.
-  list="$(issues | while read -r n kind run key; do jq -r '.missingPages[]?' ".stangent/tickets/$key/bundle.json" 2>/dev/null; done | sort -u)"
+  list="$(issues | while read -r n kind run key; do jq -r '.missingPages[]?' ".stangent/tickets/$key/bundle.json" 2>/dev/null || true; done | sort -u)"
   while IFS= read -r p; do [ -n "$p" ] && pages+=("$p"); done <<<"$list"
   log "pages: ${#pages[@]} to generate"
   [ ${#pages[@]} -eq 0 ] && return 0
@@ -241,6 +243,9 @@ PY
   cp "$TICKETS/run/stangent.yaml.live" stangent.yaml
 }
 
+# Before anything runs: a typo in the last phase mustn't cost the paid ones before it.
+[ ${#PHASES[@]} -gt 0 ] || usage
+for p in "${PHASES[@]}"; do declare -F "phase_$p" >/dev/null || usage; done
 for p in "${PHASES[@]}"; do
   log "== phase $p"
   "phase_$p"
