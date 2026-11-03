@@ -110,7 +110,8 @@ public static partial class TicketPull
         string? text = kind switch
         {
             "text" => Decode(await File.ReadAllBytesAsync(saved.Path, ct)),
-            "docx" => DocxConverter.Convert(await File.ReadAllBytesAsync(saved.Path, ct)).Markdown,
+            // A ticket's attachment isn't the agreed FSD, and a tracked change mustn't stop the pull: its accepted view is read.
+            "docx" => DocxConverter.Convert(await File.ReadAllBytesAsync(saved.Path, ct), acceptChanges: true).Markdown,
             _ => null,
         };
         if (text is not null)

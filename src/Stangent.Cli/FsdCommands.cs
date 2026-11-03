@@ -16,10 +16,11 @@ static class FsdCommands
         var fileArg = new Argument<string>("file") { Description = "The .docx or .pdf to import." };
         var idOption = new Option<string?>("--id") { Description = "The document's id (default: from its file name)." };
         var flatOption = new Option<bool>("--flat") { Description = "Import the whole document as one labelled section with no structure, for a document with no headings or bookmarks." };
-        var import = new Command("import", "Convert a .docx or .pdf to Markdown by code, archive the original (D16) and record its sections (source-document v1).") { fileArg, idOption, flatOption };
+        var acceptOption = new Option<bool>("--accept-changes") { Description = "For a .docx with tracked changes, which otherwise stops the import: import the accepted view (inserted text kept, deleted text gone, moved text once), listing how many were accepted." };
+        var import = new Command("import", "Convert a .docx or .pdf to Markdown by code, archive the original (D16) and record its sections (source-document v1).") { fileArg, idOption, flatOption, acceptOption };
         import.SetAction(pr => Cli.Run(pr, "fsd import", ctx =>
         {
-            var result = FsdImport.Import(ctx.Repo, pr.GetValue(fileArg)!, pr.GetValue(idOption), pr.GetValue(flatOption));
+            var result = FsdImport.Import(ctx.Repo, pr.GetValue(fileArg)!, pr.GetValue(idOption), pr.GetValue(flatOption), pr.GetValue(acceptOption));
             ctx.Span.Attributes["stangent.artifact.count"] = (int?)result["sections"] ?? 0;
             return result;
         }));

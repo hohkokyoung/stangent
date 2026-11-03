@@ -62,16 +62,16 @@ Ahead of Stangent because stale-page detection is only planned there (Phase 7).
 ## 3. Bringing the Word FSD in
 
 - ✅ Exact conversion with no AI guessing. The Word XML decides the structure and pandoc renders the text. Nothing is made up.  
-  *Code only, with our own renderer and no pandoc (D52). "Nothing is made up" isn't fully true yet: see tracked changes below.*
-- 🟡 Fails loudly instead of quietly degrading. It checks for tracked changes, merged or nested tables and missing heading styles before converting, and never guesses headings from bold text.  
-  *Missing headings and unreadable files now stop the import, for PDF and Word (D111). Word's tracked changes and nested tables are still silent. Recommend: do the rest next.*
+  *Code only, with our own renderer and no pandoc (D52). Tracked changes now stop the import rather than resolve silently (D116).*
+- ✅ Fails loudly instead of quietly degrading. It checks for tracked changes, merged or nested tables and missing heading styles before converting, and never guesses headings from bold text.  
+  *Missing headings and unreadable files stop the import, for PDF and Word (D111). Tracked changes stop a Word import unless `--accept-changes` is given; nested and merged tables are listed; a code check compares every word (D116).*
 - 🟡 Handles messy real-world Word files:
-   - 🟡 six heading levels, and tracked changes including moves  
-     *Heading levels are fine. Tracked changes resolve silently, and moved text appeared twice in my hand-built test.*
+   - ✅ six heading levels, and tracked changes including moves  
+     *Tracked changes stop the import; `--accept-changes` imports the accepted view, and moved text comes in once (D116).*
    - 🟡 merged table cells expanded  
-     *Across columns yes. A cell merged down rows comes out blank.*
+     *A cell merged down rows repeats its value and is listed (D116). A cell merged across columns still leaves blanks, not its value.*
    - ⬜ embedded Excel saved as one CSV per sheet  
-     *Lost silently today. Excel import is decided (D111), but not for embedded files.*
+     *Listed by kind and section, not read (D116). Excel import is decided (D111), but not for embedded files.*
    - 🟡 PDFs and PowerPoint slides converted to text  
      *PDF is built, read directly (D111). PowerPoint isn't decided.*
    - ⬜ EMF pictures converted to PNG  
@@ -80,10 +80,10 @@ Ahead of Stangent because stale-page detection is only planned there (Phase 7).
      *Nothing reads diagrams. Recommend: do if a real document needs it.*
    - ⬜ Word cross-references turned into working links  
      *Plain text today. Recommend: later.*
-- 🟡 Lists everything it couldn't bring in exactly, so nothing is lost silently.  
-  *Done for PDF, with stated gaps (D111). Word still reports heading problems only. Recommend: do for Word next.*
-- ⬜ Open Word review comments become questions for the BA.  
-  *Dropped silently today. Recommend: do.*
+- ✅ Lists everything it couldn't bring in exactly, so nothing is lost silently.  
+  *Done for PDF, with stated gaps (D111), and for Word, where a code check compares every word per section on each import (D116). Not yet measured on a file saved by Word itself.*
+- 🟡 Open Word review comments become questions for the BA.  
+  *Each comment is listed with its author, section and open or resolved state, in a fixed shape (D116). Becoming questions is still to do, with 2.5.*
 - ✅ Encrypted or protected files stop the run with instructions. It never works around the protection.  
   *`pdf_locked` for any protected PDF; a Word file that won't open gives `invalid_docx` (D111).*
 - ✅ Fast on a real FSD: about 360 sections and 150 tables in about 18 seconds in the pilot.  

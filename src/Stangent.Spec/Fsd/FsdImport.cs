@@ -21,12 +21,13 @@ public static class FsdImport
     public static string DefaultId(string file) =>
         Regex.Replace(Path.GetFileNameWithoutExtension(file).ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-') is { Length: > 0 } s ? s : "document";
 
-    public static JsonObject Import(StangentRepo repo, string file, string? id = null, bool flat = false)
+    public static JsonObject Import(StangentRepo repo, string file, string? id = null, bool flat = false, bool acceptChanges = false)
     {
         if (!File.Exists(file)) throw new StangentException("not_found", $"No file at {file}.", ExitCodes.NotFound);
         Func<byte[], bool, ConvertedDocument> convert = Path.GetExtension(file).ToLowerInvariant() switch
         {
-            ".docx" => DocxConverter.Convert,
+            ".docx" => (b, f) => DocxConverter.Convert(b, f, acceptChanges),
+            ".pdf" when acceptChanges => throw new StangentException("usage", "--accept-changes is for .docx files: a PDF has no tracked changes to accept.", ExitCodes.Usage),
             ".pdf" => PdfConverter.Convert,
             ".xlsx" => throw new StangentException("unsupported_format", "Excel import is decided (D111) but isn't built yet. Only .docx and .pdf are imported for now.", ExitCodes.Usage),
             _ => throw new StangentException("unsupported_format", "Only .docx and .pdf are imported; other formats get their own converter when a real FSD needs one.", ExitCodes.Usage),

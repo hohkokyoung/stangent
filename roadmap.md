@@ -45,7 +45,7 @@ The one place for what comes next (D112). From the foundation up, applying `impr
 | 0.5 ✅ | Driver tests | The bash drivers tested from xUnit with fake `claude` and `stangent` on the path | D110 | no |
 | 1.1 ✅ | Line citations | The graph answers symbol → `path:lines` at a commit, for 2.3 | D17, D25 | no |
 | 1.2 ✅ | Playwright as evidence | Specs that open a screen become labelled links in the graph; `code-graph` bump if the shape changes | D45, D76, D86 | no |
-| 2.1 | Word fails loudly | Tracked changes, moves, hidden text, comments, footnotes, embedded files, nested tables and vertical merges each stop the import or are listed | D52, D111 | no |
+| 2.1 ✅ | Word fails loudly | Tracked changes, moves, hidden text, comments, footnotes, embedded files, nested tables and vertical merges each stop the import or are listed | D52, D111 | no |
 | 2.2 | Stable section ids | Ids that survive edits and moves; a new version comes in as a candidate with a section diff; doubtful matches go to a person; removed ids kept | D15, D99 | no |
 | 2.3 | Stable statement ids | Ids never renumbered or reused; `path:lines` citations; commit stamped | D62, D54 | no |
 | 2.4 | Findings carry evidence | Findings use 0.1 and 0.2; severity from one scale | D53, D68 | no |
@@ -116,17 +116,17 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 2 | Updates by overlapping lines | 🟡 | 2a, D55 | after 2.3 |
 | 2 | Changed code no page covers is listed | ⬜ | 2a, D55 | after 2.3 |
 | 2 | Stamp per repo for split apps | 🟡 | D4 | only if a real target is split |
-| 3 | Fails loudly | 🟡 | 2b, D111 | 2.1 |
-| 3 | Messy Word files (parent item) | 🟡 | 2b, D111 | 2.1 |
-| 3 | Tracked changes including moves | 🟡 | 2b | 2.1 |
-| 3 | Vertical merges expanded | 🟡 | 2b | 2.1 |
-| 3 | Embedded Excel per sheet | ⬜ | 2b, D111 | with Excel; listed by 2.1 |
+| 3 | Fails loudly | ✅ | 2b, D111, D116 | done (2.1) |
+| 3 | Messy Word files (parent item) | 🟡 | 2b, D111, D116 | 2.1 done; embedded Excel, EMF, draw.io, cross-references remain |
+| 3 | Tracked changes including moves | ✅ | 2b, D116 | done (2.1) |
+| 3 | Vertical merges expanded | ✅ | 2b, D116 | done (2.1); merges across columns stay blank |
+| 3 | Embedded Excel per sheet | ⬜ | 2b, D111 | with Excel; listed since 2.1 |
 | 3 | PDF and PowerPoint | 🟡 | D111 | PowerPoint not decided |
 | 3 | EMF to PNG | ⬜ | 2b | if a real document needs it |
 | 3 | draw.io sources | ⬜ | 2b | if a real document needs it |
 | 3 | Word cross-references as links | ⬜ | 2b | later |
-| 3 | Lists everything not brought in exactly | 🟡 | 2b, D111 | 2.1 |
-| 3 | Word comments become BA questions | ⬜ | 2b, D58 | 2.1 lists them; questions with 2.5 |
+| 3 | Lists everything not brought in exactly | ✅ | 2b, D111, D116 | done (2.1); not yet measured on a file saved by Word |
+| 3 | Word comments become BA questions | 🟡 | 2b, D58, D116 | listed since 2.1; questions with 2.5 |
 | 4 | Section ids survive edits | ⬜ | 2b, 2c, D15, D99 | 2.2 |
 | 4 | Candidate versions with a section diff | ⬜ | 2b, D15 | 2.2 |
 | 4 | Proven on a real version change | ⬜ | D56 | needs a document with two versions |

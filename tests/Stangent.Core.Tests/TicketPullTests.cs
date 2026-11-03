@@ -119,6 +119,18 @@ public class TicketPullTests
     }
 
     [Fact]
+    public async Task A_word_attachment_with_tracked_changes_is_read_as_accepted_and_does_not_stop_the_pull()
+    {
+        using var repo = TicketFixtures.Repo();
+        TicketFixtures.Make(TicketFixtures.ReplayDir(repo), "SON-4", "Task", "x", "See spec.docx", files:
+        [
+            new("1", "spec.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", FsdDocxTests.Docx(FsdDocxTests.WithChanges)),
+        ]);
+        var t = await Pull(repo, "SON-4");
+        Assert.Contains("Limit is five orders.", (string?)t["attachments"]![0]!["text"]);
+    }
+
+    [Fact]
     public async Task Attachments_are_saved_with_hashes_text_goes_in_up_to_the_cap_and_the_rest_is_listed()
     {
         using var repo = TicketFixtures.Repo("  attachmentChars: 40\n");

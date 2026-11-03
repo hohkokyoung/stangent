@@ -234,3 +234,32 @@ which the verifier isn't asked to judge), and 0.70 × 9/20 written for 62/89 × 
 ### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
 v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.
 Checked 2026-11-04 (D20): by grep, `Stangent.Spec` reads none of the new values. All tests pass, so this now consumes `code-graph: 4`.
+
+## Overhaul (2026-11-04)
+
+Slice 2.1 of the overhaul, D116: the Word importer stops failing silently. Code only, no AI, and the same file gives the same bytes.
+
+**Built.** Details are in `docs/spec.md`.
+- Tracked changes stop the import with `docx_tracked_changes` and a count. `--accept-changes` imports the accepted view, and moved text comes in once.
+- Hidden text and hidden table rows are left out and listed. A hidden paragraph mark alone hides no words, so its text stays and is listed.
+- Comments are listed one per line, with section, author and state, in a shape `DocxComment.Parse` reads back.
+- Footnotes and endnotes come in labelled at the end of their section.
+- Embedded files, charts, SmartArt, text boxes, content controls, fields, equations and symbols are named by kind and section; readable text stays.
+- A nested table keeps its words and is listed. A cell merged down rows repeats its value and is listed.
+- A completeness check runs on every import: the file's words, read apart from the converter, per section, against the words rendered.
+- Causes the check would have flagged, fixed: rows and cells inside a content control were lost, a text box in a table cell doubled, and a text box's words ran into the words around it. Also fixed: a row starting part-way across the grid slid its cells left.
+- Leftovers: a dangling `*.spec.ts` link no longer crashes `AppSession.RelatedSpecs`, and a command name with a hyphen no longer loses its telemetry event.
+
+**Byte check.** Sonarr's planted FSD, against `HEAD` (9580ebd) before the change: `document.md` and `document.json` are byte-identical, `problems` is still empty, and a test pins the hash. The completeness check flags nothing on it, and nothing on any `DocxWriter` file in the tests. There's no other `.docx` in the repo.
+
+**Tested.** Each rule has a hand-built file in `FsdDocxTests`. With the rules removed together in a temporary build, 22 tests failed, at least one for each rule removed. The accepted view's handling of moved text wasn't part of that run.
+
+**Known gaps.**
+- No file saved by Word itself has been through this: Sonarr's was written by a script. A real one may flag something new.
+- A merge across columns leaves blanks, not its value. The brief assumed it repeats; changing it would change imported text, so it stays.
+- `w:cellMerge` counts as a tracked change but isn't applied. White text isn't listed. Table styles aren't read for hidden or struck text.
+- A file imported earlier stays `unchanged` with no new lines until its bytes change, even if tracked changes had been resolved silently.
+- Ticket attachments read the accepted view with nothing listed: the bundle has no place for it without a contract change.
+- A Word attachment with no headings still stops a ticket pull with `no_structure`. That was already so.
+
+**Impact on other phases.** `source-document` stays v1, with only its `problems` description widened, so no phase goes to `needs review`. `ticket pull` passes `acceptChanges`, so a tracked change can't stop a pull, and an attachment's text now follows these rules too: moved text once, hidden text out, footnotes in. 2.2 can match against the same text. 2.5 can read comments through `DocxComment.Parse`. Telemetry's event name for `graph screen-tests` is now `stangent.graph.screen_tests`; `stangent.command` keeps the hyphen.

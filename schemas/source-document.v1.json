@@ -47,6 +47,6 @@
         "properties": { "file": { "type": "string" }, "caption": { "type": "string" } }
       }
     },
-    "problems": { "description": "What couldn't be brought in exactly, in people's words: duplicate, missing or out-of-order section numbers; for a PDF also pages with no text, removed running headers and footers, tables kept as plain text, section titles not found, unread images. Reported, never guessed.", "type": "array", "items": { "type": "string" } }
+    "problems": { "description": "What couldn't be brought in exactly, in people's words: duplicate, missing or out-of-order section numbers; for a PDF also pages with no text, removed running headers and footers, tables kept as plain text, section titles not found, unread images; for a Word file also accepted tracked changes, hidden text left out, comments (one line each, in a fixed shape: comment: section <id> by <author> open or resolved: <text>, each value a JSON string), embedded objects and flattened tables by kind and section, and any mismatch from the completeness check. Reported, never guessed.", "type": "array", "items": { "type": "string" } }
   }
 }

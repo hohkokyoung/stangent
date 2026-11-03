@@ -26,7 +26,7 @@ public static partial class DocxConverter
     [GeneratedRegex(@"^heading\s*([1-9])$", RegexOptions.IgnoreCase)]
     private static partial Regex HeadingStyle();
 
-    public static ConvertedDocument Convert(byte[] docx, bool flat = false)
+    public static ConvertedDocument Convert(byte[] docx, bool flat = false, bool acceptChanges = false)
     {
         try
         {
@@ -34,6 +34,7 @@ public static partial class DocxConverter
             using var doc = WordprocessingDocument.Open(stream, false);
             var main = doc.MainDocumentPart ?? throw new Core.StangentException("invalid_docx", "The file has no document body.");
             var ctx = new Context(main, flat);
+            ctx.Settle(acceptChanges);
             foreach (var block in main.Document?.Body?.ChildElements ?? Enumerable.Empty<OpenXmlElement>())
                 ctx.Block(block);
             return ctx.Finish();
@@ -58,26 +59,266 @@ public static partial class DocxConverter
         readonly List<string> problems = [];
         string? title;
         string? pendingImage;
+        // What the file's own words say document.md should hold, per heading (-1: before the first): the completeness check (D116).
+        readonly Dictionary<int, Dictionary<string, int>> expected = [];
+        // What's listed against a section, in the order found; a block's section is known only once it's been read.
+        readonly List<(int Section, string Kind, string Unit)> marks = [];
+        List<(string Kind, int Count, string Unit)> pendingMarks = [];
+        readonly List<string> pendingAnchors = [];
+        readonly Dictionary<string, int> commentSection = [];
+        readonly List<Note> notes = [];
+        int footnotes, endnotes;
+        readonly Lazy<string?> defaultParagraphStyle = new(() => main.StyleDefinitionsPart?.Styles?.Elements<Style>()
+            .FirstOrDefault(s => s.Default?.Value == true && s.Type?.Value == StyleValues.Paragraph)?.StyleId?.Value);
+
+        sealed record Note(string Label, OpenXmlElement? Content);
+
+        /// <summary>Tracked changes stop the import unless the accepted view is asked for (D116). Comments are always read as accepted: they're listed, not imported.</summary>
+        public void Settle(bool accept)
+        {
+            var roots = new OpenXmlElement?[] { main.Document?.Body, main.FootnotesPart?.Footnotes, main.EndnotesPart?.Endnotes }.OfType<OpenXmlElement>().ToList();
+            var found = DocxReview.Count(roots);
+            if (found.Count > 0)
+            {
+                var total = found.Values.Sum();
+                var summary = DocxReview.Summary(found);
+                if (!accept)
+                    throw new Core.StangentException("docx_tracked_changes", $"This .docx has {total} tracked changes ({summary}), so it isn't settled. Accept or reject them in Word, or use --accept-changes to import the accepted view.");
+                foreach (var root in roots) DocxReview.Accept(root);
+                problems.Add($"--accept-changes: {total} tracked changes accepted ({summary}); this is the accepted view, not an agreed document");
+            }
+            if (main.WordprocessingCommentsPart?.Comments is { } comments) DocxReview.Accept(comments);
+        }
 
         public void Block(OpenXmlElement block)
         {
             switch (block)
             {
-                case Paragraph p: Paragraph(p); break;
-                case Table t: Table(t); break;
                 case SdtBlock sdt:
+                    Placeholder(sdt);
                     foreach (var child in sdt.SdtContentBlock?.ChildElements ?? Enumerable.Empty<OpenXmlElement>()) Block(child);
                     break;
+                case CustomXmlBlock:
+                    foreach (var child in block.ChildElements.Where(c => c is not CustomXmlProperties)) Block(child);
+                    break;
+                default: Leaf(block); break;
             }
+        }
+
+        /// <summary>One block: rules first, then the words left in it are what the render must hold. A kind of block with no case here renders nothing, so the check catches it.</summary>
+        void Leaf(OpenXmlElement block)
+        {
+            Prepare(block);
+            var words = DocxReview.Words(block);
+            switch (block)
+            {
+                case Paragraph p:
+                    Paragraph(p);
+                    SmartArt(p);
+                    break;
+                case Table t:
+                    Table(t);
+                    words = [.. words.Select(w => w.Replace("|", "\\|"))];
+                    break;
+            }
+            Expect(words);
+            Settled();
+        }
+
+        void Expect(IEnumerable<string> words)
+        {
+            var section = headings.Count - 1;
+            if (!expected.TryGetValue(section, out var counts)) expected[section] = counts = new(StringComparer.Ordinal);
+            foreach (var w in words) counts[w] = counts.GetValueOrDefault(w) + 1;
+        }
+
+        void Expect(string added) => Expect(DocxReview.Words(added));
+
+        /// <summary>The block just read belongs to the section now open.</summary>
+        void Settled()
+        {
+            var section = headings.Count - 1;
+            foreach (var (kind, count, unit) in pendingMarks) Record(section, kind, count, unit);
+            pendingMarks.Clear();
+            foreach (var id in pendingAnchors) commentSection.TryAdd(id, section);
+            pendingAnchors.Clear();
+        }
+
+        readonly Dictionary<(int, string), int> markCounts = [];
+
+        void Record(int section, string kind, int count, string unit)
+        {
+            if (markCounts.TryGetValue((section, kind), out var n)) markCounts[(section, kind)] = n + count;
+            else { markCounts[(section, kind)] = count; marks.Add((section, kind, unit)); }
+        }
+
+        void Mark(string kind, int count = 1, string unit = "")
+        {
+            if (count > 0) pendingMarks.Add((kind, count, unit));
+        }
+
+        /// <summary>A content control still showing its prompt ("Click here to enter text") has no content: the prompt isn't the document's.</summary>
+        void Placeholder(SdtElement sdt)
+        {
+            if (sdt.SdtProperties?.ChildElements.Any(c => c.LocalName == "showingPlcHdr") != true) return;
+            Mark("a content control's placeholder text left out", DocxReview.Words(sdt).Length, " words");
+            foreach (var run in sdt.Descendants<Run>().ToList()) run.Remove();
+        }
+
+        /// <summary>The rules: what's left out on purpose goes from the tree, so the words left are what the render must hold; the rest is listed.</summary>
+        void Prepare(OpenXmlElement block)
+        {
+            foreach (var e in block.Descendants())
+                if (e is CommentRangeStart { Id.Value: { } start }) pendingAnchors.Add(start);
+                else if (e is CommentReference { Id.Value: { } reference }) pendingAnchors.Add(reference);
+            foreach (var sdt in block.Descendants<SdtElement>().ToList()) Placeholder(sdt);
+            foreach (var row in block.Descendants<TableRow>().Where(r => Flag(r.TableRowProperties, "hidden") == true).ToList())
+            {
+                Mark("a hidden table row left out", DocxReview.Words(row).Length, " words");
+                row.Remove();
+            }
+            foreach (var cell in block.Descendants<TableCell>().Where(IsMergedDown).ToList())
+            {
+                Mark("text Word doesn't show in a cell merged down left out", DocxReview.Words(cell).Length, " words");
+                foreach (var run in cell.Descendants<Run>().ToList()) run.Remove();
+            }
+            foreach (var run in block.Descendants<Run>().ToList())
+            {
+                if (Applies(run, "vanish"))
+                {
+                    Mark("hidden text left out", DocxReview.Words(run).Length, " words");
+                    run.Remove();
+                }
+                else if (Applies(run, "strike") || Applies(run, "dstrike"))
+                    Mark("struck-through text kept as ordinary text", DocxReview.Words(run).Length, " words");
+            }
+            foreach (var p in (block is Paragraph own ? new[] { own } : []).Concat(block.Descendants<Paragraph>()))
+                if (Flag(p.ParagraphProperties?.ParagraphMarkRunProperties, "vanish") == true && DocxReview.Words(p).Length > 0)
+                    Mark("a hidden paragraph mark: its text is visible and kept, as its own paragraph, though Word shows it joined to the next");
+            foreach (var math in block.Descendants().Where(e => e.LocalName is "oMathPara" or "oMath" && !e.Ancestors().Any(a => a.LocalName == "oMathPara")).ToList())
+            {
+                Mark("an equation not read");
+                math.Remove();
+            }
+            if (block.LocalName == "altChunk") Mark("an embedded document (altChunk) not read");
+            var fieldOpen = false;
+            foreach (var e in Live(block))
+                switch (e)
+                {
+                    case Table _: Mark("a nested table flattened: its words are kept, its rows and columns aren't"); break;
+                    case SymbolChar: Mark("a symbol not read"); break;
+                    case FieldChar { FieldCharType.Value: var type } when type == FieldCharValues.Begin: fieldOpen = true; break;
+                    case FieldCode code when fieldOpen:
+                        fieldOpen = false;
+                        Field(code.Text);
+                        break;
+                    case SimpleField { Instruction.Value: { } instruction }: Field(instruction); break;
+                    case Drawing.GraphicData { Uri.Value: { } uri } when uri.Contains("chart", StringComparison.OrdinalIgnoreCase): Mark("a chart not read"); break;
+                    case Drawing.GraphicData { Uri.Value: { } uri } when uri.Contains("diagram", StringComparison.OrdinalIgnoreCase) && block is not Paragraph _: Mark("SmartArt not read"); break;
+                    case Drawing.Blip { Embed: null }: Mark("a linked picture not kept"); break;
+                    case { LocalName: "OLEObject" }: Mark($"an embedded file not read ({e.GetAttributes().FirstOrDefault(a => a.LocalName == "ProgID").Value ?? "unknown kind"})"); break;
+                    case { LocalName: "control" }: Mark("an ActiveX control not read"); break;
+                    case { LocalName: "txbxContent" }: Mark("a text box: its text is kept where it's anchored, which may not be where it reads"); break;
+                    case { LocalName: "imagedata" }: Mark("an old-style picture not kept"); break;
+                }
+        }
+
+        /// <summary>Descendants, leaving out what only old readers see. A table found under a block is nested, or sits in a text box.</summary>
+        static IEnumerable<OpenXmlElement> Live(OpenXmlElement block) =>
+            block.Descendants().Where(e => !e.Ancestors().Any(a => a.LocalName == "Fallback"));
+
+        void Field(string instruction)
+        {
+            var kind = DocxReview.Words(instruction).FirstOrDefault()?.ToUpperInvariant() ?? "";
+            if (kind is not ("" or "HYPERLINK" or "PAGE" or "NUMPAGES" or "PAGEREF" or "TOC")) Mark($"a {kind} field: its text is what Word last saved");
+        }
+
+        static bool IsMergedDown(TableCell c) => c.TableCellProperties?.VerticalMerge is { } vm && vm.Val?.Value != MergedCellValues.Restart;
+
+        static bool? Flag(OpenXmlElement? props, string name)
+        {
+            if (props?.ChildElements.FirstOrDefault(c => c.LocalName == name) is not { } e) return null;
+            return e.GetAttributes().FirstOrDefault(a => a.LocalName == "val").Value is not ("0" or "false" or "off");
+        }
+
+        bool? StyleFlag(string? id, string name)
+        {
+            for (var depth = 0; id is not null && depth < 32 && styles.TryGetValue(id, out var s); depth++, id = s.BasedOn?.Val?.Value)
+                if (Flag(s.StyleRunProperties, name) is { } found) return found;
+            return null;
+        }
+
+        /// <summary>A toggle on a run: its own value wins; otherwise the character and paragraph styles, which cancel if both set it (Word's rule), then the document's defaults.</summary>
+        bool Applies(Run run, string name)
+        {
+            if (Flag(run.RunProperties, name) is { } own) return own;
+            var paragraphStyle = run.Ancestors<Paragraph>().FirstOrDefault()?.ParagraphProperties?.ParagraphStyleId?.Val?.Value
+                ?? defaultParagraphStyle.Value;
+            var (character, paragraph) = (StyleFlag(run.RunProperties?.RunStyle?.Val?.Value, name), StyleFlag(paragraphStyle, name));
+            if (character is null && paragraph is null)
+                return Flag(main.StyleDefinitionsPart?.Styles?.DocDefaults?.RunPropertiesDefault?.RunPropertiesBaseStyle, name) ?? false;
+            return (character ?? false) ^ (paragraph ?? false);
+        }
+
+        /// <summary>SmartArt's words live in their own part: kept as a list after the paragraph, one item per node. Listed, because the file's order isn't always the drawing's.</summary>
+        void SmartArt(Paragraph p)
+        {
+            foreach (var data in Live(p).OfType<Drawing.GraphicData>().Where(g => g.Uri?.Value?.Contains("diagram", StringComparison.OrdinalIgnoreCase) == true))
+            {
+                var dm = data.Descendants().FirstOrDefault(e => e.LocalName == "relIds")?.GetAttributes().FirstOrDefault(a => a.LocalName == "dm").Value;
+                if (main.Parts.FirstOrDefault(x => x.RelationshipId == dm).OpenXmlPart is not DiagramDataPart part || part.DataModelRoot is null) { Mark("SmartArt not read"); continue; }
+                foreach (var pt in part.DataModelRoot.Descendants().Where(e => e.LocalName == "pt"))
+                    if (DocxReview.Words(pt) is { Length: > 0 } node)
+                    {
+                        var text = string.Join(' ', node);
+                        Expect("-");
+                        Expect(node);
+                        Emit($"- {text}", tight: true);
+                    }
+                Mark("SmartArt: its words are kept as a list, its shape and order aren't");
+            }
+        }
+
+        /// <summary>Footnotes and endnotes go at the end of their section, labelled, with the words they're attached to.</summary>
+        void FlushNotes(int count)
+        {
+            var outer = pendingMarks;
+            pendingMarks = [];
+            foreach (var note in notes.Take(count))
+            {
+                if (note.Content is not { } content) { Mark($"{note.Label} has no text in the file"); continue; }
+                Prepare(content);
+                var (words, text) = (DocxReview.Words(content), Text(content).Trim());
+                if (words.Length == 0) continue;
+                Expect(note.Label);
+                Expect(words);
+                Emit($"{note.Label} {text}");
+                if (content.Descendants<Drawing.Blip>().Any()) Mark("a picture in a footnote or endnote not kept");
+            }
+            notes.RemoveRange(0, count);
+            foreach (var (kind, marked, unit) in pendingMarks) Record(headings.Count - 1, kind, marked, unit);
+            pendingMarks = outer;
+        }
+
+        void Reference(string kind, OpenXmlElement? content, string before)
+        {
+            var words = DocxReview.Words(before);
+            var number = kind == "Footnote" ? ++footnotes : ++endnotes;
+            notes.Add(new Note($"[{kind} {number}, after \"{string.Join(' ', words[Math.Max(0, words.Length - 5)..])}\"]", content));
         }
 
         void Paragraph(Paragraph p)
         {
             var styleId = p.ParagraphProperties?.ParagraphStyleId?.Val?.Value;
             var styleName = styleId is not null && styles.TryGetValue(styleId, out var st) ? st.StyleName?.Val?.Value ?? styleId : styleId ?? "";
+            var notesBefore = notes.Count;
             var text = Text(p).Trim();
             var imagesHere = Images(p);
-            foreach (var img in imagesHere) Emit($"![]({img})");
+            foreach (var img in imagesHere)
+            {
+                Expect($"![]({img})");
+                Emit($"![]({img})");
+            }
             if (imagesHere.Count > 0) pendingImage = imagesHere[^1];
             if (text.Length == 0) return;
 
@@ -102,14 +343,20 @@ public static partial class DocxConverter
                 var typed = false;
                 // A number typed into the heading is a candidate only; Finish keeps it when it fits the numbering.
                 if (number is null && FsdSections.Typed(text) is { Number: not null } t) { (number, shown) = t; typed = true; }
+                // The notes before this heading end the section before it; one on the heading itself is in its own section.
+                FlushNotes(notesBefore);
                 var start = md.Length;
                 Emit($"{new string('#', level)} {(number is null || typed ? "" : number + " ")}{(typed ? text : shown)}");
                 headings.Add(new FsdHeading(number, shown, level, md.Line, start, md.Length, typed, text));
+                Expect(new string('#', level));
+                if (number is not null && !typed) Expect(number);
                 return;
             }
             if (label is not null || bullet)
             {
                 var indent = new string(' ', 2 * listLevel);
+                if (bullet || label is null || !Regex.IsMatch(label, @"^\d+\.$")) Expect("-");
+                if (!bullet && label is not null) Expect(label);
                 Emit(bullet || label is null ? $"{indent}- {text}" : Regex.IsMatch(label, @"^\d+\.$") ? $"{indent}{label} {text}" : $"{indent}- {label} {text}", tight: true);
                 return;
             }
@@ -118,14 +365,42 @@ public static partial class DocxConverter
 
         void Table(Table t)
         {
-            var rows = t.Elements<TableRow>().Select(r => r.Elements<TableCell>().SelectMany(c =>
+            var rows = new List<List<string>>();
+            var above = new Dictionary<int, string>();
+            var repeated = 0;
+            foreach (var r in DocxReview.Unwrapped<TableRow>(t))
             {
-                // Nested tables are flattened to their text; images keep their place as image links.
-                var cell = string.Join(" ", c.Descendants<Paragraph>().Select(x => string.Join(" ", Images(x).Select(i => $"![]({i})").Append(Text(x).Trim())).Trim())
-                    .Where(x => x.Length > 0)).Replace("|", "\\|");
-                var span = c.TableCellProperties?.GridSpan?.Val?.Value ?? 1;
-                return new[] { cell }.Concat(Enumerable.Repeat("", span - 1));
-            }).ToList()).Where(r => r.Count > 0).ToList();
+                // A row can start part-way across the grid; blanks keep its cells under the right columns.
+                var row = Enumerable.Repeat("", r.TableRowProperties?.GetFirstChild<GridBefore>()?.Val?.Value ?? 0).ToList();
+                foreach (var c in DocxReview.Unwrapped<TableCell>(r))
+                {
+                    var column = row.Count;
+                    string cell;
+                    if (IsMergedDown(c))
+                    {
+                        // A cell merged down rows repeats its value, so a row read alone still says what it says.
+                        cell = above.GetValueOrDefault(column, "");
+                        Expect(cell);
+                        repeated++;
+                    }
+                    else
+                    {
+                        // Nested tables are flattened to their text; images keep their place as image links.
+                        // A paragraph inside a text box is read with the paragraph holding it.
+                        cell = string.Join(" ", c.Descendants<Paragraph>().Where(x => !x.Ancestors<Paragraph>().Any()).Select(x =>
+                        {
+                            var pictures = Images(x).Select(i => $"![]({i})").ToList();
+                            foreach (var picture in pictures) Expect(picture);
+                            return string.Join(" ", pictures.Append(Text(x).Trim())).Trim();
+                        }).Where(x => x.Length > 0)).Replace("|", "\\|");
+                        if (c.TableCellProperties?.VerticalMerge is null) above.Remove(column); else above[column] = cell;
+                    }
+                    row.Add(cell);
+                    row.AddRange(Enumerable.Repeat("", (c.TableCellProperties?.GridSpan?.Val?.Value ?? 1) - 1));
+                }
+                if (row.Count > 0) rows.Add(row);
+            }
+            if (repeated > 0) Mark("a cell merged down rows repeats its value in each row", repeated, " cells");
             if (rows.Count == 0) return;
             var width = rows.Max(r => r.Count);
             var sb = new StringBuilder();
@@ -135,24 +410,44 @@ public static partial class DocxConverter
                 sb.Append("| ").Append(string.Join(" | ", cells)).Append(" |\n");
                 if (i == 0) sb.Append('|').Append(string.Concat(Enumerable.Repeat("---|", width))).Append('\n');
             }
+            Expect(Enumerable.Repeat("|", rows.Count * (width + 1)).Append("|" + string.Concat(Enumerable.Repeat("---|", width))));
             Emit(sb.ToString().TrimEnd('\n'));
         }
 
         void Emit(string block, bool tight = false) => md.Emit(block, tight);
 
-        static string Text(OpenXmlElement p)
+        string Text(OpenXmlElement p)
         {
             var sb = new StringBuilder();
-            // Word stores a text box twice (the shape and a fallback for old readers): read it once.
-            foreach (var e in p.Descendants().Where(d => !d.Ancestors().Any(a => a.LocalName == "Fallback")))
+            Read(p, sb);
+            return Regex.Replace(sb.ToString().Replace(' ', ' '), " {2,}", " ");
+        }
+
+        void Read(OpenXmlElement parent, StringBuilder sb)
+        {
+            foreach (var e in parent.ChildElements)
                 switch (e)
                 {
+                    // Word stores a text box twice (the shape and a fallback for old readers): read it once.
+                    case { LocalName: "Fallback" }: break;
                     case Text t when t.Parent is Run: sb.Append(t.Text); break;
-                    case TabChar: sb.Append(' '); break;
+                    case TabChar or PositionalTab: sb.Append(' '); break;
                     case Break or CarriageReturn: sb.Append(' '); break;
                     case NoBreakHyphen: sb.Append('-'); break;
+                    case FootnoteReference f:
+                        Reference("Footnote", main.FootnotesPart?.Footnotes?.Elements<Footnote>().FirstOrDefault(n => n.Id?.Value == f.Id?.Value), sb.ToString());
+                        break;
+                    case EndnoteReference n:
+                        Reference("Endnote", main.EndnotesPart?.Endnotes?.Elements<Endnote>().FirstOrDefault(x => x.Id?.Value == n.Id?.Value), sb.ToString());
+                        break;
+                    // A paragraph inside a text box ends a word, like any other paragraph.
+                    case Paragraph _:
+                        sb.Append(' ');
+                        Read(e, sb);
+                        sb.Append(' ');
+                        break;
+                    default: Read(e, sb); break;
                 }
-            return Regex.Replace(sb.ToString().Replace(' ', ' '), " {2,}", " ");
         }
 
         List<string> Images(Paragraph p)
@@ -261,16 +556,76 @@ public static partial class DocxConverter
 
         public ConvertedDocument Finish()
         {
+            FlushNotes(notes.Count);
             var body = md.ToString();
             if (flat)
             {
                 var (markdown, whole) = FsdSections.Flat(body, problems);
+                Listed(body, _ => FsdSections.FlatId);
                 return new ConvertedDocument(markdown, whole, images, problems, title);
             }
             if (headings.Count == 0)
                 throw new Core.StangentException("no_structure", $"This .docx has no headings, so it has no sections. Apply heading styles, {FsdSections.NoStructureAdvice}.");
             var sections = FsdSections.Build(body, headings, problems);
+            Listed(body, i => sections[i].Id);
             return new ConvertedDocument(body + "\n", sections, images, problems, title);
+        }
+
+        /// <summary>Everything listed after the sections are known: what each section holds that isn't brought in exactly, comments, page headers, and the completeness check.</summary>
+        void Listed(string body, Func<int, string> sectionId)
+        {
+            string Where(int i) => i >= 0 || flat ? $"section {sectionId(i)}" : "before the first heading";
+            foreach (var (section, kind, unit) in marks.OrderBy(m => m.Section))
+            {
+                var n = markCounts[(section, kind)];
+                problems.Add($"{Where(section)}: {kind}{(unit.Length > 0 ? $" ({n}{unit})" : n > 1 ? $" ({n})" : "")}");
+            }
+            Comments(i => i >= 0 || flat ? sectionId(i) : "(before the first heading)");
+            var outside = new OpenXmlElement?[0].Concat(main.HeaderParts.Select(h => (OpenXmlElement?)h.Header)).Concat(main.FooterParts.Select(f => (OpenXmlElement?)f.Footer))
+                .OfType<OpenXmlElement>().Sum(e => DocxReview.Words(e).Length);
+            if (outside > 0) problems.Add($"page headers and footers aren't imported ({outside} words)");
+            Complete(body, Where);
+        }
+
+        void Comments(Func<int, string> sectionId)
+        {
+            if (main.WordprocessingCommentsPart?.Comments is not { } comments) return;
+            var resolved = main.WordprocessingCommentsExPart?.CommentsEx?.Elements<DocumentFormat.OpenXml.Office2013.Word.CommentEx>()
+                .Where(c => c.Done?.Value == true).Select(c => c.ParaId?.Value).ToHashSet() ?? [];
+            var all = comments.Elements<Comment>().ToList();
+            var order = commentSection.Keys.ToList();
+            foreach (var c in all.OrderBy(c => order.IndexOf(c.Id?.Value ?? "") is var at and >= 0 ? at : int.MaxValue))
+            {
+                var section = commentSection.TryGetValue(c.Id?.Value ?? "", out var i) ? sectionId(i) : DocxComment.NoAnchor;
+                var done = c.Elements<Paragraph>().LastOrDefault()?.ParagraphId?.Value is { } para && resolved.Contains(para);
+                problems.Add(new DocxComment(section, c.Author?.Value ?? "unknown", done, string.Join(' ', DocxReview.Words(Text(c)))).Line());
+            }
+        }
+
+        /// <summary>
+        /// The completeness check (D18, D116): per section, the words in the file, minus the rules' removals, plus what the converter adds on
+        /// purpose (labels, numbers, table rules, repeated cells), must equal the words rendered. It lists a mismatch and never fails the import.
+        /// </summary>
+        void Complete(string body, Func<int, string> where)
+        {
+            for (var i = -1; i < headings.Count; i++)
+            {
+                var start = i < 0 ? 0 : headings[i].Start;
+                var end = i + 1 < headings.Count ? headings[i + 1].Start : body.Length;
+                var left = new Dictionary<string, int>(expected.GetValueOrDefault(i) ?? [], StringComparer.Ordinal);
+                var extra = new List<string>();
+                foreach (var w in DocxReview.Words(body[start..end]))
+                    if (left.GetValueOrDefault(w) > 0) left[w]--;
+                    else extra.Add(w);
+                var missing = left.Where(kv => kv.Value > 0).SelectMany(kv => Enumerable.Repeat(kv.Key, kv.Value)).ToList();
+                if (missing.Count == 0 && extra.Count == 0) continue;
+                static string Sample(List<string> words) =>
+                    string.Join(", ", words.Distinct().Order(StringComparer.Ordinal).Take(5).Select(w => $"\"{w}\""));
+                var parts = new List<string>();
+                if (missing.Count > 0) parts.Add($"{missing.Count} words in the file aren't in document.md ({Sample(missing)})");
+                if (extra.Count > 0) parts.Add($"{extra.Count} words in document.md aren't in the file ({Sample(extra)})");
+                problems.Add($"completeness: {where(i)}: {string.Join("; ", parts)}");
+            }
         }
     }
 }
