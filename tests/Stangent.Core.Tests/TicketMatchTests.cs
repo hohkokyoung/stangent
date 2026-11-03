@@ -121,8 +121,8 @@ public class TicketMatchTests
 
     static JsonObject Decides(bool decides = true, string reporter = "agrees")
     {
-        var o = new JsonObject { ["decides"] = decides, ["reporter"] = reporter, ["why"] = "reasons" };
-        if (decides) { o["ticketQuote"] = "I placed an order of 150"; o["requirementQuote"] = Quote1; }
+        var o = new JsonObject { ["decides"] = decides, ["why"] = "reasons" };
+        if (decides) { o["reporter"] = reporter; o["ticketQuote"] = "I placed an order of 150"; o["requirementQuote"] = Quote1; }
         return o;
     }
 
@@ -259,10 +259,129 @@ public class TicketMatchTests
     }
 
     [Fact]
-    public void A_ticket_with_no_bundle_says_so()
+    public void A_failed_file_search_is_a_failed_match_never_a_none()
+    {
+        using var app = Build();
+        var paths = new TicketPaths(app.Root, app.Key);
+        var points = JsonNode.Parse(File.ReadAllText(paths.PointsJson))!;
+        points["ai"] = new JsonObject { ["status"] = "failed" };
+        File.WriteAllText(paths.PointsJson, points.ToJsonString());
+        var step = TicketMatch.Prepare(app.Repo, app.Context(), app.Key);
+        Assert.Equal(("failed", "none"), (step.Status, step.Action));
+        var match = TicketMatch.Load(app.Root, app.Key)!;
+        Assert.Equal("failed", (string)match["outcome"]!);
+        Assert.Equal("failed", (string)match["finder"]!["status"]!);
+        Assert.Equal(1, (int)match["finder"]!["points"]!);
+    }
+
+    [Fact]
+    public void Candidates_dont_depend_on_the_bundle_or_its_size_cap()
     {
         using var app = Build();
         File.Delete(new TicketPaths(app.Root, app.Key).BundleJson);
-        Assert.Equal("no_bundle", Assert.Throws<StangentException>(() => TicketMatch.Prepare(app.Repo, app.Context(), app.Key)).Code);
+        Assert.Contains($"**{Linked}**", Input(app, TicketMatch.Prepare(app.Repo, app.Context(), app.Key)));
+    }
+
+    [Fact]
+    public void A_symbol_point_reaches_the_requirement_whose_link_cites_it()
+    {
+        using var app = Build();
+        TicketPoints.Update(app.Repo, app.Context(), app.Key, [SpecApp.Place], [SpecApp.Post], "Pat Developer");
+        Assert.Contains($"**{Linked}**", Input(app, TicketMatch.Prepare(app.Repo, app.Context(), app.Key)));
+    }
+
+    [Fact]
+    public void A_requirement_built_from_text_that_changed_is_no_candidate()
+    {
+        using var app = Build();
+        var feature = RequirementFile.Features(app.Root, "shop").First();
+        feature["textHash"] = new string('0', 64);
+        RequirementFile.Save(app.Root, feature);
+        var step = TicketMatch.Prepare(app.Repo, app.Context(), app.Key);
+        Assert.Equal(("recorded", "none"), (step.Status, step.Action));
+        Assert.Equal("none", (string)TicketMatch.Load(app.Root, app.Key)!["outcome"]!);
+    }
+
+    [Fact]
+    public void A_conflict_counts_as_code_found_and_a_disputed_agree_doesnt()
+    {
+        using var app = Build();
+        var section = SpecIndex.Load(app.Root).Sections[("shop", "1")];
+        LinkRun.ApplyEntries(app.Root, "shop", "1", [
+            LinkRun.Entry("conflict", "shop", section, Quote1, SpecApp.Post, "R1", "Orders over 100 are refused", "judge", null, "n", Linked),
+            LinkRun.Entry("agree", "shop", section, Quote2, SpecApp.Post, "R1", "Orders over 100 are refused", "judge", "disputed", "n", NoCode),
+        ]);
+        var input = Input(app, TicketMatch.Prepare(app.Repo, app.Context(), app.Key));
+        var noCode = input.IndexOf("# Requirements no code", StringComparison.Ordinal);
+        Assert.InRange(input.IndexOf($"**{Linked}**", StringComparison.Ordinal), 0, noCode);
+        Assert.True(input.IndexOf($"**{NoCode}**", StringComparison.Ordinal) > noCode);
+    }
+
+    [Fact]
+    public void Candidates_at_the_code_come_first()
+    {
+        using var app = Build();
+        var section = SpecIndex.Load(app.Root).Sections[("shop", "1")];
+        // R-0003's statement cites the symbol point; R-0001 is only on the same page, though its id sorts first.
+        LinkRun.ApplyEntries(app.Root, "shop", "1", [
+            LinkRun.Entry("agree", "shop", section, Quote1, SpecApp.Post, "R9", "Orders over 100 are refused", "judge", "confirmed", null, Linked),
+            LinkRun.Entry("agree", "shop", section, Quote3, SpecApp.Post, "R1", "Orders over 100 are refused", "judge", "confirmed", null, Elsewhere),
+        ]);
+        TicketPoints.Update(app.Repo, app.Context(), app.Key, [SpecApp.Place], [], "Pat Developer");
+        var input = Input(app, TicketMatch.Prepare(app.Repo, app.Context(), app.Key));
+        Assert.True(input.IndexOf($"**{Elsewhere}**", StringComparison.Ordinal) < input.IndexOf($"**{Linked}**", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_stale_output_is_never_read_as_the_fresh_checks_answer()
+    {
+        using var app = Build();
+        var step = Give(app, TicketMatch.Prepare(app.Repo, app.Context(), app.Key), Pick(Linked));
+        Assert.False(File.Exists(Path.Combine(app.Root, step.Output!)));
+        step = TicketMatch.Check(app.Repo, app.Context(), app.Key, null);
+        Assert.Equal("retry", step.Status);
+    }
+
+    [Fact]
+    public void Each_steps_usage_goes_to_its_own_role_across_retries()
+    {
+        using var app = Build();
+        var cost = new Usage("m", 1, 1, 1, 0, 0, 0.5, 10);
+        void Write(RunStep s, JsonObject o) => File.WriteAllText(Path.Combine(app.Root, s.Output!), o.ToJsonString());
+        var step = TicketMatch.Prepare(app.Repo, app.Context(), app.Key);
+        Write(step, new JsonObject { ["pick"] = "nope", ["why"] = "w" });
+        step = TicketMatch.Check(app.Repo, app.Context(), app.Key, cost);
+        Write(step, Pick(Linked));
+        step = TicketMatch.Check(app.Repo, app.Context(), app.Key, cost);
+        Write(step, Decides());
+        Assert.Equal("recorded", TicketMatch.Check(app.Repo, app.Context(), app.Key, new Usage("m", 1, 1, 1, 0, 0, 0.25, 10)).Status);
+        var usage = TicketMatch.Load(app.Root, app.Key)!["usage"]!;
+        Assert.Equal(1.0, Usage.FromJson(usage["matcher"]).CostUsd);
+        Assert.Equal(0.25, Usage.FromJson(usage["checker"]).CostUsd);
+    }
+
+    [Fact]
+    public void A_change_to_what_the_fresh_check_reads_runs_it_again()
+    {
+        using var app = Build();
+        Give(app, TicketMatch.Prepare(app.Repo, app.Context(), app.Key), Pick(null));
+        Assert.Equal("current", TicketMatch.Prepare(app.Repo, app.Context(), app.Key).Status);
+        var feature = RequirementFile.Features(app.Root, "shop").First();
+        feature["requirements"]![0]!["hash"] = "changed";
+        RequirementFile.Save(app.Root, feature);
+        Assert.Equal(TicketMatch.Matcher, TicketMatch.Prepare(app.Repo, app.Context(), app.Key).Agent);
+    }
+
+    [Fact]
+    public void The_fresh_check_must_say_where_the_reporter_stands_when_it_decides()
+    {
+        using var app = Build();
+        var step = Give(app, TicketMatch.Prepare(app.Repo, app.Context(), app.Key), Pick(Linked));
+        var o = Decides();
+        o.Remove("reporter");
+        step = Give(app, step, o);
+        Assert.Contains(step.Errors!, e => e.Contains("`reporter`", StringComparison.Ordinal));
+        // Not needed when it doesn't decide.
+        Assert.Equal("recorded", Give(app, step, new JsonObject { ["decides"] = false, ["why"] = "w" }).Status);
     }
 }

@@ -4,7 +4,7 @@
   "title": "A ticket matched to its requirement: .stangent/tickets/<KEY>/match.json (Phase 2c, D99)",
   "description": "suggested reads 'suggested: R-0042' until a person confirms. Only an approved requirement judges anything; approvalSkipped says a benchmark's setting treated proposed ones as approved.",
   "type": "object",
-  "required": ["schemaVersion", "key", "inputs", "outcome", "approvalSkipped", "candidates", "considered", "confirmed", "why", "usage"],
+  "required": ["schemaVersion", "key", "inputs", "outcome", "approvalSkipped", "finder", "candidates", "considered", "confirmed", "why", "usage"],
   "additionalProperties": false,
   "properties": {
     "schemaVersion": { "const": 1 },
@@ -12,6 +12,13 @@
     "inputs": { "type": "string" },
     "outcome": { "enum": ["suggested", "none", "failed"] },
     "approvalSkipped": { "type": "boolean" },
+    "finder": {
+      "description": "The file finder's status and how many starting points the ticket had: a failed search can't give a real 'none'.",
+      "type": "object",
+      "required": ["status", "points"],
+      "additionalProperties": false,
+      "properties": { "status": { "type": ["string", "null"] }, "points": { "type": "integer" } }
+    },
     "candidates": {
       "type": "object",
       "required": ["linked", "noCode"],

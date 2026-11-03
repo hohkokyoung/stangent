@@ -245,7 +245,7 @@ public static class TicketBundle
     /// pages whose statements cite code in a file ("cites"), ranked by how many of the files they cite, then by the
     /// first file's rank; for a file no page cites, the pages whose slice holds it ("slice"). A nearby page from a graph
     /// walk isn't used: it explained the fix in 1 of 12 Sonarr bugs (phases/3-tickets.md, 2026-11-02).</summary>
-    static Dictionary<string, List<(string File, string How)>> Explaining(TicketContext ctx, List<string> files)
+    public static Dictionary<string, List<(string File, string How)>> Explaining(TicketContext ctx, List<string> files)
     {
         var result = new Dictionary<string, List<(string File, string How)>>(StringComparer.Ordinal);
         if (files.Count == 0) return result;

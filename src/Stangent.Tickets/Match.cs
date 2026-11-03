@@ -7,7 +7,7 @@ using Stangent.Spec.Requirements;
 namespace Stangent.Tickets;
 
 /// <summary>
-/// <c>stangent ticket match</c> (D99): which approved requirement says what should happen here, if any. Code limits the
+/// <c>stangent ticket match</c> (D99), after the file finder: which approved requirement says what should happen here, if any. Code limits the
 /// candidates to requirements linked through page statements to the pages at the ticket's starting points; requirements no
 /// page statement covers come second, by title only, and read "no code found for this rule". An AI picks one or none,
 /// quoting both sides, and code checks the quotes. A fresh AI, without the pick's reasons, says whether that requirement
@@ -29,27 +29,33 @@ public static class TicketMatch
 
     /// <summary>Usable requirements for this ticket, the linked ones first. Only approved ones judge anything (D99); a benchmark's
     /// setting treats proposed ones as approved, and says so. One the checker disputed or didn't answer for never counts.</summary>
-    static List<Candidate> Candidates(StangentRepo repo, TicketContext ctx, JsonObject bundle)
+    static List<Candidate> Candidates(StangentRepo repo, TicketContext ctx, JsonObject points)
     {
         var skip = repo.Config.Fsd.SkipApproval;
-        var pages = bundle["pages"]!.AsArray().Select(p => (string)p!["id"]!).ToHashSet(StringComparer.Ordinal);
-        var files = bundle["points"]!.AsArray().Where(p => (string?)p!["kind"] == StartingPoint.File).Select(p => (string)p!["id"]!).ToList();
-        var atFiles = files.SelectMany(ctx.Analyzer.InFile).Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
-        var links = ctx.Trace.Where(e => (string?)e["fsd"]?["requirement"] is not null && (string)e["state"]! is "agree" or "conflict")
+        var list = points["points"]!.AsArray().Select(p => StartingPoint.FromJson(p!)).ToList();
+        var files = list.Where(p => p.Kind == StartingPoint.File).Select(p => p.Id).ToList();
+        // Every page at the starting points, not the bundle's: its size cap drops pages, and a rule shouldn't vanish with them.
+        var pages = TicketBundle.Explaining(ctx, files).Keys.Concat(list.Where(p => p.Kind == StartingPoint.Page).Select(p => p.Id)).ToHashSet(StringComparer.Ordinal);
+        var at = files.SelectMany(ctx.Analyzer.InFile).Select(n => n.Id).Concat(list.Where(p => p.Kind == StartingPoint.Symbol).Select(p => p.Id)).ToHashSet(StringComparer.Ordinal);
+        var links = ctx.Trace.Where(e => (string?)e["fsd"]?["requirement"] is not null && IsLink(e))
             .GroupBy(e => (string)e["fsd"]!["requirement"]!).ToDictionary(g => g.Key, g => g.ToList());
         var found = new List<Candidate>();
         foreach (var doc in RequirementFile.Docs(repo.Root))
             foreach (var f in RequirementFile.Features(repo.Root, doc))
+            {
+                // Built from text that has since changed: its sentences may not be in the FSD any more.
+                if (!ctx.Index.Sections.TryGetValue((doc, (string)f["section"]!), out var section) || (string?)f["textHash"] != CanonicalJson.Hash((string)section["text"]!)) continue;
                 foreach (var r in f["requirements"]!.AsArray().OfType<JsonObject>())
                 {
                     if ((string)r["check"]! != "confirmed" || !((string)r["status"]! == "approved" || skip)) continue;
                     var id = (string)r["id"]!;
                     var mine = links.GetValueOrDefault(id);
                     // Linked somewhere else: its code isn't at this ticket's starting points, so it doesn't cover this.
-                    if (mine is not null && !mine.Any(e => (string?)e["page"]?["id"] is { } p && pages.Contains(p))) continue;
-                    var direct = mine?.Any(e => Cites(ctx, e, atFiles)) == true;
+                    if (mine is not null && !mine.Any(e => ((string?)e["page"]?["id"] is { } p && pages.Contains(p)) || Cites(ctx, e, at))) continue;
+                    var direct = mine?.Any(e => Cites(ctx, e, at)) == true;
                     found.Add(new Candidate(r, doc, (string)f["section"]!, (string)f["title"]!, mine is not null, direct));
                 }
+            }
         return [.. found.OrderByDescending(c => c.Linked).ThenByDescending(c => c.AtTheCode).ThenBy(c => (string)c.Requirement["id"]!, StringComparer.Ordinal)];
     }
 
@@ -76,23 +82,32 @@ public static class TicketMatch
     {
         var paths = new TicketPaths(repo.Root, key);
         var pulled = TicketPull.LoadOrFail(repo.Root, key);
-        if (PageRun.LoadJson(paths.BundleJson) is not JsonObject bundle)
-            throw new StangentException("no_bundle", $"{key} has no bundle. Run `stangent ticket bundle {key}` first.", ExitCodes.NotFound);
-        var candidates = Candidates(repo, ctx, bundle);
+        var points = TicketPoints.LoadOrFail(repo.Root, key);
+        var finder = new JsonObject { ["status"] = (string?)points["ai"]?["status"], ["points"] = points["points"]!.AsArray().Count };
+        var candidates = Candidates(repo, ctx, points);
         var input = MatcherInput(pulled, candidates);
-        var hash = CanonicalJson.Hash(input + AiStep.Instructions("match-checker.md") + SchemaRegistry.EmbeddedText(CheckerSchema));
+        // Everything the fresh check may read about a candidate, not only what the matcher reads.
+        var hash = CanonicalJson.Hash(input + AiStep.Instructions("match-checker.md") + SchemaRegistry.EmbeddedText(CheckerSchema)
+            + string.Join('\n', candidates.Select(c => (string)c.Requirement["hash"]!)));
         var earlier = Load(repo.Root, key);
         if ((string?)earlier?["inputs"] == hash && (string?)earlier?["outcome"] != "failed") return new RunStep("current", "none");
         var counts = new JsonObject { ["linked"] = candidates.Count(c => c.Linked), ["noCode"] = candidates.Count(c => !c.Linked) };
+        // With no search for its code, a "none" would only mean nobody looked.
+        if ((string?)finder["status"] is "failed" or "needed")
+        {
+            var why = $"the file finder's status is {(string)finder["status"]!}, so nothing says where this ticket's code is";
+            Save(paths, Record(repo, key, hash, "failed", counts, new JsonArray(), finder, Usage.None, Usage.None, why));
+            return new RunStep("failed", "none", Errors: [why]);
+        }
         if (candidates.Count == 0)
         {
-            Save(paths, Record(repo, key, hash, "none", counts, new JsonArray(), Usage.None, Usage.None, why: "no approved requirement to match"));
+            Save(paths, Record(repo, key, hash, "none", counts, new JsonArray(), finder, Usage.None, Usage.None, why: "no approved requirement to match"));
             return new RunStep("recorded", "none");
         }
         AiPolicy.EnsureAllowed(repo.Config, "ticket match");
         return AiStep.Start(paths, Step, input, hash, new JsonObject
         {
-            ["stage"] = "pick", ["candidates"] = new JsonArray([.. candidates.Select(c => (JsonNode)(string)c.Requirement["id"]!)]), ["counts"] = counts,
+            ["stage"] = "pick", ["candidates"] = new JsonArray([.. candidates.Select(c => (JsonNode)(string)c.Requirement["id"]!)]), ["counts"] = counts, ["finder"] = finder,
         });
     }
 
@@ -124,7 +139,7 @@ public static class TicketMatch
             return AiStep.Retry(paths, Step, state, errors) ?? Failed(repo, paths, state, errors);
         if (requirement is null)
         {
-            Save(paths, Record(repo, paths.Key, (string)state["inputs"]!, "none", state["counts"]!, state["candidates"]!, Usage.FromJson(state["usage"]), Usage.None, why: (string?)output!["why"]));
+            Save(paths, Record(repo, paths.Key, (string)state["inputs"]!, "none", state["counts"]!, state["candidates"]!, state["finder"]!, Usage.FromJson(state["usage"]), Usage.None, why: (string?)output!["why"]));
             MarkDone(paths, state);
             return new RunStep("recorded", "none");
         }
@@ -157,7 +172,11 @@ public static class TicketMatch
         var id = (string)state["pick"]!;
         var requirement = (JsonObject?)RequirementFile.Show(repo.Root, id)?["item"]
             ?? throw new StangentException("not_found", $"{id} doesn't exist any more. Run `stangent ticket match {paths.Key}` to start again.", ExitCodes.NotFound);
-        if (output is not null && (bool)output["decides"]!) errors.AddRange(QuoteErrors(output, pulled, requirement));
+        if (output is not null && (bool)output["decides"]!)
+        {
+            errors.AddRange(QuoteErrors(output, pulled, requirement));
+            if (output["reporter"] is null) errors.Add("`reporter` is needed when the requirement decides it.");
+        }
         if (errors.Count > 0)
         {
             if ((bool?)state["retryUsed"] != true)
@@ -174,12 +193,12 @@ public static class TicketMatch
         JsonObject record;
         if (!(bool)output!["decides"]!)
         {
-            record = Record(repo, paths.Key, (string)state["inputs"]!, "none", state["counts"]!, state["candidates"]!, matcher, checker, why: $"{(string)pick["why"]!} The fresh check disagreed: {(string)output["why"]!}");
+            record = Record(repo, paths.Key, (string)state["inputs"]!, "none", state["counts"]!, state["candidates"]!, state["finder"]!, matcher, checker, why: $"{(string)pick["why"]!} The fresh check disagreed: {(string)output["why"]!}");
             record["refused"] = new JsonObject { ["pick"] = id, ["why"] = (string)output["why"]! };
         }
         else
         {
-            record = Record(repo, paths.Key, (string)state["inputs"]!, "suggested", state["counts"]!, state["candidates"]!, matcher, checker, why: (string)pick["why"]!);
+            record = Record(repo, paths.Key, (string)state["inputs"]!, "suggested", state["counts"]!, state["candidates"]!, state["finder"]!, matcher, checker, why: (string)pick["why"]!);
             var codeFound = Linked(repo.Root, id);
             record["requirement"] = new JsonObject
             {
@@ -195,7 +214,10 @@ public static class TicketMatch
         return new RunStep("recorded", "none");
     }
 
-    static bool Linked(string root, string id) => RequirementFile.Links(root, id).Any(l => (string)l["state"]! is "agree" or "conflict");
+    static bool Linked(string root, string id) => RequirementFile.Links(root, id).Any(IsLink);
+
+    /// <summary>A link that shows the code: a conflict, or an agree the second check didn't dispute.</summary>
+    static bool IsLink(JsonObject entry) => (string)entry["state"]! == "conflict" || ((string)entry["state"]! == "agree" && (string?)entry["check"] == "confirmed");
 
     static List<string> QuoteErrors(JsonObject output, JsonObject pulled, JsonObject requirement)
     {
@@ -212,7 +234,7 @@ public static class TicketMatch
     {
         var matcher = state["matcherUsage"] is { } m ? Usage.FromJson(m) : Usage.FromJson(state["usage"]);
         var checker = state["matcherUsage"] is null ? Usage.None : Usage.FromJson(state["usage"]);
-        Save(paths, Record(repo, paths.Key, (string)state["inputs"]!, "failed", state["counts"]!, state["candidates"]!, matcher, checker, why: string.Join("; ", errors.Take(3))));
+        Save(paths, Record(repo, paths.Key, (string)state["inputs"]!, "failed", state["counts"]!, state["candidates"]!, state["finder"]!, matcher, checker, why: string.Join("; ", errors.Take(3))));
         MarkDone(paths, state);
         return new RunStep("failed", "none", Errors: errors);
     }
@@ -223,11 +245,12 @@ public static class TicketMatch
         AiStep.SaveState(paths, Step, state);
     }
 
-    static JsonObject Record(StangentRepo repo, string key, string inputs, string outcome, JsonNode counts, JsonNode candidates, Usage matcher, Usage checker, string? why) => new()
+    static JsonObject Record(StangentRepo repo, string key, string inputs, string outcome, JsonNode counts, JsonNode candidates, JsonNode finder, Usage matcher, Usage checker, string? why) => new()
     {
         ["schemaVersion"] = 1, ["key"] = key, ["inputs"] = inputs, ["outcome"] = outcome,
         // Benchmark runs only (D99): every result made with it says so.
         ["approvalSkipped"] = repo.Config.Fsd.SkipApproval,
+        ["finder"] = finder.DeepClone(),
         ["candidates"] = counts.DeepClone(),
         ["considered"] = candidates is JsonArray a ? a.DeepClone() : new JsonArray(),
         ["confirmed"] = null,

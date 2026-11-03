@@ -84,19 +84,22 @@ public static class MatchScore
             rows.Add(new JsonObject
             {
                 ["id"] = id, ["group"] = group, ["outcome"] = outcome, ["pick"] = pick, ["right"] = group == "none" ? outcome == "none" : isRight,
+                ["approvalSkipped"] = match?["approvalSkipped"]?.DeepClone(), ["finder"] = match?["finder"]?.DeepClone(),
                 ["codeFound"] = match?["requirement"]?["codeFound"]?.DeepClone(), ["reporter"] = match?["reporter"]?.DeepClone(),
                 ["refused"] = match?["refused"]?["pick"]?.DeepClone(),
                 ["rightWasCandidate"] = group == "none" ? null : considered.Any(c => Overlap(quotesOf.GetValueOrDefault(c) ?? [], listed)),
                 ["candidates"] = match?["candidates"]?.DeepClone(),
             });
         }
+        var skipped = rows.Count(r => (bool?)r!["approvalSkipped"] == true);
         var share = suggestions == 0 ? 0 : (double)right / suggestions;
         var passRight = suggestions > 0 && share >= 0.9;
         var passNone = none >= 8;
         var passFound = found >= 14;
         return new JsonObject
         {
-            ["note"] = "Phase 2c (D99): matching scored on the frozen key by its own rule, with approval skipped (the benchmark setting). It's our own test set: a real FSD stays the judge (D56).",
+            ["note"] = "Phase 2c (D99): matching scored on the frozen key by its own rule. It's our own test set: a real FSD stays the judge (D56).",
+            ["approvalSkipped"] = skipped,
             ["suggestions"] = new JsonObject { ["right"] = right, ["of"] = suggestions, ["share"] = Math.Round(share, 3), ["bar"] = 0.9, ["pass"] = passRight },
             ["none"] = new JsonObject { ["right"] = none, ["of"] = 10, ["bar"] = 8, ["pass"] = passNone },
             ["found"] = new JsonObject { ["right"] = found, ["of"] = 20, ["bar"] = 14, ["pass"] = passFound },

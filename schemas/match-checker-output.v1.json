@@ -4,7 +4,7 @@
   "title": "What stangent-match-checker returns (Phase 2c, D99, D61)",
   "description": "Whether this requirement decides the ticket's situation, seen from a fresh start. Code checks both quotes word for word.",
   "type": "object",
-  "required": ["decides", "reporter", "why"],
+  "required": ["decides", "why"],
   "additionalProperties": false,
   "properties": {
     "decides": { "type": "boolean" },

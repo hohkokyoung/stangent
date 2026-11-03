@@ -1,0 +1,103 @@
+{
+  "_checker": "fresh agent (D67), 2026-11-03",
+  "L8b9d3b8755": {
+    "verdict": "false",
+    "reason": "The stored preferred protocol is Usenet or Torrent, as the FSD says; the page only left the values out. The edit screen also offers 'Only Usenet' and 'Only Torrent', but those set the separate enable flags and don't add a preferred value.",
+    "evidence": "frontend/src/Settings/Profiles/Delay/useDelayProfiles.ts:16 has preferredProtocol: 'usenet' | 'torrent'; EditDelayProfileModalContent.tsx:111-129 maps all four options onto those two values."
+  },
+  "Ld526d74cfb": {
+    "verdict": "false",
+    "reason": "The code has separate Usenet and Torrent delays, in minutes, and rejects negative values, exactly as the FSD says. The page just didn't state the rule.",
+    "evidence": "src/Sonarr.Api.V3/Profiles/Delay/DelayProfileController.cs:24-25 validates UsenetDelay and TorrentDelay GreaterThanOrEqualTo(0); frontend/src/Settings/Profiles/Delay/EditDelayProfileModalContent.tsx:174-194 shows both fields with unit=\"minutes\"."
+  },
+  "L9c796c0564": {
+    "verdict": "false",
+    "reason": "A series gets the first delay profile, by order, that shares one of its tags or has no tags, which is what the FSD describes. The page only showed the tags on the row.",
+    "evidence": "src/NzbDrone.Core/Profiles/Delay/DelayProfileService.cs:97-102 filters on r.Tags.Intersect(tagIds).Any() || r.Tags.Empty(); src/NzbDrone.Core/DecisionEngine/Specifications/RssSync/DelaySpecification.cs:41 calls BestForTags(subject.Series.Tags)."
+  },
+  "L3b4e14ba3e": {
+    "verdict": "false",
+    "reason": "There is no season pass screen in this code: the old address only redirects to the series list. There is nothing here for an FSD to describe.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:65-68 has path=\"/seasonpass\" with element <Navigate to=\"/series\" replace={true} />."
+  },
+  "L7738f7bdc4": {
+    "verdict": "false",
+    "reason": "The details screen shows every item the FSD lists: poster, status, size on disk, network, path, overview and seasons with their episodes. The page covered only part of the header.",
+    "evidence": "frontend/src/Series/Details/SeriesDetails.tsx:597 poster, :771 sizeOnDisk, :824 status, :861 network, :868 path, :877 overview, :922-924 seasons; SeriesDetailsSeason.tsx:484-496 renders EpisodeRow under each season."
+  },
+  "L5b8e20c169": {
+    "verdict": "real",
+    "reason": "Download Clients is a full settings screen (add, test and manage clients, handling options, remote path mappings), and the FSD's Settings section never describes it. A BA would document it because the queue depends on these clients.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:118 routes /settings/downloadclients; frontend/src/Settings/DownloadClients/DownloadClientSettings.tsx:90-105 test-all and manage buttons, :134-142 DownloadClients, DownloadClientOptions, RemotePathMappings."
+  },
+  "Lc87617cd19": {
+    "verdict": "real",
+    "reason": "Queue items have no priority and the user can't change one or reorder downloads. The FSD states a feature the code lacks.",
+    "evidence": "src/NzbDrone.Core/Queue/Queue.cs:13-43 has no priority field; src/Sonarr.Api.V3/Queue/QueueController.cs:75,98,139 and QueueActionController.cs:23,38 offer only delete, bulk delete, list and grab; the only 'priority' in frontend/src/Activity/Queue/Queue.tsx (:315-367) is toolbar button layout."
+  },
+  "Lcd18ef7eee": {
+    "verdict": "real",
+    "reason": "The FSD allows retention up to 365 days, but the code rejects anything above 90.",
+    "evidence": "src/Sonarr.Api.V3/Config/HostConfigController.cs:133 has RuleFor(c => c.BackupRetention).InclusiveBetween(1, 90)."
+  },
+  "La1cb5f357f": {
+    "verdict": "real",
+    "reason": "System > Events is a user-facing screen with a filterable, sortable log table and a Clear action. The FSD's System section covers only backups, and a BA would list this screen.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:151 routes /system/events; frontend/src/System/Events/LogsTable.tsx:116-124 Clear button, :138-144 FilterMenu, :149 'Events' heading, :159-170 table."
+  },
+  "Lf698bcabf4": {
+    "verdict": "real",
+    "reason": "System > Log Files lets the user list, download and clear log files. The FSD covers log level and file size in settings but not this screen; it is minor, yet still a screen a BA would write down.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:153 routes /system/logs/files; frontend/src/System/Logs/LogFiles.tsx:97-100 Clear button, :105-106 heading; LogFilesTableRow.tsx:22-27 shows filename, last write time and a download link."
+  },
+  "L48a0bdaca1": {
+    "verdict": "false",
+    "reason": "Trace is a selectable log level in the settings dropdown, as the FSD says. The finding only looked at a backend method that isn't where the choice is made.",
+    "evidence": "frontend/src/Settings/General/LoggingSettings.tsx:15-34 lists info, debug and trace; :64-70 renders them as a select on logLevel."
+  },
+  "Laad4cdfb0e": {
+    "verdict": "false",
+    "reason": "The API rejects negative delays, so the code does what the FSD says. The page just didn't state the rule.",
+    "evidence": "src/Sonarr.Api.V3/Profiles/Delay/DelayProfileController.cs:24-25 has RuleFor UsenetDelay and TorrentDelay GreaterThanOrEqualTo(0)."
+  },
+  "L0c6d91c33a": {
+    "verdict": "real",
+    "reason": "Import Lists is a full settings screen (lists, options, exclusions, test and manage) that adds series automatically. The FSD only mentions import lists in passing as something tags link to.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:122 routes /settings/importlists; frontend/src/Settings/ImportLists/ImportListSettings.tsx:90-102 test-all and manage buttons, :125-132 ImportLists, ImportListOptions, ImportListExclusions."
+  },
+  "L03b08d81c3": {
+    "verdict": "false",
+    "reason": "Series type does change how searches are made: daily and anime series take their own search paths. The page only described the popover.",
+    "evidence": "src/NzbDrone.Core/IndexerSearch/ReleaseSearchService.cs:63-71 SearchDaily for Daily, :74-84 SearchAnime for Anime, :118-125 the same split for season searches."
+  },
+  "Lc5075fde86": {
+    "verdict": "real",
+    "reason": "Library Import is a second way to add series, from existing folders under a root folder. The FSD's 'Adding a series' section covers only the Add New search, and a BA would document this flow.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:56-58 routes /add/import and /add/import/:rootFolderId; frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx:63-67 'ImportSeries' page, :79 LibraryImportSeriesHeader."
+  },
+  "L669384f23d": {
+    "verdict": "false",
+    "reason": "Debug is a selectable log level in the settings dropdown, as the FSD says. The finding only looked at a backend method that isn't where the choice is made.",
+    "evidence": "frontend/src/Settings/General/LoggingSettings.tsx:22-27 has the debug option; :64-70 renders the select; src/NzbDrone.Core/Configuration/ConfigFileProvider.cs:270 reads LogLevel, default debug."
+  },
+  "L9be2055e2e": {
+    "verdict": "false",
+    "reason": "Closest call in the sample. The calendar's All / Monitored Only filter shows or hides unmonitored episodes, and downloaded episodes are marked, which is the sensible meaning of the sentence; read word for word, though, monitored episodes themselves can't be hidden.",
+    "evidence": "frontend/src/Calendar/useCalendar.ts:17-34 filters All and Monitored Only, :36-41 custom filter on 'unmonitored' only; frontend/src/Calendar/getStatusStyle.ts:13-14 returns 'downloaded'; frontend/src/Calendar/Legend/Legend.tsx:103 has a downloaded legend item."
+  },
+  "L48708cba00": {
+    "verdict": "false",
+    "reason": "The series' quality profile does decide what gets downloaded, because releases are checked against it. The page only listed the field.",
+    "evidence": "src/NzbDrone.Core/DecisionEngine/Specifications/QualityAllowedByProfileSpecification.cs:22-26 reads subject.Series.QualityProfile.Value and checks qualityOrGroup.Allowed."
+  },
+  "L1637b1c24c": {
+    "verdict": "real",
+    "reason": "Media Management is a large settings screen (episode naming, folders, importing, file management, permissions, root folders) that the FSD doesn't describe. Renaming and file handling are behaviour a BA would write down.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:104 routes /settings/mediamanagement; frontend/src/Settings/MediaManagement/MediaManagement.tsx:224 Naming, :251 Folders, :294 Importing, :552 FileManagement, :697 Permissions, :764-768 RootFolders."
+  },
+  "L27fcdfab08": {
+    "verdict": "false",
+    "reason": "The library screen and API list all series the user has added, so the code matches. The finding complains about a page that didn't state something this basic.",
+    "evidence": "src/Sonarr.Api.V3/Series/SeriesController.cs:107,121 GET returns _seriesService.GetAllSeries(); frontend/src/App/AppRoutes.tsx:52 routes /series to SeriesIndex."
+  }
+}
