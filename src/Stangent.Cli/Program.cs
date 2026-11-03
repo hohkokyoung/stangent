@@ -2,6 +2,7 @@ using System.CommandLine;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.State;
 using Stangent.Core.DataCheck;
 using Stangent.Core.Phases;
 using Stangent.Core.Store;
@@ -138,6 +139,18 @@ dataCheck.SetAction(pr => Cli.Run(pr, "data check", _ =>
     throw new CheckFailed("client_data_found", "Client data found; see result.findings.", report);
 }));
 data.Subcommands.Add(dataCheck);
+
+var state = new Command("state", "Lifecycles: what moved, when and who moved it (D114).");
+root.Subcommands.Add(state);
+var stateKindArg = new Argument<string>("kind") { Description = "The lifecycle: " + string.Join(", ", StateKinds.All.Select(k => k.Name)) + "." };
+var stateIdArg = new Argument<string>("id") { Description = "The item's id." };
+var stateHistory = new Command("history", "One item's moves, oldest first.") { stateKindArg, stateIdArg };
+stateHistory.SetAction(pr => Cli.Run(pr, "state history", ctx => new JsonObject
+{
+    ["kind"] = pr.GetValue(stateKindArg)!, ["id"] = pr.GetValue(stateIdArg)!,
+    ["moves"] = new JsonArray([.. StateChanges.History(ctx.Repo.Root, pr.GetValue(stateKindArg)!, pr.GetValue(stateIdArg)!).Select(m => (JsonNode)m.ToJson())]),
+}));
+state.Subcommands.Add(stateHistory);
 
 var graph = new Command("graph", "The code graph (D25–D27): build it, then ask what a change affects.");
 root.Subcommands.Add(graph);

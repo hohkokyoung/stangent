@@ -1,0 +1,112 @@
+namespace Stangent.Core.State;
+
+/// <summary>Who made a move. <c>code</c> and <c>person</c> may; an <c>agent</c> never decides state (D18, D60).</summary>
+public sealed record StateActor(string Kind, string Name)
+{
+    public const string CodeKind = "code", PersonKind = "person", AgentKind = "agent";
+    public static StateActor Code(string name) => new(CodeKind, name);
+    public static StateActor Person(string name) => new(PersonKind, name);
+    public static StateActor Agent(string name) => new(AgentKind, name);
+}
+
+/// <summary>One legal move and who may make it.</summary>
+public sealed record StateRule(string From, string To, IReadOnlyList<string> Who);
+
+/// <summary>
+/// One lifecycle: its first states and its legal moves. <see cref="Field"/> is the JSON field that holds the state, when
+/// the field holds the state's own name; <see cref="NullState"/> is the state a null or missing field means.
+/// </summary>
+public sealed record StateKind(string Name, string HistoryFile, IReadOnlyList<string> Initial, IReadOnlyList<StateRule> Moves,
+    string? Field = null, string? NullState = null, IReadOnlyList<string>? ClearedOnNull = null)
+{
+    public IEnumerable<string> States => Initial.Concat(Moves.SelectMany(m => new[] { m.From, m.To })).Distinct();
+}
+
+/// <summary>
+/// The tables (D114). Only real lifecycles are here: a stored thing moving over time, with code or a person deciding.
+/// What one command returned isn't (<c>docs/foundation.md</c>). No table lets an agent move anything.
+/// </summary>
+public static class StateKinds
+{
+    public const string Requirement = "requirement", Question = "question", TraceDecision = "trace-decision",
+        Proof = "proof", ProofConfirmation = "proof-confirmation", DraftPosted = "draft-posted",
+        PageRun = "page-run", LinkRun = "link-run", ReqRun = "req-run", TicketMatch = "ticket-match", TicketStep = "ticket-step";
+
+    // Committed state gets committed history; run state in .stangent/ gets history beside it, ignored the same way.
+    const string RequirementHistory = "specs/requirements/history.jsonl", TraceHistory = "specs/trace-history.jsonl",
+        TicketHistory = ".stangent/tickets/state-history.jsonl";
+
+    static readonly string[] Code = [StateActor.CodeKind], Person = [StateActor.PersonKind];
+    static StateRule By(string[] who, string from, string to) => new(from, to, who);
+    static StateRule[] Each(string[] who, string from, params string[] to) => [.. to.Select(t => By(who, from, t))];
+
+    static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "defer"];
+    static readonly string[] Outcomes = ["reproduced", "not-reproduced", "not-reproduced-flaky", "not-provable", "failed"];
+
+    public static readonly IReadOnlyList<StateKind> All =
+    [
+        // Approval is a person's (D99); anything that changes an item drops it back (D11). A retired id never returns.
+        new(Requirement, RequirementHistory, ["proposed"],
+        [
+            By(Person, "proposed", "approved"), By(Code, "approved", "proposed"),
+            By(Code, "proposed", "retired"), By(Code, "approved", "retired"),
+        ], Field: "status"),
+
+        // A question that goes away is closed, never deleted; the same words on the same text open it again.
+        new(Question, RequirementHistory, ["open"], [By(Code, "open", "dropped"), By(Code, "dropped", "open")], Field: "status"),
+
+        // D58: a person decides and can change their mind. Code only ever drops a decision back. A person removing one
+        // by hand in a PR is seen when the merge is attributed.
+        new(TraceDecision, TraceHistory, ["undecided"],
+        [
+            .. Decisions.Select(d => By(Person, "undecided", d)),
+            .. Decisions.SelectMany(from => Decisions.Where(to => to != from).Select(to => By(Person, from, to))),
+            .. Decisions.Select(d => new StateRule(d, "undecided", [StateActor.CodeKind, StateActor.PersonKind])),
+        ], Field: "decision", NullState: "undecided", ClearedOnNull: ["decided_by"]),
+
+        // The latest attempt's outcome: any attempt can follow any other, so the table holds the values and who moves them.
+        new(Proof, TicketHistory, Outcomes,
+            [.. Outcomes.SelectMany(from => Outcomes.Where(to => to != from).Select(to => By(Code, from, to)))], Field: "outcome"),
+
+        // D96: only a developer makes a reproduced failure a bug. A new attempt clears it. Confirming again names a new person.
+        new(ProofConfirmation, TicketHistory, ["unconfirmed"],
+        [
+            By(Person, "unconfirmed", "confirmed"), By(Person, "confirmed", "confirmed"), By(Code, "confirmed", "unconfirmed"),
+        ], NullState: "unconfirmed"),
+
+        // D74: posted under a person's own login. --again posts twice. Making the draft again starts it over.
+        new(DraftPosted, TicketHistory, ["unposted"],
+        [
+            By(Person, "unposted", "posted"), By(Person, "posted", "posted"), By(Code, "posted", "unposted"),
+        ], NullState: "unposted"),
+
+        // The AI steps' runs (D60). `prepare` starts a new run from nothing, so a restart is a first state, not a move.
+        new(PageRun, ".stangent/spec/state-history.jsonl", ["write"],
+        [
+            .. Each(Code, "write", "verify", "failed"), .. Each(Code, "verify", "fix", "done", "failed"), .. Each(Code, "fix", "done", "failed"),
+        ], Field: "stage"),
+
+        new(LinkRun, ".stangent/fsd/state-history.jsonl", ["find", "judge"],
+        [
+            By(Code, "find", "failed"), .. Each(Code, "judge", "confirm", "done", "failed"), .. Each(Code, "confirm", "done", "failed"),
+        ], Field: "stage"),
+
+        new(ReqRun, ".stangent/req/state-history.jsonl", ["write"],
+        [
+            .. Each(Code, "write", "confirm", "failed"), .. Each(Code, "confirm", "fix", "done", "failed"),
+            .. Each(Code, "fix", "reconfirm", "done", "failed"), .. Each(Code, "reconfirm", "done", "failed"),
+        ], Field: "stage"),
+
+        new(TicketMatch, TicketHistory, ["pick"], [.. Each(Code, "pick", "confirm", "done"), By(Code, "confirm", "done")], Field: "stage"),
+
+        // Points, prove and drafts: a run with no stage yet is running. `check` has no guard on these, so a second check
+        // can move a finished run either way (listed as questionable in phases/0-foundation.md).
+        new(TicketStep, TicketHistory, ["running"],
+        [
+            .. Each(Code, "running", "done", "failed"), By(Code, "failed", "done"), By(Code, "done", "failed"),
+        ], Field: "stage", NullState: "running"),
+    ];
+
+    public static StateKind Get(string name) => All.FirstOrDefault(k => k.Name == name)
+        ?? throw new StangentException("unknown_state_kind", $"No lifecycle named '{name}'. There are: {string.Join(", ", All.Select(k => k.Name))}.", ExitCodes.Usage);
+}

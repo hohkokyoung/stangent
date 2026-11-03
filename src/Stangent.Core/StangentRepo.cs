@@ -195,7 +195,7 @@ public sealed class StangentRepo
     public const string ConfigFile = "stangent.yaml";
 
     /// <summary>Lines <c>stangent init</c> adds to the repo's .gitignore: derived and run data, never committed (D7, D21; AI run files, D52).</summary>
-    public static readonly string[] GitIgnoreLines = [".stangent/index.sqlite*", ".stangent/telemetry/", ".stangent/spec/", ".stangent/tickets/"];
+    public static readonly string[] GitIgnoreLines = [".stangent/index.sqlite*", ".stangent/telemetry/", ".stangent/spec/", ".stangent/fsd/", ".stangent/req/", ".stangent/tickets/"];
 
     static readonly IDeserializer Reader = new DeserializerBuilder()
         .WithNamingConvention(CamelCaseNamingConvention.Instance)
