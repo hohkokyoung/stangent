@@ -58,7 +58,7 @@ jobs:
           [ "$(stangent status | jq -r '.result.ai.enabled')" = true ] || exit 0
           .stangent-src/plugin/scripts/spec-run.sh --jobs 4 --stale | tee regenerated.tsv
         env: { CLAUDE_CODE_OAUTH_TOKEN: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}" }
-      # Regenerated statements can move quotes: decisions whose quotes no longer match drop back to undecided (D58).
+      # Regenerated statements can move quotes or change words: decisions whose quotes no longer match, or whose statement changed, drop back to undecided (D58, D118).
       - run: stangent trace check --fix || true
       - run: |
           [ -n "$(git status --porcelain -- specs)" ] || exit 0

@@ -65,7 +65,7 @@ public static class StateKinds
             .. Decisions.Select(d => By(Person, "undecided", d)),
             .. Decisions.SelectMany(from => Decisions.Where(to => to != from).Select(to => By(Person, from, to))),
             .. Decisions.Select(d => new StateRule(d, "undecided", [StateActor.CodeKind, StateActor.PersonKind])),
-        ], Field: "decision", NullState: "undecided", ClearedOnNull: ["decided_by"]),
+        ], Field: "decision", NullState: "undecided", ClearedOnNull: ["decided_by", "decided_on"]),
 
         // D118: code starts a finding ungraded and a person grades it, and can change their mind. An agent never does, and code can't judge the effect on users.
         new(FindingSeverity, TraceHistory, [Severity.Ungraded],

@@ -28,12 +28,16 @@ public static partial class TraceFindings
     static PermanentIds Ledger(string root) => new(LedgerFile(root), Path.Combine(root, ".stangent", "fsd", "trace-ids.lock"));
 
     /// <summary>
-    /// Gives every finding what it lacks: an id, its first severity, and any evidence record it doesn't have yet. A record already
-    /// there isn't rewritten, so one that's been damaged is seen by <see cref="Check"/>. Ids nothing holds any more are marked removed.
-    /// Returns whether the file needs saving.
+    /// Gives every finding what it lacks, an id and its first severity, and derives its evidence again from what's current. Evidence
+    /// is code's own, so a finding's records are replaced when each is what code derives now, or what code wrote before: the base's
+    /// copy when there is a base, else the file's own <c>evidence_hash</c>. Any other record is left where <see cref="Check"/> sees it,
+    /// and named in <paramref name="refused"/>. Ids nothing holds any more are marked removed. Returns whether the file needs saving.
     /// </summary>
-    public static bool Stamp(string root, JsonObject trace, SpecIndex index)
+    /// <param name="baseFindings">The base file's findings by id, or null when the check has no base.</param>
+    /// <param name="refused">Filled with each finding's records that nobody but a person could have written.</param>
+    public static bool Stamp(string root, JsonObject trace, SpecIndex index, IReadOnlyDictionary<string, JsonObject>? baseFindings, Dictionary<string, List<string>> refused)
     {
+        refused.Clear();
         var entries = TraceFile.Sorted(trace["entries"]!.AsArray()).ToList();
         var findings = entries.Where(IsFinding).ToList();
         if (findings.Count == 0 && !File.Exists(LedgerFile(root))) return false;
@@ -55,15 +59,32 @@ public static partial class TraceFindings
             var id = (string)e["finding"]!;
             if (e["severity"] is null)
                 StateChanges.Apply(root, e, StateKinds.FindingSeverity, id, Severity.Ungraded, StateActor.Code(CheckerName), "a new finding starts ungraded");
-            var evidence = e["evidence"] as JsonArray ?? [];
-            var have = evidence.OfType<JsonObject>().Select(r => (string?)r["id"]).OfType<string>().ToHashSet(StringComparer.Ordinal);
-            var checkers = Checkers(e, runs);
-            foreach (var record in Records(e, id, documents, index, repo, checkers).Where(r => !have.Contains((string)r["id"]!)))
-                evidence.Add((JsonNode)record);
-            foreach (var record in evidence.OfType<JsonObject>()) SyncPerson(record, (string?)e["decided_by"]);
+            var derived = Records(e, id, documents, index, repo, Checkers(e, runs)).ToList();
+            foreach (var record in derived) SyncPerson(record, (string?)e["decided_by"]);
+            var filed = e["evidence"] as JsonArray ?? [];
+            var typed = Typed(e, filed, derived, baseFindings is null ? null : baseFindings.GetValueOrDefault(id)?["evidence"] as JsonArray ?? [], baseFindings is null);
+            if (typed.Count > 0)
+            {
+                refused[id] = [.. typed.Select(r => (r as JsonObject)?["id"]?.GetValueKind() == System.Text.Json.JsonValueKind.String ? (string)r!["id"]! : "(no id)")];
+                // Stays as it is, hash and all, so the refusal holds until a person deletes it. A record they deleted comes back.
+                var have = filed.OfType<JsonObject>().Select(r => r["id"]?.GetValueKind() == System.Text.Json.JsonValueKind.String ? (string?)r["id"] : null).OfType<string>().ToHashSet(StringComparer.Ordinal);
+                foreach (var record in derived.Where(r => !have.Contains((string)r["id"]!))) filed.Add((JsonNode)record);
+                e["evidence"] = filed;
+                continue;
+            }
+            var evidence = new JsonArray([.. derived.Select(r => (JsonNode)r)]);
             e["evidence"] = evidence;
+            e["evidence_hash"] = TraceFile.EvidenceHash(evidence);
         }
         return trace.ToJsonString() != before;
+    }
+
+    /// <summary>The records code can't vouch for: not what it derives now, and not what it wrote before.</summary>
+    static List<JsonNode?> Typed(JsonObject e, JsonArray filed, List<JsonObject> derived, JsonArray? baseEvidence, bool useHash)
+    {
+        var hashHolds = useHash && (string?)e["evidence_hash"] == TraceFile.EvidenceHash(filed);
+        return [.. filed.Where(r => !derived.Exists(d => JsonNode.DeepEquals(d, r))
+            && !(hashHolds || baseEvidence is not null && baseEvidence.Any(b => JsonNode.DeepEquals(b, r))))];
     }
 
     static int Number(string id) => int.TryParse(id.Split('-').Last(), out var n) ? n : 0;
@@ -124,6 +145,8 @@ public static partial class TraceFindings
             if (lines["symbols"]?[cite] is not JsonObject at_ || (string?)at_["file"] is not { } path) continue;
             var code = new JsonObject { ["kind"] = "code", ["ref"] = $"{repo.Value}/{path}", ["symbol"] = cite };
             if (at_["start"] is not null) code["lines"] = new JsonObject { ["start"] = (int)at_["start"]!, ["end"] = (int)at_["end"]! };
+            // Whatever limits these lines goes with them, so a partial type's first part isn't read as the whole type.
+            if (((string?)at_["note"] ?? (string?)at_["why"]) is { } limit) code["note"] = limit;
             yield return new JsonObject { ["id"] = $"{id}.code.{n}", ["citation"] = code, ["commit"] = at, ["strength"] = "read", ["checkedBy"] = Checked() };
         }
     }
@@ -132,10 +155,13 @@ public static partial class TraceFindings
     /// Everything wrong with a finding's evidence, as one line each: the contract's own validator, then what it can't know. Evidence
     /// mustn't cite a finding, because an opinion can't back up a claim about today's behaviour (D53).
     /// </summary>
-    public static IEnumerable<string> Check(JsonObject e, IReadOnlySet<string>? nodes)
+    /// <param name="refused">This finding's records that aren't code's, from <see cref="Stamp"/>.</param>
+    public static IEnumerable<string> Check(JsonObject e, IReadOnlySet<string>? nodes, IEnumerable<string>? refused = null)
     {
         var id = (string?)e["finding"] ?? (string)e["id"]!;
         if (e["evidence"] is not JsonArray { Count: > 0 } evidence) { yield return $"{id}: a finding needs evidence, and code found nothing to cite"; yield break; }
+        foreach (var record in refused ?? [])
+            yield return $"{id}: evidence {record}: it isn't what code derives from the current inputs, and evidence is never typed; delete it and the next check writes what's true";
         foreach (var node in evidence)
         {
             var problems = EvidenceValidator.Validate(node?.ToJsonString() ?? "null");

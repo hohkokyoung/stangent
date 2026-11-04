@@ -65,6 +65,7 @@ public static class PageRender
             md.Append($"{i + 1}. {Link(cited[i], pathOf, self)}");
             var symbol = lines?["symbols"]?[cited[i]] as JsonObject;
             if (PageLines.Cite(symbol) is { } cite) md.Append($" · `{cite}`");
+            if ((string?)symbol?["note"] is { } note) md.Append($" · {note}");
             if (wholePage is null && (string?)symbol?["why"] is { } why) md.Append($" · no lines: {why}");
             md.Append('\n');
         }

@@ -18,11 +18,10 @@ public static class PageLines
 
     public static JsonObject? Load(string pageJson) => PageRun.LoadJson(FileFor(pageJson)) as JsonObject;
 
-    /// <summary>Why nothing on the page can be cited, or null. A dirty tree stops all of it, not only the files that differ.</summary>
+    /// <summary>Why nothing on the page can be cited, or null. A dirty tree doesn't: a file that differs is answered per symbol, and a clean file's lines at the commit are still right.</summary>
     static string? PageWide(CodeGraph graph) =>
         SymbolLines.CommitOf(graph) is null ? "the graph wasn't built at a git commit"
         : graph.DirtyFiles is null || graph.NotInCommit is null ? "the graph doesn't say whether its tree was clean; rebuild it"
-        : graph.DirtyFiles.Count > 0 ? $"the graph's tree was dirty ({graph.DirtyFiles.Count} file(s) differed from the commit); rebuild it on a clean tree and run `stangent spec cite`"
         : null;
 
     public static JsonObject Build(JsonObject page, CodeGraph graph, Func<string, SymbolLines?> lookup)
@@ -44,7 +43,12 @@ public static class PageLines
         // A file that may not match the commit is never cited; ToCitation holds that rule.
         if (at.ToCitation("") is null) return new JsonObject { ["why"] = at.Note ?? "this symbol has no place in a file" };
         var o = new JsonObject { ["file"] = at.File };
-        if (at.StartLine is { } start && at.EndLine is { } end) { o["start"] = start; o["end"] = end; }
+        if (at.StartLine is { } start && at.EndLine is { } end)
+        {
+            o["start"] = start; o["end"] = end;
+            // Citable lines carry a note only when they aren't the whole of it: a partial type's first part.
+            if (at.Note is { } note) o["note"] = note;
+        }
         else o["why"] = at.Note ?? "the graph doesn't hold this symbol's lines";
         return o;
     }

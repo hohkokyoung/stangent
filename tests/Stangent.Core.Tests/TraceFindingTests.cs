@@ -240,6 +240,297 @@ public class TraceFindingTests
         Assert.Equal((string)entry["id"]!, (string)Entry(app)["id"]!);
     }
 
+    // ---- Evidence is code's own ----
+
+    static List<JsonObject> Records(SpecApp app) => [.. Entry(app)["evidence"]!.AsArray().OfType<JsonObject>()];
+
+    const string Rule = "Orders over 100 are refused with \"Orders over 100 need approval\".";
+
+    static void Record(SpecApp app, params string[] cites) => StatementIdTests.Regenerate(app, StatementIdTests.Writer(rules: [StatementIdTests.S(Rule, cites)]));
+
+    [Fact]
+    public void Evidence_follows_a_page_recorded_again_and_keeps_its_person_and_a_second_check_changes_nothing()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        SavedWorkTests.CleanGraph(app);
+        PageLines.Refresh(app.Root, GraphStore.Load(GraphStore.PathFor(app.Repo))!, null);
+        Save(app, Conflict());
+        Check(app);
+        Change(app, e => { e["decision"] = "code-wrong"; e["decided_by"] = "bob"; });
+        var baseTrace = TraceFile.Load(app.Root);
+        Assert.True((bool)Check(app, null, baseTrace)["ok"]!);
+        Assert.Equal(SpecApp.Place, (string)Records(app).Single(r => (string)r["id"]! == "X-0001.code.1")["citation"]!["symbol"]!);
+
+        // Page R1 is the same words, cited from another symbol, at another commit.
+        SavedWorkTests.CleanGraph(app, commit: 'b');
+        Record(app, SpecApp.Create);
+        foreach (var against in new[] { null, baseTrace })
+        {
+            var report = Check(app, GraphStore.Load(GraphStore.PathFor(app.Repo))!, against);
+            Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report)));
+        }
+
+        var code = Records(app).Single(r => (string)r["citation"]!["kind"]! == "code");
+        Assert.Equal(("X-0001.code.1", SpecApp.Create, new string('b', 40)), ((string)code["id"]!, (string)code["citation"]!["symbol"]!, (string)code["commit"]!));
+        Assert.DoesNotContain(SpecApp.Place, Entry(app)["evidence"]!.ToJsonString());
+        Assert.All(Records(app), r => Assert.Contains(r["checkedBy"]!.AsArray(), c => (string)c!["kind"]! == "person" && (string)c["name"]! == "bob"));
+        var once = File.ReadAllText(TraceFile.PathIn(app.Root));
+        Check(app, GraphStore.Load(GraphStore.PathFor(app.Repo))!);
+        Assert.Equal(once, File.ReadAllText(TraceFile.PathIn(app.Root)));
+    }
+
+    static JsonObject TypedTest() => new()
+    {
+        ["id"] = "X-0001.test.1", ["citation"] = new JsonObject { ["kind"] = "test", ["ref"] = "shop/Tests/Nope.cs", ["symbol"] = "Nope" },
+        ["commit"] = new string('a', 40), ["strength"] = "ran", ["checkedBy"] = new JsonArray(new JsonObject { ["kind"] = "code", ["name"] = "typed by hand" }),
+    };
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Typed_evidence_is_refused_by_name_and_fix_does_not_launder_it(bool fix)
+    {
+        var (app, _) = App();
+        using var _d = app;
+        Save(app, Conflict());
+        Check(app);
+        Change(app, e => e["evidence"]!.AsArray().Add((JsonNode)TypedTest()));
+        var report = Check(app, fix: fix);
+        Assert.False((bool)report["ok"]!);
+        Assert.Contains(Problems(report), p => p.StartsWith("X-0001: evidence X-0001.test.1: it isn't what code derives", StringComparison.Ordinal));
+        Assert.Contains(Records(app), r => (string)r["id"]! == "X-0001.test.1");
+
+        // The way out: delete it. Code writes what's true.
+        Change(app, e => { var ev = e["evidence"]!.AsArray(); ev.Remove(ev.Single(r => (string)r!["id"]! == "X-0001.test.1")); });
+        Assert.True((bool)Check(app, fix: fix)["ok"]!);
+        Assert.DoesNotContain(Records(app), r => (string)r["id"]! == "X-0001.test.1");
+    }
+
+    [Fact]
+    public void A_value_typed_over_a_real_record_is_refused_and_a_person_typed_on_it_too()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        Save(app, Conflict());
+        Check(app);
+        Change(app, e => e["evidence"]![0]!["checkedBy"]!.AsArray().Add((JsonNode)new JsonObject { ["kind"] = "person", ["name"] = "nobody-asked" }));
+        // A person only comes from decided_by, so this one drops on the record, and that record doesn't equal what code derives.
+        Assert.Contains(Problems(Check(app)), p => p.StartsWith("X-0001: evidence X-0001.fsd:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Typed_evidence_with_its_hash_worked_out_is_still_refused_against_the_base()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        Save(app, Conflict());
+        Check(app);
+        var baseTrace = TraceFile.Load(app.Root);
+        Change(app, e =>
+        {
+            e["evidence"]!.AsArray().Add((JsonNode)TypedTest());
+            e["evidence_hash"] = TraceFile.EvidenceHash(e["evidence"]!.AsArray());
+        });
+        Assert.Contains(Problems(Check(app, null, baseTrace)), p => p.Contains("evidence X-0001.test.1: it isn't what code derives"));
+    }
+
+    [Fact]
+    public void A_partial_types_note_goes_on_the_evidence_and_it_stays_valid()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        SavedWorkTests.CleanGraph(app);
+        const string Partial = "a partial type: these lines are its first part, and it has members outside them";
+        var file = new SpecPaths(app.Root).PageJson(app.Pages().Find(SpecApp.Post)!);
+        var graph = GraphStore.Load(GraphStore.PathFor(app.Repo))!;
+        PageLines.Write(file, PageLines.Build(SpecIndex.Load(app.Root).Pages[SpecApp.Post], graph,
+            id => new SymbolLines(id, "type", "OrderService", "Core/OrderService.cs", 1, 5, new string('a', 40), true, false, ["Core/OrderService.B.cs"], Partial)));
+        Save(app, Conflict());
+        var report = Check(app);
+        Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report)));
+        var code = Records(app).Single(r => (string)r["citation"]!["kind"]! == "code");
+        Assert.Equal((Partial, 1, 5), ((string)code["citation"]!["note"]!, (int)code["citation"]!["lines"]!["start"]!, (int)code["citation"]!["lines"]!["end"]!));
+        Assert.Empty(EvidenceValidator.Validate(code.ToJsonString()));
+    }
+
+    [Fact]
+    public void A_dirty_file_gets_no_code_evidence_and_a_clean_file_keeps_its_own()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        SavedWorkTests.CleanGraph(app, dirty: ["Core/OrderService.cs"]);
+        Record(app, SpecApp.Place, SpecApp.Create);
+        Save(app, Conflict());
+        var report = Check(app, GraphStore.Load(GraphStore.PathFor(app.Repo))!);
+        Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report)));
+        var code = Records(app).Where(r => (string)r["citation"]!["kind"]! == "code").ToList();
+        Assert.Equal(SpecApp.Create, (string)Assert.Single(code)["citation"]!["symbol"]!);
+    }
+
+    // ---- A decision rests on the words it was made on ----
+
+    const string Flipped = "Orders over 100 are refused is never done; any order is accepted.";
+
+    static JsonObject Decided()
+    {
+        var link = LinkRun.Entry("agree", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "R1", Page100, "judge", "confirmed", null);
+        link["decision"] = "agree";
+        link["decided_by"] = "bob";
+        return link;
+    }
+
+    static void Rephrase(SpecApp app, string text) =>
+        StatementIdTests.Regenerate(app, StatementIdTests.Writer(rules: [StatementIdTests.S(text, SpecApp.Place)]));
+
+    [Fact]
+    public void A_rephrase_that_flips_the_meaning_keeps_its_id_and_the_decision_drops_back_and_is_reported()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        Save(app, Decided());
+        Assert.True((bool)Check(app)["ok"]!);
+        var id = (string)Entry(app)["id"]!;
+        Assert.Equal(TraceFile.QuoteHash(Rule), (string)Entry(app)["decided_on"]!);
+
+        Rephrase(app, Flipped);
+        Assert.Equal(Flipped, (string)SpecIndex.Load(app.Root).Statement(SpecApp.Post, "R1")!["text"]!);
+
+        var plain = Check(app);
+        Assert.False((bool)plain["ok"]!);
+        Assert.Contains(Problems(plain), p => p.StartsWith(id, StringComparison.Ordinal) && p.Contains("changed after this decision was made"));
+        Assert.Equal("agree", (string)Entry(app)["decision"]!);
+
+        var report = Check(app, fix: true);
+        Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report)));
+        Assert.Empty(report["staleQuotes"]!.AsArray());
+        Assert.Equal((id, "R1", "agree"), ((string)report["changedStatements"]![0]!["entry"]!, (string)report["changedStatements"]![0]!["statement"]!, (string)report["changedStatements"]![0]!["was"]!));
+        Assert.Equal(1, (int)report["counts"]!["changedStatements"]!);
+        Assert.Equal((null, null, null), ((string?)Entry(app)["decision"], (string?)Entry(app)["decided_by"], (string?)Entry(app)["decided_on"]));
+        var move = StateChanges.History(app.Root, StateKinds.TraceDecision, id)[^1];
+        Assert.Equal(("agree", "undecided", "code"), (move.From, move.To, move.Who.Kind));
+        Assert.Contains("the statement it was decided on changed", move.Reason);
+    }
+
+    [Fact]
+    public void A_decision_on_a_finding_drops_back_and_its_evidence_stops_naming_the_person_in_one_go()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        var entry = Conflict();
+        entry["decision"] = "code-wrong";
+        entry["decided_by"] = "bob";
+        Save(app, entry);
+        Check(app);
+        Rephrase(app, Flipped);
+        Check(app, fix: true);
+        Assert.Null(Entry(app)["decision"]);
+        Assert.DoesNotContain(Records(app).SelectMany(r => r["checkedBy"]!.AsArray()), c => (string)c!["kind"]! == "person");
+        var once = File.ReadAllText(TraceFile.PathIn(app.Root));
+        Check(app);
+        Assert.Equal(once, File.ReadAllText(TraceFile.PathIn(app.Root)));
+    }
+
+    [Fact]
+    public void Only_whitespace_changing_is_not_a_changed_statement()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        Save(app, Decided());
+        Check(app);
+        Change(app, e => e["decided_on"] = TraceFile.QuoteHash("  Orders  over 100 are refused with\n\"Orders over 100 need approval\". "));
+        var report = Check(app, fix: true);
+        Assert.True((bool)report["ok"]!);
+        Assert.Equal("agree", (string)Entry(app)["decision"]!);
+    }
+
+    [Fact]
+    public void A_file_with_no_stored_hash_gets_one_at_first_check_and_drops_nothing()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        Rephrase(app, Rule + " Always.");
+        Save(app, Decided());
+        Assert.Null(Entry(app)["decided_on"]);
+        var report = Check(app);
+        Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report)));
+        Assert.Empty(report["changedStatements"]!.AsArray());
+        Assert.Equal(("agree", "bob", TraceFile.QuoteHash(Rule + " Always.")), ((string)Entry(app)["decision"]!, (string)Entry(app)["decided_by"]!, (string)Entry(app)["decided_on"]!));
+        Assert.Empty(StateChanges.History(app.Root, StateKinds.TraceDecision, (string)Entry(app)["id"]!));
+    }
+
+    [Theory]
+    [InlineData("approve")]
+    [InlineData("attribute")]
+    [InlineData("rejudge")]
+    public void A_decision_is_tied_before_a_regeneration_whichever_way_it_was_made(string how)
+    {
+        var (app, _) = App();
+        using var _d = app;
+        var link = Decided();
+        link["decision"] = null;
+        link["decided_by"] = null;
+        Save(app, link);
+        var baseTrace = TraceFile.Load(app.Root);
+        switch (how)
+        {
+            case "approve":
+                Assert.Equal(1, TraceCheck.ApproveChapter(app.Root, "shop", "1", "bob"));
+                break;
+            case "attribute":
+                Change(app, e => e["decision"] = "agree");
+                Assert.Equal(1, TraceCheck.Attribute(app.Root, baseTrace, "bob"));
+                break;
+            case "rejudge":
+                // The same link judged again, after it was decided and tied: what it was decided on stays with it.
+                Change(app, e => { e["decision"] = "agree"; e["decided_by"] = "bob"; });
+                Check(app);
+                link["decision"] = null;
+                link["decided_by"] = null;
+                LinkRun.ApplyEntries(app.Root, "shop", "1", [link]);
+                break;
+        }
+        Assert.Equal(TraceFile.QuoteHash(Rule), (string)Entry(app)["decided_on"]!);
+        Rephrase(app, Flipped);
+        Assert.Single(Check(app, fix: true)["changedStatements"]!.AsArray());
+        Assert.Null(Entry(app)["decision"]);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Changing_what_a_decision_rests_on_by_hand_is_listed_against_the_base(bool delete)
+    {
+        var (app, _) = App();
+        using var _d = app;
+        Save(app, Decided());
+        Check(app);
+        var baseTrace = TraceFile.Load(app.Root);
+        Rephrase(app, Flipped);
+        Change(app, e => { if (delete) e.Remove("decided_on"); else e["decided_on"] = TraceFile.QuoteHash(Flipped); });
+        Assert.Contains(Problems(Check(app, null, baseTrace)), p => p.Contains("decided_on was changed in this change"));
+    }
+
+    [Fact]
+    public void What_a_decision_rests_on_and_the_evidence_hash_reach_no_hash_and_no_prompt()
+    {
+        var (app, verifier) = App();
+        using var _d = app;
+        Save(app, Decided(), Conflict());
+        Check(app);
+        var entries = TraceFile.Load(app.Root)["entries"]!.AsArray().OfType<JsonObject>().ToList();
+        var decidedOn = (string)entries.Single(e => e["decided_on"] is not null)["decided_on"]!;
+        var evidenceHash = (string)entries.Single(e => e["evidence_hash"] is not null)["evidence_hash"]!;
+        Assert.Equal(string.Join("\n", SavedWorkTests.Saved), string.Join("\n", SavedWorkTests.Hashes(app, verifier)));
+        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
+        foreach (var file in Directory.EnumerateFiles(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!), "*.md"))
+        {
+            var bundle = File.ReadAllText(file);
+            Assert.DoesNotContain(decidedOn, bundle);
+            Assert.DoesNotContain(evidenceHash, bundle);
+        }
+    }
+
     // ---- Severity ----
 
     [Fact]

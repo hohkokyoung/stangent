@@ -13,9 +13,9 @@ public class StatementIdTests
     const string Rule = "Orders over 100 are refused with \"Orders over 100 need approval\".";
     const string Effect = "Placing an order publishes OrderPlaced, which sends a receipt.";
 
-    static JsonObject S(string text, params string[] cites) => new() { ["text"] = text, ["cites"] = new JsonArray([.. cites.Select(c => (JsonNode)c)]) };
+    internal static JsonObject S(string text, params string[] cites) => new() { ["text"] = text, ["cites"] = new JsonArray([.. cites.Select(c => (JsonNode)c)]) };
 
-    static JsonObject Writer(JsonObject[]? shows = null, JsonObject[]? rules = null, JsonObject[]? effects = null) => new()
+    internal static JsonObject Writer(JsonObject[]? shows = null, JsonObject[]? rules = null, JsonObject[]? effects = null) => new()
     {
         ["title"] = "Place an order",
         ["shows"] = new JsonArray([.. (shows ?? []).Select(s => (JsonNode)s)]), ["actions"] = new JsonArray(),
@@ -24,7 +24,7 @@ public class StatementIdTests
     };
 
     /// <summary>The whole loop, for a page regenerated because its code changed: the writer's output in, the recorded page out.</summary>
-    static JsonObject Regenerate(SpecApp app, JsonObject output, JsonArray? findings = null, JsonObject? fix = null)
+    internal static JsonObject Regenerate(SpecApp app, JsonObject output, JsonArray? findings = null, JsonObject? fix = null)
     {
         var def = app.Pages().Find(SpecApp.Post)!;
         var file = new SpecPaths(app.Root).PageJson(def);
@@ -212,19 +212,39 @@ public class StatementIdTests
     }
 
     [Fact]
-    public void A_dirty_tree_writes_no_citation_at_all_and_the_page_says_why()
+    public void A_dirty_file_gets_no_citation_and_says_why_and_a_clean_file_keeps_its_own()
     {
         using var app = new SpecApp();
-        // Not even the file cited: the tree as a whole wasn't the commit.
-        SavedWorkTests.CleanGraph(app, dirty: ["web/src/Other.tsx"]);
-        Regenerate(app, Writer(rules: [S(Rule, SpecApp.Place)]));
+        // An untracked file is on this list too: the graph build puts it there.
+        SavedWorkTests.CleanGraph(app, dirty: ["Core/OrderService.cs", "web/src/Other.tsx"]);
+        Regenerate(app, Writer(rules: [S(Rule, SpecApp.Place, SpecApp.Create)]));
         var file = new SpecPaths(app.Root).PageJson(app.Pages().Find(SpecApp.Post)!);
         var lines = PageLines.Load(file)!;
-        Assert.Null(lines["commit"]);
+        Assert.Equal(new string('a', 40), (string?)lines["commit"]);
+        Assert.Null(lines["note"]);
         Assert.Null(PageLines.Cite(lines["symbols"]![SpecApp.Place]!.AsObject()));
+        Assert.Contains("differed from the commit", (string)lines["symbols"]![SpecApp.Place]!["why"]!);
+        Assert.Equal("Api/OrdersController.cs:4", PageLines.Cite(lines["symbols"]![SpecApp.Create]!.AsObject()));
         var md = File.ReadAllText(file[..^".json".Length] + ".md");
-        Assert.Contains("No lines are cited: the graph's tree was dirty", md);
+        Assert.Contains("no lines: this file differed from the commit", md);
+        Assert.Contains("`Api/OrdersController.cs:4`", md);
+        Assert.DoesNotContain("No lines are cited", md);
         Assert.DoesNotContain("OrderService.cs:3", md);
+    }
+
+    [Fact]
+    public void A_partial_types_lines_say_they_are_its_first_part_in_the_file_and_on_the_page()
+    {
+        using var app = new SpecApp();
+        SavedWorkTests.CleanGraph(app);
+        var page = Regenerate(app, Writer(rules: [S(Rule, SpecApp.Place)]));
+        const string Partial = "a partial type: these lines are its first part, and it has members outside them";
+        var graph = GraphStore.Load(GraphStore.PathFor(app.Repo))!;
+        var lines = PageLines.Build(page, graph, id => new SymbolLines(id, "type", "OrderService", "Core/OrderService.cs", 1, 5, new string('a', 40), true, false, ["Core/OrderService.B.cs"], Partial));
+        var symbol = lines["symbols"]![SpecApp.Place]!.AsObject();
+        Assert.Equal(("Core/OrderService.cs:1-5", Partial), (PageLines.Cite(symbol), (string?)symbol["note"]));
+        PageLines.Write(new SpecPaths(app.Root).PageJson(app.Pages().Find(SpecApp.Post)!), lines);
+        Assert.Contains($"`Core/OrderService.cs:1-5` · {Partial}", PageRender.Markdown(page, _ => null, lines));
     }
 
     [Fact]

@@ -296,8 +296,13 @@ Checked 2026-11-04 (D20): by grep, `Stangent.Spec` reads none of the new values,
 
 **Contracts (D20).** `reference-page` keeps its shape and stays v1. `reference-lines` v1 is new, consumed by 2b for 2.4.
 
+**Fresh check (2.3).** Found: a partial type's lines were cited as if whole, any dirty file stopped all citations, and a rephrase keeping its id let a decision survive a reversed meaning.
+
+**This round fixed them (D118).** Citations are per file, a partial type's note goes into the lines file, the evidence and the page, and `decided_on` ties a decision to the statement's text. No input hash moved.
+
+**Unconfirmed, not investigated further.** Sonarr's 194 saved pages already mismatch their recorded hashes under the old build, possibly from the clone being changed for 2c.
+
 **Known gaps.**
-- A dirty tree stops all citations, however small the difference.
 - A page's citations are at the graph's commit, which can be newer than the page's `generated.commit`. A page whose code changed is listed by `spec stale` and its citations still point at today's lines.
 - Deleting a ledger forgets retired numbers. The next run raises it only to the highest id still on the page.
 - `spec cite` renders Markdown with links only to recorded pages, where a page recorded in a run also links to one still to be generated.

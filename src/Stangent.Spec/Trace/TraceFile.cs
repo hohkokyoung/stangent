@@ -20,7 +20,7 @@ public static class TraceFile
     public static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "defer"];
 
     /// <summary>What a finding carries beyond its link (D118).</summary>
-    public static readonly string[] FindingFields = ["finding", "severity", "severity_by", "evidence"];
+    public static readonly string[] FindingFields = ["finding", "severity", "severity_by", "evidence", "evidence_hash"];
 
     public static string PathIn(string root) => Path.Combine(root, "specs", "trace.yaml");
 
@@ -77,6 +77,7 @@ public static class TraceFile
             if (e["note"] is not null) sb.Append($"    note: {S(e["note"])}\n");
             sb.Append($"    decision: {S(e["decision"])}\n");
             sb.Append($"    decided_by: {S(e["decided_by"])}\n");
+            if (e["decided_on"] is not null) sb.Append($"    decided_on: {S(e["decided_on"])}\n");
             if (e["finding"] is not null) sb.Append($"    finding: {S(e["finding"])}\n");
             if (e["severity"] is not null) sb.Append($"    severity: {S(e["severity"])}\n");
             if (e["severity_by"] is not null) sb.Append($"    severity_by: {S(e["severity_by"])}\n");
@@ -86,6 +87,7 @@ public static class TraceFile
                 sb.Append("    evidence:\n");
                 foreach (var record in evidence) sb.Append($"      - {record?.ToJsonString(Json) ?? "null"}\n");
             }
+            if (e["evidence_hash"] is not null) sb.Append($"    evidence_hash: {S(e["evidence_hash"])}\n");
         }
         return sb.ToString();
     }
@@ -128,4 +130,7 @@ public static class TraceFile
     public static bool IsRemovedSection(string? section) => section is not null && System.Text.RegularExpressions.Regex.IsMatch(section, @"^\(removed S-\d+\) ");
 
     public static string QuoteHash(string quote) => CanonicalJson.Hash(Quotes.Normalize(quote));
+
+    /// <summary>The evidence as code wrote it. Without a base to compare with, this is how an out-of-date record is told from a typed one.</summary>
+    public static string EvidenceHash(JsonArray evidence) => CanonicalJson.Hash(CanonicalJson.SerializeCompact(evidence));
 }

@@ -366,6 +366,8 @@ public static class LinkRun
             {
                 copy["decision"] = was["decision"]?.DeepClone();
                 copy["decided_by"] = was["decided_by"]?.DeepClone();
+                // What it was decided on stays too, or a re-judged link would tie an old decision to new words.
+                if (was["decided_on"] is not null) copy["decided_on"] = was["decided_on"]!.DeepClone();
                 // The same link is the same finding: its id, its grade and its evidence stay with it (D118).
                 foreach (var carried in TraceFile.FindingFields.Where(f => was[f] is not null)) copy[carried] = was[carried]!.DeepClone();
             }

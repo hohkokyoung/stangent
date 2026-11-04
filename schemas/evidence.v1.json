@@ -29,7 +29,8 @@
           }
         },
         "symbol": { "type": "string", "minLength": 1 },
-        "quote": { "type": "string", "minLength": 1 }
+        "quote": { "type": "string", "minLength": 1 },
+        "note": { "description": "What a reader must know about these lines, such as a partial type's first part only.", "type": "string", "minLength": 1 }
       }
     },
     "commit": {

@@ -22,6 +22,8 @@ public sealed record Citation
     public LineRange? Lines { get; init; }
     public string? Symbol { get; init; }
     public string? Quote { get; init; }
+    /// <summary>What a reader must know about these lines, such as a partial type's first part only.</summary>
+    public string? Note { get; init; }
 }
 
 public sealed record EvidenceChecker

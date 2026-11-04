@@ -45,9 +45,10 @@ public sealed class SpecIndex
 
 /// <summary>
 /// The CI checks on <c>specs/trace.yaml</c> (D58): the schema and allowed values; every id still the hash of its link;
-/// both quotes still in the current FSD section and page statement (else the decision drops back to undecided);
-/// every symbol a quoted statement cites in the graph; <c>decided_by</c> and <c>severity_by</c> never typed in a PR; and each finding's
-/// id, severity and evidence, which it issues where they're missing (D118).
+/// both quotes still in the current FSD section and page statement, and the statement's text still what the decision was made on
+/// (else the decision drops back to undecided); every symbol a quoted statement cites in the graph; <c>decided_by</c> and
+/// <c>severity_by</c> never typed in a PR; and each finding's id and severity, which it issues where they're missing, and its
+/// evidence, which it derives again on every check and refuses if typed (D118).
 /// </summary>
 public static class TraceCheck
 {
@@ -58,17 +59,20 @@ public static class TraceCheck
         var trace = TraceFile.Load(root);
         var problems = new List<string>();
         problems.AddRange(SchemaRegistry.Embedded.Validate(TraceFile.Schema, trace.ToJsonString()).Select(e => $"schema: {e}"));
-        if (problems.Count > 0) return Report(trace, problems, [], [], []);
+        if (problems.Count > 0) return Report(trace, problems, [], [], [], []);
 
         var index = SpecIndex.Load(root);
-        var stamped = TraceFindings.Stamp(root, trace, index);
         var nodes = graph?.AllNodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
         var typedBefore = (baseTrace?["entries"]?.AsArray() ?? []).OfType<JsonObject>().ToDictionary(e => (string)e["id"]!, e => (string?)e["decided_by"]);
         var baseByLink = TraceFile.ByLink(baseTrace?["entries"]?.AsArray() ?? []);
         var baseEntries = (baseTrace?["entries"]?.AsArray() ?? []).OfType<JsonObject>().ToList();
         var baseByFinding = baseEntries.Where(e => e["finding"] is not null).GroupBy(e => (string)e["finding"]!).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        var refused = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var stamped = TraceFindings.Stamp(root, trace, index, baseTrace is null ? null : baseByFinding, refused);
         var findingIds = new HashSet<string>(StringComparer.Ordinal);
         var stale = new List<string>();
+        var changed = new List<JsonNode>();
+        var changedIds = new List<string>();
         var retired = new List<JsonNode>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var requirements = new Lazy<HashSet<string>>(() => [.. Stangent.Spec.Requirements.RequirementFile.Docs(root).SelectMany(d => Stangent.Spec.Requirements.RequirementFile.Features(root, d))
@@ -88,7 +92,7 @@ public static class TraceCheck
             {
                 var finding = (string)e["finding"]!;
                 if (!findingIds.Add(finding)) problems.Add($"{id}: finding {finding} is used twice");
-                problems.AddRange(TraceFindings.Check(e, nodes));
+                problems.AddRange(TraceFindings.Check(e, nodes, refused.GetValueOrDefault(finding)));
                 // A finding's id is the same across a move, so the base's copy is found by it, or by its entry id when a person changed it.
                 var entryBefore = baseEntries.FirstOrDefault(b => (string)b["id"]! == id);
                 if ((string?)entryBefore?["finding"] is { } was && was != finding) problems.Add($"{id}: its finding id was {was} and is now {finding}; ids are issued by code");
@@ -130,6 +134,24 @@ public static class TraceCheck
                 stale.Add(id);
                 if (fix) StateChanges.Apply(root, e, StateKinds.TraceDecision, id, "undecided", StateActor.Code("stangent trace check"), "a quote no longer matches");
             }
+            else if (e["decision"] is null)
+            {
+                if (e["decided_on"] is not null) { e.Remove("decided_on"); stamped = true; }
+            }
+            else if (DecidedOn(e, index) is { } textNow)
+            {
+                var entryWas = baseEntries.FirstOrDefault(b => (string)b["id"]! == id) ?? baseByLink.GetValueOrDefault(TraceFile.LinkKey(e));
+                // A decision with its person still on it is the one the base holds: re-tying it to new words would keep it unchecked.
+                if (baseTrace is not null && e["decided_by"] is not null && (string?)entryWas?["decided_on"] is { } onBefore && (string?)e["decided_on"] != onBefore)
+                    problems.Add($"{id}: decided_on was changed in this change; code writes it, and it ties the decision to the statement's text");
+                else if ((string?)e["decided_on"] is not { } decidedOn) { e["decided_on"] = textNow; stamped = true; }
+                else if (decidedOn != textNow)
+                {
+                    changedIds.Add(id);
+                    changed.Add(new JsonObject { ["entry"] = id, ["page"] = (string)page!["id"]!, ["statement"] = (string)page["statement"]!, ["was"] = (string?)e["decision"] });
+                    if (fix) StateChanges.Apply(root, e, StateKinds.TraceDecision, id, "undecided", StateActor.Code("stangent trace check"), "the statement it was decided on changed");
+                }
+            }
 
             if (baseTrace is not null && (string?)e["decided_by"] is { } by && (!typedBefore.TryGetValue(id, out var before) || before != by)
                 // A promotion gave the entry a new id, because its section's number changed: the same link keeps who decided it (D117).
@@ -137,13 +159,31 @@ public static class TraceCheck
                 problems.Add($"{id}: decided_by was set in this change ({by}); it's filled from git after merge, never typed");
         }
         var undecided = trace["entries"]!.AsArray().OfType<JsonObject>().Where(e => stale.Contains((string)e["id"]!) && e["decision"] is not null).Select(e => (string)e["id"]!).ToList();
-        if (stamped || fix && stale.Count > 0) TraceFile.Save(root, trace);
+        // A decision that dropped back took its person with it, and the evidence says who checked it.
+        if (fix && (stale.Count > 0 || changedIds.Count > 0)) TraceFindings.Stamp(root, trace, index, baseTrace is null ? null : baseByFinding, refused);
+        if (stamped || fix && (stale.Count > 0 || changedIds.Count > 0)) TraceFile.Save(root, trace);
         foreach (var id in undecided)
             problems.Add($"{id}: a quote no longer matches the FSD or the page, so its decision must drop back to undecided (run `stangent trace check --fix`)");
-        return Report(trace, problems, stale, undecided, retired);
+        var stillDecided = trace["entries"]!.AsArray().OfType<JsonObject>().Where(e => changedIds.Contains((string)e["id"]!) && e["decision"] is not null);
+        foreach (var e in stillDecided)
+            problems.Add($"{e["id"]}: statement {e["page"]!["id"]} {e["page"]!["statement"]} changed after this decision was made on it, so the decision must drop back to undecided (run `stangent trace check --fix`)");
+        return Report(trace, problems, stale, undecided, retired, changed);
     }
 
-    static JsonObject Report(JsonObject trace, List<string> problems, List<string> stale, List<string> undecided, List<JsonNode> retired)
+    /// <summary>The hash of the page statement's text this entry rests on, or null when it rests on none (D118).</summary>
+    static string? DecidedOn(JsonObject e, SpecIndex index) =>
+        (string?)e["page"]?["id"] is { } page && (string?)e["page"]?["statement"] is { } statement && index.Statement(page, statement) is { } found
+            ? TraceFile.QuoteHash((string)found["text"]!) : null;
+
+    /// <summary>Ties a decision made just now to the words it was made on, unless it's tied already.</summary>
+    static bool TieDecision(JsonObject e, SpecIndex index)
+    {
+        if (e["decision"] is null || e["decided_on"] is not null || DecidedOn(e, index) is not { } text) return false;
+        e["decided_on"] = text;
+        return true;
+    }
+
+    static JsonObject Report(JsonObject trace, List<string> problems, List<string> stale, List<string> undecided, List<JsonNode> retired, List<JsonNode> changed)
     {
         var entries = trace["entries"]?.AsArray().OfType<JsonObject>().ToList() ?? [];
         return new JsonObject
@@ -157,10 +197,12 @@ public static class TraceCheck
                 ["findings"] = entries.Count(TraceFindings.IsFinding),
                 ["bySeverity"] = new JsonObject(Severity.All.Select(s => KeyValuePair.Create(s, (JsonNode?)entries.Count(e => TraceFindings.IsFinding(e) && ((string?)e["severity"] ?? Severity.Ungraded) == s)))),
                 ["staleQuotes"] = stale.Count,
+                ["changedStatements"] = changed.Count,
             },
             ["problems"] = new JsonArray([.. problems.Select(p => (JsonNode)p)]),
             ["staleQuotes"] = new JsonArray([.. stale.Select(s => (JsonNode)s)]),
             ["retiredStatements"] = new JsonArray([.. retired]),
+            ["changedStatements"] = new JsonArray([.. changed]),
             ["findings"] = TraceFindings.Listing(TraceFile.Sorted(trace["entries"]?.AsArray() ?? [])),
         };
     }
@@ -170,6 +212,7 @@ public static class TraceCheck
     public static int ApproveChapter(string root, string doc, string chapter, string who = "developer")
     {
         var trace = TraceFile.Load(root);
+        var index = SpecIndex.Load(root);
         var n = 0;
         foreach (var e in trace["entries"]!.AsArray().OfType<JsonObject>())
         {
@@ -177,6 +220,7 @@ public static class TraceCheck
             if ((string?)e["state"] != "agree" || (string?)e["check"] != "confirmed" || e["decision"] is not null) continue;
             if ((string?)e["fsd"]?["doc"] != doc || section is null || !(section == chapter || section.StartsWith(chapter + ".", StringComparison.Ordinal) || section.StartsWith(chapter + " / ", StringComparison.Ordinal))) continue;
             StateChanges.Apply(root, e, StateKinds.TraceDecision, (string)e["id"]!, "agree", StateActor.Person(who), $"approved chapter {chapter}");
+            TieDecision(e, index);
             n++;
         }
         if (n > 0) TraceFile.Save(root, trace);
@@ -184,16 +228,20 @@ public static class TraceCheck
     }
 
     /// <summary>After a PR merges, CI names who decided (D58): every entry whose decision or severity the PR changed gets the
-    /// approver or merger the code-host adapter reports. Never typed by a person. A severity's move goes on the module too (D118).</summary>
+    /// approver or merger the code-host adapter reports. Never typed by a person. A severity's move goes on the module too, and a decision
+    /// not yet tied to its statement's text is tied here, before a regeneration can change that text (D118).</summary>
     public static int Attribute(string root, JsonObject baseTrace, string by)
     {
         var trace = TraceFile.Load(root);
         var before = (baseTrace["entries"]?.AsArray() ?? []).OfType<JsonObject>().ToDictionary(e => (string)e["id"]!, e => (string?)e["decision"]);
         var byLink = TraceFile.ByLink(baseTrace["entries"]?.AsArray() ?? []);
         var graded = (baseTrace["entries"]?.AsArray() ?? []).OfType<JsonObject>().Where(e => e["finding"] is not null).GroupBy(e => (string)e["finding"]!).ToDictionary(g => g.Key, g => (string?)g.First()["severity"], StringComparer.Ordinal);
+        var index = SpecIndex.Load(root);
+        var tied = false;
         var n = 0;
         foreach (var e in trace["entries"]!.AsArray().OfType<JsonObject>())
         {
+            tied |= TieDecision(e, index);
             if ((string?)e["finding"] is { } finding && (string?)e["severity"] is { } severity && severity != (graded.GetValueOrDefault(finding) ?? Severity.Ungraded))
             {
                 StateChanges.Move(root, StateKinds.FindingSeverity, finding, graded.GetValueOrDefault(finding) ?? Severity.Ungraded, severity, StateActor.Person(by), "merged in a PR");
@@ -211,7 +259,7 @@ public static class TraceCheck
             e["decided_by"] = by;
             n++;
         }
-        if (n > 0) TraceFile.Save(root, trace);
+        if (n > 0 || tied) TraceFile.Save(root, trace);
         return n;
     }
 }

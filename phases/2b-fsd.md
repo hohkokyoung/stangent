@@ -333,10 +333,14 @@ Code only, no AI. Details are in `docs/spec.md`.
 
 **Contracts (D20).** `trace-links` v2 → v3, additive. This file still said v1, though v2 shipped with 2c; it says v3 now. 2c and 3 were checked by grep and moved, each with its line. This phase now consumes `evidence` v1 and `reference-lines` v1.
 
+**Fresh check (2.4).** Found: evidence was written once and never refreshed, hand-typed evidence passed as fact, a partial type's note was lost, and a decision survived a rephrase that reversed its statement.
+
+**This round fixed them (D118).** Evidence is derived again on every check and refused by name when typed, it carries the partial type's note, and `decided_on` drops a decision whose statement's text changed. No input hash moved.
+
 **Known gaps.**
 - Every finding is `ungraded` until a person edits the file. There's no command for it, and no AI suggestion until 2.5.
 - Findings are still off by default (D68), and the false-alarm rate behind that hasn't changed.
-- Evidence isn't refreshed. A code citation stays at the commit it was stamped with, and a document's `contentHash` at the version read, after a page or a document moves on. A new record is added only where one is missing.
+- ~~Evidence isn't refreshed.~~ Fixed in this slice's fix round. As first built: a code citation stays at the commit it was stamped with, and a document's `contentHash` at the version read, after a page or a document moves on. A new record is added only where one is missing.
 - `fsd undocumented` and `fsd check` write findings with no id: the id comes at the next `trace check`. `fsd undocumented` still returns a count, with no ids.
 - A finding whose link is judged again with other quotes has a new entry id, so it's a new finding with a new `X-` id and `ungraded`, as a decision drops back today.
 - No per-chapter report: on `roadmap.md`'s list, still to do.

@@ -136,10 +136,10 @@ public class SavedWorkTests
     }
 
     /// <summary>The graph as a clean build at a real commit leaves it.</summary>
-    internal static void CleanGraph(SpecApp app, IReadOnlyList<string>? dirty = null, IReadOnlyList<string>? notInCommit = null)
+    internal static void CleanGraph(SpecApp app, IReadOnlyList<string>? dirty = null, IReadOnlyList<string>? notInCommit = null, char commit = 'a')
     {
         var graph = Stangent.Graph.GraphStore.Load(Stangent.Graph.GraphStore.PathFor(app.Repo))!;
-        graph.Commit = new string('a', 40);
+        graph.Commit = new string(commit, 40);
         graph.DirtyFiles = [.. dirty ?? []];
         graph.NotInCommit = [.. notInCommit ?? []];
         Stangent.Graph.GraphStore.Save(graph, Stangent.Graph.GraphStore.PathFor(app.Repo));

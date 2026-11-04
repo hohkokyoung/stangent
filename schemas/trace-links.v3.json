@@ -54,10 +54,12 @@
           "note": { "type": "string" },
           "decision": { "oneOf": [{ "type": "null" }, { "enum": ["agree", "code-wrong", "fsd-wrong", "defer"] }] },
           "decided_by": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
+          "decided_on": { "description": "The hash of the page statement's normalised text when the decision was made, written by code. If the text changes, the decision drops back. No input hash reads it.", "$ref": "#/definitions/hash" },
           "finding": { "description": "Permanent, issued by trace check from specs/trace-ids.json. Only a finding has one.", "type": "string", "pattern": "^X-[0-9]{4,}$" },
           "severity": { "description": "A person sets it, in a PR. Starts ungraded. See Severity in Core.", "enum": ["blocker", "major", "minor", "cosmetic", "ungraded"] },
           "severity_by": { "description": "Comes from git after merge, as decided_by does; never typed.", "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
-          "evidence": { "description": "Records of contract evidence v1, filled by trace check.", "type": "array" }
+          "evidence": { "description": "Records of contract evidence v1, derived again by trace check from what's current. Nobody types them.", "type": "array" },
+          "evidence_hash": { "description": "The hash of the evidence as code last wrote it, so a record that differs is told apart from one that's only out of date.", "$ref": "#/definitions/hash" }
         }
       }
     }

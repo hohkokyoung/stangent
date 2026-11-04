@@ -13,6 +13,7 @@ It's a new contract, not a change to `artifact-base`, so nothing else had to cha
 | `citation.kind` | `code`, `document`, `page`, `test` or `url`. |
 | `citation.ref` | `repo/path`, or a document id. |
 | `citation.lines`, `symbol`, `quote` | Optional. Where exactly. |
+| `citation.note` | Optional. What a reader must know about these lines, such as a partial type's first part only. |
 | `commit` | The 40-hex commit read. Required for `code` and `test`. |
 | `contentHash` | SHA-256 of the document read. Required for `document`. |
 | `strength` | How far it's backed (below). |

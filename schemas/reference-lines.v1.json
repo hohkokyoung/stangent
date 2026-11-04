@@ -10,7 +10,7 @@
     "version": { "const": 1 },
     "page": { "type": "string", "minLength": 1 },
     "commit": { "description": "The commit the graph was built from; null when nothing can be cited.", "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "^[0-9a-f]{40}$" }] },
-    "note": { "description": "Why nothing on this page is cited: the tree was dirty, or the graph has no commit.", "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
+    "note": { "description": "Why nothing on this page is cited: the graph has no commit, or doesn't say whether its tree was clean. A dirty file is answered per symbol.", "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
     "symbols": {
       "type": "object",
       "additionalProperties": {
@@ -20,7 +20,8 @@
           "file": { "type": "string", "minLength": 1 },
           "start": { "type": "integer", "minimum": 1 },
           "end": { "type": "integer", "minimum": 1 },
-          "why": { "description": "Why this symbol has no lines.", "type": "string", "minLength": 1 }
+          "why": { "description": "Why this symbol has no lines.", "type": "string", "minLength": 1 },
+          "note": { "description": "What a reader must know about the lines given: a partial type's cover its first part only.", "type": "string", "minLength": 1 }
         }
       }
     }
