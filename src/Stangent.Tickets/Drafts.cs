@@ -37,6 +37,7 @@ public static partial class TicketDrafts
 
     public static RunStep Prepare(StangentRepo repo, TicketContext ctx, string key, string kind, string? tone, string? prRange, string? prUrl)
     {
+        if (!StangentComponents.IsOn(repo.Config, "drafts")) return new RunStep("off", "none", Errors: ["drafts is off, so no draft was made."]);
         var paths = new TicketPaths(repo.Root, key);
         var step = Step(kind);
         tone ??= repo.Config.Tickets.Tone;
@@ -47,7 +48,10 @@ public static partial class TicketDrafts
         AiPolicy.EnsureAllowed(repo.Config, $"ticket draft --kind {kind}");
         facts["kind"] = kind;
         facts["tone"] = tone;
-        return AiStep.Start(paths, step, input, hash, facts);
+        var started = AiStep.Start(paths, step, input, hash, facts);
+        // D121: with no proof tried, a draft that asks about a bug mustn't read as "couldn't reproduce it". Not in its input.
+        return !StangentComponents.IsOn(repo.Config, "bug-proof") && (bool?)TicketPull.Load(repo.Root, key)?["isBug"] == true
+            ? started with { Warning = "bug-proof is off, so this draft has no proof to go on: that says nothing about whether the bug reproduces." } : started;
     }
 
     /// <summary>What a draft is made from: the facts it may link to, and the input the writer reads, whose hash says

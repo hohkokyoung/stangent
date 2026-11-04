@@ -38,6 +38,10 @@ public static class LinkRun
         && (string?)feature["textHash"] == CanonicalJson.Hash((string)section["text"]!)
             ? [.. feature["requirements"]!.AsArray().OfType<JsonObject>()] : null;
 
+    /// <summary><see cref="Requirements"/>, unless <c>requirements-links</c> is off (D121): then the section's sentences are judged, as with none built.</summary>
+    static List<JsonObject>? RequirementsInUse(StangentRepo repo, string doc, JsonObject section) =>
+        StangentComponents.IsOn(repo.Config, "requirements-links") ? Requirements(repo.Root, doc, section) : null;
+
     static string FirstQuote(JsonObject requirement) => (string)requirement["quotes"]![0]!["text"]!;
 
     public static RunStep Prepare(PageSet set, StangentRepo repo, string doc, string sectionId)
@@ -49,7 +53,7 @@ public static class LinkRun
         var runs = LoadRuns(repo.Root);
         var key = Key(doc, sectionId);
         var run = runs[key] as JsonObject;
-        var requirements = Requirements(repo.Root, doc, section);
+        var requirements = RequirementsInUse(repo, doc, section);
         // Every sentence is background: nothing here to link.
         if (requirements is { Count: 0 })
         {
@@ -63,6 +67,12 @@ public static class LinkRun
         if (candidates.Count == 0 && found.Count > 0)
             return new RunStep("failed", "none", Errors: [$"no candidate page has been recorded yet: {string.Join(", ", found.Select(c => c.Page))}"]);
         var by = "code";
+        if (candidates.Count == 0 && !StangentComponents.IsOn(repo.Config, "candidate-finder"))
+        {
+            // Off (D121): nothing was asked, so this section can't be called a gap. Its run says so, and what's on file stays.
+            UpdateRun(repo.Root, Key(doc, sectionId), r => r["candidatesBy"] = "off");
+            return new RunStep("off", "none", Errors: ["candidate-finder is off and code found no page for this section, so it wasn't judged. That isn't a gap."]);
+        }
         if (candidates.Count == 0)
         {
             var finderBundle = FinderBundle(section, set, index);
@@ -97,7 +107,7 @@ public static class LinkRun
             var unrecorded = set.Pages.Count(p => !index.Pages.ContainsKey(p.Id));
             var why = "no reference page matches this section (by name, field labels, or the candidate finder)"
                 + (unrecorded > 0 ? $"; {unrecorded} page(s) have no recorded version, so it may be among them" : "");
-            List<JsonObject> gaps = Requirements(repo.Root, doc, section) is { } reqs
+            List<JsonObject> gaps = RequirementsInUse(repo, doc, section) is { } reqs
                 ? [.. reqs.Select(r => Entry("gap", doc, section, FirstQuote(r), null, null, null, "code", null, why, (string)r["id"]!))]
                 : [Entry("gap", doc, section, quote, null, null, null, "code", null, why)];
             var existing = TraceFile.Load(repo.Root)["entries"]!.AsArray().OfType<JsonObject>()
@@ -108,7 +118,7 @@ public static class LinkRun
             UpdateRun(repo.Root, key, r => { MergeInto(r, carried); r["inputs"] = null; r["candidates"] = new JsonArray(); r["candidatesBy"] = by; r["links"] = 1; });
             return new RunStep("recorded", "none");
         }
-        var requirements = Requirements(repo.Root, doc, section);
+        var requirements = RequirementsInUse(repo, doc, section);
         var judgeBundle = requirements is null ? JudgeBundle(section, doc, candidates.Select(c => c.Page), index) : RequirementJudgeBundle(section, doc, candidates.Select(c => c.Page), index, requirements);
         var inputs = JudgeInputs(judgeBundle, requirements is not null, repo.Config.Fsd.Findings);
         if ((string?)run?["inputs"] == inputs) return new RunStep("current", "none");
@@ -213,6 +223,12 @@ public static class LinkRun
                 state["links"] = new JsonArray([.. kept.Select(l => (JsonNode)l.DeepClone())]);
                 var agrees = kept.Where(l => (string)l["state"]! == "agree").ToList();
                 if (agrees.Count == 0) return Finish(repo.Root, work, state, doc, section, [], repo.Config.Fsd.Findings);
+                // Off (D121): recorded with no second check, and each says so, as one the checker didn't answer does.
+                if (!StangentComponents.IsOn(repo.Config, "agree-checker"))
+                {
+                    state["agreeCheckerOff"] = true;
+                    return Finish(repo.Root, work, state, doc, section, [], repo.Config.Fsd.Findings);
+                }
                 Stage(repo.Root, state, "confirm", "the judge's output passed the code check");
                 state["retryUsed"] = false; // the checker gets its own one retry
                 Save(work, state);
@@ -251,7 +267,12 @@ public static class LinkRun
             {
                 var id = $"K{++k}";
                 var verdict = checks.FirstOrDefault(c => (string)c["link"]! == id);
-                if (verdict is null) { unchecked_++; final = (JsonObject)link.DeepClone(); final["note"] = $"{(string?)link["note"]} (the second check gave no answer: not confirmed, reviewed one by one)"; }
+                if (verdict is null)
+                {
+                    unchecked_++;
+                    final = (JsonObject)link.DeepClone();
+                    final["note"] = (bool?)state["agreeCheckerOff"] == true ? $"{(string?)link["note"]} (agree-checker is off: not checked)".TrimStart() : $"{(string?)link["note"]} (the second check gave no answer: not confirmed, reviewed one by one)";
+                }
                 else if ((string)verdict["verdict"]! == "confirm") check = "confirmed";
                 else if (verdict["state"] is null) { check = "disputed"; disputed++; final = (JsonObject)link.DeepClone(); final["note"] = $"Disputed by the second check without saying what it is instead: {(string)verdict["note"]!}"; }
                 else
@@ -291,6 +312,8 @@ public static class LinkRun
             r["links"] = entries.Count;
             r["disputed"] = disputed;
             r["unchecked"] = unchecked_;
+            if ((bool?)state["agreeCheckerOff"] == true) r["agreeChecker"] = "off";
+            else r.Remove("agreeChecker");
             // A requirement the judge left out even after its retry has no entry at all: say so, or it reads as nothing to see.
             if (state["unanswered"] is JsonArray { Count: > 0 } unanswered) r["unanswered"] = unanswered.DeepClone();
             else r.Remove("unanswered");

@@ -52,9 +52,22 @@ public sealed class WholeFlow : IDisposable
     public List<string> SchemaErrors { get; } = [];
     public Dictionary<string, JsonNode?> Saw { get; } = [];
 
-    public WholeFlow()
+    readonly string? extraConfig;
+
+    public WholeFlow() : this(null) { }
+
+    /// <summary>The flow with these settings added, as far as what's left on can take it (D121): the rest of the stages need findings to act on.</summary>
+    public static WholeFlow With(string extraConfig) => new(extraConfig);
+
+    /// <summary>A command as a person runs it, envelope and all.</summary>
+    public JsonNode Cli(params string[] args) => Run(args).Envelope;
+
+    WholeFlow(string? extraConfig)
     {
-        Action[] stages = [SetUp, ReferencePages, Import, LinksAndFindings, Disprove, PersonDecides, Impact, NewVersion, Regenerate, WholeResult];
+        this.extraConfig = extraConfig;
+        Action[] stages = extraConfig is null
+            ? [SetUp, ReferencePages, Import, LinksAndFindings, Disprove, PersonDecides, Impact, NewVersion, Regenerate, WholeResult]
+            : [SetUp, ReferencePages, Import, LinksAndFindings, Impact];
         for (var i = 0; i < stages.Length; i++)
         {
             try
@@ -100,6 +113,7 @@ public sealed class WholeFlow : IDisposable
     {
         Append(".gitignore", "bin/\nobj/\n");   // as a real repo has; the fixture's graph build restores packages
         var yaml = File.ReadAllText(Path.Combine(Root, "stangent.yaml")).TrimEnd() + $"\n{FsdConfig(disprove: false)}\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n  aiPoints: false\n";
+        if (extraConfig is not null) yaml = yaml.TrimEnd() + $"\n{extraConfig}\n";
         File.WriteAllText(Path.Combine(Root, "stangent.yaml"), yaml);
         Saw["init"] = Ok("init");
         Git("config", "user.name", Person);

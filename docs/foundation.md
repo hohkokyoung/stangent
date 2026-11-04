@@ -31,6 +31,37 @@ Three rules live in the validator, not the schema:
 - `checkedBy` may be empty only for a `guess` (D18).
 - `ran` needs a checker of kind `code` or `person`. An agent saying a test passed isn't a test passing.
 
+## Switches (D120, D121)
+
+Anything that can be taken out with the flow still running has a switch, so the test phase can run the flow with each one off.
+
+```yaml
+components: { page-verifier: false, git-history: false, detector-config-keys: false }
+```
+
+`components.<name>` works for every one and wins. Older keys keep working where they are, and an old `stangent.yaml` needs nothing changed. Unknown names stop with `unknown_component`. `stangent components` lists them with their state.
+
+| Component | Setting | Default | When it's off |
+|---|---|---|---|
+| `ai` | `ai.enabled` | on | Every AI step stops with `ai_disabled`, exit 4. |
+| `git-history` | `history.enabled` | on | `historyStatus: off` on the graph. |
+| `detector-<name>` (8) | `detectors` | on | It doesn't run; the graph lists those that did. `http-services` and `frontend-http` need `aspnetcore-routes`. |
+| `detector-playwright-specs` | `detectors` | on | The Playwright lines. `graph screen-tests` says `playwrightSpecs: off`, not none. |
+| `page-verifier` | `components.` | on | Recorded as written, with `verification.off: true` on the page and a warning. |
+| `line-citations` | `components.` | on | No `<path>.lines.json`, an old one removed, so no `code` evidence; `spec cite` says `lineCitations: off`. |
+| `candidate-finder` | `components.` | on | A section code finds no page for gets status `off`, `candidatesBy: off`, and no gap. |
+| `agree-checker` | `components.` | on | Each agree link is recorded unchecked with a note, and the run has `agreeChecker: off`. |
+| `requirements-links` | `components.` | on | The section's sentences are judged, as with no requirements built. |
+| `findings` | `fsd.findings` | off | Only links are recorded (D68). |
+| `disprove` | `fsd.disprove` | off | Status `off`. Needs `findings`: on without it, it's `off` and says so. |
+| `file-finder` | `tickets.aiPoints` | on | Code's signals are the starting points (`ai.status: off`). |
+| `bug-proof` | `components.` | on | Status `off`, "neither proven nor disproven", and a questions draft on a bug warns. |
+| `drafts` | `components.` | on | Status `off`. |
+
+**A run says which were on:** in the envelope beside `result`, and on its telemetry event, for the components that command uses. **Never in a hash:** a switch's state goes into no input hash. Turning one on or off asks for no new paid call by itself; only what really reaches an AI can move a hash, as `requirements-links` does by changing what's judged. Turning `page-verifier` back on leaves pages it didn't check as they are, marked, until their inputs change.
+
+**No clean switch,** and why: the document import and the page writer (everything after them reads what they make, and a step without them would report a false gap); the link judge (it is the step that makes a link, and `ai.enabled` stops it); the code checks (they make an AI's answer usable, D18); the state module.
+
 ## Permanent ids
 
 `new PermanentIds(path)` keeps a ledger in the file you name.

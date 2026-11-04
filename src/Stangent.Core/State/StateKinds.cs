@@ -106,7 +106,7 @@ public static class StateKinds
         // The AI steps' runs (D60). `prepare` starts a new run from nothing, so a restart is a first state, not a move.
         new(PageRun, ".stangent/spec/state-history.jsonl", ["write"],
         [
-            .. Each(Code, "write", "verify", "failed"), .. Each(Code, "verify", "fix", "done", "failed"), .. Each(Code, "fix", "done", "failed"),
+            .. Each(Code, "write", "verify", "done", "failed"), .. Each(Code, "verify", "fix", "done", "failed"), .. Each(Code, "fix", "done", "failed"),
         ], Field: "stage"),
 
         new(LinkRun, ".stangent/fsd/state-history.jsonl", ["find", "judge"],

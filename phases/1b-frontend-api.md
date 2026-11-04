@@ -2,7 +2,7 @@
 phase: 1b
 name: frontend-api
 status: done
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4 }
 provides: {}
 ---
 
@@ -296,3 +296,5 @@ Beyond those ten:
 
 **Impact on other phases.** Nothing reads these lines yet. A later step can cite `read`; a step that runs the spec can cite `ran`.
 Follow-ups: show them beside an impact answer when a consumer needs it (a new field means `impact-report` v6), and read helper files.
+
+Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions` v2 → v3. By grep, nothing here reads telemetry, and results are read by name, so `components` beside `result` changes nothing. Moved.

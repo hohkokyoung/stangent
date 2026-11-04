@@ -31,6 +31,7 @@ public static partial class BugProof
 
     public static RunStep Prepare(StangentRepo repo, TicketContext ctx, string key, string? hint)
     {
+        if (!StangentComponents.IsOn(repo.Config, "bug-proof")) return new RunStep("off", "none", Errors: ["bug-proof is off, so nothing was tried: this bug is neither proven nor disproven."]);
         var paths = new TicketPaths(repo.Root, key);
         var pulled = TicketPull.LoadOrFail(repo.Root, key);
         if (!(bool)pulled["isBug"]!)

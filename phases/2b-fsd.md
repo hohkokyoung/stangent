@@ -2,7 +2,7 @@
 phase: 2b
 name: fsd
 status: done
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, reference-lines: 1, evidence: 1 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, reference-lines: 1, evidence: 1 }
 provides: { source-document: 3, trace-links: 4 }
 ---
 
@@ -389,3 +389,5 @@ Code only, no AI. Details are in `docs/spec.md`.
 **S.3 · One set of import steps.** `IImportFormat` and `ImportPipeline` (D121); `fsd import`'s result has `steps`. Word's and Sonarr's `document.md` are byte-identical (the pinned hash) and the PDF tests didn't change.
 
 **S.1 · `trace-links` v3 → v4.** `fsd.sectionId`, by code at `trace check`. 2c and 3 were checked by grep and moved, each with its line. A build before this one can't read a v4 file. `requirements` v1 grew `sectionId` in place: 2c is still being built, and it has provided nothing.
+
+Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions` v2 → v3. By grep, nothing here reads telemetry, and results are read by name, so `components` beside `result` changes nothing. Moved.

@@ -163,6 +163,7 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 7 | No client data in the tool's repo | ⬜ | 0 | 0.3 |
 | 7 | Hooks never block, tested | ⬜ | plugin | only if hooks are added |
 | 8 | A test of the whole flow with fake AI answers | ✅ | 0, 2 | S.0; `WholeFlowTests.cs` |
+| 8 | Every component has a switch, and a run says which were on | ✅ | all, D120, D121 | F.1 |
 | 8 | Links store a section's permanent id as well as its number | ✅ | 2b, D117 | S.1 |
 | 8 | Import problems become structured | ✅ | 2b, D111, D116 | S.2 |
 | 8 | One set of import steps every format fills in, and ticket attachments use the same path | ✅ | 2b, 3, D72, D111 | S.3 |

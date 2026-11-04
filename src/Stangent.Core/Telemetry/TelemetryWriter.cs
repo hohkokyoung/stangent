@@ -10,7 +10,7 @@ public sealed class Span(string name, long startNanos)
     public long StartNanos { get; } = startNanos;
     public string TraceId { get; } = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(16));
     public string SpanId { get; } = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(8));
-    /// <summary>Only keys listed in telemetry-event.v1.json are accepted; an event with any other key is not written.</summary>
+    /// <summary>Only keys listed in telemetry-event.v2.json are accepted; an event with any other key is not written.</summary>
     public Dictionary<string, object> Attributes { get; } = [];
 }
 
@@ -22,7 +22,7 @@ public sealed class Span(string name, long startNanos)
 /// </summary>
 public sealed class TelemetryWriter(string dir, SchemaRegistry schemas, TimeProvider time, TextWriter? warnings = null)
 {
-    public const string Schema = "telemetry-event.v1.json";
+    public const string Schema = "telemetry-event.v2.json";
     public static readonly string ServiceVersion =
         typeof(TelemetryWriter).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "0.0.0";
 
@@ -45,7 +45,7 @@ public sealed class TelemetryWriter(string dir, SchemaRegistry schemas, TimeProv
 
         var evt = new JsonObject
         {
-            ["schemaVersion"] = 1,
+            ["schemaVersion"] = 2,
             ["traceId"] = span.TraceId,
             ["spanId"] = span.SpanId,
             ["name"] = span.Name,

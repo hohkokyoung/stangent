@@ -137,6 +137,18 @@ public class TicketDraftTests
     }
 
     [Fact]
+    public void With_bug_proof_off_a_draft_on_a_bug_says_it_has_no_proof_to_go_on_and_its_input_doesnt_move()
+    {
+        using var on = new Draft();
+        var with = on.Prepare();
+        Assert.Null(with.Warning);
+        using var d = new Draft("components: { bug-proof: false }\n");
+        var step = d.Prepare();
+        Assert.Contains("bug-proof is off", step.Warning);
+        Assert.Equal(File.ReadAllText(Path.Combine(on.Root, ".stangent", "tickets", Key, "questions", "input.md")), File.ReadAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "questions", "input.md")));
+    }
+
+    [Fact]
     public void A_questions_draft_asks_for_missing_fields_and_quotes_both_sides_of_a_clash()
     {
         using var d = new Draft();

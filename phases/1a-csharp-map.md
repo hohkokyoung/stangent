@@ -2,7 +2,7 @@
 phase: 1a
 name: csharp-map
 status: done
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1 }
 provides: { code-graph: 4, impact-report: 5 }
 ---
 
@@ -315,3 +315,5 @@ The line-level table above and the exact check were re-run after these fixes. eS
   spec layer supplies (`ImpactAnalyzer.FsdSections`); the graph itself knows nothing about pages or the FSD.
   `--expand fsdSections` lists them all; the Markdown has a "📄 FSD sections" block.
 - **Consumers:** 2a and 2b, which consumed v4 and moved to v5 with the change. No other phase consumes it yet.
+
+Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions` v2 → v3. By grep, nothing here reads telemetry, and results are read by name, so `components` beside `result` changes nothing. Moved.

@@ -34,6 +34,18 @@ public class TicketPointsTests
         [.. points["points"]!.AsArray().Select(p => ((string)p!["kind"]!, (string)p["id"]!, (string)p["signal"]!))];
 
     [Fact]
+    public void The_file_finder_off_by_its_component_works_as_the_old_key_does()
+    {
+        using var app = App("");
+        app.Repo.Config.Tickets.AiPoints = true;
+        using var off = App("");
+        off.Repo.Config.Components["file-finder"] = false;
+        StangentComponents.Apply(off.Repo.Config);
+        Assert.NotEqual("off", (string)Points(app, "SON-20", "Orders fail")["ai"]!["status"]!);
+        Assert.Equal("off", (string)Points(off, "SON-20", "Orders fail")["ai"]!["status"]!);
+    }
+
+    [Fact]
     public void A_stack_frame_finds_its_method_by_file_and_line_or_by_name()
     {
         using var app = CodeOnly();

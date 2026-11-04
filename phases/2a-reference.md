@@ -2,7 +2,7 @@
 phase: 2a
 name: reference
 status: done
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4, impact-report: 5 }
 provides: { reference-page: 1, reference-lines: 1 }
 ---
 
@@ -309,3 +309,7 @@ Checked 2026-11-04 (D20): by grep, `Stangent.Spec` reads none of the new values,
 - A statement's order on the page follows the writer, so a reorder alone changes the link judge's input for that page. A regenerated page's words usually change it anyway.
 
 **Impact on other phases.** None goes to `needs review`: `reference-page` didn't change. Phase 3 reads statements through `PageChecks.Statements`, and gets the same ids for unchanged pages.
+
+Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions` v2 → v3. By grep, nothing here reads telemetry, and results are read by name, so `components` beside `result` changes nothing. Moved.
+
+§8 F.1 (D121): `reference-page` v1 grew `verification.off`, absent on every page a verifier checked, and `page-verifier` and `line-citations` have switches. A page written with one off isn't checked again by turning it on. Not checked with a real AI.

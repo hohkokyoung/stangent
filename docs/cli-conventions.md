@@ -1,4 +1,4 @@
-# CLI conventions (contract `cli-conventions` v1)
+# CLI conventions (contract `cli-conventions` v3)
 
 Every product talks to the store through the `stangent` CLI (decisions.md D23). These rules
 are what callers (other products, Claude Code commands and hooks, CI) can rely on.
@@ -6,7 +6,7 @@ are what callers (other products, Claude Code commands and hooks, CI) can rely o
 ## Output
 
 - **One JSON envelope on stdout**, compact by default (cheap for agents to read); `--pretty` indents it.
-  - Success: `{"ok":true,"result":…}`
+  - Success: `{"ok":true,"result":…}`. A command that uses a switchable component adds `"components":{"on":[…],"off":[…]}` beside `result` (D121), so a result's own shape never moves.
   - Failure: `{"ok":false,"error":{"code":"…","message":"…","details":[…]}}`
   - A check that ran and found problems (e.g. `phases check`) also carries its report in `result`.
 - Keys are sorted, so the same result always prints the same bytes.
@@ -37,9 +37,13 @@ are what callers (other products, Claude Code commands and hooks, CI) can rely o
 one process. The whole batch is checked first, in order — an op may use an artifact created by
 an earlier op, not a later one — and nothing is written if any op would fail.
 
+## Components
+
+`stangent components` lists every component (D121): `name`, `label`, `on`, `default`, `setting`, `switch`, `needs`, `neededBy`, `connected`, and `waitingFor` or `blocked` where they apply; then `notConnected` and `noSwitch`. `docs/foundation.md` has the list.
+
 ## Telemetry
 
-Every command writes one event (contract `telemetry-event` v1, D21) to
+Every command writes one event (contract `telemetry-event` v2, D21) to
 `.stangent/telemetry/<date>.jsonl` in the repo, or to `$STANGENT_TELEMETRY_DIR` when set, or to
-`~/.stangent/telemetry` outside a repo. Events carry counts, codes, ids and hashes only; one
+`~/.stangent/telemetry` outside a repo. An event from a command that uses a component names those on and off (`stangent.components.on`, `.off`). Events carry counts, codes, ids, hashes and names from a closed list only; one
 that breaks the contract is dropped with a warning, never written.

@@ -2,7 +2,7 @@
 phase: 3
 name: tickets
 status: done
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 3, trace-links: 4 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 3, trace-links: 4 }
 provides: { ticket-bundle: 2, ticket-update: 1, bug-proof: 1 }
 ---
 
@@ -799,3 +799,5 @@ Checked 2026-11-04 (D20, D121): `source-document` v2 → v3. By grep, `Stangent.
 §8 S.3 (D121): attachments go through `ImportPipeline.Attachment`, so a `.pdf` converts or is listed, and the pull never stops. `problems` and `format` stay out of the bundle, so `ticket-bundle` is unchanged. A ticket already pulled with a PDF gains text at its next pull, which changes its bundle and what a saved draft or finder ran on: not checked on a real ticket.
 
 Checked 2026-11-04 (D20, D121): `trace-links` v3 → v4. By grep, `Stangent.Tickets` reads `fsd.section`, `fsd.title` and `fsd.quote` by name, never the whole object. Moved to `trace-links: 4`.
+
+Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions` v2 → v3. By grep, nothing here reads telemetry, and results are read by name, so `components` beside `result` changes nothing. Moved.

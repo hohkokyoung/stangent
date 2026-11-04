@@ -199,7 +199,7 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
 
 **Seams, first**
 
-- ⬜ F.1 · Every component has a switch, and a run says which were on (D120).  
+- ✅ F.1 · Every component has a switch, and a run says which were on (D120).  
   *So the test phase can run the flow with each one off. Some exist: `history.enabled`, `fsd.findings`, `fsd.disprove`, `detectors`. Recommend: do first.*
 - ✅ S.0 · A test of the whole flow with fake AI answers: import, links, promote, disprove, impact, as one run.  
   *`WholeFlowTests.cs`; what it found is in `phases/0-foundation.md`. Five things wait on the owner, as skipped facts.*

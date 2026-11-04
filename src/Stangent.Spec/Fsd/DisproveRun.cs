@@ -41,7 +41,9 @@ public static class DisproveRun
 
     /// <summary>Starts a section's run: the first finding that needs an answer, or nothing. Off unless <c>fsd.disprove</c> is on.</summary>
     public static RunStep Prepare(PageSet set, StangentRepo repo, string doc, string sectionId) =>
-        !repo.Config.Fsd.Disprove ? new RunStep("off", "none") : Next(set, repo, doc, sectionId, false);
+        !repo.Config.Fsd.Disprove ? new RunStep("off", "none")
+        : !repo.Config.Fsd.Findings ? new RunStep("off", "none", Errors: [StangentComponents.MissingNeed(repo.Config, "disprove")!])
+        : Next(set, repo, doc, sectionId, false);
 
     public static RunStep Check(PageSet set, StangentRepo repo, string doc, string sectionId, Usage? usage)
     {

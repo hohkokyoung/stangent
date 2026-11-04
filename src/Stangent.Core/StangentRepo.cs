@@ -26,6 +26,9 @@ public sealed class StangentConfig
     public FsdConfig Fsd { get; set; } = new();
     /// <summary>Jira tickets (Phase 3, D69–D82).</summary>
     public TicketsConfig Tickets { get; set; } = new();
+    /// <summary>One place to switch any component on or off (D121): <c>components: { page-verifier: false }</c>. Unset keeps today's behaviour, and the
+    /// older keys (<c>history.enabled</c>, <c>fsd.findings</c>, ...) keep working; this wins where both are set. <see cref="StangentComponents"/> lists them.</summary>
+    public Dictionary<string, bool> Components { get; set; } = [];
 
     public sealed class StoreConfig
     {
@@ -263,6 +266,7 @@ public sealed class StangentRepo
         try
         {
             var config = Reader.Deserialize<StangentConfig?>(File.ReadAllText(path)) ?? new StangentConfig();
+            StangentComponents.Apply(config);
             if (config.Version != 1)
                 throw new StangentException("unsupported_config", $"{path}: version {config.Version} is not supported (expected 1).");
             return config;

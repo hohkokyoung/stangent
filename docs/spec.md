@@ -166,6 +166,9 @@ A first import goes straight in. The same file again is `unchanged`; if a candid
 
 ## Links, findings and decisions (2b, D53, D58, D62)
 
+Each step here has a switch (D121, `docs/foundation.md`): `candidate-finder`, `agree-checker`, `requirements-links`, `findings`, `disprove`, `line-citations`.
+
+
 - `stangent fsd candidates`: candidate pages per section, by code: section titles ↔ routes, component names and page
   titles (case, word order and plurals normalised), field labels in tables ↔ properties in a page's slice, and the
   endpoints a candidate screen calls. A section with none goes to `stangent-candidate-finder`, which sees the page

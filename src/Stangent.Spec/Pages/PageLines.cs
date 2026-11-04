@@ -70,8 +70,9 @@ public static class PageLines
     /// Fills citations for pages already recorded, and adopts their statement ids, with no AI. A page's JSON isn't touched, so nothing
     /// hashed changes. Its Markdown is rendered again, linking to the pages that are recorded.
     /// </summary>
-    public static JsonObject Refresh(string root, CodeGraph graph, string? only)
+    public static JsonObject Refresh(string root, CodeGraph graph, string? only, bool on = true)
     {
+        if (!on) return new JsonObject { ["lineCitations"] = "off", ["pages"] = 0, ["note"] = "line-citations is off, so no citation was written." };
         var paths = new SpecPaths(root);
         var files = new List<(string File, JsonObject Page)>();
         if (Directory.Exists(paths.ReferenceDir))

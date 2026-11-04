@@ -145,7 +145,13 @@ public static class PageRun
                     return WriteStep(paths, page, state, Feedback(errors, findings)) with { Status = "retry", Errors = errors };
                 }
                 state["staged"] = output!.DeepClone();
-                if (stage == "fix") return Record(set, paths, page, state, work, bundle);
+                if (stage == "fix") return Record(set, repo.Config, paths, page, state, work, bundle);
+                // Switched off (D121): recorded as written, and the page says no one checked it, so no findings can't read as none found.
+                if (!StangentComponents.IsOn(repo.Config, "page-verifier"))
+                {
+                    state["verifierOff"] = true;
+                    return Record(set, repo.Config, paths, page, state, work, bundle);
+                }
                 Stage(paths, page, state, "verify", "the writer's output passed the code check");
                 Save(work, state);
                 File.WriteAllText(Path.Combine(work, "verify.md"), VerifyPage(page, (JsonObject)output));
@@ -178,7 +184,7 @@ public static class PageRun
                 }
                 state["dropped"] = dropped;
                 state["findings"] = new JsonArray([.. kept.Select(f => (JsonNode)FindingJson(f))]);
-                if (kept.Count == 0) return Record(set, paths, page, state, work, bundle);
+                if (kept.Count == 0) return Record(set, repo.Config, paths, page, state, work, bundle);
                 state["verified"] = staged.DeepClone();
                 Stage(paths, page, state, "fix", "the verifier found problems");
                 state["fixUsed"] = true;
@@ -251,7 +257,7 @@ public static class PageRun
         return sb.ToString();
     }
 
-    static RunStep Record(PageSet set, SpecPaths paths, PageDef page, JsonObject state, string work, Bundle bundle)
+    static RunStep Record(PageSet set, StangentConfig config, SpecPaths paths, PageDef page, JsonObject state, string work, Bundle bundle)
     {
         var staged = (JsonObject)state["staged"]!;
         var findings = FindingsFrom(state);
@@ -297,19 +303,26 @@ public static class PageRun
                 ["checkRetries"] = (int)state["checkRetries"]!,
             },
         };
+        if ((bool?)state["verifierOff"] == true) record["verification"]!["off"] = true;
         var errors = SchemaRegistry.Embedded.Validate("reference-page.v1.json", record.ToJsonString());
         if (errors.Count > 0)
             throw new StangentException("invalid_page", "The recorded page broke reference-page v1 (a stangent bug).", ExitCodes.Failed, errors);
         Directory.CreateDirectory(Path.GetDirectoryName(paths.PageJson(page))!);
         Quotes.WriteAtomic(paths.PageJson(page), CanonicalJson.Serialize(record));
-        var lines = PageLines.Build(record, set.Graph, SymbolLines.Lookup(set.Graph));
-        PageLines.Write(paths.PageJson(page), lines);
+        // Off (D121): no lines file, not even an old one that would read as this page's, and the step says so.
+        var citing = StangentComponents.IsOn(config, "line-citations");
+        var lines = citing ? PageLines.Build(record, set.Graph, SymbolLines.Lookup(set.Graph)) : null;
+        if (lines is not null) PageLines.Write(paths.PageJson(page), lines);
+        else File.Delete(PageLines.FileFor(paths.PageJson(page)));
         var traceProblem = Staleness.ClearReportedWrong(paths.Root, page.Id);
         Quotes.WriteAtomic(paths.PageMarkdown(page), PageRender.Markdown(record, id => set.Find(id) is { } p && p.Id == id ? p.Path : null, lines));
         ClearFailed(paths, page);
         Stage(paths, page, state, "done", "recorded");
         Save(work, state);
-        return new RunStep("recorded", "none", Warning: traceProblem);
+        var off = (string?)null;
+        if ((bool?)state["verifierOff"] == true) off = "page-verifier is off: no one checked this page.";
+        if (!citing) off = $"{off} line-citations is off: this page has no path:lines.".TrimStart();
+        return new RunStep("recorded", "none", Warning: traceProblem is null ? off : off is null ? traceProblem : $"{traceProblem} {off}");
     }
 
     /// <summary>What a verifier's finding says when its statement went in the writer's fix: a number here could be another statement's.</summary>

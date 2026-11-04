@@ -2,7 +2,7 @@
 phase: 2c
 name: spec
 status: in progress
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 3, trace-links: 4, ticket-bundle: 2, bug-proof: 1 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 3, trace-links: 4, ticket-bundle: 2, bug-proof: 1 }
 provides: {}
 ---
 
@@ -118,3 +118,5 @@ Read at the lines noted, which still line up.
 Checked 2026-11-04 (D20, D121): `source-document` v2 → v3. By grep, `Stangent.Spec/Requirements` reads sections by field and never `problems`. Moved to `source-document: 3`.
 
 Checked 2026-11-04 (D20, D121): `trace-links` v3 → v4. By grep, 2c reads `fsd` by field and ignores `sectionId`. Moved to `trace-links: 4`. A feature now has `sectionId`, filled by code.
+
+Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions` v2 → v3. By grep, nothing here reads telemetry, and results are read by name, so `components` beside `result` changes nothing. Moved.

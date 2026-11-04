@@ -62,7 +62,7 @@ static class SpecCommands
         var cite = new Command("cite", "Fill recorded pages' line citations from the graph and make their statement ids permanent. Code only: no AI, and no page's JSON changes (2.3).") { citePage };
         cite.SetAction(pr => Cli.Run(pr, "spec cite", ctx =>
         {
-            var report = PageLines.Refresh(ctx.Repo.Root, Cli.LoadGraph(ctx), pr.GetValue(citePage));
+            var report = PageLines.Refresh(ctx.Repo.Root, Cli.LoadGraph(ctx), pr.GetValue(citePage), Stangent.Core.StangentComponents.IsOn(ctx.Repo.Config, "line-citations"));
             ctx.Span.Attributes["stangent.artifact.count"] = (int)report["pages"]!;
             return report;
         }));

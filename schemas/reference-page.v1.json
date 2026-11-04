@@ -71,6 +71,7 @@
       "required": ["findings", "dropped"],
       "additionalProperties": false,
       "properties": {
+        "off": { "description": "The verifier was switched off (D121), so empty findings don't mean none were found. Absent on every page it checked.", "const": true },
         "dropped": { "description": "Findings dropped because their quote isn't in the slice.", "type": "integer", "minimum": 0 },
         "findings": {
           "type": "array",
