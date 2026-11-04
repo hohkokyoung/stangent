@@ -83,6 +83,15 @@ code 4 (D24); `spec stale`, `spec cite`, `fsd import`, `fsd diff`, `fsd resolve`
   PR comment. On merge, CI runs
   `spec-run.sh --stale` and opens a spec-only PR (see `plugin/ci/spec.yml`).
 
+## Checks where pages are read and written (T.4, T.5, T.6, T.8, D126)
+
+All code, no AI, and none changes a prompt or a saved hash.
+
+- **`stangent spec read <page>`** (`--format md` for the page itself) prints a recorded page. When its inputs have moved on from the code, there's a warning on stderr, in the result, and on top of the Markdown. `spec ask`'s answer lists the same under `answer.pagesBehind`, and a ticket bundle has always had `stalePages`. A Markdown file opened directly can't warn: writing the warning into it would change it with every commit. `spec stale` in the PR comment covers that case.
+- **`stangent spec content-check`,** run in CI. Broken: a Markdown link in a page to a file that isn't there, a link in `trace.yaml` to a page, statement or section that isn't there. Repeated: a page id, a statement id on a page, a section id in a document, a link id, an id in the requirements. A link to a page the graph calls for but no one has written is counted apart (`linksToPagesNotWritten`), since pages are made as needed. A retired statement and a removed section keep their links on purpose; `trace check` lists those. With no graph, a page not written yet counts as broken, and it warns.
+- **`stangent run-check before|after --snapshot <file>`:** `spec-run.sh` and `ticket-run.sh` wrap each run in it. By git: the commit, and each changed or untracked file with a hash of its content, leaving out `.stangent/`, `specs/` and `stangent.yaml`. A change is `APP FILES CHANGED` on stderr and exit 1. It can't see git-ignored files such as build output, or say which job did it, and outside git it says it didn't check. A `--prove` run isn't checked: bug proof builds and runs the app (D75).
+- **`plugin/scripts/read-only-hook.sh`** stops an analysis step writing outside `.stangent/` or running a command, through a `PreToolUse` hook. One-turn calls have no tools, so it matters for `--agents`, the file finder, and agents started through the plugin's commands, which `plugin/hooks/hooks.json` catches by their `agent_type`. The bug reproducer is the exception (D75). Only tested by feeding the script hook input: no real Claude Code has run it, and the `agent_type` field is as the assistant remembers it, not checked here.
+
 ## Asking how the app works (E.2, D124)
 
 `stangent spec ask "<question>"`, or `/stangent:ask`, with `spec: { ask: true }`. Off by default. **It hasn't been shown to help, and no real AI has answered one.** It answers from pages, which are generated, so every answer is labelled `as the pages describe it`.

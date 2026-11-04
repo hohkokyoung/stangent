@@ -59,6 +59,7 @@ public sealed class DriverRig : IDisposable
         case "$*" in
         {{{cases}}}
         "spec schema "*) echo '{"type":"object"}' ;;
+        "run-check "*) echo '{"ok":true,"result":{"checked":true}}' ;;
         "cost estimate "*) echo '{"ok":true,"result":{"estimateUsd":null,"basis":"fake"}}' ;;
         *) echo "fake stangent: unexpected: $*" >&2; exit 99 ;;
         esac
@@ -74,7 +75,7 @@ public sealed class DriverRig : IDisposable
 
     public IReadOnlyList<string> Calls() => File.Exists(Path.Combine(Dir, "log")) ? File.ReadAllLines(Path.Combine(Dir, "log")) : [];
     public IReadOnlyList<string> ClaudeCalls() => [.. Calls().Where(c => c.StartsWith("claude -p"))];
-    public IReadOnlyList<string> StangentCalls() => [.. Calls().Where(c => c.StartsWith("stangent ") && !c.StartsWith("stangent cost "))];
+    public IReadOnlyList<string> StangentCalls() => [.. Calls().Where(c => c.StartsWith("stangent ") && !c.StartsWith("stangent cost ") && !c.StartsWith("stangent run-check "))];
 
     /// <summary>Writes a file under the work folder (or an absolute path).</summary>
     public string Put(string path, string text)

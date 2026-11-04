@@ -14,6 +14,16 @@ namespace Stangent.Spec.Pages;
 /// </summary>
 public static class Staleness
 {
+    /// <summary>T.4: whether a recorded page's inputs have moved on from the code, for wherever a page is read. Not recorded isn't behind: it has nothing to be behind with.</summary>
+    public static bool Behind(PageSet set, SpecPaths paths, PageDef page) =>
+        PageRun.LoadJson(paths.PageJson(page)) is JsonObject recorded && (string?)recorded["generated"]?["bundleHash"] != Bundles.Build(set, page, null).InputHash;
+
+    /// <summary>The warning itself, in one form everywhere.</summary>
+    public static string BehindWarning(string id, string? writtenAt, string? codeAt) =>
+        $"Behind the code: page `{id}` was written at {Short(writtenAt)} and what it describes has changed since (code at {Short(codeAt)}). Treat it with care; `stangent spec stale` lists these.";
+
+    static string Short(string? commit) => string.IsNullOrEmpty(commit) ? "an unknown commit" : commit[..Math.Min(commit.Length, 10)];
+
     public static JsonObject Report(PageSet set, SpecPaths paths, string? diff)
     {
         var changedFiles = diff is null ? null : DiffMapper.ChangedLines(paths.Root, diff).Select(c => c.File).ToHashSet(StringComparer.Ordinal);

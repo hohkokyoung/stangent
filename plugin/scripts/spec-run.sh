@@ -142,7 +142,7 @@ run_steps() {
     if [ -n "$AGENTS" ]; then
       # Absolute rules and each command back in the repo (D89): a `cd` mustn't change what the rules allow.
       CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1 $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" ${MODEL:+--model "$MODEL"} ${CALL_BUDGET:+--max-budget-usd "$CALL_BUDGET"} \
-        --permission-mode dontAsk --allowedTools "Read(/$(pwd -P)/.stangent/**)" "Edit(/$(pwd -P)/.stangent/**)" --output-format json "$prompt" >"$usage" 2>"$usage.err" || true
+        --settings "$READ_ONLY_SETTINGS" --permission-mode dontAsk --allowedTools "Read(/$(pwd -P)/.stangent/**)" "Edit(/$(pwd -P)/.stangent/**)" --output-format json "$prompt" >"$usage" 2>"$usage.err" || true
       cp "$usage" "$usage.raw" 2>/dev/null || : >"$usage.raw"
     else
       single_turn "$step" "$usage"
@@ -232,6 +232,10 @@ esac
 [ -z "$ESTIMATE" ] || exit 0
 [ ! -f "$STANGENT_COST_DIR/stopped" ] || guard_finish 0
 
+export READ_ONLY_SETTINGS
+READ_ONLY_SETTINGS="$(guard_read_only_settings)"
+guard_app_before
 rc=0
 printf '%s\0' "${PAGES[@]}" | xargs -0 -n 1 -P "$JOBS" bash -c 'run_page "$1"' _ || rc=$?
+guard_app_after
 guard_finish "$rc"

@@ -136,6 +136,33 @@ guard_after_call() {   # <the call's whole output> <its result line> <its stderr
 # A step stangent refused, or that ended failed: the batch goes on and the run exits nonzero at the end (I.10).
 guard_mark_refused() { jq -e '.ok == false' <<<"$1" >/dev/null 2>&1 && printf '%s\n' "${2:-}" >>"$GUARD_REFUSED"; return 0; }
 
+# T.5: did a run change the app's files? By git, before and after. Bug proof builds and runs the app, so it isn't checked.
+guard_app_before() {
+  GUARD_SNAPSHOT="$(mktemp)"
+  $STANGENT run-check before --snapshot "$GUARD_SNAPSHOT" >/dev/null 2>&1 || { rm -f "$GUARD_SNAPSHOT"; GUARD_SNAPSHOT=""; }
+}
+
+guard_app_after() {
+  local out
+  [ -n "${GUARD_SNAPSHOT:-}" ] || { echo "note: the app's files weren't checked: no snapshot from before the run" >&2; return 0; }
+  out="$($STANGENT run-check after --snapshot "$GUARD_SNAPSHOT" 2>/dev/null || true)"
+  rm -f "$GUARD_SNAPSHOT"
+  if jq -e '.ok == false' <<<"$out" >/dev/null 2>&1; then
+    printf 'APP FILES CHANGED by this run: %s\n' "$(jq -r '[.result.changed[]?, (.result.commitMoved // empty | "commit \(.from) to \(.to)")] | join(", ")' <<<"$out")" >&2
+    printf 'app files changed\n' >>"$GUARD_REFUSED"
+  elif jq -e '.result.checked == false' <<<"$out" >/dev/null 2>&1; then
+    printf "note: the app's files weren't checked: %s\n" "$(jq -r '.result.why // "no reason given"' <<<"$out")" >&2
+  fi
+}
+
+# T.8: hooks for a step that has tools but must leave the app alone; settings for `--settings`. Never for bug proof (D75).
+guard_read_only_settings() {   # [more settings as JSON]
+  local more='{}'
+  [ $# -eq 0 ] || more="$1"
+  jq -cn --arg cmd "STANGENT_READ_ONLY=1 '$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/read-only-hook.sh'" --argjson more "$more" \
+    '$more + {hooks: {PreToolUse: [{matcher: "Write|Edit|MultiEdit|NotebookEdit|Bash", hooks: [{type: "command", command: $cmd}]}]}}'
+}
+
 guard_finish() {   # <the batch's exit code>; exits with the run's
   local rc="$1" d="$STANGENT_COST_DIR" summary code why
   summary="$(awk -v cap="$COST_CAP" '{ s += $1; n++ } END { if (n) printf "spent: %d AI calls, $%.2f%s\n", n, s, (cap != "" && cap != "none") ? " of $" cap : "" }' "$d/spent")"

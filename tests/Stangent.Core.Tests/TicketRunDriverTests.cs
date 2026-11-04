@@ -243,6 +243,45 @@ public sealed class TicketRunDriverTests : IDisposable
         Assert.Empty(rig.ClaudeCalls());
     }
 
+    [Fact]
+    public void The_finder_gets_the_read_only_hook_and_the_reproducer_does_not()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var repo = rig.NewRepo("repo");
+        rig.Put(Path.Combine(repo, ".stangent/in.md"), "T");
+        File.WriteAllText(Path.Combine(repo, ".git/info/exclude"), ".stangent/\n");
+        rig.Stangent(FinderSteps());
+        rig.RunIn(repo, Script, "K-1");
+        var finder = Assert.Single(rig.ClaudeCalls());
+        Assert.Contains("read-only-hook.sh", finder);
+        Assert.Contains("autoMemoryEnabled", finder);
+
+        IsBug(true);
+        Steps($"""
+            "ticket prove K-1") echo '{Reproducer}' ;;
+            "ticket check K-1 --step prove --usage "*) echo '{Written}' ;;
+            """);
+        rig.Run(Script, "--prove", "K-1");
+        Assert.DoesNotContain("read-only-hook.sh", rig.ClaudeCalls()[^1]);
+    }
+
+    [Fact]
+    public void A_run_that_changed_the_apps_files_exits_one_and_a_proof_run_isnt_checked()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        Steps("""
+            "run-check after "*) echo '{"ok":false,"error":{"code":"app_files_changed"},"result":{"changed":["src/App.cs"]}}'; exit 1 ;;
+            """);
+        var result = rig.Run(Script, "K-1");
+        Assert.Equal(1, result.Exit);
+        Assert.Contains("APP FILES CHANGED by this run: src/App.cs", result.Err);
+
+        File.Delete(Path.Combine(rig.Dir, "log"));
+        IsBug(false);
+        rig.Run(Script, "--prove", "K-1");
+        Assert.DoesNotContain(rig.Calls(), c => c.Contains("run-check"));
+    }
+
     /// <summary>T.2: a capped attempt counts as "not reproduced", so an attempt the run can't pay for in full must not start.</summary>
     [Fact]
     public void A_reproducer_whose_own_cap_is_more_than_is_left_never_starts()

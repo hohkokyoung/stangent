@@ -33,6 +33,7 @@ jobs:
         run: gh pr comment "${{ github.event.number }}" --body-file stale.md --edit-last || gh pr comment "${{ github.event.number }}" --body-file stale.md
         env: { GH_TOKEN: "${{ github.token }}" }
       # decided_by may change only in the bot's own spec PRs, where the merge job filled it from the code host.
+      - run: stangent spec content-check
       - run: stangent trace check ${{ !startsWith(github.head_ref, 'stangent/spec-') && format('--base origin/{0}', github.base_ref) || '' }}
 
   merge:

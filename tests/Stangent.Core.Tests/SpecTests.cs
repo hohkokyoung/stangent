@@ -416,6 +416,24 @@ public class SpecTests
     }
 
     [Fact]
+    public void A_page_behind_the_code_is_flagged_where_its_read_and_an_unwritten_one_isnt_called_behind()
+    {
+        using var app = new SpecApp();
+        var (page, paths) = (app.Pages().Find(SpecApp.Post)!, new SpecPaths(app.Root));
+        Assert.False(Staleness.Behind(app.Pages(), paths, page));
+
+        var step = PageRun.Prepare(app.Pages(), page, app.Repo);
+        WriteOutput(app, step, GoodEndpointPage());
+        WriteOutput(app, PageRun.Check(app.Pages(), page, app.Repo, null), new JsonObject { ["findings"] = new JsonArray() });
+        PageRun.Check(app.Pages(), page, app.Repo, null);
+        Assert.False(Staleness.Behind(app.Pages(), paths, page));
+
+        app.Write("Core/OrderService.cs", File.ReadAllText(Path.Combine(app.Root, "Core/OrderService.cs")).Replace("total > 100", "total > 200").TrimEnd('\n'));
+        Assert.True(Staleness.Behind(app.Pages(), paths, page));
+        Assert.Contains("Behind the code: page `p` was written at abcdef0123 ", Staleness.BehindWarning("p", "abcdef0123456", "99"));
+    }
+
+    [Fact]
     public void With_AI_switched_off_prepare_stops_but_stale_still_works()
     {
         using var app = new SpecApp("version: 1\nai: { enabled: false }\n");

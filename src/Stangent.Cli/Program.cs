@@ -110,6 +110,27 @@ var costEstimate = new Command("estimate", "calls × this step's average cost so
 costEstimate.SetAction(pr => Cli.Run(pr, "cost estimate", ctx => CostHistory.Estimate(ctx.Repo.Root, pr.GetValue(costStepOption)!, pr.GetValue(costCallsOption))));
 cost.Subcommands.Add(costEstimate);
 
+var runCheck = new Command("run-check", "Did a run change the app's files? By git, before and after; stangent's own folders are left out (T.5).");
+root.Subcommands.Add(runCheck);
+var snapshotOption = new Option<string>("--snapshot") { Description = "The file holding the 'before' state.", Required = true };
+var runBefore = new Command("before", "Write what git says now.") { snapshotOption };
+runBefore.SetAction(pr => Cli.Run(pr, "run-check before", ctx =>
+{
+    var snapshot = Stangent.Spec.Checks.AppFiles.Snapshot(ctx.Repo.Root);
+    File.WriteAllText(pr.GetValue(snapshotOption)!, snapshot.ToJsonString());
+    return new JsonObject { ["checked"] = (bool)snapshot["checked"]! };
+}));
+runCheck.Subcommands.Add(runBefore);
+var runAfter = new Command("after", "Compare with what `before` wrote. Exit 1 when anything changed.") { snapshotOption };
+runAfter.SetAction(pr => Cli.Run(pr, "run-check after", ctx =>
+{
+    var report = Stangent.Spec.Checks.AppFiles.Compare(ctx.Repo.Root, Cli.ReadJson(pr.GetValue(snapshotOption)!) as JsonObject
+        ?? throw new StangentException("invalid_json", "Expected the JSON object `run-check before` wrote.", ExitCodes.Usage));
+    if ((bool)report["ok"]! == false) throw new CheckFailed("app_files_changed", "The run changed the app's files.", report);
+    return report;
+}));
+runCheck.Subcommands.Add(runAfter);
+
 var index = new Command("index", "The SQLite index derived from the store files.");
 root.Subcommands.Add(index);
 var rebuild = new Command("rebuild", "Rebuild the index from the store files (validates every file).");

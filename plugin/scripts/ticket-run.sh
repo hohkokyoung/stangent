@@ -143,7 +143,7 @@ agent_search() {
     if [ -n "$tmp" ]; then trap 'git worktree remove --force "'"$tmp"'/repo" >/dev/null 2>&1; rm -rf "'"$tmp"'"' EXIT INT TERM; fi
     printf '%s' "$input" | (cd "$dir" && $CLAUDE -p ${MODEL:+--model "$MODEL"} --tools "$(jq -r '.tools' <<<"$limits")" --allowedTools "${allowed[@]}" \
       ${denied[@]+--disallowedTools "${denied[@]}"} --permission-mode "$(jq -r '.permissionMode' <<<"$limits")" \
-      --setting-sources "" --settings '{"autoMemoryEnabled":false}' --strict-mcp-config --disable-slash-commands --no-session-persistence \
+      --setting-sources "" --settings "$FINDER_SETTINGS" --strict-mcp-config --disable-slash-commands --no-session-persistence \
       --max-turns "$(jq -r '.maxTurns' <<<"$limits")" --max-budget-usd "$(jq -r '.maxBudgetUsd' <<<"$limits")" \
       --json-schema "$schema" --output-format stream-json --verbose \
       --append-system-prompt "You are one of stangent's AI steps: the stangent-file-finder. Your prompt holds your instructions, the ticket and your output schema, and on a retry your previous attempt and what to fix. The repo is your current folder. Return the JSON as your structured output.") \
@@ -325,6 +325,11 @@ guard_estimate "ticket check" $((per * ${#KEYS[@]}))
 [ -z "$ESTIMATE" ] || exit 0
 [ ! -f "$STANGENT_COST_DIR/stopped" ] || guard_finish 0
 
+export FINDER_SETTINGS
+FINDER_SETTINGS="$(guard_read_only_settings '{"autoMemoryEnabled":false}')"
+# Bug proof builds and runs the app (D75), so a run with --prove isn't one that should leave its files alone.
+[ -n "$PROVE" ] || guard_app_before
 rc=0
 printf '%s\0' "${KEYS[@]}" | xargs -0 -n 1 -P "$JOBS" bash -c 'run_ticket "$1"' _ || rc=$?
+[ -n "$PROVE" ] || guard_app_after
 guard_finish "$rc"

@@ -362,6 +362,8 @@ public sealed class WholeFlow : IDisposable
         Saw["post.ids.2"] = PageFile(Post, ".ids.json");
         Saw["trace.regenerated"] = Trace();
         Saw["check.regenerated"] = Check();
+        Saw["post.read"] = Ok("spec", "read", Post);
+        Saw["content.check"] = Ok("spec", "content-check");
         Saw["check.fixed"] = Check("--fix");
         Saw["trace.fixed"] = Trace();
         Saw["runs.regenerated"] = Runs();
@@ -736,6 +738,10 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         Assert.Equal((string?)flow.Seen("graph")["commit"], (string?)lines["commit"]);
         var ids = flow.Seen("post.ids")["scopes"]!;
         Assert.Equal((1, 1, 1), ((int?)ids["S"]!["last"], (int?)ids["R"]!["last"], (int?)ids["E"]!["last"]));
+
+        // Read just after it was written, it isn't behind (T.4); what the flow generated has no broken link or repeated id (T.6).
+        Assert.False((bool)flow.Seen("post.read")["behind"]!);
+        Assert.True((bool)flow.Seen("content.check")["ok"]!);
 
         // The verifier's finding sent the page to the fix round, and stays recorded on its statement.
         Assert.Equal("fix", (string?)flow.Seen("checkout.fix")["status"]);

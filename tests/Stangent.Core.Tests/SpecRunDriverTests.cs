@@ -575,6 +575,17 @@ public sealed class CostGuardDriverTests : IDisposable
     }
 
     [Fact]
+    public void Agents_mode_gets_the_read_only_hook_and_a_one_turn_call_has_no_tools_to_hold()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.Run(Script, "--agents", "p1");
+        Assert.Contains("read-only-hook.sh", Assert.Single(rig.ClaudeCalls()));
+        File.Delete(Path.Combine(rig.Dir, "log"));
+        rig.Run(Script, "p1");
+        Assert.Contains("--tools  ", Assert.Single(rig.ClaudeCalls()));
+    }
+
+    [Fact]
     public void No_stangent_command_starts_Claude_Code_only_the_drivers_do()
     {
         // Why benchmark/run.sh, which runs only stangent commands, has no cap of its own.

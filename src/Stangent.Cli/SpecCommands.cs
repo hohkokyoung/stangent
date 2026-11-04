@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.Text.Json.Nodes;
 using Stangent.Spec;
+using Stangent.Spec.Checks;
 using Stangent.Spec.Pages;
 
 /// <summary><c>stangent spec …</c>: reference pages from the code graph (Phase 2a, D54–D55, D60).</summary>
@@ -103,9 +104,44 @@ static class SpecCommands
         askCheck.SetAction(pr => Cli.Run(pr, "spec ask-check", ctx =>
         {
             var question = pr.GetValue(questionArg)!;
-            return Answered(PageAsk.Check(ctx.Repo, question, ReadUsage(ctx, pr.GetValue(usageOption))), question);
+            var done = PageAsk.Check(ctx.Repo, question, ReadUsage(ctx, pr.GetValue(usageOption)));
+            if (done.Answer is { } answer) NoteBehind(ctx, answer);
+            return Answered(done, question);
         }));
         spec.Subcommands.Add(askCheck);
+
+        var readFormat = new Option<string>("--format") { Description = "json (default) or md (the page's Markdown, under the warning).", DefaultValueFactory = _ => "json" };
+        var read = new Command("read", "Print a recorded page, with a warning at the top when it's behind the code (T.4). Code only, no AI.") { pageArg, readFormat };
+        read.SetAction(pr => Cli.Run(pr, "spec read", ctx =>
+        {
+            var (set, page) = LoadPage(ctx, pr.GetValue(pageArg)!);
+            var paths = new SpecPaths(ctx.Repo.Root);
+            if (PageRun.LoadJson(paths.PageJson(page)) is not JsonObject recorded || !File.Exists(paths.PageMarkdown(page)))
+                throw new Stangent.Core.StangentException("not_found", $"Page '{page.Id}' isn't written yet. `spec-run.sh` writes it.", Stangent.Core.ExitCodes.NotFound);
+            var written = (string?)recorded["generated"]?["commit"];
+            var behind = Staleness.Behind(set, paths, page);
+            var warning = behind ? Staleness.BehindWarning(page.Id, written, set.Commit) : null;
+            if (warning is not null) Console.Error.WriteLine("warning: " + warning);
+            return new JsonObject
+            {
+                ["id"] = page.Id, ["path"] = paths.Relative(paths.PageMarkdown(page)), ["behind"] = behind, ["warning"] = warning, ["writtenAt"] = written, ["codeAt"] = set.Commit,
+                ["markdown"] = File.ReadAllText(paths.PageMarkdown(page)),
+            };
+        }, pr.GetValue(readFormat) == "md" ? r => ((string?)r!["warning"] is { } w ? $"> **{w}**\n\n" : "") + (string)r["markdown"]! : null));
+        spec.Subcommands.Add(read);
+
+        var contentCheck = new Command("content-check", "Broken links and duplicate ids in the generated pages, links, documents and requirements (T.6). Code only, no AI. Exit 1 when it finds any.");
+        contentCheck.SetAction(pr => Cli.Run(pr, "spec content-check", ctx =>
+        {
+            // The graph tells a page not written yet from a broken link; without one, every missing target is broken.
+            IReadOnlySet<string>? known = null;
+            try { known = Load(ctx, null).Pages.Select(p => p.Path).ToHashSet(StringComparer.Ordinal); }
+            catch (Stangent.Core.StangentException) { Console.Error.WriteLine("warning: no graph, so a link to a page not written yet counts as broken."); }
+            var report = ContentChecks.Run(ctx.Repo.Root, known);
+            if ((bool)report["ok"]! == false) throw new CheckFailed("content_check_failed", $"{report["counts"]!["problems"]} broken links or duplicate ids.", report);
+            return report;
+        }));
+        spec.Subcommands.Add(contentCheck);
 
         var diffOption = new Option<string?>("--diff") { Description = "The PR's range (base..head): lists the changed files inside each stale page's slice." };
         var formatOption = new Option<string>("--format") { Description = "json (default) or md (the list for a PR comment).", DefaultValueFactory = _ => "json" };
@@ -144,6 +180,24 @@ static class SpecCommands
         var set = Load(ctx, null);
         var page = set.Find(id) ?? throw new Stangent.Core.StangentException("not_found", $"No page '{id}'. `stangent spec pages` lists them.", Stangent.Core.ExitCodes.NotFound);
         return (set, page);
+    }
+
+    /// <summary>T.4: an answer read from a page that's behind the code says so, beside the answer. Added here, so the asker's input and the saved answer don't change.</summary>
+    static void NoteBehind(CliContext ctx, JsonObject answer)
+    {
+        var ids = (answer["pages"] as JsonArray ?? []).Select(p => p is JsonObject o ? (string?)o["id"] : (string?)p).OfType<string>().ToList();
+        try
+        {
+            var set = Load(ctx, null);
+            var paths = new SpecPaths(ctx.Repo.Root);
+            var behind = ids.Select(set.Find).OfType<PageDef>().Where(d => Staleness.Behind(set, paths, d)).Select(d => d.Id).ToList();
+            answer["pagesBehind"] = new JsonArray([.. behind.Select(b => (JsonNode)b)]);
+            foreach (var id in behind) Console.Error.WriteLine("warning: " + Staleness.BehindWarning(id, null, set.Commit));
+        }
+        catch (Stangent.Core.StangentException e)
+        {
+            answer["pagesBehindNote"] = "couldn't check whether these pages are behind the code: " + e.Message;
+        }
     }
 
     /// <summary>A step that ends the page as failed, or asks for a retry, is a check that found problems: exit 1, with the next step in result.</summary>
