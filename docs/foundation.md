@@ -2,9 +2,9 @@
 
 The pieces every product builds on, added in the overhaul (D112, D113).
 
-## Evidence (contract `evidence` v1)
+## Evidence (contract `evidence` v2)
 
-One claim's proof, in `schemas/evidence.v1.json`, with `EvidenceRecord` and `EvidenceValidator` in Core.
+One claim's proof, in `schemas/evidence.v2.json` (v2 adds a `document` citation's `attachment`, `file`, `sheet` and `row`, D123), with `EvidenceRecord` and `EvidenceValidator` in Core.
 It's a new contract, not a change to `artifact-base`, so nothing else had to change. Products move onto it when each is rebuilt. Findings are the first (2.4, `docs/spec.md`).
 
 | Field | Meaning |
@@ -53,6 +53,8 @@ components: { page-verifier: false, git-history: false, detector-config-keys: fa
 | `agree-checker` | `components.` | on | Each agree link is recorded unchecked with a note, and the run has `agreeChecker: off`. |
 | `requirements-links` | `components.` | on | The section's sentences are judged, as with no requirements built. |
 | `first-import-approval` | `components.` | off | A first import goes straight in. When it's on, it waits until `fsd approve` (D122). |
+| `attachments-in-checks` | `fsd.attachmentsInChecks` | off | A section's attachments stay out of every bundle and hash, and a quote from one is refused (D123). |
+| `ticket-excel-text` | `components.` | off | A ticket's workbook, zip or a file inside its attachment is only saved under `converted/`; `ticket.json`, and so every ticket hash, is what it was (D123). |
 | `findings` | `fsd.findings` | off | Only links are recorded (D68). |
 | `disprove` | `fsd.disprove` | off | Status `off`. Needs `findings`: on without it, it's `off` and says so. |
 | `file-finder` | `tickets.aiPoints` | on | Code's signals are the starting points (`ai.status: off`). |
@@ -70,8 +72,8 @@ Built and tested, and nothing uses them yet. They're labelled so no one counts o
 | What | Built in | Waiting for |
 |---|---|---|
 | `opens-screen` lines (Playwright specs to screens) | 1.2, D115 | A step that reads them. Only graph code does today: `graph screen-tests` and the graph's own store. Bug proof finds related specs through the shared code behind them, not the lines. |
-| `ran` evidence | `evidence` v1 | A step that really runs something. Nothing fills it, and it can't be typed. Phase 4 records what a failing test ran. |
-| Tickets on the evidence shape | `evidence` v1 | Tickets being rebuilt. A bundle and a draft carry their own shape; only findings use `evidence`. |
+| `ran` evidence | `evidence` v2 | A step that really runs something. Nothing fills it, and it can't be typed. Phase 4 records what a failing test ran. |
+| Tickets on the evidence shape | `evidence` v2 | Tickets being rebuilt. A bundle and a draft carry their own shape; only findings use `evidence`. |
 
 ## Permanent ids
 

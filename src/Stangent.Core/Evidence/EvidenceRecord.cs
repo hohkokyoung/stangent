@@ -22,6 +22,11 @@ public sealed record Citation
     public LineRange? Lines { get; init; }
     public string? Symbol { get; init; }
     public string? Quote { get; init; }
+    /// <summary>A document citation whose quote is in an attachment: its <c>A-</c> id, file, and where a workbook has them, sheet and row (D123).</summary>
+    public string? Attachment { get; init; }
+    public string? File { get; init; }
+    public string? Sheet { get; init; }
+    public int? Row { get; init; }
     /// <summary>What a reader must know about these lines, such as a partial type's first part only.</summary>
     public string? Note { get; init; }
 }
@@ -33,7 +38,7 @@ public sealed record EvidenceChecker
     public string? InputsHash { get; init; }
 }
 
-/// <summary>One claim's proof, contract <c>evidence</c> v1 (D113). Consumers move onto it when each is rebuilt (D112).</summary>
+/// <summary>One claim's proof, contract <c>evidence</c> v2 (D113, D123). Consumers move onto it when each is rebuilt (D112).</summary>
 public sealed record EvidenceRecord
 {
     static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
@@ -66,7 +71,7 @@ public sealed record EvidenceRecord
 /// <summary>The contract's schema plus what a schema can't say. The AI proposes, this checks (D18).</summary>
 public static class EvidenceValidator
 {
-    public const string Schema = "evidence.v1.json";
+    public const string Schema = "evidence.v2.json";
 
     /// <summary>Errors as "path: what's wrong" lines; empty when valid.</summary>
     public static IReadOnlyList<string> Validate(string json)
@@ -85,6 +90,12 @@ public static class EvidenceValidator
         if (((string)node!["id"]!).EndsWith('\n')) problems.Add("id: ends in a line break");
         if (node["citation"]!["lines"] is JsonObject lines && (int)lines["start"]! > (int)lines["end"]!)
             problems.Add("citation.lines: start is after end");
+
+        var citation = node["citation"]!;
+        if (citation["attachment"] is null && new[] { "file", "sheet", "row" }.Any(k => citation[k] is not null))
+            problems.Add("citation: file, sheet and row need an attachment");
+        if (citation["attachment"] is not null && (string?)citation["kind"] != "document")
+            problems.Add("citation.attachment: only a document citation can name an attachment");
 
         var strength = (string)node["strength"]!;
         var checkers = node["checkedBy"]!.AsArray().Select(c => (string)c!["kind"]!).ToList();

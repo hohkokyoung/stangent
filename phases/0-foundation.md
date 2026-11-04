@@ -3,7 +3,7 @@ phase: 0
 name: foundation
 status: done
 consumes: {}
-provides: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, evidence: 1 }
+provides: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, evidence: 2 }
 ---
 
 # Phase 0 · Foundation

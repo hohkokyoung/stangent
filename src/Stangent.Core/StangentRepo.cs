@@ -93,6 +93,18 @@ public sealed class StangentConfig
         public bool SkipApproval { get; set; }
         /// <summary><c>fsd export</c>: a chapter longer than this many lines is cut at its next heading level (D122). <c>--max-lines</c> overrides it.</summary>
         public int ExportMaxLines { get; set; } = 1500;
+        /// <summary>A section's attachments in the link judge's and the disprove step's bundles, and a quote from one accepted (D123). Off by default: with it off no bundle or hash changes.</summary>
+        public bool AttachmentsInChecks { get; set; }
+        /// <summary>With <see cref="AttachmentsInChecks"/> on, an attachment holding more text than this stays out of the bundle and reads "not checked" (D123). A stated setting, not a measured one.</summary>
+        public int AttachmentChars { get; set; } = 40000;
+        public ExcelConfig Excel { get; set; } = new();
+    }
+
+    /// <summary>When a workbook is flagged as very large in the import report (D123). It's still imported; these only say when to look. Stated settings, not measured ones.</summary>
+    public sealed class ExcelConfig
+    {
+        public int LargeSheets { get; set; } = 50;
+        public int LargeRows { get; set; } = 100000;
     }
 
     /// <summary>

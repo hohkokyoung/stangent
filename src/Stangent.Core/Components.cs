@@ -49,11 +49,13 @@ public static class StangentComponents
         new("agree-checker", "The fresh check of each agree link", "components.agree-checker", true, Links, ["ai"]),
         new("requirements-links", "Judging by requirement when a section's are built", "components.requirements-links", true, Links, []),
         new("first-import-approval", "A person approves a document's first import before anything reads it", "components.first-import-approval", false, ["fsd import", "fsd approve"], []),
+        new("attachments-in-checks", "A section's attachments in the link judge's and disprove bundles, and quotes from them accepted", "fsd.attachmentsInChecks", false, [.. Links, "fsd disprove prepare", "fsd disprove check", "fsd disprove estimate", "fsd promote"], []),
         new("findings", "Gap, conflict and undocumented findings", "fsd.findings", false, [.. Links, "fsd undocumented", "trace check", "ticket bundle", "ticket draft", "fsd promote"], []),
         new("disprove", "A second agent tries to refute each finding", "fsd.disprove", false, ["fsd disprove prepare", "fsd disprove check", "fsd disprove estimate"], ["ai", "findings"]),
         new("file-finder", "The AI that finds a ticket's files", "tickets.aiPoints", true, ["ticket points", "ticket prepare", "ticket check"], ["ai"]),
         new("bug-proof", "A failing test before a bug is fixed", "components.bug-proof", true, ["ticket prove", "ticket prepare", "ticket check", "ticket draft"], ["ai"]),
         new("drafts", "Draft comments for a ticket", "components.drafts", true, ["ticket draft", "ticket prepare", "ticket check", "ticket post"], ["ai"]),
+        new("ticket-excel-text", "A ticket's workbooks and files inside its attachments reach ticket.json, and so the AI steps. Off, they're only saved beside the attachment", "components.ticket-excel-text", false, ["ticket pull"], []),
     ];
 
     /// <summary>What can't come out, so a test run with everything off knows where it stops.</summary>
@@ -69,7 +71,7 @@ public static class StangentComponents
     public static IReadOnlyList<NotConnected> NotConnectedYet { get; } =
     [
         new("ran-evidence", "`ran` evidence: a test or run shows it", "a step that really runs something: nothing fills `ran` today, and Phase 4 records what a failing test ran"),
-        new("ticket-evidence", "Tickets on the evidence shape", "Tickets are rebuilt onto `evidence` v1: a bundle and a draft still carry their own shape"),
+        new("ticket-evidence", "Tickets on the evidence shape", "Tickets are rebuilt onto `evidence` v2: a bundle and a draft still carry their own shape"),
     ];
 
     public static StangentComponent Find(string name) => All.First(c => c.Name == name);
@@ -87,6 +89,7 @@ public static class StangentComponents
                 case "git-history": config.History.Enabled = on; break;
                 case "findings": config.Fsd.Findings = on; break;
                 case "disprove": config.Fsd.Disprove = on; break;
+                case "attachments-in-checks": config.Fsd.AttachmentsInChecks = on; break;
                 case "file-finder": config.Tickets.AiPoints = on; break;
             }
     }
@@ -98,6 +101,7 @@ public static class StangentComponents
         "git-history" => config.History.Enabled,
         "findings" => config.Fsd.Findings,
         "disprove" => config.Fsd.Disprove,
+        "attachments-in-checks" => config.Fsd.AttachmentsInChecks,
         "file-finder" => config.Tickets.AiPoints,
         _ when name.StartsWith("detector-", StringComparison.Ordinal) => DetectorOn(config, name["detector-".Length..]),
         _ => config.Components.TryGetValue(name, out var on) ? on : All.FirstOrDefault(c => c.Name == name)?.OnByDefault ?? true,

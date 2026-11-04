@@ -2,7 +2,7 @@
 phase: 2b
 name: fsd
 status: done
-consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, reference-lines: 1, evidence: 1 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, reference-lines: 1, evidence: 2 }
 provides: { source-document: 3, trace-links: 4 }
 ---
 
