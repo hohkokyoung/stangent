@@ -10,6 +10,8 @@
     <ProjectReference Include="..\..\src\Stangent.Graph\Stangent.Graph.csproj" />
     <ProjectReference Include="..\..\src\Stangent.Spec\Stangent.Spec.csproj" />
     <ProjectReference Include="..\..\src\Stangent.Tickets\Stangent.Tickets.csproj" />
+    <!-- Built first, not referenced: WholeFlowTests runs the real tool. -->
+    <ProjectReference Include="..\..\src\Stangent.Cli\Stangent.Cli.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
