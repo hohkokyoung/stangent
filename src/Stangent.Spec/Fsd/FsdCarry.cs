@@ -22,7 +22,7 @@ static class FsdCarry
         public bool SameWords => (string)Old["text"]! == (string)New["text"]! && (string)Old["title"]! == Title && JsonNode.DeepEquals(Old[AttachmentChecks.Key], New[AttachmentChecks.Key]);
     }
 
-    public static JsonObject Apply(string root, string doc, IReadOnlyList<Pair> pairs, IReadOnlyList<JsonObject> gone, IReadOnlySet<string> numbersNow, bool findings)
+    public static JsonObject Apply(string root, string doc, IReadOnlyList<Pair> pairs, IReadOnlyList<JsonObject> gone, IReadOnlySet<string> numbersNow, bool findings, bool finer = false)
     {
         using var links = LinkRun.Lock(root);
         using var items = RequirementFile.Lock(root);
@@ -36,7 +36,7 @@ static class FsdCarry
             var pages = (run["candidates"]?.AsArray() ?? []).Select(c => (string)c!["page"]!).ToList();
             var index = SpecIndex.Load(root);
             var requirements = LinkRun.Requirements(root, doc, p.Old);
-            return (LinkRun.JudgeInputs(p.Old, doc, pages, index, requirements, findings), LinkRun.JudgeInputs(p.New, doc, pages, index, requirements, findings));
+            return (LinkRun.JudgeInputs(p.Old, doc, pages, index, requirements, findings, finer), LinkRun.JudgeInputs(p.New, doc, pages, index, requirements, findings, finer));
         });
         var reqRuns = CarryRuns(RequirementRun.LoadRuns(root), doc, pairs, rerun, (p, _) => (RequirementRun.InputsOf(p.Old, doc), RequirementRun.InputsOf(p.New, doc)));
 

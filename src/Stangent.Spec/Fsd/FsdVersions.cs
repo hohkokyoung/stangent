@@ -324,7 +324,7 @@ public static class FsdVersions
             foreach (var s in oldById.Values) AttachmentChecks.Fill(s, current, FsdImport.DocDir(root, doc), false, repo.Config.Fsd.AttachmentChars);
             foreach (var s in sections) AttachmentChecks.Fill(s, pending, CandidateDir(root, doc), true, repo.Config.Fsd.AttachmentChars);
         }
-        var carried = FsdCarry.Apply(root, doc, pairs, gone, sections.Select(s => (string)s["id"]!).ToHashSet(StringComparer.Ordinal), repo.Config.Fsd.Findings);
+        var carried = FsdCarry.Apply(root, doc, pairs, gone, sections.Select(s => (string)s["id"]!).ToHashSet(StringComparer.Ordinal), repo.Config.Fsd.Findings, repo.Config.Fsd.JudgeFinerVerdicts);
         foreach (var s in sections) s.Remove(AttachmentChecks.Key);
 
         var ledger = Ledger(root, doc);

@@ -49,6 +49,8 @@
               "gap",
               "conflict",
               "undocumented",
+              "partial",
+              "unclear",
               "table-fact"
             ]
           },
@@ -185,6 +187,13 @@
                 "minLength": 1
               }
             ]
+          },
+          "partial": {
+            "description": "On a partial link only (C.4, D124): what the page's statement covers and what it leaves out, from the judge.",
+            "type": "object",
+            "required": ["covered", "missing"],
+            "additionalProperties": false,
+            "properties": { "covered": { "type": "string" }, "missing": { "type": "string" } }
           },
           "table_fact": {
             "description": "On a table-fact finding only (C.2, D124): what code compared. Written by code; the route says this came by comparing a table with the code, not through a page. Its evidence is the table's cell, stated, and the code's lines, read.",

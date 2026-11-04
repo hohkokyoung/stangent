@@ -16,7 +16,7 @@ namespace Stangent.Spec.Trace;
 public static class TraceFile
 {
     public const string Schema = "trace-links.v4.json";
-    public static readonly string[] States = ["agree", "gap", "conflict", "undocumented", "table-fact"];
+    public static readonly string[] States = ["agree", "gap", "conflict", "undocumented", "partial", "unclear", "table-fact"];
     /// <summary>A difference found by comparing a table with the code, by code (C.2, D124): it has no page, and it holds what was compared in <c>table_fact</c>.</summary>
     public const string TableFact = "table-fact";
     public static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "page-wrong", "defer", "accepted", "not-a-difference"];
@@ -77,6 +77,7 @@ public static class TraceFile
             sb.Append($"    by: {S(e["by"])}\n");
             if (e["check"] is not null) sb.Append($"    check: {S(e["check"])}\n");
             if (e["note"] is not null) sb.Append($"    note: {S(e["note"])}\n");
+            if (e["partial"] is JsonObject partial) sb.Append($"    partial: {partial.ToJsonString(Json)}\n");
             if (e["table_fact"] is JsonObject tableFact) sb.Append($"    table_fact: {tableFact.ToJsonString(Json)}\n");
             sb.Append($"    decision: {S(e["decision"])}\n");
             sb.Append($"    decided_by: {S(e["decided_by"])}\n");

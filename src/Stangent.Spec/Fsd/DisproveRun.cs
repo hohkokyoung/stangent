@@ -241,6 +241,7 @@ public static class DisproveRun
         {
             "conflict" => $"The application does something different from this FSD sentence: \"{fsdQuote}\". The page says: \"{pageQuote}\".\n",
             "gap" => $"The application doesn't do what this FSD sentence says: \"{fsdQuote}\".\n",
+            "partial" => $"The application only partly does what this FSD sentence says: \"{fsdQuote}\". The page says: \"{pageQuote}\". What isn't shown: {(string?)finding["partial"]?["missing"]}\n",
             _ => $"The application does this, and the FSD doesn't say it: \"{pageQuote}\".\n",
         });
 

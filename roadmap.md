@@ -181,7 +181,7 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 8 | Every section is linked or marked "not in code" by a person, with its attachments listed | ✅ | 2b, 2c, D53 | C.1 |
 | 8 | Compare table facts by code | ✅ built, off, not shown to help (D124) | 1, 2b, D68, D56 | C.2 |
 | 8 | A decided finding becomes `recheck` or `gone` | ✅ | 2b, D58, D118 | C.3 |
-| 8 | The link judge can say `partial` and `unclear` | ⬜ | 2b, 2c, D53 | C.4 |
+| 8 | The link judge can say `partial` and `unclear` | ✅ built, off, not shown to help (D124) | 2b, 2c, D53 | C.4 |
 | 8 | BA decisions `accepted` and `not a difference` | ✅ | 2b, D58 | C.5 |
 | 8 | Group small neighbouring sections into one unit when checking | ⬜ | 2b, 2c | C.6 |
 | 8 | A status for a document | ✅ | plugin, 2b | E.1 |

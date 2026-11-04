@@ -23,7 +23,7 @@ public sealed class SpecPaths(string root)
 
 /// <summary>The next thing a driver (the plugin command, CI, the benchmark) does for a page.</summary>
 public sealed record RunStep(string Status, string Action, string? Agent = null, string? Prompt = null, string? Output = null,
-    IReadOnlyList<string>? Errors = null, Usage? Usage = null, string? Warning = null)
+    IReadOnlyList<string>? Errors = null, Usage? Usage = null, string? Warning = null, string? Schema = null)
 {
     public JsonObject ToJson(string page)
     {
@@ -32,7 +32,7 @@ public sealed record RunStep(string Status, string Action, string? Agent = null,
         if (Agent is not null) next["agent"] = Agent;
         if (Prompt is not null) next["prompt"] = Prompt;
         if (Output is not null) next["output"] = Output;
-        if (Agent is not null && SchemaOf(Agent) is { } schema) next["schema"] = schema;
+        if (Agent is not null && (Schema ?? SchemaOf(Agent)) is { } schema) next["schema"] = schema;
         o["next"] = next;
         if (Errors is { Count: > 0 }) o["errors"] = new JsonArray([.. Errors.Select(e => (JsonNode)e)]);
         if (Warning is not null) o["warning"] = Warning;

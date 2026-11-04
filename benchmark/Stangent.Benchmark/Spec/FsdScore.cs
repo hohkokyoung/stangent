@@ -18,7 +18,7 @@ public static class FsdScore
         var doc = (string)key["doc"]!;
         var items = key["items"]!.AsArray().OfType<JsonObject>().ToList();
         var findings = TraceFile.Load(root)["entries"]!.AsArray().OfType<JsonObject>()
-            .Where(e => (string)e["state"]! is not ("agree" or TraceFile.TableFact)).Where(e => e["fsd"] is null || (string?)e["fsd"]!["doc"] == doc).Where(e => keep?.Invoke(e) ?? true).ToList();
+            .Where(e => (string)e["state"]! is not ("agree" or "unclear" or TraceFile.TableFact)).Where(e => e["fsd"] is null || (string?)e["fsd"]!["doc"] == doc).Where(e => keep?.Invoke(e) ?? true).ToList();
 
         // Each planted item takes the first finding that matches it; a finding matches at most one item.
         var used = new HashSet<string>(StringComparer.Ordinal);
@@ -84,6 +84,7 @@ public static class FsdScore
 
         var runs = Stangent.Spec.Fsd.LinkRun.LoadRuns(root);
         var sections = runs.Where(r => r.Key.StartsWith(doc + "#", StringComparison.Ordinal)).Select(r => r.Value!.AsObject()).ToList();
+        var finer = FinerVerdicts(root, doc, findings, results);
         return new JsonObject
         {
             ["doc"] = doc,
@@ -92,6 +93,7 @@ public static class FsdScore
             ["foundAsKind"] = Shares(foundStrict),
             ["noise"] = noise,
             ["bars"] = bars,
+            ["finerVerdicts"] = finer,
             ["candidates"] = new JsonObject
             {
                 ["sections"] = sections.Count,
@@ -108,6 +110,21 @@ public static class FsdScore
                 ["fsdQuote"] = f["fsd"]?["quote"]?.DeepClone(), ["page"] = f["page"]?["id"]?.DeepClone(),
                 ["pageQuote"] = f["page"]?["quote"]?.DeepClone(), ["note"] = f["note"]?.DeepClone(),
             })]),
+        };
+    }
+
+    /// <summary>Partial and unclear, counted out loud (C.4): a partial on a planted item is already in <c>found</c>; an unclear one counts as neither found nor a false alarm, and is listed here. Null when there are none, so a saved score reads as it did.</summary>
+    static JsonObject? FinerVerdicts(string root, string doc, List<JsonObject> findings, JsonArray results)
+    {
+        var unclear = TraceFile.Load(root)["entries"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "unclear" && (string?)e["fsd"]?["doc"] == doc).ToList();
+        var partial = findings.Where(f => (string)f["state"]! == "partial").ToList();
+        if (unclear.Count == 0 && partial.Count == 0) return null;
+        var found = results.OfType<JsonObject>().Where(r => (string?)r["state"] == "partial").Select(r => (string)r["id"]!).ToList();
+        return new JsonObject
+        {
+            ["partial"] = partial.Count, ["partialFoundPlanted"] = new JsonArray([.. found.Select(id => (JsonNode)id)]),
+            ["unclear"] = unclear.Count, ["unclearEntries"] = new JsonArray([.. unclear.Select(e => (JsonNode)(string)e["id"]!)]),
+            ["note"] = "A partial on a planted item counts as found, and not as its kind. An unclear one counts as neither found nor noise.",
         };
     }
 
@@ -143,7 +160,8 @@ public static class FsdScore
         var section = (string?)f["fsd"]?["section"];
         if (kind is "gap" or "conflict")
         {
-            if (strict ? state != kind : state is not ("gap" or "conflict")) return false;
+            // Finer verdicts (C.4): a partial one on a planted item counts as found, and never as its kind.
+            if (strict ? state != kind : state is not ("gap" or "conflict" or "partial")) return false;
             if (section != (string)item["section"]!) return false;
             var quote = Quotes.Normalize((string?)f["fsd"]?["quote"] ?? "").ToLowerInvariant();
             var text = Quotes.Normalize((string)item["text"]!).ToLowerInvariant();

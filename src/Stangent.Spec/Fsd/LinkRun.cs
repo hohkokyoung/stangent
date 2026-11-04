@@ -21,6 +21,8 @@ public static class LinkRun
     public const string Judge = "stangent-link-judge";
     public const string RequirementJudge = "stangent-requirement-judge";
     public const string Checker = "stangent-agree-checker";
+    public const string JudgeSchema = "link-judge-output.v1.json", RequirementJudgeSchema = "requirement-judge-output.v1.json";
+    public const string FinerJudgeSchema = "link-judge-finer-output.v1.json", FinerRequirementJudgeSchema = "requirement-judge-finer-output.v1.json";
 
     public static string Key(string doc, string section) => $"{doc}#{section}";
     public static string RunsFile(string root) => Path.Combine(root, "specs", "trace-runs.json");
@@ -120,7 +122,8 @@ public static class LinkRun
             return new RunStep("recorded", "none");
         }
         var requirements = RequirementsInUse(repo, doc, section);
-        var judgeBundle = requirements is null ? JudgeBundle(section, doc, candidates.Select(c => c.Page), index) : RequirementJudgeBundle(section, doc, candidates.Select(c => c.Page), index, requirements);
+        var finer = repo.Config.Fsd.JudgeFinerVerdicts;
+        var judgeBundle = requirements is null ? JudgeBundle(section, doc, candidates.Select(c => c.Page), index, finer) : RequirementJudgeBundle(section, doc, candidates.Select(c => c.Page), index, requirements, finer);
         var inputs = JudgeInputs(judgeBundle, requirements is not null, repo.Config.Fsd.Findings);
         if ((string?)run?["inputs"] == inputs) return new RunStep("current", "none");
         AiPolicy.EnsureAllowed(repo.Config, "fsd prepare");
@@ -133,9 +136,10 @@ public static class LinkRun
             ["candidates"] = new JsonArray([.. candidates.Select(c => (JsonNode)new JsonObject { ["page"] = c.Page, ["why"] = c.Why })]),
             ["candidatesBy"] = by, ["usage"] = carried?.DeepClone() ?? new JsonObject(),
         };
+        if (finer) state["schema"] = requirements is null ? FinerJudgeSchema : FinerRequirementJudgeSchema;
         Stage(repo.Root, state, "judge", "prepared");
         Save(work, state);
-        return Step(repo.Root, work, requirements is null ? Judge : RequirementJudge, "judge.md", "judge.json", "Section and candidate pages");
+        return Step(repo.Root, work, requirements is null ? Judge : RequirementJudge, "judge.md", "judge.json", "Section and candidate pages", (string?)state["schema"]);
     }
 
     static string JudgeInputs(string judgeBundle, bool byRequirement, bool findings)
@@ -147,10 +151,10 @@ public static class LinkRun
 
     /// <summary>What a run's judge step would hash for this section and these candidate pages (D117: a section that only changed
     /// its number keeps its paid links). Null when a page has no record.</summary>
-    internal static string? JudgeInputs(JsonObject section, string doc, IReadOnlyList<string> pages, SpecIndex index, List<JsonObject>? requirements, bool findings)
+    internal static string? JudgeInputs(JsonObject section, string doc, IReadOnlyList<string> pages, SpecIndex index, List<JsonObject>? requirements, bool findings, bool finer = false)
     {
         if (pages.Any(p => !index.Pages.ContainsKey(p))) return null;
-        var bundle = requirements is null ? JudgeBundle(section, doc, pages, index) : RequirementJudgeBundle(section, doc, pages, index, requirements);
+        var bundle = requirements is null ? JudgeBundle(section, doc, pages, index, finer) : RequirementJudgeBundle(section, doc, pages, index, requirements, finer);
         return JudgeInputs(bundle, requirements is not null, findings);
     }
 
@@ -199,7 +203,7 @@ public static class LinkRun
             {
                 var candidates = state["candidates"]!.AsArray().Select(c => (string)c!["page"]!).ToHashSet(StringComparer.Ordinal);
                 var output = PageChecks.Parse(Read(work, "judge.json"), errors);
-                if (errors.Count == 0) errors.AddRange(SchemaRegistry.Embedded.Validate(byRequirement ? "requirement-judge-output.v1.json" : "link-judge-output.v1.json", output!.ToJsonString()).Select(e => $"Schema: {e}"));
+                if (errors.Count == 0) errors.AddRange(SchemaRegistry.Embedded.Validate((string?)state["schema"] ?? (byRequirement ? RequirementJudgeSchema : JudgeSchema), output!.ToJsonString()).Select(e => $"Schema: {e}"));
                 var links = new List<(JsonObject Link, List<string> Errors)>();
                 var missing = new List<string>();
                 if (errors.Count == 0)
@@ -232,6 +236,7 @@ public static class LinkRun
                     return Finish(repo.Root, work, state, doc, section, [], repo.Config.Fsd.Findings);
                 }
                 Stage(repo.Root, state, "confirm", "the judge's output passed the code check");
+                state.Remove("schema");
                 state["retryUsed"] = false; // the checker gets its own one retry
                 Save(work, state);
                 File.WriteAllText(Path.Combine(work, "checker.md"), CheckerBundle(section, doc, candidates, index, agrees, byRequirement ? Requirements(repo.Root, doc, section) : null));
@@ -296,10 +301,13 @@ public static class LinkRun
                     else final = (JsonObject)link.DeepClone(); // its evidence failed: stays "agree", disputed, never bulk-approved
                 }
             }
-            entries.Add(Entry((string)final["state"]!, doc, section, (string?)final["fsdQuote"], (string?)final["page"], (string?)final["statement"],
-                (string?)final["pageQuote"], "judge", check, (string?)final["note"], (string?)link["requirement"]));
+            var entry = Entry((string)final["state"]!, doc, section, (string?)final["fsdQuote"], (string?)final["page"], (string?)final["statement"],
+                (string?)final["pageQuote"], "judge", check, (string?)final["note"], (string?)link["requirement"]);
+            if ((string)final["state"]! == "partial") entry["partial"] = new JsonObject { ["covered"] = (string?)final["covered"], ["missing"] = (string?)final["missing"] };
+            entries.Add(entry);
         }
-        // With findings off (D57, D68) only links are recorded: a disputed "agree" that became a finding is left out too.
+        // With findings off (D57, D68) only links are recorded: a disputed "agree" that became a finding is left out too, and an unclear one, which has only a person's queue to go to. A run says how many.
+        var unclearLeftOut = findings ? 0 : entries.Count(e => (string)e["state"]! == "unclear");
         if (!findings) entries = [.. entries.Where(e => (string)e["state"]! == "agree")];
         ApplyEntries(root, doc, (string)state["section"]!, entries);
         var key = Key(doc, (string)state["section"]!);
@@ -314,6 +322,8 @@ public static class LinkRun
             r["links"] = entries.Count;
             r["disputed"] = disputed;
             r["unchecked"] = unchecked_;
+            if (unclearLeftOut > 0) r["unclearLeftOut"] = unclearLeftOut;
+            else r.Remove("unclearLeftOut");
             if ((bool?)state["agreeCheckerOff"] == true) r["agreeChecker"] = "off";
             else r.Remove("agreeChecker");
             // A requirement the judge left out even after its retry has no entry at all: say so, or it reads as nothing to see.
@@ -338,7 +348,7 @@ public static class LinkRun
         // A subagent that wrote nothing (a timeout, a refusal) still gets its retry.
         if (File.Exists(Path.Combine(work, output))) File.Move(Path.Combine(work, output), Path.Combine(work, "previous-" + output), overwrite: true);
         else File.WriteAllText(Path.Combine(work, "previous-" + output), "(no output)");
-        var step = Step(root, work, agent, bundle, output, "Input");
+        var step = Step(root, work, agent, bundle, output, "Input", (string?)state["schema"]);
         return step with
         {
             Status = "retry", Errors = errors,
@@ -354,9 +364,9 @@ public static class LinkRun
         return new RunStep("failed", "none", Errors: errors);
     }
 
-    internal static RunStep Step(string root, string work, string agent, string bundle, string output, string label) =>
+    internal static RunStep Step(string root, string work, string agent, string bundle, string output, string label, string? schema = null) =>
         new(agent is Judge or RequirementJudge ? "judge" : agent == Finder ? "find" : "confirm", agent is Judge or RequirementJudge ? "judge" : agent == Finder ? "find" : "confirm", agent,
-            $"{label}: {Rel(root, Path.Combine(work, bundle))}\nWrite your JSON to: {Rel(root, Path.Combine(work, output))}", Rel(root, Path.Combine(work, output)));
+            $"{label}: {Rel(root, Path.Combine(work, bundle))}\nWrite your JSON to: {Rel(root, Path.Combine(work, output))}", Rel(root, Path.Combine(work, output)), Schema: schema);
 
     public static JsonObject Entry(string state, string doc, JsonObject? section, string? fsdQuote, string? page, string? statement, string? pageQuote,
         string by, string? check, string? note, string? requirement = null)
@@ -500,18 +510,18 @@ public static class LinkRun
         return sb.ToString();
     }
 
-    static string JudgeBundle(JsonObject section, string doc, IEnumerable<string> pages, SpecIndex index)
+    static string JudgeBundle(JsonObject section, string doc, IEnumerable<string> pages, SpecIndex index, bool finer = false)
     {
-        var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions("link-judge.md"));
-        sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText("link-judge-output.v1.json").TrimEnd('\n')).Append("\n```\n\n");
+        var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions(finer ? "link-judge-finer.md" : "link-judge.md"));
+        sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText(finer ? FinerJudgeSchema : JudgeSchema).TrimEnd('\n')).Append("\n```\n\n");
         sb.Append(SectionBlock(section, doc)).Append(AttachmentChecks.Block(section)).Append(PagesBlock(pages, index));
         return sb.ToString();
     }
 
-    static string RequirementJudgeBundle(JsonObject section, string doc, IEnumerable<string> pages, SpecIndex index, List<JsonObject> requirements)
+    static string RequirementJudgeBundle(JsonObject section, string doc, IEnumerable<string> pages, SpecIndex index, List<JsonObject> requirements, bool finer = false)
     {
-        var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions("requirement-judge.md"));
-        sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText("requirement-judge-output.v1.json").TrimEnd('\n')).Append("\n```\n\n");
+        var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions(finer ? "requirement-judge-finer.md" : "requirement-judge.md"));
+        sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText(finer ? FinerRequirementJudgeSchema : RequirementJudgeSchema).TrimEnd('\n')).Append("\n```\n\n");
         sb.Append(SectionBlock(section, doc)).Append(AttachmentChecks.Block(section)).Append("\n# The requirements\n\n");
         foreach (var r in requirements) sb.Append(RequirementLine(r));
         sb.Append(PagesBlock(pages, index));
@@ -572,9 +582,14 @@ public static class LinkChecks
         var page = (string?)link["page"];
         var statement = (string?)link["statement"];
         var pageQuote = (string?)link["pageQuote"];
-        if (state is "agree" or "conflict" or "gap" && fsdQuote is null) errors.Add($"a {state} link needs fsdQuote");
-        if (state is "agree" or "conflict" or "undocumented" && (page is null || statement is null || pageQuote is null))
+        if (state is "agree" or "conflict" or "gap" or "partial" && fsdQuote is null) errors.Add($"a {state} link needs fsdQuote");
+        if (state == "unclear" && fsdQuote is null) errors.Add("an unclear link needs fsdQuote");
+        if (state is "agree" or "conflict" or "undocumented" or "partial" && (page is null || statement is null || pageQuote is null))
             errors.Add($"a {state} link needs page, statement and pageQuote");
+        // Finer verdicts (C.4): a partial says what's covered and what isn't. An unclear one is a question, so it names no page and doesn't read as a link.
+        if (state == "partial" && (string.IsNullOrWhiteSpace((string?)link["covered"]) || string.IsNullOrWhiteSpace((string?)link["missing"]))) errors.Add("a partial link needs covered and missing");
+        if (state == "unclear" && page is not null) errors.Add("an unclear link names no page: it's a question for a person");
+        if (state == "unclear" && string.IsNullOrWhiteSpace((string?)link["note"])) errors.Add("an unclear link needs its reason in note");
         if (fsdQuote is not null && !Quotes.InText(fsdQuote, (string)section["text"]!) && !AttachmentChecks.Holds(section, fsdQuote))
             errors.Add($"fsdQuote \"{Short(fsdQuote)}\" isn't a sentence from the section's text, word for word (at least 4 words, or a whole table cell or list item)");
         if (page is not null && !candidates.Contains(page)) errors.Add($"page `{page}` isn't one of the candidate pages");

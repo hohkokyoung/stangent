@@ -245,8 +245,8 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
   *Built, off, not shown to help (`fsd.compareTables`, D124). `fsd tables`, `table-map.yaml`, `fsd compare-tables`, with API fields and enums from C# and TypeScript, by code. D68's question is still the owner's. Hand-built documents only: there's no real FSD to pilot it on. Constants and seed data aren't done.*
 - ✅ C.3 · A decided finding becomes `recheck` or `gone`.  
   *`standing`, beside the drop-back, which is unchanged. A decided finding that goes away keeps its `X-` id; one nobody decided doesn't (D122).*
-- ⬜ C.4 · The link judge can say `partial` and `unclear`.  
-  *May cut false alarms. Changes prompts, so it needs a paid run. Recommend: with the re-score.*
+- ✅ C.4 · The link judge can say `partial` and `unclear`.  
+  *Built, off, not shown to help (`fsd.judgeFinerVerdicts`, D124). New instruction text and schemas; every reader and the scorer handle both. Whether it cuts false alarms needs the paid re-score.*
 - ✅ C.5 · BA decisions `accepted` and `not a difference`.  
   *`accepted` and `not-a-difference`, in `trace-links` v4 (D122).*
 - ⬜ C.6 · Group small neighbouring sections into one unit when checking.  

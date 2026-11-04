@@ -62,12 +62,12 @@ public class FsdLinkTests
         Assert.Equal("recorded", PageRun.Check(app.Pages(), def, app.Repo, null).Status);
     }
 
-    static void Write(SpecApp app, RunStep step, JsonNode output) => File.WriteAllText(Path.Combine(app.Root, step.Output!), output.ToJsonString());
+    internal static void Write(SpecApp app, RunStep step, JsonNode output) => File.WriteAllText(Path.Combine(app.Root, step.Output!), output.ToJsonString());
 
-    static JsonObject Link(string state, string? fsd, string? page, string? statement, string? pageQuote, string note = "n") =>
+    internal static JsonObject Link(string state, string? fsd, string? page, string? statement, string? pageQuote, string note = "n") =>
         new() { ["state"] = state, ["fsdQuote"] = fsd, ["page"] = page, ["statement"] = statement, ["pageQuote"] = pageQuote, ["note"] = note };
 
-    static JsonObject Links(params JsonObject[] links)
+    internal static JsonObject Links(params JsonObject[] links)
     {
         foreach (var l in links) foreach (var k in l.Where(p => p.Value is null).Select(p => p.Key).ToList()) l.Remove(k);
         return new JsonObject { ["links"] = new JsonArray(links) };

@@ -209,7 +209,7 @@ Each step here has a switch (D121, `docs/foundation.md`): `candidate-finder`, `a
   endpoints a candidate screen calls. A section with none goes to `stangent-candidate-finder`, which sees the page
   titles only.
 - `stangent fsd prepare|check <doc> <section>`: `stangent-link-judge` (fresh context) returns links — `agree`,
-  `conflict`, `gap`, `undocumented` — each quoting the FSD sentence and the page statement exactly. Code checks both
+  `conflict`, `gap`, `undocumented`, and `partial` and `unclear` with a switch on (below) — each quoting the FSD sentence and the page statement exactly. Code checks both
   quotes word for word, both ends exist, and every symbol the quoted statement cites is in the graph. Every `agree`
   then goes to `stangent-agree-checker`, a second fresh check: `confirmed`, or `disputed` and turned into the finding it
   raises. `specs/trace-runs.json` records each section's inputs, candidates (by code or AI), tokens and retries.
@@ -251,6 +251,16 @@ Each step here has a switch (D121, `docs/foundation.md`): `candidate-finder`, `a
   - **Staying current:** an unchanged bundle means no call. When the bundle changed, the old verdict drops to `unverified` before the new call, so a closed finding reopens, for a person to look at again, even if the call never comes. Until the next `disprove prepare`, a verdict can be older than the code; `trace check` doesn't see that.
   - **Readers:** only a closed finding, one a person confirmed, leaves the ticket bundle, a draft's sections and impact's `fsdSections`. A `developer-confirm` or `page-gap` one stays in them, marked unconfirmed as before.
 - **`page-wrong` (D119).** The BA says the reference is wrong, in a PR like any decision, with `decided_by` from git and `decided_on` as usual. The entry needs a page, or `trace check` says so. `spec stale` lists the page, with `reportedWrong` on the item, even though its inputs didn't change, so `spec-run.sh --stale` picks it up. `spec prepare` runs it, and the writer's bundle says what was reported, after the hashed part: the statement and the FSD's quote, or for a gap, that the page has no statement on it, with the quote. Writing the page again drops the decision back on the state module, so it returns to the BA. Impact's `verified` is false while it holds. Page steps don't depend on the links: `spec prepare`, `spec check` and `spec stale` read a broken `trace.yaml` as no marks, say so in `warning` or `traceProblem`, and carry on.
+
+## The link judge's finer verdicts (C.4, D124)
+
+`fsd: { judgeFinerVerdicts: true }`, off by default. **It hasn't been shown to help: no real AI has seen these prompts,** and whether they cut false alarms is what the paid re-score would say.
+
+- **On,** the judge reads new instruction text (`link-judge-finer.md`, `requirement-judge-finer.md`) and answers with a new schema (`link-judge-finer-output` v1, `requirement-judge-finer-output` v1). The bundle differs, so the input hash does, and a section runs again. Off, nothing it reads has changed, and `SavedWorkTests` holds that.
+- **`partial`** is a kind of finding: the statement covers part of the claim and leaves the rest unshown, with nothing that contradicts it. It needs both quotes, like a conflict, and `covered` and `missing`, kept as `partial` on the entry. It takes an `X-` id and goes to the disprove step when that's on, and through the queues as any finding.
+- **`unclear`** needs the FSD's quote and a reason, in `note`, and names no page. It goes to the BA labelled `unclear, not counted as a difference: <reason>`, and takes an `X-` id so it can be decided. It isn't in `counts.findings` or `counts.bySeverity`, which is `counts.unclear`, and `difference` on the listing says false. It doesn't count a section as linked, or reach a ticket bundle, a draft or an impact answer, as it has no page, and it isn't sent to the disprove step. With `findings` off it isn't recorded, and the run says `unclearLeftOut`.
+- **Readers.** A ticket bundle lists a `partial` link (`ticket-bundle` v2 grew in place, not being on `main`). A ticket match counts it as a link that shows the code. `impact-report` v5 is on `main` and has no such state, so an impact answer's `states` reads it as `conflict`.
+- **The scorer.** A `partial` on a planted item counts as `found`, and not as `foundAsKind`. An `unclear` one counts as neither found nor noise. `finerVerdicts` reports both: the counts, which planted items a partial found, and the unclear entries.
 
 ## Comparing tables with the code (C.2, D124)
 

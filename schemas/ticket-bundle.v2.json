@@ -517,7 +517,8 @@
                     "agree",
                     "conflict",
                     "gap",
-                    "undocumented"
+                    "undocumented",
+                    "partial"
                   ]
                 },
                 "page": {

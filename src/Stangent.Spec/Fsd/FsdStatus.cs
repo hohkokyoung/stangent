@@ -46,7 +46,7 @@ public static class FsdStatus
         static JsonArray Ids(IEnumerable<string> ids) => new([.. ids.Select(i => (JsonNode)i)]);
         result["queues"] = new JsonObject
         {
-            ["ba"] = Ids(ba), ["agreeLinksToApprove"] = toApprove, ["developer"] = Ids(developer), ["developerConfirm"] = Ids(confirm), ["pageOwner"] = Ids(pageOwner),
+            ["ba"] = Ids(ba), ["unclear"] = findings.Count(e => (string?)e["state"] == "unclear" && !TraceFindings.IsGone(e)), ["agreeLinksToApprove"] = toApprove, ["developer"] = Ids(developer), ["developerConfirm"] = Ids(confirm), ["pageOwner"] = Ids(pageOwner),
             ["recheck"] = findings.Count(e => TraceFindings.Standing(e) == "recheck"), ["gone"] = Queue("gone").Count, ["closed"] = Queue("closed").Count, ["decided"] = Queue("decided").Count,
         };
         result["next"] = Next(doc, waiting, doubtful, uncovered, ba, confirm, developer, pageOwner, toApprove);

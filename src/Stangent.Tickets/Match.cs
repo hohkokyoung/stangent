@@ -219,8 +219,8 @@ public static class TicketMatch
 
     static bool Linked(string root, string id) => RequirementFile.Links(root, id).Any(IsLink);
 
-    /// <summary>A link that shows the code: a conflict, or an agree the second check didn't dispute.</summary>
-    static bool IsLink(JsonObject entry) => (string)entry["state"]! == "conflict" || ((string)entry["state"]! == "agree" && (string?)entry["check"] == "confirmed");
+    /// <summary>A link that shows the code: a conflict, a partial one, or an agree the second check didn't dispute.</summary>
+    static bool IsLink(JsonObject entry) => (string)entry["state"]! is "conflict" or "partial" || ((string)entry["state"]! == "agree" && (string?)entry["check"] == "confirmed");
 
     static List<string> QuoteErrors(JsonObject output, JsonObject pulled, JsonObject requirement)
     {

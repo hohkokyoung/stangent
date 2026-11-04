@@ -62,7 +62,7 @@ public sealed class WholeFlow : IDisposable
     /// <summary>The flow with these settings added, as far as what's left on can take it (D121): the rest of the stages need findings to act on.</summary>
     public static WholeFlow With(string extraConfig) => new(extraConfig);
 
-    public const string SwitchedOn = "components: { table-facts: true }";
+    public const string SwitchedOn = "components: { table-facts: true, judge-finer-verdicts: true }";
 
     /// <summary>The flow with what's built switched off turned on (D124): the fake AI answers each variant, and nothing real runs.</summary>
     public static WholeFlow AllSwitchedOn() => new(SwitchedOn, allOn: true);
@@ -74,7 +74,7 @@ public sealed class WholeFlow : IDisposable
     {
         this.extraConfig = extraConfig;
         this.allOn = allOn;
-        Action[] stages = allOn ? [SetUp, ReferencePages, Import, ComparedTables] : extraConfig is null
+        Action[] stages = allOn ? [SetUp, ReferencePages, Import, ComparedTables, LinksOn] : extraConfig is null
             ? [SetUp, ReferencePages, Import, LinksAndFindings, Disprove, PersonDecides, Impact, NewVersion, Regenerate, WholeResult, ExcelAndEmbeddedFiles]
             : [SetUp, ReferencePages, Import, LinksAndFindings, Impact];
         for (var i = 0; i < stages.Length; i++)
@@ -523,6 +523,22 @@ public sealed class WholeFlow : IDisposable
         File.WriteAllText(yaml, on);
         Ok("graph", "build");
         Saw["enums.back"] = JsonValue.Create(File.ReadAllText(CodeEnums.PathFor(Root)) == enumsOn);
+    }
+
+    /// <summary>The link judge's variants, answered by the fake AI, with the code checks running on each.</summary>
+    void LinksOn()
+    {
+        var step = Ok("fsd", "prepare", "shop", "1");
+        Saw["on.judge"] = step;
+        var partial = Link("partial", FsdConflict, Post, "R1", "Every order is placed with a total of 1.", "Part of it.");
+        partial["covered"] = "a total";
+        partial["missing"] = "who approves";
+        var unclear = Link("unclear", FsdGap, null, null, null, "It doesn't say which post.");
+        foreach (var k in unclear.Where(p => p.Value is null).Select(p => p.Key).ToList()) unclear.Remove(k);
+        Answer(step, Links(partial, unclear));
+        Saw["on.recorded"] = Ok("fsd", "check", "shop", "1");
+        Saw["on.check"] = Check();
+        Saw["on.status"] = Ok("fsd", "status", "shop");
     }
 
     static byte[] Version1() => FsdDocxTests.Docx(

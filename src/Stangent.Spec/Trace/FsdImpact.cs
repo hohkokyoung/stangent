@@ -26,7 +26,8 @@ public static class FsdImpact
             {
                 ["doc"] = g.Key.Item1, ["section"] = g.Key.Item2, ["title"] = (string?)g.First()["fsd"]!["title"] ?? "",
                 ["pages"] = new JsonArray([.. g.Select(e => (string)e["page"]!["id"]!).Distinct().Order(StringComparer.Ordinal).Select(p => (JsonNode)p)]),
-                ["states"] = new JsonArray([.. g.Select(e => (string)e["state"]!).Distinct().Order(StringComparer.Ordinal).Select(s => (JsonNode)s)]),
+                // impact-report v5, on main, has no `partial`: it reads as what's nearest, a difference on that page (C.4, D124).
+                ["states"] = new JsonArray([.. g.Select(e => (string)e["state"]! == "partial" ? "conflict" : (string)e["state"]!).Distinct().Order(StringComparer.Ordinal).Select(s => (JsonNode)s)]),
                 ["verified"] = g.All(e => e["decision"] is not null && (string?)e["decision"] != "page-wrong"),
             }).ToList();
         var shown = expand ? items : [.. items.Take(Shown)];

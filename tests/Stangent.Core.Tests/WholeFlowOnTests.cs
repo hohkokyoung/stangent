@@ -51,6 +51,19 @@ public class WholeFlowOnTests(WholeFlowOn on) : IClassFixture<WholeFlowOn>
     }
 
     [Fact]
+    public void The_finer_judge_is_answered_and_its_verdicts_reach_trace_check_and_status()
+    {
+        flow.Reached(5);
+        Assert.Equal("link-judge-finer-output.v1.json", (string)flow.Seen("on.judge")["next"]!["schema"]!);
+        Assert.Equal("recorded", (string)flow.Seen("on.recorded")["status"]!);
+        var check = flow.Seen("on.check");
+        Assert.True((bool)check["ok"]!, string.Join("; ", check["problems"]!.AsArray().Select(p => (string)p!)));
+        Assert.Equal(1, (int)check["counts"]!["byState"]!["partial"]!);
+        Assert.Equal(1, (int)check["counts"]!["unclear"]!);
+        Assert.Equal(1, (int)flow.Seen("on.status")["queues"]!["unclear"]!);
+    }
+
+    [Fact]
     public void Switched_off_the_graph_export_is_the_same_bytes_and_compare_says_off()
     {
         flow.Reached(4);

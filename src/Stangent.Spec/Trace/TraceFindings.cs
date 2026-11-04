@@ -23,7 +23,10 @@ public static partial class TraceFindings
     public static bool IsFinding(JsonObject e) => (string?)e["state"] != "agree";
 
     /// <summary>Whether the disprove step can test it. Not a table fact: code already compared it, so there's nothing for an AI to refute.</summary>
-    public static bool Testable(JsonObject e) => (string?)e["state"] != TraceFile.TableFact;
+    public static bool Testable(JsonObject e) => (string?)e["state"] is not (TraceFile.TableFact or "unclear");
+
+    /// <summary>Whether it says the FSD and the code differ. An <c>unclear</c> one is a question for the BA, in their queue and not counted as a difference (C.4).</summary>
+    public static bool IsDifference(JsonObject e) => IsFinding(e) && (string?)e["state"] != "unclear";
 
     /// <summary>Every queue a finding can be in, in the order they're listed.</summary>
     public static readonly string[] Queues = ["ba", "developer", "developer-confirm", "closed", "page-owner", "decided", "gone"];
@@ -92,6 +95,7 @@ public static partial class TraceFindings
     static string Label(JsonObject e)
     {
         if (e["table_fact"] is JsonObject fact) return $"table-fact, compared by code on a second route to code: {(string?)fact["result"]}";
+        if ((string?)e["state"] == "unclear") return $"unclear, not counted as a difference: {(string?)e["note"]}";
         var verdict = (string?)e["verdict"];
         return (ReviewHolds(e) ? (string?)e["review"] : null) switch
         {
@@ -419,7 +423,7 @@ public static partial class TraceFindings
         ["atCommit"] = (string?)e["disproof"]?["commit"],
         ["suggestedSeverity"] = (string?)e["disproof"]?["suggestedSeverity"],
         ["standing"] = Standing(e), ["was"] = (string?)e["standing_note"]?["was"], ["wasBy"] = (string?)e["standing_note"]?["by"], ["standingWhy"] = (string?)e["standing_note"]?["why"],
-        ["tableFact"] = e["table_fact"]?.DeepClone(),
+        ["tableFact"] = e["table_fact"]?.DeepClone(), ["partial"] = e["partial"]?.DeepClone(), ["difference"] = IsDifference(e),
     })]);
 
     /// <summary>The same findings by who has them next, so each queue reads on its own (D119).</summary>
