@@ -25,7 +25,7 @@ public static class StangentComponents
     const string Graph = "graph build";
     static readonly string[] Links = ["fsd prepare", "fsd check"];
     static readonly string[] Pages = ["spec prepare", "spec check"];
-    static readonly string[] AiSteps = ["spec prepare", "fsd prepare", "fsd disprove prepare", "req prepare", "ticket points", "ticket prepare", "ticket match", "ticket prove", "ticket draft"];
+    static readonly string[] AiSteps = ["spec prepare", "fsd prepare", "fsd disprove prepare", "req prepare", "ticket points", "ticket prepare", "ticket match", "ticket prove", "ticket draft", "spec ask"];
 
     static StangentComponent Detector(string name, string label, params string[] needs) =>
         new($"detector-{name}", label, "detectors", true, [Graph], needs);
@@ -55,6 +55,10 @@ public static class StangentComponents
         new("file-finder", "The AI that finds a ticket's files", "tickets.aiPoints", true, ["ticket points", "ticket prepare", "ticket check"], ["ai"]),
         new("bug-proof", "A failing test before a bug is fixed", "components.bug-proof", true, ["ticket prove", "ticket prepare", "ticket check", "ticket draft"], ["ai"]),
         new("drafts", "Draft comments for a ticket", "components.drafts", true, ["ticket draft", "ticket prepare", "ticket check", "ticket post"], ["ai"]),
+        new("table-facts", "A document's tables compared with the code by code, a second route to code: labelled, pending the owner's answer on D68", "fsd.compareTables", false, ["fsd compare-tables", Graph], []),
+        new("judge-finer-verdicts", "The link judge can also say partial and unclear", "fsd.judgeFinerVerdicts", false, Links, []),
+        new("group-sections", "The link judge reads a run of small neighbouring sections as one unit", "fsd.groupSections", false, Links, []),
+        new("spec-ask", "Ask how the app works, answered from the reference pages with citations", "spec.ask", false, ["spec ask", "spec ask-check"], ["ai"]),
         new("ticket-excel-text", "A ticket's workbooks and files inside its attachments reach ticket.json, and so the AI steps. Off, they're only saved beside the attachment", "components.ticket-excel-text", false, ["ticket pull"], []),
     ];
 
@@ -90,6 +94,10 @@ public static class StangentComponents
                 case "findings": config.Fsd.Findings = on; break;
                 case "disprove": config.Fsd.Disprove = on; break;
                 case "attachments-in-checks": config.Fsd.AttachmentsInChecks = on; break;
+                case "table-facts": config.Fsd.CompareTables = on; break;
+                case "judge-finer-verdicts": config.Fsd.JudgeFinerVerdicts = on; break;
+                case "group-sections": config.Fsd.GroupSections = on; break;
+                case "spec-ask": config.Spec.Ask = on; break;
                 case "file-finder": config.Tickets.AiPoints = on; break;
             }
     }
@@ -102,6 +110,10 @@ public static class StangentComponents
         "findings" => config.Fsd.Findings,
         "disprove" => config.Fsd.Disprove,
         "attachments-in-checks" => config.Fsd.AttachmentsInChecks,
+        "table-facts" => config.Fsd.CompareTables,
+        "judge-finer-verdicts" => config.Fsd.JudgeFinerVerdicts,
+        "group-sections" => config.Fsd.GroupSections,
+        "spec-ask" => config.Spec.Ask,
         "file-finder" => config.Tickets.AiPoints,
         _ when name.StartsWith("detector-", StringComparison.Ordinal) => DetectorOn(config, name["detector-".Length..]),
         _ => config.Components.TryGetValue(name, out var on) ? on : All.FirstOrDefault(c => c.Name == name)?.OnByDefault ?? true,

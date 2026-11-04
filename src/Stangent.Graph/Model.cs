@@ -134,6 +134,8 @@ public sealed class ProjectFragment
     public List<Edge> Edges { get; } = [];
     public List<BlindSpot> BlindSpots { get; } = [];
     public List<Fact> Facts { get; } = [];
+    /// <summary>Enums this build read (C.2). Never stored with the fragment, so the walk and the graph's bytes can't see them: <see cref="CodeEnums"/> holds them.</summary>
+    public List<CodeEnum> Enums { get; } = [];
 }
 
 /// <summary>The whole graph after linking: fragments plus what detectors linked across them.</summary>

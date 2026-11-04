@@ -147,3 +147,17 @@ test("a verb is read off whole words of a wrapper's name, never part of one", ()
   const calls = lines.filter((l) => l.t === "fact" && l.kind === "call").map((l) => l.t === "fact" ? `${l.data.verb} ${l.data.url}` : "").sort();
   assert.deepEqual(calls, [`GET ${BASE}a`, `GET ${BASE}b`, `POST ${BASE}c`]);
 });
+
+test("enums are printed only when asked for, with members, values and lines", () => {
+  const root = project({ "src/status.ts": 'export enum Status {\n  Open,\n  Closed = 5,\n  Named = "n",\n}\nexport class A {}\n' });
+  const options = { tsconfig: path.join(root, "tsconfig.json"), root, projectId: "project:tsconfig.json", settings: {} };
+  assert.deepEqual(extract(options).lines.filter((l) => l.t === "enum"), []);
+  const found = extract({ ...options, enums: true }).lines.filter((l) => l.t === "enum");
+  assert.equal(found.length, 1);
+  const status = found[0] as Extract<typeof found[0], { t: "enum" }>;
+  assert.equal(status.id, "ts|src/status.ts#Status");
+  assert.equal(status.name, "Status");
+  assert.deepEqual(status.members, [{ name: "Open", value: "0", line: 2 }, { name: "Closed", value: "5", line: 3 }, { name: "Named", value: "n", line: 4 }]);
+  // The rest of the output is what it always was.
+  assert.deepEqual(extract({ ...options, enums: true }).lines.filter((l) => l.t !== "enum"), extract(options).lines);
+});

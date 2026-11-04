@@ -252,6 +252,28 @@ Each step here has a switch (D121, `docs/foundation.md`): `candidate-finder`, `a
   - **Readers:** only a closed finding, one a person confirmed, leaves the ticket bundle, a draft's sections and impact's `fsdSections`. A `developer-confirm` or `page-gap` one stays in them, marked unconfirmed as before.
 - **`page-wrong` (D119).** The BA says the reference is wrong, in a PR like any decision, with `decided_by` from git and `decided_on` as usual. The entry needs a page, or `trace check` says so. `spec stale` lists the page, with `reportedWrong` on the item, even though its inputs didn't change, so `spec-run.sh --stale` picks it up. `spec prepare` runs it, and the writer's bundle says what was reported, after the hashed part: the statement and the FSD's quote, or for a gap, that the page has no statement on it, with the quote. Writing the page again drops the decision back on the state module, so it returns to the BA. Impact's `verified` is false while it holds. Page steps don't depend on the links: `spec prepare`, `spec check` and `spec stale` read a broken `trace.yaml` as no marks, say so in `warning` or `traceProblem`, and carry on.
 
+## Comparing tables with the code (C.2, D124)
+
+**A second route to code, off by default.** Everything else reaches code through pages. D68 kept direct links out as noisy, and that question is the owner's and still open, so this is labelled on every result and `fsd.compareTables` is off. **It hasn't been shown to help, and there's no real FSD on a C# project to pilot it on:** every test uses hand-built documents.
+
+- **`stangent fsd tables <doc>`** lists each table with its `T-` id, each attachment's sheet with its `A-` id and sheet name, their columns and rows, and any attachment with no sheet to read. Code only, with or without the switch, so a person can write the map first.
+- **`specs/fsd/<doc>/table-map.yaml`** (contract `table-map` v1), which a person writes or approves. An AI may propose one later; not now. `aliases` is where a name difference is declared, and nowhere else.
+
+  ```yaml
+  version: 1
+  tables:
+    - { table: T-0001, column: Field, kind: api-field, target: POST /api/orders response }
+    - { table: T-0002, column: Status, kind: enum-member, target: OrderStatus, valueColumn: Code }
+    - { table: A-0001, sheet: Fees, column: Tier, kind: enum-member, target: FeeTier }
+  aliases:
+    - { fsd: Customer Name, code: customerName }
+  ```
+
+- **Facts from the code.** `api-field`: the JSON fields the graph holds for a type an endpoint sends or receives, one level deep, by the type's name or graph id, or by `<VERB> <route> request` or `response`. A match says how many `maps-field` lines reach it as `frontendFields`. `enum-member`: from `.stangent/graph-enums.json` (`docs/code-graph.md`). **Not done:** constants and SQL seed data, which the result says under `notDone`.
+- **`stangent fsd compare-tables <doc>`** applies the map, by code with no AI. A name matches in any case and nothing else, so `customer_name` against `customerName` needs an alias. For each line it gives `matches`, `differs`, `fsdOnly`, `codeOnly` and `skippedRows`. `differs` needs a value to compare, so today it's only an enum's `valueColumn`: the graph holds no value for an API field. `unmapped` lists every table no line names, and `attachmentsNotRead` every attachment with no sheet, so nothing is silently unchecked. A line it can't apply goes in `problems` and leaves what's on file from it as it was. With no map it says `noMap` and writes nothing.
+- **Each difference is a finding of its own kind, `table-fact`,** in `specs/trace.yaml`, with `by: code` and what was compared in `table_fact`: `route: table-facts`, `result` (`differs`, `fsd-only`, `code-only`), the table, column, row, target and both values, and the code's `path`, `start`, `end` and `commit`. Its quote is the table's cell, or the column's header for a name only the code has. Its evidence is that cell, `stated` as every document citation is, and the code's lines, `read`; `table_fact.strength` is `read`. A file that may not match the commit gets `linesNot` and no lines.
+- **Where it goes.** The BA's queue, with state and history like other findings, labelled by its route. It has no page, so it doesn't enter a link bundle, a ticket bundle, a draft or an impact answer, and doesn't count a section as linked. It isn't sent to the disprove step, because code already compared it. A judge's run doesn't touch it. Running `compare-tables` again replaces its own, and a decided one that went away is kept as `gone`.
+
 ## Requirements (2c, D99; contract `requirements` v1, being built)
 
 The FSD stays the record. On top of it, one AI pass per section builds items, each quoting the FSD word for word. Status starts

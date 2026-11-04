@@ -13,7 +13,7 @@ public static partial class FsdObjects
     const string Tables = "tables", TableFormat = "T-{0:D4}", Figures = "figures", FigureFormat = "F-{0:D4}";
 
     [GeneratedRegex(@"^\|(-+\|)+$")]
-    private static partial Regex RuleLine();
+    internal static partial Regex RuleLine();
 
     /// <summary>A section's Markdown tables: a line of cells, then a rule, then its rows. A paragraph that starts with a bar has no rule under it.</summary>
     public static IEnumerable<(int Rows, int Columns, string Hash)> TablesIn(string text)

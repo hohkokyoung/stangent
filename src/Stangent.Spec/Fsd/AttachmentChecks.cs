@@ -167,11 +167,11 @@ public static class AttachmentChecks
     }
 
     /// <summary>A CSV's rows in the shape quotes match, a row per line, so a line of this is a row of the sheet. Other text as it is.</summary>
-    static string Readable(string role, string text) =>
+    internal static string Readable(string role, string text) =>
         role != "csv" ? text : string.Join('\n', text.TrimEnd('\n').Split('\n').Select(l => l.Length == 0 ? "" : "| " + string.Join(" | ", Cells(l).Select(c => c.Replace("|", "\\|", StringComparison.Ordinal))) + " |"));
 
     /// <summary>One CSV line's cells. Our own files have no line breaks in a cell, as a cell's text is one line.</summary>
-    static List<string> Cells(string line)
+    internal static List<string> Cells(string line)
     {
         var cells = new List<string>();
         var sb = new StringBuilder();

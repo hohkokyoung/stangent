@@ -181,7 +181,7 @@ public static class DisproveRun
 
     /// <summary>A section's findings nobody has decided. A person's decision stands, so it isn't tested again.</summary>
     static IEnumerable<JsonObject> Pending(JsonObject trace, string doc, string sectionId) => TraceFile.Sorted(trace["entries"]!.AsArray())
-        .Where(e => TraceFindings.IsFinding(e) && !TraceFindings.IsGone(e) && e["decision"] is null && (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId);
+        .Where(e => TraceFindings.IsFinding(e) && TraceFindings.Testable(e) && !TraceFindings.IsGone(e) && e["decision"] is null && (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId);
 
     /// <summary>Writes a verdict through the state module, and the finding's evidence with it (D118's Stamp derives it from what's here).</summary>
     static void Write(StangentRepo repo, string entry, string verdict, JsonObject disproof, string reason)
@@ -376,7 +376,7 @@ public static class DisproveRun
         var trace = TraceFile.Load(repo.Root);
         // One chapter on its own, to see what it costs before the whole document (E.3).
         var only = chapter is null ? null : FsdOutline.Chapter(FsdOutline.Load(repo.Root, doc), chapter).Select(s => (string)s["id"]!).ToHashSet(StringComparer.Ordinal);
-        var findings = trace["entries"]!.AsArray().OfType<JsonObject>().Where(TraceFindings.IsFinding)
+        var findings = trace["entries"]!.AsArray().OfType<JsonObject>().Where(TraceFindings.IsFinding).Where(TraceFindings.Testable)
             .Where(f => only is null || (string?)f["fsd"]?["doc"] == doc && only.Contains((string?)f["fsd"]?["section"] ?? "")).ToList();
         var calls = new List<(string Section, DisproveBundle Bundle)>();
         var noCode = 0;

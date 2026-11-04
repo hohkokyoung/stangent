@@ -6,6 +6,7 @@ export type Line =
   | { t: "edge"; source: string; target: string; kind: string; label: 0 | 1; detector: string }
   | { t: "blind"; node: string; file: string; line: number; reason: string; detector: string }
   | { t: "fact"; detector: string; kind: string; node: string; file: string | null; line: number; data: Record<string, string> }
+  | { t: "enum"; id: string; name: string; file: string; line: number; endLine: number; members: { name: string; value: string | null; line: number }[] }
   | { t: "warning"; message: string };
 
 export interface Options {
@@ -17,6 +18,8 @@ export interface Options {
   projectId: string;
   /** detectorSettings from stangent.yaml, e.g. { "frontend-http": { wrappers: ["useApiQuery:path"] } }. */
   settings: Record<string, Record<string, string[]>>;
+  /** Also print enums, members and values (C.2). Off, the output is what it always was. */
+  enums?: boolean;
 }
 
 /** Collects lines, dropping duplicate nodes and edges, in the order they were first seen. */
@@ -45,6 +48,10 @@ export class Output {
 
   fact(detector: string, kind: string, node: string, file: string | null, line: number, data: Record<string, string>) {
     this.lines.push({ t: "fact", detector, kind, node, file, line, data });
+  }
+
+  enumDecl(e: Omit<Extract<Line, { t: "enum" }>, "t">) {
+    this.lines.push({ t: "enum", ...e });
   }
 
   warning(message: string) {

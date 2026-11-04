@@ -65,7 +65,7 @@ static class FsdCarry
             else continue;
             fsd["section"] = to;
             var from = (string)e["id"]!;
-            var id = TraceFile.EntryId((string)e["state"]!, doc, to, (string?)e["page"]?["id"], (string?)fsd["quote"], (string?)e["page"]?["quote"], (string?)fsd["requirement"]);
+            var id = TraceFile.IdOf(e, to);
             e["id"] = id;
             traceIds.Add((JsonNode)new JsonObject { ["from"] = from, ["to"] = id });
             if (goneBySection.ContainsKey(section)) (onRemoved.TryGetValue(section, out var list) ? list : onRemoved[section] = []).Add(e);

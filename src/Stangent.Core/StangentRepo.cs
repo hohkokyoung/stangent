@@ -74,6 +74,10 @@ public sealed class StangentConfig
         /// <summary>A point with this many distinct callers or more is included but not walked into (0: off).</summary>
         public int HubCallers { get; set; } = 10;
         public int MaxBundleChars { get; set; } = 260_000;
+        /// <summary><c>spec ask</c> (E.2). Off by default: nothing has shown it helps.</summary>
+        public bool Ask { get; set; }
+        /// <summary><c>spec ask</c>: the most pages one answer's bundle holds. A stated setting, not a measured one.</summary>
+        public int AskMaxPages { get; set; } = 5;
     }
 
     public sealed class FsdConfig
@@ -98,6 +102,14 @@ public sealed class StangentConfig
         /// <summary>With <see cref="AttachmentsInChecks"/> on, an attachment holding more text than this stays out of the bundle and reads "not checked" (D123). A stated setting, not a measured one.</summary>
         public int AttachmentChars { get; set; } = 40000;
         public ExcelConfig Excel { get; set; } = new();
+        /// <summary>Table facts compared with the code (C.2, D124): a second route to code, off by default until the owner answers D68's question. Off, <c>graph build</c> reads no enums and <c>fsd compare-tables</c> writes nothing.</summary>
+        public bool CompareTables { get; set; }
+        /// <summary>The link judge can also say <c>partial</c> and <c>unclear</c> (C.4, D124). Off by default: with it off no bundle or hash changes.</summary>
+        public bool JudgeFinerVerdicts { get; set; }
+        /// <summary>The link judge's unit is a run of small neighbouring sections under one parent (C.6, D124). Off by default: with it off no bundle or hash changes.</summary>
+        public bool GroupSections { get; set; }
+        /// <summary>With <see cref="GroupSections"/> on, the most characters of section text one unit holds. A stated setting, not a measured one.</summary>
+        public int GroupMaxChars { get; set; } = 4000;
     }
 
     /// <summary>When a workbook is flagged as very large in the import report (D123). It's still imported; these only say when to look. Stated settings, not measured ones.</summary>

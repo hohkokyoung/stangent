@@ -112,7 +112,7 @@ public static class LinkRun
                 ? [.. reqs.Select(r => Entry("gap", doc, section, FirstQuote(r), null, null, null, "code", null, why, (string)r["id"]!))]
                 : [Entry("gap", doc, section, quote, null, null, null, "code", null, why)];
             var existing = TraceFile.Load(repo.Root)["entries"]!.AsArray().OfType<JsonObject>()
-                .Where(e => (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId && !TraceFindings.IsGone(e)).Select(e => (string)e["id"]!).ToList();
+                .Where(e => (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId && !TraceFindings.IsGone(e) && (string?)e["state"] != TraceFile.TableFact).Select(e => (string)e["id"]!).ToList();
             List<JsonObject> recorded = repo.Config.Fsd.Findings ? gaps : [];
             if (carried is null && existing.SequenceEqual(recorded.Select(e => (string)e["id"]!))) return new RunStep("current", "none");
             ApplyEntries(repo.Root, doc, sectionId, recorded);
@@ -397,7 +397,8 @@ public static class LinkRun
         using var _ = Lock(root);
         var trace = TraceFile.Load(root);
         var old = trace["entries"]!.AsArray().OfType<JsonObject>().ToList();
-        replaces ??= e => (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId;
+        // A table fact comes from `fsd compare-tables`, so a judge's run neither removes nor marks it (C.2).
+        replaces ??= e => (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId && (string?)e["state"] != TraceFile.TableFact;
         var keepDecisions = old.Where(replaces).ToDictionary(e => (string)e["id"]!, e => e);
         var list = old.Where(e => !replaces(e)).Select(e => (JsonNode)e.DeepClone()).ToList();
         foreach (var e in entries.DistinctBy(e => (string)e["id"]!))

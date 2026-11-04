@@ -94,6 +94,14 @@ static class FsdCommands
             SpecCommands.Finish(LinkRun.Prepare(SpecCommands.LoadSet(ctx), ctx.Repo, pr.GetValue(docArg)!, pr.GetValue(sectionArg)!), LinkRun.Key(pr.GetValue(docArg)!, pr.GetValue(sectionArg)!))));
         fsd.Subcommands.Add(prepare);
 
+        var tables = new Command("tables", "A document's tables and attachments' sheets, with their T- or A- ids and columns, for writing table-map.yaml. Code only.") { docArg };
+        tables.SetAction(pr => Cli.Run(pr, "fsd tables", ctx => FsdTables.Listing(ctx.Repo.Root, pr.GetValue(docArg)!)));
+        fsd.Subcommands.Add(tables);
+        var compareTables = new Command("compare-tables", "Compare a document's tables with facts from the code, as specs/fsd/<doc>/table-map.yaml says, by code with no AI. Each difference is a table-fact finding. Off unless fsd.compareTables is on (C.2, D124).") { docArg };
+        compareTables.SetAction(pr => Cli.Run(pr, "fsd compare-tables", ctx => Stangent.Core.StangentComponents.IsOn(ctx.Repo.Config, "table-facts")
+            ? TableFacts.Compare(ctx.Repo.Root, pr.GetValue(docArg)!, Cli.LoadGraph(ctx)) : TableFacts.Off()));
+        fsd.Subcommands.Add(compareTables);
+
         var diffFormat = new Option<string>("--format") { Description = "json (default) or md (SECTION_DIFF.md).", DefaultValueFactory = _ => "json" };
         var diff = new Command("diff", "The waiting candidate's section diff against the current version (D117). Code only.") { docArg, diffFormat };
         diff.SetAction(pr =>

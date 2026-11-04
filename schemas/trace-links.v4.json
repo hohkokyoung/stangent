@@ -48,7 +48,8 @@
               "agree",
               "gap",
               "conflict",
-              "undocumented"
+              "undocumented",
+              "table-fact"
             ]
           },
           "fsd": {
@@ -184,6 +185,34 @@
                 "minLength": 1
               }
             ]
+          },
+          "table_fact": {
+            "description": "On a table-fact finding only (C.2, D124): what code compared. Written by code; the route says this came by comparing a table with the code, not through a page. Its evidence is the table's cell, stated, and the code's lines, read.",
+            "type": "object",
+            "required": ["route", "result", "table", "column", "row", "kind", "target", "strength", "key"],
+            "additionalProperties": false,
+            "properties": {
+              "route": { "const": "table-facts" },
+              "result": { "enum": ["differs", "fsd-only", "code-only"] },
+              "table": { "type": "string", "pattern": "^[TA]-[0-9]{4,}$" },
+              "sheet": { "type": "string" },
+              "column": { "type": "string" },
+              "row": { "type": "integer", "minimum": 1 },
+              "kind": { "enum": ["api-field", "enum-member"] },
+              "target": { "type": "string" },
+              "strength": { "const": "read" },
+              "key": { "type": "string" },
+              "fsdName": { "type": "string" },
+              "fsdValue": { "type": "string" },
+              "codeName": { "type": "string" },
+              "codeValue": { "type": "string" },
+              "symbol": { "type": "string" },
+              "path": { "type": "string" },
+              "start": { "type": "integer", "minimum": 1 },
+              "end": { "type": "integer", "minimum": 1 },
+              "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+              "linesNot": { "type": "string" }
+            }
           },
           "decided_on": {
             "description": "The hash of the page statement's normalised text when the decision was made, written by code. If the text changes, the decision drops back. No input hash reads it.",

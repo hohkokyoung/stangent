@@ -34,7 +34,10 @@ public static class GraphBuilder
         var salt = Salt(repo.Config, detectors);
         var fingerprints = ProjectScanner.Fingerprints(repo.Root, projects)
             .ToDictionary(kv => kv.Key, kv => CanonicalJson.Hash(kv.Value + "\n" + salt), StringComparer.Ordinal);
-        var previous = options.Full ? null : GraphStore.Load(GraphStore.PathFor(repo));
+        // Enums (C.2) are read only with table-facts on. Turned on with none on file, a project nothing changed in still has to be read for them.
+        var enumsOn = StangentComponents.IsOn(repo.Config, "table-facts");
+        var enumsBefore = enumsOn ? CodeEnums.Load(repo.Root) : null;
+        var previous = options.Full || enumsOn && enumsBefore is null ? null : GraphStore.Load(GraphStore.PathFor(repo));
 
         var changed = projects.Where(p => previous?.Fragments.GetValueOrDefault(p.Id)?.Fingerprint != fingerprints[p.Id]).ToList();
         var graph = new CodeGraph { Commit = Git.Head(repo.Root) };
@@ -135,7 +138,7 @@ public static class GraphBuilder
                 {
                     var f = frontendChanged[i];
                     log.WriteLine($"stangent: extracting {f.RelativeTsConfig}");
-                    results[i] = FrontendScanner.Extract(repo.Root, f, frontendPrints[f.Id], repo.Config.DetectorSettings);
+                    results[i] = FrontendScanner.Extract(repo.Root, f, frontendPrints[f.Id], repo.Config.DetectorSettings, enums: enumsOn);
                     return ValueTask.CompletedTask;
                 });
                 foreach (var (fragment, frontWarnings, error) in results)
@@ -152,6 +155,8 @@ public static class GraphBuilder
             }
             extract.Stop();
         }
+
+        CodeEnums.Save(repo.Root, enumsOn, graph, previous, enumsBefore);
 
         var link = Stopwatch.StartNew();
         var linkCtx = new LinkContext(graph, new Dictionary<string, List<string>>()) { Root = repo.Root };

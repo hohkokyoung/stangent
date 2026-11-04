@@ -72,6 +72,7 @@ export function extract(o: Options): Output {
   for (const sf of files) angularTemplates(ctx, sf);
   for (const sf of files) pages(ctx, sf);
   for (const sf of files) httpFacts(ctx, sf);
+  if (o.enums) for (const sf of files) enums(ctx, sf);
   return out;
 }
 
@@ -200,6 +201,26 @@ function isReactComponent(decl: ts.Node): boolean {
   };
   visit(decl);
   return found;
+}
+
+/** Each enum's members and values (C.2), apart from the walked lines. A value the compiler can't work out is null, never a guess. */
+function enums(ctx: Context, sf: ts.SourceFile) {
+  const file = ctx.rel(sf.fileName);
+  const lineOf = (pos: number) => sf.getLineAndCharacterOfPosition(pos).line + 1;
+  const visit = (n: ts.Node) => {
+    if (ts.isEnumDeclaration(n)) {
+      const id = ctx.declId(n);
+      if (id) {
+        const members = n.members.map((m) => {
+          const value = ctx.checker.getConstantValue(m);
+          return { name: m.name.getText(sf).replace(/^["']|["']$/g, ""), value: value === undefined ? null : String(value), line: lineOf(m.getStart(sf)) };
+        });
+        ctx.out.enumDecl({ id, name: n.name.text, file, line: lineOf(n.getStart(sf)), endLine: lineOf(n.getEnd()), members });
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
 }
 
 function declare(ctx: Context, sf: ts.SourceFile) {

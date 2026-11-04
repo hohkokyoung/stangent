@@ -3,7 +3,7 @@ phase: 2b
 name: fsd
 status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, reference-lines: 1, evidence: 2 }
-provides: { source-document: 3, trace-links: 4 }
+provides: { source-document: 3, trace-links: 4, table-map: 1 }
 ---
 
 # Phase 2b · FSD and discrepancies
@@ -413,3 +413,9 @@ Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions
 **Found while building.** A part in an Office file can be called anything, as the SDK's `package.bin` showed, so a file whose name says nothing goes by what it holds. `trace.yaml` reads numbers in evidence by key, so `row` had to be added beside `start` and `end`, or a citation's row came back as a string and broke `evidence`.
 
 **Impact on other phases.** 2c reads `source-document` by field, and 3 reads it only through `ImportPipeline.Attachment`, whose results for `.docx` and `.pdf` are the same. Neither goes to `needs review`.
+
+## §8 batch 4, under D120 (2026-11-04): built off, not checked
+
+C.2, C.4, C.6 and E.2, each behind a switch that's off (D124). `dotnet test`, the whole-flow test and `phases check` ran. **Nothing here has had a fresh check, or a run on a real AI, or a real document, and nothing here has been shown to help.**
+
+**C.2, comparing tables.** Not checked: any real FSD (there's none on a C# project), so how often a table's column really lines up with a type is unknown; a real Word table with merged cells or a cell holding a bar; a real CI sharing an exported graph, which won't have enums. **Not done:** constants and SQL seed data. `trace-links` v4 grew in place (`table-fact`, `table_fact`). New contract: `table-map` v1. `code-graph` stays v4, as the enums are in a file of their own. Consumers of `trace-links` were checked by grep: a table fact has no page, so ticket bundles, drafts, impact and coverage don't see it; 2c and 3 aren't `needs review`.

@@ -96,6 +96,12 @@ impact walk never follows them.
     aren't. A blobless clone (`blob:none`) would fetch over the network on every build (34 s on nopCommerce),
     so there renames aren't followed and the build warns (`history_renames_skipped`).
 
+## Enums, for comparing tables (C.2, D124)
+
+With `table-facts` on (`fsd.compareTables`), `graph build` also reads each enum's name, members and values from the C# and TypeScript extractors, and writes them to `.stangent/graph-enums.json`, with the commit they were read at. A value the compiler can't work out is null, never a guess.
+
+**Kept apart.** They aren't points, lines or facts, and the file isn't the graph. So the impact walk can't see them, and `graph export` gives the same bytes with the switch on or off, which a test holds. `code-graph` stays v4. CI sharing an exported graph doesn't get them: `fsd compare-tables` then says to run `graph build`. Turned on with no file there, the next build reads every project again. Off, the file is removed.
+
 ## Screen tests: 🟡 `opens-screen` (D115)
 
 An existing Playwright spec whose `goto` matches a screen's route is a line from the spec and line to the `page` point. It says a

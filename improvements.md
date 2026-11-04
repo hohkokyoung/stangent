@@ -163,8 +163,8 @@ Ahead of Stangent because Stangent has designed approval states but not a workin
   *Built in 2.5 (D119): a `page-gap` verdict goes to developers, listed in its own group. Off by default and unscored until the re-score runs.*
 - ⬜ A per-chapter report of findings by result and severity, plus a count of FSD rules with no test, for QA. Still to do: `trace check` lists ids and severity, with no per-chapter view.  
   *Bulk approval works per chapter, but there's no report. Tests carrying ids are Phase 5. **Not done:** 2.5 didn't build it. Recommend: do after severity.*
-- ⬜ An alias map records names that differ between the FSD and the screens.  
-  *Not in Stangent. Recommend: do if real documents need it.*
+- ✅ An alias map records names that differ between the FSD and the screens.  
+  *Built, off, not shown to help: `aliases` in `specs/fsd/<doc>/table-map.yaml`, for comparing tables with the code (C.2, D124). Names on screens aren't compared: the link judge still reads those itself.*
 - ⬜ Trial result: every finding built on a correct reference page was right (12 of 12).  
   *A result, not a feature. Stangent's own: 44% false alarms (D99). The two aren't comparable.*
 
@@ -241,8 +241,8 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
 
 - ✅ C.1 · Every section is linked or marked "not in code" by a person, with its attachments listed.  
   *`coverage` in `trace check`, and `fsd not-in-code`, by code; it reports and doesn't fail (D122).*
-- ⬜ C.2 · Compare table facts by code: fee tables, field lists, status codes against facts from the code.  
-  *Exact, no AI. API fields are in the graph (`maps-field`); enums, constants and seed data aren't. A second route to code beside pages, so it needs a decision against D68. No real FSD on a C# project to measure it. Recommend: pilot field lists first, on a real document.*
+- ✅ C.2 · Compare table facts by code: fee tables, field lists, status codes against facts from the code.  
+  *Built, off, not shown to help (`fsd.compareTables`, D124). `fsd tables`, `table-map.yaml`, `fsd compare-tables`, with API fields and enums from C# and TypeScript, by code. D68's question is still the owner's. Hand-built documents only: there's no real FSD to pilot it on. Constants and seed data aren't done.*
 - ✅ C.3 · A decided finding becomes `recheck` or `gone`.  
   *`standing`, beside the drop-back, which is unchanged. A decided finding that goes away keeps its `X-` id; one nobody decided doesn't (D122).*
 - ⬜ C.4 · The link judge can say `partial` and `unclear`.  

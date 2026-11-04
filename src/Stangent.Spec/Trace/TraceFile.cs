@@ -16,7 +16,9 @@ namespace Stangent.Spec.Trace;
 public static class TraceFile
 {
     public const string Schema = "trace-links.v4.json";
-    public static readonly string[] States = ["agree", "gap", "conflict", "undocumented"];
+    public static readonly string[] States = ["agree", "gap", "conflict", "undocumented", "table-fact"];
+    /// <summary>A difference found by comparing a table with the code, by code (C.2, D124): it has no page, and it holds what was compared in <c>table_fact</c>.</summary>
+    public const string TableFact = "table-fact";
     public static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "page-wrong", "defer", "accepted", "not-a-difference"];
 
     /// <summary>What a finding carries beyond its link (D118).</summary>
@@ -38,7 +40,7 @@ public static class TraceFile
         return ToJson(stream.Documents[0].RootNode, "") as JsonObject ?? throw new StangentException("invalid_trace", "trace.yaml must be a mapping.");
     }
 
-    static JsonNode? ToJson(YamlNode node, string key) => node switch
+    internal static JsonNode? ToJson(YamlNode node, string key) => node switch
     {
         YamlMappingNode m => new JsonObject(m.Children.Select(c => KeyValuePair.Create(((YamlScalarNode)c.Key).Value!, ToJson(c.Value, ((YamlScalarNode)c.Key).Value!)))),
         YamlSequenceNode s => new JsonArray([.. s.Children.Select(c => ToJson(c, ""))]),
@@ -75,6 +77,7 @@ public static class TraceFile
             sb.Append($"    by: {S(e["by"])}\n");
             if (e["check"] is not null) sb.Append($"    check: {S(e["check"])}\n");
             if (e["note"] is not null) sb.Append($"    note: {S(e["note"])}\n");
+            if (e["table_fact"] is JsonObject tableFact) sb.Append($"    table_fact: {tableFact.ToJsonString(Json)}\n");
             sb.Append($"    decision: {S(e["decision"])}\n");
             sb.Append($"    decided_by: {S(e["decided_by"])}\n");
             if (e["decided_on"] is not null) sb.Append($"    decided_on: {S(e["decided_on"])}\n");
@@ -122,6 +125,10 @@ public static class TraceFile
     static readonly JsonSerializerOptions Json = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     /// <summary>An entry's id: the same link and quotes always get the same id, so decisions survive a re-run.</summary>
+    /// <summary>The id an entry should have, with its section as given. A table fact has no page quote, so what was compared stands in for it: two members missing from one table cite the same header.</summary>
+    public static string IdOf(JsonObject e, string? section) => EntryId((string)e["state"]!, (string?)e["fsd"]?["doc"], section, (string?)e["page"]?["id"], (string?)e["fsd"]?["quote"],
+        (string?)e["table_fact"]?["key"] ?? (string?)e["page"]?["quote"], (string?)e["fsd"]?["requirement"]);
+
     public static string EntryId(string state, string? doc, string? section, string? page, string? fsdQuote, string? pageQuote, string? requirement = null) =>
         "L" + CanonicalJson.Hash(string.Join("\u0001", [state, doc ?? "", section ?? "", page ?? "", Quotes.Normalize(fsdQuote ?? ""), Quotes.Normalize(pageQuote ?? ""), .. requirement is null ? Array.Empty<string>() : [requirement]]))[..10];
 
@@ -131,7 +138,7 @@ public static class TraceFile
         .Where(g => g.Count() == 1).ToDictionary(g => g.Key, g => g.Single(), StringComparer.Ordinal);
 
     public static string LinkKey(JsonObject e) => string.Join("\u0001", (string?)e["state"] ?? "", (string?)e["fsd"]?["doc"] ?? "", (string?)e["fsd"]?["requirement"] ?? "", (string?)e["page"]?["id"] ?? "",
-        (string?)e["page"]?["statement"] ?? "", Quotes.Normalize((string?)e["fsd"]?["quote"] ?? ""), Quotes.Normalize((string?)e["page"]?["quote"] ?? ""));
+        (string?)e["page"]?["statement"] ?? "", Quotes.Normalize((string?)e["fsd"]?["quote"] ?? ""), Quotes.Normalize((string?)e["table_fact"]?["key"] ?? (string?)e["page"]?["quote"] ?? ""));
 
     /// <summary>A removed section's mark (D117). It keeps what cited the section on file, out of reach of any section that gets the same number later.</summary>
     public static string RemovedSection(string permanentId, string section) => $"(removed {permanentId}) {section}";

@@ -22,6 +22,9 @@ public static partial class TraceFindings
 
     public static bool IsFinding(JsonObject e) => (string?)e["state"] != "agree";
 
+    /// <summary>Whether the disprove step can test it. Not a table fact: code already compared it, so there's nothing for an AI to refute.</summary>
+    public static bool Testable(JsonObject e) => (string?)e["state"] != TraceFile.TableFact;
+
     /// <summary>Every queue a finding can be in, in the order they're listed.</summary>
     public static readonly string[] Queues = ["ba", "developer", "developer-confirm", "closed", "page-owner", "decided", "gone"];
 
@@ -88,6 +91,7 @@ public static partial class TraceFindings
     /// <summary>The words a queue shows beside a finding. A verdict is the AI's reading: code found its quote, and nobody has said the quote supports it.</summary>
     static string Label(JsonObject e)
     {
+        if (e["table_fact"] is JsonObject fact) return $"table-fact, compared by code on a second route to code: {(string?)fact["result"]}";
         var verdict = (string?)e["verdict"];
         return (ReviewHolds(e) ? (string?)e["review"] : null) switch
         {
@@ -256,9 +260,10 @@ public static partial class TraceFindings
     }
 
     /// <summary>The FSD's quote, naming the attachment, file, sheet and row when it came from one (D123).</summary>
-    static JsonObject DocumentCitation(JsonObject fsd, string quote)
+    static JsonObject DocumentCitation(JsonObject fsd, string quote, JsonObject? table = null)
     {
         var citation = new JsonObject { ["kind"] = "document", ["ref"] = (string)fsd["doc"]!, ["quote"] = quote };
+        if (table is not null) citation["note"] = $"table {(string?)table["table"]}, column {(string?)table["column"]}, row {(int?)table["row"]}";
         if ((string?)fsd["attachment"] is not { } attachment) return citation;
         citation["attachment"] = attachment;
         citation["file"] = (string?)fsd["attachmentFile"];
@@ -273,7 +278,7 @@ public static partial class TraceFindings
         if (e["fsd"] is JsonObject fsd && (string?)fsd["quote"] is { } fsdQuote && documents.TryGetValue((string)fsd["doc"]!, out var doc))
             yield return new JsonObject
             {
-                ["id"] = id + ".fsd", ["citation"] = DocumentCitation(fsd, fsdQuote),
+                ["id"] = id + ".fsd", ["citation"] = DocumentCitation(fsd, fsdQuote, e["table_fact"] as JsonObject),
                 ["contentHash"] = (string?)doc["original"]?["hash"], ["strength"] = "stated", ["checkedBy"] = Checked(),
             };
         // The disprove step's quote: the agent said it, then code found it word for word at these lines (D119). Code read, so `read`, never `ran`.
@@ -290,6 +295,17 @@ public static partial class TraceFindings
                 ["checkedBy"] = new JsonArray(
                     new JsonObject { ["kind"] = "agent", ["name"] = (string?)disproof["agent"] ?? DisproveRun.Disprover, ["inputsHash"] = (string)disproof["inputs"]! },
                     Checker("code", "stangent fsd disprove")),
+            };
+        if (e["table_fact"] is JsonObject fact && (string?)fact["path"] is { } factPath && (string?)fact["commit"] is { } factCommit)
+            yield return new JsonObject
+            {
+                ["id"] = id + ".code.1",
+                ["citation"] = new JsonObject
+                {
+                    ["kind"] = "code", ["ref"] = $"{repo.Value}/{factPath}", ["lines"] = new JsonObject { ["start"] = (int)fact["start"]!, ["end"] = (int)fact["end"]! },
+                    ["symbol"] = (string)fact["symbol"]!,
+                },
+                ["commit"] = factCommit, ["strength"] = "read", ["checkedBy"] = Checked(),
             };
         if (e["page"] is not JsonObject page) yield break;
 
@@ -403,6 +419,7 @@ public static partial class TraceFindings
         ["atCommit"] = (string?)e["disproof"]?["commit"],
         ["suggestedSeverity"] = (string?)e["disproof"]?["suggestedSeverity"],
         ["standing"] = Standing(e), ["was"] = (string?)e["standing_note"]?["was"], ["wasBy"] = (string?)e["standing_note"]?["by"], ["standingWhy"] = (string?)e["standing_note"]?["why"],
+        ["tableFact"] = e["table_fact"]?.DeepClone(),
     })]);
 
     /// <summary>The same findings by who has them next, so each queue reads on its own (D119).</summary>

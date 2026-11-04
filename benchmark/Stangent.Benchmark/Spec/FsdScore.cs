@@ -18,7 +18,7 @@ public static class FsdScore
         var doc = (string)key["doc"]!;
         var items = key["items"]!.AsArray().OfType<JsonObject>().ToList();
         var findings = TraceFile.Load(root)["entries"]!.AsArray().OfType<JsonObject>()
-            .Where(e => (string)e["state"]! != "agree").Where(e => e["fsd"] is null || (string?)e["fsd"]!["doc"] == doc).Where(e => keep?.Invoke(e) ?? true).ToList();
+            .Where(e => (string)e["state"]! is not ("agree" or TraceFile.TableFact)).Where(e => e["fsd"] is null || (string?)e["fsd"]!["doc"] == doc).Where(e => keep?.Invoke(e) ?? true).ToList();
 
         // Each planted item takes the first finding that matches it; a finding matches at most one item.
         var used = new HashSet<string>(StringComparer.Ordinal);

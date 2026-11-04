@@ -110,7 +110,7 @@ public static class FrontendScanner
     /// <summary>Runs the extractor and reads its JSON lines into a fragment; warnings come back separately.</summary>
     public static (ProjectFragment Fragment, List<string> Warnings, string? Error) Extract(
         string root, FrontendProject p, string fingerprint, IReadOnlyDictionary<string, Dictionary<string, List<string>>> settings,
-        string? extractorOverride = null)
+        string? extractorOverride = null, bool enums = false)
     {
         var fragment = new ProjectFragment { ProjectId = p.Id, Fingerprint = fingerprint };
         var warnings = new List<string>();
@@ -118,7 +118,7 @@ public static class FrontendScanner
         if (extractor is null)
             return (fragment, warnings, $"{p.RelativeTsConfig}: the TypeScript extractor isn't installed with this stangent build");
         var settingsJson = JsonSerializer.Serialize(settings);
-        var args = $"\"{extractor}\" --tsconfig \"{p.TsConfig}\" --root \"{root}\" --project \"{p.Id}\" --settings {Quote(settingsJson)}";
+        var args = $"\"{extractor}\" --tsconfig \"{p.TsConfig}\" --root \"{root}\" --project \"{p.Id}\" --settings {Quote(settingsJson)}" + (enums ? " --enums" : "");
         var (code, output) = Run("node", args, root, TimeSpan.FromMinutes(10), splitStderr: true);
         if (code != 0) return (fragment, warnings, $"{p.RelativeTsConfig}: TypeScript extractor failed (exit {code}): {Tail(output)}");
 
@@ -141,6 +141,10 @@ public static class FrontendScanner
                 case "fact":
                     fragment.Facts.Add(new Fact((string)o["detector"]!, (string)o["kind"]!, (string)o["node"]!, (string?)o["file"], (int)o["line"]!,
                         o["data"]!.AsObject().ToDictionary(kv => kv.Key, kv => (string)kv.Value!, StringComparer.Ordinal)));
+                    break;
+                case "enum":
+                    fragment.Enums.Add(new CodeEnum((string)o["id"]!, (string)o["name"]!, p.Id, (string)o["file"]!, (int)o["line"]!, (int)o["endLine"]!,
+                        [.. o["members"]!.AsArray().OfType<JsonObject>().Select(m => new CodeEnumMember((string)m["name"]!, (string?)m["value"], (int)m["line"]!))]));
                     break;
                 case "warning":
                     warnings.Add($"{p.RelativeTsConfig}: {(string?)o["message"]}");

@@ -3,6 +3,8 @@ using System.Text.Json.Nodes;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Stangent.Core;
+using Stangent.Graph;
+using Stangent.Spec.Fsd;
 using Stangent.Spec.Trace;
 
 namespace Stangent.Core.Tests;
@@ -53,19 +55,26 @@ public sealed class WholeFlow : IDisposable
     public Dictionary<string, JsonNode?> Saw { get; } = [];
 
     readonly string? extraConfig;
+    readonly bool allOn;
 
     public WholeFlow() : this(null) { }
 
     /// <summary>The flow with these settings added, as far as what's left on can take it (D121): the rest of the stages need findings to act on.</summary>
     public static WholeFlow With(string extraConfig) => new(extraConfig);
 
+    public const string SwitchedOn = "components: { table-facts: true }";
+
+    /// <summary>The flow with what's built switched off turned on (D124): the fake AI answers each variant, and nothing real runs.</summary>
+    public static WholeFlow AllSwitchedOn() => new(SwitchedOn, allOn: true);
+
     /// <summary>A command as a person runs it, envelope and all.</summary>
     public JsonNode Cli(params string[] args) => Run(args).Envelope;
 
-    WholeFlow(string? extraConfig)
+    WholeFlow(string? extraConfig, bool allOn = false)
     {
         this.extraConfig = extraConfig;
-        Action[] stages = extraConfig is null
+        this.allOn = allOn;
+        Action[] stages = allOn ? [SetUp, ReferencePages, Import, ComparedTables] : extraConfig is null
             ? [SetUp, ReferencePages, Import, LinksAndFindings, Disprove, PersonDecides, Impact, NewVersion, Regenerate, WholeResult, ExcelAndEmbeddedFiles]
             : [SetUp, ReferencePages, Import, LinksAndFindings, Impact];
         for (var i = 0; i < stages.Length; i++)
@@ -115,6 +124,11 @@ public sealed class WholeFlow : IDisposable
         var yaml = File.ReadAllText(Path.Combine(Root, "stangent.yaml")).TrimEnd() + $"\n{FsdConfig(disprove: false)}\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n  aiPoints: false\n";
         if (extraConfig is not null) yaml = yaml.TrimEnd() + $"\n{extraConfig}\n";
         File.WriteAllText(Path.Combine(Root, "stangent.yaml"), yaml);
+        if (allOn)
+        {
+            File.WriteAllText(Path.Combine(Root, "Shop.Core", "Status.cs"), "namespace Shop.Core;\n\npublic enum OrderStatus\n{\n    Open,\n    Closed = 5,\n}\n");
+            File.WriteAllText(Path.Combine(Root, "Shop.Web", "ClientApp", "src", "app", "status.ts"), "export enum ScreenStatus {\n  Shown,\n  Hidden = 7,\n}\n");
+        }
         Saw["init"] = Ok("init");
         Git("config", "user.name", Person);
         Git("config", "user.email", "pat@example.invalid");
@@ -471,6 +485,44 @@ public sealed class WholeFlow : IDisposable
         Saw["embedded.check.before"] = checkBefore;
         Saw["embedded.check.after"] = Check();
         Saw["components"] = Ok("components");
+    }
+
+    /// <summary>A person's mapping file and a real graph, with enums read from C# and TypeScript (C.2). The graph's export is the same bytes with the switch on or off.</summary>
+    void ComparedTables()
+    {
+        var file = Path.Combine(Root, "facts.docx");
+        File.WriteAllBytes(file, DocxWriter.Write("# Order fields\n\n| Field |\n| total |\n| customer |\n| weight |\n\n# Statuses\n\n| Status | Code |\n| Open | 0 |\n| Closed | 1 |\n\n# Screens\n\n| Status |\n| Shown |\n| Hidden |\n\n# Other\n\n| Thing |\n| One |\n"));
+        Ok("fsd", "import", file, "--id", "facts");
+        File.Delete(file);
+        var tables = Ok("fsd", "tables", "facts");
+        Saw["tables"] = tables;
+        string Id(int i) => (string)tables["tables"]![i]!["id"]!;
+        File.WriteAllText(Path.Combine(Root, "specs", "fsd", "facts", "table-map.yaml"),
+            $"version: 1\ntables:\n  - {{ table: {Id(0)}, column: Field, kind: api-field, target: POST /api/orders response }}\n"
+            + $"  - {{ table: {Id(1)}, column: Status, kind: enum-member, target: OrderStatus, valueColumn: Code }}\n"
+            + $"  - {{ table: {Id(2)}, column: Status, kind: enum-member, target: ScreenStatus }}\n");
+        Saw["compared"] = Ok("fsd", "compare-tables", "facts");
+        Saw["compared.check"] = Check();
+        Saw["compared.trace"] = Trace();
+
+        string Export(string name)
+        {
+            var path = Path.Combine(archive, name);
+            Ok("graph", "export", path);
+            return Convert.ToBase64String(File.ReadAllBytes(path));
+        }
+        var yaml = Path.Combine(Root, "stangent.yaml");
+        var on = File.ReadAllText(yaml);
+        var enumsOn = File.ReadAllText(CodeEnums.PathFor(Root));
+        var exportOn = Export("on.gz");
+        File.WriteAllText(yaml, on.Replace("table-facts: true", "table-facts: false", StringComparison.Ordinal));
+        Ok("graph", "build");
+        Saw["enums.removed"] = JsonValue.Create(!File.Exists(CodeEnums.PathFor(Root)));
+        Saw["compare.off"] = Ok("fsd", "compare-tables", "facts");
+        Saw["export.same"] = JsonValue.Create(Export("off.gz") == exportOn);
+        File.WriteAllText(yaml, on);
+        Ok("graph", "build");
+        Saw["enums.back"] = JsonValue.Create(File.ReadAllText(CodeEnums.PathFor(Root)) == enumsOn);
     }
 
     static byte[] Version1() => FsdDocxTests.Docx(

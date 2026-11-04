@@ -85,6 +85,11 @@ public static class CSharpExtractor
         declared[id] = new Node(id, kind, DisplayName(symbol), ctx.ProjectId, file.RelativePath,
             span.StartLinePosition.Line + 1, span.EndLinePosition.Line + 1, isTest);
 
+        if (symbol is INamedTypeSymbol { TypeKind: TypeKind.Enum } declaredEnum)
+            ctx.Fragment.Enums.Add(new CodeEnum(id, declaredEnum.Name, ctx.ProjectId, file.RelativePath, span.StartLinePosition.Line + 1, span.EndLinePosition.Line + 1,
+                [.. declaredEnum.GetMembers().OfType<IFieldSymbol>().Where(m => m.HasConstantValue).Select(m => new CodeEnumMember(m.Name,
+                    Convert.ToString(m.ConstantValue, System.Globalization.CultureInfo.InvariantCulture), m.Locations[0].GetLineSpan().StartLinePosition.Line + 1))]));
+
         // Structure: file → type, type → member.
         if (symbol is INamedTypeSymbol type)
         {

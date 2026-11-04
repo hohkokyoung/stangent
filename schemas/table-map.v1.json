@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:table-map:v1",
+  "title": "specs/fsd/<doc>/table-map.yaml: which column of a document's table means what (C.2, D124)",
+  "description": "A person writes or approves this. No AI proposes one yet. `fsd compare-tables` applies it; a table not named here is listed as unmapped, never silently passed.",
+  "type": "object",
+  "required": ["version", "tables"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "tables": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["table", "column", "kind", "target"],
+        "additionalProperties": false,
+        "properties": {
+          "table": { "description": "A table's T- id or an attachment's A- id, from `fsd tables`.", "type": "string", "pattern": "^[TA]-[0-9]{4,}$" },
+          "sheet": { "description": "An attachment's sheet, when it has more than one.", "type": "string" },
+          "column": { "description": "The column whose cells name the facts: its header, word for word.", "type": "string" },
+          "kind": { "enum": ["api-field", "enum-member"] },
+          "target": { "description": "api-field: a type's name or graph id, or `<VERB> <route> request` or `response`. enum-member: an enum's name or graph id.", "type": "string" },
+          "valueColumn": { "description": "enum-member only: the column holding each member's value, compared with the code's.", "type": "string" }
+        }
+      }
+    },
+    "aliases": {
+      "description": "A name difference between the FSD and the code is declared here, and only here.",
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["fsd", "code"],
+        "additionalProperties": false,
+        "properties": {
+          "fsd": { "description": "The name as the FSD's cell has it.", "type": "string" },
+          "code": { "description": "The name as the code has it.", "type": "string" }
+        }
+      }
+    }
+  }
+}
