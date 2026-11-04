@@ -14,6 +14,7 @@
       "properties": {
         "doc": { "type": "string" },
         "section": { "type": "string" },
+    "sectionId": { "description": "The section's permanent id (D121), beside its number. Read by no hash.", "type": ["string", "null"], "pattern": "^S-[0-9]{4,}$" },
         "text": { "type": "string", "minLength": 1 },
         "hash": { "type": "string" }
       }
@@ -27,6 +28,7 @@
     "id": { "type": "string", "pattern": "^F-[0-9]{4,}$" },
     "doc": { "type": "string" },
     "section": { "type": "string" },
+    "sectionId": { "description": "The section's permanent id (D121), beside its number. Read by no hash.", "type": ["string", "null"], "pattern": "^S-[0-9]{4,}$" },
     "title": { "type": "string" },
     "parent": { "type": ["string", "null"], "pattern": "^F-[0-9]{4,}$" },
     "children": { "type": "array", "items": { "type": "string", "pattern": "^F-[0-9]{4,}$" } },

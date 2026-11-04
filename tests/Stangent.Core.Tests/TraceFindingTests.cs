@@ -18,7 +18,7 @@ public class TraceFindingTests
 
     static JsonObject Conflict() => LinkRun.Entry("conflict", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "R1", Page100, "judge", null, "FSD 50, code 100");
 
-    static JsonObject SpecIndexSection() => new() { ["id"] = "1", ["title"] = "Orders" };
+    static JsonObject SpecIndexSection() => new() { ["id"] = "1", ["title"] = "Orders", ["permanentId"] = "S-0001" };
 
     static void Save(SpecApp app, params JsonObject[] entries)
     {
@@ -642,7 +642,7 @@ public class TraceFindingTests
         // The person who decided is on the evidence, from the file, not typed.
         Assert.Contains(entry["evidence"]![0]!["checkedBy"]!.AsArray(), c => (string)c!["kind"]! == "person" && (string)c["name"]! == "pm-anna");
         Assert.StartsWith("# FSD", File.ReadAllText(TraceFile.PathIn(app.Root)));
-        Assert.Contains("version: 3", File.ReadAllText(TraceFile.PathIn(app.Root)));
+        Assert.Contains("version: 4", File.ReadAllText(TraceFile.PathIn(app.Root)));
     }
 
     [Fact]

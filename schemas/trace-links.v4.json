@@ -1,0 +1,312 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:trace-links:v4",
+  "title": "FSD ↔ reference page links and findings (contract trace-links v4, Phases 2b, 2c)",
+  "description": "specs/trace.yaml (D58), read as JSON. v2 added the requirement a link belongs to (D99). v3 adds what a finding carries (D118): its permanent id, its severity and who set it, and its evidence, each record checked by EvidenceValidator; files written by v1 and v2 still read. One entry per link or finding: both ends, the state, both quotes and their hashes, and the decision people make. decided_by comes from git, never typed. v4 adds the section's permanent id beside its number (D121): filled and kept right by code at trace check, read by no hash.",
+  "type": "object",
+  "required": [
+    "version",
+    "entries"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "properties": {
+    "version": {
+      "enum": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "state",
+          "fsd",
+          "page",
+          "by",
+          "decision",
+          "decided_by"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^L[0-9a-f]{10}$"
+          },
+          "state": {
+            "enum": [
+              "agree",
+              "gap",
+              "conflict",
+              "undocumented"
+            ]
+          },
+          "fsd": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "doc",
+                  "section"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "doc": {
+                    "type": "string"
+                  },
+                  "section": {
+                    "type": "string"
+                  },
+                  "sectionId": {
+                    "description": "The section's permanent id (D117, D121). `section` stays, because entry ids and saved hashes are built from it.",
+                    "type": "string",
+                    "pattern": "^S-[0-9]{4,}$"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "requirement": {
+                    "description": "The requirement this link judges, when the section's requirements were built (D99).",
+                    "type": "string",
+                    "pattern": "^R-[0-9]{4,}$"
+                  },
+                  "quote": {
+                    "type": "string"
+                  },
+                  "quoteHash": {
+                    "$ref": "#/definitions/hash"
+                  }
+                }
+              }
+            ]
+          },
+          "page": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "statement": {
+                    "type": "string",
+                    "pattern": "^[SARE][0-9]+$"
+                  },
+                  "quote": {
+                    "type": "string"
+                  },
+                  "quoteHash": {
+                    "$ref": "#/definitions/hash"
+                  }
+                }
+              }
+            ]
+          },
+          "by": {
+            "description": "judge: the link judge proposed it (and, for agree, a second fresh check confirmed or disputed it); code: found by code.",
+            "enum": [
+              "judge",
+              "code"
+            ]
+          },
+          "check": {
+            "enum": [
+              "confirmed",
+              "disputed"
+            ]
+          },
+          "note": {
+            "type": "string"
+          },
+          "decision": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "enum": [
+                  "agree",
+                  "code-wrong",
+                  "fsd-wrong",
+                  "page-wrong",
+                  "defer"
+                ]
+              }
+            ]
+          },
+          "decided_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          },
+          "decided_on": {
+            "description": "The hash of the page statement's normalised text when the decision was made, written by code. If the text changes, the decision drops back. No input hash reads it.",
+            "$ref": "#/definitions/hash"
+          },
+          "finding": {
+            "description": "Permanent, issued by trace check from specs/trace-ids.json. Only a finding has one.",
+            "type": "string",
+            "pattern": "^X-[0-9]{4,}$"
+          },
+          "severity": {
+            "description": "A person sets it, in a PR. Starts ungraded. See Severity in Core.",
+            "enum": [
+              "blocker",
+              "major",
+              "minor",
+              "cosmetic",
+              "ungraded"
+            ]
+          },
+          "severity_by": {
+            "description": "Comes from git after merge, as decided_by does; never typed.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          },
+          "evidence": {
+            "description": "Records of contract evidence v1, derived again by trace check from what's current. Nobody types them.",
+            "type": "array"
+          },
+          "evidence_hash": {
+            "description": "The hash of the evidence as code last wrote it, so a record that differs is told apart from one that's only out of date.",
+            "$ref": "#/definitions/hash"
+          },
+          "verdict": {
+            "description": "The disprove step's answer, written by code once its quote passes (D119). No field means unverified.",
+            "enum": [
+              "stands",
+              "refuted",
+              "page-gap",
+              "unreachable",
+              "cant-tell"
+            ]
+          },
+          "disproof": {
+            "description": "What the verdict rests on. `inputs` is the hash of the bundle it was judged from; a changed bundle drops the verdict back.",
+            "type": "object",
+            "required": [
+              "inputs",
+              "why"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "inputs": {
+                "$ref": "#/definitions/hash"
+              },
+              "why": {
+                "type": "string"
+              },
+              "agent": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "start": {
+                "type": "integer"
+              },
+              "end": {
+                "type": "integer"
+              },
+              "quote": {
+                "type": "string"
+              },
+              "symbol": {
+                "type": "string"
+              },
+              "commit": {
+                "type": "string"
+              },
+              "suggestedSeverity": {
+                "description": "The agent's suggestion, shown beside `severity`. A person still sets it (D118).",
+                "enum": [
+                  "blocker",
+                  "major",
+                  "minor",
+                  "cosmetic"
+                ]
+              },
+              "claimed": {
+                "description": "What the agent answered when its quote failed twice and code wrote cant-tell.",
+                "enum": [
+                  "stands",
+                  "refuted",
+                  "page-gap",
+                  "unreachable",
+                  "cant-tell"
+                ]
+              }
+            }
+          },
+          "disproof_hash": {
+            "description": "The hash of the verdict and disproof as code wrote them.",
+            "$ref": "#/definitions/hash"
+          },
+          "review": {
+            "description": "A person's word on a verdict (D119): confirmed closes a refuted or unreachable finding; sent-back returns a finding to the BA. No field means waiting.",
+            "enum": [
+              "confirmed",
+              "sent-back"
+            ]
+          },
+          "review_note": {
+            "description": "Who and why. `by` is from git, and missing when code sent it back because a decision dropped. `on` is the hash of the statement's text it was confirmed on.",
+            "type": "object",
+            "required": [
+              "why"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "by": {
+                "type": "string"
+              },
+              "why": {
+                "type": "string"
+              },
+              "on": {
+                "$ref": "#/definitions/hash"
+              }
+            }
+          },
+          "review_hash": {
+            "description": "The hash of the review, its note and the verdict's disproof_hash as code wrote them.",
+            "$ref": "#/definitions/hash"
+          }
+        }
+      }
+    }
+  }
+}

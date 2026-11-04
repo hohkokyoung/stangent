@@ -337,6 +337,7 @@ public static class LinkRun
         string by, string? check, string? note, string? requirement = null)
     {
         JsonNode? fsd = section is null ? null : new JsonObject { ["doc"] = doc, ["section"] = (string)section["id"]!, ["title"] = (string)section["title"]! };
+        if (fsd is JsonObject known && (string?)section!["permanentId"] is { } sectionId) known["sectionId"] = sectionId;
         if (fsd is JsonObject r && requirement is not null) r["requirement"] = requirement;
         if (fsd is JsonObject f && fsdQuote is not null) { f["quote"] = fsdQuote; f["quoteHash"] = TraceFile.QuoteHash(fsdQuote); }
         JsonNode? pg = page is null ? null : new JsonObject { ["id"] = page };

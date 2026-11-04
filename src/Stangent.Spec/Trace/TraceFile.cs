@@ -8,14 +8,14 @@ using YamlDotNet.RepresentationModel;
 namespace Stangent.Spec.Trace;
 
 /// <summary>
-/// <c>specs/trace.yaml</c> (D58, contract <c>trace-links</c> v3): one entry per link or finding between an FSD section
+/// <c>specs/trace.yaml</c> (D58, contract <c>trace-links</c> v4): one entry per link or finding between an FSD section
 /// and a reference page, with both quotes, the state, and the decision a person makes by editing the file in a PR.
 /// Written by code in one fixed form, so a re-run with the same content gives the same bytes; the dashboard (Phase 8)
 /// will edit the same file.
 /// </summary>
 public static class TraceFile
 {
-    public const string Schema = "trace-links.v3.json";
+    public const string Schema = "trace-links.v4.json";
     public static readonly string[] States = ["agree", "gap", "conflict", "undocumented"];
     public static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "page-wrong", "defer"];
 
@@ -57,7 +57,7 @@ public static class TraceFile
         sb.Append("# FSD ↔ reference page links and findings (trace-links v3, D58, D99, D118). Edit `decision` only:\n");
         sb.Append("# agree, code-wrong, fsd-wrong, page-wrong or defer. On a finding, also `severity`: blocker, major, minor, cosmetic or ungraded.\n");
         sb.Append("# `decided_by` and `severity_by` are filled from git after merge, never typed. Code fills the rest.\n");
-        sb.Append("version: 3\nentries:");
+        sb.Append("version: 4\nentries:");
         var entries = Sorted(trace["entries"]?.AsArray() ?? []).ToList();
         if (entries.Count == 0) sb.Append(" []");
         sb.Append('\n');
@@ -69,7 +69,7 @@ public static class TraceFile
             {
                 if (e[end] is not JsonObject o) { sb.Append($"    {end}: null\n"); continue; }
                 sb.Append($"    {end}:\n");
-                foreach (var k in end == "fsd" ? new[] { "doc", "section", "title", "requirement", "quote", "quoteHash" } : ["id", "statement", "quote", "quoteHash"])
+                foreach (var k in end == "fsd" ? new[] { "doc", "section", "sectionId", "title", "requirement", "quote", "quoteHash" } : ["id", "statement", "quote", "quoteHash"])
                     if (o[k] is not null) sb.Append($"      {k}: {S(o[k])}\n");
             }
             sb.Append($"    by: {S(e["by"])}\n");

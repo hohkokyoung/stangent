@@ -3,7 +3,7 @@ phase: 2b
 name: fsd
 status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, reference-lines: 1, evidence: 1 }
-provides: { source-document: 3, trace-links: 3 }
+provides: { source-document: 3, trace-links: 4 }
 ---
 
 # Phase 2b · FSD and discrepancies
@@ -387,3 +387,5 @@ Code only, no AI. Details are in `docs/spec.md`.
 **S.2 · `source-document` v2 → v3 (D121).** `problems` become objects: `kind`, `detail`, and `sectionNumber`, `section`, `page`, `line`, `author`, `state`, `text` where they apply. `ConvertedDocument.Problems` stays lines, so the converters and their tests didn't move, and `ImportProblems` reads lines for old documents and new imports alike. Sonarr's `document.md` keeps its hash, and `document.json` with its ids taken off keeps its hash too, since it has no problems. 2c and 3 were checked by grep (they read sections by field, never `problems` or `schemaVersion`) and moved, each with its line.
 
 **S.3 · One set of import steps.** `IImportFormat` and `ImportPipeline` (D121); `fsd import`'s result has `steps`. Word's and Sonarr's `document.md` are byte-identical (the pinned hash) and the PDF tests didn't change.
+
+**S.1 · `trace-links` v3 → v4.** `fsd.sectionId`, by code at `trace check`. 2c and 3 were checked by grep and moved, each with its line. A build before this one can't read a v4 file. `requirements` v1 grew `sectionId` in place: 2c is still being built, and it has provided nothing.

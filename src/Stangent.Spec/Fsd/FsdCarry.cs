@@ -43,12 +43,19 @@ static class FsdCarry
         var trace = TraceFile.Load(root);
         var traceIds = new JsonArray();
         var onRemoved = new Dictionary<string, List<JsonObject>>(StringComparer.Ordinal);
+        var disagree = new JsonArray();
         foreach (var e in trace["entries"]!.AsArray().OfType<JsonObject>())
         {
             if (e["fsd"] is not JsonObject fsd || (string?)fsd["doc"] != doc) continue;
             var section = (string)fsd["section"]!;
             string to;
-            if (goneBySection.TryGetValue(section, out var g)) to = Mark(g);
+            // Two ids for one section: the entry's number and its permanent id must name the same one before either moves (D121).
+            var was = (string?)fsd["sectionId"];
+            var named = goneBySection.TryGetValue(section, out var g) ? g : map.TryGetValue(section, out var pair) ? pair.Old : null;
+            if (was is not null && named is not null && was != (string)named["permanentId"]!)
+                disagree.Add((JsonNode)new JsonObject { ["entry"] = (string)e["id"]!, ["section"] = section, ["sectionId"] = was, ["numberNames"] = (string)named["permanentId"]! });
+            if (named is not null) fsd["sectionId"] = (string)named["permanentId"]!;
+            if (g is not null) to = Mark(g);
             else if (map.TryGetValue(section, out var p))
             {
                 fsd["title"] = p.Title;
@@ -105,6 +112,7 @@ static class FsdCarry
             ["traceIds"] = traceIds,
             ["sectionsFollowed"] = pairs.Count(p => p.From != p.To),
             ["removed"] = removed,
+            ["sectionIdsDisagree"] = disagree,
             // These run again at the next prepare: the words the AI read changed, so their saved answers don't count for them.
             ["runAgain"] = new JsonArray([.. rerun.Select(r => r!.DeepClone()).DistinctBy(r => (string)r!)]),
         };
@@ -119,10 +127,18 @@ static class FsdCarry
         if (map.TryGetValue(section, out var p))
         {
             item["section"] = p.To;
-            if (title) item["title"] = p.Title;
+            if (title)
+            {
+                item["title"] = p.Title;
+                item["sectionId"] = (string)p.New["permanentId"]!;
+            }
             FollowQuotes(item, map);
         }
-        else if (gone.TryGetValue(section, out var g)) item["section"] = Mark(g);
+        else if (gone.TryGetValue(section, out var g))
+        {
+            item["section"] = Mark(g);
+            if (title) item["sectionId"] = (string)g["permanentId"]!;
+        }
     }
 
     static void FollowQuotes(JsonNode? node, Dictionary<string, Pair> map)

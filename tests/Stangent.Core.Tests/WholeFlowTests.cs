@@ -526,7 +526,7 @@ public sealed class WholeFlow : IDisposable
         if (Directory.Exists(fsd))
             foreach (var dir in Directory.EnumerateDirectories(fsd))
                 Validate("source-document.v3.json", JsonNode.Parse(File.ReadAllText(Path.Combine(dir, "document.json"))), $"stage {stage} {Path.GetFileName(dir)}");
-        if (File.Exists(TraceFile.PathIn(Root))) Validate("trace-links.v3.json", Trace(), $"stage {stage} trace.yaml");
+        if (File.Exists(TraceFile.PathIn(Root))) Validate("trace-links.v4.json", Trace(), $"stage {stage} trace.yaml");
     }
 
     JsonObject Trace() => TraceFile.Load(Root);
@@ -785,6 +785,7 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         var was = flow.EntryIn("ids.before", WholeFlow.FsdStock);
         var moved = flow.EntryIn("trace.promoted", WholeFlow.FsdStock);
         Assert.Equal(("2.1", "Stock"), ((string?)moved["fsd"]!["section"], (string?)moved["fsd"]!["title"]));
+        Assert.Equal("S-0002", (string?)moved["fsd"]!["sectionId"]);     // the number moved; the permanent id didn't
         Assert.Equal((string?)was["finding"], (string?)moved["finding"]);
         Assert.Contains(flow.Seen("promote")["carried"]!["traceIds"]!.AsArray(), m => (string?)m!["from"] == (string?)was["id"] && (string?)m["to"] == (string?)moved["id"]);
         Assert.Equal("closed", (string?)flow.Listing("check.promoted", (string)moved["finding"]!)!["goesTo"]);
@@ -792,6 +793,7 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
 
         var modified = flow.EntryIn("trace.promoted", WholeFlow.FsdConflict);
         Assert.Contains(flow.Seen("promote")["staleQuotes"]!.AsArray(), id => (string?)id == (string?)modified["id"]);
+        Assert.Empty(flow.Seen("promote")["carried"]!["sectionIdsDisagree"]!.AsArray());
         Assert.Equal(["1"], flow.Seen("promote")["carried"]!["runAgain"]!.AsArray().Select(s => (string?)s));
         Assert.Null(modified["decision"]);
         Assert.Null(modified["decided_by"]);

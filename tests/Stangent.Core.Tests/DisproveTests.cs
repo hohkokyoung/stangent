@@ -24,7 +24,7 @@ public class DisproveTests
         return app;
     }
 
-    static JsonObject Section() => new() { ["id"] = "1", ["title"] = "Orders" };
+    static JsonObject Section() => new() { ["id"] = "1", ["title"] = "Orders", ["permanentId"] = "S-0001" };
 
     static JsonObject Conflict() => LinkRun.Entry("conflict", "shop", Section(), Fsd50, SpecApp.Post, "R1", Page100, "judge", null, Secret);
 

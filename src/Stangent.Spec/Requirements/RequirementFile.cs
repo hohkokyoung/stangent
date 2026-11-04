@@ -128,12 +128,18 @@ public static partial class RequirementFile
                 above["children"]!.AsArray().Add((string)existing["id"]!);
                 Save(root, above);
             }
+            // One built before permanent ids on links gets its section's here (D121). Nothing reads it for a hash.
+            if (existing["sectionId"] is null && (string?)section["permanentId"] is { } sectionId)
+            {
+                existing["sectionId"] = sectionId;
+                Save(root, existing);
+            }
             return existing;
         }
         JsonObject? parent = (string?)section["parent"] is { } p && index.Sections.TryGetValue((doc, p), out var ps) ? Ensure(root, doc, ps, index) : null;
         var feature = new JsonObject
         {
-            ["version"] = 1, ["id"] = NextId(root, "F"), ["doc"] = doc, ["section"] = id, ["title"] = (string)section["title"]!,
+            ["version"] = 1, ["id"] = NextId(root, "F"), ["doc"] = doc, ["section"] = id, ["sectionId"] = section["permanentId"]?.DeepClone(), ["title"] = (string)section["title"]!,
             ["parent"] = (string?)parent?["id"], ["children"] = new JsonArray(), ["textHash"] = null,
             ["requirements"] = new JsonArray(), ["definitions"] = new JsonArray(), ["journeys"] = new JsonArray(), ["background"] = new JsonArray(), ["retired"] = new JsonArray(),
         };

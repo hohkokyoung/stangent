@@ -203,7 +203,7 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
   *So the test phase can run the flow with each one off. Some exist: `history.enabled`, `fsd.findings`, `fsd.disprove`, `detectors`. Recommend: do first.*
 - ✅ S.0 · A test of the whole flow with fake AI answers: import, links, promote, disprove, impact, as one run.  
   *`WholeFlowTests.cs`; what it found is in `phases/0-foundation.md`. Five things wait on the owner, as skipped facts.*
-- ⬜ S.1 · Links store a section's permanent id as well as its number.  
+- ✅ S.1 · Links store a section's permanent id as well as its number.  
   *Links cite numbers, carried across on promote (D117). Keep the number for old hashes. Recommend: do.*
 - ✅ S.2 · Import problems become structured: kind, section, detail.  
   *`problems` are plain lines, and comments use a fixed text shape no product code reads back. `source-document` v3. Recommend: do before the report and questions.*

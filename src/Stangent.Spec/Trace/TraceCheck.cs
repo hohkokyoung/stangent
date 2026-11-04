@@ -69,6 +69,7 @@ public static class TraceCheck
         var baseByFinding = baseEntries.Where(e => e["finding"] is not null).GroupBy(e => (string)e["finding"]!).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         var refused = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         var stamped = TraceFindings.Stamp(root, trace, index, baseTrace is null ? null : baseByFinding, refused);
+        stamped |= StampSectionIds(trace, index);
         var findingIds = new HashSet<string>(StringComparer.Ordinal);
         var stale = new List<string>();
         var changed = new List<JsonNode>();
@@ -183,6 +184,28 @@ public static class TraceCheck
             problems.Add($"{e["id"]}: statement {e["page"]!["id"]} {e["page"]!["statement"]} changed after this decision was made on it, so the decision must drop back to undecided (run `stangent trace check --fix`)");
         return Report(trace, problems, stale, undecided, retired, changed);
     }
+
+    /// <summary>
+    /// Each link's section's permanent id, beside its number (D121), by code on every check, even without <c>--fix</c>, as a finding's id is. It follows
+    /// the number and the document, so nothing typed survives, and no hash or entry id reads it. A section marked removed keeps the id its mark holds.
+    /// One no imported document knows keeps what it has. Returns whether anything changed.
+    /// </summary>
+    internal static bool StampSectionIds(JsonObject trace, SpecIndex index)
+    {
+        var changed = false;
+        foreach (var fsd in trace["entries"]!.AsArray().OfType<JsonObject>().Select(e => e["fsd"]).OfType<JsonObject>())
+        {
+            var section = (string)fsd["section"]!;
+            var id = RemovedMark.Match(section) is { Success: true } mark ? mark.Groups[1].Value
+                : (string?)index.Sections.GetValueOrDefault(((string)fsd["doc"]!, section))?["permanentId"];
+            if (id is null || (string?)fsd["sectionId"] == id) continue;
+            fsd["sectionId"] = id;
+            changed = true;
+        }
+        return changed;
+    }
+
+    static readonly System.Text.RegularExpressions.Regex RemovedMark = new(@"^\(removed (S-[0-9]{4,})\)");
 
     static string? DecidedOn(JsonObject e, SpecIndex index) => TraceFindings.DecidedOn(e, index);
 
