@@ -3,7 +3,7 @@ phase: 2b
 name: fsd
 status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1 }
-provides: { source-document: 1, trace-links: 1 }
+provides: { source-document: 2, trace-links: 1 }
 ---
 
 # Phase 2b · FSD and discrepancies
@@ -263,3 +263,50 @@ Slice 2.1 of the overhaul, D116: the Word importer stops failing silently. Code 
 - A Word attachment with no headings still stops a ticket pull with `no_structure`. That was already so.
 
 **Impact on other phases.** `source-document` stays v1, with only its `problems` description widened, so no phase goes to `needs review`. `ticket pull` passes `acceptChanges`, so a tracked change can't stop a pull, and an attachment's text now follows these rules too: moved text once, hidden text out, footnotes in. 2.2 can match against the same text. 2.5 can read comments through `DocxComment.Parse`. Telemetry's event name for `graph screen-tests` is now `stangent.graph.screen_tests`; `stangent.command` keeps the hyphen.
+
+### Slice 2.2: stable section ids and a version diff (D117)
+
+Code only, no AI. Details are in `docs/spec.md`.
+
+**Built.**
+- Each section gets a permanent id (`S-0001`) beside its number, from a ledger per document. `id` stays what it was, because saved hashes use it. Never reused; a removed id stays marked removed.
+- A document imported earlier gets its ids on its next import, the same file included, which stays `unchanged`. There's no first-read change: a read never writes.
+- A changed file waits in `specs/fsd/<doc>/candidate/` with `SECTION_DIFF.md` and `section-diff.json`, and the current version keeps serving. A first import goes straight in.
+- Matching uses exact signals only, with no scores. A shared sentence never matches anything: it makes a section doubtful. A sentence counts with at least 4 words, the same floor `Sentences.Cited` uses.
+- `fsd diff`, `fsd resolve` and `fsd promote`. `decided_by` comes from git, and `promote` refuses with `doubtful_sections_remain`. Two new lifecycles are on the state module, `fsd-candidate` and `fsd-section-match`, with history in `specs/fsd/history.jsonl`.
+- Promotion carries by code: trace entries (with their new id, decision kept), feature files, quotes, questions, parents, run keys. Each removed section's items are listed and kept. The existing drop-back (D58) runs at once.
+- `TraceCheck` and `Attribute` find a moved entry's copy in the base file by its link without the section, so a promotion doesn't look like a typed `decided_by` or a new decision.
+- `resolve --removed` is beyond the brief: in a merge, a section of the current version has no candidate section to settle it from.
+
+**The hash bar.** Met. Against the build before this slice (6b3c9d4), on Sonarr's FSD: `document.md` byte-identical, `document.json` identical once the ids are taken off, all 15 requirement input hashes the same, measured by running both builds. A test pins the two file hashes, upgrades a saved document in place, and shows the saved run, link id and judge hash all unchanged and `req prepare` answering `current`.
+
+**The measure.** A planted edit of `benchmark/fsd/sonarr/`, **not a real version change**, so "proven on a real version change" stays open (D56). Planted: one chapter inserted, one section moved, one reworded, one split in two.
+
+| Outcome | Planted | Found |
+|---|---|---|
+| Unchanged | 18 | 18 |
+| Moved | 1 | 1 |
+| Renamed | 0 | 0 |
+| Modified | 1 | 1 |
+| Added | 1 | 1 |
+| Removed | 0 | 0 |
+| Doubtful | 3 (the split: its old section and two new ones) | 3 |
+
+7 sections changed number. The numbers follow from the edit script, written before the first run, so it's a check that the rules do what they say, not of how a real editor's changes look.
+
+**Tested.** 41 tests in `FsdVersionTests`, including one reviewed pair pinned whole. 22 single changes to the code, each removing a rule or leaking the new id into a bundle, each failed at least one test.
+
+**Known gaps.**
+- No real document with two versions has been through it.
+- Body text is compared exactly. A section whose text mentions another section's number ("see 4.2") counts as modified after a renumbering, and so does one whose image file name shifted. That's a person's read and possibly a paid re-run, never a wrong match.
+- A sentence repeated across a document makes a new section doubtful with each section holding it. That's noise for a person, never a wrong match.
+- A renamed section's links and items follow it, but its runs go again at the next prepare, because the AI read its title. `runAgain` lists them.
+- `finderInputs` isn't carried: working it out needs the page set, which promotion doesn't load. A renumbered section with no candidates by name runs the finder again.
+- A promotion isn't one atomic write. A crash part-way leaves references moved and the old document in place, and running it again would move them twice. The files are committed, so `git checkout` undoes it.
+- A `same_as` keeps the id, so a split's second half is a new section. Its share of the old section's links isn't told apart.
+- D15's version dates and draft or approved status aren't built: a candidate is promoted by a person, whichever is newer.
+- Trace history is by entry id, so a moved entry's old lines stay under the old id. `promotions.jsonl` holds the pairs.
+- `S-0001` shares its shape with a requirement scenario's id. They live in different files per document and no command takes both.
+- A deleted ledger catches up with the live ids only, as requirement ids do. Don't delete it.
+
+**Impact on other phases.** `source-document` went to v2 in this file. 2c and 3 were each checked by grep and moved to `source-document: 2`, each with its line. Neither reads what changed, and neither goes to `needs review`. `fsd import`'s `replacedSections` and `replaced` status are gone; nothing outside the tests read them. Later slices can cite the permanent id; links and requirements still cite the number.

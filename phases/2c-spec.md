@@ -2,7 +2,7 @@
 phase: 2c
 name: spec
 status: in progress
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 1, trace-links: 1, ticket-bundle: 2, bug-proof: 1 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 2, trace-links: 1, ticket-bundle: 2, bug-proof: 1 }
 provides: {}
 ---
 
@@ -58,3 +58,5 @@ Provides a new contract beside `source-document` (name not decided). Phase 3 goe
 ### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
 v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.
 Checked 2026-11-04 (D20): by grep, `Stangent.Spec` reads none of the new values. All tests pass, so this now consumes `code-graph: 4`.
+
+Checked 2026-11-04 (D20, D117): `source-document` v1 → v2. By grep, `Stangent.Spec`'s link and requirement runs read each section's `id`, `title`, `text` and `parent`, never `permanentId` or the document's `schemaVersion`. All tests pass, so this now consumes `source-document: 2`. On a promotion, `FsdCarry` moves this phase's section references to the new numbers; no file changes shape.
