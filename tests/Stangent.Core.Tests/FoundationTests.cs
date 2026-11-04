@@ -70,6 +70,13 @@ public class RepoTests
     }
 
     [Fact]
+    public void Init_ignores_the_graph_and_the_disprove_steps_work_files()
+    {
+        Assert.Contains(".stangent/graph.sqlite*", StangentRepo.GitIgnoreLines);      // documented as git-ignored (D25)
+        Assert.Contains(".stangent/fsd-disprove/", StangentRepo.GitIgnoreLines);      // its bundles hold FSD text and source
+    }
+
+    [Fact]
     public void Ai_steps_are_blocked_when_the_repo_switches_ai_off()
     {
         using var temp = new TempRepo("version: 1\nai:\n  enabled: false\n");
