@@ -132,6 +132,10 @@
         "gen_ai.usage.output_tokens": {
           "type": "integer",
           "minimum": 0
+        },
+        "gen_ai.usage.cost_usd": {
+          "type": "number",
+          "minimum": 0
         }
       }
     }

@@ -11,7 +11,7 @@ to set a `decision`.
 **A whole document** (`$ARGUMENTS` is a document id): run the batch driver, then the code-only steps:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/spec-run.sh --jobs 4 --fsd <doc id>
+${CLAUDE_PLUGIN_ROOT}/scripts/spec-run.sh --jobs 4 --max-cost "$STANGENT_MAX_COST" --fsd <doc id>
 stangent fsd undocumented
 stangent trace check
 ```

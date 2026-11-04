@@ -7,7 +7,7 @@
 #   [--resolution <base..head>]  stangent ticket draft --kind resolution → stangent-summary-writer → check
 # The logic lives in `stangent ticket`; this only runs the subagent each step names and hands its result back.
 #
-# usage: ticket-run.sh [--jobs N] [--model M] [--no-pull] [--refind] [--no-find] [--match] [--prove] [--hint TEXT] [--questions] [--resolution RANGE] [--tone T] <KEY>...
+# usage: ticket-run.sh [--jobs N] [--max-cost USD|none] [--stop-at-usage PCT] [--estimate] [--model M] [--no-pull] [--refind] [--no-find] [--match] [--prove] [--hint TEXT] [--questions] [--resolution RANGE] [--tone T] <KEY>...
 # --no-pull works from the ticket already pulled (a benchmark re-run, no Jira call). --refind searches for the ticket's
 # files again although the ticket is unchanged (its answer is otherwise kept, marked stale once the code moves on).
 # --no-find skips the file finder (a benchmark searches at each ticket's own commit later, in its `files` phase).
@@ -15,9 +15,16 @@
 # and Glob in the repo only, its answer as structured output, under the limits `stangent ticket prepare` returns. The
 # reproducer is multi-turn too (it builds and runs tests): the plugin's agent with the permission rules, turn and dollar
 # caps `stangent ticket prove` returns (D81).
-# env:   STANGENT (default: stangent), PLUGIN_DIR (default: this plugin), CLAUDE (default: claude)
-# out:   one line per ticket and step: <status>\t<key>\t<step>
+# --max-cost (T.2): the hard stop, see cost-guard.sh for what it can and can't see. A paid step won't start without a
+# choice: dollars, or `none`. A multi-turn step with its own cap doesn't start unless all of that cap is left.
+# --estimate prints the estimate and stops. --stop-at-usage: stop once a call reports a plan window this percent used.
+# Exit: 0 ok, 1 something refused or failed (the rest went on), 2 no cap chosen, 5 stopped on the cap or a limit, 125 the batch stopped on anything else.
+# env:   STANGENT (default: stangent), PLUGIN_DIR (default: this plugin), CLAUDE (default: claude), STANGENT_MAX_COST, STANGENT_STOP_AT_USAGE
+# out:   one line per ticket and step: <status>\t<key>\t<step>; stopped\t<key>\t<step>\t<why> at a hard stop
 set -euo pipefail
+
+source "$(dirname "$0")/cost-guard.sh"
+TYPED="$(printf '%q ' "$0" "$@")"
 
 usage() { sed -n 's/^# usage: //p' "$0" >&2; exit 2; }
 
@@ -32,11 +39,17 @@ REFIND=""
 NOFIND=""
 RESOLUTION=""
 TONE=""
+MAXCOST=""
+STOPUSAGE=""
+ESTIMATE=""
 KEYS=()
 while [ $# -gt 0 ]; do
-  case "$1" in --jobs|--model|--hint|--resolution|--tone) [ $# -ge 2 ] || usage ;; esac
+  case "$1" in --jobs|--model|--hint|--resolution|--tone|--max-cost|--stop-at-usage) [ $# -ge 2 ] || usage ;; esac
   case "$1" in
     --jobs) JOBS="$2"; shift 2 ;;
+    --max-cost) MAXCOST="$2"; shift 2 ;;
+    --stop-at-usage) STOPUSAGE="$2"; shift 2 ;;
+    --estimate) ESTIMATE=1; shift ;;
     --model) MODEL="$2"; shift 2 ;;
     --prove) PROVE=1; shift ;;
     --match) MATCH=1; shift ;;
@@ -61,7 +74,7 @@ export PLUGIN_DIR="${PLUGIN_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 # structured answer is written where the step wants it. Every call here has auto memory off: no AI step may see notes an
 # earlier session left about this repo (a benchmark clone's could hold its fixes).
 single_turn() {
-  local step="$1" usage="$2" out schema input label f
+  local step="$1" usage="$2" out schema input label f raw="$2.raw"
   out="$(jq -r '.result.next.output' <<<"$step")"
   schema="$($STANGENT spec schema "$(jq -r '.result.next.schema' <<<"$step")")"
   input=""
@@ -69,11 +82,13 @@ single_turn() {
     input+="# $label"$'\n\n'"$(cat "$f")"$'\n\n'
   done < <(jq -r '.result.next.prompt' <<<"$step" | grep -E ': \.stangent/' | grep -v '^Write' | sed -E 's/^(.*): (\.stangent\/.*)$/\1\t\2/')
   rm -f "$out"
-  printf '%s' "$input" | $CLAUDE -p ${MODEL:+--model "$MODEL"} --tools "" --setting-sources "" --settings '{"autoMemoryEnabled":false}' --disable-slash-commands \
-    --strict-mcp-config --exclude-dynamic-system-prompt-sections --no-session-persistence --output-format json \
+  # stream-json for the same result line plus any usage-limit event (T.2); the result is what's read.
+  printf '%s' "$input" | $CLAUDE -p ${MODEL:+--model "$MODEL"} ${CALL_BUDGET:+--max-budget-usd "$CALL_BUDGET"} --tools "" --setting-sources "" --settings '{"autoMemoryEnabled":false}' --disable-slash-commands \
+    --strict-mcp-config --exclude-dynamic-system-prompt-sections --no-session-persistence --output-format stream-json --verbose \
     --json-schema "$schema" \
     --system-prompt "You are one of stangent's AI steps. The input holds your instructions, the only evidence you may use, and on a retry your previous attempt and what to fix. Where the instructions say to write a result file, return that JSON as your structured output instead. Reply with nothing else." \
-    >"$usage" 2>/dev/null || true
+    >"$raw" 2>"$2.err" || true
+  jq -Rc 'fromjson? | select(type == "object" and .type == "result")' "$raw" 2>/dev/null | tail -n 1 >"$usage" || true
   if jq -e '.type == "result" and (.is_error | not)' "$usage" >/dev/null 2>&1; then
     jq -c '.structured_output // empty' "$usage" >"$out" || true
   fi
@@ -132,8 +147,9 @@ agent_search() {
       --max-turns "$(jq -r '.maxTurns' <<<"$limits")" --max-budget-usd "$(jq -r '.maxBudgetUsd' <<<"$limits")" \
       --json-schema "$schema" --output-format stream-json --verbose \
       --append-system-prompt "You are one of stangent's AI steps: the stangent-file-finder. Your prompt holds your instructions, the ticket and your output schema, and on a retry your previous attempt and what to fix. The repo is your current folder. Return the JSON as your structured output.") \
-      >"$transcript" 2>/dev/null || true
+      >"$transcript" 2>"$usage.err" || true
   )
+  cp "$transcript" "$usage.raw" 2>/dev/null || true
   [ -n "$tmp" ] && trap - INT TERM
   jq -c 'select(.type == "result")' "$transcript" 2>/dev/null | tail -n 1 >"$usage" || true
   if jq -e '.type == "result" and (.is_error | not)' "$usage" >/dev/null 2>&1; then
@@ -184,7 +200,8 @@ multi_turn() {
     --setting-sources "" --settings '{"autoMemoryEnabled":false}' --strict-mcp-config \
     --permission-mode "$(jq -r '.permissionMode' <<<"$limits")" --allowedTools "${tools[@]}" \
     --max-turns "$(jq -r '.maxTurns' <<<"$limits")" --max-budget-usd "$(jq -r '.maxBudgetUsd' <<<"$limits")" \
-    --no-session-persistence --output-format stream-json --verbose "$prompt" >"$transcript" 2>/dev/null || true
+    --no-session-persistence --output-format stream-json --verbose "$prompt" >"$transcript" 2>"$usage.err" || true
+  cp "$transcript" "$usage.raw" 2>/dev/null || true
   # D104: the rounds `--max-turns` limits, one per model message. The result's `num_turns` also counts parallel tool calls.
   rounds="$(jq -r 'select(.type == "assistant") | .message.id' "$transcript" 2>/dev/null | sort -u | wc -l | tr -d ' ')" || true
   jq -c --argjson rounds "${rounds:-0}" 'select(.type == "result") | . + {rounds: $rounds}' "$transcript" 2>/dev/null | tail -n 1 >"$usage" || true
@@ -209,10 +226,26 @@ run_step() {
   stop_if_no_envelope "$step" "$key" "$name" "$usage"
   action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   while [ "$action" != "none" ]; do
+    # The hard stop (T.2). A multi-turn step spends up to its own cap, so it starts only if all of that is left. A
+    # one-turn step gets what's left as its budget.
+    local own=""
+    if [ "$name" = prove ]; then own="$(jq -r '.result.next.limits.maxBudgetUsd // empty' <<<"$first")"
+    elif [ "$name" = points ]; then own="$(jq -r '.result.next.limits.maxBudgetUsd // empty' <<<"$step")"; fi
+    if ! guard_before_call "$own"; then
+      guard_stopped_line "$key" | sed "s/\$/\t$name/"
+      rm -f "$usage" "$usage.raw" "$usage.err"
+      exit 255
+    fi
     if [ "$name" = prove ]; then multi_turn "$first" "$usage" "$key"
     elif [ "$name" = points ]; then agent_search "$step" "$usage" "$key"
     else single_turn "$step" "$usage"; fi
-    # Claude Code itself failed (a usage limit, an outage, no login): not the AI's fault, so nothing is recorded and
+    # A limit or the cap: stop cleanly, say what was done and how to resume (T.2).
+    if ! guard_after_call "$usage.raw" "$usage" "$usage.err"; then
+      guard_stopped_line "$key" | sed "s/\$/\t$name/"
+      rm -f "$usage" "$usage.raw" "$usage.err"
+      exit 255
+    fi
+    # Claude Code itself failed (an outage, no login): not the AI's fault, so nothing is recorded and
     # the next run starts the step again. Only a reproducer or file finder that hit its own turn or dollar cap goes on to `check`.
     if ! jq -e '.type == "result" and ((.is_error | not) or ((.subtype // "") | test("max_turns|budget")))' "$usage" >/dev/null 2>&1; then
       local why
@@ -227,8 +260,9 @@ run_step() {
     [ "$name" = prove ] && first="$step"
     action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   done
-  rm -f "$usage"
+  rm -f "$usage" "$usage.raw" "$usage.err"
   printf '%s\t%s\t%s\n' "$(jq -r '.result.status // .error.code' <<<"$step")" "$key" "$name"
+  guard_mark_refused "$step" "$key $name"
   # D89: stangent's own permission rules refused what they allow. Every later attempt would hit the same wall: stop.
   if [ "$(jq -r '.error.code // ""' <<<"$step")" = setup_blocked ]; then
     printf 'error\t%s\t%s\t%s\n' "$key" "$name" "$(jq -r '.error.message // ""' <<<"$step" | head -c 300)" >&2
@@ -272,9 +306,25 @@ run_ticket() {
   fi
 }
 export -f run_ticket run_step single_turn multi_turn agent_search stop_if_no_envelope
+export -f guard_before_call guard_after_call guard_stop guard_stopped_line guard_lock guard_unlock guard_mark_refused
 
 # File finder worktrees an interrupted run left behind (their folders are gone): forget them.
 git worktree prune 2>/dev/null || true
 # A Playwright proof keeps the app on its one port for the whole attempt: proofs run one at a time (D86).
 if [ -n "$PROVE" ] && [ "$JOBS" -gt 1 ]; then echo "note: --prove runs one ticket at a time (the app's port)" >&2; JOBS=1; fi
-printf '%s\0' "${KEYS[@]}" | xargs -0 -n 1 -P "$JOBS" bash -c 'run_ticket "$1"' _
+
+guard_init "$MAXCOST" "$STOPUSAGE" "$JOBS" "$TYPED"
+# An estimate before anything runs (T.2). "At least": the steps asked for; the file finder only runs where it's needed,
+# and a retry adds more. A ticket's real count can only be known once its pull and points are done.
+per=0
+[ -z "$MATCH" ] || per=$((per + 2))
+[ -z "$PROVE" ] || per=$((per + 1))
+[ -z "$QUESTIONS" ] || per=$((per + 1))
+[ -z "$RESOLUTION" ] || per=$((per + 1))
+guard_estimate "ticket check" $((per * ${#KEYS[@]}))
+[ -z "$ESTIMATE" ] || exit 0
+[ ! -f "$STANGENT_COST_DIR/stopped" ] || guard_finish 0
+
+rc=0
+printf '%s\0' "${KEYS[@]}" | xargs -0 -n 1 -P "$JOBS" bash -c 'run_ticket "$1"' _ || rc=$?
+guard_finish "$rc"

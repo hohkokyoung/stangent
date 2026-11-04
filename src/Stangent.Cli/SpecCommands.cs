@@ -133,6 +133,7 @@ static class SpecCommands
         ctx.Span.Attributes["gen_ai.provider.name"] = "anthropic";
         ctx.Span.Attributes["gen_ai.usage.input_tokens"] = usage.InputTokens + usage.CacheReadTokens + usage.CacheWriteTokens;
         ctx.Span.Attributes["gen_ai.usage.output_tokens"] = usage.OutputTokens;
+        ctx.Span.Attributes["gen_ai.usage.cost_usd"] = usage.CostUsd;
         return usage;
     }
 

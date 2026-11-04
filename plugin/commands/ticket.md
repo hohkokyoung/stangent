@@ -17,7 +17,7 @@ Never judge a quote, a page or a test yourself, never write a comment to Jira yo
    yourself. It is an AI step capped by `tickets.findBudget` (default 30 turns, $1; usually a few cents):
 
    ```bash
-   ${CLAUDE_PLUGIN_ROOT}/scripts/ticket-run.sh --no-pull <KEY>
+   ${CLAUDE_PLUGIN_ROOT}/scripts/ticket-run.sh --max-cost "$STANGENT_MAX_COST" --no-pull <KEY>
    ```
 3. `stangent ticket bundle <KEY> --format md`, and read `.stangent/tickets/<KEY>/bundle.json` too.
 4. Show the user the Markdown view: the starting points with their reasons, the pages, FSD sections, impact and
@@ -32,7 +32,7 @@ through the driver, which starts the reproducer headless under the permission ru
 don't start `stangent-bug-reproducer` yourself:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/ticket-run.sh --prove [--hint "<hint>"] <KEY>
+${CLAUDE_PLUGIN_ROOT}/scripts/ticket-run.sh --max-cost "$STANGENT_MAX_COST" --prove [--hint "<hint>"] <KEY>
 ```
 
 Then report the outcome from `.stangent/tickets/<KEY>/bug-proof.json`:

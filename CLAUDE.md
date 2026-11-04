@@ -41,9 +41,9 @@ benchmark/run.sh <label> <stangent args...>               # D6 benchmark; result
 dotnet run --project benchmark/Stangent.Benchmark -- <clone>   # D28 scoring (needs full history + a built graph)
 npm --prefix tools/ts-extractor ci && npm --prefix tools/ts-extractor test   # the TypeScript extractor (D30)
 npm --prefix tools/ts-extractor run build                 # → dist/, shipped by the dotnet build (built automatically if missing)
-plugin/scripts/spec-run.sh --jobs 4 --all                 # Phase 2 AI steps through headless Claude Code (STANGENT= to point at a build)
+plugin/scripts/spec-run.sh --jobs 4 --max-cost 5 --all    # --estimate shows the cost first; Phase 2 AI steps through headless Claude Code (STANGENT= to point at a build)
 plugin/scripts/spec-run.sh --disprove <doc>               # D119: only the disprove stage (needs fsd.disprove; `fsd disprove estimate <doc>` is free)
-plugin/scripts/ticket-run.sh --prove --questions <KEY>... # Phase 3: pull → points → bundle → proof → drafts, headless
+plugin/scripts/ticket-run.sh --max-cost 5 --prove --questions <KEY>... # Phase 3: pull → points → bundle → proof → drafts, headless
 stangent jira login                                       # browser sign-in to Atlassian's MCP v2; token in the OS keychain
 ```
 

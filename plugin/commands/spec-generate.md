@@ -11,8 +11,10 @@ Never write or edit a page yourself, and never judge a page yourself: the writer
 records tokens and time per page:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/spec-run.sh --jobs 4 $ARGUMENTS
+${CLAUDE_PLUGIN_ROOT}/scripts/spec-run.sh --jobs 4 --max-cost "$STANGENT_MAX_COST" $ARGUMENTS
 ```
+
+`STANGENT_MAX_COST` is the hard stop in dollars (`none` for no cap). If it isn't set, the driver stops at the first paid step and says so: ask the person for a cap and don't choose one yourself. Exit 5 means it stopped on the cap or a usage limit: report that line and the resume command.
 
 It prints `<status>\t<page id>` per page. Report the counts by status and list any `failed` pages with the reason from
 `specs/reference/failed.json`.

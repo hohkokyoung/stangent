@@ -243,17 +243,34 @@ public sealed class TicketRunDriverTests : IDisposable
         Assert.Empty(rig.ClaudeCalls());
     }
 
-    /// <summary>Pins today's behaviour, a known gap: a step stangent refuses is a status line and the run exits 0.</summary>
+    /// <summary>T.2: a capped attempt counts as "not reproduced", so an attempt the run can't pay for in full must not start.</summary>
     [Fact]
-    public void A_step_stangent_refuses_is_reported_by_its_code_and_the_ticket_goes_on()
+    public void A_reproducer_whose_own_cap_is_more_than_is_left_never_starts()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        IsBug(true);
+        Steps($"""
+            "ticket prove K-1") echo '{Reproducer}' ;;
+            """);
+        var result = rig.Run(Script, "--max-cost", "0.01", "--prove", "K-1");
+        Assert.Equal(5, result.Exit);
+        Assert.Empty(rig.ClaudeCalls());
+        Assert.Contains("cap_reached", result.Err);
+        Assert.Contains("stopped\tK-1\tcap_reached\tprove", result.Out);
+    }
+
+    /// <summary>I.10: a refused step is a status line, the rest goes on, and the run exits 1 at the end.</summary>
+    [Fact]
+    public void A_step_stangent_refuses_is_reported_by_its_code_and_the_run_exits_nonzero()
     {
         if (OperatingSystem.IsWindows()) return;
         Steps("""
             "ticket match K-1") echo '{"ok":false,"error":{"code":"no_requirements","message":"none"}}'; exit 1 ;;
             """);
         var result = rig.Run(Script, "--match", "K-1");
-        Assert.Equal(0, result.Exit);
+        Assert.Equal(1, result.Exit);
         Assert.Contains("no_requirements\tK-1\tmatch", result.Out);
+        Assert.Contains("refused or failed: K-1 match", result.Err);
     }
 
     [Fact]

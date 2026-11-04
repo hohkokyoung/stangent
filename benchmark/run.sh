@@ -5,6 +5,9 @@
 #
 #   benchmark/run.sh <label> <stangent args...>     e.g.  benchmark/run.sh phase0 status
 #
+# This makes no paid call, so it has no --max-cost (T.2): `stangent` itself never starts Claude Code, only the plugin's
+# drivers do (a test pins that). What it records as tokens comes from telemetry an earlier driver wrote.
+#
 # STANGENT    stangent binary to run (default: stangent on PATH)
 # BENCH_CACHE where clones live (default: benchmark/.cache, git-ignored)
 # BENCH_ONLY  run only this repo name

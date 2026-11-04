@@ -7,7 +7,7 @@ allowed-tools: Bash(*spec-run.sh:*)
 Run the driver with the question as one argument:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/scripts/spec-run.sh" --ask "$ARGUMENTS"
+"${CLAUDE_PLUGIN_ROOT}/scripts/spec-run.sh" --max-cost "${STANGENT_MAX_COST:-none}" --ask "$ARGUMENTS"
 ```
 
 It prints a status line, then the result as one JSON object. Code picks the pages and checks every citation; you only report what comes back.

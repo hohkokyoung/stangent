@@ -14,7 +14,9 @@
 #   replay    pull, points and bundle again from the saved MCP results: byte-identical bundles, and no AI call
 # AI cost (D81, worst case): prove ≈ $40 (40 attempts × $1 cap), points + drafts ≈ $5, pages ≈ $10–20.
 #
-# usage: run.sh <clone> <tickets dir> <phase>... [--model M] [--jobs N] [--only KEY,...]
+# usage: run.sh <clone> <tickets dir> <phase>... [--max-cost USD|none] [--model M] [--jobs N] [--only KEY,...]
+# --max-cost covers the whole run across its phases (T.2, plugin/scripts/cost-guard.sh): at a stop it exits 5, and the
+# same command resumes. Without a choice the first paid step stops the run (exit 2).
 # env:   STANGENT (default: the stangent CLI), PLUGIN_DIR (default: this repo's plugin)
 # out:   <tickets dir>/run/<KEY>.json per ticket (times, replay checks) and run.log lines
 set -euo pipefail
@@ -28,10 +30,13 @@ while [ $# -gt 0 ]; do
     --model) MODEL="$2"; shift 2 ;;
     --jobs) JOBS="$2"; shift 2 ;;
     --only) ONLY="$2"; shift 2 ;;
+    --max-cost) export STANGENT_MAX_COST="$2"; shift 2 ;;
     *) PHASES+=("$1"); shift ;;
   esac
 done
 HERE="$(cd "$(dirname "$0")/../.." && pwd)"
+# One ledger for every driver this run starts, so the cap is for the run and not for each ticket.
+export STANGENT_COST_DIR="${STANGENT_COST_DIR:-$(mktemp -d)}"
 export STANGENT="${STANGENT:-dotnet $HOME/stangent-bench/stangent-bin/stangent.dll}"
 export PLUGIN_DIR="${PLUGIN_DIR:-$HERE/plugin}"
 # Older Sonarr commits target net8.0: a .NET with both the 10 SDK and the 8 runtimes, installed for the benchmark by
@@ -67,9 +72,14 @@ now_ms() { python3 -c 'import time; print(int(time.time() * 1000))'; }   # macOS
 timed() {
   local key="$1" step="$2"; shift 2; local t0 t1 rc=0
   t0=$(now_ms); "$@" || rc=$?; t1=$(now_ms); record "$key" ".steps.\"$step\".ms = $((t1 - t0))"
-  [ "$rc" -eq 0 ] || stop "$step $key exited $rc (see run.log)"
+  # A refused step (I.10): that ticket has no result, the rest can still run. The hard stop's own codes end the run.
+  if [ "$rc" -eq 1 ]; then log "$step $key: refused or failed, going on (see run.log)"; return 0; fi
+  [ "$rc" -eq 0 ] || stop "$step $key exited $rc (see run.log)" "$rc"
 }
-stop() { log "STOPPED: $*"; exit 1; }
+stop() {
+  log "STOPPED: $1"
+  case "${2:-1}" in 2|5) exit "$2" ;; *) exit 1 ;; esac
+}
 
 # Back to a commit with the SDK pin (D28's approach: past issues are judged against today's graph and pages).
 at() {

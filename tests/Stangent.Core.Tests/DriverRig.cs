@@ -53,12 +53,13 @@ public sealed class DriverRig : IDisposable
 
     /// <summary>The fake stangent: <paramref name="cases"/> is the body of a bash <c>case "$*" in</c>. Anything it doesn't
     /// name fails loudly, so a driver calling something unexpected shows up.</summary>
-    public void Stangent(string cases) => WriteExecutable("stangent", $$"""
+    public void Stangent(string cases) => WriteExecutable("stangent", $$$"""
         #!/bin/bash
         printf 'stangent %s\n' "$*" >>"$FAKE_LOG"
         case "$*" in
-        {{cases}}
+        {{{cases}}}
         "spec schema "*) echo '{"type":"object"}' ;;
+        "cost estimate "*) echo '{"ok":true,"result":{"estimateUsd":null,"basis":"fake"}}' ;;
         *) echo "fake stangent: unexpected: $*" >&2; exit 99 ;;
         esac
         """.Replace("\r\n", "\n"));
@@ -73,7 +74,7 @@ public sealed class DriverRig : IDisposable
 
     public IReadOnlyList<string> Calls() => File.Exists(Path.Combine(Dir, "log")) ? File.ReadAllLines(Path.Combine(Dir, "log")) : [];
     public IReadOnlyList<string> ClaudeCalls() => [.. Calls().Where(c => c.StartsWith("claude -p"))];
-    public IReadOnlyList<string> StangentCalls() => [.. Calls().Where(c => c.StartsWith("stangent "))];
+    public IReadOnlyList<string> StangentCalls() => [.. Calls().Where(c => c.StartsWith("stangent ") && !c.StartsWith("stangent cost "))];
 
     /// <summary>Writes a file under the work folder (or an absolute path).</summary>
     public string Put(string path, string text)
@@ -160,6 +161,8 @@ public sealed class DriverRig : IDisposable
             psi.Environment[$"GIT_{who}_NAME"] = "Test";
             psi.Environment[$"GIT_{who}_EMAIL"] = "test@example.invalid";
         }
+        // A test about the hard stop sets or clears this itself (T.2).
+        psi.Environment["STANGENT_MAX_COST"] = "none";
         foreach (var (key, value) in Env) psi.Environment[key] = value;
         return psi;
     }

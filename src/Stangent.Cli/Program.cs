@@ -102,6 +102,14 @@ batch.SetAction(pr => Cli.Run(pr, "store batch", ctx =>
 }));
 store.Subcommands.Add(batch);
 
+var cost = new Command("cost", "What AI steps have cost in this repo: read from telemetry, no AI.");
+root.Subcommands.Add(cost);
+var costStepOption = new Option<string>("--step") { Description = "The command that records the calls, e.g. \"spec check\".", Required = true };
+var costCallsOption = new Option<int>("--calls") { Description = "How many calls the run is expected to make, at least.", Required = true };
+var costEstimate = new Command("estimate", "calls × this step's average cost so far. No earlier call means no estimate, and it says so.") { costStepOption, costCallsOption };
+costEstimate.SetAction(pr => Cli.Run(pr, "cost estimate", ctx => CostHistory.Estimate(ctx.Repo.Root, pr.GetValue(costStepOption)!, pr.GetValue(costCallsOption))));
+cost.Subcommands.Add(costEstimate);
+
 var index = new Command("index", "The SQLite index derived from the store files.");
 root.Subcommands.Add(index);
 var rebuild = new Command("rebuild", "Rebuild the index from the store files (validates every file).");

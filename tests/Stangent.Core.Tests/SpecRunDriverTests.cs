@@ -294,7 +294,7 @@ public sealed class SpecRunDriverTests : IDisposable
     }
 
     [Theory]
-    [InlineData("""{"type":"result","is_error":true,"result":"usage limit hit"}""", 0, "usage limit hit")]
+    [InlineData("""{"type":"result","is_error":true,"result":"no login"}""", 0, "no login")]
     [InlineData("not json", 1, "claude exited without a result")]
     public void Claude_failing_stops_the_batch_says_which_page_and_records_nothing(string answer, int exit, string said)
     {
@@ -354,7 +354,7 @@ public sealed class SpecRunDriverTests : IDisposable
         Assert.Single(rig.ClaudeCalls());
     }
 
-    /// <summary>Pins today's behaviour, a known gap: a refused page is a status line, so the batch still exits 0.</summary>
+    /// <summary>I.10: a refused page is a status line and the batch goes on, and the run exits 1 at the end.</summary>
     [Fact]
     public void A_page_stangent_refuses_is_reported_by_its_code_and_the_batch_goes_on()
     {
@@ -364,7 +364,7 @@ public sealed class SpecRunDriverTests : IDisposable
             "spec prepare p2") echo '{{{Done}}}' ;;
             """);
         var result = rig.Run(Script, "p1", "p2");
-        Assert.Equal(0, result.Exit);
+        Assert.Equal(1, result.Exit);
         Assert.Equal("not_found\tp1\nwritten\tp2\n", result.Out);
         Assert.Empty(rig.ClaudeCalls());
     }
@@ -385,5 +385,232 @@ public sealed class SpecRunDriverTests : IDisposable
         Assert.Equal(ExitCodes.Usage, result.Exit);
         Assert.Contains("spec-run.sh [--jobs N]", result.Err);
         Assert.Empty(rig.Calls());
+    }
+}
+
+/// <summary>The hard stop (T.2, I.10): cost-guard.sh through spec-run.sh, with fakes only.</summary>
+public sealed class CostGuardDriverTests : IDisposable
+{
+    const string Script = "plugin/scripts/spec-run.sh";
+    const string Step = """{"ok":true,"result":{"status":"prepared","next":{"action":"write","agent":"w","prompt":"Input: .stangent/in.md\nWrite your result to: .stangent/out.json","output":".stangent/out.json","schema":"s.json"}}}""";
+    const string Done = """{"ok":true,"result":{"status":"written"}}""";
+    const string Paid = """{"type":"result","is_error":false,"total_cost_usd":0.6,"structured_output":{"done":true}}""";
+
+    readonly DriverRig rig = new();
+
+    public CostGuardDriverTests()
+    {
+        rig.Put(".stangent/in.md", "IN");
+        rig.Stangent($"""
+            "spec prepare "*) echo '{Step}' ;;
+            "spec check "*) echo '{Done}' ;;
+            "cost estimate "*) echo '{Estimate}' ;;
+            """);
+    }
+
+    const string Estimate = """{"ok":true,"result":{"estimateUsd":null,"basis":"none yet"}}""";
+
+    public void Dispose() => rig.Dispose();
+
+    [Fact]
+    public void No_choice_of_cap_stops_before_the_first_paid_call_and_says_what_to_pass()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.Env["STANGENT_MAX_COST"] = "";
+        var result = rig.Run(Script, "p1");
+        Assert.Equal(2, result.Exit);
+        Assert.Empty(rig.ClaudeCalls());
+        Assert.Contains("--max-cost", result.Err);
+        Assert.Contains("stopped\tp1\tno_cap", result.Out);
+    }
+
+    [Fact]
+    public void None_is_a_choice_and_runs_with_no_budget_flag()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var result = rig.Run(Script, "--max-cost", "none", "p1");
+        Assert.Equal(0, result.Exit);
+        Assert.DoesNotContain("--max-budget-usd", Assert.Single(rig.ClaudeCalls()));
+    }
+
+    [Fact]
+    public void Each_call_gets_what_is_left_and_the_run_stops_when_the_next_could_go_over()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.ClaudeAnswers(Paid);
+        var result = rig.Run(Script, "--max-cost", "1", "p1", "p2", "p3");
+        Assert.Equal(5, result.Exit);
+        // $0.60 spent leaves $0.40, less than the run's average call, so the second doesn't start.
+        Assert.Contains("--max-budget-usd 1.0000", Assert.Single(rig.ClaudeCalls()));
+        Assert.Contains("stopped\tp", result.Out);
+        Assert.Contains("cap_reached", result.Err);
+        Assert.Contains("spent: ", result.Err);
+        Assert.Contains("To resume, run the same command again", result.Err);
+        Assert.Contains("spec-run.sh", result.Err);
+    }
+
+    [Fact]
+    public void An_estimate_over_the_cap_stops_with_nothing_spent()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.Stangent("""
+            "cost estimate "*) echo '{"ok":true,"result":{"estimateUsd":9.5,"basis":"19 earlier calls"}}' ;;
+            """);
+        var result = rig.Run(Script, "--max-cost", "1", "p1");
+        Assert.Equal(5, result.Exit);
+        Assert.Empty(rig.ClaudeCalls());
+        Assert.Contains("over_estimate", result.Err);
+        Assert.Contains("about $9.5 (19 earlier calls)", result.Err);
+    }
+
+    [Fact]
+    public void Estimate_prints_and_stops_with_no_AI_call()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var result = rig.Run(Script, "--estimate", "p1", "p2");
+        Assert.Equal(0, result.Exit);
+        Assert.Empty(rig.ClaudeCalls());
+        Assert.Contains("estimate: at least 4 AI calls, cost unknown (none yet)", result.Err);
+    }
+
+    [Theory]
+    [InlineData("""{"type":"result","is_error":true,"result":"You've hit your weekly limit · resets Nov 7"}""")]
+    [InlineData("""{"type":"result","is_error":true,"result":"Claude usage limit reached"}""")]
+    public void A_limit_message_stops_cleanly_and_says_how_to_resume(string answer)
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.ClaudeAnswers(answer, exit: 1);
+        var result = rig.Run(Script, "--max-cost", "5", "p1", "p2");
+        Assert.Equal(5, result.Exit);
+        Assert.Single(rig.ClaudeCalls());
+        Assert.Contains("usage_limit", result.Err);
+        Assert.Contains("Claude Code said:", result.Err);
+        Assert.Contains("To resume", result.Err);
+        Assert.DoesNotContain(rig.StangentCalls(), c => c.StartsWith("stangent spec check"));
+    }
+
+    [Fact]
+    public void A_refused_rate_limit_event_stops_even_with_no_words_to_match()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.ClaudeAnswers("""
+            {"type":"rate_limit_event","rate_limit_info":{"status":"rejected","rateLimitType":"seven_day","resetsAt":1794045600}}
+            {"type":"result","is_error":true,"result":"stopped"}
+            """, exit: 1);
+        var result = rig.Run(Script, "--max-cost", "none", "p1");
+        Assert.Equal(5, result.Exit);
+        Assert.Contains("seven_day limit, which resets 2026-", result.Err);
+    }
+
+    [Fact]
+    public void A_page_about_rate_limits_is_not_a_limit()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.ClaudeAnswers("""{"type":"result","is_error":false,"result":"the rate limit middleware","structured_output":{"done":true}}""");
+        Assert.Equal(0, rig.Run(Script, "--max-cost", "none", "p1").Exit);
+    }
+
+    [Fact]
+    public void Another_failure_is_not_called_a_limit_and_still_stops_the_batch()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.ClaudeAnswers("""{"type":"result","is_error":true,"result":"no login"}""", exit: 1);
+        var result = rig.Run(Script, "--max-cost", "none", "p1", "p2");
+        Assert.NotEqual(0, result.Exit);
+        Assert.NotEqual(5, result.Exit);
+        Assert.Contains("error\tp1\tno login", result.Out);
+    }
+
+    [Fact]
+    public void Usage_a_call_reports_is_shown_and_a_persons_stop_at_usage_stops_before_the_next_call()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.ClaudeAnswers("""
+            {"type":"rate_limit_event","rate_limit_info":{"status":"allowed_warning","rateLimitType":"seven_day","utilization":0.94,"resetsAt":1794045600}}
+            {"type":"result","is_error":false,"structured_output":{"done":true}}
+            """);
+        var result = rig.Run(Script, "--max-cost", "none", "--stop-at-usage", "90", "p1", "p2");
+        Assert.Equal(5, result.Exit);
+        Assert.Single(rig.ClaudeCalls());
+        Assert.Contains("usage: allowed_warning, seven_day window 94% used", result.Err);
+        Assert.Contains("--stop-at-usage 90", result.Err);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("lots")]
+    public void A_bad_cap_is_a_usage_error_and_runs_nothing(string cap)
+    {
+        if (OperatingSystem.IsWindows()) return;
+        Assert.Equal(ExitCodes.Usage, rig.Run(Script, "--max-cost", cap, "p1").Exit);
+        Assert.Empty(rig.ClaudeCalls());
+    }
+
+    [Fact]
+    public void Parallel_jobs_cannot_each_spend_the_whole_cap()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.ClaudeAnswers("""{"type":"result","is_error":false,"total_cost_usd":0.1,"structured_output":{"done":true}}""");
+        var result = rig.Run(Script, "--max-cost", "1", "--jobs", "4", "p1", "p2", "p3", "p4");
+        var budgets = rig.ClaudeCalls().Select(c => double.Parse(c.Split("--max-budget-usd ")[1].Split(' ')[0], System.Globalization.CultureInfo.InvariantCulture)).ToList();
+        // Held money is held: whatever the timing, no call is promised more than a share of what isn't held by others.
+        Assert.All(budgets.Take(1), b => Assert.True(b <= 0.25 + 0.0001, $"{b}"));
+    }
+
+    [Fact]
+    public void A_refused_page_exits_one_and_the_others_still_run()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.Stangent($$$"""
+            "spec prepare p1") echo '{"ok":false,"error":{"code":"not_found","message":"no"}}'; exit 3 ;;
+            "spec prepare p2") echo '{{{Step}}}' ;;
+            "spec check "*) echo '{{{Done}}}' ;;
+            """);
+        var result = rig.Run(Script, "p1", "p2");
+        Assert.Equal(1, result.Exit);
+        Assert.Contains("not_found\tp1", result.Out);
+        Assert.Contains("written\tp2", result.Out);
+        Assert.Contains("refused or failed: p1", result.Err);
+    }
+
+    [Fact]
+    public void No_stangent_command_starts_Claude_Code_only_the_drivers_do()
+    {
+        // Why benchmark/run.sh, which runs only stangent commands, has no cap of its own.
+        var src = Path.Combine(DriverRig.RepoRoot, "src");
+        var starts = Directory.EnumerateFiles(src, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .Where(f => File.ReadAllText(f) is var t && (t.Contains("ProcessStartInfo(\"claude\"") || t.Contains("FileName = \"claude\"")))
+            .ToList();
+        Assert.Empty(starts);
+    }
+}
+
+/// <summary>The estimate itself: telemetry only.</summary>
+public sealed class CostHistoryTests : IDisposable
+{
+    readonly DirectoryInfo dir = Directory.CreateTempSubdirectory("stangent-cost");
+    public void Dispose() => dir.Delete(true);
+
+    [Fact]
+    public void An_estimate_is_calls_times_this_steps_average_and_no_history_says_so()
+    {
+        var none = Stangent.Core.Telemetry.CostHistory.Estimate(dir.FullName, "spec check", 10);
+        Assert.Null(none["estimateUsd"]);
+        Assert.Contains("no earlier", (string)none["basis"]!);
+
+        var telemetry = Directory.CreateDirectory(Path.Combine(dir.FullName, ".stangent", "telemetry")).FullName;
+        File.WriteAllLines(Path.Combine(telemetry, "d.jsonl"),
+        [
+            """{"attributes":{"stangent.command":"spec check","gen_ai.usage.cost_usd":0.1}}""",
+            """{"attributes":{"stangent.command":"spec check","gen_ai.usage.cost_usd":0.3}}""",
+            """{"attributes":{"stangent.command":"ticket check","gen_ai.usage.cost_usd":9}}""",
+            """{"attributes":{"stangent.command":"spec check"}}""",
+            "not json gen_ai.usage.cost_usd",
+        ]);
+        var some = Stangent.Core.Telemetry.CostHistory.Estimate(dir.FullName, "spec check", 10);
+        Assert.Equal(2.0, (double)some["estimateUsd"]!);
+        Assert.Equal(2, (int)some["earlierCalls"]!);
     }
 }

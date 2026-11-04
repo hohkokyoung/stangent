@@ -210,8 +210,8 @@ its real list names real repos and its results would land in this repo.
 
 | Driver | Tested |
 |---|---|
-| `plugin/scripts/spec-run.sh` | Normal path, retry, `--retry-failed`, `--all`, `--jobs`, `--stale`, `--fsd`, `--req`, `--ask`, `--only`, `--agents`, no AI call when nothing is needed, Claude failing, stangent crashing, a failed list, usage |
-| `plugin/scripts/ticket-run.sh` | Normal path, `--no-pull`, `--refind`, `--no-find`, the file finder's worktree, `--prove`, a capped reproducer, `--match`, `--questions`, `--resolution`, `--jobs`, a failed pull or bundle, Claude failing, a blocked setup, an app that won't start, usage |
+| `plugin/scripts/spec-run.sh` | The hard stop (no cap, cap reached, estimate over the cap, `--estimate`, a limit message, a refused event, `--stop-at-usage`), a refused page exiting 1, normal path, retry, `--retry-failed`, `--all`, `--jobs`, `--stale`, `--fsd`, `--req`, `--ask`, `--only`, `--agents`, no AI call when nothing is needed, Claude failing, stangent crashing, a failed list, usage |
+| `plugin/scripts/ticket-run.sh` | A reproducer whose cap is more than is left, a refused step exiting 1, normal path, `--no-pull`, `--refind`, `--no-find`, the file finder's worktree, `--prove`, a capped reproducer, `--match`, `--questions`, `--resolution`, `--jobs`, a failed pull or bundle, Claude failing, a blocked setup, an app that won't start, usage |
 | `benchmark/run.sh` | Normal path, `BENCH_ONLY`, a repo's config, a failing command recorded, a failing init, usage |
 | `benchmark/tickets/run.sh` | `points`, `files` resuming, `pages`, `bundles`, `drafts` (also in parallel), `prove`, `replay`, `--only`, a failed step, a missing Jira key, a bad phase, usage |
 
@@ -235,3 +235,24 @@ Each phase has its own tests, so a seam between phases could pass all of them an
 **With what's built switched off turned on (D124):** `WholeFlow.AllSwitchedOn` runs set-up, pages and import, then table facts on a real graph with enums from both extractors, a grouped and finer judge, the disprove step's bundle, and asking, each answered by a fake AI (`WholeFlowOnTests.cs`). The same run proves `graph export` is the same bytes with `table-facts` off. `SavedWorkTests`' pinned hashes and `SwitchedOffStaysTheSameTests` hold prompts, bundles and hashes with every switch off.
 
 **Not in it:** requirements (Phase 2c's `req` steps), bug proof, drafts and posting, and the bash drivers, which `DriverRig` covers.
+
+## The hard stop (T.2, D126)
+
+Every paid step goes through `plugin/scripts/cost-guard.sh`, from `spec-run.sh`, `ticket-run.sh` and `benchmark/tickets/run.sh`. `benchmark/tickets/agent_baseline.py` follows the same rules on its own. `benchmark/run.sh` runs only `stangent` commands, and no `stangent` command starts Claude Code (a test pins that), so it has nothing to stop.
+
+- **You choose a cap, or say none.** `--max-cost <dollars>`, `STANGENT_MAX_COST`, or `--max-cost none`. With no choice, the first paid step stops the run: exit 2, nothing spent. A run with nothing paid to do never asks. `/stangent:ask` is the one exception: one question, one call, no cap unless one is set.
+- **An estimate first.** `--estimate` prints it and stops. It's at least the calls a run must make, times what that step has cost per call in this repo (`stangent cost estimate`, from telemetry). A repo with no history says "cost unknown"; no price list, so no number to go stale. An estimate over the cap stops the run before any call. Only calls made since this was built count, as older telemetry has no cost.
+- **Before each call,** what's left is shared among the parallel jobs, money promised to a running call stays promised, and that share goes to Claude Code as `--max-budget-usd`. The run stops if the share is below the run's average call so far. A file finder or reproducer has its own cap, and starts only if all of that is left: a capped attempt counts as "not reproduced", which would be a false result.
+- **A limit stops it cleanly.** A failed call whose message reads like a usage limit, or a `rate_limit_event` saying `rejected`, gives `stopped\t<id>\t<why>`, a line saying what was spent, why it stopped and the command to resume, and exit 5. Finished work is kept; a step cut short records nothing. A different failure, such as no login, stops the batch as before.
+
+**What code can and can't see.**
+
+| | |
+|---|---|
+| Sees | Each call's `total_cost_usd`: Claude Code's figure at API prices, which on a plan is a measure, not a bill |
+| Sees | Any `rate_limit_event` a call streams: status, window, percent used, reset time. Saved runs show percent only above a threshold (`allowed_warning`) |
+| Sees | A failed call's message. Its wording isn't pinned anywhere and no real one was saved, so the match is a list of phrases. An unmatched one still stops the batch, as a plain failure |
+| Can't see | The plan's usage card, or what's left before a call. So a plan limit can't be foretold: only `--stop-at-usage <percent>` acts early, your own number, once a call has reported a figure |
+| Can't promise | Claude Code checks `--max-budget-usd` between turns, so one long answer can pass it. The cap can be overrun by that much |
+
+Nothing here has met real Claude Code: fakes only (D120).

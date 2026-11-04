@@ -15,18 +15,23 @@ the named files (D79's right place, at the file level).
 In held-out mode the ticket is the issue's title, body and the comments before the fix (select.py), the code is the
 merge commit's first parent, and the fix files are what the merge commit changed (its own paths, not traced forward).
 
+The hard stop (T.2): STANGENT_MAX_COST (dollars, or `none`) must be set, or nothing runs (exit 2). A ticket starts only if
+its whole cap is left. A usage limit stops the run (exit 5); what's done is saved in the output file, and the same command
+resumes from it.
 Env: CLAUDE (default `claude`), MODEL (default sonnet), WORK (export folder, default a temp folder; removed after).
 Transcripts are kept beside out.json (`<out>.transcripts/KEY.jsonl`) to check the agent only read the export.
 """
 import json
 import os
 import shutil
+import re
 import subprocess
 import sys
 import tempfile
 
 TURNS, BUDGET, MAX_FILES = 30, 1.0, 10
 HOME = os.path.expanduser("~")
+LIMIT_WORDS = re.compile(r"usage limit|limit reached|limit exceeded|hit your( [a-z-]+)* limit|reached your( [a-z-]+)* limit|out of( extra)? usage|rate.?limit|weekly limit|session limit|quota", re.I)
 
 SCHEMA = {
     "type": "object", "additionalProperties": False, "required": ["files"],
@@ -85,6 +90,7 @@ def run_one(clone, key, number, parent, fix, text, out_dir, work_root):
             "key": key, "issue": number, "hit": rank is not None, "rank": rank, "named": named, "fix": fix,
             "status": result.get("subtype"), "turns": result.get("num_turns"), "costUsd": result.get("total_cost_usd"),
             "toolCalls": calls, "outsideExport": outside,
+            "failure": (str(result.get("result") or "") + " " + proc.stderr) if result.get("is_error") or not result else None,
         }
     finally:
         shutil.rmtree(work, ignore_errors=True)
@@ -112,9 +118,24 @@ def main(clone, out, cases):
     out_dir = out + ".transcripts"
     os.makedirs(out_dir, exist_ok=True)
     work_root = os.environ.get("WORK") or tempfile.mkdtemp(prefix="agent-baseline-")
-    rows = []
+    cap = os.environ.get("STANGENT_MAX_COST")
+    if not cap:
+        print("STOPPED (no_cap): set STANGENT_MAX_COST to dollars, or to none. Nothing was run.", file=sys.stderr)
+        sys.exit(2)
+    rows = json.load(open(out))["cases"] if os.path.exists(out) else []
+    done, why = {r["key"] for r in rows}, None
     for key, n, parent, fix, text in cases:
+        if key in done:
+            continue
+        spent = sum(r["costUsd"] or 0 for r in rows)
+        if cap != "none" and spent + BUDGET > float(cap):
+            why = f"cap_reached: --max-cost ${cap}: ${spent:.2f} spent and the next ticket could take ${BUDGET}"
+            break
         row = run_one(clone, key, n, parent, fix, text, out_dir, work_root)
+        limit = row.pop("failure", None)
+        if limit and LIMIT_WORDS.search(limit):
+            why = f"usage_limit: Claude Code said: {limit[:300]}"
+            break
         rows.append(row)
         print(f"{key}: hit={row['hit']} rank={row['rank']} turns={row['turns']} cost={row['costUsd']} outside={len(row['outsideExport'])}", file=sys.stderr)
     cost = sum(r["costUsd"] or 0 for r in rows)
@@ -126,6 +147,9 @@ def main(clone, out, cases):
     }
     json.dump(summary, open(out, "w"), indent=1)
     print(json.dumps({k: v for k, v in summary.items() if k != "cases"}), file=sys.stderr)
+    if why:
+        print(f"STOPPED ({why})\n{len(rows)} tickets are saved in {out}. To resume, run the same command again.", file=sys.stderr)
+        sys.exit(5)
 
 
 if __name__ == "__main__":

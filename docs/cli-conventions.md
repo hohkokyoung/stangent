@@ -24,6 +24,9 @@ are what callers (other products, Claude Code commands and hooks, CI) can rely o
 | 2 | usage: bad arguments, no `stangent.yaml` found, bad reference syntax |
 | 3 | not found |
 | 4 | AI is switched off for this repo (`ai.enabled: false`, D24) |
+| 5 | drivers only: stopped by `--max-cost` or a usage limit; the same command resumes (T.2, D126) |
+
+The drivers in `plugin/scripts/` add to these: 1 means a step was refused or failed and the rest went on (I.10), 2 also means no cost cap was chosen, and 125 means the batch stopped on anything else, such as Claude Code failing.
 
 ## Input
 
@@ -46,4 +49,4 @@ an earlier op, not a later one — and nothing is written if any op would fail.
 Every command writes one event (contract `telemetry-event` v2, D21) to
 `.stangent/telemetry/<date>.jsonl` in the repo, or to `$STANGENT_TELEMETRY_DIR` when set, or to
 `~/.stangent/telemetry` outside a repo. An event from a command that uses a component names those on and off (`stangent.components.on`, `.off`). Events carry counts, codes, ids, hashes and names from a closed list only; one
-that breaks the contract is dropped with a warning, never written.
+that breaks the contract is dropped with a warning, never written. `gen_ai.usage.cost_usd` is the cost Claude Code reported for a step; `stangent cost estimate` reads it back.
