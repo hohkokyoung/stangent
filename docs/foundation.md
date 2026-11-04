@@ -46,6 +46,8 @@ Requirement ids use it (D114): `RequirementFile.NextId` issues `F-`, `R-`, `D-`,
 with the old `ids.yaml` carries on from its numbers: the counter is taken over once and the file removed. `Raise` only goes up,
 so two runs doing this together can't give an id out twice. A retired requirement isn't marked `Remove`d yet; that's 2.3.
 
+Section ids use it (D117): `S-0001`, per document, in `specs/fsd/<doc>/ids.json`, with the lock in `.stangent/fsd/<doc>/`. A removed section's id is marked `Remove`d.
+
 `PermanentIds` itself starts fresh when its file is absent. `NextId` guards against that: before each id it raises every kind to
 the highest id in the feature and question files, retired ones included, so a new id is beyond them and a recreated ledger records
 them. An id removed from all of those files can't be recovered when the ledger is deleted, and may be given again, as can any
@@ -119,6 +121,8 @@ returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds ev
 | `page-run` | `write`, `verify`, `fix`, `done`, `failed` | code | `.stangent/spec/state-history.jsonl` |
 | `link-run` | `find`, `judge`, `confirm`, `done`, `failed` | code | `.stangent/fsd/state-history.jsonl` |
 | `req-run` | `write`, `confirm`, `fix`, `reconfirm`, `done`, `failed` | code | `.stangent/req/state-history.jsonl` |
+| `fsd-candidate` | `candidate`, `promoted`, `replaced` | a person promotes; code replaces it when a newer file comes in | `specs/fsd/history.jsonl` |
+| `fsd-section-match` | `doubtful`, `same`, `new`, `removed` | a person settles and can change their mind; code only lets go of a claimed id | same |
 
 **History.** Append-only JSONL, one move per line: `at`, `kind`, `id`, `from`, `to`, `who`, `reason`. It sits beside the state:
 committed state has committed history, and CI adds `specs/trace-history.jsonl` to the bot's PR. No input hash and no artifact

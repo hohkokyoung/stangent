@@ -30,11 +30,12 @@ public static class StateKinds
 {
     public const string Requirement = "requirement", Question = "question", TraceDecision = "trace-decision",
         Proof = "proof", ProofConfirmation = "proof-confirmation", DraftPosted = "draft-posted",
-        PageRun = "page-run", LinkRun = "link-run", ReqRun = "req-run", TicketMatch = "ticket-match", TicketStep = "ticket-step";
+        PageRun = "page-run", LinkRun = "link-run", ReqRun = "req-run", TicketMatch = "ticket-match", TicketStep = "ticket-step",
+        FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match";
 
     // Committed state gets committed history; run state in .stangent/ gets history beside it, ignored the same way.
     const string RequirementHistory = "specs/requirements/history.jsonl", TraceHistory = "specs/trace-history.jsonl",
-        TicketHistory = ".stangent/tickets/state-history.jsonl";
+        TicketHistory = ".stangent/tickets/state-history.jsonl", FsdHistory = "specs/fsd/history.jsonl";
 
     static readonly string[] Code = [StateActor.CodeKind], Person = [StateActor.PersonKind];
     static StateRule By(string[] who, string from, string to) => new(from, to, who);
@@ -105,6 +106,17 @@ public static class StateKinds
         [
             .. Each(Code, "running", "done", "failed"), By(Code, "failed", "done"), By(Code, "done", "failed"),
         ], Field: "stage", NullState: "running"),
+
+        // D117: a new version of an imported document waits beside the current one. Only a person promotes it; a newer file replaces it.
+        new(FsdCandidate, FsdHistory, ["candidate"], [By(Person, "candidate", "promoted"), By(Code, "candidate", "replaced")], Field: "state"),
+
+        // D117: a section code won't match on its own. A person settles it and can change their mind. Code only lets go of a
+        // claim when the section that claimed this id is settled another way.
+        new(FsdSectionMatch, FsdHistory, ["doubtful"],
+        [
+            .. Each(Person, "doubtful", "same", "new", "removed"), By(Person, "same", "same"), By(Person, "same", "new"), By(Person, "new", "same"),
+            By(Person, "removed", "same"), By(Code, "same", "doubtful"),
+        ], Field: "state"),
     ];
 
     public static StateKind Get(string name) => All.FirstOrDefault(k => k.Name == name)
