@@ -132,10 +132,11 @@ def main(clone, out, cases):
             why = f"cap_reached: --max-cost ${cap}: ${spent:.2f} spent and the next ticket could take ${BUDGET}"
             break
         row = run_one(clone, key, n, parent, fix, text, out_dir, work_root)
-        limit = row.pop("failure", None)
+        limit = row["failure"]
         if limit and LIMIT_WORDS.search(limit):
             why = f"usage_limit: Claude Code said: {limit[:300]}"
             break
+        del row["failure"]
         rows.append(row)
         print(f"{key}: hit={row['hit']} rank={row['rank']} turns={row['turns']} cost={row['costUsd']} outside={len(row['outsideExport'])}", file=sys.stderr)
     cost = sum(r["costUsd"] or 0 for r in rows)

@@ -31,7 +31,8 @@ The build order (decisions.md D19) and how phases stay in step with each other (
 - **Out of date:** the saved proof numbers predate the finder, D95, D104, D106 and D107 (D109).
 - **Overhaul (2026-11-04), local on `claude/phase2c-spec`, not pushed:** slices 0.1 to 2.6 landed, then the whole-flow test and §8's four batches (D120): switches, seams, import report, Excel, attachments, and table comparison, finer verdicts, grouping and ask, built off.
 - **Disprove re-score:** stopped at 11 of 62 calls on a weekly limit, resuming after Nov 7, so no bar is called. It can't lift found above 24 of 30.
-- **Unchecked:** §8's batches had no fresh check (D120), and none has met a real FSD or real AI. Next is "What's next" below.
+- **§9's batch 1 (2026-11-05), local, not pushed:** T.2, T.4, T.5, T.6, T.8, I.5, I.7, I.8 (off), I.9, I.10, I.11 (D126). Every paid step now needs a cap or `none`, so a script or CI needs `STANGENT_MAX_COST`.
+- **Unchecked:** §8's and §9's batches had no fresh check (D120), and none has met a real FSD or real AI. Next is "What's next" below.
 - No private-repo check and no proof run on bitwarden (owner): Phase 3's report says so.
 
 ## The overhaul: order of work
@@ -62,7 +63,7 @@ Stop there. Phase 4 needs the owner: the order after 2.x, and the questions unde
 
 **Proposed, not decided.** The assistant proposed this and the owner said "ok what we gonna do next"; see "Open questions" in `decisions.md`. Until the owner confirms it, D120 and D125 stand as written.
 
-1. **Build I and T first (owner, 2026-11-05):** about 500–700K tokens, in two batches. Held until a real repo or document needs them: T.9, T.10, I.12.
+1. **Build I and T first (owner, 2026-11-05):** about 500–700K tokens, in two batches. Batch 1 is built (D126). Left for batch 2: I.1 to I.4, I.6, T.1, T.3, T.7. Held until a real repo or document needs them: T.9, T.10, I.12.
 2. **Then the first real pilot.** On a reputable public project Stangent hasn't been tuned on, since the owner has none of their own (recommended, not yet confirmed: RealWorld's C# app first, whose written spec and tests let us test links; then umbraco/Umbraco-CMS, with no FSD): pages, impact, one real ticket. Everything free first; the cost is stated and the owner says yes before any AI step. Results go in a phase file.
 3. Make the test material.
 4. Start the test phase: the re-score after Nov 7 (the owner chooses how), then on/off runs against bars frozen first.
@@ -91,8 +92,8 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 | A renumbered section's finder hash carried too, with the page set loaded at promotion | D117 | not placed |
 | A promotion that can't half-finish | D117 | not placed |
 | "bug, per R-0042" and "looks intended (R-0042)"; a developer flags a spec gap when confirming a bug | D96, D99 | 2c |
-| Improve (I.1 to I.12): on-demand pages, per-statement updates, smaller disprove bundles, moved citations, diff outcomes, ranked suggestions, originals to the archive, PDF attachments, caching check, driver exit codes, table of contents, pandoc as a second reader | D125, D120 | next build |
-| Take (T.1 to T.10): corrections that survive, a hard cost stop, coverage with reasons, a behind-the-code warning, app-files check, link and id checks, navigation, a read-only hook, Playwright settings for another repo; EMF, draw.io, cross-references and PowerPoint when a real document needs them | D125, D120, D4 | next build |
+| Improve, still to build: on-demand pages, per-statement updates, smaller disprove bundles, moved citations, ranked suggestions (I.1 to I.4, I.6); pandoc as a second reader (I.12, held). I.5, I.7 to I.11 are built (D126) | D125, D120 | next build |
+| Take, still to build: corrections that survive, coverage with reasons, navigation (T.1, T.3, T.7); Playwright settings for another repo; EMF, draw.io, cross-references and PowerPoint when a real document needs them (T.9, T.10, held). T.2, T.4 to T.6, T.8 are built (D126) | D125, D120, D4 | next build |
 | Take, then test (X.1 to X.19): off until its test, listed in `improvements.md` §9 | D125, D120 | test phase |
 | Test material: extend the planted FSD (tables, a workbook, dead rules, a comment, a second version); a second planted FSD on Kavita; Sonarr's public wiki as a messy document, licence to check | D125, D44, D56 | before the on/off runs |
 | The graph's blind spots, a smarter split rule, `impact-report` v6 | D65, D88, D109 | 4 |
@@ -113,7 +114,7 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 
 **In the owner's brief, with no decision yet:** security review (Open questions).
 
-**Checks owed:** every build under D120 (no fresh check while building); the proof re-run (D109); a real-FSD dry run (D56); 1d part 2, context scoping (D45); 2b's noise re-measure (D68); hand
+**Checks owed:** every build under D120 (no fresh check while building); the hard stop, `stream-json` on one-turn calls and the read-only hook against real Claude Code, on the first paid run (D126); the proof re-run (D109); a real-FSD dry run (D56); 1d part 2, context scoping (D45); 2b's noise re-measure (D68); hand
 checks on 1b, 1c (D28), 2a, 2b (D67); a third repo of another shape (D94); a sign-in approved with only D82's scopes.
 
 Status values: `not started` · `planned` · `in progress` · `done` · `needs review` (an upstream contract changed after this phase was done).
@@ -135,7 +136,7 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 1 | Adapters: Playwright, Razor, Svelte, SQL seed | 🟡 | 1b, D31, D65, D86 | 1.2 for Playwright; rest when a repo needs them |
 | 1 | Generated navigation and numbering | 🟡 | 2a | after 2.3 |
 | 1 | Script checks, including client data | 🟡 | 0, D18 | 0.3 |
-| 1 | Client code read-only by hook | 🟡 | 3, D60, D75, D86 | not placed; analysis steps only |
+| 1 | Client code read-only by hook | ✅ | 3, D60, D75, D86 | built, D126; analysis steps only |
 | 1 | Runs reproducible, measured by a fresh session | ⬜ | 2a, D57, D79 | after 2.3; paid |
 | 2 | Updates by overlapping lines | 🟡 | 2a, D55 | after 2.3 |
 | 2 | Changed code no page covers is listed | ⬜ | 2a, D55 | after 2.3 |

@@ -382,3 +382,60 @@ public sealed class BenchmarkTicketsDriverTests : IDisposable
         Assert.Equal(1, (int)Record("K-2")["rerunAiCalls"]!);
     }
 }
+
+/// <summary>benchmark/tickets/agent_baseline.py's hard stop (T.2), with the fake claude. It makes paid calls of its own.</summary>
+public sealed class AgentBaselineDriverTests : IDisposable
+{
+    readonly DriverRig rig = new();
+    readonly string clone;
+    readonly string heldout;
+    string Out => Path.Combine(rig.Dir, "out.json");
+
+    public AgentBaselineDriverTests()
+    {
+        clone = rig.NewRepo("clone", ("a.txt", "one\n"));
+        File.WriteAllText(Path.Combine(clone, "a.txt"), "two\n");
+        var fix = rig.Commit(clone);
+        heldout = Path.Combine(rig.Dir, "heldout.json");
+        File.WriteAllText(heldout, $$$"""[{"id":"#1","summary":"s","description":"d","comments":[],"fix":{"mergeCommit":"{{{fix}}}"}},{"id":"#2","summary":"s","description":"d","comments":[],"fix":{"mergeCommit":"{{{fix}}}"}}]""");
+    }
+
+    public void Dispose() => rig.Dispose();
+
+    DriverResult Run()
+    {
+        var script = rig.WriteScript("run.sh", $"""exec /usr/bin/python3 -I '{Path.Combine(DriverRig.RepoRoot, "benchmark/tickets/agent_baseline.py")}' --heldout '{clone}' '{heldout}' '{Out}'""");
+        return rig.Run(script);
+    }
+
+    [Fact]
+    public void No_cap_runs_nothing_a_cap_too_small_for_a_tickets_own_cap_runs_nothing_and_a_limit_stops_and_resumes()
+    {
+        if (OperatingSystem.IsWindows() || !File.Exists("/usr/bin/python3")) return;
+        rig.Env["STANGENT_MAX_COST"] = "";
+        Assert.Equal(2, Run().Exit);
+        Assert.Empty(rig.ClaudeCalls());
+
+        rig.Env["STANGENT_MAX_COST"] = "0.5";
+        Assert.Equal(5, Run().Exit);
+        Assert.Empty(rig.ClaudeCalls());
+
+        rig.Env["STANGENT_MAX_COST"] = "5";
+        rig.ClaudeAnswers("""{"type":"result","is_error":true,"result":"You've hit your weekly limit"}""", exit: 1);
+        var limited = Run();
+        Assert.Equal(5, limited.Exit);
+        Assert.Contains("usage_limit", limited.Err);
+        Assert.Single(rig.ClaudeCalls());
+
+        rig.ClaudeAnswers("""{"type":"result","is_error":false,"total_cost_usd":0.1,"structured_output":{"files":[{"path":"a.txt","reason":"r"}]}}""");
+        Assert.Equal(0, Run().Exit);
+        Assert.Equal(3, rig.ClaudeCalls().Count);
+        var saved = JsonNode.Parse(File.ReadAllText(Out))!;
+        Assert.Equal(2, (int)saved["tickets"]!);
+        Assert.Null(saved["cases"]![0]!["failure"]);
+
+        // Nothing left to do: the same command makes no call.
+        Assert.Equal(0, Run().Exit);
+        Assert.Equal(3, rig.ClaudeCalls().Count);
+    }
+}

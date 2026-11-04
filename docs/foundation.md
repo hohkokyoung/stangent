@@ -214,6 +214,7 @@ its real list names real repos and its results would land in this repo.
 | `plugin/scripts/spec-run.sh` | The hard stop (no cap, cap reached, estimate over the cap, `--estimate`, a limit message, a refused event, `--stop-at-usage`), a refused page exiting 1, normal path, retry, `--retry-failed`, `--all`, `--jobs`, `--stale`, `--fsd`, `--req`, `--ask`, `--only`, `--agents`, no AI call when nothing is needed, Claude failing, stangent crashing, a failed list, usage |
 | `plugin/scripts/ticket-run.sh` | A reproducer whose cap is more than is left, a refused step exiting 1, normal path, `--no-pull`, `--refind`, `--no-find`, the file finder's worktree, `--prove`, a capped reproducer, `--match`, `--questions`, `--resolution`, `--jobs`, a failed pull or bundle, Claude failing, a blocked setup, an app that won't start, usage |
 | `benchmark/run.sh` | Normal path, `BENCH_ONLY`, a repo's config, a failing command recorded, a failing init, usage |
+| `benchmark/tickets/agent_baseline.py` | No cap, a cap below a ticket's own, a limit, resuming |
 | `benchmark/tickets/run.sh` | `points`, `files` resuming, `pages`, `bundles`, `drafts` (also in parallel), `prove`, `replay`, `--only`, a failed step, a missing Jira key, a bad phase, usage |
 
 **Not tested.**

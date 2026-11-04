@@ -120,3 +120,29 @@ Checked 2026-11-04 (D20, D121): `source-document` v2 → v3. By grep, `Stangent.
 Checked 2026-11-04 (D20, D121): `trace-links` v3 → v4. By grep, 2c reads `fsd` by field and ignores `sectionId`. Moved to `trace-links: 4`. A feature now has `sectionId`, filled by code.
 
 Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions` v2 → v3. By grep, nothing here reads telemetry, and results are read by name, so `components` beside `result` changes nothing. Moved.
+
+## §9's batch 1: what wasn't run (D126, 2026-11-05)
+
+Built under D120, so no fresh check and no fix round. `dotnet test`, the whole-flow test and `phases check` passed before each commit.
+
+**Not run, on purpose:**
+
+- No real AI call of any kind, and no Jira. `spec-run.sh`, `ticket-run.sh`, `benchmark/run.sh`, `benchmark/tickets/run.sh` and `agent_baseline.py` ran only against fakes.
+- **So these have met nothing real:** `--max-budget-usd` on one-turn calls; `stream-json` on one-turn calls, though the file finder has used it for real; hooks through `--settings`; `plugin/hooks/hooks.json` and the `agent_type` field it depends on; a real usage-limit message. No real one was saved, so the phrase list is from memory.
+- Sonarr's clone at `~/stangent-bench/sonarr` was only read. Its FSD was imported into a throwaway repo: `document.md` byte-identical, section numbers and text hashes the same. `SavedWorkTests`' pins hold.
+- Bitwarden wasn't read. `suragms/warehouse-assistant-erp` wasn't fetched.
+
+**The caching check (I.9).** From saved files only: pages' `generated` usage, `.stangent` run records and transcripts in Sonarr's clone. No call was made.
+
+| What | Calls | Written to the cache | Read from it |
+|---|---|---|---|
+| Page writers | 223 | 3.92M | 0.54M |
+| Page verifiers | 194 | 3.70M | 0.18M |
+| Link steps, in `.stangent/fsd` | 31 | 0.28M | 0.02M |
+| Requirement steps, in `.stangent/req` | 38 | 0.14M | 0.05M |
+| File finder, the 40 newest transcripts | 40 runs, many turns | 0.34M | 1.50M |
+
+- Caching is on, automatically, with no setting of ours. These saved calls show one-hour entries.
+- **One-turn calls mostly pay for it.** Each call's input is new and nothing runs after it, so what's written is never read. What's read, about 2.4K tokens a writer call, is most likely the shared system prompt, which `--exclude-dynamic-system-prompt-sections` keeps the same between calls. Input outside the cache is almost nothing: 850 tokens across 417 page calls.
+- **Multi-turn calls gain,** as each turn reads the last.
+- **What could change, neither done:** turning caching off for one-turn calls, if Claude Code allows it (not checked), would stop paying the extra for writes, but it needs a paid test to see the bill and it loses the 2.4K. Putting the bundle first, so a page's verifier reuses what its writer wrote, changes a prompt, so it would have to be built off and re-run. Neither saving is estimated here, as that needs prices this repo doesn't hold.

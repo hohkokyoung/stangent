@@ -275,20 +275,20 @@ Marked down, not built. A ☑️ with a test note is taken in and stays off unti
   *44 of 62 hit the 60K cap.*
 - ☑️ I.4 · Citations follow code that only moved.  
   *Stops needless re-runs.*
-- ☑️ I.5 · The diff shows `renamed` and `split` as their own outcomes.  
-  *Small.*
+- ✅ I.5 · The diff shows `renamed` and `split` as their own outcomes.  
+  *`renamed` already was. `split` shows apart, and stays a person's call (D126).*
 - ☑️ I.6 · Similarity ranks suggestions for doubtful matches and never decides.  
   *Less work for a person, no tuned cut-off.*
-- ☑️ I.7 · Embedded originals go to the archive, not the repo.  
-  *D16; `data check` flags committed `original/` files today.*
-- ☑️ I.8 · Files attached to a PDF get a home.  
-  *They have no section today.*
-- ☑️ I.9 · Check prompt caching on headless calls.  
-  *Free to look.*
-- ☑️ I.10 · Refused driver steps exit nonzero.  
-  *A silent success misleads; pinned by a test today.*
-- ☑️ I.11 · Confirm a Word table of contents is removed, with a test.  
-  *Unconfirmed.*
+- ✅ I.7 · Embedded originals go to the archive, not the repo.  
+  *Built: at any depth; the record says where (D126).*
+- ✅ I.8 · Files attached to a PDF get a home.  
+  *Built, off: `attachment-home`. Off because such a document gains a section (D126).*
+- ✅ I.9 · Check prompt caching on headless calls.  
+  *Looked: one-turn calls write 7.62M and read 0.72M, so caching mostly costs there; multi-turn pays. Not changed (D126, `phases/2c-spec.md`).*
+- ✅ I.10 · Refused driver steps exit nonzero.  
+  *Built: exit 1, the rest goes on (D126).*
+- ✅ I.11 · Confirm a Word table of contents is removed, with a test.  
+  *It wasn't. Fixed and tested; Sonarr byte-identical (D126).*
 - ☑️ I.12 · A second reader: pandoc reads the same Word file and code compares the words.  
   *In checks only, so saved work holds. Needs pandoc installed; it isn't on this machine.*
 
@@ -296,20 +296,20 @@ Marked down, not built. A ☑️ with a test note is taken in and stays off unti
 
 - ☑️ T.1 · A person's correction to a page is recorded, approved and survives regeneration.  
   *No AI. `page-wrong` regenerates today, so a correction doesn't stick.*
-- ☑️ T.2 · A hard stop: an estimate and `--max-cost` before every paid step.  
-  *No AI. Include usage limits: the re-score hit one unseen.*
+- ✅ T.2 · A hard stop: an estimate and `--max-cost` before every paid step.  
+  *Built: a cap or `none` is required; limits noticed; what code can't see is in `docs/foundation.md` (D126).*
 - ☑️ T.3 · Every screen and entry point is covered, or excluded with a reason.  
   *No AI.*
-- ☑️ T.4 · A warning when a page is behind the code, where it's read.  
-  *No AI.*
-- ☑️ T.5 · A check that a run didn't change the app's files.  
-  *No AI.*
-- ☑️ T.6 · Broken-link and duplicate-id checks.  
-  *No AI.*
+- ✅ T.4 · A warning when a page is behind the code, where it's read.  
+  *Built: `spec read`, `spec ask` (D126).*
+- ✅ T.5 · A check that a run didn't change the app's files.  
+  *Built: `run-check`, in the drivers (D126).*
+- ✅ T.6 · Broken-link and duplicate-id checks.  
+  *Built: `spec content-check`, in CI (D126).*
 - ☑️ T.7 · Generated navigation and footers.  
   *No AI.*
-- ☑️ T.8 · Client code read-only by hook, for analysis steps only.  
-  *No AI. Bug proof still builds and runs the app (D75).*
+- ✅ T.8 · Client code read-only by hook, for analysis steps only.  
+  *Built: `read-only-hook.sh`; never on the reproducer (D126).*
 - ☑️ T.9 · Playwright adapter by settings: specs in another repo, the project's own helpers, its URL shape.  
   *No AI. A link records both repos' commits; this is the reason D4 asked for. Generated scripts only if settings can't express it.*
 - ☑️ T.10 · EMF, draw.io, Word cross-references, PowerPoint.  
