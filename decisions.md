@@ -2305,6 +2305,15 @@ Reverses D62's "rejected: a second check on every finding". Follows D18, D53, D5
 
 ## Open questions
 
+- **Waiting on the owner after the overhaul (2026-11-04):**
+  (a) Confirm `improvements.md`, and the order after 2.x.
+  (b) A fresh check on 2.5 and 2.6 (about 300K tokens with its fix round), or leave them unchecked as a listed gap.
+  (c) The disprove step's re-score, about $4–6 (`phases/2c-spec.md`).
+  (d) 2c's found bar: the disprove step can only remove findings, so it can't lift 24 of 30 to 27. Keep the bar and look for what's missing, or change it. Recommended: decide after the re-score.
+  (e) BAs editing the FSD through Claude (reversing D52 or D12), dropping the requirements layer (D99), journey-based pages (D54, D63): left alone, as agreed.
+  (f) The drivers' refused steps still exit 0 (pinned by a test, Phase 0). Recommended: exit nonzero.
+  (g) A client-terms file outside the repo, so `data check` can look for the names it must not find.
+
 - **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that
   assert the current behaviour. Not decided. (The review's other new idea, right place reported per stage, is built:
   `reported.rightPlaceStages`, D98's re-score.)

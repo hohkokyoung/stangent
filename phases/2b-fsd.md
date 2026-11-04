@@ -369,3 +369,5 @@ Code only, no AI. Details are in `docs/spec.md`.
 - `graph where` gives a type's first part only, and 44 of Sonarr's 62 bundles hit the code limit, so a refuting line can be out of sight. The bundle names what it left out, and the likely answer is then `cant-tell`.
 - Regenerating a `page-wrong` page sends the finding back even if the page came out the same.
 - Sonarr's saved graph is too old to cite lines, so the real run needs `graph build` first.
+
+**2.5 and 2.6, not fresh-checked (2026-11-04):** the owner asked about token use before this build's check started, so D61's check and fix round wait on the owner's call. Treat the disprove step as unverified beyond its own tests.
