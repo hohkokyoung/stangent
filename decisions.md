@@ -2383,6 +2383,13 @@ Listed item by item in `improvements.md` §9; on `roadmap.md`. Marked down, none
 
 ## Open questions
 
+- **A first real pilot, a cut rule, a cap and an earlier bundle test (proposed by the assistant, 2026-11-04; the owner: "ok what we gonna do next, and lets do it in a new sessin"; not numbered until confirmed; order on `roadmap.md`):**
+  (a) **The next milestone is a first real pilot** on the owner's own project, even with no FSD: pages, impact, one real ticket. Nothing added lately has met a real FSD or a real project, and the core result is still 24 of 30 found with 44% false alarms. Free steps first; AI steps on the owner's OK.
+  (b) **Cut rule:** a component that fails a bar gets one fix attempt, then it's removed. Stops a failing piece collecting fixes forever.
+  (c) **Cap on new items:** nothing joins the list unless a test or real use showed the need. `improvements.md` has about 40 items waiting, 19 of them on tests.
+  (d) **"Does the bundle help a fix?" runs earlier:** in the test phase, before Phase 4 is grilled, not with it. Every Phase 3 bar checks a piece; none shows the bundle helps. Paid, on the owner's OK.
+  **Still to settle, from writing this down:** the cut rule read literally removes 2c's links, which already failed both bars and are what the FSD side is for. Recommended: for a piece the pipeline can't run without, "removed" means its output stops counting as a finding until a person reads it, and the disprove re-score counts as its one fix attempt. D120's "bars and decisions stay as they are" holds either way: the rule cuts components, it doesn't move bars.
+
 - **Table facts compared by code, a second route to code (proposed 2026-11-04, `improvements.md` §8 C.2; built switched off and labelled, D124, so this is still open):** everything else reaches code through pages, and D68 kept direct FSD-to-code links out as noisy. Recommended: allow exact comparison as its own labelled route, kept out of the impact walk like 📜 lines, after a pilot on field lists with a real document.
 - **For the Playwright adapter (T.9, 2026-11-04):** on the owner's custom project, are the tests in their own repo, and do they use page objects or helpers to navigate? Asked, not answered.
 - **Recommended, not confirmed (2026-11-04):** BAs editing through Claude, not yet; journey pages, not yet; table comparison as a labelled second route, yes; installer, when BAs become users; keep `MaxChapterGap = 10`; `improvements.md` as the agreed list, yes.

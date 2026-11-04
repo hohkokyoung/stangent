@@ -58,9 +58,20 @@ Stop there. Phase 4 needs the owner: the order after 2.x, and the questions unde
 
 **Follow-ups from 1.1 and 1.2 (D20, D115).** Done 2026-11-04: `code-graph` went to v4, and 1b, 1c, 1d, 2a, 2b, 2c and 3 were each checked by grep, tests re-run, and moved to `code-graph: 4`. Their code wasn't touched.
 
-## What's next (D125)
+## What's next (D125, with the order proposed 2026-11-04)
 
-1. Build I and T, about 500–700K tokens, in two batches. 2. Make the test material. 3. Start the test phase: the re-score after Nov 7, then on/off runs against bars frozen first. 4. Grill Phase 4.
+**Proposed, not decided.** The assistant proposed this and the owner said "ok what we gonna do next"; see "Open questions" in `decisions.md`. Until the owner confirms it, D120 and D125 stand as written.
+
+1. **First real pilot: the next milestone.** On the owner's own project, even with no FSD: pages, impact, one real ticket. Everything free first; the cost is stated and the owner says yes before any AI step. Results go in a phase file.
+2. Build I and T, about 500–700K tokens, in two batches, led by what the pilot shows.
+3. Make the test material.
+4. Start the test phase: the re-score after Nov 7 (the owner chooses how), then on/off runs against bars frozen first.
+5. **"Does the bundle help a fix?", moved earlier:** run in the test phase, not left to Phase 4's grill, because Phase 4 is built on the answer. The fix agent on the same bugs three ways (open question in `decisions.md`). Paid, on the owner's OK.
+6. Grill Phase 4.
+
+**Two rules, also proposed:**
+- **Cut rule:** a component that fails a bar gets one fix attempt. If it fails again, it's removed.
+- **Cap on new items:** nothing joins the list unless a test or real use showed the need. Ideas go in a note, not on the list.
 
 ## Decided, not built
 
