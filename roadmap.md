@@ -95,6 +95,7 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 | Improve, still to build: on-demand pages, per-statement updates, smaller disprove bundles, moved citations, ranked suggestions (I.1 to I.4, I.6); pandoc as a second reader (I.12, held). I.5, I.7 to I.11 are built (D126) | D125, D120 | next build |
 | Take, still to build: corrections that survive, coverage with reasons, navigation (T.1, T.3, T.7); Playwright settings for another repo; EMF, draw.io, cross-references and PowerPoint when a real document needs them (T.9, T.10, held). T.2, T.4 to T.6, T.8 are built (D126) | D125, D120, D4 | next build |
 | Take, then test (X.1 to X.19): off until its test, listed in `improvements.md` §9 | D125, D120 | test phase |
+| Test material, bigger spec (owner, 2026-11-05; recommended, not confirmed): `umbraco/UmbracoDocs` beside Umbraco, a chapter at a time, with Markdown import and an answer key from docs-fix PRs | open question in `decisions.md` | before the on/off runs |
 | Test material: extend the planted FSD (tables, a workbook, dead rules, a comment, a second version); a second planted FSD on Kavita; Sonarr's public wiki as a messy document, licence to check | D125, D44, D56 | before the on/off runs |
 | The graph's blind spots, a smarter split rule, `impact-report` v6 | D65, D88, D109 | 4 |
 | Parallel work is merged and built together before it counts | D49 | 4 |
