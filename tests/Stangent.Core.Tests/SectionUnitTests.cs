@@ -241,3 +241,51 @@ public class SectionUnitTests
         Assert.Equal("R-0003", (string)entries.Single(e => (string)e["state"]! == "unclear")["fsd"]!["requirement"]!);
     }
 }
+
+/// <summary>D124's switches off leave what the old build gave: prompts, bundles and every input hash. <see cref="SavedWorkTests"/> pins those values; this holds them with each switch named off, and with each turned on and off.</summary>
+public class SwitchedOffStaysTheSameTests
+{
+
+    static (string Bundle, string Trace, string Runs, string Output) Run(SpecApp app)
+    {
+        var step = Stangent.Spec.Fsd.LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
+        var bundle = File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "judge.md"));
+        return (bundle, File.Exists(TraceFile.PathIn(app.Root)) ? File.ReadAllText(TraceFile.PathIn(app.Root)) : "",
+            File.Exists(Stangent.Spec.Fsd.LinkRun.RunsFile(app.Root)) ? File.ReadAllText(Stangent.Spec.Fsd.LinkRun.RunsFile(app.Root)) : "", step.Output!);
+    }
+
+    [Fact]
+    public void Each_switch_named_off_gives_the_same_bundle_as_none_named()
+    {
+        using var none = App();
+        using var named = App("components: { table-facts: false, judge-finer-verdicts: false, group-sections: false, spec-ask: false }\n");
+        var (a, b) = (Run(none), Run(named));
+        Assert.Equal(a.Bundle.Replace(none.Root, "", StringComparison.Ordinal), b.Bundle.Replace(named.Root, "", StringComparison.Ordinal));
+        Assert.Equal(a.Runs, b.Runs);
+    }
+
+    [Fact]
+    public void Off_a_runs_record_has_no_unit_and_a_saved_trace_has_no_new_field()
+    {
+        using var app = App();
+        Write(app, Stangent.Spec.Fsd.LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1"), Links(Link("conflict", "Orders over 50 need approval.", SpecApp.Post, "R1", "Orders over 100 are refused")));
+        Assert.Equal("recorded", Stangent.Spec.Fsd.LinkRun.Check(app.Pages(), app.Repo, GraphStore.Load(GraphStore.PathFor(app.Repo))!, "shop", "1", null).Status);
+        var runs = File.ReadAllText(Stangent.Spec.Fsd.LinkRun.RunsFile(app.Root));
+        Assert.DoesNotContain("\"unit\"", runs);
+        Assert.DoesNotContain("\"saved\"", runs);
+        var trace = File.ReadAllText(TraceFile.PathIn(app.Root));
+        Assert.DoesNotContain("table_fact", trace);
+        Assert.DoesNotContain("partial", trace);
+    }
+
+    [Fact]
+    public void Finer_verdicts_on_then_off_gives_back_the_old_hash()
+    {
+        using var app = App();
+        var off = Run(app).Bundle;
+        app.Repo.Config.Fsd.JudgeFinerVerdicts = true;
+        Assert.NotEqual(off, Run(app).Bundle);
+        app.Repo.Config.Fsd.JudgeFinerVerdicts = false;
+        Assert.Equal(off, Run(app).Bundle);
+    }
+}

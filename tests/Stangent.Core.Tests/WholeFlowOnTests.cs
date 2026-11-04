@@ -102,12 +102,31 @@ public class WholeFlowOnTests(WholeFlowOn on) : IClassFixture<WholeFlowOn>
     }
 
     [Fact]
+    public void A_partial_goes_to_the_disprove_step_and_an_unclear_one_or_a_table_fact_doesnt()
+    {
+        flow.Reached(5);
+        Assert.Contains("only partly does", flow.Seen("on.disprove").GetValue<string>());
+        // The partial and the conflict; not the unclear one.
+        Assert.Equal(2, (int)flow.Seen("on.estimate")["calls"]!);
+        Assert.Equal(0, (int)flow.Seen("on.estimate.facts")["calls"]!);
+    }
+
+    [Fact]
+    public void Each_switch_shows_on_in_components()
+    {
+        flow.Reached(6);
+        var list = flow.Cli("components")["result"]!["components"]!.AsArray();
+        Assert.All(new[] { "table-facts", "judge-finer-verdicts", "group-sections", "spec-ask" }, name => Assert.True((bool)list.Single(c => (string?)c!["name"] == name)!["on"]!));
+    }
+
+    [Fact]
     public void Switched_off_the_graph_export_is_the_same_bytes_and_compare_says_off()
     {
         flow.Reached(4);
         Assert.True((bool)flow.Seen("export.same"));
         Assert.True((bool)flow.Seen("enums.removed"));
         Assert.True((bool)flow.Seen("enums.back"));
+        Assert.True((bool)flow.Seen("enums.kept"));
         Assert.False((bool)flow.Seen("compare.off")["compared"]!);
     }
 }

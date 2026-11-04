@@ -62,7 +62,7 @@ public sealed class WholeFlow : IDisposable
     /// <summary>The flow with these settings added, as far as what's left on can take it (D121): the rest of the stages need findings to act on.</summary>
     public static WholeFlow With(string extraConfig) => new(extraConfig);
 
-    public const string SwitchedOn = "components: { table-facts: true, judge-finer-verdicts: true, group-sections: true, spec-ask: true }";
+    public const string SwitchedOn = "components: { table-facts: true, judge-finer-verdicts: true, group-sections: true, spec-ask: true, disprove: true }";
 
     /// <summary>The flow with what's built switched off turned on (D124): the fake AI answers each variant, and nothing real runs.</summary>
     public static WholeFlow AllSwitchedOn() => new(SwitchedOn, allOn: true);
@@ -523,6 +523,9 @@ public sealed class WholeFlow : IDisposable
         File.WriteAllText(yaml, on);
         Ok("graph", "build");
         Saw["enums.back"] = JsonValue.Create(File.ReadAllText(CodeEnums.PathFor(Root)) == enumsOn);
+        // A build that reuses every project keeps what's on file for them.
+        Ok("graph", "build");
+        Saw["enums.kept"] = JsonValue.Create(File.ReadAllText(CodeEnums.PathFor(Root)) == enumsOn);
     }
 
     /// <summary>The link judge's variants, answered by the fake AI, with the code checks running on each.</summary>
@@ -547,6 +550,10 @@ public sealed class WholeFlow : IDisposable
         Saw["on.trace"] = Trace();
         Saw["on.check"] = Check();
         Saw["on.status"] = Ok("fsd", "status", "shop");
+        Saw["on.estimate"] = Ok("fsd", "disprove", "estimate", "shop");
+        var disprove = Ok("fsd", "disprove", "prepare", "shop", "1");
+        Saw["on.disprove"] = File.ReadAllText(Path.Combine(Root, Path.GetDirectoryName((string)disprove["next"]!["output"]!)!, "bundle.md"));
+        Saw["on.estimate.facts"] = Ok("fsd", "disprove", "estimate", "facts");
     }
 
     /// <summary>A question, answered by the fake AI with statement ids; one the pages can't answer; and one the AI answers with nothing cited.</summary>

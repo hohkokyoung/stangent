@@ -210,7 +210,7 @@ its real list names real repos and its results would land in this repo.
 
 | Driver | Tested |
 |---|---|
-| `plugin/scripts/spec-run.sh` | Normal path, retry, `--retry-failed`, `--all`, `--jobs`, `--stale`, `--fsd`, `--req`, `--only`, `--agents`, no AI call when nothing is needed, Claude failing, stangent crashing, a failed list, usage |
+| `plugin/scripts/spec-run.sh` | Normal path, retry, `--retry-failed`, `--all`, `--jobs`, `--stale`, `--fsd`, `--req`, `--ask`, `--only`, `--agents`, no AI call when nothing is needed, Claude failing, stangent crashing, a failed list, usage |
 | `plugin/scripts/ticket-run.sh` | Normal path, `--no-pull`, `--refind`, `--no-find`, the file finder's worktree, `--prove`, a capped reproducer, `--match`, `--questions`, `--resolution`, `--jobs`, a failed pull or bundle, Claude failing, a blocked setup, an app that won't start, usage |
 | `benchmark/run.sh` | Normal path, `BENCH_ONLY`, a repo's config, a failing command recorded, a failing init, usage |
 | `benchmark/tickets/run.sh` | `points`, `files` resuming, `pages`, `bundles`, `drafts` (also in parallel), `prove`, `replay`, `--only`, a failed step, a missing Jira key, a bad phase, usage |
@@ -231,5 +231,7 @@ Each phase has its own tests, so a seam between phases could pass all of them an
 **How it's built:** a class fixture does the run once and saves what each stage saw. The facts read those, so one stage's fact can fail without hiding the others. A stage that can't finish fails its own facts and every later stage's, with the reason. After each stage, a sweep checks pages, line files, documents and the trace file against their contracts. The test project builds the CLI first, without referencing it.
 
 **What it found stays in it.** The facts at the end of the file state the right behaviour for what the first run found, skipped until each was fixed (`phases/0-foundation.md`). None is skipped now.
+
+**With what's built switched off turned on (D124):** `WholeFlow.AllSwitchedOn` runs set-up, pages and import, then table facts on a real graph with enums from both extractors, a grouped and finer judge, the disprove step's bundle, and asking, each answered by a fake AI (`WholeFlowOnTests.cs`). The same run proves `graph export` is the same bytes with `table-facts` off. `SavedWorkTests`' pinned hashes and `SwitchedOffStaysTheSameTests` hold prompts, bundles and hashes with every switch off.
 
 **Not in it:** requirements (Phase 2c's `req` steps), bug proof, drafts and posting, and the bash drivers, which `DriverRig` covers.
