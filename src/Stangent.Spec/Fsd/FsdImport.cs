@@ -25,14 +25,11 @@ public static class FsdImport
     public static JsonObject Import(StangentRepo repo, string file, string? id = null, bool flat = false, bool acceptChanges = false)
     {
         if (!File.Exists(file)) throw new StangentException("not_found", $"No file at {file}.", ExitCodes.NotFound);
-        Func<byte[], bool, ConvertedDocument> convert = Path.GetExtension(file).ToLowerInvariant() switch
-        {
-            ".docx" => (b, f) => DocxConverter.Convert(b, f, acceptChanges),
-            ".pdf" when acceptChanges => throw new StangentException("usage", "--accept-changes is for .docx files: a PDF has no tracked changes to accept.", ExitCodes.Usage),
-            ".pdf" => PdfConverter.Convert,
-            ".xlsx" => throw new StangentException("unsupported_format", "Excel import is decided (D111) but isn't built yet. Only .docx and .pdf are imported for now.", ExitCodes.Usage),
-            _ => throw new StangentException("unsupported_format", "Only .docx and .pdf are imported; other formats get their own converter when a real FSD needs one.", ExitCodes.Usage),
-        };
+        var options = new ImportOptions(flat, acceptChanges);
+        var format = ImportPipeline.ForFile(file) ?? throw (Path.GetExtension(file).Equals(".xlsx", StringComparison.OrdinalIgnoreCase)
+            ? new StangentException("unsupported_format", "Excel import is decided (D111) but isn't built yet. Only .docx and .pdf are imported for now.", ExitCodes.Usage)
+            : new StangentException("unsupported_format", "Only .docx and .pdf are imported; other formats get their own converter when a real FSD needs one.", ExitCodes.Usage));
+        format.CheckOptions(options);
         var archive = repo.Config.Fsd.Archive is { Name.Length: > 0, Path.Length: > 0 } a ? a
             : throw new StangentException("archive_not_set", "Set fsd.archive in stangent.yaml first: { name: <archive name>, path: <folder outside this repo>, git: false } (D16).", ExitCodes.Usage);
         id ??= DefaultId(file);
@@ -59,11 +56,17 @@ public static class FsdImport
             return same;
         }
 
-        var converted = convert(bytes, flat);
+        var import = ImportPipeline.Run(format, bytes, options);
+        var converted = import.Document;
         var archivedPath = ArchiveOriginal(repo, archive, id, file, bytes, hash);
         var doc = Document(id, file, converted, archive.Name, archivedPath, hash);
         var archived = new JsonObject { ["name"] = archive.Name, ["path"] = archivedPath };
-        if (current is not null) return FsdVersions.Offer(repo.Root, id, current, doc, converted, hash, flat, archived);
+        if (current is not null)
+        {
+            var offered = FsdVersions.Offer(repo.Root, id, current, doc, converted, hash, flat, archived);
+            offered["steps"] = import.StepsJson();
+            return offered;
+        }
 
         FsdVersions.IssueIds(repo.Root, id, doc, doc["sections"]!.AsArray().OfType<JsonObject>());
         ImportProblems.Attach(doc);
@@ -75,7 +78,7 @@ public static class FsdImport
         return new JsonObject
         {
             ["id"] = id, ["status"] = "imported", ["hash"] = hash, ["sections"] = converted.Sections.Count,
-            ["images"] = converted.Images.Count, ["problems"] = doc["problems"]!.DeepClone(), ["archive"] = archived,
+            ["images"] = converted.Images.Count, ["problems"] = doc["problems"]!.DeepClone(), ["archive"] = archived, ["steps"] = import.StepsJson(),
         };
     }
 

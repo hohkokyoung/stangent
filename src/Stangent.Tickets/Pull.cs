@@ -27,7 +27,7 @@ public sealed class TicketPaths(string root, string key)
 
 /// <summary>
 /// <c>stangent ticket pull &lt;KEY&gt;</c> (plan step 2, D72, D75): the ticket through the adapter, every attachment saved
-/// with its hash, text attachments in up to a cap, <c>.docx</c> through 2b's converter, images and anything else listed,
+/// with its hash, text attachments in up to a cap, <c>.docx</c> and <c>.pdf</c> through the import steps, images and anything else listed,
 /// and a bug's steps, expected and actual result, version and environment in their own fields. All code: the same
 /// ticket and files give the same <c>ticket.json</c>, byte for byte.
 /// </summary>
@@ -110,7 +110,9 @@ public static partial class TicketPull
         string? text = kind switch
         {
             "text" => Decode(await File.ReadAllBytesAsync(saved.Path, ct)),
-            "docx" => Word(await File.ReadAllBytesAsync(saved.Path, ct), o),
+            "docx" => Document(a, await File.ReadAllBytesAsync(saved.Path, ct), o),
+            // A PDF keeps its kind, "other", since ticket-bundle has no other value for it: its text and its format say the rest.
+            _ when ImportPipeline.ForFile(a.FileName) is not null => Document(a, await File.ReadAllBytesAsync(saved.Path, ct), o),
             _ => null,
         };
         if (text is not null)
@@ -123,20 +125,19 @@ public static partial class TicketPull
         return o;
     }
 
-    /// <summary>A ticket's attachment isn't the agreed FSD, so nothing about it stops the pull (D72): a tracked change reads as accepted, no headings
-    /// reads flat, and a file the converter can't take is listed with why.</summary>
-    static string? Word(byte[] bytes, JsonObject attachment)
+    /// <summary>A document through the same import steps as an FSD (D121). A ticket's attachment isn't the agreed FSD, so nothing about it stops the pull:
+    /// see <see cref="ImportPipeline.Attachment"/>. What the import listed goes beside it, for a person; the bundle leaves it out.</summary>
+    static string? Document(TicketAttachment a, byte[] bytes, JsonObject attachment)
     {
-        try
+        var converted = ImportPipeline.Attachment(a.FileName, bytes)!;
+        if (converted.NotConverted is { } why)
         {
-            try { return DocxConverter.Convert(bytes, acceptChanges: true).Markdown; }
-            catch (StangentException e) when (e.Code == "no_structure") { return DocxConverter.Convert(bytes, flat: true, acceptChanges: true).Markdown; }
-        }
-        catch (StangentException e)
-        {
-            attachment["notConverted"] = e.Message;
+            attachment["notConverted"] = why;
             return null;
         }
+        attachment["format"] = converted.Format;
+        if (converted.Problems.Count > 0) attachment["problems"] = converted.Problems;
+        return converted.Text;
     }
 
     public static string Kind(TicketAttachment a)

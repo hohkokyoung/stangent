@@ -1142,6 +1142,7 @@ a pointer; on a repo with few generated pages the bundle is mostly pointers.
   **no stangent AI step describes them**, since nothing could check the description (D18).
 - **PDF, Excel, video and anything else:** listed by name, type and size. Each gets a converter when a real ticket
   needs one, as 2b did for FSD formats. *D111 (2026-11-03) adds PDF and Excel import; whether attachments use it is still to grill.*
+  *Changed, 2026-11-04 (D121): a `.pdf` goes through the same import steps as a `.docx`, so its text reaches the ticket. It never stops the pull: one that can't be read is listed with why. A saved ticket with a PDF attachment gains text the next time it's pulled, so its bundle changes then. Excel and the rest stay listed.*
 Rejected: an AI describing each image into text (a call per image, unverifiable); text only (many bug tickets are a
 screenshot and one line).
 **Why:** everything deterministic is converted by code; what isn't stays in its original form for whoever reads it.
@@ -2212,6 +2213,7 @@ Changes "`.docx` only" (D15's deferral, 2b) and "a converter when a real FSD or 
 **Why:** the owner's documents come in these formats.
 **Cost:** a PDF holds no reliable structure, so its import is weaker than Word's and quote checks depend on extraction; at least one
 new dependency; two more formats to keep byte-identical across versions.
+**Note, 2026-11-04 (D121):** Word and PDF now fill in one set of import steps (`IImportFormat`), which Excel fills in next, and ticket attachments use it. What D72 left open about attachments is settled there.
 
 ## D112 · The overhaul's order: foundation first, stopping before Phase 4 — 2026-11-04 (assistant's call, owner asleep; owner: "continue from the foundation again")
 The order is in `roadmap.md`, "The overhaul: order of work", and it replaces D109's "next" list until the owner changes it.
@@ -2317,8 +2319,9 @@ Reverses D62's "rejected: a second check on every finding". Follows D18, D53, D5
 ## D121 · Switches, structured import problems and one set of import steps — 2026-11-04 (assistant's call, under the owner's D120)
 Follows D18, D20, D72, D111, D116 and D117.
 - **Structured problems.** `source-document` v3: `problems` are objects with `kind`, `detail` and whatever else the line says. Converters keep writing lines and one reader takes them apart, because old documents hold lines and have to come out the same as new ones. `detail` keeps each line word for word. Rejected: changing some sixty places in the converters to write objects, which gives old and new documents two readers.
-**Why:** a report or a question for the BA has to read problems by kind and section; a fixed text shape can't be relied on from outside.
-**Cost:** a kind is read from a line's words, so rewording a line in a converter can move it to `other`. The tests pin each kind's shape.
+- **One set of import steps.** `IImportFormat`: safety checks, convert, comments, extract files, completeness check. A format without a step says so, with why. Tickets call the same pipeline. Word and PDF do comments and completeness inside convert, since they share its walk, and their steps report what it found: splitting that walk risked the bytes of `document.md`, for no gain until a format needs it. Safety opens the file one more time for that reason.
+**Why:** a report or a question for the BA has to read problems by kind and section, and a fixed text shape can't be relied on from outside. A format missing a step should say so, or an empty answer reads as "none found".
+**Cost:** a kind is read from a line's words, so rewording a line in a converter can move it to `other`. The tests pin each kind's shape. For Word and PDF, three of the five steps only report, so the interface is a promise for Excel more than a change for them.
 
 ## Open questions
 

@@ -136,6 +136,7 @@ public sealed class ImportProblemsTests : IDisposable
         var offered = FsdImport.Import(repo.Repo, file, "shop");
         Assert.Equal("candidate", (string)offered["status"]!);
         Assert.Null(offered["problems"]![0]!["section"]);
+        Assert.Equal(5, offered["steps"]!.AsArray().Count);
 
         FsdVersions.Promote(repo.Repo, "shop", "Pat Example");
         var p = Assert.Single(JsonNode.Parse(File.ReadAllText(json))!["problems"]!.AsArray())!;

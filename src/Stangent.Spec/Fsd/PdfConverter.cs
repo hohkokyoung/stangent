@@ -121,14 +121,20 @@ public static partial class PdfConverter
     public static ConvertedDocument Convert(byte[] pdf, bool flat = false) => Convert(pdf, flat, null);
 
     /// <summary><paramref name="tamper"/> lets a test break a page's layout: no PDF can reach the check that catches it, since a block's words all come from the page.</summary>
-    internal static ConvertedDocument Convert(byte[] pdf, bool flat, Func<int, List<PdfBlock>, List<PdfBlock>>? tamper)
+    internal static ConvertedDocument Convert(byte[] pdf, bool flat, Func<int, List<PdfBlock>, List<PdfBlock>>? tamper) =>
+        Open(pdf, doc => new Reader(doc, flat, tamper).Run());
+
+    /// <summary>The import's safety step (D121): damaged, protected or empty stops here. Gives the page count.</summary>
+    public static int CheckSafe(byte[] pdf) => Open(pdf, doc => doc.NumberOfPages);
+
+    static T Open<T>(byte[] pdf, Func<PdfDocument, T> read)
     {
         try
         {
             using var doc = PdfDocument.Open(pdf);
             if (doc.IsEncrypted) throw Locked();
             if (doc.NumberOfPages == 0) throw new StangentException("invalid_pdf", "This PDF has no pages.");
-            return new Reader(doc, flat, tamper).Run();
+            return read(doc);
         }
         catch (PdfDocumentEncryptedException)
         {

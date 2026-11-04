@@ -385,3 +385,5 @@ Code only, no AI. Details are in `docs/spec.md`.
 **Not checked, under D120:** no fresh check of any of this. `dotnet test`, the whole-flow test and `phases check` pass.
 
 **S.2 · `source-document` v2 → v3 (D121).** `problems` become objects: `kind`, `detail`, and `sectionNumber`, `section`, `page`, `line`, `author`, `state`, `text` where they apply. `ConvertedDocument.Problems` stays lines, so the converters and their tests didn't move, and `ImportProblems` reads lines for old documents and new imports alike. Sonarr's `document.md` keeps its hash, and `document.json` with its ids taken off keeps its hash too, since it has no problems. 2c and 3 were checked by grep (they read sections by field, never `problems` or `schemaVersion`) and moved, each with its line.
+
+**S.3 · One set of import steps.** `IImportFormat` and `ImportPipeline` (D121); `fsd import`'s result has `steps`. Word's and Sonarr's `document.md` are byte-identical (the pinned hash) and the PDF tests didn't change.

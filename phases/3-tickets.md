@@ -795,3 +795,5 @@ Checked 2026-11-04 (D20, D117): `source-document` v1 → v2. By grep, `Stangent.
 Checked 2026-11-04 (D20, D118): `trace-links` v1 → v3. By grep, `Stangent.Tickets` reads an entry's `state`, `fsd`, `page`, `check` and `decision`, by name, and never `finding`, `severity` or `evidence`, so none reaches a ticket bundle. All tests pass, so this consumes `trace-links: 3`.
 
 Checked 2026-11-04 (D20, D121): `source-document` v2 → v3. By grep, `Stangent.Tickets` never reads a document's `problems`. Moved to `source-document: 3`.
+
+§8 S.3 (D121): attachments go through `ImportPipeline.Attachment`, so a `.pdf` converts or is listed, and the pull never stops. `problems` and `format` stay out of the bundle, so `ticket-bundle` is unchanged. A ticket already pulled with a PDF gains text at its next pull, which changes its bundle and what a saved draft or finder ran on: not checked on a real ticket.

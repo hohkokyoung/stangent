@@ -26,18 +26,30 @@ public static partial class DocxConverter
     [GeneratedRegex(@"^heading\s*([1-9])$", RegexOptions.IgnoreCase)]
     private static partial Regex HeadingStyle();
 
-    public static ConvertedDocument Convert(byte[] docx, bool flat = false, bool acceptChanges = false)
+    public static ConvertedDocument Convert(byte[] docx, bool flat = false, bool acceptChanges = false) => Open(docx, main =>
+    {
+        var ctx = new Context(main, flat);
+        ctx.Settle(acceptChanges);
+        foreach (var block in main.Document?.Body?.ChildElements ?? Enumerable.Empty<OpenXmlElement>())
+            ctx.Block(block);
+        return ctx.Finish();
+    });
+
+    /// <summary>The import's safety step (D121): a file that can't be opened, or isn't settled, stops here. Gives how many tracked changes it holds.</summary>
+    public static int CheckSafe(byte[] docx, bool acceptChanges) => Open(docx, main =>
+    {
+        var found = DocxReview.Count(TrackedRoots(main));
+        if (found.Count > 0 && !acceptChanges) throw NotSettled(found);
+        return found.Values.Sum();
+    });
+
+    static T Open<T>(byte[] docx, Func<MainDocumentPart, T> read)
     {
         try
         {
             using var stream = new MemoryStream(docx);
             using var doc = WordprocessingDocument.Open(stream, false);
-            var main = doc.MainDocumentPart ?? throw new Core.StangentException("invalid_docx", "The file has no document body.");
-            var ctx = new Context(main, flat);
-            ctx.Settle(acceptChanges);
-            foreach (var block in main.Document?.Body?.ChildElements ?? Enumerable.Empty<OpenXmlElement>())
-                ctx.Block(block);
-            return ctx.Finish();
+            return read(doc.MainDocumentPart ?? throw new Core.StangentException("invalid_docx", "The file has no document body."));
         }
         catch (Exception e) when (e is FileFormatException or OpenXmlPackageException or InvalidDataException or System.Xml.XmlException)
         {
@@ -45,6 +57,12 @@ public static partial class DocxConverter
             throw new Core.StangentException("invalid_docx", "This .docx can't be opened: it may be damaged or password-protected. Supply an unprotected copy.", Core.ExitCodes.Failed, [e.Message]);
         }
     }
+
+    static List<OpenXmlElement> TrackedRoots(MainDocumentPart main) =>
+        new OpenXmlElement?[] { main.Document?.Body, main.FootnotesPart?.Footnotes, main.EndnotesPart?.Endnotes }.OfType<OpenXmlElement>().ToList();
+
+    static Core.StangentException NotSettled(Dictionary<string, int> found) =>
+        new("docx_tracked_changes", $"This .docx has {found.Values.Sum()} tracked changes ({DocxReview.Summary(found)}), so it isn't settled. Accept or reject them in Word, or use --accept-changes to import the accepted view.");
 
     sealed class Context(MainDocumentPart main, bool flat)
     {
@@ -76,14 +94,13 @@ public static partial class DocxConverter
         /// <summary>Tracked changes stop the import unless the accepted view is asked for (D116). Comments are always read as accepted: they're listed, not imported.</summary>
         public void Settle(bool accept)
         {
-            var roots = new OpenXmlElement?[] { main.Document?.Body, main.FootnotesPart?.Footnotes, main.EndnotesPart?.Endnotes }.OfType<OpenXmlElement>().ToList();
+            var roots = TrackedRoots(main);
             var found = DocxReview.Count(roots);
             if (found.Count > 0)
             {
                 var total = found.Values.Sum();
                 var summary = DocxReview.Summary(found);
-                if (!accept)
-                    throw new Core.StangentException("docx_tracked_changes", $"This .docx has {total} tracked changes ({summary}), so it isn't settled. Accept or reject them in Word, or use --accept-changes to import the accepted view.");
+                if (!accept) throw NotSettled(found);
                 foreach (var root in roots) DocxReview.Accept(root);
                 problems.Add($"--accept-changes: {total} tracked changes accepted ({summary}); this is the accepted view, not an agreed document");
             }
