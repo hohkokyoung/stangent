@@ -260,7 +260,6 @@ Slice 2.1 of the overhaul, D116: the Word importer stops failing silently. Code 
 - `w:cellMerge` counts as a tracked change but isn't applied. White text isn't listed. Table styles aren't read for hidden or struck text.
 - A file imported earlier stays `unchanged` with no new lines until its bytes change, even if tracked changes had been resolved silently.
 - Ticket attachments read the accepted view with nothing listed: the bundle has no place for it without a contract change.
-- A Word attachment with no headings still stops a ticket pull with `no_structure`. That was already so.
 
 **Impact on other phases.** `source-document` stays v1, with only its `problems` description widened, so no phase goes to `needs review`. `ticket pull` passes `acceptChanges`, so a tracked change can't stop a pull, and an attachment's text now follows these rules too: moved text once, hidden text out, footnotes in. 2.2 can match against the same text. 2.5 can read comments through `DocxComment.Parse`. Telemetry's event name for `graph screen-tests` is now `stangent.graph.screen_tests`; `stangent.command` keeps the hyphen.
 
@@ -310,3 +309,14 @@ Code only, no AI. Details are in `docs/spec.md`.
 - A deleted ledger catches up with the live ids only, as requirement ids do. Don't delete it.
 
 **Impact on other phases.** `source-document` went to v2 in this file. 2c and 3 were each checked by grep and moved to `source-document: 2`, each with its line. Neither reads what changed, and neither goes to `needs review`. `fsd import`'s `replacedSections` and `replaced` status are gone; nothing outside the tests read them. Later slices can cite the permanent id; links and requirements still cite the number.
+
+### Fix round after the fresh check (2026-11-04)
+
+**Found, one line each, all fixed.**
+- A removed section's trace entry kept its old number, so it read as the new section with that number, and promotion's `trace check` then dropped its decision. Now it takes the removed mark, keeps its decision and `decided_by`, is reported in `carried.removed[].decisions`, and is flagged by `trace check`. While there: a resolution draft crashed on a section it couldn't find, and a removed section's link made a screen count as documented.
+- Text in an `mc:Fallback` with no `mc:Choice` was dropped with `problems` empty. Now the converter and the completeness check read it, inline and as blocks.
+- A candidate couldn't be thrown away, and re-importing the current file left it waiting silently. Now there's `stangent fsd discard <doc>`, through the state module, and the `unchanged` result says plainly that a candidate is waiting and how to discard it.
+- A rewritten section under a repeated heading came out as `added` plus `removed`, setting its id aside silently. Now a section left on both sides with the same heading path is doubtful, even with no sentence shared; a unique path is still `modified`.
+- A `.docx` ticket attachment with no headings stopped the whole pull, as the note above said: confirmed by a test. Now it reads flat, and a damaged one is listed with `notConverted`. A PDF attachment never stopped it: it's listed by name, type and size (D72).
+
+**Still untested.** No file saved by Word itself has been through any of this, the `mc:Fallback` rule included.

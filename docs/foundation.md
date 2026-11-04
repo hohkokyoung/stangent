@@ -121,7 +121,7 @@ returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds ev
 | `page-run` | `write`, `verify`, `fix`, `done`, `failed` | code | `.stangent/spec/state-history.jsonl` |
 | `link-run` | `find`, `judge`, `confirm`, `done`, `failed` | code | `.stangent/fsd/state-history.jsonl` |
 | `req-run` | `write`, `confirm`, `fix`, `reconfirm`, `done`, `failed` | code | `.stangent/req/state-history.jsonl` |
-| `fsd-candidate` | `candidate`, `promoted`, `replaced` | a person promotes; code replaces it when a newer file comes in | `specs/fsd/history.jsonl` |
+| `fsd-candidate` | `candidate`, `promoted`, `discarded`, `replaced` | a person promotes or discards; code replaces it when a newer file comes in | `specs/fsd/history.jsonl` |
 | `fsd-section-match` | `doubtful`, `same`, `new`, `removed` | a person settles and can change their mind; code only lets go of a claimed id | same |
 
 **History.** Append-only JSONL, one move per line: `at`, `kind`, `id`, `from`, `to`, `who`, `reason`. It sits beside the state:
