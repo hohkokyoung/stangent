@@ -137,7 +137,7 @@ returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds ev
 committed state has committed history, and CI adds `specs/trace-history.jsonl` to the bot's PR. No input hash and no artifact
 reads it, so its timestamps change nothing else. An append holds the file under an OS lock, with no lock file beside it.
 
-`stangent state history <kind> <id>` prints one item's moves, oldest first.
+`stangent state history <kind> <id>` prints one item's moves, oldest first. An item whose id changed is followed: a promotion adds an `id-moved` line from the old id to the new, old lines are never rewritten, and the answer holds both ids' moves and that line. It isn't a lifecycle, so no table lists it. An `X-` id reads as the entry that holds it now.
 
 **The rule is a test.** `StateChangesTests` scans `src/**/*.cs` for writes of `status`, `decision`, `decided_by`, `confirmedBy`,
 `stage`, `posted`, `outcome`, `severity` and `severity_by` outside the module. A new write fails until it moves onto the module or is listed there with
@@ -180,6 +180,6 @@ Each phase has its own tests, so a seam between phases could pass all of them an
 
 **How it's built:** a class fixture does the run once and saves what each stage saw. The facts read those, so one stage's fact can fail without hiding the others. A stage that can't finish fails its own facts and every later stage's, with the reason. After each stage, a sweep checks pages, line files, documents and the trace file against their contracts. The test project builds the CLI first, without referencing it.
 
-**A skipped fact is a finding.** Five facts at the end of the file are `Skip`ped, each stating the right behaviour and saying what's wrong. They wait on a decision. Taking the `Skip` off is how to test a fix.
+**What it found stays in it.** The facts at the end of the file state the right behaviour for what the first run found, skipped until each was fixed (`phases/0-foundation.md`). None is skipped now.
 
 **Not in it:** requirements (Phase 2c's `req` steps), bug proof, drafts and posting, and the bash drivers, which `DriverRig` covers.

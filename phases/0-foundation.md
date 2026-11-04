@@ -171,12 +171,12 @@ Slices 0.1 to 0.5 of `roadmap.md`'s overhaul order (D112, D113, D114).
 
 - **S.0 Whole-flow test** (`tests/Stangent.Core.Tests/WholeFlowTests.cs`, `docs/foundation.md`). All ten stages are reachable from the real CLI. What it found:
   - **Fixed:** `init` didn't ignore `.stangent/fsd-disprove/` or `.stangent/graph.sqlite` (`StangentRepo.cs`, `GitIgnoreLines`), so a `git add -A` committed disprove bundles holding FSD text and source, and the graph that `docs/code-graph.md` calls git-ignored. A repo set up earlier gets the lines on its next `init`.
-  - **Skipped, waiting on the owner.** Each is a fact that states the right behaviour:
-    - **A new commit reopens every finding.** The disprove bundle says `At commit <sha>` and is hashed whole (`DisproveRun.cs:245`), so a commit and a `graph build`, with no code changed, drops every verdict, reopens closed findings and asks for new paid calls. `docs/spec.md` says an unchanged bundle means no call. The fix changes the bundle's text and hash. This matters most, and the 2.5 re-score should wait for it.
-    - **A section that only moved loses its verdict.** The bundle holds the section's number (`DisproveRun.cs:227`), so a promotion that moves a section costs a paid call and wipes a person's confirmation. Links don't have this: `FsdCarry` works their inputs out again.
-    - **History doesn't follow a moved finding.** A promotion gives the entry a new id (`FsdCarry.cs:62`), and `state history` shows nothing under it, or under the `X-` id. Design question.
-    - **A gap in typed heading numbers.** Taking chapter 2 out of a Word file with typed numbers makes `3 Checkout` a plain heading, listed as renamed (`FsdSections.cs:75`). The rule guards against `2023 Roadmap`, but a removed chapter is what a new version does. Design question. The test's second version renumbers, so it isn't hit there.
-    - **An odd line for a gap.** `page-wrong` on a gap with no statement reads `statement (none) ""` in the writer's bundle (`Staleness.cs:103`). Left alone because prompts stay as they are for now.
+  - **Fixed after the first run,** each fact's `Skip` taken off, with no expectation changed. The run's own step that answered a new verdict on section 3 went, because code two lines lower no longer asks for one; a new fact states that:
+    - **A new commit reopened every finding:** fixed, the commit is shown and not hashed (D119's note).
+    - **A section that only moved lost its verdict:** fixed, the number is shown and not hashed (D119's note).
+    - **History didn't follow a moved finding:** fixed. The `X-` id was already stable and the entry id moved, so a move line connects them, and `state history` reads it and takes an `X-` id (D117's note).
+    - **A gap in typed heading numbers:** fixed, a typed number stays a number across a gap, with `2023 Roadmap` and `24 hour clock` still plain (D117's note).
+    - **An odd line for a gap:** fixed, the note says the page has no statement on it, with no hash moved.
   - **Worked first time:** set-up, pages, both imports, links and findings, routes and reviews, decisions, impact and the ticket bundle, promotion, including CI on a promotion and a section number used again, regeneration, line citations, and input hashes.
   - **Worth knowing:** a removed section's entry fails `trace check` until a person deletes it by hand, though the file's header says to edit `decision` only. CI accepts the deletion. The test does this at the end.
 
