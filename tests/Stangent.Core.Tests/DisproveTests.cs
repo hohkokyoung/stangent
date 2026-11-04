@@ -113,10 +113,10 @@ public class DisproveTests
     }
 
     [Theory]
-    [InlineData("refuted", "closed", "refuted")]
-    [InlineData("unreachable", "closed", "unreachable")]
-    [InlineData("stands", "ba", "code-confirmed")]
-    [InlineData("page-gap", "developer", "page-gap")]
+    [InlineData("refuted", "developer-confirm", "the AI's reading: refuted")]
+    [InlineData("unreachable", "developer-confirm", "the AI's reading: unreachable")]
+    [InlineData("stands", "ba", "the AI's reading: stands")]
+    [InlineData("page-gap", "developer", "the AI's reading: page-gap")]
     public void A_verdict_goes_where_it_should_with_its_quote_in_the_evidence_as_read(string verdict, string goesTo, string label)
     {
         using var app = App();
@@ -310,12 +310,14 @@ public class DisproveTests
     }
 
     [Fact]
-    public void Closed_findings_leave_the_impact_answer_and_page_wrong_isnt_verified()
+    public void Only_a_confirmed_finding_leaves_the_impact_answer_and_page_wrong_isnt_verified()
     {
         using var app = App();
         Save(app, Conflict());
         Assert.Equal(1, (int)FsdImpact.Sections(app.Root, [SpecApp.Place], false)["total"]!);
         Answer(app, Prepare(app), Quoted("refuted"));
+        Assert.Equal(1, (int)FsdImpact.Sections(app.Root, [SpecApp.Place], false)["total"]!);
+        TraceFindings.Review(app.Root, "X-0001", "confirmed", "pat", null);
         Assert.Equal(0, (int)FsdImpact.Sections(app.Root, [SpecApp.Place], false)["total"]!);
 
         var wrong = Conflict();
@@ -385,6 +387,314 @@ public class DisproveTests
         gap["decision"] = "page-wrong";
         Save(app, gap);
         Assert.Contains(Problems(TraceCheck.Run(app.Root, null, null, false)), p => ((string)p!).Contains("page-wrong needs a page", StringComparison.Ordinal));
+    }
+
+    // ---- a person confirms what code can't judge (D119's fix round) ----
+
+    static JsonObject Listed(JsonObject report) => report["findings"]![0]!.AsObject();
+
+    static void Rephrase(SpecApp app, string text) =>
+        StatementIdTests.Regenerate(app, StatementIdTests.Writer(rules: [StatementIdTests.S(text, SpecApp.Place)]));
+
+    /// <summary>Refuted, then decided by a person and tied to the statement's text.</summary>
+    static void RefutedThenDecided(SpecApp app, string decision = "code-wrong")
+    {
+        Save(app, Conflict());
+        Answer(app, Prepare(app), Quoted("refuted"));
+        var edited = TraceFile.Load(app.Root);
+        edited["entries"]![0]!["decision"] = decision;
+        TraceFile.Save(app.Root, edited);
+        Assert.True((bool)TraceCheck.Run(app.Root, null, null, false)["ok"]!);
+    }
+
+    [Theory]
+    [InlineData("refuted")]
+    [InlineData("unreachable")]
+    public void A_quote_only_proves_the_text_exists_so_the_verdict_waits_for_a_person(string verdict)
+    {
+        using var app = App();
+        Save(app, Conflict());
+        // The line is really there, and code has no way to say whether it's about this finding.
+        Answer(app, Prepare(app), Quoted(verdict));
+        var e = Entry(app);
+        Assert.Equal("developer-confirm", TraceFindings.GoesTo(e));
+        Assert.False(TraceFindings.Closed(e));
+
+        var report = TraceCheck.Run(app.Root, null, null, false);
+        Assert.Empty(report["queues"]!["ba"]!.AsArray());
+        Assert.Empty(report["queues"]!["closed"]!.AsArray());
+        Assert.Equal("X-0001", (string)report["queues"]!["developer-confirm"]![0]!);
+        var listed = Listed(report);
+        Assert.Equal((verdict, RealLine, "Core/OrderService.cs:5-5"), ((string)listed["verdict"]!, (string)listed["quote"]!, (string)listed["at"]!));
+        Assert.Equal($"the AI's reading: {verdict}", (string)listed["label"]!);
+    }
+
+    [Fact]
+    public void A_person_closes_it_by_name_with_history_and_the_file_still_checks()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        Answer(app, Prepare(app), Quoted("refuted"));
+
+        var result = TraceFindings.Review(app.Root, "X-0001", "confirmed", "pat", "read it, and it does");
+        Assert.Equal("closed", (string)result["goesTo"]!);
+        var e = Entry(app);
+        Assert.True(TraceFindings.Closed(e));
+        Assert.Equal("pat", (string)e["review_note"]!["by"]!);
+        var move = StateChanges.History(app.Root, StateKinds.FindingReview, (string)e["id"]!).Last();
+        Assert.Equal(("confirmed", StateActor.PersonKind, "pat"), (move.To, move.Who.Kind, move.Who.Name));
+
+        var report = TraceCheck.Run(app.Root, null, null, false);
+        Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report).Select(p => (string)p!)));
+        Assert.Equal("refuted, confirmed by pat", (string)Listed(report)["label"]!);
+        Assert.Empty(SchemaRegistry.Embedded.Validate(TraceFile.Schema, TraceFile.Load(app.Root).ToJsonString()));
+        var bytes = File.ReadAllText(TraceFile.PathIn(app.Root));
+        LinkRun.ApplyEntries(app.Root, "shop", "1", [Conflict()]);
+        Assert.True(TraceFindings.Closed(Entry(app)));
+        Assert.Equal(bytes, File.ReadAllText(TraceFile.PathIn(app.Root)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void A_person_can_send_it_back_to_the_ba_before_or_after_confirming(bool confirmedFirst)
+    {
+        using var app = App();
+        Save(app, Conflict());
+        Answer(app, Prepare(app), Quoted("refuted"));
+        if (confirmedFirst) TraceFindings.Review(app.Root, "X-0001", "confirmed", "pat", null);
+
+        var result = TraceFindings.Review(app.Root, (string)Entry(app)["id"]!, "sent-back", "sam", "that line isn't about approval");
+        Assert.Equal("ba", (string)result["goesTo"]!);
+        var report = TraceCheck.Run(app.Root, null, null, false);
+        Assert.True((bool)report["ok"]!);
+        Assert.Equal("X-0001", (string)report["queues"]!["ba"]![0]!);
+        Assert.Equal("sent back to the BA: that line isn't about approval", (string)Listed(report)["label"]!);
+        Assert.Equal("sam", StateChanges.History(app.Root, StateKinds.FindingReview, (string)Entry(app)["id"]!).Last().Who.Name);
+    }
+
+    [Fact]
+    public void Only_a_waiting_refuted_or_unreachable_finding_can_be_reviewed()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        Answer(app, Prepare(app), Quoted("stands"));
+        Assert.Equal("not_reviewable", Assert.Throws<StangentException>(() => TraceFindings.Review(app.Root, "X-0001", "confirmed", "pat", null)).Code);
+        Assert.Equal("not_reviewable", Assert.Throws<StangentException>(() => TraceFindings.Review(app.Root, "X-0001", "sent-back", "pat", null)).Code);
+        Assert.Equal("not_found", Assert.Throws<StangentException>(() => TraceFindings.Review(app.Root, "X-9999", "confirmed", "pat", null)).Code);
+    }
+
+    [Fact]
+    public void A_decided_finding_cant_be_reviewed_and_neither_code_nor_an_agent_can_confirm()
+    {
+        using var app = App();
+        RefutedThenDecided(app);
+        Assert.Equal("not_reviewable", Assert.Throws<StangentException>(() => TraceFindings.Review(app.Root, "X-0001", "confirmed", "pat", null)).Code);
+        Assert.Throws<StangentException>(() => StateChanges.Move(app.Root, StateKinds.FindingReview, "L1", null, "confirmed", StateActor.Code("x"), "no"));
+        Assert.Throws<StangentException>(() => StateChanges.Move(app.Root, StateKinds.FindingReview, "L1", null, "confirmed", StateActor.Agent("x"), "no"));
+    }
+
+    [Fact]
+    public void A_confirmation_typed_by_hand_closes_nothing_and_is_a_problem()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        Answer(app, Prepare(app), Quoted("refuted"));
+        var trace = TraceFile.Load(app.Root);
+        trace["entries"]![0]!["review"] = "confirmed";
+        TraceFile.Save(app.Root, trace);
+        Assert.Equal("developer-confirm", TraceFindings.GoesTo(Entry(app)));
+        Assert.Contains(Problems(TraceCheck.Run(app.Root, null, null, false)), p => ((string)p!).Contains("its review isn't what code wrote", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_new_verdict_starts_with_nobodys_word_on_it()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        Answer(app, Prepare(app), Quoted("refuted"));
+        TraceFindings.Review(app.Root, "X-0001", "confirmed", "pat", null);
+        Rephrase(app, Page100 + " unless someone signs them off.");
+
+        var step = Prepare(app);
+        Assert.Equal(DisproveRun.Disprover, step.Agent);
+        Assert.Null(Entry(app)["review"]);
+        Answer(app, step, Quoted("refuted"));
+        Assert.Equal("developer-confirm", TraceFindings.GoesTo(Entry(app)));
+    }
+
+    [Theory]
+    [InlineData(Page100 + " unless someone signs them off.")]  // the statement changed
+    [InlineData("Nothing about the size of an order is refused.")]  // the quote went
+    public void A_changed_statement_drops_a_confirmation_and_the_finding_goes_back_to_the_ba(string text)
+    {
+        using var app = App();
+        Save(app, Conflict());
+        Answer(app, Prepare(app), Quoted("refuted"));
+        TraceFindings.Review(app.Root, "X-0001", "confirmed", "pat", null);
+        Rephrase(app, text);
+        Assert.Contains(Problems(TraceCheck.Run(app.Root, null, null, false)), p => ((string)p!).Contains("the confirmation must drop", StringComparison.Ordinal));
+        var report = TraceCheck.Run(app.Root, null, null, true);
+        Assert.Equal("ba", TraceFindings.GoesTo(Entry(app)));
+        Assert.Contains("confirmation was dropped", (string)Listed(report)["label"]!);
+    }
+
+    // ---- a person's override stays theirs ----
+
+    [Theory]
+    [InlineData(true, Page100 + " unless someone signs them off.")]
+    [InlineData(false, Page100 + " unless someone signs them off.")]
+    [InlineData(true, "Nothing about the size of an order is refused.")]
+    [InlineData(false, "Nothing about the size of an order is refused.")]
+    public void A_dropped_decision_drops_the_verdicts_effect_with_the_step_on_or_off(bool on, string text)
+    {
+        using var app = App();
+        RefutedThenDecided(app);
+        Assert.Equal("decided", TraceFindings.GoesTo(Entry(app)));
+        app.Repo.Config.Fsd.Disprove = on;
+        Rephrase(app, text);
+
+        var report = TraceCheck.Run(app.Root, null, null, true);
+        var e = Entry(app);
+        Assert.Null(e["decision"]);
+        Assert.Equal("ba", TraceFindings.GoesTo(e));
+        Assert.False(TraceFindings.Closed(e));
+        Assert.Contains("decision was dropped", (string)Listed(report)["label"]!);
+        Assert.Equal("X-0001", (string)report["queues"]!["ba"]![0]!);
+        Assert.Equal(StateActor.CodeKind, StateChanges.History(app.Root, StateKinds.FindingReview, (string)e["id"]!).Last().Who.Kind);
+        if (!on)
+        {
+            Assert.Equal("off", Prepare(app).Status);
+            Assert.Equal("ba", TraceFindings.GoesTo(Entry(app)));
+        }
+    }
+
+    [Fact]
+    public void Regenerating_a_page_marked_wrong_sends_a_refuted_finding_to_the_ba_not_the_old_verdict()
+    {
+        using var app = App();
+        RefutedThenDecided(app, "page-wrong");
+        Rephrase(app, Page100 + " unless someone signs them off.");
+        var e = Entry(app);
+        Assert.Null(e["decision"]);
+        Assert.Equal("ba", TraceFindings.GoesTo(e));
+    }
+
+    [Fact]
+    public void A_person_removing_their_decision_in_a_pr_sends_it_to_the_ba_too()
+    {
+        using var app = App();
+        RefutedThenDecided(app);
+        var before = TraceFile.Load(app.Root);
+        var edited = TraceFile.Load(app.Root);
+        edited["entries"]![0]!["decision"] = null;
+        TraceFile.Save(app.Root, edited);
+        TraceCheck.Attribute(app.Root, before, "pat");
+        Assert.Equal("ba", TraceFindings.GoesTo(Entry(app)));
+    }
+
+    // ---- what comes back from the agent ----
+
+    [Fact]
+    public void An_unknown_verdict_twice_is_cant_tell_with_the_reason_and_the_file_still_checks()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        var retry = Answer(app, Prepare(app), Quoted("weird"));
+        Assert.Equal("retry", retry.Status);
+        Assert.Equal("recorded", Answer(app, retry, Quoted("weird")).Status);
+
+        var e = Entry(app);
+        Assert.Equal("cant-tell", (string)e["verdict"]!);
+        Assert.Null(e["disproof"]!["claimed"]);
+        Assert.Contains("failed the code check", (string)e["disproof"]!["why"]!);
+        var report = TraceCheck.Run(app.Root, null, null, false);
+        Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report).Select(p => (string)p!)));
+    }
+
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("5")]
+    [InlineData("null")]
+    [InlineData("\"refuted\"")]
+    [InlineData("{\"verdict\":5}")]
+    [InlineData("{\"verdict\":\"refuted\",\"why\":\"x\",\"path\":\"Core/OrderService.cs\",\"start\":99999999999,\"end\":99999999999,\"quote\":\"x\"}")]
+    public void Malformed_output_gets_one_retry_then_is_cant_tell(string bad)
+    {
+        using var app = App();
+        Save(app, Conflict());
+        var retry = Answer(app, Prepare(app), bad);
+        Assert.Equal("retry", retry.Status);
+        Assert.NotEmpty(retry.Errors!);
+        Assert.Equal("recorded", Answer(app, retry, bad).Status);
+
+        var e = Entry(app);
+        Assert.Equal("cant-tell", (string)e["verdict"]!);
+        Assert.Equal("ba", TraceFindings.GoesTo(e));
+        Assert.True((bool)TraceCheck.Run(app.Root, null, null, false)["ok"]!);
+    }
+
+    // ---- off is off: pages don't depend on the links ----
+
+    [Theory]
+    [InlineData("entries: [unclosed")]
+    [InlineData("just words")]
+    [InlineData("version: 3\nentries: 5")]
+    [InlineData("version: 3")]
+    [InlineData("version: 3\nentries:\n  - decision: {a: b}")]
+    public void A_broken_trace_file_is_reported_and_never_stops_a_page(string broken)
+    {
+        using var app = App(on: false);
+        Save(app);
+        File.WriteAllText(TraceFile.PathIn(app.Root), broken);
+        var set = app.Pages();
+        var page = set.Find(SpecApp.Post)!;
+
+        var step = PageRun.Prepare(set, page, app.Repo);
+        Assert.Equal("current", step.Status);
+        Assert.Contains("trace.yaml", step.Warning);
+        Assert.Contains("trace.yaml", (string)step.ToJson(page.Id)["warning"]!);
+
+        var stale = Staleness.Report(set, new SpecPaths(app.Root), null);
+        Assert.Contains("trace.yaml", (string)stale["traceProblem"]!);
+        Assert.True((int)stale["counts"]!["current"]! > 0);
+        Assert.Contains("trace.yaml", Staleness.Markdown(stale));
+        Assert.Contains("trace.yaml", Staleness.ClearReportedWrong(app.Root, page.Id));
+    }
+
+    [Fact]
+    public void A_good_trace_file_warns_nobody()
+    {
+        using var app = App(on: false);
+        Save(app, Conflict());
+        var set = app.Pages();
+        Assert.Null(PageRun.Prepare(set, set.Find(SpecApp.Post)!, app.Repo).Warning);
+        Assert.Null(Staleness.Report(set, new SpecPaths(app.Root), null)["traceProblem"]);
+    }
+
+    // ---- the BA's count ----
+
+    [Theory]
+    [InlineData("refuted", 0)]
+    [InlineData("unreachable", 0)]
+    [InlineData("page-gap", 0)]
+    [InlineData("stands", 1)]
+    public void The_undecided_count_is_only_what_the_ba_has(string verdict, int undecided)
+    {
+        using var app = App();
+        Save(app, Conflict());
+        Answer(app, Prepare(app), Quoted(verdict));
+        Assert.Equal(undecided, (int)TraceCheck.Run(app.Root, null, null, false)["counts"]!["undecided"]!);
+    }
+
+    [Fact]
+    public void The_undecided_count_leaves_a_confirmed_finding_out()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        Answer(app, Prepare(app), Quoted("refuted"));
+        TraceFindings.Review(app.Root, "X-0001", "confirmed", "pat", null);
+        Assert.Equal(0, (int)TraceCheck.Run(app.Root, null, null, false)["counts"]!["undecided"]!);
     }
 
     // ---- the hard bar ----

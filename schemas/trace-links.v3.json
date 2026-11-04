@@ -74,7 +74,20 @@
               "claimed": { "description": "What the agent answered when its quote failed twice and code wrote cant-tell.", "enum": ["stands", "refuted", "page-gap", "unreachable", "cant-tell"] }
             }
           },
-          "disproof_hash": { "description": "The hash of the verdict and disproof as code wrote them.", "$ref": "#/definitions/hash" }
+          "disproof_hash": { "description": "The hash of the verdict and disproof as code wrote them.", "$ref": "#/definitions/hash" },
+          "review": { "description": "A person's word on a verdict (D119): confirmed closes a refuted or unreachable finding; sent-back returns a finding to the BA. No field means waiting.", "enum": ["confirmed", "sent-back"] },
+          "review_note": {
+            "description": "Who and why. `by` is from git, and missing when code sent it back because a decision dropped. `on` is the hash of the statement's text it was confirmed on.",
+            "type": "object",
+            "required": ["why"],
+            "additionalProperties": false,
+            "properties": {
+              "by": { "type": "string" },
+              "why": { "type": "string" },
+              "on": { "$ref": "#/definitions/hash" }
+            }
+          },
+          "review_hash": { "description": "The hash of the review, its note and the verdict's disproof_hash as code wrote them.", "$ref": "#/definitions/hash" }
         }
       }
     }

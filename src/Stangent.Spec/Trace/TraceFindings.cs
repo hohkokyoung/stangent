@@ -22,20 +22,102 @@ public static partial class TraceFindings
 
     public static bool IsFinding(JsonObject e) => (string?)e["state"] != "agree";
 
-    /// <summary>Who's next with this finding (D119): <c>ba</c> by default, including a code-confirmed or cant-tell one; <c>developer</c> for a page gap;
-    /// <c>closed</c> when code refuted it or nothing reaches it, kept and listed; <c>page-owner</c> when a person said the page is wrong; <c>decided</c> otherwise.</summary>
+    /// <summary>Every queue a finding can be in, in the order they're listed.</summary>
+    public static readonly string[] Queues = ["ba", "developer", "developer-confirm", "closed", "page-owner", "decided"];
+
+    /// <summary>Who's next with this finding (D119): <c>ba</c> by default, including one that stands, can't be told, or was sent back; <c>developer</c> for a page gap;
+    /// <c>developer-confirm</c> when the AI says refuted or unreachable, because code proved its quote exists and only a person can say it supports the verdict (D18);
+    /// <c>closed</c> once a person confirmed that, kept and listed; <c>page-owner</c> when a person said the page is wrong; <c>decided</c> otherwise.</summary>
     public static string GoesTo(JsonObject e) => (string?)e["decision"] switch
     {
         "page-wrong" => "page-owner",
         not null => "decided",
-        _ => (string?)e["verdict"] switch { "refuted" or "unreachable" => "closed", "page-gap" => "developer", _ => "ba" },
+        _ => ((string?)e["verdict"], ReviewHolds(e) ? (string?)e["review"] : null) switch
+        {
+            (_, "sent-back") => "ba",
+            ("refuted" or "unreachable", "confirmed") => "closed",
+            ("refuted" or "unreachable", _) => "developer-confirm",
+            ("page-gap", _) => "developer",
+            _ => "ba",
+        },
     };
 
-    /// <summary>A finding the code took apart, that nobody has decided: out of every list a person works from, and kept on file.</summary>
+    /// <summary>A finding a person agreed the code took apart, that nobody has decided: out of every list a person works from, and kept on file.
+    /// A verdict nobody has confirmed closes nothing, so it stays in impact answers, ticket bundles and drafts.</summary>
     public static bool Closed(JsonObject e) => GoesTo(e) == "closed";
 
-    /// <summary>The words a queue shows beside a finding. <c>stands</c> reads as code-confirmed, which is still only code read, never run.</summary>
-    static string Label(string? verdict) => verdict switch { null => "unverified", "stands" => "code-confirmed", _ => verdict };
+    /// <summary>Whether the disprove step's verdict is what took this finding away from the BA, as opposed to a person's decision or sending it back.</summary>
+    public static bool TakenOutByDisprove(JsonObject e) => GoesTo(e) is "developer" or "developer-confirm" or "closed";
+
+    /// <summary>The words a queue shows beside a finding. A verdict is the AI's reading: code found its quote, and nobody has said the quote supports it.</summary>
+    static string Label(JsonObject e)
+    {
+        var verdict = (string?)e["verdict"];
+        return (ReviewHolds(e) ? (string?)e["review"] : null) switch
+        {
+            "sent-back" => $"sent back to the BA: {(string?)e["review_note"]?["why"]}",
+            "confirmed" => $"{verdict}, confirmed by {(string?)e["review_note"]?["by"]}",
+            _ => verdict switch { null => "unverified", "cant-tell" => "cant-tell", _ => $"the AI's reading: {verdict}" },
+        };
+    }
+
+    public static bool ReviewHolds(JsonObject e) => (string?)e["review_hash"] == TraceFile.ReviewHash((string?)e["review"], e["review_note"] as JsonObject, (string?)e["disproof_hash"]);
+
+    /// <summary>A person's word on a verdict, from <c>trace confirm</c> and <c>trace send-back</c>, on the state module. Returns where the finding went.</summary>
+    /// <param name="to"><c>confirmed</c> or <c>sent-back</c>.</param>
+    /// <param name="who">From git, never typed.</param>
+    public static JsonObject Review(string root, string id, string to, string who, string? why)
+    {
+        using var _ = LinkRun.Lock(root);
+        var trace = TraceFile.Load(root);
+        var e = trace["entries"]!.AsArray().OfType<JsonObject>().FirstOrDefault(x => IsFinding(x) && ((string?)x["finding"] == id || (string?)x["id"] == id))
+            ?? throw new StangentException("not_found", $"No finding {id} in specs/trace.yaml.", ExitCodes.NotFound);
+        var now = GoesTo(e);
+        var allowed = to == "confirmed"
+            ? (string?)e["verdict"] is "refuted" or "unreachable" && now is "developer-confirm" or "ba"
+            : now is "developer-confirm" or "closed";
+        if (!allowed)
+            throw new StangentException("not_reviewable", $"{id} is with {now}{((string?)e["verdict"] is { } v ? $", verdict {v}" : "")}: only a refuted or unreachable verdict nobody has decided can be {to}.", ExitCodes.Usage);
+        var note = new JsonObject { ["by"] = who, ["why"] = why ?? (to == "confirmed" ? "the quote supports the verdict" : $"{who} sent it back") };
+        if (to == "confirmed" && DecidedOn(e, SpecIndex.Load(root)) is { } on) note["on"] = on;
+        WriteReview(root, e, to, note, StateActor.Person(who), why ?? (to == "confirmed" ? "confirmed by a person" : "sent back by a person"));
+        TraceFile.Save(root, trace);
+        return new JsonObject { ["finding"] = (string?)e["finding"], ["entry"] = (string?)e["id"], ["review"] = to, ["by"] = who, ["goesTo"] = GoesTo(e) };
+    }
+
+    static void WriteReview(string root, JsonObject e, string to, JsonObject note, StateActor who, string reason)
+    {
+        StateChanges.Apply(root, e, StateKinds.FindingReview, (string)e["id"]!, to, who, reason);
+        e["review_note"] = note;
+        e["review_hash"] = TraceFile.ReviewHash(to, note, (string?)e["disproof_hash"]);
+    }
+
+    /// <summary>A person's word no longer stands, so the verdict it covered mustn't take over again: the finding goes to the BA, saying why. It holds with the disprove step off, because nothing has to run for it.</summary>
+    public static void SendBack(string root, JsonObject e, StateActor who, string why)
+    {
+        if (e["verdict"] is null || (string?)e["review"] == "sent-back" && ReviewHolds(e)) return;
+        WriteReview(root, e, "sent-back", new JsonObject { ["why"] = why }, who, why);
+    }
+
+    /// <summary>Code drops a person's decision back, and the verdict underneath it doesn't get to decide instead.</summary>
+    public static void DropDecision(string root, JsonObject e, StateActor who, string reason)
+    {
+        var had = e["decision"] is not null;
+        StateChanges.Apply(root, e, StateKinds.TraceDecision, (string)e["id"]!, "undecided", who, reason);
+        if (had) SendBack(root, e, who, $"a person's decision was dropped because {reason}");
+    }
+
+    /// <summary>The verdict a review was about is moving, so a new verdict starts with nobody's word on it.</summary>
+    public static void ClearReview(string root, JsonObject e, StateActor who, string reason)
+    {
+        if (e["review"] is not null || e["review_note"] is not null || e["review_hash"] is not null)
+            StateChanges.Apply(root, e, StateKinds.FindingReview, (string)e["id"]!, "waiting", who, reason);
+    }
+
+    /// <summary>The hash of the page statement's text this entry rests on, or null when it rests on none (D118).</summary>
+    public static string? DecidedOn(JsonObject e, SpecIndex index) =>
+        (string?)e["page"]?["id"] is { } page && (string?)e["page"]?["statement"] is { } statement && index.Statement(page, statement) is { } found
+            ? TraceFile.QuoteHash((string)found["text"]!) : null;
 
     public static string LedgerFile(string root) => Path.Combine(root, "specs", "trace-ids.json");
 
@@ -192,6 +274,8 @@ public static partial class TraceFindings
         if ((e["verdict"] is not null || e["disproof"] is not null || e["disproof_hash"] is not null)
             && (string?)e["disproof_hash"] != TraceFile.DisproofHash((string?)e["verdict"], e["disproof"] as JsonObject))
             yield return $"{id}: its verdict isn't what code wrote; only `stangent fsd disprove` writes one, because it takes a finding out of a queue";
+        if ((e["review"] is not null || e["review_note"] is not null || e["review_hash"] is not null) && !ReviewHolds(e))
+            yield return $"{id}: its review isn't what code wrote; only `stangent trace confirm` and `trace send-back` write one, because it closes a finding";
         if (e["evidence"] is not JsonArray { Count: > 0 } evidence) { yield return $"{id}: a finding needs evidence, and code found nothing to cite"; yield break; }
         foreach (var record in refused ?? [])
             yield return $"{id}: evidence {record}: it isn't what code derives from the current inputs, and evidence is never typed; delete it and the next check writes what's true";
@@ -251,7 +335,8 @@ public static partial class TraceFindings
         ["id"] = (string?)e["finding"], ["entry"] = (string?)e["id"], ["state"] = (string?)e["state"], ["severity"] = (string?)e["severity"] ?? Severity.Ungraded,
         ["doc"] = (string?)e["fsd"]?["doc"], ["section"] = (string?)e["fsd"]?["section"], ["page"] = (string?)e["page"]?["id"], ["statement"] = (string?)e["page"]?["statement"],
         ["decision"] = (string?)e["decision"],
-        ["goesTo"] = GoesTo(e), ["verdict"] = (string?)e["verdict"] ?? "unverified", ["label"] = Label((string?)e["verdict"]),
+        ["goesTo"] = GoesTo(e), ["verdict"] = (string?)e["verdict"] ?? "unverified", ["label"] = Label(e),
+        ["review"] = (string?)e["review"], ["reviewBy"] = (string?)e["review_note"]?["by"], ["reviewWhy"] = (string?)e["review_note"]?["why"],
         ["why"] = (string?)e["disproof"]?["why"], ["quote"] = (string?)e["disproof"]?["quote"],
         ["at"] = (string?)e["disproof"]?["path"] is { } path ? $"{path}:{(int)e["disproof"]!["start"]!}-{(int)e["disproof"]!["end"]!}" : null,
         ["suggestedSeverity"] = (string?)e["disproof"]?["suggestedSeverity"],
@@ -261,7 +346,7 @@ public static partial class TraceFindings
     public static JsonObject Groups(IEnumerable<JsonObject> entries)
     {
         var findings = entries.Where(IsFinding).ToList();
-        return new JsonObject(new[] { "ba", "developer", "closed", "page-owner", "decided" }.Select(g => KeyValuePair.Create(g,
+        return new JsonObject(Queues.Select(g => KeyValuePair.Create(g,
             (JsonNode?)new JsonArray([.. findings.Where(e => GoesTo(e) == g).Select(e => (JsonNode?)((string?)e["finding"] ?? (string)e["id"]!))]))));
     }
 }

@@ -33,7 +33,7 @@ public static class StateKinds
     public const string Requirement = "requirement", Question = "question", TraceDecision = "trace-decision", FindingSeverity = "finding-severity",
         Proof = "proof", ProofConfirmation = "proof-confirmation", DraftPosted = "draft-posted",
         PageRun = "page-run", LinkRun = "link-run", ReqRun = "req-run", TicketMatch = "ticket-match", TicketStep = "ticket-step",
-        FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FindingVerdict = "finding-verdict", DisproveRun = "disprove-run";
+        FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FindingVerdict = "finding-verdict", FindingReview = "finding-review", DisproveRun = "disprove-run";
 
     // Committed state gets committed history; run state in .stangent/ gets history beside it, ignored the same way.
     const string RequirementHistory = "specs/requirements/history.jsonl", TraceHistory = "specs/trace-history.jsonl",
@@ -44,7 +44,7 @@ public static class StateKinds
     static StateRule[] Each(string[] who, string from, params string[] to) => [.. to.Select(t => By(who, from, t))];
 
     static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "page-wrong", "defer"];
-    static readonly string[] Verdicts = ["stands", "refuted", "page-gap", "unreachable", "cant-tell"];
+    public static readonly string[] Verdicts = ["stands", "refuted", "page-gap", "unreachable", "cant-tell"];
     static readonly string[] VerdictStates = ["unverified", .. Verdicts];
     static readonly string[] Outcomes = ["reproduced", "not-reproduced", "not-reproduced-flaky", "not-provable", "failed"];
 
@@ -77,6 +77,15 @@ public static class StateKinds
         new(FindingVerdict, TraceHistory, ["unverified"],
             [.. VerdictStates.SelectMany(from => VerdictStates.Where(to => to != from).Select(to => By(Code, from, to)))],
             Field: "verdict", NullState: "unverified", ClearedOnNull: ["disproof", "disproof_hash"]),
+
+        // D119 (fix round): a quote proves the text exists, not that it supports the verdict, so a person confirms a refuted or unreachable one, or sends it back to the BA.
+        // Code sends one back when a person's decision on it drops, and lets go of a review when the verdict it was about moves. An agent never does.
+        new(FindingReview, TraceHistory, ["waiting"],
+        [
+            .. Each(Person, "waiting", "confirmed"), By(Person, "sent-back", "confirmed"),
+            new StateRule("waiting", "sent-back", [StateActor.CodeKind, StateActor.PersonKind]), new StateRule("confirmed", "sent-back", [StateActor.CodeKind, StateActor.PersonKind]),
+            .. Each(Code, "confirmed", "waiting"), By(Code, "sent-back", "waiting"),
+        ], Field: "review", NullState: "waiting", ClearedOnNull: ["review_note", "review_hash"]),
 
         // The latest attempt's outcome: any attempt can follow any other, so the table holds the values and who moves them.
         new(Proof, TicketHistory, Outcomes,

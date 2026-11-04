@@ -57,7 +57,9 @@ public static class DisproveRun
 
         var errors = new List<string>();
         var text = File.Exists(Path.Combine(work, "output.json")) ? File.ReadAllText(Path.Combine(work, "output.json")) : "";
-        var output = PageChecks.Parse(text, errors) as JsonObject;
+        var parsed = PageChecks.Parse(text, errors);
+        var output = parsed as JsonObject;
+        if (errors.Count == 0 && output is null) errors.Add($"The answer has to be one JSON object, and this is {parsed?.GetValueKind().ToString().ToLowerInvariant() ?? "null"}.");
         if (errors.Count == 0) errors.AddRange(SchemaRegistry.Embedded.Validate(OutputSchema, output!.ToJsonString()).Select(e => $"Schema: {e}"));
         var code = (JsonNode.Parse(File.ReadAllText(Path.Combine(work, "code.json"))) as JsonArray ?? []).OfType<JsonObject>()
             .Select(c => new DisproveCode((string)c["symbol"]!, (string)c["path"]!, (int)c["start"]!, (int)c["end"]!, [.. c["lines"]!.AsArray().Select(l => (string)l!)])).ToList();
@@ -68,7 +70,8 @@ public static class DisproveRun
         var inputs = (string)state["inputs"]!;
         if (errors.Count > 0)
         {
-            var claimed = (string?)output?["verdict"];
+            // Kept only when it's a verdict at all: anything else would break the file's own schema, and the first error already says what came back.
+            var claimed = output?["verdict"] is JsonValue said && said.TryGetValue<string>(out var word) && StateKinds.Verdicts.Contains(word) ? word : null;
             Write(repo, entry, "cant-tell", Disproof(inputs, $"The answer failed the code check twice: {errors[0]}", model, claimed: claimed), "its answer failed the code check twice");
         }
         else
@@ -100,7 +103,11 @@ public static class DisproveRun
             errors.Add($"a {(string)output["verdict"]!} verdict needs path, start, end and quote");
             return null;
         }
-        int start = (int)output["start"]!, end = (int)output["end"]!;
+        if (output["start"] is not JsonValue from || !from.TryGetValue<int>(out var start) || output["end"] is not JsonValue to || !to.TryGetValue<int>(out var end))
+        {
+            errors.Add("start and end have to be line numbers shown in the code you were given");
+            return null;
+        }
         var at = code.FirstOrDefault(c => c.Path == path && c.Start <= start && end <= c.End && start <= end);
         if (at is null)
         {
@@ -180,6 +187,7 @@ public static class DisproveRun
         var trace = TraceFile.Load(repo.Root);
         var e = trace["entries"]!.AsArray().OfType<JsonObject>().FirstOrDefault(x => (string)x["id"]! == entry);
         if (e is null) return; // the links were judged again meanwhile: this finding is gone, and so is what the answer was about.
+        TraceFindings.ClearReview(repo.Root, e, Who, "there's a new verdict");
         StateChanges.Apply(repo.Root, e, StateKinds.FindingVerdict, entry, verdict, Who, reason);
         e["disproof"] = disproof;
         e["disproof_hash"] = TraceFile.DisproofHash(verdict, disproof);
@@ -192,6 +200,7 @@ public static class DisproveRun
         using var _ = LinkRun.Lock(root);
         var trace = TraceFile.Load(root);
         var e = trace["entries"]!.AsArray().OfType<JsonObject>().First(x => (string)x["id"]! == entry);
+        TraceFindings.ClearReview(root, e, Who, "what its verdict was judged on changed");
         StateChanges.Apply(root, e, StateKinds.FindingVerdict, entry, "unverified", Who, "what it was judged on changed");
         TraceFile.Save(root, trace);
     }

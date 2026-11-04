@@ -23,7 +23,7 @@ public sealed class SpecPaths(string root)
 
 /// <summary>The next thing a driver (the plugin command, CI, the benchmark) does for a page.</summary>
 public sealed record RunStep(string Status, string Action, string? Agent = null, string? Prompt = null, string? Output = null,
-    IReadOnlyList<string>? Errors = null, Usage? Usage = null)
+    IReadOnlyList<string>? Errors = null, Usage? Usage = null, string? Warning = null)
 {
     public JsonObject ToJson(string page)
     {
@@ -35,6 +35,7 @@ public sealed record RunStep(string Status, string Action, string? Agent = null,
         if (Agent is not null && SchemaOf(Agent) is { } schema) next["schema"] = schema;
         o["next"] = next;
         if (Errors is { Count: > 0 }) o["errors"] = new JsonArray([.. Errors.Select(e => (JsonNode)e)]);
+        if (Warning is not null) o["warning"] = Warning;
         return o;
     }
 
@@ -72,11 +73,18 @@ public static class PageRun
 
     public static RunStep Prepare(PageSet set, PageDef page, StangentRepo repo, bool retryFailed = false)
     {
+        // Pages don't depend on the links: a broken trace file costs its page-wrong marks, is said, and stops nothing.
+        var wrong = Staleness.ReportedWrong(repo.Root, out var problem).GetValueOrDefault(page.Id);
+        var step = Prepare(set, page, repo, retryFailed, wrong);
+        return problem is null ? step : step with { Warning = problem };
+    }
+
+    static RunStep Prepare(PageSet set, PageDef page, StangentRepo repo, bool retryFailed, List<JsonObject>? wrong)
+    {
         var paths = new SpecPaths(repo.Root);
         var previous = LoadJson(paths.PageJson(page)) as JsonObject;
         var bundle = Bundles.Build(set, page, previous);
         // A person said this page is wrong (D119): it runs again though its inputs didn't change.
-        var wrong = Staleness.ReportedWrong(repo.Root).GetValueOrDefault(page.Id);
         if (wrong is null && (string?)previous?["generated"]?["bundleHash"] == bundle.InputHash) return new RunStep("current", "none");
         var failed = Failed(paths);
         if (!retryFailed && failed.FirstOrDefault(f => (string?)f!["id"] == page.Id) is { } known && (string?)known["bundleHash"] == bundle.InputHash)
@@ -296,12 +304,12 @@ public static class PageRun
         Quotes.WriteAtomic(paths.PageJson(page), CanonicalJson.Serialize(record));
         var lines = PageLines.Build(record, set.Graph, SymbolLines.Lookup(set.Graph));
         PageLines.Write(paths.PageJson(page), lines);
-        Staleness.ClearReportedWrong(paths.Root, page.Id);
+        var traceProblem = Staleness.ClearReportedWrong(paths.Root, page.Id);
         Quotes.WriteAtomic(paths.PageMarkdown(page), PageRender.Markdown(record, id => set.Find(id) is { } p && p.Id == id ? p.Path : null, lines));
         ClearFailed(paths, page);
         Stage(paths, page, state, "done", "recorded");
         Save(work, state);
-        return new RunStep("recorded", "none");
+        return new RunStep("recorded", "none", Warning: traceProblem);
     }
 
     /// <summary>What a verifier's finding says when its statement went in the writer's fix: a number here could be another statement's.</summary>

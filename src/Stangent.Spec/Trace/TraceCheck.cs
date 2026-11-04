@@ -135,7 +135,7 @@ public static class TraceCheck
             if (!quotesMatch)
             {
                 stale.Add(id);
-                if (fix) StateChanges.Apply(root, e, StateKinds.TraceDecision, id, "undecided", StateActor.Code("stangent trace check"), "a quote no longer matches");
+                if (fix) TraceFindings.DropDecision(root, e, StateActor.Code("stangent trace check"), "a quote no longer matches");
             }
             else if (e["decision"] is null)
             {
@@ -152,8 +152,19 @@ public static class TraceCheck
                 {
                     changedIds.Add(id);
                     changed.Add(new JsonObject { ["entry"] = id, ["page"] = (string)page!["id"]!, ["statement"] = (string)page["statement"]!, ["was"] = (string?)e["decision"] });
-                    if (fix) StateChanges.Apply(root, e, StateKinds.TraceDecision, id, "undecided", StateActor.Code("stangent trace check"), "the statement it was decided on changed");
+                    if (fix) TraceFindings.DropDecision(root, e, StateActor.Code("stangent trace check"), "the statement it was decided on changed");
                 }
+            }
+
+            // A confirmation rests on the same words a decision does, so it drops the same way, and the finding goes back to the BA rather than staying closed.
+            if ((string?)e["review"] == "confirmed" && TraceFindings.ReviewHolds(e) && (!quotesMatch || DecidedOn(e, index) != (string?)e["review_note"]?["on"]))
+            {
+                if (fix)
+                {
+                    TraceFindings.SendBack(root, e, StateActor.Code("stangent trace check"), "a person's confirmation was dropped because the statement or quote it was made on changed");
+                    stamped = true;
+                }
+                else problems.Add($"{id}: the statement or quote changed after a person confirmed this verdict, so the confirmation must drop (run `stangent trace check --fix`)");
             }
 
             if (baseTrace is not null && (string?)e["decided_by"] is { } by && (!typedBefore.TryGetValue(id, out var before) || before != by)
@@ -173,10 +184,7 @@ public static class TraceCheck
         return Report(trace, problems, stale, undecided, retired, changed);
     }
 
-    /// <summary>The hash of the page statement's text this entry rests on, or null when it rests on none (D118).</summary>
-    static string? DecidedOn(JsonObject e, SpecIndex index) =>
-        (string?)e["page"]?["id"] is { } page && (string?)e["page"]?["statement"] is { } statement && index.Statement(page, statement) is { } found
-            ? TraceFile.QuoteHash((string)found["text"]!) : null;
+    static string? DecidedOn(JsonObject e, SpecIndex index) => TraceFindings.DecidedOn(e, index);
 
     /// <summary>Ties a decision made just now to the words it was made on, unless it's tied already.</summary>
     static bool TieDecision(JsonObject e, SpecIndex index)
@@ -196,7 +204,7 @@ public static class TraceCheck
             {
                 ["entries"] = entries.Count,
                 ["byState"] = new JsonObject(TraceFile.States.Select(s => KeyValuePair.Create(s, (JsonNode?)entries.Count(e => (string?)e["state"] == s)))),
-                ["undecided"] = entries.Count(e => e["decision"] is null),
+                ["undecided"] = entries.Count(e => e["decision"] is null && (!TraceFindings.IsFinding(e) || TraceFindings.GoesTo(e) == "ba")),
                 ["findings"] = entries.Count(TraceFindings.IsFinding),
                 ["bySeverity"] = new JsonObject(Severity.All.Select(s => KeyValuePair.Create(s, (JsonNode?)entries.Count(e => TraceFindings.IsFinding(e) && ((string?)e["severity"] ?? Severity.Ungraded) == s)))),
                 ["staleQuotes"] = stale.Count,
@@ -259,7 +267,13 @@ public static class TraceCheck
             // The person's edit is already in the file: this is where it's seen, checked and put in the history.
             if ((string?)e["decided_by"] != by || decision is null)
                 StateChanges.Move(root, StateKinds.TraceDecision, (string)e["id"]!, old, decision ?? "undecided", StateActor.Person(by), "merged in a PR");
-            if (decision is null) continue;
+            if (decision is null)
+            {
+                // A person took their decision away, so the verdict under it doesn't get to decide instead.
+                TraceFindings.SendBack(root, e, StateActor.Person(by), "a person's decision was removed in a PR");
+                tied = true;
+                continue;
+            }
             e["decided_by"] = by;
             n++;
         }

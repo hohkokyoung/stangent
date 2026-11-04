@@ -150,6 +150,15 @@ static class FsdCommands
         approve.SetAction(pr => Cli.Run(pr, "trace approve", ctx => new JsonObject { ["approved"] = TraceCheck.ApproveChapter(ctx.Repo.Root, pr.GetValue(docArg)!, pr.GetValue(chapterArg)!, TicketCommands.Who(ctx)) }));
         trace.Subcommands.Add(approve);
 
+        var findingArg = new Argument<string>("finding") { Description = "The finding's X- id, or its entry id." };
+        var whyOption = new Option<string?>("--why") { Description = "Why, in your words. It's kept beside your name." };
+        var confirm = new Command("confirm", "A person closes a finding the AI called refuted or unreachable, having read its quote at its lines (D119). Who comes from git.") { findingArg, whyOption };
+        confirm.SetAction(pr => Cli.Run(pr, "trace confirm", ctx => TraceFindings.Review(ctx.Repo.Root, pr.GetValue(findingArg)!, "confirmed", TicketCommands.Who(ctx), pr.GetValue(whyOption))));
+        trace.Subcommands.Add(confirm);
+        var sendBack = new Command("send-back", "A person sends a finding the AI called refuted or unreachable back to the BA's queue (D119). Who comes from git.") { findingArg, whyOption };
+        sendBack.SetAction(pr => Cli.Run(pr, "trace send-back", ctx => TraceFindings.Review(ctx.Repo.Root, pr.GetValue(findingArg)!, "sent-back", TicketCommands.Who(ctx), pr.GetValue(whyOption))));
+        trace.Subcommands.Add(sendBack);
+
         var byOption = new Option<string>("--by") { Description = "Who approved or merged the PR, from the code host (D24): CI passes it.", Required = true };
         var attribute = new Command("attribute", "After a merge: fill decided_by on every decision, and severity_by on every severity, the merged PR changed (D58, D118).") { baseOption, byOption };
         attribute.SetAction(pr => Cli.Run(pr, "trace attribute", ctx =>

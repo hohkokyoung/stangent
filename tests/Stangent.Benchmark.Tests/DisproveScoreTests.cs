@@ -82,7 +82,7 @@ public sealed class DisproveScoreTests : IDisposable
         Assert.Equal(2, (int)score["byVerdict"]!["page-gap"]!);
         Assert.Equal(1, (int)score["byVerdict"]!["unreachable"]!);
         Assert.Equal(0, (int)score["byVerdict"]!["unverified"]!);
-        Assert.Equal((3, 3, 2), ((int)score["byQueue"]!["ba"]!, (int)score["byQueue"]!["closed"]!, (int)score["byQueue"]!["developer"]!));
+        Assert.Equal((3, 3, 2, 0), ((int)score["byQueue"]!["ba"]!, (int)score["byQueue"]!["developer-confirm"]!, (int)score["byQueue"]!["developer"]!, (int)score["byQueue"]!["closed"]!));
 
         Assert.Equal((4, 3, 1), ((int)score["handChecked"]!["false"]!["checked"]!, (int)score["handChecked"]!["false"]!["leftTheQueue"]!, (int)score["handChecked"]!["false"]!["stillInTheQueue"]!));
         Assert.Equal((1, 0, 1), ((int)score["handChecked"]!["real"]!["checked"]!, (int)score["handChecked"]!["real"]!["leftTheQueue"]!, (int)score["handChecked"]!["real"]!["stillInTheQueue"]!));
@@ -91,6 +91,41 @@ public sealed class DisproveScoreTests : IDisposable
         Assert.False((bool)score["bars"]!["found27of30"]!);
         Assert.False((bool)score["bars"]!["falseAlarmsAtMost30Percent"]!);
         Assert.Equal(24, (int)score["before2c"]!["found"]!);
+    }
+
+    [Fact]
+    public void A_finding_a_person_decided_isnt_lost_and_one_waiting_on_a_developer_is()
+    {
+        var decided = Finding("gap", "1", "Alpha orders are checked every single day.", "page:/a", "refuted");
+        decided["decision"] = "code-wrong";
+        var pageWrong = Finding("conflict", "2", "Beta orders may wait for thirty days.", "page:/a", "refuted");
+        pageWrong["decision"] = "page-wrong";
+        var waiting = Finding("gap", "3", "Gamma orders always send one receipt.", "page:/a", "refuted");
+        var unplanted = Finding("gap", "4", "Delta orders are sent by carrier pigeon.", "page:/a", "unreachable");
+        var trace = TraceFile.Empty();
+        foreach (var e in new[] { decided, pageWrong, waiting, unplanted }) trace["entries"]!.AsArray().Add((JsonNode)e);
+        TraceFile.Save(root, trace);
+
+        var score = DisproveScore.Run(root, Key(), null);
+
+        Assert.Equal(3, (int)score["before"]!["found"]!["found"]!);
+        Assert.Equal(2, (int)score["after"]!["found"]!["overall"]!["found"]!);   // P1 and P2 stay: a person decided them
+        Assert.Equal(2, (int)score["after"]!["findings"]!);                      // the unplanted one is out of the queue, as a false alarm should be
+        var lost = score["plantedLost"]!.AsArray().Single()!;
+        Assert.Equal(("P3", "developer-confirm"), ((string)lost["item"]!, (string)lost["goesTo"]!));
+    }
+
+    [Fact]
+    public void A_finding_a_person_confirmed_closed_still_counts_as_the_steps_effect()
+    {
+        var closed = Finding("gap", "3", "Gamma orders always send one receipt.", "page:/a", "refuted");
+        var trace = TraceFile.Empty();
+        trace["entries"]!.AsArray().Add((JsonNode)closed);
+        TraceFile.Save(root, trace);
+        TraceFindings.Review(root, (string)closed["id"]!, "confirmed", "pat", null);
+
+        var lost = DisproveScore.Run(root, Key(), null)["plantedLost"]!.AsArray().Single()!;
+        Assert.Equal(("P3", "closed"), ((string)lost["item"]!, (string)lost["goesTo"]!));
     }
 
     [Fact]

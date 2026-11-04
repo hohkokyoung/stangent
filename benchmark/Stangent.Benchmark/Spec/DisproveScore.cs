@@ -5,7 +5,7 @@ namespace Stangent.Benchmark.Spec;
 
 /// <summary>
 /// The disprove step against the frozen key (D119): the findings before it, and what still reaches the BA after it, by <see cref="FsdScore"/>'s own
-/// rule, so nothing about the scoring moves. A finding the step closed or sent to developers isn't in front of the BA. The bars are 2c's, set before
+/// rule, so nothing about the scoring moves. A finding counts as gone only when the step took it away (<see cref="TraceFindings.TakenOutByDisprove"/>): waiting on a developer's confirmation, confirmed closed, or sent to developers. One a person decided is the person's doing, not the step's. The bars are 2c's, set before
 /// any run: at least 27 of 30 found, false alarms at or below 30%. Code only.
 /// </summary>
 public static class DisproveScore
@@ -15,7 +15,7 @@ public static class DisproveScore
     public static JsonObject Run(string root, string keyPath, string? handCheckPath)
     {
         var before = FsdScore.Run(root, keyPath, handCheckPath);
-        var after = FsdScore.Run(root, keyPath, handCheckPath, keep: e => TraceFindings.GoesTo(e) == "ba");
+        var after = FsdScore.Run(root, keyPath, handCheckPath, keep: e => !TraceFindings.TakenOutByDisprove(e));
         var doc = (string)before["doc"]!;
         var findings = TraceFile.Load(root)["entries"]!.AsArray().OfType<JsonObject>()
             .Where(TraceFindings.IsFinding).Where(e => e["fsd"] is null || (string?)e["fsd"]!["doc"] == doc).ToList();
@@ -23,7 +23,7 @@ public static class DisproveScore
         var handCheck = handCheckPath is not null && File.Exists(handCheckPath) ? JsonNode.Parse(File.ReadAllText(handCheckPath))!.AsObject() : null;
 
         // A planted item the step took out of the BA's queue: the worst thing it can do, so each is named.
-        var lost = before["items"]!.AsArray().OfType<JsonObject>().Where(i => (bool)i["found"]! && (string?)i["by"] is { } by && TraceFindings.GoesTo(byId[by]) != "ba")
+        var lost = before["items"]!.AsArray().OfType<JsonObject>().Where(i => (bool)i["found"]! && (string?)i["by"] is { } by && TraceFindings.TakenOutByDisprove(byId[by]))
             .Select(i => (JsonNode)new JsonObject
             {
                 ["item"] = i["id"]!.DeepClone(), ["kind"] = i["kind"]!.DeepClone(), ["entry"] = i["by"]!.DeepClone(),
@@ -38,8 +38,8 @@ public static class DisproveScore
             return new JsonObject
             {
                 ["checked"] = ids.Count,
-                ["leftTheQueue"] = ids.Count(id => TraceFindings.GoesTo(byId[id]) != "ba"),
-                ["stillInTheQueue"] = ids.Count(id => TraceFindings.GoesTo(byId[id]) == "ba"),
+                ["leftTheQueue"] = ids.Count(id => TraceFindings.TakenOutByDisprove(byId[id])),
+                ["stillInTheQueue"] = ids.Count(id => !TraceFindings.TakenOutByDisprove(byId[id])),
             };
         }
         var falseOnes = Hand("false");
@@ -66,7 +66,7 @@ public static class DisproveScore
             ["handChecked"] = new JsonObject { ["false"] = falseOnes, ["real"] = realOnes },
             ["byVerdict"] = new JsonObject(new[] { "unverified", "stands", "refuted", "page-gap", "unreachable", "cant-tell" }
                 .Select(v => KeyValuePair.Create(v, (JsonNode?)findings.Count(e => ((string?)e["verdict"] ?? "unverified") == v)))),
-            ["byQueue"] = new JsonObject(new[] { "ba", "developer", "closed", "page-owner", "decided" }
+            ["byQueue"] = new JsonObject(TraceFindings.Queues
                 .Select(q => KeyValuePair.Create(q, (JsonNode?)findings.Count(e => TraceFindings.GoesTo(e) == q)))),
             ["plantedLost"] = new JsonArray([.. lost]),
             ["bars"] = new JsonObject

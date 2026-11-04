@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Nodes;
+using Stangent.Core;
 using Stangent.Core.State;
 using Stangent.Graph.Impact;
 
@@ -17,12 +18,13 @@ public static class Staleness
     {
         var changedFiles = diff is null ? null : DiffMapper.ChangedLines(paths.Root, diff).Select(c => c.File).ToHashSet(StringComparer.Ordinal);
         // The FSD sections linked to each page (D55 step 1: the PR lists them with the stale pages).
-        var linked = Trace.TraceFile.Load(paths.Root)["entries"]!.AsArray().OfType<JsonObject>()
+        var entries = Entries(paths.Root, out var traceProblem);
+        var linked = entries
             .Where(e => e["fsd"] is JsonObject && (string?)e["page"]?["id"] is not null)
             .GroupBy(e => (string)e["page"]!["id"]!)
             .ToDictionary(g => g.Key, g => g.Select(e => (string)e["fsd"]!["section"]!).Distinct()
                 .OrderBy(Trace.TraceFile.SectionKey, StringComparer.Ordinal).ToList(), StringComparer.Ordinal);
-        var wrong = ReportedWrong(paths.Root);
+        var wrong = ReportedWrong(entries);
         var stale = new JsonArray();
         var fresh = new JsonArray();
         var current = 0;
@@ -56,17 +58,39 @@ public static class Staleness
                     removed.Add(new JsonObject { ["id"] = (string?)o["id"], ["path"] = paths.Relative(file) });
             }
 
-        return new JsonObject
+        var result = new JsonObject
         {
             ["commit"] = set.Commit,
             ["diff"] = diff,
             ["counts"] = new JsonObject { ["pages"] = set.Pages.Count, ["current"] = current, ["stale"] = stale.Count, ["new"] = fresh.Count, ["removed"] = removed.Count },
             ["stale"] = stale, ["new"] = fresh, ["removed"] = removed,
         };
+        if (traceProblem is not null) result["traceProblem"] = traceProblem;
+        return result;
     }
 
-    /// <summary>The entries marked <c>page-wrong</c>, by page (D119).</summary>
-    public static Dictionary<string, List<JsonObject>> ReportedWrong(string root) => Trace.TraceFile.Load(root)["entries"]!.AsArray().OfType<JsonObject>()
+    /// <summary>The entries of <c>specs/trace.yaml</c>, for the page steps. Pages don't depend on the links, so a broken file is said, in <paramref name="problem"/>, and never stops one.</summary>
+    static List<JsonObject> Entries(string root, out string? problem)
+    {
+        problem = null;
+        try
+        {
+            var entries = Trace.TraceFile.Load(root)["entries"]!.AsArray().OfType<JsonObject>().ToList();
+            // Reading what the page steps use, here, so a wrong shape is seen here too.
+            foreach (var e in entries) _ = ((string?)e["decision"], (string?)e["page"]?["id"], (string?)e["fsd"]?["section"]);
+            return entries;
+        }
+        catch (Exception e) when (e is StangentException or InvalidOperationException or NullReferenceException or InvalidCastException or ArgumentException or FormatException)
+        {
+            problem = $"specs/trace.yaml can't be read, so page-wrong marks and linked sections were left out: {e.Message} Run `stangent trace check`.";
+            return [];
+        }
+    }
+
+    /// <summary>The entries marked <c>page-wrong</c>, by page (D119). A broken trace file marks nothing, and says so in <paramref name="problem"/>.</summary>
+    public static Dictionary<string, List<JsonObject>> ReportedWrong(string root, out string? problem) => ReportedWrong(Entries(root, out problem));
+
+    static Dictionary<string, List<JsonObject>> ReportedWrong(List<JsonObject> entries) => entries
         .Where(e => (string?)e["decision"] == "page-wrong" && (string?)e["page"]?["id"] is not null)
         .GroupBy(e => (string)e["page"]!["id"]!).ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
 
@@ -80,16 +104,20 @@ public static class Staleness
         return sb.ToString();
     }
 
-    /// <summary>The page was written again, so what a person said about the old one has been dealt with: it goes back to them to look at.</summary>
-    public static void ClearReportedWrong(string root, string pageId)
+    /// <summary>The page was written again, so what a person said about the old one has been dealt with: it goes back to them to look at. Returns what stopped that, if the trace file can't be read:
+    /// the page is already paid for and recorded, and the mark stays until the file is fixed and the page runs again.</summary>
+    public static string? ClearReportedWrong(string root, string pageId)
     {
-        if (!File.Exists(Trace.TraceFile.PathIn(root))) return;
+        if (!File.Exists(Trace.TraceFile.PathIn(root))) return null;
         using var _ = Fsd.LinkRun.Lock(root);
+        Entries(root, out var problem);
+        if (problem is not null) return problem;
         var trace = Trace.TraceFile.Load(root);
         var marked = trace["entries"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["decision"] == "page-wrong" && (string?)e["page"]?["id"] == pageId).ToList();
         foreach (var e in marked)
-            StateChanges.Apply(root, e, StateKinds.TraceDecision, (string)e["id"]!, "undecided", StateActor.Code("stangent spec"), "the page was regenerated");
+            Trace.TraceFindings.DropDecision(root, e, StateActor.Code("stangent spec"), "the page was regenerated");
         if (marked.Count > 0) Trace.TraceFile.Save(root, trace);
+        return null;
     }
 
     static JsonObject Item(PageDef page, JsonObject? recorded)
@@ -104,6 +132,7 @@ public static class Staleness
     {
         var md = new StringBuilder();
         var c = report["counts"]!;
+        if ((string?)report["traceProblem"] is { } problem) md.Append($"**Warning:** {problem}\n\n");
         md.Append($"**Reference pages:** {c["stale"]} stale, {c["new"]} new, {c["removed"]} removed, {c["current"]} current");
         md.Append(" (code only, no AI; stale pages are regenerated when this merges)\n\n");
         void List(string key, string title)

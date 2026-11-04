@@ -20,7 +20,7 @@ public static class TraceFile
     public static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "page-wrong", "defer"];
 
     /// <summary>What a finding carries beyond its link (D118).</summary>
-    public static readonly string[] FindingFields = ["finding", "severity", "severity_by", "evidence", "evidence_hash", "verdict", "disproof", "disproof_hash"];
+    public static readonly string[] FindingFields = ["finding", "severity", "severity_by", "evidence", "evidence_hash", "verdict", "disproof", "disproof_hash", "review", "review_note", "review_hash"];
 
     public static string PathIn(string root) => Path.Combine(root, "specs", "trace.yaml");
 
@@ -91,6 +91,9 @@ public static class TraceFile
             if (e["verdict"] is not null) sb.Append($"    verdict: {S(e["verdict"])}\n");
             if (e["disproof"] is JsonObject disproof) sb.Append($"    disproof: {disproof.ToJsonString(Json)}\n");
             if (e["disproof_hash"] is not null) sb.Append($"    disproof_hash: {S(e["disproof_hash"])}\n");
+            if (e["review"] is not null) sb.Append($"    review: {S(e["review"])}\n");
+            if (e["review_note"] is JsonObject note) sb.Append($"    review_note: {note.ToJsonString(Json)}\n");
+            if (e["review_hash"] is not null) sb.Append($"    review_hash: {S(e["review_hash"])}\n");
         }
         return sb.ToString();
     }
@@ -140,4 +143,8 @@ public static class TraceFile
     /// <summary>A verdict as code wrote it (D119), so one typed by hand to clear a finding out of a queue is seen.</summary>
     public static string DisproofHash(string? verdict, JsonObject? disproof) =>
         CanonicalJson.Hash((verdict ?? "") + "\n" + (disproof is null ? "" : CanonicalJson.SerializeCompact(disproof)));
+
+    /// <summary>A review as code wrote it, on the verdict it was about, so one typed by hand or left over from an older verdict closes nothing.</summary>
+    public static string ReviewHash(string? review, JsonObject? note, string? disproofHash) =>
+        CanonicalJson.Hash((review ?? "") + "\n" + (note is null ? "" : CanonicalJson.SerializeCompact(note)) + "\n" + (disproofHash ?? ""));
 }
