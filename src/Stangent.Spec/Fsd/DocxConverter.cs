@@ -129,10 +129,18 @@ public static partial class DocxConverter
             if (main.WordprocessingCommentsPart?.Comments is { } comments) DocxReview.Accept(comments);
         }
 
+        int tocFieldDepth;
+
         public void Block(OpenXmlElement block)
         {
             switch (block)
             {
+                case SdtBlock sdt when IsTableOfContents(sdt):
+                    Mark("a table of contents left out", DocxReview.Words(sdt).Length, " words");
+                    break;
+                case Paragraph p when InTableOfContents(p):
+                    Mark("a table of contents left out", DocxReview.Words(p).Length, " words");
+                    break;
                 case SdtBlock sdt:
                     Placeholder(sdt);
                     foreach (var child in sdt.SdtContentBlock?.ChildElements ?? Enumerable.Empty<OpenXmlElement>()) Block(child);
@@ -205,6 +213,24 @@ public static partial class DocxConverter
         }
 
         /// <summary>A content control still showing its prompt ("Click here to enter text") has no content: the prompt isn't the document's.</summary>
+        // I.11: Word's table of contents is headings and page numbers again. Word saves it in a content control, or as a field
+        // running across paragraphs in the TOC styles. Text alone never decides: "Contents" is an ordinary word.
+        bool IsTableOfContents(SdtBlock sdt) => sdt.SdtProperties?.Descendants().Any(d => d.LocalName == "docPartGallery" && d.GetAttributes().Any(a => a.LocalName == "val" && a.Value == "Table of Contents")) == true;
+
+        bool InTableOfContents(Paragraph p)
+        {
+            var style = p.ParagraphProperties?.ParagraphStyleId?.Val?.Value ?? "";
+            var opensField = p.Descendants<FieldCode>().Any(f => DocxReview.Words(f.Text).FirstOrDefault()?.Equals("TOC", StringComparison.OrdinalIgnoreCase) == true);
+            if (tocFieldDepth == 0 && !opensField) return style.StartsWith("TOC", StringComparison.OrdinalIgnoreCase) && (style.Length == 4 && char.IsDigit(style[3]) || style.Equals("TOCHeading", StringComparison.OrdinalIgnoreCase));
+            foreach (var mark in p.Descendants<FieldChar>())
+            {
+                if (mark.FieldCharType?.Value == FieldCharValues.Begin) tocFieldDepth++;
+                else if (mark.FieldCharType?.Value == FieldCharValues.End) tocFieldDepth--;
+            }
+            tocFieldDepth = Math.Max(tocFieldDepth, 0);
+            return true;
+        }
+
         void Placeholder(SdtElement sdt)
         {
             if (sdt.SdtProperties?.ChildElements.Any(c => c.LocalName == "showingPlcHdr") != true) return;

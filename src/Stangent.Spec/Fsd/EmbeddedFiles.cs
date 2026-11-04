@@ -284,6 +284,9 @@ public static partial class EmbeddedFiles
     }
 
     /// <summary>The record <c>document.json</c> holds, its id and section's permanent id still to come.</summary>
+    /// <summary>I.7, D16: a client's file as it came, at any depth. It goes to the archive; what it came to stays in the repo.</summary>
+    public static bool IsOriginal(AttachmentOutput o) => o.Path.StartsWith("original/", StringComparison.Ordinal) || o.Path.Contains("/original/", StringComparison.Ordinal);
+
     public static JsonObject Json(AttachmentRecord r, int attachmentChars)
     {
         var o = new JsonObject
@@ -307,7 +310,7 @@ public static partial class EmbeddedFiles
     public static void Write(string folder, AttachmentRecord record)
     {
         var root = Path.GetFullPath(folder) + Path.DirectorySeparatorChar;
-        foreach (var output in record.Outputs)
+        foreach (var output in record.Outputs.Where(o => !IsOriginal(o)))
         {
             var target = Path.GetFullPath(Path.Combine(root, output.Path));
             if (!target.StartsWith(root, StringComparison.Ordinal)) throw new InvalidOperationException($"An attachment's file {output.Path} would land outside its folder (a stangent bug).");

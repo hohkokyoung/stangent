@@ -412,3 +412,51 @@ public class FsdDocxTests
         Assert.Equal(["real.spec.ts"], AppSession.RelatedSpecs(temp.Repo, bundle));
     }
 }
+
+/// <summary>I.11: Word's table of contents is a list of headings and page numbers, not the document's text.</summary>
+public sealed class WordTableOfContentsTests
+{
+    const string Heading = """<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Rules</w:t></w:r></w:p>""";
+    const string Body = """<w:p><w:r><w:t>Orders over fifty need approval.</w:t></w:r></w:p>""";
+    const string Toc = """
+        <w:p><w:pPr><w:pStyle w:val="TOCHeading"/></w:pPr><w:r><w:t>Contents</w:t></w:r></w:p>
+        <w:p><w:pPr><w:pStyle w:val="TOC1"/></w:pPr>
+          <w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> TOC \o "1-3" \h </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>
+          <w:hyperlink w:anchor="_Toc1"><w:r><w:t>Rules</w:t></w:r><w:r><w:tab/></w:r>
+            <w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> PAGEREF _Toc1 \h </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>3</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>
+          </w:hyperlink>
+        </w:p>
+        <w:p><w:pPr><w:pStyle w:val="TOC2"/></w:pPr><w:hyperlink w:anchor="_Toc2"><w:r><w:t>More rules</w:t></w:r><w:r><w:tab/></w:r><w:r><w:t>4</w:t></w:r></w:hyperlink></w:p>
+        <w:p><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>
+        """;
+    const string Styles = """
+        <w:style w:type="paragraph" w:styleId="TOC1"><w:name w:val="toc 1"/></w:style>
+        <w:style w:type="paragraph" w:styleId="TOC2"><w:name w:val="toc 2"/></w:style>
+        <w:style w:type="paragraph" w:styleId="TOCHeading"><w:name w:val="TOC Heading"/></w:style>
+        """;
+
+    static Stangent.Spec.Fsd.ConvertedDocument Convert(string body) => Stangent.Spec.Fsd.DocxConverter.Convert(FsdDocxTests.Docx(body, styles: Styles));
+
+    static void AssertRemoved(Stangent.Spec.Fsd.ConvertedDocument doc)
+    {
+        Assert.DoesNotContain("Contents", doc.Markdown);
+        Assert.DoesNotContain("More rules", doc.Markdown);
+        Assert.DoesNotContain("_Toc", doc.Markdown);
+        Assert.Contains("Orders over fifty need approval.", doc.Markdown);
+        Assert.Equal("Rules", Assert.Single(doc.Sections).Title);
+    }
+
+    [Fact]
+    public void A_field_table_of_contents_is_removed() => AssertRemoved(Convert(Toc + Heading + Body));
+
+    [Fact]
+    public void One_in_a_content_control_as_Word_saves_it_is_removed() => AssertRemoved(Convert(
+        $"""<w:sdt><w:sdtPr><w:docPartObj><w:docPartGallery w:val="Table of Contents"/><w:docPartUnique/></w:docPartObj></w:sdtPr><w:sdtContent>{Toc}</w:sdtContent></w:sdt>""" + Heading + Body));
+
+    [Fact]
+    public void Text_in_no_such_style_or_field_is_kept()
+    {
+        var doc = Convert(Heading + Body + """<w:p><w:r><w:t>Contents of the box are listed.</w:t></w:r></w:p>""");
+        Assert.Contains("Contents of the box are listed.", doc.Markdown);
+    }
+}

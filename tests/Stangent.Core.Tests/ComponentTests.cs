@@ -89,7 +89,7 @@ public class ComponentTests
     {
         var c = new StangentConfig();
         Assert.All(StangentComponents.All, x => Assert.Equal(x.OnByDefault, StangentComponents.IsOn(c, x.Name)));
-        Assert.Equal(["attachments-in-checks", "disprove", "findings", "first-import-approval", "group-sections", "judge-finer-verdicts", "spec-ask", "table-facts", "ticket-excel-text"], StangentComponents.All.Where(x => !x.OnByDefault).Select(x => x.Name).Order());
+        Assert.Equal(["attachment-home", "attachments-in-checks", "disprove", "findings", "first-import-approval", "group-sections", "judge-finer-verdicts", "spec-ask", "table-facts", "ticket-excel-text"], StangentComponents.All.Where(x => !x.OnByDefault).Select(x => x.Name).Order());
     }
 
     [Fact]

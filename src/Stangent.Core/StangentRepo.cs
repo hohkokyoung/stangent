@@ -99,6 +99,8 @@ public sealed class StangentConfig
         public int ExportMaxLines { get; set; } = 1500;
         /// <summary>A section's attachments in the link judge's and the disprove step's bundles, and a quote from one accepted (D123). Off by default: with it off no bundle or hash changes.</summary>
         public bool AttachmentsInChecks { get; set; }
+        /// <summary>Files with no place in a document's text get a section of their own at its end (I.8, D126). Off by default: on, such a document has one more section, so its text and sections change.</summary>
+        public bool AttachmentHome { get; set; }
         /// <summary>With <see cref="AttachmentsInChecks"/> on, an attachment holding more text than this stays out of the bundle and reads "not checked" (D123). A stated setting, not a measured one.</summary>
         public int AttachmentChars { get; set; } = 40000;
         public ExcelConfig Excel { get; set; } = new();

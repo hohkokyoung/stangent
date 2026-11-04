@@ -133,6 +133,7 @@ public static class FsdSectionDiff
                     })]),
                 });
         }
+        MarkSplits(entries);
         return entries;
     }
 
@@ -162,6 +163,26 @@ public static class FsdSectionDiff
         [.. left.Where(s => s.Path == section.Path && shared.All(c => c.Other != s))];
 
     /// <summary>Each outcome's count. <c>doubtful</c> is what's still open, so it reaches zero; <c>numberChanged</c> counts across the outcomes.</summary>
+    /// <summary>
+    /// I.5: one section of the current version whose sentences went to two or more sections no other section claims. Stays doubtful, since which part keeps the
+    /// id is a person's call and links rest on it, but it reads as what it is. A sentence is the same test the doubtful ones pass, so there's no score here.
+    /// </summary>
+    static void MarkSplits(List<JsonObject> entries)
+    {
+        var parts = entries.Where(e => (string)e["kind"]! == "doubtful" && (string?)e["side"] == "candidate").ToDictionary(e => (string)e["to"]!, StringComparer.Ordinal);
+        foreach (var old in entries.Where(e => (string)e["kind"]! == "doubtful" && (string?)e["side"] == "current"))
+        {
+            var into = old["candidates"]!.AsArray().OfType<JsonObject>().Where(c => c["sentence"] is not null && (bool)c["alreadyMatched"]! == false)
+                .Select(c => (string)c["to"]!).Distinct(StringComparer.Ordinal).ToList();
+            if (into.Count < 2) continue;
+            var onlyFromThis = into.All(to => parts.TryGetValue(to, out var part) && part["candidates"]!.AsArray().OfType<JsonObject>()
+                .Where(c => c["sentence"] is not null).All(c => (string?)c["permanentId"] == (string?)old["permanentId"]));
+            if (!onlyFromThis) continue;
+            old["splitInto"] = new JsonArray([.. into.Select(t => (JsonNode)t)]);
+            foreach (var to in into) parts[to]["splitFrom"] = (string?)old["permanentId"];
+        }
+    }
+
     public static JsonObject Counts(IEnumerable<JsonObject> entries)
     {
         var list = entries.ToList();
@@ -173,6 +194,8 @@ public static class FsdSectionDiff
             ["added"] = Kind("added"), ["removed"] = Kind("removed"),
             ["doubtful"] = list.Count(e => (string)e["kind"]! == "doubtful" && (string?)e["state"] == "doubtful"),
             ["settled"] = list.Count(e => (string)e["kind"]! == "doubtful" && (string?)e["state"] != "doubtful"),
+            // Of the doubtful: sections that came apart, counted once each, on the current version's side.
+            ["split"] = list.Count(e => e["splitInto"] is not null && (string?)e["state"] == "doubtful"),
             ["numberChanged"] = list.Count(e => e["numberChanged"] is not null),
         };
     }
@@ -187,7 +210,14 @@ public static class FsdSectionDiff
         var sb = new StringBuilder($"# Section diff: {doc}\n\n");
         sb.Append($"Current version `{((string)diff["from"]!)[..12]}`, candidate `{((string)diff["to"]!)[..12]}`. The current version keeps serving until `stangent fsd promote {doc}`.\n\n");
         sb.Append("| Outcome | Sections |\n|---|---|\n");
-        foreach (var name in new[] { "unchanged", "moved", "renamed", "modified", "added", "removed", "doubtful", "settled", "numberChanged" }) sb.Append($"| {name} | {diff["counts"]![name]} |\n");
+        foreach (var name in new[] { "unchanged", "moved", "renamed", "modified", "added", "removed", "doubtful", "split", "settled", "numberChanged" }) sb.Append($"| {name} | {diff["counts"]![name]} |\n");
+        var splits = entries.Where(e => e["splitInto"] is not null && (string?)e["state"] == "doubtful").ToList();
+        if (splits.Count > 0)
+        {
+            sb.Append("\n## Split: a person decides\n\nOne section's sentences are now in several, and no other section claims them. At most one part can keep the id, and the links with it. They're in the doubtful count, and listed there with what they share.\n\n");
+            foreach (var e in splits)
+                sb.Append($"- `{(string)e["from"]!}` {(string)e["title"]!} ({(string)e["permanentId"]!}) became {string.Join(", ", e["splitInto"]!.AsArray().Select(t => $"`{(string)t!}`"))}\n");
+        }
         var open = entries.Where(e => (string)e["kind"]! == "doubtful").ToList();
         if (open.Count > 0)
         {

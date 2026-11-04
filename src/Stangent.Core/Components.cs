@@ -49,6 +49,7 @@ public static class StangentComponents
         new("agree-checker", "The fresh check of each agree link", "components.agree-checker", true, Links, ["ai"]),
         new("requirements-links", "Judging by requirement when a section's are built", "components.requirements-links", true, Links, []),
         new("first-import-approval", "A person approves a document's first import before anything reads it", "components.first-import-approval", false, ["fsd import", "fsd approve"], []),
+        new("attachment-home", "A section of its own for files with no place in a document's text, such as those attached to a PDF", "fsd.attachmentHome", false, ["fsd import", "fsd reread"], []),
         new("attachments-in-checks", "A section's attachments in the link judge's and disprove bundles, and quotes from them accepted", "fsd.attachmentsInChecks", false, [.. Links, "fsd disprove prepare", "fsd disprove check", "fsd disprove estimate", "fsd promote"], []),
         new("findings", "Gap, conflict and undocumented findings", "fsd.findings", false, [.. Links, "fsd undocumented", "trace check", "ticket bundle", "ticket draft", "fsd promote"], []),
         new("disprove", "A second agent tries to refute each finding", "fsd.disprove", false, ["fsd disprove prepare", "fsd disprove check", "fsd disprove estimate"], ["ai", "findings"]),
@@ -96,6 +97,7 @@ public static class StangentComponents
                 case "findings": config.Fsd.Findings = on; break;
                 case "disprove": config.Fsd.Disprove = on; break;
                 case "attachments-in-checks": config.Fsd.AttachmentsInChecks = on; break;
+                case "attachment-home": config.Fsd.AttachmentHome = on; break;
                 case "table-facts": config.Fsd.CompareTables = on; break;
                 case "judge-finer-verdicts": config.Fsd.JudgeFinerVerdicts = on; break;
                 case "group-sections": config.Fsd.GroupSections = on; break;
@@ -112,6 +114,7 @@ public static class StangentComponents
         "findings" => config.Fsd.Findings,
         "disprove" => config.Fsd.Disprove,
         "attachments-in-checks" => config.Fsd.AttachmentsInChecks,
+        "attachment-home" => config.Fsd.AttachmentHome,
         "table-facts" => config.Fsd.CompareTables,
         "judge-finer-verdicts" => config.Fsd.JudgeFinerVerdicts,
         "group-sections" => config.Fsd.GroupSections,

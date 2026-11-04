@@ -53,6 +53,7 @@ components: { page-verifier: false, git-history: false, detector-config-keys: fa
 | `agree-checker` | `components.` | on | Each agree link is recorded unchecked with a note, and the run has `agreeChecker: off`. |
 | `requirements-links` | `components.` | on | The section's sentences are judged, as with no requirements built. |
 | `first-import-approval` | `components.` | off | A first import goes straight in. When it's on, it waits until `fsd approve` (D122). |
+| `attachment-home` | `fsd.attachmentHome` | off | A file with no place in a document's text, such as one attached to a PDF, has no section, and no link or check reaches it. On, those files get a section at the end, which changes that document's text and sections (I.8). |
 | `attachments-in-checks` | `fsd.attachmentsInChecks` | off | A section's attachments stay out of every bundle and hash, and a quote from one is refused (D123). |
 | `ticket-excel-text` | `components.` | off | A ticket's workbook, zip or a file inside its attachment is only saved under `converted/`; `ticket.json`, and so every ticket hash, is what it was (D123). |
 | `table-facts` | `fsd.compareTables` | off | `graph build` reads no enums and removes any on file; `fsd compare-tables` writes nothing and says `compared: false` (D124). |

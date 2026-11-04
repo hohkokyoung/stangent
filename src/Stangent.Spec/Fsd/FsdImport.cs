@@ -50,10 +50,11 @@ public static class FsdImport
         }
 
         var import = ImportPipeline.Run(format, bytes, options);
-        var converted = import.Document;
+        var converted = AttachmentHome.Apply(import.Document, StangentComponents.IsOn(repo.Config, AttachmentHome.Component));
         var labels = LabelRecord(repo.Root, import.Labels, null);
         var archivedPath = ArchiveOriginal(repo, archive, id, file, bytes, hash);
         var doc = Document(id, file, converted, archive.Name, archivedPath, hash, options.AttachmentChars);
+        ArchiveEmbedded(repo, archive, id, converted, doc);
         if (labels is not null) doc["labels"] = labels;
         var archived = new JsonObject { ["name"] = archive.Name, ["path"] = archivedPath };
         if (current is not null)
@@ -147,8 +148,9 @@ public static class FsdImport
         var options = ImportOptions.From(repo.Config, flat, accepted, allowed);
         format.CheckOptions(options);
         var import = ImportPipeline.Run(format, bytes, options);
-        var converted = import.Document;
+        var converted = AttachmentHome.Apply(import.Document, StangentComponents.IsOn(repo.Config, AttachmentHome.Component));
         var doc = Document(id, fileName, converted, archive.Name, (string)original["path"]!, hash, options.AttachmentChars);
+        ArchiveEmbedded(repo, archive, id, converted, doc);
         doc["title"] = current["title"]?.DeepClone();
         if (LabelRecord(repo.Root, import.Labels, current) is { } labels) doc["labels"] = labels;
         var archived = new JsonObject { ["name"] = archive.Name, ["path"] = (string)original["path"]! };
@@ -236,10 +238,26 @@ public static class FsdImport
     }
 
     /// <summary>Copies the original into the archive as <c>&lt;doc-id&gt;/&lt;hash 12&gt;-&lt;file name&gt;</c>; a git archive also commits it.</summary>
-    static string ArchiveOriginal(StangentRepo repo, StangentConfig.ArchiveConfig archive, string id, string file, byte[] bytes, string hash)
+    static string ArchiveOriginal(StangentRepo repo, StangentConfig.ArchiveConfig archive, string id, string file, byte[] bytes, string hash) =>
+        ToArchive(repo, archive, $"{id}/{hash[..12]}-{Path.GetFileName(file)}", bytes);
+
+    /// <summary>I.7: an embedded file as it came goes to the archive under its own hash, and its record says where. The record's hash and path are what they were, so nothing that reads them moves.</summary>
+    static void ArchiveEmbedded(StangentRepo repo, StangentConfig.ArchiveConfig archive, string id, ConvertedDocument converted, JsonObject doc)
+    {
+        var records = (doc["attachments"]?.AsArray() ?? []).OfType<JsonObject>().ToList();
+        for (var i = 0; i < converted.Attachments.Count; i++)
+            foreach (var output in converted.Attachments[i].Outputs.Where(EmbeddedFiles.IsOriginal))
+            {
+                var hash = Convert.ToHexStringLower(SHA256.HashData(output.Bytes));
+                var rel = ToArchive(repo, archive, $"{id}/attachments/{hash[..12]}-{Path.GetFileName(output.Path)}", output.Bytes);
+                var file = records[i]["files"]!.AsArray().OfType<JsonObject>().First(f => (string?)f["file"] == output.Path);
+                file["archived"] = rel;
+            }
+    }
+
+    static string ToArchive(StangentRepo repo, StangentConfig.ArchiveConfig archive, string rel, byte[] bytes)
     {
         var root = Path.GetFullPath(Path.Combine(repo.Root, archive.Path));
-        var rel = $"{id}/{hash[..12]}-{Path.GetFileName(file)}";
         var target = Path.Combine(root, rel);
         if (!File.Exists(target))
         {

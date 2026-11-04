@@ -80,7 +80,10 @@ public sealed class EmbeddedFilesTests : IDisposable
         var attachment = doc["attachments"]![0]!;
         Assert.Equal(("A-0001", "S-0001", "Rules", "excel", "converted"), ((string)attachment["id"]!, (string)attachment["section"]!, (string)attachment["sectionNumber"]!, (string)attachment["kind"]!, (string)attachment["reading"]!));
         var folder = FsdAttachments.Folder(DocDir, "A-0001");
-        Assert.Equal(workbook, File.ReadAllBytes(Path.Combine(folder, "original", (string)attachment["fileName"]!)));
+        // I.7, D16: as it came, it's in the archive and not the repo; its record says where, and what it came to stays.
+        Assert.False(Directory.Exists(Path.Combine(folder, "original")));
+        var original = attachment["files"]!.AsArray().Single(f => (string)f!["role"]! == "original")!;
+        Assert.Equal(workbook, File.ReadAllBytes(Path.Combine(archive.Root, (string)original["archived"]!)));
         // Line N of the CSV is row N of the sheet, and a comma in a cell is quoted.
         Assert.Equal("Tier,\"Fee, in EUR\"\n\nGold,12\n", File.ReadAllText(Path.Combine(folder, "rates.csv")));
         Assert.False(File.Exists(Path.Combine(folder, "back.csv")));
@@ -355,6 +358,49 @@ public sealed class EmbeddedFilesTests : IDisposable
         Assert.Equal(("rates.bin", (string?)null, "kept"), (a.FileName, a.Section, a.Status));
         Assert.Equal([1, 2, 3], a.Outputs.Single().Bytes);
         Assert.Contains(d.Problems, p => p.StartsWith("attachment \"rates.bin\" with no section", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Off_a_file_attached_to_a_PDF_has_no_section_and_the_document_is_as_it_was()
+    {
+        var d = ImportPipeline.Run(ImportPipeline.ForFile("a.pdf")!, PdfWithFile("rates.bin", [1, 2, 3]), new(Flat: true)).Document;
+        var same = AttachmentHome.Apply(d, on: false);
+        Assert.Same(d, same);
+        Assert.Null(Assert.Single(d.Attachments).Section);
+    }
+
+    [Fact]
+    public void On_it_gets_a_section_of_its_own_at_the_end_and_flat_it_goes_in_the_one_section()
+    {
+        var pdf = PdfWithFile("rates.bin", [1, 2, 3]);
+        var flat = ImportPipeline.Run(ImportPipeline.ForFile("a.pdf")!, pdf, new(Flat: true)).Document;
+        // A hand-written PDF can't have bookmarks here, so the same file and a numbered section as a bookmarked PDF would give.
+        var d = flat with { Markdown = "# 1 Rules\n\nText.\n", Sections = [new FsdSection("1", "number", "Rules", 1, null, "Text.", 1)] };
+        var on = AttachmentHome.Apply(d, on: true);
+        Assert.Equal("2", on.Sections[^1].Id);
+        Assert.Equal(d.Sections.Count + 1, on.Sections.Count);
+        var home = on.Sections[^1];
+        Assert.Equal(AttachmentHome.Title, home.Title);
+        Assert.Contains("- rates.bin", home.Text);
+        Assert.Equal(home.Id, Assert.Single(on.Attachments).Section);
+        Assert.StartsWith(d.Markdown.TrimEnd('\n'), on.Markdown);
+        Assert.Equal($"# {AttachmentHome.Title}", on.Markdown.Split('\n')[home.Line - 1]);
+
+        var flatOn = AttachmentHome.Apply(flat, on: true);
+        Assert.Equal(flat.Sections.Count, flatOn.Sections.Count);
+        Assert.Equal(FsdSections.FlatId, Assert.Single(flatOn.Attachments).Section);
+    }
+
+    [Fact]
+    public void With_the_switch_on_an_import_of_it_records_a_section_and_a_home_for_the_file()
+    {
+        using var on = new TempRepo($"version: 1\ncomponents: {{ attachment-home: true, first-import-approval: false }}\nfsd: {{ archive: {{ name: a, path: '{archive.Root}', git: false }} }}\n");
+        var file = Path.Combine(on.Root, "a.pdf");
+        File.WriteAllBytes(file, PdfWithFile("rates.bin", [1, 2, 3]));
+        FsdImport.Import(on.Repo, file, "fsd", flat: true);
+        var doc = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(on.Root, "specs/fsd/fsd/document.json")))!;
+        Assert.NotNull(doc["attachments"]![0]!["section"]);
+        Assert.NotNull(doc["sections"]![0]!["attachments"]);
     }
 
     /// <summary>A one-page PDF, written by hand, as PdfPig's builder can't attach a file.</summary>

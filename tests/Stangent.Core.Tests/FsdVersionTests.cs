@@ -893,3 +893,59 @@ public sealed class FsdVersionTests : IDisposable
         Assert.Equal(7, (int)counts["numberChanged"]!);
     }
 }
+
+/// <summary>I.5: a split as its own outcome, on the diff alone.</summary>
+public sealed class SectionSplitTests
+{
+    static JsonArray Sections(params (string Id, string Perm, string Title, string Text)[] list) => new([.. list.Select(s => (JsonNode)new JsonObject
+    {
+        ["id"] = s.Id, ["idKind"] = "number", ["permanentId"] = s.Perm, ["title"] = s.Title, ["level"] = 1, ["line"] = 1, ["text"] = s.Text, ["textHash"] = "h",
+    })]);
+
+    const string One = "The first long sentence about refunds goes here.";
+    const string Two = "The second long sentence about shipping goes here.";
+    const string Other = "A third long sentence about tax goes over here.";
+
+    static JsonArray Before => Sections(("1", "S-0001", "Orders", $"{One} {Two}"), ("2", "S-0002", "Tax", Other));
+
+    [Fact]
+    public void One_section_going_to_two_that_nothing_else_claims_is_a_split_and_stays_a_persons_call()
+    {
+        var entries = FsdSectionDiff.Compare(Before, Sections(("1", "", "Refunds", One), ("2", "", "Shipping", Two), ("3", "", "Tax", Other)));
+        var old = entries.Single(e => (string?)e["permanentId"] == "S-0001" && (string?)e["side"] == "current");
+        Assert.Equal("doubtful", (string)old["kind"]!);
+        Assert.Equal(["1", "2"], old["splitInto"]!.AsArray().Select(t => (string)t!));
+        Assert.All(entries.Where(e => (string?)e["side"] == "candidate"), e => Assert.Equal("S-0001", (string)e["splitFrom"]!));
+
+        foreach (var e in entries.Where(e => (string)e["kind"]! == "doubtful")) e["state"] = "doubtful";
+        var counts = FsdSectionDiff.Counts(entries);
+        Assert.Equal(1, (int)counts["split"]!);
+        Assert.Equal(3, (int)counts["doubtful"]!);
+        var diff = new JsonObject { ["doc"] = "d", ["from"] = new string('a', 40), ["to"] = new string('b', 40), ["counts"] = counts, ["sections"] = new JsonArray([.. entries]) };
+        var md = FsdSectionDiff.Markdown(diff);
+        Assert.Contains("| split | 1 |", md);
+        Assert.Contains("## Split: a person decides", md);
+        Assert.Contains("became `1`, `2`", md);
+    }
+
+    [Fact]
+    public void A_part_that_also_shares_with_another_old_section_is_only_doubtful()
+    {
+        var entries = FsdSectionDiff.Compare(Before, Sections(("1", "", "Refunds", One), ("2", "", "Shipping", $"{Two} {Other}"), ("3", "", "Tax two", "Nothing shared at all in this one.")));
+        Assert.DoesNotContain(entries, e => e["splitInto"] is not null || e["splitFrom"] is not null);
+    }
+
+    [Fact]
+    public void A_section_with_one_shared_sentence_is_only_doubtful()
+    {
+        var entries = FsdSectionDiff.Compare(Before, Sections(("1", "", "Refunds", One), ("2", "", "Tax", Other)));
+        Assert.DoesNotContain(entries, e => e["splitInto"] is not null || e["splitFrom"] is not null);
+    }
+
+    [Fact]
+    public void A_new_title_on_the_same_words_under_the_same_parent_was_already_its_own_outcome()
+    {
+        var entries = FsdSectionDiff.Compare(Before, Sections(("1", "", "Orders renamed", $"{One} {Two}"), ("2", "", "Tax", Other)));
+        Assert.Equal("renamed", (string)entries.Single(e => (string?)e["to"] == "1")["kind"]!);
+    }
+}

@@ -445,6 +445,10 @@
                     "kept"
                   ]
                 },
+                "archived": {
+                  "description": "Where the file as it came sits in the document's archive (I.7, D16). An older document kept it in the repo at `file`.",
+                  "type": "string"
+                },
                 "sheet": {
                   "type": "string"
                 },
