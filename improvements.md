@@ -261,6 +261,114 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
 - ✅ E.3 · Run one chapter and see its cost before the whole document.  
   *`spec-run.sh --chapter <n>` and `fsd disprove estimate --chapter <n>` (D122). The estimate covers the disprove stage only; nothing estimates the link judge.*
 
+## 9. The owner's bulk decisions (2026-11-04, D125)
+
+Marked down, not built. Numbers are the ones in the owner's list. A ☑️ with a test note is taken in and stays off until that test.
+
+**Improve what we have**
+
+- ☑️ I.1 · Pages generated only when a section or ticket needs them, as the normal path.  
+  *Biggest cost saving; 113 of 718 ran on Sonarr.*
+- ☑️ I.2 · Update only the statements a change touches, not the whole page.  
+  *Today a changed line regenerates the page and its verifier.*
+- ☑️ I.3 · Smaller disprove bundles, watching `cant-tell`.  
+  *44 of 62 hit the 60K cap.*
+- ☑️ I.4 · Citations follow code that only moved.  
+  *Stops needless re-runs.*
+- ☑️ I.5 · The diff shows `renamed` and `split` as their own outcomes.  
+  *Small.*
+- ☑️ I.6 · Similarity ranks suggestions for doubtful matches and never decides.  
+  *Less work for a person, no tuned cut-off.*
+- ☑️ I.7 · Embedded originals go to the archive, not the repo.  
+  *D16; `data check` flags committed `original/` files today.*
+- ☑️ I.8 · Files attached to a PDF get a home.  
+  *They have no section today.*
+- ☑️ I.9 · Check prompt caching on headless calls.  
+  *Free to look.*
+- ☑️ I.10 · Refused driver steps exit nonzero.  
+  *A silent success misleads; pinned by a test today.*
+- ☑️ I.11 · Confirm a Word table of contents is removed, with a test.  
+  *Unconfirmed.*
+- ☑️ I.12 · A second reader: pandoc reads the same Word file and code compares the words.  
+  *In checks only, so saved work holds. Needs pandoc installed; it isn't on this machine.*
+
+**Take: cheap, no AI**
+
+- ☑️ T.1 · A person's correction to a page is recorded, approved and survives regeneration.  
+  *No AI. `page-wrong` regenerates today, so a correction doesn't stick.*
+- ☑️ T.2 · A hard stop: an estimate and `--max-cost` before every paid step.  
+  *No AI. Include usage limits: the re-score hit one unseen.*
+- ☑️ T.3 · Every screen and entry point is covered, or excluded with a reason.  
+  *No AI.*
+- ☑️ T.4 · A warning when a page is behind the code, where it's read.  
+  *No AI.*
+- ☑️ T.5 · A check that a run didn't change the app's files.  
+  *No AI.*
+- ☑️ T.6 · Broken-link and duplicate-id checks.  
+  *No AI.*
+- ☑️ T.7 · Generated navigation and footers.  
+  *No AI.*
+- ☑️ T.8 · Client code read-only by hook, for analysis steps only.  
+  *No AI. Bug proof still builds and runs the app (D75).*
+- ☑️ T.9 · Playwright adapter by settings: specs in another repo, the project's own helpers, its URL shape.  
+  *No AI. A link records both repos' commits; this is the reason D4 asked for. Generated scripts only if settings can't express it.*
+- ☑️ T.10 · EMF, draw.io, Word cross-references, PowerPoint.  
+  *No AI. When a real document needs them.*
+
+**Take, then test: off until its test says otherwise**
+
+- ☑️ X.1 · Disprove step.  
+  *Test: Sonarr key; re-score after Nov 7.*
+- ☑️ X.2 · Page verifier: keep or drop.  
+  *Test: Sonarr key, on and off.*
+- ☑️ X.3 · Each rule tested for whether it can trigger.  
+  *Test: Sonarr plus planted dead rules.*
+- ☑️ X.4 · A short guide per app.  
+  *Test: Sonarr key; a small effect may not show.*
+- ☑️ X.5 · Findings about the code itself.  
+  *Test: Sonarr's real bug history; needs new scoring.*
+- ☑️ X.6 · Haiku on small pages.  
+  *Test: Sonarr key and a hand read.*
+- ☑️ X.7 · Table comparison by code.  
+  *Test: Extended planted FSD, then a real one.*
+- ☑️ X.8 · Finer verdicts, grouping, ask.  
+  *Test: Sonarr key, on and off.*
+- ☑️ X.9 · Requirements layer.  
+  *Test: Sonarr key, on and off; can't show catching wrong reports.*
+- ☑️ X.10 · Git history.  
+  *Test: Existing benchmark; about 2.5 points so far.*
+- ☑️ X.11 · Playwright as evidence.  
+  *Test: The owner's project: unresolved rate and a hand check.*
+- ☑️ X.12 · Structured specs before pages.  
+  *Test: One feature on Sonarr, about 3M tokens.*
+- ☑️ X.13 · UI check per screen.  
+  *Test: Same run.*
+- ☑️ X.14 · Reviewer per journey.  
+  *Test: Same run.*
+- ☑️ X.15 · Passes over finished pages.  
+  *Test: Same run.*
+- ☑️ X.16 · Gap finders.  
+  *Test: Sonarr key; the only idea that can lift found above 24 of 30.*
+- ☑️ X.17 · Pictures read by the agent.  
+  *Test: A real document; a person confirms each claim.*
+- ☑️ X.18 · Overview pages and a glossary.  
+  *Test: Sonarr key; may help names that differ.*
+- ☑️ X.19 · Generated per-app adapter scripts.  
+  *Test: Only where settings can't express a pattern.*
+
+**Not taking**
+
+- ❌ Other tools' file layout and names.  
+  *Owner.*
+- ❌ Windows and GitLab-specific setup.  
+  *D24 keeps these behind adapters.*
+- ❌ Claude merging clashing edits without asking.  
+  *Nothing can check it (D18).*
+- ❌ Similarity cut-offs deciding matches.  
+  *Tuned numbers; can flip meaning silently.*
+- ❌ A repo survey agent.  
+  *The graph does this job.*
+
 ## Two caveats
 
 - Most of the accuracy evidence comes from one app and small samples (one chapter, 22 findings). Stangent is tested on more codebases.

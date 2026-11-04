@@ -56,6 +56,10 @@ Stop there. Phase 4 needs the owner: the order after 2.x, and the questions unde
 
 **Follow-ups from 1.1 and 1.2 (D20, D115).** Done 2026-11-04: `code-graph` went to v4, and 1b, 1c, 1d, 2a, 2b, 2c and 3 were each checked by grep, tests re-run, and moved to `code-graph: 4`. Their code wasn't touched.
 
+## What's next (D125)
+
+1. Build I and T, about 500–700K tokens, in two batches. 2. Make the test material. 3. Start the test phase: the re-score after Nov 7, then on/off runs against bars frozen first. 4. Grill Phase 4.
+
 ## Decided, not built
 
 So nothing settled lives only in `decisions.md`. Each is built in the phase named.
@@ -74,6 +78,10 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 | A renumbered section's finder hash carried too, with the page set loaded at promotion | D117 | not placed |
 | A promotion that can't half-finish | D117 | not placed |
 | "bug, per R-0042" and "looks intended (R-0042)"; a developer flags a spec gap when confirming a bug | D96, D99 | 2c |
+| Improve (I.1 to I.12): on-demand pages, per-statement updates, smaller disprove bundles, moved citations, diff outcomes, ranked suggestions, originals to the archive, PDF attachments, caching check, driver exit codes, table of contents, pandoc as a second reader | D125, D120 | next build |
+| Take (T.1 to T.10): corrections that survive, a hard cost stop, coverage with reasons, a behind-the-code warning, app-files check, link and id checks, navigation, a read-only hook, Playwright settings for another repo; EMF, draw.io, cross-references and PowerPoint when a real document needs them | D125, D120, D4 | next build |
+| Take, then test (X.1 to X.19): off until its test, listed in `improvements.md` §9 | D125, D120 | test phase |
+| Test material: extend the planted FSD (tables, a workbook, dead rules, a comment, a second version); a second planted FSD on Kavita; Sonarr's public wiki as a messy document, licence to check | D125, D44, D56 | before the on/off runs |
 | The graph's blind spots, a smarter split rule, `impact-report` v6 | D65, D88, D109 | 4 |
 | Parallel work is merged and built together before it counts | D49 | 4 |
 | An agent waits for a person's go on a ticket with no proof | D75, D106 | 4 |
