@@ -212,6 +212,8 @@ public static class DisproveRun
     /// <summary>
     /// By code. The finding as a plain claim, never its finder's words; the FSD's text; the page's statements; the code; and the entry points
     /// that reach it, from the impact walk. The agent has no tools, so what isn't here it can't see, and this says what's missing.
+    /// <c>Inputs</c> hashes what a verdict rests on, not the whole text: the commit, the section's number and where a symbol starts are shown
+    /// but left out, so a new commit, a moved section or code pushed down a few lines keeps a verdict, and changed words or code don't.
     /// </summary>
     public static DisproveBundle Build(PageSet set, SpecIndex index, Lazy<ImpactAnalyzer> analyzer, string doc, JsonObject section, JsonObject finding)
     {
@@ -222,52 +224,67 @@ public static class DisproveRun
         var pageQuote = (string?)finding["page"]?["quote"];
         var page = pageId is null ? null : index.Pages.GetValueOrDefault(pageId);
 
-        var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions("finding-disprover.md"));
-        sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText(OutputSchema).TrimEnd('\n')).Append("\n```\n\n");
-        sb.Append(LinkRun.SectionBlock(section, doc)).Append("\n# The claim\n\n");
-        sb.Append(state switch
+        var sb = new StringBuilder();
+        var rests = new StringBuilder();
+        void Both(string text) { sb.Append(text); rests.Append(text); }
+
+        Both("# Instructions\n\n" + Bundles.Instructions("finding-disprover.md"));
+        Both("\n# Output schema\n\n```json\n" + SchemaRegistry.EmbeddedText(OutputSchema).TrimEnd('\n') + "\n```\n\n");
+        sb.Append(LinkRun.SectionBlock(section, doc));
+        rests.Append($"# The FSD section\n\n- document: `{doc}`\n- title: {(string)section["title"]!}\n\n{(string)section["text"]!}\n");
+        Both("\n# The claim\n\n");
+        Both(state switch
         {
             "conflict" => $"The application does something different from this FSD sentence: \"{fsdQuote}\". The page says: \"{pageQuote}\".\n",
             "gap" => $"The application doesn't do what this FSD sentence says: \"{fsdQuote}\".\n",
             _ => $"The application does this, and the FSD doesn't say it: \"{pageQuote}\".\n",
         });
 
-        sb.Append("\n# The reference page\n\n");
-        if (page is null) sb.Append(pageId is null ? "No page is linked to this claim.\n" : $"`{pageId}` has no recorded version.\n");
+        Both("\n# The reference page\n\n");
+        if (page is null) Both(pageId is null ? "No page is linked to this claim.\n" : $"`{pageId}` has no recorded version.\n");
         else
         {
-            sb.Append($"`{pageId}`: {(string)page["title"]!}. Generated from the code; it may have left things out.\n\n");
+            Both($"`{pageId}`: {(string)page["title"]!}. Generated from the code; it may have left things out.\n\n");
             foreach (var (_, id, s) in PageChecks.Statements(page))
-                sb.Append($"- **{id}**{(id == statementId ? " (the claim's)" : "")} {(string)s["text"]!}\n");
+                Both($"- **{id}**{(id == statementId ? " (the claim's)" : "")} {(string)s["text"]!}\n");
         }
 
-        var (code, missing) = Choose(set, page, pageId, statementId, $"{fsdQuote} {pageQuote}");
-        sb.Append($"\n# The code\n\nAt commit `{SymbolLines.CommitOf(set.Graph)}`. Whole symbols only, up to {MaxCodeChars} characters: the claim's own cited symbols first, then ");
-        sb.Append("what the page's other statements cite, then the rest of the page's slice and the slices of the endpoints it reaches, each group by how many of the claim's words it holds.\n");
+        var (code, missing, missingHashed) = Choose(set, page, pageId, statementId, $"{fsdQuote} {pageQuote}");
+        sb.Append($"\n# The code\n\nAt commit `{SymbolLines.CommitOf(set.Graph)}`. ");
+        rests.Append("\n# The code\n\n");
+        Both($"Whole symbols only, up to {MaxCodeChars} characters: the claim's own cited symbols first, then ");
+        Both("what the page's other statements cite, then the rest of the page's slice and the slices of the endpoints it reaches, each group by how many of the claim's words it holds.\n");
         foreach (var c in code)
         {
             sb.Append($"\n## `{c.Path}` lines {c.Start}-{c.End}: `{c.Symbol}`\n\n````text\n");
-            for (var i = 0; i < c.Lines.Count; i++) sb.Append($"{c.Start + i}: {c.Lines[i]}\n");
-            sb.Append("````\n");
+            rests.Append($"\n## `{c.Path}`: `{c.Symbol}`\n\n````text\n");
+            for (var i = 0; i < c.Lines.Count; i++)
+            {
+                sb.Append($"{c.Start + i}: {c.Lines[i]}\n");
+                rests.Append($"{c.Lines[i]}\n");
+            }
+            Both("````\n");
         }
-        if (code.Count == 0) sb.Append("\nNone.\n");
-        sb.Append("\n# Couldn't be shown\n\n");
-        if (missing.Count == 0) sb.Append("Nothing: every symbol looked at is shown above.\n");
+        if (code.Count == 0) Both("\nNone.\n");
+        Both("\n# Couldn't be shown\n\n");
+        if (missing.Count == 0) Both("Nothing: every symbol looked at is shown above.\n");
         foreach (var m in missing.Take(MaxNamed)) sb.Append($"- {m}\n");
-        if (missing.Count > MaxNamed) sb.Append($"- and {missing.Count - MaxNamed} more\n");
+        foreach (var m in missingHashed.Take(MaxNamed)) rests.Append($"- {m}\n");
+        if (missing.Count > MaxNamed) Both($"- and {missing.Count - MaxNamed} more\n");
 
-        sb.Append("\n# The entry points that reach it\n\n");
+        Both("\n# The entry points that reach it\n\n");
         var cited = statementId is not null && pageId is not null && index.Statement(pageId, statementId) is { } statement
             ? statement["cites"]!.AsArray().Select(c => (string)c!).ToList() : [];
-        AppendEntryPoints(sb, set, analyzer, pageId, cited);
+        var entryPoints = new StringBuilder();
+        AppendEntryPoints(entryPoints, set, analyzer, pageId, cited);
+        Both(entryPoints.ToString());
 
-        var text = sb.ToString();
-        return new DisproveBundle(text, CanonicalJson.Hash(text), code, missing);
+        return new DisproveBundle(sb.ToString(), CanonicalJson.Hash(rests.ToString()), code, missing);
     }
 
     /// <summary>The code to show, under the size rule. The claim's own cited symbols come first, because that's what it rests on; and a gap has none,
     /// so the rest of the slice is where a page's omission shows up.</summary>
-    static (List<DisproveCode> Code, List<string> Missing) Choose(PageSet set, JsonObject? page, string? pageId, string? statementId, string claim)
+    static (List<DisproveCode> Code, List<string> Missing, List<string> MissingHashed) Choose(PageSet set, JsonObject? page, string? pageId, string? statementId, string claim)
     {
         var words = Regex.Matches(claim.ToLowerInvariant(), "[a-z0-9]{3,}").Select(m => m.Value).ToHashSet(StringComparer.Ordinal);
         var lookup = SymbolLines.Lookup(set.Graph);
@@ -285,6 +302,8 @@ public static class DisproveRun
 
         var code = new List<DisproveCode>();
         var missing = new List<string>();
+        var missingHashed = new List<string>();
+        void Miss(string shown, string? hashed = null) { missing.Add(shown); missingHashed.Add(hashed ?? shown); }
         var used = 0;
         foreach (var (group, named) in new[] { (own, true), (others, true), (slice, false) })
         {
@@ -295,7 +314,7 @@ public static class DisproveRun
                 var lines = at?.File is not null && at.LinesMatchCommit && at.StartLine is not null && at.EndLine is not null ? set.Source.Lines(at.File) : null;
                 if (lines is null || at!.StartLine > lines.Length)
                 {
-                    if (named) missing.Add($"`{id}`: {(at is null ? "it isn't in the code graph any more" : at.Note ?? "its file can't be read")}");
+                    if (named) Miss($"`{id}`: {(at is null ? "it isn't in the code graph any more" : at.Note ?? "its file can't be read")}");
                     continue;
                 }
                 var body = lines.Skip(at.StartLine!.Value - 1).Take(at.EndLine!.Value - at.StartLine.Value + 1).ToArray();
@@ -310,15 +329,15 @@ public static class DisproveRun
                 var size = body.Sum(l => l.Length + 1);
                 if (used + size > MaxCodeChars)
                 {
-                    missing.Add($"`{id}` (`{at.File}` lines {start}-{end}): over the bundle's size limit");
+                    Miss($"`{id}` (`{at.File}` lines {start}-{end}): over the bundle's size limit", $"`{id}` (`{at.File}`): over the bundle's size limit");
                     continue;
                 }
                 used += size;
                 code.Add(new DisproveCode(id, at.File!, start, end, body));
-                if (at.Note is { } note) missing.Add($"`{id}`: {note}");
+                if (at.Note is { } note) Miss($"`{id}`: {note}");
             }
         }
-        return (code, missing);
+        return (code, missing, missingHashed);
     }
 
     /// <summary>The screens and endpoints the impact walk gets to, from what the claim cites, or else from the page's own entry point. Or that it gets to none.</summary>

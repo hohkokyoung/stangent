@@ -22,6 +22,9 @@ public sealed record StateMove(string At, string Kind, string Id, string? From, 
 /// </summary>
 public static class StateChanges
 {
+    /// <summary>The kind of a line that says an item's id changed: <c>from</c> is the old id, <c>to</c> the new. It isn't a lifecycle, so no table lists it.</summary>
+    public const string IdMoved = "id-moved";
+
     static readonly TimeSpan LockWait = TimeSpan.FromSeconds(30);
 
     /// <summary>
@@ -58,18 +61,56 @@ public static class StateChanges
             foreach (var cleared in kind.ClearedOnNull ?? []) item[cleared] = null;
     }
 
-    /// <summary>The item's moves, oldest first. A damaged line stops the read, because a history with holes misleads.</summary>
+    /// <summary>
+    /// Items got new ids: one line for each, connecting old to new, so <see cref="History"/> follows them and no old line is rewritten.
+    /// They go in one write at one time, because they happen together: when 3 moves to 4 and 4 to 5, an id's line is read with the others.
+    /// </summary>
+    public static void RecordIdMoves(string root, string kindName, IReadOnlyList<(string From, string To)> moved, StateActor who, string reason)
+    {
+        if (moved.Count == 0) return;
+        var at = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture);
+        Append(Path.Combine(root, StateKinds.Get(kindName).HistoryFile),
+            string.Concat(moved.Select(m => CanonicalJson.SerializeCompact(new StateMove(at, IdMoved, m.To, m.From, m.To, who, reason).ToJson()) + "\n")));
+    }
+
+    /// <summary>
+    /// The item's moves, oldest first, across any change of its id, with the lines that say so. Asked about an id the item has since left, it gives
+    /// what happened up to leaving. An id used again later starts fresh: the earlier item's moves aren't shown as its own. An item
+    /// with no moves of this kind has no history, whatever its ids did.
+    /// A damaged line stops the read, because a history with holes misleads.
+    /// </summary>
     public static IReadOnlyList<StateMove> History(string root, string kindName, string id)
     {
         var kind = StateKinds.Get(kindName);
         var path = Path.Combine(root, kind.HistoryFile);
         if (!File.Exists(path)) return [];
+        var lines = Read(path).Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(l => Parse(l, path)).ToArray();
         var moves = new List<StateMove>();
-        foreach (var line in Read(path).Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        var current = id;
+        for (var i = lines.Length - 1; i >= 0; i--)
         {
-            var move = Parse(line, path);
-            if (move.Kind == kind.Name && move.Id == id) moves.Add(move);
+            if (lines[i].Kind != IdMoved)
+            {
+                if (lines[i].Kind == kind.Name && lines[i].Id == current) moves.Add(lines[i]);
+                continue;
+            }
+            var first = i;
+            while (first > 0 && lines[first - 1].Kind == IdMoved && lines[first - 1].At == lines[i].At) first--;
+            var together = lines[first..(i + 1)];
+            if (together.FirstOrDefault(m => m.To == current) is { } came)
+            {
+                moves.Add(came);
+                current = came.From!;
+            }
+            else if (together.FirstOrDefault(m => m.From == current) is { } left)
+            {
+                if (moves.Count > 0) break;
+                moves.Add(left);
+            }
+            i = first;
         }
+        if (moves.All(m => m.Kind == IdMoved)) return [];
+        moves.Reverse();
         return moves;
     }
 

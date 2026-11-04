@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.State;
 using Stangent.Spec.Pages;
 using Stangent.Spec.Requirements;
 using Stangent.Spec.Trace;
@@ -91,6 +92,7 @@ static class FsdCarry
         }
         Retree(features, pairs);
 
+        StateChanges.RecordIdMoves(root, StateKinds.TraceDecision, [.. traceIds.Select(m => ((string)m!["from"]!, (string)m["to"]!)).Where(m => m.Item1 != m.Item2)], StateActor.Code("stangent fsd promote"), "its section moved");
         if (trace["entries"]!.AsArray().Count > 0) TraceFile.Save(root, trace);
         foreach (var f in features.Where(f => f.ToJsonString() != before[(string)f["id"]!])) RequirementFile.Save(root, f);
         if (questions.Count > 0) RequirementFile.SaveQuestions(root, doc, questions);

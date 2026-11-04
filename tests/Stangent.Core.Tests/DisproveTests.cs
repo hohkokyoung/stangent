@@ -230,6 +230,55 @@ public class DisproveTests
     }
 
     [Fact]
+    public void A_new_commit_keeps_the_verdict_the_bundle_shows_it_and_the_evidence_keeps_the_verdicts_commit()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        var first = Prepare(app);
+        Assert.Contains($"At commit `{new string('a', 40)}`", Bundle(app, first));
+        Answer(app, first, Quoted("refuted"));
+        var before = Build(app, (string)Entry(app)["fsd"]!["section"]!);
+
+        SavedWorkTests.CleanGraph(app, commit: 'b');
+        var after = Build(app, (string)Entry(app)["fsd"]!["section"]!);
+        Assert.Equal(before.Inputs, after.Inputs);
+        Assert.Contains($"At commit `{new string('b', 40)}`", after.Text);
+        Assert.Equal(("current", "none"), (Prepare(app).Status, Prepare(app).Action));
+        Assert.Equal("refuted", (string?)Entry(app)["verdict"]);
+        TraceCheck.Run(app.Root, null, null, false);
+        Assert.Equal(new string('a', 40), (string?)Entry(app)["evidence"]!.AsArray().Single(r => ((string)r!["id"]!).EndsWith(".disprove", StringComparison.Ordinal))!["commit"]);
+    }
+
+    static DisproveBundle Build(SpecApp app, string sectionId, Func<JsonObject, JsonObject>? change = null)
+    {
+        var set = app.Pages();
+        var index = SpecIndex.Load(app.Root);
+        var section = (JsonObject)index.Sections[("shop", sectionId)].DeepClone();
+        return DisproveRun.Build(set, index, new Lazy<Stangent.Graph.Impact.ImpactAnalyzer>(() => new Stangent.Graph.Impact.ImpactAnalyzer(set.Graph)), "shop", change?.Invoke(section) ?? section, Conflict());
+    }
+
+    [Fact]
+    public void A_sections_number_is_shown_and_not_hashed_and_its_words_are_hashed()
+    {
+        using var app = App();
+        var same = Build(app, "1");
+        var moved = Build(app, "1", s => { s["id"] = "7.2"; s["parent"] = "7"; return s; });
+        Assert.Equal(same.Inputs, moved.Inputs);
+        Assert.Contains("- section: `7.2`", moved.Text);
+        Assert.NotEqual(same.Inputs, Build(app, "1", s => { s["text"] = (string)s["text"]! + " And more."; return s; }).Inputs);
+        Assert.NotEqual(same.Inputs, Build(app, "1", s => { s["title"] = "Refunds"; return s; }).Inputs);
+    }
+
+    [Fact]
+    public void The_page_wrong_note_says_what_is_known()
+    {
+        var conflict = Conflict();
+        Assert.Contains($"- statement R1 \"{Page100}\", against the FSD's \"{Fsd50}\"\n", Staleness.ReportedWrongNote([conflict]));
+        var gap = LinkRun.Entry("gap", "shop", Section(), Fsd50, SpecApp.Post, null, null, "judge", null, Secret);
+        Assert.Contains($"- the page has no statement on this; the FSD says \"{Fsd50}\"\n", Staleness.ReportedWrongNote([gap]));
+    }
+
+    [Fact]
     public void A_persons_decision_isnt_tested_again()
     {
         using var app = App();

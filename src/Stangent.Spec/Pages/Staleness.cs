@@ -100,7 +100,12 @@ public static class Staleness
         if (entries is null) return "";
         var sb = new StringBuilder("\n## A person said this page is wrong\n\nCheck these against the source above. Say only what the source shows.\n\n");
         foreach (var e in entries)
-            sb.Append($"- statement {(string?)e["page"]?["statement"] ?? "(none)"} \"{(string?)e["page"]?["quote"]}\", against the FSD's \"{(string?)e["fsd"]?["quote"]}\"\n");
+        {
+            var fsd = (string?)e["fsd"]?["quote"];
+            sb.Append((string?)e["page"]?["statement"] is { } statement
+                ? $"- statement {statement} \"{(string?)e["page"]?["quote"]}\", {(fsd is null ? "which the FSD doesn't mention" : $"against the FSD's \"{fsd}\"")}\n"
+                : $"- the page has no statement on this; the FSD says \"{fsd}\"\n");
+        }
         return sb.ToString();
     }
 

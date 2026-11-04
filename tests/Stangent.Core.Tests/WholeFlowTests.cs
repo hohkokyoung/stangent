@@ -303,6 +303,7 @@ public sealed class WholeFlow : IDisposable
         Saw["rejudge.unchanged"] = Ok("fsd", "prepare", "shop", "3");
         var stock = Find(Trace(), FsdStock)!;
         Saw["history.moved"] = Ok("state", "history", "finding-review", (string)stock["id"]!);
+        Saw["history.moved.finding"] = Ok("state", "history", "finding-review", (string)stock["finding"]!);
         Commit("the new version");
         // CI on that PR: a promotion mustn't read as typed decisions.
         Saw["check.promoted.base"] = Check("--base", beforeImport);
@@ -371,13 +372,13 @@ public sealed class WholeFlow : IDisposable
         // Last, because each changes what's on file: what the disprove step does next, on a real run. It runs after every section.
         Saw["disprove.moved"] = Ok("fsd", "disprove", "prepare", "shop", "2.1");
         Saw["trace.disprove-moved"] = Trace();
-        Answer(Ok("fsd", "disprove", "prepare", "shop", "3"), Quoted("refuted", "Shop.Web/Controllers/CheckoutController.cs", 8, "public IActionResult Index() => Content(orders.PlaceOrder(\"web\", 2m).Customer);"));
-        Ok("fsd", "disprove", "check", "shop", "3");
-        Commit("the verdict on the moved code");
+        // Regenerate pushed this code two lines down, words unchanged: section 3's verdict rests on the words.
+        Saw["disprove.pushed-down"] = Ok("fsd", "disprove", "prepare", "shop", "3");
         Append("README.md", "A line about nothing.\n");
         Commit("no code changes");
         Ok("graph", "build");
         Saw["disprove.new-commit"] = Ok("fsd", "disprove", "prepare", "shop", "3");
+        Saw["trace.disprove-new-commit"] = Trace();
     }
 
     // ---- the fake agents' answers ----
@@ -902,9 +903,9 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         Assert.Equal(("current", "none"), ((string?)flow.Seen("rejudge.unchanged")["status"], (string?)flow.Seen("rejudge.unchanged")["next"]!["action"]));
     }
 
-    // ---- what the run found and the fix is someone's decision (improvements.md §8, phases/0-foundation.md) ----
+    // ---- what the run found, fixed (phases/0-foundation.md) ----
 
-    [Fact(Skip = "The disprove bundle's hash holds the section's number, so a section that only moved asks for a new paid verdict and wipes a person's confirmation, though its words, page and code are the same. Links don't: promotion works their inputs out again (FsdCarry). Fixing it means either a carry here or a change to the bundle hash, which the owner decides.")]
+    [Fact]
     public void Disprove_a_section_that_only_moved_keeps_its_verdict_and_a_persons_confirmation()
     {
         flow.Reached(11);
@@ -913,28 +914,39 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         Assert.Equal(("refuted", "confirmed"), ((string?)stock["verdict"], (string?)stock["review"]));
     }
 
-    [Fact(Skip = "The disprove bundle's text says 'At commit <sha>' and is hashed whole, so any new commit followed by graph build changes every bundle: each finding drops to unverified, reopens if closed, and asks for a new paid verdict, with no code changed. docs/spec.md says an unchanged bundle means no call. Fixing it changes the bundle's text and hash, so it's the owner's call.")]
+    [Fact]
     public void Disprove_a_new_commit_that_touches_no_code_asks_for_no_new_verdict()
     {
         flow.Reached(11);
         Assert.Equal(("current", "none"), ((string?)flow.Seen("disprove.new-commit")["status"], (string?)flow.Seen("disprove.new-commit")["next"]!["action"]));
+        Assert.Equal("refuted", (string?)flow.EntryIn("trace.disprove-new-commit", WholeFlow.FsdCheckout)["verdict"]);
     }
 
-    [Fact(Skip = "A promotion gives a moved entry a new id, and the state history stays under the old one: `state history finding-review <new id>` shows nothing, so who confirmed a finding is only on the entry, not in its history. The history also doesn't answer to the permanent X- id. Whether moves follow, or history takes the X- id, is a design question.")]
+    [Fact]
+    public void Disprove_code_pushed_down_with_the_same_words_asks_for_no_new_verdict()
+    {
+        flow.Reached(11);
+        Assert.Equal(("current", "none"), ((string?)flow.Seen("disprove.pushed-down")["status"], (string?)flow.Seen("disprove.pushed-down")["next"]!["action"]));
+    }
+
+    [Fact]
     public void A_moved_findings_history_can_be_read_under_its_current_id()
     {
         flow.Reached(8);
         Assert.NotEmpty(flow.Seen("history.moved")["moves"]!.AsArray());
+        Assert.Contains(flow.Seen("history.moved")["moves"]!.AsArray(), m => (string?)m!["kind"] == "finding-review" && (string?)m["to"] == "confirmed");
+        Assert.Contains(flow.Seen("history.moved")["moves"]!.AsArray(), m => (string?)m!["kind"] == "id-moved");
+        Assert.Equal(flow.Seen("history.moved")["moves"]!.ToJsonString(), flow.Seen("history.moved.finding")["moves"]!.ToJsonString());
     }
 
-    [Fact(Skip = "Numbers typed into Word headings must run on with no gap, so taking chapter 2 out turns '3 Checkout' into a plain heading: id '3 Checkout', title '3 Checkout', listed as renamed, its links re-pointed. The rule guards against '2023 Roadmap'. A removed chapter is exactly what a new version does, so whether a gap should be allowed is a design question.")]
+    [Fact]
     public void A_chapter_taken_out_leaves_later_typed_chapters_their_numbers()
     {
         var doc = Stangent.Spec.Fsd.DocxConverter.Convert(FsdDocxTests.Docx(WholeFlow.TypedHeadings("1 Orders", "3 Checkout")));
         Assert.Equal([("1", "Orders"), ("3", "Checkout")], doc.Sections.Select(s => (s.Id, s.Title)));
     }
 
-    [Fact(Skip = "When page-wrong is on a gap with no statement, the note in the writer's bundle reads 'statement (none) \"\", against the FSD's ...'. Harmless to the check, odd to read. It's text an agent reads, and prompts stay as they are for now.")]
+    [Fact]
     public void The_page_wrong_note_doesnt_show_an_empty_statement_for_a_gap()
     {
         flow.Reached(9);

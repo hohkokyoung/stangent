@@ -61,6 +61,11 @@ public static partial class TraceFindings
         };
     }
 
+    /// <summary>The entry id a permanent <c>X-</c> id is on now, for reading a history. Null when it isn't one, or nothing holds it.</summary>
+    public static string? EntryOf(string root, string finding) =>
+        !finding.StartsWith("X-", StringComparison.Ordinal) || !File.Exists(TraceFile.PathIn(root)) ? null
+        : (string?)TraceFile.Load(root)["entries"]!.AsArray().OfType<JsonObject>().FirstOrDefault(e => (string?)e["finding"] == finding)?["id"];
+
     public static bool ReviewHolds(JsonObject e) => (string?)e["review_hash"] == TraceFile.ReviewHash((string?)e["review"], e["review_note"] as JsonObject, (string?)e["disproof_hash"]);
 
     /// <summary>A person's word on a verdict, from <c>trace confirm</c> and <c>trace send-back</c>, on the state module. Returns where the finding went.</summary>
@@ -339,6 +344,7 @@ public static partial class TraceFindings
         ["review"] = (string?)e["review"], ["reviewBy"] = (string?)e["review_note"]?["by"], ["reviewWhy"] = (string?)e["review_note"]?["why"],
         ["why"] = (string?)e["disproof"]?["why"], ["quote"] = (string?)e["disproof"]?["quote"],
         ["at"] = (string?)e["disproof"]?["path"] is { } path ? $"{path}:{(int)e["disproof"]!["start"]!}-{(int)e["disproof"]!["end"]!}" : null,
+        ["atCommit"] = (string?)e["disproof"]?["commit"],
         ["suggestedSeverity"] = (string?)e["disproof"]?["suggestedSeverity"],
     })]);
 

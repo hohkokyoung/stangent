@@ -333,4 +333,42 @@ public partial class StateChangesTests
         new PermanentIds(path).Raise("S", "S-{0:D4}", 40);
         Assert.Equal("S-0041", RequirementFile.NextId(temp.Root, "S"));
     }
+
+    static readonly StateActor Promote = StateActor.Code("promote");
+
+    static string[] Ids(string root, string id) =>
+        [.. StateChanges.History(root, StateKinds.TraceDecision, id).Select(m => $"{m.Kind}:{m.From}>{m.To}")];
+
+    [Fact]
+    public void History_follows_an_id_across_moves_and_old_lines_stay_as_they_were()
+    {
+        using var temp = new TempRepo();
+        StateChanges.Move(temp.Root, StateKinds.TraceDecision, "old", "undecided", "defer", StateActor.Person("Ann"), "why");
+        var path = Path.Combine(temp.Root, StateKinds.Get(StateKinds.TraceDecision).HistoryFile);
+        var before = File.ReadAllText(path);
+        StateChanges.RecordIdMoves(temp.Root, StateKinds.TraceDecision, [("old", "new")], Promote, "its section moved");
+        StateChanges.Move(temp.Root, StateKinds.TraceDecision, "new", "defer", "undecided", Promote, "dropped");
+
+        Assert.StartsWith(before, File.ReadAllText(path));
+        Assert.Equal(["trace-decision:undecided>defer", "id-moved:old>new", "trace-decision:defer>undecided"], Ids(temp.Root, "new"));
+        // Asked by the id it left: what happened up to leaving.
+        Assert.Equal(["trace-decision:undecided>defer", "id-moved:old>new"], Ids(temp.Root, "old"));
+    }
+
+    [Fact]
+    public void Ids_moved_together_are_read_together_and_a_used_again_id_starts_fresh()
+    {
+        using var temp = new TempRepo();
+        StateChanges.Move(temp.Root, StateKinds.TraceDecision, "a", "undecided", "defer", StateActor.Person("Ann"), "why");
+        StateChanges.Move(temp.Root, StateKinds.TraceDecision, "b", "undecided", "agree", StateActor.Person("Ann"), "why");
+        StateChanges.RecordIdMoves(temp.Root, StateKinds.TraceDecision, [("a", "b"), ("b", "a")], Promote, "swapped");
+        Assert.Equal(["trace-decision:undecided>agree", "id-moved:b>a"], Ids(temp.Root, "a"));
+        Assert.Equal(["trace-decision:undecided>defer", "id-moved:a>b"], Ids(temp.Root, "b"));
+
+        using var other = new TempRepo();
+        StateChanges.Move(other.Root, StateKinds.TraceDecision, "a", "undecided", "defer", StateActor.Person("Ann"), "why");
+        StateChanges.RecordIdMoves(other.Root, StateKinds.TraceDecision, [("a", "b")], Promote, "moved");
+        StateChanges.Move(other.Root, StateKinds.TraceDecision, "a", "undecided", "agree", StateActor.Person("Ann"), "a new entry");
+        Assert.Equal(["trace-decision:undecided>agree"], Ids(other.Root, "a"));
+    }
 }

@@ -97,6 +97,43 @@ public class FsdTests
         Assert.Contains("# 2023 Roadmap", doc.Markdown);
     }
 
+    static (string[] Ids, List<string> Problems) Headings(params string[] lines)
+    {
+        var doc = DocxConverter.Convert(DocxWriter.Write(string.Join("\n", lines)));
+        return ([.. doc.Sections.Select(s => s.Id)], [.. doc.Problems]);
+    }
+
+    [Fact]
+    public void A_gap_in_typed_chapter_numbers_keeps_the_numbers_and_says_one_is_skipped()
+    {
+        var (ids, problems) = Headings("# 1 Orders", "# 3 Checkout", "## 3.1 Pay", "# 7 Returns");
+        Assert.Equal(["1", "3", "3.1", "7"], ids);
+        Assert.Contains(problems, p => p.Contains("section 3 follows 1"));
+        Assert.DoesNotContain(problems, p => p.Contains("plain heading"));
+        // Chapter 1 taken out: the run that follows says what the first number is.
+        Assert.Equal(["2", "3"], Headings("# 2 Cart", "# 3 Checkout").Ids);
+        // A plain chapter beside them changes nothing (D56), as in Sonarr's FSD.
+        Assert.Equal(["1", "3", "Wanted"], Headings("# 1 Library", "# 3 Activity", "# Wanted").Ids);
+    }
+
+    [Fact]
+    public void A_heading_that_only_starts_with_a_number_stays_a_plain_heading()
+    {
+        Assert.Equal(["3 Ways to pay", "Refunds"], Headings("# 3 Ways to pay", "# Refunds").Ids);     // nothing numbered around it
+        Assert.Equal(["1", "3 ways to pay"], Headings("# 1 Intro", "# 3 ways to pay").Ids);           // a lower-case word next
+        Assert.Equal(["1", "3 Ways to pay", "2", "3"], Headings("# 1 Intro", "# 3 Ways to pay", "# 2 Pricing", "# 3 Checkout").Ids);   // the real chapters come later
+        Assert.Equal(["1", "30 Day Returns"], Headings("# 1 Intro", "# 30 Day Returns").Ids);         // too far on
+        Assert.Equal(["1", "2023 Roadmap"], Headings("# 1 Intro", "# 2023 Roadmap").Ids);
+    }
+
+    [Fact]
+    public void A_chapter_number_and_a_heading_with_the_same_shape_cant_be_told_apart_and_the_skip_is_said()
+    {
+        var (ids, problems) = Headings("# 1 Intro", "# 3 Ways to pay");
+        Assert.Equal(["1", "3"], ids);
+        Assert.Contains(problems, p => p.Contains("section 3 follows 1"));
+    }
+
     [Fact]
     public void Import_archives_the_original_and_the_same_file_always_gives_the_same_bytes()
     {

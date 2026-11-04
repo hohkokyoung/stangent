@@ -148,7 +148,7 @@ var stateHistory = new Command("history", "One item's moves, oldest first.") { s
 stateHistory.SetAction(pr => Cli.Run(pr, "state history", ctx => new JsonObject
 {
     ["kind"] = pr.GetValue(stateKindArg)!, ["id"] = pr.GetValue(stateIdArg)!,
-    ["moves"] = new JsonArray([.. StateChanges.History(ctx.Repo.Root, pr.GetValue(stateKindArg)!, pr.GetValue(stateIdArg)!).Select(m => (JsonNode)m.ToJson())]),
+    ["moves"] = new JsonArray([.. StateChanges.History(ctx.Repo.Root, pr.GetValue(stateKindArg)!, Stangent.Spec.Trace.TraceFindings.EntryOf(ctx.Repo.Root, pr.GetValue(stateIdArg)!) ?? pr.GetValue(stateIdArg)!).Select(m => (JsonNode)m.ToJson())]),
 }));
 state.Subcommands.Add(stateHistory);
 

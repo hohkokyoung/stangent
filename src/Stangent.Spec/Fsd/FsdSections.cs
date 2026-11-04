@@ -34,6 +34,9 @@ static partial class FsdSections
 
     public const string NoStructureAdvice = "supply a copy with headings or bookmarks, or use --flat to import the whole document as one section with no structure";
 
+    /// <summary>How far a typed chapter number can run on from the one before. Further than this reads as words that start with a number; it's reported either way, so a person sees it.</summary>
+    const int MaxChapterGap = 10;
+
     [GeneratedRegex(@"^(\d+(?:\.\d+)*)\.?\s+(\S.*)$")]
     private static partial Regex TypedNumber();
 
@@ -58,7 +61,7 @@ static partial class FsdSections
             if (h.Typed)
             {
                 // "4.2 Tags" under chapter 4 is a number; "2023 Roadmap" or "24 hour clock" isn't. A typed number
-                // must have one part per heading level and continue its parent's (or the previous chapter's) number.
+                // must have one part per heading level and continue its parent's number, or be a next chapter's (ChapterNumber).
                 var parts = h.Number!.Split('.');
                 var above = path.Where(x => x.Level < h.Level).ToList();
                 var prefix = string.Join(".", parts[..^1]);
@@ -73,7 +76,7 @@ static partial class FsdSections
                 {
                     var parentNumber = above.Select(x => x.Id).LastOrDefault();
                     fits = parts.Length == h.Level && (h.Level == 1
-                        ? (lastTop is null ? parts[0] == "1" : int.TryParse(lastTop, out var t) && parts[0] == (t + 1).ToString())
+                        ? ChapterNumber(parts[0], lastTop, headings, i)
                         : parentNumber is not null && prefix == parentNumber);
                 }
                 if (!fits)
@@ -114,6 +117,22 @@ static partial class FsdSections
                     problems.Add($"section {group.ElementAt(k).Id} follows {group.ElementAt(k - 1).Id}: a number is skipped or out of order");
         }
         return sections;
+    }
+
+    /// <summary>
+    /// Whether a number typed on a top-level heading is a chapter's. The next number always is. A gap is normal, since it's what taking a chapter out
+    /// leaves, and the skip is reported. So a higher number stays a number too, unless what's around it says it's words: too far on to be chapters taken
+    /// out ("2023 Roadmap"), a lower-case word next ("24 hour clock"), a later chapter at or below it ("3 Ways to pay" before "2 Pricing"), or, with no
+    /// numbered chapter before it, no next number after it. "1 Intro" then "3 Ways to pay" has the same shape as "1 Orders" then "3 Checkout" and reads as a number.
+    /// </summary>
+    static bool ChapterNumber(string number, string? lastTop, IReadOnlyList<FsdHeading> headings, int at)
+    {
+        var last = 0;
+        if (lastTop is not null && !int.TryParse(lastTop, out last)) return false;
+        if (number == (last + 1).ToString()) return true;
+        if (!int.TryParse(number, out var n) || n.ToString() != number || n <= last || n - last > MaxChapterGap || char.IsLower(headings[at].Title[0])) return false;
+        var later = headings.Skip(at + 1).Where(x => x.Level == 1 && x.Number is not null).Select(x => int.TryParse(x.Number, out var v) ? v : int.MaxValue).ToList();
+        return later.All(v => v > n) && (lastTop is not null || later.FirstOrDefault() == n + 1);
     }
 
     /// <summary>The whole body as one labelled section (<c>--flat</c>), with the problem line saying it has no structure.</summary>
