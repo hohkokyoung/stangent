@@ -127,6 +127,25 @@ public static partial class PdfConverter
     /// <summary>The import's safety step (D121): damaged, protected or empty stops here. Gives the page count.</summary>
     public static int CheckSafe(byte[] pdf) => Open(pdf, doc => doc.NumberOfPages);
 
+    /// <summary>Sensitivity labels in the document's information and its XMP metadata (D122). Metadata that can't be read shows no label; that's a known gap.</summary>
+    public static IReadOnlyList<ImportLabel> Labels(byte[] pdf) => Open(pdf, doc =>
+    {
+        var properties = new List<KeyValuePair<string, string>>();
+        foreach (var (key, value) in doc.Information.DocumentInformationDictionary?.Data ?? new Dictionary<string, UglyToad.PdfPig.Tokens.IToken>())
+            if (value is UglyToad.PdfPig.Tokens.IDataToken<string> text) properties.Add(KeyValuePair.Create(key, text.Data));
+        try
+        {
+            if (doc.TryGetXmpMetadata(out var xmp))
+                foreach (var e in xmp.GetXDocument().Descendants())
+                {
+                    if (!e.HasElements) properties.Add(KeyValuePair.Create(e.Name.LocalName, e.Value));
+                    properties.AddRange(e.Attributes().Select(a => KeyValuePair.Create(a.Name.LocalName, a.Value)));
+                }
+        }
+        catch (System.Xml.XmlException) { }
+        return (IReadOnlyList<ImportLabel>)ImportLabels.FromProperties(properties);
+    });
+
     static T Open<T>(byte[] pdf, Func<PdfDocument, T> read)
     {
         try

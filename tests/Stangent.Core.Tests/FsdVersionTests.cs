@@ -722,6 +722,8 @@ public sealed class FsdVersionTests : IDisposable
         var copy = (JsonObject)doc.DeepClone();
         copy["schemaVersion"] = 1;
         foreach (var s in copy["sections"]!.AsArray().OfType<JsonObject>()) s.Remove("permanentId");
+        copy.Remove("tables");
+        foreach (var i in copy["images"]!.AsArray().OfType<JsonObject>()) { i.Remove("id"); i.Remove("section"); i.Remove("sectionNumber"); }
         return copy;
     }
 

@@ -3,7 +3,7 @@ using Stangent.Core;
 
 namespace Stangent.Spec.Fsd;
 
-public sealed record ImportOptions(bool Flat = false, bool AcceptChanges = false);
+public sealed record ImportOptions(bool Flat = false, bool AcceptChanges = false, IReadOnlyList<string>? AllowLabels = null);
 
 /// <summary>What one step did. <c>not-for-format</c> says, with a reason, that a format has no such step, so a missing step can't pass for an empty one.</summary>
 public sealed record ImportStepResult(string Step, string Status, string Note, int Count = 0)
@@ -13,7 +13,7 @@ public sealed record ImportStepResult(string Step, string Status, string Note, i
     public JsonObject ToJson() => new() { ["step"] = Step, ["result"] = Status, ["note"] = Note, ["count"] = Count };
 }
 
-public sealed record ImportResult(string Format, ConvertedDocument Document, IReadOnlyList<ImportStepResult> Steps)
+public sealed record ImportResult(string Format, ConvertedDocument Document, IReadOnlyList<ImportStepResult> Steps, IReadOnlyList<ImportLabel> Labels)
 {
     public JsonArray StepsJson() => new([.. Steps.Select(s => (JsonNode)s.ToJson())]);
 }
@@ -30,6 +30,8 @@ public interface IImportFormat
     IReadOnlyList<string> Extensions { get; }
     /// <summary>A request this format can't do at all, refused before anything else is looked at.</summary>
     void CheckOptions(ImportOptions options);
+    /// <summary>The sensitivity labels on the file. Safety stops on any nobody named.</summary>
+    IReadOnlyList<ImportLabel> Labels(byte[] file);
     /// <summary>Stops a file that shouldn't be read, by throwing.</summary>
     ImportStepResult Safety(byte[] file, ImportOptions options);
     ConvertedDocument Convert(byte[] file, ImportOptions options);
@@ -57,7 +59,7 @@ public static class ImportPipeline
         var safety = format.Safety(file, options);
         var document = format.Convert(file, options);
         var convert = new ImportStepResult("convert", ImportStepResult.Ran, "the file's text as Markdown, the same bytes each time", document.Sections.Count);
-        return new ImportResult(format.Name, document, [safety, convert, format.Comments(document), format.ExtractFiles(document), format.Completeness(document)]);
+        return new ImportResult(format.Name, document, [safety, convert, format.Comments(document), format.ExtractFiles(document), format.Completeness(document)], format.Labels(file));
     }
 
     /// <summary>
@@ -87,8 +89,12 @@ public static class ImportPipeline
         public IReadOnlyList<string> Extensions { get; } = [".docx"];
         public void CheckOptions(ImportOptions options) { }
 
+        public IReadOnlyList<ImportLabel> Labels(byte[] file) => ImportLabels.OfWord(file);
+
         public ImportStepResult Safety(byte[] file, ImportOptions options)
         {
+            DocxConverter.CheckLocked(file);
+            ImportLabels.Check(Labels(file), options.AllowLabels);
             var tracked = DocxConverter.CheckSafe(file, options.AcceptChanges);
             return new("safety", ImportStepResult.Ran, tracked > 0 ? "opens; tracked changes accepted, as asked" : "opens, with no tracked changes", tracked);
         }
@@ -116,9 +122,12 @@ public static class ImportPipeline
             if (options.AcceptChanges) throw new StangentException("usage", "--accept-changes is for .docx files: a PDF has no tracked changes to accept.", ExitCodes.Usage);
         }
 
+        public IReadOnlyList<ImportLabel> Labels(byte[] file) => PdfConverter.Labels(file);
+
         public ImportStepResult Safety(byte[] file, ImportOptions options)
         {
             var pages = PdfConverter.CheckSafe(file);
+            ImportLabels.Check(Labels(file), options.AllowLabels);
             return new("safety", ImportStepResult.Ran, "opens, isn't protected, has pages; count is the pages", pages);
         }
 

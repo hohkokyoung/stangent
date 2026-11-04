@@ -48,6 +48,7 @@ public static class StangentComponents
         new("candidate-finder", "The AI that names pages when code finds none", "components.candidate-finder", true, Links, ["ai"]),
         new("agree-checker", "The fresh check of each agree link", "components.agree-checker", true, Links, ["ai"]),
         new("requirements-links", "Judging by requirement when a section's are built", "components.requirements-links", true, Links, []),
+        new("first-import-approval", "A person approves a document's first import before anything reads it", "components.first-import-approval", false, ["fsd import", "fsd approve"], []),
         new("findings", "Gap, conflict and undocumented findings", "fsd.findings", false, [.. Links, "fsd undocumented", "trace check", "ticket bundle", "ticket draft", "fsd promote"], []),
         new("disprove", "A second agent tries to refute each finding", "fsd.disprove", false, ["fsd disprove prepare", "fsd disprove check", "fsd disprove estimate"], ["ai", "findings"]),
         new("file-finder", "The AI that finds a ticket's files", "tickets.aiPoints", true, ["ticket points", "ticket prepare", "ticket check"], ["ai"]),
@@ -99,7 +100,7 @@ public static class StangentComponents
         "disprove" => config.Fsd.Disprove,
         "file-finder" => config.Tickets.AiPoints,
         _ when name.StartsWith("detector-", StringComparison.Ordinal) => DetectorOn(config, name["detector-".Length..]),
-        _ => !config.Components.TryGetValue(name, out var on) || on,
+        _ => config.Components.TryGetValue(name, out var on) ? on : All.FirstOrDefault(c => c.Name == name)?.OnByDefault ?? true,
     };
 
     /// <summary><c>components.detector-x</c> wins; otherwise the <c>detectors</c> list decides: empty is all, <c>[none]</c> is none (D17).</summary>

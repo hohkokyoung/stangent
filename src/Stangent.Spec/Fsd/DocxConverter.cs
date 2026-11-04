@@ -43,6 +43,17 @@ public static partial class DocxConverter
         return found.Values.Sum();
     });
 
+    /// <summary>A Word file locked with a password is an encrypted package inside an OLE container, not a zip. Protection is never worked around, so this says how to get a copy that can be read.</summary>
+    public static void CheckLocked(byte[] docx)
+    {
+        byte[] ole = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+        if (docx.Length < ole.Length || !docx.AsSpan(0, ole.Length).SequenceEqual(ole)) return;
+        if (docx.AsSpan().IndexOf(System.Text.Encoding.Unicode.GetBytes("EncryptedPackage")) < 0) return;
+        throw new Core.StangentException("docx_locked",
+            "This Word file is locked with a password, so it can't be read, and stangent never gets round protection. To import it: open it in Word, choose File > Info > Protect Document > Encrypt with Password, clear the password, save a copy and import that copy. If you aren't allowed to, ask the document's owner for an unlocked copy.",
+            Core.ExitCodes.Failed);
+    }
+
     static T Open<T>(byte[] docx, Func<MainDocumentPart, T> read)
     {
         try
@@ -66,6 +77,9 @@ public static partial class DocxConverter
 
     sealed class Context(MainDocumentPart main, bool flat)
     {
+        /// <summary>How many bold lines a <c>no_structure</c> stop lists, and how long a line can be and still read as a heading: stated settings (D122).</summary>
+        const int MaxBoldLines = 20, MaxHeadingWords = 15;
+
         readonly Dictionary<string, Style> styles = main.StyleDefinitionsPart?.Styles?.Elements<Style>()
             .Where(s => s.StyleId?.Value is not null).GroupBy(s => s.StyleId!.Value!).ToDictionary(g => g.Key, g => g.First()) ?? [];
         readonly Numbering? numbering = main.NumberingDefinitionsPart?.Numbering;
@@ -586,11 +600,42 @@ public static partial class DocxConverter
                 return new ConvertedDocument(markdown, whole, images, problems, title);
             }
             if (headings.Count == 0)
-                throw new Core.StangentException("no_structure", $"This .docx has no headings, so it has no sections. Apply heading styles, {FsdSections.NoStructureAdvice}.");
+                throw new Core.StangentException("no_structure", $"This .docx has no headings, so it has no sections. Apply heading styles, {FsdSections.NoStructureAdvice}.", Core.ExitCodes.Failed, BoldLines());
             var sections = FsdSections.Build(body, headings, problems);
             Listed(body, i => sections[i].Id);
             return new ConvertedDocument(body + "\n", sections, images, problems, title);
         }
+
+        /// <summary>
+        /// For a file that stops with <c>no_structure</c> (D122): the lines that look like headings, so a person knows where to apply heading styles. A line
+        /// counts when all its words are bold, it has at most <see cref="MaxHeadingWords"/> words, and it doesn't end like a sentence. It's advice only: nothing is imported from it.
+        /// </summary>
+        List<string> BoldLines()
+        {
+            var body = main.Document?.Body?.Elements<Paragraph>().ToList() ?? [];
+            var found = new List<string>();
+            foreach (var (p, at) in body.Select((p, i) => (p, i + 1)))
+            {
+                var runs = p.Descendants<Run>().Where(r => r.InnerText.Trim().Length > 0).ToList();
+                var text = string.Concat(runs.Select(r => r.InnerText)).Trim();
+                if (runs.Count == 0 || text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length > MaxHeadingWords || ".!?;,".Contains(text[^1]) || !runs.TrueForAll(r => Bold(p, r))) continue;
+                found.Add($"paragraph {at}: \"{text}\"");
+            }
+            if (found.Count == 0) return [];
+            return [$"stangent never guesses a heading from bold text. {(found.Count > MaxBoldLines ? $"The first {MaxBoldLines} of {found.Count} lines" : $"These {found.Count} lines")} are all bold and look like headings; if they are, give them heading styles in Word and import again.", .. found.Take(MaxBoldLines)];
+        }
+
+        bool Bold(Paragraph p, Run r) =>
+            BoldValue(r.RunProperties?.Bold) ?? StyleBold(r.RunProperties?.RunStyle?.Val?.Value) ?? StyleBold(p.ParagraphProperties?.ParagraphStyleId?.Val?.Value) ?? false;
+
+        bool? StyleBold(string? id)
+        {
+            for (var seen = 0; id is not null && seen < 20 && styles.TryGetValue(id, out var style); seen++, id = style.BasedOn?.Val?.Value)
+                if (BoldValue(style.StyleRunProperties?.Bold) is { } on) return on;
+            return null;
+        }
+
+        static bool? BoldValue(Bold? bold) => bold is null ? null : bold.Val is null || bold.Val.Value;
 
         /// <summary>Everything listed after the sections are known: what each section holds that isn't brought in exactly, comments, page headers, and the completeness check.</summary>
         void Listed(string body, Func<int, string> sectionId)

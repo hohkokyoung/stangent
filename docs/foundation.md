@@ -52,6 +52,7 @@ components: { page-verifier: false, git-history: false, detector-config-keys: fa
 | `candidate-finder` | `components.` | on | A section code finds no page for gets status `off`, `candidatesBy: off`, and no gap. |
 | `agree-checker` | `components.` | on | Each agree link is recorded unchecked with a note, and the run has `agreeChecker: off`. |
 | `requirements-links` | `components.` | on | The section's sentences are judged, as with no requirements built. |
+| `first-import-approval` | `components.` | off | A first import goes straight in. When it's on, it waits until `fsd approve` (D122). |
 | `findings` | `fsd.findings` | off | Only links are recorded (D68). |
 | `disprove` | `fsd.disprove` | off | Status `off`. Needs `findings`: on without it, it's `off` and says so. |
 | `file-finder` | `tickets.aiPoints` | on | Code's signals are the starting points (`ai.status: off`). |
@@ -88,7 +89,7 @@ Requirement ids use it (D114): `RequirementFile.NextId` issues `F-`, `R-`, `D-`,
 with the old `ids.yaml` carries on from its numbers: the counter is taken over once and the file removed. `Raise` only goes up,
 so two runs doing this together can't give an id out twice. A retired requirement, definition, journey or scenario is marked `Remove`d when its feature is saved, along with any retired earlier (2.3).
 
-Section ids use it (D117): `S-0001`, per document, in `specs/fsd/<doc>/ids.json`, with the lock in `.stangent/fsd/<doc>/`. A removed section's id is marked `Remove`d.
+Section ids use it (D117): `S-0001`, per document, in `specs/fsd/<doc>/ids.json`, with the lock in `.stangent/fsd/<doc>/`. A removed section's id is marked `Remove`d. Tables (`T-0001`) and pictures (`F-0001`) share that ledger, each kind its own scope (D122).
 
 Finding ids use it (2.4, D118): `X-0001`, per project, in `specs/trace-ids.json`, with the lock at `.stangent/fsd/trace-ids.lock`. `trace check` issues them.
 
@@ -171,7 +172,7 @@ returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds ev
 | `link-run` | `find`, `judge`, `confirm`, `done`, `failed` | code | `.stangent/fsd/state-history.jsonl` |
 | `disprove-run` | `disprove`, `done` | code | `.stangent/fsd/state-history.jsonl` |
 | `req-run` | `write`, `confirm`, `fix`, `reconfirm`, `done`, `failed` | code | `.stangent/req/state-history.jsonl` |
-| `fsd-candidate` | `candidate`, `promoted`, `discarded`, `replaced` | a person promotes or discards; code replaces it when a newer file comes in | `specs/fsd/history.jsonl` |
+| `fsd-candidate` | `candidate`, `pending-approval`, `promoted`, `approved`, `discarded`, `replaced` | a person promotes, approves a first import, or discards; code replaces it when a newer file comes in | `specs/fsd/history.jsonl` |
 | `fsd-section-match` | `doubtful`, `same`, `new`, `removed` | a person settles and can change their mind; code only lets go of a claimed id | same |
 
 **History.** Append-only JSONL, one move per line: `at`, `kind`, `id`, `from`, `to`, `who`, `reason`. It sits beside the state:

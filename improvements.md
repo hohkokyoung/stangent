@@ -81,11 +81,11 @@ Ahead of Stangent because stale-page detection is only planned there (Phase 7).
    - ⬜ Word cross-references turned into working links  
      *Plain text today. Recommend: later.*
 - ✅ Lists everything it couldn't bring in exactly, so nothing is lost silently.  
-  *Done for PDF, with stated gaps (D111), and for Word, where a code check compares every word per section on each import (D116). Not yet measured on a file saved by Word itself.*
+  *Done for PDF, with stated gaps (D111), and for Word, where a code check compares every word per section on each import (D116). Each import now has a verdict and a report, grouped by kind (D122). Not yet measured on a file saved by Word itself.*
 - 🟡 Open Word review comments become questions for the BA.  
   *Each comment is listed with its author, section and open or resolved state, in a fixed shape (D116). **Not done:** becoming questions. 2.5 didn't build it.*
 - ✅ Encrypted or protected files stop the run with instructions. It never works around the protection.  
-  *`pdf_locked` for any protected PDF; a Word file that won't open gives `invalid_docx` (D111).*
+  *`pdf_locked` for any protected PDF (D111); `docx_locked` for a Word file with a password, saying how to get a copy that can be read (D122). A sensitivity label stops it too, with `--allow-label` (D122).*
 - ✅ Fast on a real FSD: about 360 sections and 150 tables in about 18 seconds in the pilot.  
   *A 717-page Word file imported in 1.9 seconds.*
 
@@ -214,24 +214,24 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
 
 **Bringing a document in**
 
-- ⬜ A.1 · Re-read the same file with a newer build, through the candidate flow.  
-  *The same file reads `unchanged`, so 2.1's fixes never reach earlier imports. Recommend: do.*
-- ⬜ A.2 · One readable import report with a verdict: OK, OK with warnings, or failed.  
-  *Only a raw `problems` list today, 77 lines on a real PDF. Recommend: do after structured problems.*
-- ⬜ A.3 · Sensitivity labels stop the import, and a locked Word file gets its own stop with plain instructions.  
-  *Labels aren't checked; a locked `.docx` gets a generic `invalid_docx`. Recommend: do.*
-- ⬜ A.4 · When a Word file has no headings, list the bold lines that look like headings.  
-  *`no_structure` stops but doesn't say what to fix. It still never guesses. Recommend: do, small.*
+- ✅ A.1 · Re-read the same file with a newer build, through the candidate flow.  
+  *`fsd reread <doc>`, from the archive's original, comparing text (D122).*
+- ✅ A.2 · One readable import report with a verdict: OK, OK with warnings, or failed.  
+  *`verdict` on the result and `import-report.md`, from structured problems (D122).*
+- ✅ A.3 · Sensitivity labels stop the import, and a locked Word file gets its own stop with plain instructions.  
+  *`document_labelled`, `--allow-label`, `docx_locked` (D122).*
+- ✅ A.4 · When a Word file has no headings, list the bold lines that look like headings.  
+  *In the `no_structure` error's details, up to 20, by paragraph. It still never guesses (D122).*
 - ⬜ A.5 · Excel follows the same steps: each sheet a section, merged cells expanded, hidden sheets and comments listed, values shown with the formula noted, very large workbooks flagged.  
   *Decided (D111), not built. These answer most of what D111 left to grill. Recommend: do after the seams.*
-- ⬜ A.6 · Ids for tables, pictures and attachments, kept in `document.json`.  
-  *Only sections have ids. Recommend: do with Excel.*
+- 🟡 A.6 · Ids for tables, pictures and attachments, kept in `document.json`.  
+  *Tables and pictures are done (`T-`, `F-`, D122). Attachments' `A-` ids come with A.7.*
 - ⬜ A.7 · Embedded files converted, linked from their section, and their text checked with it. A locked or scanned one is kept and listed.  
   *Listed only today. The section carries the attachment; the text stays out of `document.md`, so saved hashes hold. Sections that gain text re-run, which is paid. Recommend: do after Excel.*
 - ⬜ A.8 · A section's fingerprint includes its attachments.  
   *A changed sheet with the same words reads `unchanged` today. Keep `textHash`; add a second hash. Recommend: do with attachments.*
-- ⬜ A.9 · A person approves the first import, in a spec-only PR.  
-  *It goes straight in today. Recommend: decide with D99's approval.*
+- ✅ A.9 · A person approves the first import, in a spec-only PR.  
+  *A switch, off by default: `fsd approve` (D122). Stangent opens no PR; a spec-only PR is the team's own.*
 - ⬜ A.10 · `fsd outline` and `fsd show <section>`.  
   *No command reads one section. Recommend: do, small.*
 - ⬜ A.11 · `fsd export`: one file per top-level heading, long chapters cut one level down, generated, never read back.  

@@ -126,6 +126,91 @@
           },
           "caption": {
             "type": "string"
+          },
+          "id": {
+            "description": "The picture's permanent id, from the document's ledger (D122). A picture is its file, which is named by content. An older document gets one on its next import.",
+            "type": "string",
+            "pattern": "^F-[0-9]{4,}$"
+          },
+          "section": {
+            "description": "The permanent id of the first section that shows it. Missing when it sits before the first heading.",
+            "type": "string",
+            "pattern": "^S-[0-9]{4,}$"
+          },
+          "sectionNumber": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "tables": {
+      "description": "The document's tables, each with a permanent id from its ledger and its section (D122). Worked out from the sections' text; document.md and the sections don't change. No hash reads it. An older document gets it on its next import.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "section",
+          "sectionNumber",
+          "position",
+          "rows",
+          "columns",
+          "hash"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^T-[0-9]{4,}$"
+          },
+          "section": {
+            "type": "string",
+            "pattern": "^S-[0-9]{4,}$"
+          },
+          "sectionNumber": {
+            "type": "string"
+          },
+          "position": {
+            "description": "Which table of its section this is, from 1.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "rows": {
+            "description": "Rows, the header included.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "columns": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "labels": {
+      "description": "Sensitivity labels on the file that a person allowed with --allow-label (D122). allowedBy is from git, never typed.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "allowedBy"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "allowedBy": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }

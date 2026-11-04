@@ -15,6 +15,7 @@ namespace Stangent.Spec.Fsd;
 public static class FsdVersions
 {
     const string Scope = "sections", Format = "S-{0:D4}";
+    public const string FirstImportApproval = "first-import-approval";
     static readonly StateActor Code = StateActor.Code("stangent fsd import");
 
     static string JsonPath(string root, string doc) => Path.Combine(FsdImport.DocDir(root, doc), "document.json");
@@ -42,9 +43,10 @@ public static class FsdVersions
     public static int EnsureIds(string root, string doc, JsonObject current)
     {
         var missing = current["sections"]!.AsArray().OfType<JsonObject>().Where(s => s["permanentId"] is null).ToList();
-        if (missing.Count == 0 && (int?)current["schemaVersion"] >= 3) return 0;
+        if (missing.Count == 0 && (int?)current["schemaVersion"] >= 3 && current["tables"] is not null) return 0;
         if (missing.Count > 0) IssueIds(root, doc, current, missing);
         current["schemaVersion"] = 3;
+        if (current["tables"] is null) FsdObjects.Assign(root, doc, null, current);
         ImportProblems.Upgrade(current);
         ImportProblems.Attach(current);
         Validate(current);
@@ -52,7 +54,7 @@ public static class FsdVersions
         return missing.Count;
     }
 
-    static void Validate(JsonObject doc)
+    internal static void Validate(JsonObject doc)
     {
         var errors = SchemaRegistry.Embedded.Validate(FsdImport.Schema, doc.ToJsonString());
         if (errors.Count > 0) throw new StangentException("invalid_document", "The document broke source-document v3 (a stangent bug).", ExitCodes.Failed, errors);
@@ -75,20 +77,23 @@ public static class FsdVersions
     }
 
     /// <summary>A changed file for a document already here: it waits beside the current version. The same file again keeps what people settled; a different one starts over.</summary>
-    internal static JsonObject Offer(string root, string doc, JsonObject current, JsonObject document, ConvertedDocument converted, string hash, bool flat, JsonObject archive)
+    internal static JsonObject Offer(string root, string doc, JsonObject current, JsonObject document, ConvertedDocument converted, string hash, bool flat, JsonObject archive, string why = "a changed file came in")
     {
         EnsureIds(root, doc, current);
         var dir = CandidateDir(root, doc);
         if (File.Exists(DiffJson(root, doc)))
         {
             var waiting = Load(root, doc);
-            if ((string)waiting["to"]! == hash && (bool)waiting["flat"]! == flat) return Result(doc, waiting, document, "waiting", archive);
+            // The same file read the same way waits as it is. A newer build reading it differently is a newer candidate.
+            if ((string)waiting["to"]! == hash && (bool)waiting["flat"]! == flat && File.ReadAllText(Path.Combine(dir, "document.md")) == converted.Markdown)
+                return Result(doc, waiting, document, "waiting", archive);
             StateChanges.Apply(root, waiting, StateKinds.FsdCandidate, CandidateKey(doc, (string)waiting["to"]!), "replaced", Code, $"a newer file came in: {hash[..12]}");
         }
         if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
         Directory.CreateDirectory(dir);
         FsdImport.WriteText(dir, converted);
         Quotes.WriteAtomic(Pending(root, doc), CanonicalJson.Serialize(document));
+        ImportReport.Write(dir, document);
 
         var key = CandidateKey(doc, hash);
         var entries = FsdSectionDiff.Compare(current["sections"]!.AsArray(), document["sections"]!.AsArray());
@@ -99,19 +104,85 @@ public static class FsdVersions
             ["version"] = 1, ["doc"] = doc, ["from"] = (string)current["original"]!["hash"]!, ["to"] = hash, ["flat"] = flat,
             ["sections"] = new JsonArray([.. entries.Select(e => (JsonNode)e)]),
         };
-        StateChanges.Apply(root, diff, StateKinds.FsdCandidate, key, "candidate", Code, "a changed file came in");
+        StateChanges.Apply(root, diff, StateKinds.FsdCandidate, key, "candidate", Code, why);
         Save(root, doc, diff);
         return Result(doc, diff, document, "candidate", archive);
     }
 
     static string MatchKey(string candidate, JsonObject entry) => $"{candidate}#{(string?)entry["to"] ?? (string)entry["permanentId"]!}";
 
-    static JsonObject Result(string doc, JsonObject diff, JsonObject document, string status, JsonObject archive) => new()
+    static JsonObject Result(string doc, JsonObject diff, JsonObject document, string status, JsonObject archive) => ImportReport.AddTo(new JsonObject
     {
         ["id"] = doc, ["status"] = status, ["hash"] = (string)diff["to"]!, ["from"] = (string)diff["from"]!, ["sections"] = document["sections"]!.AsArray().Count,
         ["images"] = document["images"]!.AsArray().Count, ["problems"] = document["problems"]!.DeepClone(), ["archive"] = archive,
         ["counts"] = diff["counts"]!.DeepClone(), ["doubtful"] = Open(diff), ["diff"] = $"specs/fsd/{doc}/candidate/SECTION_DIFF.md",
-    };
+    }, document, $"specs/fsd/{doc}/candidate");
+
+    static bool IsFirst(JsonObject diff) => (bool?)diff["first"] == true;
+
+    /// <summary>
+    /// A first import, with <c>first-import-approval</c> on (D122): it waits in <c>candidate/</c>, and with no <c>document.json</c> beside it nothing else can read it,
+    /// until a person runs <c>fsd approve</c>. Stangent only holds it there; any PR around it is the team's own.
+    /// </summary>
+    internal static JsonObject OfferFirst(string root, string doc, JsonObject document, ConvertedDocument converted, string hash, bool flat, JsonObject archive)
+    {
+        var dir = CandidateDir(root, doc);
+        JsonObject diff;
+        if (File.Exists(DiffJson(root, doc)) && Load(root, doc) is var waiting && (string)waiting["to"]! == hash && (bool)waiting["flat"]! == flat) diff = waiting;
+        else
+        {
+            ReplaceFirst(root, doc, hash);
+            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+            Directory.CreateDirectory(dir);
+            FsdImport.WriteText(dir, converted);
+            Quotes.WriteAtomic(Pending(root, doc), CanonicalJson.Serialize(document));
+            ImportReport.Write(dir, document);
+            diff = new JsonObject { ["version"] = 1, ["doc"] = doc, ["first"] = true, ["from"] = null, ["to"] = hash, ["flat"] = flat, ["sections"] = new JsonArray() };
+            StateChanges.Apply(root, diff, StateKinds.FsdCandidate, CandidateKey(doc, hash), "pending-approval", Code, "a first import, with first-import-approval on");
+            diff["counts"] = FsdSectionDiff.Counts([]);
+            Quotes.WriteAtomic(DiffJson(root, doc), CanonicalJson.Serialize(diff));
+        }
+        return ImportReport.AddTo(new JsonObject
+        {
+            ["id"] = doc, ["status"] = "pending-approval", ["hash"] = hash, ["sections"] = document["sections"]!.AsArray().Count, ["images"] = document["images"]!.AsArray().Count,
+            ["problems"] = document["problems"]!.DeepClone(), ["archive"] = archive, ["next"] = $"stangent fsd approve {doc}",
+        }, document, $"specs/fsd/{doc}/candidate");
+    }
+
+    /// <summary>A first import still waiting gives way to another file for the same document.</summary>
+    internal static void ReplaceFirst(string root, string doc, string hash)
+    {
+        if (!File.Exists(DiffJson(root, doc))) return;
+        var waiting = Load(root, doc);
+        if (!IsFirst(waiting)) return;
+        StateChanges.Apply(root, waiting, StateKinds.FsdCandidate, CandidateKey(doc, (string)waiting["to"]!), "replaced", Code, $"another file came in: {hash[..12]}");
+        Directory.Delete(CandidateDir(root, doc), recursive: true);
+    }
+
+    /// <summary>A person approves a first import, and it becomes the current version. Only then does it get its ids and anything can read it.</summary>
+    public static JsonObject Approve(string root, string doc, string who)
+    {
+        var diff = Load(root, doc);
+        if (!IsFirst(diff))
+            throw new StangentException("not_pending_approval", $"{doc}'s candidate is a new version, not a first import: run `stangent fsd promote {doc}`.", ExitCodes.Usage);
+        var dir = FsdImport.DocDir(root, doc);
+        var candidate = CandidateDir(root, doc);
+        var pending = JsonNode.Parse(File.ReadAllText(Pending(root, doc)))!.AsObject();
+        IssueIds(root, doc, pending, pending["sections"]!.AsArray().OfType<JsonObject>());
+        FsdObjects.Assign(root, doc, null, pending);
+        ImportProblems.Attach(pending);
+        Validate(pending);
+        if (Directory.Exists(Path.Combine(candidate, "images"))) Directory.Move(Path.Combine(candidate, "images"), Path.Combine(dir, "images"));
+        File.Move(Path.Combine(candidate, "document.md"), Path.Combine(dir, "document.md"), overwrite: true);
+        Quotes.WriteAtomic(JsonPath(root, doc), CanonicalJson.Serialize(pending));
+        ImportReport.Write(dir, pending);
+        StateChanges.Apply(root, diff, StateKinds.FsdCandidate, CandidateKey(doc, (string)diff["to"]!), "approved", StateActor.Person(who), "first import approved");
+        Directory.Delete(candidate, recursive: true);
+        return ImportReport.AddTo(new JsonObject
+        {
+            ["id"] = doc, ["status"] = "imported", ["hash"] = (string)diff["to"]!, ["sections"] = pending["sections"]!.AsArray().Count, ["approvedBy"] = who,
+        }, pending, $"specs/fsd/{doc}");
+    }
 
     static JsonArray Open(JsonObject diff) => new([.. diff["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful")
         .Select(e => (JsonNode)((string?)e["to"] ?? (string)e["permanentId"]!))]);
@@ -204,6 +275,8 @@ public static class FsdVersions
     {
         var root = repo.Root;
         var diff = Load(root, doc);
+        if (IsFirst(diff))
+            throw new StangentException("needs_approval", $"{doc} is a first import waiting for approval, with no current version to carry anything from: run `stangent fsd approve {doc}`.", ExitCodes.Usage);
         var left = Open(diff);
         if (left.Count > 0)
             throw new StangentException("doubtful_sections_remain", $"{left.Count} section(s) of {doc}'s candidate are doubtful. Settle each with `stangent fsd resolve`.", ExitCodes.Failed, [.. left.Select(o => (string)o!)]);
@@ -224,6 +297,7 @@ public static class FsdVersions
         var sections = pending["sections"]!.AsArray().OfType<JsonObject>().ToList();
         foreach (var s in sections.Where(s => kept.ContainsKey((string)s["id"]!))) s["permanentId"] = kept[(string)s["id"]!].Id;
         IssueIds(root, doc, current, sections.Where(s => !kept.ContainsKey((string)s["id"]!)));
+        FsdObjects.Assign(root, doc, current, pending);
         ImportProblems.Upgrade(pending);
         ImportProblems.Attach(pending);
         pending["schemaVersion"] = 3;
@@ -243,6 +317,7 @@ public static class FsdVersions
         if (Directory.Exists(Path.Combine(candidate, "images"))) Directory.Move(Path.Combine(candidate, "images"), Path.Combine(dir, "images"));
         File.Move(Path.Combine(candidate, "document.md"), Path.Combine(dir, "document.md"), overwrite: true);
         Quotes.WriteAtomic(JsonPath(root, doc), CanonicalJson.Serialize(pending));
+        ImportReport.Write(dir, pending);
 
         StateChanges.Apply(root, diff, StateKinds.FsdCandidate, CandidateKey(doc, (string)diff["to"]!), "promoted", StateActor.Person(who), "promoted");
         var log = new JsonObject
@@ -255,10 +330,10 @@ public static class FsdVersions
 
         // The existing drop-back (D58): a decision whose quote is gone goes back to undecided, here rather than at the next CI run.
         var check = Trace.TraceCheck.Run(root, null, null, fix: true);
-        return new JsonObject
+        return ImportReport.AddTo(new JsonObject
         {
             ["id"] = doc, ["hash"] = (string)diff["to"]!, ["from"] = (string)diff["from"]!, ["sections"] = sections.Count, ["counts"] = diff["counts"]!.DeepClone(),
             ["carried"] = carried, ["staleQuotes"] = check["staleQuotes"]!.DeepClone(), ["traceProblems"] = check["problems"]!.DeepClone(),
-        };
+        }, pending, $"specs/fsd/{doc}");
     }
 }

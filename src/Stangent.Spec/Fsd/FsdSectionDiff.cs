@@ -157,6 +157,7 @@ public static class FsdSectionDiff
     public static string Markdown(JsonObject diff)
     {
         var doc = (string)diff["doc"]!;
+        if (diff["from"] is null) return $"# Section diff: {doc}\n\nA first import, waiting for `stangent fsd approve {doc}`. There's no current version to compare it with.\n";
         var entries = diff["sections"]!.AsArray().OfType<JsonObject>().ToList();
         var claimed = entries.Select(e => (string?)e["same_as"]).OfType<string>().ToHashSet(StringComparer.Ordinal);
         var sb = new StringBuilder($"# Section diff: {doc}\n\n");

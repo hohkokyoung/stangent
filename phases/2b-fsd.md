@@ -391,3 +391,9 @@ Code only, no AI. Details are in `docs/spec.md`.
 **S.1 · `trace-links` v3 → v4.** `fsd.sectionId`, by code at `trace check`. 2c and 3 were checked by grep and moved, each with its line. A build before this one can't read a v4 file. `requirements` v1 grew `sectionId` in place: 2c is still being built, and it has provided nothing.
 
 Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions` v2 → v3. By grep, nothing here reads telemetry, and results are read by name, so `components` beside `result` changes nothing. Moved.
+
+## §8 batch 2, under D120 (2026-11-04)
+
+**Not checked, under D120:** no fresh check of any of this. `dotnet test`, the whole-flow test and `phases check` pass. Sensitivity labels and locked files have only been run on hand-built files, never one saved by Word or a real labelling tool. `fsd reread`'s candidate path has only been run by making the saved text look older, never with two real builds.
+
+**`source-document` v3 grew in place (D20, D122).** `tables`, each picture's `id` and `section`, and `labels`, all optional, all in no hash. v3 is on this branch only, not on `main`, so it isn't shipped and takes no bump. A document without them gets `tables` and picture ids on its next import.

@@ -173,7 +173,7 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 8 | Sensitivity labels stop the import, and a locked Word file gets its own stop with plain in | ⬜ | 2b, D111 | A.3 |
 | 8 | When a Word file has no headings, list the bold lines that look like headings | ⬜ | 2b, D111 | A.4 |
 | 8 | Excel follows the same steps | ⬜ | D111 | A.5 |
-| 8 | Ids for tables, pictures and attachments, kept in `document.json` | ⬜ | 2b, D113 | A.6 |
+| 8 | Ids for tables, pictures and attachments, kept in `document.json` | 🟡 | 2b, D113 | A.6; tables and pictures done, attachments with A.7 |
 | 8 | Embedded files converted, linked from their section, and their text checked with it. A loc | ⬜ | 2b, 2c, D53, D111 | A.7 |
 | 8 | A section's fingerprint includes its attachments | ⬜ | 2b, D117 | A.8 |
 | 8 | A person approves the first import, in a spec-only PR | ⬜ | 2b, D99 | A.9 |

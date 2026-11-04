@@ -261,7 +261,7 @@ TicketCommands.Add(root);
 return Cli.Execute(root, args, prettyOption);
 
 /// <summary>A check that ran and found problems: exit 1, with the report as the result.</summary>
-sealed class CheckFailed(string code, string message, JsonNode result) : StangentException(code, message)
+sealed class CheckFailed(string code, string message, JsonNode result, int exitCode = ExitCodes.Failed, IReadOnlyList<string>? details = null) : StangentException(code, message, exitCode, details)
 {
     public JsonNode Result { get; } = result;
 }

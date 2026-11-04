@@ -1106,7 +1106,7 @@ public class FsdPdfTests
 
     // ---- A damaged outline (finding 6)
 
-    static byte[] PlainPdf(string[] extraObjects, string catalogExtra, string trailerExtra = "", string content = "BT /F1 12 Tf 72 700 Td (Hello words on the page.) Tj ET", string pageResources = "")
+    internal static byte[] PlainPdf(string[] extraObjects, string catalogExtra, string trailerExtra = "", string content = "BT /F1 12 Tf 72 700 Td (Hello words on the page.) Tj ET", string pageResources = "")
     {
         string[] objects = [
             $"<< /Type /Catalog /Pages 2 0 R {catalogExtra} >>", "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",

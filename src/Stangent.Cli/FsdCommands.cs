@@ -17,14 +17,24 @@ static class FsdCommands
         var idOption = new Option<string?>("--id") { Description = "The document's id (default: from its file name)." };
         var flatOption = new Option<bool>("--flat") { Description = "Import the whole document as one labelled section with no structure, for a document with no headings or bookmarks." };
         var acceptOption = new Option<bool>("--accept-changes") { Description = "For a .docx with tracked changes, which otherwise stops the import: import the accepted view (inserted text kept, deleted text gone, moved text once), listing how many were accepted." };
-        var import = new Command("import", "Convert a .docx or .pdf to Markdown by code, archive the original (D16) and record its sections (source-document v2). A changed file for a document already here comes in as a candidate with a section diff (D117).") { fileArg, idOption, flatOption, acceptOption };
+        var allowLabelOption = new Option<string[]>("--allow-label") { Description = "Import a file with this sensitivity label, by its name or id. Without it, a label stops the import. It's kept in the document's record with your name, from git. Repeat for several." };
+        var import = new Command("import", "Convert a .docx or .pdf to Markdown by code, archive the original (D16) and record its sections (source-document v3), with a verdict and a report. A changed file for a document already here comes in as a candidate with a section diff (D117).") { fileArg, idOption, flatOption, acceptOption, allowLabelOption };
         import.SetAction(pr => Cli.Run(pr, "fsd import", ctx =>
         {
-            var result = FsdImport.Import(ctx.Repo, pr.GetValue(fileArg)!, pr.GetValue(idOption), pr.GetValue(flatOption), pr.GetValue(acceptOption));
+            var result = Stopping(() => FsdImport.Import(ctx.Repo, pr.GetValue(fileArg)!, pr.GetValue(idOption), pr.GetValue(flatOption), pr.GetValue(acceptOption), pr.GetValue(allowLabelOption)));
             ctx.Span.Attributes["stangent.artifact.count"] = (int?)result["sections"] ?? 0;
             return result;
         }));
         fsd.Subcommands.Add(import);
+
+        var docArgument = new Argument<string>("doc") { Description = "The document's id." };
+        var reread = new Command("reread", "Read the same original from the archive again with this build (D122). Different text comes in as a candidate; the same text reads unchanged.") { docArgument, allowLabelOption };
+        reread.SetAction(pr => Cli.Run(pr, "fsd reread", ctx => Stopping(() => FsdImport.Reread(ctx.Repo, pr.GetValue(docArgument)!, pr.GetValue(allowLabelOption)))));
+        fsd.Subcommands.Add(reread);
+
+        var approveFirst = new Command("approve", "A person approves a first import waiting with first-import-approval on (D122). Who decided comes from git. Stangent opens no PR and pushes nothing.") { docArgument };
+        approveFirst.SetAction(pr => Cli.Run(pr, "fsd approve", ctx => FsdVersions.Approve(ctx.Repo.Root, pr.GetValue(docArgument)!, FsdVersions.GitPerson(ctx.Repo.Root))));
+        fsd.Subcommands.Add(approveFirst);
 
         var docOption = new Option<string?>("--doc") { Description = "Only this document." };
         var sections = new Command("sections", "List the imported sections that have text to judge.") { docOption };
@@ -167,6 +177,16 @@ static class FsdCommands
             return new JsonObject { ["attributed"] = TraceCheck.Attribute(ctx.Repo.Root, BaseTrace(ctx, b) ?? TraceFile.Empty(), pr.GetValue(byOption)!) };
         }));
         trace.Subcommands.Add(attribute);
+    }
+
+    /// <summary>A file that was read and couldn't come in gets the verdict too (D122), in the envelope, as nothing was written to hold it. The error stays what it was.</summary>
+    static JsonObject Stopping(Func<JsonObject> import)
+    {
+        try { return import(); }
+        catch (Stangent.Core.StangentException e) when (ImportReport.Stops.Contains(e.Code))
+        {
+            throw new CheckFailed(e.Code, e.Message, new JsonObject { ["verdict"] = ImportReport.Failed, ["stoppedBy"] = e.Code }, e.ExitCode, e.Details);
+        }
     }
 
     static JsonObject? BaseTrace(CliContext ctx, string gitRef)
