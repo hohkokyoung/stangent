@@ -94,18 +94,18 @@ Ahead of Stangent because Stangent's AI extraction produced 109 requirements but
 
 ## 4. Stable section ids across FSD versions
 
-- ⬜ Section ids survive edits, moves, renames and splits.  
-  *Section ids are heading numbers, so a new chapter changes what `1` means. Recommend: do.*
-- ⬜ A new Word version comes in as a candidate, with a section-by-section list of what changed (`SECTION_DIFF.md`).  
-  *A new version replaces the old one today. Recommend: do.*
-- ☑️ Doubtful matches are never guessed. They're listed for a person to decide, and promoting the candidate is refused until they're settled.  
-  *Decided for requirements (D99), in 2c step 6. Try matching by code before AI (D18).*
-- ☑️ Removed ids are kept and marked removed, never reused.  
-  *Decided for requirement ids (D99), not built. Section ids need the same.*
+- ✅ Section ids survive edits, moves, renames and splits.  
+  *Built in 2.2 (D117): a permanent id beside the number. A split or merge is a person's call, since only exact signals match on their own.*
+- ✅ A new Word version comes in as a candidate, with a section-by-section list of what changed (`SECTION_DIFF.md`).  
+  *Built in 2.2 (D117), for `.docx` and `.pdf` alike. The current version serves until a person promotes.*
+- ✅ Doubtful matches are never guessed. They're listed for a person to decide, and promoting the candidate is refused until they're settled.  
+  *Built for sections in 2.2 (D117), by code with no AI. Requirements stay with 2c step 6 (D99).*
+- ✅ Removed ids are kept and marked removed, never reused.  
+  *Built for section ids in 2.2 (D117), on the ledger. Requirement ids come with 2.3.*
 - ⬜ Proven on a real version change: 294 sections unchanged, 27 modified, 25 added, 14 moved, with no open decisions. Matching took half a second.  
-  *No real version change yet. It needs a document with two versions (D56).*
-- ⬜ Mistakes were fixed and locked in. The matcher's three first-run errors each got a design fix and a test, and the reviewed result is pinned as a regression check.  
-  *Same habit as Stangent's frozen keys. Comes with the matcher.*
+  *No real version change yet. It needs a document with two versions (D56). A planted edit of Sonarr's FSD found all it planted: a check of the rules, not this.*
+- 🟡 Mistakes were fixed and locked in. The matcher's three first-run errors each got a design fix and a test, and the reviewed result is pinned as a regression check.  
+  *A reviewed pair is pinned (2.2). There's been no real first run to learn from yet.*
 
 Ahead of Stangent because stable requirement ids are still in progress in Stangent's Phase 2c. These are built and tested on a real FSD.  
 *Fair.*

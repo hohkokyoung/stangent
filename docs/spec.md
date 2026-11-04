@@ -32,7 +32,7 @@ runs the plugin's subagents instead, each allowed to read and write only under `
 (`--permission-mode dontAsk --allowedTools "Read(.stangent/**)" "Edit(.stangent/**)"`). Files
 drivers share are written whole (temp file, then rename) under a lock. A section whose candidate pages have no recorded
 version is reported as failed, never turned into a gap. `ai.enabled: false` stops every `prepare` with exit
-code 4 (D24); `spec stale`, `fsd import`, `fsd candidates`, `fsd undocumented` and `trace check` are code only.
+code 4 (D24); `spec stale`, `fsd import`, `fsd diff`, `fsd resolve`, `fsd promote`, `fsd candidates`, `fsd undocumented` and `trace check` are code only.
 
 ## Reference pages (2a, D54, D55)
 
@@ -102,13 +102,40 @@ code 4 (D24); `spec stale`, `fsd import`, `fsd candidates`, `fsd undocumented` a
   - **Images** are kept in reading position, named by content hash. One that can't be decoded is saved as raw bytes and listed. One `problems` line counts them: no AI or code reads them, and rules can sit inside diagrams.
   - **Symbols:** only clear bullets become `- `; a tick, an empty box or an empty circle stays as drawn, and a line starting with one starts a new line. Glyphs with no standard letter (a symbol font's private range, the replacement character) stay as drawn, with one `problems` line counting them, since quotes depend on them.
 - **`--flat`** imports the whole document as one section, id and title `(whole document, no sections)`, with a `problems` line saying it has no structure. A re-import that changes
-  between `--flat` and not replaces the document. Any re-import that replaces a document reports `replacedSections` in the command's result: the section ids that left, and how many `specs/trace.yaml` entries point at them, because `trace check --fix` clears those decisions.
+  between `--flat` and not is a changed import, so it comes in as a candidate (below).
 - **Errors, with nothing written:** `no_structure` (a PDF with none of the above, or a `.docx` with no headings), `no_text` (no page has text), `pdf_locked` (any encryption, even one that opens without a password; protection is never worked around), `invalid_pdf` (PdfPig couldn't read the file, including an outline that loops or nests impossibly deep; usually damage, but it can be a valid file PdfPig can't handle), `invalid_docx` (damaged, or an encrypted Word file), `docx_tracked_changes` (a Word file with tracked changes and no `--accept-changes`).
 - **Known Word gaps:** never yet run on a file saved by Word itself, only on hand-built files and Sonarr's planted FSD, which a script wrote. A tracked merge of table cells (`w:cellMerge`) counts as a change but isn't applied. White text is kept and not listed. A style from a table doesn't count for hidden or struck text. A hidden run that splits a word leaves its two halves joined. A file imported before this check stays `unchanged`, with no new lines, until its bytes change. Ticket attachments read the accepted view with nothing listed, because a ticket bundle has no place for it.
 - **Known PDF gaps:** a table split across pages stays as separate pieces; images are unread; no OCR, so a page with no text is listed and skipped; a title on a page doesn't prove it's the heading there. Fully borderless tables can't be detected without guessing: they flatten into text, unlisted. Tables ruled only across flatten into text too, and are listed; underlined lines close together are listed the same way, as a false alarm. Two columns drawn row by row can interleave. A word can split where PdfPig reads a gap in it. A capitalised sentence over a page break stays split, and a footnote at body size can join a lower-case next page (the join is listed). Near-white and fully transparent text is kept and not listed. Text covered by a shape isn't detected. Table rows drawn apart from each other lose their columns but keep their words in order. Text in another direction is listed with a page count, not its page numbers. Rotated column heads leave a table's header cells blank: their text is listed as another direction. A list item's label can read as a sentence's start, or the reverse, where nothing else marks a list. A page tree nested about 100,000 levels deep overflows PdfPig's stack as the file opens and ends the process (nothing is written): it can't be guarded before opening, and it takes a hostile file.
 - **Section ids:** the FSD's own number (`4.2.3`), or the heading path (`Calendar / Views`) where a section has none.
   Duplicate, missing and skipped numbers are reported in `problems`, never guessed. In a PDF, a parent with no number (`Chapter 7: Title`) doesn't stop
   its children keeping theirs (`7.1`), and a number out of step with its parent (`8.3.2` under `8.2`) keeps its id with a problem.
+- **Permanent ids (D117, `source-document` v2):** each section also has `permanentId`, `S-0001`, from `specs/fsd/<doc>/ids.json`. It stays with the section across versions and is never given twice. `id` stays as it was, because saved input hashes and link ids are built from it. A document imported earlier gets its ids on its next import, the same file included: it stays `unchanged`, the result says `permanentIdsAdded`, and only those fields change.
+
+### A new version (D117)
+
+A first import goes straight in. The same file again is `unchanged`, and says if a candidate is waiting. A different file for that document id no longer replaces it:
+
+- **It waits.** `specs/fsd/<doc>/candidate/` holds its `document.md`, images, `pending.json` (its record, ids still to come), `section-diff.json` and `SECTION_DIFF.md`. The current version keeps serving everything until promotion. The same file again is `waiting` and keeps what was settled; a newer file replaces the candidate and starts over.
+- **Matching, by code, in order, on the section model, so `.docx` and `.pdf` alike.** A heading path is the titles from the top down, without numbers. "Unique" means in the whole document, on both sides.
+
+| Outcome | Rule |
+|---|---|
+| `unchanged` | The same body and heading path, as a unique pair. Its number may change; `numberChanged` says so. |
+| `moved`, `renamed` | The same body, unique and not empty. `renamed` is a new title under the same parent; anything else is `moved`. |
+| `modified` | The same heading path, unique, with another body. |
+| `doubtful` | Anything left that shares a whole sentence with any section on the other side, listed with those candidates and marked `alreadyMatched` where they are. |
+| `added`, `removed` | Left, with no shared sentence. |
+
+  A sentence is one from `Sentences.Of`, with whitespace normalised and table rows counted, holding at least 4 words: "See above." says nothing about where a section went. There's no score and no threshold. A split or a merge lands in `doubtful`, on both sides.
+- `stangent fsd diff <doc> [--format md]` shows the diff. `no_candidate` (exit 3) when none is waiting.
+- `stangent fsd resolve <doc> <candidate-section> --same-as <S-id>` or `--new` settles a section in the candidate. `stangent fsd resolve <doc> <S-id> --removed` settles one in the current version, for a merge. `--same-as` also settles the id it claims. Who decided comes from `git config user.name`, never an option; with none set it stops with `no_git_identity`. Refusals: `not_doubtful`, `section_id_taken`, `section_id_removed` (a removed id never comes back), `not_found`. A person can change their mind, and the id they let go of goes back to doubtful.
+- `stangent fsd promote <doc>` refuses with `doubtful_sections_remain` (exit 1), listing them, while any are open. `candidate_out_of_date` if the current version isn't the one compared. Otherwise the candidate becomes current: settled and exact matches keep their ids, the rest get new ones, ids nothing claimed are marked removed, and `candidate/` goes. `promotions.jsonl` keeps a line per promotion.
+- **What follows a section, by code, with no file changing shape.** Trace entries get the new number and title, and a new `id` because it's the hash of the link, with the decision and `decided_by` kept. Feature files, every quote, and questions follow; a feature goes under its new parent's. Run keys move. A run's `inputs` is worked out again only when it was valid for the old section and only the number changed, so a renumbering costs no paid run; `carried.runAgain` lists the sections whose words changed. `carried.traceIds` holds old and new entry ids.
+- **A modified section** then goes through the existing drop-back (D58): promotion runs `trace check --fix`, and `staleQuotes` lists what dropped. Its requirements rebuild at the next `req prepare`, as they do whenever a section's text changes.
+- **A removed section** is listed in `carried.removed`: its trace entries, features, requirements and questions. Nothing is dropped. Its features and questions move to the section `(removed S-0007) 3.2`, so a new section given that number can't pick them up. Its trace entries stay, so `trace check` flags them until a person acts.
+- CI: `TraceCheck` and `trace attribute` look up a moved entry in the base file by its link without the section, so promoting doesn't read as a typed `decided_by` or a new decision.
+- **Known gaps:** see `phases/2b-fsd.md`. No real document with two versions has been through this yet (D56).
+
 - The original goes to the archive set in `stangent.yaml` (`fsd: { archive: { name, path, git } }`, a folder outside
   the repo or a second git repo, which gets a commit) and is cited by archive name, path and content hash.
   A file with a known hash is imported once.

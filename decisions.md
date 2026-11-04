@@ -188,6 +188,7 @@ between documents and code.
 - The archive lives in a separate repo — see D16.
 - *Deferred 2026-10-20 (Phase 2 plan):* versions and supersession wait for a project with several FSD versions;
   Phase 2 handles one version per document, `.docx` only.
+- *Partly built 2026-11-04 (D117):* a new version of one document comes in as a candidate, and a person promotes it. Version dates, draft or approved status, and clashes across documents aren't built.
 - *Changed 2026-11-03 (D111):* PDF and Excel are to be imported as well.
 - *Picked up 2026-11-02 (D99, not built):* `fsd reconcile` carries out this entry. The version date is the one the
   document states (`--effective`), not the file's own metadata (which changes when a file is copied); the BA confirms
@@ -2260,6 +2261,17 @@ Follows D52 and D111's rule: what can't be brought in exactly is listed, never d
 - **Added beyond the brief because the same principle needs them:** struck-through text is listed, page headers and footers get a word count, a content control's prompt is left out, rows and cells inside a content control are read, and a row starting part-way across keeps its columns.
 **Why:** a tracked document silently resolved is a false record of what was agreed, and moved text used to appear twice. A list of known cases can't cover the element nobody thought of; a word count can.
 **Cost:** a document mid-review can't be imported without a flag or a trip to Word. The check adds a pass per block, and sees only text in the file's main text-bearing elements. It's proven on hand-built files and Sonarr's script-written FSD, with no file saved by Word itself in the repo, so a real one may flag something new, and that's a line to read rather than a failure. Footnotes lose their place in the sentence, and keep only the words before them in their label. A merge across columns still leaves blanks while one down rows repeats, kept so as not to change any imported text.
+
+## D117 · Sections get a permanent id beside their number, and only exact signals match across versions — 2026-11-04 (assistant's call, owner asleep)
+Follows D15, D58 and D99, and D20 for the contract.
+- **The permanent id goes beside the old id, not instead of it.** `permanentId` (`S-0001`) comes from a ledger per document. `id` stays the number or heading path, because input hashes and link ids are built from it: changing it would make every saved paid answer look stale. Measured on Sonarr's FSD against the build before: `document.md` byte-identical, `document.json` the same once the ids are taken off, all 15 requirement hashes the same.
+- **A document from before gets its ids on its next import**, the same file included, which stays `unchanged`. A read never writes.
+- **A changed file is a candidate.** It waits beside the current version, with `SECTION_DIFF.md` and a JSON form. Only a person promotes, and `decided_by` comes from git.
+- **Exact signals only, with no score or threshold:** the same body and heading path is unchanged; the same body, unique on both sides, is moved or renamed; the same heading path, unique on both sides, is modified. Whatever's left that shares a whole sentence of at least 4 words with any section on the other side is doubtful. The rest is added or removed.
+- **Promotion carries work by code.** References follow a section that kept its id, in the stored files as they are. A run's hash is worked out again only when it was valid and the words are the same but the number. Items on a removed section stay on file under a mark and are listed.
+- **Added beyond the brief because the design needs them:** `resolve --removed`, since in a merge a current section has no candidate section to settle it from; and a base-file lookup by link, since a moved entry's new id would otherwise read as a typed `decided_by`.
+**Why:** a new chapter changes what `1` means, and a wrong match would carry an approval to the wrong rule, silently. A person reading one doubtful line costs far less, and rules with no numbers can't be tuned to the document in hand.
+**Cost:** a split or merge always takes a person. So does a heavily edited section that kept a sentence, and a repeated sentence adds noise. A renamed section's runs go again, and a renumbered section's finder too. Links still cite numbers, so the two ids live side by side until a paid re-run is due. It's proven only on a planted edit, not a real version change (D56).
 
 ## Open questions
 

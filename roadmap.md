@@ -46,7 +46,7 @@ The one place for what comes next (D112). From the foundation up, applying `impr
 | 1.1 ✅ | Line citations | The graph answers symbol → `path:lines` at a commit, for 2.3 | D17, D25 | no |
 | 1.2 ✅ | Playwright as evidence | Specs that open a screen become labelled links in the graph; `code-graph` bump if the shape changes | D45, D76, D86 | no |
 | 2.1 ✅ | Word fails loudly | Tracked changes, moves, hidden text, comments, footnotes, embedded files, nested tables and vertical merges each stop the import or are listed | D52, D111 | no |
-| 2.2 | Stable section ids | Ids that survive edits and moves; a new version comes in as a candidate with a section diff; doubtful matches go to a person; removed ids kept | D15, D99 | no |
+| 2.2 ✅ | Stable section ids | Ids that survive edits and moves; a new version comes in as a candidate with a section diff; doubtful matches go to a person; removed ids kept | D15, D99 | no |
 | 2.3 | Stable statement ids | Ids never renumbered or reused; `path:lines` citations; commit stamped | D62, D54 | no |
 | 2.4 | Findings carry evidence | Findings use 0.1 and 0.2; severity from one scale | D53, D68 | no |
 | 2.5 | Disprove step | A second agent tries to refute every finding, reversing D62's "rejected"; page gaps go to developers; a "page is wrong" decision | D62, D99, D58 | **the re-score is paid: prepared, not run** |
@@ -69,6 +69,9 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 | `/stangent:adopt` sets a project up in one run (replaces D14's audit); a stale page's links are judged again | D99 | 2c |
 | Several documents with effective dates; `fsd reconcile`, run by CI when an import lands; items carried forward by code; clashes between sections become BA questions | D99, D15 | 2c |
 | Jira change requests as sources; as-built drafts when there's no FSD (context only) | D99 | 2c |
+| Links and requirements cite a section's permanent id, not its number, once a paid re-run is due anyway | D117 | not placed |
+| A renumbered section's finder hash carried too, with the page set loaded at promotion | D117 | not placed |
+| A promotion that can't half-finish | D117 | not placed |
 | Excel import, by code, listing what can't be brought in exactly (PDF is built) | D111, D15, D72 | not placed; after 2.1, once its questions are grilled |
 | "bug, per R-0042" and "looks intended (R-0042)"; a developer flags a spec gap when confirming a bug | D96, D99 | 2c |
 | The graph's blind spots, a smarter split rule, `impact-report` v6 | D65, D88, D109 | 4 |
@@ -127,10 +130,10 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 3 | Word cross-references as links | ⬜ | 2b | later |
 | 3 | Lists everything not brought in exactly | ✅ | 2b, D111, D116 | done (2.1); not yet measured on a file saved by Word |
 | 3 | Word comments become BA questions | 🟡 | 2b, D58, D116 | listed since 2.1; questions with 2.5 |
-| 4 | Section ids survive edits | ⬜ | 2b, 2c, D15, D99 | 2.2 |
-| 4 | Candidate versions with a section diff | ⬜ | 2b, D15 | 2.2 |
+| 4 | Section ids survive edits | ✅ | 2b, 2c, D15, D99, D117 | done (2.2); a split or merge is a person's call |
+| 4 | Candidate versions with a section diff | ✅ | 2b, D15, D117 | done (2.2) |
 | 4 | Proven on a real version change | ⬜ | D56 | needs a document with two versions |
-| 4 | First-run errors pinned as tests | ⬜ | 2b | 2.2 |
+| 4 | First-run errors pinned as tests | 🟡 | 2b, D117 | a reviewed pair is pinned (2.2); no real first run yet |
 | 5 | BAs change the FSD through Claude | ⬜ | D52, D12 | Owner |
 | 5 | BAs never touch git | ⬜ | D99, D12 | Owner |
 | 5 | A branch per BA, every edit a commit | ⬜ | D12 | Owner |

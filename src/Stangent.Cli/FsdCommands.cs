@@ -17,7 +17,7 @@ static class FsdCommands
         var idOption = new Option<string?>("--id") { Description = "The document's id (default: from its file name)." };
         var flatOption = new Option<bool>("--flat") { Description = "Import the whole document as one labelled section with no structure, for a document with no headings or bookmarks." };
         var acceptOption = new Option<bool>("--accept-changes") { Description = "For a .docx with tracked changes, which otherwise stops the import: import the accepted view (inserted text kept, deleted text gone, moved text once), listing how many were accepted." };
-        var import = new Command("import", "Convert a .docx or .pdf to Markdown by code, archive the original (D16) and record its sections (source-document v1).") { fileArg, idOption, flatOption, acceptOption };
+        var import = new Command("import", "Convert a .docx or .pdf to Markdown by code, archive the original (D16) and record its sections (source-document v2). A changed file for a document already here comes in as a candidate with a section diff (D117).") { fileArg, idOption, flatOption, acceptOption };
         import.SetAction(pr => Cli.Run(pr, "fsd import", ctx =>
         {
             var result = FsdImport.Import(ctx.Repo, pr.GetValue(fileArg)!, pr.GetValue(idOption), pr.GetValue(flatOption), pr.GetValue(acceptOption));
@@ -64,6 +64,28 @@ static class FsdCommands
         prepare.SetAction(pr => Cli.Run(pr, "fsd prepare", ctx =>
             SpecCommands.Finish(LinkRun.Prepare(SpecCommands.LoadSet(ctx), ctx.Repo, pr.GetValue(docArg)!, pr.GetValue(sectionArg)!), LinkRun.Key(pr.GetValue(docArg)!, pr.GetValue(sectionArg)!))));
         fsd.Subcommands.Add(prepare);
+
+        var diffFormat = new Option<string>("--format") { Description = "json (default) or md (SECTION_DIFF.md).", DefaultValueFactory = _ => "json" };
+        var diff = new Command("diff", "The waiting candidate's section diff against the current version (D117). Code only.") { docArg, diffFormat };
+        diff.SetAction(pr =>
+        {
+            var markdown = pr.GetValue(diffFormat) == "md";
+            return Cli.Run(pr, "fsd diff", ctx => FsdVersions.Diff(ctx.Repo.Root, pr.GetValue(docArg)!), markdown ? r => FsdSectionDiff.Markdown(r!.AsObject()) : null);
+        });
+        fsd.Subcommands.Add(diff);
+
+        var candidateSection = new Argument<string>("candidate-section") { Description = "The doubtful section's id in the candidate; with --removed, the S-id of a doubtful section of the current version." };
+        var sameAsOption = new Option<string?>("--same-as") { Description = "It's the current version's section with this permanent id (S-0001)." };
+        var newOption = new Option<bool>("--new") { Description = "It's a new section: it gets a new permanent id on promotion." };
+        var removedOption = new Option<bool>("--removed") { Description = "The current version's section is gone: its id is marked removed on promotion." };
+        var resolve = new Command("resolve", "Settle one doubtful section (D117). Who decided comes from git.") { docArg, candidateSection, sameAsOption, newOption, removedOption };
+        resolve.SetAction(pr => Cli.Run(pr, "fsd resolve", ctx => FsdVersions.Resolve(ctx.Repo.Root, pr.GetValue(docArg)!, pr.GetValue(candidateSection)!,
+            pr.GetValue(sameAsOption), pr.GetValue(newOption), pr.GetValue(removedOption), FsdVersions.GitPerson(ctx.Repo.Root))));
+        fsd.Subcommands.Add(resolve);
+
+        var promote = new Command("promote", "Make the candidate the current version, carrying links and requirements across by code. Refused while a doubtful section remains (D117).") { docArg };
+        promote.SetAction(pr => Cli.Run(pr, "fsd promote", ctx => FsdVersions.Promote(ctx.Repo, pr.GetValue(docArg)!, FsdVersions.GitPerson(ctx.Repo.Root))));
+        fsd.Subcommands.Add(promote);
 
         var usageOption = new Option<string?>("--usage") { Description = "Claude Code's JSON result for the step just run." };
         var check = new Command("check", "Check the step just run (quotes word for word, ids, cited symbols), record links in specs/trace.yaml, and say what runs next.") { docArg, sectionArg, usageOption };

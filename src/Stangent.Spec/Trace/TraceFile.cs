@@ -99,5 +99,13 @@ public static class TraceFile
     public static string EntryId(string state, string? doc, string? section, string? page, string? fsdQuote, string? pageQuote, string? requirement = null) =>
         "L" + CanonicalJson.Hash(string.Join("\u0001", [state, doc ?? "", section ?? "", page ?? "", Quotes.Normalize(fsdQuote ?? ""), Quotes.Normalize(pageQuote ?? ""), .. requirement is null ? Array.Empty<string>() : [requirement]]))[..10];
 
+    /// <summary>A link without its section. Its id holds the section's number, so a section that moved has a new id; this is how a base
+    /// file's copy of the entry is still found (D117). Two entries sharing a key are left out, because it can't tell them apart.</summary>
+    public static IReadOnlyDictionary<string, JsonObject> ByLink(JsonArray entries) => entries.OfType<JsonObject>().GroupBy(LinkKey)
+        .Where(g => g.Count() == 1).ToDictionary(g => g.Key, g => g.Single(), StringComparer.Ordinal);
+
+    public static string LinkKey(JsonObject e) => string.Join("\u0001", (string?)e["state"] ?? "", (string?)e["fsd"]?["doc"] ?? "", (string?)e["fsd"]?["requirement"] ?? "", (string?)e["page"]?["id"] ?? "",
+        (string?)e["page"]?["statement"] ?? "", Quotes.Normalize((string?)e["fsd"]?["quote"] ?? ""), Quotes.Normalize((string?)e["page"]?["quote"] ?? ""));
+
     public static string QuoteHash(string quote) => CanonicalJson.Hash(Quotes.Normalize(quote));
 }

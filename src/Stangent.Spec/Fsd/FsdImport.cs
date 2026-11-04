@@ -9,12 +9,13 @@ namespace Stangent.Spec.Fsd;
 
 /// <summary>
 /// <c>stangent fsd import</c> (Phase 2b step 1, D111): converts a <c>.docx</c> or <c>.pdf</c> to Markdown by code, archives the original
-/// (D16) and records the document's sections as a <c>source-document</c> (v1) in <c>specs/fsd/&lt;doc-id&gt;/</c>.
-/// The same file always gives the same bytes; a file already imported (same content hash) is left alone.
+/// (D16) and records the document's sections as a <c>source-document</c> (v2) in <c>specs/fsd/&lt;doc-id&gt;/</c>.
+/// The same file always gives the same bytes; a file already imported (same content hash) is left alone. A different file
+/// for a document already here comes in as a candidate beside it (<see cref="FsdVersions"/>, D117).
 /// </summary>
 public static class FsdImport
 {
-    public const string Schema = "source-document.v1.json";
+    public const string Schema = "source-document.v2.json";
 
     public static string DocDir(string root, string id) => Path.Combine(root, "specs", "fsd", id);
 
@@ -42,71 +43,73 @@ public static class FsdImport
         var hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
         var dir = DocDir(repo.Root, id);
         var jsonPath = Path.Combine(dir, "document.json");
+        var current = File.Exists(jsonPath) ? JsonNode.Parse(File.ReadAllText(jsonPath)) as JsonObject : null;
         // The same file is imported once, unless --flat asks for a different shape than what's recorded.
-        if (File.Exists(jsonPath) && JsonNode.Parse(File.ReadAllText(jsonPath)) is { } existing && existing["original"]?["hash"]?.GetValue<string>() == hash
-            && flat == (existing["sections"]?.AsArray() is { Count: 1 } only && only[0]?["id"]?.GetValue<string>() == FsdSections.FlatId))
-            return new JsonObject { ["id"] = id, ["status"] = "unchanged", ["hash"] = hash };
-        var replaced = File.Exists(jsonPath);
+        if (current is not null && (string?)current["original"]?["hash"] == hash
+            && flat == (current["sections"]?.AsArray() is { Count: 1 } only && (string?)only[0]?["id"] == FsdSections.FlatId))
+        {
+            var added = FsdVersions.EnsureIds(repo.Root, id, current);
+            var same = new JsonObject { ["id"] = id, ["status"] = "unchanged", ["hash"] = hash };
+            if (added > 0) same["permanentIdsAdded"] = added;
+            if (FsdVersions.PendingHash(repo.Root, id) is { } pending) same["candidate"] = pending;
+            return same;
+        }
 
         var converted = convert(bytes, flat);
-        var left = replaced ? SectionsThatLeft(repo.Root, id, jsonPath, converted) : null;
         var archivedPath = ArchiveOriginal(repo, archive, id, file, bytes, hash);
+        var doc = Document(id, file, converted, archive.Name, archivedPath, hash);
+        var archived = new JsonObject { ["name"] = archive.Name, ["path"] = archivedPath };
+        if (current is not null) return FsdVersions.Offer(repo.Root, id, current, doc, converted, hash, flat, archived);
 
-        if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+        FsdVersions.IssueIds(repo.Root, id, doc, doc["sections"]!.AsArray().OfType<JsonObject>());
+        var errors = SchemaRegistry.Embedded.Validate(Schema, doc.ToJsonString());
+        if (errors.Count > 0) throw new StangentException("invalid_document", "The imported document broke source-document v2 (a stangent bug).", ExitCodes.Failed, errors);
         Directory.CreateDirectory(dir);
+        WriteText(dir, converted);
+        File.WriteAllText(jsonPath, CanonicalJson.Serialize(doc));
+        return new JsonObject
+        {
+            ["id"] = id, ["status"] = "imported", ["hash"] = hash, ["sections"] = converted.Sections.Count,
+            ["images"] = converted.Images.Count, ["problems"] = doc["problems"]!.DeepClone(), ["archive"] = archived,
+        };
+    }
+
+    /// <summary>The document's record, every section's permanent id still to come.</summary>
+    static JsonObject Document(string id, string file, ConvertedDocument converted, string archive, string archivedPath, string hash) => new()
+    {
+        ["schemaVersion"] = 2,
+        ["id"] = id,
+        ["title"] = converted.Title ?? Path.GetFileNameWithoutExtension(file),
+        ["original"] = new JsonObject { ["archive"] = archive, ["path"] = archivedPath, ["hash"] = hash, ["fileName"] = Path.GetFileName(file) },
+        ["markdown"] = "document.md",
+        ["sections"] = new JsonArray([.. converted.Sections.Select(s =>
+        {
+            var o = new JsonObject
+            {
+                ["id"] = s.Id, ["idKind"] = s.IdKind, ["title"] = s.Title, ["level"] = s.Level, ["line"] = s.Line,
+                ["text"] = s.Text, ["textHash"] = CanonicalJson.Hash(s.Text),
+            };
+            if (s.Parent is not null) o["parent"] = s.Parent;
+            return (JsonNode)o;
+        })]),
+        ["images"] = new JsonArray([.. converted.Images.Select(i =>
+        {
+            var o = new JsonObject { ["file"] = i.Name };
+            if (i.Caption is not null) o["caption"] = i.Caption;
+            return (JsonNode)o;
+        })]),
+        ["problems"] = new JsonArray([.. converted.Problems.Select(p => (JsonNode)p)]),
+    };
+
+    /// <summary>The Markdown and the images into a folder.</summary>
+    internal static void WriteText(string dir, ConvertedDocument converted)
+    {
         File.WriteAllText(Path.Combine(dir, "document.md"), converted.Markdown);
         foreach (var img in converted.Images)
         {
             Directory.CreateDirectory(Path.Combine(dir, "images"));
             File.WriteAllBytes(Path.Combine(dir, img.Name), img.Bytes);
         }
-        var doc = new JsonObject
-        {
-            ["schemaVersion"] = 1,
-            ["id"] = id,
-            ["title"] = converted.Title ?? Path.GetFileNameWithoutExtension(file),
-            ["original"] = new JsonObject { ["archive"] = archive.Name, ["path"] = archivedPath, ["hash"] = hash, ["fileName"] = Path.GetFileName(file) },
-            ["markdown"] = "document.md",
-            ["sections"] = new JsonArray([.. converted.Sections.Select(s =>
-            {
-                var o = new JsonObject
-                {
-                    ["id"] = s.Id, ["idKind"] = s.IdKind, ["title"] = s.Title, ["level"] = s.Level, ["line"] = s.Line,
-                    ["text"] = s.Text, ["textHash"] = CanonicalJson.Hash(s.Text),
-                };
-                if (s.Parent is not null) o["parent"] = s.Parent;
-                return (JsonNode)o;
-            })]),
-            ["images"] = new JsonArray([.. converted.Images.Select(i =>
-            {
-                var o = new JsonObject { ["file"] = i.Name };
-                if (i.Caption is not null) o["caption"] = i.Caption;
-                return (JsonNode)o;
-            })]),
-            ["problems"] = new JsonArray([.. converted.Problems.Select(p => (JsonNode)p)]),
-        };
-        var errors = SchemaRegistry.Embedded.Validate(Schema, doc.ToJsonString());
-        if (errors.Count > 0) throw new StangentException("invalid_document", "The imported document broke source-document v1 (a stangent bug).", ExitCodes.Failed, errors);
-        File.WriteAllText(jsonPath, CanonicalJson.Serialize(doc));
-        var result = new JsonObject
-        {
-            ["id"] = id, ["status"] = replaced ? "replaced" : "imported", ["hash"] = hash, ["sections"] = converted.Sections.Count,
-            ["images"] = converted.Images.Count, ["problems"] = doc["problems"]!.DeepClone(),
-            ["archive"] = new JsonObject { ["name"] = archive.Name, ["path"] = archivedPath },
-        };
-        if (left is not null) result["replacedSections"] = left;
-        return result;
-    }
-
-    /// <summary>On a re-import: the section ids that are gone, and how many trace entries point at them, because `trace check --fix` clears their decisions.</summary>
-    static JsonObject SectionsThatLeft(string root, string id, string jsonPath, ConvertedDocument converted)
-    {
-        var kept = converted.Sections.Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
-        var gone = (JsonNode.Parse(File.ReadAllText(jsonPath))?["sections"]?.AsArray() ?? []).Select(s => (string)s!["id"]!).Where(s => !kept.Contains(s)).ToList();
-        var goneSet = gone.ToHashSet(StringComparer.Ordinal);
-        var entries = (TraceFile.Load(root)["entries"]?.AsArray() ?? [])
-            .Count(e => e?["fsd"] is JsonObject fsd && (string?)fsd["doc"] == id && (string?)fsd["section"] is { } section && goneSet.Contains(section));
-        return new JsonObject { ["sectionsGone"] = new JsonArray([.. gone.Select(s => (JsonNode)s)]), ["traceEntriesPointingAtThem"] = entries };
     }
 
     /// <summary>Copies the original into the archive as <c>&lt;doc-id&gt;/&lt;hash 12&gt;-&lt;file name&gt;</c>; a git archive also commits it.</summary>

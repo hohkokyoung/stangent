@@ -51,6 +51,7 @@ public static class TraceCheck
         var index = SpecIndex.Load(root);
         var nodes = graph?.AllNodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
         var typedBefore = (baseTrace?["entries"]?.AsArray() ?? []).OfType<JsonObject>().ToDictionary(e => (string)e["id"]!, e => (string?)e["decided_by"]);
+        var baseByLink = TraceFile.ByLink(baseTrace?["entries"]?.AsArray() ?? []);
         var stale = new List<string>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var requirements = new Lazy<HashSet<string>>(() => [.. Stangent.Spec.Requirements.RequirementFile.Docs(root).SelectMany(d => Stangent.Spec.Requirements.RequirementFile.Features(root, d))
@@ -93,7 +94,9 @@ public static class TraceCheck
                 if (fix) StateChanges.Apply(root, e, StateKinds.TraceDecision, id, "undecided", StateActor.Code("stangent trace check"), "a quote no longer matches");
             }
 
-            if (baseTrace is not null && (string?)e["decided_by"] is { } by && (!typedBefore.TryGetValue(id, out var before) || before != by))
+            if (baseTrace is not null && (string?)e["decided_by"] is { } by && (!typedBefore.TryGetValue(id, out var before) || before != by)
+                // A promotion gave the entry a new id, because its section's number changed: the same link keeps who decided it (D117).
+                && (string?)baseByLink.GetValueOrDefault(TraceFile.LinkKey(e))?["decided_by"] != by)
                 problems.Add($"{id}: decided_by was set in this change ({by}); it's filled from git after merge, never typed");
         }
         var undecided = trace["entries"]!.AsArray().OfType<JsonObject>().Where(e => stale.Contains((string)e["id"]!) && e["decision"] is not null).Select(e => (string)e["id"]!).ToList();
@@ -145,11 +148,13 @@ public static class TraceCheck
     {
         var trace = TraceFile.Load(root);
         var before = (baseTrace["entries"]?.AsArray() ?? []).OfType<JsonObject>().ToDictionary(e => (string)e["id"]!, e => (string?)e["decision"]);
+        var byLink = TraceFile.ByLink(baseTrace["entries"]?.AsArray() ?? []);
         var n = 0;
         foreach (var e in trace["entries"]!.AsArray().OfType<JsonObject>())
         {
             var decision = (string?)e["decision"];
-            before.TryGetValue((string)e["id"]!, out var old);
+            // A promotion gave the entry a new id, because its section's number changed: nobody decided anything (D117).
+            var old = before.TryGetValue((string)e["id"]!, out var was) ? was : (string?)byLink.GetValueOrDefault(TraceFile.LinkKey(e))?["decision"];
             if (decision == old) continue;
             // The person's edit is already in the file: this is where it's seen, checked and put in the history.
             if ((string?)e["decided_by"] != by || decision is null)

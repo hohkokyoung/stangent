@@ -34,7 +34,7 @@ public static class RequirementRun
             ?? throw new StangentException("not_found", $"No section {sectionId} in FSD {doc}. Run `stangent fsd import` first.", ExitCodes.NotFound);
         if (Sentences.Of((string)section["text"]!).Count == 0) return new RunStep("skipped", "none", Errors: ["the section has no text of its own"]);
         var bundle = WriterBundle(section, doc);
-        var inputs = CanonicalJson.Hash(bundle + Bundles.Instructions("requirement-checker.md") + SchemaRegistry.EmbeddedText("requirement-checker-output.v1.json"));
+        var inputs = Inputs(bundle);
         var run = LoadRuns(repo.Root)[Key(doc, sectionId)] as JsonObject;
         if ((string?)run?["inputs"] == inputs)
         {
@@ -53,6 +53,11 @@ public static class RequirementRun
         Save(work, fresh);
         return Step(repo.Root, work, Writer, "writer.md", "writer.json", "FSD section");
     }
+
+    static string Inputs(string bundle) => CanonicalJson.Hash(bundle + Bundles.Instructions("requirement-checker.md") + SchemaRegistry.EmbeddedText("requirement-checker-output.v1.json"));
+
+    /// <summary>What <see cref="Prepare"/> hashes for this section (D117: a section that only changed its number keeps its paid items).</summary>
+    internal static string InputsOf(JsonObject section, string doc) => Inputs(WriterBundle(section, doc));
 
     public static RunStep Check(StangentRepo repo, string doc, string sectionId, Usage? usage)
     {

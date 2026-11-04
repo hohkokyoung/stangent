@@ -34,6 +34,19 @@ static class Artifacts
     }
 }
 
+/// <summary>A new version taken all the way in, as a person would: imported, anything doubtful settled, promoted (D117).</summary>
+static class FsdNewVersion
+{
+    public static JsonObject Take(StangentRepo repo, string file, string doc = "shop")
+    {
+        var result = Stangent.Spec.Fsd.FsdImport.Import(repo, file);
+        if ((string)result["status"]! != "candidate") return result;
+        foreach (var e in Stangent.Spec.Fsd.FsdVersions.Diff(repo.Root, doc)["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful").ToList())
+            Stangent.Spec.Fsd.FsdVersions.Resolve(repo.Root, doc, (string?)e["to"] ?? (string)e["permanentId"]!, null, e["to"] is not null, e["to"] is null, "Pat");
+        return Stangent.Spec.Fsd.FsdVersions.Promote(repo, doc, "Pat");
+    }
+}
+
 sealed class FixedTime(DateTimeOffset now) : TimeProvider
 {
     public override DateTimeOffset GetUtcNow() => now;

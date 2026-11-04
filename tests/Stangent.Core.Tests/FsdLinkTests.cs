@@ -225,10 +225,12 @@ public class FsdLinkTests
         File.WriteAllText(TraceFile.PathIn(app.Root), typed);
         var archive = Path.Combine(app.Root, "shop.docx");
         File.WriteAllBytes(archive, DocxWriter.Write(Fsd.Replace("Orders over 50 need approval.", "Orders over 60 need approval.")));
-        FsdImport.Import(app.Repo, archive);
+        FsdNewVersion.Take(app.Repo, archive);
         Assert.True((bool)TraceCheck.Run(app.Root, graph, null, false)["ok"]!);  // the quote is still in the text
         File.WriteAllBytes(archive, DocxWriter.Write(Fsd.Replace("Every order sends a receipt.", "Receipts are optional.")));
-        FsdImport.Import(app.Repo, archive);
+        FsdNewVersion.Take(app.Repo, archive);
+        Assert.Null(TraceFile.Load(app.Root)["entries"]![0]!["decision"]);  // promoting dropped it back
+        File.WriteAllText(TraceFile.PathIn(app.Root), typed);  // and a person putting it back is caught
         var stale = TraceCheck.Run(app.Root, graph, null, false);
         Assert.Contains(stale["problems"]!.AsArray(), p => ((string)p!).Contains("must drop back to undecided"));
         Assert.True((bool)TraceCheck.Run(app.Root, graph, null, fix: true)["ok"]!);
@@ -261,7 +263,7 @@ public class FsdLinkTests
         // A quote that changed drops the decision, by code.
         var archive = Path.Combine(app.Root, "shop.docx");
         File.WriteAllBytes(archive, DocxWriter.Write(Fsd.Replace("Every order sends a receipt.", "Receipts are optional.")));
-        FsdImport.Import(app.Repo, archive);
+        FsdNewVersion.Take(app.Repo, archive);
         Assert.True((bool)TraceCheck.Run(app.Root, graph, null, fix: true)["ok"]!);
         var dropped = Assert.Single(StateChanges.History(app.Root, StateKinds.TraceDecision, id));
         Assert.Equal(("agree", "undecided", StateActor.CodeKind), (dropped.From, dropped.To, dropped.Who.Kind));
@@ -491,7 +493,7 @@ public class FsdLinkTests
         using var app = WithRequirements();
         var file = Path.Combine(app.Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write(Fsd.Replace("Orders over 50", "Orders over 80")));
-        FsdImport.Import(app.Repo, file);
+        FsdNewVersion.Take(app.Repo, file);
         Assert.Equal(LinkRun.Judge, LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1").Agent);
     }
 

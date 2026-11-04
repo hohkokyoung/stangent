@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:source-document:v2",
+  "title": "An imported FSD (contract source-document v2, Phase 2b, slice 2.2)",
+  "description": "A document converted to text by code (D13, D52): never rewritten by AI. The original is archived and cited by archive name, path and content hash (D16). Stored in specs/fsd/<id>/document.json beside document.md and its images. v2 adds each section's permanentId beside its id (D117); nothing else changed.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "title", "original", "markdown", "sections", "images", "problems"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$" },
+    "title": { "type": "string" },
+    "original": {
+      "type": "object",
+      "required": ["archive", "path", "hash", "fileName"],
+      "additionalProperties": false,
+      "properties": {
+        "archive": { "description": "The archive's name from stangent.yaml, not its location.", "type": "string" },
+        "path": { "type": "string" },
+        "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "fileName": { "type": "string" }
+      }
+    },
+    "markdown": { "type": "string" },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "permanentId", "idKind", "title", "level", "line", "text", "textHash"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "description": "The FSD's own number (4.2.3), or the heading path where a section has none. It can change between versions. Saved links and requirements cite it, and input hashes use it.", "type": "string" },
+          "permanentId": { "description": "The section's id across versions of this document, from the document's ledger (specs/fsd/<id>/ids.json). Never reused; a removed id stays marked removed there.", "type": "string", "pattern": "^S-[0-9]{4,}$" },
+          "idKind": { "enum": ["number", "path"] },
+          "title": { "type": "string" },
+          "level": { "type": "integer", "minimum": 1 },
+          "parent": { "type": "string" },
+          "line": { "description": "The heading's line in document.md.", "type": "integer", "minimum": 1 },
+          "text": { "description": "The section's own text, up to the next heading.", "type": "string" },
+          "textHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["file"], "additionalProperties": false,
+        "properties": { "file": { "type": "string" }, "caption": { "type": "string" } }
+      }
+    },
+    "problems": { "description": "What couldn't be brought in exactly, in people's words: duplicate, missing or out-of-order section numbers; for a PDF also pages with no text, removed running headers and footers, tables kept as plain text, section titles not found, unread images; for a Word file also accepted tracked changes, hidden text left out, comments (one line each, in a fixed shape: comment: section <id> by <author> open or resolved: <text>, each value a JSON string), embedded objects and flattened tables by kind and section, and any mismatch from the completeness check. Reported, never guessed.", "type": "array", "items": { "type": "string" } }
+  }
+}

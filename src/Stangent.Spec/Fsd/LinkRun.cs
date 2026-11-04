@@ -110,9 +110,7 @@ public static class LinkRun
         }
         var requirements = Requirements(repo.Root, doc, section);
         var judgeBundle = requirements is null ? JudgeBundle(section, doc, candidates.Select(c => c.Page), index) : RequirementJudgeBundle(section, doc, candidates.Select(c => c.Page), index, requirements);
-        var inputs = CanonicalJson.Hash(judgeBundle + Bundles.Instructions(requirements is null ? "agree-checker.md" : "requirement-agree-checker.md") + SchemaRegistry.EmbeddedText("agree-checker-output.v1.json"));
-        // Turning findings off (or on) changes what a section records, so it runs again; with them on the hash is unchanged.
-        if (!repo.Config.Fsd.Findings) inputs = CanonicalJson.Hash(inputs + "\nfindings off");
+        var inputs = JudgeInputs(judgeBundle, requirements is not null, repo.Config.Fsd.Findings);
         if ((string?)run?["inputs"] == inputs) return new RunStep("current", "none");
         AiPolicy.EnsureAllowed(repo.Config, "fsd prepare");
         var work = Fresh(repo.Root, doc, sectionId);
@@ -127,6 +125,22 @@ public static class LinkRun
         Stage(repo.Root, state, "judge", "prepared");
         Save(work, state);
         return Step(repo.Root, work, requirements is null ? Judge : RequirementJudge, "judge.md", "judge.json", "Section and candidate pages");
+    }
+
+    static string JudgeInputs(string judgeBundle, bool byRequirement, bool findings)
+    {
+        var inputs = CanonicalJson.Hash(judgeBundle + Bundles.Instructions(byRequirement ? "requirement-agree-checker.md" : "agree-checker.md") + SchemaRegistry.EmbeddedText("agree-checker-output.v1.json"));
+        // Turning findings off (or on) changes what a section records, so it runs again; with them on the hash is unchanged.
+        return findings ? inputs : CanonicalJson.Hash(inputs + "\nfindings off");
+    }
+
+    /// <summary>What a run's judge step would hash for this section and these candidate pages (D117: a section that only changed
+    /// its number keeps its paid links). Null when a page has no record.</summary>
+    internal static string? JudgeInputs(JsonObject section, string doc, IReadOnlyList<string> pages, SpecIndex index, List<JsonObject>? requirements, bool findings)
+    {
+        if (pages.Any(p => !index.Pages.ContainsKey(p))) return null;
+        var bundle = requirements is null ? JudgeBundle(section, doc, pages, index) : RequirementJudgeBundle(section, doc, pages, index, requirements);
+        return JudgeInputs(bundle, requirements is not null, findings);
     }
 
     public static RunStep Check(PageSet set, StangentRepo repo, CodeGraph graph, string doc, string sectionId, Usage? usage)
@@ -379,7 +393,7 @@ public static class LinkRun
         foreach (var (role, u) in usage) run[role] = u?.DeepClone();
     }
 
-    static FileStream Lock(string root)
+    internal static FileStream Lock(string root)
     {
         Directory.CreateDirectory(Path.Combine(root, ".stangent", "fsd"));
         var path = Path.Combine(root, ".stangent", "fsd", "trace.lock");

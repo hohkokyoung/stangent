@@ -547,7 +547,10 @@ public class FsdPdfTests
         File.WriteAllBytes(file, Outlined(("1 Series", 0)));
         FsdImport.Import(repo.Repo, file);
         var flat = FsdImport.Import(repo.Repo, file, flat: true);
-        Assert.Equal(("replaced", 1), ((string)flat["status"]!, (int)flat["sections"]!));
+        Assert.Equal(("candidate", 1), ((string)flat["status"]!, (int)flat["sections"]!));
+        Assert.Equal("waiting", (string)FsdImport.Import(repo.Repo, file, flat: true)["status"]!);
+        // Both sections of the current version go, with no text in common: nothing to settle.
+        FsdVersions.Promote(repo.Repo, "shop", "Pat");
         Assert.Equal("unchanged", (string)FsdImport.Import(repo.Repo, file, flat: true)["status"]!);
         var doc = JsonNode.Parse(File.ReadAllText(Path.Combine(FsdImport.DocDir(repo.Root, "shop"), "document.json")))!;
         Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, doc.ToJsonString()));
@@ -1177,12 +1180,15 @@ public class FsdPdfTests
         trace["entries"]!.AsArray().Add(entry);
         TraceFile.Save(repo.Root, trace);
 
-        var flat = FsdImport.Import(repo.Repo, file, flat: true);
-        Assert.Equal(["1", "2"], flat["replacedSections"]!["sectionsGone"]!.AsArray().Select(s => (string)s!));
-        Assert.Equal(1, (int)flat["replacedSections"]!["traceEntriesPointingAtThem"]!);
+        Assert.Equal("candidate", (string)FsdImport.Import(repo.Repo, file, flat: true)["status"]!);
+        foreach (var open in FsdVersions.Diff(repo.Root, "shop")["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful" && (string?)e["side"] == "candidate"))
+            FsdVersions.Resolve(repo.Root, "shop", (string)open["to"]!, null, isNew: true, removed: false, "Pat");
+        foreach (var open in FsdVersions.Diff(repo.Root, "shop")["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful"))
+            FsdVersions.Resolve(repo.Root, "shop", (string)open["permanentId"]!, null, isNew: false, removed: true, "Pat");
+        var removed = FsdVersions.Promote(repo.Repo, "shop", "Pat")["carried"]!["removed"]!.AsArray();
+        Assert.Equal(["1", "2"], removed.Select(s => (string)s!["section"]!));
+        Assert.Single(removed[0]!["traceEntries"]!.AsArray());
         Assert.Null(JsonNode.Parse(File.ReadAllText(Path.Combine(FsdImport.DocDir(repo.Root, "shop"), "document.json")))!["replacedSections"]);
-
-        Assert.Null(FsdImport.Import(repo.Repo, file, flat: true)["replacedSections"]);
     }
 
     static byte[] Rc4(byte[] key, byte[] data)
@@ -1484,7 +1490,13 @@ public class FsdPdfTests
         var trace = TraceFile.Empty();
         trace["entries"]!.AsArray().Add(LinkRun.Entry("gap", "another-doc", new JsonObject { ["id"] = "1", ["title"] = "Orders" }, "Text.", null, null, null, "code", null, null));
         TraceFile.Save(repo.Root, trace);
-        Assert.Equal(0, (int)FsdImport.Import(repo.Repo, file, flat: true)["replacedSections"]!["traceEntriesPointingAtThem"]!);
+        FsdImport.Import(repo.Repo, file, flat: true);
+        foreach (var open in FsdVersions.Diff(repo.Root, "shop")["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful" && (string?)e["side"] == "candidate"))
+            FsdVersions.Resolve(repo.Root, "shop", (string)open["to"]!, null, isNew: true, removed: false, "Pat");
+        foreach (var open in FsdVersions.Diff(repo.Root, "shop")["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful"))
+            FsdVersions.Resolve(repo.Root, "shop", (string)open["permanentId"]!, null, isNew: false, removed: true, "Pat");
+        var removed = FsdVersions.Promote(repo.Repo, "shop", "Pat")["carried"]!["removed"]!.AsArray();
+        Assert.All(removed, s => Assert.Empty(s!["traceEntries"]!.AsArray()));
     }
 
     [Fact]

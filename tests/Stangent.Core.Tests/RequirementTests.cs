@@ -33,7 +33,7 @@ public class RequirementTests
     {
         var file = Path.Combine(app.Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write(fsd));
-        FsdImport.Import(app.Repo, file);
+        FsdNewVersion.Take(app.Repo, file);
     }
 
     static JsonArray Q(params string[] quotes) => new([.. quotes.Select(q => (JsonNode)q)]);
