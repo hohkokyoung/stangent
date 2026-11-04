@@ -547,6 +547,7 @@ public static class Undocumented
         var trace = TraceFile.Load(root);
         var linked = trace["entries"]!.AsArray().OfType<JsonObject>()
             .Where(e => !((string?)e["by"] == "code" && (string?)e["state"] == "undocumented" && e["fsd"] is null))
+            .Where(e => !TraceFile.IsRemovedSection((string?)e["fsd"]?["section"]))
             .Select(e => (string?)e["page"]?["id"]).OfType<string>().ToHashSet(StringComparer.Ordinal);
         var index = SpecIndex.Load(root);
         var screens = set.Pages.Where(p => p.Kind == PageKind.Screen && index.Pages.ContainsKey(p.Id))

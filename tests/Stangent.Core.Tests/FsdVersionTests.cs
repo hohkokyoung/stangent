@@ -549,7 +549,8 @@ public sealed class FsdVersionTests : IDisposable
 
         var removed = result["carried"]!["removed"]![0]!;
         Assert.Equal((veg, "2", true), ((string)removed["permanentId"]!, (string)removed["section"]!, (bool)removed["numberUsedAgain"]!));
-        Assert.Equal([(string)link["id"]!], removed["traceEntries"]!.AsArray().Select(s => (string)s!));
+        Assert.Equal([TraceFile.EntryId("gap", "shop", $"(removed {veg}) 2", null, Pears, null)], removed["traceEntries"]!.AsArray().Select(s => (string)s!));
+        Assert.Equal((string)link["id"]!, (string)result["carried"]!["traceIds"]![0]!["from"]!);
         Assert.Equal(["F-0001"], removed["features"]!.AsArray().Select(s => (string)s!));
         Assert.Equal(["R-0001"], removed["requirements"]!.AsArray().Select(s => (string)s!));
         // Never dropped: the items are still on file, under a mark no heading can be, and the new section 2 doesn't pick them up.
@@ -557,9 +558,131 @@ public sealed class FsdVersionTests : IDisposable
         Assert.Equal($"(removed {veg}) 2", (string)feature["section"]!);
         Assert.Equal("approved", (string)feature["requirements"]![0]!["status"]!);
         Assert.Null(LinkRun.Requirements(Root, "shop", Current()["sections"]![1]!.AsObject()));
-        // The link's quote isn't in the new section 2, so it dropped back.
-        Assert.Single(TraceFile.Load(Root)["entries"]!.AsArray());
-        Assert.Null(Trace()["decision"]);
+        Assert.Equal($"(removed {veg}) 2", (string)Assert.Single(TraceFile.Load(Root)["entries"]!.AsArray())!["fsd"]!["section"]!);
+    }
+
+    [Fact]
+    public void A_removed_sections_trace_entry_takes_the_mark_and_keeps_its_decision_and_who_decided()
+    {
+        Import($"#! Intro\n{Apples}\n#! Orders\n{Pears}\n");
+        var orders = Id("2");
+        var oldId = (string)Link("2", "Orders", Pears, "fsd-wrong")["id"]!;
+        var before = TraceFile.Load(Root);
+
+        // Orders goes, and Billing takes its number.
+        Import($"#! Intro\n{Apples}\n#! Billing\n{Plums}\n");
+        var result = FsdVersions.Promote(repo.Repo, "shop", Pat);
+
+        var mark = $"(removed {orders}) 2";
+        var newId = TraceFile.EntryId("gap", "shop", mark, null, Pears, null);
+        void Kept()
+        {
+            var entry = Assert.Single(TraceFile.Load(Root)["entries"]!.AsArray())!;
+            Assert.Equal((newId, mark, "Orders"), ((string)entry["id"]!, (string)entry["fsd"]!["section"]!, (string)entry["fsd"]!["title"]!));
+            Assert.Equal(("fsd-wrong", Pat), ((string?)entry["decision"], (string?)entry["decided_by"]));
+        }
+        Kept();
+
+        // Reported on promote: where it went and what it still holds. Nothing moved, so there's no history line and it isn't a stale quote.
+        var removed = result["carried"]!["removed"]![0]!;
+        Assert.Equal([newId], removed["traceEntries"]!.AsArray().Select(s => (string)s!));
+        var decision = Assert.Single(removed["decisions"]!.AsArray())!;
+        Assert.Equal((newId, "fsd-wrong", Pat), ((string)decision["id"]!, (string)decision["value"]!, (string)decision["by"]!));
+        Assert.Equal((oldId, newId), ((string)result["carried"]!["traceIds"]![0]!["from"]!, (string)result["carried"]!["traceIds"]![0]!["to"]!));
+        Assert.Empty(result["staleQuotes"]!.AsArray());
+        Assert.Empty(StateChanges.History(Root, StateKinds.TraceDecision, oldId));
+        Assert.Empty(StateChanges.History(Root, StateKinds.TraceDecision, newId));
+
+        // `trace check` keeps flagging it for a person, and its fix leaves it alone. CI doesn't read the new id as a typed name or a new decision.
+        var check = TraceCheck.Run(Root, null, null, fix: true);
+        Assert.Contains(check["problems"]!.AsArray(), p => (string)p! == $"{newId}: FSD section shop §{mark} was removed; its decision stays until a person deals with the entry");
+        Assert.Contains(result["traceProblems"]!.AsArray(), p => ((string)p!).Contains("was removed", StringComparison.Ordinal));
+        Assert.Empty(check["staleQuotes"]!.AsArray());
+        Kept();
+        Assert.DoesNotContain(TraceCheck.Run(Root, null, before, fix: false)["problems"]!.AsArray(), p => ((string)p!).Contains("decided_by", StringComparison.Ordinal));
+        Assert.Equal(0, TraceCheck.Attribute(Root, before, "The Merger"));
+        Kept();
+
+        // A judge's new build of the new section 2 doesn't reach it, and approving that chapter doesn't either.
+        LinkRun.ApplyEntries(Root, "shop", "2", []);
+        Assert.Equal(0, TraceCheck.ApproveChapter(Root, "shop", "2"));
+        Kept();
+    }
+
+    [Fact]
+    public void A_person_discards_a_candidate_and_the_current_version_stays()
+    {
+        var first = $"#! Fruit\n{Apples}\n";
+        var second = $"#! Fruit\n{Pears}\n";
+        Import(first);
+        var hash = (string)Import(second)["hash"]!;
+
+        var result = FsdVersions.Discard(Root, "shop", Pat);
+
+        Assert.Equal(("shop", hash, Pat), ((string)result["id"]!, (string)result["discarded"]!, (string)result["by"]!));
+        Assert.False(Directory.Exists(FsdVersions.CandidateDir(Root, "shop")));
+        Assert.Null(FsdVersions.PendingHash(Root, "shop"));
+        Assert.Equal(Apples, ((string)Current()["sections"]![0]!["text"]!).Trim());
+        var last = StateChanges.History(Root, StateKinds.FsdCandidate, $"shop@{hash[..12]}")[^1];
+        Assert.Equal(("candidate", "discarded", "person", Pat), (last.From, last.To, last.Who.Kind, last.Who.Name));
+
+        Assert.Equal("no_candidate", Assert.Throws<StangentException>(() => FsdVersions.Discard(Root, "shop", Pat)).Code);
+        Assert.Equal("no_candidate", Assert.Throws<StangentException>(() => FsdVersions.Promote(repo.Repo, "shop", Pat)).Code);
+        // The same file can come back as a candidate later.
+        Assert.Equal("candidate", (string)Import(second)["status"]!);
+    }
+
+    [Fact]
+    public void The_current_file_again_says_plainly_a_candidate_is_still_waiting_and_how_to_discard_it()
+    {
+        var first = $"#! Fruit\n{Apples}\n";
+        Import(first);
+        Assert.Null(Import(first)["note"]);
+
+        var hash = (string)Import($"#! Fruit\n{Pears}\n")["hash"]!;
+        var same = Import(first);
+
+        Assert.Equal(("unchanged", hash), ((string)same["status"]!, (string)same["candidate"]!));
+        var note = (string)same["note"]!;
+        Assert.Contains($"candidate {hash[..12]} is still waiting", note);
+        Assert.Contains("`stangent fsd promote shop` would apply it", note);
+        Assert.Contains("`stangent fsd discard shop`", note);
+    }
+
+    [Fact]
+    public void A_modified_section_under_a_duplicate_heading_goes_to_a_person_even_with_no_sentence_shared()
+    {
+        Import($"#! Notes\n{Apples}\n#! Notes\n{Pears}\n");
+        var (apples, pears) = (Id("1"), Id("2"));
+        Import($"#! Notes\n{Pears}\n#! Notes\n{Apples}\n");
+        FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Assert.Equal((pears, apples), (Id("1"), Id("2")));
+
+        // The first note is rewritten: not a word shared, and the heading is the same as the other note's.
+        Import($"#! Notes\n{Plums}\n#! Notes\n{Apples}\n");
+
+        Assert.Equal(["doubtful 1: 1", "unchanged 2>2", "doubtful 1: 1"], Entries().Select(Show));
+        var open = Entries()[0];
+        var candidate = open["candidates"]![0]!;
+        Assert.Equal((pears, true), ((string)candidate["permanentId"]!, (bool)candidate["sameHeading"]!));
+        Assert.Null(candidate["sentence"]);
+        Assert.Contains("the same heading", FsdSectionDiff.Markdown(FsdVersions.Diff(Root, "shop")));
+        Assert.Equal("doubtful_sections_remain", Assert.Throws<StangentException>(() => FsdVersions.Promote(repo.Repo, "shop", Pat)).Code);
+
+        FsdVersions.Resolve(Root, "shop", "1", pears, isNew: false, removed: false, Pat);
+        FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Assert.Equal((pears, apples), (Id("1"), Id("2")));
+    }
+
+    [Fact]
+    public void A_duplicate_heading_with_a_shared_sentence_lists_that_sentence_once()
+    {
+        Import($"#! Notes\n{Apples}\n#! Notes\n{Pears}\n");
+        Import($"#! Notes\n{Apples} {Plums}\n#! Notes\n{Pears} {Figs}\n");
+        var entries = Entries().Where(e => (string?)e["side"] == "candidate").ToList();
+        Assert.Equal(2, entries.Count);
+        // Each holds the note it shares a sentence with first, then the other under the same heading, each once.
+        Assert.Equal([("1", Apples), ("2", null)], entries[0]["candidates"]!.AsArray().Select(c => ((string)c!["from"]!, (string?)c["sentence"])));
     }
 
     [Fact]

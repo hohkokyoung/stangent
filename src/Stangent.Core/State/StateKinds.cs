@@ -107,8 +107,8 @@ public static class StateKinds
             .. Each(Code, "running", "done", "failed"), By(Code, "failed", "done"), By(Code, "done", "failed"),
         ], Field: "stage", NullState: "running"),
 
-        // D117: a new version of an imported document waits beside the current one. Only a person promotes it; a newer file replaces it.
-        new(FsdCandidate, FsdHistory, ["candidate"], [By(Person, "candidate", "promoted"), By(Code, "candidate", "replaced")], Field: "state"),
+        // D117: a new version of an imported document waits beside the current one. Only a person promotes or discards it; a newer file replaces it.
+        new(FsdCandidate, FsdHistory, ["candidate"], [.. Each(Person, "candidate", "promoted", "discarded"), By(Code, "candidate", "replaced")], Field: "state"),
 
         // D117: a section code won't match on its own. A person settles it and can change their mind. Code only lets go of a
         // claim when the section that claimed this id is settled another way.

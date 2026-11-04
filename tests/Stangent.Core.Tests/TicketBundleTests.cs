@@ -72,6 +72,22 @@ public class TicketBundleTests
     }
 
     [Fact]
+    public async Task An_attachment_that_cannot_be_converted_is_listed_in_a_valid_bundle()
+    {
+        using var app = App();
+        TicketFixtures.Make(Path.Combine(app.Root, "replay"), "SHOP-20", "Bug", "Orders are wrong", "See broken.docx", files:
+        [
+            new("1", "broken.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", [1, 2, 3]),
+        ]);
+        await using var tracker = Trackers.Open(app.Repo, new MemorySecretStore(), TextWriter.Null, null);
+        await TicketPull.RunAsync(app.Repo, tracker, "SHOP-20", TestContext.Current.CancellationToken);
+        TicketPoints.Update(app.Repo, TicketContext.Load(app.Repo), "SHOP-20", [], [], "Pat Developer");
+        var b = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-20");
+        Assert.Empty(SchemaRegistry.Embedded.Validate("ticket-bundle.v2.json", b.ToJsonString()));
+        Assert.Equal("broken.docx", (string)b["ticket"]!["attachments"]![0]!["fileName"]!);
+    }
+
+    [Fact]
     public void The_bundle_carries_pages_sections_impact_and_pointers_but_no_source_code()
     {
         using var app = App();

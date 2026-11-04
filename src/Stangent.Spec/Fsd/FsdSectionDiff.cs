@@ -7,7 +7,8 @@ namespace Stangent.Spec.Fsd;
 /// <summary>
 /// Two versions of a document, section by section, by code (D117). Only exact signals match on their own, in this order:
 /// the same body and heading path; the same body, unique on both sides; the same heading path, unique on both sides. Anything
-/// left that shares a whole sentence with a section on the other side is doubtful, for a person. The rest is added or removed.
+/// left that shares a whole sentence with a section on the other side, or its heading path with one left there too, is doubtful,
+/// for a person. The rest is added or removed.
 /// There's no score and no threshold, so nothing here can be tuned to a document.
 /// </summary>
 public static class FsdSectionDiff
@@ -75,7 +76,8 @@ public static class FsdSectionDiff
                 continue;
             }
             var shared = Shared(n, oldBySentence);
-            entries.Add(shared.Count == 0
+            var heading = SameHeading(n, olds.Where(o => !taken.Contains(o)), shared);
+            entries.Add(shared.Count + heading.Count == 0
                 ? new JsonObject { ["kind"] = "added", ["to"] = n.Id, ["title"] = n.Title }
                 : new JsonObject
                 {
@@ -83,13 +85,17 @@ public static class FsdSectionDiff
                     ["candidates"] = new JsonArray([.. shared.Select(c => (JsonNode)new JsonObject
                     {
                         ["permanentId"] = c.Other.PermanentId, ["from"] = c.Other.Id, ["title"] = c.Other.Title, ["sentence"] = c.Sentence, ["alreadyMatched"] = taken.Contains(c.Other),
+                    }), .. heading.Select(o => (JsonNode)new JsonObject
+                    {
+                        ["permanentId"] = o.PermanentId, ["from"] = o.Id, ["title"] = o.Title, ["sentence"] = null, ["sameHeading"] = true, ["alreadyMatched"] = false,
                     })]),
                 });
         }
         foreach (var o in olds.Where(o => !taken.Contains(o)))
         {
             var shared = Shared(o, newBySentence);
-            entries.Add(shared.Count == 0
+            var heading = SameHeading(o, news.Where(n => !match.ContainsKey(n)), shared);
+            entries.Add(shared.Count + heading.Count == 0
                 ? new JsonObject { ["kind"] = "removed", ["permanentId"] = o.PermanentId, ["from"] = o.Id, ["title"] = o.Title }
                 : new JsonObject
                 {
@@ -97,6 +103,9 @@ public static class FsdSectionDiff
                     ["candidates"] = new JsonArray([.. shared.Select(c => (JsonNode)new JsonObject
                     {
                         ["to"] = c.Other.Id, ["title"] = c.Other.Title, ["sentence"] = c.Sentence, ["alreadyMatched"] = match.ContainsKey(c.Other),
+                    }), .. heading.Select(n => (JsonNode)new JsonObject
+                    {
+                        ["to"] = n.Id, ["title"] = n.Title, ["sentence"] = null, ["sameHeading"] = true, ["alreadyMatched"] = false,
                     })]),
                 });
         }
@@ -122,6 +131,11 @@ public static class FsdSectionDiff
                 if (seen.Add(s)) found.Add((s, sentence));
         return found;
     }
+
+    /// <summary>The sections left unmatched on the other side under this one's heading path, not already listed for a sentence. A path shared by several
+    /// can't match on its own, and setting an id aside over a rewrite under a repeated heading would be silent.</summary>
+    static List<Side> SameHeading(Side section, IEnumerable<Side> left, List<(Side Other, string Sentence)> shared) =>
+        [.. left.Where(s => s.Path == section.Path && shared.All(c => c.Other != s))];
 
     /// <summary>Each outcome's count. <c>doubtful</c> is what's still open, so it reaches zero; <c>numberChanged</c> counts across the outcomes.</summary>
     public static JsonObject Counts(IEnumerable<JsonObject> entries)
@@ -152,7 +166,7 @@ public static class FsdSectionDiff
         var open = entries.Where(e => (string)e["kind"]! == "doubtful").ToList();
         if (open.Count > 0)
         {
-            sb.Append("\n## Doubtful: a person decides\n\nCode found a shared sentence and nothing exact, so it doesn't guess.\n");
+            sb.Append("\n## Doubtful: a person decides\n\nCode found a shared sentence or the same heading, and nothing exact, so it doesn't guess.\n");
             foreach (var e in open)
             {
                 var candidateSide = (string)e["side"]! == "candidate";
@@ -163,7 +177,7 @@ public static class FsdSectionDiff
                 foreach (var c in e["candidates"]!.AsArray().OfType<JsonObject>())
                 {
                     var where = candidateSide ? $"{c["permanentId"]} §{c["from"]}" : $"§{c["to"]}";
-                    sb.Append($"- {where} {c["title"]}{((bool)c["alreadyMatched"]! ? " (already matched)" : "")}: \"{c["sentence"]}\"\n");
+                    sb.Append($"- {where} {c["title"]}{((bool)c["alreadyMatched"]! ? " (already matched)" : "")}: {((string?)c["sentence"] is { } sentence ? $"\"{sentence}\"" : "the same heading")}\n");
                 }
                 sb.Append(candidateSide
                     ? $"\nSettle: `stangent fsd resolve {doc} \"{e["to"]}\" --same-as <S-id>` or `--new`\n"

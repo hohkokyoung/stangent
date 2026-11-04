@@ -131,6 +131,41 @@ public class TicketPullTests
     }
 
     [Fact]
+    public async Task A_word_attachment_with_no_headings_is_converted_flat_and_does_not_stop_the_pull()
+    {
+        using var repo = TicketFixtures.Repo();
+        TicketFixtures.Make(TicketFixtures.ReplayDir(repo), "SON-5", "Task", "x", "See note.docx", files:
+        [
+            new("1", "note.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", FsdDocxTests.Docx("""<w:p><w:r><w:t>Limit is five orders.</w:t></w:r></w:p>""")),
+        ]);
+        var t = await Pull(repo, "SON-5");
+        var a = t["attachments"]![0]!;
+        Assert.Contains("Limit is five orders.", (string?)a["text"]);
+        Assert.Null(a["notConverted"]);
+    }
+
+    [Fact]
+    public async Task A_damaged_word_attachment_and_a_pdf_are_listed_and_do_not_stop_the_pull()
+    {
+        using var repo = TicketFixtures.Repo();
+        TicketFixtures.Make(TicketFixtures.ReplayDir(repo), "SON-6", "Task", "x", "See broken.docx", files:
+        [
+            new("1", "broken.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", [1, 2, 3]),
+            new("2", "spec.pdf", "application/pdf", [37, 80, 68, 70]),
+        ]);
+        var t = await Pull(repo, "SON-6");
+        var a = t["attachments"]!.AsArray().Select(x => x!.AsObject()).ToDictionary(x => (string)x["fileName"]!);
+
+        // Listed by name, type and size (D72), and saved, with why it has no text.
+        Assert.Equal(("docx", 3L), ((string)a["broken.docx"]["kind"]!, (long)a["broken.docx"]["size"]!));
+        Assert.NotNull(a["broken.docx"]["path"]);
+        Assert.Null(a["broken.docx"]["text"]);
+        Assert.Contains("can't be opened", (string)a["broken.docx"]["notConverted"]!);
+        Assert.Equal(("other", 4L), ((string)a["spec.pdf"]["kind"]!, (long)a["spec.pdf"]["size"]!));
+        Assert.Null(a["spec.pdf"]["text"]);
+    }
+
+    [Fact]
     public async Task Attachments_are_saved_with_hashes_text_goes_in_up_to_the_cap_and_the_rest_is_listed()
     {
         using var repo = TicketFixtures.Repo("  attachmentChars: 40\n");

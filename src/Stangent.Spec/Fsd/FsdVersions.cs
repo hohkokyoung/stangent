@@ -91,7 +91,7 @@ public static class FsdVersions
         var key = CandidateKey(doc, hash);
         var entries = FsdSectionDiff.Compare(current["sections"]!.AsArray(), document["sections"]!.AsArray());
         foreach (var e in entries.Where(e => (string)e["kind"]! == "doubtful"))
-            StateChanges.Apply(root, e, StateKinds.FsdSectionMatch, MatchKey(key, e), "doubtful", Code, "shares a sentence, and nothing exact matches");
+            StateChanges.Apply(root, e, StateKinds.FsdSectionMatch, MatchKey(key, e), "doubtful", Code, "shares a sentence or a heading, and nothing exact matches");
         var diff = new JsonObject
         {
             ["version"] = 1, ["doc"] = doc, ["from"] = (string)current["original"]!["hash"]!, ["to"] = hash, ["flat"] = flat,
@@ -185,6 +185,16 @@ public static class FsdVersions
         var holder = entries.FirstOrDefault(e => !ReferenceEquals(e, entry) && (string?)e["to"] is not null && (((string)e["kind"]! != "doubtful" && (string?)e["permanentId"] == id) || (string?)e["same_as"] == id));
         if (holder is not null)
             throw new StangentException("section_id_taken", $"§{holder["to"]} already holds {id}. Settle that section another way first if this is wrong.", ExitCodes.Failed);
+    }
+
+    /// <summary>A person throws the waiting candidate away. The current version never changed, so nothing else does; the file stays in the archive and can be imported again.</summary>
+    public static JsonObject Discard(string root, string doc, string who)
+    {
+        var diff = Load(root, doc);
+        var hash = (string)diff["to"]!;
+        StateChanges.Apply(root, diff, StateKinds.FsdCandidate, CandidateKey(doc, hash), "discarded", StateActor.Person(who), "discarded");
+        Directory.Delete(CandidateDir(root, doc), recursive: true);
+        return new JsonObject { ["id"] = doc, ["discarded"] = hash, ["current"] = (string)diff["from"]!, ["by"] = who };
     }
 
     /// <summary>Makes the candidate current. Refused while anything's doubtful. Nothing is dropped: what a removed section held is listed, and stays until a person acts.</summary>

@@ -126,7 +126,7 @@ static class TicketCommands
             ["attachments"] = new JsonArray([.. t["attachments"]!.AsArray().Select(a => (JsonNode)new JsonObject
             {
                 ["fileName"] = a!["fileName"]!.DeepClone(), ["kind"] = a["kind"]!.DeepClone(), ["hash"] = a["hash"]?.DeepClone(),
-                ["chars"] = a["chars"]?.DeepClone(), ["truncated"] = a["truncated"]?.DeepClone(), ["notDownloaded"] = a["notDownloaded"]?.DeepClone(),
+                ["chars"] = a["chars"]?.DeepClone(), ["truncated"] = a["truncated"]?.DeepClone(), ["notDownloaded"] = a["notDownloaded"]?.DeepClone(), ["notConverted"] = a["notConverted"]?.DeepClone(),
             })]),
             ["missingBugFields"] = t["bug"]?["missing"]?.DeepClone(),
             ["file"] = paths.Relative(paths.TicketJson),

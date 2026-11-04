@@ -201,6 +201,7 @@ public static class TicketBundle
                 var c = a!.DeepClone().AsObject();
                 c.Remove("chars");
                 c.Remove("bytes");
+                c.Remove("notConverted");
                 return (JsonNode)c;
             })]),
             ["isBug"] = pulled["isBug"]!.DeepClone(),

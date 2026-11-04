@@ -110,8 +110,7 @@ public static partial class TicketPull
         string? text = kind switch
         {
             "text" => Decode(await File.ReadAllBytesAsync(saved.Path, ct)),
-            // A ticket's attachment isn't the agreed FSD, and a tracked change mustn't stop the pull: its accepted view is read.
-            "docx" => DocxConverter.Convert(await File.ReadAllBytesAsync(saved.Path, ct), acceptChanges: true).Markdown,
+            "docx" => Word(await File.ReadAllBytesAsync(saved.Path, ct), o),
             _ => null,
         };
         if (text is not null)
@@ -122,6 +121,22 @@ public static partial class TicketPull
             o["truncated"] = text.Length > cap;
         }
         return o;
+    }
+
+    /// <summary>A ticket's attachment isn't the agreed FSD, so nothing about it stops the pull (D72): a tracked change reads as accepted, no headings
+    /// reads flat, and a file the converter can't take is listed with why.</summary>
+    static string? Word(byte[] bytes, JsonObject attachment)
+    {
+        try
+        {
+            try { return DocxConverter.Convert(bytes, acceptChanges: true).Markdown; }
+            catch (StangentException e) when (e.Code == "no_structure") { return DocxConverter.Convert(bytes, flat: true, acceptChanges: true).Markdown; }
+        }
+        catch (StangentException e)
+        {
+            attachment["notConverted"] = e.Message;
+            return null;
+        }
     }
 
     public static string Kind(TicketAttachment a)

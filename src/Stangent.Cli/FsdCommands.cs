@@ -87,6 +87,10 @@ static class FsdCommands
         promote.SetAction(pr => Cli.Run(pr, "fsd promote", ctx => FsdVersions.Promote(ctx.Repo, pr.GetValue(docArg)!, FsdVersions.GitPerson(ctx.Repo.Root))));
         fsd.Subcommands.Add(promote);
 
+        var discard = new Command("discard", "Throw the waiting candidate away; the current version stays. Who decided comes from git (D117).") { docArg };
+        discard.SetAction(pr => Cli.Run(pr, "fsd discard", ctx => FsdVersions.Discard(ctx.Repo.Root, pr.GetValue(docArg)!, FsdVersions.GitPerson(ctx.Repo.Root))));
+        fsd.Subcommands.Add(discard);
+
         var usageOption = new Option<string?>("--usage") { Description = "Claude Code's JSON result for the step just run." };
         var check = new Command("check", "Check the step just run (quotes word for word, ids, cited symbols), record links in specs/trace.yaml, and say what runs next.") { docArg, sectionArg, usageOption };
         check.SetAction(pr => Cli.Run(pr, "fsd check", ctx =>

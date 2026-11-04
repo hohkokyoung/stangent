@@ -70,10 +70,14 @@ public static class TraceCheck
             var quotesMatch = true;
             if (fsd is not null)
             {
-                if (!index.Sections.TryGetValue(((string)fsd["doc"]!, (string)fsd["section"]!), out var section))
-                { problems.Add($"{id}: FSD section {fsd["doc"]} §{fsd["section"]} doesn't exist"); quotesMatch = false; }
-                else if (fsd["quote"] is { } q && !Quotes.InText((string)q!, (string)section["text"]!))
-                    quotesMatch = false;
+                var sectionId = (string)fsd["section"]!;
+                if (index.Sections.TryGetValue(((string)fsd["doc"]!, sectionId), out var section))
+                {
+                    if (fsd["quote"] is { } q && !Quotes.InText((string)q!, (string)section["text"]!)) quotesMatch = false;
+                }
+                // Its section went in a promotion, so the quote has nothing to be checked against: that isn't a stale quote (D117).
+                else if (TraceFile.IsRemovedSection(sectionId)) problems.Add($"{id}: FSD section {fsd["doc"]} §{sectionId} was removed; its decision stays until a person deals with the entry");
+                else { problems.Add($"{id}: FSD section {fsd["doc"]} §{sectionId} doesn't exist"); quotesMatch = false; }
             }
             if (page is not null)
             {

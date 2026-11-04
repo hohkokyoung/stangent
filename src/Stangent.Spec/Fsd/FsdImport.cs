@@ -51,7 +51,11 @@ public static class FsdImport
             var added = FsdVersions.EnsureIds(repo.Root, id, current);
             var same = new JsonObject { ["id"] = id, ["status"] = "unchanged", ["hash"] = hash };
             if (added > 0) same["permanentIdsAdded"] = added;
-            if (FsdVersions.PendingHash(repo.Root, id) is { } pending) same["candidate"] = pending;
+            if (FsdVersions.PendingHash(repo.Root, id) is { } pending)
+            {
+                same["candidate"] = pending;
+                same["note"] = $"This file is already the current version, and candidate {pending[..12]} is still waiting: `stangent fsd promote {id}` would apply it. To throw it away, run `stangent fsd discard {id}`.";
+            }
             return same;
         }
 

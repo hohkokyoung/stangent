@@ -121,11 +121,14 @@ static class DocxReview
         return sb.ToString();
     }
 
+    /// <summary>A fallback is only a copy for old readers when there's a choice beside it. With no choice, it's what the file holds.</summary>
+    public static bool ForOldReaders(OpenXmlElement e) => e.LocalName == "Fallback" && e.Parent?.ChildElements.Any(c => c.LocalName == "Choice") == true;
+
     static void Visit(OpenXmlElement e, StringBuilder sb)
     {
         switch (e.LocalName)
         {
-            case "Fallback": return;
+            case "Fallback" when ForOldReaders(e): return;
             case "t": sb.Append(e.InnerText); return;
             case "textpath": sb.Append(' ').Append(e.GetAttributes().FirstOrDefault(a => a.LocalName == "string").Value).Append(' '); return;
             case "noBreakHyphen": sb.Append('-'); return;

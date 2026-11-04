@@ -339,6 +339,32 @@ public class FsdDocxTests
     }
 
     [Fact]
+    public void A_fallback_with_no_choice_is_what_the_file_holds_so_it_is_read_and_checked()
+    {
+        var box = $"""<w:p><w:r><w:t xml:space="preserve">Before </w:t></w:r><w:r><mc:AlternateContent><mc:Fallback><w:pict><v:shape><v:textbox><w:txbxContent>{P("Boxed rule here")}</w:txbxContent></v:textbox></v:shape></w:pict></mc:Fallback></mc:AlternateContent></w:r></w:p>""";
+        var inline = """<w:p><mc:AlternateContent><mc:Fallback><w:r><w:t>Inline rule here</w:t></w:r></mc:Fallback></mc:AlternateContent></w:p>""";
+        var block = $"""<mc:AlternateContent><mc:Fallback>{P("Block rule here")}</mc:Fallback></mc:AlternateContent>""";
+
+        var doc = DocxConverter.Convert(Docx(H("Rules") + box + inline + block));
+
+        var text = Text(doc, "Rules");
+        Assert.Contains("Boxed rule here", text);
+        Assert.Contains("Inline rule here", text);
+        Assert.Contains("Block rule here", text);
+        // Listed like any text box, and nothing's missing from the render.
+        Assert.Contains(doc.Problems, p => p.Contains("a text box", StringComparison.Ordinal));
+        Assert.DoesNotContain(doc.Problems, p => p.StartsWith("completeness:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_completeness_check_sees_a_fallback_with_no_choice_where_the_converter_reads_nothing()
+    {
+        // No rule reads a paragraph's text out of a picture's old-style shape data, so this is the check's to catch.
+        var doc = DocxConverter.Convert(Docx(H("Rules") + """<w:p><w:r><mc:AlternateContent><mc:Fallback><w:pict><v:shape><v:textpath string="Big claim"/></v:shape></w:pict></mc:Fallback></mc:AlternateContent></w:r></w:p>"""));
+        Assert.Contains(doc.Problems, p => p.StartsWith("completeness: section Rules: 2 words in the file", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void The_completeness_check_lists_word_art_it_has_no_rule_for()
     {
         var doc = DocxConverter.Convert(Docx(H("Rules") + """<w:p><w:r><w:pict><v:shape><v:textpath string="Big claim"/></v:shape></w:pict></w:r></w:p>"""));

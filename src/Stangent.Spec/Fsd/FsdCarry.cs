@@ -9,7 +9,7 @@ namespace Stangent.Spec.Fsd;
 /// <summary>
 /// On promotion, saved work follows its section by code (D117). Links and items that cite a section that kept its permanent id get its
 /// new number and title, with no stored file changing shape. A run's input hash is worked out again only when it was valid and the words the
-/// AI read are the same apart from the number, so a renumbering costs no paid run. What cites a removed section is listed, never dropped.
+/// AI read are the same apart from the number, so a renumbering costs no paid run. What cites a removed section takes its mark and is listed, never dropped.
 /// </summary>
 static class FsdCarry
 {
@@ -41,20 +41,26 @@ static class FsdCarry
 
         var trace = TraceFile.Load(root);
         var traceIds = new JsonArray();
-        var onRemoved = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var onRemoved = new Dictionary<string, List<JsonObject>>(StringComparer.Ordinal);
         foreach (var e in trace["entries"]!.AsArray().OfType<JsonObject>())
         {
             if (e["fsd"] is not JsonObject fsd || (string?)fsd["doc"] != doc) continue;
             var section = (string)fsd["section"]!;
-            if (goneBySection.ContainsKey(section)) (onRemoved.TryGetValue(section, out var list) ? list : onRemoved[section] = []).Add((string)e["id"]!);
-            if (!map.TryGetValue(section, out var p)) continue;
-            fsd["title"] = p.Title;
-            if (p.From == p.To) continue;
-            fsd["section"] = p.To;
+            string to;
+            if (goneBySection.TryGetValue(section, out var g)) to = Mark(g);
+            else if (map.TryGetValue(section, out var p))
+            {
+                fsd["title"] = p.Title;
+                if (p.From == p.To) continue;
+                to = p.To;
+            }
+            else continue;
+            fsd["section"] = to;
             var from = (string)e["id"]!;
-            var to = TraceFile.EntryId((string)e["state"]!, doc, p.To, (string?)e["page"]?["id"], (string?)fsd["quote"], (string?)e["page"]?["quote"], (string?)fsd["requirement"]);
-            e["id"] = to;
-            traceIds.Add((JsonNode)new JsonObject { ["from"] = from, ["to"] = to });
+            var id = TraceFile.EntryId((string)e["state"]!, doc, to, (string?)e["page"]?["id"], (string?)fsd["quote"], (string?)e["page"]?["quote"], (string?)fsd["requirement"]);
+            e["id"] = id;
+            traceIds.Add((JsonNode)new JsonObject { ["from"] = from, ["to"] = id });
+            if (goneBySection.ContainsKey(section)) (onRemoved.TryGetValue(section, out var list) ? list : onRemoved[section] = []).Add(e);
         }
 
         var removed = new JsonArray();
@@ -67,11 +73,17 @@ static class FsdCarry
         {
             var mark = Mark(s);
             var on = features.Where(f => (string)f["section"]! == mark).ToList();
+            var entries = onRemoved.GetValueOrDefault((string)s["id"]!) ?? [];
             removed.Add((JsonNode)new JsonObject
             {
                 ["permanentId"] = (string)s["permanentId"]!, ["section"] = (string)s["id"]!, ["title"] = (string)s["title"]!,
                 ["numberUsedAgain"] = numbersNow.Contains((string)s["id"]!),
-                ["traceEntries"] = new JsonArray([.. (onRemoved.GetValueOrDefault((string)s["id"]!) ?? []).Select(x => (JsonNode)x)]),
+                ["traceEntries"] = new JsonArray([.. entries.Select(e => (JsonNode)(string)e["id"]!)]),
+                // No move: these stay as a person decided them, until a person deals with the entry.
+                ["decisions"] = new JsonArray([.. entries.Where(e => e["decision"] is not null).Select(e => (JsonNode)new JsonObject
+                {
+                    ["id"] = (string)e["id"]!, ["value"] = (string?)e["decision"], ["by"] = (string?)e["decided_by"],
+                })]),
                 ["features"] = new JsonArray([.. on.Select(f => (JsonNode)(string)f["id"]!)]),
                 ["requirements"] = new JsonArray([.. on.SelectMany(f => f["requirements"]!.AsArray().OfType<JsonObject>()).Select(r => (JsonNode)(string)r["id"]!)]),
                 ["questions"] = new JsonArray([.. questions.Where(q => (string)q["section"]! == mark).Select(q => (JsonNode)(string)q["id"]!)]),
@@ -96,8 +108,7 @@ static class FsdCarry
         };
     }
 
-    /// <summary>A removed section's marker. It keeps its items in their file, out of reach of any section that gets the same number later.</summary>
-    static string Mark(JsonObject section) => $"(removed {(string)section["permanentId"]!}) {(string)section["id"]!}";
+    static string Mark(JsonObject section) => TraceFile.RemovedSection((string)section["permanentId"]!, (string)section["id"]!);
 
     /// <summary>Every section reference in a feature or question: its own, and each quote's. One pass, so 3 → 4 and 4 → 5 can't run together.</summary>
     static void Follow(JsonObject item, Dictionary<string, Pair> map, Dictionary<string, JsonObject> gone, bool title)

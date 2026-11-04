@@ -101,6 +101,10 @@ public static partial class DocxConverter
                 case CustomXmlBlock:
                     foreach (var child in block.ChildElements.Where(c => c is not CustomXmlProperties)) Block(child);
                     break;
+                // With no choice beside it, a fallback's blocks are the document's.
+                case { LocalName: "AlternateContent" } when !block.ChildElements.Any(c => c.LocalName == "Choice"):
+                    foreach (var child in block.ChildElements.Where(c => c.LocalName == "Fallback").SelectMany(f => f.ChildElements)) Block(child);
+                    break;
                 default: Leaf(block); break;
             }
         }
@@ -225,7 +229,7 @@ public static partial class DocxConverter
 
         /// <summary>Descendants, leaving out what only old readers see. A table found under a block is nested, or sits in a text box.</summary>
         static IEnumerable<OpenXmlElement> Live(OpenXmlElement block) =>
-            block.Descendants().Where(e => !e.Ancestors().Any(a => a.LocalName == "Fallback"));
+            block.Descendants().Where(e => !e.Ancestors().Any(DocxReview.ForOldReaders));
 
         void Field(string instruction)
         {
@@ -429,7 +433,7 @@ public static partial class DocxConverter
                 switch (e)
                 {
                     // Word stores a text box twice (the shape and a fallback for old readers): read it once.
-                    case { LocalName: "Fallback" }: break;
+                    case { LocalName: "Fallback" } when DocxReview.ForOldReaders(e): break;
                     case Text t when t.Parent is Run: sb.Append(t.Text); break;
                     case TabChar or PositionalTab: sb.Append(' '); break;
                     case Break or CarriageReturn: sb.Append(' '); break;

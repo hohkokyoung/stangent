@@ -336,6 +336,28 @@ public class FsdLinkTests
     }
 
     [Fact]
+    public void A_link_on_a_removed_section_is_marked_in_impact_answers_and_documents_no_screen()
+    {
+        using var app = App();
+        const string mark = "(removed S-0009) 1";
+        var section = new JsonObject { ["id"] = mark, ["title"] = "Orders", ["text"] = "" };
+        LinkRun.ApplyEntries(app.Root, "shop", mark, [LinkRun.Entry("conflict", "shop", section, "Orders over 50 need approval.", SpecApp.Post, "R1",
+            "Orders over 100 are refused", "judge", null, "50 vs 100")]);
+        var graph = GraphStore.Load(GraphStore.PathFor(app.Repo))!;
+        var report = new Graph.Impact.ImpactAnalyzer(graph).Analyze(new Graph.Impact.ChangeSpec("symbol", SpecApp.Place), app.Root, null, null,
+            (reached, expand) => FsdImpact.Sections(app.Root, reached, expand));
+        Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v5.json", report.ToJsonString()));
+        Assert.Equal(mark, (string)Assert.Single(report["fsdSections"]!["items"]!.AsArray())!["section"]!);
+
+        // A screen whose only link is on a removed section has no FSD section linking to it.
+        var pages = app.Pages();
+        Assert.Equal(2, Undocumented.Apply(app.Root, pages, null));
+        var screen = TraceFile.Load(app.Root)["entries"]!.AsArray().First(e => (string)e!["state"]! == "undocumented")!["page"]!["id"]!.GetValue<string>();
+        LinkRun.ApplyEntries(app.Root, "shop", mark, [LinkRun.Entry("agree", "shop", section, "Orders over 50 need approval.", screen, null, null, "judge", null, null)]);
+        Assert.Equal(2, Undocumented.Apply(app.Root, pages, null));
+    }
+
+    [Fact]
     public void Fragments_are_not_quotes_and_a_missing_output_still_gets_its_retry()
     {
         using var app = App();

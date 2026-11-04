@@ -107,5 +107,10 @@ public static class TraceFile
     public static string LinkKey(JsonObject e) => string.Join("\u0001", (string?)e["state"] ?? "", (string?)e["fsd"]?["doc"] ?? "", (string?)e["fsd"]?["requirement"] ?? "", (string?)e["page"]?["id"] ?? "",
         (string?)e["page"]?["statement"] ?? "", Quotes.Normalize((string?)e["fsd"]?["quote"] ?? ""), Quotes.Normalize((string?)e["page"]?["quote"] ?? ""));
 
+    /// <summary>A removed section's mark (D117). It keeps what cited the section on file, out of reach of any section that gets the same number later.</summary>
+    public static string RemovedSection(string permanentId, string section) => $"(removed {permanentId}) {section}";
+
+    public static bool IsRemovedSection(string? section) => section is not null && System.Text.RegularExpressions.Regex.IsMatch(section, @"^\(removed S-\d+\) ");
+
     public static string QuoteHash(string quote) => CanonicalJson.Hash(Quotes.Normalize(quote));
 }

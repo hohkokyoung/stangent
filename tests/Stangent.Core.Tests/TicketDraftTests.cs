@@ -4,6 +4,7 @@ using Stangent.Core;
 using Stangent.Core.State;
 using Stangent.Spec.Fsd;
 using Stangent.Spec.Pages;
+using Stangent.Spec.Trace;
 using Stangent.Tickets;
 using Stangent.Tickets.Secrets;
 
@@ -154,6 +155,27 @@ public class TicketDraftTests
         Assert.Contains("**Kept with no claim (questions, requests, greetings, headings: not checked, read them)**\n\n- Thanks for the report.\n",
             File.ReadAllText(Path.ChangeExtension(TicketDrafts.JsonPath(new TicketPaths(d.Root, Key), "questions", "internal"), ".md")));
         Assert.Equal("current", d.Prepare().Status); // unchanged: no AI call
+    }
+
+    [Fact]
+    public void A_link_on_a_removed_section_stays_out_of_a_draft_and_does_not_stop_it()
+    {
+        using var d = new Draft();
+        var trace = TraceFile.Load(d.Root);
+        foreach (var page in new[] { Orders, SpecApp.Post })
+            trace["entries"]!.AsArray().Add(LinkRun.Entry("agree", "shop", new JsonObject { ["id"] = "(removed S-0009) 9", ["title"] = "Gone", ["text"] = "" },
+                "A rule from a removed section.", page, null, null, "judge", "confirmed", null));
+        TraceFile.Save(d.Root, trace);
+        Git(d.Root, "init -q -b main");
+        Git(d.Root, "-c user.name=t -c user.email=t@t add -A");
+        Git(d.Root, "-c user.name=t -c user.email=t@t commit -q -m base");
+        var file = Path.Combine(d.Root, "Core", "OrderService.cs");
+        File.WriteAllText(file, File.ReadAllText(file).Replace("total > 100", "total > 50"));
+        Git(d.Root, "-c user.name=t -c user.email=t@t commit -q -am fix");
+
+        Assert.Equal(StepSpec.SummaryWriter, d.Prepare("resolution", pr: "HEAD~1..HEAD").Agent);
+
+        Assert.DoesNotContain("## shop §(removed", File.ReadAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "resolution", "input.md")));
     }
 
     [Fact]
