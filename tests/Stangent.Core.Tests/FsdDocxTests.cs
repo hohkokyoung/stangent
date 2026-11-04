@@ -14,9 +14,9 @@ public class FsdDocxTests
 {
     const string Ns = """xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" """;
 
-    static string P(string text) => $"""<w:p><w:r><w:t xml:space="preserve">{text}</w:t></w:r></w:p>""";
-    static string H(string text, int level = 1) => $"""<w:p><w:pPr><w:pStyle w:val="Heading{level}"/></w:pPr><w:r><w:t>{text}</w:t></w:r></w:p>""";
-    static string R(string text, string props = "") => $"""<w:r><w:rPr>{props}</w:rPr><w:t xml:space="preserve">{text}</w:t></w:r>""";
+    internal static string P(string text) => $"""<w:p><w:r><w:t xml:space="preserve">{text}</w:t></w:r></w:p>""";
+    internal static string H(string text, int level = 1) => $"""<w:p><w:pPr><w:pStyle w:val="Heading{level}"/></w:pPr><w:r><w:t>{text}</w:t></w:r></w:p>""";
+    internal static string R(string text, string props = "") => $"""<w:r><w:rPr>{props}</w:rPr><w:t xml:space="preserve">{text}</w:t></w:r>""";
     static string Tc(string inner, string props = "") => $"""<w:tc><w:tcPr>{props}</w:tcPr>{(inner.StartsWith('<') ? inner : P(inner))}</w:tc>""";
     static string Tr(params string[] cells) => $"<w:tr>{string.Concat(cells)}</w:tr>";
     static string Tbl(params string[] rows) => $"<w:tbl>{string.Concat(rows)}</w:tbl>";

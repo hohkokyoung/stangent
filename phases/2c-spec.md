@@ -2,7 +2,7 @@
 phase: 2c
 name: spec
 status: in progress
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 2, trace-links: 3, ticket-bundle: 2, bug-proof: 1 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 3, trace-links: 3, ticket-bundle: 2, bug-proof: 1 }
 provides: {}
 ---
 
@@ -114,3 +114,5 @@ Read at the lines noted, which still line up.
 - **"56 of 109 requirements read 'no code found'": not a code bug.** On the saved data, all 109 have a link. 53 have one that shows code. Exactly 56 have only gaps, and `Match.IsLink` treats those as no code, as designed. It's what the failed links said. It's also loosely worded: it means no page statement says this, not that no code does. Left as it is; the requirements layer's future is the owner's (D99).
 
 **Not built, on purpose:** gap finders, the per-chapter report, Word comments as questions, anything on the requirements layer's future.
+
+Checked 2026-11-04 (D20, D121): `source-document` v2 → v3. By grep, `Stangent.Spec/Requirements` reads sections by field and never `problems`. Moved to `source-document: 3`.

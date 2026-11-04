@@ -37,14 +37,16 @@ public static class FsdVersions
         foreach (var s in sections) s["permanentId"] = ledger.Issue(Scope, Format);
     }
 
-    /// <summary>A document imported before permanent ids gets them on its next import, in document order. Only <c>document.json</c> changes,
-    /// and only by adding them: <c>document.md</c>, numbers, text and hashes stay, so saved AI work stays valid.</summary>
+    /// <summary>A document from before gets what later versions added on its next import: permanent ids (v2), in document order, and structured
+    /// problems (v3). Only <c>document.json</c> changes: <c>document.md</c>, numbers, text and hashes stay, so saved AI work stays valid.</summary>
     public static int EnsureIds(string root, string doc, JsonObject current)
     {
         var missing = current["sections"]!.AsArray().OfType<JsonObject>().Where(s => s["permanentId"] is null).ToList();
-        if (missing.Count == 0) return 0;
-        IssueIds(root, doc, current, missing);
-        current["schemaVersion"] = 2;
+        if (missing.Count == 0 && (int?)current["schemaVersion"] >= 3) return 0;
+        if (missing.Count > 0) IssueIds(root, doc, current, missing);
+        current["schemaVersion"] = 3;
+        ImportProblems.Upgrade(current);
+        ImportProblems.Attach(current);
         Validate(current);
         File.WriteAllText(JsonPath(root, doc), CanonicalJson.Serialize(current));
         return missing.Count;
@@ -53,7 +55,7 @@ public static class FsdVersions
     static void Validate(JsonObject doc)
     {
         var errors = SchemaRegistry.Embedded.Validate(FsdImport.Schema, doc.ToJsonString());
-        if (errors.Count > 0) throw new StangentException("invalid_document", "The document broke source-document v2 (a stangent bug).", ExitCodes.Failed, errors);
+        if (errors.Count > 0) throw new StangentException("invalid_document", "The document broke source-document v3 (a stangent bug).", ExitCodes.Failed, errors);
     }
 
     public static string? PendingHash(string root, string doc) => File.Exists(DiffJson(root, doc)) ? (string?)Load(root, doc)["to"] : null;
@@ -222,6 +224,9 @@ public static class FsdVersions
         var sections = pending["sections"]!.AsArray().OfType<JsonObject>().ToList();
         foreach (var s in sections.Where(s => kept.ContainsKey((string)s["id"]!))) s["permanentId"] = kept[(string)s["id"]!].Id;
         IssueIds(root, doc, current, sections.Where(s => !kept.ContainsKey((string)s["id"]!)));
+        ImportProblems.Upgrade(pending);
+        ImportProblems.Attach(pending);
+        pending["schemaVersion"] = 3;
         Validate(pending);
 
         var claimed = kept.Values.Select(k => k.Id).ToHashSet(StringComparer.Ordinal);

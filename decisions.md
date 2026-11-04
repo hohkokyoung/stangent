@@ -2314,6 +2314,12 @@ Reverses D62's "rejected: a second check on every finding". Follows D18, D53, D5
 **Why:** a component that damages the flow only shows up when the whole thing can be run with and without it. Testing each piece as it's built doesn't show that.
 **Cost:** defects stay in longer and may be built on. Tonight's fresh checks caught serious ones (a decision surviving a flipped statement, ids reissued), so the test phase will find more at once, and some builds may need redoing. Also, 24 of 30 and 44% stay unimproved until the test phase.
 
+## D121 · Switches, structured import problems and one set of import steps — 2026-11-04 (assistant's call, under the owner's D120)
+Follows D18, D20, D72, D111, D116 and D117.
+- **Structured problems.** `source-document` v3: `problems` are objects with `kind`, `detail` and whatever else the line says. Converters keep writing lines and one reader takes them apart, because old documents hold lines and have to come out the same as new ones. `detail` keeps each line word for word. Rejected: changing some sixty places in the converters to write objects, which gives old and new documents two readers.
+**Why:** a report or a question for the BA has to read problems by kind and section; a fixed text shape can't be relied on from outside.
+**Cost:** a kind is read from a line's words, so rewording a line in a converter can move it to `other`. The tests pin each kind's shape.
+
 ## Open questions
 
 - **Table facts compared by code, a second route to code (proposed 2026-11-04, `improvements.md` §8 C.2):** everything else reaches code through pages, and D68 kept direct FSD-to-code links out as noisy. Recommended: allow exact comparison as its own labelled route, kept out of the impact walk like 📜 lines, after a pilot on field lists with a real document.

@@ -74,7 +74,7 @@ public sealed class FsdVersionTests : IDisposable
         var result = Import($"#! Fruit\n{Apples}\n##! Pears\n{Pears}\n");
 
         Assert.Equal("imported", (string)result["status"]!);
-        Assert.Equal(2, (int)Current()["schemaVersion"]!);
+        Assert.Equal(3, (int)Current()["schemaVersion"]!);
         Assert.Equal([("1", "S-0001"), ("1.1", "S-0002")], Current()["sections"]!.AsArray().Select(s => ((string)s!["id"]!, (string)s["permanentId"]!)));
         Assert.Equal(["S-0001", "S-0002"], FsdVersions.Ledger(Root, "shop").Active("sections"));
         Assert.False(Directory.Exists(FsdVersions.CandidateDir(Root, "shop")));
@@ -135,7 +135,7 @@ public sealed class FsdVersionTests : IDisposable
 
         Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
 
-        Assert.Equal(2, (int)Current()["schemaVersion"]!);
+        Assert.Equal(3, (int)Current()["schemaVersion"]!);
         Assert.Equal("S-0001", (string)Entries()[0]["permanentId"]!);
     }
 
@@ -761,7 +761,7 @@ public sealed class FsdVersionTests : IDisposable
         Assert.Null(FsdImport.Import(repo.Repo, file, "sonarr")["permanentIdsAdded"]);
 
         var upgraded = JsonNode.Parse(File.ReadAllText(jsonPath))!.AsObject();
-        Assert.Equal(2, (int)upgraded["schemaVersion"]!);
+        Assert.Equal(3, (int)upgraded["schemaVersion"]!);
         Assert.All(upgraded["sections"]!.AsArray(), s => Assert.Matches("^S-[0-9]{4}$", (string)s!["permanentId"]!));
         Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, upgraded.ToJsonString()));
         // Taking the ids off gives back the exact bytes: the ids are the only change.

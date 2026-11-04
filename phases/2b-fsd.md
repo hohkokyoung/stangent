@@ -3,7 +3,7 @@ phase: 2b
 name: fsd
 status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, reference-lines: 1, evidence: 1 }
-provides: { source-document: 2, trace-links: 3 }
+provides: { source-document: 3, trace-links: 3 }
 ---
 
 # Phase 2b · FSD and discrepancies
@@ -379,3 +379,9 @@ Code only, no AI. Details are in `docs/spec.md`.
 - The scorer counted decided and `page-owner` findings as lost. Now only what the step took out counts, including `developer-confirm`.
 - `counts.undecided` included closed findings. Now it holds only the BA's.
 - Two graph tests that failed in a copy without `.git` pass in the real tree: only the missing `.git`.
+
+## §8 batch 1, under D120 (2026-11-04): what this phase's contracts gained
+
+**Not checked, under D120:** no fresh check of any of this. `dotnet test`, the whole-flow test and `phases check` pass.
+
+**S.2 · `source-document` v2 → v3 (D121).** `problems` become objects: `kind`, `detail`, and `sectionNumber`, `section`, `page`, `line`, `author`, `state`, `text` where they apply. `ConvertedDocument.Problems` stays lines, so the converters and their tests didn't move, and `ImportProblems` reads lines for old documents and new imports alike. Sonarr's `document.md` keeps its hash, and `document.json` with its ids taken off keeps its hash too, since it has no problems. 2c and 3 were checked by grep (they read sections by field, never `problems` or `schemaVersion`) and moved, each with its line.

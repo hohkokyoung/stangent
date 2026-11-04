@@ -205,7 +205,7 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
   *`WholeFlowTests.cs`; what it found is in `phases/0-foundation.md`. Five things wait on the owner, as skipped facts.*
 - ⬜ S.1 · Links store a section's permanent id as well as its number.  
   *Links cite numbers, carried across on promote (D117). Keep the number for old hashes. Recommend: do.*
-- ⬜ S.2 · Import problems become structured: kind, section, detail.  
+- ✅ S.2 · Import problems become structured: kind, section, detail.  
   *`problems` are plain lines, and comments use a fixed text shape no product code reads back. `source-document` v3. Recommend: do before the report and questions.*
 - ⬜ S.3 · One set of import steps every format fills in, and ticket attachments use the same path.  
   *Comments and tracked changes are Word only; `Pull.cs` converts `.docx` but not PDF, which D111 left open. Recommend: do.*

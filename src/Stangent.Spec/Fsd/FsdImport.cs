@@ -9,13 +9,13 @@ namespace Stangent.Spec.Fsd;
 
 /// <summary>
 /// <c>stangent fsd import</c> (Phase 2b step 1, D111): converts a <c>.docx</c> or <c>.pdf</c> to Markdown by code, archives the original
-/// (D16) and records the document's sections as a <c>source-document</c> (v2) in <c>specs/fsd/&lt;doc-id&gt;/</c>.
+/// (D16) and records the document's sections as a <c>source-document</c> (v3) in <c>specs/fsd/&lt;doc-id&gt;/</c>.
 /// The same file always gives the same bytes; a file already imported (same content hash) is left alone. A different file
 /// for a document already here comes in as a candidate beside it (<see cref="FsdVersions"/>, D117).
 /// </summary>
 public static class FsdImport
 {
-    public const string Schema = "source-document.v2.json";
+    public const string Schema = "source-document.v3.json";
 
     public static string DocDir(string root, string id) => Path.Combine(root, "specs", "fsd", id);
 
@@ -66,8 +66,9 @@ public static class FsdImport
         if (current is not null) return FsdVersions.Offer(repo.Root, id, current, doc, converted, hash, flat, archived);
 
         FsdVersions.IssueIds(repo.Root, id, doc, doc["sections"]!.AsArray().OfType<JsonObject>());
+        ImportProblems.Attach(doc);
         var errors = SchemaRegistry.Embedded.Validate(Schema, doc.ToJsonString());
-        if (errors.Count > 0) throw new StangentException("invalid_document", "The imported document broke source-document v2 (a stangent bug).", ExitCodes.Failed, errors);
+        if (errors.Count > 0) throw new StangentException("invalid_document", "The imported document broke source-document v3 (a stangent bug).", ExitCodes.Failed, errors);
         Directory.CreateDirectory(dir);
         WriteText(dir, converted);
         File.WriteAllText(jsonPath, CanonicalJson.Serialize(doc));
@@ -81,29 +82,32 @@ public static class FsdImport
     /// <summary>The document's record, every section's permanent id still to come.</summary>
     static JsonObject Document(string id, string file, ConvertedDocument converted, string archive, string archivedPath, string hash) => new()
     {
-        ["schemaVersion"] = 2,
+        ["schemaVersion"] = 3,
         ["id"] = id,
         ["title"] = converted.Title ?? Path.GetFileNameWithoutExtension(file),
         ["original"] = new JsonObject { ["archive"] = archive, ["path"] = archivedPath, ["hash"] = hash, ["fileName"] = Path.GetFileName(file) },
         ["markdown"] = "document.md",
-        ["sections"] = new JsonArray([.. converted.Sections.Select(s =>
-        {
-            var o = new JsonObject
-            {
-                ["id"] = s.Id, ["idKind"] = s.IdKind, ["title"] = s.Title, ["level"] = s.Level, ["line"] = s.Line,
-                ["text"] = s.Text, ["textHash"] = CanonicalJson.Hash(s.Text),
-            };
-            if (s.Parent is not null) o["parent"] = s.Parent;
-            return (JsonNode)o;
-        })]),
+        ["sections"] = new JsonArray([.. converted.Sections.Select(s => (JsonNode)SectionJson(s))]),
         ["images"] = new JsonArray([.. converted.Images.Select(i =>
         {
             var o = new JsonObject { ["file"] = i.Name };
             if (i.Caption is not null) o["caption"] = i.Caption;
             return (JsonNode)o;
         })]),
-        ["problems"] = new JsonArray([.. converted.Problems.Select(p => (JsonNode)p)]),
+        ["problems"] = ImportProblems.Of(converted.Problems, [.. converted.Sections.Select(SectionJson)]),
     };
+
+    /// <summary>One section as <c>document.json</c> holds it, its permanent id still to come.</summary>
+    internal static JsonObject SectionJson(FsdSection s)
+    {
+        var o = new JsonObject
+        {
+            ["id"] = s.Id, ["idKind"] = s.IdKind, ["title"] = s.Title, ["level"] = s.Level, ["line"] = s.Line,
+            ["text"] = s.Text, ["textHash"] = CanonicalJson.Hash(s.Text),
+        };
+        if (s.Parent is not null) o["parent"] = s.Parent;
+        return o;
+    }
 
     /// <summary>The Markdown and the images into a folder.</summary>
     internal static void WriteText(string dir, ConvertedDocument converted)

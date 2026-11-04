@@ -525,7 +525,7 @@ public sealed class WholeFlow : IDisposable
         var fsd = Path.Combine(Root, "specs", "fsd");
         if (Directory.Exists(fsd))
             foreach (var dir in Directory.EnumerateDirectories(fsd))
-                Validate("source-document.v2.json", JsonNode.Parse(File.ReadAllText(Path.Combine(dir, "document.json"))), $"stage {stage} {Path.GetFileName(dir)}");
+                Validate("source-document.v3.json", JsonNode.Parse(File.ReadAllText(Path.Combine(dir, "document.json"))), $"stage {stage} {Path.GetFileName(dir)}");
         if (File.Exists(TraceFile.PathIn(Root))) Validate("trace-links.v3.json", Trace(), $"stage {stage} trace.yaml");
     }
 
@@ -618,10 +618,13 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         Assert.Contains("| Customer | Required |", orders);
         Assert.DoesNotContain("Is it 50 or 75?", orders);
 
-        var problems = flow.Seen("import")["problems"]!.AsArray().Select(p => (string)p!).ToList();
+        var structured = flow.Seen("import")["problems"]!.AsArray();
+        var problems = structured.Select(p => (string)p!["detail"]!).ToList();
         Assert.Contains("section 1: an embedded file not read (Excel.Sheet.12)", problems);
         Assert.Contains("comment: section \"1\" by \"Jane\" open: \"Is it 50 or 75?\"", problems);
         Assert.Equal(2, problems.Count);
+        Assert.Equal([("element", "S-0001"), ("comment", "S-0001")], structured.Select(p => ((string)p!["kind"]!, (string)p["section"]!)));
+        Assert.Equal(("Jane", "open", "Is it 50 or 75?"), ((string)structured[1]!["author"]!, (string)structured[1]!["state"]!, (string)structured[1]!["text"]!));
     }
 
     [Fact]
