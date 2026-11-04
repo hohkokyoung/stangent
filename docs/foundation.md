@@ -171,3 +171,15 @@ its real list names real repos and its results would land in this repo.
 
 **Known gap.** A page or step stangent refuses (an error envelope) comes out as a status line holding its code, and the batch
 exits 0. Tests pin this. A crash, a failed Claude call, a failed pull and a failed bundle all exit nonzero.
+
+## Whole-flow test
+
+Each phase has its own tests, so a seam between phases could pass all of them and still break. `tests/Stangent.Core.Tests/WholeFlowTests.cs` (S.0) runs the flow once, end to end: the built `stangent` as a process, on a real git repo holding the shop fixture, with the real graph builder. Every AI step's answer is a hand-written file playing that step's agent, written where the step says and checked against its schema, and the code checks still run on it. No test here reaches an AI.
+
+**The order:** `init` and `graph build`; reference pages; a `.docx` and a `.pdf` imported; links and findings; the disprove step, `trace confirm` and `trace send-back`; a person's decisions, with `trace attribute`; impact and a ticket bundle; a new version through `fsd promote`; a page written again after the code moved; then `trace check` and `phases check`, with section 1 judged again.
+
+**How it's built:** a class fixture does the run once and saves what each stage saw. The facts read those, so one stage's fact can fail without hiding the others. A stage that can't finish fails its own facts and every later stage's, with the reason. After each stage, a sweep checks pages, line files, documents and the trace file against their contracts. The test project builds the CLI first, without referencing it.
+
+**A skipped fact is a finding.** Five facts at the end of the file are `Skip`ped, each stating the right behaviour and saying what's wrong. They wait on a decision. Taking the `Skip` off is how to test a fix.
+
+**Not in it:** requirements (Phase 2c's `req` steps), bug proof, drafts and posting, and the bash drivers, which `DriverRig` covers.

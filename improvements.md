@@ -199,8 +199,8 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
 
 **Seams, first**
 
-- ⬜ S.0 · A test of the whole flow with fake AI answers: import, links, promote, disprove, impact, as one run.  
-  *No such test by name today; each part has its own. Recommend: do first, it costs almost nothing.*
+- ✅ S.0 · A test of the whole flow with fake AI answers: import, links, promote, disprove, impact, as one run.  
+  *`WholeFlowTests.cs`; what it found is in `phases/0-foundation.md`. Five things wait on the owner, as skipped facts.*
 - ⬜ S.1 · Links store a section's permanent id as well as its number.  
   *Links cite numbers, carried across on promote (D117). Keep the number for old hashes. Recommend: do.*
 - ⬜ S.2 · Import problems become structured: kind, section, detail.  
