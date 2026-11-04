@@ -352,14 +352,14 @@ Code only, no AI. Details are in `docs/spec.md`.
 **Built.** Details are in `docs/spec.md`; the re-score, its estimate and 2.6's outcomes are in `phases/2c-spec.md`.
 - `fsd disprove prepare|check|estimate`, `finding-disprover-output` v1, `stangent-finding-disprover`, a stage in `spec-run.sh --fsd` and `spec-run.sh --disprove`. Off unless `fsd.disprove` is on, set like `findings` (D68).
 - A bundle built by code: the claim in a fixed sentence, the section, the page's statements, the code at numbered lines, what couldn't be shown, the entry points. No finder, no note, no check (D61).
-- Five verdicts, moved only by code on the state module, each routed: `closed`, `developer`, `ba`.
+- Five verdicts, moved only by code on the state module, each routed: `developer-confirm` (then `closed` once a person confirms), `developer`, `ba`.
 - `page-wrong`, `suggestedSeverity`, and the listing's `goesTo`, `verdict`, `label`, `quote`, `at` and `queues`.
 
 **The hash bar: met.** `SavedWorkTests.Saved` has the same 25 values, and `DisproveTests` compares them again after a verdict is written. On a temp copy of Sonarr's real data, all 16 sections read `current` to `fsd prepare`, with no AI. A `trace.yaml` from before this step reads and checks, and `trace check` passes on the real 134 entries.
 
 **It isn't shown to help.** No paid run has happened. 2c's numbers (24 of 30, 44%) still stand as the only measured ones.
 
-**Contracts (D20).** `trace-links` v3 grew in place, unshipped, so no bump. New: `finding-disprover-output` v1, `finding-verdict` and `disprove-run` on the state module. Readers of `decision` were checked by grep: `Bundle`, `Drafts` and `FsdCarry` carry it as text; `FsdImpact.verified` now reads `page-wrong` as not verified; `trace approve` skips anything decided. A closed finding leaves the ticket bundle, a draft and impact, only when the setting has made one, so Phase 3 has no `needs review`.
+**Contracts (D20).** `trace-links` v3 grew in place, unshipped, so no bump. New: `finding-disprover-output` v1, `finding-verdict`, `finding-review` and `disprove-run` on the state module. Readers of `decision` were checked by grep: `Bundle`, `Drafts` and `FsdCarry` carry it as text; `FsdImpact.verified` now reads `page-wrong` as not verified; `trace approve` skips anything decided. A closed finding leaves the ticket bundle, a draft and impact, only when the setting has made one, so Phase 3 has no `needs review`.
 
 **Known gaps.**
 - The step can only remove findings, so it can't raise found to 27.
@@ -370,4 +370,12 @@ Code only, no AI. Details are in `docs/spec.md`.
 - Regenerating a `page-wrong` page sends the finding back even if the page came out the same.
 - Sonarr's saved graph is too old to cite lines, so the real run needs `graph build` first.
 
-**2.5 and 2.6, not fresh-checked (2026-11-04):** the owner asked about token use before this build's check started, so D61's check and fix round wait on the owner's call. Treat the disprove step as unverified beyond its own tests.
+**Fresh check of 2.5 and 2.6 (2026-11-04).** What it found, and what this round did:
+- A `refuted` quote only proved the text exists, so any real line closed a finding. Now `refuted` and `unreachable` wait in `developer-confirm` until a person confirms or sends them back (D119's note).
+- A dropped decision let the old verdict close the finding again, for good with `fsd.disprove` off. Now the finding goes to the BA, labelled with why.
+- `"verdict":"weird"` twice wrote a `claimed` outside the schema and broke `trace check`. Now `claimed` is kept only if it's a verdict.
+- `[]`, `5`, `null` and `{"verdict":5}` crashed `disprove check`. Now each is a failed answer: one retry, then `cant-tell`.
+- A broken `trace.yaml` stopped page generation, and `spec stale` the same way. Now each reports it and carries on.
+- The scorer counted decided and `page-owner` findings as lost. Now only what the step took out counts, including `developer-confirm`.
+- `counts.undecided` included closed findings. Now it holds only the BA's.
+- Two graph tests that failed in a copy without `.git` pass in the real tree: only the missing `.git`.

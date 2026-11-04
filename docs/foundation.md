@@ -121,6 +121,7 @@ returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds ev
 | `trace-decision` | `undecided`, `agree`, `code-wrong`, `fsd-wrong`, `page-wrong`, `defer` | a person decides; code only drops back | `specs/trace-history.jsonl` |
 | `finding-severity` | `ungraded`, `blocker`, `major`, `minor`, `cosmetic` | code starts it `ungraded`; a person grades it and can change their mind | `specs/trace-history.jsonl` |
 | `finding-verdict` | `unverified`, `stands`, `refuted`, `page-gap`, `unreachable`, `cant-tell` | code only, once the agent's quote passes (D119) | `specs/trace-history.jsonl` |
+| `finding-review` | `waiting`, `confirmed`, `sent-back` | a person confirms or sends back; code sends back when a decision drops, and clears when the verdict moves (D119) | `specs/trace-history.jsonl` |
 | `proof` | the proof's outcome values | code | `.stangent/tickets/state-history.jsonl` |
 | `proof-confirmation` | `unconfirmed`, `confirmed` | a person confirms; code clears | same |
 | `draft-posted` | `unposted`, `posted` | a person posts; code starts over when a draft is remade | same |

@@ -28,7 +28,7 @@ Here's the full list, grouped by area. Each section ends with a line on why it's
 - ✅ Findings get a severity from one shared scale, graded by the effect on users on the path they actually take.  
   *Built in 2.4 (D118): `blocker`, `major`, `minor`, `cosmetic`, starting `ungraded`, set by a person through the decision path. Since 2.5 the disprove step can suggest a grade, shown beside it; a person still sets it.*
 - 🟡 A second agent tries to disprove every finding. It assumes each claim is wrong until the code proves it, and checks whether the code path is actually reached. Separate "gap finders" look for what the first pass missed.  
-  *Built in 2.5, reversing D62 (D119): off by default, and not shown to help until the owner's paid re-score runs. Not tested: `undocumented` screens found by code, which have no FSD quote. **Not done:** gap finders; the step only removes findings, so it can't raise what's found.*
+  *Built in 2.5, reversing D62 (D119): off by default, and not shown to help until the owner's paid re-score runs. Not tested: `undocumented` screens found by code, which have no FSD quote. Since the fresh check, a refuted or unreachable finding leaves the BA's queue only for a developer to confirm or send back, because a quote can't show it's relevant. **Not done:** gap finders; the step only removes findings, so it can't raise what's found.*
 - 🟡 The call graph handles real C#. It resolves interface calls and DI registrations, and shows every entry point (endpoint, page, job, handler) that reaches a method.  
   *Roslyn graph with DI and impact answers, scored on real repos. Known gaps: code dispatched by interface or name, and framework-run code (D109). Recommend: close them in Phase 4 as decided.*
 - 🟡 Adapters for the actual stack: Playwright tests, Svelte screens, Razor pages, .NET code and SQL seed data.  
@@ -154,7 +154,7 @@ Ahead of Stangent because Stangent has designed approval states but not a workin
 - ✅ Every finding is stamped and weighed. It records which code commit it was checked against, and how strong the evidence is: backed by a test, by code only, or weak.  
   *Built in 2.4 (D118): each finding carries `evidence` records with the commit, the strength (`stated`, `read`; `ran` only with a real run) and who checked it, filled by code and validated by `trace check`.*
 - 🟡 Findings stay marked "unverified" until code confirms them. Nothing is overstated.  
-  *Unverified until a person approves (D53); findings are off by default (D68). Since 2.5 a verdict can mark one code-confirmed, as `read`, never `ran`; off by default and unscored (D119).*
+  *Unverified until a person approves (D53); findings are off by default (D68). Since 2.5 a verdict can mark one as the AI's reading, `read`, never `ran`, and a refuted or unreachable one leaves the BA's queue only for a developer to confirm; off by default and unscored (D119).*
 - ✅ The BA decides each finding, and can say "the reference is wrong", which sends it back to the reference's owner.  
   *Built in 2.5 (D119): `page-wrong`, with `decided_by` from git. The page goes stale for its owner, is listed in `spec stale`, and writing it again sends the finding back to the BA.*
 - 🟡 Only what changed is re-checked. A new import re-checks just the units whose pages changed. Decided findings go back to "recheck" if their evidence changed, or "gone" if it disappeared.  
