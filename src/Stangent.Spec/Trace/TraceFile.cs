@@ -17,10 +17,10 @@ public static class TraceFile
 {
     public const string Schema = "trace-links.v3.json";
     public static readonly string[] States = ["agree", "gap", "conflict", "undocumented"];
-    public static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "defer"];
+    public static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "page-wrong", "defer"];
 
     /// <summary>What a finding carries beyond its link (D118).</summary>
-    public static readonly string[] FindingFields = ["finding", "severity", "severity_by", "evidence", "evidence_hash"];
+    public static readonly string[] FindingFields = ["finding", "severity", "severity_by", "evidence", "evidence_hash", "verdict", "disproof", "disproof_hash"];
 
     public static string PathIn(string root) => Path.Combine(root, "specs", "trace.yaml");
 
@@ -55,7 +55,7 @@ public static class TraceFile
     {
         var sb = new StringBuilder();
         sb.Append("# FSD ↔ reference page links and findings (trace-links v3, D58, D99, D118). Edit `decision` only:\n");
-        sb.Append("# agree, code-wrong, fsd-wrong or defer. On a finding, also `severity`: blocker, major, minor, cosmetic or ungraded.\n");
+        sb.Append("# agree, code-wrong, fsd-wrong, page-wrong or defer. On a finding, also `severity`: blocker, major, minor, cosmetic or ungraded.\n");
         sb.Append("# `decided_by` and `severity_by` are filled from git after merge, never typed. Code fills the rest.\n");
         sb.Append("version: 3\nentries:");
         var entries = Sorted(trace["entries"]?.AsArray() ?? []).ToList();
@@ -88,6 +88,9 @@ public static class TraceFile
                 foreach (var record in evidence) sb.Append($"      - {record?.ToJsonString(Json) ?? "null"}\n");
             }
             if (e["evidence_hash"] is not null) sb.Append($"    evidence_hash: {S(e["evidence_hash"])}\n");
+            if (e["verdict"] is not null) sb.Append($"    verdict: {S(e["verdict"])}\n");
+            if (e["disproof"] is JsonObject disproof) sb.Append($"    disproof: {disproof.ToJsonString(Json)}\n");
+            if (e["disproof_hash"] is not null) sb.Append($"    disproof_hash: {S(e["disproof_hash"])}\n");
         }
         return sb.ToString();
     }
@@ -133,4 +136,8 @@ public static class TraceFile
 
     /// <summary>The evidence as code wrote it. Without a base to compare with, this is how an out-of-date record is told from a typed one.</summary>
     public static string EvidenceHash(JsonArray evidence) => CanonicalJson.Hash(CanonicalJson.SerializeCompact(evidence));
+
+    /// <summary>A verdict as code wrote it (D119), so one typed by hand to clear a finding out of a queue is seen.</summary>
+    public static string DisproofHash(string? verdict, JsonObject? disproof) =>
+        CanonicalJson.Hash((verdict ?? "") + "\n" + (disproof is null ? "" : CanonicalJson.SerializeCompact(disproof)));
 }

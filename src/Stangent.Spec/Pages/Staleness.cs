@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Nodes;
+using Stangent.Core.State;
 using Stangent.Graph.Impact;
 
 namespace Stangent.Spec.Pages;
@@ -7,7 +8,8 @@ namespace Stangent.Spec.Pages;
 /// <summary>
 /// Which pages need regenerating (D55): code only. A page is stale when its input hash today differs from the one it
 /// was recorded with; new when the graph calls for a page that has none; removed when a recorded page no longer
-/// matches anything in the graph (a renamed route, a deleted endpoint).
+/// matches anything in the graph (a renamed route, a deleted endpoint). A page a person marked <c>page-wrong</c> (D119) is stale
+/// too, until it's regenerated: that's the one case where its inputs are the same and it still has to run.
 /// </summary>
 public static class Staleness
 {
@@ -20,6 +22,7 @@ public static class Staleness
             .GroupBy(e => (string)e["page"]!["id"]!)
             .ToDictionary(g => g.Key, g => g.Select(e => (string)e["fsd"]!["section"]!).Distinct()
                 .OrderBy(Trace.TraceFile.SectionKey, StringComparer.Ordinal).ToList(), StringComparer.Ordinal);
+        var wrong = ReportedWrong(paths.Root);
         var stale = new JsonArray();
         var fresh = new JsonArray();
         var current = 0;
@@ -28,8 +31,13 @@ public static class Staleness
             var recorded = PageRun.LoadJson(paths.PageJson(page)) as JsonObject;
             if (recorded is null) { fresh.Add(Item(page, null)); continue; }
             var hash = Bundles.Build(set, page, null).InputHash;
-            if ((string?)recorded["generated"]?["bundleHash"] == hash) { current++; continue; }
+            var reported = wrong.GetValueOrDefault(page.Id);
+            if (reported is null && (string?)recorded["generated"]?["bundleHash"] == hash) { current++; continue; }
             var item = Item(page, recorded);
+            if (reported is not null) item["reportedWrong"] = new JsonArray([.. reported.Select(e => (JsonNode)new JsonObject
+            {
+                ["entry"] = (string)e["id"]!, ["finding"] = (string?)e["finding"], ["statement"] = (string?)e["page"]?["statement"], ["by"] = (string?)e["decided_by"],
+            })]);
             if (linked.TryGetValue(page.Id, out var sections))
                 item["fsdSections"] = new JsonArray([.. sections.Select(x => (JsonNode)x)]);
             if (changedFiles is not null)
@@ -57,6 +65,33 @@ public static class Staleness
         };
     }
 
+    /// <summary>The entries marked <c>page-wrong</c>, by page (D119).</summary>
+    public static Dictionary<string, List<JsonObject>> ReportedWrong(string root) => Trace.TraceFile.Load(root)["entries"]!.AsArray().OfType<JsonObject>()
+        .Where(e => (string?)e["decision"] == "page-wrong" && (string?)e["page"]?["id"] is not null)
+        .GroupBy(e => (string)e["page"]!["id"]!).ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
+
+    /// <summary>What the writer reads about it. It goes after the hashed part of the bundle, so it changes no hash.</summary>
+    public static string ReportedWrongNote(List<JsonObject>? entries)
+    {
+        if (entries is null) return "";
+        var sb = new StringBuilder("\n## A person said this page is wrong\n\nCheck these against the source above. Say only what the source shows.\n\n");
+        foreach (var e in entries)
+            sb.Append($"- statement {(string?)e["page"]?["statement"] ?? "(none)"} \"{(string?)e["page"]?["quote"]}\", against the FSD's \"{(string?)e["fsd"]?["quote"]}\"\n");
+        return sb.ToString();
+    }
+
+    /// <summary>The page was written again, so what a person said about the old one has been dealt with: it goes back to them to look at.</summary>
+    public static void ClearReportedWrong(string root, string pageId)
+    {
+        if (!File.Exists(Trace.TraceFile.PathIn(root))) return;
+        using var _ = Fsd.LinkRun.Lock(root);
+        var trace = Trace.TraceFile.Load(root);
+        var marked = trace["entries"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["decision"] == "page-wrong" && (string?)e["page"]?["id"] == pageId).ToList();
+        foreach (var e in marked)
+            StateChanges.Apply(root, e, StateKinds.TraceDecision, (string)e["id"]!, "undecided", StateActor.Code("stangent spec"), "the page was regenerated");
+        if (marked.Count > 0) Trace.TraceFile.Save(root, trace);
+    }
+
     static JsonObject Item(PageDef page, JsonObject? recorded)
     {
         var o = new JsonObject { ["id"] = page.Id, ["kind"] = page.Kind, ["title"] = (string?)recorded?["title"] ?? page.Title, ["path"] = page.Path };
@@ -79,6 +114,7 @@ public static class Staleness
             foreach (var i in items.Take(50))
             {
                 md.Append($"- `{(string)i!["id"]!}` {(string)i["title"]!}");
+                if (i["reportedWrong"] is JsonArray { Count: > 0 } reported) md.Append($" (a person said this page is wrong: {reported.Count} decision(s))");
                 if (i["changedFiles"] is JsonArray { Count: > 0 } files)
                     md.Append(" (changed: " + string.Join(", ", files.Take(5).Select(f => $"`{f}`")) + (files.Count > 5 ? $" and {files.Count - 5} more" : "") + ")");
                 if (i["fsdSections"] is JsonArray { Count: > 0 } sections)

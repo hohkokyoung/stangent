@@ -22,6 +22,21 @@ public static partial class TraceFindings
 
     public static bool IsFinding(JsonObject e) => (string?)e["state"] != "agree";
 
+    /// <summary>Who's next with this finding (D119): <c>ba</c> by default, including a code-confirmed or cant-tell one; <c>developer</c> for a page gap;
+    /// <c>closed</c> when code refuted it or nothing reaches it, kept and listed; <c>page-owner</c> when a person said the page is wrong; <c>decided</c> otherwise.</summary>
+    public static string GoesTo(JsonObject e) => (string?)e["decision"] switch
+    {
+        "page-wrong" => "page-owner",
+        not null => "decided",
+        _ => (string?)e["verdict"] switch { "refuted" or "unreachable" => "closed", "page-gap" => "developer", _ => "ba" },
+    };
+
+    /// <summary>A finding the code took apart, that nobody has decided: out of every list a person works from, and kept on file.</summary>
+    public static bool Closed(JsonObject e) => GoesTo(e) == "closed";
+
+    /// <summary>The words a queue shows beside a finding. <c>stands</c> reads as code-confirmed, which is still only code read, never run.</summary>
+    static string Label(string? verdict) => verdict switch { null => "unverified", "stands" => "code-confirmed", _ => verdict };
+
     public static string LedgerFile(string root) => Path.Combine(root, "specs", "trace-ids.json");
 
     /// <summary>The lock stays out of specs/, which is committed.</summary>
@@ -122,6 +137,21 @@ public static partial class TraceFindings
                 ["id"] = id + ".fsd", ["citation"] = new JsonObject { ["kind"] = "document", ["ref"] = (string)fsd["doc"]!, ["quote"] = fsdQuote },
                 ["contentHash"] = (string?)doc["original"]?["hash"], ["strength"] = "stated", ["checkedBy"] = Checked(),
             };
+        // The disprove step's quote: the agent said it, then code found it word for word at these lines (D119). Code read, so `read`, never `ran`.
+        if (e["disproof"] is JsonObject disproof && (string?)disproof["quote"] is { } quote && (string?)disproof["commit"] is { } quotedAt)
+            yield return new JsonObject
+            {
+                ["id"] = id + ".disprove",
+                ["citation"] = new JsonObject
+                {
+                    ["kind"] = "code", ["ref"] = $"{repo.Value}/{(string)disproof["path"]!}", ["lines"] = new JsonObject { ["start"] = (int)disproof["start"]!, ["end"] = (int)disproof["end"]! },
+                    ["symbol"] = (string)disproof["symbol"]!, ["quote"] = quote,
+                },
+                ["commit"] = quotedAt, ["strength"] = "read",
+                ["checkedBy"] = new JsonArray(
+                    new JsonObject { ["kind"] = "agent", ["name"] = (string?)disproof["agent"] ?? DisproveRun.Disprover, ["inputsHash"] = (string)disproof["inputs"]! },
+                    Checker("code", "stangent fsd disprove")),
+            };
         if (e["page"] is not JsonObject page) yield break;
 
         var pageId = (string)page["id"]!;
@@ -159,6 +189,9 @@ public static partial class TraceFindings
     public static IEnumerable<string> Check(JsonObject e, IReadOnlySet<string>? nodes, IEnumerable<string>? refused = null)
     {
         var id = (string?)e["finding"] ?? (string)e["id"]!;
+        if ((e["verdict"] is not null || e["disproof"] is not null || e["disproof_hash"] is not null)
+            && (string?)e["disproof_hash"] != TraceFile.DisproofHash((string?)e["verdict"], e["disproof"] as JsonObject))
+            yield return $"{id}: its verdict isn't what code wrote; only `stangent fsd disprove` writes one, because it takes a finding out of a queue";
         if (e["evidence"] is not JsonArray { Count: > 0 } evidence) { yield return $"{id}: a finding needs evidence, and code found nothing to cite"; yield break; }
         foreach (var record in refused ?? [])
             yield return $"{id}: evidence {record}: it isn't what code derives from the current inputs, and evidence is never typed; delete it and the next check writes what's true";
@@ -218,5 +251,17 @@ public static partial class TraceFindings
         ["id"] = (string?)e["finding"], ["entry"] = (string?)e["id"], ["state"] = (string?)e["state"], ["severity"] = (string?)e["severity"] ?? Severity.Ungraded,
         ["doc"] = (string?)e["fsd"]?["doc"], ["section"] = (string?)e["fsd"]?["section"], ["page"] = (string?)e["page"]?["id"], ["statement"] = (string?)e["page"]?["statement"],
         ["decision"] = (string?)e["decision"],
+        ["goesTo"] = GoesTo(e), ["verdict"] = (string?)e["verdict"] ?? "unverified", ["label"] = Label((string?)e["verdict"]),
+        ["why"] = (string?)e["disproof"]?["why"], ["quote"] = (string?)e["disproof"]?["quote"],
+        ["at"] = (string?)e["disproof"]?["path"] is { } path ? $"{path}:{(int)e["disproof"]!["start"]!}-{(int)e["disproof"]!["end"]!}" : null,
+        ["suggestedSeverity"] = (string?)e["disproof"]?["suggestedSeverity"],
     })]);
+
+    /// <summary>The same findings by who has them next, so each queue reads on its own (D119).</summary>
+    public static JsonObject Groups(IEnumerable<JsonObject> entries)
+    {
+        var findings = entries.Where(IsFinding).ToList();
+        return new JsonObject(new[] { "ba", "developer", "closed", "page-owner", "decided" }.Select(g => KeyValuePair.Create(g,
+            (JsonNode?)new JsonArray([.. findings.Where(e => GoesTo(e) == g).Select(e => (JsonNode?)((string?)e["finding"] ?? (string)e["id"]!))]))));
+    }
 }

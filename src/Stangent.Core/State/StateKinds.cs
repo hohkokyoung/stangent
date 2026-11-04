@@ -33,7 +33,7 @@ public static class StateKinds
     public const string Requirement = "requirement", Question = "question", TraceDecision = "trace-decision", FindingSeverity = "finding-severity",
         Proof = "proof", ProofConfirmation = "proof-confirmation", DraftPosted = "draft-posted",
         PageRun = "page-run", LinkRun = "link-run", ReqRun = "req-run", TicketMatch = "ticket-match", TicketStep = "ticket-step",
-        FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match";
+        FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FindingVerdict = "finding-verdict", DisproveRun = "disprove-run";
 
     // Committed state gets committed history; run state in .stangent/ gets history beside it, ignored the same way.
     const string RequirementHistory = "specs/requirements/history.jsonl", TraceHistory = "specs/trace-history.jsonl",
@@ -43,7 +43,9 @@ public static class StateKinds
     static StateRule By(string[] who, string from, string to) => new(from, to, who);
     static StateRule[] Each(string[] who, string from, params string[] to) => [.. to.Select(t => By(who, from, t))];
 
-    static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "defer"];
+    static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "page-wrong", "defer"];
+    static readonly string[] Verdicts = ["stands", "refuted", "page-gap", "unreachable", "cant-tell"];
+    static readonly string[] VerdictStates = ["unverified", .. Verdicts];
     static readonly string[] Outcomes = ["reproduced", "not-reproduced", "not-reproduced-flaky", "not-provable", "failed"];
 
     public static readonly IReadOnlyList<StateKind> All =
@@ -71,6 +73,11 @@ public static class StateKinds
         new(FindingSeverity, TraceHistory, [Severity.Ungraded],
             [.. Severity.All.SelectMany(from => Severity.All.Where(to => to != from).Select(to => By(Person, from, to)))], Field: "severity"),
 
+        // D119: an agent proposes a verdict, and only code writes it, once its quote passes. Code drops it back when what it was judged on changes.
+        new(FindingVerdict, TraceHistory, ["unverified"],
+            [.. VerdictStates.SelectMany(from => VerdictStates.Where(to => to != from).Select(to => By(Code, from, to)))],
+            Field: "verdict", NullState: "unverified", ClearedOnNull: ["disproof", "disproof_hash"]),
+
         // The latest attempt's outcome: any attempt can follow any other, so the table holds the values and who moves them.
         new(Proof, TicketHistory, Outcomes,
             [.. Outcomes.SelectMany(from => Outcomes.Where(to => to != from).Select(to => By(Code, from, to)))], Field: "outcome"),
@@ -97,6 +104,9 @@ public static class StateKinds
         [
             By(Code, "find", "failed"), .. Each(Code, "judge", "confirm", "done", "failed"), .. Each(Code, "confirm", "done", "failed"),
         ], Field: "stage"),
+
+        // D119: one finding at a time, each from nothing.
+        new(DisproveRun, ".stangent/fsd/state-history.jsonl", ["disprove"], [.. Each(Code, "disprove", "done", "failed")], Field: "stage"),
 
         new(ReqRun, ".stangent/req/state-history.jsonl", ["write"],
         [

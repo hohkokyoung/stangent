@@ -2,17 +2,18 @@
 # Runs stangent's AI steps through headless Claude Code (D60), for CI and long batch runs:
 #   pages:    stangent spec prepare → stangent-page-writer → stangent spec check → stangent-page-verifier → …
 #   sections: stangent fsd prepare → candidate finder / link judge / agree checker → stangent fsd check → …
+#             then, when fsd.disprove is on: stangent fsd disprove prepare → finding disprover → stangent fsd disprove check → …
 #   items:    stangent req prepare → requirement writer → stangent req check → requirement checker → …
 # The logic lives in `stangent spec`, `stangent fsd` and `stangent req`; this only runs the subagent each step names,
 # then hands its result back.
 #
-# usage: spec-run.sh [--jobs N] [--model M] [--retry-failed] [--agents] (<page id>... | --all | --stale | --fsd <doc> | --req <doc>)
+# usage: spec-run.sh [--jobs N] [--model M] [--retry-failed] [--agents] (<page id>... | --all | --stale | --fsd <doc> | --disprove <doc> | --req <doc>)
 # Default (D66): one turn per call. The step's input files go into the prompt, Claude Code runs with no tools and none of
 # the user's settings, skills or MCP servers, and the answer comes back as structured output (--json-schema) that this
 # script writes to the step's output file; `check` is unchanged. Far fewer tokens than a session that reads files.
 # --agents: the plugin's subagents instead, each limited to reading and writing under .stangent/ (D60).
 # env:   STANGENT (default: stangent), PLUGIN_DIR (default: this plugin), CLAUDE (default: claude)
-# out:   one line per page or section: <status>\t<id>
+# out:   one line per page or section: <status>\t<id>; and when the disprove stage ran, disprove:<status>\t<id>
 set -euo pipefail
 
 usage() { sed -n 's/^# usage: //p' "$0" >&2; exit 2; }
@@ -37,7 +38,7 @@ NAMED=""
 PAGES=()
 ONLY=()
 while [ $# -gt 0 ]; do
-  case "$1" in --jobs|--model|--fsd|--req|--only) [ $# -ge 2 ] || usage ;; esac
+  case "$1" in --jobs|--model|--fsd|--disprove|--req|--only) [ $# -ge 2 ] || usage ;; esac
   case "$1" in
     --jobs) JOBS="$2"; shift 2 ;;
     --model) MODEL="$2"; shift 2 ;;
@@ -45,6 +46,7 @@ while [ $# -gt 0 ]; do
     --agents) AGENTS=1; shift ;;
     --all) add_ids '.result.pages[].id' spec pages; shift ;;
     --fsd) MODE=fsd; add_ids '.result[] | .doc + "\t" + .section' fsd sections --doc "$2"; shift 2 ;;
+    --disprove) MODE=disprove; add_ids '.result[] | .doc + "\t" + .section' fsd sections --doc "$2"; shift 2 ;;
     --req) MODE=req; add_ids '.result[] | .doc + "\t" + .section' req sections --doc "$2"; shift 2 ;;
     --stale) add_ids '.result.stale[].id, .result.new[].id' spec stale; shift ;;
     --only) ONLY+=("$2"); shift 2 ;;
@@ -55,7 +57,7 @@ done
 [ -n "$NAMED" ] || usage
 case "$JOBS" in ''|0|*[!0-9]*) usage ;; esac
 
-# --only <section> (repeatable), with --fsd or --req: just these sections.
+# --only <section> (repeatable), with --fsd, --disprove or --req: just these sections.
 if [ ${#ONLY[@]} -gt 0 ]; then
   KEPT=()
   for p in ${PAGES[@]+"${PAGES[@]}"}; do
@@ -91,16 +93,9 @@ single_turn() {
 # stangent crashed: no envelope, so no next step to read. Without this the loop below would call Claude on nothing, forever.
 no_envelope() { ! jq -e 'type == "object" and has("ok")' <<<"$1" >/dev/null 2>&1; }
 
-run_page() {
-  local page="$1" step action agent prompt usage args
-  usage="$(mktemp)"
-  if [ "$MODE" = spec ]; then args=("$page"); else args=("${page%%$'\t'*}" "${page#*$'\t'}"); fi
-  # prepare/check exit 1 when a check fails; the next step is still in the envelope.
-  case "$MODE" in
-    fsd) step="$($STANGENT fsd prepare "${args[@]}" || true)" ;;
-    req) step="$($STANGENT req prepare "${args[@]}" $RETRY || true)" ;;
-    *) step="$($STANGENT spec prepare "${args[@]}" $RETRY || true)" ;;
-  esac
+# Runs the steps until none is left. $step holds the first; it holds the last when this returns. "$@" is the check command.
+run_steps() {
+  local page="$1" usage="$2" action agent prompt; shift 2
   if no_envelope "$step"; then
     printf 'error\t%s\tstangent prepare gave no result\n' "$page"
     rm -f "$usage"
@@ -126,7 +121,7 @@ run_page() {
       rm -f "$usage"
       exit 255
     fi
-    step="$($STANGENT "$MODE" check "${args[@]}" --usage "$usage" || true)"
+    step="$($STANGENT "$@" --usage "$usage" || true)"
     if no_envelope "$step"; then
       printf 'error\t%s\tstangent check gave no result\n' "$page"
       rm -f "$usage"
@@ -134,10 +129,38 @@ run_page() {
     fi
     action="$(jq -r '.result.next.action // "none"' <<<"$step")"
   done
-  rm -f "$usage"
-  printf '%s\t%s\n' "$(jq -r '.result.status // .error.code' <<<"$step")" "$page"
 }
-export -f run_page single_turn no_envelope
+
+# The disprove stage. Says nothing when it's off, so a saved run prints what it always did.
+disprove() {
+  local page="$1" usage="$2" status
+  step="$($STANGENT fsd disprove prepare "${args[@]}" || true)"
+  run_steps "$page" "$usage" fsd disprove check "${args[@]}"
+  status="$(jq -r '.result.status // .error.code' <<<"$step")"
+  [ "$status" = off ] || printf 'disprove:%s\t%s\n' "$status" "$page"
+}
+
+run_page() {
+  local page="$1" step usage args
+  usage="$(mktemp)"
+  if [ "$MODE" = spec ]; then args=("$page"); else args=("${page%%$'\t'*}" "${page#*$'\t'}"); fi
+  if [ "$MODE" = disprove ]; then
+    disprove "$page" "$usage"
+    rm -f "$usage"
+    return
+  fi
+  # prepare/check exit 1 when a check fails; the next step is still in the envelope.
+  case "$MODE" in
+    fsd) step="$($STANGENT fsd prepare "${args[@]}" || true)" ;;
+    req) step="$($STANGENT req prepare "${args[@]}" $RETRY || true)" ;;
+    *) step="$($STANGENT spec prepare "${args[@]}" $RETRY || true)" ;;
+  esac
+  run_steps "$page" "$usage" "$MODE" check "${args[@]}"
+  printf '%s\t%s\n' "$(jq -r '.result.status // .error.code' <<<"$step")" "$page"
+  [ "$MODE" != fsd ] || disprove "$page" "$usage"
+  rm -f "$usage"
+}
+export -f run_page run_steps disprove single_turn no_envelope
 
 [ ${#PAGES[@]} -gt 0 ] || exit 0
 printf '%s\0' "${PAGES[@]}" | xargs -0 -n 1 -P "$JOBS" bash -c 'run_page "$1"' _

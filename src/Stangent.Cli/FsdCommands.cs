@@ -101,6 +101,23 @@ static class FsdCommands
         }));
         fsd.Subcommands.Add(check);
 
+        var disprove = new Command("disprove", "A fresh agent tries to refute each finding from the code (D119). Off unless fsd.disprove is on.");
+        fsd.Subcommands.Add(disprove);
+        var disprovePrepare = new Command("prepare", "Start on one section's findings: says what runs next, or nothing when none needs an answer.") { docArg, sectionArg };
+        disprovePrepare.SetAction(pr => Cli.Run(pr, "fsd disprove prepare", ctx =>
+            SpecCommands.Finish(DisproveRun.Prepare(SpecCommands.LoadSet(ctx), ctx.Repo, pr.GetValue(docArg)!, pr.GetValue(sectionArg)!), LinkRun.Key(pr.GetValue(docArg)!, pr.GetValue(sectionArg)!))));
+        disprove.Subcommands.Add(disprovePrepare);
+        var disproveCheck = new Command("check", "Check the answer (its quote word for word at its lines), write the verdict through the state module, and say what runs next.") { docArg, sectionArg, usageOption };
+        disproveCheck.SetAction(pr => Cli.Run(pr, "fsd disprove check", ctx =>
+        {
+            var usage = SpecCommands.ReadUsage(ctx, pr.GetValue(usageOption));
+            return SpecCommands.Finish(DisproveRun.Check(SpecCommands.LoadSet(ctx), ctx.Repo, pr.GetValue(docArg)!, pr.GetValue(sectionArg)!, usage), LinkRun.Key(pr.GetValue(docArg)!, pr.GetValue(sectionArg)!));
+        }));
+        disprove.Subcommands.Add(disproveCheck);
+        var disproveEstimate = new Command("estimate", "What a run would send, from the bundles alone: no AI, nothing written.") { docArg };
+        disproveEstimate.SetAction(pr => Cli.Run(pr, "fsd disprove estimate", ctx => DisproveRun.Estimate(SpecCommands.LoadSet(ctx), ctx.Repo, pr.GetValue(docArg)!)));
+        disprove.Subcommands.Add(disproveEstimate);
+
         var undocumented = new Command("undocumented", "List screens no FSD section links to as undocumented, in specs/trace.yaml (code, no AI). Needs fsd.findings: true.");
         undocumented.SetAction(pr => Cli.Run(pr, "fsd undocumented", ctx =>
         {

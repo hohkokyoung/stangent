@@ -102,6 +102,9 @@ public static class TraceCheck
             else if (TraceFile.FindingFields.Any(f => e[f] is not null))
                 problems.Add($"{id}: an agree link isn't a finding, so it has no finding id, severity or evidence");
 
+            // "The page is wrong" has to name a page, or there's nothing for its owner to regenerate (D119).
+            if ((string?)e["decision"] == "page-wrong" && page is null) problems.Add($"{id}: page-wrong needs a page, and this entry has none");
+
             var quotesMatch = true;
             if (fsd is not null)
             {
@@ -204,6 +207,7 @@ public static class TraceCheck
             ["retiredStatements"] = new JsonArray([.. retired]),
             ["changedStatements"] = new JsonArray([.. changed]),
             ["findings"] = TraceFindings.Listing(TraceFile.Sorted(trace["entries"]?.AsArray() ?? [])),
+            ["queues"] = TraceFindings.Groups(TraceFile.Sorted(trace["entries"]?.AsArray() ?? [])),
         };
     }
 

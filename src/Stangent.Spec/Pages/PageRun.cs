@@ -47,6 +47,7 @@ public sealed record RunStep(string Status, string Action, string? Agent = null,
         Stangent.Spec.Fsd.LinkRun.Judge => "link-judge-output.v1.json",
         Stangent.Spec.Fsd.LinkRun.Checker => "agree-checker-output.v1.json",
         Stangent.Spec.Fsd.LinkRun.RequirementJudge => "requirement-judge-output.v1.json",
+        Stangent.Spec.Fsd.DisproveRun.Disprover => Stangent.Spec.Fsd.DisproveRun.OutputSchema,
         Stangent.Spec.Requirements.RequirementRun.Writer => "requirement-writer-output.v1.json",
         Stangent.Spec.Requirements.RequirementRun.Checker => "requirement-checker-output.v1.json",
         // Phase 3's ticket steps (Stangent.Tickets.StepSpec).
@@ -74,7 +75,9 @@ public static class PageRun
         var paths = new SpecPaths(repo.Root);
         var previous = LoadJson(paths.PageJson(page)) as JsonObject;
         var bundle = Bundles.Build(set, page, previous);
-        if ((string?)previous?["generated"]?["bundleHash"] == bundle.InputHash) return new RunStep("current", "none");
+        // A person said this page is wrong (D119): it runs again though its inputs didn't change.
+        var wrong = Staleness.ReportedWrong(repo.Root).GetValueOrDefault(page.Id);
+        if (wrong is null && (string?)previous?["generated"]?["bundleHash"] == bundle.InputHash) return new RunStep("current", "none");
         var failed = Failed(paths);
         if (!retryFailed && failed.FirstOrDefault(f => (string?)f!["id"] == page.Id) is { } known && (string?)known["bundleHash"] == bundle.InputHash)
             return new RunStep("failed", "none", Errors: [(string)known["reason"]!]);
@@ -89,7 +92,7 @@ public static class PageRun
         var work = paths.Work(page);
         if (Directory.Exists(work)) Directory.Delete(work, recursive: true);
         Directory.CreateDirectory(work);
-        File.WriteAllText(Path.Combine(work, "bundle.md"), bundle.Text);
+        File.WriteAllText(Path.Combine(work, "bundle.md"), bundle.Text + Staleness.ReportedWrongNote(wrong));
         var state = new JsonObject
         {
             ["page"] = page.Id, ["inputHash"] = bundle.InputHash, ["attempts"] = 0,
@@ -293,6 +296,7 @@ public static class PageRun
         Quotes.WriteAtomic(paths.PageJson(page), CanonicalJson.Serialize(record));
         var lines = PageLines.Build(record, set.Graph, SymbolLines.Lookup(set.Graph));
         PageLines.Write(paths.PageJson(page), lines);
+        Staleness.ClearReportedWrong(paths.Root, page.Id);
         Quotes.WriteAtomic(paths.PageMarkdown(page), PageRender.Markdown(record, id => set.Find(id) is { } p && p.Id == id ? p.Path : null, lines));
         ClearFailed(paths, page);
         Stage(paths, page, state, "done", "recorded");

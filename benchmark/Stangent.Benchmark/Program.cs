@@ -54,6 +54,16 @@ if (argList.Count >= 3 && argList[0] == "--score-fsd")
     Console.WriteLine(scoreText);
     return 0;
 }
+// The disprove step (D119): `--score-disprove <repo> <answer-key.json> [--hand-check <file>] [--out file]`: the same key and hand check, before and after.
+if (argList.Count >= 3 && argList[0] == "--score-disprove")
+{
+    var hand = argList.IndexOf("--hand-check") is var hc and >= 0 ? argList[hc + 1] : null;
+    var score = Stangent.Benchmark.Spec.DisproveScore.Run(Path.GetFullPath(argList[1]), argList[2], hand);
+    var scoreText = score.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+    if (argList.IndexOf("--out") is var so and >= 0) File.WriteAllText(argList[so + 1], scoreText + "\n");
+    Console.WriteLine(scoreText);
+    return 0;
+}
 // Phase 2c's frozen key (D99): `--match-seed <clone> <match-key.json>` writes its tickets into the clone, printing keys only;
 // `--score-match <clone> <match-key.json> [--out file]` scores them by the key's own rule.
 if (argList.Count >= 3 && argList[0] == "--match-seed")

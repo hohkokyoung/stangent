@@ -6,6 +6,11 @@ public sealed class SpecRunDriverTests : IDisposable
     const string Script = "plugin/scripts/spec-run.sh";
     const string Step = """{"ok":true,"result":{"status":"prepared","next":{"action":"write","agent":"stangent-page-writer","prompt":"Input: .stangent/in.md\nWrite your result to: .stangent/out.json","output":".stangent/out.json","schema":"page-writer-output.v1.json"}}}""";
     const string Done = """{"ok":true,"result":{"status":"written"}}""";
+    const string Off = """{"ok":true,"result":{"status":"off","next":{"action":"none"}}}""";
+    const string Current = """{"ok":true,"result":{"status":"current","next":{"action":"none"}}}""";
+    const string Disprover = """{"ok":true,"result":{"status":"confirm","next":{"action":"confirm","agent":"stangent-finding-disprover","prompt":"Finding and code: .stangent/in.md\nWrite your JSON to: .stangent/out.json","output":".stangent/out.json","schema":"finding-disprover-output.v1.json"}}}""";
+    const string DisproveDone = """{"ok":true,"result":{"status":"recorded","next":{"action":"none"}}}""";
+    const string Sections = """{"ok":true,"result":[{"doc":"d1","section":"s1"}]}""";
 
     readonly DriverRig rig = new();
 
@@ -135,11 +140,59 @@ public sealed class SpecRunDriverTests : IDisposable
             "{{{list}}}") echo '{"ok":true,"result":[{"doc":"d1","section":"s1"},{"doc":"d1","section":"s 2"}]}' ;;
             "{{{mode}}} prepare d1 s 2") echo '{{{Step}}}' ;;
             "{{{mode}}} check d1 s 2 --usage "*) echo '{{{Done}}}' ;;
+            "fsd disprove prepare d1 s 2") echo '{{{Off}}}' ;;
             """);
         var result = rig.Run(Script, flag, "d1", "--only", "s 2");
         Assert.Equal(0, result.Exit);
         Assert.Equal("written\td1\ts 2\n", result.Out);
         Assert.Single(rig.ClaudeCalls());
+    }
+
+    [Fact]
+    public void The_disprove_stage_follows_the_links_when_it_is_on()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.Stangent($$$"""
+            "fsd sections --doc d1") echo '{{{Sections}}}' ;;
+            "fsd prepare d1 s1") echo '{{{Current}}}' ;;
+            "fsd disprove prepare d1 s1") echo '{{{Disprover}}}' ;;
+            "fsd disprove check d1 s1 --usage "*) echo '{{{DisproveDone}}}' ;;
+            """);
+        var result = rig.Run(Script, "--fsd", "d1");
+        Assert.Equal(0, result.Exit);
+        Assert.Equal("current\td1\ts1\ndisprove:recorded\td1\ts1\n", result.Out);
+        var claude = Assert.Single(rig.ClaudeCalls());
+        Assert.Contains("--tools ", claude);
+        Assert.Contains("INPUT-TEXT", rig.ClaudeStdin);
+        Assert.Contains("stangent spec schema finding-disprover-output.v1.json", rig.StangentCalls());
+    }
+
+    [Fact]
+    public void Off_the_stage_prints_nothing_and_calls_nothing()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.Stangent($$$"""
+            "fsd sections --doc d1") echo '{{{Sections}}}' ;;
+            "fsd prepare d1 s1") echo '{{{Current}}}' ;;
+            "fsd disprove prepare d1 s1") echo '{{{Off}}}' ;;
+            """);
+        var result = rig.Run(Script, "--fsd", "d1");
+        Assert.Equal("current\td1\ts1\n", result.Out);
+        Assert.Empty(rig.ClaudeCalls());
+    }
+
+    [Fact]
+    public void Disprove_alone_never_touches_the_links()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.Stangent($$$"""
+            "fsd sections --doc d1") echo '{{{Sections}}}' ;;
+            "fsd disprove prepare d1 s1") echo '{{{Disprover}}}' ;;
+            "fsd disprove check d1 s1 --usage "*) echo '{{{DisproveDone}}}' ;;
+            """);
+        var result = rig.Run(Script, "--disprove", "d1");
+        Assert.Equal("disprove:recorded\td1\ts1\n", result.Out);
+        Assert.DoesNotContain(rig.StangentCalls(), c => c.StartsWith("stangent fsd prepare", StringComparison.Ordinal));
     }
 
     [Fact]

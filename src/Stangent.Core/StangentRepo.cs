@@ -82,6 +82,9 @@ public sealed class StangentConfig
         /// <summary>Discrepancy findings (gap, conflict, undocumented) in <c>specs/trace.yaml</c>. Off by default: Phase
         /// 2b's "not too noisy" bar failed on Sonarr (D57, D68), so only links are recorded until a project turns them on.</summary>
         public bool Findings { get; set; }
+        /// <summary>The disprove step (D119): a second, fresh agent tries to refute each finding from the code. Off by default, as
+        /// <see cref="Findings"/> is, so a saved run stays as it is until a project asks. It reaches no link's input hash.</summary>
+        public bool Disprove { get; set; }
         /// <summary>Benchmarks only, until a project with a proper FSD is found (D99): treats proposed requirements as approved,
         /// and every result made with it says so. Off by default, and never for a real project.</summary>
         public bool SkipApproval { get; set; }

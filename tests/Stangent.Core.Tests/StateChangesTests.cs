@@ -160,13 +160,13 @@ public partial class StateChangesTests
         git.WaitForExit();
         var check = Process.Start(new ProcessStartInfo("git", ["check-ignore", "-q", StateKinds.Get(name).HistoryFile]) { WorkingDirectory = temp.Root })!;
         check.WaitForExit();
-        var committed = name is StateKinds.Requirement or StateKinds.Question or StateKinds.TraceDecision or StateKinds.FindingSeverity or StateKinds.FsdCandidate or StateKinds.FsdSectionMatch;
+        var committed = name is StateKinds.Requirement or StateKinds.Question or StateKinds.TraceDecision or StateKinds.FindingSeverity or StateKinds.FindingVerdict or StateKinds.FsdCandidate or StateKinds.FsdSectionMatch;
         Assert.Equal(committed ? 1 : 0, check.ExitCode);   // check-ignore: 0 ignored, 1 not
     }
 
     // ---- Writes stay on the module ----
 
-    [GeneratedRegex("""\["(?<field>status|decision|decided_by|confirmedBy|stage|posted|outcome|severity|severity_by)"\]\s*(?:\?\?)?=(?!=)|\.Add\(\s*"(?<field>status|decision|decided_by|confirmedBy|stage|posted|outcome|severity|severity_by)"\s*,""")]
+    [GeneratedRegex("""\["(?<field>status|decision|decided_by|confirmedBy|stage|posted|outcome|severity|severity_by|verdict)"\]\s*(?:\?\?)?=(?!=)|\.Add\(\s*"(?<field>status|decision|decided_by|confirmedBy|stage|posted|outcome|severity|severity_by|verdict)"\s*,""")]
     private static partial Regex LifecycleWrite();
 
     /// <summary>Every write of these field names outside the module, per file and field. A new one fails the test until it's
@@ -174,6 +174,7 @@ public partial class StateChangesTests
     static readonly Dictionary<(string File, string Field), (int Count, string Why)> Exceptions = new()
     {
         // Result fields: what one command returned, or a copy of someone else's value. Not lifecycles.
+        [("src/Stangent.Spec/Trace/TraceFindings.cs", "verdict")] = (1, "the listing's field: a finding's verdict, or \"unverified\", for reading"),
         [("src/Stangent.Core/Phases/PhaseCheck.cs", "status")] = (1, "the report copies what roadmap.md and a phase file say; people edit those"),
         [("src/Stangent.Core/Telemetry/TelemetryWriter.cs", "status")] = (1, "the event's result"),
         [("src/Stangent.Graph/GraphStore.cs", "status")] = (1, "how much git history the build could read, set once per build"),

@@ -105,7 +105,7 @@ public static partial class TicketDrafts
             .Select(p => p.Key).Order(StringComparer.Ordinal).Take(MaxPages).ToList();
         var pageSet = pages.ToHashSet(StringComparer.Ordinal);
         var findings = repo.Config.Fsd.Findings;
-        var sections = ctx.Trace.Where(e => e["fsd"] is JsonObject && (string?)e["page"]?["id"] is { } p && pageSet.Contains(p) && (findings || (string?)e["state"] == "agree"))
+        var sections = ctx.Trace.Where(e => e["fsd"] is JsonObject && (string?)e["page"]?["id"] is { } p && pageSet.Contains(p) && (findings || (string?)e["state"] == "agree") && !TraceFindings.Closed(e))
             .Select(e => ((string)e["fsd"]!["doc"]!, (string)e["fsd"]!["section"]!)).Where(ctx.Index.Sections.ContainsKey).Distinct().OrderBy(s => s.Item1, StringComparer.Ordinal).ThenBy(s => TraceFile.SectionKey(s.Item2), StringComparer.Ordinal);
         JsonObject? impact = starts.Count == 0 ? null : ctx.Analyzer.Analyze(change, repo.Root, null, TicketBundle.ImpactDepth, (r, x) => FsdImpact.Sections(repo.Root, r, x));
         return new JsonObject

@@ -14,7 +14,7 @@ public static class FsdImpact
     public static JsonObject Sections(string root, IReadOnlyCollection<string> reached, bool expand)
     {
         var index = SpecIndex.Load(root);
-        var trace = TraceFile.Load(root)["entries"]!.AsArray().OfType<JsonObject>().ToList();
+        var trace = TraceFile.Load(root)["entries"]!.AsArray().OfType<JsonObject>().Where(e => !TraceFindings.Closed(e)).ToList();
         if (index.Pages.Count == 0 || trace.Count == 0) return ImpactAnalyzer.NoFsdSections();
         var hit = reached.ToHashSet(StringComparer.Ordinal);
         var pages = index.Pages.Where(p => Pages.PageChecks.Statements(p.Value).Any(s => s.Statement["cites"]!.AsArray().Any(c => hit.Contains((string)c!))))
@@ -27,7 +27,7 @@ public static class FsdImpact
                 ["doc"] = g.Key.Item1, ["section"] = g.Key.Item2, ["title"] = (string?)g.First()["fsd"]!["title"] ?? "",
                 ["pages"] = new JsonArray([.. g.Select(e => (string)e["page"]!["id"]!).Distinct().Order(StringComparer.Ordinal).Select(p => (JsonNode)p)]),
                 ["states"] = new JsonArray([.. g.Select(e => (string)e["state"]!).Distinct().Order(StringComparer.Ordinal).Select(s => (JsonNode)s)]),
-                ["verified"] = g.All(e => e["decision"] is not null),
+                ["verified"] = g.All(e => e["decision"] is not null && (string?)e["decision"] != "page-wrong"),
             }).ToList();
         var shown = expand ? items : [.. items.Take(Shown)];
         return new JsonObject { ["status"] = "ok", ["total"] = items.Count, ["items"] = new JsonArray([.. shown.Select(i => i!.DeepClone())]), ["more"] = items.Count - shown.Count };

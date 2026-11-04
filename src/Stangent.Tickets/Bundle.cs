@@ -216,7 +216,7 @@ public static class TicketBundle
     {
         var findings = repo.Config.Fsd.Findings;
         var entries = ctx.Trace.Where(e => e["fsd"] is JsonObject && (string?)e["page"]?["id"] is { } p && pages.Contains(p))
-            .Where(e => findings || (string?)e["state"] == "agree");
+            .Where(e => findings || (string?)e["state"] == "agree").Where(e => !TraceFindings.Closed(e));
         var result = new JsonArray();
         foreach (var g in entries.GroupBy(e => ((string)e["fsd"]!["doc"]!, (string)e["fsd"]!["section"]!))
                      .OrderBy(g => g.Key.Item1, StringComparer.Ordinal).ThenBy(g => TraceFile.SectionKey(g.Key.Item2), StringComparer.Ordinal))

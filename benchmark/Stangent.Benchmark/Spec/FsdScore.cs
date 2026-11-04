@@ -11,13 +11,14 @@ namespace Stangent.Benchmark.Spec;
 /// </summary>
 public static class FsdScore
 {
-    public static JsonObject Run(string root, string keyPath, string? handCheckPath, int sample = 20)
+    /// <param name="keep">Which findings count, when not all of them (D119's scoring counts only what reaches the BA).</param>
+    public static JsonObject Run(string root, string keyPath, string? handCheckPath, int sample = 20, Func<JsonObject, bool>? keep = null)
     {
         var key = JsonNode.Parse(File.ReadAllText(keyPath))!.AsObject();
         var doc = (string)key["doc"]!;
         var items = key["items"]!.AsArray().OfType<JsonObject>().ToList();
         var findings = TraceFile.Load(root)["entries"]!.AsArray().OfType<JsonObject>()
-            .Where(e => (string)e["state"]! != "agree").Where(e => e["fsd"] is null || (string?)e["fsd"]!["doc"] == doc).ToList();
+            .Where(e => (string)e["state"]! != "agree").Where(e => e["fsd"] is null || (string?)e["fsd"]!["doc"] == doc).Where(e => keep?.Invoke(e) ?? true).ToList();
 
         // Each planted item takes the first finding that matches it; a finding matches at most one item.
         var used = new HashSet<string>(StringComparer.Ordinal);
@@ -192,6 +193,6 @@ public static class FsdScore
                 ["costUsd"] = Math.Round(runs.Sum(u => u.CostUsd), 2),
             };
         }
-        return new JsonObject { ["finder"] = Role("finder"), ["judge"] = Role("judge"), ["checker"] = Role("checker") };
+        return new JsonObject { ["finder"] = Role("finder"), ["judge"] = Role("judge"), ["checker"] = Role("checker"), ["disprover"] = Role("disprover") };
     }
 }
