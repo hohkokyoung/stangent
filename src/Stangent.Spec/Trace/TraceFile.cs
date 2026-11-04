@@ -17,10 +17,10 @@ public static class TraceFile
 {
     public const string Schema = "trace-links.v4.json";
     public static readonly string[] States = ["agree", "gap", "conflict", "undocumented"];
-    public static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "page-wrong", "defer"];
+    public static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "page-wrong", "defer", "accepted", "not-a-difference"];
 
     /// <summary>What a finding carries beyond its link (D118).</summary>
-    public static readonly string[] FindingFields = ["finding", "severity", "severity_by", "evidence", "evidence_hash", "verdict", "disproof", "disproof_hash", "review", "review_note", "review_hash"];
+    public static readonly string[] FindingFields = ["finding", "severity", "severity_by", "evidence", "evidence_hash", "verdict", "disproof", "disproof_hash", "review", "review_note", "review_hash", "standing", "standing_note", "standing_hash"];
 
     public static string PathIn(string root) => Path.Combine(root, "specs", "trace.yaml");
 
@@ -55,7 +55,7 @@ public static class TraceFile
     {
         var sb = new StringBuilder();
         sb.Append("# FSD ↔ reference page links and findings (trace-links v3, D58, D99, D118). Edit `decision` only:\n");
-        sb.Append("# agree, code-wrong, fsd-wrong, page-wrong or defer. On a finding, also `severity`: blocker, major, minor, cosmetic or ungraded.\n");
+        sb.Append("# agree, code-wrong, fsd-wrong, page-wrong, defer, accepted or not-a-difference. On a finding, also `severity`: blocker, major, minor, cosmetic or ungraded.\n");
         sb.Append("# `decided_by` and `severity_by` are filled from git after merge, never typed. Code fills the rest.\n");
         sb.Append("version: 4\nentries:");
         var entries = Sorted(trace["entries"]?.AsArray() ?? []).ToList();
@@ -94,6 +94,9 @@ public static class TraceFile
             if (e["review"] is not null) sb.Append($"    review: {S(e["review"])}\n");
             if (e["review_note"] is JsonObject note) sb.Append($"    review_note: {note.ToJsonString(Json)}\n");
             if (e["review_hash"] is not null) sb.Append($"    review_hash: {S(e["review_hash"])}\n");
+            if (e["standing"] is not null) sb.Append($"    standing: {S(e["standing"])}\n");
+            if (e["standing_note"] is JsonObject standing) sb.Append($"    standing_note: {standing.ToJsonString(Json)}\n");
+            if (e["standing_hash"] is not null) sb.Append($"    standing_hash: {S(e["standing_hash"])}\n");
         }
         return sb.ToString();
     }
@@ -143,6 +146,10 @@ public static class TraceFile
     /// <summary>A verdict as code wrote it (D119), so one typed by hand to clear a finding out of a queue is seen.</summary>
     public static string DisproofHash(string? verdict, JsonObject? disproof) =>
         CanonicalJson.Hash((verdict ?? "") + "\n" + (disproof is null ? "" : CanonicalJson.SerializeCompact(disproof)));
+
+    /// <summary>A finding's standing as code wrote it (D122), so one typed by hand to take a finding out of a queue is seen.</summary>
+    public static string StandingHash(string? standing, JsonObject? note) =>
+        CanonicalJson.Hash((standing ?? "") + "\n" + (note is null ? "" : CanonicalJson.SerializeCompact(note)));
 
     /// <summary>A review as code wrote it, on the verdict it was about, so one typed by hand or left over from an older verdict closes nothing.</summary>
     public static string ReviewHash(string? review, JsonObject? note, string? disproofHash) =>

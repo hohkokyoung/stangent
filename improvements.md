@@ -158,7 +158,7 @@ Ahead of Stangent because Stangent has designed approval states but not a workin
 - ✅ The BA decides each finding, and can say "the reference is wrong", which sends it back to the reference's owner.  
   *Built in 2.5 (D119): `page-wrong`, with `decided_by` from git. The page goes stale for its owner, is listed in `spec stale`, and writing it again sends the finding back to the BA.*
 - 🟡 Only what changed is re-checked. A new import re-checks just the units whose pages changed. Decided findings go back to "recheck" if their evidence changed, or "gone" if it disappeared.  
-  *Unchanged inputs are reused (D18), and a changed quote drops its decision (D58). 2.6 stopped a finder's re-run re-paying the judge for the same pages. Re-judging a stale page's links is decided, not built (D99).*
+  *Unchanged inputs are reused (D18), and a changed quote drops its decision (D58), now marked `recheck` with the old decision visible, or `gone` with its id kept (D122). 2.6 stopped a finder's re-run re-paying the judge for the same pages. Re-judging a stale page's links is decided, not built (D99).*
 - 🟡 Reference gaps are kept out of the BA's queue. "The reference doesn't cover this" goes to a developer, not the BA.  
   *Built in 2.5 (D119): a `page-gap` verdict goes to developers, listed in its own group. Off by default and unscored until the re-score runs.*
 - ⬜ A per-chapter report of findings by result and severity, plus a count of FSD rules with no test, for QA. Still to do: `trace check` lists ids and severity, with no per-chapter view.  
@@ -239,23 +239,23 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
 
 **Checking the document against the app**
 
-- ⬜ C.1 · Every section is linked or marked "not in code" by a person, with its attachments listed.  
-  *Sections with no candidates go to the finder, but nothing proves all were covered. Recommend: do, by code.*
+- ✅ C.1 · Every section is linked or marked "not in code" by a person, with its attachments listed.  
+  *`coverage` in `trace check`, and `fsd not-in-code`, by code; it reports and doesn't fail (D122).*
 - ⬜ C.2 · Compare table facts by code: fee tables, field lists, status codes against facts from the code.  
   *Exact, no AI. API fields are in the graph (`maps-field`); enums, constants and seed data aren't. A second route to code beside pages, so it needs a decision against D68. No real FSD on a C# project to measure it. Recommend: pilot field lists first, on a real document.*
-- ⬜ C.3 · A decided finding becomes `recheck` or `gone`.  
-  *A finding that goes away and returns gets a new id today. Recommend: do.*
+- ✅ C.3 · A decided finding becomes `recheck` or `gone`.  
+  *`standing`, beside the drop-back, which is unchanged. A decided finding that goes away keeps its `X-` id; one nobody decided doesn't (D122).*
 - ⬜ C.4 · The link judge can say `partial` and `unclear`.  
   *May cut false alarms. Changes prompts, so it needs a paid run. Recommend: with the re-score.*
-- ⬜ C.5 · BA decisions `accepted` and `not a difference`.  
-  *Recommend: do, small.*
+- ✅ C.5 · BA decisions `accepted` and `not a difference`.  
+  *`accepted` and `not-a-difference`, in `trace-links` v4 (D122).*
 - ⬜ C.6 · Group small neighbouring sections into one unit when checking.  
   *A rule split across two sections would be judged together. Unproven, and any size limit needs its own reason. Needs a paid run. Recommend: test after the re-score.*
 
 **Everyday use**
 
-- ⬜ E.1 · A status for a document: where it stands, what's waiting, who it waits on.  
-  *Doesn't need the BA workflow. Recommend: do.*
+- ✅ E.1 · A status for a document: where it stands, what's waiting, who it waits on.  
+  *`fsd status` and `/stangent:fsd-status`, by code, with the next command (D122).*
 - ⬜ E.2 · Ask "how does the app do X today?", answered from pages with citations.  
   *No plugin command does this. Recommend: do, after the links are measured.*
 - ✅ E.3 · Run one chapter and see its cost before the whole document.  

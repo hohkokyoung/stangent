@@ -386,4 +386,28 @@ public sealed class ImportExtrasTests : IDisposable
         Assert.Empty(FsdImport.Documents(on.Root));
         Assert.Equal("no_candidate", Code(() => FsdVersions.Diff(on.Root, "shop")));
     }
+
+    [Fact]
+    public void Status_shows_a_first_import_waiting_with_no_current_version()
+    {
+        using var on = Approving(archive);
+        var file = Path.Combine(on.Root, "shop.docx");
+        File.WriteAllBytes(file, DocxWriter.Write(Outline));
+        FsdImport.Import(on.Repo, file);
+        var status = FsdStatus.Of(on.Root, "shop");
+        Assert.Null(status["current"]);
+        Assert.True((bool)status["candidate"]!["first"]!);
+        Assert.Equal("pending-approval", (string)status["candidate"]!["state"]!);
+        Assert.Equal("stangent fsd approve shop", (string)status["next"]!["command"]!);
+    }
+
+    [Fact]
+    public void Status_names_a_doubtful_section_of_the_candidate()
+    {
+        Import("# Fruit\n\nApples are sorted by size before they are packed.\n");
+        Import("# Produce\n\nApples are sorted by size before they are packed.\n\nMore words were added to this section here.\n");
+        var status = FsdStatus.Of(Root, "shop");
+        Assert.Equal(["Produce", "S-0001"], status["doubtful"]!.AsArray().Select(d => (string)d!));
+        Assert.Equal("stangent fsd resolve shop Produce --same-as <S-id>", (string)status["next"]!["command"]!);
+    }
 }

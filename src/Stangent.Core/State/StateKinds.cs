@@ -33,7 +33,8 @@ public static class StateKinds
     public const string Requirement = "requirement", Question = "question", TraceDecision = "trace-decision", FindingSeverity = "finding-severity",
         Proof = "proof", ProofConfirmation = "proof-confirmation", DraftPosted = "draft-posted",
         PageRun = "page-run", LinkRun = "link-run", ReqRun = "req-run", TicketMatch = "ticket-match", TicketStep = "ticket-step",
-        FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FindingVerdict = "finding-verdict", FindingReview = "finding-review", DisproveRun = "disprove-run";
+        FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FindingVerdict = "finding-verdict", FindingReview = "finding-review", DisproveRun = "disprove-run",
+        FindingStanding = "finding-standing", SectionCoverage = "section-coverage";
 
     // Committed state gets committed history; run state in .stangent/ gets history beside it, ignored the same way.
     const string RequirementHistory = "specs/requirements/history.jsonl", TraceHistory = "specs/trace-history.jsonl",
@@ -43,7 +44,7 @@ public static class StateKinds
     static StateRule By(string[] who, string from, string to) => new(from, to, who);
     static StateRule[] Each(string[] who, string from, params string[] to) => [.. to.Select(t => By(who, from, t))];
 
-    static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "page-wrong", "defer"];
+    static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "page-wrong", "defer", "accepted", "not-a-difference"];
     public static readonly string[] Verdicts = ["stands", "refuted", "page-gap", "unreachable", "cant-tell"];
     static readonly string[] VerdictStates = ["unverified", .. Verdicts];
     static readonly string[] Outcomes = ["reproduced", "not-reproduced", "not-reproduced-flaky", "not-provable", "failed"];
@@ -86,6 +87,17 @@ public static class StateKinds
             new StateRule("waiting", "sent-back", [StateActor.CodeKind, StateActor.PersonKind]), new StateRule("confirmed", "sent-back", [StateActor.CodeKind, StateActor.PersonKind]),
             .. Each(Code, "confirmed", "waiting"), By(Code, "sent-back", "waiting"),
         ], Field: "review", NullState: "waiting", ClearedOnNull: ["review_note", "review_hash"]),
+
+        // D122: what happened to a decided finding, beside the decision and its drop-back (D58, D118), which are unchanged. Code marks it `recheck` when the decision dropped because
+        // what it rested on changed, and `gone` when a new build no longer finds it. A person deciding again clears `recheck`. A finding that comes back is `recheck`, never decided again by itself.
+        new(FindingStanding, TraceHistory, ["current"],
+        [
+            .. Each(Code, "current", "recheck", "gone"), By(Code, "recheck", "gone"), By(Code, "gone", "recheck"),
+            new StateRule("recheck", "current", [StateActor.CodeKind, StateActor.PersonKind]),
+        ], Field: "standing", NullState: "current", ClearedOnNull: ["standing_note", "standing_hash"]),
+
+        // D122: a person says a section's words aren't about the code. It holds only for the words it was said on.
+        new(SectionCoverage, FsdHistory, ["unmarked"], [By(Person, "unmarked", "not-in-code"), By(Person, "not-in-code", "unmarked")], Field: "state", NullState: "unmarked"),
 
         // The latest attempt's outcome: any attempt can follow any other, so the table holds the values and who moves them.
         new(Proof, TicketHistory, Outcomes,

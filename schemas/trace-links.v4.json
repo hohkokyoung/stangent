@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "urn:stangent:schema:trace-links:v4",
   "title": "FSD ↔ reference page links and findings (contract trace-links v4, Phases 2b, 2c)",
-  "description": "specs/trace.yaml (D58), read as JSON. v2 added the requirement a link belongs to (D99). v3 adds what a finding carries (D118): its permanent id, its severity and who set it, and its evidence, each record checked by EvidenceValidator; files written by v1 and v2 still read. One entry per link or finding: both ends, the state, both quotes and their hashes, and the decision people make. decided_by comes from git, never typed. v4 adds the section's permanent id beside its number (D121): filled and kept right by code at trace check, read by no hash.",
+  "description": "specs/trace.yaml (D58), read as JSON. v2 added the requirement a link belongs to (D99). v3 adds what a finding carries (D118): its permanent id, its severity and who set it, and its evidence, each record checked by EvidenceValidator; files written by v1 and v2 still read. One entry per link or finding: both ends, the state, both quotes and their hashes, and the decision people make. decided_by comes from git, never typed. v4 adds the section's permanent id beside its number (D121): filled and kept right by code at trace check, read by no hash. It also holds, unshipped until this version merges (D122): the decisions accepted and not-a-difference, and a finding's standing.",
   "type": "object",
   "required": [
     "version",
@@ -149,7 +149,9 @@
                   "code-wrong",
                   "fsd-wrong",
                   "page-wrong",
-                  "defer"
+                  "defer",
+                  "accepted",
+                  "not-a-difference"
                 ]
               }
             ]
@@ -304,6 +306,63 @@
           "review_hash": {
             "description": "The hash of the review, its note and the verdict's disproof_hash as code wrote them.",
             "$ref": "#/definitions/hash"
+          },
+          "standing": {
+            "description": "What happened to a decided finding, written by code (D122). recheck: its decision dropped because what it rested on changed, or it came back after being gone. gone: a new build no longer finds it. It's kept, listed and in no reader's lists. No field means current.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "enum": [
+                  "recheck",
+                  "gone"
+                ]
+              }
+            ]
+          },
+          "standing_note": {
+            "description": "The decision it had and who made it, so it stays visible, and why it moved.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "why"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "was": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "by": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          },
+          "standing_hash": {
+            "description": "The hash of the standing and its note as code wrote them.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/definitions/hash"
+              }
+            ]
           }
         }
       }

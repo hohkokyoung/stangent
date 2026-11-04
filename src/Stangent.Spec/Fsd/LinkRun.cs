@@ -111,7 +111,7 @@ public static class LinkRun
                 ? [.. reqs.Select(r => Entry("gap", doc, section, FirstQuote(r), null, null, null, "code", null, why, (string)r["id"]!))]
                 : [Entry("gap", doc, section, quote, null, null, null, "code", null, why)];
             var existing = TraceFile.Load(repo.Root)["entries"]!.AsArray().OfType<JsonObject>()
-                .Where(e => (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId).Select(e => (string)e["id"]!).ToList();
+                .Where(e => (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId && !TraceFindings.IsGone(e)).Select(e => (string)e["id"]!).ToList();
             List<JsonObject> recorded = repo.Config.Fsd.Findings ? gaps : [];
             if (carried is null && existing.SequenceEqual(recorded.Select(e => (string)e["id"]!))) return new RunStep("current", "none");
             ApplyEntries(repo.Root, doc, sectionId, recorded);
@@ -403,13 +403,24 @@ public static class LinkRun
                 if (was["decided_on"] is not null) copy["decided_on"] = was["decided_on"]!.DeepClone();
                 // The same link is the same finding: its id, its grade and its evidence stay with it (D118).
                 foreach (var carried in TraceFile.FindingFields.Where(f => was[f] is not null)) copy[carried] = was[carried]!.DeepClone();
+                if (TraceFindings.IsGone(copy)) TraceFindings.CameBack(root, copy, Who);
             }
             list.Add(copy);
         }
-        // A decided link that didn't come back took its decision with it: its id is the hash of its quotes (D58).
+        // A decided link that didn't come back took its decision with it: its id is the hash of its quotes (D58). A decided finding is
+        // kept as gone, holding its X- id for if it comes back (D122). One already gone stays as it is, and one nobody decided goes, as it always has.
         var back = entries.Select(e => (string)e["id"]!).ToHashSet(StringComparer.Ordinal);
-        foreach (var (id, gone) in keepDecisions.Where(k => k.Value["decision"] is not null && !back.Contains(k.Key)))
-            StateChanges.Move(root, StateKinds.TraceDecision, id, (string?)gone["decision"], "undecided", Who, "a new build didn't find this link again");
+        foreach (var (id, left) in keepDecisions.Where(k => !back.Contains(k.Key)))
+        {
+            var kept = (JsonObject)left.DeepClone();
+            if (TraceFindings.IsFinding(left) && (left["decision"] is not null || TraceFindings.Standing(left) is not null))
+            {
+                if (!TraceFindings.IsGone(kept)) TraceFindings.MarkGone(root, kept, Who, "a new build didn't find this link again");
+                list.Add(kept);
+            }
+            else if (left["decision"] is not null)
+                StateChanges.Move(root, StateKinds.TraceDecision, id, (string?)left["decision"], "undecided", Who, "a new build didn't find this link again");
+        }
         trace["entries"] = new JsonArray([.. list]);
         TraceFile.Save(root, trace);
     }
@@ -588,6 +599,7 @@ public static class Undocumented
         var trace = TraceFile.Load(root);
         var linked = trace["entries"]!.AsArray().OfType<JsonObject>()
             .Where(e => !((string?)e["by"] == "code" && (string?)e["state"] == "undocumented" && e["fsd"] is null))
+            .Where(e => !TraceFindings.IsGone(e))
             .Where(e => !TraceFile.IsRemovedSection((string?)e["fsd"]?["section"]))
             .Select(e => (string?)e["page"]?["id"]).OfType<string>().ToHashSet(StringComparer.Ordinal);
         var index = SpecIndex.Load(root);

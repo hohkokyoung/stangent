@@ -59,7 +59,7 @@ public static class TraceCheck
         var trace = TraceFile.Load(root);
         var problems = new List<string>();
         problems.AddRange(SchemaRegistry.Embedded.Validate(TraceFile.Schema, trace.ToJsonString()).Select(e => $"schema: {e}"));
-        if (problems.Count > 0) return Report(trace, problems, [], [], [], []);
+        if (problems.Count > 0) return Report(trace, problems, [], [], [], [], new JsonObject());
 
         var index = SpecIndex.Load(root);
         var nodes = graph?.AllNodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
@@ -102,6 +102,9 @@ public static class TraceCheck
             }
             else if (TraceFile.FindingFields.Any(f => e[f] is not null))
                 problems.Add($"{id}: an agree link isn't a finding, so it has no finding id, severity or evidence");
+
+            // Nothing finds it now, so there's nothing to compare its quotes with: it's kept and listed (D122).
+            if (TraceFindings.IsGone(e)) continue;
 
             // "The page is wrong" has to name a page, or there's nothing for its owner to regenerate (D119).
             if ((string?)e["decision"] == "page-wrong" && page is null) problems.Add($"{id}: page-wrong needs a page, and this entry has none");
@@ -182,7 +185,7 @@ public static class TraceCheck
         var stillDecided = trace["entries"]!.AsArray().OfType<JsonObject>().Where(e => changedIds.Contains((string)e["id"]!) && e["decision"] is not null);
         foreach (var e in stillDecided)
             problems.Add($"{e["id"]}: statement {e["page"]!["id"]} {e["page"]!["statement"]} changed after this decision was made on it, so the decision must drop back to undecided (run `stangent trace check --fix`)");
-        return Report(trace, problems, stale, undecided, retired, changed);
+        return Report(trace, problems, stale, undecided, retired, changed, TraceCoverage.All(root, trace));
     }
 
     /// <summary>
@@ -217,7 +220,7 @@ public static class TraceCheck
         return true;
     }
 
-    static JsonObject Report(JsonObject trace, List<string> problems, List<string> stale, List<string> undecided, List<JsonNode> retired, List<JsonNode> changed)
+    static JsonObject Report(JsonObject trace, List<string> problems, List<string> stale, List<string> undecided, List<JsonNode> retired, List<JsonNode> changed, JsonObject coverage)
     {
         var entries = trace["entries"]?.AsArray().OfType<JsonObject>().ToList() ?? [];
         return new JsonObject
@@ -228,16 +231,21 @@ public static class TraceCheck
                 ["entries"] = entries.Count,
                 ["byState"] = new JsonObject(TraceFile.States.Select(s => KeyValuePair.Create(s, (JsonNode?)entries.Count(e => (string?)e["state"] == s)))),
                 ["undecided"] = entries.Count(e => e["decision"] is null && (!TraceFindings.IsFinding(e) || TraceFindings.GoesTo(e) == "ba")),
-                ["findings"] = entries.Count(TraceFindings.IsFinding),
-                ["bySeverity"] = new JsonObject(Severity.All.Select(s => KeyValuePair.Create(s, (JsonNode?)entries.Count(e => TraceFindings.IsFinding(e) && ((string?)e["severity"] ?? Severity.Ungraded) == s)))),
+                ["findings"] = entries.Count(e => TraceFindings.IsFinding(e) && !TraceFindings.IsGone(e)),
+                ["bySeverity"] = new JsonObject(Severity.All.Select(s => KeyValuePair.Create(s, (JsonNode?)entries.Count(e => TraceFindings.IsFinding(e) && !TraceFindings.IsGone(e) && ((string?)e["severity"] ?? Severity.Ungraded) == s)))),
                 ["staleQuotes"] = stale.Count,
                 ["changedStatements"] = changed.Count,
+                ["recheck"] = entries.Count(e => TraceFindings.Standing(e) == "recheck"),
+                ["gone"] = entries.Count(TraceFindings.IsGone),
+                ["uncoveredSections"] = coverage.Sum(d => d.Value!["uncovered"]!.AsArray().Count),
             },
             ["problems"] = new JsonArray([.. problems.Select(p => (JsonNode)p)]),
             ["staleQuotes"] = new JsonArray([.. stale.Select(s => (JsonNode)s)]),
             ["retiredStatements"] = new JsonArray([.. retired]),
             ["changedStatements"] = new JsonArray([.. changed]),
+            ["coverage"] = coverage,
             ["findings"] = TraceFindings.Listing(TraceFile.Sorted(trace["entries"]?.AsArray() ?? [])),
+            ["gone"] = TraceFindings.Listing(TraceFile.Sorted(trace["entries"]?.AsArray() ?? []), gone: true),
             ["queues"] = TraceFindings.Groups(TraceFile.Sorted(trace["entries"]?.AsArray() ?? [])),
         };
     }
@@ -298,6 +306,7 @@ public static class TraceCheck
                 continue;
             }
             e["decided_by"] = by;
+            TraceFindings.Settled(root, e, StateActor.Person(by));
             n++;
         }
         if (n > 0 || tied) TraceFile.Save(root, trace);

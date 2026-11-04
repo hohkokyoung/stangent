@@ -180,7 +180,7 @@ public static class DisproveRun
 
     /// <summary>A section's findings nobody has decided. A person's decision stands, so it isn't tested again.</summary>
     static IEnumerable<JsonObject> Pending(JsonObject trace, string doc, string sectionId) => TraceFile.Sorted(trace["entries"]!.AsArray())
-        .Where(e => TraceFindings.IsFinding(e) && e["decision"] is null && (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId);
+        .Where(e => TraceFindings.IsFinding(e) && !TraceFindings.IsGone(e) && e["decision"] is null && (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId);
 
     /// <summary>Writes a verdict through the state module, and the finding's evidence with it (D118's Stamp derives it from what's here).</summary>
     static void Write(StangentRepo repo, string entry, string verdict, JsonObject disproof, string reason)

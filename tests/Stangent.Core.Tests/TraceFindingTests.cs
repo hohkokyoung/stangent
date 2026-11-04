@@ -670,4 +670,277 @@ public class TraceFindingTests
         Assert.Equal(0, TraceCheck.Attribute(app.Root, baseTrace, "pm-anna"));
         Assert.Equal("X-0001", (string)Entry(app)["finding"]!);
     }
+
+    // ---- C.5: accepted and not-a-difference ----
+
+    [Theory]
+    [InlineData("accepted")]
+    [InlineData("not-a-difference")]
+    public void The_new_decisions_are_decisions_like_any_other(string decision)
+    {
+        var (app, _) = App();
+        using var _d = app;
+        var entry = Conflict();
+        entry["decision"] = decision;
+        entry["decided_by"] = "bob";
+        Save(app, entry);
+        var report = Check(app);
+        Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report)));
+        Assert.Equal("decided", (string)report["findings"]![0]!["goesTo"]!);
+        Assert.Equal(0, (int)report["counts"]!["undecided"]!);
+        Assert.Contains(decision, TraceFile.Decisions);
+        Assert.True(StateChanges.Move(app.Root, StateKinds.TraceDecision, "L", "undecided", decision, StateActor.Person("bob"), "t"));
+        Assert.Equal(decision, (string)TraceFile.Load(app.Root)["entries"]![0]!["decision"]!);
+
+        Rephrase(app, Flipped);
+        Check(app, fix: true);
+        Assert.Null(Entry(app)["decision"]);
+        Assert.Equal(decision, (string)Entry(app)["standing_note"]!["was"]!);
+    }
+
+    // ---- C.3: recheck and gone ----
+
+    JsonObject Decided(SpecApp app, string decision = "code-wrong")
+    {
+        var entry = Conflict();
+        entry["decision"] = decision;
+        entry["decided_by"] = "bob";
+        Save(app, entry);
+        Check(app);
+        return Entry(app);
+    }
+
+    [Fact]
+    public void A_decided_finding_whose_statement_changed_drops_as_it_did_and_its_old_decision_stays_visible_as_recheck()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        Decided(app);
+        Rephrase(app, Flipped);
+        Assert.Equal("code-wrong", (string)Entry(app)["decision"]!);
+        Assert.Null(Entry(app)["standing"]);
+
+        var report = Check(app, fix: true);
+        Assert.Equal((null, null), ((string?)Entry(app)["decision"], (string?)Entry(app)["decided_by"]));
+        Assert.Equal("recheck", (string)Entry(app)["standing"]!);
+        var listed = report["findings"]![0]!;
+        Assert.Equal(("recheck", "code-wrong", "bob", "ba"), ((string)listed["standing"]!, (string)listed["was"]!, (string)listed["wasBy"]!, (string)listed["goesTo"]!));
+        Assert.Equal(1, (int)report["counts"]!["recheck"]!);
+        Assert.Contains(report["queues"]!["ba"]!.AsArray(), f => (string?)f == "X-0001");
+
+        Assert.True((bool)Check(app)["ok"]!);
+        var move = StateChanges.History(app.Root, StateKinds.FindingStanding, (string)Entry(app)["id"]!).Single();
+        Assert.Equal(("current", "recheck", "code"), (move.From, move.To, move.Who.Kind));
+    }
+
+    [Fact]
+    public void A_person_deciding_again_clears_recheck_through_attribution()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        Decided(app);
+        Rephrase(app, Flipped);
+        Check(app, fix: true);
+        var baseTrace = TraceFile.Load(app.Root);
+        Change(app, e => e["decision"] = "accepted");
+        Assert.Equal(1, TraceCheck.Attribute(app.Root, baseTrace, "pm-anna"));
+        Assert.Equal(("accepted", "pm-anna"), ((string)Entry(app)["decision"]!, (string)Entry(app)["decided_by"]!));
+        Assert.Null(Entry(app)["standing"]);
+        Assert.Null(Entry(app)["standing_note"]);
+        Assert.True((bool)Check(app)["ok"]!);
+    }
+
+    static JsonObject Other() => LinkRun.Entry("gap", "shop", SpecIndexSection(), "Every order sends a receipt.", null, null, null, "judge", null, "another finding");
+
+    [Fact]
+    public void A_decided_finding_a_new_build_doesnt_find_is_gone_kept_and_listed_and_a_new_one_gets_its_own_id()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        Decided(app);
+        LinkRun.ApplyEntries(app.Root, "shop", "1", [Other()]);
+
+        var report = Check(app);
+        Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report)));
+        var gone = TraceFile.Load(app.Root)["entries"]!.AsArray().OfType<JsonObject>().Single(e => (string?)e["standing"] == "gone");
+        Assert.Equal(("X-0001", (string?)null, "code-wrong", "bob"), ((string)gone["finding"]!, (string?)gone["decision"], (string)gone["standing_note"]!["was"]!, (string)gone["standing_note"]!["by"]!));
+        Assert.Contains(report["queues"]!["gone"]!.AsArray(), f => (string?)f == "X-0001");
+        Assert.DoesNotContain(report["queues"]!["ba"]!.AsArray(), f => (string?)f == "X-0001");
+        Assert.Equal(1, (int)report["counts"]!["gone"]!);
+        Assert.Equal(("X-0001", "gone", "code-wrong"), ((string)report["gone"]![0]!["id"]!, (string)report["gone"]![0]!["standing"]!, (string)report["gone"]![0]!["was"]!));
+        Assert.DoesNotContain(report["findings"]!.AsArray(), f => (string)f!["id"]! == "X-0001");
+        Assert.Equal("X-0002", (string)TraceFile.Load(app.Root)["entries"]!.AsArray().OfType<JsonObject>().Single(e => e["standing"] is null)["finding"]!);
+        Assert.True(TraceFindings.Closed(gone));
+        Assert.Contains("a new build didn't find this link again", StateChanges.History(app.Root, StateKinds.TraceDecision, (string)gone["id"]!)[^1].Reason);
+    }
+
+    [Fact]
+    public void A_gone_finding_that_comes_back_keeps_its_id_and_waits_for_a_person()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        var id = (string)Decided(app)["id"]!;
+        LinkRun.ApplyEntries(app.Root, "shop", "1", []);
+        Check(app);
+        Assert.Equal("gone", (string)Entry(app)["standing"]!);
+        // Going again changes nothing, and it isn't lost.
+        LinkRun.ApplyEntries(app.Root, "shop", "1", []);
+        Assert.Equal("gone", (string)Entry(app)["standing"]!);
+
+        LinkRun.ApplyEntries(app.Root, "shop", "1", [Conflict()]);
+        var back = Entry(app);
+        Assert.Equal((id, "X-0001", "recheck", "code-wrong", (string?)null), ((string)back["id"]!, (string)back["finding"]!, (string)back["standing"]!, (string)back["standing_note"]!["was"]!, (string?)back["decision"]));
+        var report = Check(app);
+        Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report)));
+        Assert.Equal("ba", (string)report["findings"]![0]!["goesTo"]!);
+        Assert.Equal(["recheck"], StateChanges.History(app.Root, StateKinds.FindingStanding, id).Select(m => m.To).TakeLast(1));
+    }
+
+    [Fact]
+    public void A_finding_nobody_decided_that_goes_away_is_removed_as_it_always_was()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        Save(app, Conflict());
+        Check(app);
+        LinkRun.ApplyEntries(app.Root, "shop", "1", []);
+        Assert.Empty(TraceFile.Load(app.Root)["entries"]!.AsArray());
+        Check(app);
+        Assert.Contains("X-0001", new PermanentIds(TraceFindings.LedgerFile(app.Root)).Removed("X"));
+    }
+
+    [Fact]
+    public void A_typed_standing_counts_for_nothing_and_is_a_problem()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        Save(app, Conflict());
+        Check(app);
+        Change(app, e => e["standing"] = "gone");
+        var report = Check(app);
+        Assert.False((bool)report["ok"]!);
+        Assert.Contains(Problems(report), p => p.Contains("its standing isn't what code wrote"));
+        Assert.Equal("ba", (string)report["findings"]![0]!["goesTo"]!);
+    }
+
+    [Fact]
+    public void A_gone_finding_has_nothing_checked_against_it_when_its_page_changes()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        Decided(app);
+        LinkRun.ApplyEntries(app.Root, "shop", "1", []);
+        Check(app);
+        var once = File.ReadAllText(TraceFile.PathIn(app.Root));
+        Rephrase(app, Flipped);
+        var report = Check(app, fix: true);
+        Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report)));
+        Assert.Empty(report["staleQuotes"]!.AsArray());
+        Assert.Equal(once, File.ReadAllText(TraceFile.PathIn(app.Root)));
+    }
+
+    // ---- C.1: section coverage ----
+
+    static JsonObject Coverage(JsonObject report) => report["coverage"]!["shop"]!.AsObject();
+
+    [Fact]
+    public void Each_section_is_linked_or_marked_or_listed_and_nothing_fails_for_it()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        var report = Check(app);
+        Assert.True((bool)report["ok"]!);
+        var all = FsdOutline.Load(app.Root, "shop")["sections"]!.AsArray().OfType<JsonObject>().Where(s => ((string)s["text"]!).Length > 0).Count();
+        Assert.Equal(all, Coverage(report)["uncovered"]!.AsArray().Count);
+        Assert.Equal(all, (int)report["counts"]!["uncoveredSections"]!);
+
+        Save(app, LinkRun.Entry("agree", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "E1", "which sends a receipt", "judge", "confirmed", null));
+        var linked = Coverage(Check(app));
+        Assert.Equal("1", (string)Assert.Single(linked["linked"]!.AsArray())!["section"]!);
+        Assert.DoesNotContain(linked["uncovered"]!.AsArray(), s => (string)s!["section"]! == "1");
+    }
+
+    [Fact]
+    public void A_person_marks_a_section_not_in_code_with_a_name_from_git_and_it_holds_for_those_words_only()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        var marked = TraceCoverage.Mark(app.Root, "shop", "1", "it's about the warehouse", "Pat", clear: false);
+        Assert.Equal(("not-in-code", "S-0001"), ((string)marked["state"]!, (string)marked["id"]!));
+        var coverage = Coverage(Check(app));
+        var item = Assert.Single(coverage["notInCode"]!.AsArray())!;
+        Assert.Equal(("1", "Pat", "it's about the warehouse"), ((string)item["section"]!, (string)item["by"]!, (string)item["why"]!));
+        Assert.DoesNotContain(coverage["uncovered"]!.AsArray(), s => (string)s!["section"]! == "1");
+        Assert.Equal(["not-in-code"], StateChanges.History(app.Root, StateKinds.SectionCoverage, "shop#S-0001").Select(m => m.To));
+        Assert.Equal("person", StateChanges.History(app.Root, StateKinds.SectionCoverage, "shop#S-0001")[0].Who.Kind);
+
+        // The same mark on other words isn't one.
+        var marks = Path.Combine(FsdImport.DocDir(app.Root, "shop"), "not-in-code.json");
+        File.WriteAllText(marks, File.ReadAllText(marks).Replace((string)FsdOutline.Find(FsdOutline.Load(app.Root, "shop"), "1")["textHash"]!, new string('0', 64)));
+        var stale = Coverage(Check(app));
+        Assert.Empty(stale["notInCode"]!.AsArray());
+        Assert.Contains(stale["uncovered"]!.AsArray(), s => (string)s!["section"]! == "1" && (string?)s["markWas"] == "Pat");
+
+        Assert.Equal("unmarked", (string)TraceCoverage.Mark(app.Root, "shop", "S-0001", null, "Pat", clear: true)["state"]!);
+        Assert.Equal("not_found", Assert.Throws<StangentException>(() => TraceCoverage.Mark(app.Root, "shop", "S-9999", null, "Pat", clear: false)).Code);
+    }
+
+    [Fact]
+    public void A_section_not_in_code_lists_its_pictures_and_embedded_files()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        var path = Path.Combine(FsdImport.DocDir(app.Root, "shop"), "document.json");
+        var doc = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+        doc["images"] = new JsonArray(new JsonObject { ["file"] = "images/a.png", ["id"] = "F-0001", ["section"] = "S-0001", ["sectionNumber"] = "1" });
+        doc["problems"] = new JsonArray(new JsonObject { ["kind"] = "element", ["detail"] = "section 1: an embedded file not read (Excel.Sheet.12)", ["sectionNumber"] = "1" });
+        File.WriteAllText(path, CanonicalJson.Serialize(doc));
+        var attachments = TraceCoverage.Mark(app.Root, "shop", "1", null, "Pat", clear: false)["attachments"]!.AsArray();
+        Assert.Equal(("F-0001", "section 1: an embedded file not read (Excel.Sheet.12)"), ((string)attachments[0]!["id"]!, (string)attachments[1]!["detail"]!));
+        Assert.Equal(2, Assert.Single(Coverage(Check(app))["notInCode"]!.AsArray())!["attachments"]!.AsArray().Count);
+    }
+
+    // ---- E.1: where a document stands ----
+
+    static JsonObject Next(SpecApp app) => FsdStatus.Of(app.Root, "shop")["next"]!.AsObject();
+
+    [Fact]
+    public void Status_says_where_a_document_stands_who_has_what_and_the_next_command()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        var empty = FsdStatus.Of(app.Root, "shop");
+        Assert.Equal(64, ((string)empty["current"]!["hash"]!).Length);
+        Assert.Equal("plugin/scripts/spec-run.sh --fsd shop", (string)Next(app)["command"]!);
+        Assert.Contains("1", empty["coverage"]!["uncovered"]!.AsArray().Select(s => (string)s!));
+
+        foreach (var s in FsdOutline.Load(app.Root, "shop")["sections"]!.AsArray().OfType<JsonObject>().Where(s => ((string)s["text"]!).Length > 0))
+            TraceCoverage.Mark(app.Root, "shop", (string)s["id"]!, null, "Pat", clear: false);
+        Assert.Equal("nobody", (string)Next(app)["who"]!);
+        Assert.Equal("", (string)Next(app)["command"]!);
+
+        Save(app, Conflict());
+        Check(app);
+        var waiting = FsdStatus.Of(app.Root, "shop");
+        Assert.Equal("X-0001", (string)Assert.Single(waiting["queues"]!["ba"]!.AsArray())!);
+        Assert.Equal(("the BA", "stangent trace check"), ((string)Next(app)["who"]!, (string)Next(app)["command"]!));
+
+        Change(app, e => e["decision"] = "page-wrong");
+        Assert.Equal("X-0001", (string)Assert.Single(FsdStatus.Of(app.Root, "shop")["queues"]!["pageOwner"]!.AsArray())!);
+        Assert.Equal("plugin/scripts/spec-run.sh --stale", (string)Next(app)["command"]!);
+        Assert.Equal("not_found", Assert.Throws<StangentException>(() => FsdStatus.Of(app.Root, "other")).Code);
+    }
+
+    [Fact]
+    public void Status_puts_a_waiting_candidate_first()
+    {
+        var (app, _) = App();
+        using var _d = app;
+        var file = Path.Combine(app.Root, "shop.docx");
+        File.WriteAllBytes(file, DocxWriter.Write(SavedWorkTests.Fsd + "\n\n#! Returns\nReturns take five days from the day they arrive.\n"));
+        Assert.Equal("candidate", (string)FsdImport.Import(app.Repo, file)["status"]!);
+        var status = FsdStatus.Of(app.Root, "shop");
+        Assert.False((bool)status["candidate"]!["first"]!);
+        Assert.Equal("stangent fsd promote shop", (string)Next(app)["command"]!);
+    }
 }

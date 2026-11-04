@@ -120,6 +120,17 @@ static class FsdCommands
         discard.SetAction(pr => Cli.Run(pr, "fsd discard", ctx => FsdVersions.Discard(ctx.Repo.Root, pr.GetValue(docArg)!, FsdVersions.GitPerson(ctx.Repo.Root))));
         fsd.Subcommands.Add(discard);
 
+        var notInCodeWhy = new Option<string?>("--why") { Description = "Why, in your words. It's kept beside your name." };
+        var notInCodeClear = new Option<bool>("--clear") { Description = "Take the mark off." };
+        var notInCodeSection = new Argument<string>("section") { Description = "The section's permanent id (S-0001), or its number or heading path." };
+        var notInCode = new Command("not-in-code", "A person marks a section as not about the code, so it counts as covered (D122). It holds for these words only. Who decided comes from git.") { docArgument, notInCodeSection, notInCodeWhy, notInCodeClear };
+        notInCode.SetAction(pr => Cli.Run(pr, "fsd not-in-code", ctx => TraceCoverage.Mark(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(notInCodeSection)!, pr.GetValue(notInCodeWhy), FsdVersions.GitPerson(ctx.Repo.Root), pr.GetValue(notInCodeClear))));
+        fsd.Subcommands.Add(notInCode);
+
+        var status = new Command("status", "Where a document stands: its version, a candidate waiting, doubtful sections, uncovered sections, who has what, and the next command. No AI.") { docArgument };
+        status.SetAction(pr => Cli.Run(pr, "fsd status", ctx => FsdStatus.Of(ctx.Repo.Root, pr.GetValue(docArgument)!)));
+        fsd.Subcommands.Add(status);
+
         var usageOption = new Option<string?>("--usage") { Description = "Claude Code's JSON result for the step just run." };
         var check = new Command("check", "Check the step just run (quotes word for word, ids, cited symbols), record links in specs/trace.yaml, and say what runs next.") { docArg, sectionArg, usageOption };
         check.SetAction(pr => Cli.Run(pr, "fsd check", ctx =>

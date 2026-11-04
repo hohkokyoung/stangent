@@ -160,7 +160,8 @@ returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds ev
 |---|---|---|---|
 | `requirement` | `proposed`, `approved`, `retired` | a person approves; code drops back and retires | `specs/requirements/history.jsonl` |
 | `question` | `open`, `dropped` | code | same |
-| `trace-decision` | `undecided`, `agree`, `code-wrong`, `fsd-wrong`, `page-wrong`, `defer` | a person decides; code only drops back | `specs/trace-history.jsonl` |
+| `trace-decision` | `undecided`, `agree`, `code-wrong`, `fsd-wrong`, `page-wrong`, `defer`, `accepted`, `not-a-difference` | a person decides; code only drops back | `specs/trace-history.jsonl` |
+| `finding-standing` | `current`, `recheck`, `gone` | code marks what happened to a decided finding; a person deciding again clears `recheck` (D122) | `specs/trace-history.jsonl` |
 | `finding-severity` | `ungraded`, `blocker`, `major`, `minor`, `cosmetic` | code starts it `ungraded`; a person grades it and can change their mind | `specs/trace-history.jsonl` |
 | `finding-verdict` | `unverified`, `stands`, `refuted`, `page-gap`, `unreachable`, `cant-tell` | code only, once the agent's quote passes (D119) | `specs/trace-history.jsonl` |
 | `finding-review` | `waiting`, `confirmed`, `sent-back` | a person confirms or sends back; code sends back when a decision drops, and clears when the verdict moves (D119) | `specs/trace-history.jsonl` |
@@ -174,6 +175,7 @@ returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds ev
 | `req-run` | `write`, `confirm`, `fix`, `reconfirm`, `done`, `failed` | code | `.stangent/req/state-history.jsonl` |
 | `fsd-candidate` | `candidate`, `pending-approval`, `promoted`, `approved`, `discarded`, `replaced` | a person promotes, approves a first import, or discards; code replaces it when a newer file comes in | `specs/fsd/history.jsonl` |
 | `fsd-section-match` | `doubtful`, `same`, `new`, `removed` | a person settles and can change their mind; code only lets go of a claimed id | same |
+| `section-coverage` | `unmarked`, `not-in-code` | a person marks a section, and takes it back (D122) | same |
 
 **History.** Append-only JSONL, one move per line: `at`, `kind`, `id`, `from`, `to`, `who`, `reason`. It sits beside the state:
 committed state has committed history, and CI adds `specs/trace-history.jsonl` to the bot's PR. No input hash and no artifact

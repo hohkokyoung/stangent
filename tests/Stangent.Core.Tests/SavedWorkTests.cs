@@ -43,7 +43,7 @@ public class SavedWorkTests
         "schema requirement-checker-output 8f787c9045590edf0a85cb1f176a3a834471231fa427a201745e376eb7edcf9e",
     ];
 
-    const string Fsd = """
+    internal const string Fsd = """
         #! Orders
         The orders screen has a Place order button.
         Orders over 50 need approval.

@@ -23,12 +23,12 @@ public static partial class TraceFindings
     public static bool IsFinding(JsonObject e) => (string?)e["state"] != "agree";
 
     /// <summary>Every queue a finding can be in, in the order they're listed.</summary>
-    public static readonly string[] Queues = ["ba", "developer", "developer-confirm", "closed", "page-owner", "decided"];
+    public static readonly string[] Queues = ["ba", "developer", "developer-confirm", "closed", "page-owner", "decided", "gone"];
 
     /// <summary>Who's next with this finding (D119): <c>ba</c> by default, including one that stands, can't be told, or was sent back; <c>developer</c> for a page gap;
     /// <c>developer-confirm</c> when the AI says refuted or unreachable, because code proved its quote exists and only a person can say it supports the verdict (D18);
     /// <c>closed</c> once a person confirmed that, kept and listed; <c>page-owner</c> when a person said the page is wrong; <c>decided</c> otherwise.</summary>
-    public static string GoesTo(JsonObject e) => (string?)e["decision"] switch
+    public static string GoesTo(JsonObject e) => Standing(e) == "gone" ? "gone" : (string?)e["decision"] switch
     {
         "page-wrong" => "page-owner",
         not null => "decided",
@@ -44,7 +44,43 @@ public static partial class TraceFindings
 
     /// <summary>A finding a person agreed the code took apart, that nobody has decided: out of every list a person works from, and kept on file.
     /// A verdict nobody has confirmed closes nothing, so it stays in impact answers, ticket bundles and drafts.</summary>
-    public static bool Closed(JsonObject e) => GoesTo(e) == "closed";
+    public static bool Closed(JsonObject e) => GoesTo(e) is "closed" or "gone";
+
+    /// <summary>What happened to a decided finding (D122): <c>recheck</c>, <c>gone</c>, or null for current. One typed by hand counts for nothing, and <see cref="Check"/> says so.</summary>
+    public static string? Standing(JsonObject e) =>
+        (string?)e["standing"] is { } standing && (string?)e["standing_hash"] == TraceFile.StandingHash(standing, e["standing_note"] as JsonObject) ? standing : null;
+
+    public static bool IsGone(JsonObject e) => Standing(e) == "gone";
+
+    /// <summary>
+    /// A decided finding moves (D122). The old decision stays visible in the note, and only there: the decision itself has already dropped back by D58's and D118's rules, so no reader counts it.
+    /// A note already holding a decision isn't replaced by an empty one, so a finding that goes from <c>recheck</c> to <c>gone</c> and back still says what it was.
+    /// </summary>
+    public static void Move(string root, JsonObject e, string to, string? was, string? by, StateActor who, string why)
+    {
+        var held = e["standing_note"] as JsonObject;
+        StateChanges.Apply(root, e, StateKinds.FindingStanding, (string)e["id"]!, to, who, why);
+        var note = new JsonObject { ["was"] = was ?? (string?)held?["was"], ["by"] = by ?? (string?)held?["by"], ["why"] = why };
+        e["standing_note"] = note;
+        e["standing_hash"] = TraceFile.StandingHash(to, note);
+    }
+
+    /// <summary>A person decided it again, so what it was no longer needs saying.</summary>
+    public static void Settled(string root, JsonObject e, StateActor who)
+    {
+        if (Standing(e) == "recheck") StateChanges.Apply(root, e, StateKinds.FindingStanding, (string)e["id"]!, "current", who, "a person decided it again");
+    }
+
+    /// <summary>A new build no longer finds a decided finding (D122). The decision drops by the rule it always dropped by, D58's and D119's; what's new is that the entry and its <c>X-</c> id stay.</summary>
+    public static void MarkGone(string root, JsonObject e, StateActor who, string why)
+    {
+        var (was, by) = ((string?)e["decision"], (string?)e["decided_by"]);
+        DropDecision(root, e, who, why, mark: false);
+        if (!IsGone(e)) Move(root, e, "gone", was, by, who, why);
+    }
+
+    /// <summary>A gone finding came back. It keeps its id, and its old decision stays only visible: the words match, and a person still says so again.</summary>
+    public static void CameBack(string root, JsonObject e, StateActor who) => Move(root, e, "recheck", null, null, who, "a new build found this link again");
 
     /// <summary>Whether the disprove step's verdict is what took this finding away from the BA, as opposed to a person's decision or sending it back.</summary>
     public static bool TakenOutByDisprove(JsonObject e) => GoesTo(e) is "developer" or "developer-confirm" or "closed";
@@ -105,11 +141,13 @@ public static partial class TraceFindings
     }
 
     /// <summary>Code drops a person's decision back, and the verdict underneath it doesn't get to decide instead.</summary>
-    public static void DropDecision(string root, JsonObject e, StateActor who, string reason)
+    public static void DropDecision(string root, JsonObject e, StateActor who, string reason, bool mark = true)
     {
-        var had = e["decision"] is not null;
+        var (was, by) = ((string?)e["decision"], (string?)e["decided_by"]);
         StateChanges.Apply(root, e, StateKinds.TraceDecision, (string)e["id"]!, "undecided", who, reason);
-        if (had) SendBack(root, e, who, $"a person's decision was dropped because {reason}");
+        if (was is null) return;
+        SendBack(root, e, who, $"a person's decision was dropped because {reason}");
+        if (mark && IsFinding(e)) Move(root, e, "recheck", was, by, who, reason);
     }
 
     /// <summary>The verdict a review was about is moving, so a new verdict starts with nobody's word on it.</summary>
@@ -158,6 +196,8 @@ public static partial class TraceFindings
         var repo = new Lazy<string>(() => SymbolLines.RepoName(root));
         foreach (var e in findings)
         {
+            // Kept as it was when it went: its evidence is about a finding nothing finds now.
+            if (IsGone(e)) continue;
             var id = (string)e["finding"]!;
             if (e["severity"] is null)
                 StateChanges.Apply(root, e, StateKinds.FindingSeverity, id, Severity.Ungraded, StateActor.Code(CheckerName), "a new finding starts ungraded");
@@ -281,6 +321,9 @@ public static partial class TraceFindings
             yield return $"{id}: its verdict isn't what code wrote; only `stangent fsd disprove` writes one, because it takes a finding out of a queue";
         if ((e["review"] is not null || e["review_note"] is not null || e["review_hash"] is not null) && !ReviewHolds(e))
             yield return $"{id}: its review isn't what code wrote; only `stangent trace confirm` and `trace send-back` write one, because it closes a finding";
+        if ((e["standing"] is not null || e["standing_note"] is not null || e["standing_hash"] is not null) && Standing(e) is null)
+            yield return $"{id}: its standing isn't what code wrote; only code writes `recheck` and `gone`, because `gone` takes a finding out of every queue";
+        if (IsGone(e)) yield break;
         if (e["evidence"] is not JsonArray { Count: > 0 } evidence) { yield return $"{id}: a finding needs evidence, and code found nothing to cite"; yield break; }
         foreach (var record in refused ?? [])
             yield return $"{id}: evidence {record}: it isn't what code derives from the current inputs, and evidence is never typed; delete it and the next check writes what's true";
@@ -334,8 +377,8 @@ public static partial class TraceFindings
         }
     }
 
-    /// <summary>The findings as <c>trace check</c> lists them.</summary>
-    public static JsonArray Listing(IEnumerable<JsonObject> entries) => new([.. entries.Where(IsFinding).Select(e => (JsonNode)new JsonObject
+    /// <summary>The findings as <c>trace check</c> lists them: the live ones, or with <paramref name="gone"/> the ones nothing finds any more (D122), kept on a list of their own.</summary>
+    public static JsonArray Listing(IEnumerable<JsonObject> entries, bool gone = false) => new([.. entries.Where(e => IsFinding(e) && IsGone(e) == gone).Select(e => (JsonNode)new JsonObject
     {
         ["id"] = (string?)e["finding"], ["entry"] = (string?)e["id"], ["state"] = (string?)e["state"], ["severity"] = (string?)e["severity"] ?? Severity.Ungraded,
         ["doc"] = (string?)e["fsd"]?["doc"], ["section"] = (string?)e["fsd"]?["section"], ["page"] = (string?)e["page"]?["id"], ["statement"] = (string?)e["page"]?["statement"],
@@ -346,6 +389,7 @@ public static partial class TraceFindings
         ["at"] = (string?)e["disproof"]?["path"] is { } path ? $"{path}:{(int)e["disproof"]!["start"]!}-{(int)e["disproof"]!["end"]!}" : null,
         ["atCommit"] = (string?)e["disproof"]?["commit"],
         ["suggestedSeverity"] = (string?)e["disproof"]?["suggestedSeverity"],
+        ["standing"] = Standing(e), ["was"] = (string?)e["standing_note"]?["was"], ["wasBy"] = (string?)e["standing_note"]?["by"], ["standingWhy"] = (string?)e["standing_note"]?["why"],
     })]);
 
     /// <summary>The same findings by who has them next, so each queue reads on its own (D119).</summary>
