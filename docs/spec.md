@@ -262,6 +262,17 @@ Each step here has a switch (D121, `docs/foundation.md`): `candidate-finder`, `a
 - **Readers.** A ticket bundle lists a `partial` link (`ticket-bundle` v2 grew in place, not being on `main`). A ticket match counts it as a link that shows the code. `impact-report` v5 is on `main` and has no such state, so an impact answer's `states` reads it as `conflict`.
 - **The scorer.** A `partial` on a planted item counts as `found`, and not as `foundAsKind`. An `unclear` one counts as neither found nor noise. `finerVerdicts` reports both: the counts, which planted items a partial found, and the unclear entries.
 
+## Judging small neighbouring sections together (C.6, D124)
+
+`fsd: { groupSections: true }`, off by default, so a rule split across two sections is read as one. **Whether that helps is unknown: no real AI has read one of these bundles,** and turning it on on a real document re-runs every unit, which is paid.
+
+- **The unit:** walking the sections in order, a run with the same parent and up to `fsd.groupMaxChars` (4000, a stated setting, not a measured one) of text between them. A section with no text ends a run. So does one over the limit, which is judged alone, and one judged by requirement (`requirements-links`), which already has its own unit. If code finds no page for the whole unit, each section takes the usual road alone, through the candidate finder.
+- **The steps:** `fsd prepare <doc> <first section>` writes the bundle: all the sections, then the pages for all of them, with `link-judge.md` (or its finer variant) plus `link-judge-group.md`, and a schema of its own (`link-judge-group-output` v1, `link-judge-group-finer-output` v1). The others answer `grouped`, naming the first, with no call, so `spec-run.sh --fsd` needs no change. The candidate finder doesn't run. The agree checker reads the same sections.
+- **Each link cites its own section.** `section` is required, code checks the FSD quote against that section alone, and one that names another unit's section is rejected. A link's entry is on its own section, with an id as usual.
+- **`specs/trace-runs.json` records the unit,** as `unit` on each section: `kind`, `leader`, `sections`, `inputs`, `links` and the unit's usage.
+- **Its own hash.** A unit's `inputs` are over its own bundle, and a section's own `inputs` aren't touched. `saved` beside them keeps what each side last gave: `own` and `group`, each with its inputs and its links, with no decision or finding fields. So turning it on re-runs; turning it off puts each section's saved links back with no call, once that section is prepared, as long as its own inputs are unchanged; and turning it on again does the same for the unit. A person's decision follows the rule it always has (D58, D122): the same link comes back with it, and one that didn't come back drops or goes `gone`.
+- **Off,** nothing in `trace-runs.json`, any bundle or any hash changes.
+
 ## Comparing tables with the code (C.2, D124)
 
 **A second route to code, off by default.** Everything else reaches code through pages. D68 kept direct links out as noisy, and that question is the owner's and still open, so this is labelled on every result and `fsd.compareTables` is off. **It hasn't been shown to help, and there's no real FSD on a C# project to pilot it on:** every test uses hand-built documents.

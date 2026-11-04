@@ -426,7 +426,7 @@ public class FsdLinkTests
     }
 
     /// <summary>The section's three sentences as R-0001 to R-0003.</summary>
-    static SpecApp WithRequirements(bool findings = true)
+    internal static SpecApp WithRequirements(bool findings = true)
     {
         var app = App(findings: findings);
         Extract(app, "1", new JsonObject

@@ -249,8 +249,8 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
   *Built, off, not shown to help (`fsd.judgeFinerVerdicts`, D124). New instruction text and schemas; every reader and the scorer handle both. Whether it cuts false alarms needs the paid re-score.*
 - ✅ C.5 · BA decisions `accepted` and `not a difference`.  
   *`accepted` and `not-a-difference`, in `trace-links` v4 (D122).*
-- ⬜ C.6 · Group small neighbouring sections into one unit when checking.  
-  *A rule split across two sections would be judged together. Unproven, and any size limit needs its own reason. Needs a paid run. Recommend: test after the re-score.*
+- ✅ C.6 · Group small neighbouring sections into one unit when checking.  
+  *Built, off, not shown to help (`fsd.groupSections`, D124). A run under one parent, up to `fsd.groupMaxChars` (4000, stated, with no measurement behind it). Each link cites its own section, by code. It has its own hash: on re-runs, off reuses.*
 
 **Everyday use**
 

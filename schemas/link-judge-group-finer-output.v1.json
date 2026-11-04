@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:link-judge-group-finer-output:v1",
+  "title": "What stangent-link-judge returns with fsd.groupSections and fsd.judgeFinerVerdicts on (C.4, C.6, D124)",
+  "description": "The link judge output, for a run of neighbouring sections: each link names its own section, and code checks its quote against that section alone.",
+  "type": "object",
+  "required": [
+    "links"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "section",
+          "state",
+          "note"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "section": {
+            "description": "The id of the section this link's FSD sentence comes from, as listed.",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "agree",
+              "gap",
+              "conflict",
+              "undocumented",
+              "partial",
+              "unclear"
+            ]
+          },
+          "fsdQuote": {
+            "description": "Copied exactly from the FSD section (agree, conflict, gap).",
+            "type": "string"
+          },
+          "page": {
+            "description": "A candidate page's id (agree, conflict, undocumented; optional for gap).",
+            "type": "string"
+          },
+          "statement": {
+            "description": "The page statement's id, e.g. R3.",
+            "type": "string",
+            "pattern": "^[SARE][0-9]+$"
+          },
+          "pageQuote": {
+            "description": "Copied exactly from that statement (agree, conflict, undocumented).",
+            "type": "string"
+          },
+          "covered": {
+            "description": "partial: what the statement does show.",
+            "type": "string",
+            "maxLength": 600
+          },
+          "missing": {
+            "description": "partial: what it doesn't.",
+            "type": "string",
+            "maxLength": 600
+          },
+          "note": {
+            "description": "Why. On unclear, the reason it can't be told.",
+            "type": "string",
+            "maxLength": 600
+          }
+        }
+      }
+    }
+  }
+}

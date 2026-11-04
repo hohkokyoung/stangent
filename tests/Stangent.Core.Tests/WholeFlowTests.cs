@@ -62,7 +62,7 @@ public sealed class WholeFlow : IDisposable
     /// <summary>The flow with these settings added, as far as what's left on can take it (D121): the rest of the stages need findings to act on.</summary>
     public static WholeFlow With(string extraConfig) => new(extraConfig);
 
-    public const string SwitchedOn = "components: { table-facts: true, judge-finer-verdicts: true }";
+    public const string SwitchedOn = "components: { table-facts: true, judge-finer-verdicts: true, group-sections: true }";
 
     /// <summary>The flow with what's built switched off turned on (D124): the fake AI answers each variant, and nothing real runs.</summary>
     public static WholeFlow AllSwitchedOn() => new(SwitchedOn, allOn: true);
@@ -535,8 +535,16 @@ public sealed class WholeFlow : IDisposable
         partial["missing"] = "who approves";
         var unclear = Link("unclear", FsdGap, null, null, null, "It doesn't say which post.");
         foreach (var k in unclear.Where(p => p.Value is null).Select(p => p.Key).ToList()) unclear.Remove(k);
-        Answer(step, Links(partial, unclear));
+        partial["section"] = "1";
+        unclear["section"] = "1";
+        var second = Link("conflict", FsdStock, Stock, "S1", "The screen shows a Stock button.", "A button, not a count.");
+        second["section"] = "2";
+        Answer(step, Links(partial, unclear, second));
+        Saw["on.grouped"] = Ok("fsd", "prepare", "shop", "2");
         Saw["on.recorded"] = Ok("fsd", "check", "shop", "1");
+        Saw["on.current"] = Ok("fsd", "prepare", "shop", "1");
+        Saw["on.runs"] = JsonNode.Parse(File.ReadAllText(Path.Combine(Root, "specs", "trace-runs.json")));
+        Saw["on.trace"] = Trace();
         Saw["on.check"] = Check();
         Saw["on.status"] = Ok("fsd", "status", "shop");
     }

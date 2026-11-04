@@ -23,6 +23,7 @@ public static class LinkRun
     public const string Checker = "stangent-agree-checker";
     public const string JudgeSchema = "link-judge-output.v1.json", RequirementJudgeSchema = "requirement-judge-output.v1.json";
     public const string FinerJudgeSchema = "link-judge-finer-output.v1.json", FinerRequirementJudgeSchema = "requirement-judge-finer-output.v1.json";
+    public const string GroupJudgeSchema = "link-judge-group-output.v1.json", GroupFinerJudgeSchema = "link-judge-group-finer-output.v1.json";
 
     public static string Key(string doc, string section) => $"{doc}#{section}";
     public static string RunsFile(string root) => Path.Combine(root, "specs", "trace-runs.json");
@@ -41,7 +42,7 @@ public static class LinkRun
             ? [.. feature["requirements"]!.AsArray().OfType<JsonObject>()] : null;
 
     /// <summary><see cref="Requirements"/>, unless <c>requirements-links</c> is off (D121): then the section's sentences are judged, as with none built.</summary>
-    static List<JsonObject>? RequirementsInUse(StangentRepo repo, string doc, JsonObject section) =>
+    internal static List<JsonObject>? RequirementsInUse(StangentRepo repo, string doc, JsonObject section) =>
         StangentComponents.IsOn(repo.Config, "requirements-links") ? Requirements(repo.Root, doc, section) : null;
 
     static string FirstQuote(JsonObject requirement) => (string)requirement["quotes"]![0]!["text"]!;
@@ -56,6 +57,8 @@ public static class LinkRun
         var runs = LoadRuns(repo.Root);
         var key = Key(doc, sectionId);
         var run = runs[key] as JsonObject;
+        // Grouping (C.6): the unit may be more than this section. Off, this does nothing.
+        if (repo.Config.Fsd.GroupSections && SectionUnits.Prepare(set, repo, index, doc, sectionId) is { } grouped) return grouped;
         var requirements = RequirementsInUse(repo, doc, section);
         // Every sentence is background: nothing here to link.
         if (requirements is { Count: 0 })
@@ -118,14 +121,15 @@ public static class LinkRun
             List<JsonObject> recorded = repo.Config.Fsd.Findings ? gaps : [];
             if (carried is null && existing.SequenceEqual(recorded.Select(e => (string)e["id"]!))) return new RunStep("current", "none");
             ApplyEntries(repo.Root, doc, sectionId, recorded);
-            UpdateRun(repo.Root, key, r => { MergeInto(r, carried); r["inputs"] = null; r["candidates"] = new JsonArray(); r["candidatesBy"] = by; r["links"] = 1; });
+            UpdateRun(repo.Root, key, r => { MergeInto(r, carried); r["inputs"] = null; r["candidates"] = new JsonArray(); r["candidatesBy"] = by; r["links"] = 1; r.Remove("unit"); });
             return new RunStep("recorded", "none");
         }
         var requirements = RequirementsInUse(repo, doc, section);
         var finer = repo.Config.Fsd.JudgeFinerVerdicts;
         var judgeBundle = requirements is null ? JudgeBundle(section, doc, candidates.Select(c => c.Page), index, finer) : RequirementJudgeBundle(section, doc, candidates.Select(c => c.Page), index, requirements, finer);
         var inputs = JudgeInputs(judgeBundle, requirements is not null, repo.Config.Fsd.Findings);
-        if ((string?)run?["inputs"] == inputs) return new RunStep("current", "none");
+        // A group's links may be what's on file (C.6): this section's own saved work goes back, with no call.
+        if ((string?)run?["inputs"] == inputs && (run?["unit"] is null || SectionUnits.RestoreOwn(repo.Root, doc, section, inputs))) return new RunStep("current", "none");
         AiPolicy.EnsureAllowed(repo.Config, "fsd prepare");
         var work = Fresh(repo.Root, doc, sectionId);
         File.WriteAllText(Path.Combine(work, "judge.md"), judgeBundle);
@@ -148,6 +152,9 @@ public static class LinkRun
         // Turning findings off (or on) changes what a section records, so it runs again; with them on the hash is unchanged.
         return findings ? inputs : CanonicalJson.Hash(inputs + "\nfindings off");
     }
+
+    /// <summary>A unit's own hash (C.6): its bundle holds every section it covers, so it can't equal one section's.</summary>
+    internal static string GroupInputs(string bundle, bool findings) => JudgeInputs(bundle, false, findings);
 
     /// <summary>What a run's judge step would hash for this section and these candidate pages (D117: a section that only changed
     /// its number keeps its paid links). Null when a page has no record.</summary>
@@ -175,6 +182,8 @@ public static class LinkRun
         var nodes = graph.AllNodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
         var byRequirement = (string?)state["level"] == "requirement";
         var judge = byRequirement ? RequirementJudge : Judge;
+        // One unit's sections, when it's more than this one (C.6). Each link is checked against its own.
+        var unit = state["sections"]?.AsArray().Select(s => (string)s!).ToDictionary(s => s, s => index.Sections[(doc, s)], StringComparer.Ordinal);
 
         switch (stage)
         {
@@ -212,7 +221,11 @@ public static class LinkRun
                     links = [.. output!["links"]!.AsArray().OfType<JsonObject>().Select(l =>
                     {
                         var own = requirements is null ? [] : FromRequirement(l, requirements);
-                        return (l, (List<string>)[.. own, .. LinkChecks.Check(l, section, candidates, index, nodes)]);
+                        if (unit is null) return (l, (List<string>)[.. own, .. LinkChecks.Check(l, section, candidates, index, nodes)]);
+                        // The check that each link cites its own section: `section` must be one of the unit's, and the quote must be from that one.
+                        return unit.TryGetValue((string)l["section"]!, out var cited)
+                            ? (l, (List<string>)[.. LinkChecks.Check(l, cited, candidates, index, nodes)])
+                            : (l, [$"section `{(string)l["section"]!}` isn't one of this unit's: {string.Join(", ", unit.Keys)}"]);
                     })];
                     if (requirements is not null)
                         missing = [.. requirements.Select(r => (string)r["id"]!).Where(id => !links.Any(l => (string?)l.Link["requirement"] == id)).Select(id => $"{id} has no link: give every requirement one, or a gap")];
@@ -228,18 +241,18 @@ public static class LinkRun
                 state["rejected"] = links.Count - kept.Count;
                 state["links"] = new JsonArray([.. kept.Select(l => (JsonNode)l.DeepClone())]);
                 var agrees = kept.Where(l => (string)l["state"]! == "agree").ToList();
-                if (agrees.Count == 0) return Finish(repo.Root, work, state, doc, section, [], repo.Config.Fsd.Findings);
+                if (agrees.Count == 0) return Finish(repo.Root, work, state, doc, section, [], repo.Config.Fsd.Findings, unit: unit);
                 // Off (D121): recorded with no second check, and each says so, as one the checker didn't answer does.
                 if (!StangentComponents.IsOn(repo.Config, "agree-checker"))
                 {
                     state["agreeCheckerOff"] = true;
-                    return Finish(repo.Root, work, state, doc, section, [], repo.Config.Fsd.Findings);
+                    return Finish(repo.Root, work, state, doc, section, [], repo.Config.Fsd.Findings, unit: unit);
                 }
                 Stage(repo.Root, state, "confirm", "the judge's output passed the code check");
                 state.Remove("schema");
                 state["retryUsed"] = false; // the checker gets its own one retry
                 Save(work, state);
-                File.WriteAllText(Path.Combine(work, "checker.md"), CheckerBundle(section, doc, candidates, index, agrees, byRequirement ? Requirements(repo.Root, doc, section) : null));
+                File.WriteAllText(Path.Combine(work, "checker.md"), CheckerBundle(section, doc, candidates, index, agrees, byRequirement ? Requirements(repo.Root, doc, section) : null, unit?.Values));
                 return Step(repo.Root, work, Checker, "checker.md", "checker.json", "Section, pages and the links to check");
             }
             case "confirm":
@@ -249,7 +262,7 @@ public static class LinkRun
                 if (errors.Count == 0) errors.AddRange(SchemaRegistry.Embedded.Validate("agree-checker-output.v1.json", output!.ToJsonString()).Select(e => $"Schema: {e}"));
                 if (errors.Count > 0 && Retry(repo.Root, work, state, errors, Checker, "checker.md", "checker.json") is { } retry) return retry;
                 var checks = errors.Count > 0 ? [] : output!["checks"]!.AsArray().OfType<JsonObject>().ToList();
-                return Finish(repo.Root, work, state, doc, section, checks, repo.Config.Fsd.Findings, candidates, index, nodes);
+                return Finish(repo.Root, work, state, doc, section, checks, repo.Config.Fsd.Findings, candidates, index, nodes, unit);
             }
             default:
                 throw new StangentException("nothing_to_check", $"{doc} §{sectionId}'s run is {stage}. Run `stangent fsd prepare` to start again.", ExitCodes.Usage);
@@ -259,7 +272,7 @@ public static class LinkRun
     /// <summary>Turns the checked links into trace entries. "agree" links take the checker's verdict: confirmed, or
     /// disputed and turned into the finding it raised (when its quotes pass), reviewed one by one (D62).</summary>
     static RunStep Finish(string root, string work, JsonObject state, string doc, JsonObject section, List<JsonObject> checks, bool findings,
-        HashSet<string>? candidates = null, SpecIndex? index = null, IReadOnlySet<string>? nodes = null)
+        HashSet<string>? candidates = null, SpecIndex? index = null, IReadOnlySet<string>? nodes = null, IReadOnlyDictionary<string, JsonObject>? unit = null)
     {
         var entries = new List<JsonObject>();
         var k = 0;
@@ -268,6 +281,8 @@ public static class LinkRun
         foreach (var link in state["links"]!.AsArray().OfType<JsonObject>())
         {
             var s = (string)link["state"]!;
+            // In a unit, each link is its own section's, for its checks and its entry.
+            var own = unit is null ? section : unit[(string)link["section"]!];
             string? check = null;
             var final = link;
             if (s == "agree")
@@ -297,11 +312,11 @@ public static class LinkRun
                     if ((string)raised["state"]! == "gap") { raised.Remove("pageQuote"); raised.Remove("statement"); }
                     // A requirement's link can't become undocumented: that means the FSD doesn't say it, and this requirement quotes the FSD.
                     var forRequirement = link["requirement"] is not null && (string)raised["state"]! == "undocumented";
-                    if (!forRequirement && LinkChecks.Check(raised, section, candidates!, index!, nodes).Count == 0) final = raised;
+                    if (!forRequirement && LinkChecks.Check(raised, own, candidates!, index!, nodes).Count == 0) final = raised;
                     else final = (JsonObject)link.DeepClone(); // its evidence failed: stays "agree", disputed, never bulk-approved
                 }
             }
-            var entry = Entry((string)final["state"]!, doc, section, (string?)final["fsdQuote"], (string?)final["page"], (string?)final["statement"],
+            var entry = Entry((string)final["state"]!, doc, own, (string?)final["fsdQuote"], (string?)final["page"], (string?)final["statement"],
                 (string?)final["pageQuote"], "judge", check, (string?)final["note"], (string?)link["requirement"]);
             if ((string)final["state"]! == "partial") entry["partial"] = new JsonObject { ["covered"] = (string?)final["covered"], ["missing"] = (string?)final["missing"] };
             entries.Add(entry);
@@ -309,6 +324,7 @@ public static class LinkRun
         // With findings off (D57, D68) only links are recorded: a disputed "agree" that became a finding is left out too, and an unclear one, which has only a person's queue to go to. A run says how many.
         var unclearLeftOut = findings ? 0 : entries.Count(e => (string)e["state"]! == "unclear");
         if (!findings) entries = [.. entries.Where(e => (string)e["state"]! == "agree")];
+        if (unit is not null) return SectionUnits.Finish(root, work, state, doc, unit, entries, disputed, unchecked_, unclearLeftOut);
         ApplyEntries(root, doc, (string)state["section"]!, entries);
         var key = Key(doc, (string)state["section"]!);
         UpdateRun(root, key, r =>
@@ -324,6 +340,8 @@ public static class LinkRun
             r["unchecked"] = unchecked_;
             if (unclearLeftOut > 0) r["unclearLeftOut"] = unclearLeftOut;
             else r.Remove("unclearLeftOut");
+            // Its own links are what's on file now, not a group's.
+            r.Remove("unit");
             if ((bool?)state["agreeCheckerOff"] == true) r["agreeChecker"] = "off";
             else r.Remove("agreeChecker");
             // A requirement the judge left out even after its retry has no entry at all: say so, or it reads as nothing to see.
@@ -399,7 +417,7 @@ public static class LinkRun
     /// <summary>Replaces a section's entries; an entry that comes back with the same id keeps its decision.</summary>
     static readonly StateActor Who = StateActor.Code("stangent fsd");
 
-    static void Stage(string root, JsonObject state, string to, string reason) =>
+    internal static void Stage(string root, JsonObject state, string to, string reason) =>
         StateChanges.Apply(root, state, StateKinds.LinkRun, Key((string)state["doc"]!, (string)state["section"]!), to, Who, reason);
 
     public static void ApplyEntries(string root, string doc, string? sectionId, IEnumerable<JsonObject> entries, Func<JsonObject, bool>? replaces = null)
@@ -475,7 +493,7 @@ public static class LinkRun
         }
     }
 
-    static string Fresh(string root, string doc, string section)
+    internal static string Fresh(string root, string doc, string section)
     {
         var work = Work(root, doc, section);
         if (Directory.Exists(work)) Directory.Delete(work, recursive: true);
@@ -483,7 +501,7 @@ public static class LinkRun
         return work;
     }
 
-    static void Save(string work, JsonObject state) => File.WriteAllText(Path.Combine(work, "state.json"), CanonicalJson.Serialize(state));
+    internal static void Save(string work, JsonObject state) => File.WriteAllText(Path.Combine(work, "state.json"), CanonicalJson.Serialize(state));
     static string Read(string work, string file) => File.Exists(Path.Combine(work, file)) ? File.ReadAllText(Path.Combine(work, file)) : "";
     internal static string Rel(string root, string path) => Path.GetRelativePath(root, path).Replace('\\', '/');
 
@@ -543,11 +561,12 @@ public static class LinkRun
         return [];
     }
 
-    static string CheckerBundle(JsonObject section, string doc, IEnumerable<string> pages, SpecIndex index, List<JsonObject> agrees, List<JsonObject>? requirements = null)
+    static string CheckerBundle(JsonObject section, string doc, IEnumerable<string> pages, SpecIndex index, List<JsonObject> agrees, List<JsonObject>? requirements = null, IEnumerable<JsonObject>? unit = null)
     {
         var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions(requirements is null ? "agree-checker.md" : "requirement-agree-checker.md"));
         sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText("agree-checker-output.v1.json").TrimEnd('\n')).Append("\n```\n\n");
-        sb.Append(SectionBlock(section, doc)).Append(AttachmentChecks.Block(section)).Append(PagesBlock(pages, index)).Append("\n# The links to check\n\n");
+        foreach (var s in unit ?? [section]) sb.Append(SectionBlock(s, doc)).Append(AttachmentChecks.Block(s));
+        sb.Append(PagesBlock(pages, index)).Append("\n# The links to check\n\n");
         for (var i = 0; i < agrees.Count; i++)
         {
             var requirement = requirements?.FirstOrDefault(r => (string)r["id"]! == (string?)agrees[i]["requirement"]);
@@ -557,7 +576,7 @@ public static class LinkRun
         return sb.ToString();
     }
 
-    static string PagesBlock(IEnumerable<string> pages, SpecIndex index)
+    internal static string PagesBlock(IEnumerable<string> pages, SpecIndex index)
     {
         var sb = new StringBuilder("\n# The candidate pages\n\nGenerated from the code; every statement cites the code it comes from.\n");
         foreach (var id in pages.Order(StringComparer.Ordinal))

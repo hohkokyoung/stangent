@@ -54,13 +54,25 @@ public class WholeFlowOnTests(WholeFlowOn on) : IClassFixture<WholeFlowOn>
     public void The_finer_judge_is_answered_and_its_verdicts_reach_trace_check_and_status()
     {
         flow.Reached(5);
-        Assert.Equal("link-judge-finer-output.v1.json", (string)flow.Seen("on.judge")["next"]!["schema"]!);
+        Assert.Equal("link-judge-group-finer-output.v1.json", (string)flow.Seen("on.judge")["next"]!["schema"]!);
         Assert.Equal("recorded", (string)flow.Seen("on.recorded")["status"]!);
         var check = flow.Seen("on.check");
         Assert.True((bool)check["ok"]!, string.Join("; ", check["problems"]!.AsArray().Select(p => (string)p!)));
         Assert.Equal(1, (int)check["counts"]!["byState"]!["partial"]!);
         Assert.Equal(1, (int)check["counts"]!["unclear"]!);
         Assert.Equal(1, (int)flow.Seen("on.status")["queues"]!["unclear"]!);
+    }
+
+    [Fact]
+    public void A_group_of_sections_is_judged_once_each_link_on_its_own_section()
+    {
+        flow.Reached(5);
+        Assert.Equal("grouped", (string)flow.Seen("on.grouped")["status"]!);
+        Assert.Equal("current", (string)flow.Seen("on.current")["status"]!);
+        var runs = flow.Seen("on.runs");
+        Assert.Equal("1", (string)runs["shop#2"]!["unit"]!["leader"]!);
+        Assert.Contains("2", runs["shop#1"]!["unit"]!["sections"]!.AsArray().Select(s => (string)s!));
+        Assert.Contains(flow.Seen("on.trace")["entries"]!.AsArray(), e => (string?)e!["fsd"]?["section"] == "2" && (string)e!["state"]! == "conflict");
     }
 
     [Fact]

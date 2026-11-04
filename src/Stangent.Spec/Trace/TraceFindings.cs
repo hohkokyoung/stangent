@@ -246,8 +246,10 @@ public static partial class TraceFindings
         if ((string?)e["by"] == "judge")
         {
             var run = (string?)e["fsd"]?["doc"] is { } doc && (string?)e["fsd"]?["section"] is { } section ? runs[LinkRun.Key(doc, section)] : null;
-            list.Add(Checker("agent", (string?)run?["judge"]?["model"] ?? LinkRun.Judge));
-            if (e["check"] is not null) list.Add(Checker("agent", (string?)run?["checker"]?["model"] ?? LinkRun.Checker));
+            // A group's own usage, when a group's links are what's on file (C.6).
+            var usage = run?["unit"]?["usage"] ?? run;
+            list.Add(Checker("agent", (string?)usage?["judge"]?["model"] ?? LinkRun.Judge));
+            if (e["check"] is not null) list.Add(Checker("agent", (string?)usage?["checker"]?["model"] ?? LinkRun.Checker));
         }
         return list;
     }
