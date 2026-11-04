@@ -263,7 +263,7 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
 
 ## 9. The owner's bulk decisions (2026-11-04, D125)
 
-Marked down, not built. Numbers are the ones in the owner's list. A ☑️ with a test note is taken in and stays off until that test.
+Marked down, not built. A ☑️ with a test note is taken in and stays off until that test.
 
 **Improve what we have**
 

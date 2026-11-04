@@ -29,7 +29,9 @@ The build order (decisions.md D19) and how phases stay in step with each other (
 - **Not passing:** proof is real, catches wrong reports (needs 2c and a project whose FSD covers those tickets); 2c's links, both bars
   failed (24/30, 44% false alarms); 1d part 2 (deferred).
 - **Out of date:** the saved proof numbers predate the finder, D95, D104, D106 and D107 (D109).
-- **Overhaul:** slices 0.1 to 2.6 landed locally on `claude/phase2c-spec` (2026-11-04), not pushed. The disprove step isn't shown to help until the re-score runs (about $4–6, the owner's OK), and it can't raise links found above 24 of 30, so 2c's 27 of 30 bar needs something else as well. Its order is below and replaces D109's "next" list until the owner says otherwise.
+- **Overhaul (2026-11-04), local on `claude/phase2c-spec`, not pushed:** slices 0.1 to 2.6 landed, then the whole-flow test and §8's four batches (D120): switches, seams, import report, Excel, attachments, and table comparison, finer verdicts, grouping and ask, built off.
+- **Disprove re-score:** stopped at 11 of 62 calls on a weekly limit, resuming after Nov 7, so no bar is called. It can't lift found above 24 of 30.
+- **Unchecked:** §8's batches had no fresh check (D120), and none has met a real FSD or real AI. Next is "What's next" below.
 - No private-repo check and no proof run on bitwarden (owner): Phase 3's report says so.
 
 ## The overhaul: order of work
