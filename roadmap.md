@@ -92,7 +92,7 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 
 **In the owner's brief, with no decision yet:** security review (Open questions).
 
-**Checks owed:** the proof re-run (D109); a real-FSD dry run (D56); 1d part 2, context scoping (D45); 2b's noise re-measure (D68); hand
+**Checks owed:** every build under D120 (no fresh check while building); the proof re-run (D109); a real-FSD dry run (D56); 1d part 2, context scoping (D45); 2b's noise re-measure (D68); hand
 checks on 1b, 1c (D28), 2a, 2b (D67); a third repo of another shape (D94); a sign-in approved with only D82's scopes.
 
 Status values: `not started` · `planned` · `in progress` · `done` · `needs review` (an upstream contract changed after this phase was done).
@@ -188,7 +188,7 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 8 | Ask "how does the app do X today?", answered from pages with citations | ⬜ | plugin, 2a | E.2 |
 | 8 | Run one chapter and see its cost before the whole document | ⬜ | plugin, 2b | E.3 |
 
-**Suggested order for §8, not decided:** S.0, then S.1 and S.2, then S.3, then Excel and attachments (A.5 to A.8), then C.1, then the C.2 pilot once its decision is made. The re-score comes before C.4 and C.6. Other A and E items fit in where they're small.
+**Order for §8 (D120, build first, test later):** F.1 and S.1 to S.4; then A.1 to A.4, A.6, A.9 to A.11, C.1, C.3, C.5, E.1, E.3; then A.5, A.7, A.8; then C.2, C.4, C.6, E.2, built switched off. **Earlier suggestion:** S.0, then S.1 and S.2, then S.3, then Excel and attachments (A.5 to A.8), then C.1, then the C.2 pilot once its decision is made. The re-score comes before C.4 and C.6. Other A and E items fit in where they're small.
 
 ## Phase files
 

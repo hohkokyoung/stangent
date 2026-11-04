@@ -145,8 +145,8 @@ Ahead of Stangent because Stangent has designed approval states but not a workin
 
 - ⬜ Two ways to check: against the code, or against the reference for BAs who don't have the code.  
   *Pages only today. Recommend: test against the code first (D99's "bigger option").*
-- ⬜ Whoever finds a difference never verifies it. A separate agent re-checks it in a fresh context before the BA sees it.  
-  *Same item as disproving findings in section 1 (D62). Recommend: do.*
+- 🟡 Whoever finds a difference never verifies it. A separate agent re-checks it in a fresh context before the BA sees it.  
+  *Built with the disprove step (D119), off by default and not yet proven; the re-score stopped at 11 of 62 calls.*
 - ✅ Only today's behaviour counts as evidence. The reference's opinions and its own findings can never back up a claim.  
   *Links quote the FSD and page statements only (D53), and since 2.4 `trace check` rejects evidence citing a finding (D118).*
 - ✅ A script checks every citation: the id must really be on the cited page, and in the right part of it.  
@@ -199,6 +199,8 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
 
 **Seams, first**
 
+- ⬜ F.1 · Every component has a switch, and a run says which were on (D120).  
+  *So the test phase can run the flow with each one off. Some exist: `history.enabled`, `fsd.findings`, `fsd.disprove`, `detectors`. Recommend: do first.*
 - ✅ S.0 · A test of the whole flow with fake AI answers: import, links, promote, disprove, impact, as one run.  
   *`WholeFlowTests.cs`; what it found is in `phases/0-foundation.md`. Five things wait on the owner, as skipped facts.*
 - ⬜ S.1 · Links store a section's permanent id as well as its number.  
