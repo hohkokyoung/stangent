@@ -193,6 +193,72 @@ Ahead of Stangent because Stangent's discrepancy check failed its bar, with abou
 Ahead of Stangent because the review's main ask, "evidence provenance" (a proof trail for every finding), is already how this works.  
 *Partly: Stangent checks citations but records no evidence strength or commit per finding.*
 
+## 8. Proposed from comparing a fuller workflow (2026-11-04)
+
+All proposed, none decided. Stangent's own file layout stays; only the ideas count. Letters give a suggested order: seams first (S), then A, C and E.
+
+**Seams, first**
+
+- ⬜ S.0 · A test of the whole flow with fake AI answers: import, links, promote, disprove, impact, as one run.  
+  *No such test by name today; each part has its own. Recommend: do first, it costs almost nothing.*
+- ⬜ S.1 · Links store a section's permanent id as well as its number.  
+  *Links cite numbers, carried across on promote (D117). Keep the number for old hashes. Recommend: do.*
+- ⬜ S.2 · Import problems become structured: kind, section, detail.  
+  *`problems` are plain lines, and comments use a fixed text shape no product code reads back. `source-document` v3. Recommend: do before the report and questions.*
+- ⬜ S.3 · One set of import steps every format fills in, and ticket attachments use the same path.  
+  *Comments and tracked changes are Word only; `Pull.cs` converts `.docx` but not PDF, which D111 left open. Recommend: do.*
+- ⬜ S.4 · Connect or plainly label what Phase 1 and 0 built and nothing uses.  
+  *Only graph code reads `opens-screen` lines; `ran` evidence has no source; Tickets don't use the evidence shape. Recommend: label now, connect when a step needs it.*
+
+**Bringing a document in**
+
+- ⬜ A.1 · Re-read the same file with a newer build, through the candidate flow.  
+  *The same file reads `unchanged`, so 2.1's fixes never reach earlier imports. Recommend: do.*
+- ⬜ A.2 · One readable import report with a verdict: OK, OK with warnings, or failed.  
+  *Only a raw `problems` list today, 77 lines on a real PDF. Recommend: do after structured problems.*
+- ⬜ A.3 · Sensitivity labels stop the import, and a locked Word file gets its own stop with plain instructions.  
+  *Labels aren't checked; a locked `.docx` gets a generic `invalid_docx`. Recommend: do.*
+- ⬜ A.4 · When a Word file has no headings, list the bold lines that look like headings.  
+  *`no_structure` stops but doesn't say what to fix. It still never guesses. Recommend: do, small.*
+- ⬜ A.5 · Excel follows the same steps: each sheet a section, merged cells expanded, hidden sheets and comments listed, values shown with the formula noted, very large workbooks flagged.  
+  *Decided (D111), not built. These answer most of what D111 left to grill. Recommend: do after the seams.*
+- ⬜ A.6 · Ids for tables, pictures and attachments, kept in `document.json`.  
+  *Only sections have ids. Recommend: do with Excel.*
+- ⬜ A.7 · Embedded files converted, linked from their section, and their text checked with it. A locked or scanned one is kept and listed.  
+  *Listed only today. The section carries the attachment; the text stays out of `document.md`, so saved hashes hold. Sections that gain text re-run, which is paid. Recommend: do after Excel.*
+- ⬜ A.8 · A section's fingerprint includes its attachments.  
+  *A changed sheet with the same words reads `unchanged` today. Keep `textHash`; add a second hash. Recommend: do with attachments.*
+- ⬜ A.9 · A person approves the first import, in a spec-only PR.  
+  *It goes straight in today. Recommend: decide with D99's approval.*
+- ⬜ A.10 · `fsd outline` and `fsd show <section>`.  
+  *No command reads one section. Recommend: do, small.*
+- ⬜ A.11 · `fsd export`: one file per top-level heading, long chapters cut one level down, generated, never read back.  
+  *Nothing writes per-section files, and `document.json` stays the record. Recommend: do, small. Default to `.stangent/`, not committed.*
+
+**Checking the document against the app**
+
+- ⬜ C.1 · Every section is linked or marked "not in code" by a person, with its attachments listed.  
+  *Sections with no candidates go to the finder, but nothing proves all were covered. Recommend: do, by code.*
+- ⬜ C.2 · Compare table facts by code: fee tables, field lists, status codes against facts from the code.  
+  *Exact, no AI. API fields are in the graph (`maps-field`); enums, constants and seed data aren't. A second route to code beside pages, so it needs a decision against D68. No real FSD on a C# project to measure it. Recommend: pilot field lists first, on a real document.*
+- ⬜ C.3 · A decided finding becomes `recheck` or `gone`.  
+  *A finding that goes away and returns gets a new id today. Recommend: do.*
+- ⬜ C.4 · The link judge can say `partial` and `unclear`.  
+  *May cut false alarms. Changes prompts, so it needs a paid run. Recommend: with the re-score.*
+- ⬜ C.5 · BA decisions `accepted` and `not a difference`.  
+  *Recommend: do, small.*
+- ⬜ C.6 · Group small neighbouring sections into one unit when checking.  
+  *A rule split across two sections would be judged together. Unproven, and any size limit needs its own reason. Needs a paid run. Recommend: test after the re-score.*
+
+**Everyday use**
+
+- ⬜ E.1 · A status for a document: where it stands, what's waiting, who it waits on.  
+  *Doesn't need the BA workflow. Recommend: do.*
+- ⬜ E.2 · Ask "how does the app do X today?", answered from pages with citations.  
+  *No plugin command does this. Recommend: do, after the links are measured.*
+- ⬜ E.3 · Run one chapter and see its cost before the whole document.  
+  *`--only` and `disprove estimate` exist. Recommend: do, small.*
+
 ## Two caveats
 
 - Most of the accuracy evidence comes from one app and small samples (one chapter, 22 findings). Stangent is tested on more codebases.

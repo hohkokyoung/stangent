@@ -162,6 +162,33 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 7 | Coverage floor, real tools | 🟡 | 0, D28 | 0.4 for measuring |
 | 7 | No client data in the tool's repo | ⬜ | 0 | 0.3 |
 | 7 | Hooks never block, tested | ⬜ | plugin | only if hooks are added |
+| 8 | A test of the whole flow with fake AI answers | ⬜ | 0, 2 | S.0 |
+| 8 | Links store a section's permanent id as well as its number | ⬜ | 2b, D117 | S.1 |
+| 8 | Import problems become structured | ⬜ | 2b, D111, D116 | S.2 |
+| 8 | One set of import steps every format fills in, and ticket attachments use the same path | ⬜ | 2b, 3, D72, D111 | S.3 |
+| 8 | Connect or plainly label what Phase 1 and 0 built and nothing uses | ⬜ | 0, 1, 3, D115 | S.4 |
+| 8 | Re-read the same file with a newer build, through the candidate flow | ⬜ | 2b, D117 | A.1 |
+| 8 | One readable import report with a verdict | ⬜ | 2b, D111 | A.2 |
+| 8 | Sensitivity labels stop the import, and a locked Word file gets its own stop with plain in | ⬜ | 2b, D111 | A.3 |
+| 8 | When a Word file has no headings, list the bold lines that look like headings | ⬜ | 2b, D111 | A.4 |
+| 8 | Excel follows the same steps | ⬜ | D111 | A.5 |
+| 8 | Ids for tables, pictures and attachments, kept in `document.json` | ⬜ | 2b, D113 | A.6 |
+| 8 | Embedded files converted, linked from their section, and their text checked with it. A loc | ⬜ | 2b, 2c, D53, D111 | A.7 |
+| 8 | A section's fingerprint includes its attachments | ⬜ | 2b, D117 | A.8 |
+| 8 | A person approves the first import, in a spec-only PR | ⬜ | 2b, D99 | A.9 |
+| 8 | `fsd outline` and `fsd show <section>` | ⬜ | 2b | A.10 |
+| 8 | `fsd export` | ⬜ | 2b | A.11 |
+| 8 | Every section is linked or marked "not in code" by a person, with its attachments listed | ⬜ | 2b, 2c, D53 | C.1 |
+| 8 | Compare table facts by code | ⬜ | 1, 2b, D68, D56 | C.2 |
+| 8 | A decided finding becomes `recheck` or `gone` | ⬜ | 2b, D58, D118 | C.3 |
+| 8 | The link judge can say `partial` and `unclear` | ⬜ | 2b, 2c, D53 | C.4 |
+| 8 | BA decisions `accepted` and `not a difference` | ⬜ | 2b, D58 | C.5 |
+| 8 | Group small neighbouring sections into one unit when checking | ⬜ | 2b, 2c | C.6 |
+| 8 | A status for a document | ⬜ | plugin, 2b | E.1 |
+| 8 | Ask "how does the app do X today?", answered from pages with citations | ⬜ | plugin, 2a | E.2 |
+| 8 | Run one chapter and see its cost before the whole document | ⬜ | plugin, 2b | E.3 |
+
+**Suggested order for §8, not decided:** S.0, then S.1 and S.2, then S.3, then Excel and attachments (A.5 to A.8), then C.1, then the C.2 pilot once its decision is made. The re-score comes before C.4 and C.6. Other A and E items fit in where they're small.
 
 ## Phase files
 

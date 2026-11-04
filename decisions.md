@@ -2306,6 +2306,7 @@ Reverses D62's "rejected: a second check on every finding". Follows D18, D53, D5
 
 ## Open questions
 
+- **Table facts compared by code, a second route to code (proposed 2026-11-04, `improvements.md` §8 C.2):** everything else reaches code through pages, and D68 kept direct FSD-to-code links out as noisy. Recommended: allow exact comparison as its own labelled route, kept out of the impact walk like 📜 lines, after a pilot on field lists with a real document.
 - **Waiting on the owner after the overhaul (2026-11-04):**
   (a) Confirm `improvements.md`, and the order after 2.x.
   (b) The fresh check on 2.5 and 2.6 is done, with its fix round (`phases/2b-fsd.md`, D119's note).
