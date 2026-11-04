@@ -493,6 +493,63 @@ public class FsdLinkTests
     }
 
     [Fact]
+    public void A_requirement_the_judge_leaves_out_after_its_retry_is_named_in_the_run()
+    {
+        using var app = WithRequirements();
+        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
+        Write(app, step, ReqLinks(ReqLink("gap", "R-0001")));
+        step = LinkRun.Check(app.Pages(), app.Repo, app.Graph, "shop", "1", null);
+        Assert.Equal("retry", step.Status);
+        Write(app, step, ReqLinks(ReqLink("gap", "R-0001")));
+        Assert.Equal("recorded", LinkRun.Check(app.Pages(), app.Repo, app.Graph, "shop", "1", null).Status);
+        var unanswered = LinkRun.LoadRuns(app.Root)["shop#1"]!["unanswered"]!.AsArray().Select(r => (string)r!).ToList();
+        Assert.Contains("R-0002", unanswered);
+        Assert.DoesNotContain("R-0001", unanswered);
+    }
+
+    [Fact]
+    public void When_the_finder_picks_the_same_pages_the_judge_isnt_paid_again()
+    {
+        using var app = App();
+        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "2");
+        Assert.Equal(LinkRun.Finder, step.Agent);
+        Write(app, step, new JsonObject { ["candidates"] = new JsonArray(new JsonObject { ["page"] = "page:/orders", ["reason"] = "points" }) });
+        step = LinkRun.Check(app.Pages(), app.Repo, app.Graph, "shop", "2", null);
+        Assert.Equal(LinkRun.Judge, step.Agent);
+        Write(app, step, new JsonObject { ["links"] = new JsonArray(new JsonObject { ["state"] = "gap", ["fsdQuote"] = "Customers earn one point per dollar.", ["note"] = "not shown" }) });
+        Assert.Equal("recorded", LinkRun.Check(app.Pages(), app.Repo, app.Graph, "shop", "2", null).Status);
+
+        // The finder's input moved (a new page in the list), so it runs again. It picks the same page: the judge's inputs are unchanged.
+        var runs = LinkRun.LoadRuns(app.Root);
+        runs["shop#2"]!["finderInputs"] = "something older";
+        File.WriteAllText(LinkRun.RunsFile(app.Root), Stangent.Core.CanonicalJson.Serialize(runs));
+        step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "2");
+        Assert.Equal(LinkRun.Finder, step.Agent);
+        Write(app, step, new JsonObject { ["candidates"] = new JsonArray(new JsonObject { ["page"] = "page:/orders", ["reason"] = "points" }) });
+        step = LinkRun.Check(app.Pages(), app.Repo, app.Graph, "shop", "2", new Usage("m", 1, 10, 0, 0, 1, 0.5, 1));
+        Assert.Equal(("current", "none"), (step.Status, step.Action));
+        Assert.Equal(0.5, Usage.FromJson(LinkRun.LoadRuns(app.Root)["shop#2"]!["finder"]).CostUsd);
+    }
+
+    [Fact]
+    public void A_requirement_link_cant_be_disputed_into_undocumented()
+    {
+        using var app = WithRequirements();
+        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
+        Write(app, step, ReqLinks(ReqLink("gap", "R-0001"), ReqLink("gap", "R-0002"), ReqLink("agree", "R-0003", "page:/orders", "A1", "The Place order button posts the order.")));
+        step = LinkRun.Check(app.Pages(), app.Repo, app.Graph, "shop", "1", null);
+        Assert.Equal(LinkRun.Checker, step.Agent);
+        Write(app, step, new JsonObject { ["checks"] = new JsonArray(new JsonObject
+        {
+            ["link"] = "K1", ["verdict"] = "dispute", ["state"] = "undocumented", ["page"] = "page:/orders", ["statement"] = "A1",
+            ["pageQuote"] = "The Place order button posts the order.", ["note"] = "not in the FSD",
+        }) });
+        Assert.Equal("recorded", LinkRun.Check(app.Pages(), app.Repo, app.Graph, "shop", "1", null).Status);
+        var entry = TraceFile.Load(app.Root)["entries"]!.AsArray().Single(e => (string?)e!["fsd"]!["requirement"] == "R-0003")!;
+        Assert.Equal(("agree", "disputed"), ((string)entry["state"]!, (string)entry["check"]!));
+    }
+
+    [Fact]
     public void Two_requirements_from_one_sentence_each_get_their_own_entry()
     {
         using var app = App();

@@ -178,7 +178,10 @@ public static class LinkRun
                     r["candidatesBy"] = "ai";
                 });
                 var runs = LoadRuns(repo.Root);
-                return PrepareJudge(set, repo, index, section, doc, sectionId, picked, "ai", null, runs, usageAll);
+                // The finder ran because the page list changed. If it picked the same pages, the judge's inputs are the same: no second AI call (D18).
+                var judged = PrepareJudge(set, repo, index, section, doc, sectionId, picked, "ai", runs[Key(doc, sectionId)] as JsonObject, runs, usageAll);
+                if (judged.Status == "current") UpdateRun(repo.Root, Key(doc, sectionId), r => MergeInto(r, usageAll));
+                return judged;
             }
             case "judge":
             {
@@ -198,6 +201,7 @@ public static class LinkRun
                     if (requirements is not null)
                         missing = [.. requirements.Select(r => (string)r["id"]!).Where(id => !links.Any(l => (string?)l.Link["requirement"] == id)).Select(id => $"{id} has no link: give every requirement one, or a gap")];
                 }
+                state["unanswered"] = new JsonArray([.. missing.Select(m => (JsonNode)m.Split(' ')[0])]);
                 var linkErrors = links.SelectMany((l, i) => l.Errors.Select(e => $"links[{i}]: {e}")).Concat(missing).ToList();
                 if (errors.Count > 0 || linkErrors.Count > 0)
                 {
@@ -263,7 +267,9 @@ public static class LinkRun
                     // A requirement's link keeps its requirement and the quote code took from it.
                     if (link["requirement"] is not null) { raised["requirement"] = link["requirement"]!.DeepClone(); raised["fsdQuote"] = link["fsdQuote"]!.DeepClone(); }
                     if ((string)raised["state"]! == "gap") { raised.Remove("pageQuote"); raised.Remove("statement"); }
-                    if (LinkChecks.Check(raised, section, candidates!, index!, nodes).Count == 0) final = raised;
+                    // A requirement's link can't become undocumented: that means the FSD doesn't say it, and this requirement quotes the FSD.
+                    var forRequirement = link["requirement"] is not null && (string)raised["state"]! == "undocumented";
+                    if (!forRequirement && LinkChecks.Check(raised, section, candidates!, index!, nodes).Count == 0) final = raised;
                     else final = (JsonObject)link.DeepClone(); // its evidence failed: stays "agree", disputed, never bulk-approved
                 }
             }
@@ -285,13 +291,16 @@ public static class LinkRun
             r["links"] = entries.Count;
             r["disputed"] = disputed;
             r["unchecked"] = unchecked_;
+            // A requirement the judge left out even after its retry has no entry at all: say so, or it reads as nothing to see.
+            if (state["unanswered"] is JsonArray { Count: > 0 } unanswered) r["unanswered"] = unanswered.DeepClone();
+            else r.Remove("unanswered");
         });
         Stage(root, state, "done", "recorded");
         Save(work, state);
         return new RunStep("recorded", "none");
     }
 
-    static RunStep? Retry(string root, string work, JsonObject state, List<string> errors, string agent, string bundle, string output)
+    internal static RunStep? Retry(string root, string work, JsonObject state, List<string> errors, string agent, string bundle, string output)
     {
         if ((bool)state["retryUsed"]!) return null;
         state["retryUsed"] = true;
@@ -320,7 +329,7 @@ public static class LinkRun
         return new RunStep("failed", "none", Errors: errors);
     }
 
-    static RunStep Step(string root, string work, string agent, string bundle, string output, string label) =>
+    internal static RunStep Step(string root, string work, string agent, string bundle, string output, string label) =>
         new(agent is Judge or RequirementJudge ? "judge" : agent == Finder ? "find" : "confirm", agent is Judge or RequirementJudge ? "judge" : agent == Finder ? "find" : "confirm", agent,
             $"{label}: {Rel(root, Path.Combine(work, bundle))}\nWrite your JSON to: {Rel(root, Path.Combine(work, output))}", Rel(root, Path.Combine(work, output)));
 
@@ -383,7 +392,7 @@ public static class LinkRun
 
     public static JsonObject LoadRuns(string root) => PageRun.LoadJson(RunsFile(root)) as JsonObject ?? new JsonObject();
 
-    static void UpdateRun(string root, string key, Action<JsonObject> change)
+    internal static void UpdateRun(string root, string key, Action<JsonObject> change)
     {
         using var _ = Lock(root);
         var runs = LoadRuns(root);
@@ -395,7 +404,7 @@ public static class LinkRun
         Quotes.WriteAtomic(RunsFile(root), CanonicalJson.Serialize(runs));
     }
 
-    static void MergeInto(JsonObject run, JsonObject? usage)
+    internal static void MergeInto(JsonObject run, JsonObject? usage)
     {
         if (usage is null) return;
         foreach (var (role, u) in usage) run[role] = u?.DeepClone();
@@ -422,7 +431,7 @@ public static class LinkRun
 
     static void Save(string work, JsonObject state) => File.WriteAllText(Path.Combine(work, "state.json"), CanonicalJson.Serialize(state));
     static string Read(string work, string file) => File.Exists(Path.Combine(work, file)) ? File.ReadAllText(Path.Combine(work, file)) : "";
-    static string Rel(string root, string path) => Path.GetRelativePath(root, path).Replace('\\', '/');
+    internal static string Rel(string root, string path) => Path.GetRelativePath(root, path).Replace('\\', '/');
 
     /// <summary>The first sentence of a section, as it appears in its text: the quote for a gap found by code.</summary>
     public static string FirstSentence(string text)
@@ -434,7 +443,7 @@ public static class LinkRun
 
     // ---- bundles ----
 
-    static string SectionBlock(JsonObject section, string doc) =>
+    internal static string SectionBlock(JsonObject section, string doc) =>
         $"# The FSD section\n\n- document: `{doc}`\n- section: `{(string)section["id"]!}` {(string)section["title"]!}\n\nIts text, exactly:\n\n````text\n{(string)section["text"]!}\n````\n";
 
     static string FinderBundle(JsonObject section, PageSet set, SpecIndex index)
