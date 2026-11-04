@@ -1,4 +1,4 @@
-# The spec (Phase 2: contracts `reference-page`, `source-document`, `trace-links`)
+# The spec (Phase 2: contracts `reference-page`, `reference-lines`, `source-document`, `trace-links`)
 
 "The spec" is three layers (D52), each with its own check:
 
@@ -32,7 +32,7 @@ runs the plugin's subagents instead, each allowed to read and write only under `
 (`--permission-mode dontAsk --allowedTools "Read(.stangent/**)" "Edit(.stangent/**)"`). Files
 drivers share are written whole (temp file, then rename) under a lock. A section whose candidate pages have no recorded
 version is reported as failed, never turned into a gap. `ai.enabled: false` stops every `prepare` with exit
-code 4 (D24); `spec stale`, `fsd import`, `fsd diff`, `fsd resolve`, `fsd promote`, `fsd discard`, `fsd candidates`, `fsd undocumented` and `trace check` are code only.
+code 4 (D24); `spec stale`, `spec cite`, `fsd import`, `fsd diff`, `fsd resolve`, `fsd promote`, `fsd discard`, `fsd candidates`, `fsd undocumented` and `trace check` are code only.
 
 ## Reference pages (2a, D54, D55)
 
@@ -50,7 +50,24 @@ code 4 (D24); `spec stale`, `fsd import`, `fsd diff`, `fsd resolve`, `fsd promot
   lines, the source of each method and component, what it couldn't see, and the page's previous version. Its input
   hash covers everything but the previous version. Over `maxBundleChars` → listed as failed, never cut.
 - **The writer** (`stangent-page-writer`) returns sections `shows`, `actions` (with the `endpoints` they call), `rules`
-  and `sideEffects`; every statement cites symbol ids. Code numbers them S1…, A1…, R1…, E1….
+  and `sideEffects`; every statement cites symbol ids. Code gives them ids S1…, A1…, R1…, E1…. While a run is under way, the writer and the verifier see
+  them numbered by place, as before; the permanent ids go on when the page is recorded.
+- **Statement ids (2.3, D118)** stay with their statements. A page's ids at adoption become permanent, so nothing already cited moves. Each page has a ledger beside it, `<path>.ids.json`
+  (`docs/foundation.md`). When a page is recorded again, code matches by exact signals, with no score:
+
+  | The new statement | Its id |
+  |---|---|
+  | The same words, whitespace normalised, in any section | Kept. An id's letter says where the statement began. Repeated words pair off in order, the same section first. |
+  | Other words, the same section, exactly the same cited symbols, alone on both sides among what's left | Kept. Its text changed, so whatever quoted it drops back anyway. |
+  | Anything else | The next unused number in its letter. |
+
+  An old id nothing claimed is marked removed in the ledger and never comes back. A link citing it isn't re-pointed: its statement is gone, so `trace check` lists it in `staleQuotes` and `retiredStatements`, and `--fix` drops its decision.
+  A verifier's finding is recorded on its statement's final id, or `(removed in the fix)`.
+- **Line citations (2.3, D118; `schemas/reference-lines.v1.json`):** code fills them from `graph where`, never the AI. `<path>.lines.json`, beside the page, gives each cited symbol its `file`, `start` and `end`,
+  and the file gives the graph's `commit`. Nothing hashes that file, and it changes nothing in the page's JSON. The Markdown lists them under "Cited symbols".
+  - A graph with a dirty tree writes no citation at all, even for files that didn't differ: `note` says why, and so does the page. So does a graph with no commit, or one too old to say whether it was clean.
+  - A symbol in a file the commit doesn't hold, or no longer in the graph, has `why` instead. So does a symbol the graph holds only by file: it keeps `file`, with no lines.
+- **`stangent spec cite [page]`** fills citations for pages already recorded and adopts their ids. Code only, and it needs the graph, not the source. It doesn't touch a page's JSON, so nothing goes stale. It renders the Markdown again, and there a link goes only to a page that's recorded. It reports `citations` and distinct `symbols`, with and without lines, and `why`.
 - **The verifier** (`stangent-page-verifier`, fresh context, bundle and finished page only) flags statements the slice
   doesn't support: `contradicted` (with the contradicting line, which code checks is in the slice: at least 12
   characters, and two tokens or a whole line (D103), so a fragment like `return` is no evidence; otherwise the finding is dropped) or

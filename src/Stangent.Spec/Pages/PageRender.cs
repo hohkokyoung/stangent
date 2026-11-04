@@ -10,7 +10,8 @@ public static class PageRender
         [("shows", "Shows"), ("actions", "Actions"), ("rules", "Rules"), ("sideEffects", "Side effects")];
 
     /// <param name="pathOf">The page path for an id that has a page of its own (endpoints, shared components), or null.</param>
-    public static string Markdown(JsonObject page, Func<string, string?> pathOf)
+    /// <param name="lines">The page's line citations (<see cref="PageLines"/>), or null before it has any.</param>
+    public static string Markdown(JsonObject page, Func<string, string?> pathOf, JsonObject? lines = null)
     {
         var md = new StringBuilder();
         var self = pathOf((string)page["id"]!) ?? "";
@@ -56,7 +57,17 @@ public static class PageRender
         }
 
         md.Append("\n## Cited symbols\n\n");
-        for (var i = 0; i < cited.Count; i++) md.Append($"{i + 1}. {Link(cited[i], pathOf, self)}\n");
+        var wholePage = (string?)lines?["note"];
+        if (wholePage is not null) md.Append($"No lines are cited: {wholePage}.\n\n");
+        else if ((string?)lines?["commit"] is { } at) md.Append($"Lines are at commit {Short(at)}, filled by code from the graph.\n\n");
+        for (var i = 0; i < cited.Count; i++)
+        {
+            md.Append($"{i + 1}. {Link(cited[i], pathOf, self)}");
+            var symbol = lines?["symbols"]?[cited[i]] as JsonObject;
+            if (PageLines.Cite(symbol) is { } cite) md.Append($" · `{cite}`");
+            if (wholePage is null && (string?)symbol?["why"] is { } why) md.Append($" · no lines: {why}");
+            md.Append('\n');
+        }
 
         var g = page["generated"]!;
         md.Append($"\n<sub>commit {Short((string)g["commit"]!)} · inputs {Short((string)g["bundleHash"]!)} · slice of {(int)g["slice"]!["points"]!} points, ");

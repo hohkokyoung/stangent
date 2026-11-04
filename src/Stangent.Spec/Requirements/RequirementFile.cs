@@ -71,6 +71,18 @@ public static partial class RequirementFile
         return ledger.Issue(kind, Format(kind));
     }
 
+    /// <summary>Marks retired ids removed in the ledger (2.3). Doing it again changes nothing. An id the ledger can't know, one hand-written
+    /// in another format, is left alone: it can't be issued anyway, and it mustn't stop recording a paid run.</summary>
+    public static void MarkRetired(string root, IEnumerable<string> ids)
+    {
+        var ledger = new PermanentIds(IdsFile(root), Path.Combine(root, ".stangent", "req", "ids.lock"));
+        TakeOverOldIds(root, ledger);
+        RaiseToLiveIds(root, ledger);
+        foreach (var id in ids)
+            try { ledger.Remove(id[..1], id); }
+            catch (StangentException e) when (e.Code == "unknown_id") { }
+    }
+
     static string Format(string kind) => kind + "-{0:D4}";
 
     /// <summary>A repo from before the ledger kept each kind's last number in <c>ids.yaml</c>. Raising only goes up, so two runs

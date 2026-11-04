@@ -12,6 +12,8 @@ public sealed class SpecIndex
 {
     public required IReadOnlyDictionary<(string Doc, string Section), JsonObject> Sections { get; init; }
     public required IReadOnlyDictionary<string, JsonObject> Pages { get; init; }
+    /// <summary>Where each recorded page's JSON lives, for what's kept beside it: its id ledger and line citations.</summary>
+    public IReadOnlyDictionary<string, string> PageFiles { get; init; } = new Dictionary<string, string>();
 
     public static SpecIndex Load(string root)
     {
@@ -20,16 +22,24 @@ public sealed class SpecIndex
             foreach (var s in doc["sections"]!.AsArray().OfType<JsonObject>())
                 sections[((string)doc["id"]!, (string)s["id"]!)] = s;
         var pages = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
+        var files = new Dictionary<string, string>(StringComparer.Ordinal);
         var dir = Path.Combine(root, "specs", "reference");
         if (Directory.Exists(dir))
             foreach (var file in Directory.EnumerateFiles(dir, "*.json", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
                 if (Path.GetFileName(file) != "failed.json" && JsonNode.Parse(File.ReadAllText(file)) is JsonObject p && p["sections"] is not null)
+                {
                     pages[(string)p["id"]!] = p;
-        return new SpecIndex { Sections = sections, Pages = pages };
+                    files[(string)p["id"]!] = file;
+                }
+        return new SpecIndex { Sections = sections, Pages = pages, PageFiles = files };
     }
 
     public JsonObject? Statement(string page, string statement) =>
         Pages.TryGetValue(page, out var p) ? PageChecks.Statements(p).FirstOrDefault(s => s.Id == statement).Statement : null;
+
+    /// <summary>Whether a page retired this statement id (2.3): it's gone for good, and nothing is re-pointed.</summary>
+    public bool Retired(string root, string page, string statement) => PageFiles.TryGetValue(page, out var file) && !string.IsNullOrEmpty(statement)
+        && File.Exists(StatementIds.LedgerFile(file)) && StatementIds.Ledger(root, file).Removed(statement[..1]).Contains(statement);
 }
 
 /// <summary>
@@ -46,13 +56,14 @@ public static class TraceCheck
         var trace = TraceFile.Load(root);
         var problems = new List<string>();
         problems.AddRange(SchemaRegistry.Embedded.Validate(TraceFile.Schema, trace.ToJsonString()).Select(e => $"schema: {e}"));
-        if (problems.Count > 0) return Report(trace, problems, [], []);
+        if (problems.Count > 0) return Report(trace, problems, [], [], []);
 
         var index = SpecIndex.Load(root);
         var nodes = graph?.AllNodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
         var typedBefore = (baseTrace?["entries"]?.AsArray() ?? []).OfType<JsonObject>().ToDictionary(e => (string)e["id"]!, e => (string?)e["decided_by"]);
         var baseByLink = TraceFile.ByLink(baseTrace?["entries"]?.AsArray() ?? []);
         var stale = new List<string>();
+        var retired = new List<JsonNode>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var requirements = new Lazy<HashSet<string>>(() => [.. Stangent.Spec.Requirements.RequirementFile.Docs(root).SelectMany(d => Stangent.Spec.Requirements.RequirementFile.Features(root, d))
             .SelectMany(f => f["requirements"]!.AsArray().Select(r => (string)r!["id"]!))]);
@@ -85,6 +96,8 @@ public static class TraceCheck
                 else if (page["statement"] is { } st)
                 {
                     var statement = index.Statement((string)page["id"]!, (string)st!);
+                    if (statement is null && index.Retired(root, (string)page["id"]!, (string)st!))
+                        retired.Add(new JsonObject { ["entry"] = id, ["page"] = (string)page["id"]!, ["statement"] = (string)st! });
                     if (statement is null || (page["quote"] is { } pq && !Quotes.InText((string)pq!, (string)statement["text"]!)))
                         quotesMatch = false;
                     else if (nodes is not null)
@@ -107,10 +120,10 @@ public static class TraceCheck
         if (fix && stale.Count > 0) TraceFile.Save(root, trace);
         foreach (var id in undecided)
             problems.Add($"{id}: a quote no longer matches the FSD or the page, so its decision must drop back to undecided (run `stangent trace check --fix`)");
-        return Report(trace, problems, stale, undecided);
+        return Report(trace, problems, stale, undecided, retired);
     }
 
-    static JsonObject Report(JsonObject trace, List<string> problems, List<string> stale, List<string> undecided)
+    static JsonObject Report(JsonObject trace, List<string> problems, List<string> stale, List<string> undecided, List<JsonNode> retired)
     {
         var entries = trace["entries"]?.AsArray().OfType<JsonObject>().ToList() ?? [];
         return new JsonObject
@@ -125,6 +138,7 @@ public static class TraceCheck
             },
             ["problems"] = new JsonArray([.. problems.Select(p => (JsonNode)p)]),
             ["staleQuotes"] = new JsonArray([.. stale.Select(s => (JsonNode)s)]),
+            ["retiredStatements"] = new JsonArray([.. retired]),
         };
     }
 

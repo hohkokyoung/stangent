@@ -2275,6 +2275,15 @@ Follows D15, D58 and D99, and D20 for the contract.
 **Why:** a new chapter changes what `1` means, and a wrong match would carry an approval to the wrong rule, silently. A person reading one doubtful line costs far less, and rules with no numbers can't be tuned to the document in hand.
 **Cost:** a split or merge always takes a person. So does a heavily edited section that kept a sentence, and a repeated sentence adds noise. A renamed section's runs go again, and a renumbered section's finder too. Links still cite numbers, so the two ids live side by side until a paid re-run is due. It's proven only on a planted edit, not a real version change (D56).
 
+## D118 · What counts as the same statement, and where line citations live — 2026-11-04 (assistant's call, owner asleep)
+Follows D54, D62 and D117's rule of exact signals, and D18 and D20. The hard bar: saved paid work stays valid.
+- **The same statement** is the same words after normalising whitespace, in any section; or a rephrase with exactly the same cited symbols, in the same section, alone on both sides among what the first rule left. Anything else gets a new id, and the old one is retired for good. No score and no threshold.
+- **Today's numbers stay.** A page's ids at adoption become permanent, so nothing cited moves. A writer's output still has none, and it's numbered by place while a run is under way: the prompts and the verifier's input don't change. Ids go on when a page is recorded.
+- **Citations live beside the page,** in `<path>.lines.json`, not in its JSON. The link judge's input is built from page text, and the writer sees the previous page whole, so a file nothing reads for a hash is the safe place. `reference-page` keeps its shape and stays v1. `reference-lines` v1 is new.
+- **A dirty tree writes no citation at all,** stricter than `graph where`, which still cites an untouched file. A page either rests on the commit it names or says it doesn't.
+**Why:** links have to outlive a re-run, and every paid page and link must stay valid. Exact signals can't move a decision to the wrong statement: a rephrase that keeps its id has new words, so what quoted it drops back regardless.
+**Cost:** a rephrase that also changes a symbol, or has a rival in its section, gets a new id. An id's letter can disagree with its section after a move. One small dirty file stops a whole build's citations until the graph is rebuilt on a clean tree. Two more files per page.
+
 ## Open questions
 
 - **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that

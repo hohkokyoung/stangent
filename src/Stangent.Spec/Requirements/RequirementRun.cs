@@ -581,6 +581,7 @@ public static class RequirementRecord
             ["retired"] = new JsonArray([.. retired]),
         };
         RequirementFile.Save(root, updated);
+        RequirementFile.MarkRetired(root, retired.Select(r => (string)r!["id"]!));
 
         // A question that comes back keeps its id and any answer; one that doesn't is closed, never deleted.
         var questions = RequirementFile.Questions(root, doc);

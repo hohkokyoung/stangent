@@ -58,6 +58,16 @@ static class SpecCommands
             new JsonObject { ["text"] = Stangent.Core.SchemaRegistry.EmbeddedText(pr.GetValue(schemaArg)!) }, r => (string)r!["text"]!));
         spec.Subcommands.Add(schema);
 
+        var citePage = new Argument<string?>("page") { Description = "One recorded page's id or path; every recorded page if left out.", Arity = ArgumentArity.ZeroOrOne };
+        var cite = new Command("cite", "Fill recorded pages' line citations from the graph and make their statement ids permanent. Code only: no AI, and no page's JSON changes (2.3).") { citePage };
+        cite.SetAction(pr => Cli.Run(pr, "spec cite", ctx =>
+        {
+            var report = PageLines.Refresh(ctx.Repo.Root, Cli.LoadGraph(ctx), pr.GetValue(citePage));
+            ctx.Span.Attributes["stangent.artifact.count"] = (int)report["pages"]!;
+            return report;
+        }));
+        spec.Subcommands.Add(cite);
+
         var retryFailedOption = new Option<bool>("--retry-failed") { Description = "Try again a page that failed with these same inputs." };
         var prepare = new Command("prepare", "Write a page's bundle and say what runs next: nothing if its inputs are unchanged (D18), else the writer (D60).") { pageArg, retryFailedOption };
         prepare.SetAction(pr => Cli.Run(pr, "spec prepare", ctx =>

@@ -26,6 +26,17 @@ public sealed record SymbolLines(
         return [.. matches.Select(n => Of(graph, n, n.Kind == NodeKind.Type ? PartsElsewhere(n, members, nodes) : []))];
     }
 
+    /// <summary>
+    /// Many symbols, by exact graph id, for a caller citing a whole set: the same answer as <see cref="Where"/> without walking the
+    /// graph for each. Null when the graph has no such point.
+    /// </summary>
+    public static Func<string, SymbolLines?> Lookup(CodeGraph graph)
+    {
+        var nodes = graph.AllNodes.GroupBy(n => n.Id).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        var members = graph.AllEdges.Where(e => e.Kind == EdgeKind.Contains).ToLookup(e => e.Source, StringComparer.Ordinal);
+        return id => nodes.GetValueOrDefault(id) is { } n ? Of(graph, n, n.Kind == NodeKind.Type ? PartsElsewhere(n, members, nodes) : []) : null;
+    }
+
     /// <summary>The commit if it's a real one: a graph built outside git has none.</summary>
     public static string? CommitOf(CodeGraph graph) =>
         graph.Commit.Length == 40 && graph.Commit.All(Uri.IsHexDigit) ? graph.Commit.ToLowerInvariant() : null;

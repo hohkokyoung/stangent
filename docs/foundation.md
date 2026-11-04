@@ -44,9 +44,11 @@ same id. Commit the ledger; ignore the lock. A damaged file stops the call, beca
 Requirement ids use it (D114): `RequirementFile.NextId` issues `F-`, `R-`, `D-`, `J-`, `S-` and `Q-` from
 `specs/requirements/ids.json`. The lock is `.stangent/req/ids.lock`, passed in, so it stays out of the committed folder. A repo
 with the old `ids.yaml` carries on from its numbers: the counter is taken over once and the file removed. `Raise` only goes up,
-so two runs doing this together can't give an id out twice. A retired requirement isn't marked `Remove`d yet; that's 2.3.
+so two runs doing this together can't give an id out twice. A retired requirement, definition, journey or scenario is marked `Remove`d when its feature is saved, along with any retired earlier (2.3).
 
 Section ids use it (D117): `S-0001`, per document, in `specs/fsd/<doc>/ids.json`, with the lock in `.stangent/fsd/<doc>/`. A removed section's id is marked `Remove`d.
+
+Statement ids use it (2.3, D118): `S1`, `A1`, `R1`, `E1`, one scope per letter, per page, in `specs/reference/<path>.ids.json`, with the lock at `.stangent/spec/ids.lock`. `docs/spec.md` has the matching.
 
 `PermanentIds` itself starts fresh when its file is absent. `NextId` guards against that: before each id it raises every kind to
 the highest id in the feature and question files, retired ones included, so a new id is beyond them and a recreated ledger records

@@ -33,6 +33,8 @@ public sealed class PageSet
     public required SpecSettings Settings { get; init; }
     /// <summary>The commit the graph was built from: what a recorded page says it describes.</summary>
     public required string Commit { get; init; }
+    /// <summary>The graph itself: where a recorded page's line citations come from.</summary>
+    public required CodeGraph Graph { get; init; }
 
     Dictionary<string, PageDef>? byKey;
 
@@ -123,7 +125,7 @@ public static partial class PageList
         return new PageSet
         {
             Pages = [.. pages.OrderBy(p => KindOrder(p.Kind)).ThenBy(p => p.Id, StringComparer.Ordinal)],
-            Slices = slices, Builder = builder, Source = source, Settings = settings, Commit = graph.Commit,
+            Slices = slices, Builder = builder, Source = source, Settings = settings, Commit = graph.Commit, Graph = graph,
         };
     }
 

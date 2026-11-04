@@ -33,15 +33,22 @@ public static class PageChecks
         return first > 0 && last > first ? t[(first + 1)..last] : t;
     }
 
-    /// <summary>The page's statements with the ids code gives them: S1… shows, A1… actions, R1… rules, E1… side effects.</summary>
+    public static string Letter(string section) => Prefix[section];
+
+    /// <summary>The page's statements with their ids. A recorded page holds its own, which stay with their statements (2.3). A writer's
+    /// output has none, so while a run is under way they're numbered by place: S1… shows, A1… actions, R1… rules, E1… side effects.</summary>
     public static IEnumerable<(string Section, string Id, JsonObject Statement)> Statements(JsonObject page)
     {
         foreach (var section in Sections)
         {
-            var list = page[section] as JsonArray ?? page["sections"]?[section] as JsonArray ?? [];
+            var working = page[section] as JsonArray;
+            var list = working ?? page["sections"]?[section] as JsonArray ?? [];
             var i = 0;
             foreach (var s in list.OfType<JsonObject>())
-                yield return (section, Prefix[section] + ++i, s);
+            {
+                i++;
+                yield return (section, (working is null ? (string?)s["id"] : null) ?? Prefix[section] + i, s);
+            }
         }
     }
 

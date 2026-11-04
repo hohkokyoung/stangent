@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Stangent.Core;
 using Stangent.Core.State;
+using Stangent.Graph;
 
 namespace Stangent.Spec.Pages;
 
@@ -167,6 +168,7 @@ public static class PageRun
                 state["dropped"] = dropped;
                 state["findings"] = new JsonArray([.. kept.Select(f => (JsonNode)FindingJson(f))]);
                 if (kept.Count == 0) return Record(set, paths, page, state, work, bundle);
+                state["verified"] = staged.DeepClone();
                 Stage(paths, page, state, "fix", "the verifier found problems");
                 state["fixUsed"] = true;
                 Save(work, state);
@@ -243,14 +245,19 @@ public static class PageRun
         var staged = (JsonObject)state["staged"]!;
         var findings = FindingsFrom(state);
         var resolutions = (staged["resolutions"] as JsonArray ?? []).OfType<JsonObject>().ToDictionary(r => (string)r["finding"]!, r => r);
+        // Ids stay with their statements (2.3). The ledger only changes here, when a page is recorded.
+        var fresh = StatementRef.Of(staged);
+        var ids = StatementIds.Assign(LoadJson(paths.PageJson(page)) as JsonObject, fresh, StatementIds.Ledger(paths.Root, paths.PageJson(page))).Ids;
+        var place = PageChecks.Statements(staged).Select((s, i) => (s.Statement, i)).ToDictionary(x => x.Statement, x => x.i);
         var sections = new JsonObject();
         foreach (var section in PageChecks.Sections)
             sections[section] = new JsonArray([.. PageChecks.Statements(staged).Where(s => s.Section == section).Select(s =>
             {
-                var st = new JsonObject { ["id"] = s.Id, ["text"] = s.Statement["text"]!.DeepClone(), ["cites"] = s.Statement["cites"]!.DeepClone() };
+                var st = new JsonObject { ["id"] = ids[place[s.Statement]], ["text"] = s.Statement["text"]!.DeepClone(), ["cites"] = s.Statement["cites"]!.DeepClone() };
                 if (s.Statement["endpoints"] is JsonArray { Count: > 0 } eps) st["endpoints"] = eps.DeepClone();
                 return (JsonNode)st;
             })]);
+        var findingOn = FindingStatements(state, fresh, ids);
         var slice = set.Slices[page.Id];
         var record = new JsonObject
         {
@@ -264,6 +271,7 @@ public static class PageRun
                 {
                     var r = resolutions[f.Id];
                     var o = FindingJson(f);
+                    o["statement"] = findingOn.GetValueOrDefault(f.Statement) ?? RemovedInFix;
                     o["outcome"] = r["outcome"]!.DeepClone();
                     o["reason"] = r["reason"]!.DeepClone();
                     if (r["quote"] is { } q && (string)r["outcome"]! == "rejected") o["supportQuote"] = q.DeepClone();
@@ -283,11 +291,24 @@ public static class PageRun
             throw new StangentException("invalid_page", "The recorded page broke reference-page v1 (a stangent bug).", ExitCodes.Failed, errors);
         Directory.CreateDirectory(Path.GetDirectoryName(paths.PageJson(page))!);
         Quotes.WriteAtomic(paths.PageJson(page), CanonicalJson.Serialize(record));
-        Quotes.WriteAtomic(paths.PageMarkdown(page), PageRender.Markdown(record, id => set.Find(id) is { } p && p.Id == id ? p.Path : null));
+        var lines = PageLines.Build(record, set.Graph, SymbolLines.Lookup(set.Graph));
+        PageLines.Write(paths.PageJson(page), lines);
+        Quotes.WriteAtomic(paths.PageMarkdown(page), PageRender.Markdown(record, id => set.Find(id) is { } p && p.Id == id ? p.Path : null, lines));
         ClearFailed(paths, page);
         Stage(paths, page, state, "done", "recorded");
         Save(work, state);
         return new RunStep("recorded", "none");
+    }
+
+    /// <summary>What a verifier's finding says when its statement went in the writer's fix: a number here could be another statement's.</summary>
+    const string RemovedInFix = "(removed in the fix)";
+
+    /// <summary>The verifier saw statements numbered by place, and the writer may then have changed them: each number it saw, to the id
+    /// its statement was recorded under, by the same matching ids use.</summary>
+    static Dictionary<string, string> FindingStatements(JsonObject state, IReadOnlyList<StatementRef> fresh, IReadOnlyList<string> ids)
+    {
+        var seen = state["verified"] as JsonObject ?? (JsonObject)state["staged"]!;
+        return StatementIds.Match(StatementRef.Of(seen), fresh).Kept.ToDictionary(k => k.Value, k => ids[k.Key], StringComparer.Ordinal);
     }
 
     static void Stage(SpecPaths paths, PageDef page, JsonObject state, string to, string reason) =>

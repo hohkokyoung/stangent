@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:reference-lines:v1",
+  "title": "A reference page's line citations (contract reference-lines v1, 2.3)",
+  "description": "Beside a page, in specs/reference/<path>.lines.json. For each symbol the page's statements cite: its file and lines at the graph's commit, or why there are none. Filled by code from the graph, never the AI, and read by no input hash (D118).",
+  "type": "object",
+  "required": ["version", "page", "commit", "note", "symbols"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "page": { "type": "string", "minLength": 1 },
+    "commit": { "description": "The commit the graph was built from; null when nothing can be cited.", "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "^[0-9a-f]{40}$" }] },
+    "note": { "description": "Why nothing on this page is cited: the tree was dirty, or the graph has no commit.", "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
+    "symbols": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "file": { "type": "string", "minLength": 1 },
+          "start": { "type": "integer", "minimum": 1 },
+          "end": { "type": "integer", "minimum": 1 },
+          "why": { "description": "Why this symbol has no lines.", "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

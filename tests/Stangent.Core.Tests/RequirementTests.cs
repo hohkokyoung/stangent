@@ -405,6 +405,7 @@ public class RequirementTests
         var feature = Feature(app);
         Assert.Equal("R-0003", (string)Item(feature, 1)["id"]!);
         Assert.Equal("R-0002", (string)feature["retired"]![0]!["id"]!);
+        Assert.Equal(["R-0002"], new Stangent.Core.Evidence.PermanentIds(Path.Combine(app.Root, "specs", "requirements", "ids.json"), Path.Combine(app.Root, ".stangent", "req", "ids.lock")).Removed("R"));
     }
 
     [Fact]
@@ -776,6 +777,10 @@ public class RequirementTests
         again["background"] = Q("Another line.");
         Record(app, again, Verdicts(("r1", "ok", null), ("r2", "ok", null), ("b1", "ok", null)));
         Assert.Equal(["D-0001", "J-0001", "S-0001"], Feature(app)["retired"]!.AsArray().Select(r => (string)r!["id"]!));
+        var ledger = new Stangent.Core.Evidence.PermanentIds(Path.Combine(app.Root, "specs", "requirements", "ids.json"), Path.Combine(app.Root, ".stangent", "req", "ids.lock"));
+        Assert.Equal(["D-0001"], ledger.Removed("D"));
+        Assert.Equal(["J-0001"], ledger.Removed("J"));
+        Assert.Equal(["S-0001"], ledger.Removed("S"));
     }
 
     [Fact]

@@ -3,7 +3,7 @@ phase: 2a
 name: reference
 status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5 }
-provides: { reference-page: 1 }
+provides: { reference-page: 1, reference-lines: 1 }
 ---
 
 # Phase 2a · Reference from code
@@ -280,3 +280,27 @@ check (it judges statement content). With 2 wrong in 88, Sonnet stays the writer
 ### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
 v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.
 Checked 2026-11-04 (D20): by grep, `Stangent.Spec` reads none of the new values, and page slices walk only `AllEdges`. All tests pass, so this now consumes `code-graph: 4`.
+
+### Reopened 2026-11-04 · Stable statement ids and line citations (overhaul 2.3, D118)
+
+**Built.** `StatementIds`: a ledger per page, matching by exact signals, adoption, retired numbers kept out. `PageChecks.Statements` reads a recorded page's own ids and still numbers a writer's output by place. `PageLines`: `<path>.lines.json` from the graph, shown on the page, `stangent spec cite` for pages from before. `SymbolLines.Lookup`: many symbols by id without a walk per symbol. `trace check` reports `retiredStatements`. Retired requirement ids are now `Remove`d in their ledger, which closes 0.2's gap.
+
+**The hash bar.** Saved work stays valid.
+- `SavedWorkTests` compares against values taken by running that same test on the build before this (7064baa): the writer's input hash, the verifier's input, the judge's inputs with findings on and off and by requirement, the requirement inputs, an entry id, every prompt, and every step schema.
+- A real comparison on a copy of the Sonarr clone: the old and new builds gave byte-identical output for 755 hashes, 718 pages, 16 link sections and 21 requirement sections. All 16 recorded link `inputs` match in both builds.
+- Found on the way, not caused here: 0 of the 194 recorded Sonarr pages match their stored `bundleHash`, under the old build as under the new. They were recorded on 2026-10-26, and `Bundle.cs` or the writer's prompt changed on 2026-11-02; the exact cause isn't traced. `spec stale` lists them, and a rerun is the owner's call.
+
+**Measures, no AI.**
+- 113 saved pages in `benchmark/results/2026-10-24-phase2-sonarr`, 1,739 statements. A script reversed each section and reworded 615 of them. Kept for their words: 1,124. Kept as a rephrase: 556. Retired: 59, each with a new id: 59. No new id reused a number, and no unworded statement changed id.
+- `spec cite` on a temp copy of the Sonarr clone (never written to), 194 saved pages. Its stored graph predates the build recording dirty files, so with that graph: 0 of 1,390 distinct symbols cited, each saying to rebuild it. With the graph rebuilt in the temp copy at the same commit, 57 seconds with no AI: 1,388 of 1,390 got `path:lines`. The 2 left have no place in a file.
+
+**Contracts (D20).** `reference-page` keeps its shape and stays v1. `reference-lines` v1 is new, consumed by 2b for 2.4.
+
+**Known gaps.**
+- A dirty tree stops all citations, however small the difference.
+- A page's citations are at the graph's commit, which can be newer than the page's `generated.commit`. A page whose code changed is listed by `spec stale` and its citations still point at today's lines.
+- Deleting a ledger forgets retired numbers. The next run raises it only to the highest id still on the page.
+- `spec cite` renders Markdown with links only to recorded pages, where a page recorded in a run also links to one still to be generated.
+- A statement's order on the page follows the writer, so a reorder alone changes the link judge's input for that page. A regenerated page's words usually change it anyway.
+
+**Impact on other phases.** None goes to `needs review`: `reference-page` didn't change. Phase 3 reads statements through `PageChecks.Statements`, and gets the same ids for unchanged pages.
