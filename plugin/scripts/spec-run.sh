@@ -7,7 +7,8 @@
 # The logic lives in `stangent spec`, `stangent fsd` and `stangent req`; this only runs the subagent each step names,
 # then hands its result back.
 #
-# usage: spec-run.sh [--jobs N] [--model M] [--retry-failed] [--agents] (<page id>... | --all | --stale | --fsd <doc> | --disprove <doc> | --req <doc>)
+# usage: spec-run.sh [--jobs N] [--model M] [--retry-failed] [--agents] [--chapter N] (<page id>... | --all | --stale | --fsd <doc> | --disprove <doc> | --req <doc>)
+# --chapter N, with --fsd or --disprove: only that top-level heading, to try a chapter first (`stangent fsd disprove estimate <doc> --chapter N` shows its cost).
 # Default (D66): one turn per call. The step's input files go into the prompt, Claude Code runs with no tools and none of
 # the user's settings, skills or MCP servers, and the answer comes back as structured output (--json-schema) that this
 # script writes to the step's output file; `check` is unchanged. Far fewer tokens than a session that reads files.
@@ -37,16 +38,26 @@ RETRY=""
 NAMED=""
 PAGES=()
 ONLY=()
+CHAPTER=""
+ARGS=("$@")
+for ((i = 0; i < $#; i++)); do
+  if [ "${ARGS[$i]}" = --chapter ]; then
+    [ $((i + 1)) -lt $# ] || usage
+    CHAPTER="${ARGS[$((i + 1))]}"
+  fi
+done
+CHAPTERED=""
 while [ $# -gt 0 ]; do
-  case "$1" in --jobs|--model|--fsd|--disprove|--req|--only) [ $# -ge 2 ] || usage ;; esac
+  case "$1" in --jobs|--model|--fsd|--disprove|--req|--only|--chapter) [ $# -ge 2 ] || usage ;; esac
   case "$1" in
     --jobs) JOBS="$2"; shift 2 ;;
     --model) MODEL="$2"; shift 2 ;;
     --retry-failed) RETRY="--retry-failed"; shift ;;
     --agents) AGENTS=1; shift ;;
     --all) add_ids '.result.pages[].id' spec pages; shift ;;
-    --fsd) MODE=fsd; add_ids '.result[] | .doc + "\t" + .section' fsd sections --doc "$2"; shift 2 ;;
-    --disprove) MODE=disprove; add_ids '.result[] | .doc + "\t" + .section' fsd sections --doc "$2"; shift 2 ;;
+    --fsd) MODE=fsd; CHAPTERED=1; add_ids '.result[] | .doc + "\t" + .section' fsd sections --doc "$2" ${CHAPTER:+--chapter "$CHAPTER"}; shift 2 ;;
+    --disprove) MODE=disprove; CHAPTERED=1; add_ids '.result[] | .doc + "\t" + .section' fsd sections --doc "$2" ${CHAPTER:+--chapter "$CHAPTER"}; shift 2 ;;
+    --chapter) shift 2 ;;
     --req) MODE=req; add_ids '.result[] | .doc + "\t" + .section' req sections --doc "$2"; shift 2 ;;
     --stale) add_ids '.result.stale[].id, .result.new[].id' spec stale; shift ;;
     --only) ONLY+=("$2"); shift 2 ;;
@@ -55,6 +66,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ -n "$NAMED" ] || usage
+[ -z "$CHAPTER" ] || [ -n "$CHAPTERED" ] || usage
 case "$JOBS" in ''|0|*[!0-9]*) usage ;; esac
 
 # --only <section> (repeatable), with --fsd, --disprove or --req: just these sections.

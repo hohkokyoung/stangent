@@ -91,6 +91,8 @@ public sealed class StangentConfig
         /// <summary>Benchmarks only, until a project with a proper FSD is found (D99): treats proposed requirements as approved,
         /// and every result made with it says so. Off by default, and never for a real project.</summary>
         public bool SkipApproval { get; set; }
+        /// <summary><c>fsd export</c>: a chapter longer than this many lines is cut at its next heading level (D122). <c>--max-lines</c> overrides it.</summary>
+        public int ExportMaxLines { get; set; } = 1500;
     }
 
     /// <summary>

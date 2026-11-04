@@ -232,10 +232,10 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
   *A changed sheet with the same words reads `unchanged` today. Keep `textHash`; add a second hash. Recommend: do with attachments.*
 - ✅ A.9 · A person approves the first import, in a spec-only PR.  
   *A switch, off by default: `fsd approve` (D122). Stangent opens no PR; a spec-only PR is the team's own.*
-- ⬜ A.10 · `fsd outline` and `fsd show <section>`.  
-  *No command reads one section. Recommend: do, small.*
-- ⬜ A.11 · `fsd export`: one file per top-level heading, long chapters cut one level down, generated, never read back.  
-  *Nothing writes per-section files, and `document.json` stays the record. Recommend: do, small. Default to `.stangent/`, not committed.*
+- ✅ A.10 · `fsd outline` and `fsd show <section>`.  
+  *By code, by permanent id or number (D122).*
+- ✅ A.11 · `fsd export`: one file per top-level heading, long chapters cut one level down, generated, never read back.  
+  *Into `.stangent/fsd/<doc>/export/`, which git ignores; `document.json` stays the record (D122). The limit is a stated setting, 1500 lines.*
 
 **Checking the document against the app**
 
@@ -258,8 +258,8 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
   *Doesn't need the BA workflow. Recommend: do.*
 - ⬜ E.2 · Ask "how does the app do X today?", answered from pages with citations.  
   *No plugin command does this. Recommend: do, after the links are measured.*
-- ⬜ E.3 · Run one chapter and see its cost before the whole document.  
-  *`--only` and `disprove estimate` exist. Recommend: do, small.*
+- ✅ E.3 · Run one chapter and see its cost before the whole document.  
+  *`spec-run.sh --chapter <n>` and `fsd disprove estimate --chapter <n>` (D122). The estimate covers the disprove stage only; nothing estimates the link judge.*
 
 ## Two caveats
 

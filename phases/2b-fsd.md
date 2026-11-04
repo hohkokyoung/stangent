@@ -397,3 +397,5 @@ Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions
 **Not checked, under D120:** no fresh check of any of this. `dotnet test`, the whole-flow test and `phases check` pass. Sensitivity labels and locked files have only been run on hand-built files, never one saved by Word or a real labelling tool. `fsd reread`'s candidate path has only been run by making the saved text look older, never with two real builds.
 
 **`source-document` v3 grew in place (D20, D122).** `tables`, each picture's `id` and `section`, and `labels`, all optional, all in no hash. v3 is on this branch only, not on `main`, so it isn't shipped and takes no bump. A document without them gets `tables` and picture ids on its next import.
+
+**A.10, A.11, E.3.** `fsd outline`, `fsd show`, `fsd export` and `--chapter` are read-only over `document.json` and `document.md`. They've only run on hand-built documents and the fake `claude`. Export's 1500 lines isn't measured against a real FSD.

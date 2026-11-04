@@ -131,6 +131,61 @@ public sealed class SpecRunDriverTests : IDisposable
     }
 
     [Theory]
+    [InlineData("--fsd", "--chapter", "2")]
+    [InlineData("--disprove", "--chapter", "2")]
+    public void A_chapter_limits_a_run_to_what_stangent_lists_for_it_whichever_way_round_it_comes(string flag, string chapter, string n)
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.Stangent($$$"""
+            "fsd sections --doc d1 --chapter 2") echo '{"ok":true,"result":[{"doc":"d1","section":"2.1"}]}' ;;
+            "fsd prepare d1 2.1") echo '{{{Step}}}' ;;
+            "fsd check d1 2.1 --usage "*) echo '{{{Done}}}' ;;
+            "fsd disprove prepare d1 2.1") echo '{{{Disprover}}}' ;;
+            "fsd disprove check d1 2.1 --usage "*) echo '{{{DisproveDone}}}' ;;
+            """);
+        var first = rig.Run(Script, flag, "d1", chapter, n);
+        var calls = rig.ClaudeCalls().Count;
+        Assert.Equal(0, first.Exit);
+        Assert.Contains("2.1", first.Out);
+        Assert.DoesNotContain("1.1", first.Out);
+        Assert.True(calls >= 1);
+        var second = rig.Run(Script, chapter, n, flag, "d1");
+        Assert.Equal((0, first.Out), (second.Exit, second.Out));
+    }
+
+    [Fact]
+    public void A_chapter_stangent_doesnt_know_stops_the_run_and_calls_no_claude()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.Stangent("""
+            "fsd sections --doc d1 --chapter 9") echo '{"ok":false,"error":{"code":"not_found"}}'; exit 3 ;;
+            """);
+        var result = rig.Run(Script, "--fsd", "d1", "--chapter", "9");
+        Assert.Equal(1, result.Exit);
+        Assert.Contains("not_found", result.Err);
+        Assert.Empty(rig.ClaudeCalls());
+    }
+
+    [Theory]
+    [InlineData("--chapter", "2", "p1")]
+    [InlineData("--req", "d1", "--chapter", "2")]
+    public void A_chapter_is_only_for_fsd_and_disprove(params string[] args)
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.Stangent("""
+            "req sections --doc d1") echo '{"ok":true,"result":[]}' ;;
+            """);
+        Assert.Equal(2, rig.Run(Script, args).Exit);
+    }
+
+    [Fact]
+    public void A_chapter_with_no_number_is_usage()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        Assert.Equal(2, rig.Run(Script, "--fsd", "d1", "--chapter").Exit);
+    }
+
+    [Theory]
     [InlineData("fsd", "--fsd", "fsd sections --doc d1")]
     [InlineData("req", "--req", "req sections --doc d1")]
     public void Fsd_and_req_run_only_the_sections_asked_for(string mode, string flag, string list)

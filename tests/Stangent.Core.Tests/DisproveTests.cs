@@ -776,4 +776,20 @@ public class DisproveTests
         var listed = TraceCheck.Run(app.Root, null, null, false)["findings"]![0]!;
         Assert.Equal(("unverified", "ba"), ((string)listed["verdict"]!, (string)listed["goesTo"]!));
     }
+
+    // ---- E.3: one chapter's cost ----
+
+    [Fact]
+    public void An_estimate_can_be_for_one_chapter_and_says_which()
+    {
+        var app = App();
+        using var _d = app;
+        Save(app, Conflict());
+        var one = DisproveRun.Estimate(app.Pages(), app.Repo, "shop", "1");
+        Assert.Equal(("1", 1), ((string?)one["chapter"], (int)one["findings"]!));
+        var whole = DisproveRun.Estimate(app.Pages(), app.Repo, "shop");
+        Assert.Null(whole["chapter"]);
+        Assert.Equal((int)whole["calls"]!, (int)one["calls"]!);
+        Assert.Equal("not_found", Assert.Throws<StangentException>(() => DisproveRun.Estimate(app.Pages(), app.Repo, "shop", "9")).Code);
+    }
 }

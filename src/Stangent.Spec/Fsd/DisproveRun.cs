@@ -365,16 +365,19 @@ public static class DisproveRun
     }
 
     /// <summary>What a run on this document would send, from the bundles alone: no AI, nothing written. For saying the cost before paying it.</summary>
-    public static JsonObject Estimate(PageSet set, StangentRepo repo, string doc)
+    public static JsonObject Estimate(PageSet set, StangentRepo repo, string doc, string? chapter = null)
     {
         if (ClearCommit(set.Graph) is { } unclear) throw new StangentException("graph_not_clear", unclear, ExitCodes.Failed);
         var index = SpecIndex.Load(repo.Root);
         var analyzer = new Lazy<ImpactAnalyzer>(() => new ImpactAnalyzer(set.Graph));
         var trace = TraceFile.Load(repo.Root);
-        var findings = trace["entries"]!.AsArray().OfType<JsonObject>().Where(TraceFindings.IsFinding).ToList();
+        // One chapter on its own, to see what it costs before the whole document (E.3).
+        var only = chapter is null ? null : FsdOutline.Chapter(FsdOutline.Load(repo.Root, doc), chapter).Select(s => (string)s["id"]!).ToHashSet(StringComparer.Ordinal);
+        var findings = trace["entries"]!.AsArray().OfType<JsonObject>().Where(TraceFindings.IsFinding)
+            .Where(f => only is null || (string?)f["fsd"]?["doc"] == doc && only.Contains((string?)f["fsd"]?["section"] ?? "")).ToList();
         var calls = new List<(string Section, DisproveBundle Bundle)>();
         var noCode = 0;
-        foreach (var ((d, sectionId), section) in index.Sections.Where(s => s.Key.Doc == doc).OrderBy(s => TraceFile.SectionKey(s.Key.Section), StringComparer.Ordinal))
+        foreach (var ((d, sectionId), section) in index.Sections.Where(s => s.Key.Doc == doc && (only is null || only.Contains(s.Key.Section))).OrderBy(s => TraceFile.SectionKey(s.Key.Section), StringComparer.Ordinal))
             foreach (var finding in Pending(trace, doc, sectionId))
             {
                 var bundle = Build(set, index, analyzer, d, section, finding);
@@ -385,6 +388,7 @@ public static class DisproveRun
         return new JsonObject
         {
             ["doc"] = doc,
+            ["chapter"] = chapter,
             ["findings"] = findings.Count,
             ["notTested"] = findings.Count(f => f["fsd"] is null),
             ["decided"] = findings.Count(f => f["fsd"] is not null && f["decision"] is not null),

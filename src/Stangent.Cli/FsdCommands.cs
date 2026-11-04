@@ -37,12 +37,31 @@ static class FsdCommands
         fsd.Subcommands.Add(approveFirst);
 
         var docOption = new Option<string?>("--doc") { Description = "Only this document." };
-        var sections = new Command("sections", "List the imported sections that have text to judge.") { docOption };
-        sections.SetAction(pr => Cli.Run(pr, "fsd sections", ctx => new JsonArray([.. FsdImport.Documents(ctx.Repo.Root)
-            .Where(d => pr.GetValue(docOption) is not { } only || (string)d["id"]! == only)
-            .SelectMany(d => d["sections"]!.AsArray().OfType<JsonObject>().Where(s => ((string)s["text"]!).Trim().Length > 0)
-                .Select(s => (JsonNode)new JsonObject { ["doc"] = (string)d["id"]!, ["section"] = (string)s["id"]!, ["title"] = (string)s["title"]! }))])));
+        var chapterOption = new Option<string?>("--chapter") { Description = "Only this top-level heading: its number or permanent id, or its place in `fsd outline` where chapters have no numbers." };
+        var sections = new Command("sections", "List the imported sections that have text to judge.") { docOption, chapterOption };
+        sections.SetAction(pr => Cli.Run(pr, "fsd sections", ctx =>
+        {
+            if (pr.GetValue(chapterOption) is not null && pr.GetValue(docOption) is null) throw new Stangent.Core.StangentException("usage", "--chapter needs --doc.", Stangent.Core.ExitCodes.Usage);
+            return new JsonArray([.. FsdImport.Documents(ctx.Repo.Root)
+                .Where(d => pr.GetValue(docOption) is not { } only || (string)d["id"]! == only)
+                .SelectMany(d => (pr.GetValue(chapterOption) is { } chapter ? FsdOutline.Chapter(d, chapter) : d["sections"]!.AsArray().OfType<JsonObject>()).Where(s => ((string)s["text"]!).Trim().Length > 0)
+                    .Select(s => (JsonNode)new JsonObject { ["doc"] = (string)d["id"]!, ["section"] = (string)s["id"]!, ["title"] = (string)s["title"]! }))]);
+        }));
         fsd.Subcommands.Add(sections);
+
+        var viewFormat = new Option<string>("--format") { Description = "json (default) or text.", DefaultValueFactory = _ => "json" };
+        var outline = new Command("outline", "A document's sections: level, id, title and size. Code only.") { docArgument, viewFormat };
+        outline.SetAction(pr => Cli.Run(pr, "fsd outline", ctx => FsdOutline.Outline(ctx.Repo.Root, pr.GetValue(docArgument)!), pr.GetValue(viewFormat) == "text" ? FsdOutline.OutlineText : null));
+        fsd.Subcommands.Add(outline);
+        var showSection = new Argument<string>("section") { Description = "The section's permanent id (S-0001), or its number or heading path." };
+        var show = new Command("show", "One section's text. Code only.") { docArgument, showSection, viewFormat };
+        show.SetAction(pr => Cli.Run(pr, "fsd show", ctx => FsdOutline.Show(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(showSection)!), pr.GetValue(viewFormat) == "text" ? FsdOutline.ShowText : null));
+        fsd.Subcommands.Add(show);
+        var exportOut = new Option<string?>("--out") { Description = "Where to write (default: .stangent/fsd/<doc>/export/, which git ignores)." };
+        var exportMax = new Option<int?>("--max-lines") { Description = "A chapter over this many lines is cut at its next heading level (default: fsd.exportMaxLines, 1500)." };
+        var export = new Command("export", "One Markdown file per top-level heading, generated and never read back (D122). Code only.") { docArgument, exportOut, exportMax };
+        export.SetAction(pr => Cli.Run(pr, "fsd export", ctx => FsdExport.Run(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(exportOut), pr.GetValue(exportMax) ?? ctx.Repo.Config.Fsd.ExportMaxLines)));
+        fsd.Subcommands.Add(export);
 
         var candidates = new Command("candidates", "Candidate pages for each section, found by code: names, field labels, endpoints (D53). No AI.") { docOption };
         candidates.SetAction(pr => Cli.Run(pr, "fsd candidates", ctx =>
@@ -124,8 +143,8 @@ static class FsdCommands
             return SpecCommands.Finish(DisproveRun.Check(SpecCommands.LoadSet(ctx), ctx.Repo, pr.GetValue(docArg)!, pr.GetValue(sectionArg)!, usage), LinkRun.Key(pr.GetValue(docArg)!, pr.GetValue(sectionArg)!));
         }));
         disprove.Subcommands.Add(disproveCheck);
-        var disproveEstimate = new Command("estimate", "What a run would send, from the bundles alone: no AI, nothing written.") { docArg };
-        disproveEstimate.SetAction(pr => Cli.Run(pr, "fsd disprove estimate", ctx => DisproveRun.Estimate(SpecCommands.LoadSet(ctx), ctx.Repo, pr.GetValue(docArg)!)));
+        var disproveEstimate = new Command("estimate", "What a run would send, from the bundles alone: no AI, nothing written.") { docArg, chapterOption };
+        disproveEstimate.SetAction(pr => Cli.Run(pr, "fsd disprove estimate", ctx => DisproveRun.Estimate(SpecCommands.LoadSet(ctx), ctx.Repo, pr.GetValue(docArg)!, pr.GetValue(chapterOption))));
         disprove.Subcommands.Add(disproveEstimate);
 
         var undocumented = new Command("undocumented", "List screens no FSD section links to as undocumented, in specs/trace.yaml (code, no AI). Needs fsd.findings: true.");
