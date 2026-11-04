@@ -117,6 +117,15 @@ public class ComponentTests
         Assert.Null(StangentComponents.ForCommand(c, "store get"));
     }
 
+    [Fact]
+    public void What_isnt_connected_says_what_its_waiting_for()
+    {
+        Assert.False(StangentComponents.Find("detector-playwright-specs").Connected);
+        Assert.Contains("opens-screen", StangentComponents.Find("detector-playwright-specs").WaitingFor);
+        Assert.True(StangentComponents.Find("page-verifier").Connected);
+        Assert.Equal(["ran-evidence", "ticket-evidence"], StangentComponents.NotConnectedYet.Select(n => n.Name));
+    }
+
     // ---- each switch ----
 
     [Fact]
@@ -378,6 +387,10 @@ public class WholeFlowOffTests(WholeFlowOff off) : IClassFixture<WholeFlowOff>
         Assert.Contains("disprove needs findings", (string?)disprove["blocked"]);
         Assert.Contains(list["components"]!.AsArray().Single(c => (string?)c!["name"] == "findings")!["neededBy"]!.AsArray(), n => (string?)n == "disprove");
         Assert.NotEmpty(list["noSwitch"]!.AsArray());
+        var playwright = list["components"]!.AsArray().Single(c => (string?)c!["name"] == "detector-playwright-specs")!;
+        Assert.Equal(false, (bool?)playwright["connected"]);
+        Assert.Contains("opens-screen", (string?)playwright["waitingFor"]);
+        Assert.All(list["notConnected"]!.AsArray(), n => Assert.Equal(false, (bool?)n!["connected"]));
 
         var events = Directory.EnumerateFiles(Path.Combine(flow.Root, ".stangent", "telemetry"), "*.jsonl").SelectMany(File.ReadAllLines).Select(l => JsonNode.Parse(l)!);
         var build = events.First(e => (string?)e["attributes"]!["stangent.command"] == "graph build");

@@ -14,9 +14,15 @@ static class ComponentReport
                 ["setting"] = c.Setting, ["switch"] = $"components.{c.Name}",
                 ["needs"] = new JsonArray([.. c.Needs.Select(n => (JsonNode)n)]),
                 ["neededBy"] = new JsonArray([.. StangentComponents.All.Where(d => d.Needs.Contains(c.Name)).Select(d => (JsonNode)d.Name)]),
+                ["connected"] = c.Connected,
             };
+            if (c.WaitingFor is not null) o["waitingFor"] = c.WaitingFor;
             if (StangentComponents.MissingNeed(config, c.Name) is { } missing) o["blocked"] = missing;
             return (JsonNode)o;
+        })]),
+        ["notConnected"] = new JsonArray([.. StangentComponents.NotConnectedYet.Select(n => (JsonNode)new JsonObject
+        {
+            ["name"] = n.Name, ["label"] = n.Label, ["connected"] = false, ["waitingFor"] = n.WaitingFor,
         })]),
         ["noSwitch"] = new JsonArray([.. StangentComponents.NoSwitches.Select(n => (JsonNode)new JsonObject { ["name"] = n.Name, ["why"] = n.Why })]),
     };

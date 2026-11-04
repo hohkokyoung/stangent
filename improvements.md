@@ -209,7 +209,7 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
   *`problems` are plain lines, and comments use a fixed text shape no product code reads back. `source-document` v3. Recommend: do before the report and questions.*
 - ✅ S.3 · One set of import steps every format fills in, and ticket attachments use the same path.  
   *Comments and tracked changes are Word only; `Pull.cs` converts `.docx` but not PDF, which D111 left open. Recommend: do.*
-- ⬜ S.4 · Connect or plainly label what Phase 1 and 0 built and nothing uses.  
+- ✅ S.4 · Connect or plainly label what Phase 1 and 0 built and nothing uses.  
   *Only graph code reads `opens-screen` lines; `ran` evidence has no source; Tickets don't use the evidence shape. Recommend: label now, connect when a step needs it.*
 
 **Bringing a document in**

@@ -4,10 +4,17 @@ namespace Stangent.Core;
 /// <param name="Setting">The key that controls it. <c>components.&lt;name&gt;</c> works for every one and wins over this key; old keys keep working.</param>
 /// <param name="Commands">The commands that use it, so each run can say which were on.</param>
 /// <param name="Needs">What it can't work without.</param>
-public sealed record StangentComponent(string Name, string Label, string Setting, bool OnByDefault, IReadOnlyList<string> Commands, IReadOnlyList<string> Needs);
+/// <param name="WaitingFor">Set when it's built and nothing outside its own code uses it yet (S.4).</param>
+public sealed record StangentComponent(string Name, string Label, string Setting, bool OnByDefault, IReadOnlyList<string> Commands, IReadOnlyList<string> Needs, string? WaitingFor = null)
+{
+    public bool Connected => WaitingFor is null;
+}
 
 /// <summary>Something that can't be switched off cleanly, and why.</summary>
 public sealed record NoSwitch(string Name, string Why);
+
+/// <summary>Built, with no switch to give and nothing using it yet (S.4).</summary>
+public sealed record NotConnected(string Name, string Label, string WaitingFor);
 
 /// <summary>
 /// Every component and its switch (D121). A switch's state is never part of an input hash: a component that's off changes what a step does,
@@ -34,7 +41,8 @@ public static class StangentComponents
         Detector("config-keys", "Configuration keys"),
         Detector("http-services", "Backend HTTP calls to endpoints", "detector-aspnetcore-routes"),
         Detector("frontend-http", "Frontend calls to endpoints, fields to properties", "detector-aspnetcore-routes"),
-        new("detector-playwright-specs", "Playwright lines: existing specs' goto to screens", "detectors", true, [Graph, "graph screen-tests"], []),
+        new("detector-playwright-specs", "Playwright lines: existing specs' goto to screens", "detectors", true, [Graph, "graph screen-tests"], [],
+            "a step that reads opens-screen lines: only graph code does today"),
         new("page-verifier", "The fresh check of each reference page", "components.page-verifier", true, Pages, ["ai"]),
         new("line-citations", "path:lines beside each page, and code evidence from them", "components.line-citations", true, ["spec check", "spec cite", "trace check"], []),
         new("candidate-finder", "The AI that names pages when code finds none", "components.candidate-finder", true, Links, ["ai"]),
@@ -55,6 +63,12 @@ public static class StangentComponents
         new("link-judge", "It is the step that makes a link. `ai.enabled: false` stops it, and with it every other AI step."),
         new("code-checks", "Quote checks, schema checks and `trace check` are what make an AI's answer usable (D18). Taking one out would let a made-up quote through."),
         new("state-module", "Every lifecycle moves through it, and a test holds that to be true."),
+    ];
+
+    public static IReadOnlyList<NotConnected> NotConnectedYet { get; } =
+    [
+        new("ran-evidence", "`ran` evidence: a test or run shows it", "a step that really runs something: nothing fills `ran` today, and Phase 4 records what a failing test ran"),
+        new("ticket-evidence", "Tickets on the evidence shape", "Tickets are rebuilt onto `evidence` v1: a bundle and a draft still carry their own shape"),
     ];
 
     public static StangentComponent Find(string name) => All.First(c => c.Name == name);

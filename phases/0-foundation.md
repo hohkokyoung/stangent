@@ -244,4 +244,6 @@ Consumers move onto it when each is rebuilt (2.3, 2.4).
 
 **Not checked, under D120:** no fresh check. No switch has been tried on a real project or with a real AI; what they do to the flow is what the test phase is for. `dotnet test`, the whole-flow test and its variant with `git-history`, `findings` and `disprove` off, and `phases check` pass.
 
+**S.4.** A "Built, not connected yet" list in `docs/foundation.md`, and `connected: false` with `waitingFor` in `stangent components`. Labelled, not connected.
+
 **Contracts (D20).** `telemetry-event` v1 → v2: `stangent.components.on` and `.off`. `cli-conventions` v2 → v3: `components` beside `result`, and `stangent components`. Every consumer was checked by grep: no product reads telemetry, and drivers read `.result.*` and `.error.*` by name, so all move with one line. `reference-page` v1 grew `verification.off` in place (D121): a bump would change every page's bytes.

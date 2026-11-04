@@ -167,7 +167,7 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 8 | Links store a section's permanent id as well as its number | ✅ | 2b, D117 | S.1 |
 | 8 | Import problems become structured | ✅ | 2b, D111, D116 | S.2 |
 | 8 | One set of import steps every format fills in, and ticket attachments use the same path | ✅ | 2b, 3, D72, D111 | S.3 |
-| 8 | Connect or plainly label what Phase 1 and 0 built and nothing uses | ⬜ | 0, 1, 3, D115 | S.4 |
+| 8 | Connect or plainly label what Phase 1 and 0 built and nothing uses | ✅ | 0, 1, 3, D115 | S.4 |
 | 8 | Re-read the same file with a newer build, through the candidate flow | ⬜ | 2b, D117 | A.1 |
 | 8 | One readable import report with a verdict | ⬜ | 2b, D111 | A.2 |
 | 8 | Sensitivity labels stop the import, and a locked Word file gets its own stop with plain in | ⬜ | 2b, D111 | A.3 |

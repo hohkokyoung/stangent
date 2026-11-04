@@ -62,6 +62,16 @@ components: { page-verifier: false, git-history: false, detector-config-keys: fa
 
 **No clean switch,** and why: the document import and the page writer (everything after them reads what they make, and a step without them would report a false gap); the link judge (it is the step that makes a link, and `ai.enabled` stops it); the code checks (they make an AI's answer usable, D18); the state module.
 
+## Built, not connected yet (S.4)
+
+Built and tested, and nothing uses them yet. They're labelled so no one counts on them; none is connected in this batch. `stangent components` shows each with `connected: false` and what it's waiting for.
+
+| What | Built in | Waiting for |
+|---|---|---|
+| `opens-screen` lines (Playwright specs to screens) | 1.2, D115 | A step that reads them. Only graph code does today: `graph screen-tests` and the graph's own store. Bug proof finds related specs through the shared code behind them, not the lines. |
+| `ran` evidence | `evidence` v1 | A step that really runs something. Nothing fills it, and it can't be typed. Phase 4 records what a failing test ran. |
+| Tickets on the evidence shape | `evidence` v1 | Tickets being rebuilt. A bundle and a draft carry their own shape; only findings use `evidence`. |
+
 ## Permanent ids
 
 `new PermanentIds(path)` keeps a ledger in the file you name.
