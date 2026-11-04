@@ -62,7 +62,7 @@ Stop there. Phase 4 needs the owner: the order after 2.x, and the questions unde
 
 **Proposed, not decided.** The assistant proposed this and the owner said "ok what we gonna do next"; see "Open questions" in `decisions.md`. Until the owner confirms it, D120 and D125 stand as written.
 
-1. **First real pilot: the next milestone.** On the owner's own project, even with no FSD: pages, impact, one real ticket. Everything free first; the cost is stated and the owner says yes before any AI step. Results go in a phase file.
+1. **First real pilot: the next milestone.** On a reputable public project Stangent hasn't been tuned on, since the owner has none of their own (recommended: umbraco/Umbraco-CMS, not yet confirmed), with no FSD: pages, impact, one real ticket. Everything free first; the cost is stated and the owner says yes before any AI step. Results go in a phase file.
 2. Build I and T, about 500–700K tokens, in two batches, led by what the pilot shows.
 3. Make the test material.
 4. Start the test phase: the re-score after Nov 7 (the owner chooses how), then on/off runs against bars frozen first.

@@ -338,7 +338,7 @@ Marked down, not built. A ☑️ with a test note is taken in and stays off unti
 - ☑️ X.10 · Git history.  
   *Test: Existing benchmark; about 2.5 points so far.*
 - ☑️ X.11 · Playwright as evidence.  
-  *Test: The owner's project: unresolved rate and a hand check.*
+  *Test: the pilot's project (the owner has none of their own): unresolved rate and a hand check.*
 - ☑️ X.12 · Structured specs before pages.  
   *Test: One feature on Sonarr, about 3M tokens.*
 - ☑️ X.13 · UI check per screen.  
