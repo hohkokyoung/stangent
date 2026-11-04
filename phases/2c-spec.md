@@ -66,7 +66,7 @@ Checked 2026-11-04 (D20, D118): `trace-links` v1 → v3. By grep, requirement li
 Checked 2026-11-04 (D20, D119): `trace-links` v3 grew `page-wrong`, `verdict`, `disproof` and `disproof_hash` in place, because v3 hasn't reached `main`. Requirement links and matching read `state` and `check`, never these. `Match.IsLink` is unchanged, so a refuted gap still reads "no code found" until a person says otherwise. All tests pass.
 
 ## The disprove step's re-score: prepared, not run (2.5, D119)
-**It isn't shown to help.** Nothing paid has run. The only result so far is that the scorer works. That's the owner's call to make.
+**It isn't shown to help yet.** The owner OK'd the run on 2026-11-04. It stopped at 11 of 62 calls on Claude Code's weekly limit, so it covers 4 of 16 sections and 16 of 90 findings, about $1.29. `benchmark/results/2026-11-04-phase2c-disprove-partial-score.json` is that partial result: **no bar can be called on it.** So far: 5 stands, 3 refuted, 2 page-gap, 6 cant-tell; of the hand-checked 20, 3 of 12 false alarms left the BA's queue and 0 of 8 real ones did; no planted item lost. Re-running the same command picks up where it stopped.
 
 **Before (2c, `benchmark/results/2026-11-03-phase2c-sonarr-links-score.json`):** 24 of 30 found, 44% false alarms (95% range 29-59%), from 90 findings and a hand check of 20 (12 false, 8 real).
 

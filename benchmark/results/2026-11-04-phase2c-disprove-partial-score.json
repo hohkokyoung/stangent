@@ -1,0 +1,182 @@
+{
+  "doc": "sonarr-fsd",
+  "note": "The disprove step (D119): the frozen key before and after. falseAlarmShare uses the hand check of the 20 sampled before the step; a fresh hand check of what's left is still owed before a bar is called met (D61).",
+  "before2c": {
+    "found": 24,
+    "of": 30,
+    "falseAlarmShare": 0.44,
+    "results": "benchmark/results/2026-11-03-phase2c-sonarr-links-score.json"
+  },
+  "before": {
+    "found": {
+      "found": 24,
+      "of": 30,
+      "share": 0.8,
+      "range95": [
+        0.633,
+        0.933
+      ]
+    },
+    "noise": {
+      "findings": 90,
+      "unplanted": 66,
+      "worstCaseShare": 0.733,
+      "sample": 20,
+      "handChecked": 20,
+      "realInSample": 8,
+      "falseAlarmShare": 0.44,
+      "falseAlarmRange95": [
+        0.293,
+        0.587
+      ]
+    }
+  },
+  "after": {
+    "found": {
+      "overall": {
+        "found": 24,
+        "of": 30,
+        "share": 0.8,
+        "range95": [
+          0.633,
+          0.933
+        ]
+      },
+      "gap": {
+        "found": 10,
+        "of": 10,
+        "share": 1,
+        "range95": [
+          1,
+          1
+        ]
+      },
+      "conflict": {
+        "found": 10,
+        "of": 10,
+        "share": 1,
+        "range95": [
+          1,
+          1
+        ]
+      },
+      "undocumented": {
+        "found": 4,
+        "of": 10,
+        "share": 0.4,
+        "range95": [
+          0.1,
+          0.7
+        ]
+      }
+    },
+    "foundAsKind": {
+      "overall": {
+        "found": 20,
+        "of": 30,
+        "share": 0.667,
+        "range95": [
+          0.5,
+          0.833
+        ]
+      },
+      "gap": {
+        "found": 10,
+        "of": 10,
+        "share": 1,
+        "range95": [
+          1,
+          1
+        ]
+      },
+      "conflict": {
+        "found": 6,
+        "of": 10,
+        "share": 0.6,
+        "range95": [
+          0.3,
+          0.9
+        ]
+      },
+      "undocumented": {
+        "found": 4,
+        "of": 10,
+        "share": 0.4,
+        "range95": [
+          0.1,
+          0.7
+        ]
+      }
+    },
+    "findings": 85,
+    "unplanted": 61,
+    "falseAlarmShare": 0.38
+  },
+  "handChecked": {
+    "false": {
+      "checked": 12,
+      "leftTheQueue": 3,
+      "stillInTheQueue": 9
+    },
+    "real": {
+      "checked": 8,
+      "leftTheQueue": 0,
+      "stillInTheQueue": 8
+    }
+  },
+  "byVerdict": {
+    "unverified": 74,
+    "stands": 5,
+    "refuted": 3,
+    "page-gap": 2,
+    "unreachable": 0,
+    "cant-tell": 6
+  },
+  "byQueue": {
+    "ba": 85,
+    "developer": 2,
+    "developer-confirm": 3,
+    "closed": 0,
+    "page-owner": 0,
+    "decided": 0
+  },
+  "plantedLost": [],
+  "bars": {
+    "found27of30": false,
+    "falseAlarmsAtMost30Percent": false
+  },
+  "cost": {
+    "finder": {
+      "calls": 2,
+      "sections": 2,
+      "inputTokensPerSection": 12593.5,
+      "outputTokensPerSection": 264.5,
+      "secondsPerSection": 3.3,
+      "costUsd": 0.1
+    },
+    "judge": {
+      "calls": 16,
+      "sections": 16,
+      "inputTokensPerSection": 9301.375,
+      "outputTokensPerSection": 759.4375,
+      "secondsPerSection": 5.3,
+      "costUsd": 0.67
+    },
+    "checker": {
+      "calls": 16,
+      "sections": 16,
+      "inputTokensPerSection": 9425,
+      "outputTokensPerSection": 503.5,
+      "secondsPerSection": 5.4,
+      "costUsd": 0.64
+    },
+    "disprover": {
+      "calls": 11,
+      "sections": 4,
+      "inputTokensPerSection": 87567.5,
+      "outputTokensPerSection": 1415.25,
+      "secondsPerSection": 16.5,
+      "costUsd": 1.29
+    }
+  }
+}
