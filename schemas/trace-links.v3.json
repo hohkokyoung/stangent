@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:trace-links:v3",
+  "title": "FSD ↔ reference page links and findings (contract trace-links v3, Phases 2b, 2c)",
+  "description": "specs/trace.yaml (D58), read as JSON. v2 added the requirement a link belongs to (D99). v3 adds what a finding carries (D118): its permanent id, its severity and who set it, and its evidence, each record checked by EvidenceValidator; files written by v1 and v2 still read. One entry per link or finding: both ends, the state, both quotes and their hashes, and the decision people make. decided_by comes from git, never typed.",
+  "type": "object",
+  "required": ["version", "entries"],
+  "additionalProperties": false,
+  "definitions": {
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  },
+  "properties": {
+    "version": { "enum": [1, 2, 3] },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "state", "fsd", "page", "by", "decision", "decided_by"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^L[0-9a-f]{10}$" },
+          "state": { "enum": ["agree", "gap", "conflict", "undocumented"] },
+          "fsd": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["doc", "section"],
+                "additionalProperties": false,
+                "properties": {
+                  "doc": { "type": "string" }, "section": { "type": "string" }, "title": { "type": "string" },
+                  "requirement": { "description": "The requirement this link judges, when the section's requirements were built (D99).", "type": "string", "pattern": "^R-[0-9]{4,}$" },
+                  "quote": { "type": "string" }, "quoteHash": { "$ref": "#/definitions/hash" }
+                }
+              }
+            ]
+          },
+          "page": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["id"],
+                "additionalProperties": false,
+                "properties": {
+                  "id": { "type": "string" }, "statement": { "type": "string", "pattern": "^[SARE][0-9]+$" },
+                  "quote": { "type": "string" }, "quoteHash": { "$ref": "#/definitions/hash" }
+                }
+              }
+            ]
+          },
+          "by": { "description": "judge: the link judge proposed it (and, for agree, a second fresh check confirmed or disputed it); code: found by code.", "enum": ["judge", "code"] },
+          "check": { "enum": ["confirmed", "disputed"] },
+          "note": { "type": "string" },
+          "decision": { "oneOf": [{ "type": "null" }, { "enum": ["agree", "code-wrong", "fsd-wrong", "defer"] }] },
+          "decided_by": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
+          "finding": { "description": "Permanent, issued by trace check from specs/trace-ids.json. Only a finding has one.", "type": "string", "pattern": "^X-[0-9]{4,}$" },
+          "severity": { "description": "A person sets it, in a PR. Starts ungraded. See Severity in Core.", "enum": ["blocker", "major", "minor", "cosmetic", "ungraded"] },
+          "severity_by": { "description": "Comes from git after merge, as decided_by does; never typed.", "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
+          "evidence": { "description": "Records of contract evidence v1, filled by trace check.", "type": "array" }
+        }
+      }
+    }
+  }
+}

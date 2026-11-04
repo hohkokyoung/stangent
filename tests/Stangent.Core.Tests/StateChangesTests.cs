@@ -160,13 +160,13 @@ public partial class StateChangesTests
         git.WaitForExit();
         var check = Process.Start(new ProcessStartInfo("git", ["check-ignore", "-q", StateKinds.Get(name).HistoryFile]) { WorkingDirectory = temp.Root })!;
         check.WaitForExit();
-        var committed = name is StateKinds.Requirement or StateKinds.Question or StateKinds.TraceDecision or StateKinds.FsdCandidate or StateKinds.FsdSectionMatch;
+        var committed = name is StateKinds.Requirement or StateKinds.Question or StateKinds.TraceDecision or StateKinds.FindingSeverity or StateKinds.FsdCandidate or StateKinds.FsdSectionMatch;
         Assert.Equal(committed ? 1 : 0, check.ExitCode);   // check-ignore: 0 ignored, 1 not
     }
 
     // ---- Writes stay on the module ----
 
-    [GeneratedRegex("""\["(?<field>status|decision|decided_by|confirmedBy|stage|posted|outcome)"\]\s*(?:\?\?)?=(?!=)|\.Add\(\s*"(?<field>status|decision|decided_by|confirmedBy|stage|posted|outcome)"\s*,""")]
+    [GeneratedRegex("""\["(?<field>status|decision|decided_by|confirmedBy|stage|posted|outcome|severity|severity_by)"\]\s*(?:\?\?)?=(?!=)|\.Add\(\s*"(?<field>status|decision|decided_by|confirmedBy|stage|posted|outcome|severity|severity_by)"\s*,""")]
     private static partial Regex LifecycleWrite();
 
     /// <summary>Every write of these field names outside the module, per file and field. A new one fails the test until it's
@@ -179,6 +179,8 @@ public partial class StateChangesTests
         [("src/Stangent.Graph/GraphStore.cs", "status")] = (1, "how much git history the build could read, set once per build"),
         [("src/Stangent.Graph/Impact/ImpactAnalyzer.cs", "status")] = (2, "a report's field"),
         [("src/Stangent.Spec/Trace/FsdImpact.cs", "status")] = (1, "a report's field"),
+        [("src/Stangent.Spec/Trace/TraceFindings.cs", "severity")] = (1, "trace check's listing: a copy of the entry's severity"),
+        [("src/Stangent.Spec/Trace/TraceFindings.cs", "decision")] = (1, "trace check's listing: a copy of the entry's decision"),
         [("src/Stangent.Spec/Fsd/FsdImport.cs", "status")] = (2, "what this import did: imported or unchanged"),
         [("src/Stangent.Spec/Fsd/FsdVersions.cs", "status")] = (1, "what this import did: a new or a waiting candidate"),
         [("src/Stangent.Spec/Pages/PageRun.cs", "status")] = (1, "RunStep's JSON: what this command returned"),
@@ -198,6 +200,7 @@ public partial class StateChangesTests
         [("src/Stangent.Spec/Requirements/RequirementRun.cs", "decided_by")] = (1, "a rebuilt item that kept its approval keeps who gave it: not a move"),
         [("src/Stangent.Spec/Fsd/FsdVersions.cs", "decided_by")] = (2, "holds a name from git, not a state (D58): one follows each move on the module"),
         [("src/Stangent.Spec/Trace/TraceCheck.cs", "decided_by")] = (1, "holds a name from git, not a state (D58); Attribute moves the decision on the module first"),
+        [("src/Stangent.Spec/Trace/TraceCheck.cs", "severity_by")] = (1, "holds a name from git, not a state (D118); Attribute moves the severity on the module first"),
         [("src/Stangent.Tickets/Drafts.cs", "posted")] = (2, "null in a new draft; then who, when and the comment, right after the move on the module"),
         [("src/Stangent.Tickets/Proof/BugProof.cs", "confirmedBy")] = (2, "holds who confirmed, not a state; both follow a move on the module"),
     };

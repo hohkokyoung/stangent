@@ -14,7 +14,7 @@ namespace Stangent.Core.Tests;
 /// </summary>
 public class SavedWorkTests
 {
-    static readonly string[] Saved =
+    internal static readonly string[] Saved =
     [
         "writer 20d521af7016b7598063f3018f69e725d5f00e0a86d9ba7d57da112249c1b382",
         "recorded 20d521af7016b7598063f3018f69e725d5f00e0a86d9ba7d57da112249c1b382",

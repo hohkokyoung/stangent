@@ -23,10 +23,10 @@ Here's the full list, grouped by area. Each section ends with a line on why it's
   *Pages are per screen and endpoint today (D54, D63). Recommend: decide after results.*
 - 🟡 Shared behaviour is written once (lifecycles, shared steps) and linked. Feature pages only describe what's different.  
   *Shared components and endpoints have their own pages. Lifecycles and shared steps don't. Recommend: decide with the page shape.*
-- 🟡 Three kinds of statement are kept apart: what the app does today, the required behaviour for a new app, and findings or open questions (`X` and `Q` ids). Opinions can't pass as facts.  
-  *Reference, FSD and findings are separate (D52), and questions exist. No separate finding or question ids of this form, and "a new app" isn't Stangent's job. Recommend: adapt.*
-- ⬜ Findings get a severity from one shared scale, graded by the effect on users on the path they actually take.  
-  *Nothing has a severity. Recommend: do.*
+- ✅ Three kinds of statement are kept apart: what the app does today, the required behaviour for a new app, and findings or open questions (`X` and `Q` ids). Opinions can't pass as facts.  
+  *Built in 2.4 (D118): findings have permanent `X-0001` ids, questions already had `Q-0001`, and `trace check` rejects evidence citing a finding. "A new app" isn't Stangent's job, so that part is the FSD.*
+- ✅ Findings get a severity from one shared scale, graded by the effect on users on the path they actually take.  
+  *Built in 2.4 (D118): `blocker`, `major`, `minor`, `cosmetic`, starting `ungraded`, set by a person through the decision path. An AI suggestion comes with 2.5.*
 - ⬜ A second agent tries to disprove every finding. It assumes each claim is wrong until the code proves it, and checks whether the code path is actually reached. Separate "gap finders" look for what the first pass missed.  
   *D62 rejected this; only "agree" verdicts get a second check. Recommend: do, reversing D62, and re-score.*
 - 🟡 The call graph handles real C#. It resolves interface calls and DI registrations, and shows every entry point (endpoint, page, job, handler) that reaches a method.  
@@ -148,11 +148,11 @@ Ahead of Stangent because Stangent has designed approval states but not a workin
 - ⬜ Whoever finds a difference never verifies it. A separate agent re-checks it in a fresh context before the BA sees it.  
   *Same item as disproving findings in section 1 (D62). Recommend: do.*
 - ✅ Only today's behaviour counts as evidence. The reference's opinions and its own findings can never back up a claim.  
-  *Links quote the FSD and page statements only (D53).*
+  *Links quote the FSD and page statements only (D53), and since 2.4 `trace check` rejects evidence citing a finding (D118).*
 - ✅ A script checks every citation: the id must really be on the cited page, and in the right part of it.  
   *Quotes and ids are checked word for word (D53, `trace check`).*
-- 🟡 Every finding is stamped and weighed. It records which code commit it was checked against, and how strong the evidence is: backed by a test, by code only, or weak.  
-  *The contract is built: `evidence` v1 has a commit and a strength (`ran`, `stated`, `read`, `guess`, D113). No finding uses it yet, so this stays partly done until 2.4 moves findings onto it.*
+- ✅ Every finding is stamped and weighed. It records which code commit it was checked against, and how strong the evidence is: backed by a test, by code only, or weak.  
+  *Built in 2.4 (D118): each finding carries `evidence` records with the commit, the strength (`stated`, `read`; `ran` only with a real run) and who checked it, filled by code and validated by `trace check`.*
 - 🟡 Findings stay marked "unverified" until code confirms them. Nothing is overstated.  
   *Unverified until a person approves (D53); findings are off by default (D68). No code confirmation step.*
 - 🟡 The BA decides each finding, and can say "the reference is wrong", which sends it back to the reference's owner.  
@@ -161,7 +161,7 @@ Ahead of Stangent because Stangent has designed approval states but not a workin
   *Unchanged inputs are reused (D18), and a changed quote drops its decision (D58). Re-judging a stale page's links is decided, not built (D99).*
 - ⬜ Reference gaps are kept out of the BA's queue. "The reference doesn't cover this" goes to a developer, not the BA.  
   *Most of Stangent's false alarms are this case (D99). Recommend: do.*
-- ⬜ A per-chapter report of findings by result and severity, plus a count of FSD rules with no test, for QA.  
+- ⬜ A per-chapter report of findings by result and severity, plus a count of FSD rules with no test, for QA. Still to do: `trace check` lists ids and severity, with no per-chapter view.  
   *Bulk approval works per chapter, but there's no report. Tests carrying ids are Phase 5. Recommend: do after severity.*
 - ⬜ An alias map records names that differ between the FSD and the screens.  
   *Not in Stangent. Recommend: do if real documents need it.*

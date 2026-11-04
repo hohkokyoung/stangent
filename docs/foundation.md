@@ -5,7 +5,7 @@ The pieces every product builds on, added in the overhaul (D112, D113).
 ## Evidence (contract `evidence` v1)
 
 One claim's proof, in `schemas/evidence.v1.json`, with `EvidenceRecord` and `EvidenceValidator` in Core.
-It's a new contract, not a change to `artifact-base`, so nothing else had to change. Products move onto it when each is rebuilt.
+It's a new contract, not a change to `artifact-base`, so nothing else had to change. Products move onto it when each is rebuilt. Findings are the first (2.4, `docs/spec.md`).
 
 | Field | Meaning |
 |---|---|
@@ -47,6 +47,8 @@ with the old `ids.yaml` carries on from its numbers: the counter is taken over o
 so two runs doing this together can't give an id out twice. A retired requirement, definition, journey or scenario is marked `Remove`d when its feature is saved, along with any retired earlier (2.3).
 
 Section ids use it (D117): `S-0001`, per document, in `specs/fsd/<doc>/ids.json`, with the lock in `.stangent/fsd/<doc>/`. A removed section's id is marked `Remove`d.
+
+Finding ids use it (2.4, D118): `X-0001`, per project, in `specs/trace-ids.json`, with the lock at `.stangent/fsd/trace-ids.lock`. `trace check` issues them.
 
 Statement ids use it (2.3, D118): `S1`, `A1`, `R1`, `E1`, one scope per letter, per page, in `specs/reference/<path>.ids.json`, with the lock at `.stangent/spec/ids.lock`. `docs/spec.md` has the matching.
 
@@ -116,6 +118,7 @@ returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds ev
 | `requirement` | `proposed`, `approved`, `retired` | a person approves; code drops back and retires | `specs/requirements/history.jsonl` |
 | `question` | `open`, `dropped` | code | same |
 | `trace-decision` | `undecided`, `agree`, `code-wrong`, `fsd-wrong`, `defer` | a person decides; code only drops back | `specs/trace-history.jsonl` |
+| `finding-severity` | `ungraded`, `blocker`, `major`, `minor`, `cosmetic` | code starts it `ungraded`; a person grades it and can change their mind | `specs/trace-history.jsonl` |
 | `proof` | the proof's outcome values | code | `.stangent/tickets/state-history.jsonl` |
 | `proof-confirmation` | `unconfirmed`, `confirmed` | a person confirms; code clears | same |
 | `draft-posted` | `unposted`, `posted` | a person posts; code starts over when a draft is remade | same |
@@ -133,7 +136,7 @@ reads it, so its timestamps change nothing else. An append holds the file under 
 `stangent state history <kind> <id>` prints one item's moves, oldest first.
 
 **The rule is a test.** `StateChangesTests` scans `src/**/*.cs` for writes of `status`, `decision`, `decided_by`, `confirmedBy`,
-`stage`, `posted` and `outcome` outside the module. A new write fails until it moves onto the module or is listed there with
+`stage`, `posted`, `outcome`, `severity` and `severity_by` outside the module. A new write fails until it moves onto the module or is listed there with
 its reason. A count that's gone stale fails too.
 
 **Known gaps.**

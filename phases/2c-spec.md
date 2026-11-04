@@ -2,7 +2,7 @@
 phase: 2c
 name: spec
 status: in progress
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 2, trace-links: 1, ticket-bundle: 2, bug-proof: 1 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 2, trace-links: 3, ticket-bundle: 2, bug-proof: 1 }
 provides: {}
 ---
 
@@ -60,3 +60,5 @@ v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirty
 Checked 2026-11-04 (D20): by grep, `Stangent.Spec` reads none of the new values. All tests pass, so this now consumes `code-graph: 4`.
 
 Checked 2026-11-04 (D20, D117): `source-document` v1 → v2. By grep, `Stangent.Spec`'s link and requirement runs read each section's `id`, `title`, `text` and `parent`, never `permanentId` or the document's `schemaVersion`. All tests pass, so this now consumes `source-document: 2`. On a promotion, `FsdCarry` moves this phase's section references to the new numbers; no file changes shape.
+
+Checked 2026-11-04 (D20, D118): `trace-links` v1 → v3. By grep, requirement links are written through `LinkRun.Entry`, which didn't change, and read by field, with `requirement` and the id's hash as they were. `ApplyEntries` now also carries a finding's new fields across a re-run. All tests pass, so this consumes `trace-links: 3`.

@@ -362,7 +362,13 @@ public static class LinkRun
         foreach (var e in entries.DistinctBy(e => (string)e["id"]!))
         {
             var copy = (JsonObject)e.DeepClone();
-            if (keepDecisions.TryGetValue((string)e["id"]!, out var was)) { copy["decision"] = was["decision"]?.DeepClone(); copy["decided_by"] = was["decided_by"]?.DeepClone(); }
+            if (keepDecisions.TryGetValue((string)e["id"]!, out var was))
+            {
+                copy["decision"] = was["decision"]?.DeepClone();
+                copy["decided_by"] = was["decided_by"]?.DeepClone();
+                // The same link is the same finding: its id, its grade and its evidence stay with it (D118).
+                foreach (var carried in TraceFile.FindingFields.Where(f => was[f] is not null)) copy[carried] = was[carried]!.DeepClone();
+            }
             list.Add(copy);
         }
         // A decided link that didn't come back took its decision with it: its id is the hash of its quotes (D58).

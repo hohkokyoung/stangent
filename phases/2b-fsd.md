@@ -2,8 +2,8 @@
 phase: 2b
 name: fsd
 status: done
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1 }
-provides: { source-document: 2, trace-links: 1 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, reference-lines: 1, evidence: 1 }
+provides: { source-document: 2, trace-links: 3 }
 ---
 
 # Phase 2b · FSD and discrepancies
@@ -320,3 +320,26 @@ Code only, no AI. Details are in `docs/spec.md`.
 - A `.docx` ticket attachment with no headings stopped the whole pull, as the note above said: confirmed by a test. Now it reads flat, and a damaged one is listed with `notConverted`. A PDF attachment never stopped it: it's listed by name, type and size (D72).
 
 **Still untested.** No file saved by Word itself has been through any of this, the `mc:Fallback` rule included.
+
+### Reopened 2026-11-04 · Findings carry evidence and a severity (overhaul 2.4, D118)
+
+**Built.** `TraceFindings`: `trace check` gives each finding an `X-0001`, a first severity of `ungraded`, and `evidence` records filled by code, then validates them with `EvidenceValidator` and the rules it can't know. `Severity` in Core, one scale. `finding-severity` on the state module: only a person grades, seen at `trace attribute`, with `severity_by` from git. `trace check` lists ids and severity in `findings`.
+
+**Separation (D53).** Checked, and it held: a page statement comes from the page's JSON only, and a writer can't cite `X-0001`, because it isn't in the graph. New: `trace check` rejects evidence citing a finding. Each has a test.
+
+**The hash bar.** `SavedWorkTests` passes with a finding stamped and graded in the file. The judge's input files for that section hold no `X-` id, severity or note. An entry's id is unchanged. Tickets reads named fields of an entry only, none of them new.
+
+**Measures, no AI.** A plain `trace check` on a temp copy of Sonarr's real `trace.yaml`, written by v2 (never written to that clone): 134 entries, 90 findings, each issued an id and valid evidence on the first try, no problems. All 134 ids, decisions and `decided_by` unchanged. A second check passes. The old build and this one give the same 755 input hashes on that copy.
+
+**Contracts (D20).** `trace-links` v2 → v3, additive. This file still said v1, though v2 shipped with 2c; it says v3 now. 2c and 3 were checked by grep and moved, each with its line. This phase now consumes `evidence` v1 and `reference-lines` v1.
+
+**Known gaps.**
+- Every finding is `ungraded` until a person edits the file. There's no command for it, and no AI suggestion until 2.5.
+- Findings are still off by default (D68), and the false-alarm rate behind that hasn't changed.
+- Evidence isn't refreshed. A code citation stays at the commit it was stamped with, and a document's `contentHash` at the version read, after a page or a document moves on. A new record is added only where one is missing.
+- `fsd undocumented` and `fsd check` write findings with no id: the id comes at the next `trace check`. `fsd undocumented` still returns a count, with no ids.
+- A finding whose link is judged again with other quotes has a new entry id, so it's a new finding with a new `X-` id and `ungraded`, as a decision drops back today.
+- No per-chapter report: on `roadmap.md`'s list, still to do.
+- `severity_by` shows who merged it, the same limit `decided_by` has.
+
+**Impact on other phases.** 2c and 3 read entries by field and ignore what's new, so both move to `trace-links: 3` with no `needs review`.

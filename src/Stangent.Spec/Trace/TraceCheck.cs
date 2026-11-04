@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.Evidence;
 using Stangent.Core.State;
 using Stangent.Graph;
 using Stangent.Spec.Fsd;
@@ -45,7 +46,8 @@ public sealed class SpecIndex
 /// <summary>
 /// The CI checks on <c>specs/trace.yaml</c> (D58): the schema and allowed values; every id still the hash of its link;
 /// both quotes still in the current FSD section and page statement (else the decision drops back to undecided);
-/// every symbol a quoted statement cites in the graph; and <c>decided_by</c> never typed in a PR.
+/// every symbol a quoted statement cites in the graph; <c>decided_by</c> and <c>severity_by</c> never typed in a PR; and each finding's
+/// id, severity and evidence, which it issues where they're missing (D118).
 /// </summary>
 public static class TraceCheck
 {
@@ -59,9 +61,13 @@ public static class TraceCheck
         if (problems.Count > 0) return Report(trace, problems, [], [], []);
 
         var index = SpecIndex.Load(root);
+        var stamped = TraceFindings.Stamp(root, trace, index);
         var nodes = graph?.AllNodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
         var typedBefore = (baseTrace?["entries"]?.AsArray() ?? []).OfType<JsonObject>().ToDictionary(e => (string)e["id"]!, e => (string?)e["decided_by"]);
         var baseByLink = TraceFile.ByLink(baseTrace?["entries"]?.AsArray() ?? []);
+        var baseEntries = (baseTrace?["entries"]?.AsArray() ?? []).OfType<JsonObject>().ToList();
+        var baseByFinding = baseEntries.Where(e => e["finding"] is not null).GroupBy(e => (string)e["finding"]!).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        var findingIds = new HashSet<string>(StringComparer.Ordinal);
         var stale = new List<string>();
         var retired = new List<JsonNode>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -77,6 +83,20 @@ public static class TraceCheck
             if (id != expected) problems.Add($"{id}: the state, an end or a quote was edited by hand (only `decision` is edited; the id would be {expected})");
             if ((string?)fsd?["requirement"] is { } requirement && !requirements.Value.Contains(requirement))
                 problems.Add($"{id}: requirement {requirement} doesn't exist any more");
+
+            if (TraceFindings.IsFinding(e))
+            {
+                var finding = (string)e["finding"]!;
+                if (!findingIds.Add(finding)) problems.Add($"{id}: finding {finding} is used twice");
+                problems.AddRange(TraceFindings.Check(e, nodes));
+                // A finding's id is the same across a move, so the base's copy is found by it, or by its entry id when a person changed it.
+                var entryBefore = baseEntries.FirstOrDefault(b => (string)b["id"]! == id);
+                if ((string?)entryBefore?["finding"] is { } was && was != finding) problems.Add($"{id}: its finding id was {was} and is now {finding}; ids are issued by code");
+                if ((string?)e["severity_by"] is { } gradedBy && baseTrace is not null && (string?)baseByFinding.GetValueOrDefault(finding)?["severity_by"] != gradedBy)
+                    problems.Add($"{id}: severity_by was set in this change ({gradedBy}); it's filled from git after merge, never typed");
+            }
+            else if (TraceFile.FindingFields.Any(f => e[f] is not null))
+                problems.Add($"{id}: an agree link isn't a finding, so it has no finding id, severity or evidence");
 
             var quotesMatch = true;
             if (fsd is not null)
@@ -117,7 +137,7 @@ public static class TraceCheck
                 problems.Add($"{id}: decided_by was set in this change ({by}); it's filled from git after merge, never typed");
         }
         var undecided = trace["entries"]!.AsArray().OfType<JsonObject>().Where(e => stale.Contains((string)e["id"]!) && e["decision"] is not null).Select(e => (string)e["id"]!).ToList();
-        if (fix && stale.Count > 0) TraceFile.Save(root, trace);
+        if (stamped || fix && stale.Count > 0) TraceFile.Save(root, trace);
         foreach (var id in undecided)
             problems.Add($"{id}: a quote no longer matches the FSD or the page, so its decision must drop back to undecided (run `stangent trace check --fix`)");
         return Report(trace, problems, stale, undecided, retired);
@@ -134,11 +154,14 @@ public static class TraceCheck
                 ["entries"] = entries.Count,
                 ["byState"] = new JsonObject(TraceFile.States.Select(s => KeyValuePair.Create(s, (JsonNode?)entries.Count(e => (string?)e["state"] == s)))),
                 ["undecided"] = entries.Count(e => e["decision"] is null),
+                ["findings"] = entries.Count(TraceFindings.IsFinding),
+                ["bySeverity"] = new JsonObject(Severity.All.Select(s => KeyValuePair.Create(s, (JsonNode?)entries.Count(e => TraceFindings.IsFinding(e) && ((string?)e["severity"] ?? Severity.Ungraded) == s)))),
                 ["staleQuotes"] = stale.Count,
             },
             ["problems"] = new JsonArray([.. problems.Select(p => (JsonNode)p)]),
             ["staleQuotes"] = new JsonArray([.. stale.Select(s => (JsonNode)s)]),
             ["retiredStatements"] = new JsonArray([.. retired]),
+            ["findings"] = TraceFindings.Listing(TraceFile.Sorted(trace["entries"]?.AsArray() ?? [])),
         };
     }
 
@@ -160,16 +183,23 @@ public static class TraceCheck
         return n;
     }
 
-    /// <summary>After a PR merges, CI names who decided (D58): every entry whose decision the PR changed gets the
-    /// approver or merger the code-host adapter reports. Never typed by a person.</summary>
+    /// <summary>After a PR merges, CI names who decided (D58): every entry whose decision or severity the PR changed gets the
+    /// approver or merger the code-host adapter reports. Never typed by a person. A severity's move goes on the module too (D118).</summary>
     public static int Attribute(string root, JsonObject baseTrace, string by)
     {
         var trace = TraceFile.Load(root);
         var before = (baseTrace["entries"]?.AsArray() ?? []).OfType<JsonObject>().ToDictionary(e => (string)e["id"]!, e => (string?)e["decision"]);
         var byLink = TraceFile.ByLink(baseTrace["entries"]?.AsArray() ?? []);
+        var graded = (baseTrace["entries"]?.AsArray() ?? []).OfType<JsonObject>().Where(e => e["finding"] is not null).GroupBy(e => (string)e["finding"]!).ToDictionary(g => g.Key, g => (string?)g.First()["severity"], StringComparer.Ordinal);
         var n = 0;
         foreach (var e in trace["entries"]!.AsArray().OfType<JsonObject>())
         {
+            if ((string?)e["finding"] is { } finding && (string?)e["severity"] is { } severity && severity != (graded.GetValueOrDefault(finding) ?? Severity.Ungraded))
+            {
+                StateChanges.Move(root, StateKinds.FindingSeverity, finding, graded.GetValueOrDefault(finding) ?? Severity.Ungraded, severity, StateActor.Person(by), "merged in a PR");
+                e["severity_by"] = severity == Severity.Ungraded ? null : by;
+                n++;
+            }
             var decision = (string?)e["decision"];
             // A promotion gave the entry a new id, because its section's number changed: nobody decided anything (D117).
             var old = before.TryGetValue((string)e["id"]!, out var was) ? was : (string?)byLink.GetValueOrDefault(TraceFile.LinkKey(e))?["decision"];

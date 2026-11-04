@@ -116,7 +116,7 @@ static class FsdCommands
         root.Subcommands.Add(trace);
         var baseOption = new Option<string?>("--base") { Description = "The PR's base ref: decided_by must not change in the PR." };
         var fixOption = new Option<bool>("--fix") { Description = "Drop the decision of entries whose quotes no longer match, and save." };
-        var traceCheck = new Command("check", "CI checks: schema and values, ids, quotes still in the FSD and pages, cited symbols, decided_by never typed.") { baseOption, fixOption };
+        var traceCheck = new Command("check", "CI checks: schema and values, ids, quotes still in the FSD and pages, cited symbols, decided_by never typed. Issues findings' ids and evidence, lists them with their severity (D118).") { baseOption, fixOption };
         traceCheck.SetAction(pr => Cli.Run(pr, "trace check", ctx =>
         {
             var graph = Stangent.Graph.GraphStore.Load(Stangent.Graph.GraphStore.PathFor(ctx.Repo));
@@ -134,7 +134,7 @@ static class FsdCommands
         trace.Subcommands.Add(approve);
 
         var byOption = new Option<string>("--by") { Description = "Who approved or merged the PR, from the code host (D24): CI passes it.", Required = true };
-        var attribute = new Command("attribute", "After a merge: fill decided_by on every decision the merged PR changed (D58).") { baseOption, byOption };
+        var attribute = new Command("attribute", "After a merge: fill decided_by on every decision, and severity_by on every severity, the merged PR changed (D58, D118).") { baseOption, byOption };
         attribute.SetAction(pr => Cli.Run(pr, "trace attribute", ctx =>
         {
             var b = pr.GetValue(baseOption) ?? throw new Stangent.Core.StangentException("usage", "--base is required: the commit before the merge.", Stangent.Core.ExitCodes.Usage);

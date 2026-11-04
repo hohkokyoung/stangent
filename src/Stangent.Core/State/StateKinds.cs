@@ -1,3 +1,5 @@
+using Stangent.Core.Evidence;
+
 namespace Stangent.Core.State;
 
 /// <summary>Who made a move. <c>code</c> and <c>person</c> may; an <c>agent</c> never decides state (D18, D60).</summary>
@@ -28,7 +30,7 @@ public sealed record StateKind(string Name, string HistoryFile, IReadOnlyList<st
 /// </summary>
 public static class StateKinds
 {
-    public const string Requirement = "requirement", Question = "question", TraceDecision = "trace-decision",
+    public const string Requirement = "requirement", Question = "question", TraceDecision = "trace-decision", FindingSeverity = "finding-severity",
         Proof = "proof", ProofConfirmation = "proof-confirmation", DraftPosted = "draft-posted",
         PageRun = "page-run", LinkRun = "link-run", ReqRun = "req-run", TicketMatch = "ticket-match", TicketStep = "ticket-step",
         FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match";
@@ -64,6 +66,10 @@ public static class StateKinds
             .. Decisions.SelectMany(from => Decisions.Where(to => to != from).Select(to => By(Person, from, to))),
             .. Decisions.Select(d => new StateRule(d, "undecided", [StateActor.CodeKind, StateActor.PersonKind])),
         ], Field: "decision", NullState: "undecided", ClearedOnNull: ["decided_by"]),
+
+        // D118: code starts a finding ungraded and a person grades it, and can change their mind. An agent never does, and code can't judge the effect on users.
+        new(FindingSeverity, TraceHistory, [Severity.Ungraded],
+            [.. Severity.All.SelectMany(from => Severity.All.Where(to => to != from).Select(to => By(Person, from, to)))], Field: "severity"),
 
         // The latest attempt's outcome: any attempt can follow any other, so the table holds the values and who moves them.
         new(Proof, TicketHistory, Outcomes,

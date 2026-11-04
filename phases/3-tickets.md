@@ -2,7 +2,7 @@
 phase: 3
 name: tickets
 status: done
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 2, trace-links: 1 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 2, trace-links: 3 }
 provides: { ticket-bundle: 2, ticket-update: 1, bug-proof: 1 }
 ---
 
@@ -791,3 +791,5 @@ Checked 2026-11-04 (D20): by grep, `Stangent.Tickets` reads none of the new valu
 The code that finds related specs moved from `AppSession` to `PlaywrightSpecs` in `Stangent.Graph`, with the same behaviour; `AppSession.RelatedSpecs` and `RouteMatches` stay, and bug proof's tests pass unchanged.
 
 Checked 2026-11-04 (D20, D117): `source-document` v1 → v2. By grep, `Stangent.Tickets` reads sections through `SpecIndex`, by `id`, `title` and `text`, and never `permanentId` or the document's `schemaVersion`. All tests pass, so this now consumes `source-document: 2`. Its code wasn't touched.
+
+Checked 2026-11-04 (D20, D118): `trace-links` v1 → v3. By grep, `Stangent.Tickets` reads an entry's `state`, `fsd`, `page`, `check` and `decision`, by name, and never `finding`, `severity` or `evidence`, so none reaches a ticket bundle. All tests pass, so this consumes `trace-links: 3`.

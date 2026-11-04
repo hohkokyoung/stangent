@@ -8,20 +8,23 @@ using YamlDotNet.RepresentationModel;
 namespace Stangent.Spec.Trace;
 
 /// <summary>
-/// <c>specs/trace.yaml</c> (D58, contract <c>trace-links</c> v2): one entry per link or finding between an FSD section
+/// <c>specs/trace.yaml</c> (D58, contract <c>trace-links</c> v3): one entry per link or finding between an FSD section
 /// and a reference page, with both quotes, the state, and the decision a person makes by editing the file in a PR.
 /// Written by code in one fixed form, so a re-run with the same content gives the same bytes; the dashboard (Phase 8)
 /// will edit the same file.
 /// </summary>
 public static class TraceFile
 {
-    public const string Schema = "trace-links.v2.json";
+    public const string Schema = "trace-links.v3.json";
     public static readonly string[] States = ["agree", "gap", "conflict", "undocumented"];
     public static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "defer"];
 
+    /// <summary>What a finding carries beyond its link (D118).</summary>
+    public static readonly string[] FindingFields = ["finding", "severity", "severity_by", "evidence"];
+
     public static string PathIn(string root) => Path.Combine(root, "specs", "trace.yaml");
 
-    public static JsonObject Empty() => new() { ["version"] = 2, ["entries"] = new JsonArray() };
+    public static JsonObject Empty() => new() { ["version"] = 3, ["entries"] = new JsonArray() };
 
     public static JsonObject Load(string root) => File.Exists(PathIn(root)) ? Parse(File.ReadAllText(PathIn(root))) : Empty();
 
@@ -41,6 +44,8 @@ public static class TraceFile
         YamlSequenceNode s => new JsonArray([.. s.Children.Select(c => ToJson(c, ""))]),
         YamlScalarNode { Value: null or "" or "~" or "null" } sc when sc.Style == YamlDotNet.Core.ScalarStyle.Plain => null,
         YamlScalarNode sc when key == "version" && int.TryParse(sc.Value, out var v) => v,
+        // An evidence record's lines; the contract wants numbers.
+        YamlScalarNode { Style: YamlDotNet.Core.ScalarStyle.Plain } sc when key is "start" or "end" && int.TryParse(sc.Value, out var line) => line,
         YamlScalarNode sc => sc.Value,
         _ => null,
     };
@@ -49,9 +54,10 @@ public static class TraceFile
     public static string Write(JsonObject trace)
     {
         var sb = new StringBuilder();
-        sb.Append("# FSD ↔ reference page links and findings (trace-links v2, D58, D99). Edit `decision` only:\n");
-        sb.Append("# agree, code-wrong, fsd-wrong or defer. `decided_by` is filled from git after merge, never typed.\n");
-        sb.Append("version: 2\nentries:");
+        sb.Append("# FSD ↔ reference page links and findings (trace-links v3, D58, D99, D118). Edit `decision` only:\n");
+        sb.Append("# agree, code-wrong, fsd-wrong or defer. On a finding, also `severity`: blocker, major, minor, cosmetic or ungraded.\n");
+        sb.Append("# `decided_by` and `severity_by` are filled from git after merge, never typed. Code fills the rest.\n");
+        sb.Append("version: 3\nentries:");
         var entries = Sorted(trace["entries"]?.AsArray() ?? []).ToList();
         if (entries.Count == 0) sb.Append(" []");
         sb.Append('\n');
@@ -71,6 +77,15 @@ public static class TraceFile
             if (e["note"] is not null) sb.Append($"    note: {S(e["note"])}\n");
             sb.Append($"    decision: {S(e["decision"])}\n");
             sb.Append($"    decided_by: {S(e["decided_by"])}\n");
+            if (e["finding"] is not null) sb.Append($"    finding: {S(e["finding"])}\n");
+            if (e["severity"] is not null) sb.Append($"    severity: {S(e["severity"])}\n");
+            if (e["severity_by"] is not null) sb.Append($"    severity_by: {S(e["severity_by"])}\n");
+            if (e["evidence"] is JsonArray { Count: > 0 } evidence)
+            {
+                // One record a line, as JSON, which is valid YAML: only code writes these, so a diff stays short.
+                sb.Append("    evidence:\n");
+                foreach (var record in evidence) sb.Append($"      - {record?.ToJsonString(Json) ?? "null"}\n");
+            }
         }
         return sb.ToString();
     }

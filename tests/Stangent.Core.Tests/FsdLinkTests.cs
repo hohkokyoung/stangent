@@ -538,6 +538,6 @@ public class FsdLinkTests
         File.WriteAllText(TraceFile.PathIn(app.Root), "version: 1\nentries: []\n");
         Assert.Empty(TraceCheck.Run(app.Root, app.Graph, null, false)["problems"]!.AsArray());
         TraceFile.Save(app.Root, TraceFile.Empty());
-        Assert.StartsWith("version: 2", File.ReadAllLines(TraceFile.PathIn(app.Root)).First(l => l.StartsWith("version", StringComparison.Ordinal)));
+        Assert.StartsWith("version: 3", File.ReadAllLines(TraceFile.PathIn(app.Root)).First(l => l.StartsWith("version", StringComparison.Ordinal)));
     }
 }

@@ -48,8 +48,8 @@ The one place for what comes next (D112). From the foundation up, applying `impr
 | 2.1 ✅ | Word fails loudly | Tracked changes, moves, hidden text, comments, footnotes, embedded files, nested tables and vertical merges each stop the import or are listed | D52, D111 | no |
 | 2.2 ✅ | Stable section ids | Ids that survive edits and moves; a new version comes in as a candidate with a section diff; doubtful matches go to a person; removed ids kept | D15, D99 | no |
 | 2.3 ✅ | Stable statement ids | Ids never renumbered or reused; `path:lines` citations; commit stamped | D62, D54 | no |
-| 2.4 | Findings carry evidence | Findings use 0.1 and 0.2; severity from one scale | D53, D68 | no |
-| 2.5 | Disprove step | A second agent tries to refute every finding, reversing D62's "rejected"; page gaps go to developers; a "page is wrong" decision | D62, D99, D58 | **the re-score is paid: prepared, not run** |
+| 2.4 ✅ | Findings carry evidence | Findings use 0.1 and 0.2; severity from one scale | D53, D68 | no |
+| 2.5 | Disprove step | A second agent tries to refute every finding, reversing D62's "rejected"; page gaps go to developers; a "page is wrong" decision; an AI suggestion for a finding's severity (D118) | D62, D99, D58 | **the re-score is paid: prepared, not run** |
 | 2.6 | 2c's leftovers | Only if they still apply after 2.5: `LinkRun.cs` review items, "no code found" on 56 of 109 | D99 | scored run is paid |
 
 Stop there. Phase 4 needs the owner: the order after 2.x, and the questions under "Open questions" in `decisions.md`.
@@ -107,8 +107,8 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 1 | Ids never renumbered or reused | ✅ | 2a, D62, D118 | done (2.3) |
 | 1 | Pages follow journeys | ⬜ | 2a, D54, D63 | Owner |
 | 1 | Shared behaviour written once | 🟡 | 2a, D54 | Owner, with page shape |
-| 1 | Today, required and findings kept apart, with ids | 🟡 | 2a, 2b, D52 | 2.4 |
-| 1 | Severity from one scale | ⬜ | 2b, D68 | 2.4 |
+| 1 | Today, required and findings kept apart, with ids | ✅ | 2a, 2b, D52, D118 | done (2.4); "a new app" isn't Stangent's job |
+| 1 | Severity from one scale | ✅ | 2b, D68, D118 | done (2.4), set by a person; an AI suggestion with 2.5 |
 | 1 | Second agent disproves findings; gap finders | ⬜ | 2b, D62 | 2.5 |
 | 1 | Call graph: every entry point on real C# | 🟡 | 1a, 4, D109 | Phase 4 (decided) |
 | 1 | Adapters: Playwright, Razor, Svelte, SQL seed | 🟡 | 1b, D31, D65, D86 | 1.2 for Playwright; rest when a repo needs them |
@@ -149,12 +149,12 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 5 | One-line installer, pinned version | ⬜ | D1 | when BAs become users |
 | 6 | Check against code or against the reference | ⬜ | 2b, D99 | 2.5, code first |
 | 6 | Finder never verifies; fresh re-check | ⬜ | D62 | 2.5 |
-| 6 | Stamped with commit and evidence strength | ⬜ | D53, 0 | 0.1, 2.4 |
+| 6 | Stamped with commit and evidence strength | ✅ | D53, 0, D118 | done (2.4) |
 | 6 | Unverified until code confirms | 🟡 | D53, D68 | 2.5 |
 | 6 | "The reference is wrong" decision | 🟡 | D58 | 2.5 |
 | 6 | Only what changed is re-checked | 🟡 | D18, D58, D99 | 2.6 |
 | 6 | Reference gaps go to a developer | ⬜ | D99 | 2.5 |
-| 6 | Per-chapter report | ⬜ | 2b | after 2.4 |
+| 6 | Per-chapter report | ⬜ | 2b, D118 | still to do: 2.4 shows ids and severity in `trace check` only |
 | 6 | Alias map for names | ⬜ | 2b | if real documents need it |
 | 6 | Trial result (12 of 12) | ⬜ | D99 | a result, not a feature; the owner's denominator is open |
 | 7 | All state changes through one module | ⬜ | 0, 2, 3, D18 | 0.2 |
