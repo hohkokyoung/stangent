@@ -76,6 +76,7 @@ public static partial class FsdObjects
             image["sectionNumber"] = (string)holder["id"]!;
         }
         foreach (var gone in pictures.Values) ledger.Remove(Figures, gone);
+        FsdAttachments.Assign(root, doc, previous, document);
     }
 
     /// <summary>A ledger behind the document, or deleted, catches up first, so a live id is never given again.</summary>

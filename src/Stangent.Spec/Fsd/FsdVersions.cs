@@ -85,13 +85,14 @@ public static class FsdVersions
         {
             var waiting = Load(root, doc);
             // The same file read the same way waits as it is. A newer build reading it differently is a newer candidate.
-            if ((string)waiting["to"]! == hash && (bool)waiting["flat"]! == flat && File.ReadAllText(Path.Combine(dir, "document.md")) == converted.Markdown)
+            if ((string)waiting["to"]! == hash && (bool)waiting["flat"]! == flat && File.ReadAllText(Path.Combine(dir, "document.md")) == converted.Markdown
+                && FsdAttachments.Same(JsonNode.Parse(File.ReadAllText(Pending(root, doc)))!.AsObject(), document))
                 return Result(doc, waiting, document, "waiting", archive);
             StateChanges.Apply(root, waiting, StateKinds.FsdCandidate, CandidateKey(doc, (string)waiting["to"]!), "replaced", Code, $"a newer file came in: {hash[..12]}");
         }
         if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
         Directory.CreateDirectory(dir);
-        FsdImport.WriteText(dir, converted);
+        FsdImport.WriteText(dir, converted, document);
         Quotes.WriteAtomic(Pending(root, doc), CanonicalJson.Serialize(document));
         ImportReport.Write(dir, document);
 
@@ -104,9 +105,18 @@ public static class FsdVersions
             ["version"] = 1, ["doc"] = doc, ["from"] = (string)current["original"]!["hash"]!, ["to"] = hash, ["flat"] = flat,
             ["sections"] = new JsonArray([.. entries.Select(e => (JsonNode)e)]),
         };
+        if (WholeDocumentFiles(current, document) is { Count: > 0 } files) diff["attachmentsWithNoSection"] = files;
         StateChanges.Apply(root, diff, StateKinds.FsdCandidate, key, "candidate", Code, why);
         Save(root, doc, diff);
         return Result(doc, diff, document, "candidate", archive);
+    }
+
+    /// <summary>A file with no section is in no section's hash, so a change to one is said here instead.</summary>
+    static JsonArray WholeDocumentFiles(JsonObject current, JsonObject document)
+    {
+        static List<(string Name, string Hash)> Of(JsonObject d) =>
+            [.. (d["attachments"]?.AsArray() ?? []).OfType<JsonObject>().Where(a => a["sectionNumber"] is null).Select(a => ((string)a["fileName"]!, (string)a["hash"]!))];
+        return new JsonArray([.. FsdSectionDiff.Changes(Of(current), Of(document)).Select(c => (JsonNode)c)]);
     }
 
     static string MatchKey(string candidate, JsonObject entry) => $"{candidate}#{(string?)entry["to"] ?? (string)entry["permanentId"]!}";
@@ -134,7 +144,7 @@ public static class FsdVersions
             ReplaceFirst(root, doc, hash);
             if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
             Directory.CreateDirectory(dir);
-            FsdImport.WriteText(dir, converted);
+            FsdImport.WriteText(dir, converted, document);
             Quotes.WriteAtomic(Pending(root, doc), CanonicalJson.Serialize(document));
             ImportReport.Write(dir, document);
             diff = new JsonObject { ["version"] = 1, ["doc"] = doc, ["first"] = true, ["from"] = null, ["to"] = hash, ["flat"] = flat, ["sections"] = new JsonArray() };
@@ -173,6 +183,7 @@ public static class FsdVersions
         ImportProblems.Attach(pending);
         Validate(pending);
         if (Directory.Exists(Path.Combine(candidate, "images"))) Directory.Move(Path.Combine(candidate, "images"), Path.Combine(dir, "images"));
+        FsdAttachments.Move(candidate, dir, pending);
         File.Move(Path.Combine(candidate, "document.md"), Path.Combine(dir, "document.md"), overwrite: true);
         Quotes.WriteAtomic(JsonPath(root, doc), CanonicalJson.Serialize(pending));
         ImportReport.Write(dir, pending);
@@ -307,7 +318,14 @@ public static class FsdVersions
         var gone = oldById.Where(o => !claimed.Contains(o.Key)).Select(o => o.Value).ToList();
         var pairs = sections.Where(s => kept.ContainsKey((string)s["id"]!))
             .Select(s => new FsdCarry.Pair(oldById[kept[(string)s["id"]!].Id], s, kept[(string)s["id"]!].Kind)).ToList();
+        // With attachments in the checks, what a judge saw includes them, so a run's hash is worked out with them on both sides, and a changed file means a new run.
+        if (repo.Config.Fsd.AttachmentsInChecks)
+        {
+            foreach (var s in oldById.Values) AttachmentChecks.Fill(s, current, FsdImport.DocDir(root, doc), false, repo.Config.Fsd.AttachmentChars);
+            foreach (var s in sections) AttachmentChecks.Fill(s, pending, CandidateDir(root, doc), true, repo.Config.Fsd.AttachmentChars);
+        }
         var carried = FsdCarry.Apply(root, doc, pairs, gone, sections.Select(s => (string)s["id"]!).ToHashSet(StringComparer.Ordinal), repo.Config.Fsd.Findings);
+        foreach (var s in sections) s.Remove(AttachmentChecks.Key);
 
         var ledger = Ledger(root, doc);
         foreach (var s in gone) ledger.Remove(Scope, (string)s["permanentId"]!);
@@ -315,6 +333,7 @@ public static class FsdVersions
         var candidate = CandidateDir(root, doc);
         if (Directory.Exists(Path.Combine(dir, "images"))) Directory.Delete(Path.Combine(dir, "images"), recursive: true);
         if (Directory.Exists(Path.Combine(candidate, "images"))) Directory.Move(Path.Combine(candidate, "images"), Path.Combine(dir, "images"));
+        FsdAttachments.Move(candidate, dir, pending);
         File.Move(Path.Combine(candidate, "document.md"), Path.Combine(dir, "document.md"), overwrite: true);
         Quotes.WriteAtomic(JsonPath(root, doc), CanonicalJson.Serialize(pending));
         ImportReport.Write(dir, pending);

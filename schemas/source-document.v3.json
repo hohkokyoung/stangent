@@ -108,6 +108,43 @@
           "textHash": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
+          },
+          "contentHash": {
+            "description": "A hash over the section's text and its attachments' hashes (D123). The same as textHash with no attachments. An older document has none, and matching falls back on the text.",
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "attachments": {
+            "description": "The files attached to this section (D123), each with its content hash. The text stays out of document.md.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "fileName",
+                "hash"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^A-[0-9]{4,}$"
+                },
+                "fileName": {
+                  "type": "string"
+                },
+                "hash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          },
+          "attachmentLines": {
+            "description": "A generated line per attachment, saying where it is. Made by code; never the document's own words.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       }
@@ -247,6 +284,16 @@
               "before-first-section",
               "page-join",
               "outside-body",
+              "attachment",
+              "hidden",
+              "shared-workbook",
+              "merged",
+              "formula",
+              "number-format",
+              "large-workbook",
+              "protected",
+              "not-read",
+              "sheet",
               "other"
             ]
           },
@@ -297,6 +344,123 @@
             "state",
             "text"
           ]
+        }
+      }
+    },
+    "attachments": {
+      "description": "Files held inside the document, each with a permanent id from its ledger (D123). Saved under attachments/<id>/ beside document.json. No hash reads them unless fsd.attachmentsInChecks is on.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "fileName",
+          "from",
+          "hash",
+          "bytes",
+          "kind",
+          "reading",
+          "files",
+          "problems"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^A-[0-9]{4,}$"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "from": {
+            "description": "Where it was in the document.",
+            "type": "string"
+          },
+          "hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kind": {
+            "enum": [
+              "excel",
+              "word",
+              "pdf",
+              "zip",
+              "ole",
+              "powerpoint",
+              "other"
+            ]
+          },
+          "reading": {
+            "enum": [
+              "converted",
+              "kept",
+              "withheld"
+            ],
+            "description": "converted: its text was read. kept: saved and listed, not read. withheld: a sensitivity label nobody allowed, so nothing is saved here; the archived original holds it."
+          },
+          "why": {
+            "type": "string"
+          },
+          "section": {
+            "description": "The permanent id of its section. Missing for a file that belongs to the whole document, such as one attached to a PDF.",
+            "type": "string",
+            "pattern": "^S-[0-9]{4,}$"
+          },
+          "sectionNumber": {
+            "type": "string"
+          },
+          "chars": {
+            "description": "Characters of readable text.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "notChecked": {
+            "description": "Over fsd.attachmentChars when imported: it stays out of the bundles even with attachments in checks on.",
+            "type": "boolean"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "file",
+                "role",
+                "hash"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "file": {
+                  "type": "string"
+                },
+                "role": {
+                  "enum": [
+                    "original",
+                    "csv",
+                    "text",
+                    "kept"
+                  ]
+                },
+                "sheet": {
+                  "type": "string"
+                },
+                "hash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         }
       }
     }

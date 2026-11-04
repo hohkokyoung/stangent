@@ -50,8 +50,8 @@ public sealed class ImportStepsTests
     [Fact]
     public void A_format_with_no_import_has_no_steps()
     {
-        Assert.Null(ImportPipeline.ForFile("a.xlsx"));
-        Assert.Null(ImportPipeline.Attachment("a.xlsx", [1]));
+        Assert.Null(ImportPipeline.ForFile("a.pptx"));
+        Assert.Null(ImportPipeline.Attachment("a.pptx", [1]));
     }
 
     [Fact]

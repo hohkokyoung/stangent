@@ -68,7 +68,8 @@ public static class TraceCheck
         var baseEntries = (baseTrace?["entries"]?.AsArray() ?? []).OfType<JsonObject>().ToList();
         var baseByFinding = baseEntries.Where(e => e["finding"] is not null).GroupBy(e => (string)e["finding"]!).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         var refused = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-        var stamped = TraceFindings.Stamp(root, trace, index, baseTrace is null ? null : baseByFinding, refused);
+        var rowsMoved = AttachmentChecks.StampRows(root, trace);
+        var stamped = TraceFindings.Stamp(root, trace, index, baseTrace is null ? null : baseByFinding, refused) | rowsMoved;
         stamped |= StampSectionIds(trace, index);
         var findingIds = new HashSet<string>(StringComparer.Ordinal);
         var stale = new List<string>();
@@ -115,7 +116,8 @@ public static class TraceCheck
                 var sectionId = (string)fsd["section"]!;
                 if (index.Sections.TryGetValue(((string)fsd["doc"]!, sectionId), out var section))
                 {
-                    if (fsd["quote"] is { } q && !Quotes.InText((string)q!, (string)section["text"]!)) quotesMatch = false;
+                    // A quote from an attachment is checked against that file, with the switch on or off: it's what the link says it rests on (D123).
+                    if (fsd["quote"] is { } q && !(fsd["attachment"] is not null ? AttachmentChecks.Check(root, fsd, (string)q!).Holds : Quotes.InText((string)q!, (string)section["text"]!))) quotesMatch = false;
                 }
                 // Its section went in a promotion, so the quote has nothing to be checked against: that isn't a stale quote (D117).
                 else if (TraceFile.IsRemovedSection(sectionId)) problems.Add($"{id}: FSD section {fsd["doc"]} §{sectionId} was removed; its decision stays until a person deals with the entry");

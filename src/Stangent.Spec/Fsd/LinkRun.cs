@@ -47,6 +47,7 @@ public static class LinkRun
     public static RunStep Prepare(PageSet set, StangentRepo repo, string doc, string sectionId)
     {
         var index = SpecIndex.Load(repo.Root);
+        AttachmentChecks.Load(index, repo);
         var section = index.Sections.GetValueOrDefault((doc, sectionId))
             ?? throw new StangentException("not_found", $"No section {sectionId} in FSD {doc}. Run `stangent fsd import` first.", ExitCodes.NotFound);
         if (((string)section["text"]!).Trim().Length == 0) return new RunStep("skipped", "none", Errors: ["the section has no text of its own"]);
@@ -159,6 +160,7 @@ public static class LinkRun
         if (PageRun.LoadJson(Path.Combine(work, "state.json")) is not JsonObject state)
             throw new StangentException("not_prepared", $"No run for {doc} §{sectionId}. Run `stangent fsd prepare` first.", ExitCodes.Usage);
         var index = SpecIndex.Load(repo.Root);
+        AttachmentChecks.Load(index, repo);
         var section = index.Sections[(doc, sectionId)];
         var stage = (string)state["stage"]!;
         var role = stage switch { "find" => "finder", "judge" => "judge", "confirm" => "checker", _ => "none" };
@@ -362,7 +364,13 @@ public static class LinkRun
         JsonNode? fsd = section is null ? null : new JsonObject { ["doc"] = doc, ["section"] = (string)section["id"]!, ["title"] = (string)section["title"]! };
         if (fsd is JsonObject known && (string?)section!["permanentId"] is { } sectionId) known["sectionId"] = sectionId;
         if (fsd is JsonObject r && requirement is not null) r["requirement"] = requirement;
-        if (fsd is JsonObject f && fsdQuote is not null) { f["quote"] = fsdQuote; f["quoteHash"] = TraceFile.QuoteHash(fsdQuote); }
+        if (fsd is JsonObject f && fsdQuote is not null)
+        {
+            f["quote"] = fsdQuote;
+            f["quoteHash"] = TraceFile.QuoteHash(fsdQuote);
+            if (AttachmentChecks.SourceOf(section!, fsdQuote) is { } source)
+                foreach (var (k, v) in source) f[k] = v!.DeepClone();
+        }
         JsonNode? pg = page is null ? null : new JsonObject { ["id"] = page };
         if (pg is JsonObject p && statement is not null) p["statement"] = statement;
         if (pg is JsonObject p2 && pageQuote is not null) { p2["quote"] = pageQuote; p2["quoteHash"] = TraceFile.QuoteHash(pageQuote); }
@@ -495,7 +503,7 @@ public static class LinkRun
     {
         var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions("link-judge.md"));
         sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText("link-judge-output.v1.json").TrimEnd('\n')).Append("\n```\n\n");
-        sb.Append(SectionBlock(section, doc)).Append(PagesBlock(pages, index));
+        sb.Append(SectionBlock(section, doc)).Append(AttachmentChecks.Block(section)).Append(PagesBlock(pages, index));
         return sb.ToString();
     }
 
@@ -503,7 +511,7 @@ public static class LinkRun
     {
         var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions("requirement-judge.md"));
         sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText("requirement-judge-output.v1.json").TrimEnd('\n')).Append("\n```\n\n");
-        sb.Append(SectionBlock(section, doc)).Append("\n# The requirements\n\n");
+        sb.Append(SectionBlock(section, doc)).Append(AttachmentChecks.Block(section)).Append("\n# The requirements\n\n");
         foreach (var r in requirements) sb.Append(RequirementLine(r));
         sb.Append(PagesBlock(pages, index));
         return sb.ToString();
@@ -528,7 +536,7 @@ public static class LinkRun
     {
         var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions(requirements is null ? "agree-checker.md" : "requirement-agree-checker.md"));
         sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText("agree-checker-output.v1.json").TrimEnd('\n')).Append("\n```\n\n");
-        sb.Append(SectionBlock(section, doc)).Append(PagesBlock(pages, index)).Append("\n# The links to check\n\n");
+        sb.Append(SectionBlock(section, doc)).Append(AttachmentChecks.Block(section)).Append(PagesBlock(pages, index)).Append("\n# The links to check\n\n");
         for (var i = 0; i < agrees.Count; i++)
         {
             var requirement = requirements?.FirstOrDefault(r => (string)r["id"]! == (string?)agrees[i]["requirement"]);
@@ -566,7 +574,7 @@ public static class LinkChecks
         if (state is "agree" or "conflict" or "gap" && fsdQuote is null) errors.Add($"a {state} link needs fsdQuote");
         if (state is "agree" or "conflict" or "undocumented" && (page is null || statement is null || pageQuote is null))
             errors.Add($"a {state} link needs page, statement and pageQuote");
-        if (fsdQuote is not null && !Quotes.InText(fsdQuote, (string)section["text"]!))
+        if (fsdQuote is not null && !Quotes.InText(fsdQuote, (string)section["text"]!) && !AttachmentChecks.Holds(section, fsdQuote))
             errors.Add($"fsdQuote \"{Short(fsdQuote)}\" isn't a sentence from the section's text, word for word (at least 4 words, or a whole table cell or list item)");
         if (page is not null && !candidates.Contains(page)) errors.Add($"page `{page}` isn't one of the candidate pages");
         else if (page is not null && statement is not null)

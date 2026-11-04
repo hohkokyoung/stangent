@@ -19,7 +19,7 @@ static class FsdCarry
         public string From => (string)Old["id"]!;
         public string To => (string)New["id"]!;
         public string Title => (string)New["title"]!;
-        public bool SameWords => (string)Old["text"]! == (string)New["text"]! && (string)Old["title"]! == Title;
+        public bool SameWords => (string)Old["text"]! == (string)New["text"]! && (string)Old["title"]! == Title && JsonNode.DeepEquals(Old[AttachmentChecks.Key], New[AttachmentChecks.Key]);
     }
 
     public static JsonObject Apply(string root, string doc, IReadOnlyList<Pair> pairs, IReadOnlyList<JsonObject> gone, IReadOnlySet<string> numbersNow, bool findings)

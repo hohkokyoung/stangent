@@ -70,6 +70,24 @@
                   "section": {
                     "type": "string"
                   },
+                  "attachment": {
+                    "description": "The quote is from this attachment of the section, not its text, found by code (D123).",
+                    "type": "string",
+                    "pattern": "^A-[0-9]{4,}$"
+                  },
+                  "attachmentFile": {
+                    "description": "The file the quote is in, under the attachment's folder.",
+                    "type": "string"
+                  },
+                  "attachmentSheet": {
+                    "description": "The workbook's sheet, for a CSV file.",
+                    "type": "string"
+                  },
+                  "attachmentRow": {
+                    "description": "The sheet's row, which is the CSV file's line. Kept up to date by trace check.",
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
+                  },
                   "sectionId": {
                     "description": "The section's permanent id (D117, D121). `section` stays, because entry ids and saved hashes are built from it.",
                     "type": "string",

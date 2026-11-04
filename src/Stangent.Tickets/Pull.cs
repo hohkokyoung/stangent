@@ -57,7 +57,7 @@ public static partial class TicketPull
 
         var files = new JsonArray();
         foreach (var a in ticket.Attachments.OrderBy(a => a.Id, StringComparer.Ordinal))
-            files.Add(await Attachment(paths, tracker, ticket, a, settings.AttachmentChars, description, comments, ct));
+            files.Add(await Attachment(paths, tracker, ticket, a, settings.AttachmentChars, description, comments, StangentComponents.IsOn(repo.Config, "ticket-excel-text"), ct));
 
         var isBug = settings.IsBugType(ticket.Type);
         var result = new JsonObject
@@ -89,7 +89,7 @@ public static partial class TicketPull
         ?? throw new StangentException("not_pulled", $"{key} hasn't been pulled. Run `stangent ticket pull {key}` first.", ExitCodes.NotFound);
 
     static async Task<JsonNode> Attachment(TicketPaths paths, IIssueTracker tracker, Ticket ticket, TicketAttachment a, int cap,
-        string description, List<(TicketComment c, string Text)> comments, CancellationToken ct)
+        string description, List<(TicketComment c, string Text)> comments, bool excelText, CancellationToken ct)
     {
         var kind = Kind(a);
         var o = new JsonObject { ["id"] = a.Id, ["fileName"] = a.FileName, ["mimeType"] = a.MimeType, ["size"] = a.Size, ["kind"] = kind };
@@ -111,10 +111,13 @@ public static partial class TicketPull
         {
             "text" => Decode(await File.ReadAllBytesAsync(saved.Path, ct)),
             "docx" => Document(a, await File.ReadAllBytesAsync(saved.Path, ct), o),
+            // A workbook is new to tickets, and its text would reach the AI steps, so it's only saved beside the attachment until the switch says otherwise (D123).
+            _ when ImportPipeline.ForFile(a.FileName)?.Name == "xlsx" && !excelText => null,
             // A PDF keeps its kind, "other", since ticket-bundle has no other value for it: its text and its format say the rest.
             _ when ImportPipeline.ForFile(a.FileName) is not null => Document(a, await File.ReadAllBytesAsync(saved.Path, ct), o),
             _ => null,
         };
+        SaveConverted(paths, a, saved.Path, o, excelText);
         if (text is not null)
         {
             text = text.Replace("\r\n", "\n");
@@ -123,6 +126,26 @@ public static partial class TicketPull
             o["truncated"] = text.Length > cap;
         }
         return o;
+    }
+
+    /// <summary>
+    /// A workbook's CSVs, a zip's contents and files inside a document, through the same path as an FSD's (A.7, D123), saved under <c>converted/</c> beside the attachment with a <c>converted.json</c>.
+    /// Nothing about it stops the pull. Off, <c>ticket.json</c> is byte for byte what it was, so no ticket hash moves; on, it lists them too, and a bundle still leaves that out.
+    /// </summary>
+    static void SaveConverted(TicketPaths paths, TicketAttachment a, string file, JsonObject attachment, bool excelText)
+    {
+        var folder = Path.Combine(paths.Attachments, a.Id, "converted");
+        if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
+        var ext = Path.GetExtension(a.FileName).ToLowerInvariant();
+        if (ImportPipeline.ForFile(a.FileName) is null && ext != ".zip") return;
+        var record = EmbeddedFiles.One(new FileInDocument(a.FileName, File.ReadAllBytes(file), null, "ticket attachment"), new ImportOptions(), 1);
+        if (ext is not (".xlsx" or ".xlsm" or ".zip") && !record.Outputs.Any(o => o.Path.StartsWith("embedded/", StringComparison.Ordinal))) return;
+        var saved = record with { Outputs = [.. record.Outputs.Where(o => o.Role != "original")] };
+        EmbeddedFiles.Write(folder, saved);
+        var json = EmbeddedFiles.Json(saved, int.MaxValue);
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, "converted.json"), CanonicalJson.Serialize(json));
+        if (excelText) attachment["converted"] = json;
     }
 
     /// <summary>A document through the same import steps as an FSD (D121). A ticket's attachment isn't the agreed FSD, so nothing about it stops the pull:

@@ -45,13 +45,14 @@ public static class TraceCoverage
         return new JsonObject { ["doc"] = doc, ["section"] = (string)s["id"]!, ["id"] = id, ["state"] = clear ? "unmarked" : "not-in-code", ["by"] = who, ["why"] = why, ["attachments"] = Attachments(document, s) };
     }
 
-    /// <summary>What a section holds besides its words: its pictures, by id, and the files embedded in it, which are only named until they're read (A.7).</summary>
+    /// <summary>What a section holds besides its words: its pictures and attachments, by id, and any embedded file named with nothing to read (A.7).</summary>
     static JsonArray Attachments(JsonObject document, JsonObject section)
     {
         var id = (string?)section["permanentId"];
         var number = (string)section["id"]!;
         return new JsonArray([
             .. document["images"]!.AsArray().OfType<JsonObject>().Where(i => id is not null && (string?)i["section"] == id).Select(i => (JsonNode)new JsonObject { ["id"] = (string?)i["id"], ["file"] = (string)i["file"]! }),
+            .. (document["attachments"]?.AsArray() ?? []).OfType<JsonObject>().Where(a => (string?)a["sectionNumber"] == number).Select(a => (JsonNode)new JsonObject { ["id"] = (string?)a["id"], ["file"] = (string)a["fileName"]! }),
             .. document["problems"]!.AsArray().OfType<JsonObject>().Where(p => (string?)p["sectionNumber"] == number && ((string)p["detail"]!).Contains("embedded", StringComparison.Ordinal))
                 .Select(p => (JsonNode)new JsonObject { ["detail"] = (string)p["detail"]! }),
         ]);

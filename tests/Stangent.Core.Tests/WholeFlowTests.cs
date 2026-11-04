@@ -66,7 +66,7 @@ public sealed class WholeFlow : IDisposable
     {
         this.extraConfig = extraConfig;
         Action[] stages = extraConfig is null
-            ? [SetUp, ReferencePages, Import, LinksAndFindings, Disprove, PersonDecides, Impact, NewVersion, Regenerate, WholeResult]
+            ? [SetUp, ReferencePages, Import, LinksAndFindings, Disprove, PersonDecides, Impact, NewVersion, Regenerate, WholeResult, ExcelAndEmbeddedFiles]
             : [SetUp, ReferencePages, Import, LinksAndFindings, Impact];
         for (var i = 0; i < stages.Length; i++)
         {
@@ -446,6 +446,32 @@ public sealed class WholeFlow : IDisposable
     static string Section1(string conflict) => H("1 Orders") + P(FsdAgree) + conflict + P(FsdGap) + P(FsdReceipt) + P(FsdBack) + Fields;
     static string Section2Body => P(FsdStock);
     static string Section3 => H("3 Checkout") + P(FsdCheckout);
+
+    /// <summary>A workbook as the main document, and a workbook inside a Word file (D123). Last, so what's before it runs on what it always did; with the switch off nothing it adds reaches a check.</summary>
+    void ExcelAndEmbeddedFiles()
+    {
+        var checkBefore = Check();
+        var book = Path.Combine(Root, "rates.xlsx");
+        File.WriteAllBytes(book, XlsxFixture.Build([
+            new("Rates", XlsxFixture.Row(1, XlsxFixture.Str("A1", "Tier"), XlsxFixture.Str("B1", "Fee")) + XlsxFixture.Row(2, XlsxFixture.Str("A2", "Gold"), XlsxFixture.Num("B2", "12"))),
+            new("Back", XlsxFixture.Row(1, XlsxFixture.Str("A1", "secret")), State: "veryHidden"),
+        ]));
+        Saw["excel.import"] = Ok("fsd", "import", book, "--id", "rates");
+        Saw["excel.document"] = Document("rates");
+        Saw["excel.show"] = Ok("fsd", "show", "rates", "Rates");
+        File.Delete(book);
+
+        var word = Path.Combine(Root, "attached.docx");
+        File.WriteAllBytes(word, EmbeddedFilesTests.WordWith("rates.xlsx", XlsxFixture.Rates()));
+        Saw["embedded.import"] = Ok("fsd", "import", word, "--id", "attached");
+        Saw["embedded.document"] = Document("attached");
+        Saw["embedded.show"] = Ok("fsd", "show", "attached", "Rules");
+        Saw["embedded.csv"] = JsonValue.Create(File.ReadAllText(Path.Combine(Root, "specs", "fsd", "attached", "attachments", "A-0001", "rates.csv")));
+        File.Delete(word);
+        Saw["embedded.check.before"] = checkBefore;
+        Saw["embedded.check.after"] = Check();
+        Saw["components"] = Ok("components");
+    }
 
     static byte[] Version1() => FsdDocxTests.Docx(
         Section1(Commented(FsdConflict)) + Sheet
@@ -956,6 +982,32 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         Assert.Contains(flow.Seen("history.moved")["moves"]!.AsArray(), m => (string?)m!["kind"] == "finding-review" && (string?)m["to"] == "confirmed");
         Assert.Contains(flow.Seen("history.moved")["moves"]!.AsArray(), m => (string?)m!["kind"] == "id-moved");
         Assert.Equal(flow.Seen("history.moved")["moves"]!.ToJsonString(), flow.Seen("history.moved.finding")["moves"]!.ToJsonString());
+    }
+
+    [Fact]
+    public void A_workbook_imports_as_a_document_with_its_hidden_sheet_left_out_and_listed()
+    {
+        flow.Reached(12);
+        Assert.Equal(("imported", "ok-with-warnings"), ((string?)flow.Seen("excel.import")["status"], (string?)flow.Seen("excel.import")["verdict"]));
+        var document = flow.Seen("excel.document");
+        Assert.Equal(["Rates"], document["sections"]!.AsArray().Select(s => (string?)s!["id"]));
+        Assert.DoesNotContain("secret", document["sections"]![0]!["text"]!.GetValue<string>());
+        Assert.Contains(document["problems"]!.AsArray(), p => (string?)p!["kind"] == "hidden" && ((string)p["detail"]!).Contains("veryHidden", StringComparison.Ordinal));
+        Assert.Contains("| Gold | 12 |", flow.Seen("excel.show")["text"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void A_workbook_inside_a_word_file_is_saved_and_linked_and_changes_nothing_a_check_reads()
+    {
+        flow.Reached(12);
+        var document = flow.Seen("embedded.document");
+        Assert.Equal(("A-0001", "S-0001"), ((string?)document["attachments"]![0]!["id"], (string?)document["attachments"]![0]!["section"]));
+        Assert.DoesNotContain("Gold", document["sections"]![0]!["text"]!.GetValue<string>());
+        Assert.Contains("A-0001", flow.Seen("embedded.show")["attachments"]!.ToJsonString());
+        Assert.Contains("Gold,12", flow.Seen("embedded.csv").GetValue<string>());
+        Assert.Equal(flow.Seen("embedded.check.before")["staleQuotes"]!.ToJsonString(), flow.Seen("embedded.check.after")["staleQuotes"]!.ToJsonString());
+        var attachments = flow.Seen("components")["components"]!.AsArray().Single(c => (string?)c!["name"] == "attachments-in-checks")!;
+        Assert.False((bool)attachments["on"]!);
     }
 
     [Fact]

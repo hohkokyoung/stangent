@@ -70,8 +70,8 @@ Ahead of Stangent because stale-page detection is only planned there (Phase 7).
      *Tracked changes stop the import; `--accept-changes` imports the accepted view, and moved text comes in once (D116).*
    - 🟡 merged table cells expanded  
      *A cell merged down rows repeats its value and is listed (D116). A cell merged across columns still leaves blanks, not its value.*
-   - ⬜ embedded Excel saved as one CSV per sheet  
-     *Listed by kind and section, not read (D116). Excel import is decided (D111), but not for embedded files.*
+   - ✅ embedded Excel saved as one CSV per sheet  
+     *Saved under `attachments/<A-id>/`, one CSV per sheet, linked from `document.json`, with `document.md` unchanged (D123). Only on hand-built files.*
    - 🟡 PDFs and PowerPoint slides converted to text  
      *PDF is built, read directly (D111). PowerPoint isn't decided.*
    - ⬜ EMF pictures converted to PNG  
@@ -222,14 +222,14 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
   *`document_labelled`, `--allow-label`, `docx_locked` (D122).*
 - ✅ A.4 · When a Word file has no headings, list the bold lines that look like headings.  
   *In the `no_structure` error's details, up to 20, by paragraph. It still never guesses (D122).*
-- ⬜ A.5 · Excel follows the same steps: each sheet a section, merged cells expanded, hidden sheets and comments listed, values shown with the formula noted, very large workbooks flagged.  
-  *Decided (D111), not built. These answer most of what D111 left to grill. Recommend: do after the seams.*
-- 🟡 A.6 · Ids for tables, pictures and attachments, kept in `document.json`.  
-  *Tables and pictures are done (`T-`, `F-`, D122). Attachments' `A-` ids come with A.7.*
-- ⬜ A.7 · Embedded files converted, linked from their section, and their text checked with it. A locked or scanned one is kept and listed.  
-  *Listed only today. The section carries the attachment; the text stays out of `document.md`, so saved hashes hold. Sections that gain text re-run, which is paid. Recommend: do after Excel.*
-- ⬜ A.8 · A section's fingerprint includes its attachments.  
-  *A changed sheet with the same words reads `unchanged` today. Keep `textHash`; add a second hash. Recommend: do with attachments.*
+- ✅ A.5 · Excel follows the same steps: each sheet a section, merged cells expanded, hidden sheets and comments listed, values shown with the formula noted, very large workbooks flagged.  
+  *`.xlsx` and `.xlsm`, by code (D123). No real Excel FSD has been seen: hand-built files only.*
+- ✅ A.6 · Ids for tables, pictures and attachments, kept in `document.json`.  
+  *`T-`, `F-` (D122), and `A-`, each with its section (D123).*
+- ✅ A.7 · Embedded files converted, linked from their section, and their text checked with it. A locked or scanned one is kept and listed.  
+  *Built (D123). The text stays out of `document.md`, so saved hashes hold. The check seeing them is `fsd.attachmentsInChecks`, off by default; turning it on re-runs sections that gain text, which is paid, and hasn't been run on a real AI.*
+- ✅ A.8 · A section's fingerprint includes its attachments.  
+  *`contentHash` beside `textHash`. The same words with other files read `modified`, naming the file; an older document falls back on the text (D123).*
 - ✅ A.9 · A person approves the first import, in a spec-only PR.  
   *A switch, off by default: `fsd approve` (D122). Stangent opens no PR; a spec-only PR is the team's own.*
 - ✅ A.10 · `fsd outline` and `fsd show <section>`.  

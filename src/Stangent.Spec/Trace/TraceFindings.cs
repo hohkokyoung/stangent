@@ -255,13 +255,25 @@ public static partial class TraceFindings
             checkers.Add((JsonNode)Checker("person", decidedBy));
     }
 
+    /// <summary>The FSD's quote, naming the attachment, file, sheet and row when it came from one (D123).</summary>
+    static JsonObject DocumentCitation(JsonObject fsd, string quote)
+    {
+        var citation = new JsonObject { ["kind"] = "document", ["ref"] = (string)fsd["doc"]!, ["quote"] = quote };
+        if ((string?)fsd["attachment"] is not { } attachment) return citation;
+        citation["attachment"] = attachment;
+        citation["file"] = (string?)fsd["attachmentFile"];
+        if ((string?)fsd["attachmentSheet"] is { } sheet) citation["sheet"] = sheet;
+        if (int.TryParse((string?)fsd["attachmentRow"], out var row)) citation["row"] = row;
+        return citation;
+    }
+
     static IEnumerable<JsonObject> Records(JsonObject e, string id, Dictionary<string, JsonObject> documents, SpecIndex index, Lazy<string> repo, List<JsonObject> checkers)
     {
         JsonArray Checked() => [.. checkers.Select(c => (JsonNode)c.DeepClone())];
         if (e["fsd"] is JsonObject fsd && (string?)fsd["quote"] is { } fsdQuote && documents.TryGetValue((string)fsd["doc"]!, out var doc))
             yield return new JsonObject
             {
-                ["id"] = id + ".fsd", ["citation"] = new JsonObject { ["kind"] = "document", ["ref"] = (string)fsd["doc"]!, ["quote"] = fsdQuote },
+                ["id"] = id + ".fsd", ["citation"] = DocumentCitation(fsd, fsdQuote),
                 ["contentHash"] = (string?)doc["original"]?["hash"], ["strength"] = "stated", ["checkedBy"] = Checked(),
             };
         // The disprove step's quote: the agent said it, then code found it word for word at these lines (D119). Code read, so `read`, never `ran`.
@@ -364,6 +376,7 @@ public static partial class TraceFindings
             case "document":
                 if (cited != (string?)e["fsd"]?["doc"]) yield return $"it cites document {cited}, and this finding is on {(string?)e["fsd"]?["doc"] ?? "no document"}";
                 if (!same((string?)citation["quote"], (string?)e["fsd"]?["quote"])) yield return "its quote isn't the finding's FSD quote";
+                if ((string?)citation["attachment"] != (string?)e["fsd"]?["attachment"]) yield return $"it cites attachment {(string?)citation["attachment"] ?? "(none)"}, and this finding's quote is from {(string?)e["fsd"]?["attachment"] ?? "the section's text"}";
                 break;
             case "page":
                 if (cited != (string?)e["page"]?["id"]) yield return $"it cites page {cited}, and this finding is on {(string?)e["page"]?["id"] ?? "no page"}";

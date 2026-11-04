@@ -116,6 +116,7 @@ public sealed class ImportProblemsTests : IDisposable
         old["schemaVersion"] = version;
         old["problems"] = new JsonArray([.. old["problems"]!.AsArray().Select(p => (JsonNode)(string)p!["detail"]!)]);
         old.Remove("tables");
+        foreach (var s in old["sections"]!.AsArray().OfType<JsonObject>()) s.Remove("contentHash");
         foreach (var i in old["images"]!.AsArray().OfType<JsonObject>()) { i.Remove("id"); i.Remove("section"); i.Remove("sectionNumber"); }
         if (version == 1) foreach (var s in old["sections"]!.AsArray().OfType<JsonObject>()) s.Remove("permanentId");
         Assert.Empty(SchemaRegistry.Embedded.Validate($"source-document.v{version}.json", old.ToJsonString()));

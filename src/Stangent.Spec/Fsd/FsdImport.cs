@@ -8,7 +8,7 @@ using Stangent.Spec.Trace;
 namespace Stangent.Spec.Fsd;
 
 /// <summary>
-/// <c>stangent fsd import</c> (Phase 2b step 1, D111): converts a <c>.docx</c> or <c>.pdf</c> to Markdown by code, archives the original
+/// <c>stangent fsd import</c> (Phase 2b step 1, D111): converts a <c>.docx</c>, <c>.pdf</c>, <c>.xlsx</c> or <c>.xlsm</c> to Markdown by code, archives the original
 /// (D16) and records the document's sections as a <c>source-document</c> (v3) in <c>specs/fsd/&lt;doc-id&gt;/</c>.
 /// The same file always gives the same bytes; a file already imported (same content hash) is left alone. A different file
 /// for a document already here comes in as a candidate beside it (<see cref="FsdVersions"/>, D117).
@@ -25,10 +25,10 @@ public static class FsdImport
     public static JsonObject Import(StangentRepo repo, string file, string? id = null, bool flat = false, bool acceptChanges = false, IReadOnlyList<string>? allowLabels = null)
     {
         if (!File.Exists(file)) throw new StangentException("not_found", $"No file at {file}.", ExitCodes.NotFound);
-        var options = new ImportOptions(flat, acceptChanges, allowLabels);
-        var format = ImportPipeline.ForFile(file) ?? throw (Path.GetExtension(file).Equals(".xlsx", StringComparison.OrdinalIgnoreCase)
-            ? new StangentException("unsupported_format", "Excel import is decided (D111) but isn't built yet. Only .docx and .pdf are imported for now.", ExitCodes.Usage)
-            : new StangentException("unsupported_format", "Only .docx and .pdf are imported; other formats get their own converter when a real FSD needs one.", ExitCodes.Usage));
+        var options = ImportOptions.From(repo.Config, flat, acceptChanges, allowLabels);
+        var format = ImportPipeline.ForFile(file) ?? throw (Path.GetExtension(file).Equals(".xls", StringComparison.OrdinalIgnoreCase)
+            ? new StangentException("unsupported_format", "An old Excel file (.xls) isn't read. Save it as .xlsx in Excel, then import that.", ExitCodes.Usage)
+            : new StangentException("unsupported_format", "Only .docx, .pdf, .xlsx and .xlsm are imported; other formats get their own converter when a real FSD needs one.", ExitCodes.Usage));
         format.CheckOptions(options);
         var archive = repo.Config.Fsd.Archive is { Name.Length: > 0, Path.Length: > 0 } a ? a
             : throw new StangentException("archive_not_set", "Set fsd.archive in stangent.yaml first: { name: <archive name>, path: <folder outside this repo>, git: false } (D16).", ExitCodes.Usage);
@@ -53,7 +53,7 @@ public static class FsdImport
         var converted = import.Document;
         var labels = LabelRecord(repo.Root, import.Labels, null);
         var archivedPath = ArchiveOriginal(repo, archive, id, file, bytes, hash);
-        var doc = Document(id, file, converted, archive.Name, archivedPath, hash);
+        var doc = Document(id, file, converted, archive.Name, archivedPath, hash, options.AttachmentChars);
         if (labels is not null) doc["labels"] = labels;
         var archived = new JsonObject { ["name"] = archive.Name, ["path"] = archivedPath };
         if (current is not null)
@@ -77,7 +77,7 @@ public static class FsdImport
         var errors = SchemaRegistry.Embedded.Validate(Schema, doc.ToJsonString());
         if (errors.Count > 0) throw new StangentException("invalid_document", "The imported document broke source-document v3 (a stangent bug).", ExitCodes.Failed, errors);
         Directory.CreateDirectory(dir);
-        WriteText(dir, converted);
+        WriteText(dir, converted, doc);
         File.WriteAllText(jsonPath, CanonicalJson.Serialize(doc));
         ImportReport.Write(dir, doc);
         return ImportReport.AddTo(new JsonObject
@@ -144,16 +144,16 @@ public static class FsdImport
         ImportProblems.Upgrade(current);
         var accepted = current["problems"]!.AsArray().OfType<JsonObject>().Any(p => (string?)p["kind"] == "tracked-changes");
         var allowed = (current["labels"]?.AsArray() ?? []).OfType<JsonObject>().Select(l => (string)l["id"]!).Concat(allowLabels ?? []).ToList();
-        var options = new ImportOptions(flat, accepted, allowed);
+        var options = ImportOptions.From(repo.Config, flat, accepted, allowed);
         format.CheckOptions(options);
         var import = ImportPipeline.Run(format, bytes, options);
         var converted = import.Document;
-        var doc = Document(id, fileName, converted, archive.Name, (string)original["path"]!, hash);
+        var doc = Document(id, fileName, converted, archive.Name, (string)original["path"]!, hash, options.AttachmentChars);
         doc["title"] = current["title"]?.DeepClone();
         if (LabelRecord(repo.Root, import.Labels, current) is { } labels) doc["labels"] = labels;
         var archived = new JsonObject { ["name"] = archive.Name, ["path"] = (string)original["path"]! };
 
-        if (converted.Markdown != File.ReadAllText(Path.Combine(dir, "document.md")) || !SameSections(current, doc))
+        if (converted.Markdown != File.ReadAllText(Path.Combine(dir, "document.md")) || !SameSections(current, doc) || !FsdAttachments.Same(current, doc))
         {
             var offered = FsdVersions.Offer(repo.Root, id, current, doc, converted, hash, flat, archived, "the same file, read again by a newer build, gives other text");
             offered["reread"] = true;
@@ -187,7 +187,14 @@ public static class FsdImport
     }
 
     /// <summary>The document's record, every section's permanent id still to come.</summary>
-    static JsonObject Document(string id, string file, ConvertedDocument converted, string archive, string archivedPath, string hash) => new()
+    static JsonObject Document(string id, string file, ConvertedDocument converted, string archive, string archivedPath, string hash, int attachmentChars)
+    {
+        var doc = Record(id, file, converted, archive, archivedPath, hash);
+        FsdAttachments.AddTo(doc, converted, attachmentChars);
+        return doc;
+    }
+
+    static JsonObject Record(string id, string file, ConvertedDocument converted, string archive, string archivedPath, string hash) => new()
     {
         ["schemaVersion"] = 3,
         ["id"] = id,
@@ -216,9 +223,10 @@ public static class FsdImport
         return o;
     }
 
-    /// <summary>The Markdown and the images into a folder.</summary>
-    internal static void WriteText(string dir, ConvertedDocument converted)
+    /// <summary>The Markdown, the images and the attachments into a folder.</summary>
+    internal static void WriteText(string dir, ConvertedDocument converted, JsonObject document)
     {
+        FsdAttachments.Write(dir, converted, document);
         File.WriteAllText(Path.Combine(dir, "document.md"), converted.Markdown);
         foreach (var img in converted.Images)
         {

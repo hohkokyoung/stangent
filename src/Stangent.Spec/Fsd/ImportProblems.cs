@@ -39,6 +39,16 @@ public static partial class ImportProblems
             o["line"] = number;
             if (sections.LastOrDefault(s => (int)s["line"]! <= number) is { } holder) o["sectionNumber"] = (string)holder["id"]!;
         }
+        if (line.StartsWith("attachment \"", StringComparison.Ordinal))
+        {
+            if (ids.FirstOrDefault(id => line.Contains($"\" in section {id}: ", StringComparison.Ordinal)) is { } held) o["sectionNumber"] = held;
+            return o;
+        }
+        if (line.StartsWith("sheet \"", StringComparison.Ordinal))
+        {
+            if (ids.FirstOrDefault(id => line.StartsWith($"sheet \"{id}\": ", StringComparison.Ordinal)) is { } sheet) o["sectionNumber"] = sheet;
+            return o;
+        }
         if (Follows().Match(line) is { Success: true } follows) o["sectionNumber"] = follows.Groups[1].Value;
         else if (OutOfStep().Match(line) is { Success: true } step) o["sectionNumber"] = step.Groups[1].Value;
         else
@@ -55,6 +65,10 @@ public static partial class ImportProblems
         bool Starts(string s) => line.StartsWith(s, StringComparison.Ordinal);
         bool Has(string s) => line.Contains(s, StringComparison.Ordinal);
         if (Starts("completeness: ")) return "completeness";
+        if (Starts("attachment \"")) return "attachment";
+        if (Starts("hidden sheet \"")) return "hidden";
+        if (Starts("shared workbook: ")) return "shared-workbook";
+        if (Starts("sheet \"") || Starts("workbook: ")) return SheetKind(line[(Starts("workbook: ") ? "workbook: ".Length : line.IndexOf("\": ", StringComparison.Ordinal) + 3)..]);
         if (Starts("--accept-changes: ")) return "tracked-changes";
         if (Starts("imported with --flat")) return "flat";
         if (Starts("page headers and footers")) return "outside-body";
@@ -77,6 +91,20 @@ public static partial class ImportProblems
         }
         if (Starts("section ") || Starts("before the first heading: ")) return "element";
         return "other";
+    }
+
+    /// <summary>A workbook's line, by what follows the sheet's name, as a name can say anything.</summary>
+    static string SheetKind(string rest)
+    {
+        bool Has(string s) => rest.Contains(s, StringComparison.Ordinal);
+        if (rest.StartsWith("merged cells ", StringComparison.Ordinal)) return "merged";
+        if (rest.StartsWith("formula at ", StringComparison.Ordinal)) return "formula";
+        if (rest.StartsWith("hidden ", StringComparison.Ordinal)) return "hidden";
+        if (Has("custom number format") || Has("isn't a real date")) return "number-format";
+        if (Has("fsd.excel.")) return "large-workbook";
+        if (Has("protected")) return "protected";
+        if (Has(" not read") || Has("not a worksheet") || Has("isn't a worksheet")) return "not-read";
+        return "sheet";
     }
 
     /// <summary>Every line of a conversion, in the order the converter wrote them.</summary>

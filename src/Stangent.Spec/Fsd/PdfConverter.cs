@@ -120,6 +120,18 @@ public static partial class PdfConverter
 
     public static ConvertedDocument Convert(byte[] pdf, bool flat = false) => Convert(pdf, flat, null);
 
+    /// <summary>Files attached to the PDF (A.7). The file names no place in the text for them, so they have no section, and none is guessed.</summary>
+    static List<FileInDocument> Attached(PdfDocument doc)
+    {
+        try
+        {
+            return doc.Advanced.TryGetEmbeddedFiles(out var files)
+                ? [.. files.OrderBy(f => f.Name, StringComparer.Ordinal).Select(f => new FileInDocument(f.Name, [.. f.Bytes], null, $"attached to the PDF as {f.Name}"))]
+                : [];
+        }
+        catch (Exception e) when (e is InvalidOperationException or ArgumentException or NullReferenceException or InvalidCastException) { return []; }
+    }
+
     /// <summary><paramref name="tamper"/> lets a test break a page's layout: no PDF can reach the check that catches it, since a block's words all come from the page.</summary>
     internal static ConvertedDocument Convert(byte[] pdf, bool flat, Func<int, List<PdfBlock>, List<PdfBlock>>? tamper) =>
         Open(pdf, doc => new Reader(doc, flat, tamper).Run());
@@ -267,10 +279,10 @@ public static partial class PdfConverter
             if (flat)
             {
                 var (markdown, whole) = FsdSections.Flat(body.ToString(), problems);
-                return new ConvertedDocument(markdown, whole, images, problems, title);
+                return new ConvertedDocument(markdown, whole, images, problems, title) { Files = Attached(doc) };
             }
             var text = body.ToString();
-            return new ConvertedDocument(text + "\n", FsdSections.Build(text, headings, problems, outline: true), images, problems, title);
+            return new ConvertedDocument(text + "\n", FsdSections.Build(text, headings, problems, outline: true), images, problems, title) { Files = Attached(doc) };
         }
 
         static StangentException NoStructure() =>

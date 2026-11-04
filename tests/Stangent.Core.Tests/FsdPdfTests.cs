@@ -275,14 +275,14 @@ public class FsdPdfTests
     }
 
     [Fact]
-    public void Excel_says_it_isnt_built_yet_and_other_formats_are_unsupported()
+    public void Old_excel_says_what_to_do_and_other_formats_are_unsupported()
     {
         using var repo = new TempRepo();
-        var xlsx = Path.Combine(repo.Root, "book.xlsx");
-        File.WriteAllBytes(xlsx, [0]);
-        var e = Assert.Throws<StangentException>(() => FsdImport.Import(repo.Repo, xlsx));
+        var xls = Path.Combine(repo.Root, "book.xls");
+        File.WriteAllBytes(xls, [0]);
+        var e = Assert.Throws<StangentException>(() => FsdImport.Import(repo.Repo, xls));
         Assert.Equal("unsupported_format", e.Code);
-        Assert.Contains("isn't built yet", e.Message);
+        Assert.Contains("Save it as .xlsx", e.Message);
         var txt = Path.Combine(repo.Root, "notes.txt");
         File.WriteAllBytes(txt, [0]);
         Assert.Equal("unsupported_format", Code(() => FsdImport.Import(repo.Repo, txt)));

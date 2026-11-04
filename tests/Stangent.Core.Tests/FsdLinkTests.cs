@@ -21,7 +21,7 @@ public class FsdLinkTests
         Customers earn one point per dollar.
         """;
 
-    static SpecApp App(string extra = "", bool findings = true)
+    internal static SpecApp App(string extra = "", bool findings = true)
     {
         var archive = Directory.CreateTempSubdirectory("stangent-archive-").FullName;
         var app = new SpecApp($"version: 1\nfsd: {{ archive: {{ name: docs, path: '{archive}' }}, findings: {(findings ? "true" : "false")} }}\n{extra}");

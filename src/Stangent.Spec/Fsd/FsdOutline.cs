@@ -62,11 +62,15 @@ public static class FsdOutline
         return new JsonObject
         {
             ["doc"] = doc, ["id"] = (string?)s["permanentId"], ["number"] = (string)s["id"]!, ["title"] = (string)s["title"]!, ["level"] = (int)s["level"]!,
-            ["parent"] = (string?)s["parent"], ["line"] = (int)s["line"]!, ["words"] = Words((string)s["text"]!), ["tables"] = tables, ["figures"] = figures, ["text"] = (string)s["text"]!,
+            ["parent"] = (string?)s["parent"], ["line"] = (int)s["line"]!, ["words"] = Words((string)s["text"]!), ["tables"] = tables, ["figures"] = figures, ["attachments"] = (s["attachments"]?.AsArray() ?? []).DeepClone(), ["attachmentLines"] = (s["attachmentLines"]?.AsArray() ?? []).DeepClone(), ["text"] = (string)s["text"]!,
         };
     }
 
-    public static string ShowText(JsonNode? result) => $"{(string)result!["number"]!}  {(string)result["title"]!}\n\n{(string)result["text"]!}\n";
+    public static string ShowText(JsonNode? result)
+    {
+        var lines = result!["attachmentLines"]!.AsArray().Select(l => $"\n{(string)l!}\n");
+        return $"{(string)result["number"]!}  {(string)result["title"]!}\n\n{(string)result["text"]!}\n{string.Concat(lines)}";
+    }
 
     /// <summary>
     /// One top-level heading and everything under it, in document order. <paramref name="chapter"/> is its number, its permanent id or its heading. Where no chapter has a

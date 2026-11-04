@@ -45,7 +45,7 @@ public static class TraceFile
         YamlScalarNode { Value: null or "" or "~" or "null" } sc when sc.Style == YamlDotNet.Core.ScalarStyle.Plain => null,
         YamlScalarNode sc when key == "version" && int.TryParse(sc.Value, out var v) => v,
         // An evidence record's lines; the contract wants numbers.
-        YamlScalarNode { Style: YamlDotNet.Core.ScalarStyle.Plain } sc when key is "start" or "end" && int.TryParse(sc.Value, out var line) => line,
+        YamlScalarNode { Style: YamlDotNet.Core.ScalarStyle.Plain } sc when key is "start" or "end" or "row" && int.TryParse(sc.Value, out var line) => line,
         YamlScalarNode sc => sc.Value,
         _ => null,
     };
@@ -69,7 +69,7 @@ public static class TraceFile
             {
                 if (e[end] is not JsonObject o) { sb.Append($"    {end}: null\n"); continue; }
                 sb.Append($"    {end}:\n");
-                foreach (var k in end == "fsd" ? new[] { "doc", "section", "sectionId", "title", "requirement", "quote", "quoteHash" } : ["id", "statement", "quote", "quoteHash"])
+                foreach (var k in end == "fsd" ? new[] { "doc", "section", "sectionId", "title", "requirement", "quote", "quoteHash", "attachment", "attachmentFile", "attachmentSheet", "attachmentRow" } : ["id", "statement", "quote", "quoteHash"])
                     if (o[k] is not null) sb.Append($"      {k}: {S(o[k])}\n");
             }
             sb.Append($"    by: {S(e["by"])}\n");

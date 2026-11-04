@@ -15,7 +15,7 @@ public static class ImportReport
 
     /// <summary>The codes that mean this file was read and couldn't come in, as opposed to a mistake in the command.</summary>
     public static readonly IReadOnlySet<string> Stops = new HashSet<string>(StringComparer.Ordinal)
-        { "no_structure", "no_text", "pdf_locked", "invalid_pdf", "invalid_docx", "docx_locked", "docx_tracked_changes", "document_labelled" };
+        { "no_structure", "no_text", "pdf_locked", "invalid_pdf", "invalid_docx", "docx_locked", "docx_tracked_changes", "document_labelled", "xlsx_locked", "invalid_xlsx", "xlsx_tracked_changes", "xlsx_too_large" };
 
     public static string Verdict(JsonObject doc) => doc["problems"]!.AsArray().Count == 0 ? Ok : Warnings;
 
@@ -29,6 +29,7 @@ public static class ImportReport
         sb.Append($"- File: `{(string)original["fileName"]!}`, `{((string)original["hash"]!)[..12]}`, in archive `{(string)original["archive"]!}` at `{(string)original["path"]!}`\n");
         sb.Append($"- Sections: {doc["sections"]!.AsArray().Count}. Pictures: {doc["images"]!.AsArray().Count}.");
         if (doc["tables"] is JsonArray tables) sb.Append($" Tables: {tables.Count}.");
+        if (doc["attachments"] is JsonArray held) sb.Append($" Attachments: {held.Count}.");
         sb.Append('\n');
         foreach (var label in (doc["labels"]?.AsArray() ?? []).OfType<JsonObject>())
             sb.Append($"- Sensitivity label `{(string?)label["name"] ?? (string)label["id"]!}`, allowed by {(string)label["allowedBy"]!}\n");
@@ -43,7 +44,23 @@ public static class ImportReport
             sb.Append($"\n## {g.Key} ({g.Count()})\n\n");
             foreach (var p in g) sb.Append($"- {(string)p["detail"]!}\n");
         }
+        Attachments(sb, doc);
         return sb.ToString();
+    }
+
+    /// <summary>Each attachment and what its own import listed. Hidden sheets and formulas inside one are here, as its text isn't in the document's. "Not checked" is what the checks won't see, with attachments in checks on.</summary>
+    static void Attachments(StringBuilder sb, JsonObject doc)
+    {
+        if (doc["attachments"] is not JsonArray held || held.Count == 0) return;
+        sb.Append($"\n## Attachments ({held.Count})\n\n");
+        foreach (var a in held.OfType<JsonObject>())
+        {
+            var where = (string?)a["sectionNumber"] is { } number ? $"section {number}" : "no section";
+            sb.Append($"- {(string?)a["id"] ?? "(id to come)"} `{(string)a["fileName"]!}`, {where}: {(string)a["reading"]!}{((string?)a["why"] is { } why ? $" ({why})" : "")}");
+            if ((bool?)a["notChecked"] == true) sb.Append($". **Not checked:** its {(int)a["chars"]!} characters are over fsd.attachmentChars");
+            sb.Append('\n');
+            foreach (var p in a["problems"]!.AsArray()) sb.Append($"  - {(string)p!}\n");
+        }
     }
 
     /// <summary>Writes it into the folder that holds this version; left alone when it already says this.</summary>

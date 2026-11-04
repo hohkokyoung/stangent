@@ -20,6 +20,8 @@ public static class FsdSectionDiff
 
     sealed record Side(JsonObject Json, string Id, string Title, string Path, string Text, string? PermanentId)
     {
+        public string? ContentHash => (string?)Json["contentHash"];
+        public List<(string Name, string Hash)> Files => [.. (Json["attachments"]?.AsArray() ?? []).OfType<JsonObject>().Select(a => ((string)a["fileName"]!, (string)a["hash"]!))];
         public string ParentPath => Path.Contains(PathMark) ? Path[..Path.LastIndexOf(PathMark)] : "";
         public string ShownPath => Path.Replace(PathMark.ToString(), " / ", StringComparison.Ordinal);
     }
@@ -35,6 +37,25 @@ public static class FsdSectionDiff
     /// <summary>The sentences a section can be recognised by, each once, in order.</summary>
     public static List<string> SharedSentences(string text) =>
         [.. Sentences.Of(text).Select(s => s.Text).Where(s => s.Split(' ', StringSplitOptions.RemoveEmptyEntries).Count(w => w != "|") >= MinSentenceWords).Distinct(StringComparer.Ordinal)];
+
+    /// <summary>Files on two sides, compared: by name and bytes, and a name on both sides with other bytes is that file changed.</summary>
+    internal static List<JsonObject> Changes(List<(string Name, string Hash)> before, List<(string Name, string Hash)> after)
+    {
+        var (left, right) = (before.Where(b => !after.Contains(b)).ToList(), after.Where(a => !before.Contains(a)).ToList());
+        var changes = new List<JsonObject>();
+        foreach (var r in right)
+        {
+            var was = left.FindIndex(l => l.Name == r.Name);
+            changes.Add(new JsonObject { ["fileName"] = r.Name, ["change"] = was >= 0 ? "changed" : "added" });
+            if (was >= 0) left.RemoveAt(was);
+        }
+        changes.AddRange(left.Select(l => new JsonObject { ["fileName"] = l.Name, ["change"] = "removed" }));
+        return changes;
+    }
+
+    /// <summary>What changed in a matched section's attachments. Nothing when either side has no content hash, an older document, where matching falls back on the text (D123).</summary>
+    static JsonArray? FileChanges(Side old, Side now) =>
+        old.ContentHash is null || now.ContentHash is null || Changes(old.Files, now.Files) is not { Count: > 0 } changes ? null : new JsonArray([.. changes.Select(c => (JsonNode)c)]);
 
     /// <summary>One entry per section: the candidate's in its order, then the current version's that have no match.</summary>
     public static List<JsonObject> Compare(JsonArray current, JsonArray candidate)
@@ -68,7 +89,10 @@ public static class FsdSectionDiff
         {
             if (match.TryGetValue(n, out var m))
             {
-                var e = new JsonObject { ["kind"] = m.Kind, ["permanentId"] = m.Old.PermanentId, ["from"] = m.Old.Id, ["to"] = n.Id, ["title"] = n.Title };
+                // The same words with other files is a changed section: it reads modified, and says which file.
+                var files = FileChanges(m.Old, n);
+                var e = new JsonObject { ["kind"] = m.Kind == "unchanged" && files is not null ? "modified" : m.Kind, ["permanentId"] = m.Old.PermanentId, ["from"] = m.Old.Id, ["to"] = n.Id, ["title"] = n.Title };
+                if (files is not null) e["attachmentsChanged"] = files;
                 if (m.Old.Id != n.Id) e["numberChanged"] = true;
                 if (m.Old.Title != n.Title) e["fromTitle"] = m.Old.Title;
                 if (m.Old.Path != n.Path) { e["fromPath"] = m.Old.ShownPath; e["toPath"] = n.ShownPath; }
@@ -192,6 +216,11 @@ public static class FsdSectionDiff
             sb.Append($"\n## {char.ToUpperInvariant(kind[0])}{kind[1..]}\n\n");
             foreach (var e in some) sb.Append($"- {Line(e)}\n");
         }
+        if (diff["attachmentsWithNoSection"] is JsonArray whole)
+        {
+            sb.Append("\n## Files attached to the whole document\n\nThey're in no section's hash, so they're said here.\n\n");
+            foreach (var c in whole.OfType<JsonObject>()) sb.Append($"- {(string)c["fileName"]!}: {(string)c["change"]!}\n");
+        }
         var renumbered = entries.Where(e => (string)e["kind"]! == "unchanged" && e["numberChanged"] is not null).ToList();
         if (renumbered.Count > 0)
         {
@@ -212,6 +241,7 @@ public static class FsdSectionDiff
             _ => "",
         };
         var was = (string?)e["fromPath"] is { } path ? $" (was {path})" : "";
-        return $"{id}{numbers} {e["title"]}{was}";
+        var files = e["attachmentsChanged"] is JsonArray changes ? $" (attachment {string.Join(", ", changes.OfType<JsonObject>().Select(c => $"{(string)c["fileName"]!} {(string)c["change"]!}"))})" : "";
+        return $"{id}{numbers} {e["title"]}{was}{files}";
     }
 }

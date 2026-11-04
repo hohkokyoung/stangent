@@ -401,3 +401,15 @@ Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions
 **A.10, A.11, E.3.** `fsd outline`, `fsd show`, `fsd export` and `--chapter` are read-only over `document.json` and `document.md`. They've only run on hand-built documents and the fake `claude`. Export's 1500 lines isn't measured against a real FSD.
 
 **C.1, C.3, C.5, E.1.** `trace-links` v4 grew in place (`accepted`, `not-a-difference`, `standing`, `standing_note`, `standing_hash`), as it's on this branch only. No reader's answer changes for a file without them, and no input hash reads them. `recheck` and `gone` have never met a real re-judge: they've only run on hand-built entries through `ApplyEntries`, so how many findings a real re-run marks `gone` because the judge reworded a quote isn't known. That's the first thing to look at in the test phase. `fsd status`'s order of what comes next is the assistant's reading of what a person would want, not something a person has tried.
+
+## §8 batch 3, under D120 (2026-11-04)
+
+**Not checked, under D120:** no fresh check of any of this. `dotnet test`, the whole-flow test and `phases check` pass. **No real Excel FSD has been seen,** and no file saved by Excel or Word with an embedded workbook: every workbook, OLE container and zip here was built by hand, and PDF attachment reading was only run on a hand-written PDF. With `attachments-in-checks` on, only canned answers have been through; no real AI has seen an attachment, so whether it helps or does harm is untested. The limits and settings (`fsd.excel.*`, `fsd.attachmentChars`, `ImportLimits`, `MaxSheetCells`) are stated, not measured.
+
+**A.5, A.6, A.7, A.8.** See D123 and `docs/spec.md`. Sonarr's planted FSD has no embedded files: `document.md` still hashes to `b546bb24…` and `document.json` to `c18cbded…` with `contentHash` set aside, and every saved hash test passes.
+
+**Contracts (D20).** `source-document` v3 and `trace-links` v4 grew in place, as neither is on `main`: `attachments`, section `contentHash`, `attachments`, `attachmentLines`, new problem kinds; `fsd.attachment`, `attachmentFile`, `attachmentSheet`, `attachmentRow`. `evidence` v1 → v2, additive: by grep, only `TraceFindings` and `EvidenceValidator` read a citation, by field, in this phase, so 0 provides v2 and 2b consumes it, with no `needs review`. `Stangent.Tickets` doesn't use the evidence shape. Ticket `ticket-bundle` v2 didn't change: `converted` is left out of it, as `format` and `problems` are.
+
+**Found while building.** A part in an Office file can be called anything, as the SDK's `package.bin` showed, so a file whose name says nothing goes by what it holds. `trace.yaml` reads numbers in evidence by key, so `row` had to be added beside `start` and `end`, or a citation's row came back as a string and broke `evidence`.
+
+**Impact on other phases.** 2c reads `source-document` by field, and 3 reads it only through `ImportPipeline.Attachment`, whose results for `.docx` and `.pdf` are the same. Neither goes to `needs review`.

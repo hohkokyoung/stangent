@@ -204,6 +204,7 @@ public static class TicketBundle
                 c.Remove("notConverted");
                 c.Remove("problems");
                 c.Remove("format");
+                c.Remove("converted");
                 return (JsonNode)c;
             })]),
             ["isBug"] = pulled["isBug"]!.DeepClone(),

@@ -72,7 +72,6 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 | Links and requirements cite a section's permanent id, not its number, once a paid re-run is due anyway | D117 | not placed |
 | A renumbered section's finder hash carried too, with the page set loaded at promotion | D117 | not placed |
 | A promotion that can't half-finish | D117 | not placed |
-| Excel import, by code, listing what can't be brought in exactly (PDF is built) | D111, D15, D72 | not placed; after 2.1, once its questions are grilled |
 | "bug, per R-0042" and "looks intended (R-0042)"; a developer flags a spec gap when confirming a bug | D96, D99 | 2c |
 | The graph's blind spots, a smarter split rule, `impact-report` v6 | D65, D88, D109 | 4 |
 | Parallel work is merged and built together before it counts | D49 | 4 |
@@ -120,10 +119,10 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 2 | Changed code no page covers is listed | ⬜ | 2a, D55 | after 2.3 |
 | 2 | Stamp per repo for split apps | 🟡 | D4 | only if a real target is split |
 | 3 | Fails loudly | ✅ | 2b, D111, D116 | done (2.1) |
-| 3 | Messy Word files (parent item) | 🟡 | 2b, D111, D116 | 2.1 done; embedded Excel, EMF, draw.io, cross-references remain |
+| 3 | Messy Word files (parent item) | 🟡 | 2b, D111, D116 | 2.1 done; embedded Excel done (D123); EMF, draw.io, cross-references remain |
 | 3 | Tracked changes including moves | ✅ | 2b, D116 | done (2.1) |
 | 3 | Vertical merges expanded | ✅ | 2b, D116 | done (2.1); merges across columns stay blank |
-| 3 | Embedded Excel per sheet | ⬜ | 2b, D111 | with Excel; listed since 2.1 |
+| 3 | Embedded Excel per sheet | ✅ | 2b, D111, D123 | A.7 |
 | 3 | PDF and PowerPoint | 🟡 | D111 | PowerPoint not decided |
 | 3 | EMF to PNG | ⬜ | 2b | if a real document needs it |
 | 3 | draw.io sources | ⬜ | 2b | if a real document needs it |
@@ -172,10 +171,10 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 8 | One readable import report with a verdict | ✅ | 2b, D111 | A.2 |
 | 8 | Sensitivity labels stop the import, and a locked Word file gets its own stop with plain in | ✅ | 2b, D111 | A.3 |
 | 8 | When a Word file has no headings, list the bold lines that look like headings | ✅ | 2b, D111 | A.4 |
-| 8 | Excel follows the same steps | ⬜ | D111 | A.5 |
-| 8 | Ids for tables, pictures and attachments, kept in `document.json` | 🟡 | 2b, D113 | A.6; tables and pictures done, attachments with A.7 |
-| 8 | Embedded files converted, linked from their section, and their text checked with it. A loc | ⬜ | 2b, 2c, D53, D111 | A.7 |
-| 8 | A section's fingerprint includes its attachments | ⬜ | 2b, D117 | A.8 |
+| 8 | Excel follows the same steps | ✅ | D111, D123 | A.5; hand-built files only |
+| 8 | Ids for tables, pictures and attachments, kept in `document.json` | ✅ | 2b, D113, D123 | A.6 |
+| 8 | Embedded files converted, linked from their section, and their text checked with it. A loc | ✅ | 2b, 2c, D53, D111, D123 | A.7; the check seeing them is off by default |
+| 8 | A section's fingerprint includes its attachments | ✅ | 2b, D117, D123 | A.8 |
 | 8 | A person approves the first import, in a spec-only PR | ✅ | 2b, D99 | A.9 |
 | 8 | `fsd outline` and `fsd show <section>` | ✅ | 2b | A.10 |
 | 8 | `fsd export` | ✅ | 2b | A.11 |
@@ -189,7 +188,7 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 8 | Ask "how does the app do X today?", answered from pages with citations | ⬜ | plugin, 2a | E.2 |
 | 8 | Run one chapter and see its cost before the whole document | ✅ | plugin, 2b | E.3 |
 
-**Order for §8 (D120, build first, test later):** F.1 and S.1 to S.4; then A.1 to A.4, A.6, A.9 to A.11, C.1, C.3, C.5, E.1, E.3; then A.5, A.7, A.8; then C.2, C.4, C.6, E.2, built switched off. **Earlier suggestion:** S.0, then S.1 and S.2, then S.3, then Excel and attachments (A.5 to A.8), then C.1, then the C.2 pilot once its decision is made. The re-score comes before C.4 and C.6. Other A and E items fit in where they're small.
+**Order for §8 (D120, build first, test later):** F.1 and S.1 to S.4; then A.1 to A.4, A.6, A.9 to A.11, C.1, C.3, C.5, E.1, E.3; then A.5, A.7, A.8 (done, D123); then C.2, C.4, C.6, E.2, built switched off. **Earlier suggestion:** S.0, then S.1 and S.2, then S.3, then Excel and attachments (A.5 to A.8), then C.1, then the C.2 pilot once its decision is made. The re-score comes before C.4 and C.6. Other A and E items fit in where they're small.
 
 ## Phase files
 

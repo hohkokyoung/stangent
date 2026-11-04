@@ -136,6 +136,7 @@ public static class DisproveRun
     {
         if (ClearCommit(set.Graph) is { } unclear) return new RunStep("failed", "none", Errors: [unclear]);
         var index = SpecIndex.Load(repo.Root);
+        AttachmentChecks.Load(index, repo);
         var section = index.Sections.GetValueOrDefault((doc, sectionId))
             ?? throw new StangentException("not_found", $"No section {sectionId} in FSD {doc}. Run `stangent fsd import` first.", ExitCodes.NotFound);
         var analyzer = new Lazy<ImpactAnalyzer>(() => new ImpactAnalyzer(set.Graph));
@@ -234,6 +235,7 @@ public static class DisproveRun
         Both("\n# Output schema\n\n```json\n" + SchemaRegistry.EmbeddedText(OutputSchema).TrimEnd('\n') + "\n```\n\n");
         sb.Append(LinkRun.SectionBlock(section, doc));
         rests.Append($"# The FSD section\n\n- document: `{doc}`\n- title: {(string)section["title"]!}\n\n{(string)section["text"]!}\n");
+        Both(AttachmentChecks.Block(section));
         Both("\n# The claim\n\n");
         Both(state switch
         {
@@ -369,6 +371,7 @@ public static class DisproveRun
     {
         if (ClearCommit(set.Graph) is { } unclear) throw new StangentException("graph_not_clear", unclear, ExitCodes.Failed);
         var index = SpecIndex.Load(repo.Root);
+        AttachmentChecks.Load(index, repo);
         var analyzer = new Lazy<ImpactAnalyzer>(() => new ImpactAnalyzer(set.Graph));
         var trace = TraceFile.Load(repo.Root);
         // One chapter on its own, to see what it costs before the whole document (E.3).

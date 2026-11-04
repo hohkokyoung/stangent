@@ -14,7 +14,15 @@ public sealed record FsdSection(string Id, string IdKind, string Title, int Leve
 /// <summary>An image kept from the document, named by its content (Phase 2b: no AI reads it).</summary>
 public sealed record FsdImage(string Name, byte[] Bytes, string? Caption);
 
-public sealed record ConvertedDocument(string Markdown, IReadOnlyList<FsdSection> Sections, IReadOnlyList<FsdImage> Images, IReadOnlyList<string> Problems, string? Title);
+public sealed record ConvertedDocument(string Markdown, IReadOnlyList<FsdSection> Sections, IReadOnlyList<FsdImage> Images, IReadOnlyList<string> Problems, string? Title)
+{
+    /// <summary>Files held inside the document, as the converter found them.</summary>
+    public IReadOnlyList<FileInDocument> Files { get; init; } = [];
+    /// <summary>Those files once they've been read (<see cref="EmbeddedFiles"/>).</summary>
+    public IReadOnlyList<AttachmentRecord> Attachments { get; init; } = [];
+    /// <summary>A workbook's sheets as CSV files, used when it's an attachment.</summary>
+    public IReadOnlyList<SheetCsv> Sheets { get; init; } = [];
+}
 
 /// <summary>
 /// <c>.docx</c> → Markdown, deterministically, in C# with the Open XML SDK (Phase 2b step 1, D13). Keeps headings (with
@@ -175,11 +183,15 @@ public static partial class DocxConverter
             var section = headings.Count - 1;
             foreach (var (kind, count, unit) in pendingMarks) Record(section, kind, count, unit);
             pendingMarks.Clear();
+            foreach (var id in pendingEmbeds) embeds.Add((section, id));
+            pendingEmbeds.Clear();
             foreach (var id in pendingAnchors) commentSection.TryAdd(id, section);
             pendingAnchors.Clear();
         }
 
         readonly Dictionary<(int, string), int> markCounts = [];
+        readonly List<string> pendingEmbeds = [];
+        readonly List<(int Section, string Id)> embeds = [];
 
         void Record(int section, string kind, int count, string unit)
         {
@@ -251,7 +263,11 @@ public static partial class DocxConverter
                     case Drawing.GraphicData { Uri.Value: { } uri } when uri.Contains("chart", StringComparison.OrdinalIgnoreCase): Mark("a chart not read"); break;
                     case Drawing.GraphicData { Uri.Value: { } uri } when uri.Contains("diagram", StringComparison.OrdinalIgnoreCase) && block is not Paragraph _: Mark("SmartArt not read"); break;
                     case Drawing.Blip { Embed: null }: Mark("a linked picture not kept"); break;
-                    case { LocalName: "OLEObject" }: Mark($"an embedded file not read ({e.GetAttributes().FirstOrDefault(a => a.LocalName == "ProgID").Value ?? "unknown kind"})"); break;
+                    case { LocalName: "OLEObject" }:
+                        // With its bytes in the file it's read (A.7); it comes in by its relationship, with this section. With none, it's only named.
+                        if (e.GetAttributes().FirstOrDefault(a => a.LocalName == "id").Value is { } embed && EmbeddedPart(embed) is not null) pendingEmbeds.Add(embed);
+                        else Mark($"an embedded file not read ({e.GetAttributes().FirstOrDefault(a => a.LocalName == "ProgID").Value ?? "unknown kind"})");
+                        break;
                     case { LocalName: "control" }: Mark("an ActiveX control not read"); break;
                     case { LocalName: "txbxContent" }: Mark("a text box: its text is kept where it's anchored, which may not be where it reads"); break;
                     case { LocalName: "imagedata" }: Mark("an old-style picture not kept"); break;
@@ -261,6 +277,28 @@ public static partial class DocxConverter
         /// <summary>Descendants, leaving out what only old readers see. A table found under a block is nested, or sits in a text box.</summary>
         static IEnumerable<OpenXmlElement> Live(OpenXmlElement block) =>
             block.Descendants().Where(e => !e.Ancestors().Any(DocxReview.ForOldReaders));
+
+        OpenXmlPart? EmbeddedPart(string relationship) =>
+            main.Parts.FirstOrDefault(p => p.RelationshipId == relationship).OpenXmlPart is { } part and (EmbeddedPackagePart or EmbeddedObjectPart) ? part : null;
+
+        /// <summary>The files in the document, by the order they're met. One nothing in the body points to has no section, and it's still read.</summary>
+        List<FileInDocument> Files(Func<int, string> sectionId)
+        {
+            var files = new List<FileInDocument>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            void Add(OpenXmlPart part, string? section)
+            {
+                using var stream = part.GetStream(FileMode.Open, FileAccess.Read);
+                using var bytes = new MemoryStream();
+                stream.CopyTo(bytes);
+                files.Add(new FileInDocument(Path.GetFileName(part.Uri.ToString()), bytes.ToArray(), section, part.Uri.ToString()));
+            }
+            foreach (var (section, id) in embeds)
+                if (seen.Add(id)) Add(EmbeddedPart(id)!, section >= 0 || flat ? sectionId(section) : null);
+            foreach (var part in main.Parts.Where(p => !seen.Contains(p.RelationshipId) && p.OpenXmlPart is EmbeddedPackagePart or EmbeddedObjectPart).OrderBy(p => p.OpenXmlPart.Uri.ToString(), StringComparer.Ordinal))
+                Add(part.OpenXmlPart, null);
+            return files;
+        }
 
         void Field(string instruction)
         {
@@ -597,13 +635,13 @@ public static partial class DocxConverter
             {
                 var (markdown, whole) = FsdSections.Flat(body, problems);
                 Listed(body, _ => FsdSections.FlatId);
-                return new ConvertedDocument(markdown, whole, images, problems, title);
+                return new ConvertedDocument(markdown, whole, images, problems, title) { Files = Files(_ => FsdSections.FlatId) };
             }
             if (headings.Count == 0)
                 throw new Core.StangentException("no_structure", $"This .docx has no headings, so it has no sections. Apply heading styles, {FsdSections.NoStructureAdvice}.", Core.ExitCodes.Failed, BoldLines());
             var sections = FsdSections.Build(body, headings, problems);
             Listed(body, i => sections[i].Id);
-            return new ConvertedDocument(body + "\n", sections, images, problems, title);
+            return new ConvertedDocument(body + "\n", sections, images, problems, title) { Files = Files(i => sections[i].Id) };
         }
 
         /// <summary>
