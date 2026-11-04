@@ -106,7 +106,7 @@ public static class StateKinds
         ], Field: "stage"),
 
         // D119: one finding at a time, each from nothing.
-        new(DisproveRun, ".stangent/fsd/state-history.jsonl", ["disprove"], [.. Each(Code, "disprove", "done", "failed")], Field: "stage"),
+        new(DisproveRun, ".stangent/fsd/state-history.jsonl", ["disprove"], [By(Code, "disprove", "done")], Field: "stage"),
 
         new(ReqRun, ".stangent/req/state-history.jsonl", ["write"],
         [

@@ -26,9 +26,9 @@ Here's the full list, grouped by area. Each section ends with a line on why it's
 - ✅ Three kinds of statement are kept apart: what the app does today, the required behaviour for a new app, and findings or open questions (`X` and `Q` ids). Opinions can't pass as facts.  
   *Built in 2.4 (D118): findings have permanent `X-0001` ids, questions already had `Q-0001`, and `trace check` rejects evidence citing a finding. "A new app" isn't Stangent's job, so that part is the FSD.*
 - ✅ Findings get a severity from one shared scale, graded by the effect on users on the path they actually take.  
-  *Built in 2.4 (D118): `blocker`, `major`, `minor`, `cosmetic`, starting `ungraded`, set by a person through the decision path. An AI suggestion comes with 2.5.*
-- ⬜ A second agent tries to disprove every finding. It assumes each claim is wrong until the code proves it, and checks whether the code path is actually reached. Separate "gap finders" look for what the first pass missed.  
-  *D62 rejected this; only "agree" verdicts get a second check. Recommend: do, reversing D62, and re-score.*
+  *Built in 2.4 (D118): `blocker`, `major`, `minor`, `cosmetic`, starting `ungraded`, set by a person through the decision path. Since 2.5 the disprove step can suggest a grade, shown beside it; a person still sets it.*
+- 🟡 A second agent tries to disprove every finding. It assumes each claim is wrong until the code proves it, and checks whether the code path is actually reached. Separate "gap finders" look for what the first pass missed.  
+  *Built in 2.5, reversing D62 (D119): off by default, and not shown to help until the owner's paid re-score runs. Not tested: `undocumented` screens found by code, which have no FSD quote. **Not done:** gap finders; the step only removes findings, so it can't raise what's found.*
 - 🟡 The call graph handles real C#. It resolves interface calls and DI registrations, and shows every entry point (endpoint, page, job, handler) that reaches a method.  
   *Roslyn graph with DI and impact answers, scored on real repos. Known gaps: code dispatched by interface or name, and framework-run code (D109). Recommend: close them in Phase 4 as decided.*
 - 🟡 Adapters for the actual stack: Playwright tests, Svelte screens, Razor pages, .NET code and SQL seed data.  
@@ -83,7 +83,7 @@ Ahead of Stangent because stale-page detection is only planned there (Phase 7).
 - ✅ Lists everything it couldn't bring in exactly, so nothing is lost silently.  
   *Done for PDF, with stated gaps (D111), and for Word, where a code check compares every word per section on each import (D116). Not yet measured on a file saved by Word itself.*
 - 🟡 Open Word review comments become questions for the BA.  
-  *Each comment is listed with its author, section and open or resolved state, in a fixed shape (D116). Becoming questions is still to do, with 2.5.*
+  *Each comment is listed with its author, section and open or resolved state, in a fixed shape (D116). **Not done:** becoming questions. 2.5 didn't build it.*
 - ✅ Encrypted or protected files stop the run with instructions. It never works around the protection.  
   *`pdf_locked` for any protected PDF; a Word file that won't open gives `invalid_docx` (D111).*
 - ✅ Fast on a real FSD: about 360 sections and 150 tables in about 18 seconds in the pilot.  
@@ -154,15 +154,15 @@ Ahead of Stangent because Stangent has designed approval states but not a workin
 - ✅ Every finding is stamped and weighed. It records which code commit it was checked against, and how strong the evidence is: backed by a test, by code only, or weak.  
   *Built in 2.4 (D118): each finding carries `evidence` records with the commit, the strength (`stated`, `read`; `ran` only with a real run) and who checked it, filled by code and validated by `trace check`.*
 - 🟡 Findings stay marked "unverified" until code confirms them. Nothing is overstated.  
-  *Unverified until a person approves (D53); findings are off by default (D68). No code confirmation step.*
-- 🟡 The BA decides each finding, and can say "the reference is wrong", which sends it back to the reference's owner.  
-  *Decisions exist (agree, code-wrong, fsd-wrong, defer). "The page is wrong" doesn't. Recommend: do, small.*
+  *Unverified until a person approves (D53); findings are off by default (D68). Since 2.5 a verdict can mark one code-confirmed, as `read`, never `ran`; off by default and unscored (D119).*
+- ✅ The BA decides each finding, and can say "the reference is wrong", which sends it back to the reference's owner.  
+  *Built in 2.5 (D119): `page-wrong`, with `decided_by` from git. The page goes stale for its owner, is listed in `spec stale`, and writing it again sends the finding back to the BA.*
 - 🟡 Only what changed is re-checked. A new import re-checks just the units whose pages changed. Decided findings go back to "recheck" if their evidence changed, or "gone" if it disappeared.  
-  *Unchanged inputs are reused (D18), and a changed quote drops its decision (D58). Re-judging a stale page's links is decided, not built (D99).*
-- ⬜ Reference gaps are kept out of the BA's queue. "The reference doesn't cover this" goes to a developer, not the BA.  
-  *Most of Stangent's false alarms are this case (D99). Recommend: do.*
+  *Unchanged inputs are reused (D18), and a changed quote drops its decision (D58). 2.6 stopped a finder's re-run re-paying the judge for the same pages. Re-judging a stale page's links is decided, not built (D99).*
+- 🟡 Reference gaps are kept out of the BA's queue. "The reference doesn't cover this" goes to a developer, not the BA.  
+  *Built in 2.5 (D119): a `page-gap` verdict goes to developers, listed in its own group. Off by default and unscored until the re-score runs.*
 - ⬜ A per-chapter report of findings by result and severity, plus a count of FSD rules with no test, for QA. Still to do: `trace check` lists ids and severity, with no per-chapter view.  
-  *Bulk approval works per chapter, but there's no report. Tests carrying ids are Phase 5. Recommend: do after severity.*
+  *Bulk approval works per chapter, but there's no report. Tests carrying ids are Phase 5. **Not done:** 2.5 didn't build it. Recommend: do after severity.*
 - ⬜ An alias map records names that differ between the FSD and the screens.  
   *Not in Stangent. Recommend: do if real documents need it.*
 - ⬜ Trial result: every finding built on a correct reference page was right (12 of 12).  

@@ -24,6 +24,9 @@ stangent trace check
    `stangent fsd check "<doc>" "<section>"` and read `result.next` again (exit 1 means a retry or a failure; keep
    following `result.next`).
 
-Then report from `stangent trace check`: counts by state, and list the gaps, conflicts and undocumented items for the
+When `fsd.disprove` is on (D119), the batch driver also runs the disprove stage. For one section: `stangent fsd disprove prepare "<doc>" "<section>"`, the same
+loop with `stangent-finding-disprover`, then `stangent fsd disprove check "<doc>" "<section>"`.
+
+Then report from `stangent trace check`: counts by state, who each finding goes to (`goesTo`, `queues`), and list the gaps, conflicts and undocumented items for the
 section(s), each with its two quotes. "Agree" links whose second check says `confirmed` can be approved in bulk with
 `stangent trace approve <doc> <chapter>`; everything else is reviewed one by one by editing `decision` in a PR.

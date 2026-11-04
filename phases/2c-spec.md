@@ -62,3 +62,55 @@ Checked 2026-11-04 (D20): by grep, `Stangent.Spec` reads none of the new values.
 Checked 2026-11-04 (D20, D117): `source-document` v1 → v2. By grep, `Stangent.Spec`'s link and requirement runs read each section's `id`, `title`, `text` and `parent`, never `permanentId` or the document's `schemaVersion`. All tests pass, so this now consumes `source-document: 2`. On a promotion, `FsdCarry` moves this phase's section references to the new numbers; no file changes shape.
 
 Checked 2026-11-04 (D20, D118): `trace-links` v1 → v3. By grep, requirement links are written through `LinkRun.Entry`, which didn't change, and read by field, with `requirement` and the id's hash as they were. `ApplyEntries` now also carries a finding's new fields across a re-run. All tests pass, so this consumes `trace-links: 3`.
+
+Checked 2026-11-04 (D20, D119): `trace-links` v3 grew `page-wrong`, `verdict`, `disproof` and `disproof_hash` in place, because v3 hasn't reached `main`. Requirement links and matching read `state` and `check`, never these. `Match.IsLink` is unchanged, so a refuted gap still reads "no code found" until a person says otherwise. All tests pass.
+
+## The disprove step's re-score: prepared, not run (2.5, D119)
+**It isn't shown to help.** Nothing paid has run. The only result so far is that the scorer works. That's the owner's call to make.
+
+**Before (2c, `benchmark/results/2026-11-03-phase2c-sonarr-links-score.json`):** 24 of 30 found, 44% false alarms (95% range 29-59%), from 90 findings and a hand check of 20 (12 false, 8 real).
+
+**Bars, unchanged:** at least 27 of 30 found; false alarms at or below 30%.
+
+**What to expect from the bars.** The step can only take findings out, so it **can't raise found above 24 and can't meet the 27 bar**. The most it can do is meet the noise bar without losing planted items. `plantedLost` names each one lost. Meeting 27 needs more found, which is the gap finders, not built. Also, 23 of the 90 are `undocumented` screens found by code, which the step can't test, so they stay in the BA's queue.
+
+**Estimate, from the real bundles on a temp copy of the clone (`fsd disprove estimate sonarr-fsd`, no AI):**
+
+| | |
+|---|---|
+| Findings | 90: 62 calls, 23 not testable, 5 with no code so no call |
+| Characters sent | 4.50M in all, median 89K, largest 101K; 44 of 62 hit the 60K code limit and name what they left out |
+| Input tokens | about 1.2M, at 3.5 to 4 characters a token |
+| Output tokens | about 40K, at the saved judge and checker's 630 a call |
+| Cost | **$4 to $6** on Sonnet 5.5, with a tenth for retries. The saved judge and checker cost $1.31 for 300K in and 20K out, so this scales from what's been paid, not from a price list |
+| Time | not measured: no call of this size has run. The saved calls took 5 seconds at a third of the size |
+
+Because the copy's graph is pre-1.1, the estimate marked it clean by hand in the copy. Its only dirty file was `global.json`. On the real clone, `graph build` does this properly, and the first command below says the numbers again.
+
+**The command, for the owner (from this repo's root):**
+```bash
+B=$HOME/stangent-bench; REPO=$PWD
+dotnet build src/Stangent.Cli && rm -rf $B/stangent-bin-disprove && cp -R src/Stangent.Cli/bin/Debug/net10.0 $B/stangent-bin-disprove
+export STANGENT="dotnet $B/stangent-bin-disprove/stangent.dll"
+(cd $B/sonarr && cp -R specs ../sonarr-specs-before-disprove && cp $REPO/benchmark/configs/sonarr.spec-2c-disprove.yaml stangent.yaml \
+  && $STANGENT graph build && $STANGENT fsd disprove estimate sonarr-fsd)   # free: stop here if the numbers surprise you
+(cd $B/sonarr && $REPO/plugin/scripts/spec-run.sh --jobs 4 --model sonnet --disprove sonarr-fsd)   # PAID: $4-6. Re-judges nothing
+dotnet run --project benchmark/Stangent.Benchmark -- --score-disprove $B/sonarr benchmark/fsd/sonarr/answer-key.json \
+  --hand-check benchmark/results/2026-11-03-phase2c-handcheck.json --out benchmark/results/<date>-phase2c-disprove-score.json
+```
+Stopped partway, it picks up where it was: an answered finding with an unchanged bundle makes no call. After it, a fresh agent should check what's still in the BA's queue by hand before a bar is called met, since `falseAlarmShare` here rests on the 20 sampled before the step (D61). `specs/` goes in `benchmark/results/`, as the other runs' did.
+
+**Checked without paying.** `--score-disprove` on the saved Sonarr trace, with no verdicts, gives 24 of 30 and 44%, the numbers 2c reported, before and after alike. `DisproveScoreTests` scores a hand-written key and output with the answers worked out by hand. On the same temp copy, every one of the 16 sections reads `current` to `fsd prepare`, and `trace check` passes all 134 entries.
+
+**The key.** The score uses `answer-key.json` and the frozen matching rule in `FsdScore`, reused, not copied. `match-key.json` isn't read.
+
+## 2.6: 2c's leftovers (2026-11-04)
+Read at the lines noted, which still line up.
+- **`LinkRun.cs:181`, a real defect, fixed.** After the finder ran, the judge was prepared with no run record, so the same pages paid the judge again. It now reads the record. If the inputs match, there's no call, and the finder's cost is still recorded.
+- **`LinkRun.cs:256`, a real defect, fixed.** A dispute could turn a requirement's link into `undocumented`, which can't be true of something quoted from the FSD. It stays `agree`, `disputed`, and never bulk-approved.
+- **Near it, a real defect, fixed.** A requirement the judge left out even after its retry got no entry and no mention. The run record now names it in `unanswered`. Sonarr has none.
+- **`LinkRun.cs:35`, not a defect.** Retired requirements live in their own list, so they aren't judged, and a changed text falls back to sentences.
+- **`LinkRun.cs:337`, not fixed, and small.** An entry's id leaves out the statement, so two statements with the same quote would share one id and one entry would be lost. Fixing it changes every saved id, which the hard bar forbids.
+- **"56 of 109 requirements read 'no code found'": not a code bug.** On the saved data, all 109 have a link. 53 have one that shows code. Exactly 56 have only gaps, and `Match.IsLink` treats those as no code, as designed. It's what the failed links said. It's also loosely worded: it means no page statement says this, not that no code does. Left as it is; the requirements layer's future is the owner's (D99).
+
+**Not built, on purpose:** gap finders, the per-chapter report, Word comments as questions, anything on the requirements layer's future.

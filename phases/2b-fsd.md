@@ -347,3 +347,25 @@ Code only, no AI. Details are in `docs/spec.md`.
 - `severity_by` shows who merged it, the same limit `decided_by` has.
 
 **Impact on other phases.** 2c and 3 read entries by field and ignore what's new, so both move to `trace-links: 3` with no `needs review`.
+
+### 2.5 The disprove step · 2.6 Leftovers (2026-11-04, D119)
+**Built.** Details are in `docs/spec.md`; the re-score, its estimate and 2.6's outcomes are in `phases/2c-spec.md`.
+- `fsd disprove prepare|check|estimate`, `finding-disprover-output` v1, `stangent-finding-disprover`, a stage in `spec-run.sh --fsd` and `spec-run.sh --disprove`. Off unless `fsd.disprove` is on, set like `findings` (D68).
+- A bundle built by code: the claim in a fixed sentence, the section, the page's statements, the code at numbered lines, what couldn't be shown, the entry points. No finder, no note, no check (D61).
+- Five verdicts, moved only by code on the state module, each routed: `closed`, `developer`, `ba`.
+- `page-wrong`, `suggestedSeverity`, and the listing's `goesTo`, `verdict`, `label`, `quote`, `at` and `queues`.
+
+**The hash bar: met.** `SavedWorkTests.Saved` has the same 25 values, and `DisproveTests` compares them again after a verdict is written. On a temp copy of Sonarr's real data, all 16 sections read `current` to `fsd prepare`, with no AI. A `trace.yaml` from before this step reads and checks, and `trace check` passes on the real 134 entries.
+
+**It isn't shown to help.** No paid run has happened. 2c's numbers (24 of 30, 44%) still stand as the only measured ones.
+
+**Contracts (D20).** `trace-links` v3 grew in place, unshipped, so no bump. New: `finding-disprover-output` v1, `finding-verdict` and `disprove-run` on the state module. Readers of `decision` were checked by grep: `Bundle`, `Drafts` and `FsdCarry` carry it as text; `FsdImpact.verified` now reads `page-wrong` as not verified; `trace approve` skips anything decided. A closed finding leaves the ticket bundle, a draft and impact, only when the setting has made one, so Phase 3 has no `needs review`.
+
+**Known gaps.**
+- The step can only remove findings, so it can't raise found to 27.
+- `undocumented` screens found by code can't be tested: 23 of Sonarr's 90.
+- A verdict can be older than the code until the next `disprove prepare`. `trace check` doesn't see that, and a closed finding stays closed meanwhile.
+- A person who works out `disproof_hash` for a typed verdict passes, on the terms of `evidence_hash` (D118).
+- `graph where` gives a type's first part only, and 44 of Sonarr's 62 bundles hit the code limit, so a refuting line can be out of sight. The bundle names what it left out, and the likely answer is then `cant-tell`.
+- Regenerating a `page-wrong` page sends the finding back even if the page came out the same.
+- Sonarr's saved graph is too old to cite lines, so the real run needs `graph build` first.

@@ -1,0 +1,36 @@
+# stangent.yaml for scoring the disprove step (D119) on Sonarr: sonarr.spec-2c.yaml plus fsd.disprove. The findings under test are the saved 2c ones.
+# because the links' noise bar measures findings (D68, D99). The original FSD is already imported, so the archive isn't used here.
+version: 1
+store:
+  root: .stangent/store
+ai:
+  enabled: true
+detectors: []
+detectorSettings:
+  frontend-http:
+    # Sonarr's own API helpers (frontend/src/Helpers/Hooks, Utilities/Fetch): name:urlProperty[:verbProperty].
+    wrappers: ["useApiQuery:path", "usePagedApiQuery:path", "useApiMutation:path:method", "fetchJson:path:method", "createAjaxRequest:url:method"]
+  publish-handle:
+    # IHandle<TEvent> and IHandleAsync<TEvent> for events; IExecute<TCommand> for commands, which Sonarr's
+    # scheduler and its command API run (src/NzbDrone.Core/Messaging).
+    handlerInterfaces: ["NzbDrone.Core.Messaging.Events.IHandle`1", "NzbDrone.Core.Messaging.Events.IHandleAsync`1", "NzbDrone.Core.Messaging.Commands.IExecute`1"]
+fsd:
+  findings: true
+  disprove: true   # D119: off by default; a benchmark turns it on to measure it
+  skipApproval: true   # benchmarks only (D99): every match made with it says so
+  scope: ["/", "/add", "/series", "/seasonpass", "/serieseditor", "/calendar", "/activity", "/wanted", "/settings", "/system"]
+tickets:
+  site: peachpersonal.atlassian.net
+  projects: [SONB]
+  bugTypes: [Bug]
+  dotnetArgs: "-p:SolutionDir={root}/src/ -p:NuGetAudit=false"
+  testFilter: "TestCategory!=ManualTest&TestCategory!=WINDOWS&TestCategory!=IntegrationTest&TestCategory!=AutomationTest"
+  app:
+    build: ./.stangent-app/build.sh
+    start: ./.stangent-app/start.sh
+    url: http://127.0.0.1:8989/
+    readySeconds: 300
+    specDir: e2e/stangent
+    playwrightDir: e2e
+  proveBudget: { usd: 1, turns: 30 }
+  textFiles: [src/NzbDrone.Core/Localization/Core/en.json]

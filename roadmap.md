@@ -49,8 +49,8 @@ The one place for what comes next (D112). From the foundation up, applying `impr
 | 2.2 ✅ | Stable section ids | Ids that survive edits and moves; a new version comes in as a candidate with a section diff; doubtful matches go to a person; removed ids kept | D15, D99 | no |
 | 2.3 ✅ | Stable statement ids | Ids never renumbered or reused; `path:lines` citations; commit stamped | D62, D54 | no |
 | 2.4 ✅ | Findings carry evidence | Findings use 0.1 and 0.2; severity from one scale | D53, D68 | no |
-| 2.5 | Disprove step | A second agent tries to refute every finding, reversing D62's "rejected"; page gaps go to developers; a "page is wrong" decision; an AI suggestion for a finding's severity (D118) | D62, D99, D58 | **the re-score is paid: prepared, not run** |
-| 2.6 | 2c's leftovers | Only if they still apply after 2.5: `LinkRun.cs` review items, "no code found" on 56 of 109 | D99 | scored run is paid |
+| 2.5 ✅ | Disprove step | A second agent tries to refute every finding, reversing D62's "rejected"; page gaps go to developers; a "page is wrong" decision; an AI suggestion for a finding's severity (D118) | D62, D99, D58 | built and off by default; **the re-score is paid: prepared, not run** (estimate and command in `phases/2c-spec.md`) |
+| 2.6 ✅ | 2c's leftovers | Only if they still apply after 2.5: `LinkRun.cs` review items, "no code found" on 56 of 109 | D99 | no paid run needed: three defects fixed; "no code found" is the failed links, not a bug |
 
 Stop there. Phase 4 needs the owner: the order after 2.x, and the questions under "Open questions" in `decisions.md`.
 
@@ -108,8 +108,8 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 1 | Pages follow journeys | ⬜ | 2a, D54, D63 | Owner |
 | 1 | Shared behaviour written once | 🟡 | 2a, D54 | Owner, with page shape |
 | 1 | Today, required and findings kept apart, with ids | ✅ | 2a, 2b, D52, D118 | done (2.4); "a new app" isn't Stangent's job |
-| 1 | Severity from one scale | ✅ | 2b, D68, D118 | done (2.4), set by a person; an AI suggestion with 2.5 |
-| 1 | Second agent disproves findings; gap finders | ⬜ | 2b, D62 | 2.5 |
+| 1 | Severity from one scale | ✅ | 2b, D68, D118 | done (2.4), set by a person; the AI's suggestion built (2.5), shown only |
+| 1 | Second agent disproves findings; gap finders | 🟡 | 2b, D62, D119 | disprove built, off, not shown to help until the paid re-score (2.5); gap finders still to do |
 | 1 | Call graph: every entry point on real C# | 🟡 | 1a, 4, D109 | Phase 4 (decided) |
 | 1 | Adapters: Playwright, Razor, Svelte, SQL seed | 🟡 | 1b, D31, D65, D86 | 1.2 for Playwright; rest when a repo needs them |
 | 1 | Generated navigation and numbering | 🟡 | 2a | after 2.3 |
@@ -129,7 +129,7 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 3 | draw.io sources | ⬜ | 2b | if a real document needs it |
 | 3 | Word cross-references as links | ⬜ | 2b | later |
 | 3 | Lists everything not brought in exactly | ✅ | 2b, D111, D116 | done (2.1); not yet measured on a file saved by Word |
-| 3 | Word comments become BA questions | 🟡 | 2b, D58, D116 | listed since 2.1; questions with 2.5 |
+| 3 | Word comments become BA questions | 🟡 | 2b, D58, D116 | listed since 2.1; becoming questions still to do |
 | 4 | Section ids survive edits | ✅ | 2b, 2c, D15, D99, D117 | done (2.2); a split or merge is a person's call |
 | 4 | Candidate versions with a section diff | ✅ | 2b, D15, D117 | done (2.2) |
 | 4 | Proven on a real version change | ⬜ | D56 | needs a document with two versions |
@@ -147,13 +147,13 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 5 | Clashes between BAs | ⬜ | D12 | Owner |
 | 5 | One command for what's next | ⬜ | plugin | Owner |
 | 5 | One-line installer, pinned version | ⬜ | D1 | when BAs become users |
-| 6 | Check against code or against the reference | ⬜ | 2b, D99 | 2.5, code first |
-| 6 | Finder never verifies; fresh re-check | ⬜ | D62 | 2.5 |
+| 6 | Check against code or against the reference | 🟡 | 2b, D99, D119 | built, off (2.5): code first, unscored |
+| 6 | Finder never verifies; fresh re-check | 🟡 | D62, D119 | built, off (2.5), unscored |
 | 6 | Stamped with commit and evidence strength | ✅ | D53, 0, D118 | done (2.4) |
-| 6 | Unverified until code confirms | 🟡 | D53, D68 | 2.5 |
-| 6 | "The reference is wrong" decision | 🟡 | D58 | 2.5 |
-| 6 | Only what changed is re-checked | 🟡 | D18, D58, D99 | 2.6 |
-| 6 | Reference gaps go to a developer | ⬜ | D99 | 2.5 |
+| 6 | Unverified until code confirms | 🟡 | D53, D68, D119 | built, off (2.5), unscored |
+| 6 | "The reference is wrong" decision | ✅ | D58, D119 | done (2.5) |
+| 6 | Only what changed is re-checked | 🟡 | D18, D58, D99 | 2.6 stopped one re-paid judge; a stale page's links still aren't judged again (2c step 6) |
+| 6 | Reference gaps go to a developer | 🟡 | D99, D119 | built, off (2.5): sorted by the unscored step |
 | 6 | Per-chapter report | ⬜ | 2b, D118 | still to do: 2.4 shows ids and severity in `trace check` only |
 | 6 | Alias map for names | ⬜ | 2b | if real documents need it |
 | 6 | Trial result (12 of 12) | ⬜ | D99 | a result, not a feature; the owner's denominator is open |

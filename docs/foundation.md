@@ -118,14 +118,16 @@ returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds ev
 |---|---|---|---|
 | `requirement` | `proposed`, `approved`, `retired` | a person approves; code drops back and retires | `specs/requirements/history.jsonl` |
 | `question` | `open`, `dropped` | code | same |
-| `trace-decision` | `undecided`, `agree`, `code-wrong`, `fsd-wrong`, `defer` | a person decides; code only drops back | `specs/trace-history.jsonl` |
+| `trace-decision` | `undecided`, `agree`, `code-wrong`, `fsd-wrong`, `page-wrong`, `defer` | a person decides; code only drops back | `specs/trace-history.jsonl` |
 | `finding-severity` | `ungraded`, `blocker`, `major`, `minor`, `cosmetic` | code starts it `ungraded`; a person grades it and can change their mind | `specs/trace-history.jsonl` |
+| `finding-verdict` | `unverified`, `stands`, `refuted`, `page-gap`, `unreachable`, `cant-tell` | code only, once the agent's quote passes (D119) | `specs/trace-history.jsonl` |
 | `proof` | the proof's outcome values | code | `.stangent/tickets/state-history.jsonl` |
 | `proof-confirmation` | `unconfirmed`, `confirmed` | a person confirms; code clears | same |
 | `draft-posted` | `unposted`, `posted` | a person posts; code starts over when a draft is remade | same |
 | `ticket-step`, `ticket-match` | a ticket AI step's run | code | same |
 | `page-run` | `write`, `verify`, `fix`, `done`, `failed` | code | `.stangent/spec/state-history.jsonl` |
 | `link-run` | `find`, `judge`, `confirm`, `done`, `failed` | code | `.stangent/fsd/state-history.jsonl` |
+| `disprove-run` | `disprove`, `done` | code | `.stangent/fsd/state-history.jsonl` |
 | `req-run` | `write`, `confirm`, `fix`, `reconfirm`, `done`, `failed` | code | `.stangent/req/state-history.jsonl` |
 | `fsd-candidate` | `candidate`, `promoted`, `discarded`, `replaced` | a person promotes or discards; code replaces it when a newer file comes in | `specs/fsd/history.jsonl` |
 | `fsd-section-match` | `doubtful`, `same`, `new`, `removed` | a person settles and can change their mind; code only lets go of a claimed id | same |

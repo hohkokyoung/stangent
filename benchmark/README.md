@@ -115,6 +115,12 @@ history (Kavita has a usable `openapi.json`); CleanArchitecture for the hand-che
 For 📜 history (Phase 1c): tuned on nopCommerce and Sonarr, judged on bitwarden/server (Kavita and eShop
 are reported but have too few fixes to count).
 
+## The disprove step on Sonarr (D119)
+
+`bench --score-disprove <clone> benchmark/fsd/sonarr/answer-key.json --hand-check benchmark/results/2026-11-03-phase2c-handcheck.json [--out file]`
+scores what still reaches the BA, by `--score-fsd`'s own rule, before and after, and names every planted item the step took out of the queue.
+The run itself is paid; its config is `configs/sonarr.spec-2c-disprove.yaml`, and the estimate and exact commands are in `phases/2c-spec.md`.
+
 ## Phase 3: tickets on Sonarr (D77–D81)
 
 The frozen set is in `tickets/sonarr/`: `selection.json` (40 bugs, newest first, and 10 not-bugs, chosen by
