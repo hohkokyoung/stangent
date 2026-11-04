@@ -237,6 +237,37 @@ public sealed class SpecRunDriverTests : IDisposable
     }
 
     [Fact]
+    public void Ask_runs_one_turn_and_prints_the_status_then_the_result()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        const string asker = """{"ok":true,"result":{"status":"confirm","next":{"action":"confirm","agent":"stangent-page-asker","prompt":"Question and pages: .stangent/in.md\nWrite your JSON to: .stangent/out.json","output":".stangent/out.json","schema":"page-asker-output.v1.json"}}}""";
+        const string answered = """{"ok":true,"result":{"status":"answered","next":{"action":"none"},"answer":{"label":"as the pages describe it"}}}""";
+        rig.Stangent($$$"""
+            "spec ask how does it work") echo '{{{asker}}}' ;;
+            "spec ask-check how does it work --usage "*) echo '{{{answered}}}' ;;
+            "spec schema "*) echo '{"type":"object"}' ;;
+            """);
+        var result = rig.Run(Script, "--ask", "how does it work");
+        Assert.Equal(0, result.Exit);
+        Assert.StartsWith("answered\thow does it work\n", result.Out);
+        Assert.Contains("\"label\":\"as the pages describe it\"", result.Out);
+        Assert.Contains("--json-schema", Assert.Single(rig.ClaudeCalls()));
+        Assert.Contains("INPUT-TEXT", rig.ClaudeStdin);
+    }
+
+    [Fact]
+    public void Ask_with_it_off_or_nothing_to_ask_makes_no_AI_call()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.Stangent($$$"""
+            "spec ask how does it work") echo '{{{Off}}}' ;;
+            """);
+        var result = rig.Run(Script, "--ask", "how does it work");
+        Assert.StartsWith("off\thow does it work\n", result.Out);
+        Assert.Empty(rig.ClaudeCalls());
+    }
+
+    [Fact]
     public void Disprove_alone_never_touches_the_links()
     {
         if (OperatingSystem.IsWindows()) return;

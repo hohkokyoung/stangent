@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:page-asker-output:v1",
+  "title": "What stangent-page-asker returns (E.2, D124)",
+  "description": "An answer from the reference pages in the bundle, a sentence at a time, each citing the statements it rests on. Code checks every id. No sentences means the pages don't cover the question.",
+  "type": "object",
+  "required": ["answer"],
+  "additionalProperties": false,
+  "properties": {
+    "answer": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["text", "cites"],
+        "additionalProperties": false,
+        "properties": {
+          "text": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "cites": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["page", "statement"],
+              "additionalProperties": false,
+              "properties": {
+                "page": { "description": "A page's id, as the bundle lists it.", "type": "string" },
+                "statement": { "description": "That page's statement id, e.g. R3.", "type": "string", "pattern": "^[SARE][0-9]+$" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

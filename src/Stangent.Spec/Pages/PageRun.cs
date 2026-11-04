@@ -44,6 +44,7 @@ public sealed record RunStep(string Status, string Action, string? Agent = null,
     {
         PageRun.Writer => Bundles.WriterSchema,
         PageRun.Verifier => Bundles.VerifierSchema,
+        PageAsk.Asker => PageAsk.OutputSchema,
         Stangent.Spec.Fsd.LinkRun.Finder => "candidate-finder-output.v1.json",
         Stangent.Spec.Fsd.LinkRun.Judge => "link-judge-output.v1.json",
         Stangent.Spec.Fsd.LinkRun.Checker => "agree-checker-output.v1.json",

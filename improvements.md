@@ -256,8 +256,8 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
 
 - ✅ E.1 · A status for a document: where it stands, what's waiting, who it waits on.  
   *`fsd status` and `/stangent:fsd-status`, by code, with the next command (D122).*
-- ⬜ E.2 · Ask "how does the app do X today?", answered from pages with citations.  
-  *No plugin command does this. Recommend: do, after the links are measured.*
+- ✅ E.2 · Ask "how does the app do X today?", answered from pages with citations.  
+  *Built, off, not shown to help (`spec.ask`, D124). `stangent spec ask` and `/stangent:ask`: code picks pages by words, one turn, no tools; every id checked by code, lines from `reference-lines`, and an answer with no citations is refused.*
 - ✅ E.3 · Run one chapter and see its cost before the whole document.  
   *`spec-run.sh --chapter <n>` and `fsd disprove estimate --chapter <n>` (D122). The estimate covers the disprove stage only; nothing estimates the link judge.*
 

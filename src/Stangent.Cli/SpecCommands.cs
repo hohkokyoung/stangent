@@ -91,6 +91,22 @@ static class SpecCommands
         }));
         spec.Subcommands.Add(check);
 
+        var questionArg = new Argument<string>("question") { Description = "The question, as one argument." };
+        var ask = new Command("ask", "Ask how the app works today, from the reference pages (E.2, D124): code picks the pages and says what runs next, nothing when it's been answered. Off unless spec.ask is on.") { questionArg };
+        ask.SetAction(pr => Cli.Run(pr, "spec ask", ctx =>
+        {
+            var question = pr.GetValue(questionArg)!;
+            return Answered(PageAsk.Prepare(ctx.Repo, question), question);
+        }));
+        spec.Subcommands.Add(ask);
+        var askCheck = new Command("ask-check", "Check the answer just written: every statement id on a page in the bundle, every sentence citing one. Adds the code's lines. With nothing cited it says the pages don't cover this.") { questionArg, usageOption };
+        askCheck.SetAction(pr => Cli.Run(pr, "spec ask-check", ctx =>
+        {
+            var question = pr.GetValue(questionArg)!;
+            return Answered(PageAsk.Check(ctx.Repo, question, ReadUsage(ctx, pr.GetValue(usageOption))), question);
+        }));
+        spec.Subcommands.Add(askCheck);
+
         var diffOption = new Option<string?>("--diff") { Description = "The PR's range (base..head): lists the changed files inside each stale page's slice." };
         var formatOption = new Option<string>("--format") { Description = "json (default) or md (the list for a PR comment).", DefaultValueFactory = _ => "json" };
         var stale = new Command("stale", "Pages whose inputs changed since they were recorded, with new and removed pages (D55). Code only, no AI.") { diffOption, formatOption };
@@ -130,6 +146,14 @@ static class SpecCommands
     }
 
     /// <summary>A step that ends the page as failed, or asks for a retry, is a check that found problems: exit 1, with the next step in result.</summary>
+    static JsonNode Answered((RunStep Step, JsonObject? Answer) done, string question)
+    {
+        var json = Finish(done.Step, PageAsk.Id(question)).AsObject();
+        json["question"] = question;
+        if (done.Answer is not null) json["answer"] = done.Answer;
+        return json;
+    }
+
     public static JsonNode Finish(RunStep step, string id)
     {
         var json = step.ToJson(id);

@@ -185,7 +185,7 @@ Every ⬜ and 🟡 item in `improvements.md`, with what it touches. The owner ha
 | 8 | BA decisions `accepted` and `not a difference` | ✅ | 2b, D58 | C.5 |
 | 8 | Group small neighbouring sections into one unit when checking | ✅ built, off, not shown to help (D124) | 2b, 2c | C.6 |
 | 8 | A status for a document | ✅ | plugin, 2b | E.1 |
-| 8 | Ask "how does the app do X today?", answered from pages with citations | ⬜ | plugin, 2a | E.2 |
+| 8 | Ask "how does the app do X today?", answered from pages with citations | ✅ built, off, not shown to help (D124) | plugin, 2a | E.2 |
 | 8 | Run one chapter and see its cost before the whole document | ✅ | plugin, 2b | E.3 |
 
 **Order for §8 (D120, build first, test later):** F.1 and S.1 to S.4; then A.1 to A.4, A.6, A.9 to A.11, C.1, C.3, C.5, E.1, E.3; then A.5, A.7, A.8 (done, D123); then C.2, C.4, C.6, E.2, built switched off. **Earlier suggestion:** S.0, then S.1 and S.2, then S.3, then Excel and attachments (A.5 to A.8), then C.1, then the C.2 pilot once its decision is made. The re-score comes before C.4 and C.6. Other A and E items fit in where they're small.

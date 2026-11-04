@@ -58,6 +58,7 @@ components: { page-verifier: false, git-history: false, detector-config-keys: fa
 | `table-facts` | `fsd.compareTables` | off | `graph build` reads no enums and removes any on file; `fsd compare-tables` writes nothing and says `compared: false` (D124). |
 | `judge-finer-verdicts` | `fsd.judgeFinerVerdicts` | off | The link judge's and requirement judge's prompts and schemas are the old ones, so no hash moves (D124). |
 | `group-sections` | `fsd.groupSections` | off | Each section is judged alone. Turned off after a group ran, each section's own saved links go back with no call (D124). |
+| `spec-ask` | `spec.ask` | off | `spec ask` says `off`, writes nothing and asks nothing (D124). |
 | `findings` | `fsd.findings` | off | Only links are recorded (D68). |
 | `disprove` | `fsd.disprove` | off | Status `off`. Needs `findings`: on without it, it's `off` and says so. |
 | `file-finder` | `tickets.aiPoints` | on | Code's signals are the starting points (`ai.status: off`). |

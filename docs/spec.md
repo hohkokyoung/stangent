@@ -83,6 +83,16 @@ code 4 (D24); `spec stale`, `spec cite`, `fsd import`, `fsd diff`, `fsd resolve`
   PR comment. On merge, CI runs
   `spec-run.sh --stale` and opens a spec-only PR (see `plugin/ci/spec.yml`).
 
+## Asking how the app works (E.2, D124)
+
+`stangent spec ask "<question>"`, or `/stangent:ask`, with `spec: { ask: true }`. Off by default. **It hasn't been shown to help, and no real AI has answered one.** It answers from pages, which are generated, so every answer is labelled `as the pages describe it`.
+
+- **Code picks the pages,** by the question's words: most in a page's title or route, then most in its statements, then most statements holding one, then by id. The order of those is the rule, with no weights. A page holding none isn't picked. `spec.askMaxPages` (5, a stated setting) is the cap. No graph expansion.
+- **The bundle** holds the question, those pages' statements with their ids, `page-asker.md` and `page-asker-output` v1.
+- **`stangent-page-asker`,** one turn, no tools, as other AI steps are (D66). `spec-run.sh --ask "<question>"` runs it, printing a status line and the result as one JSON line. By hand: `spec ask`, then `spec ask-check "<question>"` with the same words.
+- **The check, by code.** Every statement id has to exist on a page in the bundle, and every sentence has to cite one. One retry. The cited lines come from `reference-lines`, `path:lines` for each symbol the statement cites, and one with no lines says why, and `notCited` lists such statements. Nothing checks a sentence says what its statement says.
+- **`answered` or `not-covered`.** An answer with no citations, or one that fails twice, is refused and says `The pages don't cover this.`, with `why`. A question no page holds a word of says it with no call. The same question on the same pages reuses the saved answer, with no call. Saved under `.stangent/spec-ask/`.
+
 ## The FSD (2b, D13, D16)
 
 - `stangent fsd import <file> [--id <doc>] [--flat] [--accept-changes] [--allow-label <name>]` takes `.docx`, `.pdf`, `.xlsx` or `.xlsm` (D111, D123), by code only: the same file gives the same bytes, and

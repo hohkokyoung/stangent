@@ -62,7 +62,7 @@ public sealed class WholeFlow : IDisposable
     /// <summary>The flow with these settings added, as far as what's left on can take it (D121): the rest of the stages need findings to act on.</summary>
     public static WholeFlow With(string extraConfig) => new(extraConfig);
 
-    public const string SwitchedOn = "components: { table-facts: true, judge-finer-verdicts: true, group-sections: true }";
+    public const string SwitchedOn = "components: { table-facts: true, judge-finer-verdicts: true, group-sections: true, spec-ask: true }";
 
     /// <summary>The flow with what's built switched off turned on (D124): the fake AI answers each variant, and nothing real runs.</summary>
     public static WholeFlow AllSwitchedOn() => new(SwitchedOn, allOn: true);
@@ -74,7 +74,7 @@ public sealed class WholeFlow : IDisposable
     {
         this.extraConfig = extraConfig;
         this.allOn = allOn;
-        Action[] stages = allOn ? [SetUp, ReferencePages, Import, ComparedTables, LinksOn] : extraConfig is null
+        Action[] stages = allOn ? [SetUp, ReferencePages, Import, ComparedTables, LinksOn, Asked] : extraConfig is null
             ? [SetUp, ReferencePages, Import, LinksAndFindings, Disprove, PersonDecides, Impact, NewVersion, Regenerate, WholeResult, ExcelAndEmbeddedFiles]
             : [SetUp, ReferencePages, Import, LinksAndFindings, Impact];
         for (var i = 0; i < stages.Length; i++)
@@ -547,6 +547,22 @@ public sealed class WholeFlow : IDisposable
         Saw["on.trace"] = Trace();
         Saw["on.check"] = Check();
         Saw["on.status"] = Ok("fsd", "status", "shop");
+    }
+
+    /// <summary>A question, answered by the fake AI with statement ids; one the pages can't answer; and one the AI answers with nothing cited.</summary>
+    void Asked()
+    {
+        const string question = "How does placing an order send a receipt?";
+        var step = Ok("spec", "ask", question);
+        Saw["ask.prepare"] = step;
+        Saw["ask.bundle"] = File.ReadAllText(Path.Combine(Root, Path.GetDirectoryName((string)step["next"]!["output"]!)!, "bundle.md"));
+        Answer(step, new JsonObject { ["answer"] = new JsonArray(new JsonObject { ["text"] = "It publishes OrderPlaced, which sends a receipt.", ["cites"] = new JsonArray(new JsonObject { ["page"] = Post, ["statement"] = "E1" }) }) });
+        Saw["ask.answer"] = Ok("spec", "ask-check", question);
+        Saw["ask.again"] = Ok("spec", "ask", question);
+        Saw["ask.unknown"] = Ok("spec", "ask", "xylophones zeppelins");
+        const string nothing = "Does the order page show receipts?";
+        Answer(Ok("spec", "ask", nothing), new JsonObject { ["answer"] = new JsonArray() });
+        Saw["ask.nothing"] = Ok("spec", "ask-check", nothing);
     }
 
     static byte[] Version1() => FsdDocxTests.Docx(

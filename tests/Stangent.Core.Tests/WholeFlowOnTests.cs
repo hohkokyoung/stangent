@@ -76,6 +76,32 @@ public class WholeFlowOnTests(WholeFlowOn on) : IClassFixture<WholeFlowOn>
     }
 
     [Fact]
+    public void A_question_is_answered_from_the_pages_with_code_lines_and_labelled()
+    {
+        flow.Reached(6);
+        Assert.Equal(("stangent-page-asker", "page-asker-output.v1.json"), ((string)flow.Seen("ask.prepare")["next"]!["agent"]!, (string)flow.Seen("ask.prepare")["next"]!["schema"]!));
+        Assert.Contains(WholeFlow.Effect, flow.Seen("ask.bundle").GetValue<string>());
+        var answer = flow.Seen("ask.answer");
+        Assert.Equal("answered", (string)answer["status"]!);
+        Assert.Equal("as the pages describe it", (string)answer["answer"]!["label"]!);
+        var cite = answer["answer"]!["sentences"]![0]!["cites"]![0]!;
+        Assert.Equal(WholeFlow.Effect, (string)cite["says"]!);
+        Assert.Contains(cite["lines"]!.AsArray(), l => ((string?)l!["at"] ?? "").Contains("Shop.Core/Orders.cs:", StringComparison.Ordinal));
+        // The same pages and the same question: the same answer, with no call.
+        Assert.Equal("none", (string)flow.Seen("ask.again")["next"]!["action"]!);
+        Assert.Equal("answered", (string)flow.Seen("ask.again")["status"]!);
+    }
+
+    [Fact]
+    public void A_question_nothing_answers_says_the_pages_dont_cover_it()
+    {
+        flow.Reached(6);
+        Assert.Equal(("not-covered", "none"), ((string)flow.Seen("ask.unknown")["status"]!, (string)flow.Seen("ask.unknown")["next"]!["action"]!));
+        Assert.Equal("not-covered", (string)flow.Seen("ask.nothing")["status"]!);
+        Assert.Equal("The pages don't cover this.", (string)flow.Seen("ask.nothing")["answer"]!["text"]!);
+    }
+
+    [Fact]
     public void Switched_off_the_graph_export_is_the_same_bytes_and_compare_says_off()
     {
         flow.Reached(4);

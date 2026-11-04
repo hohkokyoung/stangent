@@ -7,7 +7,8 @@
 # The logic lives in `stangent spec`, `stangent fsd` and `stangent req`; this only runs the subagent each step names,
 # then hands its result back.
 #
-# usage: spec-run.sh [--jobs N] [--model M] [--retry-failed] [--agents] [--chapter N] (<page id>... | --all | --stale | --fsd <doc> | --disprove <doc> | --req <doc>)
+# usage: spec-run.sh [--jobs N] [--model M] [--retry-failed] [--agents] [--chapter N] (<page id>... | --all | --stale | --fsd <doc> | --disprove <doc> | --req <doc> | --ask <question>)
+# --ask <question>: one question from the reference pages (spec.ask, E.2); prints its status line, then the result as one JSON line.
 # --chapter N, with --fsd or --disprove: only that top-level heading, to try a chapter first (`stangent fsd disprove estimate <doc> --chapter N` shows its cost).
 # Default (D66): one turn per call. The step's input files go into the prompt, Claude Code runs with no tools and none of
 # the user's settings, skills or MCP servers, and the answer comes back as structured output (--json-schema) that this
@@ -48,7 +49,7 @@ for ((i = 0; i < $#; i++)); do
 done
 CHAPTERED=""
 while [ $# -gt 0 ]; do
-  case "$1" in --jobs|--model|--fsd|--disprove|--req|--only|--chapter) [ $# -ge 2 ] || usage ;; esac
+  case "$1" in --jobs|--model|--fsd|--disprove|--req|--only|--chapter|--ask) [ $# -ge 2 ] || usage ;; esac
   case "$1" in
     --jobs) JOBS="$2"; shift 2 ;;
     --model) MODEL="$2"; shift 2 ;;
@@ -61,6 +62,7 @@ while [ $# -gt 0 ]; do
     --req) MODE=req; add_ids '.result[] | .doc + "\t" + .section' req sections --doc "$2"; shift 2 ;;
     --stale) add_ids '.result.stale[].id, .result.new[].id' spec stale; shift ;;
     --only) ONLY+=("$2"); shift 2 ;;
+    --ask) MODE=ask; PAGES+=("$2"); NAMED=1; shift 2 ;;
     -*) usage ;;
     *) PAGES+=("$1"); NAMED=1; shift ;;
   esac
@@ -158,6 +160,14 @@ run_page() {
   if [ "$MODE" = spec ]; then args=("$page"); else args=("${page%%$'\t'*}" "${page#*$'\t'}"); fi
   if [ "$MODE" = disprove ]; then
     disprove "$page" "$usage"
+    rm -f "$usage"
+    return
+  fi
+  if [ "$MODE" = ask ]; then
+    step="$($STANGENT spec ask "$page" || true)"
+    run_steps "$page" "$usage" spec ask-check "$page"
+    printf '%s\t%s\n' "$(jq -r '.result.status // .error.code' <<<"$step")" "$page"
+    jq -c '.result' <<<"$step"
     rm -f "$usage"
     return
   fi
