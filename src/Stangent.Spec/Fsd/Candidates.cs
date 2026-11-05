@@ -7,8 +7,19 @@ namespace Stangent.Spec.Fsd;
 
 /// <summary>A page proposed for an FSD section, and why: <c>name</c> (titles match), <c>fields</c> (field labels match
 /// properties in the page's slice), <c>endpoint</c> (an endpoint a candidate screen calls), <c>ai</c> (proposed by the
-/// candidate finder from page titles only).</summary>
+/// candidate finder from page titles only), <c>shared component reached from …</c> (a candidate screen reaches it through
+/// its unshared components, with <c>shared-through</c> on).</summary>
 public sealed record Candidate(string Page, string Why, double Score);
+
+/// <summary>A shared component a candidate screen reaches whose page isn't in the bundle, and why (D140).</summary>
+public sealed record LeftOutPage(string Page, string Why, string Reason)
+{
+    public const string NoRoom = "it didn't fit";
+    public const string NotWritten = "no page written yet";
+}
+
+/// <summary>A section's candidates, and the shared components left out of them.</summary>
+public sealed record CandidateList(List<Candidate> Kept, List<LeftOutPage> LeftOut);
 
 /// <summary>
 /// Candidate pairs by code (D53, Phase 2b step 2): names that match across the two sides. Screen names ↔ routes,
@@ -84,8 +95,49 @@ public static partial class Candidates
         return [.. labels.Where(w => w.Count > 0).DistinctBy(w => string.Join(" ", w.Order()))];
     }
 
+    /// <summary>Everything found for a section, with the shared components its screens reach when that's on.</summary>
+    public static CandidateList Find(JsonObject section, PageSet set, IReadOnlyDictionary<string, JsonObject> recorded, JsonObject? parent = null) =>
+        WithShared(ByCode(section, set, recorded, parent), (string)section["text"]!, set, recorded);
+
     public static List<Candidate> ForSection(JsonObject section, PageSet set, IReadOnlyDictionary<string, JsonObject> recorded, JsonObject? parent = null) =>
-        ByCode(section, set, recorded, parent);
+        Find(section, set, recorded, parent).Kept;
+
+    /// <summary>
+    /// The shared components each candidate screen reaches (D140). What fits goes by the limits that already exist:
+    /// <see cref="MaxPerSection"/> pages, and <see cref="SpecSettings.MaxBundleChars"/> for the text and the recorded pages. What's
+    /// already found keeps its place; the rest is listed, not dropped. Off, the list comes back as it was.
+    /// </summary>
+    /// <param name="judged">For the judge, who can only read recorded pages: one not written yet is left out and said so. Otherwise
+    /// it's kept, as any candidate with no page is, so <c>spec needed</c> lists it to be written.</param>
+    public static CandidateList WithShared(List<Candidate> found, string text, PageSet set, IReadOnlyDictionary<string, JsonObject> recorded, bool judged = false)
+    {
+        if (!set.Settings.SharedThrough) return new(found, []);
+        var kept = found.ToList();
+        var leftOut = new List<LeftOutPage>();
+        var have = kept.Select(c => c.Page).ToHashSet(StringComparer.Ordinal);
+        int Chars(string page) => recorded.GetValueOrDefault(page) is { } p ? LinkRun.PageBlock(page, p).Length : 0;
+        var chars = text.Length + kept.Sum(c => Chars(c.Page));
+        foreach (var screen in found.Where(c => set.Find(c.Page)?.Kind == PageKind.Screen).OrderByDescending(c => c.Score).ThenBy(c => c.Page, StringComparer.Ordinal))
+            foreach (var page in ReachedShared(set, screen.Page))
+            {
+                if (!have.Add(page)) continue;
+                var why = $"shared component reached from {screen.Page}";
+                var size = Chars(page);
+                if (kept.Count >= MaxPerSection || chars + size > set.Settings.MaxBundleChars) leftOut.Add(new LeftOutPage(page, why, LeftOutPage.NoRoom));
+                else if (judged && !recorded.ContainsKey(page)) leftOut.Add(new LeftOutPage(page, why, LeftOutPage.NotWritten));
+                else
+                {
+                    kept.Add(new Candidate(page, why, screen.Score * 0.5));
+                    chars += size;
+                }
+            }
+        return new(kept, leftOut);
+    }
+
+    /// <summary>The component pages a screen's slice stops at, nearest first: what its page links to, and so the first shared component
+    /// on each path through its unshared ones. Nothing past one of them, which is in that page's own slice.</summary>
+    static IEnumerable<string> ReachedShared(PageSet set, string screen) =>
+        set.Slices[screen].Nodes.Where(n => n.Role == "stop" && set.Find(n.Node.Id)?.Kind == PageKind.Component).Select(n => n.Node.Id);
 
     /// <param name="parent">The chapter the section sits in: a subsection is about part of its chapter's screen, so the
     /// chapter's screens are its candidates too.</param>

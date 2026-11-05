@@ -55,6 +55,7 @@ public static class StangentComponents
         new("disprove-small", "A disprove bundle holds what the page's statements cite, or for a gap the slice's code holding the claim's words, not the whole slice. It changes what the disprover reads and its saved hash, so it's off by default", "components.disprove-small", false, ["fsd disprove prepare", "fsd disprove check", "fsd disprove estimate"], ["disprove"]),
         new("page-verifier", "The fresh check of each reference page", "components.page-verifier", true, Pages, ["ai"]),
         new("line-citations", "path:lines beside each page, and code evidence from them", "components.line-citations", true, ["spec check", "spec cite", "trace check"], []),
+        new("shared-through", "The shared components a candidate screen reaches through its unshared ones are candidates too, as far as the bundle's size allows, stopping at the first on each path. Changes what a link judge reads, so it's off by default", "components.shared-through", false, [.. Links, "fsd candidates", "spec needed"], []),
         new("candidate-finder", "The AI that names pages when code finds none", "components.candidate-finder", true, Links, ["ai"]),
         new("agree-checker", "The fresh check of each agree link", "components.agree-checker", true, Links, ["ai"]),
         new("requirements-links", "Judging by requirement when a section's are built", "components.requirements-links", true, Links, []),

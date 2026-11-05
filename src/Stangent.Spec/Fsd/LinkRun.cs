@@ -124,9 +124,11 @@ public static class LinkRun
             UpdateRun(repo.Root, key, r => { MergeInto(r, carried); r["inputs"] = null; r["candidates"] = new JsonArray(); r["candidatesBy"] = by; r["links"] = 1; r.Remove("unit"); });
             return new RunStep("recorded", "none");
         }
+        var listed = Candidates.WithShared(candidates, (string)section["text"]!, set, index.Pages, judged: true);
+        candidates = listed.Kept;
         var requirements = RequirementsInUse(repo, doc, section);
         var finer = repo.Config.Fsd.JudgeFinerVerdicts;
-        var judgeBundle = requirements is null ? JudgeBundle(section, doc, candidates.Select(c => c.Page), index, finer) : RequirementJudgeBundle(section, doc, candidates.Select(c => c.Page), index, requirements, finer);
+        var judgeBundle = (requirements is null ? JudgeBundle(section, doc, candidates.Select(c => c.Page), index, finer) : RequirementJudgeBundle(section, doc, candidates.Select(c => c.Page), index, requirements, finer)) + LeftOutBlock(listed.LeftOut);
         var inputs = JudgeInputs(judgeBundle, requirements is not null, repo.Config.Fsd.Findings);
         // A group's links may be what's on file (C.6): this section's own saved work goes back, with no call.
         if ((string?)run?["inputs"] == inputs && (run?["unit"] is null || SectionUnits.RestoreOwn(repo.Root, doc, section, inputs))) return new RunStep("current", "none");
@@ -140,10 +142,11 @@ public static class LinkRun
             ["candidates"] = new JsonArray([.. candidates.Select(c => (JsonNode)new JsonObject { ["page"] = c.Page, ["why"] = c.Why })]),
             ["candidatesBy"] = by, ["usage"] = carried?.DeepClone() ?? new JsonObject(),
         };
+        if (listed.LeftOut.Count > 0) state["candidatesLeftOut"] = LeftOutList(listed.LeftOut);
         if (finer) state["schema"] = requirements is null ? FinerJudgeSchema : FinerRequirementJudgeSchema;
         Stage(repo.Root, state, "judge", "prepared");
         Save(work, state);
-        return Step(repo.Root, work, requirements is null ? Judge : RequirementJudge, "judge.md", "judge.json", "Section and candidate pages", (string?)state["schema"]);
+        return Step(repo.Root, work, requirements is null ? Judge : RequirementJudge, "judge.md", "judge.json", "Section and candidate pages", (string?)state["schema"]) with { Warning = LeftOutWarning(listed.LeftOut, doc) };
     }
 
     static string JudgeInputs(string judgeBundle, bool byRequirement, bool findings)
@@ -158,10 +161,10 @@ public static class LinkRun
 
     /// <summary>What a run's judge step would hash for this section and these candidate pages (D117: a section that only changed
     /// its number keeps its paid links). Null when a page has no record.</summary>
-    internal static string? JudgeInputs(JsonObject section, string doc, IReadOnlyList<string> pages, SpecIndex index, List<JsonObject>? requirements, bool findings, bool finer = false)
+    internal static string? JudgeInputs(JsonObject section, string doc, IReadOnlyList<string> pages, SpecIndex index, List<JsonObject>? requirements, bool findings, bool finer = false, IReadOnlyList<LeftOutPage>? leftOut = null)
     {
         if (pages.Any(p => !index.Pages.ContainsKey(p))) return null;
-        var bundle = requirements is null ? JudgeBundle(section, doc, pages, index, finer) : RequirementJudgeBundle(section, doc, pages, index, requirements, finer);
+        var bundle = (requirements is null ? JudgeBundle(section, doc, pages, index, finer) : RequirementJudgeBundle(section, doc, pages, index, requirements, finer)) + LeftOutBlock(leftOut ?? []);
         return JudgeInputs(bundle, requirements is not null, findings);
     }
 
@@ -331,6 +334,8 @@ public static class LinkRun
         {
             r["inputs"] = state["inputs"]!.DeepClone();
             r["candidates"] = state["candidates"]!.DeepClone();
+            if (state["candidatesLeftOut"] is { } leftOut) r["candidatesLeftOut"] = leftOut.DeepClone();
+            else r.Remove("candidatesLeftOut");
             r["candidatesBy"] = state["candidatesBy"]!.DeepClone();
             MergeInto(r, state["usage"] as JsonObject);
             r["retries"] = (int?)state["retries"] ?? 0;
@@ -588,6 +593,26 @@ public static class LinkRun
             sb.Append($"- **{sid}** ({section}) {(string)s["text"]!}\n");
         return sb.ToString();
     }
+
+    /// <summary>Shared components a candidate screen reaches that aren't here: said to the judge, so what it can't see isn't taken for missing. Nothing left out adds nothing.</summary>
+    internal static string LeftOutBlock(IReadOnlyList<LeftOutPage> leftOut) => leftOut.Count == 0 ? "" :
+        "\n# Pages left out\n\nA candidate screen reaches these shared components, and their pages aren't here. What they do isn't shown, so its absence above isn't evidence of a gap.\n"
+        + string.Concat(leftOut.Select(c => $"- `{c.Page}` ({c.Why}): {c.Reason}\n"));
+
+    internal static string? LeftOutWarning(IReadOnlyList<LeftOutPage> leftOut, string doc)
+    {
+        if (leftOut.Count == 0) return null;
+        var notWritten = leftOut.Where(c => c.Reason == LeftOutPage.NotWritten).Select(c => c.Page).ToList();
+        return $"{leftOut.Count} shared component page(s) left out of this judge's bundle, and it's told so"
+            + (notWritten.Count > 0 ? $"; not written yet: {string.Join(", ", notWritten)}. `spec-run.sh --for-fsd {doc}` writes them, and this section is then judged again" : "");
+    }
+
+    public static JsonArray LeftOutList(IEnumerable<LeftOutPage> leftOut) =>
+        new([.. leftOut.Select(c => (JsonNode)new JsonObject { ["page"] = c.Page, ["why"] = c.Why, ["reason"] = c.Reason })]);
+
+    /// <summary>What a run's <c>candidatesLeftOut</c> holds, back as the list that went into its hash.</summary>
+    internal static List<LeftOutPage> LeftOutOf(JsonObject run) =>
+        [.. (run["candidatesLeftOut"]?.AsArray() ?? []).Select(c => new LeftOutPage((string)c!["page"]!, (string)c["why"]!, (string)c["reason"]!))];
 }
 
 /// <summary>The code checks on one link (D53 step 3): quotes word for word, both ends exist, cited symbols in the graph.</summary>

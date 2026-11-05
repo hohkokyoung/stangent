@@ -36,7 +36,8 @@ static class FsdCarry
             var pages = (run["candidates"]?.AsArray() ?? []).Select(c => (string)c!["page"]!).ToList();
             var index = SpecIndex.Load(root);
             var requirements = LinkRun.Requirements(root, doc, p.Old);
-            return (LinkRun.JudgeInputs(p.Old, doc, pages, index, requirements, findings, finer), LinkRun.JudgeInputs(p.New, doc, pages, index, requirements, findings, finer));
+            var leftOut = LinkRun.LeftOutOf(run);
+            return (LinkRun.JudgeInputs(p.Old, doc, pages, index, requirements, findings, finer, leftOut), LinkRun.JudgeInputs(p.New, doc, pages, index, requirements, findings, finer, leftOut));
         });
         var reqRuns = CarryRuns(RequirementRun.LoadRuns(root), doc, pairs, rerun, (p, _) => (RequirementRun.InputsOf(p.Old, doc), RequirementRun.InputsOf(p.New, doc)));
 

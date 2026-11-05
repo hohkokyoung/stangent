@@ -71,12 +71,16 @@ static class FsdCommands
             var result = new JsonArray();
             foreach (var d in FsdImport.Documents(ctx.Repo.Root).Where(d => pr.GetValue(docOption) is not { } only || (string)d["id"]! == only))
                 foreach (var s in d["sections"]!.AsArray().OfType<JsonObject>().Where(s => ((string)s["text"]!).Trim().Length > 0))
-                    result.Add(new JsonObject
+                {
+                    var list = Candidates.Find(s, set, index.Pages, (string?)s["parent"] is { } par ? index.Sections.GetValueOrDefault(((string)d["id"]!, par)) : null);
+                    var row = new JsonObject
                     {
                         ["doc"] = (string)d["id"]!, ["section"] = (string)s["id"]!, ["title"] = (string)s["title"]!,
-                        ["candidates"] = new JsonArray([.. Candidates.ForSection(s, set, index.Pages, (string?)s["parent"] is { } par ? index.Sections.GetValueOrDefault(((string)d["id"]!, par)) : null)
-                            .Select(c => (JsonNode)new JsonObject { ["page"] = c.Page, ["why"] = c.Why, ["recorded"] = index.Pages.ContainsKey(c.Page) })]),
-                    });
+                        ["candidates"] = new JsonArray([.. list.Kept.Select(c => (JsonNode)new JsonObject { ["page"] = c.Page, ["why"] = c.Why, ["recorded"] = index.Pages.ContainsKey(c.Page) })]),
+                    };
+                    if (list.LeftOut.Count > 0) row["leftOut"] = LinkRun.LeftOutList(list.LeftOut);
+                    result.Add(row);
+                }
             ctx.Span.Attributes["stangent.artifact.count"] = result.Count;
             return new JsonObject
             {
