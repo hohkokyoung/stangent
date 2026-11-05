@@ -198,6 +198,11 @@ static class FsdCommands
         approve.SetAction(pr => Cli.Run(pr, "trace approve", ctx => new JsonObject { ["approved"] = TraceCheck.ApproveChapter(ctx.Repo.Root, pr.GetValue(docArg)!, pr.GetValue(chapterArg)!, TicketCommands.Who(ctx)) }));
         trace.Subcommands.Add(approve);
 
+        var linkSection = new Option<string?>("--section") { Description = "Only this section, by its number." };
+        var traceLinks = new Command("links", "Each link of a document with its page statement and the code lines that statement cites (D133). Reads only: no AI, no project file written, not even telemetry. The lines come from the page's citations, so they show where to look and don't prove the code matches.") { docArg, linkSection };
+        traceLinks.SetAction(pr => Cli.Run(pr, "trace links", ctx => TraceLinks.Run(ctx.Repo.Root, pr.GetValue(docArg)!, pr.GetValue(linkSection)), null));
+        trace.Subcommands.Add(traceLinks);
+
         var findingArg = new Argument<string>("finding") { Description = "The finding's X- id, or its entry id." };
         var whyOption = new Option<string?>("--why") { Description = "Why, in your words. It's kept beside your name." };
         var confirm = new Command("confirm", "A person closes a finding the AI called refuted or unreachable, having read its quote at its lines (D119). Who comes from git.") { findingArg, whyOption };

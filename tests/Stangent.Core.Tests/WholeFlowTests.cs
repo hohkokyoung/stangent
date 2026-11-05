@@ -599,7 +599,7 @@ public sealed class WholeFlow : IDisposable
     CliRun Run(params string[] args) => RunIn(Root, args);
 
     /// <summary>The built tool, as a person or a driver runs it.</summary>
-    static CliRun RunIn(string cwd, params string[] args)
+    internal static CliRun RunIn(string cwd, params string[] args)
     {
         var dll = StangentDll();
         var psi = new ProcessStartInfo("dotnet") { WorkingDirectory = cwd, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true };

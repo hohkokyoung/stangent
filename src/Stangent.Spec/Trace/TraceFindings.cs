@@ -329,16 +329,13 @@ public static partial class TraceFindings
         // The code the quoted statement cites, where the page has line citations (2.3).
         if ((string?)page["statement"] is not { } st || index.Statement(pageId, st) is not { } statement || !index.PageFiles.TryGetValue(pageId, out var file)) yield break;
         if (PageLines.Load(file) is not { } lines || (string?)lines["commit"] is not { } at) yield break;
-        var n = 0;
-        foreach (var cite in statement["cites"]!.AsArray().Select(c => (string)c!))
+        foreach (var cited in PageLines.Of(statement, lines))
         {
-            n++;
-            if (lines["symbols"]?[cite] is not JsonObject at_ || (string?)at_["file"] is not { } path) continue;
-            var code = new JsonObject { ["kind"] = "code", ["ref"] = $"{repo.Value}/{path}", ["symbol"] = cite };
-            if (at_["start"] is not null) code["lines"] = new JsonObject { ["start"] = (int)at_["start"]!, ["end"] = (int)at_["end"]! };
+            var code = new JsonObject { ["kind"] = "code", ["ref"] = $"{repo.Value}/{cited.Path}", ["symbol"] = cited.Symbol };
+            if (cited.Lines is not null) code["lines"] = cited.Lines;
             // Whatever limits these lines goes with them, so a partial type's first part isn't read as the whole type.
-            if (((string?)at_["note"] ?? (string?)at_["why"]) is { } limit) code["note"] = limit;
-            yield return new JsonObject { ["id"] = $"{id}.code.{n}", ["citation"] = code, ["commit"] = at, ["strength"] = "read", ["checkedBy"] = Checked() };
+            if (cited.Note is not null) code["note"] = cited.Note;
+            yield return new JsonObject { ["id"] = $"{id}.code.{cited.Number}", ["citation"] = code, ["commit"] = at, ["strength"] = "read", ["checkedBy"] = Checked() };
         }
     }
 

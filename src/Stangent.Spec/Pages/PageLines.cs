@@ -18,6 +18,22 @@ public static class PageLines
 
     public static JsonObject? Load(string pageJson) => PageRun.LoadJson(FileFor(pageJson)) as JsonObject;
 
+    /// <summary>One symbol a statement cites, where the line map gives it a file. <see cref="Number"/> is its place among all the statement's citations, from 1.</summary>
+    public sealed record CodeLine(int Number, string Symbol, string Path, JsonObject? Lines, string? Note);
+
+    /// <summary>The code a statement cites, from its page's line map. A symbol the map holds no file for is left out; <see cref="CodeLine.Lines"/> is null when it holds only the file.</summary>
+    public static IEnumerable<CodeLine> Of(JsonObject statement, JsonObject lines)
+    {
+        var n = 0;
+        foreach (var cite in statement["cites"]!.AsArray().Select(c => (string)c!))
+        {
+            n++;
+            if (lines["symbols"]?[cite] is not JsonObject at || (string?)at["file"] is not { } path) continue;
+            var range = at["start"] is null ? null : new JsonObject { ["start"] = (int)at["start"]!, ["end"] = (int)at["end"]! };
+            yield return new CodeLine(n, cite, path, range, (string?)at["note"] ?? (string?)at["why"]);
+        }
+    }
+
     /// <summary>Why nothing on the page can be cited, or null. A dirty tree doesn't: a file that differs is answered per symbol, and a clean file's lines at the commit are still right.</summary>
     static string? PageWide(CodeGraph graph) =>
         SymbolLines.CommitOf(graph) is null ? "the graph wasn't built at a git commit"
