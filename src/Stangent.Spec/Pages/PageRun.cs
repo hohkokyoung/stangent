@@ -330,6 +330,7 @@ public static class PageRun
         if (lines is not null) PageLines.Write(paths.PageJson(page), lines);
         else File.Delete(PageLines.FileFor(paths.PageJson(page)));
         Quotes.WriteAtomic(paths.PageMarkdown(page), PageRender.Markdown(record, id => set.Find(id) is { } p && p.Id == id ? p.Path : null, lines, PageCorrections.Marks(paths.Root, page.Id, config)));
+        PageNavigation.Write(paths);
         return citing;
     }
 

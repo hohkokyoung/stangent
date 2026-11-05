@@ -128,6 +128,10 @@ static class SpecCommands
         }));
         spec.Subcommands.Add(coverage);
 
+        var nav = new Command("nav", "Write specs/reference/index.md, every written page by kind and group (T.7). `spec cite` puts the links and footers on pages written earlier. No AI.");
+        nav.SetAction(pr => Cli.Run(pr, "spec nav", ctx => new JsonObject { ["pages"] = PageNavigation.Write(new SpecPaths(ctx.Repo.Root)), ["file"] = "specs/reference/index.md" }));
+        spec.Subcommands.Add(nav);
+
         var retryFailedOption = new Option<bool>("--retry-failed") { Description = "Try again a page that failed with these same inputs." };
         var prepare = new Command("prepare", "Write a page's bundle and say what runs next: nothing if its inputs are unchanged (D18), else the writer (D60).") { pageArg, retryFailedOption };
         prepare.SetAction(pr => Cli.Run(pr, "spec prepare", ctx =>

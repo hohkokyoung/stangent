@@ -76,3 +76,27 @@ public class PageCoverageTests
         Assert.Equal(off.Pages().Pages.Select(p => p.Id), on.Pages().Pages.Select(p => p.Id));
     }
 }
+
+/// <summary>T.7: the index and each page's links, in Markdown only.</summary>
+public class PageNavigationTests
+{
+    [Fact]
+    public void A_written_page_links_to_an_index_that_lists_it_and_content_check_is_happy()
+    {
+        using var app = SavedWorkTests.App(out _);
+        var page = app.Pages().Find(SpecApp.Post)!;
+        var paths = new SpecPaths(app.Root);
+        var md = File.ReadAllText(paths.PageMarkdown(page));
+        var up = string.Concat(Enumerable.Repeat("../", page.Path.Count(c => c == '/'))) + "index.md";
+        Assert.Contains($"[All pages]({up})", md);
+        Assert.Contains("stangent spec correct", md);
+
+        var index = File.ReadAllText(PageNavigation.FileIn(paths));
+        Assert.Contains($"({page.Path}.md)", index);
+        Assert.Contains("## Backend", index);
+        Assert.Equal(1, PageNavigation.Write(paths));
+        Assert.Equal(index, File.ReadAllText(PageNavigation.FileIn(paths)));
+        var check = Stangent.Spec.Checks.ContentChecks.Run(app.Root, app.Pages().Pages.Select(p => p.Path).ToHashSet(StringComparer.Ordinal));
+        Assert.True((bool)check["ok"]!, check.ToJsonString());
+    }
+}

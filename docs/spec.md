@@ -89,6 +89,10 @@ A page writer's, page verifier's, link judge's or agree checker's file under `.s
   PR comment. On merge, CI runs
   `spec-run.sh --stale` and opens a spec-only PR (see `plugin/ci/spec.yml`).
 
+## Navigation (T.7, D131)
+
+A page's Markdown links to `specs/reference/index.md` at its top and bottom, and its footer says it's generated and how to correct it. The index lists every written page by kind and group; it's rewritten whenever a page is written, or by `stangent spec nav`. `stangent spec cite` puts the links on pages written earlier. Only people read these: no step reads a page's Markdown, so no prompt or hash moves.
+
 ## Every page accounted for (T.3, D131)
 
 `stangent spec coverage` lists every screen, shared component and backend entry point the graph calls for, per kind: written, failed, not written yet, or excluded with a reason. `--strict` exits 1 if any is neither written nor excluded. A page not written yet isn't a fault in itself, since pages are made as needed (I.1): `--strict` is for a project that wants them all. It reports what the graph knows: what the graph can't see isn't here, and is counted where it was read (`docs/code-graph.md`).

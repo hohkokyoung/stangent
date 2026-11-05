@@ -105,6 +105,7 @@ public static class PageLines
                 }
             }
         }
+        PageNavigation.Write(paths);
         return new JsonObject
         {
             ["commit"] = SymbolLines.CommitOf(graph), ["pages"] = chosen.Count,

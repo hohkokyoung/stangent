@@ -79,6 +79,7 @@ public static class StangentComponents
         new("code-checks", "Quote checks, schema checks and `trace check` are what make an AI's answer usable (D18). Taking one out would let a made-up quote through."),
         new("state-module", "Every lifecycle moves through it, and a test holds that to be true."),
         new("cost-stop", "`--max-cost none` already says no cap, per run. It changes no prompt and no result, only whether a run goes on."),
+        new("page-navigation", "The links and footer on a page's Markdown and the index only help a person read. No step reads them, so they change no prompt and no hash."),
         new("run-checks", "The app-files check, the link and id check, the behind-the-code warning and the read-only hook only report or refuse. They change no prompt and no hash, so they can't move a result to compare."),
     ];
 
