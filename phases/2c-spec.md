@@ -206,6 +206,64 @@ Headless calls were refused on a weekly limit, so this ran through the app's age
 
 **What doesn't fit:** `root-screens` assumes a `createRoot` is an app's root. Here one mounts a tooltip, so the rule shaped on one app is wrong on the next. Off by default, so nothing else changes. Not fixed; said here. `route-render` has nothing to do on this repo, so it's been tested on one real app only.
 
+**Comparing directly with the code, no pages (owner's idea, same day, one use case, counts only).** `improvements.md` §6 asked for this and it had never been tried. One fresh agent on Opus, not given the pages or the 13 findings. It got the section and six code files, picked by hand by following the screen's imports: 34K characters. No checker ran after it. Nothing was built.
+
+| | Through pages (the re-run above) | Direct |
+|---|---|---|
+| Agree | 23 | 25 |
+| Gap | 8 | 1 |
+| Conflict | 1 | 1 |
+| Undocumented | 4 | 3 |
+| Findings | 13 | 5 |
+| Tokens | 289K, with pages written and a checker | 82K, against 50-70K estimated |
+
+**Read against the code by the assistant, not freshly checked and not the owner's rulings:**
+
+| | Through pages, 13 | Direct, 5 |
+|---|---|---|
+| Nothing there | 7, all the shared pop-up and the PIN step | 1, the error colour, in a CSS file it wasn't given |
+| Part real, part not | 1 | 0 |
+| Real difference or rule the section leaves out | 4 | 3 |
+| Outside the section, covered elsewhere in the document | 0 | 1 |
+| For the owner | 1, the Twitter id | 0 |
+
+**What this does and doesn't show:**
+- The 7 are confirmed false by reading the code, replacing "about 8".
+- **It doesn't separate pages from what the AI was given.** The direct agent saw the pop-up because a person fed it. A judge given the pop-up's page might do as well. Not tested.
+- Choosing the code stayed the weak point: the one false gap is a file left out of the hand-picked set.
+- **Direct lost things.** It left out one undocumented item the pages route found, and it marked the Twitter id `agree`, calling it the saved id. The check compares the id sent in the request, which reaches the browser from the database. So in normal use it holds, but the server doesn't read the database at that step.
+- The 25 agrees were read, not each proven. The pages route's 23 agrees haven't been checked against the code.
+- One section, one run each, and the instructions let scenarios share an item, so 5 against 13 isn't a rate. 25 and 23 count different things for the same reason.
+
+**Then pages with the pop-up's page added (owner's OK, same day, one use case, counts only).** Same section and the judge's real instructions. The pop-up had no page, so one fresh agent wrote it (59K tokens) from Stangent's own writer input, and it was added by hand to the judge's saved input. Another fresh agent judged it (74K). No verifier or checker ran, and nothing was written to the clone's `specs/`.
+
+| | Pages, today | Pages + pop-up | Direct |
+|---|---|---|---|
+| Agree | 23 | 27 | 25 |
+| Gap | 8 | 0 | 1 |
+| Conflict | 1 | 1 | 1 |
+| Undocumented | 4 | 5 | 3 |
+| Findings | 13 | 6 | 5 |
+
+**Read against the code by the assistant, not freshly checked and not the owner's rulings:**
+
+| | Pages, today | Pages + pop-up | Direct |
+|---|---|---|---|
+| Nothing there | 7 | 0 | 1 |
+| Part real, part not | 1 | 0 | 0 |
+| Real difference or rule the section leaves out | 4 | 5 | 3 |
+| Outside the section, covered elsewhere | 0 | 0 | 1 |
+| For the owner | 1 | 1 | 0 |
+
+**What this shows:** on this section, the false gaps came from the missing pop-up, not from going through pages. With it added, the pages route had no false alarm, kept the Twitter id question direct lost, and found more.
+
+**What it doesn't show:**
+- **A person chose the page,** knowing it was the cause. Nothing in code picks it yet, since the pop-up is two steps from the screen. That's D127's open question, and `shared-candidates` was removed (D131) because its one step didn't reach this.
+- **No checker ran.** In the earlier run the checker sent 2 agrees back, on the PIN step and on the colour red, so this judge's 2 matching agrees might not have stood. The colour is one: the page doesn't name it, though the code's colour is red.
+- Whether pages hide real differences behind `agree`, which is direct's main promise. Neither list shows one here, and one section can't rule it out.
+- **On accuracy this is about a tie, not a win for pages.** Direct's one false alarm is a file left out by hand, and the pages route's `agree` on the colour had no words on the page behind it.
+- One section, one run each, so no rate.
+
 ## §9's batch 2 (2026-11-05, D131): what wasn't run
 
 All built with fakes. Tests pass and `SavedWorkTests`' pins hold, untouched. No AI call, no Jira, nothing pushed, and Sonarr's clone wasn't changed: its document was copied to a scratch folder to check the hand-edit warning, which said nothing. The import code didn't change, so the document imports as it did; it wasn't re-imported.

@@ -110,14 +110,13 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 | A code PR lists the requirements it reaches with no test | D99 | 6 |
 | Integration tests with databases or containers | D76 | 5 |
 | The review package shows impact, with its 📜 history section | D27, D40 | 6 |
+| Security review as its own checked step in the review package, apart from the FSD comparison | D132 | 6 |
 | Revert per ticket: a ticket's spec PR and code PRs together, with their links | D11 | not placed; 6 or 7 |
 | The CI workflow that builds and shares the graph (full history) | D42 | 7 |
 | Telemetry gathered into a SQLite index | D21 | 8 |
 | The BA/PM view, editing the same files through the website | D12, D58 | 8 |
 | Draft a Jira ticket from a "code-wrong" decision | D80 | later, not placed |
 | Installable for others | D1 | later, not placed |
-
-**In the owner's brief, with no decision yet:** security review (Open questions).
 
 **Checks owed:** every build under D120 (no fresh check while building); the hard stop, `stream-json` on one-turn calls and the read-only hook against real Claude Code, on the first paid run (D126); the proof re-run (D109); a real-FSD dry run (D56); 1d part 2, context scoping (D45); 2b's noise re-measure (D68); hand
 checks on 1b, 1c (D28), 2a, 2b (D67); a third repo of another shape (D94); a sign-in approved with only D82's scopes.
