@@ -377,7 +377,7 @@ Marked down, not built. A ☑️ with a test note is taken in and stays off unti
   *Extraction built; Sonarr gave 0 journeys from 109 requirements, and no real document has produced one yet.*
 - ⬜ J.3 · The page verifier also reads the tests.  
   *Today it reads the bundle only, and tests aren't a separate source. Recommend: decide after J.1, which has to read those tests anyway.*
-- ⬜ J.4 · Batch runs send the output schema only once.  
+- ☑️ J.4 · Batch runs send the output schema only once (D130, batch 2).  
   *`spec-run.sh` sends it in the bundle and through `--json-schema`, about 2.5k characters a page. It's in the input hash, so removing it alone would regenerate every page. Recommend: leave it; if trimmed, take it out of the hash in the same change.*
 
 ## Two caveats

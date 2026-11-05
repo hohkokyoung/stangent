@@ -2454,6 +2454,15 @@ Follows D15, D16, D18, D20, D66, D75, D120, D121 and D125. Items T.2, T.4, T.5, 
 **Why:** nothing in Stangent can say which screens are visited in which order, and FSD journeys can't: they're built from the FSD alone and never touch the graph. A test already holds that order, and code can read it.
 **Cost:** the helper and click following is real work, not sized yet, and it does nothing for a project without end-to-end tests. D99's journeys stay in the writer's prompt and checks with no proof yet that they earn it.
 
+## D130 · A bundle stores only what's unique; code assembles the rest — 2026-11-05 (owner: "idw things to be duplicated so much ... why not just ask it to refer or a link, also is code in the md file make sense in the bundle?"; "just be in mind on that, unless u wanna record that as decisions")
+- **Code stays in the bundle.** One-turn calls have no tools, and a page records a hash of exactly what it was built from. An AI that fetched its own files couldn't be held to that.
+- **The repeated instructions and schema leave it.** Each bundle on disk holds what's unique to it and a pointer to one copy of each. Code assembles the full text just before the call. Same for the judge's and checker's inputs.
+- **The hash stays on the full text,** so saved pages stay valid and nothing regenerates. J.4 is taken up this way, sending the schema once.
+- **Rule:** store once, and let code assemble what each step needs. A link the AI has to follow itself isn't enough: the pop-up's link is why the judge never saw it.
+- Built in batch 2.
+**Why:** the same text in every bundle hides what's different, and two copies can drift.
+**Cost:** mainly tidiness. The AI still gets the instructions on every call, so the token saving is small, about 2.5K characters a page from the schema.
+
 ## Open questions
 
 - **The spec in its own git repo? (owner asked, 2026-11-05, so a PM or BA sees an easier diff; owner: "okay we can keep it for now"):** the graph is settled, it isn't committed anywhere (D25). For the spec, recommended: stay in the app's repo (D7, D12) and fix the diff itself, with spec-only PRs and the generated files collapsed. Kept in the app's repo for now. Move when a real project needs what only a split gives: BAs without access to the code, client text kept away from developers, or one spec over several code repos. **A split would cost:** one PR no longer holds both spec and code (D7's reason), each link has to record two commits, a code branch and a spec branch can disagree, and paths are written in about 23 C# files.
