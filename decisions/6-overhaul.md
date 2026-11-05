@@ -338,3 +338,19 @@ Answers D127's open question and reopens what D131 removed. New component `share
 **Why:** on the first real document 7 of 13 findings on one section were false because the judge never saw the pop-up, and adding its page by hand took the false gaps from 8 to 0. One step didn't reach it; this does.
 **Rejected:** stopping a section until its pages are written, because one unwritten page would block a section and today's partly-written sections already go ahead. A depth or per-screen limit, because nothing measured says what it should be. Walking past the first shared component, because that one's page covers it. Telling apart which shared components matter by name, which is a guess code can't check.
 **Cost:** more for the judge to read. Counts in `phases/2c-spec.md`: on Actual a screen reaches 6.4 shared components on average, up to 22, against about 1.2 with one step, and 26 of 71 screens reach more than fit, so `MaxPerSection` is doing real cutting there, with order by nearness and not by what the section is about. A left-out page can hide the one a section needed; the judge is told, and whether it heeds that is untested. A section judged before its pages are written is judged again after, so the order matters for spend. Turning it on re-judges every section that gains a candidate. Untested with a real AI.
+
+## D141 · An AI flag for findings that touch security, sent to a developer; severity stays a person's — 2026-11-05 (owner, asked "should findings get an AI security flag that goes to a developer?", having asked "the severity should also be decided by the agent no? in case something is important security wise": "ok"; decided, not built)
+- **A separate flag, not a grade.** An agent marks a finding that touches security, such as logins, permissions, or trusting data the browser sent, and says why.
+- **It goes to a developer,** not a PM, because "is this dangerous?" isn't a business question (D137).
+- **It stays visible until a person answers it,** and never closes by itself.
+- **The agent always suggests a severity.** Today's `suggestedSeverity` is optional and comes only from the disprove step, which is off by default. **A person still sets it (D118).**
+- **Built off (D120),** since it changes a prompt. Which step sets the flag isn't settled.
+**Why:** the severity scale grades the effect on users on the normal path, so a security hole can score low. X-0014 on Login gives the right result in normal use, while the server trusts an id sent in the request.
+**Rejected:** the agent setting the final severity. A wrong low grade hides the problem, code can't check a severity (D18), and a grade doesn't make anyone look.
+**Cost:** some false flags for developers. It only looks at findings, so a hole that matches the FSD is never flagged; Phase 6's review stays (D132).
+
+## D142 · Readable section files go into git with D128, as a generated view; `document.json` stays the record — 2026-11-05 (owner, asked when they should go in, recommended "with D128": "ok lets do whatever we need to do now"; decided, not built)
+One readable file per section, written by code at import, so a PM reviewing a spec change sees a clean diff. Nothing reads them back. `fsd export` stays as it is. This settles D128's open proposal for now: readable files become the real source only if real people start editing them.
+**Why:** a diff in `document.json` is unreadable, and D128 is what makes someone review spec changes in PRs. No BA uses Stangent yet, so nothing justifies parsing hand-edited Markdown back into data, where a small edit could break a table or move saved hashes.
+**Rejected:** building it before D128, since nobody would read the diffs. Swapping now, for the same reason.
+**Cost:** about 340 files on the thesis, 40 nearly empty, so those may be skipped or merged. Someone could edit one and expect it to count, so it needs `document.md`'s warning.

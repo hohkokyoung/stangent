@@ -327,3 +327,40 @@ So the page to write was already on the list. What grows is that 61 sections hav
 - **Actual's figures are per screen, not per section,** counted by a throwaway program over the same library code, since there's no document to run `fsd candidates` on. A section can reach several screens' components, and can't hold more than `MaxPerSection`.
 
 **What wasn't run:** any judge. Whether the pop-up's page brings the false gaps down when code picks it, as it did by hand, is unmeasured, and so is whether a judge heeds "left out, not evidence of a gap". The pop-up's page hasn't been written. No other use case, no fresh check (D120).
+
+## `shared-through` on Login, with a real AI (2026-11-05, D140, one use case, counts only)
+
+On a copy of the clone, through the app's agents on Opus, with `shared-through` on. Code chose the pop-up's page: no person picked it, and nothing was hand-added to the judge's input. The clone itself wasn't changed.
+
+| | Pages, before (13 findings) | Judge only | After the agree checker |
+|---|---|---|---|
+| Agree | 23 | 24 | 20 |
+| Gap | 8 | 0 | 4 |
+| Conflict | 1 | 1 | 1 |
+| Undocumented | 4 | 4 | 4 |
+| Findings | 13 | 5 | 9 |
+
+**Read against the code by the assistant, not freshly checked and not a person's ruling (D137):**
+
+| | Before | After the checker |
+|---|---|---|
+| Nothing there | 8 | 4 |
+| The five read as real earlier (X-0008, X-0014, X-0021, the password rules, the contact details) | 5 | 5 |
+
+**The 4 left are all gaps the checker made from agrees.** Each one holds in the code, and each page just doesn't say it in words:
+- X-0027: the highlight is red (`constant.css`, `#FF1414`); the page says "marked as in error".
+- X-0030: the Twitter API gives the link (`organisation.py:358`); the page says the response contains a URL.
+- X-0032: the wrong-PIN message is on the endpoint's page (S2), and the judge had linked the Login page's A10.
+- X-0034: Continue closes the pop-up (`pop_up.js:11`, `setModal` is passed at `twitter_login.js:89`); the page says what the click sets. Its writer may not have had its instructions, below.
+
+**What this shows:** code picking the page removed the false gaps about what the judge couldn't see, the same as the hand test. The checker read only pages, so it can't tell "the page doesn't say so" from "the code doesn't do so". That's D137's split, seen in one section. It caught nothing real here, on this reading.
+
+**What it doesn't show:**
+- One section, one run, so no rate. The 61 sections that would gain the pop-up, most probably unrelated, weren't run, so whether it adds noise there is still open. Actual's 26 screens over `MaxPerSection` weren't run either.
+- **No verifier ran:** `page-verifier` was off on the copy.
+- **The writer probably lacked its instructions:** its bundle was given unassembled, the assistant's slip (`spec assemble --in-place`, which `plugin/commands/fsd-link.md` says to run). Its five statements match `pop_up.js`, and the code check passed. The judge's and checker's inputs were assembled.
+- The judge's first call stopped on the same slip and was resumed, so it wasn't a clean fresh context, though its second read followed the real instructions.
+
+**Found by this run: a decision is lost when a re-judge quotes less of the same statement.** X-0025's and X-0029's decisions dropped, and they came back as `gone` with new undecided findings (X-0033, X-0031), because the judge quoted the first part of the same statement and a link's id follows the quote. X-0008, X-0014 and X-0021 quoted it the same and kept theirs. 2 of 5. This is what batch 2 of §8 said to look at first (D122). Not fixed; in `questions.md`.
+
+**Tokens:** writer 60K, judge 82K, checker 72K, about 215K against 130K estimated; the checker wasn't in the estimate, and the slip added more to the judge. The 5-hour limit moved 0 to 8, weekly 84 to 86.

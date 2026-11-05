@@ -4,6 +4,8 @@ Only what's still open, sorted by when it needs answering (D136). When one is an
 
 ## Waiting on the owner now
 
+- **`.stangent/` isn't always ignored by git (found 2026-11-05):** `docs/spec.md` says `fsd export`'s default folder is one git ignores, but in the cyberbullying clone `.stangent/` shows as untracked, so it could get committed by accident. `ignoredByGit` in the result does say so. Recommended: `stangent` adds it to the repo's ignore list on first use, or the doc stops claiming it.
+- **A decision is lost when a re-judge quotes less of the same statement (found 2026-11-05, `phases/2c-spec.md`):** a link's id follows the page quote, so on Login 2 of 5 decisions went `gone` and came back as new undecided findings, with the page statement unchanged. Recommended: make an undocumented link's id follow the statement's id, with the switch off until tested, since it moves saved ids. **Cost:** ids change, so it needs `SavedWorkTests`' pins kept with the switch off.
 - **Under D137, who answers "is it true?", and who confirms what it throws away? (raised 2026-11-05):** D119 has `refuted` and `unreachable` wait for a person, and the PM shouldn't be that person. Recommended: decide after the disprove re-score shows whether the step works at all. Until then, every finding still reaches a person.
 - **Ask for a PM's ruling only when a ticket reaches the section? (assistant's idea, 2026-11-05; the owner hasn't answered):** findings stay marked unconfirmed until then, which the bundle already handles. On Login, D137 leaves about 3 or 4 questions, but ruling on every section is still work a PM may never need. **Cost:** a wrong document or a real bug stays unnoticed until a ticket lands there, so Stangent stops working as an audit of the whole spec.
 
