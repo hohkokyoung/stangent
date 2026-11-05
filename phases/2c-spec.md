@@ -146,3 +146,22 @@ Built under D120, so no fresh check and no fix round. `dotnet test`, the whole-f
 - **One-turn calls mostly pay for it.** Each call's input is new and nothing runs after it, so what's written is never read. What's read, about 2.4K tokens a writer call, is most likely the shared system prompt, which `--exclude-dynamic-system-prompt-sections` keeps the same between calls. Input outside the cache is almost nothing: 850 tokens across 417 page calls.
 - **Multi-turn calls gain,** as each turn reads the last.
 - **What could change, neither done:** turning caching off for one-turn calls, if Claude Code allows it (not checked), would stop paying the extra for writes, but it needs a paid test to see the bill and it loses the 2.4K. Putting the bundle first, so a page's verifier reuses what its writer wrote, changes a prompt, so it would have to be built off and re-run. Neither saving is estimated here, as that needs prices this repo doesn't hold.
+
+## First run on a real document (D127, 2026-11-05)
+
+The owner's own project, section by section, counts only: the document holds a name and a student id and this repo is public. Results are in the project's clone, uncommitted.
+
+Headless calls were refused on a weekly limit, so this ran through the app's agents on Opus, one fresh agent per role: writer, verifier, judge, agree checker. One use case so far, the first with candidates in document order.
+
+| | |
+|---|---|
+| Pages | 2, 23 statements, verifier found 0 problems |
+| Links | 11 agree after the checker sent 1 back, 14 gap, 2 conflict, 2 undocumented |
+| Findings | 18 |
+| Assistant's first read, not the owner's ruling | About 14 of 18 look like false alarms, all gaps; 4 look real |
+| Agent tokens | 278K for 6 steps, about 46K a step |
+| Plan usage | 5-hour 48 to 55, weekly 65 to 66 |
+
+**Why the gaps:** the use case describes a screen, and the only candidates were two backend endpoints. The screen is rendered directly from the app's root, not through a route, so the graph lists no page for it, though its files exist. Spot-checked in the code: the modal, cancel, tooltip and redirect are all there. This is a miss in what the graph treats as a screen, not a disagreement.
+
+**Not shown yet:** the owner's rulings; whether fixing it lowers the false alarms; anything beyond one use case. One use case is too small for a rate. The earlier "3 screens" matched the route lines only, so it undercounted the app's screens.
