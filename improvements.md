@@ -1,387 +1,90 @@
 # Improvements
 
-The owner's list, kept as given, with a status against each item. Change a status in the same turn as the decision or the work behind it.
+**Ideas not decided yet.** The file an item sits in is its status (D134): not decided here, decided and unbuilt on [`roadmap.md`](roadmap.md), built or rejected in [`improvements-done.md`](improvements-done.md). When its state changes, the item moves, in the same turn as the decision or the work behind it.
 
-| Mark | Meaning |
-|---|---|
-| ✅ | In Stangent now |
-| 🟡 | Partly in Stangent; the note says what's missing |
-| 🔨 | Being built now |
-| ☑️ | Decided, not built |
-| ⬜ | Not decided yet; the note gives a recommendation |
-| ❌ | Decided against |
-
-Here's the full list, grouped by area. Each section ends with a line on why it's ahead of Stangent, based on what the review says about Stangent.
+Sections keep their numbers in both files, so "§6" means the same section in either. Each note says what's there today and what's recommended. Nothing here is a commitment.
 
 ## 1. Explaining how the app works today
 
-- ✅ Every fact has proof. Each statement gets a permanent id and a code citation (`repo/path:lines`).  
-  *Built in 2.3 (D118). A ledger per page holds the ids, and `path:lines` and the commit come from the graph by code, beside the page. A dirty tree writes none, and the page says why. A page from before gets them from `stangent spec cite`, with no AI.*
-- ✅ Ids are never renumbered or reused, so links from findings, answers and the FSD stay valid.  
-  *Built in 2.3 (D118): the same words, or a rephrase with the same symbols alone in its section, keep the id. A retired number never returns, and a link citing one drops back, reported.*
-- ⬜ Pages follow how people use the app. Journeys are cut by step ("what happens at step 4" lives in one place), alongside list, report and admin pages. The team switched to this after a pilot.  
+- Pages follow how people use the app. Journeys are cut by step ("what happens at step 4" lives in one place), alongside list, report and admin pages. The team switched to this after a pilot.  
   *Pages are per screen and endpoint today (D54, D63). Recommend: decide after results. J.1 adds the order without changing the pages.*
-- 🟡 Shared behaviour is written once (lifecycles, shared steps) and linked. Feature pages only describe what's different.  
+- Shared behaviour is written once (lifecycles, shared steps) and linked. Feature pages only describe what's different.  
   *Shared components and endpoints have their own pages. Lifecycles and shared steps don't. Recommend: decide with the page shape.*
-- ✅ Three kinds of statement are kept apart: what the app does today, the required behaviour for a new app, and findings or open questions (`X` and `Q` ids). Opinions can't pass as facts.  
-  *Built in 2.4 (D118): findings have permanent `X-0001` ids, questions already had `Q-0001`, and `trace check` rejects evidence citing a finding. "A new app" isn't Stangent's job, so that part is the FSD.*
-- ✅ Findings get a severity from one shared scale, graded by the effect on users on the path they actually take.  
-  *Built in 2.4 (D118): `blocker`, `major`, `minor`, `cosmetic`, starting `ungraded`, set by a person through the decision path. Since 2.5 the disprove step can suggest a grade, shown beside it; a person still sets it.*
-- 🟡 A second agent tries to disprove every finding. It assumes each claim is wrong until the code proves it, and checks whether the code path is actually reached. Separate "gap finders" look for what the first pass missed.  
-  *Built in 2.5, reversing D62 (D119): off by default, and not shown to help until the owner's paid re-score runs. Not tested: `undocumented` screens found by code, which have no FSD quote. Since the fresh check, a refuted or unreachable finding leaves the BA's queue only for a developer to confirm or send back, because a quote can't show it's relevant. **Not done:** gap finders; the step only removes findings, so it can't raise what's found.*
-- 🟡 The call graph handles real C#. It resolves interface calls and DI registrations, and shows every entry point (endpoint, page, job, handler) that reaches a method.  
-  *Roslyn graph with DI and impact answers, scored on real repos. Known gaps: code dispatched by interface or name, and framework-run code (D109). Recommend: close them in Phase 4 as decided.*
-- 🟡 Adapters for the actual stack: Playwright tests, Svelte screens, Razor pages, .NET code and SQL seed data.  
+- Adapters for the actual stack: Playwright tests, Svelte screens, Razor pages, .NET code and SQL seed data.  
   *.NET, Angular and React are in. Playwright is used for bug proof (D86), and existing specs now link to screens in the graph as evidence of strength `read` (1.2, D115). Razor is a blind spot (D65). Svelte is out until a repo needs it (D31). No SQL seed data. Recommend: the rest when a repo needs them.*
-- 🟡 Scripts generate navigation and numbering, so agents can't break links or page order.  
-  *Code numbers statements and renders pages (`PageRender.cs`). No generated navigation. Recommend: do, small.*
-- 🟡 Script checks on every output: coverage (`doc-check`), broken links (`docs-lint`), plan order (`plan-check`), and that no client data leaks into the tool (`prompt-lint`).  
-  *`spec check`, `trace check`, `req check`, `phases check` and `data check` (client data, D113) exist. Coverage, broken-link and plan-order checks of this kind are per product.*
-- 🟡 The client's code is read-only, enforced by a hook (`guard-app.js`), not just by instructions. Agents can't edit, build, run or use git in the app repo.  
-  *Headless runs are limited by permission rules (D60, D86), with no hook. Bug proof has to build and run the app (D75). Recommend: not as written; read-only for analysis steps only.*
-- ⬜ Runs are reproducible, and that was measured. A fresh session with no access to the first run found 9 of 10 key findings again. Runs are compared by the code lines they cite and their wording, not by id.  
+- Runs are reproducible, and that was measured. A fresh session with no access to the first run found 9 of 10 key findings again. Runs are compared by the code lines they cite and their wording, not by id.  
   *"Repeatable" measures cache reuse only (D57, D79). Recommend: do.*
-
-Ahead of Stangent because Stangent's reference pages are summaries, and its discrepancy check failed its quality bar. These pages carry evidence and are independently checked.  
-*Partly fair: Stangent's statements do carry checked citations and a fresh verifier (D62). The failed bar is real (D68, D99).*
 
 ## 2. Keeping that knowledge current
 
-- 🟡 Updates from a release diff. `reconcile` maps each changed file to the pages that cite it (only overlapping lines count) and updates just those pages.  
-  *`spec stale` finds pages per PR and regenerates them on merge (D55), but per whole page, not by overlapping lines. Recommend: do.*
-- ✅ A second agent re-checks the updated pages against the new code.  
-  *The fresh verifier runs on regenerated pages (D62). A page fixed after its findings isn't verified again.*
-- ⬜ Changed code that no page covers is listed as new work, so it isn't silently missed.  
+- Changed code that no page covers is listed as new work, so it isn't silently missed.  
   *`spec stale` lists new and removed pages only. Recommend: do, small.*
-- 🟡 Every reference is stamped with the exact code it describes: commit and branch, per repo for apps split over several repos (`BUILT_FROM.json`).  
+- Every reference is stamped with the exact code it describes: commit and branch, per repo for apps split over several repos (`BUILT_FROM.json`).  
   *Each page records its commit and input hash. One repo only (D4). Recommend: reopen D4 only if a real target is split across repos.*
-
-Ahead of Stangent because stale-page detection is only planned there (Phase 7).  
-*Wrong: `spec stale` and `plugin/ci/spec.yml` have been built since Phase 2a.*
 
 ## 3. Bringing the Word FSD in
 
-- ✅ Exact conversion with no AI guessing. The Word XML decides the structure and pandoc renders the text. Nothing is made up.  
-  *Code only, with our own renderer and no pandoc (D52). Tracked changes now stop the import rather than resolve silently (D116).*
-- ✅ Fails loudly instead of quietly degrading. It checks for tracked changes, merged or nested tables and missing heading styles before converting, and never guesses headings from bold text.  
-  *Missing headings and unreadable files stop the import, for PDF and Word (D111). Tracked changes stop a Word import unless `--accept-changes` is given; nested and merged tables are listed; a code check compares every word (D116).*
-- 🟡 Handles messy real-world Word files:
-   - ✅ six heading levels, and tracked changes including moves  
-     *Tracked changes stop the import; `--accept-changes` imports the accepted view, and moved text comes in once (D116).*
-   - 🟡 merged table cells expanded  
+- Handles messy real-world Word files:
+   - merged table cells expanded  
      *A cell merged down rows repeats its value and is listed (D116). A cell merged across columns still leaves blanks, not its value.*
-   - ✅ embedded Excel saved as one CSV per sheet  
-     *Saved under `attachments/<A-id>/`, one CSV per sheet, linked from `document.json`, with `document.md` unchanged (D123). Only on hand-built files.*
-   - 🟡 PDFs and PowerPoint slides converted to text  
-     *PDF is built, read directly (D111). PowerPoint isn't decided.*
-   - ⬜ EMF pictures converted to PNG  
-     *Saved as `.bin` today. Recommend: do if a real document needs it.*
-   - ⬜ draw.io diagram sources pulled out of images  
-     *Nothing reads diagrams. Recommend: do if a real document needs it.*
-   - ⬜ Word cross-references turned into working links  
-     *Plain text today. Recommend: later.*
-- ✅ Lists everything it couldn't bring in exactly, so nothing is lost silently.  
-  *Done for PDF, with stated gaps (D111), and for Word, where a code check compares every word per section on each import (D116). Each import now has a verdict and a report, grouped by kind (D122). Not yet measured on a file saved by Word itself.*
-- 🟡 Open Word review comments become questions for the BA.  
+- Open Word review comments become questions for the BA.  
   *Each comment is listed with its author, section and open or resolved state, in a fixed shape (D116). **Not done:** becoming questions. 2.5 didn't build it.*
-- ✅ Encrypted or protected files stop the run with instructions. It never works around the protection.  
-  *`pdf_locked` for any protected PDF (D111); `docx_locked` for a Word file with a password, saying how to get a copy that can be read (D122). A sensitivity label stops it too, with `--allow-label` (D122).*
-- ✅ Fast on a real FSD: about 360 sections and 150 tables in about 18 seconds in the pilot.  
-  *A 717-page Word file imported in 1.9 seconds.*
-
-Ahead of Stangent because Stangent's AI extraction produced 109 requirements but acceptance criteria for only 12, and the review worried about the spec becoming "another source of hallucinations". This step can't hallucinate because no AI is involved.  
-*Compares different steps: Stangent's conversion uses no AI either. The 12 is partly by design (D99 forbids inventing outcomes).*
 
 ## 4. Stable section ids across FSD versions
 
-- ✅ Section ids survive edits, moves, renames and splits.  
-  *Built in 2.2 (D117): a permanent id beside the number. A split or merge is a person's call, since only exact signals match on their own.*
-- ✅ A new Word version comes in as a candidate, with a section-by-section list of what changed (`SECTION_DIFF.md`).  
-  *Built in 2.2 (D117), for `.docx` and `.pdf` alike. The current version serves until a person promotes.*
-- ✅ Doubtful matches are never guessed. They're listed for a person to decide, and promoting the candidate is refused until they're settled.  
-  *Built for sections in 2.2 (D117), by code with no AI. Requirements stay with 2c step 6 (D99).*
-- ✅ Removed ids are kept and marked removed, never reused.  
-  *Built for section ids in 2.2 (D117), on the ledger. Requirement ids come with 2.3.*
-- ⬜ Proven on a real version change: 294 sections unchanged, 27 modified, 25 added, 14 moved, with no open decisions. Matching took half a second.  
+- Proven on a real version change: 294 sections unchanged, 27 modified, 25 added, 14 moved, with no open decisions. Matching took half a second.  
   *No real version change yet. It needs a document with two versions (D56). A planted edit of Sonarr's FSD found all it planted: a check of the rules, not this.*
-- 🟡 Mistakes were fixed and locked in. The matcher's three first-run errors each got a design fix and a test, and the reviewed result is pinned as a regression check.  
+- Mistakes were fixed and locked in. The matcher's three first-run errors each got a design fix and a test, and the reviewed result is pinned as a regression check.  
   *A reviewed pair is pinned (2.2). There's been no real first run to learn from yet.*
-
-Ahead of Stangent because stable requirement ids are still in progress in Stangent's Phase 2c. These are built and tested on a real FSD.  
-*Fair.*
 
 ## 5. BAs changing the FSD, with approval
 
-- ⬜ BAs describe changes in plain words. Claude edits through the tool, and direct file edits are blocked so ids and numbering stay correct.  
+- BAs describe changes in plain words. Claude edits through the tool, and direct file edits are blocked so ids and numbering stay correct.  
   *Conflicts with D52 (the FSD is written outside Stangent). Recommend: decide after results, and first settle whether BAs have Claude Code.*
-- ⬜ BAs never touch git. Branches, commits and merge requests happen behind the scenes.  
+- BAs never touch git. Branches, commits and merge requests happen behind the scenes.  
   *D99 has BAs ticking boxes in a PR, and D12 has a dashboard in Phase 8. Decide with the BA workflow.*
-- ⬜ Each BA has their own branch, and every edit is a commit, so nothing is lost.  
+- Each BA has their own branch, and every edit is a commit, so nothing is lost.  
   *Decide with the BA workflow.*
-- ⬜ Done is one step. It opens the merge request.  
+- Done is one step. It opens the merge request.  
   *Decide with the BA workflow.*
-- 🟡 The lead BA sees each change marked up and approves or sends it back with a note.  
+- The lead BA sees each change marked up and approves or sends it back with a note.  
   *D99 decided approval by tick boxes in a spec-only PR, not built. No send-back flow.*
-- 🟡 Approval safety rules:
-   - ⬜ you can't approve your own change (a one-BA app is the recorded exception)  
+- Approval safety rules:
+   - you can't approve your own change (a one-BA app is the recorded exception)  
      *Not in Stangent. Decide with the BA workflow.*
-   - 🟡 an approval never overwrites a section that changed after it was reviewed  
+   - an approval never overwrites a section that changed after it was reviewed  
      *A decision drops back when its quote changes (D58). Nothing blocks a merge.*
-   - ⬜ approving always asks for confirmation  
+   - approving always asks for confirmation  
      *Decide with the BA workflow.*
-- 🟡 Every approved change is a commit on `main` recording who asked, who approved and which sections changed: a full audit trail.  
+- Every approved change is a commit on `main` recording who asked, who approved and which sections changed: a full audit trail.  
   *`decided_by` comes from git, never typed (D58). "Who asked" isn't recorded.*
-- ⬜ Clashes between BAs are handled: keep mine, take theirs, or combine.  
+- Clashes between BAs are handled: keep mine, take theirs, or combine.  
   *Decide with the BA workflow.*
-- ⬜ One command tells each person what's next. A note at session start says what's waiting on them.  
+- One command tells each person what's next. A note at session start says what's waiting on them.  
   *`/stangent:status` shows the store only. Recommend: do, with the BA workflow.*
-- ⬜ One-line installer for PMs, with the whole team pinned to one version and offered updates.  
+- One-line installer for PMs, with the whole team pinned to one version and offered updates.  
   *"Installable for others" isn't placed (D1). A self-contained build ran with no .NET. Recommend: do when BAs become users.*
-
-Ahead of Stangent because Stangent has designed approval states but not a working edit-and-approve workflow for BAs.  
-*Fair.*
 
 ## 6. Checking the FSD against the app
 
-- ⬜ Two ways to check: against the code, or against the reference for BAs who don't have the code.  
+- Two ways to check: against the code, or against the reference for BAs who don't have the code.  
   *Pages only today. Recommend: test against the code first (D99's "bigger option").*
-- 🟡 Whoever finds a difference never verifies it. A separate agent re-checks it in a fresh context before the BA sees it.  
-  *Built with the disprove step (D119), off by default and not yet proven; the re-score stopped at 11 of 62 calls.*
-- ✅ Only today's behaviour counts as evidence. The reference's opinions and its own findings can never back up a claim.  
-  *Links quote the FSD and page statements only (D53), and since 2.4 `trace check` rejects evidence citing a finding (D118).*
-- ✅ A script checks every citation: the id must really be on the cited page, and in the right part of it.  
-  *Quotes and ids are checked word for word (D53, `trace check`).*
-- ✅ Every finding is stamped and weighed. It records which code commit it was checked against, and how strong the evidence is: backed by a test, by code only, or weak.  
-  *Built in 2.4 (D118): each finding carries `evidence` records with the commit, the strength (`stated`, `read`; `ran` only with a real run) and who checked it, filled by code and validated by `trace check`.*
-- 🟡 Findings stay marked "unverified" until code confirms them. Nothing is overstated.  
-  *Unverified until a person approves (D53); findings are off by default (D68). Since 2.5 a verdict can mark one as the AI's reading, `read`, never `ran`, and a refuted or unreachable one leaves the BA's queue only for a developer to confirm; off by default and unscored (D119).*
-- ✅ The BA decides each finding, and can say "the reference is wrong", which sends it back to the reference's owner.  
-  *Built in 2.5 (D119): `page-wrong`, with `decided_by` from git. The page goes stale for its owner, is listed in `spec stale`, and writing it again sends the finding back to the BA.*
-- 🟡 Only what changed is re-checked. A new import re-checks just the units whose pages changed. Decided findings go back to "recheck" if their evidence changed, or "gone" if it disappeared.  
-  *Unchanged inputs are reused (D18), and a changed quote drops its decision (D58), now marked `recheck` with the old decision visible, or `gone` with its id kept (D122). 2.6 stopped a finder's re-run re-paying the judge for the same pages. Re-judging a stale page's links is decided, not built (D99).*
-- 🟡 Reference gaps are kept out of the BA's queue. "The reference doesn't cover this" goes to a developer, not the BA.  
-  *Built in 2.5 (D119): a `page-gap` verdict goes to developers, listed in its own group. Off by default and unscored until the re-score runs.*
-- ⬜ A per-chapter report of findings by result and severity, plus a count of FSD rules with no test, for QA. Still to do: `trace check` lists ids and severity, with no per-chapter view.  
+- A per-chapter report of findings by result and severity, plus a count of FSD rules with no test, for QA. Still to do: `trace check` lists ids and severity, with no per-chapter view.  
   *Bulk approval works per chapter, but there's no report. Tests carrying ids are Phase 5. **Not done:** 2.5 didn't build it. Recommend: do after severity.*
-- ✅ An alias map records names that differ between the FSD and the screens.  
-  *Built, off, not shown to help: `aliases` in `specs/fsd/<doc>/table-map.yaml`, for comparing tables with the code (C.2, D124). Names on screens aren't compared: the link judge still reads those itself.*
-- ⬜ Trial result: every finding built on a correct reference page was right (12 of 12).  
+- Trial result: every finding built on a correct reference page was right (12 of 12).  
   *A result, not a feature. Stangent's own: 44% false alarms (D99). The two aren't comparable.*
-
-Ahead of Stangent because Stangent's discrepancy check failed its bar, with about 44% false alarms on requirement linking. The review also says Stangent is missing a proof trail, which this builds into every finding.  
-*The 44% is real, measured on a planted FSD.*
 
 ## 7. Engineering discipline
 
-- ✅ Scripts handle everything exact; agents only judge. Agents never decide state.  
-  *D18, D60: `check` records results, never the agent.*
-- ✅ All state changes go through one module that rejects illegal transitions and keeps a history.  
-  *`src/Stangent.Core/State/`, eleven lifecycles (D114). What one command returned stays a plain field. A test scans the source, so a new write can't slip past it.*
-- ✅ Stuck locks are never broken automatically. A person clears them after being asked.  
-  *Stangent's locks are OS file locks, released when a process ends, so none get stuck. A hung process still blocks until its timeout.*
-- ⬜ Every requirement is traced to a test. The build fails if a scenario has no test, or a test names no scenario.  
+- Every requirement is traced to a test. The build fails if a scenario has no test, or a test names no scenario.  
   *Tests carrying ids in target projects are decided for Phase 5 (D10). Not done for Stangent's own code. Recommend: decide with Phase 5.*
-- 🟡 The test suite is strong: a 90% coverage floor, tests against real tools (git, pandoc, Office files) and end-to-end ingest tests.  
+- The test suite is strong: a 90% coverage floor, tests against real tools (git, pandoc, Office files) and end-to-end ingest tests.  
   *Real git and Office files are used. Coverage is measured now (`scripts/coverage.sh`: 69.7% of lines, 2026-11-04) and recorded in `phases/0-foundation.md`. No floor yet: the owner's call (D28).*
-- ✅ No client data goes into the tool's repo, and that is checked.  
-  *`stangent data check` runs in CI (D113): tracked documents need a reason in `.stangent-data-allow`; client terms stay outside the repo. It reads the current tree, not git history, and CI has no terms file, so CI checks documents only.*
-- ✅ Honest pilot notes record misses and what was changed because of them.  
-  *End-of-phase reports and `decisions.md`.*
-- ⬜ Hooks never block Claude, and that is tested.  
+- Hooks never block Claude, and that is tested.  
   *The plugin has no hooks. Applies only if we add some.*
-
-Ahead of Stangent because the review's main ask, "evidence provenance" (a proof trail for every finding), is already how this works.  
-*Partly: Stangent checks citations but records no evidence strength or commit per finding.*
-
-## 8. Proposed from comparing a fuller workflow (2026-11-04)
-
-All proposed, none decided. Stangent's own file layout stays; only the ideas count. Letters give a suggested order: seams first (S), then A, C and E.
-
-**Seams, first**
-
-- ✅ F.1 · Every component has a switch, and a run says which were on (D120).  
-  *So the test phase can run the flow with each one off. Some exist: `history.enabled`, `fsd.findings`, `fsd.disprove`, `detectors`. Recommend: do first.*
-- ✅ S.0 · A test of the whole flow with fake AI answers: import, links, promote, disprove, impact, as one run.  
-  *`WholeFlowTests.cs`; what it found is in `phases/0-foundation.md`. Five things wait on the owner, as skipped facts.*
-- ✅ S.1 · Links store a section's permanent id as well as its number.  
-  *Links cite numbers, carried across on promote (D117). Keep the number for old hashes. Recommend: do.*
-- ✅ S.2 · Import problems become structured: kind, section, detail.  
-  *`problems` are plain lines, and comments use a fixed text shape no product code reads back. `source-document` v3. Recommend: do before the report and questions.*
-- ✅ S.3 · One set of import steps every format fills in, and ticket attachments use the same path.  
-  *Comments and tracked changes are Word only; `Pull.cs` converts `.docx` but not PDF, which D111 left open. Recommend: do.*
-- ✅ S.4 · Connect or plainly label what Phase 1 and 0 built and nothing uses.  
-  *Only graph code reads `opens-screen` lines; `ran` evidence has no source; Tickets don't use the evidence shape. Recommend: label now, connect when a step needs it.*
-
-**Bringing a document in**
-
-- ✅ A.1 · Re-read the same file with a newer build, through the candidate flow.  
-  *`fsd reread <doc>`, from the archive's original, comparing text (D122).*
-- ✅ A.2 · One readable import report with a verdict: OK, OK with warnings, or failed.  
-  *`verdict` on the result and `import-report.md`, from structured problems (D122).*
-- ✅ A.3 · Sensitivity labels stop the import, and a locked Word file gets its own stop with plain instructions.  
-  *`document_labelled`, `--allow-label`, `docx_locked` (D122).*
-- ✅ A.4 · When a Word file has no headings, list the bold lines that look like headings.  
-  *In the `no_structure` error's details, up to 20, by paragraph. It still never guesses (D122).*
-- ✅ A.5 · Excel follows the same steps: each sheet a section, merged cells expanded, hidden sheets and comments listed, values shown with the formula noted, very large workbooks flagged.  
-  *`.xlsx` and `.xlsm`, by code (D123). No real Excel FSD has been seen: hand-built files only.*
-- ✅ A.6 · Ids for tables, pictures and attachments, kept in `document.json`.  
-  *`T-`, `F-` (D122), and `A-`, each with its section (D123).*
-- ✅ A.7 · Embedded files converted, linked from their section, and their text checked with it. A locked or scanned one is kept and listed.  
-  *Built (D123). The text stays out of `document.md`, so saved hashes hold. The check seeing them is `fsd.attachmentsInChecks`, off by default; turning it on re-runs sections that gain text, which is paid, and hasn't been run on a real AI.*
-- ✅ A.8 · A section's fingerprint includes its attachments.  
-  *`contentHash` beside `textHash`. The same words with other files read `modified`, naming the file; an older document falls back on the text (D123).*
-- ✅ A.9 · A person approves the first import, in a spec-only PR.  
-  *A switch, off by default: `fsd approve` (D122). Stangent opens no PR; a spec-only PR is the team's own.*
-- ✅ A.10 · `fsd outline` and `fsd show <section>`.  
-  *By code, by permanent id or number (D122).*
-- ✅ A.11 · `fsd export`: one file per top-level heading, long chapters cut one level down, generated, never read back.  
-  *Into `.stangent/fsd/<doc>/export/`, which git ignores; `document.json` stays the record (D122). The limit is a stated setting, 1500 lines.*
-
-**Checking the document against the app**
-
-- ✅ C.1 · Every section is linked or marked "not in code" by a person, with its attachments listed.  
-  *`coverage` in `trace check`, and `fsd not-in-code`, by code; it reports and doesn't fail (D122).*
-- ✅ C.2 · Compare table facts by code: fee tables, field lists, status codes against facts from the code.  
-  *Built, off, not shown to help (`fsd.compareTables`, D124). `fsd tables`, `table-map.yaml`, `fsd compare-tables`, with API fields and enums from C# and TypeScript, by code. D68's question is still the owner's. Hand-built documents only: there's no real FSD to pilot it on. Constants and seed data aren't done.*
-- ✅ C.3 · A decided finding becomes `recheck` or `gone`.  
-  *`standing`, beside the drop-back, which is unchanged. A decided finding that goes away keeps its `X-` id; one nobody decided doesn't (D122).*
-- ✅ C.4 · The link judge can say `partial` and `unclear`.  
-  *Built, off, not shown to help (`fsd.judgeFinerVerdicts`, D124). New instruction text and schemas; every reader and the scorer handle both. Whether it cuts false alarms needs the paid re-score.*
-- ✅ C.5 · BA decisions `accepted` and `not a difference`.  
-  *`accepted` and `not-a-difference`, in `trace-links` v4 (D122).*
-- ✅ C.6 · Group small neighbouring sections into one unit when checking.  
-  *Built, off, not shown to help (`fsd.groupSections`, D124). A run under one parent, up to `fsd.groupMaxChars` (4000, stated, with no measurement behind it). Each link cites its own section, by code. It has its own hash: on re-runs, off reuses.*
-
-**Everyday use**
-
-- ✅ E.1 · A status for a document: where it stands, what's waiting, who it waits on.  
-  *`fsd status` and `/stangent:fsd-status`, by code, with the next command (D122).*
-- ✅ E.2 · Ask "how does the app do X today?", answered from pages with citations.  
-  *Built, off, not shown to help (`spec.ask`, D124). `stangent spec ask` and `/stangent:ask`: code picks pages by words, one turn, no tools; every id checked by code, lines from `reference-lines`, and an answer with no citations is refused.*
-- ✅ E.3 · Run one chapter and see its cost before the whole document.  
-  *`spec-run.sh --chapter <n>` and `fsd disprove estimate --chapter <n>` (D122). The estimate covers the disprove stage only; nothing estimates the link judge.*
-
-## 9. The owner's bulk decisions (2026-11-04, D125)
-
-Marked down, not built. A ☑️ with a test note is taken in and stays off until that test.
-
-**Improve what we have**
-
-- ✅ I.1 · Pages generated only when a section or ticket needs them, as the normal path.  
-  *Built: `spec needed`, `spec-run.sh --for-fsd` and `--for-ticket`; `--stale` no longer includes pages never written, `--new` does (D131). 113 of 718 ran on Sonarr.*
-- ✅ I.2 · Update only the statements a change touches, not the whole page.  
-  *Built, off: `statement-update`. The writer still reads the whole bundle; no real run yet (D131).*
-- ✅ I.3 · Smaller disprove bundles, watching `cant-tell`.  
-  *Built, off: `disprove-small`; `fsd disprove estimate` shows the size and the `cant-tell` count. Whether `cant-tell` goes up isn't known until a paid run (D131). 44 of 62 hit the 60K cap.*
-- ✅ I.4 · Citations follow code that only moved.  
-  *Built, off: `follow-moves`. A renamed TypeScript file changes its ids, so it still runs (D131).*
-- ✅ I.5 · The diff shows `renamed` and `split` as their own outcomes.  
-  *`renamed` already was. `split` shows apart, and stays a person's call (D126).*
-- ✅ I.6 · Similarity ranks suggestions for doubtful matches and never decides.  
-  *Built: `suggestions` in `fsd diff`, by shared words, no cut-off (D131).*
-- ✅ I.7 · Embedded originals go to the archive, not the repo.  
-  *Built: at any depth; the record says where (D126).*
-- ✅ I.8 · Files attached to a PDF get a home.  
-  *Built, off: `attachment-home`. Off because such a document gains a section (D126).*
-- ✅ I.9 · Check prompt caching on headless calls.  
-  *Looked: one-turn calls write 7.62M and read 0.72M, so caching mostly costs there; multi-turn pays. Not changed (D126, `phases/2c-spec.md`).*
-- ✅ I.10 · Refused driver steps exit nonzero.  
-  *Built: exit 1, the rest goes on (D126).*
-- ✅ I.11 · Confirm a Word table of contents is removed, with a test.  
-  *It wasn't. Fixed and tested; Sonarr byte-identical (D126).*
-- ☑️ I.12 · A second reader: pandoc reads the same Word file and code compares the words.  
-  *In checks only, so saved work holds. Needs pandoc installed; it isn't on this machine.*
-
-**Take: cheap, no AI**
-
-- ✅ T.1 · A person's correction to a page is recorded, approved and survives regeneration.  
-  *Built, off: `spec correct`, `page-corrections`. Changes or removes a statement; adding one is still `page-wrong` (D131).*
-- ✅ T.2 · A hard stop: an estimate and `--max-cost` before every paid step.  
-  *Built: a cap or `none` is required; limits noticed; what code can't see is in `docs/foundation.md` (D126).*
-- ✅ T.3 · Every screen and entry point is covered, or excluded with a reason.  
-  *Built: `spec coverage`; `spec exclude`, off: `page-exclusions` (D131).*
-- ✅ T.4 · A warning when a page is behind the code, where it's read.  
-  *Built: `spec read`, `spec ask` (D126).*
-- ✅ T.5 · A check that a run didn't change the app's files.  
-  *Built: `run-check`, in the drivers (D126).*
-- ✅ T.6 · Broken-link and duplicate-id checks.  
-  *Built: `spec content-check`, in CI (D126).*
-- ✅ T.7 · Generated navigation and footers.  
-  *Built: links and a footer on each page, `specs/reference/index.md` (D131).*
-- ✅ T.8 · Client code read-only by hook, for analysis steps only.  
-  *Built: `read-only-hook.sh`; never on the reproducer (D126).*
-- ☑️ T.9 · Playwright adapter by settings: specs in another repo, the project's own helpers, its URL shape.  
-  *No AI. A link records both repos' commits; this is the reason D4 asked for. Generated scripts only if settings can't express it.*
-- ☑️ T.10 · EMF, draw.io, Word cross-references, PowerPoint.  
-  *No AI. When a real document needs them.*
-
-**Take, then test: off until its test says otherwise**
-
-- ☑️ X.1 · Disprove step.  
-  *Test: Sonarr key; re-score after Nov 7.*
-- ☑️ X.2 · Page verifier: keep or drop.  
-  *Test: Sonarr key, on and off.*
-- ☑️ X.3 · Each rule tested for whether it can trigger.  
-  *Test: Sonarr plus planted dead rules.*
-- ☑️ X.4 · A short guide per app.  
-  *Test: Sonarr key; a small effect may not show.*
-- ☑️ X.5 · Findings about the code itself.  
-  *Test: Sonarr's real bug history; needs new scoring.*
-- ☑️ X.6 · Haiku on small pages.  
-  *Test: Sonarr key and a hand read.*
-- ☑️ X.7 · Table comparison by code.  
-  *Test: Extended planted FSD, then a real one.*
-- ☑️ X.8 · Finer verdicts, grouping, ask.  
-  *Test: Sonarr key, on and off.*
-- ☑️ X.9 · Requirements layer.  
-  *Test: Sonarr key, on and off; can't show catching wrong reports. So far: requirement level 24/30, 44% false alarms; section level 27/30, 31.3%; separate runs (D129).*
-- ☑️ X.10 · Git history.  
-  *Test: Existing benchmark; about 2.5 points so far.*
-- ☑️ X.11 · Playwright as evidence.  
-  *Test: the pilot's project (the owner has none of their own): unresolved rate and a hand check.*
-- ☑️ X.12 · Structured specs before pages.  
-  *Test: One feature on Sonarr, about 3M tokens.*
-- ☑️ X.13 · UI check per screen.  
-  *Test: Same run.*
-- ☑️ X.14 · Reviewer per journey.  
-  *Test: Same run.*
-- ☑️ X.15 · Passes over finished pages.  
-  *Test: Same run.*
-- ☑️ X.16 · Gap finders.  
-  *Test: Sonarr key; the only idea that can lift found above 24 of 30.*
-- ☑️ X.17 · Pictures read by the agent.  
-  *Test: A real document; a person confirms each claim.*
-- ☑️ X.18 · Overview pages and a glossary.  
-  *Test: Sonarr key; may help names that differ.*
-- ☑️ X.19 · Generated per-app adapter scripts.  
-  *Test: Only where settings can't express a pattern.*
-
-**Not taking**
-
-- ❌ Other tools' file layout and names.  
-  *Owner.*
-- ❌ Windows and GitLab-specific setup.  
-  *D24 keeps these behind adapters.*
-- ❌ Claude merging clashing edits without asking.  
-  *Nothing can check it (D18).*
-- ❌ Similarity cut-offs deciding matches.  
-  *Tuned numbers; can flip meaning silently.*
-- ❌ A repo survey agent.  
-  *The graph does this job.*
+  *Since: T.8 added `read-only-hook.sh` (D126).*
 
 ## 10. From comparing a step-by-step journey workflow (2026-11-05, D129)
 
-- ☑️ J.1 · Journeys read from end-to-end tests by code: page, clicks, fields and checks in order, each step linked to its reference page.  
-  *No AI. Off by default, after the use-case runs, eShop first. Only tested flows appear, and there are no actors without readable test steps.*
-- ✅ J.2 · The FSD's journeys and scenarios stay.  
-  *Extraction built; Sonarr gave 0 journeys from 109 requirements, and no real document has produced one yet.*
-- ⬜ J.3 · The page verifier also reads the tests.  
+- J.3 · The page verifier also reads the tests.  
   *Today it reads the bundle only, and tests aren't a separate source. Recommend: decide after J.1, which has to read those tests anyway.*
-- ✅ J.4 · Batch runs send the output schema only once (D130).  
-  *Built, off: `schema-once`. The hash stays on the full text, so nothing regenerates; off until a test, because what the AI reads changes (D131).*
-
-## Two caveats
-
-- Most of the accuracy evidence comes from one app and small samples (one chapter, 22 findings). Stangent is tested on more codebases.
-- The handoff between the reference and the FSD tool has no version check, so the strongest part of the list (section 6) depends on the reference's page format staying the same.  
-  *Stangent has this covered: versioned contracts and `phases check` (D20).*
