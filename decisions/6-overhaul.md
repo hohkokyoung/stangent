@@ -354,3 +354,23 @@ One readable file per section, written by code at import, so a PM reviewing a sp
 **Why:** a diff in `document.json` is unreadable, and D128 is what makes someone review spec changes in PRs. No BA uses Stangent yet, so nothing justifies parsing hand-edited Markdown back into data, where a small edit could break a table or move saved hashes.
 **Rejected:** building it before D128, since nobody would read the diffs. Swapping now, for the same reason.
 **Cost:** about 340 files on the thesis, 40 nearly empty, so those may be skipped or merged. Someone could edit one and expect it to count, so it needs `document.md`'s warning.
+
+## D143 · A section is cut into claims by code, printed only (`fsd claims`, `fsd-claims`, off) — 2026-11-05 (owner asked how to split better and said "ok lets do whatever we need to do now"; the details are the assistant's call)
+An FSD's smallest piece with an id is a section, which can hold about 30 claims with no ids. So a link judge copies FSD words, a different cut of the same sentence gives a different link and loses a person's ruling (`phases/2c-spec.md`), and the same sentence can repeat under different flows. This slice only cuts and prints. **Ids and the judge come in a later slice** (`roadmap.md`, "Decided, not built"), which depends on this one reading well. The judge, its prompt, `TraceFile.EntryId` and every saved file are as they were.
+- **A claim** is a sentence, a list item, a table row, or a numbered step inside a table cell. It has its section's permanent id, its exact words, its position in the section, a kind, and a flow when one applies.
+- **A flow** is the nearest earlier text that introduces a set of steps. It's found from where cells sit, never from what they say: a first-column value when the steps below leave that column empty, or a row with one value in the column the steps start in. Outside tables: a paragraph ending in a colon or all bold, directly before a list or a table of steps. Rows after the last steps have no flow, and neither do a table's rows when each carries its own first column.
+- **What doesn't cut cleanly is kept and listed, by reason:** `starts-mid-step`, `ends-open`, `continues-above`, `numbers-out-of-order`, `maybe-sentence-end`, `code-block`, `no-table-rule`, `row-not-closed`. A stop that might not end a sentence isn't cut.
+- **Steps stay in the order written.** Numbers alternating between columns aren't sorted, because the check holds the words to the section's order. Each step keeps its own number, so a later step can sort them.
+- **The check (D18):** the section's words are read straight from its text, not through the cutting code, with table rules, cell bars and list bullets aside, and compared with the claims' in order. A mismatch is listed in `mismatches` and the command exits 1.
+- **The switch:** `fsd-claims`, off. Off, `fsd claims` says `split: false` and that it isn't a pass, as `fsd compare-tables` does; it reads no section and changes nothing else. It's a switch although it only reads, so that everything built on it stays off together.
+- **Contracts:** nothing bumps (D20). Nothing reads the output, and no contract holds it yet. Nothing needs review.
+**Why:** a later link id can only be built from claim ids if the claims are worth naming. Measuring the cut on its own, with counts and a person reading the output, tests that before anything rests on it, at no AI cost.
+**Rejected:** ids and the judge in this slice, since a bad cut would then move saved ids. An AI cutting the text, because no code could check where it cut (D18). Rules naming a document's words, such as what its flows are called. Sorting alternating steps by number, which reads better and breaks the words check. Joining a step cut across a page in this slice: counts in `phases/2c-spec.md` suggest it's possible, and it's a guess until a person has read those joins.
+**Cost:**
+- A PDF's page breaks leave what they leave: half a step is two claims, each listed. Nothing marks half a plain sentence, or a plain continuation row with several values.
+- A paragraph or one-value row starting in lower case is read as continuing something above, and a real one that starts that way, with a lower-case product name, say, is wrongly listed.
+- Adjacent tables with only blank lines between them are read as one, since a page break looks like that, so an unlabelled table can take the flow of the table above it.
+- A small fixed list of English abbreviations (`al`, `Dr`, `etc`, …) stops cuts, and it isn't complete. Non-English stops aren't read. A label in a nested list item isn't read.
+- Only one real document and one planted one have been read, and no judge has used a claim.
+
+Follows D18, D20, D118, D120, D121 and D138. Fakes and counts only.

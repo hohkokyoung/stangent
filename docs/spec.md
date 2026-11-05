@@ -236,8 +236,29 @@ Each doubtful section in `fsd diff` also has `suggestions`: the unmatched sectio
 ### Reading a document (D122)
 
 - `stangent fsd outline <doc> [--format text]`: each section's level, permanent id, number, title and size in words and lines, with `chapter` on each top-level heading, its place in the list.
+- `stangent fsd claims <doc> [--section <number or permanent id>] [--format text]`: see [Claims in a section](#claims-in-a-section-d143).
 - `stangent fsd show <doc> <section> [--format text]`: that section's text, by permanent id, number or heading path, with its `tables` and `figures` ids, and its `attachments` and generated `attachmentLines`.
 - `stangent fsd export <doc> [--out <dir>] [--max-lines N]` writes one Markdown file per top-level heading, into `.stangent/fsd/<doc>/export/` by default, which git ignores; `ignoredByGit` in the result says so for any folder. The limit is `fsd.exportMaxLines` in `stangent.yaml`, 1500 by default, a stated setting and not a measured one. A chapter over it is cut at its next heading level and so on down: `01-00-s0001-rules.md` holds the text before its first sub-heading, `01-01-s0002-pay.md` the first sub-heading. One section over it with no sub-heading stays whole, and is in `overLimit`. Text before the first heading is `00-front-matter.md`. Each file's first line says it's generated, is never read back and names the source's hash. Empty sections keep their heading. The same document gives the same bytes. An export removes only what an earlier export wrote, by that first line. A test holds that nothing in `src/` reads these files.
+
+### Claims in a section (D143)
+
+`stangent fsd claims <doc> [--section <number or permanent id>] [--format text]` cuts a section's text into claims by code, with no AI. It reads and prints, and writes only the telemetry event. Off by default (`fsd-claims`): off, it says `split: false` and that it isn't a pass. Nothing else reads claims yet, so no link, hash or bundle moves; ids and the judge come in a later slice.
+
+- **A claim** is a `sentence`, a `list-item`, a `table-row`, a `step` (a numbered step inside a cell), a `flow-label`, a `figure` or a `block`. It has `section` (the permanent id), `position` from 1, `kind`, `words` and `flow`. A row's cells keep ` | ` between them. Steps stay in the order written, even where their numbers alternate between columns.
+- **`flow`** is the nearest earlier text that introduces a set of steps, found from where cells sit and never from what they say. In `| Other paths: | Bad input. |`, then `|  | Person | Server |`, then `|  | 1. Press save. | 2. Refuse it. |`, each step's flow is `Other paths: Bad input.`. A first column labels steps that leave it empty, on its own row or above them. A row with one value labels them when it sits in the column they start in. Outside a table, it's a paragraph ending in a colon or all bold, directly before a list or a table of steps.
+- **`notClean` lists what isn't clean,** with `notCleanCount` and `notCleanByReason`. Nothing is dropped, and code doesn't guess:
+
+| Reason | What it means |
+|---|---|
+| `ends-open` | The last step in a cell ends with no stop, so it may go on in the next row. |
+| `starts-mid-step` | A cell's text before its first number, so it may be the end of a step above. |
+| `continues-above` | A paragraph or a one-value row starting in lower case, or one value between column headings and their steps. It keeps the flow and is never a label. |
+| `numbers-out-of-order` | A cell's numbers don't rise, so it stays whole. |
+| `maybe-sentence-end` | A stop before a digit, or after one letter or an abbreviation before a capital, wasn't cut. |
+| `code-block`, `no-table-rule`, `row-not-closed` | Stays whole. |
+
+- **The words check (D18).** The section's words are read straight from its text, with table rules, cell bars and list bullets aside, and compared in order with the claims' words. A difference is in `mismatches`, with `mismatchCount`, and the command exits 1 with the report in `result`.
+- **`--format text`** prints `flow | words`, one a line, with `-` for no flow and `[reason]` after a claim that isn't clean. A whole document also has a `#` line for each section.
 
 ### A new version (D117)
 

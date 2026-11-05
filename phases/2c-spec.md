@@ -384,3 +384,22 @@ The first run on real findings from a real FSD, on the same copy: the step reads
 - **X-0014 stands on a bundle that left out the caller:** it says nothing makes the caller send the saved value, and `twitter_login.js:35` does, from the login response. So in normal use it's checked against the saved id, and only a direct call can get around it. Standing is still right, and the wording overstates it.
 - **Nothing here catches a real finding wrongly refuted,** the cost D137 names, since none was.
 
+## Claims in a section (2026-11-05, D143): counts, and what wasn't run
+
+`stangent fsd claims` on copies, with `fsd-claims` on. Code only, no AI. Sections with text only.
+
+| | Sections | Claims | Not clean | Words check mismatches |
+|---|---|---|---|---|
+| The test app's document | 300 | 6,877 | 366 | 0 |
+| Sonarr's planted FSD | 16 | 73 | 0 | 0 |
+
+**Not clean on the test app:** `maybe-sentence-end` 166, `continues-above` 83, `ends-open` 74, `starts-mid-step` 43. The rest are 0. By kind: 3,484 sentences, 1,421 table rows, 1,294 steps, 373 figures, 218 list items, 87 flow labels. Its Login use case: 93 claims, 11 not clean. 847 steps have no flow, all in its test-case tables, where each row is its own record. No step in its use-case chapter lacks one.
+
+**Sonarr's:** 56 sentences, 10 list items, 6 table rows, 1 figure. It has no numbered steps, so it doesn't test flows at all.
+
+**Joining a step cut across a page looks possible by a general rule, and isn't built.** Of the 74 cells ending open, in 59 the same column of the next row starts with unnumbered text (57 of them in lower case), and in the other 15 the text was pushed out of the table into a paragraph, which a rule for rows won't reach. No open cell lacked a partner of one kind or the other. Column position is what makes it general. Whether the joins read right hasn't been checked by a person.
+
+**What it doesn't show:**
+- Whether the claims read well: that's for a person, and the output was only sampled by the assistant while the rules were written. The flow rules were corrected after reading this document (test-case tables, a label on its own steps row), so its labels aren't an independent test. They stayed general, with no words and no tuned numbers.
+- Half a plain sentence, and a continuation row with several values, aren't marked, so the not-clean count is a floor. `continues-above` also lists a few real paragraphs that start in lower case.
+- Whether claims help a judge: none has read one. No paid or AI run, and no fresh check (D120).

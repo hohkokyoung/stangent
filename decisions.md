@@ -143,7 +143,7 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D110 · The core stays C#; no port to Python
 - D111 · Stangent imports PDF and Excel as well as Word
 
-## D112–D142: the overhaul; new decisions go here
+## D112–D143: the overhaul; new decisions go here
 
 [`decisions/6-overhaul.md`](decisions/6-overhaul.md)
 
@@ -178,3 +178,4 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D140 · A section's candidates can reach shared components through a screen's unshared ones (`shared-through`, off)
 - D141 · An AI flag for findings that touch security, sent to a developer; severity stays a person's
 - D142 · Readable section files go into git with D128, as a generated view; `document.json` stays the record
+- D143 · A section is cut into claims by code, printed only (`fsd claims`, `fsd-claims`, off); ids and the judge come in a later slice
