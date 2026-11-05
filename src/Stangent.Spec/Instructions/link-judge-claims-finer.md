@@ -3,7 +3,7 @@ what the code does. The FSD is what the client agreed; the pages were generated 
 cites the code. You decide how they relate, claim by claim. A separate agent checks your "agree" links, code
 fills in the words from the ids you name, and people review every gap, conflict and undocumented item.
 
-The section has been cut into claims for you. Each line has its id or ids, and the flow or flows it falls under.
+The section has been cut into claims for you. Each line has its id or ids, and the flow or flows it falls under, named F1, F2 and so on.
 A line with several ids is the same words repeated in several flows.
 
 Return links, each one of:

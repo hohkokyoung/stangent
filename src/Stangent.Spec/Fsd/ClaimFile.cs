@@ -136,12 +136,21 @@ public static class ClaimLinks
         var sb = new StringBuilder(SharedHead.Step(finer ? FinerInstructions : Instructions, finer ? FinerOutputSchema : OutputSchema));
         var own = claims.Of((string?)section["permanentId"]).ToList();
         sb.Append($"# The FSD section\n\n- document: `{doc}`\n- section: `{(string)section["permanentId"]!}` {(string)section["title"]!}\n\n# Its claims\n\n");
-        foreach (var group in ClaimSet.Groups(own))
+        var groups = ClaimSet.Groups(own);
+        // Each flow is written once and named by number, since on a document with long flow names and many repeats the names would outweigh the claims.
+        var flows = groups.SelectMany(g => g).Select(c => c.Flow).OfType<string>().Distinct(StringComparer.Ordinal).ToList();
+        if (flows.Count > 0)
         {
-            var flows = group.Select(c => c.Flow).OfType<string>().Distinct(StringComparer.Ordinal).ToList();
-            sb.Append($"- **{string.Join(", ", group.Select(c => c.Id))}**{(flows.Count == 0 ? "" : $" ({string.Join("; ", flows)})")} {group.Key}\n");
+            sb.Append("The flows:\n\n");
+            for (var i = 0; i < flows.Count; i++) sb.Append($"- F{i + 1}: {flows[i]}\n");
+            sb.Append('\n');
         }
-        var context = own.Where(c => !c.Judged && c.Kind != FsdClaims.Kinds.Figure).ToList();
+        foreach (var group in groups)
+        {
+            var under = group.Select(c => c.Flow).OfType<string>().Distinct(StringComparer.Ordinal).Select(f => $"F{flows.IndexOf(f) + 1}").ToList();
+            sb.Append($"- **{string.Join(", ", group.Select(c => c.Id))}**{(under.Count == 0 ? "" : $" ({string.Join(", ", under)})")} {group.Key}\n");
+        }
+        var context = own.Where(c => c.Kind is FsdClaims.JudgeKinds.ColumnHeading or FsdClaims.JudgeKinds.LabelRow).ToList();
         if (context.Count > 0)
         {
             sb.Append("\n# Headings and labels in the section\n\nFor reading the claims above. They aren't claims, and need no link.\n\n");

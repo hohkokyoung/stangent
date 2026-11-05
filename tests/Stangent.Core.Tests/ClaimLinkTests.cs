@@ -229,7 +229,8 @@ public class ClaimLinkTests
         var bundle = Bundle(app, step);
         var enter = ClaimFile.Load(app.Root, "shop").All.Where(c => c.Words == "1. Enter the name.").ToList();
         Assert.Contains(Bundles.Instructions(ClaimLinks.Instructions), bundle);
-        Assert.Contains($"**{enter[0].Id}, {enter[1].Id}** (Main Flow:; Other Flow: Bad name.) 1. Enter the name.", bundle);
+        Assert.Contains("- F1: Main Flow:\n- F2: Other Flow: Bad name.\n", bundle);
+        Assert.Contains($"**{enter[0].Id}, {enter[1].Id}** (F1, F2) 1. Enter the name.", bundle);
         Assert.Equal(1, bundle.Split("1. Enter the name.").Length - 1);
         Assert.Contains("# Headings and labels in the section", bundle);
         Assert.DoesNotContain("Its text, exactly", bundle);
