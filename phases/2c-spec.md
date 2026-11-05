@@ -458,3 +458,12 @@ The first run on real findings from a real FSD, on the same copy: the step reads
 - **5 of the 28 "use cases" aren't use cases:** a sentence and a list that look like a flow. They're counted as they are, in D147's cost.
 
 **What wasn't run:** any judge, checker or disprove step, and Sonarr's planted FSD, which has no numbered steps; a test covers a document with no flows. Nothing but fakes has produced `matches`, `open`, `differs` or `not answered`, so whether the count helps a PM is unshown.
+
+**Security flag (D141, D148, `security-flag`, off), 2026-11-06. Fakes only: no AI, no judge, no disprover, no fresh check.**
+
+- **Built:** the disprove step's variant instructions and `finding-disprover-security-output` v1; the citation check and its retry; `stangent trace security`; `finding-security` on the state module; the `security` queue, `trace links`, the ticket bundle and workflow files.
+- **Not a security review:** it only looks at findings, so a hole that matches the FSD is never flagged. Phase 6's review stays (D132).
+- **Contracts (D20):** `trace-links` v4 and `ticket-bundle` v2 grew optional fields in place, since neither is on `main`. No phase goes `needs review`.
+- **With the switch off:** existing tests pass and the hash pins hold. The only edits to them were the two lists D148 names.
+
+**What wasn't run:** any real disprover, so no AI has read the new instructions, and nothing shows how many flags are false, or how many real ones it misses. Nothing was run on the test app or Sonarr, and no finding has been re-asked. The cost of turning it on, one paid call per undecided finding that can be tested, is by count of the rule, not measured. No person has answered a flag outside a test.

@@ -619,6 +619,19 @@ public class SecurityFlagTests
     }
 
     [Fact]
+    public void The_first_judging_by_claim_ids_takes_a_flag_with_the_link()
+    {
+        using var app = App();
+        Flagged(app);
+        var byClaim = LinkRun.Entry("conflict", "shop", Section(), Fsd50, SpecApp.Post, "R1", Page100, "judge", null, "n", claim: "C-0001");
+        LinkRun.ApplyEntries(app.Root, "shop", "1", [byClaim], carryOldRulings: true);
+        var e = Entry(app);
+        Assert.Equal("C-0001", (string)e["fsd"]!["claim"]!);
+        Assert.False(TraceFindings.IsGone(e));
+        Assert.True(TraceFindings.SecurityOpen(e));
+    }
+
+    [Fact]
     public void No_table_lets_code_answer_or_an_agent_move_it_or_anything_close_a_flag()
     {
         using var app = App();

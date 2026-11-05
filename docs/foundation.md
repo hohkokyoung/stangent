@@ -53,6 +53,7 @@ components: { page-verifier: false, git-history: false, detector-config-keys: fa
 | `follow-moves` | `components.follow-moves` | off | Any change to a page's inputs asks for a run, lines moving included. On, code that only moved takes the page's citations and saved hash with it, with no AI (I.4). |
 | `statement-update` | `components.statement-update` | off | A stale page goes back whole to the writer and verifier. On, only statements citing code that changed do, and code puts the others back word for word (I.2). |
 | `disprove-callers` | `components.disprove-callers` | off | A disprove bundle for a finding about an endpoint also holds the frontend code calling it, and tells the disprover that what the bundle can't show, such as a colour, is `cant-tell`. It changes what the disprover reads and its saved hash, so it's off (D146). |
+| `security-flag` | `components.security-flag` | off | The disprover isn't asked about security, and its input and hash don't change. On, with `disprove`, it says whether a finding touches security, citing a line code checks, and a flagged finding goes to a developer until a person answers it (`docs/spec.md`, D148). A flag already on file stays, with the switch on or off. Not a security review. |
 | `disprove-small` | `components.disprove-small` | off | A disprove bundle holds up to 60K characters of code from the page's slice. On, only what the page's statements cite, or for a gap what holds the claim's words (I.3). |
 | `page-verifier` | `components.` | on | Recorded as written, with `verification.off: true` on the page and a warning. |
 | `line-citations` | `components.` | on | No `<path>.lines.json`, an old one removed, so no `code` evidence; `spec cite` says `lineCitations: off`. |
@@ -184,6 +185,7 @@ returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds ev
 | `finding-severity` | `ungraded`, `blocker`, `major`, `minor`, `cosmetic` | code starts it `ungraded`; a person grades it and can change their mind | `specs/trace-history.jsonl` |
 | `finding-verdict` | `unverified`, `stands`, `refuted`, `page-gap`, `unreachable`, `cant-tell` | code only, once the agent's quote passes (D119) | `specs/trace-history.jsonl` |
 | `finding-review` | `waiting`, `confirmed`, `sent-back` | a person confirms or sends back; code sends back when a decision drops, and clears when the verdict moves (D119) | `specs/trace-history.jsonl` |
+| `finding-security` | `unflagged`, `unanswered`, `confirmed`, `not-security` | code writes a flag once its citation passes; a person answers and can change their mind; code reopens one when what it was answered on changes. Nothing goes back to `unflagged` (D148) | `specs/trace-history.jsonl` |
 | `proof` | the proof's outcome values | code | `.stangent/tickets/state-history.jsonl` |
 | `proof-confirmation` | `unconfirmed`, `confirmed` | a person confirms; code clears | same |
 | `draft-posted` | `unposted`, `posted` | a person posts; code starts over when a draft is remade | same |

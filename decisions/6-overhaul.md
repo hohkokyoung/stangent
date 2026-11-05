@@ -348,6 +348,7 @@ Answers D127's open question and reopens what D131 removed. New component `share
 **Why:** the severity scale grades the effect on users on the normal path, so a security hole can score low. X-0014 on Login gives the right result in normal use, while the server trusts an id sent in the request.
 **Rejected:** the agent setting the final severity. A wrong low grade hides the problem, code can't check a severity (D18), and a grade doesn't make anyone look.
 **Cost:** some false flags for developers. It only looks at findings, so a hole that matches the FSD is never flagged; Phase 6's review stays (D132).
+**Built, 2026-11-06 (D148):** the disprove step sets the flag, behind `security-flag`, off. "Always suggests a severity" is built for a `stands` verdict.
 
 ## D142 · Readable section files go into git with D128, as a generated view; `document.json` stays the record — 2026-11-05 (owner, asked when they should go in, recommended "with D128": "ok lets do whatever we need to do now"; decided, not built)
 One readable file per section, written by code at import, so a PM reviewing a spec change sees a clean diff. Nothing reads them back. `fsd export` stays as it is. This settles D128's open proposal for now: readable files become the real source only if real people start editing them.
@@ -480,3 +481,47 @@ Follows D18, D61, D118, D119, D120, D143, D145. Fakes and counts only; no paid o
 - `ComponentTests`' off list gained a name. Nothing else moved: no hash, bundle or existing file.
 
 Follows D18, D20, D118, D119, D120, D121, D122, D144, D145, D146. Fakes and counts only; no paid or AI run, no fresh check.
+
+## D148 · A security flag is built: the disprove step sets it, any verdict can carry it, and only a person answers it (`security-flag`, off) — 2026-11-06 (builds D141, which the owner decided; the details are the assistant's call)
+
+**This isn't a security review.** It only looks at findings, so a hole that matches the FSD is never flagged, and a finding with no flag says nothing about holes. Phase 6's review stays (D132).
+
+**Decided:**
+- **The disprove step sets it,** which D141 left open. It's the one step that reads the code for one finding, and it has the code's lines to cite. With `security-flag` on, which needs `disprove`, its input adds `finding-disprover-security.md` and its answer is held to `finding-disprover-security-output` v1: `security`, saying `touches` and `why`, and for a flag, `path`, `start`, `end` and `quote`. `suggestedSeverity` is required for a `stands` verdict, and code checks that. Nothing is added to `SharedHead.Known`, because a disprove bundle isn't stored through it.
+- **Refuted findings, and every other verdict, can carry a flag.** "The verdict" and "does this touch security" are separate questions: a server can do what the FSD says while trusting an id the browser sent, so that finding is refuted and still worth a developer's look. So a flag lives in its own fields, not in `disproof`. A verdict dropping, a new verdict, a person confirming a refutation or deciding the finding: none of them touches it. A closed finding with an unanswered flag stays on the security queue, in the ticket bundle and open in its workflow file.
+- **Code checks the citation** with the same check as the verdict's quote. A flag that fails gets the existing retry. After a second failure the existing path applies to the whole answer: `cant-tell`, for the BA, with no flag. What it said is kept as `disproof.claimedSecurity`, listed as `securityClaimed`, so it isn't dropped silently.
+- **The queue:** `trace check`'s `queues` gains `security`, apart from `ba`, holding the flagged findings nobody has answered. It's there once a flag is on file, whatever the switch says now.
+- **`goesTo` stays one word, and `alsoGoesTo: ["security"]` sits beside it.** The brief said `goesTo` gains `security`, and a flagged finding is in two places, which one word can't say. `goesTo` is the verdict's route: the scorer, the workflow status and many tests read it, and a flag mustn't move it.
+- **A person answers:** `stangent trace security <finding> confirmed|not-security [--why]`, with the name from git, on the state module (`finding-security`). Code and agents can't answer. An answer leaves the flag on file, and a person can change their mind.
+- **It can't close by itself.** No move in the table goes back to `unflagged`. A later run that doesn't flag the finding leaves the flag as it is. Turning the switch off leaves it. **An undecided finding a new build doesn't find is kept as `gone` if it's flagged,** where without a flag it goes as it always has, and it stays on the queue. The first judging by claim ids takes it along.
+- **A typed answer counts for nothing and is a problem,** following `review_hash`: `security_answer_hash` covers the answer, its note and the flag's hash. A typed flag is also a problem, and it stays in sight and can't be answered. Taking a flag out of the file is a problem against a base.
+- **An answer drops as a decision does:** when the statement's text or a quote changes, `trace check` says so, and `--fix` opens the flag again.
+- **A later flag on the same path and quote keeps the flag on file and its answer.** A later flag on another line replaces it and lets go of the answer, because that answer was about another line.
+- **Severity stays a person's (D118).** The flag sets none, and no rule reads it to grade anything.
+- **Workflow files:** an unanswered flag makes its step `open`, even on a closed or gone finding. A step that `differs` stays so, because that status comes first and says more, and the flag is shown and counted in the heading. A flag on a link no step holds has no flow to open, so each flow file of the section and the index name it.
+- **Ticket bundle:** a link gains `security`, and `bundle.md` says `SECURITY FLAG, UNANSWERED` plainly. Drafts and impact answers don't read flags.
+- **A verdict from before the switch stays valid.** Turning the switch on changes no file, and `trace check` is happy. The switch's instructions and schema are in the bundle's hash, so the next `fsd disprove prepare` sees a changed bundle and does what D119 says for one: the old verdict drops, and any person's confirmation with it, before a new paid call. An unchanged bundle means no call after that. Turning the switch off moves the hash back, so the step asks again in the plain form, and any flag stays.
+- **Contracts (D20):** `trace-links` v4 and `ticket-bundle` v2 grew optional fields in place, since neither is on `main`. No phase goes `needs review`.
+
+**Why:** the severity scale grades the effect on users on the normal path, so a real hole can score `minor`. A flag is a reason for someone to look, and it costs one more field on a call already being paid for. Keeping it apart from the verdict and the grade means no new rule about either.
+
+**Rejected:**
+- **Storing it in `disproof`:** the verdict's drop-back clears `disproof`, so a changed line would close a flag nobody answered.
+- **A new step of its own:** a second paid call per finding, reading the same bundle.
+- **Keeping the old verdict and taking only the flag from a re-run:** it would save a person's confirmation, but it needs a second hash and throws away an answer already paid for, and a disagreement between the two would be hidden.
+- **Making `goesTo` a list:** it breaks every reader for the sake of one field.
+- **Evidence records for a flag:** evidence backs up the finding's claim about the FSD and the code, and a flag isn't that. It carries its own citation and commit.
+- **Security words in code, or a check that the `why` is about security:** code can't judge that (D18), so a person answers.
+- **A rule that `confirmed` raises a severity:** D118.
+
+**Cost:**
+- **Nothing here is shown to help.** No AI has read the instructions, so how many false flags it raises, and how many real ones it misses, is unknown. A wrong flag costs a developer one read, and it stays until they answer it.
+- **Turning it on costs a run:** one paid call for each undecided finding that can be tested, with verdicts that may come back different. A person's confirmation has to be given again, as D119 already costs for any changed bundle.
+- **What it never sees:** a finding a person already decided, since the step doesn't test those again; `unclear` findings, table facts and code-found `undocumented` screens; and a bundle with no code, which gets no call.
+- **A citation failing twice costs the verdict too,** because one answer has one path. It's labelled, and the BA still sees the finding.
+- **A hash can be worked out by hand.** Without a look at the history, someone who computes `security_answer_hash` gets a typed answer through, as with `review_hash`. And an agent with a shell and a person's git name could run the command, as with `trace confirm`. The table stops a move made as an agent, not a person's name being borrowed.
+- **A flag's line can be older than today's code,** so it's read with `atCommit`. A flag kept through a later run that didn't flag it says nothing about that run.
+- **Two existing tests needed a word:** `ComponentTests`' off list, as asked, and `StateChangesTests`' list of kinds with committed history, because this is a new kind. That test's write check now also covers `security_state`, with one exception, for where an answer moves from.
+- `SpecSettings` gained a field.
+
+Follows D18, D20, D61, D118, D119, D120, D132, D137, D141, D147. Fakes only; no paid or AI run, no fresh check.
