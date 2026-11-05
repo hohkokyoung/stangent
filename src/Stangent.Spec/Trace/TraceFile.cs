@@ -22,7 +22,7 @@ public static class TraceFile
     public static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "page-wrong", "defer", "accepted", "not-a-difference"];
 
     /// <summary>What a finding carries beyond its link (D118).</summary>
-    public static readonly string[] FindingFields = ["finding", "severity", "severity_by", "evidence", "evidence_hash", "verdict", "disproof", "disproof_hash", "review", "review_note", "review_hash", "standing", "standing_note", "standing_hash"];
+    public static readonly string[] FindingFields = ["finding", "severity", "severity_by", "evidence", "evidence_hash", "verdict", "disproof", "disproof_hash", "review", "review_note", "review_hash", "standing", "standing_note", "standing_hash", "security", "security_hash", "security_state", "security_note", "security_answer_hash"];
 
     public static string PathIn(string root) => Path.Combine(root, "specs", "trace.yaml");
 
@@ -102,6 +102,11 @@ public static class TraceFile
             if (e["standing"] is not null) sb.Append($"    standing: {S(e["standing"])}\n");
             if (e["standing_note"] is JsonObject standing) sb.Append($"    standing_note: {standing.ToJsonString(Json)}\n");
             if (e["standing_hash"] is not null) sb.Append($"    standing_hash: {S(e["standing_hash"])}\n");
+            if (e["security"] is JsonObject security) sb.Append($"    security: {security.ToJsonString(Json)}\n");
+            if (e["security_hash"] is not null) sb.Append($"    security_hash: {S(e["security_hash"])}\n");
+            if (e["security_state"] is not null) sb.Append($"    security_state: {S(e["security_state"])}\n");
+            if (e["security_note"] is JsonObject securityNote) sb.Append($"    security_note: {securityNote.ToJsonString(Json)}\n");
+            if (e["security_answer_hash"] is not null) sb.Append($"    security_answer_hash: {S(e["security_answer_hash"])}\n");
         }
         return sb.ToString();
     }
@@ -172,4 +177,11 @@ public static class TraceFile
     /// <summary>A review as code wrote it, on the verdict it was about, so one typed by hand or left over from an older verdict closes nothing.</summary>
     public static string ReviewHash(string? review, JsonObject? note, string? disproofHash) =>
         CanonicalJson.Hash((review ?? "") + "\n" + (note is null ? "" : CanonicalJson.SerializeCompact(note)) + "\n" + (disproofHash ?? ""));
+
+    /// <summary>A security flag as code wrote it (D148), once its citation passed.</summary>
+    public static string SecurityHash(JsonObject? flag) => CanonicalJson.Hash(flag is null ? "" : CanonicalJson.SerializeCompact(flag));
+
+    /// <summary>A person's answer to a flag as code wrote it, on the flag it answered, so one typed by hand or left over from an older flag answers nothing.</summary>
+    public static string SecurityAnswerHash(string? answer, JsonObject? note, string? securityHash) =>
+        CanonicalJson.Hash((answer ?? "") + "\n" + (note is null ? "" : CanonicalJson.SerializeCompact(note)) + "\n" + (securityHash ?? ""));
 }

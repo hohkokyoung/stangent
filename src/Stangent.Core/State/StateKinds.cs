@@ -34,7 +34,7 @@ public static class StateKinds
         Proof = "proof", ProofConfirmation = "proof-confirmation", DraftPosted = "draft-posted",
         PageRun = "page-run", PageCorrection = "page-correction", LinkRun = "link-run", ReqRun = "req-run", TicketMatch = "ticket-match", TicketStep = "ticket-step",
         FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FindingVerdict = "finding-verdict", FindingReview = "finding-review", DisproveRun = "disprove-run",
-        FindingStanding = "finding-standing", SectionCoverage = "section-coverage";
+        FindingStanding = "finding-standing", FindingSecurity = "finding-security", SectionCoverage = "section-coverage";
 
     // Committed state gets committed history; run state in .stangent/ gets history beside it, ignored the same way.
     const string RequirementHistory = "specs/requirements/history.jsonl", TraceHistory = "specs/trace-history.jsonl",
@@ -95,6 +95,15 @@ public static class StateKinds
             .. Each(Code, "current", "recheck", "gone"), By(Code, "recheck", "gone"), By(Code, "gone", "recheck"),
             new StateRule("recheck", "current", [StateActor.CodeKind, StateActor.PersonKind]),
         ], Field: "standing", NullState: "current", ClearedOnNull: ["standing_note", "standing_hash"]),
+
+        // D141, D148: an agent says a finding touches security, and only code writes the flag, once its citation passes. Only a person answers it. Code lets go of an answer when
+        // what it was given on changes, which reopens the flag. Nothing moves a flag back to `unflagged`, so it can't close by itself. An agent never moves it.
+        new(FindingSecurity, TraceHistory, ["unflagged"],
+        [
+            By(Code, "unflagged", "unanswered"),
+            .. Each(Person, "unanswered", "confirmed", "not-security"), By(Person, "confirmed", "not-security"), By(Person, "not-security", "confirmed"),
+            .. Each(Code, "confirmed", "unanswered"), By(Code, "not-security", "unanswered"),
+        ], Field: "security_state", NullState: "unflagged"),
 
         // D122: a person says a section's words aren't about the code. It holds only for the words it was said on.
         new(SectionCoverage, FsdHistory, ["unmarked"], [By(Person, "unmarked", "not-in-code"), By(Person, "not-in-code", "unmarked")], Field: "state", NullState: "unmarked"),

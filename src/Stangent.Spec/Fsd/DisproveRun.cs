@@ -27,6 +27,9 @@ public static class DisproveRun
     public const string Disprover = "stangent-finding-disprover";
     public const string OutputSchema = "finding-disprover-output.v1.json";
 
+    /// <summary>The answer with <c>security-flag</c> on (D148): the same, and <c>security</c> as well.</summary>
+    public const string SecurityOutputSchema = "finding-disprover-security-output.v1.json";
+
     /// <summary>The size rule: at most this many characters of code in one bundle. Whole symbols only, in the order of
     /// <see cref="Choose"/>. What doesn't fit is named, so the agent knows what it can't see.</summary>
     public const int MaxCodeChars = 60_000;
@@ -36,6 +39,9 @@ public static class DisproveRun
 
     /// <summary>What <c>disprove-callers</c> adds to the instructions (D146).</summary>
     const string CallersInstructions = "finding-disprover-callers.md";
+
+    /// <summary>What <c>security-flag</c> adds to the instructions (D148).</summary>
+    const string SecurityInstructions = "finding-disprover-security.md";
 
     /// <summary>The detector whose lines run from frontend code to an endpoint. A line from another service isn't a frontend caller.</summary>
     const string FrontendHttp = "frontend-http";
@@ -68,10 +74,13 @@ public static class DisproveRun
         var parsed = PageChecks.Parse(text, errors);
         var output = parsed as JsonObject;
         if (errors.Count == 0 && output is null) errors.Add($"The answer has to be one JSON object, and this is {parsed?.GetValueKind().ToString().ToLowerInvariant() ?? "null"}.");
-        if (errors.Count == 0) errors.AddRange(SchemaRegistry.Embedded.Validate(OutputSchema, output!.ToJsonString()).Select(e => $"Schema: {e}"));
+        if (errors.Count == 0) errors.AddRange(SchemaRegistry.Embedded.Validate((string?)state["schema"] ?? OutputSchema, output!.ToJsonString()).Select(e => $"Schema: {e}"));
         var code = (JsonNode.Parse(File.ReadAllText(Path.Combine(work, "code.json"))) as JsonArray ?? []).OfType<JsonObject>()
             .Select(c => new DisproveCode((string)c["symbol"]!, (string)c["path"]!, (int)c["start"]!, (int)c["end"]!, [.. c["lines"]!.AsArray().Select(l => (string)l!)])).ToList();
-        var symbol = errors.Count == 0 ? CheckQuote(output!, code, errors) : null;
+        var valid = errors.Count == 0;
+        var symbol = valid ? CheckQuote(output!, code, errors) : null;
+        // The switch as it was when this answer was asked for: its schema is what the answer was held to.
+        var flagSymbol = valid && (string?)state["schema"] == SecurityOutputSchema ? CheckSecurity(output!, code, errors) : null;
         if (errors.Count > 0 && LinkRun.Retry(repo.Root, work, state, errors, Disprover, "bundle.md", "output.json") is { } retry) return retry;
 
         var entry = (string)state["entry"]!;
@@ -80,7 +89,9 @@ public static class DisproveRun
         {
             // Kept only when it's a verdict at all: anything else would break the file's own schema, and the first error already says what came back.
             var claimed = output?["verdict"] is JsonValue said && said.TryGetValue<string>(out var word) && StateKinds.Verdicts.Contains(word) ? word : null;
-            Write(repo, entry, "cant-tell", Disproof(inputs, $"The answer failed the code check twice: {errors[0]}", model, claimed: claimed, small: set.Settings.DisproveSmall), "its answer failed the code check twice");
+            // A flag with nothing to back it is no flag (D18), and what it said stays on file, so it isn't dropped silently.
+            var claimedSecurity = output?["security"]?["touches"] is JsonValue touches && touches.TryGetValue<bool>(out var flagged) && flagged && output["security"]?["why"] is JsonValue said2 && said2.TryGetValue<string>(out var saidWhy) ? saidWhy : null;
+            Write(repo, entry, "cant-tell", Disproof(inputs, $"The answer failed the code check twice: {errors[0]}", model, claimed: claimed, small: set.Settings.DisproveSmall, claimedSecurity: claimedSecurity), "its answer failed the code check twice");
         }
         else
         {
@@ -95,7 +106,7 @@ public static class DisproveRun
                 disproof["symbol"] = symbol;
                 disproof["commit"] = (string)state["commit"]!;
             }
-            Write(repo, entry, verdict, disproof, "the code check passed");
+            Write(repo, entry, verdict, disproof, "the code check passed", flagSymbol is null ? null : SecurityFlag((JsonObject)output["security"]!, flagSymbol, (string)state["commit"]!, inputs, model));
         }
         StateChanges.Apply(repo.Root, state, StateKinds.DisproveRun, LinkRun.Key(doc, sectionId), "done", Who, "recorded");
         Save(work, state);
@@ -103,38 +114,62 @@ public static class DisproveRun
     }
 
     /// <summary>The code check (D18): the verdict has the quote it needs, and it's word for word in the bundle's code at its path and lines. Returns the symbol it's in.</summary>
-    static string? CheckQuote(JsonObject output, List<DisproveCode> code, List<string> errors)
+    static string? CheckQuote(JsonObject output, List<DisproveCode> code, List<string> errors) =>
+        (string)output["verdict"]! == "cant-tell" ? null : CheckCitation(output, code, errors, $"a {(string)output["verdict"]!} verdict", "");
+
+    /// <summary>The same check for a flag (D148): a flag that touches security cites a line, whatever the verdict. And a <c>stands</c> verdict has to suggest a severity, which stays a suggestion (D118). Returns the symbol the flag's line is in.</summary>
+    static string? CheckSecurity(JsonObject output, List<DisproveCode> code, List<string> errors)
     {
-        if ((string)output["verdict"]! == "cant-tell") return null;
-        if ((string?)output["path"] is not { } path || output["start"] is null || output["end"] is null || (string?)output["quote"] is not { } quote)
+        if ((string)output["verdict"]! == "stands" && output["suggestedSeverity"] is null) errors.Add("a stands verdict needs suggestedSeverity");
+        var security = (JsonObject)output["security"]!;
+        return (bool)security["touches"]! ? CheckCitation(security, code, errors, "a security flag", "the security flag: ") : null;
+    }
+
+    /// <summary>A citation holds its path, lines and quote, and the quote is word for word at those lines of the bundle's code. Returns the symbol it's in.</summary>
+    static string? CheckCitation(JsonObject said, List<DisproveCode> code, List<string> errors, string needs, string prefix)
+    {
+        if ((string?)said["path"] is not { } path || said["start"] is null || said["end"] is null || (string?)said["quote"] is not { } quote)
         {
-            errors.Add($"a {(string)output["verdict"]!} verdict needs path, start, end and quote");
+            errors.Add($"{needs} needs path, start, end and quote");
             return null;
         }
-        if (output["start"] is not JsonValue from || !from.TryGetValue<int>(out var start) || output["end"] is not JsonValue to || !to.TryGetValue<int>(out var end))
+        if (said["start"] is not JsonValue from || !from.TryGetValue<int>(out var start) || said["end"] is not JsonValue to || !to.TryGetValue<int>(out var end))
         {
-            errors.Add("start and end have to be line numbers shown in the code you were given");
+            errors.Add($"{prefix}start and end have to be line numbers shown in the code you were given");
             return null;
         }
         var at = code.FirstOrDefault(c => c.Path == path && c.Start <= start && end <= c.End && start <= end);
         if (at is null)
         {
-            errors.Add($"`{path}` lines {start}-{end} aren't shown in the code you were given. Use a path and lines exactly as they're shown.");
+            errors.Add($"{prefix}`{path}` lines {start}-{end} aren't shown in the code you were given. Use a path and lines exactly as they're shown.");
             return null;
         }
         var lines = at.Lines.Skip(start - at.Start).Take(end - start + 1).Select(Quotes.Normalize).ToList();
         if (Quotes.InSource(quote, lines)) return at.Symbol;
-        errors.Add($"the quote \"{(quote.Length > 80 ? quote[..80] + "…" : quote)}\" isn't word for word at `{path}` lines {start}-{end}, without the line numbers (at least {Quotes.MinSourceChars} characters, and two words or a whole line)");
+        errors.Add($"{prefix}the quote \"{(quote.Length > 80 ? quote[..80] + "…" : quote)}\" isn't word for word at `{path}` lines {start}-{end}, without the line numbers (at least {Quotes.MinSourceChars} characters, and two words or a whole line)");
         return null;
     }
 
-    static JsonObject Disproof(string inputs, string why, string? agent, string? suggested = null, string? claimed = null, bool small = false)
+    /// <summary>What a flag rests on, once its citation passed: why, the line it cites and where, and what it was judged from.</summary>
+    static JsonObject SecurityFlag(JsonObject said, string symbol, string commit, string inputs, string? agent)
+    {
+        var flag = new JsonObject
+        {
+            ["why"] = (string)said["why"]!, ["path"] = (string)said["path"]!, ["start"] = (int)said["start"]!, ["end"] = (int)said["end"]!, ["quote"] = (string)said["quote"]!,
+            ["symbol"] = symbol, ["commit"] = commit, ["inputs"] = inputs,
+        };
+        if (agent is not null) flag["agent"] = agent;
+        return flag;
+    }
+
+    static JsonObject Disproof(string inputs, string why, string? agent, string? suggested = null, string? claimed = null, bool small = false, string? claimedSecurity = null)
     {
         var o = new JsonObject { ["inputs"] = inputs, ["why"] = why };
         if (agent is not null) o["agent"] = agent;
         if (suggested is not null) o["suggestedSeverity"] = suggested;
         if (claimed is not null) o["claimed"] = claimed;
         if (small) o["bundle"] = "small";
+        if (claimedSecurity is not null) o["claimedSecurity"] = claimedSecurity;
         return o;
     }
 
@@ -173,9 +208,10 @@ public static class DisproveRun
             {
                 ["doc"] = doc, ["section"] = sectionId, ["entry"] = entry, ["inputs"] = bundle.Inputs, ["commit"] = SymbolLines.CommitOf(set.Graph), ["retryUsed"] = false, ["agent"] = Disprover,
             };
+            if (set.Settings.SecurityFlag) state["schema"] = SecurityOutputSchema;
             StateChanges.Apply(repo.Root, state, StateKinds.DisproveRun, LinkRun.Key(doc, sectionId), "disprove", Who, "prepared");
             Save(work, state);
-            return LinkRun.Step(repo.Root, work, Disprover, "bundle.md", "output.json", "Finding and code");
+            return LinkRun.Step(repo.Root, work, Disprover, "bundle.md", "output.json", "Finding and code", (string?)state["schema"]);
         }
         return new RunStep(worked ? "recorded" : "current", "none");
     }
@@ -191,7 +227,7 @@ public static class DisproveRun
         .Where(e => TraceFindings.IsFinding(e) && TraceFindings.Testable(e) && !TraceFindings.IsGone(e) && e["decision"] is null && (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId);
 
     /// <summary>Writes a verdict through the state module, and the finding's evidence with it (D118's Stamp derives it from what's here).</summary>
-    static void Write(StangentRepo repo, string entry, string verdict, JsonObject disproof, string reason)
+    static void Write(StangentRepo repo, string entry, string verdict, JsonObject disproof, string reason, JsonObject? flag = null)
     {
         using var _ = LinkRun.Lock(repo.Root);
         var trace = TraceFile.Load(repo.Root);
@@ -201,6 +237,7 @@ public static class DisproveRun
         StateChanges.Apply(repo.Root, e, StateKinds.FindingVerdict, entry, verdict, Who, reason);
         e["disproof"] = disproof;
         e["disproof_hash"] = TraceFile.DisproofHash(verdict, disproof);
+        if (flag is not null) TraceFindings.Flag(repo.Root, e, flag, Who);
         TraceFindings.Stamp(repo.Root, trace, SpecIndex.Load(repo.Root), null, []);
         TraceFile.Save(repo.Root, trace);
     }
@@ -241,7 +278,8 @@ public static class DisproveRun
 
         Both("# Instructions\n\n" + Bundles.Instructions("finding-disprover.md"));
         if (set.Settings.DisproveCallers) Both("\n" + Bundles.Instructions(CallersInstructions));
-        Both("\n# Output schema\n\n```json\n" + SchemaRegistry.EmbeddedText(OutputSchema).TrimEnd('\n') + "\n```\n\n");
+        if (set.Settings.SecurityFlag) Both("\n" + Bundles.Instructions(SecurityInstructions));
+        Both("\n# Output schema\n\n```json\n" + SchemaRegistry.EmbeddedText(set.Settings.SecurityFlag ? SecurityOutputSchema : OutputSchema).TrimEnd('\n') + "\n```\n\n");
         sb.Append(LinkRun.SectionBlock(section, doc));
         rests.Append($"# The FSD section\n\n- document: `{doc}`\n- title: {(string)section["title"]!}\n\n{(string)section["text"]!}\n");
         Both(AttachmentChecks.Block(section));

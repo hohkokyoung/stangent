@@ -31,6 +31,12 @@ public static partial class TraceFindings
     /// <summary>Every queue a finding can be in, in the order they're listed.</summary>
     public static readonly string[] Queues = ["ba", "developer", "developer-confirm", "closed", "page-owner", "decided", "gone"];
 
+    /// <summary>A queue of its own, beside the others (D148): a flagged finding is listed here as well as wherever its verdict sends it, so <see cref="GoesTo"/> doesn't move.</summary>
+    public const string SecurityQueue = "security";
+
+    /// <summary>What a person can answer a flag with.</summary>
+    public static readonly string[] SecurityAnswers = ["confirmed", "not-security"];
+
     /// <summary>Who's next with this finding (D119): <c>ba</c> by default, including one that stands, can't be told, or was sent back; <c>developer</c> for a page gap;
     /// <c>developer-confirm</c> when the AI says refuted or unreachable, because code proved its quote exists and only a person can say it supports the verdict (D18);
     /// <c>closed</c> once a person confirmed that, kept and listed; <c>page-owner</c> when a person said the page is wrong; <c>decided</c> otherwise.</summary>
@@ -102,6 +108,76 @@ public static partial class TraceFindings
             "sent-back" => $"sent back to the BA: {(string?)e["review_note"]?["why"]}",
             "confirmed" => $"{verdict}, confirmed by {(string?)e["review_note"]?["by"]}",
             _ => verdict switch { null => "unverified", "cant-tell" => "cant-tell", _ => $"the AI's reading: {verdict}" },
+        };
+    }
+
+    /// <summary>Whether the disprove step flagged it (D148). A flag that doesn't hold its hash still counts here and <see cref="Check"/> says so: a flag edited by hand mustn't drop out of sight.</summary>
+    public static bool Flagged(JsonObject e) => e["security"] is JsonObject;
+
+    static bool FlagHolds(JsonObject e) => e["security"] is JsonObject flag && (string?)e["security_hash"] == TraceFile.SecurityHash(flag);
+
+    /// <summary>A person's answer to its flag, or null. One typed by hand, or left from an older flag, counts for nothing.</summary>
+    public static string? SecurityAnswer(JsonObject e) => FlagHolds(e) && (string?)e["security_state"] is { } answer && SecurityAnswers.Contains(answer)
+        && (string?)e["security_answer_hash"] == TraceFile.SecurityAnswerHash(answer, e["security_note"] as JsonObject, (string?)e["security_hash"]) ? answer : null;
+
+    /// <summary>Flagged and nobody has answered: on the security queue, however its verdict went and whatever was decided.</summary>
+    public static bool SecurityOpen(JsonObject e) => Flagged(e) && SecurityAnswer(e) is null;
+
+    /// <summary>
+    /// Writes a flag whose citation passed. A flag already on the same line stays as it is, with any answer it has. A different line replaces it, and a person's answer was to the old one, so it lets go.
+    /// Nothing here removes a flag: a later run that doesn't flag the finding never gets this far.
+    /// </summary>
+    public static void Flag(string root, JsonObject e, JsonObject flag, StateActor who)
+    {
+        if (FlagHolds(e) && (string?)e["security"]!["path"] == (string?)flag["path"] && Quotes.Normalize((string?)e["security"]!["quote"] ?? "") == Quotes.Normalize((string?)flag["quote"] ?? "")) return;
+        StateChanges.Apply(root, e, StateKinds.FindingSecurity, (string)e["id"]!, "unanswered", who, "the disprover flagged it and code found its citation");
+        e.Remove("security_note");
+        e.Remove("security_answer_hash");
+        e["security"] = flag;
+        e["security_hash"] = TraceFile.SecurityHash(flag);
+    }
+
+    /// <summary>A person's answer to a flag (D148), from <c>trace security</c>, on the state module. Code can't answer it, and an agent can't. It sets no severity (D118).</summary>
+    /// <param name="to"><c>confirmed</c> or <c>not-security</c>.</param>
+    /// <param name="who">From git, never typed.</param>
+    public static JsonObject AnswerSecurity(string root, string id, string to, string who, string? why)
+    {
+        if (!SecurityAnswers.Contains(to)) throw new StangentException("usage", $"'{to}' isn't an answer. It's one of: {string.Join(", ", SecurityAnswers)}.", ExitCodes.Usage);
+        using var _ = LinkRun.Lock(root);
+        var trace = TraceFile.Load(root);
+        var e = trace["entries"]!.AsArray().OfType<JsonObject>().FirstOrDefault(x => IsFinding(x) && ((string?)x["finding"] == id || (string?)x["id"] == id))
+            ?? throw new StangentException("not_found", $"No finding {id} in specs/trace.yaml.", ExitCodes.NotFound);
+        if (!Flagged(e)) throw new StangentException("not_flagged", $"{id} has no security flag to answer.", ExitCodes.Usage);
+        if (!FlagHolds(e)) throw new StangentException("flag_typed", $"{id}'s security flag isn't what code wrote, so there's nothing true to answer. `stangent trace check` says so.", ExitCodes.Usage);
+        if (SecurityAnswer(e) == to) throw new StangentException("already_answered", $"{id}'s flag is already {to}, by {(string?)e["security_note"]?["by"]}.", ExitCodes.Usage);
+        var note = new JsonObject { ["by"] = who, ["why"] = why ?? (to == "confirmed" ? "it touches security" : "it doesn't touch security") };
+        if (DecidedOn(e, SpecIndex.Load(root)) is { } on) note["on"] = on;
+        // A typed answer isn't where this starts from: it never counted, so this is the flag's first answer.
+        StateChanges.Apply(root, e, StateKinds.FindingSecurity, (string)e["id"]!, to, StateActor.Person(who), why ?? $"answered {to} by a person", new JsonObject { ["security_state"] = SecurityAnswer(e) ?? "unanswered" });
+        e["security_note"] = note;
+        e["security_answer_hash"] = TraceFile.SecurityAnswerHash(to, note, (string?)e["security_hash"]);
+        TraceFile.Save(root, trace);
+        return new JsonObject { ["finding"] = (string?)e["finding"], ["entry"] = (string?)e["id"], ["answer"] = to, ["by"] = who, ["goesTo"] = GoesTo(e) };
+    }
+
+    /// <summary>What a person's answer rested on changed, so the flag is open again, on the terms a decision drops (D118).</summary>
+    public static void DropSecurityAnswer(string root, JsonObject e, StateActor who, string why)
+    {
+        StateChanges.Apply(root, e, StateKinds.FindingSecurity, (string)e["id"]!, "unanswered", who, why);
+        e.Remove("security_note");
+        e.Remove("security_answer_hash");
+    }
+
+    /// <summary>A flag as a reader shows it, or null when it has none. An AI's flag and no more: <c>security</c> on a ticket bundle, <c>trace links</c> and <c>trace check</c>.</summary>
+    public static JsonObject? SecurityView(JsonObject e)
+    {
+        if (!Flagged(e)) return null;
+        var flag = e["security"]!;
+        var answer = SecurityAnswer(e);
+        return new JsonObject
+        {
+            ["answer"] = answer ?? "unanswered", ["answerBy"] = answer is null ? null : (string?)e["security_note"]?["by"], ["answerWhy"] = answer is null ? null : (string?)e["security_note"]?["why"],
+            ["why"] = (string?)flag["why"], ["quote"] = (string?)flag["quote"], ["at"] = $"{(string?)flag["path"]}:{(int?)flag["start"]}-{(int?)flag["end"]}", ["atCommit"] = (string?)flag["commit"],
         };
     }
 
@@ -354,6 +430,10 @@ public static partial class TraceFindings
             yield return $"{id}: its review isn't what code wrote; only `stangent trace confirm` and `trace send-back` write one, because it closes a finding";
         if ((e["standing"] is not null || e["standing_note"] is not null || e["standing_hash"] is not null) && Standing(e) is null)
             yield return $"{id}: its standing isn't what code wrote; only code writes `recheck` and `gone`, because `gone` takes a finding out of every queue";
+        if ((Flagged(e) || e["security_hash"] is not null) && !FlagHolds(e))
+            yield return $"{id}: its security flag isn't what code wrote; only `stangent fsd disprove` writes one, once its citation passes";
+        if (((string?)e["security_state"] is not (null or "unanswered") || e["security_note"] is not null || e["security_answer_hash"] is not null) && SecurityAnswer(e) is null)
+            yield return $"{id}: its security answer isn't what code wrote, so it counts for nothing; only `stangent trace security` writes one, with the name from git";
         if (IsGone(e)) yield break;
         if (e["evidence"] is not JsonArray { Count: > 0 } evidence) { yield return $"{id}: a finding needs evidence, and code found nothing to cite"; yield break; }
         foreach (var record in refused ?? [])
@@ -410,7 +490,7 @@ public static partial class TraceFindings
     }
 
     /// <summary>The findings as <c>trace check</c> lists them: the live ones, or with <paramref name="gone"/> the ones nothing finds any more (D122), kept on a list of their own.</summary>
-    public static JsonArray Listing(IEnumerable<JsonObject> entries, bool gone = false) => new([.. entries.Where(e => (IsFinding(e) || gone) && IsGone(e) == gone).Select(e => (JsonNode)new JsonObject
+    public static JsonArray Listing(IEnumerable<JsonObject> entries, bool gone = false) => new([.. entries.Where(e => (IsFinding(e) || gone) && IsGone(e) == gone).Select(e => (JsonNode)WithSecurity(e, new JsonObject
     {
         ["id"] = (string?)e["finding"], ["entry"] = (string?)e["id"], ["state"] = (string?)e["state"], ["severity"] = (string?)e["severity"] ?? Severity.Ungraded,
         ["doc"] = (string?)e["fsd"]?["doc"], ["section"] = (string?)e["fsd"]?["section"], ["page"] = (string?)e["page"]?["id"], ["statement"] = (string?)e["page"]?["statement"],
@@ -423,13 +503,28 @@ public static partial class TraceFindings
         ["suggestedSeverity"] = (string?)e["disproof"]?["suggestedSeverity"],
         ["standing"] = Standing(e), ["was"] = (string?)e["standing_note"]?["was"], ["wasBy"] = (string?)e["standing_note"]?["by"], ["standingWhy"] = (string?)e["standing_note"]?["why"],
         ["tableFact"] = e["table_fact"]?.DeepClone(), ["partial"] = e["partial"]?.DeepClone(), ["difference"] = IsDifference(e),
-    })]);
+    }))]);
+
+    /// <summary>Only what's there: a finding with no flag lists as it always has. <c>alsoGoesTo</c> sits beside <c>goesTo</c>, which stays the verdict's route, because a flagged finding is in both.</summary>
+    static JsonObject WithSecurity(JsonObject e, JsonObject listed)
+    {
+        if (SecurityView(e) is { } view)
+        {
+            listed["security"] = view;
+            if (SecurityOpen(e)) listed["alsoGoesTo"] = new JsonArray(SecurityQueue);
+        }
+        if ((string?)e["disproof"]?["claimedSecurity"] is { } claimed) listed["securityClaimed"] = claimed;
+        return listed;
+    }
 
     /// <summary>The same findings by who has them next, so each queue reads on its own (D119).</summary>
     public static JsonObject Groups(IEnumerable<JsonObject> entries)
     {
         var findings = entries.Where(e => IsFinding(e) || IsGone(e)).ToList();
-        return new JsonObject(Queues.Select(g => KeyValuePair.Create(g,
+        var groups = new JsonObject(Queues.Select(g => KeyValuePair.Create(g,
             (JsonNode?)new JsonArray([.. findings.Where(e => GoesTo(e) == g).Select(e => (JsonNode?)((string?)e["finding"] ?? (string)e["id"]!))]))));
+        // Apart from the BA's, and as well as the verdict's. There once a flag is on file, whatever the switch says now, so turning it off closes nothing.
+        if (findings.Any(Flagged)) groups[SecurityQueue] = new JsonArray([.. findings.Where(SecurityOpen).Select(e => (JsonNode?)((string?)e["finding"] ?? (string)e["id"]!))]);
+        return groups;
     }
 }

@@ -296,6 +296,10 @@
               "why": {
                 "type": "string"
               },
+              "claimedSecurity": {
+                "description": "What the answer said about security when its citation failed the code check twice: said, and not a flag (D148).",
+                "type": "string"
+              },
               "bundle": {
                 "description": "`small`: judged from a smaller bundle (disprove-small, I.3), watched against cant-tell. Absent otherwise.",
                 "enum": ["small"]
@@ -432,6 +436,46 @@
                 "$ref": "#/definitions/hash"
               }
             ]
+          },
+          "security": {
+            "description": "An AI's flag that the finding touches security, and why, written by code once its citation passed (D141, D148). Not a security review and not a grade. It never closes by itself.",
+            "type": "object",
+            "required": ["why", "path", "start", "end", "quote", "symbol", "commit", "inputs"],
+            "additionalProperties": false,
+            "properties": {
+              "why": { "type": "string" },
+              "path": { "type": "string" },
+              "start": { "type": "integer" },
+              "end": { "type": "integer" },
+              "quote": { "type": "string" },
+              "symbol": { "type": "string" },
+              "commit": { "type": "string" },
+              "inputs": { "$ref": "#/definitions/hash" },
+              "agent": { "type": "string" }
+            }
+          },
+          "security_hash": {
+            "description": "The hash of the flag as code wrote it.",
+            "$ref": "#/definitions/hash"
+          },
+          "security_state": {
+            "description": "unanswered, or a person's answer: confirmed or not-security. Only `stangent trace security` writes an answer, and one typed by hand counts for nothing.",
+            "enum": ["unanswered", "confirmed", "not-security"]
+          },
+          "security_note": {
+            "description": "Who answered and why. `by` is from git. `on` is the hash of the statement's text it was answered on, so the answer drops when that changes.",
+            "type": "object",
+            "required": ["by", "why"],
+            "additionalProperties": false,
+            "properties": {
+              "by": { "type": "string" },
+              "why": { "type": "string" },
+              "on": { "$ref": "#/definitions/hash" }
+            }
+          },
+          "security_answer_hash": {
+            "description": "The hash of the answer, its note and the flag's hash as code wrote them.",
+            "$ref": "#/definitions/hash"
           }
         }
       }

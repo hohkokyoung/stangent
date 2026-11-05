@@ -493,14 +493,14 @@ public static class LinkRun
             list.Add(copy);
         }
         // A decided link that didn't come back took its decision with it: its id is the hash of its quotes (D58). A decided finding is
-        // kept as gone, holding its X- id for if it comes back (D122). One already gone stays as it is, and one nobody decided goes, as it always has.
+        // kept as gone, holding its X- id for if it comes back (D122). One already gone stays as it is, and one nobody decided goes, as it always has, unless it's flagged: a flag never closes by itself (D148).
         var back = entries.Select(e => (string)e["id"]!).ToHashSet(StringComparer.Ordinal);
         if (carryOldRulings) CarryRulings(root, list.OfType<JsonObject>().Where(e => back.Contains((string)e["id"]!)).ToList(), keepDecisions, back);
         foreach (var (id, left) in keepDecisions.Where(k => !back.Contains(k.Key)))
         {
             var kept = (JsonObject)left.DeepClone();
             // With claim-links on, a decided agree link that nothing matches is kept as gone too, because a decision must never silently vanish (D145).
-            if ((TraceFindings.IsFinding(left) || carryOldRulings || TraceFindings.IsGone(left)) && (left["decision"] is not null || TraceFindings.Standing(left) is not null))
+            if ((TraceFindings.IsFinding(left) || carryOldRulings || TraceFindings.IsGone(left)) && (left["decision"] is not null || TraceFindings.Standing(left) is not null || TraceFindings.Flagged(left)))
             {
                 if (!TraceFindings.IsGone(kept)) TraceFindings.MarkGone(root, kept, Who, "a new build didn't find this link again");
                 list.Add(kept);
@@ -529,7 +529,7 @@ public static class LinkRun
     {
         var taken = new HashSet<string>(StringComparer.Ordinal);
         foreach (var (id, was) in old.Where(k => !back.Contains(k.Key) && !TraceFindings.IsGone(k.Value)
-            && (k.Value["decision"] is not null || k.Value["severity_by"] is not null || TraceFindings.Standing(k.Value) is not null)).OrderBy(k => k.Key, StringComparer.Ordinal).ToList())
+            && (k.Value["decision"] is not null || k.Value["severity_by"] is not null || TraceFindings.Standing(k.Value) is not null || TraceFindings.Flagged(k.Value))).OrderBy(k => k.Key, StringComparer.Ordinal).ToList())
         {
             var targets = fresh.Where(e => !taken.Contains((string)e["id"]!) && ClaimLinks.SameLink(was, e)).ToList();
             if (targets.Select(e => Quotes.Normalize((string?)e["fsd"]?["quote"] ?? "")).Distinct(StringComparer.Ordinal).Count() != 1) continue;

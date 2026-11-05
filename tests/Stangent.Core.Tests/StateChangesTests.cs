@@ -160,13 +160,13 @@ public partial class StateChangesTests
         git.WaitForExit();
         var check = Process.Start(new ProcessStartInfo("git", ["check-ignore", "-q", StateKinds.Get(name).HistoryFile]) { WorkingDirectory = temp.Root })!;
         check.WaitForExit();
-        var committed = name is StateKinds.Requirement or StateKinds.Question or StateKinds.TraceDecision or StateKinds.FindingSeverity or StateKinds.FindingVerdict or StateKinds.FindingReview or StateKinds.FsdCandidate or StateKinds.FsdSectionMatch or StateKinds.FindingStanding or StateKinds.SectionCoverage;
+        var committed = name is StateKinds.Requirement or StateKinds.Question or StateKinds.TraceDecision or StateKinds.FindingSeverity or StateKinds.FindingVerdict or StateKinds.FindingReview or StateKinds.FsdCandidate or StateKinds.FsdSectionMatch or StateKinds.FindingStanding or StateKinds.FindingSecurity or StateKinds.SectionCoverage;
         Assert.Equal(committed ? 1 : 0, check.ExitCode);   // check-ignore: 0 ignored, 1 not
     }
 
     // ---- Writes stay on the module ----
 
-    [GeneratedRegex("""\["(?<field>status|decision|decided_by|confirmedBy|stage|posted|outcome|severity|severity_by|verdict|review)"\]\s*(?:\?\?)?=(?!=)|\.Add\(\s*"(?<field>status|decision|decided_by|confirmedBy|stage|posted|outcome|severity|severity_by|verdict|review)"\s*,""")]
+    [GeneratedRegex("""\["(?<field>status|decision|decided_by|confirmedBy|stage|posted|outcome|severity|severity_by|verdict|review|security_state)"\]\s*(?:\?\?)?=(?!=)|\.Add\(\s*"(?<field>status|decision|decided_by|confirmedBy|stage|posted|outcome|severity|severity_by|verdict|review|security_state)"\s*,""")]
     private static partial Regex LifecycleWrite();
 
     /// <summary>Every write of these field names outside the module, per file and field. A new one fails the test until it's
@@ -181,6 +181,7 @@ public partial class StateChangesTests
         [("src/Stangent.Graph/GraphStore.cs", "status")] = (1, "how much git history the build could read, set once per build"),
         [("src/Stangent.Graph/Impact/ImpactAnalyzer.cs", "status")] = (2, "a report's field"),
         [("src/Stangent.Spec/Trace/FsdImpact.cs", "status")] = (1, "a report's field"),
+        [("src/Stangent.Spec/Trace/TraceFindings.cs", "security_state")] = (1, "the `previous` an answer moves from, so a typed answer isn't where it starts; the write itself is on the module"),
         [("src/Stangent.Spec/Trace/TraceFindings.cs", "severity")] = (1, "trace check's listing: a copy of the entry's severity"),
         [("src/Stangent.Spec/Trace/TraceFindings.cs", "decision")] = (1, "trace check's listing: a copy of the entry's decision"),
         [("src/Stangent.Spec/Fsd/FsdImport.cs", "status")] = (2, "what this import did: imported or unchanged"),

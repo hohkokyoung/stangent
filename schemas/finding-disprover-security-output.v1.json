@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:finding-disprover-security-output:v1",
+  "title": "What stangent-finding-disprover returns with security-flag on (D148)",
+  "description": "The same verdict as finding-disprover-output, and whether the finding touches security. A flag cites a code line, which code checks as it does the verdict's quote. A stands verdict has to give suggestedSeverity; code checks that too.",
+  "type": "object",
+  "required": [
+    "verdict",
+    "why",
+    "security"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "verdict": {
+      "description": "refuted: a code line shows the app does what the FSD says. stands: code shows the difference, on a path that's reached. page-gap: the page doesn't cover this; the code decides it, or can't. unreachable: the path isn't reached. cant-tell: not enough in the bundle.",
+      "enum": [
+        "refuted",
+        "stands",
+        "page-gap",
+        "unreachable",
+        "cant-tell"
+      ]
+    },
+    "why": {
+      "type": "string",
+      "maxLength": 600
+    },
+    "path": {
+      "description": "The file, exactly as the bundle names it.",
+      "type": "string"
+    },
+    "start": {
+      "description": "The first line of the quote, as the bundle numbers it.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "end": {
+      "description": "The last line of the quote.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "quote": {
+      "description": "The code, word for word, without the line numbers.",
+      "type": "string"
+    },
+    "suggestedSeverity": {
+      "description": "Required for a stands verdict, and optional for others. Only a suggestion: a person sets severity. blocker: users on the normal path lose data or can't finish. major: a wrong result on the normal path, or blocked on a rare one. minor: wrong on a rare path, or confusing. cosmetic: wording only.",
+      "enum": [
+        "blocker",
+        "major",
+        "minor",
+        "cosmetic"
+      ]
+    },
+    "security": {
+      "description": "Whether this finding touches security, such as logins, permissions, or trusting data a browser sent, whatever the verdict. Not a security review, and no grade.",
+      "type": "object",
+      "required": [
+        "touches",
+        "why"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "touches": {
+          "type": "boolean"
+        },
+        "why": {
+          "description": "One sentence.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "path": {
+          "description": "Needed when touches is true. The file, exactly as the bundle names it.",
+          "type": "string"
+        },
+        "start": {
+          "description": "The first line of the quote, as the bundle numbers it.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "end": {
+          "description": "The last line of the quote.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "quote": {
+          "description": "The code, word for word, without the line numbers.",
+          "type": "string"
+        }
+      }
+    }
+  }
+}
