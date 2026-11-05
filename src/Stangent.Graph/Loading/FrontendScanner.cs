@@ -19,7 +19,8 @@ public static class FrontendScanner
 
     static readonly string[] SourceExtensions = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts", ".html", ".json"];
 
-    public static List<FrontendProject> Find(string root)
+    /// <param name="plainReact">Also a React app with no tsconfig: a package.json naming React (D127). Only a repo with Python asks for this, so a repo without keeps the map it had.</param>
+    public static List<FrontendProject> Find(string root, bool plainReact = false)
     {
         var byDir = new SortedDictionary<string, string>(StringComparer.Ordinal);
         foreach (var file in Walk(root).Where(f => Path.GetFileName(f) is "tsconfig.json" or "tsconfig.app.json"))
@@ -30,11 +31,25 @@ public static class FrontendScanner
                 byDir[dir] = file;
             _ = existing;
         }
+        if (plainReact)
+            foreach (var file in Walk(root).Where(f => Path.GetFileName(f) == "package.json"))
+                if (Path.GetDirectoryName(file) is { } dir && !byDir.ContainsKey(dir) && NamesReact(file))
+                    byDir[dir] = file;
         return [.. byDir.Select(kv =>
         {
             var rel = ProjectScanner.Rel(root, kv.Value);
             return new FrontendProject("project:" + rel, kv.Value, rel, kv.Key);
         })];
+    }
+
+    static bool NamesReact(string packageJson)
+    {
+        try
+        {
+            var pkg = JsonNode.Parse(File.ReadAllText(packageJson));
+            return new[] { "dependencies", "devDependencies" }.Any(k => pkg?[k]?["react"] is not null);
+        }
+        catch (Exception e) when (e is JsonException or InvalidOperationException or IOException) { return false; }
     }
 
     /// <summary>Changes when any of the frontend's own source, template, config or lock files change.</summary>
@@ -122,6 +137,17 @@ public static class FrontendScanner
         var (code, output) = Run("node", args, root, TimeSpan.FromMinutes(10), splitStderr: true);
         if (code != 0) return (fragment, warnings, $"{p.RelativeTsConfig}: TypeScript extractor failed (exit {code}): {Tail(output)}");
 
+        ReadFragment(output, fragment, warnings, p.RelativeTsConfig);
+        // The extractor always reports at least the project itself; nothing at all means it didn't
+        // really run (a broken or wrong bundle). Say so, never leave the frontend silently empty.
+        if (!fragment.Nodes.Any(n => n.Id == p.Id))
+            return (fragment, warnings, $"{p.RelativeTsConfig}: the TypeScript extractor produced no output ({extractor})");
+        return (fragment, warnings, null);
+    }
+
+    /// <summary>An extractor's JSON lines, into a fragment. Warnings are named after the project they came from.</summary>
+    internal static void ReadFragment(string output, ProjectFragment fragment, List<string> warnings, string projectLabel)
+    {
         foreach (var line in output.Split('\n'))
         {
             if (line.Length == 0 || line[0] != '{') continue;
@@ -143,19 +169,14 @@ public static class FrontendScanner
                         o["data"]!.AsObject().ToDictionary(kv => kv.Key, kv => (string)kv.Value!, StringComparer.Ordinal)));
                     break;
                 case "enum":
-                    fragment.Enums.Add(new CodeEnum((string)o["id"]!, (string)o["name"]!, p.Id, (string)o["file"]!, (int)o["line"]!, (int)o["endLine"]!,
+                    fragment.Enums.Add(new CodeEnum((string)o["id"]!, (string)o["name"]!, fragment.ProjectId, (string)o["file"]!, (int)o["line"]!, (int)o["endLine"]!,
                         [.. o["members"]!.AsArray().OfType<JsonObject>().Select(m => new CodeEnumMember((string)m["name"]!, (string?)m["value"], (int)m["line"]!))]));
                     break;
                 case "warning":
-                    warnings.Add($"{p.RelativeTsConfig}: {(string?)o["message"]}");
+                    warnings.Add($"{projectLabel}: {(string?)o["message"]}");
                     break;
             }
         }
-        // The extractor always reports at least the project itself; nothing at all means it didn't
-        // really run (a broken or wrong bundle). Say so, never leave the frontend silently empty.
-        if (!fragment.Nodes.Any(n => n.Id == p.Id))
-            return (fragment, warnings, $"{p.RelativeTsConfig}: the TypeScript extractor produced no output ({extractor})");
-        return (fragment, warnings, null);
     }
 
     static string Quote(string s) => "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";

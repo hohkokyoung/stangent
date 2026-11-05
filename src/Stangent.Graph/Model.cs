@@ -59,6 +59,8 @@ public static class EdgeKind
     public const string Renders = "renders";
     /// <summary>A frontend field depends on the backend property it's read from (code-graph v2).</summary>
     public const string MapsField = "maps-field";
+    /// <summary>A Python file imports a file or a symbol (D127). Structure, like <c>contains</c>: what changes behaviour are its calls and uses, so it's never walked.</summary>
+    public const string Imports = "imports";
     /// <summary>
     /// 📜 A file usually changes when another does (code-graph v3). Stored apart from the other lines,
     /// as <see cref="HistoryLine"/>s, so the impact walk never follows them (D40).

@@ -32,9 +32,11 @@ export interface Context {
 
 export function extract(o: Options): Output {
   const out = new Output();
-  const tsconfig = resolveProjectConfig(o.tsconfig, out);
-  const cfg = ts.readConfigFile(tsconfig, ts.sys.readFile);
-  if (cfg.error) out.warning(`tsconfig: ${ts.flattenDiagnosticMessageText(cfg.error.messageText, " ")}`);
+  // A plain React project has only a package.json (D127): its settings are the ones its toolchain assumes.
+  const plain = path.basename(o.tsconfig) === "package.json";
+  const tsconfig = plain ? o.tsconfig : resolveProjectConfig(o.tsconfig, out);
+  const cfg = plain ? { config: plainReactConfig() } : ts.readConfigFile(tsconfig, ts.sys.readFile);
+  if ("error" in cfg && cfg.error) out.warning(`tsconfig: ${ts.flattenDiagnosticMessageText(cfg.error.messageText, " ")}`);
   const json = cfg.config ?? {};
   // .js/.jsx files are part of the map even when the project doesn't type-check them.
   json.compilerOptions = { ...(json.compilerOptions ?? {}), allowJs: true, noEmit: true };
@@ -74,6 +76,15 @@ export function extract(o: Options): Output {
   for (const sf of files) httpFacts(ctx, sf);
   if (o.enums) for (const sf of files) enums(ctx, sf);
   return out;
+}
+
+/** What a tsconfig would say for a React app written in plain .js. Generated output and packages stay out. */
+function plainReactConfig() {
+  return {
+    include: ["**/*"],
+    exclude: ["node_modules", "build", "dist", "coverage", "public"],
+    compilerOptions: { jsx: "preserve", target: "esnext", module: "esnext", moduleResolution: "bundler", esModuleInterop: true, allowSyntheticDefaultImports: true },
+  };
 }
 
 /** A solution-style tsconfig (only "references") points at the app config that has the files. */

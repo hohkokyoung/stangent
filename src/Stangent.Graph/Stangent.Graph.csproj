@@ -10,6 +10,10 @@
     <TsExtractorDir>$(MSBuildThisFileDirectory)../../tools/ts-extractor/</TsExtractorDir>
     <TsExtractorBundle>$(TsExtractorDir)dist/stangent-ts-extract.mjs</TsExtractorBundle>
   </PropertyGroup>
+  <!-- The Python extractor (D127): one standard-library file, shipped the same way. It needs no build. -->
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)../../tools/py-extractor/stangent_py_extract.py" Link="py-extractor/stangent_py_extract.py" CopyToOutputDirectory="Always" />
+  </ItemGroup>
   <Target Name="BuildTsExtractor" BeforeTargets="BeforeBuild" Condition="!Exists('$(TsExtractorBundle)')">
     <Message Importance="high" Text="stangent: building the TypeScript extractor (needs Node)" />
     <Exec Command="npm ci --no-audit --no-fund &amp;&amp; npm run build" WorkingDirectory="$(TsExtractorDir)" ContinueOnError="true" />

@@ -9,6 +9,7 @@ public static class DetectorRegistry
     public static IReadOnlyList<IDetector> BuiltIn { get; } =
     [
         new RoutesDetector(),
+        new FlaskRoutesDetector(), // Python's routes (D127), before anything links calls to endpoints
         new DiDetector(),
         new PublishHandleDetector(),
         new EntityTablesDetector(),
