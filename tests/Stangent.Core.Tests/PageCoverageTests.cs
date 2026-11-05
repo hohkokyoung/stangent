@@ -100,3 +100,29 @@ public class PageNavigationTests
         Assert.True((bool)check["ok"]!, check.ToJsonString());
     }
 }
+
+/// <summary>I.1: only the unwritten pages a document needs.</summary>
+public class PagesNeededTests
+{
+    [Fact]
+    public void A_document_needs_its_sections_candidates_that_arent_written()
+    {
+        using var app = new SpecApp($"version: 1\nfsd: {{ archive: {{ name: docs, path: '{Directory.CreateTempSubdirectory("stangent-archive-").FullName}' }} }}\n");
+        var file = Path.Combine(app.Root, "shop.docx");
+        File.WriteAllBytes(file, DocxWriter.Write("#! Orders\nThe orders screen has a Place order button.\n"));
+        FsdImport.Import(app.Repo, file);
+        var report = PagesNeeded.ForDocument(app.Pages(), Stangent.Spec.Trace.SpecIndex.Load(app.Root), app.Root, "shop", null);
+        var pages = report["pages"]!.AsArray();
+        Assert.NotEmpty(pages);
+        Assert.True(pages.Count < (int)report["outOf"]!);
+        Assert.All(pages, p => Assert.Equal("1", (string)p!["sections"]![0]!));
+    }
+
+    [Fact]
+    public void A_listed_page_the_graph_no_longer_calls_for_is_left_out()
+    {
+        using var app = new SpecApp();
+        Assert.Empty(PagesNeeded.Listed(app.Pages(), ["page:/gone"])["pages"]!.AsArray());
+        Assert.Single(PagesNeeded.Listed(app.Pages(), [SpecApp.Post, SpecApp.Post])["pages"]!.AsArray());
+    }
+}

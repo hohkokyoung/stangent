@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "page-shape.v1.json",
+  "title": "What a page was written from, with where the code sits left out (I.4, I.2, D131): beside a page, <page>.shape.json",
+  "type": "object",
+  "required": ["version", "page", "shape", "symbols"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "page": { "type": "string" },
+    "shape": { "type": "string", "description": "Same as today's means the code only moved." },
+    "symbols": { "type": "object", "additionalProperties": { "type": "string" }, "description": "Each point in the slice to a hash of the code shown for it." }
+  }
+}

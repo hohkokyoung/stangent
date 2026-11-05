@@ -89,6 +89,16 @@ A page writer's, page verifier's, link judge's or agree checker's file under `.s
   PR comment. On merge, CI runs
   `spec-run.sh --stale` and opens a spec-only PR (see `plugin/ci/spec.yml`).
 
+## Pages when they're needed (I.1, D131)
+
+The normal way to make pages is for what needs them. On Sonarr 113 pages of 718 ever ran. `stangent spec needed --doc <doc> [--chapter N]` lists the unwritten pages that a document's sections have as candidates, with the sections each is for; `--ticket <key>` lists what that ticket's saved bundle says it's missing. `spec-run.sh --for-fsd <doc>` and `--for-ticket <key>` make just those. `--stale` now means written pages whose code changed: `--new` makes every page never written, and `--all` is every page, as before. A section with no candidate by code isn't counted: the candidate finder reads written pages' titles, so it can only name those. No prompt or hash moves.
+
+## Code that only moved (I.4, D131)
+
+A page's input hash covers line numbers and file paths, so a line added above a method, or a C# file moved, makes the page stale, and a paid run writes the same thing. With `follow-moves` on, a page gets `<page>.shape.json` (contract `page-shape` v1): a hash of what it was written from with where the code sits left out, the same instructions and schema, points, lines and code. If that's unchanged, `spec prepare` moves the page on with no AI: its input hash, commit and citations change, and its statements don't. `spec stale` lists it under `moved`, not stale; `spec read` doesn't call it behind; `stangent spec follow` does them all at once and starts a shape for current pages that have none.
+
+Anything else stays stale: a change inside the code shown, a new line in the graph, a change to the instructions. A TypeScript file that's renamed changes its symbols' ids, which hold the path, so it stays stale too, and the page runs. A page with no shape on file can't be compared, so it runs once. Off by default because it rewrites a saved hash. No number decides anything: the same or not.
+
 ## Navigation (T.7, D131)
 
 A page's Markdown links to `specs/reference/index.md` at its top and bottom, and its footer says it's generated and how to correct it. The index lists every written page by kind and group; it's rewritten whenever a page is written, or by `stangent spec nav`. `stangent spec cite` puts the links on pages written earlier. Only people read these: no step reads a page's Markdown, so no prompt or hash moves.
@@ -208,6 +218,10 @@ All code, no AI, and none changes a prompt or a saved hash.
 ### A hand edit to `document.md` (D131)
 
 Nothing reads `document.md` for its sections: every step reads `document.json`. So `fsd status`, `fsd outline`, `fsd show` and `fsd export` compare it with the import, section by section, and warn on stderr when they differ; `status` and `outline` also carry `documentEdited` in their result. Change the FSD and import it again. Text above the first heading has no section, so it isn't compared.
+
+### Ranking doubtful matches (I.6, D131)
+
+Each doubtful section in `fsd diff` also has `suggestions`: the unmatched sections on the other side, closest first, by the share of words they have in common, with the figure beside each. It only gives a person an order to read in. There's no cut-off, every section sharing a word is listed, and nothing reads it to settle a match: `fsd resolve` is still the only way.
 
 ### Where a document stands (D122, E.1)
 

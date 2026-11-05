@@ -161,7 +161,22 @@ public sealed class SpecRunDriverTests : IDisposable
             "spec stale") echo '{"ok":true,"result":{"stale":[{"id":"old"}],"new":[{"id":"fresh"}]}}' ;;
             "spec prepare "*) echo '{{{Done}}}' ;;
             """);
-        Assert.Equal(2, rig.Run(Script, "--stale").Out.Trim().Split('\n').Length);
+        // I.1: stale means written pages. A page never written waits until something needs it, or --new asks.
+        Assert.Single(rig.Run(Script, "--stale").Out.Trim().Split('\n'));
+        Assert.Equal(2, rig.Run(Script, "--stale", "--new").Out.Trim().Split('\n').Length);
+    }
+
+    [Fact]
+    public void For_a_document_or_a_ticket_only_what_it_needs_runs()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.Stangent($$$"""
+            "spec needed --doc d1 --chapter 2") echo '{"ok":true,"result":{"pages":[{"id":"p1"},{"id":"p2"}]}}' ;;
+            "spec needed --ticket K-1") echo '{"ok":true,"result":{"pages":[{"id":"p3"}]}}' ;;
+            "spec prepare "*) echo '{{{Done}}}' ;;
+            """);
+        Assert.Equal(2, rig.Run(Script, "--chapter", "2", "--for-fsd", "d1").Out.Trim().Split('\n').Length);
+        Assert.Contains("p3", rig.Run(Script, "--for-ticket", "K-1").Out);
     }
 
     [Theory]

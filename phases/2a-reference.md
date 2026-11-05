@@ -3,7 +3,7 @@ phase: 2a
 name: reference
 status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4, impact-report: 5 }
-provides: { reference-page: 1, reference-lines: 1, page-corrections: 1, page-exclusions: 1 }
+provides: { reference-page: 1, reference-lines: 1, page-corrections: 1, page-exclusions: 1, page-shape: 1 }
 ---
 
 # Phase 2a · Reference from code

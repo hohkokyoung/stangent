@@ -1,13 +1,15 @@
 ---
 description: Generate stangent reference pages (Phase 2a) for a page, the stale pages, or all of them.
-argument-hint: "<page id> | --stale | --all"
+argument-hint: "<page id> | --for-fsd <doc> | --for-ticket <key> | --stale | --new | --all"
 allowed-tools: Bash(stangent spec:*), Bash(*spec-run.sh:*), Task
 ---
 
 Generate reference pages with stangent (D54, D60). Code decides every step; you only run the subagent each step names.
 Never write or edit a page yourself, and never judge a page yourself: the writer and a separate verifier do that (D61).
 
-**Many pages** (`--all`, `--stale`, or more than three ids): run the batch driver, which uses headless Claude Code and
+Pages are made when something needs them (I.1): `--for-fsd <doc>` for what a document's sections need, `--for-ticket <key>` for what a ticket's bundle says it's missing. `--stale` is written pages whose code changed. `--new` and `--all` make every page, which costs far more: only when the person asks for that.
+
+**Many pages** (any of those, or more than three ids): run the batch driver, which uses headless Claude Code and
 records tokens and time per page:
 
 ```bash

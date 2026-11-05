@@ -85,6 +85,11 @@ public static class PageRun
         var paths = new SpecPaths(repo.Root);
         var previous = LoadJson(paths.PageJson(page)) as JsonObject;
         var bundle = Bundles.Build(set, page, previous);
+        if (wrong is null && previous is not null && PageMoves.OnlyMoved(set, paths, page, previous, bundle.InputHash))
+        {
+            PageMoves.Follow(set, repo.Config, paths, page, previous, bundle);
+            return new RunStep("current", "none", Warning: "the code only moved: the page's citations followed it, with no AI.");
+        }
         // A person said this page is wrong (D119): it runs again though its inputs didn't change.
         if (wrong is null && (string?)previous?["generated"]?["bundleHash"] == bundle.InputHash) return new RunStep("current", "none");
         var failed = Failed(paths);
@@ -311,6 +316,7 @@ public static class PageRun
         Directory.CreateDirectory(Path.GetDirectoryName(paths.PageJson(page))!);
         Quotes.WriteAtomic(paths.PageJson(page), CanonicalJson.Serialize(record));
         var citing = WriteRendered(set, config, paths, page, record);
+        if (set.Settings.KeepShape) PageMoves.WriteFile(paths, page, PageMoves.Shape(set, page));
         var traceProblem = Staleness.ClearReportedWrong(paths.Root, page.Id);
         ClearFailed(paths, page);
         Stage(paths, page, state, "done", "recorded");

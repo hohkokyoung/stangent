@@ -132,6 +132,32 @@ static class SpecCommands
         nav.SetAction(pr => Cli.Run(pr, "spec nav", ctx => new JsonObject { ["pages"] = PageNavigation.Write(new SpecPaths(ctx.Repo.Root)), ["file"] = "specs/reference/index.md" }));
         spec.Subcommands.Add(nav);
 
+        var follow = new Command("follow", "Pages whose code only moved: their citations and saved hash follow it, with no AI (I.4). Off unless follow-moves is on.");
+        follow.SetAction(pr => Cli.Run(pr, "spec follow", ctx => PageMoves.Run(Load(ctx, null), ctx.Repo.Config, new SpecPaths(ctx.Repo.Root))));
+        spec.Subcommands.Add(follow);
+
+        var neededDoc = new Option<string?>("--doc") { Description = "The pages this document's sections have as candidates." };
+        var neededChapter = new Option<string?>("--chapter") { Description = "With --doc: only this top-level heading." };
+        var neededTicket = new Option<string?>("--ticket") { Description = "The pages this ticket's bundle says it's missing. `ticket bundle` first." };
+        var needed = new Command("needed", "The pages not written yet that a document or a ticket needs (I.1): what `spec-run.sh --for-fsd` and `--for-ticket` make. No AI.") { neededDoc, neededChapter, neededTicket };
+        needed.SetAction(pr => Cli.Run(pr, "spec needed", ctx =>
+        {
+            var (doc, ticket) = (pr.GetValue(neededDoc), pr.GetValue(neededTicket));
+            if ((doc is null) == (ticket is null)) throw new Stangent.Core.StangentException("usage", "Give --doc or --ticket.", Stangent.Core.ExitCodes.Usage);
+            var set = Load(ctx, null);
+            JsonObject result;
+            if (doc is not null) result = Stangent.Spec.Fsd.PagesNeeded.ForDocument(set, Stangent.Spec.Trace.SpecIndex.Load(ctx.Repo.Root), ctx.Repo.Root, doc, pr.GetValue(neededChapter));
+            else
+            {
+                var file = new Stangent.Tickets.TicketPaths(ctx.Repo.Root, ticket!).BundleJson;
+                if (PageRun.LoadJson(file) is not JsonObject saved) throw new Stangent.Core.StangentException("not_found", $"No bundle for {ticket}. Run `stangent ticket bundle {ticket}` first.", Stangent.Core.ExitCodes.NotFound);
+                result = Stangent.Spec.Fsd.PagesNeeded.Listed(set, (saved["missingPages"] as JsonArray ?? []).Select(p => (string)p!));
+            }
+            ctx.Span.Attributes["stangent.artifact.count"] = result["pages"]!.AsArray().Count;
+            return result;
+        }));
+        spec.Subcommands.Add(needed);
+
         var retryFailedOption = new Option<bool>("--retry-failed") { Description = "Try again a page that failed with these same inputs." };
         var prepare = new Command("prepare", "Write a page's bundle and say what runs next: nothing if its inputs are unchanged (D18), else the writer (D60).") { pageArg, retryFailedOption };
         prepare.SetAction(pr => Cli.Run(pr, "spec prepare", ctx =>

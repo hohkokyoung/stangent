@@ -19,6 +19,7 @@ stangent trace check
 **One section** (`<doc id> <section id>`), here in this session:
 
 1. Run `stangent fsd prepare "<doc>" "<section>"` and read `result.next`.
+   If a section fails with `no candidate page has been recorded yet`, `${CLAUDE_PLUGIN_ROOT}/scripts/spec-run.sh --for-fsd <doc>` writes only the pages this document needs. It costs money: say so first.
 2. While `result.next.action` isn't `none`: run `stangent spec assemble --in-place <file>` for each `.stangent/` file the prompt says to read (a stored bundle holds only what's unique to it, D130), then start the subagent in `result.next.agent` (`stangent-candidate-finder`,
    `stangent-link-judge` or `stangent-agree-checker`) with exactly `result.next.prompt`, wait, then run
    `stangent fsd check "<doc>" "<section>"` and read `result.next` again (exit 1 means a retry or a failure; keep

@@ -71,7 +71,7 @@ public static class LinkRun
         var candidates = found.Where(c => index.Pages.ContainsKey(c.Page)).ToList();
         // A candidate with no recorded page (it failed, or was never generated) can't be judged: say so, never guess a gap.
         if (candidates.Count == 0 && found.Count > 0)
-            return new RunStep("failed", "none", Errors: [$"no candidate page has been recorded yet: {string.Join(", ", found.Select(c => c.Page))}"]);
+            return new RunStep("failed", "none", Errors: [$"no candidate page has been recorded yet: {string.Join(", ", found.Select(c => c.Page))}. `spec-run.sh --for-fsd {doc}` writes only the pages a document needs."]);
         var by = "code";
         if (candidates.Count == 0 && !StangentComponents.IsOn(repo.Config, "candidate-finder"))
         {

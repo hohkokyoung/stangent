@@ -7,7 +7,9 @@
 # The logic lives in `stangent spec`, `stangent fsd` and `stangent req`; this only runs the subagent each step names,
 # then hands its result back.
 #
-# usage: spec-run.sh [--jobs N] [--max-cost USD|none] [--stop-at-usage PCT] [--estimate] [--model M] [--retry-failed] [--agents] [--chapter N] (<page id>... | --all | --stale | --fsd <doc> | --disprove <doc> | --req <doc> | --ask <question>)
+# usage: spec-run.sh [--jobs N] [--max-cost USD|none] [--stop-at-usage PCT] [--estimate] [--model M] [--retry-failed] [--agents] [--chapter N] (<page id>... | --for-fsd <doc> | --for-ticket <key> | --all | --stale | --new | --fsd <doc> | --disprove <doc> | --req <doc> | --ask <question>)
+# --for-fsd <doc> (with --chapter N) and --for-ticket <key>: the normal way to make pages (I.1): only the ones that document's sections or that ticket's bundle need, and aren't written.
+# --stale: pages already written whose code changed; --new adds every page never written; --all is every page the graph calls for.
 # --ask <question>: one question from the reference pages (spec.ask, E.2); prints its status line, then the result as one JSON line.
 # --chapter N, with --fsd or --disprove: only that top-level heading, to try a chapter first (`stangent fsd disprove estimate <doc> --chapter N` shows its cost).
 # Default (D66): one turn per call. The step's input files go into the prompt, Claude Code runs with no tools and none of
@@ -59,7 +61,7 @@ STOPUSAGE=""
 ESTIMATE=""
 DOC=""
 while [ $# -gt 0 ]; do
-  case "$1" in --jobs|--model|--fsd|--disprove|--req|--only|--chapter|--ask|--max-cost|--stop-at-usage) [ $# -ge 2 ] || usage ;; esac
+  case "$1" in --jobs|--model|--fsd|--for-fsd|--for-ticket|--disprove|--req|--only|--chapter|--ask|--max-cost|--stop-at-usage) [ $# -ge 2 ] || usage ;; esac
   case "$1" in
     --jobs) JOBS="$2"; shift 2 ;;
     --max-cost) MAXCOST="$2"; shift 2 ;;
@@ -73,7 +75,10 @@ while [ $# -gt 0 ]; do
     --disprove) MODE=disprove; DOC="$2"; CHAPTERED=1; add_ids '.result[] | .doc + "\t" + .section' fsd sections --doc "$2" ${CHAPTER:+--chapter "$CHAPTER"}; shift 2 ;;
     --chapter) shift 2 ;;
     --req) MODE=req; add_ids '.result[] | .doc + "\t" + .section' req sections --doc "$2"; shift 2 ;;
-    --stale) add_ids '.result.stale[].id, .result.new[].id' spec stale; shift ;;
+    --stale) add_ids '.result.stale[].id' spec stale; shift ;;
+    --new) add_ids '.result.new[].id' spec stale; shift ;;
+    --for-fsd) CHAPTERED=1; add_ids '.result.pages[].id' spec needed --doc "$2" ${CHAPTER:+--chapter "$CHAPTER"}; shift 2 ;;
+    --for-ticket) add_ids '.result.pages[].id' spec needed --ticket "$2"; shift 2 ;;
     --only) ONLY+=("$2"); shift 2 ;;
     --ask) MODE=ask; PAGES+=("$2"); NAMED=1; shift 2 ;;
     -*) usage ;;

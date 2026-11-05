@@ -57,6 +57,42 @@ public static class FsdSectionDiff
     static JsonArray? FileChanges(Side old, Side now) =>
         old.ContentHash is null || now.ContentHash is null || Changes(old.Files, now.Files) is not { Count: > 0 } changes ? null : new JsonArray([.. changes.Select(c => (JsonNode)c)]);
 
+    /// <summary>
+    /// I.6 (D131): for each doubtful section, the unmatched sections on the other side, closest first, by how many of their words they share (of all the words either has).
+    /// Only an order for a person reading them: no threshold anywhere, and nothing here settles a match, so a score can't make one. Sections sharing no word aren't listed.
+    /// </summary>
+    static void Suggest(List<JsonObject> entries, List<Side> olds, List<Side> news, Dictionary<Side, (Side Old, string Kind)> match, HashSet<Side> taken)
+    {
+        var words = new Dictionary<Side, HashSet<string>>();
+        HashSet<string> Words(Side s)
+        {
+            if (!words.TryGetValue(s, out var w))
+                words[s] = w = [.. System.Text.RegularExpressions.Regex.Matches((s.Title + " " + s.Text).ToLowerInvariant(), @"[\p{L}\p{N}]+").Select(m => m.Value)];
+            return w;
+        }
+        var oldById = olds.ToDictionary(s => s.Id, StringComparer.Ordinal);
+        var newById = news.ToDictionary(s => s.Id, StringComparer.Ordinal);
+        foreach (var e in entries.Where(e => (string)e["kind"]! == "doubtful"))
+        {
+            var candidateSide = (string?)e["side"] == "candidate";
+            var me = candidateSide ? newById[(string)e["to"]!] : oldById[(string)e["from"]!];
+            var others = candidateSide ? olds.Where(o => !taken.Contains(o)) : news.Where(n => !match.ContainsKey(n));
+            e["suggestions"] = new JsonArray([.. others
+                .Select(o => (Other: o, Shared: Words(me).Intersect(Words(o)).Count(), All: Words(me).Union(Words(o)).Count()))
+                .Where(x => x.Shared > 0)
+                .OrderByDescending(x => (double)x.Shared / x.All).ThenBy(x => x.Other.Id, StringComparer.Ordinal)
+                .Select(x =>
+                {
+                    var o = new JsonObject();
+                    if (candidateSide) { o["permanentId"] = x.Other.PermanentId; o["from"] = x.Other.Id; }
+                    else o["to"] = x.Other.Id;
+                    o["title"] = x.Other.Title;
+                    o["similarity"] = Math.Round((double)x.Shared / x.All, 2);
+                    return (JsonNode)o;
+                })]);
+        }
+    }
+
     /// <summary>One entry per section: the candidate's in its order, then the current version's that have no match.</summary>
     public static List<JsonObject> Compare(JsonArray current, JsonArray candidate)
     {
@@ -133,6 +169,7 @@ public static class FsdSectionDiff
                     })]),
                 });
         }
+        Suggest(entries, olds, news, match, taken);
         MarkSplits(entries);
         return entries;
     }
@@ -233,6 +270,12 @@ public static class FsdSectionDiff
                 {
                     var where = candidateSide ? $"{c["permanentId"]} §{c["from"]}" : $"§{c["to"]}";
                     sb.Append($"- {where} {c["title"]}{((bool)c["alreadyMatched"]! ? " (already matched)" : "")}: {((string?)c["sentence"] is { } sentence ? $"\"{sentence}\"" : "the same heading")}\n");
+                }
+                if (e["suggestions"] is JsonArray { Count: > 0 } suggestions)
+                {
+                    sb.Append("\nThe closest sections by shared words, for reading first. It's a ranking, and it decides nothing:\n\n");
+                    foreach (var s in suggestions.OfType<JsonObject>())
+                        sb.Append($"- {(candidateSide ? $"{s["permanentId"]} §{s["from"]}" : $"§{s["to"]}")} {s["title"]} ({s["similarity"]})\n");
                 }
                 sb.Append(candidateSide
                     ? $"\nSettle: `stangent fsd resolve {doc} \"{e["to"]}\" --same-as <S-id>` or `--new`\n"

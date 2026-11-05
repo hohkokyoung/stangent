@@ -50,6 +50,7 @@ components: { page-verifier: false, git-history: false, detector-config-keys: fa
 | `schema-once` | `components.schema-once` | off | Batch runs send the schema twice, in the text and through Claude Code's option. On, only through the option (J.4, D130). No hash moves either way. |
 | `page-corrections` | `components.page-corrections` | off | `spec correct` refuses, and nothing already approved is put back when a page is written. On, approved corrections stick (T.1). |
 | `page-exclusions` | `components.page-exclusions` | off | `spec exclude` refuses and exclusions on file are ignored. `spec coverage` still works. On, an excluded page isn't listed, written or a candidate (T.3). |
+| `follow-moves` | `components.follow-moves` | off | Any change to a page's inputs asks for a run, lines moving included. On, code that only moved takes the page's citations and saved hash with it, with no AI (I.4). |
 | `page-verifier` | `components.` | on | Recorded as written, with `verification.off: true` on the page and a warning. |
 | `line-citations` | `components.` | on | No `<path>.lines.json`, an old one removed, so no `code` evidence; `spec cite` says `lineCitations: off`. |
 | `candidate-finder` | `components.` | on | A section code finds no page for gets status `off`, `candidatesBy: off`, and no gap. |

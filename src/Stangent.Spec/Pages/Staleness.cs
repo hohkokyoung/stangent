@@ -16,7 +16,8 @@ public static class Staleness
 {
     /// <summary>T.4: whether a recorded page's inputs have moved on from the code, for wherever a page is read. Not recorded isn't behind: it has nothing to be behind with.</summary>
     public static bool Behind(PageSet set, SpecPaths paths, PageDef page) =>
-        PageRun.LoadJson(paths.PageJson(page)) is JsonObject recorded && (string?)recorded["generated"]?["bundleHash"] != Bundles.Build(set, page, null).InputHash;
+        PageRun.LoadJson(paths.PageJson(page)) is JsonObject recorded && Bundles.Build(set, page, null).InputHash is var hash
+        && (string?)recorded["generated"]?["bundleHash"] != hash && !PageMoves.OnlyMoved(set, paths, page, recorded, hash);
 
     /// <summary>The warning itself, in one form everywhere.</summary>
     public static string BehindWarning(string id, string? writtenAt, string? codeAt) =>
@@ -37,6 +38,7 @@ public static class Staleness
         var wrong = ReportedWrong(entries);
         var stale = new JsonArray();
         var fresh = new JsonArray();
+        var moved = new JsonArray();
         var current = 0;
         foreach (var page in set.Pages)
         {
@@ -45,6 +47,7 @@ public static class Staleness
             var hash = Bundles.Build(set, page, null).InputHash;
             var reported = wrong.GetValueOrDefault(page.Id);
             if (reported is null && (string?)recorded["generated"]?["bundleHash"] == hash) { current++; continue; }
+            if (reported is null && PageMoves.OnlyMoved(set, paths, page, recorded, hash)) { moved.Add(Item(page, recorded)); continue; }
             var item = Item(page, recorded);
             if (reported is not null) item["reportedWrong"] = new JsonArray([.. reported.Select(e => (JsonNode)new JsonObject
             {
@@ -76,6 +79,8 @@ public static class Staleness
             ["stale"] = stale, ["new"] = fresh, ["removed"] = removed,
         };
         if (traceProblem is not null) result["traceProblem"] = traceProblem;
+        // Only with follow-moves on, so the report stays as it was with it off.
+        if (set.Settings.FollowMoves) result["moved"] = moved;
         return result;
     }
 

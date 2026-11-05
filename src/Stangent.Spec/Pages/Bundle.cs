@@ -109,7 +109,9 @@ public static class Bundles
 
     static readonly HashSet<string> NamedKinds = [NodeKind.Endpoint, NodeKind.Page, NodeKind.Table, NodeKind.Column, NodeKind.Config];
 
-    static bool Listed(SliceNode n) =>
+    internal static bool ShowsBody(SliceNode n) => WithBody.Contains(n.Node.Kind) && n.Role == "walk";
+
+    internal static bool Listed(SliceNode n) =>
         n.Role is "stop" or "handler" or "table" || WithBody.Contains(n.Node.Kind) && n.Node.Kind is not (NodeKind.Property or NodeKind.Field)
         || NamedKinds.Contains(n.Node.Kind);
 

@@ -179,6 +179,22 @@ public sealed class FsdVersionTests : IDisposable
         Assert.Equal(["added 1", "removed 1"], Diff($"#! Fruit\n{Apples}\n", $"#! Veg\n{Pears}\n"));
 
     [Fact]
+    public void Similarity_only_orders_suggestions_and_never_settles_a_match()
+    {
+        var entries = FsdSectionDiff.Compare(
+            new JsonArray(Sec("1", "Fruit", $"{Apples} {Pears} Same words here."), Sec("2", "Other", "Quite different words in here.")),
+            new JsonArray(Sec("1", "Red", $"{Apples} More words here.")));
+        var open = entries.First(e => (string)e["kind"]! == "doubtful" && (string?)e["side"] == "candidate");
+        var ranked = open["suggestions"]!.AsArray().Select(s => (string)s!["from"]!).ToList();
+        Assert.Equal(["1", "2"], ranked);
+        Assert.True((double)open["suggestions"]![0]!["similarity"]! > (double)open["suggestions"]![1]!["similarity"]!);
+        Assert.Equal("doubtful", (string)open["kind"]!);
+        Assert.DoesNotContain(entries, e => (string)e["kind"]! is "modified" or "unchanged");
+    }
+
+    static JsonObject Sec(string id, string title, string text) => new() { ["id"] = id, ["title"] = title, ["text"] = text, ["permanentId"] = $"S-{id}", ["level"] = 1, ["textHash"] = id };
+
+    [Fact]
     public void A_split_is_doubtful_on_both_sides_with_its_candidates() =>
         Assert.Equal(["doubtful 1: 1", "doubtful 2: 1", "doubtful 1: 1,2"], Diff($"#! Fruit\n{Apples} {Pears}\n", $"#! Red\n{Apples}\n#! Green\n{Pears}\n"));
 

@@ -50,6 +50,8 @@ public static class StangentComponents
         new("schema-once", "Batch runs send a step's output schema once, through Claude Code's schema option, and not also in its input text. No hash moves, but it changes what the AI reads, so it's off by default", "components.schema-once", false, ["spec assemble"], ["ai"]),
         new("page-corrections", "A person's approved correction to a page, put back every time the page is written. A corrected statement is what a link judge then reads, so it's off by default", "components.page-corrections", false, ["spec correct", "spec correct-approve", "spec correct-reject", "spec check", "spec cite"], []),
         new("page-exclusions", "A page a person excluded with a reason isn't listed, written or a candidate. That can change what a link judge reads, so it's off by default; `spec coverage` itself always works", "components.page-exclusions", false, ["spec exclude", "spec include", "spec coverage", "spec pages", "spec stale"], []),
+        new("follow-moves", "When a page's code only moved, its citations and saved hash follow it with no AI. It rewrites a saved hash, so it's off by default", "components.follow-moves", false, ["spec prepare", "spec stale", "spec read", "spec follow"], []),
+        new("statement-update", "When a page is stale, the writer and verifier handle only the statements citing code that changed, and code puts the others back. It changes what the writer gets, so it's off by default", "components.statement-update", false, Pages, ["ai"]),
         new("page-verifier", "The fresh check of each reference page", "components.page-verifier", true, Pages, ["ai"]),
         new("line-citations", "path:lines beside each page, and code evidence from them", "components.line-citations", true, ["spec check", "spec cite", "trace check"], []),
         new("candidate-finder", "The AI that names pages when code finds none", "components.candidate-finder", true, Links, ["ai"]),
@@ -79,6 +81,8 @@ public static class StangentComponents
         new("code-checks", "Quote checks, schema checks and `trace check` are what make an AI's answer usable (D18). Taking one out would let a made-up quote through."),
         new("state-module", "Every lifecycle moves through it, and a test holds that to be true."),
         new("cost-stop", "`--max-cost none` already says no cap, per run. It changes no prompt and no result, only whether a run goes on."),
+        new("doubtful-suggestions", "Ranking the closest sections for a doubtful match only gives a person an order to read in. It settles nothing, and no step reads it."),
+        new("pages-as-needed", "Which pages a run asks for changes what's written when, never what a page is written from: `--all` and `--new` still make every page."),
         new("page-navigation", "The links and footer on a page's Markdown and the index only help a person read. No step reads them, so they change no prompt and no hash."),
         new("run-checks", "The app-files check, the link and id check, the behind-the-code warning and the read-only hook only report or refuse. They change no prompt and no hash, so they can't move a result to compare."),
     ];
