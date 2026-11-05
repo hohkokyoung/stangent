@@ -205,3 +205,19 @@ Headless calls were refused on a weekly limit, so this ran through the app's age
 | Routed screens directly rendering a shared component | 57 of 71, at most 10, mean 1.3 |
 
 **What doesn't fit:** `root-screens` assumes a `createRoot` is an app's root. Here one mounts a tooltip, so the rule shaped on one app is wrong on the next. Off by default, so nothing else changes. Not fixed; said here. `route-render` has nothing to do on this repo, so it's been tested on one real app only.
+
+## §9's batch 2 (2026-11-05, D131): what wasn't run
+
+All built with fakes. Tests pass and `SavedWorkTests`' pins hold, untouched. No AI call, no Jira, nothing pushed, and Sonarr's clone wasn't changed: its document was copied to a scratch folder to check the hand-edit warning, which said nothing. The import code didn't change, so the document imports as it did; it wasn't re-imported.
+
+| Item | Tested with | Not run |
+|---|---|---|
+| D130, bundles store what's unique | Fake drivers; the full text hashed against the pins; `spec assemble` run by hand once on a scratch file | A real call with an assembled bundle. Its bytes are pinned, so a difference would be a bug |
+| J.4, `schema-once` (off) | Text with and without the schema | Whether the AI does as well without it in the text |
+| T.1, T.3, T.7 | Fake writers, the real state module and content check | A real page corrected; the tooltips on Actual excluded |
+| I.1 | Fake drivers; a small app's candidates | `--for-fsd` on a real document. Its saving isn't measured |
+| I.2 (off) | A fake writer returning part of a page | Whether a real writer follows the note, and how often a kept statement should have changed |
+| I.3 (off) | Bundle contents and the count | **Its effect on `cant-tell`**, the point of the item. Sizes come from `fsd disprove estimate`, free; the rest needs a paid re-score |
+| I.4 (off) | Lines shifted in a test graph | A real commit's moves, and how many stale pages it would save |
+| I.6 | Two small documents | A real doubtful section's ranking read by a person |
+

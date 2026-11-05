@@ -267,18 +267,18 @@ Marked down, not built. A ☑️ with a test note is taken in and stays off unti
 
 **Improve what we have**
 
-- ☑️ I.1 · Pages generated only when a section or ticket needs them, as the normal path.  
-  *Biggest cost saving; 113 of 718 ran on Sonarr.*
-- ☑️ I.2 · Update only the statements a change touches, not the whole page.  
-  *Today a changed line regenerates the page and its verifier.*
-- ☑️ I.3 · Smaller disprove bundles, watching `cant-tell`.  
-  *44 of 62 hit the 60K cap.*
-- ☑️ I.4 · Citations follow code that only moved.  
-  *Stops needless re-runs.*
+- ✅ I.1 · Pages generated only when a section or ticket needs them, as the normal path.  
+  *Built: `spec needed`, `spec-run.sh --for-fsd` and `--for-ticket`; `--stale` no longer includes pages never written, `--new` does (D131). 113 of 718 ran on Sonarr.*
+- ✅ I.2 · Update only the statements a change touches, not the whole page.  
+  *Built, off: `statement-update`. The writer still reads the whole bundle; no real run yet (D131).*
+- ✅ I.3 · Smaller disprove bundles, watching `cant-tell`.  
+  *Built, off: `disprove-small`; `fsd disprove estimate` shows the size and the `cant-tell` count. Whether `cant-tell` goes up isn't known until a paid run (D131). 44 of 62 hit the 60K cap.*
+- ✅ I.4 · Citations follow code that only moved.  
+  *Built, off: `follow-moves`. A renamed TypeScript file changes its ids, so it still runs (D131).*
 - ✅ I.5 · The diff shows `renamed` and `split` as their own outcomes.  
   *`renamed` already was. `split` shows apart, and stays a person's call (D126).*
-- ☑️ I.6 · Similarity ranks suggestions for doubtful matches and never decides.  
-  *Less work for a person, no tuned cut-off.*
+- ✅ I.6 · Similarity ranks suggestions for doubtful matches and never decides.  
+  *Built: `suggestions` in `fsd diff`, by shared words, no cut-off (D131).*
 - ✅ I.7 · Embedded originals go to the archive, not the repo.  
   *Built: at any depth; the record says where (D126).*
 - ✅ I.8 · Files attached to a PDF get a home.  
@@ -294,20 +294,20 @@ Marked down, not built. A ☑️ with a test note is taken in and stays off unti
 
 **Take: cheap, no AI**
 
-- ☑️ T.1 · A person's correction to a page is recorded, approved and survives regeneration.  
-  *No AI. `page-wrong` regenerates today, so a correction doesn't stick.*
+- ✅ T.1 · A person's correction to a page is recorded, approved and survives regeneration.  
+  *Built, off: `spec correct`, `page-corrections`. Changes or removes a statement; adding one is still `page-wrong` (D131).*
 - ✅ T.2 · A hard stop: an estimate and `--max-cost` before every paid step.  
   *Built: a cap or `none` is required; limits noticed; what code can't see is in `docs/foundation.md` (D126).*
-- ☑️ T.3 · Every screen and entry point is covered, or excluded with a reason.  
-  *No AI.*
+- ✅ T.3 · Every screen and entry point is covered, or excluded with a reason.  
+  *Built: `spec coverage`; `spec exclude`, off: `page-exclusions` (D131).*
 - ✅ T.4 · A warning when a page is behind the code, where it's read.  
   *Built: `spec read`, `spec ask` (D126).*
 - ✅ T.5 · A check that a run didn't change the app's files.  
   *Built: `run-check`, in the drivers (D126).*
 - ✅ T.6 · Broken-link and duplicate-id checks.  
   *Built: `spec content-check`, in CI (D126).*
-- ☑️ T.7 · Generated navigation and footers.  
-  *No AI.*
+- ✅ T.7 · Generated navigation and footers.  
+  *Built: links and a footer on each page, `specs/reference/index.md` (D131).*
 - ✅ T.8 · Client code read-only by hook, for analysis steps only.  
   *Built: `read-only-hook.sh`; never on the reproducer (D126).*
 - ☑️ T.9 · Playwright adapter by settings: specs in another repo, the project's own helpers, its URL shape.  
@@ -377,8 +377,8 @@ Marked down, not built. A ☑️ with a test note is taken in and stays off unti
   *Extraction built; Sonarr gave 0 journeys from 109 requirements, and no real document has produced one yet.*
 - ⬜ J.3 · The page verifier also reads the tests.  
   *Today it reads the bundle only, and tests aren't a separate source. Recommend: decide after J.1, which has to read those tests anyway.*
-- ☑️ J.4 · Batch runs send the output schema only once (D130, batch 2).  
-  *`spec-run.sh` sends it in the bundle and through `--json-schema`, about 2.5k characters a page. It's in the input hash, so removing it alone would regenerate every page. Recommend: leave it; if trimmed, take it out of the hash in the same change.*
+- ✅ J.4 · Batch runs send the output schema only once (D130).  
+  *Built, off: `schema-once`. The hash stays on the full text, so nothing regenerates; off until a test, because what the AI reads changes (D131).*
 
 ## Two caveats
 

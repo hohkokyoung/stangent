@@ -22,7 +22,7 @@ The build order (decisions.md D19) and how phases stay in step with each other (
 | **8. Dashboard** | BA/PM spec view (D12), then the links between everything | all | — | not started |
 | **Demo** (any time) | quick interactive prototypes | 0, 2 | `prototype` | not started |
 
-## Where we are (2026-11-04)
+## Where we are (2026-11-05)
 
 - **Built and measured:** the foundation (0), the code graph (1a–1c), reference pages (2a), FSD import and links (2b,
   findings off; PDF import added by D111), and Phase 3: pull, the file finder with code checks, the bundle, the bug proof (advice only), drafts.
@@ -32,6 +32,7 @@ The build order (decisions.md D19) and how phases stay in step with each other (
 - **Overhaul (2026-11-04), local on `claude/phase2c-spec`, not pushed:** slices 0.1 to 2.6 landed, then the whole-flow test and §8's four batches (D120): switches, seams, import report, Excel, attachments, and table comparison, finer verdicts, grouping and ask, built off.
 - **Disprove re-score:** stopped at 11 of 62 calls on a weekly limit, resuming after Nov 7, so no bar is called. It can't lift found above 24 of 30.
 - **§9's batch 1 (2026-11-05), local, not pushed:** T.2, T.4, T.5, T.6, T.8, I.5, I.7, I.8 (off), I.9, I.10, I.11 (D126). Every paid step now needs a cap or `none`, so a script or CI needs `STANGENT_MAX_COST`.
+- **§9's batch 2 (2026-11-05), local, not pushed:** D130 and J.4 (`schema-once`, off), `shared-candidates` removed, a warning on a hand-edited `document.md`, T.1, T.3, T.7, I.1, I.2, I.3, I.4, I.6 (D131). Fakes only. Off until a test: `schema-once`, `page-corrections`, `page-exclusions`, `follow-moves`, `statement-update`, `disprove-small`.
 - **Unchecked:** §8's and §9's batches had no fresh check (D120), and none has met a real FSD or real AI. Next is "What's next" below.
 - No private-repo check and no proof run on bitwarden (owner): Phase 3's report says so.
 
@@ -65,7 +66,7 @@ Stop there. Phase 4 needs the owner: the order after 2.x, and the questions unde
 
 1. **Python support, then the links on the owner's own project (D127):** a Python extractor and Flask detector (built 2026-11-05, `phases/1b-frontend-api.md`; `code-graph` v4 grew in place, so nothing needs review), then `cyberbullying-detection-system` a chapter at a time from Chapter 7's use-case sections, the owner ruling on findings. Each AI step has its cost stated and the owner's OK. Counts only in the repo.
 1b. **New Word files as proposals a BA or PM checks (D128, owner):** the parsed spec is the source of truth; change-by-change approval, comparing against a spec that has moved on, and files holding only changes. After the links have run on the owner's project; also a cleaner diff for BAs (generated files collapsed in `.gitattributes`, the spec stays in the app's repo for now). Details still being settled, roughly 150–250K tokens.
-1a. **Then the rest of I and T (owner, 2026-11-05):** batch 1 is built (D126). Left for batch 2, about 350–450K tokens: bundles store only what's unique (D130), removing `shared-candidates`, a warning when `document.md` was edited by hand (found 2026-11-05), I.1 to I.4, I.6, T.1, T.3, T.7. Held until a real repo or document needs them: T.9, T.10, I.12.
+1a. **The rest of I and T (owner, 2026-11-05):** batches 1 and 2 are built (D126, D131), all with fakes. Six switches are off until a test says otherwise, listed under "Where we are". Held until a real repo or document needs them: T.9, T.10, I.12.
 2. **Then the pilots on public C# projects, where Stangent hasn't been tuned** (RealWorld's C# app chosen first by the owner, whose written spec and tests let us test links; then umbraco/Umbraco-CMS, with no FSD): pages, impact, one real ticket. Everything free first; the cost is stated and the owner says yes before any AI step. Results go in a phase file.
 3. Make the test material.
 4. Start the test phase: the re-score after Nov 7 (the owner chooses how), then on/off runs against bars frozen first.
@@ -95,8 +96,8 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 | A renumbered section's finder hash carried too, with the page set loaded at promotion | D117 | not placed |
 | A promotion that can't half-finish | D117 | not placed |
 | "bug, per R-0042" and "looks intended (R-0042)"; a developer flags a spec gap when confirming a bug | D96, D99 | 2c |
-| Improve, still to build: on-demand pages, per-statement updates, smaller disprove bundles, moved citations, ranked suggestions (I.1 to I.4, I.6); pandoc as a second reader (I.12, held). I.5, I.7 to I.11 are built (D126) | D125, D120 | next build |
-| Take, still to build: corrections that survive, coverage with reasons, navigation (T.1, T.3, T.7); Playwright settings for another repo; EMF, draw.io, cross-references and PowerPoint when a real document needs them (T.9, T.10, held). T.2, T.4 to T.6, T.8 are built (D126) | D125, D120, D4 | next build |
+| Improve, still to build: pandoc as a second reader (I.12, held). I.1 to I.11 are built (D126, D131) | D125, D120 | when a document needs it |
+| Take, still to build: Playwright settings for another repo; EMF, draw.io, cross-references and PowerPoint when a real document needs them (T.9, T.10, held). T.1 to T.8 are built (D126, D131) | D125, D120, D4 | next build |
 | Take, then test (X.1 to X.19): off until its test, listed in `improvements.md` §9 | D125, D120 | test phase |
 | Test material, bigger spec (owner, 2026-11-05; recommended, not confirmed): `umbraco/UmbracoDocs` beside Umbraco, a chapter at a time, with Markdown import and an answer key from docs-fix PRs | open question in `decisions.md` | before the on/off runs |
 | Test material: extend the planted FSD (tables, a workbook, dead rules, a comment, a second version); a second planted FSD on Kavita; Sonarr's public wiki as a messy document, licence to check | D125, D44, D56 | before the on/off runs |
