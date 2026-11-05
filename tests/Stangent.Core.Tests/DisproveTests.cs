@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Stangent.Core.Evidence;
 using Stangent.Core.State;
 using Stangent.Graph;
+using Stangent.Graph.Impact;
 using Stangent.Spec.Fsd;
 using Stangent.Spec.Pages;
 using Stangent.Spec.Trace;
@@ -820,5 +821,85 @@ public class DisproveTests
         var watched = DisproveRun.Estimate(app.Pages(), app.Repo, "shop")["watch"]!;
         Assert.Equal(1, (int)watched["small"]!["cantTell"]!);
         Assert.Equal(0, (int)watched["full"]!["verdicts"]!);
+    }
+
+    // ---- disprove-callers (D146) ----
+
+    const string SaveLine = "fetch('/api/orders', { method: 'POST' })";
+    const string CantShow = "What the bundle can't show";
+
+    static void CallsThePost(SpecApp app, string source, string detector = "frontend-http")
+    {
+        var graph = GraphStore.Load(GraphStore.PathFor(app.Repo))!;
+        graph.LinkedEdges.Add(new Edge(source, SpecApp.Post, EdgeKind.CallsHttp, Label.Guessed, detector));
+        GraphStore.Save(graph, GraphStore.PathFor(app.Repo));
+    }
+
+    static DisproveBundle Built(SpecApp app)
+    {
+        var set = app.Pages();
+        var index = SpecIndex.Load(app.Root);
+        var section = index.Sections[("shop", "1")];
+        return DisproveRun.Build(set, index, new Lazy<ImpactAnalyzer>(() => new ImpactAnalyzer(set.Graph)), "shop", section, Entry(app));
+    }
+
+    static string CodeOf(string bundle) => bundle.Split("# The code")[1].Split("# Couldn't be shown")[0];
+
+    [Fact]
+    public void Off_the_callers_and_the_instruction_stay_out_and_the_hash_stays_put()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        var bundle = Built(app);
+        Assert.DoesNotContain(CantShow, bundle.Text);
+        Assert.DoesNotContain(SaveLine, bundle.Text);
+        Assert.DoesNotContain(bundle.Code, c => c.Path == "web/src/Orders.tsx");
+        app.Repo.Config.Components["disprove-callers"] = true;
+        Assert.NotEqual(bundle.Inputs, Built(app).Inputs);
+    }
+
+    [Fact]
+    public void On_a_finding_about_an_endpoint_shows_the_frontend_code_calling_it_and_it_can_be_quoted()
+    {
+        using var app = App();
+        app.Repo.Config.Components["disprove-callers"] = true;
+        Save(app, Conflict());
+        var step = Prepare(app);
+        var bundle = Bundle(app, step);
+        Assert.Contains(CantShow, bundle);
+        Assert.Contains(SaveLine, CodeOf(bundle));
+        var shown = Built(app).Code.Single(c => c.Symbol == SpecApp.Save);
+        Assert.Equal("recorded", Answer(app, step, new JsonObject { ["verdict"] = "stands", ["why"] = "because", ["path"] = shown.Path, ["start"] = shown.Start, ["end"] = shown.Start, ["quote"] = SaveLine }).Status);
+        Assert.Equal("stands", (string?)Entry(app)["verdict"]);
+    }
+
+    [Fact]
+    public void A_line_from_another_service_is_not_a_frontend_caller()
+    {
+        using var app = App();
+        app.Repo.Config.Components["disprove-callers"] = true;
+        Save(app, Conflict());
+        CallsThePost(app, SpecApp.HomeIndex, "http-services");
+        var code = Built(app).Code;
+        Assert.Contains(code, c => c.Symbol == SpecApp.Save);
+        Assert.DoesNotContain(code, c => c.Symbol == SpecApp.HomeIndex);
+    }
+
+    [Fact]
+    public void A_caller_that_does_not_fit_stays_listed_as_not_shown()
+    {
+        using var app = App();
+        app.Repo.Config.Components["disprove-callers"] = true;
+        Save(app, Conflict());
+        File.WriteAllLines(Path.Combine(app.Root, "web/src/Huge.tsx"), Enumerable.Repeat(new string('x', 1000), DisproveRun.MaxCodeChars / 1000 + 1));
+        var graph = GraphStore.Load(GraphStore.PathFor(app.Repo))!;
+        const string huge = "ts|web/src/Huge.tsx#Huge";
+        graph.LinkedNodes.Add(new Node(huge, NodeKind.Component, "Huge", "project:web/tsconfig.json", "web/src/Huge.tsx", 1, DisproveRun.MaxCodeChars / 1000 + 1));
+        GraphStore.Save(graph, GraphStore.PathFor(app.Repo));
+        CallsThePost(app, huge);
+        var bundle = Built(app);
+        Assert.DoesNotContain(bundle.Code, c => c.Symbol == huge);
+        Assert.Contains(bundle.Missing, m => m.Contains(huge, StringComparison.Ordinal) && m.EndsWith("size limit", StringComparison.Ordinal));
+        Assert.Equal(1, (int)DisproveRun.Estimate(app.Pages(), app.Repo, "shop")["withSomethingNotShown"]!);
     }
 }

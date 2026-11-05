@@ -34,6 +34,12 @@ public static class DisproveRun
     /// <summary>At most this many symbols or entry points named in a list. The rest are counted.</summary>
     const int MaxNamed = 30;
 
+    /// <summary>What <c>disprove-callers</c> adds to the instructions (D146).</summary>
+    const string CallersInstructions = "finding-disprover-callers.md";
+
+    /// <summary>The detector whose lines run from frontend code to an endpoint. A line from another service isn't a frontend caller.</summary>
+    const string FrontendHttp = "frontend-http";
+
     static readonly StateActor Who = StateActor.Code("stangent fsd disprove");
 
     static string Work(string root, string doc, string section) =>
@@ -234,6 +240,7 @@ public static class DisproveRun
         void Both(string text) { sb.Append(text); rests.Append(text); }
 
         Both("# Instructions\n\n" + Bundles.Instructions("finding-disprover.md"));
+        if (set.Settings.DisproveCallers) Both("\n" + Bundles.Instructions(CallersInstructions));
         Both("\n# Output schema\n\n```json\n" + SchemaRegistry.EmbeddedText(OutputSchema).TrimEnd('\n') + "\n```\n\n");
         sb.Append(LinkRun.SectionBlock(section, doc));
         rests.Append($"# The FSD section\n\n- document: `{doc}`\n- title: {(string)section["title"]!}\n\n{(string)section["text"]!}\n");
@@ -260,6 +267,7 @@ public static class DisproveRun
         sb.Append($"\n# The code\n\nAt commit `{SymbolLines.CommitOf(set.Graph)}`. ");
         rests.Append("\n# The code\n\n");
         Both($"Whole symbols only, up to {MaxCodeChars} characters: the claim's own cited symbols first, then ");
+        if (set.Settings.DisproveCallers) Both("the frontend code calling the page's endpoint, then ");
         Both(!smaller ? "what the page's other statements cite, then the rest of the page's slice and the slices of the endpoints it reaches, each group by how many of the claim's words it holds.\n"
             : "what the page's other statements cite, and where the claim cites nothing, the code in the page's slice holding the claim's words. The rest is named below.\n");
         foreach (var c in code)
@@ -298,14 +306,17 @@ public static class DisproveRun
         var lookup = SymbolLines.Lookup(set.Graph);
         var statements = page is null ? [] : PageChecks.Statements(page).ToList();
         var own = statements.Where(s => s.Id == statementId).SelectMany(s => s.Statement["cites"]!.AsArray().Select(c => (string)c!)).Distinct(StringComparer.Ordinal).ToList();
-        var others = statements.SelectMany(s => s.Statement["cites"]!.AsArray().Select(c => (string)c!)).Distinct(StringComparer.Ordinal).Except(own).ToList();
+        // The other end of an endpoint (D146): what's sent to it can settle a claim, and a page about the endpoint doesn't cite it. Only with the switch on, and only as far as the size rule allows.
+        var callers = !set.Settings.DisproveCallers || pageId is null || set.Find(pageId) is not { } endpoint ? []
+            : set.Graph.AllEdges.Where(e => e.Target == endpoint.Entry && e.Kind == EdgeKind.CallsHttp && e.Detector == FrontendHttp).Select(e => e.Source).Distinct(StringComparer.Ordinal).Except(own).Order(StringComparer.Ordinal).ToList();
+        var others = statements.SelectMany(s => s.Statement["cites"]!.AsArray().Select(c => (string)c!)).Distinct(StringComparer.Ordinal).Except(own).Except(callers).ToList();
         // A screen's slice stops at the API (D63), and the rule a claim is about is often behind it, so the pages of the endpoints it reaches count too.
         var slice = new List<string>();
         if (pageId is not null && set.Slices.TryGetValue(pageId, out var found))
         {
             static IEnumerable<string> Bodies(Slice s) => s.Nodes.Where(n => n.Role is "walk" or "handler" && n.Node.Kind is NodeKind.Method or NodeKind.Component or NodeKind.Template).Select(n => n.Node.Id);
             var stops = found.Nodes.Where(n => n.Role == "stop").Select(n => n.Node.Id).ToHashSet(StringComparer.Ordinal);
-            slice = [.. Bodies(found).Concat(set.Pages.Where(p => stops.Contains(p.Entry) && set.Slices.ContainsKey(p.Id)).SelectMany(p => Bodies(set.Slices[p.Id]))).Distinct(StringComparer.Ordinal).Except(own).Except(others)];
+            slice = [.. Bodies(found).Concat(set.Pages.Where(p => stops.Contains(p.Entry) && set.Slices.ContainsKey(p.Id)).SelectMany(p => Bodies(set.Slices[p.Id]))).Distinct(StringComparer.Ordinal).Except(own).Except(others).Except(callers)];
         }
 
         var code = new List<DisproveCode>();
@@ -313,7 +324,7 @@ public static class DisproveRun
         var missingHashed = new List<string>();
         void Miss(string shown, string? hashed = null) { missing.Add(shown); missingHashed.Add(hashed ?? shown); }
         var used = 0;
-        foreach (var (group, named) in new[] { (own, true), (others, true), (slice, false) })
+        foreach (var (group, named) in new[] { (own, true), (callers, true), (others, true), (slice, false) })
         {
             var candidates = new List<(string Id, SymbolLines? At, string[]? Lines, int Score)>();
             foreach (var id in group)
