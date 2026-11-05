@@ -40,7 +40,7 @@ public static class TestJourneys
     }
 
     /// <param name="lines">The reader's output, one JSON line per spec.</param>
-    /// <param name="imports">The specs that import Playwright. Any other, beside a config, counts only if it has a step on a page: it may be another runner's unit test.</param>
+    /// <param name="imports">The specs that import Playwright. Any other, beside a config, counts only if the reader saw a step on a page or a browser asked for: it may be another runner's unit test.</param>
     internal static JsonObject Run(string root, CodeGraph graph, IEnumerable<string> lines, IReadOnlySet<string> imports, IReadOnlyList<(string Place, string Why)> blind, string? outDir)
     {
         var pages = PlaywrightDetector.PagesOf(graph);
@@ -57,7 +57,7 @@ public static class TestJourneys
         foreach (var o in lines.Select(l => JsonNode.Parse(l)!.AsObject()).OrderBy(o => (string)o["file"]!, StringComparer.Ordinal))
         {
             var spec = (string)o["file"]!;
-            if (!imports.Contains(spec) && (int)o["pageSteps"]! == 0)
+            if (!imports.Contains(spec) && !(bool)o["browserTest"]!)
             {
                 notBrowser++;
                 continue;

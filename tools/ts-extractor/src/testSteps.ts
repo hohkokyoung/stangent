@@ -38,8 +38,8 @@ export interface TestFile {
   blocks: Block[];
   /** Places outside any test that may hold or make tests, and aren't read. */
   unread: { line: number; words: string; reason: string }[];
-  /** Steps known to act on a page. A file that names no Playwright import and has none of these is another runner's test. */
-  pageSteps: number;
+  /** A step known to act on a page, or a test or hook asking for a browser fixture. A file that imports no Playwright and has neither is another runner's test. */
+  browserTest: boolean;
 }
 
 export const Reasons = {
@@ -102,6 +102,7 @@ type Scope = Map<string, Chain>;
 class Reader {
   readonly blocks: Block[] = [];
   readonly unread: TestFile["unread"] = [];
+  asksForBrowser = false;
 
   readonly sf: ts.SourceFile;
 
@@ -162,6 +163,7 @@ class Reader {
 
   block(kind: string, titles: string[], call: ts.CallExpression, mode: string | null, fn: ts.ArrowFunction | ts.FunctionExpression | null, scope: Scope) {
     const steps: Step[] = [];
+    if (fn && asksForBrowser(fn)) this.asksForBrowser = true;
     if (fn) this.body(fn, scope, steps);
     else steps.push({ line: this.lineOf(call), kind: "unknown", words: this.words(call), reason: Reasons.callback });
     this.blocks.push({ kind, titles, line: this.lineOf(call), mode, steps });
@@ -430,6 +432,12 @@ function bodyOf(call: ts.CallExpression): ts.ArrowFunction | ts.FunctionExpressi
   return last && isFunctionLike(last) ? last : null;
 }
 
+/** `async ({ page }) => …`: how Playwright hands a test its browser. */
+function asksForBrowser(fn: ts.ArrowFunction | ts.FunctionExpression): boolean {
+  const first = fn.parameters[0]?.name;
+  return first !== undefined && ts.isObjectBindingPattern(first) && first.elements.some((e) => ts.isIdentifier(e.name) && ["page", "browser", "context"].includes(e.name.text));
+}
+
 function passesPage(call: ts.CallExpression): boolean {
   return call.arguments.some((a) => {
     const e = strip(a);
@@ -460,6 +468,6 @@ export function readTestFile(file: string, text: string): TestFile {
   const diagnostics = (sf as unknown as { parseDiagnostics?: ts.DiagnosticWithLocation[] }).parseDiagnostics ?? [];
   if (diagnostics.length > 0)
     reader.unread.push({ line: sf.getLineAndCharacterOfPosition(diagnostics[0].start).line + 1, words: diagnostics[0].messageText.toString(), reason: File.syntax });
-  const pageSteps = reader.blocks.flatMap((b) => b.steps).filter((s) => s.kind !== "unknown" && s.target?.startsWith("page") || (s.kind === "goto" && s.receiver === "page")).length;
-  return { t: "test-file", file, blocks: reader.blocks, unread: reader.unread, pageSteps };
+  const onPage = reader.blocks.flatMap((b) => b.steps).some((s) => (s.kind !== "unknown" && s.target?.startsWith("page")) || (s.kind === "goto" && s.receiver === "page"));
+  return { t: "test-file", file, blocks: reader.blocks, unread: reader.unread, browserTest: onPage || reader.asksForBrowser };
 }

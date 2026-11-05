@@ -115,7 +115,7 @@ test.describe('orders', () => {
   assert.deepEqual(f.blocks.map((b) => [b.kind, b.titles, b.mode, b.steps.length]), [
     ["beforeEach", ["orders"], null, 1], ["test", ["orders", "one"], null, 1], ["test", ["orders", "two"], "skip", 1],
   ]);
-  assert.equal(f.pageSteps, 3);
+  assert.equal(f.browserTest, true);
 });
 
 test("a body that's elsewhere is ❓", () => {
@@ -138,7 +138,12 @@ test("options outside a test are nothing", () => {
 
 test("another runner's test has no page steps, so it can be told apart", () => {
   const f = readTestFile("a.test.ts", "test('adds', () => { expect(add(1, 1)).toBe(2); });");
-  assert.equal(f.pageSteps, 0);
+  assert.equal(f.browserTest, false);
+});
+
+test("a test that's all page objects is still a browser test, because it asks for a browser", () => {
+  const f = readTestFile("a.test.ts", "import { test } from './fixtures';\nlet nav;\ntest.beforeEach(async ({ browser }) => { nav = new Nav(await browser.newPage()); });\ntest('t', async () => { await nav.open(); });");
+  assert.equal(f.browserTest, true);
 });
 
 test("a broken file says so", () => {
