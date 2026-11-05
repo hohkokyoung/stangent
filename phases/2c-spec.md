@@ -264,6 +264,20 @@ Headless calls were refused on a weekly limit, so this ran through the app's age
 - **On accuracy this is about a tie, not a win for pages.** Direct's one false alarm is a file left out by hand, and the pages route's `agree` on the colour had no words on the page behind it.
 - One section, one run each, so no rate.
 
+**Login's 13 decided (same day), not as a person's judgement.** The owner ruled X-0021 (`code-wrong`, minor), then handed over the rest: "this cyberbullying is just for testing anyway, and im not doing this project anymore so we can just say whatever, u can go ahead". The other 12 are the assistant's reading of the code, written in the clone's `specs/trace.yaml`. `trace check` passes. Not committed there and `trace attribute` not run, so `decided_by` stays empty and no name sits on the assistant's calls.
+
+| Finding | Decision | Severity | Why |
+|---|---|---|---|
+| X-0021 username minimum | `code-wrong` | minor | Owner. The hint and both account forms say 5; login accepts 4 |
+| X-0025 password rules | `accepted` | minor | The section leaves them to the hint; the hint doesn't mention spaces or the symbol list |
+| X-0008 7-day sign-in | `accepted` | minor | True, and not in the section |
+| X-0014 Twitter id | `accepted` | ungraded | The server compares the id sent in the request, not the saved one. Same in normal use. Security isn't graded here (D132) |
+| X-0029 contact details | `not-a-difference` | ungraded | True, but page text, not part of this use case |
+| X-0019, 20, 22, 23, 24, 26, 28 | `not-a-difference` | ungraded | The PIN box and the pop-up's Continue and close are in `twitter_login.js` and `pop_up.js`, which the judge never saw |
+| X-0027 red highlight | `not-a-difference` | ungraded | The field border is `#FF1414` and the hint shows. The hint's wrong minimum is X-0021 |
+
+**What this does and doesn't show:** 8 of 13 closed as nothing there, matching the earlier reading (7 false, 1 part real). It's still one reader, the same assistant that wrote those readings, so it isn't an independent check and doesn't count toward a bar (D137).
+
 ## §9's batch 2 (2026-11-05, D131): what wasn't run
 
 All built with fakes. Tests pass and `SavedWorkTests`' pins hold, untouched. No AI call, no Jira, nothing pushed, and Sonarr's clone wasn't changed: its document was copied to a scratch folder to check the hand-edit warning, which said nothing. The import code didn't change, so the document imports as it did; it wasn't re-imported.

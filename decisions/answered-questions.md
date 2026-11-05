@@ -57,6 +57,9 @@ Moved word for word from "Open questions" in `decisions.md` on 2026-11-05 (D136)
   not rewritten. Before starting: commit or set aside the Phase 3 worktree's uncommitted work (owner's OK), and apply
   D20 to any contract change.
 
+### Who rules on findings on the cyberbullying project: D137
+Raised 2026-11-05 after the owner said: "this cyberbullying is just for testing anyway, and im not doing this project anymore so we can just say whatever". D137 answers it: false alarms aren't counted from PM rulings on any project, and that project's rulings count toward no bar. Login's 13 decisions are in `phases/2c-spec.md`.
+
 ## Parts of "Waiting on the owner after the overhaul"
 
 Item (b) is done, and item (f) was built as I.10 (D126). The rest of the list is in `questions.md`.

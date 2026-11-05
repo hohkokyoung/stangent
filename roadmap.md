@@ -23,7 +23,7 @@ The build order (decisions.md D19) and how phases stay in step with each other (
 
 **Proposed, not decided.** The assistant proposed this and the owner said "ok what we gonna do next"; see `questions.md`. Until the owner confirms it, D120 and D125 stand as written.
 
-1. **Python support, then the links on the owner's own project (D127):** a Python extractor and Flask detector (built 2026-11-05, `phases/1b-frontend-api.md`; `code-graph` v4 grew in place, so nothing needs review), then `cyberbullying-detection-system` a chapter at a time from Chapter 7's use-case sections, the owner ruling on findings. Each AI step has its cost stated and the owner's OK. Counts only in the repo.
+1. **Python support, then the links on the owner's own project (D127):** a Python extractor and Flask detector (built 2026-11-05, `phases/1b-frontend-api.md`; `code-graph` v4 grew in place, so nothing needs review), then `cyberbullying-detection-system` a chapter at a time from Chapter 7's use-case sections. The owner no longer works on that project, so its rulings count toward no bar (D137). Each AI step has its cost stated and the owner's OK. Counts only in the repo.
 2. **New Word files as proposals a BA or PM checks (D128, owner):** the parsed spec is the source of truth; change-by-change approval, comparing against a spec that has moved on, and files holding only changes. After the links have run on the owner's project; also a cleaner diff for BAs (generated files collapsed in `.gitattributes`, the spec stays in the app's repo for now). Details still being settled, roughly 150–250K tokens.
 3. **The rest of I and T (owner, 2026-11-05):** batches 1 and 2 are built (D126, D131), all with fakes. Six switches are off until a test says otherwise, listed under "Where we are". Held until a real repo or document needs them: T.9, T.10, I.12.
 4. **Then the pilots on public C# projects, where Stangent hasn't been tuned** (RealWorld's C# app chosen first by the owner, whose written spec and tests let us test links; then umbraco/Umbraco-CMS, with no FSD): pages, impact, one real ticket. Everything free first; the cost is stated and the owner says yes before any AI step. Results go in a phase file.
@@ -62,6 +62,7 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 
 | What | Decisions | Phase |
 |---|---|---|
+| A code-reading check answers "is it true?" before a finding reaches a PM, with a way of catching real findings it throws away; false alarms counted from it, not from PM rulings. What does the check isn't settled | D137, D119 | 2c |
 | Table facts from constants and SQL seed data, beside API fields and enums; an AI proposing `table-map.yaml` for a person to approve. Both after the owner answers D68's question | D124, D68 | 2b |
 | Features, requirements, acceptance criteria, journeys, scenarios and data, with stable ids; `stangent spec req <id>` | D99, D10, D11, D129 | 2c |
 | - J.1 · Journeys read from end-to-end tests by code: page, clicks, fields and checks in order, each step linked to its reference page. *No AI. Off by default, after the use-case runs, eShop first. Only tested flows appear, and there are no actors without readable test steps.* | D129 | 2a |

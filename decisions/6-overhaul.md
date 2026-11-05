@@ -303,3 +303,12 @@ Twelve lines under "How to work here", each naming its decision: D18, D20, D22, 
 **Rejected:** moving old or replaced decisions to an archive. Only a handful say they're replaced, and the newest group is the largest, so it wouldn't shrink much.
 **Cost:** looking up a decision takes two steps, and adding one means an entry and an index line. The index's "changed by" notes show only what the entries themselves say.
 
+## D137 · "Is it true?" is Stangent's job; "which side is right?" is the PM's — 2026-11-05 (owner: "of course that's stangent's issue, the ruling is just business logic that PM has to decide"; asked to record it: "Yes, record it"; decided, not built)
+- **Two questions, kept apart.** "Does the code really differ from the FSD?" can be answered by reading the code, so it's Stangent's. "Which side is right?" is business logic, so it's the PM's or BA's.
+- **A PM is only asked the second.** A finding that isn't true should stop before it reaches them. Example: a PM is never asked whether the pop-up has a Continue button.
+- **False alarms aren't counted from PM rulings.** A separate check counts them, by reading the code. Rulings say which side is right, and aren't Stangent's score.
+- **Not settled:** what does the "is it true?" check. The disprove step (D119) is the nearest piece, but it's off by default and not shown to help. Who confirms what that check throws away, since D119 has `refuted` and `unreachable` wait for a person (`questions.md`).
+**Why:** on Login, 8 of 13 findings were "is it true?" and the answer was no, on the assistant's reading (`phases/2c-spec.md`). That leaves a PM about 3 or 4 real questions. Passing Stangent's mistakes to a PM wastes their time and teaches them to stop reading.
+**Rejected:** counting false alarms from PM rulings, as the assistant first described it, because it makes the PM the check on Stangent.
+**Cost:** a check that wrongly decides a real difference isn't there hides it from the PM, and nobody notices. So it needs its own way of catching real findings thrown away, and a person still reads a sample to score it. Until it's built, every finding still reaches a person.
+
