@@ -374,3 +374,14 @@ An FSD's smallest piece with an id is a section, which can hold about 30 claims 
 - Only one real document and one planted one have been read, and no judge has used a claim.
 
 Follows D18, D20, D118, D120, D121 and D138. Fakes and counts only.
+
+## D144 · Workflow files sit on top of pages, written by code; pages stay where facts live — 2026-11-05 (owner: "i think workflow is better right, better in terms of file structure"; asked on top of pages or replacing them: "yeah sure on top"; decided, not built)
+- **`specs/workflows/`,** one folder per use case and one file per flow, with an index that counts them: "Login: 6 of 8 flows match". Each step points at its claim, its page statement and its link's state.
+- **Facts stay on pages, once.** A workflow file holds no fact of its own. Code can fill a step's words in from its page when it writes the file, so a reader sees the whole story in one place with one real copy behind it. Nothing reads these files back.
+- **D54 and D63 stand:** this answers the open question on journey-based pages, with no change to how the graph is cut.
+- **Assistant's calls, reversible:** no AI; written from existing results. Flows come from the FSD first, through D143's labels, since they're mostly there, and J.1's end-to-end tests are a second source later. Built off (D120).
+- **It needs claim ids first,** so it follows the id slice in `roadmap.md`.
+**Why:** a PM thinks in workflows, not in endpoint pages, and a count per flow is easier to trust than a count of findings. Holding facts per flow would repeat them: on Login most steps are in several flows, so one change to `/api/login` would make several files stale, cost several rewrites, and let copies drift apart.
+**Rejected:** workflow files replacing `specs/reference/`. Every page, link and ruling points at today's statement ids, and some code belongs to no workflow.
+**Cost:** only flows written in the FSD appear until J.1. A document with no numbered steps, such as Sonarr's planted FSD, has no flows to group by, and needs another grouping or none. One FSD flow doesn't map neatly to one path through the code. Not tried on anything yet.
+

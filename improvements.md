@@ -7,7 +7,7 @@ Sections keep their numbers in both files, so "§6" means the same section in ei
 ## 1. Explaining how the app works today
 
 - Pages follow how people use the app. Journeys are cut by step ("what happens at step 4" lives in one place), alongside list, report and admin pages. The team switched to this after a pilot.  
-  *Pages are per screen and endpoint today (D54, D63). Recommend: decide after results. J.1 adds the order without changing the pages.*
+  *Pages are per screen and endpoint today (D54, D63). Decided by D144: pages stay, with workflow files on top. J.1 adds the order without changing the pages.*
 - Shared behaviour is written once (lifecycles, shared steps) and linked. Feature pages only describe what's different.  
   *Shared components and endpoints have their own pages. Lifecycles and shared steps don't. Recommend: decide with the page shape.*
 - Adapters for the actual stack: Playwright tests, Svelte screens, Razor pages, .NET code and SQL seed data.  

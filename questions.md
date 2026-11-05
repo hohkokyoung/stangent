@@ -21,12 +21,12 @@ Only what's still open, sorted by when it needs answering (D136). When one is an
   **Order changed by the owner (2026-11-05: "wy not just build more first and we measure each stage later"):** I and T are built before the pilot, as D120 already says. Assistant's call, reversible: T.9, T.10 and I.12 wait for a repo or document that needs them; X items stay off. **Cost:** none of I or T can move 24 of 30 or 44%, so the core result stays unmeasured on a real spec for another 500-700K tokens, and defects stay in longer (D120's cost).
 - **A bigger spec for the test material (owner, 2026-11-05):** recommended, not confirmed: `umbraco/UmbracoDocs` beside Umbraco itself. Details under "Which project the pilot runs on" in [`decisions/answered-questions.md`](decisions/answered-questions.md).
 - **May a "nearby" FSD link count toward "working as agreed"? (asked 2026-11-02, not answered):** recommended: no, context only, a person decides. Details under "Ticket retrieval redesign" in [`decisions/answered-questions.md`](decisions/answered-questions.md).
-- **Recommended, not confirmed (2026-11-04):** BAs editing through Claude, not yet; journey pages, not yet; table comparison as a labelled second route, yes; installer, when BAs become users; keep `MaxChapterGap = 10`; `improvements.md` as the agreed list, yes.
+- **Recommended, not confirmed (2026-11-04):** BAs editing through Claude, not yet; journey pages, answered by D144; table comparison as a labelled second route, yes; installer, when BAs become users; keep `MaxChapterGap = 10`; `improvements.md` as the agreed list, yes.
 - **Waiting on the owner after the overhaul (2026-11-04):**
   (a) Confirm `improvements.md`, and the order after 2.x.
   (c) The disprove step's re-score, about $4–6 (`phases/2c-spec.md`).
   (d) 2c's found bar: the disprove step can only remove findings, so it can't lift 24 of 30 to 27. Keep the bar and look for what's missing, or change it. Recommended: decide after the re-score.
-  (e) BAs editing the FSD through Claude (reversing D52 or D12), dropping the requirements layer (D99), journey-based pages (D54, D63): left alone, as agreed.
+  (e) BAs editing the FSD through Claude (reversing D52 or D12), dropping the requirements layer (D99), left alone, as agreed. Journey-based pages: answered by D144, workflow files on top of pages.
   (g) A client-terms file outside the repo, so `data check` can look for the names it must not find.
 
 ## In the test phase
