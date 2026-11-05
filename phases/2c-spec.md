@@ -420,3 +420,22 @@ The first run on real findings from a real FSD, on the same copy: the step reads
 - **Sonarr shows nothing about repeats:** it has no numbered steps.
 
 **What wasn't run:** any judge, checker or disprove step on either document. Both are fakes in tests. Nothing shows a ruling surviving on a real run, or that a judge answers a line for all its flows correctly. The bug is reproduced in a test only: the same statement judged twice, with the ruling carried by the same id.
+
+**Small fixes (D146), 2026-11-06. Counts only: no judge, no AI, no fresh check. Only the test app's document was measured, on a scratch copy; Sonarr's has no numbered steps and wasn't re-run.**
+
+| The test app's document | Before | Numbers aside (`claim-links`) | And joins (`fsd-claims`) |
+|---|---|---|---|
+| Lines the judge reads, Login | 50 | 42 | 36 |
+| Lines the judge reads, whole document | 5,549 | 5,504 | 5,455 |
+| Claims, whole document | 6,877 | 6,877 | 6,840 |
+| Claims, Login | 93 | 93 | 88 |
+| Not clean, whole document | 366 | 366 | 290 |
+| Not clean, Login | 11 | 11 | 1 |
+
+- **Not clean by reason, before and after:** `ends-open` 74 to 33, `starts-mid-step` 43 to 14, `continues-above` 83 to 77, `maybe-sentence-end` 166, unchanged. Words check mismatches: 0 both times.
+- **41 joined,** against the earlier 59 cells with a partner, 57 in lower case. So 16 lower-case partners were left apart by the strict rule, by subtraction, not counted one by one. All 41 now end in a stop.
+- **What's left on Login** is one `continues-above`, the row "Governmental Organisation User"; none of the 5 cut steps remains. Ids were stable on a second run, with 0 issued, 0 retired and `claims.json` byte-identical.
+- **Read by the assistant, not a person:** Login's 5 in full, and the start and end of the other 36. A person hasn't read them.
+- **`disprove-callers` wasn't measured on anything.** The copy has no findings, so `fsd disprove estimate` is 0 with it on or off. The graph does hold the line from `twitter_login.js`'s component to `POST /api/twitter_login`. Fakes only.
+
+**What wasn't run:** any judge, checker or disprove step. Nothing shows the shorter lines or the joined claims help a judge, or that the instruction moves a verdict.

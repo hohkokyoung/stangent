@@ -416,3 +416,32 @@ A link's id was a hash of the words a judge copied, so quoting less of the same 
 - `claim-links` on with `fsd-claims` off behaves as off; `stangent components` says it's blocked.
 
 Follows D18, D20, D58, D117, D118, D119, D120, D121, D122, D143. Fakes and counts only; no paid or AI run, no fresh check.
+
+## D146 · A repeated step groups despite its number, a page-cut step is one claim, a disprove bundle holds an endpoint's callers (`disprove-callers`, off), and two docs say what's true — 2026-11-06 (owner: "lets do what we can, what things we can improve that wont exceed"; the details are the assistant's call)
+
+**Decided:**
+- **Repeats (`claim-links`, off):** a judge's line ignores a leading step number when grouping, so the same step numbered differently across flows is one line. This reverses what D145 rejected. Each claim keeps its own words, id and quote, and a line whose words are all the same still shows them as written.
+- **A step cut by a page break (`fsd-claims`, off):** a step with no end stop at the end of its cell joins the next row's text in the same column, when that text has no number before it and starts in lower case. This replaces D145's "page-break halves stay separate". The rule is position and punctuation: every such start in the row has to sit under an open step, a plain row joins only if all its cells do, a flow's label row never does, and anything else stays apart with its tags. The import doesn't change.
+- **The words check knows about joins:** a joined claim records where its second part starts in its words and which claim it follows in the section, and the check reads it back there. It's cut from the claim's own words, so a moved, lost or changed word still fails.
+- **`disprove-callers` (off):** a finding whose page is an endpoint also gets the frontend code calling it, from the graph's `frontend-http` lines, after its own cited symbols and under the existing size rule. What doesn't fit stays listed as not shown. New instruction text says a claim about something the bundle doesn't hold, such as a colour, is `cant-tell`, not `refuted`.
+- **Docs:** `fsd export`'s default folder is ignored only where `.gitignore` lists it, which `stangent init` does. Whether to add it automatically stays the owner's question. `roadmap.md`'s D99 row is trimmed to what's unbuilt: journeys across sections.
+
+**Why:** on a real document the judge read 50 lines against about 29 links, and 5 of Login's steps were two half-sentences a person would never write. On a real run, a finding about an endpoint stood without the frontend code sending the value, and one about a colour was refuted with no stylesheet to read. These are small, have no paid step to try them, and sit behind switches already off.
+
+**Rejected:**
+- Allowing a shifted column, or a capital, for a partner: more joins, but a wrong join makes up a sentence the document doesn't have, and a missed one is still listed.
+- Comparing the words check as a bag of words, or dropping a joined claim's check: it would stop saying the words are in order, which is what makes it worth having.
+- Reading stylesheets into the graph. That's a new reader for one finding, and the verdict that says "can't see it" already exists.
+- Counting a line from another service as a caller: the gap was what the frontend sends, and other callers can come later if a run asks for them.
+- Keeping one number on a line whose numbers differ: no one number would be true of it.
+- Adding `.stangent/` to `.gitignore` automatically, since writing to a repo's ignore file is the owner's question.
+
+**Cost:**
+- **Ids of joined claims change:** a joined claim is new and its two pieces are retired. None is in real use, since the switch is off. On the scratch copy that was 45 issued and 82 retired, once.
+- **The test that pinned two pieces was rewritten,** because it pinned the thing this replaces. With `fsd-claims` off, nothing reads the cut.
+- **A join isn't checked by a person yet.** The assistant read Login's 5 in full and the start and end of the other 36; they read right. A rule with these signals can still join two things that only look alike.
+- **33 of 74 open cells stay open:** by subtraction from D143's counts, 15 were pushed into a paragraph, 2 start with a capital, and 16 failed the strict rule. They keep their tags.
+- **`disprove-callers` changes the bundle and hash,** so a run with it on re-asks the disprover, which is paid, and a large caller can use the space a slice would have had. Not measured: the scratch copy has no findings. No AI has read the instruction, so whether it moves any verdict is unknown.
+- `SpecSettings` gained a field, and `fsd claims`' JSON gained `joinedCount`.
+
+Follows D18, D61, D118, D119, D120, D143, D145. Fakes and counts only; no paid or AI run, no fresh check.

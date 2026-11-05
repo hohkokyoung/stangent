@@ -143,7 +143,7 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D110 · The core stays C#; no port to Python
 - D111 · Stangent imports PDF and Excel as well as Word
 
-## D112–D145: the overhaul; new decisions go here
+## D112–D146: the overhaul; new decisions go here
 
 [`decisions/6-overhaul.md`](decisions/6-overhaul.md)
 
@@ -180,4 +180,5 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D142 · Readable section files go into git with D128, as a generated view; `document.json` stays the record
 - D143 · A section is cut into claims by code, printed only (`fsd claims`, `fsd-claims`, off); ids and the judge come in a later slice
 - D144 · Workflow files sit on top of pages, written by code; pages stay where facts live
-- D145 · Claims get permanent ids, a judge names ids and copies no words, and a link's id comes from ids (`claim-links`, off)
+- D145 · Claims get permanent ids, a judge names ids and copies no words, and a link's id comes from ids (`claim-links`, off) → repeated steps and page-cut steps revised by D146
+- D146 · A repeated step groups despite its number, a page-cut step is one claim, a disprove bundle holds an endpoint's callers (`disprove-callers`, off), and two docs say what's true
