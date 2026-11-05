@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Stangent.Core;
 using Stangent.Core.Evidence;
 using Stangent.Spec.Pages;
@@ -8,10 +9,15 @@ using Stangent.Spec.Trace;
 namespace Stangent.Spec.Fsd;
 
 /// <summary>One claim as <c>claims.json</c> holds it.</summary>
-public sealed record StoredClaim(string Id, string Section, int Position, string? Flow, string Kind, string Shape, string Words, string? Problem)
+public sealed partial record StoredClaim(string Id, string Section, int Position, string? Flow, string Kind, string Shape, string Words, string? Problem)
 {
     public bool Judged => Kind == FsdClaims.JudgeKinds.Claim;
     public string Normalized => Quotes.Normalize(Words);
+    /// <summary>What it says, for grouping repeats (D146): a leading step number aside, since the same step has a different number in another flow. Its own words and id don't change.</summary>
+    public string Said => LeadingNumber().Replace(Normalized, "");
+
+    [GeneratedRegex(@"^\d+[.)]\s+(?=\S)")]
+    private static partial Regex LeadingNumber();
 }
 
 /// <summary>A document's claims, as they're on file.</summary>
@@ -22,7 +28,7 @@ public sealed class ClaimSet(IReadOnlyList<StoredClaim> claims)
     public StoredClaim? Find(string id) => byId.GetValueOrDefault(id);
     public StoredClaim? At(string? section, int position) => claims.FirstOrDefault(c => c.Section == section && c.Position == position);
     public IEnumerable<StoredClaim> Of(string? section) => claims.Where(c => c.Section == section);
-    public static IReadOnlyList<IGrouping<string, StoredClaim>> Groups(IEnumerable<StoredClaim> claims) => [.. claims.Where(c => c.Judged).GroupBy(c => c.Normalized, StringComparer.Ordinal)];
+    public static IReadOnlyList<IGrouping<string, StoredClaim>> Groups(IEnumerable<StoredClaim> claims) => [.. claims.Where(c => c.Judged).GroupBy(c => c.Said, StringComparer.Ordinal)];
 }
 
 /// <summary>
@@ -148,7 +154,9 @@ public static class ClaimLinks
         foreach (var group in groups)
         {
             var under = group.Select(c => c.Flow).OfType<string>().Distinct(StringComparer.Ordinal).Select(f => $"F{flows.IndexOf(f) + 1}").ToList();
-            sb.Append($"- **{string.Join(", ", group.Select(c => c.Id))}**{(under.Count == 0 ? "" : $" ({string.Join(", ", under)})")} {group.Key}\n");
+            // Words the whole line shares are shown as written. Only a line whose numbers differ loses them, since no one number would be true of it.
+            var written = group.Select(c => c.Normalized).Distinct(StringComparer.Ordinal).ToList();
+            sb.Append($"- **{string.Join(", ", group.Select(c => c.Id))}**{(under.Count == 0 ? "" : $" ({string.Join(", ", under)})")} {(written.Count == 1 ? written[0] : group.Key)}\n");
         }
         var context = own.Where(c => c.Kind is FsdClaims.JudgeKinds.ColumnHeading or FsdClaims.JudgeKinds.LabelRow).ToList();
         if (context.Count > 0)

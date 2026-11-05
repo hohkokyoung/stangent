@@ -239,6 +239,33 @@ public class ClaimLinkTests
     }
 
     [Fact]
+    public void The_same_step_under_another_number_is_one_line_and_each_claim_keeps_its_own_words()
+    {
+        using var app = App(On);
+        SetText(app, """
+            | Main Flow: | User | System |
+            |---|---|---|
+            |  | 2. Enter the name. | 3. The system confirms it. |
+            | Other Flow: | Bad name. |  |
+            |  | User | System |
+            |  | 1. Enter the name. | 4. The system confirms it. |
+            |  | 5. Enter the name. | 6. The system refuses it. |
+            """);
+        var bundle = Bundle(app, Prepare(app));
+        var all = ClaimFile.Load(app.Root, "shop").All;
+        var three = all.Single(c => c.Words == "3. The system confirms it.");
+        var four = all.Single(c => c.Words == "4. The system confirms it.");
+        Assert.NotEqual(three.Id, four.Id);
+        Assert.Contains($"**{three.Id}, {four.Id}** (F1, F2) The system confirms it.\n", bundle);
+        Assert.Contains($"** (F2) 6. The system refuses it.\n", bundle);
+        Assert.Equal(1, bundle.Split("The system confirms it.").Length - 1);
+        Assert.Single(ClaimSet.Groups(all), g => g.Key == "Enter the name.");
+        var link = new JsonObject { ["state"] = "gap", ["claims"] = new JsonArray((JsonNode)four.Id) };
+        Assert.Empty(ClaimLinks.Fill(link, ClaimFile.Load(app.Root, "shop"), four.Section, SpecIndex.Load(app.Root)));
+        Assert.Equal("4. The system confirms it.", (string)link["fsdQuote"]!);
+    }
+
+    [Fact]
     public void With_finer_verdicts_the_finer_variant_is_asked_for_and_partial_and_unclear_go_through()
     {
         using var app = App("components: { fsd-claims: true, claim-links: true, judge-finer-verdicts: true }\n");
