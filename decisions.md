@@ -2415,13 +2415,15 @@ Follows D15, D16, D18, D20, D66, D75, D120, D121 and D125. Items T.2, T.4, T.5, 
   **Numbers that aren't measured:** a 10-minute timeout, as frontends have; a recursion limit of 10,000 for deep files; 3.9 as the oldest Python, because the extractor uses `ast.unparse`. None was tuned on the project.
   **Left for bug proof, not built:** see `phases/1b-frontend-api.md`.
 
-## D128 · After go-live, the parsed spec is the source of truth, edited by commands — 2026-11-05 (owner: "by right the spec parsed should be the source of truth already, the fsd passed in is just one time thing, unless we havent go live, so we just edit using commands")
-- **Assistant's reading, to confirm:** before go-live a new Word or PDF can still come in through the candidate flow. After go-live the imported file is history, and `specs/fsd/<doc>/` is what's true, changed only by commands.
-- **Reverses part of D52,** where the client or BA writes the FSD outside Stangent, and part of D15's latest file wins. **Returns to D11 and D12:** a living spec in the repo. D18 stands: a person approves each edit, whoever drafted it. The earlier recommendation of "not until a BA asks" is overruled.
-- **Not built, and not settled:** what happens when a client sends a new Word file after go-live; who may run the commands; what `fsd reread` means once the text has moved on from the original; how evidence cites an edited section. Asked one at a time.
-- **Assistant's call, reversible:** built after the links have run on the owner's project, since editing a spec only matters if the links work. An edit reuses the candidate flow, so links drop back the same way (D58).
-**Why:** Word files go stale once a system is live, and comparing whole versions is what makes doubtful matches and reworded sections expensive.
-**Cost:** the repo can drift from what a client signed, with no document to point at unless Stangent can export one. New commands, roughly 150-250K tokens, not measured.
+## D128 · The parsed spec is the clean source of truth; new Word files come in as proposals a BA or PM checks — 2026-11-05 (owner: "i want it to be always be able to import new word docs, and our stangent able to identify new requirements and update the spec, which our BA or PM have to check, but the spec should be a clean source of truth"; replaces the same day's "edit using commands" after go-live)
+- **`specs/fsd/<doc>/` is what's true.** A Word or PDF file is never the truth. It can come in at any time, with no go-live gate.
+- **Stangent works out what's new or changed and proposes it; a BA or PM checks each change; only what's approved lands.** Until then the spec keeps serving as it was, so it stays clean: no unapproved text, no conversion leftovers.
+- **Reverses part of D52,** where the document outside Stangent was the agreed one, and D15's latest file wins. **Returns to D11 and D12:** a living spec in the repo. D18 stands. D125's "Claude merging clashing edits without asking" stays rejected: a clash goes to a person.
+- **Assistant's reading of what's built and what isn't.** Built: the candidate, the section diff, doubtful sections going to a person, links dropping back. Missing: approving change by change, since `fsd promote` takes the whole file; comparing against a spec that has moved on since the last import, so a BA's earlier approval isn't undone; a file holding only the changes, which today would read as everything else removed.
+- **Not settled, asked one at a time:** whole documents or changes only; section level or requirement level, which leans on D99's `req` layer, off until X.9's test; who approves and how, since BAs don't use a CLI and the dashboard is Phase 8; whether direct edits stay, through the same queue.
+- **Assistant's call, reversible:** built after the links have run on the owner's project. Section level first, because code can do it with no AI.
+**Why:** a spec only people's approvals can change is one anyone can trust, and clients will keep sending Word files whatever Stangent says.
+**Cost:** more work for a BA or PM, and a light rewrite can look like many changes. The repo can differ from what a client signed unless Stangent can export it. Roughly 150-250K tokens, not measured.
 
 ## Open questions
 
