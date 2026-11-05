@@ -280,6 +280,45 @@ Off unless `components.claim-links` and `components.fsd-claims` are both on. Wit
 - **Repeats:** a judge's line holds claims with the same normalised words, a leading step number aside (D146), so "3. It confirms" and "4. It confirms" are one line. A line whose numbers differ shows the words without one. Each claim keeps its own words, id and quote.
 - **Stays as it was:** a section whose requirements are built keeps its requirement judge. `group-sections` doesn't group while this is on.
 
+### Workflow files (D144, D147)
+
+`stangent workflows <doc>` writes one readable file per flow, by code with no AI. Off unless `components.workflow-files` is on, which needs `claim-links` (and so `fsd-claims`); off, it says `written: false` and writes nothing. A `claims.json` that isn't the document's now is refused, `claims_out_of_step`: run `fsd claims <doc>`.
+
+```
+specs/workflows/<doc>/index.md                     one line per section with flows: "Login: 6 of 8 flows match"
+specs/workflows/<doc>/s-0120-login/c-2474-main-sequence-of-events.md
+```
+
+- **Holds no fact of its own.** Words are filled in from `claims.json` and the page's JSON when it's written. Nothing reads these files, with a test holding that, and they're in no input hash. Each file's first line says it's generated and not to edit it. The same inputs give the same bytes.
+- **What goes in:** sections whose claims of kind `claim` carry a flow. Everything else is counted in `index.md`: sections with none, claims in those sections with no flow, flow labels with no steps, and links on no step. "Use case" here means a section with flows.
+- **A step shows** its words, claim id and state, a `cut:` tag if it has a problem, and for each link its state, page, statement id and words. A finding adds its `X-` id, the disprove verdict, the person's decision and who it's with.
+- **Order:** by the steps' own numbers when every step has one and none repeats; otherwise as in `claims.json`. A joined or repeated step appears as it is there, and a step in several flows is a claim in each.
+- **Names:** the section's `S-` id and the flow's label claim id (its first step's if it has no label), each with a slug, so a new section number renames nothing and two flows with the same words can't collide.
+- **A rebuild** removes only files that start with the generated line, only in this folder, then folders left empty.
+
+**A step's state**, the first that applies across its links. A `gone` finding is shown and counts for nothing.
+
+| State | When |
+|---|---|
+| `differs` | Ruled `code-wrong`, `fsd-wrong` or `accepted`, or an undecided conflict with the verdict `stands` |
+| `open` | A finding waiting on a person, including a refuted or unreachable one nobody confirmed (D119), `page-wrong`, `defer`, or a disputed agree link |
+| `agree` | An agree link. An `unclear` finding beside it leaves it `agree` and is counted as an open question |
+| `closed` | A finding closed as not real: `not-a-difference`, `agree`, or a confirmed `refuted` or `unreachable` |
+| `open` | Only an `unclear` finding |
+| `not answered` / `not judged` | No link, in a section with or without links by claim |
+
+**A flow's status**, the first that applies:
+
+| Status | When |
+|---|---|
+| `not judged` | No link on the section names a claim, including a section with only older links by quote |
+| `differs` | A step differs |
+| `open` | A step is open |
+| `not answered` | A step has no link |
+| `matches` | Every step is `agree` or `closed` |
+
+The heading also counts open questions: every link waiting on a person, whatever the status.
+
 ### A new version (D117)
 
 A first import goes straight in, unless `first-import-approval` is on (above). The same file again is `unchanged`; if a candidate is waiting it gives its hash in `candidate`, and a `note` says promoting would still apply it and how to discard it. A different file for that document id no longer replaces it:

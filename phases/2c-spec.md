@@ -439,3 +439,22 @@ The first run on real findings from a real FSD, on the same copy: the step reads
 - **`disprove-callers` wasn't measured on anything.** The copy has no findings, so `fsd disprove estimate` is 0 with it on or off. The graph does hold the line from `twitter_login.js`'s component to `POST /api/twitter_login`. Fakes only.
 
 **What wasn't run:** any judge, checker or disprove step. Nothing shows the shorter lines or the joined claims help a judge, or that the instruction moves a verdict.
+
+**Workflow files (D144, D147, `workflow-files`, off), 2026-11-06. Counts only: no judge, no AI, no fresh check. Only the test app's document was run, on a scratch copy.**
+
+| The test app's document | |
+|---|---|
+| Flows | 87, with 538 steps; 87 flow labels, none without steps |
+| Sections with flows | 28 of 340, so 312 have none; 23 of the 28 hold a use-case table |
+| Statuses | 87 `not judged`; 0 of everything else; 0 open questions |
+| Claims in those sections in no flow | 219 |
+| Links on no step | 38, all on Login, all older links by quote |
+| Folder | 88 files, 100,064 bytes, 352K on disk |
+| Step order | 68 flows by their own numbers, 14 kept in place because numbers repeat or some are missing, 5 with no numbers |
+| Login (7.2.1.2.4) | 8 flows, 0 match, 8 not judged |
+
+- **A rebuild gave byte-identical files,** and `specs/fsd` and `specs/trace.yaml` didn't change. With the switch off, the command said so and wrote nothing.
+- **Read by the assistant, not a person:** Login's folder. Its out-of-order flow now reads 1 to 12.
+- **5 of the 28 "use cases" aren't use cases:** a sentence and a list that look like a flow. They're counted as they are, in D147's cost.
+
+**What wasn't run:** any judge, checker or disprove step, and Sonarr's planted FSD, which has no numbered steps; a test covers a document with no flows. Nothing but fakes has produced `matches`, `open`, `differs` or `not answered`, so whether the count helps a PM is unshown.

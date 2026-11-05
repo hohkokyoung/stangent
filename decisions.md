@@ -129,7 +129,7 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 
 [`decisions/5-spec-and-finder.md`](decisions/5-spec-and-finder.md)
 
-- D99 · The FSD becomes a structured spec, built from word-for-word quotes; the BA approves each requirement (decided, not built)
+- D99 · The FSD becomes a structured spec, built from word-for-word quotes; the BA approves each requirement (decided; extraction, requirement links and `ticket match` built, approval, reconcile and the other sources not)
 - D100 · Held-out bugs come from bitwarden/server; Sonarr's 40 become the tuning set (decided; set frozen)
 - D101 · A coding agent finds the ticket's files; code checks them; the graph is the checker and the map (decided; built, committed)
 - D102 · A ticket Jira sends as HTML reads as the same Markdown as any other (decided)
@@ -143,7 +143,7 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D110 · The core stays C#; no port to Python
 - D111 · Stangent imports PDF and Excel as well as Word
 
-## D112–D146: the overhaul; new decisions go here
+## D112–D147: the overhaul; new decisions go here
 
 [`decisions/6-overhaul.md`](decisions/6-overhaul.md)
 
@@ -179,6 +179,7 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D141 · An AI flag for findings that touch security, sent to a developer; severity stays a person's
 - D142 · Readable section files go into git with D128, as a generated view; `document.json` stays the record
 - D143 · A section is cut into claims by code, printed only (`fsd claims`, `fsd-claims`, off); ids and the judge come in a later slice
-- D144 · Workflow files sit on top of pages, written by code; pages stay where facts live
+- D144 · Workflow files sit on top of pages, written by code; pages stay where facts live → built by D147
 - D145 · Claims get permanent ids, a judge names ids and copies no words, and a link's id comes from ids (`claim-links`, off) → repeated steps and page-cut steps revised by D146
 - D146 · A repeated step groups despite its number, a page-cut step is one claim, a disprove bundle holds an endpoint's callers (`disprove-callers`, off), and two docs say what's true
+- D147 · Workflow files are built: a flow's status by code, steps by their own numbers, and older links counted rather than placed (`workflow-files`, off); builds D144

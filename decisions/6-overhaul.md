@@ -375,7 +375,7 @@ An FSD's smallest piece with an id is a section, which can hold about 30 claims 
 
 Follows D18, D20, D118, D120, D121 and D138. Fakes and counts only.
 
-## D144 · Workflow files sit on top of pages, written by code; pages stay where facts live — 2026-11-05 (owner: "i think workflow is better right, better in terms of file structure"; asked on top of pages or replacing them: "yeah sure on top"; decided, not built)
+## D144 · Workflow files sit on top of pages, written by code; pages stay where facts live — 2026-11-05 (owner: "i think workflow is better right, better in terms of file structure"; asked on top of pages or replacing them: "yeah sure on top"; built off by D147, 2026-11-06)
 - **`specs/workflows/`,** one folder per use case and one file per flow, with an index that counts them: "Login: 6 of 8 flows match". Each step points at its claim, its page statement and its link's state.
 - **Facts stay on pages, once.** A workflow file holds no fact of its own. Code can fill a step's words in from its page when it writes the file, so a reader sees the whole story in one place with one real copy behind it. Nothing reads these files back.
 - **D54 and D63 stand:** this answers the open question on journey-based pages, with no change to how the graph is cut.
@@ -445,3 +445,38 @@ Follows D18, D20, D58, D117, D118, D119, D120, D121, D122, D143. Fakes and count
 - `SpecSettings` gained a field, and `fsd claims`' JSON gained `joinedCount`.
 
 Follows D18, D61, D118, D119, D120, D143, D145. Fakes and counts only; no paid or AI run, no fresh check.
+
+## D147 · Workflow files are built: a flow's status by code, steps by their own numbers, and older links counted rather than placed (`workflow-files`, off) — 2026-11-06 (builds D144, which the owner decided; the details are the assistant's call)
+
+**Decided:**
+- **`stangent workflows <doc>`** writes `specs/workflows/<doc>/index.md` and `<section>/<flow>.md`, from `claims.json`, `specs/trace.yaml` and the pages. Off unless `workflow-files` is on, which needs `claim-links`. A claims file that isn't the document's now is refused, since the command writes nothing outside its folder and so can't catch it up.
+- **A flow's status,** first that applies. `not judged`: no link on the section names a claim. `differs`: a step is ruled `code-wrong`, `fsd-wrong` or `accepted`, or an undecided conflict has the verdict `stands`. `open`: a finding waits on a person, which includes a refuted one nobody confirmed (D119), `page-wrong`, `defer`, and a disputed agree link. `not answered`: a step has no link. `matches`: everything else, so every step has an agree link or a finding closed as not real.
+- **Closed as not real** is a person's `not-a-difference` or `agree`, or a confirmed `refuted` or `unreachable`. A review with a typed hash closes nothing, through `TraceFindings.GoesTo`.
+- **`accepted` counts as `differs`:** the docs call it a difference known and left, so counting it as a match would make the count say something untrue.
+- **An `unclear` finding beside an agree link leaves the step as it is, and the heading counts it:** `MATCHES, 1 open question`, as the owner's example reads. It's a question, not a difference (C.4). With nothing else on the step, the step is `open`. The heading's count is every link waiting on a person, whatever the status.
+- **A `gone` finding is shown and answers nothing:** a new build no longer finds it, so if it's all the step has, the step is `not answered`.
+- **Steps read by their own numbers** when every step in the flow has one and none repeats, because a two-column table cut row by row reads 4, 6, 10, 8, 9, 5. Otherwise they stay as they sit in `claims.json`. The words don't change.
+- **A flow is named by its flow-label claim's id,** or its first step's if it has no label, with a slug. Sections by `S-` id and a slug. A flow label starts a new flow, so two with the same words are two files.
+- **Older links, by quote, aren't placed on steps.** The section reads `not judged`, and the index and each flow file count them. `fsd.claim: none`, a table fact, or a link to a claim in no flow is counted the same way.
+- **A rebuild removes only files whose first line is our marker,** only inside `specs/workflows/<doc>/`, then folders left empty. A file a person put there stays. No contract or schema, because nothing reads these.
+- **Also corrected:** `roadmap.md`'s requirement-links row, which said not built; it's built and scored, and failed its bars. D99's line and heading said "not built"; extraction, links and `ticket match` are.
+
+**Why:** a count per flow is what D144 was for, and it only means something if the rule fits in a few lines and "matches" can't include anything a person is still owed. Ids on the names keep a renumbering from renaming a file, which would make every diff look like a rewrite.
+
+**Rejected:**
+- Matching older quotes to steps. `ClaimLinks.SameLink` does this for a ruling when a section is next judged, with exact signals and a state to compare. Doing it for display would make a status out of something no judge said about that claim.
+- Syncing `claims.json` from this command: it would write outside its folder, against the brief.
+- Sorting every flow by number, repeats included: there's no true order among two step 1s.
+- A separate status for `accepted` or `closed`: more words to learn for a flow that's already covered by the five.
+- Counting `not judged` flows as `not answered`: a section nobody judged and a step a judge skipped are different jobs for different people.
+
+**Cost:**
+- **No real judge has made a link these read.** On the test app, all 87 flows are `not judged`, so the file's main promise, a useful count, is unshown. Every other status is fakes.
+- **"Use case" means a section with flow labels.** 23 of the test app's 28 have a use-case table; 5 are other sections, whose lead-in sentence and list look like a flow. Saying so was cheaper than a rule about what a use case is, and that rule would be shaped to one document.
+- **14 of 87 flows stay in document order** because their numbers repeat or some are missing, so a two-column table can read out of order there.
+- **219 claims in these sections are in no flow,** such as a use case's description and pre-conditions, and so aren't listed. The index counts them.
+- **`specs/workflows/` is under `specs/`, which is committed,** so a rebuild after a ruling adds a generated diff to a PR. Whether to commit them stays open until a person has used them.
+- **A step's words are shown whole, not cleaned:** a table row keeps its bars, and a step with a tag says `cut:` and its tag.
+- `ComponentTests`' off list gained a name. Nothing else moved: no hash, bundle or existing file.
+
+Follows D18, D20, D118, D119, D120, D121, D122, D144, D145, D146. Fakes and counts only; no paid or AI run, no fresh check.

@@ -2,7 +2,7 @@
 
 Full entries, word for word. One line each in [`decisions.md`](../decisions.md).
 
-## D99 · The FSD becomes a structured spec, built from word-for-word quotes; the BA approves each requirement — 2026-11-02 (decided, not built)
+## D99 · The FSD becomes a structured spec, built from word-for-word quotes; the BA approves each requirement — 2026-11-02 (decided; status corrected 2026-11-06, D147: extraction, requirement links and `ticket match` built, approval, reconcile and the other sources not)
 The imported FSD (D52) stays the record, byte for byte. On top of it, an AI step builds a structured spec: features,
 requirements (rule, validation, flow, data, permission, non-functional), acceptance criteria, journeys and data
 definitions, each with a stable id (D11's original aim). Then requirement ↔ page statement ↔ code are linked.
