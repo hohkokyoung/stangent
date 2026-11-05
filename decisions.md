@@ -2399,7 +2399,7 @@ Follows D15, D16, D18, D20, D66, D75, D120, D121 and D125. Items T.2, T.4, T.5, 
 
 ## D127 · Python joins the code graph, tested on the owner's own project — 2026-11-05 (owner: "cant we use my cyberbullying thing docx, and we cater our stangent to handle that codebase also"; "Yes, Python next")
 - **A Python extractor and a Flask route detector are next, ahead of §9's batch 2.** Parsing only: the app's code is never imported or run. Switched by a component, and C# and TypeScript results stay as they are.
-- **The links get tested on `cyberbullying-detection-system`,** a chapter at a time from its `Documentation.pdf`, with the owner ruling on each finding. Starts at Chapter 6. Each AI step has its cost stated and the owner's OK.
+- **The links get tested on `cyberbullying-detection-system`,** a chapter at a time from its `Documentation.pdf`, with the owner ruling on each finding. Starts at Chapter 7's use-case sections, not Chapter 6 as first said: Chapter 6 is survey and interview analysis. Each AI step has its cost stated and the owner's OK.
 - **The clone comes fresh from GitHub** to `~/stangent-bench/cyberbullying`. The local copy's untracked `docs/` never reaches the AI steps.
 - **Privacy:** the PDF holds a name and student id and this repo is public. Results stay outside the repo; the phase file holds counts only, no quotes.
 - **Reverses D56's note** that links can't run on this project. **Widens D4 and D17,** which named C# and TypeScript. It isn't a general pivot: another language still needs a real need, as the proposed cap says.
@@ -2416,6 +2416,8 @@ Follows D15, D16, D18, D20, D66, D75, D120, D121 and D125. Items T.2, T.4, T.5, 
   **Left for bug proof, not built:** see `phases/1b-frontend-api.md`.
 
 ## Open questions
+
+- **Editing the parsed FSD directly (owner asked, 2026-11-05):** not supported, by D52: the FSD is the file a person changed, converted by code. Tried on a scratch copy: a hand edit to `document.md` changes nothing the steps read (`fsd show` still gives the original, since sections come from `document.json`), and `fsd status`, `spec content-check` and `trace check` say nothing; only `fsd reread` notices, by starting a candidate. Editing `document.json` wasn't tried. Recommended: a warning where the document is read, small, added to batch 2 because a test showed the need. Direct editing stays open with D12 and D52; recommended, not until a BA asks, since the next Word import would overwrite it.
 
 - **A first real pilot, a cut rule, a cap and an earlier bundle test (proposed by the assistant, 2026-11-04; the owner: "ok what we gonna do next, and lets do it in a new sessin"; not numbered until confirmed; order on `roadmap.md`):**
   (a) **The next milestone is a first real pilot** on the owner's own project, even with no FSD: pages, impact, one real ticket. Nothing added lately has met a real FSD or a real project, and the core result is still 24 of 30 found with 44% false alarms. Free steps first; AI steps on the owner's OK.
