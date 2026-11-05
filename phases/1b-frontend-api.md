@@ -298,3 +298,41 @@ Beyond those ten:
 Follow-ups: show them beside an impact answer when a consumer needs it (a new field means `impact-report` v6), and read helper files.
 
 Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions` v2 → v3. By grep, nothing here reads telemetry, and results are read by name, so `components` beside `result` changes nothing. Moved.
+
+## Python (D127)
+
+Built 2026-11-05 on the frontend's pattern: a parse-only extractor, the `python` and `detector-flask-routes` components, and plain React apps in a repo with Python. Rules are in `docs/code-graph.md`. `code-graph` stayed v4. No AI calls, no fresh check (D120).
+
+**Run:** `dotnet build`, `dotnet test` (1,812 tests, including 12 new ones on the hand-written `tests/fixtures/flask-shop`), `phases check`, and `graph build --no-restore`, `spec pages`, `graph where`, `graph impact` and `spec bundle` on the owner's project, in a clone outside this repo with its store uncommitted. The `shop` fixture's export is byte-identical to before, leaving out each fragment's fingerprint line (the fingerprint holds the build's own version id, so any code change moves it). `SavedWorkTests`' pins hold.
+
+**Not run:** any AI step, so whether pages written from these slices are any good is unknown. `--no-restore` means the frontend's packages weren't installed, so its calls were matched without library types; its calls here are `fetch`, which needs none. Python 3.14.7 only; older Pythons aren't tried. `python_missing` was tried by hand with no Python on the `PATH`, and has no test.
+
+**Counts on the owner's project (counts only, D127):**
+
+| Measure | Count |
+|---|---|
+| Python files read / couldn't be parsed | 15 / 0 |
+| Notebooks left out, counted | 2 |
+| Flask endpoints, a verb and path each | 32, from 27 route lines; an independent count of the source gives the same |
+| Endpoints ✅ / 🟡 | 3 / 29 |
+| Route problems (❓) | 32 |
+| Calls ✅ / 🟡 | 14 / 25 |
+| Calls proved outside the project | 766 |
+| Calls with an unknown receiver and no project name | 64 |
+| Calls unresolved (❓) | 0 |
+| Imports resolved / outside / ❓ | 10 / 177 / 8 |
+| React calls with a URL / matched / unmatched | 23 / 23 / 0 |
+| React calls with a URL built at runtime (❓) | 9 |
+| Pages it would plan: screen / component / backend | 3 / 1 / 32 |
+
+**Hand check:** 5 route lines compared with the source, and all 5 agree on file, line, function, verbs and URL. Routes commented out in the source have no endpoint. Where the same URL is commented out in two files and live in a third, only the live one is on the map.
+
+**What those counts don't say.** This code base has few calls between its own functions: most of its 869 calls go straight to packages, and it has one class. So 0 unresolved says little, and a code base with more classes would have far more ❓. Only one project was measured, and nothing was tuned on it. Most endpoints are 🟡 with a ❓ because of `sys.path`, not because they're doubtful. The matched React calls were spot-checked against the source, not all of them, and the app wasn't run.
+
+**Bug proof stays C# and TypeScript (`Stangent.Tickets`), left as is:**
+- `Proof/TestTargets.cs` finds `dotnet`, `vitest`, `jest` and `playwright` only: no pytest or unittest target, so a Python ticket gets no test target.
+- `Proof/BugProof.cs` allows and suggests those runners' commands only, and works out a build from `.csproj` projects.
+- `Points.cs` reads file and line from .NET and JavaScript stack traces, not a Python traceback, and its list of file types skips `.py`.
+- `Pull.cs` keeps `.cs`, `.ts` and `.js` attachments as text, not `.py`.
+- `PageIndex.cs` reads strings from Python with the script rule, and follows Razor views, not Flask templates.
+

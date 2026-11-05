@@ -13,7 +13,7 @@ software-engineering pipeline: requirements → code → tests → PR → deploy
 | `phases/` | One file per started phase: its plan and end-of-phase report. |
 | `docs/cli-conventions.md` | What every `stangent` command prints and returns. |
 | `docs/foundation.md` | The evidence contract, the permanent-id ledger, the client-data check, coverage, driver tests. |
-| `docs/code-graph.md` | The code graph: points, lines, labels, detectors, impact answers. |
+| `docs/code-graph.md` | The code graph: points, lines, labels, detectors, Python, impact answers. |
 | `docs/spec.md` | The spec: reference pages, the FSD import, links, findings and decisions (Phase 2). |
 | `docs/tickets.md` | Tickets: Jira through the MCP, pull, starting points, the bundle, bug proof, drafts (Phase 3). |
 | `benchmark/README.md` | Running the benchmark: full-history clones, per-repo configs, scoring commands. |
@@ -46,6 +46,8 @@ plugin/scripts/spec-run.sh --disprove <doc>               # D119: only the dispr
 plugin/scripts/ticket-run.sh --max-cost 5 --prove --questions <KEY>... # Phase 3: pull → points → bundle → proof → drafts, headless
 stangent jira login                                       # browser sign-in to Atlassian's MCP v2; token in the OS keychain
 ```
+
+Python analysis needs `python3` (3.9 or newer), as frontends need Node: without it, `python_missing` in `loadErrors` and the rest still builds. The extractor is `tools/py-extractor/stangent_py_extract.py`, one standard-library file, copied beside the stangent assemblies (`py-extractor/`); `STANGENT_PY_EXTRACTOR` points elsewhere. It only parses: an app's code is never imported or run.
 
 Frontend analysis needs Node. The extractor bundle and TypeScript's lib files are copied beside the
 stangent assemblies (`ts-extractor/`); `STANGENT_TS_EXTRACTOR` points elsewhere for development.

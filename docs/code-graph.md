@@ -3,6 +3,7 @@
 The map of the code that impact analysis walks (decisions D25–D28, frontends D30–D32, history D34–D42).
 It's built by code from the code and its git history; it's never committed and has no AI in it. v2
 (Phase 1b) added frontends: components, templates, pages, and the `renders` and `maps-field` lines.
+Python and Flask (D127) grew v4 in place: new id forms and one new line kind, in the same shape.
 v3 (Phase 1c) adds 📜 `changes-with` lines from git history and `meta.history`. v4 (the overhaul, 1.1 and 1.2) adds
 `opens-screen` lines from Playwright specs, `meta.dirtyFiles` and `meta.notInCommit`.
 
@@ -31,9 +32,12 @@ Every point has an id, a kind, a display name, its project, and a file and line 
 | `component` | an Angular `@Component` class or a React function component (capitalised, returns JSX) | the TypeScript extractor |
 | `template` | `ts\|<template file>#<Component>.template`: an Angular component's template, spanning its lines | the TypeScript extractor |
 | `page` | `page:<tsconfig path>\|<route>`: an Angular Router or React Router route | the TypeScript extractor |
+| `project` (Python) | `project:<path/to/requirements.txt>`, or `project:python` when no dependency file is above the code | the Python extractor |
+| `type`, `method`, `property`, `field` (Python) | `py\|<file>#<Name>`, e.g. `py\|shop/service.py#OrderService.place`; a nested function is `outer.inner`; module and class variables are fields | the Python extractor |
+| `endpoint` (Flask) | `endpoint:python\|<VERB> <route>`, or `endpoint:python:<dir>\|…` for a project in a folder | `flask-routes` |
 
 Test methods (xUnit, NUnit and MSTest attributes; `it`/`test` cases inside `describe` blocks, named
-`Suite › case`) are marked `isTest`. Ids are the same ones the
+`Suite › case`; Python's `test_…` in `test_*.py` and `*_test.py`, or on a `TestCase`) are marked `isTest`. Ids are the same ones the
 link file uses (D10), so requirements can point at them.
 
 ## Lines
@@ -55,11 +59,12 @@ everything that can reach X by following lines backwards.
 | `renders` | component → its template; template or JSX → a child component | yes |
 | `maps-field` | frontend property → the backend property with the same JSON name | yes |
 | `contains` | project → file → type → member, table → column | no (structure) |
+| `imports` | a Python file → the file or symbol it imports | no (structure) |
 | `opens-screen` | a Playwright spec's `goto` → the screen it opens; stored apart (below) | no, and no other reader sees it |
 
 ### Labels
 
-- ✅ `certain`: the compiler proved it.
+- ✅ `certain`: the compiler proved it. In Python, where there's no compiler: one binding in scope, in the same module or through a relative import.
 - 🟡 `guessed`: a detector inferred it from a pattern.
 - 📜 `usually changes together`: from git history (below). Never walked.
 - ❓ **blind spots** are stored separately: a place, a reason and the detector that recorded it.
@@ -151,6 +156,7 @@ them; list names to run only those; `[none]` runs none. Per-detector settings go
 | `config-keys` | — |
 | `http-services` | `services: ["stock-api=Shop.Stock"]`, for service names without an Aspire AppHost |
 | `playwright-specs` | — (below) |
+| `flask-routes` | — (under Python, below) |
 | `frontend-http` | `wrappers: ["useApiQuery:path", "useApiMutation:path:method"]`: in-house call helpers as `name:urlProperty[:verbProperty][@VERB]` (a plain `name` takes the URL as its first argument; `#N` names the Nth argument instead of a property, e.g. `send:#1:#0`; `@VERB` gives the verb, else it's read off the name: delete/remove, put/update, patch, post/save/mutation, else GET) |
 
 `aspnetcore-routes` also takes `groupConventions: ["Ns.IEndpointGroup=/api/{type}"]` for route groups
@@ -194,6 +200,46 @@ A project that can't be loaded is listed in `loadErrors` and its code is ❓. MS
   - **fields:** typed results and bodies give `maps-field` lines, matched by JSON name (C# side:
     `[JsonPropertyName]`, `[JsonProperty]`, `[DataMember]`, else camelCase).
 
+### Python (D127)
+
+**Parsing only.** The bundled extractor (`py-extractor/` beside the stangent assemblies, standard library only) runs as `python3 -I -B` and calls `ast.parse`. Nothing it reads is imported or run, so an app's code, its packages and its environment play no part. `python`, the component, switches it off (`stangent components`). Off, a repo's graph has no Python in it.
+
+- **Found by:** `.py` and `.wsgi` files. Each belongs to the nearest folder above it with `pyproject.toml`, `setup.py`, `setup.cfg`, `requirements.txt` or `Pipfile`, else to `project:python`. A repo with none has no Python project.
+- **Skipped:** virtualenvs under any name (`pyvenv.cfg` or `bin/activate` inside), `__pycache__`, `site-packages`, tool caches, `dist`, `build`, `*.egg-info`, `node_modules`, and a C# project's `bin` and `obj`.
+- **Python missing** → `python_missing` in `loadErrors`; the rest of the graph still builds. It needs 3.9 or newer (`python_too_old`). The Python version is part of the fingerprint, because it decides what parses.
+- **A file it can't parse** (Python 2, say) is ❓, a warning and a count. It never stops the build.
+- **Notebooks aren't read.** Each `.ipynb` is a ❓ and is counted in `notebooksOmitted`, never opened.
+
+**What a call becomes.** Every call lands in exactly one count, in `graph build`'s `python`:
+
+| Count | What it means | Line |
+|---|---|---|
+| `callsCertain` | One binding in scope, in the same module or through a relative import. `self.x()` found on the class or a known base. A local or `self.attr` holding an instance of a known class. | ✅ `calls` |
+| `callsGuessed` | The same, but it rests on an absolute import (where it lands depends on how the app is started), a type hint (never enforced), a value a function returns, or a method that an outside base could have defined first. | 🟡 `calls` |
+| `callsOutside` | Proved to land in a package or a built-in. | none |
+| `callsNotInProject` | The receiver's type isn't known, but no project code has that name, so it can't land in the project. | none |
+| `callsUnresolved` | The rest: a parameter or variable called, a method on an unknown value that project code does have a name for, a name bound to different things, `getattr`, `eval` and the like. | ❓ |
+
+A name bound twice to different things is never picked between. Subclasses add `overrides` and `dispatches-to`, as in C#. A class call adds `uses` on the class and `calls` on its `__init__`.
+
+**Imports.** `imports` lines are structure and aren't walked: what changes behaviour are the calls and uses. A relative import is ✅. An absolute one is searched from the file's folder up to the project's: one match is 🟡, several are ❓, and none is outside the project, unless a project file elsewhere fits the name and it isn't a standard module. That's ❓ too (`import x could be …`), because only `sys.path` could say.
+
+**Flask (`flask-routes`).** `@app.route` and `@bp.route`, `@app.get` and the other verb shortcuts, `methods=`, `add_url_rule` with a function or `Cls.as_view()`, `Blueprint(url_prefix=)`, `register_blueprint(url_prefix=)` (which replaces the blueprint's own), and blueprints inside blueprints. Each verb and path is an endpoint with a `routes-to` line, so pages, slices and impact see them as they see ASP.NET's. `<int:id>` becomes `{id}`, and `<path:rest>` becomes the catch-all `{*rest}`. A constant URL or methods list is followed to its one assignment, even through an import.
+
+- ✅ when the object is provably a Flask app or a registered blueprint, 🟡 when that rests on an absolute import.
+- ❓, and no endpoint: a URL built at runtime, `.route` on something not provably Flask, `add_url_rule` with no `view_func`.
+- ❓, with an endpoint: a blueprint not seen registered (🟡, at its own prefix: it may be registered through an import that can't be followed), a prefix built at runtime (the path holds `{prefix}`), and methods built at runtime (the verb is `ANY`).
+- `flask_restful` and its relatives are ❓: their routes aren't read.
+
+**React in plain `.js`.** A repo with Python also has any `package.json` naming React, with no tsconfig beside it, read as a frontend (`project:<path>/package.json`), with the settings its toolchain assumes. Its `fetch` and axios calls reach Flask's endpoints through `frontend-http`, unchanged. A repo with no Python doesn't get this, so its graph is the same as before. `python` also counts `frontendCalls`, matched, unmatched and built at runtime.
+
+**Known gaps.**
+- `sys.path` changes aren't read, so a blueprint imported that way shows as not seen registered, though it's really served.
+- A URL segment that mixes text and a parameter (`/file-<name>.txt`) is an endpoint no frontend call can match.
+- No `maps-field` lines: Python has no typed responses to match frontend fields against.
+- Django, FastAPI and the like aren't read. Flask's templates aren't on the map; a view calling `render_template` makes a screen page.
+- A call on a decorated function goes to the function, not the wrapper. Assigning over a function from outside its module (`mod.f = g`) isn't seen.
+
 ## Impact answers (contract `impact-report` v5, D27)
 
 `stangent graph impact --symbol <id or Type.Member> | --file <path> | --diff <base..head or ref> [--expand <group>] [--max-depth N] [--format md]`
@@ -236,7 +282,7 @@ The answer around them has `commit`, `head`, `repo`, `dirty`, `dirtyFiles` and `
 | A method, property, field or type | Its declaration's first and last lines (attributes and modifiers included in C#). |
 | Overloads, or a file compiled into several projects | Every match, `ambiguous: true`. None is picked; ask by id for one. |
 | A partial type | The first part only: the first file by name, as the graph stores it. `alsoIn` lists files holding members outside those lines, and `note` says so. Each member has its own lines. |
-| A TypeScript symbol | The same, from the TypeScript extractor. |
+| A TypeScript or Python symbol | The same, from its extractor. A Python declaration's first line is its first decorator. |
 | An endpoint, page, table, column or config key found in code | The one line it was found on, so `startLine` equals `endLine`. |
 | A file or project, or a config key with no declaration | `startLine` and `endLine` null. A file still cites, without lines; a point with no file doesn't. |
 | Code in a checked-in generated file | Its real lines, `generated: true`, judged by file name (`.g.cs`, `.Designer.cs`, `.generated.`, `.gen.`). Source generators' output isn't on the map, so it's not found. |

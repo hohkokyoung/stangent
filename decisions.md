@@ -2405,6 +2405,15 @@ Follows D15, D16, D18, D20, D66, D75, D120, D121 and D125. Items T.2, T.4, T.5, 
 - **Reverses D56's note** that links can't run on this project. **Widens D4 and D17,** which named C# and TypeScript. It isn't a general pivot: another language still needs a real need, as the proposed cap says.
 **Why:** the 24 of 30 and 44% come from a 1,136-word document we wrote ourselves. This is 110,496 words nobody wrote for Stangent, on code the AI can't know from memory, with an author who can say who's right.
 **Cost:** roughly 200-350K tokens for the extractor. Python's calls can't be resolved as exactly as C#'s, so weak links may come from the extractor, not the judge. It tests no C# and no tickets, and part of the document is thesis text, not rules.
+- **Built (2026-11-05).** `tools/py-extractor` (parsing only, `python3 -I -B`), the `python` component, the `flask-routes` detector, plain React apps, and the fixes the flow needed: a `python` fence and `#` comments in bundles, `render_template` as a screen, `py|` in the drafts' tone check. `docs/code-graph.md` has the rules; `phases/1b-frontend-api.md` has what was run. `code-graph` stays v4: new id forms and one line kind in the same shape, not yet on `main`, so nothing is marked `needs review`. No fresh check (D120). **Assistant's calls, reversible:**
+  (a) ✅ for one binding in scope in the same module or through a relative import; 🟡 for anything resting on an absolute import, a type hint or a returned value. **Cost:** most calls between modules are 🟡, though they're usually right.
+  (b) An import that fits a project file off the importer's path is ❓, and `sys.path` changes aren't read. **Cost:** a blueprint imported that way is real but shows 🟡 and ❓ as not seen registered, which is most of the test project's blueprints. Guessing by file name would have hidden that.
+  (c) A method on an unknown value is ❓ only if project code has that name; otherwise it's counted apart as `callsNotInProject`, with no line. **Cost:** a method attached from outside the class at runtime is missed. Listing every `.get()` would bury the ❓ that matter.
+  (d) `imports` is a new line kind that isn't walked. **Cost:** an import's side effects don't reach impact; walking them would reach most of an app.
+  (e) A plain React app with no tsconfig is read only in a repo with Python, because a repo with no Python must keep its graph. **Cost:** a JavaScript-only React repo stays off the map, and the rule looks odd. Reversible when that need shows.
+  (f) `frontend-http` no longer lists `detector-aspnetcore-routes` as a need, since Flask's routes serve it too. **Cost:** with no routes detector on at all, `stangent components` won't warn.
+  **Numbers that aren't measured:** a 10-minute timeout, as frontends have; a recursion limit of 10,000 for deep files; 3.9 as the oldest Python, because the extractor uses `ast.unparse`. None was tuned on the project.
+  **Left for bug proof, not built:** see `phases/1b-frontend-api.md`.
 
 ## Open questions
 

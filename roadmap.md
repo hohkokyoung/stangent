@@ -63,7 +63,7 @@ Stop there. Phase 4 needs the owner: the order after 2.x, and the questions unde
 
 **Proposed, not decided.** The assistant proposed this and the owner said "ok what we gonna do next"; see "Open questions" in `decisions.md`. Until the owner confirms it, D120 and D125 stand as written.
 
-1. **Python support, then the links on the owner's own project (D127):** a Python extractor and Flask detector, roughly 200–350K tokens, then `cyberbullying-detection-system` a chapter at a time from Chapter 6, the owner ruling on findings. Each AI step has its cost stated and the owner's OK. Counts only in the repo.
+1. **Python support, then the links on the owner's own project (D127):** a Python extractor and Flask detector (built 2026-11-05, `phases/1b-frontend-api.md`; `code-graph` v4 grew in place, so nothing needs review), then `cyberbullying-detection-system` a chapter at a time from Chapter 6, the owner ruling on findings. Each AI step has its cost stated and the owner's OK. Counts only in the repo.
 1a. **Then the rest of I and T (owner, 2026-11-05):** batch 1 is built (D126). Left for batch 2, about 350–450K tokens: I.1 to I.4, I.6, T.1, T.3, T.7. Held until a real repo or document needs them: T.9, T.10, I.12.
 2. **Then the pilots on public C# projects, where Stangent hasn't been tuned** (RealWorld's C# app chosen first by the owner, whose written spec and tests let us test links; then umbraco/Umbraco-CMS, with no FSD): pages, impact, one real ticket. Everything free first; the cost is stated and the owner says yes before any AI step. Results go in a phase file.
 3. Make the test material.
