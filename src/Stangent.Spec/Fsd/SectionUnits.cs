@@ -49,11 +49,9 @@ public static class SectionUnits
         if (sectionId != leader) return new RunStep("grouped", "none", Warning: $"judged with the sections from {leader}: `fsd prepare {doc} {leader}`");
         var candidates = found.Where(c => index.Pages.ContainsKey(c.Page)).ToList();
         if (candidates.Count == 0) return new RunStep("failed", "none", Errors: [$"no candidate page has been recorded yet: {string.Join(", ", found.Select(c => c.Page))}"]);
-        var listed = Candidates.WithShared(candidates, string.Concat(unit.Select(s => (string)s["text"]!)), set, index.Pages, judged: true);
-        candidates = listed.Kept;
 
         var finer = repo.Config.Fsd.JudgeFinerVerdicts;
-        var bundle = Bundle(unit, doc, candidates.Select(c => c.Page), index, finer) + LinkRun.LeftOutBlock(listed.LeftOut);
+        var bundle = Bundle(unit, doc, candidates.Select(c => c.Page), index, finer);
         var inputs = LinkRun.GroupInputs(bundle, repo.Config.Fsd.Findings);
         var ids = unit.Select(s => (string)s["id"]!).ToList();
         var runs = LinkRun.LoadRuns(repo.Root);
@@ -80,7 +78,6 @@ public static class SectionUnits
             ["candidates"] = new JsonArray([.. candidates.Select(c => (JsonNode)new JsonObject { ["page"] = c.Page, ["why"] = c.Why })]),
             ["candidatesBy"] = "code", ["usage"] = new JsonObject(), ["schema"] = finer ? LinkRun.GroupFinerJudgeSchema : LinkRun.GroupJudgeSchema,
         };
-        if (listed.LeftOut.Count > 0) state["candidatesLeftOut"] = LinkRun.LeftOutList(listed.LeftOut);
         LinkRun.Stage(repo.Root, state, "judge", "prepared");
         LinkRun.Save(work, state);
         return LinkRun.Step(repo.Root, work, LinkRun.Judge, "judge.md", "judge.json", "Sections and candidate pages", (string?)state["schema"]);

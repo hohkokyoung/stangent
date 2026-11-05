@@ -181,7 +181,7 @@ Headless calls were refused on a weekly limit, so this ran through the app's age
 
 **What's left of the false alarms:** 6 of the 8 gaps are about a shared pop-up. Once a component is shared it gets its own page, and a screen's bundle only links to it, so the judge didn't see it. Same kind of miss, one step along. **Not settled by the fix:** two findings first read as real didn't come back, a conflict and an undocumented item, with the code unchanged, so run-to-run difference in the AI steps is real and unmeasured. One use case still gives no rate. **New and real-looking:** a tooltip and the code disagree on a minimum length, which a section-to-page check caught although no one asked. **Tokens:** the fix 183K against 100K estimated, the re-run 289K against 150K. One agent per item is about 70K; a batch of two in one agent is about 35K each.
 
-**Render routes and shared components (same day, counts only, no AI).** Switches `route-render` and `shared-candidates`, off by default, on in that clone.
+**Render routes and shared components (same day, counts only, no AI).** Switches `route-render` and `shared-candidates`, off by default, on in that clone. `shared-candidates` was removed afterwards (D131); these counts are why.
 
 | | Before | After |
 |---|---|---|

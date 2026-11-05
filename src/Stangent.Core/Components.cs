@@ -49,7 +49,6 @@ public static class StangentComponents
             "a step that reads opens-screen lines: only graph code does today"),
         new("page-verifier", "The fresh check of each reference page", "components.page-verifier", true, Pages, ["ai"]),
         new("line-citations", "path:lines beside each page, and code evidence from them", "components.line-citations", true, ["spec check", "spec cite", "trace check"], []),
-        new("shared-candidates", "The shared components a candidate screen directly renders are candidates too, as far as the bundle's size allows. Changes what a link judge reads, so it's off by default", "components.shared-candidates", false, [.. Links, "fsd candidates"], []),
         new("candidate-finder", "The AI that names pages when code finds none", "components.candidate-finder", true, Links, ["ai"]),
         new("agree-checker", "The fresh check of each agree link", "components.agree-checker", true, Links, ["ai"]),
         new("requirements-links", "Judging by requirement when a section's are built", "components.requirements-links", true, Links, []),

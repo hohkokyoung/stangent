@@ -231,13 +231,6 @@ Each step here has a switch (D121, `docs/foundation.md`): `candidate-finder`, `a
   titles (case, word order and plurals normalised), field labels in tables ↔ properties in a page's slice, and the
   endpoints a candidate screen calls. A section with none goes to `stangent-candidate-finder`, which sees the page
   titles only.
-  With `shared-candidates` on (off by default, because it changes what a judge reads), the shared components a candidate
-  screen directly renders are candidates too, `why` saying `shared component of <screen>`: only from the screen's own
-  component, its template or a function inside it, never through another component. A shared component's name still finds
-  its own page as before; none is added by name here. No new limit: what's already found stays first, and the rest fits
-  within `MaxPerSection` pages and `spec.maxBundleChars` for the section's text and recorded pages. What doesn't fit is listed
-  as `leftOut` here, told to the judge, and kept as `candidatesLeftOut` on the section's run. With it on, a section that gains
-  a page has new judge inputs, so its saved links are judged again; with it off, every bundle and hash stays the same.
 - `stangent fsd prepare|check <doc> <section>`: `stangent-link-judge` (fresh context) returns links — `agree`,
   `conflict`, `gap`, `undocumented`, and `partial` and `unclear` with a switch on (below) — each quoting the FSD sentence and the page statement exactly. Code checks both
   quotes word for word, both ends exist, and every symbol the quoted statement cites is in the graph. Every `agree`
