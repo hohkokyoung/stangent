@@ -68,6 +68,7 @@ components: { page-verifier: false, git-history: false, detector-config-keys: fa
 | `route-render` | `components.route-render` | off | Off, a route written `<Route path render=…>` or `children` gets no page. On, `graph build` adds one, read from the JSX it shows (`docs/code-graph.md`), so `spec pages` lists more |
 | `shared-through` | `components.shared-through` | off | Off, a screen's shared components are candidates only by their own name. On, those it reaches through its unshared ones are candidates too, stopping at the first on each path, as far as the bundle's size allows (`docs/spec.md`, D140). Changes what a link judge reads, so saved links read stale until judged again |
 | `fsd-claims` | `components.fsd-claims` | off | `fsd claims` says `split: false` and that it isn't a pass, and reads no section. On, it prints a section's claims. Nothing else reads them yet (`docs/spec.md`, D143) |
+| `section-approval` | `components.section-approval` | off | A new version is promoted whole once doubtful sections are settled, `fsd reject` and `fsd approve <doc> <section>` refuse (`section_approval_off`), `--partial` refuses, and no section files are written. On, each changed section needs a person's answer and promote applies only what was approved (D150) |
 | `test-journeys` | `components.test-journeys` | off | `stangent workflows tests` says `written: false`, writes nothing and needs no graph. On, it writes what each Playwright test walks through under `specs/workflows/tests/`, read by nothing, comparing nothing (`docs/spec.md`, D149) |
 | `workflow-files` | `components.workflow-files` | off | `stangent workflows` says `written: false` and writes nothing. On, with `claim-links` and `fsd-claims`, it writes one file per flow under `specs/workflows/<doc>/`, read by nothing (`docs/spec.md`, D147) |
 | `table-facts` | `fsd.compareTables` | off | `graph build` reads no enums and removes any on file; `fsd compare-tables` writes nothing and says `compared: false` (D124). |
@@ -197,6 +198,7 @@ returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds ev
 | `req-run` | `write`, `confirm`, `fix`, `reconfirm`, `done`, `failed` | code | `.stangent/req/state-history.jsonl` |
 | `fsd-candidate` | `candidate`, `pending-approval`, `promoted`, `approved`, `discarded`, `replaced` | a person promotes, approves a first import, or discards; code replaces it when a newer file comes in | `specs/fsd/history.jsonl` |
 | `fsd-section-match` | `doubtful`, `same`, `new`, `removed` | a person settles and can change their mind; code only lets go of a claimed id | same |
+| `fsd-section-answer` | `unanswered`, `approved`, `rejected` | a person answers a changed section and can change their mind; the id holds the exact text, so a changed text is a new id and code never moves one (D150) | same |
 | `section-coverage` | `unmarked`, `not-in-code` | a person marks a section, and takes it back (D122) | same |
 
 **History.** Append-only JSONL, one move per line: `at`, `kind`, `id`, `from`, `to`, `who`, `reason`. It sits beside the state:

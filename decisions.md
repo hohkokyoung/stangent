@@ -143,7 +143,7 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D110 · The core stays C#; no port to Python
 - D111 · Stangent imports PDF and Excel as well as Word
 
-## D112–D149: the overhaul; new decisions go here
+## D112–D150: the overhaul; new decisions go here
 
 [`decisions/6-overhaul.md`](decisions/6-overhaul.md)
 
@@ -163,7 +163,7 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D125 · What we take from the workflow comparison, in bulk
 - D126 · Batch 1 of §9: a hard cost stop, checks around a run, FSD import fixes
 - D127 · Python joins the code graph, tested on the owner's own project
-- D128 · The parsed spec is the clean source of truth; new Word files come in as proposals a BA or PM checks
+- D128 · The parsed spec is the clean source of truth; new Word files come in as proposals a BA or PM checks → section level, built by D150
 - D129 · Journeys come from both sides: the FSD's stay, and end-to-end tests add what the app does → J.1 built ahead of the use-case runs by D149
 - D130 · A bundle stores only what's unique; code assembles the rest
 - D131 · Batch 2 of §9: bundles store what's unique, corrections stick, pages when needed
@@ -177,7 +177,7 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D139 · No cap on new items
 - D140 · A section's candidates can reach shared components through a screen's unshared ones (`shared-through`, off)
 - D141 · An AI flag for findings that touch security, sent to a developer; severity stays a person's → built by D148
-- D142 · Readable section files go into git with D128, as a generated view; `document.json` stays the record
+- D142 · Readable section files go into git with D128, as a generated view; `document.json` stays the record → built by D150
 - D143 · A section is cut into claims by code, printed only (`fsd claims`, `fsd-claims`, off); ids and the judge come in a later slice
 - D144 · Workflow files sit on top of pages, written by code; pages stay where facts live → built by D147
 - D145 · Claims get permanent ids, a judge names ids and copies no words, and a link's id comes from ids (`claim-links`, off) → repeated steps and page-cut steps revised by D146
@@ -185,3 +185,4 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D147 · Workflow files are built: a flow's status by code, steps by their own numbers, and older links counted rather than placed (`workflow-files`, off); builds D144
 - D148 · A security flag is built: the disprove step sets it, any verdict can carry it, and only a person answers it (`security-flag`, off); builds D141
 - D149 · Journeys read from end-to-end tests are built ahead of the use-case runs, and compare nothing (`test-journeys`, off); builds D129's J.1
+- D150 · D128 at section level: a person approves or rejects each changed section, promote applies only what was approved, `--partial`, readable section files (`section-approval`, off); settles D128's section-or-requirement question, builds D142

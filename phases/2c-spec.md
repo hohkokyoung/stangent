@@ -467,3 +467,9 @@ The first run on real findings from a real FSD, on the same copy: the step reads
 - **With the switch off:** existing tests pass and the hash pins hold. The only edits to them were the two lists D148 names.
 
 **What wasn't run:** any real disprover, so no AI has read the new instructions, and nothing shows how many flags are false, or how many real ones it misses. Nothing was run on the test app or Sonarr, and no finding has been re-asked. The cost of turning it on, one paid call per undecided finding that can be tested, is by count of the rule, not measured. No person has answered a flag outside a test.
+
+## Section approval (2026-11-06, D150): what wasn't run
+- **Built, off (`section-approval`), fakes only:** 19 tests on hand-built Word files (`FsdSectionApprovalTests`): approve, reject, a mix, an answer dropping on changed text and holding on the same, a typed answer ignored, a doubtful section settled first, promote refusing while unanswered, a rejected removal kept with its id and link, a rejected addition never given an id, links on a rejected change keeping their decision, a mix that doesn't fit refused, `--partial`, a stale candidate naming its sections, section files, the review view, the switch off. All 2107 tests pass.
+- **Not run:** any real FSD, two real versions of one, a real BA or PM's review, a PR with the section files or the review pasted, a fresh check (D120). No AI, no paid run.
+- **Known limits:** a rejection touching a section with attached files is refused; a changes-only file must number its headings right on its own; the merged version's `original.hash` is the candidate file's, so `fsd reread` can offer the rejected changes again.
+
