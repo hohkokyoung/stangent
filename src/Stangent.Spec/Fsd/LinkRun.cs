@@ -124,9 +124,11 @@ public static class LinkRun
             UpdateRun(repo.Root, key, r => { MergeInto(r, carried); r["inputs"] = null; r["candidates"] = new JsonArray(); r["candidatesBy"] = by; r["links"] = 1; r.Remove("unit"); });
             return new RunStep("recorded", "none");
         }
+        var listed = Candidates.WithShared(candidates, (string)section["text"]!, set, index.Pages, judged: true);
+        candidates = [.. listed.Kept.Where(c => index.Pages.ContainsKey(c.Page))];
         var requirements = RequirementsInUse(repo, doc, section);
         var finer = repo.Config.Fsd.JudgeFinerVerdicts;
-        var judgeBundle = requirements is null ? JudgeBundle(section, doc, candidates.Select(c => c.Page), index, finer) : RequirementJudgeBundle(section, doc, candidates.Select(c => c.Page), index, requirements, finer);
+        var judgeBundle = (requirements is null ? JudgeBundle(section, doc, candidates.Select(c => c.Page), index, finer) : RequirementJudgeBundle(section, doc, candidates.Select(c => c.Page), index, requirements, finer)) + LeftOutBlock(listed.LeftOut);
         var inputs = JudgeInputs(judgeBundle, requirements is not null, repo.Config.Fsd.Findings);
         // A group's links may be what's on file (C.6): this section's own saved work goes back, with no call.
         if ((string?)run?["inputs"] == inputs && (run?["unit"] is null || SectionUnits.RestoreOwn(repo.Root, doc, section, inputs))) return new RunStep("current", "none");
@@ -140,6 +142,7 @@ public static class LinkRun
             ["candidates"] = new JsonArray([.. candidates.Select(c => (JsonNode)new JsonObject { ["page"] = c.Page, ["why"] = c.Why })]),
             ["candidatesBy"] = by, ["usage"] = carried?.DeepClone() ?? new JsonObject(),
         };
+        if (listed.LeftOut.Count > 0) state["candidatesLeftOut"] = LeftOutList(listed.LeftOut);
         if (finer) state["schema"] = requirements is null ? FinerJudgeSchema : FinerRequirementJudgeSchema;
         Stage(repo.Root, state, "judge", "prepared");
         Save(work, state);
@@ -331,6 +334,8 @@ public static class LinkRun
         {
             r["inputs"] = state["inputs"]!.DeepClone();
             r["candidates"] = state["candidates"]!.DeepClone();
+            if (state["candidatesLeftOut"] is { } leftOut) r["candidatesLeftOut"] = leftOut.DeepClone();
+            else r.Remove("candidatesLeftOut");
             r["candidatesBy"] = state["candidatesBy"]!.DeepClone();
             MergeInto(r, state["usage"] as JsonObject);
             r["retries"] = (int?)state["retries"] ?? 0;
@@ -580,14 +585,25 @@ public static class LinkRun
     {
         var sb = new StringBuilder("\n# The candidate pages\n\nGenerated from the code; every statement cites the code it comes from.\n");
         foreach (var id in pages.Order(StringComparer.Ordinal))
-        {
-            var p = index.Pages[id];
-            sb.Append($"\n## `{id}`\n\n{(string)p["kind"]!}: {(string)p["title"]!} (from the code: {(string)p["codeTitle"]!})\n");
-            foreach (var (section, sid, s) in PageChecks.Statements(p))
-                sb.Append($"- **{sid}** ({section}) {(string)s["text"]!}\n");
-        }
+            sb.Append(PageBlock(id, index.Pages[id]));
         return sb.ToString();
     }
+
+    internal static string PageBlock(string id, JsonObject p)
+    {
+        var sb = new StringBuilder($"\n## `{id}`\n\n{(string)p["kind"]!}: {(string)p["title"]!} (from the code: {(string)p["codeTitle"]!})\n");
+        foreach (var (section, sid, s) in PageChecks.Statements(p))
+            sb.Append($"- **{sid}** ({section}) {(string)s["text"]!}\n");
+        return sb.ToString();
+    }
+
+    /// <summary>Shared components that didn't fit: said to the judge, so what it can't see isn't taken for missing. Nothing left out adds nothing.</summary>
+    internal static string LeftOutBlock(IReadOnlyList<Candidate> leftOut) => leftOut.Count == 0 ? "" :
+        "\n# Pages left out for size\n\nA candidate screen renders these shared components, and their pages didn't fit here. What they do isn't shown, so its absence above isn't evidence of a gap.\n"
+        + string.Concat(leftOut.Select(c => $"- `{c.Page}` ({c.Why})\n"));
+
+    public static JsonArray LeftOutList(IEnumerable<Candidate> leftOut) =>
+        new([.. leftOut.Select(c => (JsonNode)new JsonObject { ["page"] = c.Page, ["why"] = c.Why })]);
 }
 
 /// <summary>The code checks on one link (D53 step 3): quotes word for word, both ends exist, cited symbols in the graph.</summary>

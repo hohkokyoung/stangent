@@ -43,15 +43,17 @@ public static class SectionUnits
     {
         var ordered = FsdOutline.Load(repo.Root, doc)["sections"]!.AsArray().OfType<JsonObject>().Select(s => index.Sections[(doc, (string)s["id"]!)]);
         if (Of(repo, doc, ordered).FirstOrDefault(u => u.Any(s => (string)s["id"]! == sectionId)) is not { Count: > 1 } unit) return null;
-        var found = unit.SelectMany(s => Candidates.ForSection(s, set, index.Pages, (string?)s["parent"] is { } parent ? index.Sections.GetValueOrDefault((doc, parent)) : null)).DistinctBy(c => c.Page).ToList();
+        var found = unit.SelectMany(s => Candidates.ByCode(s, set, index.Pages, (string?)s["parent"] is { } parent ? index.Sections.GetValueOrDefault((doc, parent)) : null)).DistinctBy(c => c.Page).ToList();
         if (found.Count == 0) return null;
         var leader = (string)unit[0]["id"]!;
         if (sectionId != leader) return new RunStep("grouped", "none", Warning: $"judged with the sections from {leader}: `fsd prepare {doc} {leader}`");
         var candidates = found.Where(c => index.Pages.ContainsKey(c.Page)).ToList();
         if (candidates.Count == 0) return new RunStep("failed", "none", Errors: [$"no candidate page has been recorded yet: {string.Join(", ", found.Select(c => c.Page))}"]);
+        var listed = Candidates.WithShared(candidates, string.Concat(unit.Select(s => (string)s["text"]!)), set, index.Pages, judged: true);
+        candidates = listed.Kept;
 
         var finer = repo.Config.Fsd.JudgeFinerVerdicts;
-        var bundle = Bundle(unit, doc, candidates.Select(c => c.Page), index, finer);
+        var bundle = Bundle(unit, doc, candidates.Select(c => c.Page), index, finer) + LinkRun.LeftOutBlock(listed.LeftOut);
         var inputs = LinkRun.GroupInputs(bundle, repo.Config.Fsd.Findings);
         var ids = unit.Select(s => (string)s["id"]!).ToList();
         var runs = LinkRun.LoadRuns(repo.Root);
@@ -78,6 +80,7 @@ public static class SectionUnits
             ["candidates"] = new JsonArray([.. candidates.Select(c => (JsonNode)new JsonObject { ["page"] = c.Page, ["why"] = c.Why })]),
             ["candidatesBy"] = "code", ["usage"] = new JsonObject(), ["schema"] = finer ? LinkRun.GroupFinerJudgeSchema : LinkRun.GroupJudgeSchema,
         };
+        if (listed.LeftOut.Count > 0) state["candidatesLeftOut"] = LinkRun.LeftOutList(listed.LeftOut);
         LinkRun.Stage(repo.Root, state, "judge", "prepared");
         LinkRun.Save(work, state);
         return LinkRun.Step(repo.Root, work, LinkRun.Judge, "judge.md", "judge.json", "Sections and candidate pages", (string?)state["schema"]);

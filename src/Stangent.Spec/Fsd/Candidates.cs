@@ -7,8 +7,12 @@ namespace Stangent.Spec.Fsd;
 
 /// <summary>A page proposed for an FSD section, and why: <c>name</c> (titles match), <c>fields</c> (field labels match
 /// properties in the page's slice), <c>endpoint</c> (an endpoint a candidate screen calls), <c>ai</c> (proposed by the
-/// candidate finder from page titles only).</summary>
+/// candidate finder from page titles only), <c>shared component of …</c> (a candidate screen directly renders it,
+/// with <c>shared-candidates</c> on).</summary>
 public sealed record Candidate(string Page, string Why, double Score);
+
+/// <summary>A section's candidates, and the shared components that didn't fit (D88).</summary>
+public sealed record CandidateList(List<Candidate> Kept, List<Candidate> LeftOut);
 
 /// <summary>
 /// Candidate pairs by code (D53, Phase 2b step 2): names that match across the two sides. Screen names ↔ routes,
@@ -84,9 +88,54 @@ public static partial class Candidates
         return [.. labels.Where(w => w.Count > 0).DistinctBy(w => string.Join(" ", w.Order()))];
     }
 
+    /// <summary>Everything found for a section, with the shared components its screens render when that's on.</summary>
+    public static CandidateList Find(JsonObject section, PageSet set, IReadOnlyDictionary<string, JsonObject> recorded, JsonObject? parent = null) =>
+        WithShared(ByCode(section, set, recorded, parent), (string)section["text"]!, set, recorded);
+
+    public static List<Candidate> ForSection(JsonObject section, PageSet set, IReadOnlyDictionary<string, JsonObject> recorded, JsonObject? parent = null) =>
+        Find(section, set, recorded, parent).Kept;
+
+    /// <summary>
+    /// The shared components each candidate screen directly renders: only the screen's own lines, never through another component.
+    /// Name matches stay as they were, and none is added here for its name. What fits goes by the limits that already exist:
+    /// <see cref="MaxPerSection"/> pages, and <see cref="SpecSettings.MaxBundleChars"/> for the text and the recorded pages. What's
+    /// already found keeps its place; the rest is listed, not dropped. Off, the list comes back as it was.
+    /// </summary>
+    /// <param name="judged">Only recorded pages: the judge can't read any other.</param>
+    public static CandidateList WithShared(List<Candidate> found, string text, PageSet set, IReadOnlyDictionary<string, JsonObject> recorded, bool judged = false)
+    {
+        if (!set.Settings.SharedCandidates) return new(found, []);
+        var kept = found.ToList();
+        var leftOut = new List<Candidate>();
+        var have = kept.Select(c => c.Page).ToHashSet(StringComparer.Ordinal);
+        int Chars(string page) => recorded.GetValueOrDefault(page) is { } p ? LinkRun.PageBlock(page, p).Length : 0;
+        var chars = text.Length + kept.Sum(c => Chars(c.Page));
+        foreach (var screen in found.Where(c => set.Find(c.Page)?.Kind == PageKind.Screen).OrderByDescending(c => c.Score).ThenBy(c => c.Page, StringComparer.Ordinal))
+            foreach (var page in RenderedShared(set, screen.Page).Where(p => !judged || recorded.ContainsKey(p)))
+            {
+                if (!have.Add(page)) continue;
+                var candidate = new Candidate(page, $"shared component of {screen.Page}", screen.Score * 0.5);
+                var size = Chars(page);
+                if (kept.Count >= MaxPerSection || chars + size > set.Settings.MaxBundleChars) { leftOut.Add(candidate); continue; }
+                kept.Add(candidate);
+                chars += size;
+            }
+        return new(kept, leftOut);
+    }
+
+    /// <summary>Component pages the screen's own component, its template or a function inside it renders. One step, no further.</summary>
+    static IEnumerable<string> RenderedShared(PageSet set, string screen)
+    {
+        var slice = set.Slices[screen];
+        var own = slice.Edges.Where(e => e.Kind == EdgeKind.RoutesTo && e.Source == slice.Entry).Select(e => e.Target).ToHashSet(StringComparer.Ordinal);
+        own.UnionWith(slice.Edges.Where(e => e.Kind == EdgeKind.Renders && own.Contains(e.Source) && set.Builder.Find(e.Target)?.Kind == NodeKind.Template).Select(e => e.Target).ToList());
+        return slice.Edges.Where(e => e.Kind == EdgeKind.Renders && (own.Contains(e.Source) || own.Any(o => e.Source.StartsWith(o + ".", StringComparison.Ordinal))))
+            .Select(e => e.Target).Where(t => !own.Contains(t) && set.Find(t)?.Kind == PageKind.Component).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal);
+    }
+
     /// <param name="parent">The chapter the section sits in: a subsection is about part of its chapter's screen, so the
     /// chapter's screens are its candidates too.</param>
-    public static List<Candidate> ForSection(JsonObject section, PageSet set, IReadOnlyDictionary<string, JsonObject> recorded, JsonObject? parent = null)
+    public static List<Candidate> ByCode(JsonObject section, PageSet set, IReadOnlyDictionary<string, JsonObject> recorded, JsonObject? parent = null)
     {
         var title = Words((string)section["title"]!);
         var text = (string)section["text"]!;
@@ -134,7 +183,7 @@ public static partial class Candidates
         // names one or two screens. A generic chapter ("Settings") names a whole area and would crowd out the rest.
         if (parent is not null)
         {
-            var chapter = ForSection(new JsonObject { ["title"] = parent["title"]!.DeepClone(), ["text"] = "" }, set, recorded)
+            var chapter = ByCode(new JsonObject { ["title"] = parent["title"]!.DeepClone(), ["text"] = "" }, set, recorded)
                 .Where(c => c.Why == "name" && set.Find(c.Page)?.Kind == PageKind.Screen).ToList();
             if (chapter.Count is > 0 and <= 2)
                 foreach (var c in chapter) Add(c.Page, "chapter", c.Score * 0.6);

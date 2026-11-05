@@ -180,3 +180,28 @@ Headless calls were refused on a weekly limit, so this ran through the app's age
 | Assistant's first read, not the owner's ruling: looks real | 4 of 18 | 5 of 13 |
 
 **What's left of the false alarms:** 6 of the 8 gaps are about a shared pop-up. Once a component is shared it gets its own page, and a screen's bundle only links to it, so the judge didn't see it. Same kind of miss, one step along. **Not settled by the fix:** two findings first read as real didn't come back, a conflict and an undocumented item, with the code unchanged, so run-to-run difference in the AI steps is real and unmeasured. One use case still gives no rate. **New and real-looking:** a tooltip and the code disagree on a minimum length, which a section-to-page check caught although no one asked. **Tokens:** the fix 183K against 100K estimated, the re-run 289K against 150K. One agent per item is about 70K; a batch of two in one agent is about 35K each.
+
+**Render routes and shared components (same day, counts only, no AI).** Switches `route-render` and `shared-candidates`, off by default, on in that clone.
+
+| | Before | After |
+|---|---|---|
+| Screens planned | 5 | 6, the new one a `render=` route |
+| Pages planned | 38 | 39 |
+| Sections with candidates | 117 of 300 | 117 of 300 |
+| Sections gaining a shared component | | 0 |
+| The use case's section | 3 candidates | the same 3 |
+| Recorded pages stale, stale quotes | 0, 0 | 0, 0 |
+
+**This doesn't fix the false gaps.** The shared pop-up is two steps from the screen: the screen renders a component that renders it. The rule stops at one step, as asked, so it adds nothing here. Open question in D127.
+
+**A second repo: Actual, a TypeScript app, on a copy.** 12 projects read, 71 routed screens, 92 shared component pages.
+
+| | |
+|---|---|
+| Screens with no route | 2 |
+| Hand-checked, really screens | 0 of 2: both tooltips, mounted by a code editor's hover through their own `createRoot` |
+| ❓ from `root-screens` | 8: 4 components it took as picked at runtime, 4 shown by a condition; none checked |
+| Routes with `render=` or `children=` | 0, and a search of the source agrees |
+| Routed screens directly rendering a shared component | 57 of 71, at most 10, mean 1.3 |
+
+**What doesn't fit:** `root-screens` assumes a `createRoot` is an app's root. Here one mounts a tooltip, so the rule shaped on one app is wrong on the next. Off by default, so nothing else changes. Not fixed; said here. `route-render` has nothing to do on this repo, so it's been tested on one real app only.

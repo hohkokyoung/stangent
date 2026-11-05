@@ -22,6 +22,8 @@ export interface Options {
   enums?: boolean;
   /** Also a page for each screen the app's root shows with no route. Off, the output is what it always was. */
   rootScreens?: boolean;
+  /** Also a page for `<Route path render|children>`, read from the JSX it shows. Off, the output is what it always was. */
+  routeRender?: boolean;
 }
 
 /** Collects lines, dropping duplicate nodes and edges, in the order they were first seen. */

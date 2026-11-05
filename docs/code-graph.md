@@ -31,7 +31,7 @@ Every point has an id, a kind, a display name, its project, and a file and line 
 | `type`, `method`, `property`, `field` (TypeScript) | `ts\|<file>#<Name>`, e.g. `ts\|UI/Web/src/app/_services/series.service.ts#SeriesService.getSeries` | the TypeScript extractor |
 | `component` | an Angular `@Component` class or a React function component (capitalised, returns JSX) | the TypeScript extractor |
 | `template` | `ts\|<template file>#<Component>.template`: an Angular component's template, spanning its lines | the TypeScript extractor |
-| `page` | `page:<tsconfig path>\|<route>`: an Angular Router or React Router route; with `root-screens` on, also `page:<tsconfig path>\|(no route) <Component>` | the TypeScript extractor |
+| `page` | `page:<tsconfig path>\|<route>`: an Angular Router or React Router route, with `route-render` on also one written with `render` or `children`; with `root-screens` on, also `page:<tsconfig path>\|(no route) <Component>` | the TypeScript extractor |
 | `project` (Python) | `project:<path/to/requirements.txt>`, or `project:python` when no dependency file is above the code | the Python extractor |
 | `type`, `method`, `property`, `field` (Python) | `py\|<file>#<Name>`, e.g. `py\|shop/service.py#OrderService.place`; a nested function is `outer.inner`; module and class variables are fields | the Python extractor |
 | `endpoint` (Flask) | `endpoint:python\|<VERB> <route>`, or `endpoint:python:<dir>\|…` for a project in a folder | `flask-routes` |
@@ -131,6 +131,19 @@ it renders nothing of its own: then it's the only screen. Library wrappers (prov
 
 **What code can't tell.** With no routes, layout looks like a screen. A spinner shown alone by an early return is a screen by this rule, and only a person can say otherwise.
 A prop or state holding an element (`{view}`) has no JSX to read and is taken for text, with no ❓.
+
+Off, the output is the same as before the component existed.
+
+## Routes written with `render` or `children`: `route-render` (D127)
+
+Older React Router writes a route as `<Route path="/x" render={props => <X/>} />`, `children={<X/>}` or `<Route path="/x"><X/></Route>`.
+With the component `route-render` on (`components: { route-render: true }`, off by default because it adds pages), each is a `page`
+with a ✅ `routes-to` line, detector `route-render`, to every component named in that JSX, or in the function `render` names.
+A route naming `component` or `element` keeps that, and nested `<Route>`s stay routes of their own.
+
+No component of the app to read (`render={picked}` from a prop, only library tags such as a redirect, only `<div>`s) still gives the page, with a ❓ from detector `route-render`, never a guess. With the component on, `graph build`'s result has `routeRender: { routes, unresolved }`.
+
+**Who's read.** A plain React app (a `package.json` naming React, no tsconfig) is read in a repo with Python, or with `root-screens` or `route-render` on. Any other repo keeps the map it had. With a tsconfig, an app is always read.
 
 Off, the output is the same as before the component existed.
 

@@ -5,7 +5,7 @@ import { stringValue } from "./values.ts";
 /**
  * Pages: the frontend's entry points (D31). Angular Router and object-style React Router routes
  * (`{ path, component | loadComponent | loadChildren | element | Component, children }`), and JSX
- * `<Route path element>` trees. Each page routes to the component it shows (✅ when the checker
+ * `<Route path element>` trees; with `route-render` on, `<Route path render|children>` too. Each page routes to the component it shows (✅ when the checker
  * resolves it). Child paths are joined to their parents'.
  */
 export function pages(ctx: Context, sf: ts.SourceFile) {
@@ -153,6 +153,7 @@ function jsxRoute(ctx: Context, el: ts.JsxElement | ts.JsxSelfClosingElement, pr
   let own: string | null = null;
   let target: Target = { ids: [], unresolved: false };
   let index = false;
+  let shown: ts.Node | undefined;
   for (const a of attrs.properties) {
     if (!ts.isJsxAttribute(a) || !ts.isIdentifier(a.name)) continue;
     const v = a.initializer;
@@ -164,21 +165,44 @@ function jsxRoute(ctx: Context, el: ts.JsxElement | ts.JsxSelfClosingElement, pr
       const id = ctx.symbolId(ctx.checker.getSymbolAtLocation(expr));
       target = { ids: id ? [id] : [], unresolved: !id };
     }
+    if ((a.name.text === "render" || a.name.text === "children") && expr) shown = expr;
   }
   const full = own === null ? prefix : join(prefix, own);
+  if (ctx.o.routeRender && own !== null && target.ids.length === 0 && !target.unresolved) {
+    // `render={props => <X/>}`, `children={<X/>}` or `<Route path="/x"><X/></Route>`: read only when the route names nothing else.
+    const children = ts.isJsxElement(el) ? el.children.filter((c) => !ts.isJsxText(c) && !isRouteElement(c)) : [];
+    if (shown || children.length > 0) {
+      const named = shown ? renderedBy(ctx, shown) : mergeTargets(children.map((c) => jsxComponents(ctx, c)));
+      addPage(ctx, el, full, { ids: named.ids, unresolved: named.ids.length === 0 }, ROUTE_RENDER);
+    }
+  }
   if ((own !== null || index) && (target.ids.length > 0 || target.unresolved)) addPage(ctx, el, full, target);
   if (ts.isJsxElement(el))
     for (const child of el.children)
       if ((ts.isJsxElement(child) || ts.isJsxSelfClosingElement(child)) && tagName(child) === "Route") jsxRoute(ctx, child, full);
 }
 
-export function addPage(ctx: Context, at: ts.Node, route: string, target: Target) {
+const ROUTE_RENDER = "route-render";
+
+const isRouteElement = (c: ts.Node) => (ts.isJsxElement(c) || ts.isJsxSelfClosingElement(c)) && tagName(c) === "Route";
+
+const mergeTargets = (all: Target[]): Target => ({ ids: [...new Set(all.flatMap((t) => t.ids))], unresolved: all.some((t) => t.unresolved) });
+
+/** What a `render` or `children` value shows: the JSX in it, or in the function it names. A prop or variable with no JSX to read names nothing. */
+function renderedBy(ctx: Context, e: ts.Expression): Target {
+  if (!ts.isIdentifier(e) && !ts.isPropertyAccessExpression(e)) return jsxComponents(ctx, e);
+  let symbol = ctx.checker.getSymbolAtLocation(e);
+  if (symbol && symbol.flags & ts.SymbolFlags.Alias) symbol = ctx.checker.getAliasedSymbol(symbol);
+  return mergeTargets((symbol?.declarations ?? []).filter((d) => ts.isFunctionLike(d) || ts.isVariableDeclaration(d)).map((d) => jsxComponents(ctx, d)));
+}
+
+export function addPage(ctx: Context, at: ts.Node, route: string, target: Target, detector = "routes") {
   const id = `page:${ctx.o.projectId.replace(/^project:/, "")}|${route}`;
   const file = ctx.rel(at.getSourceFile().fileName);
   const line = ctx.line(at);
   ctx.out.node({ id, kind: "page", name: route, project: ctx.o.projectId, file, line, endLine: line, isTest: false });
-  for (const t of target.ids) ctx.out.edge(id, t, "routes-to", 0, "routes");
-  if (target.ids.length === 0) ctx.out.blind(id, file, line, `page ${route}: its component couldn't be resolved`, "routes");
+  for (const t of target.ids) ctx.out.edge(id, t, "routes-to", 0, detector);
+  if (target.ids.length === 0) ctx.out.blind(id, file, line, `page ${route}: its component couldn't be resolved`, detector);
 }
 
 function join(prefix: string, own: string): string {

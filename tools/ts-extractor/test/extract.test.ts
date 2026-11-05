@@ -257,3 +257,46 @@ test("off, the output doesn't change; lazy, class and React.render roots are rea
   const off = noRoute(files, false);
   assert.deepEqual([off.screens, off.unknown], [[], []]);
 });
+
+// ---- Routes written with render or children (route-render) --------------------------------------
+
+function rendered(files: Record<string, string>, on = true) {
+  const root = project(Object.fromEntries(Object.entries(files).map(([name, text]) => [`src/${name}`, text])));
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "project:tsconfig.json", settings: {}, routeRender: on }).lines;
+  return {
+    pages: lines.flatMap((l) => (l.t === "node" && l.kind === "page" ? [l.name] : [])).sort(),
+    targets: lines.flatMap((l) => (l.t === "edge" && l.kind === "routes-to" && l.detector === "route-render" ? [`${l.source.split("|")[1]} -> ${l.target.split("#")[1]}`] : [])).sort(),
+    unknown: lines.flatMap((l) => (l.t === "blind" && l.detector === "route-render" ? [l.reason] : [])),
+    lines,
+  };
+}
+const ROUTES = (body: string) => `import { Route } from "react-router-dom"; import Tasks from "./Tasks"; import Help from "./Help";
+const show = (props: any) => <Help {...props} />;
+export function App({ picked }: any) { return <div>${body}</div>; }`;
+const ROUTE_FILES = (body: string) => ({ "lib.d.ts": REACT_DOM, "Tasks.tsx": WIDGET("Tasks"), "Help.tsx": WIDGET("Help"), "App.tsx": ROUTES(body) });
+
+test("render and children routes get a page naming the component in their JSX", () => {
+  const r = rendered(ROUTE_FILES(`<Route path="/a" render={(props) => <Tasks {...props} />} />
+    <Route path="/b" children={<Help />} />
+    <Route path="/c"><Tasks /></Route>
+    <Route path="/d" render={show} />
+    <Route path="/e" render={(p) => (p.ok ? <Tasks /> : <Help />)} />`));
+  assert.deepEqual(r.pages, ["/a", "/b", "/c", "/d", "/e"]);
+  assert.deepEqual(r.targets, ["/a -> Tasks", "/b -> Help", "/c -> Tasks", "/d -> Help", "/e -> Help", "/e -> Tasks"]);
+  assert.deepEqual(r.unknown, []);
+});
+
+test("a render route with no component to read is unknown, never a guess", () => {
+  const r = rendered(ROUTE_FILES(`<Route path="/p" render={picked} /><Route path="/t" render={() => <div>text</div>} />`));
+  assert.deepEqual(r.pages, ["/p", "/t"]);
+  assert.equal(r.unknown.length, 2);
+});
+
+test("off, the output doesn't change; a route naming its component keeps it; nested routes stay routes", () => {
+  const files = ROUTE_FILES(`<Route path="/a" render={() => <Tasks />} /><Route path="/n"><Route path="m" element={<Help />} /></Route>`);
+  assert.deepEqual(rendered(files, false).pages, ["/n/m"]);
+  const on = rendered(files);
+  assert.deepEqual(on.pages, ["/a", "/n/m"]);
+  assert.deepEqual(on.targets, ["/a -> Tasks"]);
+  assert.deepEqual(rendered(ROUTE_FILES(`<Route path="/z" component={Tasks} render={() => <Help />} />`)).targets, []);
+});

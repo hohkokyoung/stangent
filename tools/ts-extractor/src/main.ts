@@ -1,5 +1,5 @@
 // stangent-ts-extract: run by `stangent graph build` for each frontend project (D30).
-//   node stangent-ts-extract.mjs --tsconfig <path> --root <repo> --project <id> [--settings <json>] [--enums] [--root-screens]
+//   node stangent-ts-extract.mjs --tsconfig <path> --root <repo> --project <id> [--settings <json>] [--enums] [--root-screens] [--route-render]
 // Prints the project's fragment as JSON lines (docs/code-graph.md) on stdout.
 import * as path from "node:path";
 import { extract } from "./extract.ts";
@@ -14,11 +14,11 @@ const tsconfig = arg("--tsconfig");
 const root = arg("--root");
 const project = arg("--project");
 if (!tsconfig || !root || !project) {
-  process.stderr.write("usage: stangent-ts-extract --tsconfig <path> --root <repo> --project <id> [--settings <json>] [--enums] [--root-screens]\n");
+  process.stderr.write("usage: stangent-ts-extract --tsconfig <path> --root <repo> --project <id> [--settings <json>] [--enums] [--root-screens] [--route-render]\n");
   process.exit(2);
 }
 // Absolute paths: the compiler reports file names the way it was given them.
-const options: Options = { tsconfig: path.resolve(tsconfig), root: path.resolve(root), projectId: project, settings: JSON.parse(arg("--settings") ?? "{}"), enums: process.argv.includes("--enums"), rootScreens: process.argv.includes("--root-screens") };
+const options: Options = { tsconfig: path.resolve(tsconfig), root: path.resolve(root), projectId: project, settings: JSON.parse(arg("--settings") ?? "{}"), enums: process.argv.includes("--enums"), rootScreens: process.argv.includes("--root-screens"), routeRender: process.argv.includes("--route-render") };
 const out = extract(options);
 const chunks: string[] = [];
 for (const line of out.lines) chunks.push(JSON.stringify(line));

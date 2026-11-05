@@ -16,7 +16,8 @@ public sealed record BuildStats(
     IReadOnlyList<string> LoadErrors, IReadOnlyList<string> LoadWarnings, IReadOnlyList<string> Detectors, long LoadMs, long ExtractMs, long LinkMs, long TotalMs,
     int HistoryLines = 0, string HistoryStatus = "", long HistoryMs = 0, int DirtyFiles = 0,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] PythonStats? Python = null,
-    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] RootScreenStats? RootScreens = null);
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] RootScreenStats? RootScreens = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] RouteRenderStats? RouteRender = null);
 
 /// <summary>Screens with no route on the map, and the ❓ the rule couldn't settle. Only with <c>root-screens</c> on.</summary>
 public sealed record RootScreenStats(int Screens, int Unresolved)
@@ -25,6 +26,15 @@ public sealed record RootScreenStats(int Screens, int Unresolved)
     public const string NamePrefix = "(no route) ";
     public static RootScreenStats From(CodeGraph graph) => new(
         graph.AllNodes.Count(n => n.Kind == NodeKind.Page && n.Name.StartsWith(NamePrefix, StringComparison.Ordinal)),
+        graph.AllBlindSpots.Count(b => b.Detector == Detector));
+}
+
+/// <summary>Routes written with <c>render</c> or <c>children</c> that name a component, and the ❓ that don't. Only with <c>route-render</c> on.</summary>
+public sealed record RouteRenderStats(int Routes, int Unresolved)
+{
+    public const string Detector = "route-render";
+    public static RouteRenderStats From(CodeGraph graph) => new(
+        graph.AllEdges.Where(e => e.Kind == EdgeKind.RoutesTo && e.Detector == Detector).Select(e => e.Source).Distinct(StringComparer.Ordinal).Count(),
         graph.AllBlindSpots.Count(b => b.Detector == Detector));
 }
 
@@ -124,11 +134,13 @@ public static class GraphBuilder
 
         // Frontends (D30): fingerprinted and re-extracted the same way, by the bundled Node extractor.
         // Python (D127) first: a repo with Python also has its plain React apps read, a repo without keeps the map it had.
-        var pythonProjects = StangentComponents.IsOn(repo.Config, "python") ? PythonScanner.Find(repo.Root) : [];
-        var frontends = FrontendScanner.Find(repo.Root, plainReact: pythonProjects.Count > 0);
-        // Screens with no route (root-screens) change what's extracted, so turning it on or off re-reads each frontend.
+        // A switch for React routes asks for React to be read, so it reads a plain app in a repo with no Python too.
         var rootScreensOn = StangentComponents.IsOn(repo.Config, "root-screens");
-        var frontendSalt = salt + "\n" + FrontendScanner.ExtractorHash() + (rootScreensOn ? "\nroot-screens" : "");
+        var routeRenderOn = StangentComponents.IsOn(repo.Config, "route-render");
+        var pythonProjects = StangentComponents.IsOn(repo.Config, "python") ? PythonScanner.Find(repo.Root) : [];
+        var frontends = FrontendScanner.Find(repo.Root, plainReact: pythonProjects.Count > 0 || rootScreensOn || routeRenderOn);
+        // Screens with no route (root-screens) and render routes (route-render) change what's extracted, so turning one on or off re-reads each frontend.
+        var frontendSalt = salt + "\n" + FrontendScanner.ExtractorHash() + (rootScreensOn ? "\nroot-screens" : "") + (routeRenderOn ? "\nroute-render" : "");
         var frontendDirs = frontends.Select(f => f.Directory).ToList();
         var frontendPrints = frontends.ToDictionary(f => f.Id,
             f => CanonicalJson.Hash(FrontendScanner.Fingerprint(repo.Root, f, frontendDirs) + "\n" + frontendSalt), StringComparer.Ordinal);
@@ -154,7 +166,7 @@ public static class GraphBuilder
                 {
                     var f = frontendChanged[i];
                     log.WriteLine($"stangent: extracting {f.RelativeTsConfig}");
-                    results[i] = FrontendScanner.Extract(repo.Root, f, frontendPrints[f.Id], repo.Config.DetectorSettings, enums: enumsOn, rootScreens: rootScreensOn);
+                    results[i] = FrontendScanner.Extract(repo.Root, f, frontendPrints[f.Id], repo.Config.DetectorSettings, enums: enumsOn, rootScreens: rootScreensOn, routeRender: routeRenderOn);
                     return ValueTask.CompletedTask;
                 });
                 foreach (var (fragment, frontWarnings, error) in results)
@@ -242,7 +254,8 @@ public static class GraphBuilder
             loadMs, extract.ElapsedMilliseconds, link.ElapsedMilliseconds, total.ElapsedMilliseconds,
             graph.HistoryLines.Count, graph.History?.Status ?? "", history.ElapsedMilliseconds, graph.DirtyFiles?.Count ?? 0,
             pythonProjects.Count > 0 ? PythonStats.From(graph, pythonProjects.Count) : null,
-            rootScreensOn ? RootScreenStats.From(graph) : null);
+            rootScreensOn ? RootScreenStats.From(graph) : null,
+            routeRenderOn ? RouteRenderStats.From(graph) : null);
         return (graph, stats);
     }
 
