@@ -149,6 +149,8 @@ Off, the output is the same as before the component existed.
 
 ## Screen tests: 🟡 `opens-screen` (D115)
 
+`stangent workflows tests` resolves a test's gotos with this same method, and writes nothing to the graph (`docs/spec.md`, D149).
+
 An existing Playwright spec whose `goto` matches a screen's route is a line from the spec and line to the `page` point. It says a
 test exists: evidence strength `read`. Only a real run can make it `ran`, and the graph never runs anything.
 

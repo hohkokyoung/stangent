@@ -143,7 +143,7 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D110 · The core stays C#; no port to Python
 - D111 · Stangent imports PDF and Excel as well as Word
 
-## D112–D148: the overhaul; new decisions go here
+## D112–D149: the overhaul; new decisions go here
 
 [`decisions/6-overhaul.md`](decisions/6-overhaul.md)
 
@@ -164,7 +164,7 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D126 · Batch 1 of §9: a hard cost stop, checks around a run, FSD import fixes
 - D127 · Python joins the code graph, tested on the owner's own project
 - D128 · The parsed spec is the clean source of truth; new Word files come in as proposals a BA or PM checks
-- D129 · Journeys come from both sides: the FSD's stay, and end-to-end tests add what the app does
+- D129 · Journeys come from both sides: the FSD's stay, and end-to-end tests add what the app does → J.1 built ahead of the use-case runs by D149
 - D130 · A bundle stores only what's unique; code assembles the rest
 - D131 · Batch 2 of §9: bundles store what's unique, corrections stick, pages when needed
 - D132 · Security review is its own checked step in Phase 6, apart from the FSD comparison
@@ -184,3 +184,4 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D146 · A repeated step groups despite its number, a page-cut step is one claim, a disprove bundle holds an endpoint's callers (`disprove-callers`, off), and two docs say what's true
 - D147 · Workflow files are built: a flow's status by code, steps by their own numbers, and older links counted rather than placed (`workflow-files`, off); builds D144
 - D148 · A security flag is built: the disprove step sets it, any verdict can carry it, and only a person answers it (`security-flag`, off); builds D141
+- D149 · Journeys read from end-to-end tests are built ahead of the use-case runs, and compare nothing (`test-journeys`, off); builds D129's J.1

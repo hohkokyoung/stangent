@@ -336,3 +336,25 @@ Built 2026-11-05 on the frontend's pattern: a parse-only extractor, the `python`
 - `Pull.cs` keeps `.cs`, `.ts` and `.js` attachments as text, not `.py`.
 - `PageIndex.cs` reads strings from Python with the script rule, and follows Razor views, not Flask templates.
 
+## What the tests walk through (D129, D149, `test-journeys`, off), 2026-11-06
+
+**Built from Phase 1b's frontend reader and D115's route resolution. Fakes and the extractor's own tests only: no AI, no judge, no fresh check. Measured on scratch copies, with the graphs already built.**
+
+| Repo | Test files | Tests | Hooks | Steps | ❓ | Gotos | Reach a screen | Reach a reference page | Left out as another runner's |
+|---|---|---|---|---|---|---|---|---|---|
+| eShop | 3 | 3 | 0 | 35 | 10 | 5 | 0 | 0 | 0 |
+| Actual | 32 | 140 | 57 | 1,225 | 820 | 36 | 24 | 0 | 133 |
+| Bonds | 32 | 218 | 0 | 2,779 | 956 | 142 | 60 | 0 | 127 |
+
+- **eShop by hand, every statement of its 3 test files against the output:** 35 steps, 25 right, 0 wrong, 10 ❓. The ❓ are 5 helpers (`emptyCart`, `addProductToCart`, `removeFirstCartItem`) and 5 gotos whose words are right with no screen resolved. The order, lines and words of all 35 match. Nothing in those files is missing as a step: the two lines that aren't steps name a place or hold a promise, and they're read where they're used.
+- **Actual's ❓:** 339 page-object calls, 332 targets from a page object, 69 checks on a value, 23 helpers, 18 unknown page calls, 17 loops, 12 gotos with no screen, 5 not read outside a test, 2 conditions, 2 try blocks, 1 computed selector.
+- **Bonds' ❓:** 621 helpers, 97 targets from a page object, 82 gotos with no screen, 46 computed selectors, 46 checks on a value, 25 unknown page calls, 23 page-object calls, 9 loops, 5 conditions, 1 try block, 1 not read outside a test.
+- **Actual and bonds were counted, not read through by hand.** A spot check found one real file of Actual's left out as another runner's, because it was all page objects. It's fixed, and the counts above are after the fix.
+- **With the switch off:** the command says so and writes nothing. `stangent-ts-extract.mjs` is byte-identical after the new bundle's build (checked by hash), so the graph's salt doesn't move. `SavedWorkTests`' pins pass unchanged.
+- **Tests:** 41 in the extractor's suite, of which 21 are this reader's, and `TestJourneyTests`. The only edits to existing tests are the three D149 names.
+
+**Not run:**
+- A link to a real reference page: none of these clones has recorded pages, so that ran on a fake only.
+- Any AI step, any use-case run, and a fresh check.
+- Sonarr and RealWorld's spec repo, which weren't asked for.
+

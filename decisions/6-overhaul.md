@@ -219,7 +219,7 @@ Follows D15, D16, D18, D20, D66, D75, D120, D121 and D125. Items T.2, T.4, T.5, 
 **Why:** a spec only people's approvals can change is one anyone can trust, and clients will keep sending Word files whatever Stangent says.
 **Cost:** more work for a BA or PM, and a light rewrite can look like many changes. The repo can differ from what a client signed unless Stangent can export it. Roughly 150-250K tokens, not measured.
 
-## D129 · Journeys come from both sides: the FSD's stay, and end-to-end tests add what the app does — 2026-11-05 (owner: "but the journey should be by the code test also no?"; "nvm keep them, make sure we record our improvements already"; decided, not built)
+## D129 · Journeys come from both sides: the FSD's stay, and end-to-end tests add what the app does — 2026-11-05 (owner: "but the journey should be by the code test also no?"; "nvm keep them, make sure we record our improvements already"; decided; J.1 built by D149, ahead of the use-case runs)
 - **D99's journeys and scenarios stay (owner).** The assistant proposed freezing them and cutting them if a use-case run came back empty; the owner said to keep them. They say what the client asked for, and they're the only journeys a new feature or a project with no end-to-end tests can have.
 - **Journeys are also read from end-to-end tests (owner).** They say what the app does. For each test, in order: the page, what's clicked and filled in, and what's checked.
 - **Assistant's call, reversible (the owner said to record these; none was asked one at a time):**
@@ -525,3 +525,41 @@ Follows D18, D20, D118, D119, D120, D121, D122, D144, D145, D146. Fakes and coun
 - `SpecSettings` gained a field.
 
 Follows D18, D20, D61, D118, D119, D120, D132, D137, D141, D147. Fakes only; no paid or AI run, no fresh check.
+
+## D149 · Journeys read from end-to-end tests are built ahead of the use-case runs, and compare nothing (`test-journeys`, off) — 2026-11-06 (owner: "lets continuing building, dont care about the tokens, just keep going"; builds D129's J.1; the details are the assistant's call)
+
+**Order:** D129 had said after the use-case runs. Those can't run yet, so this goes ahead of them. **The cost of that order:** nobody knows yet whether these files help a use case, and D129's reason for waiting was to see the D99 journeys first. So it stays off, and it stays out of every comparison.
+
+**Decided:**
+- **`stangent workflows tests [--out]`** writes `specs/workflows/tests/<spec path>.md` for each test file and an `index.md` counting tests, steps and ❓. Same rules as D147: a generated first line, nothing reads them back, the same bytes on a rebuild, and a rebuild removes only its own files, only inside that folder. A file is named by its spec's path, so a moved line renames nothing. No contract or schema, because nothing reads these, so D20 has nothing to bump and no consumer to mark.
+- **It compares nothing.** No FSD, no claims, no verdict, no pass count. It shows what the tests walk through.
+- **Steps, by parsing only:** `goto`, click, fill, select, `expect`-style checks, other actions, waits and reads, in the order written, each with its line and the test's own words. `beforeEach` and the like are blocks of their own, counted once, not repeated in each test. A local `const` naming a place on the page is followed and shown beside the words. `let` isn't, since it can change.
+- **Only a goto says which page a step is on.** A click can go anywhere, so the steps after one aren't placed on a page. A goto links through the graph's own route resolution, now one shared method (`PlaywrightDetector.Resolve`), and then to a recorded reference page if there is one.
+- **❓, with a fixed reason and a count, never a guess:** a helper; a page object's method or target; a computed selector; a check on a value rather than a locator; a page call the reader doesn't know; a built URL or a goto with no screen; a loop, condition or try block, as one step with a count of what's inside it, which isn't read; tests made by a loop or a call outside any test. A variable as a filled-in or expected value isn't ❓: its words are shown, and they say it's a variable.
+- **Which files:** the same as `graph screen-tests`. A file with no Playwright import, beside a config, counts only with a step on `page` or a test asking for a `page`, `browser` or `context` fixture. Without that, unit tests beside a config would look like journeys. Asking for a fixture was added after the first measure left out a real file of Actual's that was all page objects.
+- **A document already called `tests`:** this command took the name. Off, `workflows tests` still writes that document's files as before. On, it's refused, rather than two things sharing a folder.
+
+**Why:** D129 wanted journeys that say what the app does, read by code, each step linked to the reference page. The tests already have them, so no AI page is needed and D54 and D63 stand.
+
+**Corrected from the brief:** the extractor didn't read Playwright specs. `PlaywrightSpecs` is regular expressions in C#, and only finds gotos. The steps come from a new parser in `tools/ts-extractor`, in a bundle of its own.
+
+**Rejected:**
+- **Growing the graph's extractor.** Its hash is in the graph's salt, so every frontend would be read again, with the switch off too. A second bundle leaves `stangent-ts-extract.mjs` byte-identical (checked).
+- **Following helpers into other functions and files.** It would cut most of the ❓, and it needs arguments mapped to parameters, so it's a guess until it's tested. Left to a later measure.
+- **Reading what's inside a loop or a condition as steps.** Their count and whether they run isn't known, and the brief says not to invent.
+- **Placing steps after a click on a page.** It reads better and it's a guess.
+- **One file per test.** Two tests can share a title, and a name built from a line number moves.
+
+**Measured, no AI (`phases/1b-frontend-api.md`):**
+- **eShop, checked by hand against its 3 files:** 35 steps. 25 right, 0 wrong, 10 ❓ (5 helpers, 5 gotos whose words are right and whose page isn't resolved).
+- **Actual:** 32 files, 140 tests, 1,225 steps, 820 ❓. **Bonds:** 32 files, 218 tests, 2,779 steps, 956 ❓.
+
+**Cost:**
+- **Most of Actual is ❓ (67%),** because its tests are written with page objects. Bonds is 34%, and 621 of its 956 are helpers.
+- **No goto reached a reference page in any measure,** because these clones have no recorded pages. That link has only run on a fake.
+- **eShop's 5 gotos all stay ❓:** its Blazor screens aren't on the map, and that's the resolution as D115 built it. So eShop shows the steps and no pages.
+- **Gotos inside a helper aren't counted here.** 178 of the 244 gotos `graph screen-tests` lists in Actual and bonds are in a test's body. The others sit in functions, seen only as the helper's ❓.
+- **Two existing tests needed a word,** besides `ComponentTests`' off list: `WorkflowFileTests`' list of who uses `workflows/` gained this file, and its pin on the sweep's first-line check follows a parameter's new name. `PlaywrightDetector.Link` was cut into shared methods; its tests and pins pass unchanged.
+- **J.3 (the page verifier reading the tests) can be decided now,** and these ❓ rates count against it: on Actual, it would mostly read that a page object was called.
+
+Follows D18, D20, D30, D54, D63, D115, D120, D129, D147. Fakes only; no paid or AI run, no fresh check.

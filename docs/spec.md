@@ -319,6 +319,29 @@ specs/workflows/<doc>/s-0120-login/c-2474-main-sequence-of-events.md
 
 The heading also counts open questions: every link waiting on a person, whatever the status.
 
+### What the tests walk through (D129, D149)
+
+`stangent workflows tests [--out <dir>]`, off unless `components.test-journeys` is on, needs a built graph and Node, and no AI. It compares nothing: no FSD, no claims, no verdict, no pass count. It only shows what the Playwright tests walk through, so only tested flows appear, and there are no actors.
+
+```
+specs/workflows/tests/index.md                      counts of tests, steps and ❓, ❓ by reason, one line per test file
+specs/workflows/tests/e2e/CartTest.spec.ts.md       each test and hook, its steps in order
+```
+
+```
+1. ❓ `emptyCart(page)` (line 5): a helper function, which isn't followed
+3. ❓ **Go to**: `page.goto('/cart')` (line 8): no page resolved. playwright goto: no screen on the map has the route /cart
+6. **Check**: `expect(quantity).toHaveValue('1')` = `page.locator('[data-cart-quantity-input]')` (line 13)
+```
+
+- **Which files:** those `graph screen-tests` reads (`docs/code-graph.md`). One with no Playwright import counts only with a step on `page`, or a test or hook asking for `page`, `browser` or `context`. The result counts the others as `otherRunnersTests`.
+- **Steps:** `goto`, click, fill, select, `expect`-style checks, other actions, waits and reads, in the order written, in the test's own words. Hooks are blocks of their own, counted once. `test.step` and `Promise.all` are read through in place. A local `const` naming a place on the page is followed. Opening and closing a browser isn't a step.
+- **Pages:** only a goto says which page it's on, through the graph's route resolution. It links to a recorded reference page if there is one, or says `no reference page yet`. The steps after a click aren't placed on a page.
+- **❓ is counted by reason,** with no step invented: a helper, a page object, a computed selector, a check on a value, an unknown page call, a goto with no screen, and a loop, condition or try block, whose insides aren't read. Tests that may be made outside any test (a loop, a call) are listed as not read.
+- **Nothing reads these files.** The same inputs give the same bytes, and a rebuild removes only files with its first line, only in that folder. A file is named by its spec's path, so a moved line renames nothing. The files hold no commit; the result's `graphCommit` says which graph resolved the gotos.
+- **A document called `tests`:** off, this command still writes that document's files. On, it's refused (`name_taken`).
+- **The reader:** `tools/ts-extractor/src/testSteps.ts`, by parsing only, in its own bundle `stangent-test-steps.mjs`, so the graph's extractor and hash don't move.
+
 ### A new version (D117)
 
 A first import goes straight in, unless `first-import-approval` is on (above). The same file again is `unchanged`; if a candidate is waiting it gives its hash in `candidate`, and a `note` says promoting would still apply it and how to discard it. A different file for that document id no longer replaces it:
