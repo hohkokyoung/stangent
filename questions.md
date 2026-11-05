@@ -12,12 +12,10 @@ Only what's still open, sorted by when it needs answering (D136). When one is an
 
 - **A first real pilot, a cut rule, a cap and an earlier bundle test (proposed by the assistant, 2026-11-04; the owner: "ok what we gonna do next, and lets do it in a new sessin"; not numbered until confirmed; order on `roadmap.md`):**
   (a) **The next milestone is a first real pilot** on the owner's own project, even with no FSD: pages, impact, one real ticket. Nothing added lately has met a real FSD or a real project, and the core result is still 24 of 30 found with 44% false alarms. Free steps first; AI steps on the owner's OK.
-  (b) **Cut rule:** a component that fails a bar gets one fix attempt, then it's removed. Stops a failing piece collecting fixes forever.
-  (c) **Cap on new items:** nothing joins the list unless a test or real use showed the need. `improvements.md` has about 40 items waiting, 19 of them on tests.
+  (b) **Cut rule:** decided, D138.
+  (c) **Cap on new items:** rejected, D139.
   (d) **"Does the bundle help a fix?" runs earlier:** in the test phase, before Phase 4 is grilled, not with it. Every Phase 3 bar checks a piece; none shows the bundle helps. Paid, on the owner's OK.
   **Order changed by the owner (2026-11-05: "wy not just build more first and we measure each stage later"):** I and T are built before the pilot, as D120 already says. Assistant's call, reversible: T.9, T.10 and I.12 wait for a repo or document that needs them; X items stay off. **Cost:** none of I or T can move 24 of 30 or 44%, so the core result stays unmeasured on a real spec for another 500-700K tokens, and defects stay in longer (D120's cost).
-  **Still to settle, from writing this down:** the cut rule read literally removes 2c's links, which already failed both bars and are what the FSD side is for. Recommended: for a piece the pipeline can't run without, "removed" means its output stops counting as a finding until a person reads it, and the disprove re-score counts as its one fix attempt. D120's "bars and decisions stay as they are" holds either way: the rule cuts components, it doesn't move bars.
-
 - **A bigger spec for the test material (owner, 2026-11-05):** recommended, not confirmed: `umbraco/UmbracoDocs` beside Umbraco itself. Details under "Which project the pilot runs on" in [`decisions/answered-questions.md`](decisions/answered-questions.md).
 - **May a "nearby" FSD link count toward "working as agreed"? (asked 2026-11-02, not answered):** recommended: no, context only, a person decides. Details under "Ticket retrieval redesign" in [`decisions/answered-questions.md`](decisions/answered-questions.md).
 - **Recommended, not confirmed (2026-11-04):** BAs editing through Claude, not yet; journey pages, not yet; table comparison as a labelled second route, yes; installer, when BAs become users; keep `MaxChapterGap = 10`; `improvements.md` as the agreed list, yes.

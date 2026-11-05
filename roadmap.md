@@ -32,9 +32,7 @@ The build order (decisions.md D19) and how phases stay in step with each other (
 7. **"Does the bundle help a fix?", moved earlier:** run in the test phase, not left to Phase 4's grill, because Phase 4 is built on the answer. The fix agent on the same bugs three ways (`questions.md`). Paid, on the owner's OK.
 8. Grill Phase 4.
 
-**Two rules, also proposed:**
-- **Cut rule:** a component that fails a bar gets one fix attempt. If it fails again, it's removed.
-- **Cap on new items:** nothing joins the list unless a test or real use showed the need. Ideas go in a note, not on the list.
+**Cut rule (D138):** a component that fails a bar gets one fix attempt. If it fails again, it's removed; one the pipeline can't run without stays, with its output unconfirmed until a person reads it. The disprove re-score is the links' one attempt. No cap on new items (D139).
 
 ## Phases
 

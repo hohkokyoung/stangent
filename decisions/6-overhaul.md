@@ -312,3 +312,18 @@ Twelve lines under "How to work here", each naming its decision: D18, D20, D22, 
 **Rejected:** counting false alarms from PM rulings, as the assistant first described it, because it makes the PM the check on Stangent.
 **Cost:** a check that wrongly decides a real difference isn't there hides it from the PM, and nobody notices. So it needs its own way of catching real findings thrown away, and a person still reads a sample to score it. Until it's built, every finding still reaches a person.
 
+## D138 · The cut rule: a component that fails a bar gets one fix attempt, then it's removed — 2026-11-05 (owner, asked to accept it with the exception: "ok sure")
+- **One fix attempt.** A component that fails its bar gets one fix and one more test. If it fails again, it's deleted.
+- **The exception: a component the pipeline can't run without.** It stays, but "removed" means its output stops counting as a finding until a person has read it.
+- **The links are the first case.** They've failed both bars (24 of 30 found, 44% false alarms), and the disprove re-score after Nov 7 counts as their one fix attempt. If that fails, everything they flag stays unconfirmed (D137).
+- **The rule cuts components and doesn't move bars,** so D120's "bars and decisions stay as they are" holds.
+**Why:** a failing piece can otherwise collect fixes forever, while about 40 ideas wait and §8's and §9's batches have only met fakes.
+**Rejected:** the rule read literally, which removes the links and with them the whole FSD comparison. Keeping on fixing for as long as a piece needs, because nothing would ever stop.
+**Cost:** some work gets thrown away, including pieces a second fix might have saved. A piece can also fail because its test was poor, and the rule doesn't allow for that. Which components count as ones the pipeline can't run without is a person's call when it comes up.
+
+## D139 · No cap on new items — 2026-11-05 (owner, asked "nothing new joins the list without a test or real use?": "nah")
+New ideas can still join the list without a test or real use showing the need. D120's build first, test later stands.
+**Why:** the owner's call; no reason given. It fits "wy not just build more first and we measure each stage later".
+**Rejected:** the cap the assistant proposed, under which ideas stay as notes until a test or real use shows the need.
+**Cost:** the list can keep growing faster than anything gets tested; about 40 items wait now, and §8's and §9's batches have only met fakes. D138 only acts on what has been tested, so it doesn't limit this.
+
