@@ -71,3 +71,49 @@ public class SharedHeadTests
         Assert.Equal(full, SharedHead.Assemble(SharedHead.Store(full)));
     }
 }
+
+/// <summary>A hand edit to document.md reaches nothing, so it's said where the document is read (D131).</summary>
+public class FsdHandEditTests
+{
+    const string Text = """
+        #! Orders
+        The orders screen has a Place order button.
+        ## Approval
+        Orders over 50 need approval.
+        """;
+
+    static string Imported(SpecApp app)
+    {
+        var file = Path.Combine(app.Root, "shop.docx");
+        File.WriteAllBytes(file, DocxWriter.Write(Text));
+        FsdImport.Import(app.Repo, file);
+        return Path.Combine(FsdImport.DocDir(app.Root, "shop"), "document.md");
+    }
+
+    static SpecApp App() => new($"version: 1\nfsd: {{ archive: {{ name: docs, path: '{Directory.CreateTempSubdirectory("stangent-archive-").FullName}' }} }}\n");
+
+    [Fact]
+    public void A_fresh_import_says_nothing()
+    {
+        using var app = App();
+        Imported(app);
+        Assert.Null(FsdStatus.Of(app.Root, "shop")["documentEdited"]);
+    }
+
+    [Theory]
+    [InlineData("Orders over 50 need approval.", "Orders over 75 need approval.")]
+    [InlineData("Orders over 50 need approval.", "Orders over 50 need approval.\n\nA new sentence.")]
+    [InlineData("Approval", "Sign-off")]
+    public void An_edit_is_named_in_status_and_outline_and_changes_nothing_else(string from, string to)
+    {
+        using var app = App();
+        var md = Imported(app);
+        var before = FsdOutline.Load(app.Root, "shop").ToJsonString();
+        File.WriteAllText(md, File.ReadAllText(md).Replace(from, to));
+        var edited = FsdStatus.Of(app.Root, "shop")["documentEdited"]!.AsObject();
+        Assert.Contains("import it again", (string)edited["warning"]!);
+        Assert.NotEmpty(edited["sections"]!.AsArray());
+        Assert.NotNull(FsdOutline.Outline(app.Root, "shop")["documentEdited"]);
+        Assert.Equal(before, FsdOutline.Load(app.Root, "shop").ToJsonString());
+    }
+}

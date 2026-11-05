@@ -16,6 +16,7 @@ public static class FsdStatus
 
         var doubtful = waiting is null ? [] : waiting["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful").Select(e => (string?)e["to"] ?? (string)e["permanentId"]!).ToList();
         var result = new JsonObject { ["doc"] = doc };
+        if (document is not null) FsdHandEdit.Note(root, doc, document, result);
         if (document is not null)
             result["current"] = new JsonObject
             {

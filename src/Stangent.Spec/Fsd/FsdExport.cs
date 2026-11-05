@@ -35,6 +35,7 @@ public static partial class FsdExport
         if (maxLines < 1) throw new StangentException("usage", "--max-lines must be at least 1.", ExitCodes.Usage);
         var document = FsdOutline.Load(root, doc);
         var hash = (string)document["original"]!["hash"]!;
+        FsdHandEdit.Note(root, doc, document, null);
         var lines = File.ReadAllText(Path.Combine(FsdImport.DocDir(root, doc), "document.md")).Split('\n');
         var dir = outDir is null ? DefaultDir(root, doc) : Path.GetFullPath(outDir, root);
 

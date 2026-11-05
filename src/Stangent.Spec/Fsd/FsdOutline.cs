@@ -29,7 +29,7 @@ public static class FsdOutline
     {
         var document = Load(root, doc);
         var chapter = 0;
-        return new JsonObject
+        var result = new JsonObject
         {
             ["doc"] = doc, ["hash"] = (string)document["original"]!["hash"]!, ["title"] = (string)document["title"]!,
             ["outline"] = new JsonArray([.. Sections(document).Select(s =>
@@ -44,6 +44,8 @@ public static class FsdOutline
                 return (JsonNode)o;
             })]),
         };
+        FsdHandEdit.Note(root, doc, document, result);
+        return result;
     }
 
     public static string OutlineText(JsonNode? result)
@@ -59,6 +61,7 @@ public static class FsdOutline
         var document = Load(root, doc);
         var s = Find(document, section);
         var (tables, figures) = FsdObjects.In(document, (string?)s["permanentId"] ?? "");
+        FsdHandEdit.Note(root, doc, document, null);
         return new JsonObject
         {
             ["doc"] = doc, ["id"] = (string?)s["permanentId"], ["number"] = (string)s["id"]!, ["title"] = (string)s["title"]!, ["level"] = (int)s["level"]!,
