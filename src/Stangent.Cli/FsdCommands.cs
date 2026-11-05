@@ -229,6 +229,10 @@ static class FsdCommands
         var sendBack = new Command("send-back", "A person sends a finding the AI called refuted or unreachable back to the BA's queue (D119). Who comes from git.") { findingArg, whyOption };
         sendBack.SetAction(pr => Cli.Run(pr, "trace send-back", ctx => TraceFindings.Review(ctx.Repo.Root, pr.GetValue(findingArg)!, "sent-back", TicketCommands.Who(ctx), pr.GetValue(whyOption))));
         trace.Subcommands.Add(sendBack);
+        var securityAnswer = new Argument<string>("answer") { Description = "confirmed: it touches security. not-security: it doesn't." };
+        var security = new Command("security", "A person answers an AI's flag that a finding touches security (D141, D148). Nothing else closes it, and it sets no severity. Who comes from git.") { findingArg, securityAnswer, whyOption };
+        security.SetAction(pr => Cli.Run(pr, "trace security", ctx => TraceFindings.AnswerSecurity(ctx.Repo.Root, pr.GetValue(findingArg)!, pr.GetValue(securityAnswer)!, TicketCommands.Who(ctx), pr.GetValue(whyOption))));
+        trace.Subcommands.Add(security);
 
         var byOption = new Option<string>("--by") { Description = "Who approved or merged the PR, from the code host (D24): CI passes it.", Required = true };
         var attribute = new Command("attribute", "After a merge: fill decided_by on every decision, and severity_by on every severity, the merged PR changed (D58, D118).") { baseOption, byOption };

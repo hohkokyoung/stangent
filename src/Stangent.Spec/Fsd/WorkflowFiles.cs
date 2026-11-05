@@ -68,7 +68,7 @@ public static partial class WorkflowFiles
         var files = new Dictionary<string, string>(StringComparer.Ordinal);
         var lines = new List<string>();
         var totals = Enumerable.ToDictionary([Matches, Open, Differs, NotJudged, NotAnswered], s => s, _ => 0, StringComparer.Ordinal);
-        int useCases = 0, flowCount = 0, openQuestions = 0, offFlow = 0, emptyLabels = 0, notOnAStep = 0;
+        int useCases = 0, flowCount = 0, openQuestions = 0, offFlow = 0, emptyLabels = 0, notOnAStep = 0, flagsOnNoStep = 0;
         foreach (var s in sections.Where(s => (string?)s["permanentId"] is not null && claimsOf.Contains((string)s["permanentId"]!)))
         {
             var id = (string)s["permanentId"]!;
@@ -84,6 +84,9 @@ public static partial class WorkflowFiles
             var placed = flows.SelectMany(f => f.Steps).Select(c => c.Id).ToHashSet(StringComparer.Ordinal);
             var unplaced = links.Count(e => (string?)e["fsd"]?["claim"] is not { } c || !placed.Contains(c));
             notOnAStep += unplaced;
+            // A flag on a link no step holds has no flow to make open, so every flow file in the section and the index name it, and it isn't lost (D148).
+            var flagged = links.Where(TraceFindings.SecurityOpen).Where(e => (string?)e["fsd"]?["claim"] is not { } c || !placed.Contains(c)).Select(e => (string?)e["finding"] ?? (string)e["id"]!).ToList();
+            flagsOnNoStep += flagged.Count;
 
             var folder = Name(id, (string)s["title"]!, "section");
             var counts = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -97,11 +100,11 @@ public static partial class WorkflowFiles
                 totals[status]++;
                 openQuestions += waiting;
                 flowCount++;
-                files[$"{folder}/{Name(flow.Id, flow.Name, "flow")}.md"] = header + Render(flow, s, status, waiting, steps, states, judged ? 0 : unplaced, index);
+                files[$"{folder}/{Name(flow.Id, flow.Name, "flow")}.md"] = header + Render(flow, s, status, waiting, steps, states, judged ? 0 : unplaced, index, flagged);
             }
             var match = counts.GetValueOrDefault(Matches);
             var rest = counts.Where(c => c.Key != Matches).OrderBy(c => c.Key, StringComparer.Ordinal).Select(c => $"{c.Value} {c.Key}");
-            lines.Add($"- [{Normalize(s["title"])}]({folder}/): {match} of {flows.Count} {(flows.Count == 1 ? "flow matches" : "flows match")}{string.Concat(rest.Select(r => $", {r}"))}. Section {(string)s["id"]!}.{(unplaced > 0 ? $" {unplaced} {Plural(unplaced, "link")} on no flow's step." : "")}");
+            lines.Add($"- [{Normalize(s["title"])}]({folder}/): {match} of {flows.Count} {(flows.Count == 1 ? "flow matches" : "flows match")}{string.Concat(rest.Select(r => $", {r}"))}. Section {(string)s["id"]!}.{(unplaced > 0 ? $" {unplaced} {Plural(unplaced, "link")} on no flow's step." : "")}{(flagged.Count > 0 ? $" Unanswered security {Plural(flagged.Count, "flag")} on no step: {string.Join(", ", flagged)}." : "")}");
         }
 
         var without = sections.Count - useCases;
@@ -123,13 +126,15 @@ public static partial class WorkflowFiles
             var path = Path.Combine(dir, name);
             if (!File.Exists(path) || File.ReadAllText(path) != text) Quotes.WriteAtomic(path, text);
         }
-        return new JsonObject
+        var result = new JsonObject
         {
             ["written"] = true, ["doc"] = doc, ["out"] = Path.GetRelativePath(root, dir), ["files"] = files.Count, ["removed"] = removed,
             ["useCases"] = useCases, ["flows"] = flowCount, ["sections"] = sections.Count, ["sectionsWithNoFlows"] = without, ["openQuestions"] = openQuestions,
             ["statuses"] = new JsonObject(totals.OrderBy(t => t.Key, StringComparer.Ordinal).Select(t => KeyValuePair.Create(t.Key, (JsonNode?)t.Value))),
             ["claimsInNoFlow"] = offFlow, ["labelsWithNoSteps"] = emptyLabels, ["linksOnNoStep"] = notOnAStep,
         };
+        if (flagsOnNoStep > 0) result["securityFlagsOnNoStep"] = flagsOnNoStep;
+        return result;
     }
 
     /// <summary>A file of old claims would show a document that's gone, so it's refused. This writes nothing outside its folder, so it doesn't catch them up itself.</summary>
@@ -192,7 +197,11 @@ public static partial class WorkflowFiles
     /// What one link says. A person's ruling comes first. <c>accepted</c> is a difference known and left, so it still differs; <c>page-wrong</c> and <c>defer</c> are waiting on someone. A verdict nobody
     /// has confirmed closes nothing (D119), through <see cref="TraceFindings.GoesTo"/>. An <c>unclear</c> finding is a question, not a difference (C.4). A finding a new build no longer finds says nothing.
     /// </summary>
-    static string Reading(JsonObject e)
+    static string Reading(JsonObject e) =>
+        // An unanswered flag is waiting on a person, so its step can't read as settled, even on a finding closed or gone (D148). A difference stays what it is: the flag is shown on it and counted.
+        LinkReading(e) is var reading && reading != Differs && TraceFindings.SecurityOpen(e) ? Open : reading;
+
+    static string LinkReading(JsonObject e)
     {
         if (TraceFindings.IsGone(e)) return Gone;
         var finding = TraceFindings.IsFinding(e);
@@ -208,7 +217,7 @@ public static partial class WorkflowFiles
         return (string?)e["state"] == "unclear" ? Question : Open;
     }
 
-    static bool Waiting(JsonObject e) => Reading(e) is var r && (r is Open or Question || r == Differs && e["decision"] is null);
+    static bool Waiting(JsonObject e) => TraceFindings.SecurityOpen(e) || Reading(e) is var r && (r is Open or Question || r == Differs && e["decision"] is null);
 
     /// <summary>The worst of its links. A question beside an agree or a closed finding leaves the step as it is, and is counted; on its own, it's what's open.</summary>
     static string StepState(List<JsonObject> links, bool judged)
@@ -225,11 +234,12 @@ public static partial class WorkflowFiles
     static string StatusOf(List<string> steps, bool judged) =>
         !judged ? NotJudged : steps.Contains(Differs) ? Differs : steps.Contains(Open) ? Open : steps.Contains(NotAnswered) ? NotAnswered : Matches;
 
-    static string Render(Flow flow, JsonObject section, string status, int waiting, List<(StoredClaim Claim, List<JsonObject> Links)> steps, List<string> states, int oldLinks, SpecIndex index)
+    static string Render(Flow flow, JsonObject section, string status, int waiting, List<(StoredClaim Claim, List<JsonObject> Links)> steps, List<string> states, int oldLinks, SpecIndex index, List<string> flaggedOnNoStep)
     {
         var sb = new StringBuilder($"# {Quotes.Normalize(flow.Name)} · {status.ToUpperInvariant()}{(waiting > 0 ? $", {waiting} open {Plural(waiting, "question")}" : "")}\n\n");
         sb.Append($"Section {(string)section["id"]!} {Normalize(section["title"])} (`{(string)section["permanentId"]!}`){(flow.Label is null ? "" : $", flow label `{flow.Label}`")}.\n");
         if (oldLinks > 0) sb.Append($"\n{oldLinks} older {Plural(oldLinks, "link")} on this section {(oldLinks == 1 ? "names" : "name")} no claim, so {(oldLinks == 1 ? "it isn't" : "they aren't")} on a step here.\n");
+        if (flaggedOnNoStep.Count > 0) sb.Append($"\nUnanswered security {Plural(flaggedOnNoStep.Count, "flag")} on this section, on no step here: {string.Join(", ", flaggedOnNoStep)}.\n");
         for (var i = 0; i < steps.Count; i++)
         {
             var (claim, links) = steps[i];
@@ -261,6 +271,8 @@ public static partial class WorkflowFiles
             if (e["decision"] is not null) sb.Append($" · {Decision(e)}");
             if ((string?)e["check"] is not "confirmed") sb.Append($" · {((string?)e["check"] == "disputed" ? "disputed by the second check" : "not confirmed by a second check")}");
         }
+        if (TraceFindings.SecurityView(e) is { } flag)
+            sb.Append((string?)flag["answer"] == "unanswered" ? $" · **security flag, unanswered:** {Normalize(flag["why"])} (`{(string?)flag["at"]}`)" : $" · security flag {(string?)flag["answer"]} by {(string?)flag["answerBy"]}");
         return sb.ToString();
     }
 

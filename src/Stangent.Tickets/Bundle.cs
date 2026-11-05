@@ -219,7 +219,8 @@ public static class TicketBundle
     {
         var findings = repo.Config.Fsd.Findings;
         var entries = ctx.Trace.Where(e => e["fsd"] is JsonObject && (string?)e["page"]?["id"] is { } p && pages.Contains(p))
-            .Where(e => findings || (string?)e["state"] == "agree").Where(e => !TraceFindings.Closed(e));
+            // An unanswered security flag stays in sight whatever else happened to its finding (D148).
+            .Where(e => findings || (string?)e["state"] == "agree" || TraceFindings.SecurityOpen(e)).Where(e => !TraceFindings.Closed(e) || TraceFindings.SecurityOpen(e));
         var result = new JsonArray();
         foreach (var g in entries.GroupBy(e => ((string)e["fsd"]!["doc"]!, (string)e["fsd"]!["section"]!))
                      .OrderBy(g => g.Key.Item1, StringComparer.Ordinal).ThenBy(g => TraceFile.SectionKey(g.Key.Item2), StringComparer.Ordinal))
@@ -238,12 +239,18 @@ public static class TicketBundle
                             ["check"] = (string?)e["check"], ["decision"] = (string?)e["decision"], ["decided"] = e["decision"] is not null,
                         };
                         if ((string)e["state"]! != "agree") link["unconfirmed"] = e["decision"] is null;
+                        if (TraceFindings.SecurityView(e) is { } flag) link["security"] = flag;
                         return (JsonNode)link;
                     })]),
             });
         }
         return result;
     }
+
+    /// <summary>A flag beside its link (D148), plain when nobody has answered it. An AI's flag and not a security review, so a clean bundle says nothing about holes.</summary>
+    static string SecurityMark(JsonNode? flag) => flag is null ? ""
+        : (string?)flag["answer"] == "unanswered" ? $" · **SECURITY FLAG, UNANSWERED:** {flag["why"]} (`{flag["at"]}`, the AI's reading; no person has answered it)"
+        : $" · security flag {flag["answer"]} by {flag["answerBy"]}";
 
     /// <summary>The written pages that explain the file points (D101), best first, each with the files it explains:
     /// pages whose statements cite code in a file ("cites"), ranked by how many of the files they cite, then by the
@@ -419,7 +426,7 @@ public static class TicketBundle
             {
                 md.Append($"### §{s!["id"]} {s["title"]} ({s["doc"]})\n\n");
                 foreach (var l in s["links"]!.AsArray())
-                    md.Append($"- {l!["state"]} with `{l["page"]}`{(l["statement"] is null ? "" : $" {l["statement"]}")}{((bool)l["decided"]! ? $" · decided: {l["decision"]}" : " · not decided yet")}{((bool?)l["unconfirmed"] == true ? " · unconfirmed" : "")}\n");
+                    md.Append($"- {l!["state"]} with `{l["page"]}`{(l["statement"] is null ? "" : $" {l["statement"]}")}{((bool)l["decided"]! ? $" · decided: {l["decision"]}" : " · not decided yet")}{((bool?)l["unconfirmed"] == true ? " · unconfirmed" : "")}{SecurityMark(l["security"])}\n");
                 md.Append('\n');
             }
         }

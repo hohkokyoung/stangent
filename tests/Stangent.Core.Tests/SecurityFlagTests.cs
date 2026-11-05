@@ -382,6 +382,242 @@ public class SecurityFlagTests
         Assert.True(TraceFindings.SecurityOpen(e));
     }
 
+    // ---- a person answers it ----
+
+    [Theory]
+    [InlineData("confirmed")]
+    [InlineData("not-security")]
+    public void A_person_answers_it_from_their_git_name_and_it_stays_on_file_and_grades_nothing(string answer)
+    {
+        using var app = App();
+        var was = Flagged(app, "refuted");
+        var result = TraceFindings.AnswerSecurity(app.Root, "X-0001", answer, "pat", "read the line");
+        Assert.Equal((answer, "pat", "developer-confirm"), ((string)result["answer"]!, (string)result["by"]!, (string)result["goesTo"]!));
+
+        var e = Entry(app);
+        Assert.Equal(TraceFindings.SecurityAnswer(e), answer);
+        Assert.False(TraceFindings.SecurityOpen(e));
+        Assert.Equal((string)was["security_hash"]!, (string)e["security_hash"]!);
+        var move = StateChanges.History(app.Root, StateKinds.FindingSecurity, (string)e["id"]!).Last();
+        Assert.Equal((answer, StateActor.PersonKind, "pat"), (move.To, move.Who.Kind, move.Who.Name));
+        // D118: a confirmed flag grades nothing.
+        Assert.Equal("ungraded", (string)e["severity"]!);
+        Assert.Null(e["severity_by"]);
+        Assert.Equal((string)was["verdict"]!, (string)e["verdict"]!);
+
+        var report = CheckIt(app);
+        Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report)));
+        Assert.Empty(report["queues"]!["security"]!.AsArray());
+        var listed = report["findings"]![0]!;
+        Assert.Equal((answer, "pat", "read the line"), ((string)listed["security"]!["answer"]!, (string)listed["security"]!["answerBy"]!, (string)listed["security"]!["answerWhy"]!));
+        Assert.Null(listed["alsoGoesTo"]);
+        Assert.Equal("developer-confirm", (string)listed["goesTo"]!);
+        Assert.Equal(0, (int)report["counts"]!["security"]!["unanswered"]!);
+        Assert.Equal(1, (int)report["counts"]!["security"]!["flagged"]!);
+    }
+
+    [Fact]
+    public void A_person_can_change_their_mind_and_saying_the_same_again_is_refused()
+    {
+        using var app = App();
+        Flagged(app);
+        TraceFindings.AnswerSecurity(app.Root, "X-0001", "confirmed", "pat", null);
+        Assert.Equal("already_answered", Assert.Throws<StangentException>(() => TraceFindings.AnswerSecurity(app.Root, "X-0001", "confirmed", "sam", null)).Code);
+        TraceFindings.AnswerSecurity(app.Root, "X-0001", "not-security", "sam", "wrong line");
+        var e = Entry(app);
+        Assert.Equal("not-security", TraceFindings.SecurityAnswer(e));
+        Assert.Equal("sam", (string)e["security_note"]!["by"]!);
+    }
+
+    [Fact]
+    public void Only_a_flag_can_be_answered_and_only_with_its_two_words()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        CheckIt(app);
+        Assert.Equal("not_flagged", Assert.Throws<StangentException>(() => TraceFindings.AnswerSecurity(app.Root, "X-0001", "confirmed", "pat", null)).Code);
+        Assert.Equal("not_found", Assert.Throws<StangentException>(() => TraceFindings.AnswerSecurity(app.Root, "X-9999", "confirmed", "pat", null)).Code);
+        Assert.Equal("usage", Assert.Throws<StangentException>(() => TraceFindings.AnswerSecurity(app.Root, "X-0001", "closed", "pat", null)).Code);
+    }
+
+    [Fact]
+    public void A_typed_answer_counts_for_nothing_and_is_a_problem_and_a_person_can_still_answer()
+    {
+        using var app = App();
+        Flagged(app);
+        Edit(app, e =>
+        {
+            e["security_state"] = "not-security";
+            e["security_note"] = new JsonObject { ["by"] = "someone", ["why"] = "typed" };
+        });
+        var e = Entry(app);
+        Assert.Null(TraceFindings.SecurityAnswer(e));
+        Assert.True(TraceFindings.SecurityOpen(e));
+        var report = CheckIt(app);
+        Assert.False((bool)report["ok"]!);
+        Assert.Contains(Problems(report), p => p.Contains("security answer isn't what code wrote") && p.Contains("X-0001"));
+        Assert.Equal("X-0001", (string)report["queues"]!["security"]![0]!);
+        Assert.Equal("unanswered", (string)report["findings"]![0]!["security"]!["answer"]!);
+
+        TraceFindings.AnswerSecurity(app.Root, "X-0001", "not-security", "pat", null);
+        Assert.Equal("unanswered", StateChanges.History(app.Root, StateKinds.FindingSecurity, (string)e["id"]!).Last().From);
+        Assert.True((bool)CheckIt(app)["ok"]!);
+    }
+
+    [Fact]
+    public void An_answer_hash_from_another_flag_answers_nothing()
+    {
+        using var app = App();
+        Flagged(app);
+        TraceFindings.AnswerSecurity(app.Root, "X-0001", "not-security", "pat", null);
+        Edit(app, e => e["security_answer_hash"] = TraceFile.SecurityAnswerHash("not-security", e["security_note"] as JsonObject, TraceFile.SecurityHash(new JsonObject { ["why"] = "other" })));
+        Assert.True(TraceFindings.SecurityOpen(Entry(app)));
+        Assert.False((bool)CheckIt(app)["ok"]!);
+    }
+
+    [Fact]
+    public void A_typed_flag_is_a_problem_stays_in_sight_and_cant_be_answered()
+    {
+        using var app = App();
+        Flagged(app);
+        Edit(app, e => e["security"]!["why"] = "someone typed this");
+        var report = CheckIt(app);
+        Assert.Contains(Problems(report), p => p.Contains("security flag isn't what code wrote"));
+        Assert.Equal("X-0001", (string)report["queues"]!["security"]![0]!);
+        Assert.Equal("flag_typed", Assert.Throws<StangentException>(() => TraceFindings.AnswerSecurity(app.Root, "X-0001", "not-security", "pat", null)).Code);
+    }
+
+    [Fact]
+    public void Taking_a_flag_out_of_the_file_is_a_problem_against_the_base()
+    {
+        using var app = App();
+        Flagged(app);
+        CheckIt(app);
+        var baseTrace = TraceFile.Load(app.Root);
+        Edit(app, e =>
+        {
+            e.Remove("security");
+            e.Remove("security_hash");
+            e.Remove("security_state");
+        });
+        Assert.Contains(Problems(CheckIt(app, baseTrace: baseTrace)), p => p.Contains("security flag was removed"));
+
+        Save(app);
+        Assert.Contains(Problems(CheckIt(app, baseTrace: baseTrace)), p => p.Contains("had a security flag"));
+    }
+
+    [Fact]
+    public void An_answer_drops_when_the_statement_changes_as_a_decision_does_and_the_flag_is_open_again()
+    {
+        using var app = App();
+        Flagged(app);
+        TraceFindings.AnswerSecurity(app.Root, "X-0001", "not-security", "pat", null);
+        Assert.NotNull(Entry(app)["security_note"]!["on"]);
+        var id = (string)Entry(app)["id"]!;
+
+        StatementIdTests.Regenerate(app, StatementIdTests.Writer(rules: [StatementIdTests.S(Page100 + " unless someone signs them off.", SpecApp.Place)]));
+        var waiting = CheckIt(app);
+        Assert.False((bool)waiting["ok"]!);
+        Assert.Contains(Problems(waiting), p => p.Contains("answered its security flag"));
+
+        var fixedIt = CheckIt(app, fix: true);
+        var e = Entry(app);
+        Assert.Equal("unanswered", (string)e["security_state"]!);
+        Assert.Null(e["security_note"]);
+        Assert.Null(e["security_answer_hash"]);
+        Assert.True(TraceFindings.SecurityOpen(e));
+        Assert.Equal("X-0001", (string)fixedIt["queues"]!["security"]![0]!);
+        var move = StateChanges.History(app.Root, StateKinds.FindingSecurity, id).Last();
+        Assert.Equal(("unanswered", StateActor.CodeKind), (move.To, move.Who.Kind));
+    }
+
+    [Fact]
+    public void An_answer_drops_when_the_fsd_quote_is_no_longer_there()
+    {
+        using var app = App();
+        Flagged(app);
+        TraceFindings.AnswerSecurity(app.Root, "X-0001", "confirmed", "pat", null);
+        var file = Path.Combine(FsdImport.DocDir(app.Root, "shop"), "document.json");
+        File.WriteAllText(file, File.ReadAllText(file).Replace(Fsd50, "Orders over 60 need approval.", StringComparison.Ordinal));
+
+        Assert.Contains(Problems(CheckIt(app)), p => p.Contains("answered its security flag"));
+        CheckIt(app, fix: true);
+        Assert.True(TraceFindings.SecurityOpen(Entry(app)));
+    }
+
+    [Fact]
+    public void An_unchanged_statement_keeps_an_answer_through_a_check()
+    {
+        using var app = App();
+        Flagged(app);
+        TraceFindings.AnswerSecurity(app.Root, "X-0001", "not-security", "pat", null);
+        CheckIt(app, fix: true);
+        Assert.Equal("not-security", TraceFindings.SecurityAnswer(Entry(app)));
+    }
+
+    [Fact]
+    public void A_later_flag_on_another_line_lets_go_of_an_answer_and_one_on_the_same_line_keeps_it()
+    {
+        using var app = App();
+        Flagged(app);
+        TraceFindings.AnswerSecurity(app.Root, "X-0001", "not-security", "pat", null);
+        var again = TraceFile.Load(app.Root);
+        var entry = again["entries"]![0]!.AsObject();
+
+        var same = new JsonObject { ["why"] = "Reworded.", ["path"] = "Core/OrderService.cs", ["start"] = 9, ["end"] = 9, ["quote"] = RealLine, ["symbol"] = "s", ["commit"] = "c", ["inputs"] = "i" };
+        TraceFindings.Flag(app.Root, entry, same, StateActor.Code("t"));
+        Assert.Equal("not-security", TraceFindings.SecurityAnswer(entry));
+        Assert.Equal(Why, (string)entry["security"]!["why"]!);
+
+        var other = new JsonObject { ["why"] = "Another line.", ["path"] = "Core/OrderService.cs", ["start"] = 3, ["end"] = 3, ["quote"] = "another line of code", ["symbol"] = "s", ["commit"] = "c", ["inputs"] = "i" };
+        TraceFindings.Flag(app.Root, entry, other, StateActor.Code("t"));
+        Assert.True(TraceFindings.SecurityOpen(entry));
+        Assert.Equal("Another line.", (string)entry["security"]!["why"]!);
+        Assert.Null(entry["security_note"]);
+    }
+
+    [Fact]
+    public void The_command_takes_its_name_from_git_and_has_no_way_to_type_one()
+    {
+        using var app = App();
+        Flagged(app);
+        var refused = WholeFlow.RunIn(app.Root, "trace", "security", "X-0001", "confirmed", "--by", "someone");
+        Assert.NotEqual(0, refused.Exit);
+        Assert.True(TraceFindings.SecurityOpen(Entry(app)));
+        Assert.Equal(ExitCodes.Usage, WholeFlow.RunIn(app.Root, "trace", "security", "X-0001", "closed").Exit);
+
+        var run = WholeFlow.RunIn(app.Root, "trace", "security", "X-0001", "not-security", "--why", "wrong line");
+        Assert.Equal(0, run.Exit);
+        var e = Entry(app);
+        Assert.Equal("not-security", TraceFindings.SecurityAnswer(e));
+        Assert.Equal((string)run.Envelope["result"]!["by"]!, (string)e["security_note"]!["by"]!);
+        Assert.Equal("wrong line", (string)e["security_note"]!["why"]!);
+        Assert.Equal(StateActor.PersonKind, StateChanges.History(app.Root, StateKinds.FindingSecurity, (string)e["id"]!).Last().Who.Kind);
+    }
+
+    // ---- trace links ----
+
+    [Fact]
+    public void Trace_links_shows_it_and_says_nothing_of_it_when_theres_none()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        var plain = TraceLinks.Run(app.Root, "shop", null);
+        Assert.DoesNotContain("security", plain.ToJsonString());
+
+        Save(app);
+        Flagged(app);
+        var links = TraceLinks.Run(app.Root, "shop", null);
+        Assert.Equal("unanswered", (string)links["links"]![0]!["security"]!["answer"]!);
+        Assert.Equal(Why, (string)links["links"]![0]!["security"]!["why"]!);
+        Assert.Equal(1, (int)links["counts"]!["securityUnanswered"]!);
+
+        TraceFindings.AnswerSecurity(app.Root, "X-0001", "confirmed", "pat", null);
+        var answered = TraceLinks.Run(app.Root, "shop", null);
+        Assert.Equal(("confirmed", "pat"), ((string)answered["links"]![0]!["security"]!["answer"]!, (string)answered["links"]![0]!["security"]!["answerBy"]!));
+        Assert.Equal(0, (int)answered["counts"]!["securityUnanswered"]!);
+    }
+
     [Fact]
     public void No_table_lets_code_answer_or_an_agent_move_it_or_anything_close_a_flag()
     {

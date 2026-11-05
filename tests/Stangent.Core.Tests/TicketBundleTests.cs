@@ -1,3 +1,4 @@
+using Stangent.Spec.Trace;
 using System.Text.Json.Nodes;
 using Stangent.Core;
 using Stangent.Spec.Fsd;
@@ -270,6 +271,104 @@ public class TicketBundleTests
         var conflict = b["sections"]![0]!["links"]!.AsArray().Single(l => (string?)l!["state"] == "conflict")!;
         Assert.True((bool)conflict["unconfirmed"]!);
         Assert.True((bool)b["findings"]!);
+    }
+
+    // ---- a security flag (D148) ----
+
+    /// <summary>The conflict with a flag code wrote, and with what else it takes.</summary>
+    static void FlagTheConflict(SpecApp app, Action<JsonObject>? more = null)
+    {
+        var trace = TraceFile.Load(app.Root);
+        var e = trace["entries"]!.AsArray().OfType<JsonObject>().Single(x => (string?)x["state"] == "conflict");
+        var flag = new JsonObject
+        {
+            ["why"] = "The server trusts an id sent in the request.", ["path"] = "web/src/Orders.tsx", ["start"] = 3, ["end"] = 3, ["quote"] = "post(order)",
+            ["symbol"] = SpecApp.Save, ["commit"] = new string('a', 40), ["inputs"] = new string('b', 64),
+        };
+        e["security"] = flag;
+        e["security_hash"] = TraceFile.SecurityHash(flag);
+        e["security_state"] = "unanswered";
+        more?.Invoke(e);
+        TraceFile.Save(app.Root, trace);
+    }
+
+    static JsonNode? Conflict(JsonObject b) => b["sections"]![0]?["links"]!.AsArray().SingleOrDefault(l => (string?)l!["state"] == "conflict");
+
+    static string Md(SpecApp app, string key) => File.ReadAllText(new TicketPaths(app.Root, key).BundleMarkdown);
+
+    [Fact]
+    public void An_unanswered_flag_is_marked_plainly_in_the_bundle()
+    {
+        using var app = App("fsd:\n  findings: true\n");
+        OrdersPage(app);
+        Fsd(app);
+        FlagTheConflict(app);
+        Ticket(app, "SHOP-30", "On /orders the total is wrong.");
+        var b = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-30");
+        var flag = Conflict(b)!["security"]!;
+        Assert.Equal("unanswered", (string?)flag["answer"]);
+        Assert.Equal("The server trusts an id sent in the request.", (string?)flag["why"]);
+        Assert.Contains("**SECURITY FLAG, UNANSWERED:** The server trusts an id sent in the request. (`web/src/Orders.tsx:3-3`", Md(app, "SHOP-30"));
+    }
+
+    [Fact]
+    public void An_answered_flag_says_who_and_no_flag_says_nothing()
+    {
+        using var app = App("fsd:\n  findings: true\n");
+        OrdersPage(app);
+        Fsd(app);
+        Ticket(app, "SHOP-31", "On /orders the total is wrong.");
+        var plain = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-31");
+        Assert.DoesNotContain("security", plain.ToJsonString());
+        Assert.DoesNotContain("SECURITY", Md(app, "SHOP-31"));
+
+        FlagTheConflict(app);
+        var id = (string)TraceFile.Load(app.Root)["entries"]!.AsArray().OfType<JsonObject>().Single(x => (string?)x["state"] == "conflict")["id"]!;
+        TraceFindings.AnswerSecurity(app.Root, id, "not-security", "pat", "wrong line");
+        var answered = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-31");
+        Assert.Equal("not-security", (string?)Conflict(answered)!["security"]!["answer"]);
+        Assert.Contains("security flag not-security by pat", Md(app, "SHOP-31"));
+        Assert.DoesNotContain("UNANSWERED", Md(app, "SHOP-31"));
+    }
+
+    [Fact]
+    public void A_closed_finding_leaves_the_bundle_unless_its_flag_is_unanswered()
+    {
+        static void Close(JsonObject e)
+        {
+            var disproof = new JsonObject { ["inputs"] = new string('b', 64), ["why"] = "w" };
+            e["verdict"] = "refuted";
+            e["disproof"] = disproof;
+            e["disproof_hash"] = TraceFile.DisproofHash("refuted", disproof);
+            var note = new JsonObject { ["by"] = "pat", ["why"] = "w" };
+            e["review"] = "confirmed";
+            e["review_note"] = note;
+            e["review_hash"] = TraceFile.ReviewHash("confirmed", note, (string?)e["disproof_hash"]);
+        }
+
+        using var app = App("fsd:\n  findings: true\n");
+        OrdersPage(app);
+        Fsd(app);
+        FlagTheConflict(app, Close);
+        Ticket(app, "SHOP-32", "On /orders the total is wrong.");
+        var open = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-32");
+        Assert.Equal("unanswered", (string?)Conflict(open)!["security"]!["answer"]);
+
+        var id = (string)TraceFile.Load(app.Root)["entries"]!.AsArray().OfType<JsonObject>().Single(x => (string?)x["state"] == "conflict")["id"]!;
+        TraceFindings.AnswerSecurity(app.Root, id, "not-security", "pat", null);
+        Assert.Null(Conflict(TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-32")));
+    }
+
+    [Fact]
+    public void With_findings_switched_off_an_unanswered_flag_still_shows()
+    {
+        using var app = App();
+        OrdersPage(app);
+        Fsd(app);
+        FlagTheConflict(app);
+        Ticket(app, "SHOP-33", "On /orders the total is wrong.");
+        var b = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-33");
+        Assert.Equal("unanswered", (string?)Conflict(b)!["security"]!["answer"]);
     }
 
     [Fact]

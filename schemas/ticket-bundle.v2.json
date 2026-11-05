@@ -548,6 +548,21 @@
                 "unconfirmed": {
                   "description": "A finding (fsd.findings on) no person has decided.",
                   "type": "boolean"
+                },
+                "security": {
+                  "description": "An AI's flag that this finding touches security (D148). `answer` is `unanswered` until a person answers it with `stangent trace security`. Not a security review: a link with no flag says nothing about holes.",
+                  "type": "object",
+                  "required": ["answer", "why", "quote", "at"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "answer": { "enum": ["unanswered", "confirmed", "not-security"] },
+                    "answerBy": { "type": ["string", "null"] },
+                    "answerWhy": { "type": ["string", "null"] },
+                    "why": { "type": "string" },
+                    "quote": { "type": "string" },
+                    "at": { "type": "string" },
+                    "atCommit": { "type": ["string", "null"] }
+                  }
                 }
               }
             }

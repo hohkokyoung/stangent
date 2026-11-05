@@ -116,6 +116,91 @@ public class WorkflowFileTests
         Assert.Equal(["claim-links"], StangentComponents.All.Single(c => c.Name == WorkflowFiles.Component).Needs);
     }
 
+    // ---- a security flag (D148) ----
+
+    static JsonObject WithFlag(JsonObject e, string? answer = null)
+    {
+        var flag = new JsonObject { ["why"] = "The server trusts the name it was sent.", ["path"] = "a.cs", ["start"] = 2, ["end"] = 2, ["quote"] = "save(name)", ["symbol"] = "s", ["commit"] = new string('a', 40), ["inputs"] = new string('b', 64) };
+        e["security"] = flag;
+        e["security_hash"] = TraceFile.SecurityHash(flag);
+        e["security_state"] = answer ?? "unanswered";
+        if (answer is null) return e;
+        var note = new JsonObject { ["by"] = "Ann", ["why"] = "read it" };
+        e["security_note"] = note;
+        e["security_answer_hash"] = TraceFile.SecurityAnswerHash(answer, note, (string?)e["security_hash"]);
+        return e;
+    }
+
+    [Fact]
+    public void A_flagged_unanswered_finding_makes_a_flow_open_with_the_flag_on_the_step_even_when_closed()
+    {
+        using var app = Fixture();
+        MainFlow(app, WithFlag(Finding(Step(app, "1. Enter the name.", "Main"), verdict: "refuted", review: "confirmed")));
+        var result = Run(app);
+        Assert.Equal(1, (int)result["statuses"]!["open"]!);
+        var file = FlowFile(app, "Main Flow:");
+        Assert.Equal("# Main Flow: · OPEN, 1 open question", Heading(file));
+        Assert.Contains("· open\n", file);
+        Assert.Contains("**security flag, unanswered:** The server trusts the name it was sent. (`a.cs:2-2`)", file);
+    }
+
+    [Fact]
+    public void An_answered_flag_opens_nothing_and_is_shown_with_who_answered()
+    {
+        using var app = Fixture();
+        MainFlow(app, WithFlag(Finding(Step(app, "1. Enter the name.", "Main"), verdict: "refuted", review: "confirmed"), "not-security"));
+        var result = Run(app);
+        Assert.Equal(0, (int)result["statuses"]!["open"]!);
+        var file = FlowFile(app, "Main Flow:");
+        Assert.StartsWith("# Main Flow: · MATCHES", Heading(file));
+        Assert.Contains("security flag not-security by Ann", file);
+    }
+
+    [Fact]
+    public void A_typed_answer_leaves_the_flow_open()
+    {
+        using var app = Fixture();
+        var e = WithFlag(Finding(Step(app, "1. Enter the name.", "Main"), verdict: "refuted", review: "confirmed"));
+        e["security_state"] = "not-security";
+        MainFlow(app, e);
+        Assert.Equal(1, (int)Run(app)["statuses"]!["open"]!);
+    }
+
+    [Fact]
+    public void A_flow_that_differs_stays_so_and_still_shows_and_counts_the_flag()
+    {
+        using var app = Fixture();
+        MainFlow(app, WithFlag(Finding(Step(app, "1. Enter the name.", "Main"), decision: "code-wrong")));
+        Assert.Equal(1, (int)Run(app)["statuses"]!["differs"]!);
+        var file = FlowFile(app, "Main Flow:");
+        Assert.Equal("# Main Flow: · DIFFERS, 1 open question", Heading(file));
+        Assert.Contains("**security flag, unanswered:**", file);
+    }
+
+    [Fact]
+    public void A_flag_on_a_link_no_step_holds_is_named_in_the_flow_file_and_the_index()
+    {
+        using var app = Fixture();
+        var older = Finding(Step(app, "1. Enter the name.", "Main"));
+        older["fsd"]!.AsObject().Remove("claim");
+        MainFlow(app, WithFlag(older));
+        var result = Run(app);
+        Assert.Equal(1, (int)result["securityFlagsOnNoStep"]!);
+        Assert.Contains("Unanswered security flag on this section, on no step here: X-0007.", FlowFile(app, "Main Flow:"));
+        Assert.Contains("Unanswered security flag on no step: X-0007.", Index(app));
+    }
+
+    [Fact]
+    public void With_no_flag_the_files_say_nothing_of_it()
+    {
+        using var app = Fixture();
+        MainFlow(app, Finding(Step(app, "1. Enter the name.", "Main")));
+        var result = Run(app);
+        Assert.Null(result["securityFlagsOnNoStep"]);
+        Assert.DoesNotContain("security", FlowFile(app, "Main Flow:"));
+        Assert.DoesNotContain("security", Index(app));
+    }
+
     // ---- statuses ----
 
     [Fact]

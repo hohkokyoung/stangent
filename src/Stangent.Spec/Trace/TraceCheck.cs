@@ -102,6 +102,9 @@ public static class TraceCheck
                 if ((string?)entryBefore?["finding"] is { } was && was != finding) problems.Add($"{id}: its finding id was {was} and is now {finding}; ids are issued by code");
                 if ((string?)e["severity_by"] is { } gradedBy && baseTrace is not null && (string?)baseByFinding.GetValueOrDefault(finding)?["severity_by"] != gradedBy)
                     problems.Add($"{id}: severity_by was set in this change ({gradedBy}); it's filled from git after merge, never typed");
+                // A flag never closes by itself, and taking it out of the file by hand is the one way left to close one.
+                if (baseByFinding.GetValueOrDefault(finding)?["security"] is JsonObject && !TraceFindings.Flagged(e))
+                    problems.Add($"{id}: its security flag was removed in this change; only a person's `stangent trace security` answers one, and the answer leaves it on file");
             }
             // A decided agree link nothing found again is kept as gone, with only its standing to say so (D145).
             else if (TraceFile.FindingFields.Any(f => e[f] is not null && !f.StartsWith("standing", StringComparison.Ordinal)))
@@ -181,6 +184,17 @@ public static class TraceCheck
                 else problems.Add($"{id}: the statement or quote changed after a person confirmed this verdict, so the confirmation must drop (run `stangent trace check --fix`)");
             }
 
+            // An answer to a flag rests on the same words, and drops the same way: the flag is open again.
+            if (TraceFindings.SecurityAnswer(e) is not null && (!quotesMatch || DecidedOn(e, index) != (string?)e["security_note"]?["on"]))
+            {
+                if (fix)
+                {
+                    TraceFindings.DropSecurityAnswer(root, e, StateActor.Code("stangent trace check"), "the statement or quote a person's answer was made on changed");
+                    stamped = true;
+                }
+                else problems.Add($"{id}: the statement or quote changed after a person answered its security flag, so the answer must drop (run `stangent trace check --fix`)");
+            }
+
             if (baseTrace is not null && (string?)e["decided_by"] is { } by && (!typedBefore.TryGetValue(id, out var before) || before != by)
                 // Code carried a person's decision to the id it has by claim (D145).
                 && !((string?)e["carried_from"] is { } from && typedBefore.GetValueOrDefault(from) == by)
@@ -188,6 +202,8 @@ public static class TraceCheck
                 && (string?)baseByLink.GetValueOrDefault(TraceFile.LinkKey(e))?["decided_by"] != by)
                 problems.Add($"{id}: decided_by was set in this change ({by}); it's filled from git after merge, never typed");
         }
+        foreach (var gone in baseEntries.Where(b => b["security"] is JsonObject && (string?)b["finding"] is { } f && !findingIds.Contains(f)))
+            problems.Add($"{(string?)gone["finding"]}: it had a security flag and isn't in the file now; a flag stays on file, even when nothing finds its link any more");
         var undecided = trace["entries"]!.AsArray().OfType<JsonObject>().Where(e => stale.Contains((string)e["id"]!) && e["decision"] is not null).Select(e => (string)e["id"]!).ToList();
         // A decision that dropped back took its person with it, and the evidence says who checked it.
         if (fix && (stale.Count > 0 || changedIds.Count > 0)) TraceFindings.Stamp(root, trace, index, baseTrace is null ? null : baseByFinding, refused);
@@ -255,7 +271,7 @@ public static class TraceCheck
     static JsonObject Report(JsonObject trace, List<string> problems, List<string> stale, List<string> undecided, List<JsonNode> retired, List<JsonNode> changed, JsonObject coverage)
     {
         var entries = trace["entries"]?.AsArray().OfType<JsonObject>().ToList() ?? [];
-        return new JsonObject
+        var report = new JsonObject
         {
             ["ok"] = problems.Count == 0,
             ["counts"] = new JsonObject
@@ -281,6 +297,9 @@ public static class TraceCheck
             ["gone"] = TraceFindings.Listing(TraceFile.Sorted(trace["entries"]?.AsArray() ?? []), gone: true),
             ["queues"] = TraceFindings.Groups(TraceFile.Sorted(trace["entries"]?.AsArray() ?? [])),
         };
+        if (entries.Any(TraceFindings.Flagged))
+            report["counts"]!["security"] = new JsonObject { ["flagged"] = entries.Count(TraceFindings.Flagged), ["unanswered"] = entries.Count(TraceFindings.SecurityOpen) };
+        return report;
     }
 
     /// <summary>Bulk approval (D53): every confirmed "agree" link under a chapter gets <c>decision: agree</c>, in one edit.</summary>

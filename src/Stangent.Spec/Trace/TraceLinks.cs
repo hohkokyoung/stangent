@@ -26,11 +26,13 @@ public static class TraceLinks
             if ((string?)e["fsd"]?["doc"] != doc || (only is not null && (string?)e["fsd"]?["section"] != only)) continue;
             var link = Link(e, index);
             links.Add((JsonNode)link);
+            // Only what's there, so a file with no flag reads as it always has.
+            if (TraceFindings.SecurityView(e) is { } flag) link["security"] = flag;
             var state = (string)e["state"]!;
             byState[state] = byState.GetValueOrDefault(state) + 1;
             if (link["code"]!.AsArray().Count > 0) withCode++;
         }
-        return new JsonObject
+        var result = new JsonObject
         {
             ["doc"] = doc, ["section"] = only, ["links"] = links,
             ["counts"] = new JsonObject
@@ -39,6 +41,9 @@ public static class TraceLinks
                 ["withCode"] = withCode, ["withoutCode"] = links.Count - withCode,
             },
         };
+        var flags = links.Where(k => k!["security"] is not null).Select(k => (string?)k!["security"]!["answer"]).ToList();
+        if (flags.Count > 0) result["counts"]!["securityUnanswered"] = flags.Count(a => a == "unanswered");
+        return result;
     }
 
     static JsonObject Link(JsonObject e, SpecIndex index)
