@@ -77,6 +77,8 @@ public static class TraceCheck
         var changedIds = new List<string>();
         var retired = new List<JsonNode>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
+        var retiredClaims = new List<JsonNode>();
+        var claimSets = new Dictionary<string, ClaimSet>(StringComparer.Ordinal);
         var requirements = new Lazy<HashSet<string>>(() => [.. Stangent.Spec.Requirements.RequirementFile.Docs(root).SelectMany(d => Stangent.Spec.Requirements.RequirementFile.Features(root, d))
             .SelectMany(f => f["requirements"]!.AsArray().Select(r => (string)r!["id"]!))]);
         foreach (var e in trace["entries"]!.AsArray().OfType<JsonObject>())
@@ -101,7 +103,8 @@ public static class TraceCheck
                 if ((string?)e["severity_by"] is { } gradedBy && baseTrace is not null && (string?)baseByFinding.GetValueOrDefault(finding)?["severity_by"] != gradedBy)
                     problems.Add($"{id}: severity_by was set in this change ({gradedBy}); it's filled from git after merge, never typed");
             }
-            else if (TraceFile.FindingFields.Any(f => e[f] is not null))
+            // A decided agree link nothing found again is kept as gone, with only its standing to say so (D145).
+            else if (TraceFile.FindingFields.Any(f => e[f] is not null && !f.StartsWith("standing", StringComparison.Ordinal)))
                 problems.Add($"{id}: an agree link isn't a finding, so it has no finding id, severity or evidence");
 
             // Nothing finds it now, so there's nothing to compare its quotes with: it's kept and listed (D122).
@@ -117,7 +120,11 @@ public static class TraceCheck
                 if (index.Sections.TryGetValue(((string)fsd["doc"]!, sectionId), out var section))
                 {
                     // A quote from an attachment is checked against that file, with the switch on or off: it's what the link says it rests on (D123).
-                    if (fsd["quote"] is { } q && !(fsd["attachment"] is not null ? AttachmentChecks.Check(root, fsd, (string)q!).Holds : Quotes.InText((string)q!, (string)section["text"]!))) quotesMatch = false;
+                    if ((string?)fsd["claim"] is { } claim)
+                    {
+                        if (claim != TraceFile.NoClaim && !ClaimHolds(root, id, fsd, claim, section, claimSets, problems, retiredClaims)) quotesMatch = false;
+                    }
+                    else if (fsd["quote"] is { } q && !(fsd["attachment"] is not null ? AttachmentChecks.Check(root, fsd, (string)q!).Holds : Quotes.InText((string)q!, (string)section["text"]!))) quotesMatch = false;
                 }
                 // Its section went in a promotion, so the quote has nothing to be checked against: that isn't a stale quote (D117).
                 else if (TraceFile.IsRemovedSection(sectionId)) problems.Add($"{id}: FSD section {fsd["doc"]} §{sectionId} was removed; its decision stays until a person deals with the entry");
@@ -131,7 +138,8 @@ public static class TraceCheck
                     var statement = index.Statement((string)page["id"]!, (string)st!);
                     if (statement is null && index.Retired(root, (string)page["id"]!, (string)st!))
                         retired.Add(new JsonObject { ["entry"] = id, ["page"] = (string)page["id"]!, ["statement"] = (string)st! });
-                    if (statement is null || (page["quote"] is { } pq && !Quotes.InText((string)pq!, (string)statement["text"]!)))
+                    // Code copied the whole statement into a link by ids (D145), so any other words mean it changed.
+                    if (statement is null || (page["quote"] is { } pq && (fsd?["claim"] is not null ? Quotes.Normalize((string)pq!) != Quotes.Normalize((string)statement["text"]!) : !Quotes.InText((string)pq!, (string)statement["text"]!))))
                         quotesMatch = false;
                     else if (nodes is not null)
                         foreach (var cite in statement["cites"]!.AsArray().Select(c => (string)c!).Where(c => !nodes.Contains(c)))
@@ -149,7 +157,7 @@ public static class TraceCheck
             }
             else if (DecidedOn(e, index) is { } textNow)
             {
-                var entryWas = baseEntries.FirstOrDefault(b => (string)b["id"]! == id) ?? baseByLink.GetValueOrDefault(TraceFile.LinkKey(e));
+                var entryWas = baseEntries.FirstOrDefault(b => (string)b["id"]! == id) ?? baseEntries.FirstOrDefault(b => (string)b["id"]! == (string?)e["carried_from"]) ?? baseByLink.GetValueOrDefault(TraceFile.LinkKey(e));
                 // A decision with its person still on it is the one the base holds: re-tying it to new words would keep it unchecked.
                 if (baseTrace is not null && e["decided_by"] is not null && (string?)entryWas?["decided_on"] is { } onBefore && (string?)e["decided_on"] != onBefore)
                     problems.Add($"{id}: decided_on was changed in this change; code writes it, and it ties the decision to the statement's text");
@@ -174,6 +182,8 @@ public static class TraceCheck
             }
 
             if (baseTrace is not null && (string?)e["decided_by"] is { } by && (!typedBefore.TryGetValue(id, out var before) || before != by)
+                // Code carried a person's decision to the id it has by claim (D145).
+                && !((string?)e["carried_from"] is { } from && typedBefore.GetValueOrDefault(from) == by)
                 // A promotion gave the entry a new id, because its section's number changed: the same link keeps who decided it (D117).
                 && (string?)baseByLink.GetValueOrDefault(TraceFile.LinkKey(e))?["decided_by"] != by)
                 problems.Add($"{id}: decided_by was set in this change ({by}); it's filled from git after merge, never typed");
@@ -187,7 +197,27 @@ public static class TraceCheck
         var stillDecided = trace["entries"]!.AsArray().OfType<JsonObject>().Where(e => changedIds.Contains((string)e["id"]!) && e["decision"] is not null);
         foreach (var e in stillDecided)
             problems.Add($"{e["id"]}: statement {e["page"]!["id"]} {e["page"]!["statement"]} changed after this decision was made on it, so the decision must drop back to undecided (run `stangent trace check --fix`)");
-        return Report(trace, problems, stale, undecided, retired, changed, TraceCoverage.All(root, trace));
+        var report = Report(trace, problems, stale, undecided, retired, changed, TraceCoverage.All(root, trace));
+        if (retiredClaims.Count > 0) report["retiredClaims"] = new JsonArray([.. retiredClaims]);
+        return report;
+    }
+
+    /// <summary>
+    /// A link by ids (D145): its claim exists, belongs to its section, its quote is that claim's words, and the section's text cut now still holds them. A claim the ledger retired, or words that changed, are stale, as a retired statement is:
+    /// the decision drops. A claim nobody ever gave out is a plain problem. Returns whether the link still holds.
+    /// </summary>
+    static bool ClaimHolds(string root, string id, JsonObject fsd, string claim, JsonObject section, Dictionary<string, ClaimSet> sets, List<string> problems, List<JsonNode> retired)
+    {
+        var doc = (string)fsd["doc"]!;
+        if (!sets.TryGetValue(doc, out var set)) sets[doc] = set = ClaimFile.Load(root, doc);
+        if (set.Find(claim) is not { } found)
+        {
+            if (ClaimFile.Retired(root, doc, claim)) retired.Add(new JsonObject { ["entry"] = id, ["doc"] = doc, ["claim"] = claim });
+            else problems.Add($"{id}: claim {claim} doesn't exist in specs/fsd/{doc}/claims.json");
+            return false;
+        }
+        if (found.Section != (string?)fsd["sectionId"]) problems.Add($"{id}: claim {claim} is in section {found.Section}, not {(string?)fsd["sectionId"]}");
+        return Quotes.Normalize((string?)fsd["quote"] ?? "") == found.Normalized && ClaimFile.StillIn(found.Words, section);
     }
 
     /// <summary>
@@ -232,7 +262,7 @@ public static class TraceCheck
             {
                 ["entries"] = entries.Count,
                 ["byState"] = new JsonObject(TraceFile.States.Select(s => KeyValuePair.Create(s, (JsonNode?)entries.Count(e => (string?)e["state"] == s)))),
-                ["undecided"] = entries.Count(e => e["decision"] is null && (!TraceFindings.IsFinding(e) || TraceFindings.GoesTo(e) == "ba")),
+                ["undecided"] = entries.Count(e => e["decision"] is null && !TraceFindings.IsGone(e) && (!TraceFindings.IsFinding(e) || TraceFindings.GoesTo(e) == "ba")),
                 ["findings"] = entries.Count(e => TraceFindings.IsDifference(e) && !TraceFindings.IsGone(e)),
                 ["unclear"] = entries.Count(e => (string?)e["state"] == "unclear" && !TraceFindings.IsGone(e)),
                 ["bySeverity"] = new JsonObject(Severity.All.Select(s => KeyValuePair.Create(s, (JsonNode?)entries.Count(e => TraceFindings.IsDifference(e) && !TraceFindings.IsGone(e) && ((string?)e["severity"] ?? Severity.Ungraded) == s)))),
@@ -296,7 +326,9 @@ public static class TraceCheck
             }
             var decision = (string?)e["decision"];
             // A promotion gave the entry a new id, because its section's number changed: nobody decided anything (D117).
-            var old = before.TryGetValue((string)e["id"]!, out var was) ? was : (string?)byLink.GetValueOrDefault(TraceFile.LinkKey(e))?["decision"];
+            var old = before.TryGetValue((string)e["id"]!, out var was) ? was
+                : (string?)e["carried_from"] is { } carried && before.TryGetValue(carried, out var carriedWas) ? carriedWas
+                : (string?)byLink.GetValueOrDefault(TraceFile.LinkKey(e))?["decision"];
             if (decision == old) continue;
             // The person's edit is already in the file: this is where it's seen, checked and put in the history.
             if ((string?)e["decided_by"] != by || decision is null)

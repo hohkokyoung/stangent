@@ -71,7 +71,7 @@ public static class TraceFile
             {
                 if (e[end] is not JsonObject o) { sb.Append($"    {end}: null\n"); continue; }
                 sb.Append($"    {end}:\n");
-                foreach (var k in end == "fsd" ? new[] { "doc", "section", "sectionId", "title", "requirement", "quote", "quoteHash", "attachment", "attachmentFile", "attachmentSheet", "attachmentRow" } : ["id", "statement", "quote", "quoteHash"])
+                foreach (var k in end == "fsd" ? new[] { "doc", "section", "sectionId", "title", "requirement", "claim", "quote", "quoteHash", "attachment", "attachmentFile", "attachmentSheet", "attachmentRow" } : ["id", "statement", "quote", "quoteHash"])
                     if (o[k] is not null) sb.Append($"      {k}: {S(o[k])}\n");
             }
             sb.Append($"    by: {S(e["by"])}\n");
@@ -82,6 +82,7 @@ public static class TraceFile
             sb.Append($"    decision: {S(e["decision"])}\n");
             sb.Append($"    decided_by: {S(e["decided_by"])}\n");
             if (e["decided_on"] is not null) sb.Append($"    decided_on: {S(e["decided_on"])}\n");
+            if (e["carried_from"] is not null) sb.Append($"    carried_from: {S(e["carried_from"])}\n");
             if (e["finding"] is not null) sb.Append($"    finding: {S(e["finding"])}\n");
             if (e["severity"] is not null) sb.Append($"    severity: {S(e["severity"])}\n");
             if (e["severity_by"] is not null) sb.Append($"    severity_by: {S(e["severity_by"])}\n");
@@ -127,11 +128,20 @@ public static class TraceFile
 
     /// <summary>An entry's id: the same link and quotes always get the same id, so decisions survive a re-run.</summary>
     /// <summary>The id an entry should have, with its section as given. A table fact has no page quote, so what was compared stands in for it: two members missing from one table cite the same header.</summary>
-    public static string IdOf(JsonObject e, string? section) => EntryId((string)e["state"]!, (string?)e["fsd"]?["doc"], section, (string?)e["page"]?["id"], (string?)e["fsd"]?["quote"],
+    public static string IdOf(JsonObject e, string? section) => (string?)e["fsd"]?["claim"] is { } claim
+        ? ClaimEntryId((string)e["state"]!, (string?)e["fsd"]?["doc"], (string?)e["fsd"]?["sectionId"], (string?)e["page"]?["id"], claim, (string?)e["page"]?["statement"])
+        : EntryId((string)e["state"]!, (string?)e["fsd"]?["doc"], section, (string?)e["page"]?["id"], (string?)e["fsd"]?["quote"],
         (string?)e["table_fact"]?["key"] ?? (string?)e["page"]?["quote"], (string?)e["fsd"]?["requirement"]);
 
     public static string EntryId(string state, string? doc, string? section, string? page, string? fsdQuote, string? pageQuote, string? requirement = null) =>
         "L" + CanonicalJson.Hash(string.Join("\u0001", [state, doc ?? "", section ?? "", page ?? "", Quotes.Normalize(fsdQuote ?? ""), Quotes.Normalize(pageQuote ?? ""), .. requirement is null ? Array.Empty<string>() : [requirement]]))[..10];
+
+    /// <summary>What <c>fsd.claim</c> says on a judge's undocumented link with <c>claim-links</c> on: it's a link by ids, resting on no claim.</summary>
+    public const string NoClaim = "none";
+
+    /// <summary>A link's id with <c>claim-links</c> on (D145), from ids alone, so it holds whichever words were ever quoted, and a section's new number moves nothing. The state stays in it: a ruling on `agree` must not carry over to a `conflict`.</summary>
+    public static string ClaimEntryId(string state, string? doc, string? sectionId, string? page, string? claim, string? statement) =>
+        "L" + CanonicalJson.Hash(string.Join("\u0001", "claims", state, doc ?? "", sectionId ?? "", page ?? "", claim ?? "", statement ?? ""))[..10];
 
     /// <summary>A link without its section. Its id holds the section's number, so a section that moved has a new id; this is how a base
     /// file's copy of the entry is still found (D117). Two entries sharing a key are left out, because it can't tell them apart.</summary>

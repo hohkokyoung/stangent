@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:fsd-claims:v1",
+  "title": "A document's claims with their permanent ids (contract fsd-claims v1, D145)",
+  "description": "specs/fsd/<doc>/claims.json. Written by code from document.json; the same document gives the same bytes. Ids come from the claims scope of ids.json.",
+  "type": "object",
+  "required": [
+    "version",
+    "doc",
+    "claims"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "doc": {
+      "type": "string"
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "section",
+          "position",
+          "flow",
+          "kind",
+          "shape",
+          "words"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^C-[0-9]{4,}$"
+          },
+          "section": {
+            "description": "The section's permanent id.",
+            "type": "string",
+            "pattern": "^S-[0-9]{4,}$"
+          },
+          "position": {
+            "description": "Its place in the section, from 1.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "flow": {
+            "description": "The nearest earlier text that introduces its steps (D143), or null.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "description": "claim is judged. The others are set aside by where they sit, and only given as context.",
+            "enum": [
+              "claim",
+              "column-heading",
+              "label-row",
+              "flow-label",
+              "figure"
+            ]
+          },
+          "shape": {
+            "description": "What it is in the text (D143).",
+            "enum": [
+              "sentence",
+              "list-item",
+              "table-row",
+              "step",
+              "flow-label",
+              "figure",
+              "block"
+            ]
+          },
+          "words": {
+            "type": "string"
+          },
+          "problem": {
+            "description": "Why it isn't clean (D143).",
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

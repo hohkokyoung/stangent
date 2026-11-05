@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:link-judge-claims-finer-output:v1",
+  "title": "What stangent-link-judge returns with claim-links and fsd.judgeFinerVerdicts on (D145, D124)",
+  "description": "link-judge-claims-output with partial and unclear added.",
+  "type": "object",
+  "required": [
+    "links"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "state",
+          "note"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "enum": [
+              "agree",
+              "gap",
+              "conflict",
+              "undocumented",
+              "partial",
+              "unclear"
+            ]
+          },
+          "claims": {
+            "description": "The ids of the claims this answers (agree, conflict, gap, partial, unclear). Naming one id of a line answers the whole line, unless another link names another of its ids.",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^C-[0-9]{4,}$"
+            }
+          },
+          "page": {
+            "description": "A candidate page's id (agree, conflict, undocumented, partial; optional for gap).",
+            "type": "string"
+          },
+          "statement": {
+            "description": "The page statement's id, e.g. R3.",
+            "type": "string",
+            "pattern": "^[SARE][0-9]+$"
+          },
+          "covered": {
+            "description": "partial: what the statement does show.",
+            "type": "string",
+            "maxLength": 600
+          },
+          "missing": {
+            "description": "partial: what it doesn't.",
+            "type": "string",
+            "maxLength": 600
+          },
+          "note": {
+            "description": "Why. On unclear, the reason it can't be told.",
+            "type": "string",
+            "maxLength": 600
+          }
+        }
+      }
+    }
+  }
+}

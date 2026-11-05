@@ -54,11 +54,23 @@ public static class LinkRun
         var section = index.Sections.GetValueOrDefault((doc, sectionId))
             ?? throw new StangentException("not_found", $"No section {sectionId} in FSD {doc}. Run `stangent fsd import` first.", ExitCodes.NotFound);
         if (((string)section["text"]!).Trim().Length == 0) return new RunStep("skipped", "none", Errors: ["the section has no text of its own"]);
+        // The step before a judge is where claim ids are written (D145): every path to a judge passes here, and a document imported before the switch went on needs no new import.
+        if (ClaimFile.On(repo.Config))
+        {
+            ClaimFile.Sync(repo.Root, doc);
+            if (section["permanentId"] is null)
+            {
+                index = SpecIndex.Load(repo.Root);
+                AttachmentChecks.Load(index, repo);
+                section = index.Sections[(doc, sectionId)];
+            }
+        }
         var runs = LoadRuns(repo.Root);
         var key = Key(doc, sectionId);
         var run = runs[key] as JsonObject;
         // Grouping (C.6): the unit may be more than this section. Off, this does nothing.
-        if (repo.Config.Fsd.GroupSections && SectionUnits.Prepare(set, repo, index, doc, sectionId) is { } grouped) return grouped;
+        // With claim-links on each section is judged alone: a claim's id already says which section it's in, and a group's links are made by quote (D145).
+        if (repo.Config.Fsd.GroupSections && !ClaimFile.On(repo.Config) && SectionUnits.Prepare(set, repo, index, doc, sectionId) is { } grouped) return grouped;
         var requirements = RequirementsInUse(repo, doc, section);
         // Every sentence is background: nothing here to link.
         if (requirements is { Count: 0 })
@@ -115,12 +127,14 @@ public static class LinkRun
                 + (unrecorded > 0 ? $"; {unrecorded} page(s) have no recorded version, so it may be among them" : "");
             List<JsonObject> gaps = RequirementsInUse(repo, doc, section) is { } reqs
                 ? [.. reqs.Select(r => Entry("gap", doc, section, FirstQuote(r), null, null, null, "code", null, why, (string)r["id"]!))]
-                : [Entry("gap", doc, section, quote, null, null, null, "code", null, why)];
+                : ClaimFile.On(repo.Config)
+                    ? [.. ClaimFile.Load(repo.Root, doc).Of((string?)section["permanentId"]).Where(c => c.Judged).Take(1).Select(c => Entry("gap", doc, section, c.Normalized, null, null, null, "code", null, why, claim: c.Id))]
+                    : [Entry("gap", doc, section, quote, null, null, null, "code", null, why)];
             var existing = TraceFile.Load(repo.Root)["entries"]!.AsArray().OfType<JsonObject>()
                 .Where(e => (string?)e["fsd"]?["doc"] == doc && (string?)e["fsd"]?["section"] == sectionId && !TraceFindings.IsGone(e) && (string?)e["state"] != TraceFile.TableFact).Select(e => (string)e["id"]!).ToList();
             List<JsonObject> recorded = repo.Config.Fsd.Findings ? gaps : [];
             if (carried is null && existing.SequenceEqual(recorded.Select(e => (string)e["id"]!))) return new RunStep("current", "none");
-            ApplyEntries(repo.Root, doc, sectionId, recorded);
+            ApplyEntries(repo.Root, doc, sectionId, recorded, carryOldRulings: ClaimFile.On(repo.Config) && RequirementsInUse(repo, doc, section) is null);
             UpdateRun(repo.Root, key, r => { MergeInto(r, carried); r["inputs"] = null; r["candidates"] = new JsonArray(); r["candidatesBy"] = by; r["links"] = 1; r.Remove("unit"); });
             return new RunStep("recorded", "none");
         }
@@ -128,7 +142,10 @@ public static class LinkRun
         candidates = listed.Kept;
         var requirements = RequirementsInUse(repo, doc, section);
         var finer = repo.Config.Fsd.JudgeFinerVerdicts;
-        var judgeBundle = (requirements is null ? JudgeBundle(section, doc, candidates.Select(c => c.Page), index, finer) : RequirementJudgeBundle(section, doc, candidates.Select(c => c.Page), index, requirements, finer)) + LeftOutBlock(listed.LeftOut);
+        // A section's built requirements stay as they are: requirements citing claims is a later slice (D145).
+        var byClaim = requirements is null && ClaimFile.On(repo.Config);
+        var judgeBundle = (byClaim ? ClaimLinks.Bundle(ClaimFile.Load(repo.Root, doc), section, doc, candidates.Select(c => c.Page), index, finer)
+            : requirements is null ? JudgeBundle(section, doc, candidates.Select(c => c.Page), index, finer) : RequirementJudgeBundle(section, doc, candidates.Select(c => c.Page), index, requirements, finer)) + LeftOutBlock(listed.LeftOut);
         var inputs = JudgeInputs(judgeBundle, requirements is not null, repo.Config.Fsd.Findings);
         // A group's links may be what's on file (C.6): this section's own saved work goes back, with no call.
         if ((string?)run?["inputs"] == inputs && (run?["unit"] is null || SectionUnits.RestoreOwn(repo.Root, doc, section, inputs))) return new RunStep("current", "none");
@@ -144,6 +161,7 @@ public static class LinkRun
         };
         if (listed.LeftOut.Count > 0) state["candidatesLeftOut"] = LeftOutList(listed.LeftOut);
         if (finer) state["schema"] = requirements is null ? FinerJudgeSchema : FinerRequirementJudgeSchema;
+        if (byClaim) { state["byClaim"] = true; state["schema"] = finer ? ClaimLinks.FinerOutputSchema : ClaimLinks.OutputSchema; }
         Stage(repo.Root, state, "judge", "prepared");
         Save(work, state);
         return Step(repo.Root, work, requirements is null ? Judge : RequirementJudge, "judge.md", "judge.json", "Section and candidate pages", (string?)state["schema"]) with { Warning = LeftOutWarning(listed.LeftOut, doc) };
@@ -187,6 +205,7 @@ public static class LinkRun
         var judge = byRequirement ? RequirementJudge : Judge;
         // One unit's sections, when it's more than this one (C.6). Each link is checked against its own.
         var unit = state["sections"]?.AsArray().Select(s => (string)s!).ToDictionary(s => s, s => index.Sections[(doc, s)], StringComparer.Ordinal);
+        var claims = (bool?)state["byClaim"] == true ? ClaimFile.Load(repo.Root, doc) : null;
 
         switch (stage)
         {
@@ -223,6 +242,11 @@ public static class LinkRun
                     var requirements = byRequirement ? Requirements(repo.Root, doc, section) ?? [] : null;
                     links = [.. output!["links"]!.AsArray().OfType<JsonObject>().Select(l =>
                     {
+                        if (claims is not null)
+                        {
+                            var filled = ClaimLinks.Fill(l, claims, (string?)section["permanentId"], index);
+                            return (l, filled.Count > 0 ? filled : LinkChecks.Check(l, section, candidates, index, nodes));
+                        }
                         var own = requirements is null ? [] : FromRequirement(l, requirements);
                         if (unit is null) return (l, (List<string>)[.. own, .. LinkChecks.Check(l, section, candidates, index, nodes)]);
                         // The check that each link cites its own section: `section` must be one of the unit's, and the quote must be from that one.
@@ -230,6 +254,11 @@ public static class LinkRun
                             ? (l, (List<string>)[.. LinkChecks.Check(l, cited, candidates, index, nodes)])
                             : (l, [$"section `{(string)l["section"]!}` isn't one of this unit's: {string.Join(", ", unit.Keys)}"]);
                     })];
+                    if (claims is not null)
+                    {
+                        var contradictions = ClaimLinks.Expand([.. links.Where(l => l.Errors.Count == 0).Select(l => l.Link)], claims, (string?)section["permanentId"]);
+                        foreach (var l in links) if (contradictions.TryGetValue(l.Link, out var said)) l.Errors.AddRange(said);
+                    }
                     if (requirements is not null)
                         missing = [.. requirements.Select(r => (string)r["id"]!).Where(id => !links.Any(l => (string?)l.Link["requirement"] == id)).Select(id => $"{id} has no link: give every requirement one, or a gap")];
                 }
@@ -278,6 +307,8 @@ public static class LinkRun
         HashSet<string>? candidates = null, SpecIndex? index = null, IReadOnlySet<string>? nodes = null, IReadOnlyDictionary<string, JsonObject>? unit = null)
     {
         var entries = new List<JsonObject>();
+        var byClaim = (bool?)state["byClaim"] == true;
+        var claims = byClaim ? ClaimFile.Load(root, doc) : null;
         var k = 0;
         var disputed = 0;
         var unchecked_ = 0;
@@ -310,6 +341,7 @@ public static class LinkRun
                         ["page"] = (verdict["page"] ?? link["page"])?.DeepClone(), ["statement"] = (verdict["statement"] ?? link["statement"])?.DeepClone(),
                         ["pageQuote"] = (verdict["pageQuote"] ?? link["pageQuote"])?.DeepClone(), ["note"] = $"Disputed by the second check: {(string)verdict["note"]!}",
                     };
+                    if (link["claims"] is not null) ClaimLinks.FillRaised(raised, link, index!);
                     // A requirement's link keeps its requirement and the quote code took from it.
                     if (link["requirement"] is not null) { raised["requirement"] = link["requirement"]!.DeepClone(); raised["fsdQuote"] = link["fsdQuote"]!.DeepClone(); }
                     if ((string)raised["state"]! == "gap") { raised.Remove("pageQuote"); raised.Remove("statement"); }
@@ -319,17 +351,25 @@ public static class LinkRun
                     else final = (JsonObject)link.DeepClone(); // its evidence failed: stays "agree", disputed, never bulk-approved
                 }
             }
-            var entry = Entry((string)final["state"]!, doc, own, (string?)final["fsdQuote"], (string?)final["page"], (string?)final["statement"],
-                (string?)final["pageQuote"], "judge", check, (string?)final["note"], (string?)link["requirement"]);
-            if ((string)final["state"]! == "partial") entry["partial"] = new JsonObject { ["covered"] = (string?)final["covered"], ["missing"] = (string?)final["missing"] };
-            entries.Add(entry);
+            // One link is an entry per claim it answers, each with its own claim's words: code's copy, which no judge typed (D145).
+            List<(string? Quote, string? Claim)> ends = byClaim
+                ? final["claims"] is JsonArray named ? [.. named.Select(c => (claims!.Find((string)c!)!.Normalized, (string?)(string)c!))] : [(null, TraceFile.NoClaim)]
+                : [((string?)final["fsdQuote"], null)];
+            foreach (var (quote, claim) in ends)
+            {
+                var entry = Entry((string)final["state"]!, doc, own, quote, (string?)final["page"], (string?)final["statement"],
+                    (string?)final["pageQuote"], "judge", check, (string?)final["note"], (string?)link["requirement"], claim);
+                if ((string)final["state"]! == "partial") entry["partial"] = new JsonObject { ["covered"] = (string?)final["covered"], ["missing"] = (string?)final["missing"] };
+                entries.Add(entry);
+            }
         }
         // With findings off (D57, D68) only links are recorded: a disputed "agree" that became a finding is left out too, and an unclear one, which has only a person's queue to go to. A run says how many.
         var unclearLeftOut = findings ? 0 : entries.Count(e => (string)e["state"]! == "unclear");
         if (!findings) entries = [.. entries.Where(e => (string)e["state"]! == "agree")];
         if (unit is not null) return SectionUnits.Finish(root, work, state, doc, unit, entries, disputed, unchecked_, unclearLeftOut);
-        ApplyEntries(root, doc, (string)state["section"]!, entries);
+        ApplyEntries(root, doc, (string)state["section"]!, entries, carryOldRulings: byClaim);
         var key = Key(doc, (string)state["section"]!);
+        var unansweredClaims = claims is null ? null : ClaimLinks.Unanswered(claims, (string?)section["permanentId"], state["links"]!.AsArray().OfType<JsonObject>());
         UpdateRun(root, key, r =>
         {
             r["inputs"] = state["inputs"]!.DeepClone();
@@ -352,10 +392,12 @@ public static class LinkRun
             // A requirement the judge left out even after its retry has no entry at all: say so, or it reads as nothing to see.
             if (state["unanswered"] is JsonArray { Count: > 0 } unanswered) r["unanswered"] = unanswered.DeepClone();
             else r.Remove("unanswered");
+            if (unansweredClaims is not null) r["unansweredClaims"] = new JsonArray([.. unansweredClaims.Select(c => (JsonNode)(string)c!["id"]!)]);
+            else r.Remove("unansweredClaims");
         });
         Stage(root, state, "done", "recorded");
         Save(work, state);
-        return new RunStep("recorded", "none");
+        return new RunStep("recorded", "none", Unanswered: unansweredClaims);
     }
 
     internal static RunStep? Retry(string root, string work, JsonObject state, List<string> errors, string agent, string bundle, string output)
@@ -392,11 +434,12 @@ public static class LinkRun
             $"{label}: {Rel(root, Path.Combine(work, bundle))}\nWrite your JSON to: {Rel(root, Path.Combine(work, output))}", Rel(root, Path.Combine(work, output)), Schema: schema);
 
     public static JsonObject Entry(string state, string doc, JsonObject? section, string? fsdQuote, string? page, string? statement, string? pageQuote,
-        string by, string? check, string? note, string? requirement = null)
+        string by, string? check, string? note, string? requirement = null, string? claim = null)
     {
         JsonNode? fsd = section is null ? null : new JsonObject { ["doc"] = doc, ["section"] = (string)section["id"]!, ["title"] = (string)section["title"]! };
         if (fsd is JsonObject known && (string?)section!["permanentId"] is { } sectionId) known["sectionId"] = sectionId;
         if (fsd is JsonObject r && requirement is not null) r["requirement"] = requirement;
+        if (fsd is JsonObject onClaim && claim is not null) onClaim["claim"] = claim;
         if (fsd is JsonObject f && fsdQuote is not null)
         {
             f["quote"] = fsdQuote;
@@ -409,7 +452,9 @@ public static class LinkRun
         if (pg is JsonObject p2 && pageQuote is not null) { p2["quote"] = pageQuote; p2["quoteHash"] = TraceFile.QuoteHash(pageQuote); }
         var e = new JsonObject
         {
-            ["id"] = TraceFile.EntryId(state, section is null ? null : doc, (string?)section?["id"], page, fsdQuote, pageQuote, requirement),
+            ["id"] = claim is not null
+                ? TraceFile.ClaimEntryId(state, doc, (string?)section?["permanentId"], page, claim, statement)
+                : TraceFile.EntryId(state, section is null ? null : doc, (string?)section?["id"], page, fsdQuote, pageQuote, requirement),
             ["state"] = state, ["fsd"] = fsd, ["page"] = pg, ["by"] = by,
         };
         if (check is not null) e["check"] = check;
@@ -425,7 +470,7 @@ public static class LinkRun
     internal static void Stage(string root, JsonObject state, string to, string reason) =>
         StateChanges.Apply(root, state, StateKinds.LinkRun, Key((string)state["doc"]!, (string)state["section"]!), to, Who, reason);
 
-    public static void ApplyEntries(string root, string doc, string? sectionId, IEnumerable<JsonObject> entries, Func<JsonObject, bool>? replaces = null)
+    public static void ApplyEntries(string root, string doc, string? sectionId, IEnumerable<JsonObject> entries, Func<JsonObject, bool>? replaces = null, bool carryOldRulings = false)
     {
         using var _ = Lock(root);
         var trace = TraceFile.Load(root);
@@ -443,6 +488,7 @@ public static class LinkRun
                 copy["decided_by"] = was["decided_by"]?.DeepClone();
                 // What it was decided on stays too, or a re-judged link would tie an old decision to new words.
                 if (was["decided_on"] is not null) copy["decided_on"] = was["decided_on"]!.DeepClone();
+                if (was["carried_from"] is not null) copy["carried_from"] = was["carried_from"]!.DeepClone();
                 // The same link is the same finding: its id, its grade and its evidence stay with it (D118).
                 foreach (var carried in TraceFile.FindingFields.Where(f => was[f] is not null)) copy[carried] = was[carried]!.DeepClone();
                 if (TraceFindings.IsGone(copy)) TraceFindings.CameBack(root, copy, Who);
@@ -452,10 +498,12 @@ public static class LinkRun
         // A decided link that didn't come back took its decision with it: its id is the hash of its quotes (D58). A decided finding is
         // kept as gone, holding its X- id for if it comes back (D122). One already gone stays as it is, and one nobody decided goes, as it always has.
         var back = entries.Select(e => (string)e["id"]!).ToHashSet(StringComparer.Ordinal);
+        if (carryOldRulings) CarryRulings(root, list.OfType<JsonObject>().Where(e => back.Contains((string)e["id"]!)).ToList(), keepDecisions, back);
         foreach (var (id, left) in keepDecisions.Where(k => !back.Contains(k.Key)))
         {
             var kept = (JsonObject)left.DeepClone();
-            if (TraceFindings.IsFinding(left) && (left["decision"] is not null || TraceFindings.Standing(left) is not null))
+            // With claim-links on, a decided agree link that nothing matches is kept as gone too, because a decision must never silently vanish (D145).
+            if ((TraceFindings.IsFinding(left) || carryOldRulings || TraceFindings.IsGone(left)) && (left["decision"] is not null || TraceFindings.Standing(left) is not null))
             {
                 if (!TraceFindings.IsGone(kept)) TraceFindings.MarkGone(root, kept, Who, "a new build didn't find this link again");
                 list.Add(kept);
@@ -465,6 +513,35 @@ public static class LinkRun
         }
         trace["entries"] = new JsonArray([.. list]);
         TraceFile.Save(root, trace);
+    }
+
+    /// <summary>
+    /// The first time a section is judged by claim ids, links from before have other ids (D145). A person's word on one goes to the new entries that are the same link, by <see cref="ClaimLinks.SameLink"/>,
+    /// and all of them, since one answer can cover a sentence repeated across flows. The finding's id, grade and evidence go to the first, because an <c>X-</c> id belongs to one entry. Matches with different words are ambiguous, so none is taken.
+    /// What's carried leaves <paramref name="old"/>; anything left goes the way an unmatched entry always has.
+    /// </summary>
+    static void CarryRulings(string root, List<JsonObject> fresh, Dictionary<string, JsonObject> old, HashSet<string> back)
+    {
+        var taken = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var (id, was) in old.Where(k => !back.Contains(k.Key) && !TraceFindings.IsGone(k.Value)
+            && (k.Value["decision"] is not null || k.Value["severity_by"] is not null || TraceFindings.Standing(k.Value) is not null)).OrderBy(k => k.Key, StringComparer.Ordinal).ToList())
+        {
+            var targets = fresh.Where(e => !taken.Contains((string)e["id"]!) && ClaimLinks.SameLink(was, e)).ToList();
+            if (targets.Select(e => Quotes.Normalize((string?)e["fsd"]?["quote"] ?? "")).Distinct(StringComparer.Ordinal).Count() != 1) continue;
+            for (var i = 0; i < targets.Count; i++)
+            {
+                var e = targets[i];
+                taken.Add((string)e["id"]!);
+                e["decision"] = was["decision"]?.DeepClone();
+                e["decided_by"] = was["decided_by"]?.DeepClone();
+                if (was["decided_on"] is not null) e["decided_on"] = was["decided_on"]!.DeepClone();
+                e["carried_from"] = id;
+                if (i == 0)
+                    foreach (var field in TraceFile.FindingFields.Where(f => was[f] is not null)) e[field] = was[field]!.DeepClone();
+            }
+            StateChanges.RecordIdMoves(root, StateKinds.TraceDecision, [.. targets.Select(e => (id, (string)e["id"]!))], Who, "claim-links gave this link an id made from ids");
+            old.Remove(id);
+        }
     }
 
     public static JsonObject LoadRuns(string root) => PageRun.LoadJson(RunsFile(root)) as JsonObject ?? new JsonObject();
@@ -634,7 +711,8 @@ public static class LinkChecks
         if (state == "partial" && (string.IsNullOrWhiteSpace((string?)link["covered"]) || string.IsNullOrWhiteSpace((string?)link["missing"]))) errors.Add("a partial link needs covered and missing");
         if (state == "unclear" && page is not null) errors.Add("an unclear link names no page: it's a question for a person");
         if (state == "unclear" && string.IsNullOrWhiteSpace((string?)link["note"])) errors.Add("an unclear link needs its reason in note");
-        if (fsdQuote is not null && !Quotes.InText(fsdQuote, (string)section["text"]!) && !AttachmentChecks.Holds(section, fsdQuote))
+        // Code took these words from claim ids (D145), and a three-word step is still a claim.
+        if (fsdQuote is not null && link["claims"] is null && !Quotes.InText(fsdQuote, (string)section["text"]!) && !AttachmentChecks.Holds(section, fsdQuote))
             errors.Add($"fsdQuote \"{Short(fsdQuote)}\" isn't a sentence from the section's text, word for word (at least 4 words, or a whole table cell or list item)");
         if (page is not null && !candidates.Contains(page)) errors.Add($"page `{page}` isn't one of the candidate pages");
         else if (page is not null && statement is not null)

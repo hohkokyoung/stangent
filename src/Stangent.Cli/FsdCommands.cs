@@ -58,11 +58,11 @@ static class FsdCommands
         show.SetAction(pr => Cli.Run(pr, "fsd show", ctx => FsdOutline.Show(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(showSection)!), pr.GetValue(viewFormat) == "text" ? FsdOutline.ShowText : null));
         fsd.Subcommands.Add(show);
         var claimSection = new Option<string?>("--section") { Description = "Only this section: its number or permanent id (S-0001)." };
-        var claims = new Command("claims", "A document's sections cut into claims by code, with a check that their words are the section's. Prints only. Off unless components.fsd-claims is on (D143).") { docArgument, claimSection, viewFormat };
+        var claims = new Command("claims", "A document's sections cut into claims by code, with a check that their words are the section's. Prints only, unless components.claim-links is on, when it also writes each claim's permanent id (D145). Off unless components.fsd-claims is on (D143).") { docArgument, claimSection, viewFormat };
         claims.SetAction(pr => Cli.Run(pr, "fsd claims", ctx =>
         {
             if (!Stangent.Core.StangentComponents.IsOn(ctx.Repo.Config, FsdClaims.Component)) return FsdClaims.Off();
-            var report = FsdClaims.Report(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(claimSection));
+            var report = FsdClaims.Report(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(claimSection), ClaimFile.On(ctx.Repo.Config));
             ctx.Span.Attributes["stangent.artifact.count"] = (int)report["claimCount"]!;
             if ((int)report["mismatchCount"]! > 0) throw new CheckFailed("claim_words_differ", "The claims' words aren't the section's words; see result.mismatches.", report);
             return report;

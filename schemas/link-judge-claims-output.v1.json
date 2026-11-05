@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:link-judge-claims-output:v1",
+  "title": "What stangent-link-judge returns with claim-links on (D145)",
+  "description": "The judge names claim and statement ids and copies no words. Code fills both quotes from those ids.",
+  "type": "object",
+  "required": [
+    "links"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "state",
+          "note"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "enum": [
+              "agree",
+              "gap",
+              "conflict",
+              "undocumented"
+            ]
+          },
+          "claims": {
+            "description": "The ids of the claims this answers (agree, conflict, gap). Naming one id of a line answers the whole line, unless another link names another of its ids.",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^C-[0-9]{4,}$"
+            }
+          },
+          "page": {
+            "description": "A candidate page's id (agree, conflict, undocumented; optional for gap).",
+            "type": "string"
+          },
+          "statement": {
+            "description": "The page statement's id, e.g. R3.",
+            "type": "string",
+            "pattern": "^[SARE][0-9]+$"
+          },
+          "note": {
+            "description": "Why.",
+            "type": "string",
+            "maxLength": 600
+          }
+        }
+      }
+    }
+  }
+}

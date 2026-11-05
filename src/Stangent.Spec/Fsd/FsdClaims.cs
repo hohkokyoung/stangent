@@ -6,7 +6,11 @@ using Stangent.Core;
 namespace Stangent.Spec.Fsd;
 
 /// <summary>One claim in a section: its words as written, its place, and the nearest text before it that introduces its steps. <c>Problem</c> says why it isn't clean.</summary>
-public sealed record FsdClaim(int Position, string? Flow, string Kind, string Words, string? Problem = null);
+public sealed record FsdClaim(int Position, string? Flow, string Kind, string Words, string? Problem = null, string? SetAside = null)
+{
+    /// <summary>What a link judge does with it (D145): <c>claim</c> is judged; anything else is set aside by where it sits, and only given as context.</summary>
+    public string JudgeKind => SetAside ?? (Kind is FsdClaims.Kinds.FlowLabel or FsdClaims.Kinds.Figure ? Kind : FsdClaims.JudgeKinds.Claim);
+}
 
 /// <summary>Where the claims' words first differ from the section's. Null from <see cref="FsdClaims.CheckWords"/> means they match.</summary>
 public sealed record FsdWordMismatch(int At, string? Section, string? Claims, int SectionWords, int ClaimWords);
@@ -22,6 +26,12 @@ public static partial class FsdClaims
     public static class Kinds
     {
         public const string Sentence = "sentence", ListItem = "list-item", TableRow = "table-row", Step = "step", FlowLabel = "flow-label", Figure = "figure", Block = "block";
+    }
+
+    /// <summary>A claim's <c>kind</c> in <c>claims.json</c> (D145). Everything but <c>claim</c> comes from where the words sit, never what they say.</summary>
+    public static class JudgeKinds
+    {
+        public const string Claim = "claim", ColumnHeading = "column-heading", LabelRow = "label-row";
     }
 
     /// <summary>Why a claim isn't clean. The first three are what a table broken across a page leaves.</summary>
@@ -277,10 +287,28 @@ public static partial class FsdClaims
             if (labelAt >= 0) flow = label;
             i = end;
         }
+        for (var i = 0; i < rows.Count; i++)
+            if (!result[i].Label && !result[i].Continues) result[i].SetAside = SetAsideRow(rows, i);
         return result;
     }
 
-    record struct RowFlow(string? Flow, bool Label, bool Continues);
+    /// <summary>
+    /// A row nothing can be compared with, told by where it sits (D145). A column heading: no steps of its own, directly above a steps row, with a value for each cell holding steps there.
+    /// A label: two cells, the first ending in a colon, the second a single token, as in <c>Ref: | A12</c>. A row that's neither stays a claim, even if a person would call it a heading.
+    /// </summary>
+    static string? SetAsideRow(List<Row> rows, int at)
+    {
+        var row = rows[at];
+        if (row.HasSteps || !row.Closed || row.Steps!.Any(c => c.OutOfOrder)) return null;
+        if (row.Values >= 2 && at + 1 < rows.Count && rows[at + 1].HasSteps && row.Values == rows[at + 1].Steps!.Count(c => c.Steps.Count > 0)) return JudgeKinds.ColumnHeading;
+        if (row.Cells.Count == 2 && row.First is { } first && first.TrimEnd(Closers.ToCharArray()).EndsWith(':') && !row.Cells[1].Text.Any(char.IsWhiteSpace)) return JudgeKinds.LabelRow;
+        return null;
+    }
+
+    record struct RowFlow(string? Flow, bool Label, bool Continues)
+    {
+        public string? SetAside { get; set; }
+    }
 
     // ---- the claims ----
 
@@ -288,7 +316,7 @@ public static partial class FsdClaims
     public static List<FsdClaim> Split(string text)
     {
         var claims = new List<FsdClaim>();
-        void Add(string? flow, string kind, string words, string? problem = null) => claims.Add(new FsdClaim(claims.Count + 1, flow, kind, words, problem));
+        void Add(string? flow, string kind, string words, string? problem = null, string? setAside = null) => claims.Add(new FsdClaim(claims.Count + 1, flow, kind, words, problem, setAside));
         var blocks = Blocks(text);
         string? flow = null;
         for (var b = 0; b < blocks.Count; b++)
@@ -325,32 +353,32 @@ public static partial class FsdClaims
         return claims;
     }
 
-    static void AddRow(Row row, RowFlow at, Action<string?, string, string, string?> add)
+    static void AddRow(Row row, RowFlow at, Action<string?, string, string, string?, string?> add)
     {
         if (row.Cells.Count == 0) return;
-        if (!row.Closed) { add(at.Flow, Kinds.Block, row.Raw, Problems.RowNotClosed); return; }
+        if (!row.Closed) { add(at.Flow, Kinds.Block, row.Raw, Problems.RowNotClosed, null); return; }
         if (!row.HasSteps)
         {
             var outOfOrder = row.Steps!.Any(c => c.OutOfOrder);
             var problem = outOfOrder ? Problems.NumbersOutOfOrder : at.Continues ? Problems.ContinuesAbove : null;
-            add(at.Flow, at.Label ? Kinds.FlowLabel : Kinds.TableRow, row.Joined, problem);
+            add(at.Flow, at.Label ? Kinds.FlowLabel : Kinds.TableRow, row.Joined, problem, at.SetAside);
             return;
         }
         // Left to right, as written. Steps alternating between columns stay in that order, each with its own number, so the words read as the section does.
         var plain = new List<string>();
         void FlushPlain()
         {
-            if (plain.Count > 0) add(at.Label ? null : at.Flow, at.Label ? Kinds.FlowLabel : Kinds.TableRow, string.Join(" | ", plain), null);
+            if (plain.Count > 0) add(at.Label ? null : at.Flow, at.Label ? Kinds.FlowLabel : Kinds.TableRow, string.Join(" | ", plain), null, null);
             plain.Clear();
         }
         foreach (var cell in row.Steps!)
         {
-            if (cell.OutOfOrder) { FlushPlain(); add(at.Flow, Kinds.TableRow, cell.Text, Problems.NumbersOutOfOrder); continue; }
+            if (cell.OutOfOrder) { FlushPlain(); add(at.Flow, Kinds.TableRow, cell.Text, Problems.NumbersOutOfOrder, null); continue; }
             if (cell.Steps.Count == 0) { plain.Add(cell.Text); continue; }
             FlushPlain();
-            if (cell.Lead is not null) add(at.Flow, Kinds.Step, cell.Lead, Problems.StartsMidStep);
+            if (cell.Lead is not null) add(at.Flow, Kinds.Step, cell.Lead, Problems.StartsMidStep, null);
             for (var s = 0; s < cell.Steps.Count; s++)
-                add(at.Flow, Kinds.Step, cell.Steps[s], s == cell.Steps.Count - 1 && !EndsSentence(cell.Steps[s]) ? Problems.EndsOpen : null);
+                add(at.Flow, Kinds.Step, cell.Steps[s], s == cell.Steps.Count - 1 && !EndsSentence(cell.Steps[s]) ? Problems.EndsOpen : null, null);
         }
         FlushPlain();
     }
@@ -396,8 +424,11 @@ public static partial class FsdClaims
     };
 
     /// <summary>A document's claims, or one section's. Sections with no text aren't counted. Writes nothing.</summary>
-    public static JsonObject Report(string root, string doc, string? section)
+    /// <param name="claimLinks">The switch is on (D145): the file is brought up to date first, and each claim says its id and kind.</param>
+    public static JsonObject Report(string root, string doc, string? section, bool claimLinks = false)
     {
+        var synced = claimLinks ? ClaimFile.Sync(root, doc) : null;
+        var held = claimLinks ? ClaimFile.Load(root, doc) : null;
         var document = FsdOutline.Load(root, doc);
         var all = document["sections"]!.AsArray().OfType<JsonObject>().ToList();
         var chosen = section is not null ? [FsdOutline.Find(document, section)] : all.Where(s => ((string)s["text"]!).Trim().Length > 0).ToList();
@@ -427,7 +458,7 @@ public static partial class FsdClaims
             sections.Add(new JsonObject
             {
                 ["section"] = id, ["number"] = number, ["title"] = (string)s["title"]!,
-                ["claims"] = new JsonArray([.. claims.Select(c => (JsonNode)ClaimJson(id, c))]),
+                ["claims"] = new JsonArray([.. claims.Select(c => (JsonNode)ClaimJson(id, c, held?.At(id, c.Position)))]),
             });
         }
         var result = new JsonObject
@@ -438,13 +469,15 @@ public static partial class FsdClaims
             ["notClean"] = notClean, ["mismatches"] = mismatches, ["sections"] = sections,
         };
         if (section is not null) result["only"] = section;
+        if (synced is not null) result["ids"] = synced;
         FsdHandEdit.Note(root, doc, document, result);
         return result;
     }
 
-    static JsonObject ClaimJson(string? section, FsdClaim c)
+    static JsonObject ClaimJson(string? section, FsdClaim c, StoredClaim? held = null)
     {
         var o = new JsonObject { ["section"] = section, ["position"] = c.Position, ["flow"] = c.Flow, ["kind"] = c.Kind, ["words"] = c.Words };
+        if (held is not null) { o["id"] = held.Id; o["judgeKind"] = held.Kind; }
         if (c.Problem is not null) o["problem"] = c.Problem;
         return o;
     }
@@ -469,6 +502,7 @@ public static partial class FsdClaims
             {
                 var words = ((string)c["words"]!).Replace('\n', ' ');
                 var flow = (string?)c["flow"] ?? "-";
+                if ((string?)c["id"] is { } id) sb.Append(id).Append(' ').Append((string)c["judgeKind"]!).Append(" | ");
                 sb.Append(flow).Append(" | ").Append(words);
                 if ((string?)c["problem"] is { } problem) sb.Append(" [").Append(problem).Append(']');
                 sb.Append('\n');

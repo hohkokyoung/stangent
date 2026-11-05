@@ -410,7 +410,7 @@ public static partial class TraceFindings
     }
 
     /// <summary>The findings as <c>trace check</c> lists them: the live ones, or with <paramref name="gone"/> the ones nothing finds any more (D122), kept on a list of their own.</summary>
-    public static JsonArray Listing(IEnumerable<JsonObject> entries, bool gone = false) => new([.. entries.Where(e => IsFinding(e) && IsGone(e) == gone).Select(e => (JsonNode)new JsonObject
+    public static JsonArray Listing(IEnumerable<JsonObject> entries, bool gone = false) => new([.. entries.Where(e => (IsFinding(e) || gone) && IsGone(e) == gone).Select(e => (JsonNode)new JsonObject
     {
         ["id"] = (string?)e["finding"], ["entry"] = (string?)e["id"], ["state"] = (string?)e["state"], ["severity"] = (string?)e["severity"] ?? Severity.Ungraded,
         ["doc"] = (string?)e["fsd"]?["doc"], ["section"] = (string?)e["fsd"]?["section"], ["page"] = (string?)e["page"]?["id"], ["statement"] = (string?)e["page"]?["statement"],
@@ -428,7 +428,7 @@ public static partial class TraceFindings
     /// <summary>The same findings by who has them next, so each queue reads on its own (D119).</summary>
     public static JsonObject Groups(IEnumerable<JsonObject> entries)
     {
-        var findings = entries.Where(IsFinding).ToList();
+        var findings = entries.Where(e => IsFinding(e) || IsGone(e)).ToList();
         return new JsonObject(Queues.Select(g => KeyValuePair.Create(g,
             (JsonNode?)new JsonArray([.. findings.Where(e => GoesTo(e) == g).Select(e => (JsonNode?)((string?)e["finding"] ?? (string)e["id"]!))]))));
     }

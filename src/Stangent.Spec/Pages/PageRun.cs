@@ -23,7 +23,7 @@ public sealed class SpecPaths(string root)
 
 /// <summary>The next thing a driver (the plugin command, CI, the benchmark) does for a page.</summary>
 public sealed record RunStep(string Status, string Action, string? Agent = null, string? Prompt = null, string? Output = null,
-    IReadOnlyList<string>? Errors = null, Usage? Usage = null, string? Warning = null, string? Schema = null)
+    IReadOnlyList<string>? Errors = null, Usage? Usage = null, string? Warning = null, string? Schema = null, JsonArray? Unanswered = null)
 {
     public JsonObject ToJson(string page)
     {
@@ -36,6 +36,8 @@ public sealed record RunStep(string Status, string Action, string? Agent = null,
         o["next"] = next;
         if (Errors is { Count: > 0 }) o["errors"] = new JsonArray([.. Errors.Select(e => (JsonNode)e)]);
         if (Warning is not null) o["warning"] = Warning;
+        // Claims no link names (D145). Reported, and never a failure in this slice.
+        if (Unanswered is not null) { o["unanswered"] = Unanswered.DeepClone(); o["unansweredCount"] = Unanswered.Count; }
         return o;
     }
 

@@ -104,6 +104,11 @@
                     "type": "string",
                     "pattern": "^R-[0-9]{4,}$"
                   },
+                  "claim": {
+                    "description": "With claim-links on (D145): the claim this link judges, and its words are `quote`. `none` on a judge's undocumented link, which rests on no claim. Its presence is what makes the id come from ids.",
+                    "type": "string",
+                    "pattern": "^(C-[0-9]{4,}|none)$"
+                  },
                   "quote": {
                     "type": "string"
                   },
@@ -222,6 +227,10 @@
               "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
               "linesNot": { "type": "string" }
             }
+          },
+          "carried_from": {
+            "description": "The entry from before claim-links this one's decision came from (D145), so a check against a base finds who decided it. Written by code.",
+            "type": "string"
           },
           "decided_on": {
             "description": "The hash of the page statement's normalised text when the decision was made, written by code. If the text changes, the decision drops back. No input hash reads it.",
