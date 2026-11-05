@@ -167,3 +167,16 @@ Headless calls were refused on a weekly limit, so this ran through the app's age
 **The fix (off by default, on in that clone):** a new switch, `root-screens`, adds a page for what the app's root shows with no route. Screens 3 to 5, pages 36 to 38, ❓ 0. The use case's section now gets the new screen plus 2 endpoints; before, 2 endpoints. Sections with candidates 113 to 117. The 2 recorded pages still read current and the links still pass. Of the 2 new screens, 1 is a real screen and 1 is a spinner the rule can't tell apart by code. The judge hasn't been rerun.
 
 **Not shown yet:** the owner's rulings; whether fixing it lowers the false alarms; anything beyond one use case. One use case is too small for a rate. The earlier "3 screens" matched the route lines only, so it undercounted the app's screens.
+
+**Re-run with `root-screens` on (same day, one use case, Opus, app's agents):**
+
+| | First run | Re-run |
+|---|---|---|
+| Agree, after the checker | 11 | 23 |
+| Gap | 14 | 8 |
+| Conflict | 2 | 1 |
+| Undocumented | 2 | 4 |
+| Findings | 18 | 13 |
+| Assistant's first read, not the owner's ruling: looks real | 4 of 18 | 5 of 13 |
+
+**What's left of the false alarms:** 6 of the 8 gaps are about a shared pop-up. Once a component is shared it gets its own page, and a screen's bundle only links to it, so the judge didn't see it. Same kind of miss, one step along. **Not settled by the fix:** two findings first read as real didn't come back, a conflict and an undocumented item, with the code unchanged, so run-to-run difference in the AI steps is real and unmeasured. One use case still gives no rate. **New and real-looking:** a tooltip and the code disagree on a minimum length, which a section-to-page check caught although no one asked. **Tokens:** the fix 183K against 100K estimated, the re-run 289K against 150K. One agent per item is about 70K; a batch of two in one agent is about 35K each.
