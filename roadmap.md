@@ -138,6 +138,7 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 - I.3 · Smaller disprove bundles, watching `cant-tell`. *Built, off: `disprove-small`; `fsd disprove estimate` shows the size and the `cant-tell` count. Whether `cant-tell` goes up isn't known until a paid run (D131). 44 of 62 hit the 60K cap.*
 - I.4 · Citations follow code that only moved. *Built, off: `follow-moves`. A renamed TypeScript file changes its ids, so it still runs (D131).*
 - I.8 · Files attached to a PDF get a home. *Built, off: `attachment-home`. Off because such a document gains a section (D126).*
+- D140 · A section's candidates reach shared components through a screen's unshared ones. *Built, off, not shown to help: `shared-through`. Fakes and counts only. Test: the link judge on Login and other use cases, on and off, with the checker on; paid, on the owner's OK. It's this component's one fix attempt (D138).*
 - T.1 · A person's correction to a page is recorded, approved and survives regeneration. *Built, off: `spec correct`, `page-corrections`. Changes or removes a statement; adding one is still `page-wrong` (D131).*
 - T.3 · Every screen and entry point is covered, or excluded with a reason. *Built: `spec coverage`; `spec exclude`, off: `page-exclusions` (D131).*
 - J.4 · Batch runs send the output schema only once (D130). *Built, off: `schema-once`. The hash stays on the full text, so nothing regenerates; off until a test, because what the AI reads changes (D131).*

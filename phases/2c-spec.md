@@ -293,3 +293,37 @@ All built with fakes. Tests pass and `SavedWorkTests`' pins hold, untouched. No 
 | I.4 (off) | Lines shifted in a test graph | A real commit's moves, and how many stale pages it would save |
 | I.6 | Two small documents | A real doubtful section's ranking read by a person |
 
+## `shared-through` (2026-11-05, D140): counts, and what wasn't run
+
+Counts only, from the built binary, on copies. No AI call. The switch's tests use fakes. Every existing test passes and `SavedWorkTests`' pins hold; the one existing test changed is `ComponentTests`' list of what's off by default, which has to name a new switch.
+
+| The first real document | Off | On |
+|---|---|---|
+| Sections with text | 300 | 300 |
+| Sections with a candidate | 117 | 117 |
+| Candidates in all | 514 | 575 |
+| Sections gaining a candidate | | 61, one each |
+| Different pages added | | 1, the pop-up, with no page written |
+| Left out | | 0 |
+| Section 7.2.1.2.4 gets the pop-up | no | yes, `recorded: false` |
+| Sections needing the pop-up's page | 4, by its name | 65 |
+| Pages `spec needed` lists | 30 of 39 | the same 30 |
+| `fsd prepare` on 7.2.1.2.4 | `current`, with its saved links | `judge`, told the pop-up isn't shown, with a warning |
+
+So the page to write was already on the list. What grows is that 61 sections have new inputs and would be judged again, each reading the pop-up once it's written.
+
+| Actual, screens only (it has no FSD) | One step, the old rule | Through unshared ones |
+|---|---|---|
+| Routed screens gaining a candidate | 50 of 71 | 52 of 71 |
+| Most for one screen | 10 | 22 |
+| Mean, of the screens gaining | 1.7 | 8.7 |
+| Mean, of all 71 | 1.2 | 6.4 |
+| Median, of all 71 | | 5 |
+| Different pages reached, of 92 | | 56 |
+| Screens reaching more than fit beside them (over 9) | | 26 |
+
+- **The old rule gave 57 of 71 when it was measured, and 50 here.** This table reran its code on a graph built on a copy with `root-screens` and `route-render` on, giving the same 71 screens and 92 component pages. The difference wasn't traced.
+- **Two more screens gain, but each gains far more.** The added reach is mostly depth: the 454 links found sit at depths 2 to 6, 86 of them at 2 and 239 at 3. All 454 are `certain` lines.
+- **Actual's figures are per screen, not per section,** counted by a throwaway program over the same library code, since there's no document to run `fsd candidates` on. A section can reach several screens' components, and can't hold more than `MaxPerSection`.
+
+**What wasn't run:** any judge. Whether the pop-up's page brings the false gaps down when code picks it, as it did by hand, is unmeasured, and so is whether a judge heeds "left out, not evidence of a gap". The pop-up's page hasn't been written. No other use case, no fresh check (D120).

@@ -143,7 +143,7 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D110 · The core stays C#; no port to Python
 - D111 · Stangent imports PDF and Excel as well as Word
 
-## D112–D139: the overhaul; new decisions go here
+## D112–D140: the overhaul; new decisions go here
 
 [`decisions/6-overhaul.md`](decisions/6-overhaul.md)
 
@@ -175,3 +175,4 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D137 · "Is it true?" is Stangent's job; "which side is right?" is the PM's
 - D138 · The cut rule: a component that fails a bar gets one fix attempt, then it's removed
 - D139 · No cap on new items
+- D140 · A section's candidates can reach shared components through a screen's unshared ones (`shared-through`, off)

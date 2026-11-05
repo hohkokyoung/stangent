@@ -281,6 +281,18 @@ Each step here has a switch (D121, `docs/foundation.md`): `candidate-finder`, `a
   titles (case, word order and plurals normalised), field labels in tables ↔ properties in a page's slice, and the
   endpoints a candidate screen calls. A section with none goes to `stangent-candidate-finder`, which sees the page
   titles only.
+  With `shared-through` on (off by default, because it changes what a judge reads, D140), a candidate screen also brings the
+  shared components it reaches through its unshared ones, `why` saying `shared component reached from <screen>`. It stops at the
+  first shared component on each path, which is what the screen's page links to, so one's own subtree isn't walked. It works for any screen with a
+  slice, so a no-route screen (`root-screens`) and a `render=` route (`route-render`) too. A shared component's name still finds
+  its own page as before. No new limit: what's already found stays first, the nearest come next, and the rest fits within
+  `MaxPerSection` pages and `spec.maxBundleChars` for the section's text and recorded pages. What doesn't fit is listed as `leftOut`
+  on `fsd candidates`.
+  A reached page not written yet is a candidate with `recorded: false`, so `spec needed` lists it and `spec-run.sh --for-fsd` writes it.
+  If `fsd prepare` comes first, the judge is told it exists and isn't shown, so its absence isn't evidence of a gap, and the step
+  warns. Everything left out, with its `reason` (`it didn't fit`, `no page written yet`), is told to the judge and kept as
+  `candidatesLeftOut` on the section's run, or on its `unit`. A section that gains a page has new judge inputs, so its saved links are
+  judged again; with it off, every bundle and hash stays the same. Untested with a real AI.
 - `stangent fsd prepare|check <doc> <section>`: `stangent-link-judge` (fresh context) returns links — `agree`,
   `conflict`, `gap`, `undocumented`, and `partial` and `unclear` with a switch on (below) — each quoting the FSD sentence and the page statement exactly. Code checks both
   quotes word for word, both ends exist, and every symbol the quoted statement cites is in the graph. Every `agree`
