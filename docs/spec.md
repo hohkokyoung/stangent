@@ -242,7 +242,7 @@ Each doubtful section in `fsd diff` also has `suggestions`: the unmatched sectio
 
 ### Claims in a section (D143)
 
-`stangent fsd claims <doc> [--section <number or permanent id>] [--format text]` cuts a section's text into claims by code, with no AI. It reads and prints, and writes only the telemetry event. Off by default (`fsd-claims`): off, it says `split: false` and that it isn't a pass. Nothing else reads claims yet, so no link, hash or bundle moves; ids and the judge come in a later slice.
+`stangent fsd claims <doc> [--section <number or permanent id>] [--format text]` cuts a section's text into claims by code, with no AI. It reads and prints, and writes only the telemetry event, unless `claim-links` is on ([below](#claim-ids-and-links-by-ids-d145)). Off by default (`fsd-claims`): off, it says `split: false` and that it isn't a pass. Nothing else reads claims yet, so no link, hash or bundle moves; ids and the judge come in a later slice.
 
 - **A claim** is a `sentence`, a `list-item`, a `table-row`, a `step` (a numbered step inside a cell), a `flow-label`, a `figure` or a `block`. It has `section` (the permanent id), `position` from 1, `kind`, `words` and `flow`. A row's cells keep ` | ` between them. Steps stay in the order written, even where their numbers alternate between columns.
 - **`flow`** is the nearest earlier text that introduces a set of steps, found from where cells sit and never from what they say. In `| Other paths: | Bad input. |`, then `|  | Person | Server |`, then `|  | 1. Press save. | 2. Refuse it. |`, each step's flow is `Other paths: Bad input.`. A first column labels steps that leave it empty, on its own row or above them. A row with one value labels them when it sits in the column they start in. Outside a table, it's a paragraph ending in a colon or all bold, directly before a list or a table of steps.
@@ -259,6 +259,21 @@ Each doubtful section in `fsd diff` also has `suggestions`: the unmatched sectio
 
 - **The words check (D18).** The section's words are read straight from its text, with table rules, cell bars and list bullets aside, and compared in order with the claims' words. A difference is in `mismatches`, with `mismatchCount`, and the command exits 1 with the report in `result`.
 - **`--format text`** prints `flow | words`, one a line, with `-` for no flow and `[reason]` after a claim that isn't clean. A whole document also has a `#` line for each section.
+
+### Claim ids and links by ids (D145)
+
+Off unless `components.claim-links` and `components.fsd-claims` are both on. With either off, `ids.json` and every other file stay byte-identical, no input hash moves, and `TraceFile.EntryId` gives what it always did. Nothing here has run on a real AI.
+
+- **Written by** `fsd prepare`, and by `fsd claims`, which then also prints each claim's `id` and `judgeKind` and an `ids` block of counts. From `document.json` alone, so no new import is needed. Twice in a row changes no byte.
+- **`specs/fsd/<doc>/claims.json`** (`fsd-claims` v1): `id`, `section` (permanent), `position`, `flow`, `kind`, `shape`, `words`, and `problem` when there is one. Ids are in the `claims` scope of `ids.json`. The same section, normalised words and flow, and among exact repeats their order, keep an id. Anything else is new, and an old one is retired for good.
+- **`kind`:** `claim` is judged. Set aside by where they sit: `column-heading`, `label-row`, `flow-label`, `figure`. What position can't settle stays a claim. `shape` is D143's kind: sentence, list item, table row and so on.
+- **The judge's input** (`link-judge-claims.md`, or `-finer` with finer verdicts): the section's permanent id and title, its flows named once, then one line per set of repeated words with its ids and flows. Then the headings and labels for context, and the pages as ever. The section's text isn't there, and neither is an attachment's. A number isn't there either, so a section that only moved keeps its paid links.
+- **The judge's output:** `links[]`, each with `state`, `note`, and `claims`, `page`, `statement` as the state needs (`covered` and `missing` for `partial`). Naming any id of a line answers the whole line. A flow that differs gets its own link, and ids of the line nobody named take the line's first answer. An unlisted id, or two states for one claim and one statement, take the one retry.
+- **Entries:** one per claim a link answers, with `fsd.claim`, `fsd.quote` (the claim's words) and `page.quote` (the statement's whole text), both filled by code. The id comes from state, doc, section's permanent id, page, claim and statement. A judge's `undocumented` link has `fsd.claim: none`. The second check reads one line per link, and whatever words it copies when it raises a finding are ignored. The disprove step reads the entries as they are.
+- **`trace check`** checks an entry with `fsd.claim`, switch on or off: the claim exists in its section, the quote is its words, the section's text cut now holds them, and `page.quote` is the statement's text. Never given out is a problem. Retired, or changed, is stale and the decision drops; retired ones are listed in `retiredClaims`.
+- **Rulings from before** move when a section is next judged, not when the switch goes on. An old entry with a person's word on it carries to the new entries with the same state, page and statement, whose claim's words hold its FSD quote at word edges and whose statement holds its page quote. It goes to every flow with those words, marked `carried_from`, with an `id-moved` history line, and the `X-` id, grade and evidence go to the first. Ambiguous or unmatched goes `gone`, and with this switch on so does a decided `agree` link.
+- **`fsd check`** adds `unanswered` (`id`, `flow`, `words`) and `unansweredCount`, and the run keeps `unansweredClaims`. It never fails a section in this slice.
+- **Stays as it was:** a section whose requirements are built keeps its requirement judge. `group-sections` doesn't group while this is on. Page-break halves stay separate claims.
 
 ### A new version (D117)
 

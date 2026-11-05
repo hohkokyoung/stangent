@@ -3,7 +3,7 @@ phase: 2c
 name: spec
 status: in progress
 consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 3, trace-links: 4, ticket-bundle: 2, bug-proof: 1 }
-provides: {}
+provides: { fsd-claims: 1 }
 ---
 
 # Phase 2c · The structured spec
@@ -406,3 +406,17 @@ The first run on real findings from a real FSD, on the same copy: the step reads
 
 **Login's 93 claims read by the assistant, all of them (2026-11-05), not freshly checked.** Every flow label is right, and the repeated "closes the pop-up modal" sits under its own three flows, which is what the split was for. **Not claims:** about 10 rows of column headings, and the table's id, name, actors and so on. **Broken:** 5 steps cut in half by a page break, 10 of the 11 not clean. **Many repeat:** "1. The user enters the correct credentials" appears in several flows, so 93 is about three times the judge's 29 links, and the assistant's "about 30" was wrong. **So "code lists every claim left unanswered" would be noisy as first designed:** it needs headings set aside, and one answer for the same words across flows, or the judge's work roughly triples. To settle before the id slice.
 
+**Claim ids and links by ids (D145, `claim-links`, off), 2026-11-06. Counts only: no judge, no AI, no fresh check.**
+
+| | Claims | Set aside | To judge | Lines the judge reads |
+|---|---|---|---|---|
+| Test app, Login (7.2.1.2.4) | 93 | 16 (8 flow labels, 6 column headings, 2 label rows) | 77 | 50 |
+| Test app, whole document | 6,877 | 570 (373 figures, 87 flow labels, 55 column headings, 55 label rows) | 6,307 | 5,549 |
+| Sonarr's planted FSD | 73 | 1 (a figure) | 72 | 72 |
+
+- **Ids stable on a second run:** yes on both documents, with 0 issued, 0 retired, and `claims.json` and `ids.json` byte-identical. The words check still shows 0 mismatches.
+- **Login's judge input, whole, in characters:** 18,451 on against 19,249 off, or 4% smaller. Without the instructions and schema, 14,549 against 16,065. The list falls by almost half and the input doesn't, since the candidate pages are most of it. A first version naming each flow on every line was 24,281, larger than off, so flows are now named once.
+- **Against the judge's 29 links on Login:** 50 lines is still more than 29, and whether that's noise or claims the old judge skipped is something only a real judge can show. Stripping a step's number before grouping would give 42; not built.
+- **Sonarr shows nothing about repeats:** it has no numbered steps.
+
+**What wasn't run:** any judge, checker or disprove step on either document. Both are fakes in tests. Nothing shows a ruling surviving on a real run, or that a judge answers a line for all its flows correctly. The bug is reproduced in a test only: the same statement judged twice, with the ruling carried by the same id.
