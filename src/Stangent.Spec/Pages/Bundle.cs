@@ -116,7 +116,7 @@ public static class Bundles
         n.Role is "stop" or "handler" or "table" || WithBody.Contains(n.Node.Kind) && n.Node.Kind is not (NodeKind.Property or NodeKind.Field)
         || NamedKinds.Contains(n.Node.Kind);
 
-    static string Comment(string file) => Path.GetExtension(file) is ".html" or ".cshtml" ? "<!--" : "//";
+    static string Comment(string file) => Path.GetExtension(file) switch { ".html" or ".cshtml" => "<!--", ".py" or ".wsgi" => "#", _ => "//" };
 
     static string Lines(Node n) => n.File is null || n.Line <= 0 ? "" : n.EndLine > n.Line ? $"{n.File}:{n.Line}-{n.EndLine}" : $"{n.File}:{n.Line}";
 
@@ -124,7 +124,7 @@ public static class Bundles
 
     static string Fence(string? file) => Path.GetExtension(file ?? "") switch
     {
-        ".cs" => "csharp", ".ts" => "ts", ".tsx" => "tsx", ".js" or ".jsx" => "js", ".html" => "html", ".cshtml" => "cshtml", _ => "",
+        ".cs" => "csharp", ".ts" => "ts", ".tsx" => "tsx", ".js" or ".jsx" => "js", ".py" or ".wsgi" => "python", ".html" => "html", ".cshtml" => "cshtml", _ => "",
     };
 }
 

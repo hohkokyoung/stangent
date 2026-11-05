@@ -472,7 +472,7 @@ public static partial class TicketDrafts
         if (text.Contains('`')) problems.Add("client tone: no code formatting (backticks).");
         var plain = Url().Replace(text, " ");
         foreach (Match m in PathLike().Matches(plain)) problems.Add($"client tone: \"{m.Value}\" looks like a file path.");
-        foreach (var id in new[] { "page:", "endpoint:", "|M:", "ts|" }.Where(i => plain.Contains(i, StringComparison.Ordinal)))
+        foreach (var id in new[] { "page:", "endpoint:", "|M:", "ts|", "py|" }.Where(i => plain.Contains(i, StringComparison.Ordinal)))
             problems.Add($"client tone: \"{id}\" is part of an id; describe what the user sees instead.");
         var names = ctx.Graph.AllNodes.Where(n => n.Kind is NodeKind.Type or NodeKind.Method or NodeKind.Component or NodeKind.Property && !n.IsTest)
             .Select(n => n.Name).Where(n => n.Contains('.') || Regex.IsMatch(n, "^[A-Z][a-z0-9]+(?:[A-Z][a-z0-9]+)+$")).ToHashSet(StringComparer.Ordinal);

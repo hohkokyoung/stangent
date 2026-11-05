@@ -1,5 +1,9 @@
 using Stangent.Core;
 using Stangent.Graph;
+using Stangent.Graph.Impact;
+using Stangent.Graph.Loading;
+using Stangent.Spec;
+using Stangent.Spec.Pages;
 using Xunit;
 
 namespace Stangent.Core.Tests;
@@ -183,6 +187,31 @@ public class PythonGraphTests(FlaskShop shop) : IClassFixture<FlaskShop>
         Assert.Contains(Reasons(app + "loadBuilt"), r => r.Contains("built at runtime"));
         var python = shop.Stats.Python!;
         Assert.Equal((5, 4, 1, 1), (python.FrontendCalls, python.FrontendCallsMatched, python.FrontendCallsUnmatched, python.FrontendCallsRuntimeUrl));
+    }
+
+    [Fact]
+    public void Pages_slices_where_impact_and_the_bundle_work_on_python()
+    {
+        var set = PageList.Build(G, shop.Root, SpecSettings.From(shop.Repo.Config));
+        var page = set.Find(Endpoint("POST /api/orders"))!;
+        Assert.Equal(PageKind.Backend, page.Kind);
+        Assert.Contains(set.Pages, p => p.Kind == PageKind.Screen && p.Id == "page:/report"); // renders a template
+        Assert.Contains(set.Slices[page.Id].Nodes, n => n.Node.Id == Py("store.py", "Store.write"));
+        Assert.Contains(set.Slices["page:/orders"].Nodes, n => n.Node.Id == Endpoint("POST /api/orders"));
+        var bundle = Bundles.Build(set, page, null).Text;
+        Assert.Contains("```python\n", bundle);
+        Assert.Contains("# ⟦" + Py("orders.py", "list_orders"), bundle);
+        Assert.DoesNotContain("// ⟦", bundle);
+
+        var match = Assert.Single(SymbolLines.Where(G, "OrderService.place"));
+        Assert.Equal("backend/shop/service.py", match.File);
+        Assert.True(match.LinesMatchCommit);
+
+        var impact = new ImpactAnalyzer(G).Analyze(new ChangeSpec("symbol", "Store.write"), shop.Root);
+        var endpoints = impact["groups"]!.AsArray().Single(g => (string)g!["name"]! == "endpoints")!;
+        Assert.True((int)endpoints["total"]! >= 2);
+        Assert.Contains(impact["groups"]!.AsArray(), g => (string)g!["name"]! == "pages" && (int)g["total"]! >= 1);
+        Assert.Contains(impact["groups"]!.AsArray(), g => (string)g!["name"]! == "tests" && (int)g["total"]! >= 1);
     }
 
     [Fact]

@@ -55,6 +55,13 @@ public static partial class PageList
     [GeneratedRegex(@"\b(?:View|PartialView)\s*\(")]
     private static partial Regex ReturnsView();
 
+    /// <summary>Flask's way of returning a server-rendered screen (D127).</summary>
+    [GeneratedRegex(@"\brender_template(?:_string)?\s*\(")]
+    private static partial Regex RendersTemplate();
+
+    static bool ShowsScreen(Node action, SourceReader source) =>
+        (action.File is { } f && (f.EndsWith(".py", StringComparison.Ordinal) || f.EndsWith(".wsgi", StringComparison.Ordinal)) ? RendersTemplate() : ReturnsView()).IsMatch(source.Text(action));
+
     public static PageSet Build(CodeGraph graph, string repoRoot, SpecSettings settings)
     {
         var builder = new SliceBuilder(graph, settings.HubCallers);
@@ -76,7 +83,7 @@ public static partial class PageList
         {
             var (verb, route) = SplitEndpoint(ep.Name);
             if (verb is not ("GET" or "ANY")) continue;
-            if (!routesTo[ep.Id].Any(e => builder.Find(e.Target) is { } action && ReturnsView().IsMatch(source.Text(action)))) continue;
+            if (!routesTo[ep.Id].Any(e => builder.Find(e.Target) is { } action && ShowsScreen(action, source))) continue;
             screens.Add(($"page:{route}", ep, Project(builder, ep)));
         }
         // Two server-rendered screens on one route (GET and ANY): keep the first by id.
