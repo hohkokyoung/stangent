@@ -792,4 +792,33 @@ public class DisproveTests
         Assert.Equal((int)whole["calls"]!, (int)one["calls"]!);
         Assert.Equal("not_found", Assert.Throws<StangentException>(() => DisproveRun.Estimate(app.Pages(), app.Repo, "shop", "9")).Code);
     }
+
+    [Fact]
+    public void A_smaller_bundle_shows_what_the_page_cites_names_the_rest_and_marks_its_verdict()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        var set = app.Pages();
+        var index = SpecIndex.Load(app.Root);
+        var analyzer = new Lazy<Stangent.Graph.Impact.ImpactAnalyzer>(() => new Stangent.Graph.Impact.ImpactAnalyzer(set.Graph));
+        var section = index.Sections[("shop", "1")];
+        var full = DisproveRun.Build(set, index, analyzer, "shop", section, Entry(app));
+        var small = DisproveRun.Build(set, index, analyzer, "shop", section, Entry(app), small: true);
+        Assert.True(small.Code.Count <= full.Code.Count);
+        Assert.NotEqual(full.Inputs, small.Inputs);
+        Assert.All(full.Code.Where(c => !small.Code.Any(s => s.Symbol == c.Symbol)), c => Assert.Contains(small.Missing, m => m.Contains(c.Symbol, StringComparison.Ordinal)));
+        Assert.Equal(full.Inputs, DisproveRun.Build(set, index, analyzer, "shop", section, Entry(app), small: false).Inputs);
+
+        var estimate = DisproveRun.Estimate(set, app.Repo, "shop");
+        Assert.Equal(1, (int)estimate["small"]!["calls"]!);
+        Assert.Equal(0, (int)estimate["watch"]!["small"]!["verdicts"]!);
+
+        app.Repo.Config.Components["disprove-small"] = true;
+        var step = Prepare(app);
+        Answer(app, step, new JsonObject { ["verdict"] = "cant-tell", ["why"] = "can't see it" });
+        Assert.Equal("small", (string?)Entry(app)["disproof"]!["bundle"]);
+        var watched = DisproveRun.Estimate(app.Pages(), app.Repo, "shop")["watch"]!;
+        Assert.Equal(1, (int)watched["small"]!["cantTell"]!);
+        Assert.Equal(0, (int)watched["full"]!["verdicts"]!);
+    }
 }

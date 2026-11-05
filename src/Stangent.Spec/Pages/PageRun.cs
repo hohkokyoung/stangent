@@ -106,9 +106,11 @@ public static class PageRun
         var work = paths.Work(page);
         if (Directory.Exists(work)) Directory.Delete(work, recursive: true);
         Directory.CreateDirectory(work);
-        File.WriteAllText(Path.Combine(work, "bundle.md"), SharedHead.Store(bundle.Text + Staleness.ReportedWrongNote(wrong)));
+        var keep = StatementUpdate.Plan(set, repo.Config, paths, page, previous, wrong is not null);
+        File.WriteAllText(Path.Combine(work, "bundle.md"), SharedHead.Store(bundle.Text + Staleness.ReportedWrongNote(wrong) + StatementUpdate.Note(keep)));
         var state = new JsonObject
         {
+            ["keep"] = keep,
             ["page"] = page.Id, ["inputHash"] = bundle.InputHash, ["attempts"] = 0,
             ["checkRetryUsed"] = false, ["fixUsed"] = false, ["checkRetries"] = 0,
             ["writer"] = Usage.None.ToJson(), ["verifier"] = Usage.None.ToJson(),
@@ -139,6 +141,8 @@ public static class PageRun
                 var attempt = (int)state["attempts"]!;
                 var errors = new List<string>();
                 var output = PageChecks.Parse(ReadOrEmpty(Path.Combine(work, $"writer-{attempt}.json")), errors);
+                // I.2: what code kept goes back, word for word, before any check. Off, there's nothing kept.
+                if (output is JsonObject written && state["keep"] is JsonArray kept) output = StatementUpdate.Merge(written, kept);
                 var findings = stage == "fix" ? FindingsFrom(state) : null;
                 if (errors.Count == 0) errors = PageChecks.CheckWriter(output, slice, set.Builder, bundle, findings);
                 if (errors.Count > 0)
@@ -158,9 +162,13 @@ public static class PageRun
                     state["verifierOff"] = true;
                     return Record(set, repo.Config, paths, page, state, work, bundle);
                 }
+                // I.2: nothing new to check, so nothing for a verifier to read. It isn't "off": what's kept was checked when it was written.
+                var keptWords = StatementUpdate.KeptWords(state["keep"] as JsonArray);
+                if (keptWords.Count > 0 && PageChecks.Statements((JsonObject)output).All(s => keptWords.Contains(Quotes.Normalize((string)s.Statement["text"]!))))
+                    return Record(set, repo.Config, paths, page, state, work, bundle);
                 Stage(paths, page, state, "verify", "the writer's output passed the code check");
                 Save(work, state);
-                File.WriteAllText(Path.Combine(work, "verify.md"), SharedHead.Store(VerifyPage(page, (JsonObject)output)));
+                File.WriteAllText(Path.Combine(work, "verify.md"), SharedHead.Store(VerifyPage(page, (JsonObject)output, keptWords)));
                 return new RunStep("verify", "verify", Verifier,
                     $"Bundle: {paths.Relative(Path.Combine(work, "bundle.md"))}\nPage to check: {paths.Relative(Path.Combine(work, "verify.md"))}\n" +
                     $"Write your findings as JSON to: {paths.Relative(Path.Combine(work, "verifier.json"))}",
@@ -246,14 +254,14 @@ public static class PageRun
         return sb.ToString();
     }
 
-    static string VerifyPage(PageDef page, JsonObject output)
+    static string VerifyPage(PageDef page, JsonObject output, IReadOnlySet<string> kept)
     {
         var sb = new StringBuilder(SharedHead.Step(SharedHead.VerifierInstructions, Bundles.VerifierSchema));
         sb.Append($"# The page\n\n- id: `{page.Id}`\n- title: {(string?)output["title"]}\n");
         foreach (var section in PageChecks.Sections)
         {
             sb.Append($"\n## {section}\n\n");
-            var list = PageChecks.Statements(output).Where(s => s.Section == section).ToList();
+            var list = PageChecks.Statements(output).Where(s => s.Section == section && !kept.Contains(Quotes.Normalize((string)s.Statement["text"]!))).ToList();
             if (list.Count == 0) sb.Append("(none)\n");
             foreach (var (_, id, s) in list)
                 sb.Append($"- **{id}** {(string)s["text"]!} (cites {string.Join(", ", (s["cites"] as JsonArray ?? []).Select(c => $"`{c}`"))})\n");
@@ -316,7 +324,7 @@ public static class PageRun
         Directory.CreateDirectory(Path.GetDirectoryName(paths.PageJson(page))!);
         Quotes.WriteAtomic(paths.PageJson(page), CanonicalJson.Serialize(record));
         var citing = WriteRendered(set, config, paths, page, record);
-        if (set.Settings.KeepShape) PageMoves.WriteFile(paths, page, PageMoves.Shape(set, page));
+        if (set.Settings.KeepShape) PageMoves.WriteFile(paths, page, set);
         var traceProblem = Staleness.ClearReportedWrong(paths.Root, page.Id);
         ClearFailed(paths, page);
         Stage(paths, page, state, "done", "recorded");

@@ -51,6 +51,8 @@ components: { page-verifier: false, git-history: false, detector-config-keys: fa
 | `page-corrections` | `components.page-corrections` | off | `spec correct` refuses, and nothing already approved is put back when a page is written. On, approved corrections stick (T.1). |
 | `page-exclusions` | `components.page-exclusions` | off | `spec exclude` refuses and exclusions on file are ignored. `spec coverage` still works. On, an excluded page isn't listed, written or a candidate (T.3). |
 | `follow-moves` | `components.follow-moves` | off | Any change to a page's inputs asks for a run, lines moving included. On, code that only moved takes the page's citations and saved hash with it, with no AI (I.4). |
+| `statement-update` | `components.statement-update` | off | A stale page goes back whole to the writer and verifier. On, only statements citing code that changed do, and code puts the others back word for word (I.2). |
+| `disprove-small` | `components.disprove-small` | off | A disprove bundle holds up to 60K characters of code from the page's slice. On, only what the page's statements cite, or for a gap what holds the claim's words (I.3). |
 | `page-verifier` | `components.` | on | Recorded as written, with `verification.off: true` on the page and a warning. |
 | `line-citations` | `components.` | on | No `<path>.lines.json`, an old one removed, so no `code` evidence; `spec cite` says `lineCitations: off`. |
 | `candidate-finder` | `components.` | on | A section code finds no page for gets status `off`, `candidatesBy: off`, and no gap. |

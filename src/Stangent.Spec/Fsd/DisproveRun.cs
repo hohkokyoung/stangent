@@ -74,12 +74,12 @@ public static class DisproveRun
         {
             // Kept only when it's a verdict at all: anything else would break the file's own schema, and the first error already says what came back.
             var claimed = output?["verdict"] is JsonValue said && said.TryGetValue<string>(out var word) && StateKinds.Verdicts.Contains(word) ? word : null;
-            Write(repo, entry, "cant-tell", Disproof(inputs, $"The answer failed the code check twice: {errors[0]}", model, claimed: claimed), "its answer failed the code check twice");
+            Write(repo, entry, "cant-tell", Disproof(inputs, $"The answer failed the code check twice: {errors[0]}", model, claimed: claimed, small: set.Settings.DisproveSmall), "its answer failed the code check twice");
         }
         else
         {
             var verdict = (string)output!["verdict"]!;
-            var disproof = Disproof(inputs, (string)output["why"]!, model, suggested: (string?)output["suggestedSeverity"]);
+            var disproof = Disproof(inputs, (string)output["why"]!, model, suggested: (string?)output["suggestedSeverity"], small: set.Settings.DisproveSmall);
             if (verdict != "cant-tell")
             {
                 disproof["path"] = (string)output["path"]!;
@@ -122,12 +122,13 @@ public static class DisproveRun
         return null;
     }
 
-    static JsonObject Disproof(string inputs, string why, string? agent, string? suggested = null, string? claimed = null)
+    static JsonObject Disproof(string inputs, string why, string? agent, string? suggested = null, string? claimed = null, bool small = false)
     {
         var o = new JsonObject { ["inputs"] = inputs, ["why"] = why };
         if (agent is not null) o["agent"] = agent;
         if (suggested is not null) o["suggestedSeverity"] = suggested;
         if (claimed is not null) o["claimed"] = claimed;
+        if (small) o["bundle"] = "small";
         return o;
     }
 
@@ -148,7 +149,7 @@ public static class DisproveRun
             // No code to read means nothing for an agent to do: a call would only cost money.
             if (bundle.Code.Count == 0)
             {
-                Write(repo, entry, "cant-tell", Disproof(bundle.Inputs, "Code found no code to check this against" + (bundle.Missing.Count > 0 ? $": {bundle.Missing[0]}" : "."), null), "no code to check it against");
+                Write(repo, entry, "cant-tell", Disproof(bundle.Inputs, "Code found no code to check this against" + (bundle.Missing.Count > 0 ? $": {bundle.Missing[0]}" : "."), null, small: set.Settings.DisproveSmall), "no code to check it against");
                 worked = true;
                 continue;
             }
@@ -218,8 +219,9 @@ public static class DisproveRun
     /// <c>Inputs</c> hashes what a verdict rests on, not the whole text: the commit, the section's number and where a symbol starts are shown
     /// but left out, so a new commit, a moved section or code pushed down a few lines keeps a verdict, and changed words or code don't.
     /// </summary>
-    public static DisproveBundle Build(PageSet set, SpecIndex index, Lazy<ImpactAnalyzer> analyzer, string doc, JsonObject section, JsonObject finding)
+    public static DisproveBundle Build(PageSet set, SpecIndex index, Lazy<ImpactAnalyzer> analyzer, string doc, JsonObject section, JsonObject finding, bool? small = null)
     {
+        var smaller = small ?? set.Settings.DisproveSmall;
         var state = (string)finding["state"]!;
         var fsdQuote = (string?)finding["fsd"]?["quote"];
         var pageId = (string?)finding["page"]?["id"];
@@ -254,11 +256,12 @@ public static class DisproveRun
                 Both($"- **{id}**{(id == statementId ? " (the claim's)" : "")} {(string)s["text"]!}\n");
         }
 
-        var (code, missing, missingHashed) = Choose(set, page, pageId, statementId, $"{fsdQuote} {pageQuote}");
+        var (code, missing, missingHashed) = Choose(set, page, pageId, statementId, $"{fsdQuote} {pageQuote}", smaller);
         sb.Append($"\n# The code\n\nAt commit `{SymbolLines.CommitOf(set.Graph)}`. ");
         rests.Append("\n# The code\n\n");
         Both($"Whole symbols only, up to {MaxCodeChars} characters: the claim's own cited symbols first, then ");
-        Both("what the page's other statements cite, then the rest of the page's slice and the slices of the endpoints it reaches, each group by how many of the claim's words it holds.\n");
+        Both(!smaller ? "what the page's other statements cite, then the rest of the page's slice and the slices of the endpoints it reaches, each group by how many of the claim's words it holds.\n"
+            : "what the page's other statements cite, and where the claim cites nothing, the code in the page's slice holding the claim's words. The rest is named below.\n");
         foreach (var c in code)
         {
             sb.Append($"\n## `{c.Path}` lines {c.Start}-{c.End}: `{c.Symbol}`\n\n````text\n");
@@ -289,7 +292,7 @@ public static class DisproveRun
 
     /// <summary>The code to show, under the size rule. The claim's own cited symbols come first, because that's what it rests on; and a gap has none,
     /// so the rest of the slice is where a page's omission shows up.</summary>
-    static (List<DisproveCode> Code, List<string> Missing, List<string> MissingHashed) Choose(PageSet set, JsonObject? page, string? pageId, string? statementId, string claim)
+    static (List<DisproveCode> Code, List<string> Missing, List<string> MissingHashed) Choose(PageSet set, JsonObject? page, string? pageId, string? statementId, string claim, bool small = false)
     {
         var words = Regex.Matches(claim.ToLowerInvariant(), "[a-z0-9]{3,}").Select(m => m.Value).ToHashSet(StringComparer.Ordinal);
         var lookup = SymbolLines.Lookup(set.Graph);
@@ -325,6 +328,13 @@ public static class DisproveRun
                 var body = lines.Skip(at.StartLine!.Value - 1).Take(at.EndLine!.Value - at.StartLine.Value + 1).ToArray();
                 var said = (id + " " + string.Join(' ', body)).ToLowerInvariant();
                 candidates.Add((id, at, body, words.Count(said.Contains)));
+            }
+            // I.3: the slice goes only where a claim cites nothing, and only what holds its words. Named, so the agent knows what it can't see.
+            if (small && ReferenceEquals(group, slice))
+            {
+                var left = own.Count > 0 ? candidates : [.. candidates.Where(c => c.Score == 0)];
+                foreach (var c in left) Miss($"`{c.Id}`: left out of this smaller bundle");
+                candidates = [.. candidates.Except(left)];
             }
             foreach (var (id, at, body, _) in candidates.OrderByDescending(c => c.Score).ThenBy(c => c.Lines!.Length).ThenBy(c => c.Id, StringComparer.Ordinal))
             {
@@ -389,6 +399,17 @@ public static class DisproveRun
                 else calls.Add((sectionId, bundle));
             }
         var chars = calls.Select(c => c.Bundle.Text.Length).Order().ToList();
+        // I.3: what the pending bundles would be with disprove-small, and cant-tell so far, small and full apart. Free either way.
+        var smaller = new List<DisproveBundle>();
+        foreach (var ((d, sectionId), section) in index.Sections.Where(s => s.Key.Doc == doc && (only is null || only.Contains(s.Key.Section))))
+            foreach (var finding in Pending(trace, doc, sectionId))
+                if (Build(set, index, analyzer, d, section, finding, small: true) is { Code.Count: > 0 } bundle) smaller.Add(bundle);
+        var verdicts = findings.Where(f => f["disproof"] is not null).ToList();
+        JsonObject Watch(bool small)
+        {
+            var these = verdicts.Where(f => ((string?)f["disproof"]!["bundle"] == "small") == small).ToList();
+            return new JsonObject { ["verdicts"] = these.Count, ["cantTell"] = these.Count(f => (string?)f["verdict"] == "cant-tell") };
+        }
         return new JsonObject
         {
             ["doc"] = doc,
@@ -404,6 +425,8 @@ public static class DisproveRun
             },
             ["atTheCodeLimit"] = calls.Count(c => c.Bundle.Missing.Any(m => m.EndsWith("size limit", StringComparison.Ordinal))),
             ["withSomethingNotShown"] = calls.Count(c => c.Bundle.Missing.Count > 0),
+            ["small"] = new JsonObject { ["calls"] = smaller.Count, ["totalChars"] = smaller.Sum(b => (long)b.Text.Length), ["atTheCodeLimit"] = smaller.Count(b => b.Missing.Any(m => m.EndsWith("size limit", StringComparison.Ordinal))) },
+            ["watch"] = new JsonObject { ["small"] = Watch(true), ["full"] = Watch(false) },
         };
     }
 }

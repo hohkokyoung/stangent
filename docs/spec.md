@@ -93,6 +93,12 @@ A page writer's, page verifier's, link judge's or agree checker's file under `.s
 
 The normal way to make pages is for what needs them. On Sonarr 113 pages of 718 ever ran. `stangent spec needed --doc <doc> [--chapter N]` lists the unwritten pages that a document's sections have as candidates, with the sections each is for; `--ticket <key>` lists what that ticket's saved bundle says it's missing. `spec-run.sh --for-fsd <doc>` and `--for-ticket <key>` make just those. `--stale` now means written pages whose code changed: `--new` makes every page never written, and `--all` is every page, as before. A section with no candidate by code isn't counted: the candidate finder reads written pages' titles, so it can only name those. No prompt or hash moves.
 
+## Only the statements a change touches (I.2, D131)
+
+A changed line regenerates the whole page and its verifier. With `statement-update` on (off by default, because it changes what the writer gets), `<page>.shape.json` holds a hash of the code shown for each point in the slice. A stale page's statements whose cited points are all unchanged are kept by code: they go back on word for word, keep their ids, and the writer is told not to return them. The writer returns the rest, and anything new. The verifier reads only what isn't kept; if nothing is new it doesn't run. The input hash is the same either way, so saved pages stay valid. The writer still reads the whole bundle, because a new behaviour may be anywhere in it, so the saving is what it writes and what the verifier reads.
+
+The whole page runs for a first version, a `page-wrong` mark, new instructions or slice settings, or no shape on file.
+
 ## Code that only moved (I.4, D131)
 
 A page's input hash covers line numbers and file paths, so a line added above a method, or a C# file moved, makes the page stale, and a paid run writes the same thing. With `follow-moves` on, a page gets `<page>.shape.json` (contract `page-shape` v1): a hash of what it was written from with where the code sits left out, the same instructions and schema, points, lines and code. If that's unchanged, `spec prepare` moves the page on with no AI: its input hash, commit and citations change, and its statements don't. `spec stale` lists it under `moved`, not stale; `spec read` doesn't call it behind; `stangent spec follow` does them all at once and starts a shape for current pages that have none.
@@ -318,6 +324,12 @@ Each step here has a switch (D121, `docs/foundation.md`): `candidate-finder`, `a
   - **Staying current:** an unchanged bundle means no call. When the bundle changed, the old verdict drops to `unverified` before the new call, so a closed finding reopens, for a person to look at again, even if the call never comes. Until the next `disprove prepare`, a verdict can be older than the code; `trace check` doesn't see that.
   - **Readers:** only a closed finding, one a person confirmed, leaves the ticket bundle, a draft's sections and impact's `fsdSections`. A `developer-confirm` or `page-gap` one stays in them, marked unconfirmed as before.
 - **`page-wrong` (D119).** The BA says the reference is wrong, in a PR like any decision, with `decided_by` from git and `decided_on` as usual. The entry needs a page, or `trace check` says so. `spec stale` lists the page, with `reportedWrong` on the item, even though its inputs didn't change, so `spec-run.sh --stale` picks it up. `spec prepare` runs it, and the writer's bundle says what was reported, after the hashed part: the statement and the FSD's quote, or for a gap, that the page has no statement on it, with the quote. Writing the page again drops the decision back on the state module, so it returns to the BA. Impact's `verified` is false while it holds. Page steps don't depend on the links: `spec prepare`, `spec check` and `spec stale` read a broken `trace.yaml` as no marks, say so in `warning` or `traceProblem`, and carry on.
+
+## Smaller disprove bundles (I.3, D131)
+
+44 of 62 disprove bundles hit the 60K code cap. With `disprove-small` on (off by default, because it changes what the disprover reads, so its saved verdicts run again), a claim that cites code gets only what the page's statements cite. A gap, which cites nothing, gets those plus the slice's code that holds at least one of the claim's words, since that's where an omission shows. What's left out is named under "Couldn't be shown", so the agent knows. No new number: the 60K cap stays.
+
+The risk is the agent not seeing what it needs and answering `cant-tell`, so it's watched: each verdict made this way carries `disproof.bundle: small`. `fsd disprove estimate` shows `small`, what the pending bundles would be this way, and `watch`, `cant-tell` among recorded verdicts, small and full apart. No AI to read either.
 
 ## The link judge's finer verdicts (C.4, D124)
 

@@ -287,6 +287,10 @@
               "why": {
                 "type": "string"
               },
+              "bundle": {
+                "description": "`small`: judged from a smaller bundle (disprove-small, I.3), watched against cant-tell. Absent otherwise.",
+                "enum": ["small"]
+              },
               "agent": {
                 "type": "string"
               },

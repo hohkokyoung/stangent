@@ -9,6 +9,7 @@
     "version": { "const": 1 },
     "page": { "type": "string" },
     "shape": { "type": "string", "description": "Same as today's means the code only moved." },
+    "head": { "type": "string", "description": "A hash of the instructions, schema and slice settings: a change means the whole page runs." },
     "symbols": { "type": "object", "additionalProperties": { "type": "string" }, "description": "Each point in the slice to a hash of the code shown for it." }
   }
 }

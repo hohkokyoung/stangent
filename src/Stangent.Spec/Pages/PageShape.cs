@@ -48,11 +48,16 @@ public static class PageMoves
         return lines[(from - 1)..to];
     }
 
-    public static void WriteFile(SpecPaths paths, PageDef page, PageShape shape)
+    /// <summary>The writer's instructions, schema and the slice settings. New ones mean every statement is up for review.</summary>
+    public static string Head(PageSet set) => CanonicalJson.Hash(SharedHead.Text(true, [SharedHead.WriterInstructions], Bundles.WriterSchema) + set.Settings.Describe());
+
+    public static void WriteFile(SpecPaths paths, PageDef page, PageSet set)
     {
+        var shape = Shape(set, page);
+        var head = Head(set);
         var file = new JsonObject
         {
-            ["version"] = 1, ["page"] = page.Id, ["shape"] = shape.Hash,
+            ["version"] = 1, ["page"] = page.Id, ["shape"] = shape.Hash, ["head"] = head,
             ["symbols"] = new JsonObject([.. shape.Symbols.Select(s => KeyValuePair.Create(s.Key, (JsonNode?)s.Value))]),
         };
         var errors = SchemaRegistry.Embedded.Validate("page-shape.v1.json", file.ToJsonString());
@@ -94,7 +99,7 @@ public static class PageMoves
             var bundle = Bundles.Build(set, page, null);
             if ((string?)recorded["generated"]?["bundleHash"] == bundle.InputHash)
             {
-                if (LoadFile(paths, page) is null) { WriteFile(paths, page, Shape(set, page)); started++; }
+                if (LoadFile(paths, page) is null) { WriteFile(paths, page, set); started++; }
             }
             else if (OnlyMoved(set, paths, page, recorded, bundle.InputHash))
             {
