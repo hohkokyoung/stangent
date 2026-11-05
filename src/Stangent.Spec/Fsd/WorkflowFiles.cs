@@ -291,14 +291,16 @@ public static partial class WorkflowFiles
         ? $"decision {decision}{((string?)e["decided_by"] is { } by ? $" by {by}" : "")}" : "no decision";
 
     /// <summary>Removes what an earlier run left that doesn't apply now: only files that say they're ours, only in this folder, and then folders left empty. Returns how many files went.</summary>
-    static int Sweep(string dir, IEnumerable<string> keep)
+    static int Sweep(string dir, IEnumerable<string> keep) => Sweep(dir, keep, Marker);
+
+    internal static int Sweep(string dir, IEnumerable<string> keep, string marker)
     {
         if (!Directory.Exists(dir)) return 0;
         var wanted = keep.Select(k => Path.GetFullPath(Path.Combine(dir, k))).ToHashSet(StringComparer.Ordinal);
         var removed = 0;
         foreach (var old in Directory.EnumerateFiles(dir, "*.md", SearchOption.AllDirectories).Where(f => !wanted.Contains(Path.GetFullPath(f))).ToList())
         {
-            using (var r = new StreamReader(old)) { if (r.ReadLine()?.StartsWith(Marker, StringComparison.Ordinal) != true) continue; }
+            using (var r = new StreamReader(old)) { if (r.ReadLine()?.StartsWith(marker, StringComparison.Ordinal) != true) continue; }
             File.Delete(old);
             removed++;
         }

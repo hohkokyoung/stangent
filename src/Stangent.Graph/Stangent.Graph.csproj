@@ -9,12 +9,13 @@
   <PropertyGroup>
     <TsExtractorDir>$(MSBuildThisFileDirectory)../../tools/ts-extractor/</TsExtractorDir>
     <TsExtractorBundle>$(TsExtractorDir)dist/stangent-ts-extract.mjs</TsExtractorBundle>
+    <TestStepsBundle>$(TsExtractorDir)dist/stangent-test-steps.mjs</TestStepsBundle>
   </PropertyGroup>
   <!-- The Python extractor (D127): one standard-library file, shipped the same way. It needs no build. -->
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)../../tools/py-extractor/stangent_py_extract.py" Link="py-extractor/stangent_py_extract.py" CopyToOutputDirectory="Always" />
   </ItemGroup>
-  <Target Name="BuildTsExtractor" BeforeTargets="BeforeBuild" Condition="!Exists('$(TsExtractorBundle)')">
+  <Target Name="BuildTsExtractor" BeforeTargets="BeforeBuild" Condition="!Exists('$(TsExtractorBundle)') Or !Exists('$(TestStepsBundle)')">
     <Message Importance="high" Text="stangent: building the TypeScript extractor (needs Node)" />
     <Exec Command="npm ci --no-audit --no-fund &amp;&amp; npm run build" WorkingDirectory="$(TsExtractorDir)" ContinueOnError="true" />
   </Target>
@@ -22,6 +23,7 @@
     <ItemGroup Condition="Exists('$(TsExtractorBundle)')">
       <!-- Always: a stale copy must never shadow a new bundle (it did once, silently). -->
       <None Include="$(TsExtractorBundle)" Link="ts-extractor/stangent-ts-extract.mjs" CopyToOutputDirectory="Always" />
+      <None Include="$(TestStepsBundle)" Link="ts-extractor/stangent-test-steps.mjs" CopyToOutputDirectory="Always" Condition="Exists('$(TestStepsBundle)')" />
       <!-- TypeScript's standard library types, found next to the bundle at run time. -->
       <_TsLib Include="$(TsExtractorDir)dist/lib.*.d.ts" />
       <None Include="@(_TsLib)" Link="ts-extractor/%(_TsLib.Filename)%(_TsLib.Extension)" CopyToOutputDirectory="Always" />

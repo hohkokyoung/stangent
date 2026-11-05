@@ -28,13 +28,46 @@ public sealed partial class PlaywrightDetector : IDetector
     public void Link(LinkContext ctx)
     {
         if (ctx.Root.Length == 0) return;
-        var pages = ctx.Graph.AllNodes.Where(n => n.Kind == NodeKind.Page).DistinctBy(n => n.Id).ToList();
-        var listed = Git.Run(ctx.Root, "ls-files --cached --others --exclude-standard -z")?.Split('\0').ToHashSet(StringComparer.Ordinal);
-        var frontends = ctx.Graph.AllNodes.Where(n => n.Kind == NodeKind.Project && Path.GetFileName(n.Id) is "tsconfig.json" or "tsconfig.app.json").Select(n => n.Id)
-            .Concat(pages.Select(p => p.Project).OfType<string>()).Distinct(StringComparer.Ordinal).ToList();
-        foreach (var full in PlaywrightSpecs.Files(ctx.Root, name => TestName().IsMatch(name), dir => BlindFolder(ctx, listed, dir)).Order(StringComparer.Ordinal))
+        var pages = PagesOf(ctx.Graph);
+        var frontends = FrontendsOf(ctx.Graph, pages);
+        foreach (var file in SpecFiles(ctx.Root, (place, why) => ctx.AddBlindSpot("browser-test:" + place, place, 1, why, Detector)))
         {
-            var spec = Path.GetRelativePath(ctx.Root, full).Replace('\\', '/');
+            var (spec, text, imports) = file;
+            var gotos = PlaywrightSpecs.Gotos(text);
+            var owner = "browser-test:" + spec;
+            // A plain unit test beside a config has no goto and says nothing; one that imports Playwright is a browser test.
+            if (gotos.Count == 0 && imports) ctx.AddBlindSpot(owner, spec, 1, "playwright spec: no goto, so the screen it opens isn't known", Detector);
+            foreach (var call in gotos)
+            {
+                var (screens, none) = Resolve(pages, frontends, spec, call);
+                if (none is not null) ctx.AddBlindSpot(owner, spec, call.Line, none, Detector);
+                foreach (var page in screens) ctx.Graph.ScreenTests.Add(new ScreenTest(spec, call.Line, call.Path!, page.Id));
+            }
+        }
+    }
+
+    public static List<Node> PagesOf(CodeGraph graph) => [.. graph.AllNodes.Where(n => n.Kind == NodeKind.Page).DistinctBy(n => n.Id)];
+
+    public static List<string> FrontendsOf(CodeGraph graph, List<Node> pages) =>
+        [.. graph.AllNodes.Where(n => n.Kind == NodeKind.Project && Path.GetFileName(n.Id) is "tsconfig.json" or "tsconfig.app.json").Select(n => n.Id)
+            .Concat(pages.Select(p => p.Project).OfType<string>()).Distinct(StringComparer.Ordinal)];
+
+    /// <summary>
+    /// The specs that count, in order: Playwright's default names, that git tracks or doesn't ignore, importing Playwright or with a config above. What can't be read goes to <paramref name="blind"/>,
+    /// with the place and why: a folder only if git says something in it counts.
+    /// </summary>
+    public static IEnumerable<(string Spec, string Text, bool Imports)> SpecFiles(string root, Action<string, string> blind)
+    {
+        var listed = Git.Run(root, "ls-files --cached --others --exclude-standard -z")?.Split('\0').ToHashSet(StringComparer.Ordinal);
+        void Folder(string full)
+        {
+            var dir = Path.GetRelativePath(root, full).Replace('\\', '/');
+            if (listed?.Any(f => f.StartsWith(dir + "/", StringComparison.Ordinal)) == false) return;
+            blind(dir, "possible playwright specs: this folder can't be read, so any specs in it aren't known");
+        }
+        foreach (var full in PlaywrightSpecs.Files(root, name => TestName().IsMatch(name), Folder).Order(StringComparer.Ordinal))
+        {
+            var spec = Path.GetRelativePath(root, full).Replace('\\', '/');
             if (listed?.Contains(spec) == false) continue; // built output or anything else git ignores
             string text;
             try
@@ -43,36 +76,18 @@ public sealed partial class PlaywrightDetector : IDetector
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
-                ctx.AddBlindSpot("browser-test:" + spec, spec, 1, "possible playwright spec: the file can't be read (a link with no target, or no permission), so the screens it opens aren't known", Detector);
+                blind(spec, "possible playwright spec: the file can't be read (a link with no target, or no permission), so the screens it opens aren't known");
                 continue;
             }
             var imports = PlaywrightImport().IsMatch(text);
-            if (!imports && !HasConfigAbove(ctx.Root, full)) continue; // another runner's test
-            var gotos = PlaywrightSpecs.Gotos(text);
-            var owner = "browser-test:" + spec;
-            // A plain unit test beside a config has no goto and says nothing; one that imports Playwright is a browser test.
-            if (gotos.Count == 0 && imports) ctx.AddBlindSpot(owner, spec, 1, "playwright spec: no goto, so the screen it opens isn't known", Detector);
-            foreach (var call in gotos)
-            {
-                if (Unreadable(call) is { } why)
-                {
-                    ctx.AddBlindSpot(owner, spec, call.Line, why, Detector);
-                    continue;
-                }
-                var (screens, none) = Screens(pages, frontends, spec, Local(call.Path!), call.Path!);
-                if (none is not null) ctx.AddBlindSpot(owner, spec, call.Line, none, Detector);
-                foreach (var page in screens) ctx.Graph.ScreenTests.Add(new ScreenTest(spec, call.Line, call.Path!, page.Id));
-            }
+            if (!imports && !HasConfigAbove(root, full)) continue; // another runner's test
+            yield return (spec, text, imports);
         }
     }
 
-    /// <summary>A folder that can't be read is a blind spot only if git says something in it counts.</summary>
-    static void BlindFolder(LinkContext ctx, HashSet<string>? listed, string full)
-    {
-        var dir = Path.GetRelativePath(ctx.Root, full).Replace('\\', '/');
-        if (listed?.Any(f => f.StartsWith(dir + "/", StringComparison.Ordinal)) == false) return;
-        ctx.AddBlindSpot("browser-test:" + dir, dir, 1, "possible playwright specs: this folder can't be read, so any specs in it aren't known", Detector);
-    }
+    /// <summary>The screens a goto opens, or why none: the one route resolution, for the graph's lines and for journeys (D149).</summary>
+    public static (List<Node> Screens, string? Why) Resolve(List<Node> pages, List<string> frontends, string spec, SpecGoto call) =>
+        Unreadable(call) is { } why ? ([], why) : Screens(pages, frontends, spec, Local(call.Path!), call.Path!);
 
     /// <summary>Why a call can't be matched to a route, or null when its URL can be.</summary>
     static string? Unreadable(SpecGoto call)

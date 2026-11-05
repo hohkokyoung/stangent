@@ -118,6 +118,26 @@ public static class FrontendScanner
     }
 
     /// <summary>Hash of the extractor bundle, so a new extractor re-extracts every frontend.</summary>
+    /// <summary>
+    /// Each spec's steps, as JSON lines, from the bundle beside the extractor (D149). Parsing only: nothing is run. It isn't the extractor, so the graph's hash doesn't move with it.
+    /// </summary>
+    public static (List<string> Lines, string? Error) TestSteps(string root, IEnumerable<string> specs)
+    {
+        if (ExtractorPath() is not { } extractor || Path.Combine(Path.GetDirectoryName(extractor)!, "stangent-test-steps.mjs") is var bundle && !File.Exists(bundle))
+            return ([], "the test-steps reader isn't installed with this stangent build");
+        var list = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(list, string.Join('\n', specs));
+            var (code, output) = Run("node", $"\"{bundle}\" --root \"{root}\" --files \"{list}\"", root, TimeSpan.FromMinutes(10), splitStderr: true);
+            return code != 0 ? ([], $"the test-steps reader failed (exit {code}): {Tail(output)}") : ([.. output.Split('\n', StringSplitOptions.RemoveEmptyEntries)], null);
+        }
+        finally
+        {
+            File.Delete(list);
+        }
+    }
+
     public static string ExtractorHash() => ExtractorPath() is { } p ? CanonicalJson.Hash(Convert.ToBase64String(File.ReadAllBytes(p))) : "none";
 
     public static bool NodeAvailable() => Run("node", "--version", Directory.GetCurrentDirectory(), TimeSpan.FromSeconds(20)).Code == 0;

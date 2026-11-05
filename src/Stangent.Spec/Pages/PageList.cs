@@ -64,6 +64,10 @@ public static partial class PageList
     static bool ShowsScreen(Node action, SourceReader source) =>
         (action.File is { } f && (f.EndsWith(".py", StringComparison.Ordinal) || f.EndsWith(".wsgi", StringComparison.Ordinal)) ? RendersTemplate() : ReturnsView()).IsMatch(source.Text(action));
 
+    /// <summary>A route's page id. <paramref name="sameRoute"/> is how many routes share its name: two frontends' <c>/orders</c> are told apart by the frontend.</summary>
+    public static string ScreenId(Node route, int sameRoute) =>
+        sameRoute > 1 ? $"page:{(route.Project ?? "").Replace("project:", "")}|{route.Name}" : $"page:{route.Name}";
+
     public static PageSet Build(CodeGraph graph, string repoRoot, SpecSettings settings)
     {
         var builder = new SliceBuilder(graph, settings.HubCallers);
@@ -78,7 +82,7 @@ public static partial class PageList
         foreach (var r in routes)
         {
             var frontend = (r.Project ?? "").Replace("project:", "");
-            screens.Add((routeCounts[r.Name] > 1 ? $"page:{frontend}|{r.Name}" : $"page:{r.Name}", r, frontend));
+            screens.Add((ScreenId(r, routeCounts[r.Name]), r, frontend));
         }
         var routesTo = graph.AllEdges.Where(e => e.Kind == EdgeKind.RoutesTo).ToLookup(e => e.Source, StringComparer.Ordinal);
         foreach (var ep in nodes.Where(n => n.Kind == NodeKind.Endpoint).OrderBy(n => n.Id, StringComparer.Ordinal))

@@ -75,6 +75,19 @@ static class FsdCommands
         fsd.Subcommands.Add(export);
         var workflows = new Command("workflows", "One readable file per flow under specs/workflows/<doc>/, with a count per use case, written by code and never read back (D144, D147). Off unless components.workflow-files is on.") { docArgument };
         workflows.SetAction(pr => Cli.Run(pr, "workflows", ctx => WorkflowFiles.Command(ctx.Repo.Config, ctx.Repo.Root, pr.GetValue(docArgument)!)));
+        var journeysOut = new Option<string?>("--out") { Description = "Where to write (default: specs/workflows/tests/). Old generated files are removed only inside it." };
+        var journeys = new Command("tests", "What each Playwright test walks through, in order: its pages, clicks, fields and checks, read by code with no AI, with what can't be followed marked. One file per test file and an index under specs/workflows/tests/. It compares nothing and nothing reads it (D149). Off unless components.test-journeys is on.") { journeysOut };
+        journeys.SetAction(pr => Cli.Run(pr, "workflows tests", ctx =>
+        {
+            // A document can be called `tests`: this command took that name, so its own stays reachable until the switch is on, and then it's refused rather than sharing a folder.
+            if (FsdImport.Documents(ctx.Repo.Root).Any(d => (string?)d["id"] == "tests"))
+            {
+                if (!TestJourneys.On(ctx.Repo.Config)) return WorkflowFiles.Command(ctx.Repo.Config, ctx.Repo.Root, "tests");
+                throw new Stangent.Core.StangentException("name_taken", "A document here is called `tests`, and its workflow files would share specs/workflows/tests/ with these. Import it under another name.");
+            }
+            return TestJourneys.Command(ctx.Repo.Config, ctx.Repo.Root, () => Cli.LoadGraph(ctx), pr.GetValue(journeysOut));
+        }));
+        workflows.Subcommands.Add(journeys);
         root.Subcommands.Add(workflows);
 
         var candidates = new Command("candidates", "Candidate pages for each section, found by code: names, field labels, endpoints (D53). No AI.") { docOption };

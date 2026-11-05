@@ -529,13 +529,13 @@ public class WorkflowFileTests
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(f => File.ReadAllText(f) is var t && (t.Contains("\"workflows\"", StringComparison.Ordinal) || t.Contains("WorkflowFiles", StringComparison.Ordinal) || t.Contains("workflows/", StringComparison.Ordinal)))
             .Select(Path.GetFileName).Order(StringComparer.Ordinal);
-        // Components names the command, and FsdCommands only runs it.
-        Assert.Equal(["Components.cs", "FsdCommands.cs", "WorkflowFiles.cs"], uses);
+        // Components names the command, FsdCommands only runs it, and TestJourneys writes its own folder under specs/workflows/ with WorkflowFiles' sweep (D149).
+        Assert.Equal(["Components.cs", "FsdCommands.cs", "TestJourneys.cs", "WorkflowFiles.cs"], uses);
         Assert.DoesNotContain("WorkflowFiles.DirIn", File.ReadAllText(Path.Combine(src, "Stangent.Cli/FsdCommands.cs")));
         // It reads its own folder only for the first line of what it may remove.
         var own = File.ReadAllText(Path.Combine(src, "Stangent.Spec/Fsd/WorkflowFiles.cs"));
         Assert.Single(own.Split("new StreamReader(").Skip(1));
-        Assert.Contains("using (var r = new StreamReader(old)) { if (r.ReadLine()?.StartsWith(Marker", own);
+        Assert.Contains("using (var r = new StreamReader(old)) { if (r.ReadLine()?.StartsWith(marker", own);
     }
 
     // ---- through the real recording, with a fake judge ----

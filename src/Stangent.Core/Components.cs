@@ -61,6 +61,7 @@ public static class StangentComponents
         new("fsd-claims", "A section's text cut into claims by code, printed by `fsd claims`. Only claim-links reads them, so it's off by default", "components.fsd-claims", false, ["fsd claims"], []),
         new("claim-links", "Claims get permanent C- ids, the link judge names claim and statement ids and copies no words, code fills the quotes, and a link's id comes from those ids. Every section is judged again the first time, so it's off by default", "components.claim-links", false, ["fsd claims", "fsd prepare", "fsd check", "trace check"], ["fsd-claims"]),
         new("workflow-files", "One readable file per flow under specs/workflows/, with a count per use case, written by code and read by nothing. Off until a person has read them", "components.workflow-files", false, ["workflows"], ["claim-links"]),
+        new("test-journeys", "What each Playwright test walks through, in order, under specs/workflows/tests/, read by code and read by nothing. It compares nothing. Off until a person has read them", "components.test-journeys", false, ["workflows tests"], []),
         new("candidate-finder", "The AI that names pages when code finds none", "components.candidate-finder", true, Links, ["ai"]),
         new("agree-checker", "The fresh check of each agree link", "components.agree-checker", true, Links, ["ai"]),
         new("requirements-links", "Judging by requirement when a section's are built", "components.requirements-links", true, Links, []),
