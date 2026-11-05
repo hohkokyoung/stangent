@@ -2429,6 +2429,8 @@ Follows D15, D16, D18, D20, D66, D75, D120, D121 and D125. Items T.2, T.4, T.5, 
 
 ## Open questions
 
+- **The spec in its own git repo? (owner asked, 2026-11-05, so a PM or BA sees an easier diff):** the graph is settled, it isn't committed anywhere (D25). For the spec, recommended: stay in the app's repo (D7, D12) and fix the diff itself, with spec-only PRs and the generated files collapsed. Move when a real project needs what only a split gives: BAs without access to the code, client text kept away from developers, or one spec over several code repos. **A split costs:** one PR no longer holds both spec and code (D7's reason), each link has to record two commits, a code branch and a spec branch can disagree, and paths are written in about 23 C# files. Not decided.
+
 - **Editing the parsed FSD directly (owner asked, 2026-11-05):** not supported, by D52: the FSD is the file a person changed, converted by code. Tried on a scratch copy: a hand edit to `document.md` changes nothing the steps read (`fsd show` still gives the original, since sections come from `document.json`), and `fsd status`, `spec content-check` and `trace check` say nothing; only `fsd reread` notices, by starting a candidate. Editing `document.json` wasn't tried. Recommended: a warning where the document is read, small, added to batch 2 because a test showed the need. Direct editing is now D128.
 
 - **A first real pilot, a cut rule, a cap and an earlier bundle test (proposed by the assistant, 2026-11-04; the owner: "ok what we gonna do next, and lets do it in a new sessin"; not numbered until confirmed; order on `roadmap.md`):**
