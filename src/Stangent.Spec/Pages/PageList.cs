@@ -27,6 +27,8 @@ public sealed record PageDef(string Id, string Kind, string Entry, string Title,
 public sealed class PageSet
 {
     public required IReadOnlyList<PageDef> Pages { get; init; }
+    /// <summary>Pages a person excluded with a reason (T.3): the graph calls for them, and nothing runs them. Their slices are still here.</summary>
+    public IReadOnlyList<PageDef> Excluded { get; init; } = [];
     public required IReadOnlyDictionary<string, Slice> Slices { get; init; }
     public required SliceBuilder Builder { get; init; }
     public required SourceReader Source { get; init; }
@@ -129,9 +131,12 @@ public static partial class PageList
             slices[b.Id] = builder.Build(b.Id, split ? settings.BackendDepth : depth, shared);
         }
 
+        // Last, so no page's slice or hash depends on what was excluded.
+        var excluded = settings.Exclusions ? PageExclusions.Ids(repoRoot) : [];
+        var ordered = pages.OrderBy(p => KindOrder(p.Kind)).ThenBy(p => p.Id, StringComparer.Ordinal).ToList();
         return new PageSet
         {
-            Pages = [.. pages.OrderBy(p => KindOrder(p.Kind)).ThenBy(p => p.Id, StringComparer.Ordinal)],
+            Pages = [.. ordered.Where(p => !excluded.Contains(p.Id))], Excluded = [.. ordered.Where(p => excluded.Contains(p.Id))],
             Slices = slices, Builder = builder, Source = source, Settings = settings, Commit = graph.Commit, Graph = graph,
         };
     }

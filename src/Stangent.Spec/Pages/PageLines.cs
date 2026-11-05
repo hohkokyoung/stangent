@@ -70,7 +70,7 @@ public static class PageLines
     /// Fills citations for pages already recorded, and adopts their statement ids, with no AI. A page's JSON isn't touched, so nothing
     /// hashed changes. Its Markdown is rendered again, linking to the pages that are recorded.
     /// </summary>
-    public static JsonObject Refresh(string root, CodeGraph graph, string? only, bool on = true)
+    public static JsonObject Refresh(string root, CodeGraph graph, string? only, bool on = true, StangentConfig? config = null)
     {
         if (!on) return new JsonObject { ["lineCitations"] = "off", ["pages"] = 0, ["note"] = "line-citations is off, so no citation was written." };
         var paths = new SpecPaths(root);
@@ -92,7 +92,7 @@ public static class PageLines
             StatementIds.Adopt(page, StatementIds.Ledger(root, file));
             var lines = Build(page, graph, lookup);
             Write(file, lines);
-            Quotes.WriteAtomic(file[..^".json".Length] + ".md", PageRender.Markdown(page, id => pathOf.GetValueOrDefault(id), lines));
+            Quotes.WriteAtomic(file[..^".json".Length] + ".md", PageRender.Markdown(page, id => pathOf.GetValueOrDefault(id), lines, PageCorrections.Marks(root, (string)page["id"]!, config)));
             foreach (var (id, s) in lines["symbols"]!.AsObject())
             {
                 distinct[id] = s!.AsObject();

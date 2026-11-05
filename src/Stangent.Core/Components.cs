@@ -48,6 +48,8 @@ public static class StangentComponents
         new("detector-playwright-specs", "Playwright lines: existing specs' goto to screens", "detectors", true, [Graph, "graph screen-tests"], [],
             "a step that reads opens-screen lines: only graph code does today"),
         new("schema-once", "Batch runs send a step's output schema once, through Claude Code's schema option, and not also in its input text. No hash moves, but it changes what the AI reads, so it's off by default", "components.schema-once", false, ["spec assemble"], ["ai"]),
+        new("page-corrections", "A person's approved correction to a page, put back every time the page is written. A corrected statement is what a link judge then reads, so it's off by default", "components.page-corrections", false, ["spec correct", "spec correct-approve", "spec correct-reject", "spec check", "spec cite"], []),
+        new("page-exclusions", "A page a person excluded with a reason isn't listed, written or a candidate. That can change what a link judge reads, so it's off by default; `spec coverage` itself always works", "components.page-exclusions", false, ["spec exclude", "spec include", "spec coverage", "spec pages", "spec stale"], []),
         new("page-verifier", "The fresh check of each reference page", "components.page-verifier", true, Pages, ["ai"]),
         new("line-citations", "path:lines beside each page, and code evidence from them", "components.line-citations", true, ["spec check", "spec cite", "trace check"], []),
         new("candidate-finder", "The AI that names pages when code finds none", "components.candidate-finder", true, Links, ["ai"]),

@@ -32,7 +32,7 @@ public static class StateKinds
 {
     public const string Requirement = "requirement", Question = "question", TraceDecision = "trace-decision", FindingSeverity = "finding-severity",
         Proof = "proof", ProofConfirmation = "proof-confirmation", DraftPosted = "draft-posted",
-        PageRun = "page-run", LinkRun = "link-run", ReqRun = "req-run", TicketMatch = "ticket-match", TicketStep = "ticket-step",
+        PageRun = "page-run", PageCorrection = "page-correction", LinkRun = "link-run", ReqRun = "req-run", TicketMatch = "ticket-match", TicketStep = "ticket-step",
         FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FindingVerdict = "finding-verdict", FindingReview = "finding-review", DisproveRun = "disprove-run",
         FindingStanding = "finding-standing", SectionCoverage = "section-coverage";
 
@@ -114,6 +114,10 @@ public static class StateKinds
         [
             By(Person, "unposted", "posted"), By(Person, "posted", "posted"), By(Code, "posted", "unposted"),
         ], NullState: "unposted"),
+
+        // T.1: a person proposes a page correction, a person approves or refuses it, and an approved one can be withdrawn. Never code, never an agent.
+        new(PageCorrection, ".stangent/spec/state-history.jsonl", ["proposed"],
+            [.. Each(Person, "proposed", "approved", "rejected"), By(Person, "approved", "withdrawn")], Field: "state"),
 
         // The AI steps' runs (D60). `prepare` starts a new run from nothing, so a restart is a first state, not a move.
         new(PageRun, ".stangent/spec/state-history.jsonl", ["write"],

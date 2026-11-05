@@ -89,6 +89,22 @@ A page writer's, page verifier's, link judge's or agree checker's file under `.s
   PR comment. On merge, CI runs
   `spec-run.sh --stale` and opens a spec-only PR (see `plugin/ci/spec.yml`).
 
+## Every page accounted for (T.3, D131)
+
+`stangent spec coverage` lists every screen, shared component and backend entry point the graph calls for, per kind: written, failed, not written yet, or excluded with a reason. `--strict` exits 1 if any is neither written nor excluded. A page not written yet isn't a fault in itself, since pages are made as needed (I.1): `--strict` is for a project that wants them all. It reports what the graph knows: what the graph can't see isn't here, and is counted where it was read (`docs/code-graph.md`).
+
+`stangent spec exclude <page> --why "..." --by <name>` says a page isn't one, for a tooltip `root-screens` took for a screen, say. It goes in `specs/page-exclusions.json` (contract `page-exclusions` v1), and needs `page-exclusions` on. An excluded page isn't in `spec pages`, `spec stale` or a section's candidates, and nothing writes it. Other pages' slices and hashes don't move, because exclusions are taken off last. A page already written and then excluded shows as `removed` in `spec stale`, like any recorded page the graph no longer calls for. `spec include <page>` takes it back. An exclusion for a page the graph no longer calls for is listed as `gone`.
+
+## A person's correction to a page (T.1, D131)
+
+`page-wrong` asks for the page to be written again, and the writer may well write the same thing. A correction sticks. Off by default (`page-corrections`), because a corrected statement is what link judges then read, so those sections are judged again.
+
+- `stangent spec correct <page> <statement> (--text "..." | --remove) --why "..." --by <name>` records it in `specs/page-corrections.json` (contract `page-corrections` v1), as `proposed`.
+- `stangent spec correct-approve <C-id> --by <name>` is a person's yes. The page's JSON and Markdown say it from then on, marked in the Markdown. Its input hash doesn't move, so no AI run follows, and a `page-wrong` mark on that statement goes back to the person who made it.
+- `stangent spec correct-reject <C-id> --by <name> --why "..."` refuses a proposal or withdraws an approved one. A withdrawn one is left off when the page is next written.
+- Every time the page is written, code puts approved ones back on: by the statement's id, which stays with a statement (D118), then by the words it was given for. The writer isn't told, so no prompt or hash changes. If neither is on the page, it's `notApplied`, the step warns, and `spec corrections` shows it for a person. `codeMoved` there says the code changed since the approval.
+- A correction changes or removes a statement. It can't add one: for something missing, `page-wrong` still applies. No AI anywhere in this: a person is the check (D18).
+
 ## Checks where pages are read and written (T.4, T.5, T.6, T.8, D126)
 
 All code, no AI, and none changes a prompt or a saved hash.

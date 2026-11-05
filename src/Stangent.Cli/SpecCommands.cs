@@ -79,11 +79,54 @@ static class SpecCommands
         var cite = new Command("cite", "Fill recorded pages' line citations from the graph and make their statement ids permanent. Code only: no AI, and no page's JSON changes (2.3).") { citePage };
         cite.SetAction(pr => Cli.Run(pr, "spec cite", ctx =>
         {
-            var report = PageLines.Refresh(ctx.Repo.Root, Cli.LoadGraph(ctx), pr.GetValue(citePage), Stangent.Core.StangentComponents.IsOn(ctx.Repo.Config, "line-citations"));
+            var report = PageLines.Refresh(ctx.Repo.Root, Cli.LoadGraph(ctx), pr.GetValue(citePage), Stangent.Core.StangentComponents.IsOn(ctx.Repo.Config, "line-citations"), ctx.Repo.Config);
             ctx.Span.Attributes["stangent.artifact.count"] = (int)report["pages"]!;
             return report;
         }));
         spec.Subcommands.Add(cite);
+
+        var correctStatement = new Argument<string>("statement") { Description = "The statement's id on the page." };
+        var correctText = new Option<string?>("--text") { Description = "The words it should say." };
+        var correctRemove = new Option<bool>("--remove") { Description = "The statement shouldn't be there at all." };
+        var correctWhy = new Option<string>("--why") { Description = "Why, in a person's words.", Required = true };
+        var correctBy = new Option<string>("--by") { Description = "Who says so.", Required = true };
+        var correct = new Command("correct", "Record a person's correction to a page statement (T.1). It takes effect once approved, and is put back every time the page is written. No AI.") { pageArg, correctStatement, correctText, correctRemove, correctWhy, correctBy };
+        correct.SetAction(pr => Cli.Run(pr, "spec correct", ctx =>
+        {
+            var text = pr.GetValue(correctText);
+            if ((text is null) != pr.GetValue(correctRemove)) throw new Stangent.Core.StangentException("usage", "Give --text or --remove, not both.", Stangent.Core.ExitCodes.Usage);
+            return PageCorrections.Propose(Load(ctx, null), ctx.Repo, pr.GetValue(pageArg)!, pr.GetValue(correctStatement)!, text, pr.GetValue(correctWhy)!, pr.GetValue(correctBy)!);
+        }));
+        spec.Subcommands.Add(correct);
+        var correctionId = new Argument<string>("correction") { Description = "A correction's id, C-0001." };
+        var approveCorrection = new Command("correct-approve", "A person approves a correction: the page says it from now on, with no AI run.") { correctionId, correctBy };
+        approveCorrection.SetAction(pr => Cli.Run(pr, "spec correct-approve", ctx => PageCorrections.Approve(Load(ctx, null), ctx.Repo, pr.GetValue(correctionId)!, pr.GetValue(correctBy)!)));
+        spec.Subcommands.Add(approveCorrection);
+        var rejectCorrection = new Command("correct-reject", "Refuse a proposed correction, or withdraw an approved one (the page keeps its words until it's next written).") { correctionId, correctBy, correctWhy };
+        rejectCorrection.SetAction(pr => Cli.Run(pr, "spec correct-reject", ctx => PageCorrections.Reject(ctx.Repo, pr.GetValue(correctionId)!, pr.GetValue(correctBy)!, pr.GetValue(correctWhy)!)));
+        spec.Subcommands.Add(rejectCorrection);
+        var correctionsPage = new Argument<string?>("page") { Description = "Only this page's.", Arity = ArgumentArity.ZeroOrOne };
+        var corrections = new Command("corrections", "List the corrections, saying which the code moved under and which couldn't be put back. No AI.") { correctionsPage };
+        corrections.SetAction(pr => Cli.Run(pr, "spec corrections", ctx => PageCorrections.Report(Load(ctx, null), ctx.Repo.Root, pr.GetValue(correctionsPage))));
+        spec.Subcommands.Add(corrections);
+
+        var excludeWhy = new Option<string>("--why") { Description = "Why this isn't a page, in a person's words.", Required = true };
+        var exclude = new Command("exclude", "Say a page the graph calls for isn't one, with a reason: a tooltip the graph took for a screen, say (T.3). No AI.") { pageArg, excludeWhy, correctBy };
+        exclude.SetAction(pr => Cli.Run(pr, "spec exclude", ctx => PageExclusions.Exclude(Load(ctx, null), ctx.Repo, pr.GetValue(pageArg)!, pr.GetValue(excludeWhy)!, pr.GetValue(correctBy)!)));
+        spec.Subcommands.Add(exclude);
+        var include = new Command("include", "Take an exclusion back: the page is called for again. No AI.") { pageArg };
+        include.SetAction(pr => Cli.Run(pr, "spec include", ctx => PageExclusions.Include(ctx.Repo, pr.GetValue(pageArg)!)));
+        spec.Subcommands.Add(include);
+        var coverageStrict = new Option<bool>("--strict") { Description = "Exit 1 if anything is neither written nor excluded." };
+        var coverage = new Command("coverage", "Every screen, shared component and backend entry point: written, excluded with a reason, or neither (T.3). No AI.") { coverageStrict };
+        coverage.SetAction(pr => Cli.Run(pr, "spec coverage", ctx =>
+        {
+            var report = PageExclusions.Coverage(Load(ctx, null), new SpecPaths(ctx.Repo.Root));
+            ctx.Span.Attributes["stangent.artifact.count"] = (int)report["counts"]!["uncovered"]!;
+            if (pr.GetValue(coverageStrict) && (int)report["counts"]!["uncovered"]! > 0) throw new CheckFailed("not_covered", $"{report["counts"]!["uncovered"]} page(s) are neither written nor excluded.", report);
+            return report;
+        }));
+        spec.Subcommands.Add(coverage);
 
         var retryFailedOption = new Option<bool>("--retry-failed") { Description = "Try again a page that failed with these same inputs." };
         var prepare = new Command("prepare", "Write a page's bundle and say what runs next: nothing if its inputs are unchanged (D18), else the writer (D60).") { pageArg, retryFailedOption };

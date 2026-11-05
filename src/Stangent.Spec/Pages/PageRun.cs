@@ -263,7 +263,8 @@ public static class PageRun
         var resolutions = (staged["resolutions"] as JsonArray ?? []).OfType<JsonObject>().ToDictionary(r => (string)r["finding"]!, r => r);
         // Ids stay with their statements (2.3). The ledger only changes here, when a page is recorded.
         var fresh = StatementRef.Of(staged);
-        var ids = StatementIds.Assign(LoadJson(paths.PageJson(page)) as JsonObject, fresh, StatementIds.Ledger(paths.Root, paths.PageJson(page))).Ids;
+        // A corrected statement goes back to the writer's words for matching (T.1), so it keeps its id as it would have with no correction.
+        var ids = StatementIds.Assign(PageCorrections.BeforeCorrections(LoadJson(paths.PageJson(page)) as JsonObject, PageCorrections.Approved(config, paths.Root, page.Id)), fresh, StatementIds.Ledger(paths.Root, paths.PageJson(page))).Ids;
         var place = PageChecks.Statements(staged).Select((s, i) => (s.Statement, i)).ToDictionary(x => x.Statement, x => x.i);
         var sections = new JsonObject();
         foreach (var section in PageChecks.Sections)
@@ -303,25 +304,33 @@ public static class PageRun
             },
         };
         if ((bool?)state["verifierOff"] == true) record["verification"]!["off"] = true;
+        var lostCorrection = PageCorrections.Reapply(config, paths.Root, page.Id, record);
         var errors = SchemaRegistry.Embedded.Validate("reference-page.v1.json", record.ToJsonString());
         if (errors.Count > 0)
             throw new StangentException("invalid_page", "The recorded page broke reference-page v1 (a stangent bug).", ExitCodes.Failed, errors);
         Directory.CreateDirectory(Path.GetDirectoryName(paths.PageJson(page))!);
         Quotes.WriteAtomic(paths.PageJson(page), CanonicalJson.Serialize(record));
-        // Off (D121): no lines file, not even an old one that would read as this page's, and the step says so.
-        var citing = StangentComponents.IsOn(config, "line-citations");
-        var lines = citing ? PageLines.Build(record, set.Graph, SymbolLines.Lookup(set.Graph)) : null;
-        if (lines is not null) PageLines.Write(paths.PageJson(page), lines);
-        else File.Delete(PageLines.FileFor(paths.PageJson(page)));
+        var citing = WriteRendered(set, config, paths, page, record);
         var traceProblem = Staleness.ClearReportedWrong(paths.Root, page.Id);
-        Quotes.WriteAtomic(paths.PageMarkdown(page), PageRender.Markdown(record, id => set.Find(id) is { } p && p.Id == id ? p.Path : null, lines));
         ClearFailed(paths, page);
         Stage(paths, page, state, "done", "recorded");
         Save(work, state);
         var off = (string?)null;
         if ((bool?)state["verifierOff"] == true) off = "page-verifier is off: no one checked this page.";
         if (!citing) off = $"{off} line-citations is off: this page has no path:lines.".TrimStart();
+        if (lostCorrection is not null) off = $"{off} {lostCorrection}".TrimStart();
         return new RunStep("recorded", "none", Warning: traceProblem is null ? off : off is null ? traceProblem : $"{traceProblem} {off}");
+    }
+
+    /// <summary>A page's lines and Markdown from its JSON. Says whether it has line citations. Off (D121): no lines file, not even an old one that would read as this page's.</summary>
+    internal static bool WriteRendered(PageSet set, StangentConfig config, SpecPaths paths, PageDef page, JsonObject record)
+    {
+        var citing = StangentComponents.IsOn(config, "line-citations");
+        var lines = citing ? PageLines.Build(record, set.Graph, SymbolLines.Lookup(set.Graph)) : null;
+        if (lines is not null) PageLines.Write(paths.PageJson(page), lines);
+        else File.Delete(PageLines.FileFor(paths.PageJson(page)));
+        Quotes.WriteAtomic(paths.PageMarkdown(page), PageRender.Markdown(record, id => set.Find(id) is { } p && p.Id == id ? p.Path : null, lines, PageCorrections.Marks(paths.Root, page.Id, config)));
+        return citing;
     }
 
     /// <summary>What a verifier's finding says when its statement went in the writer's fix: a number here could be another statement's.</summary>
@@ -385,7 +394,7 @@ public static class PageRun
     }
 
     /// <summary>Drivers run pages side by side; failed.json is the one file they share.</summary>
-    static FileStream Lock(SpecPaths paths)
+    internal static FileStream Lock(SpecPaths paths)
     {
         Directory.CreateDirectory(Path.Combine(paths.Root, ".stangent", "spec"));
         var path = Path.Combine(paths.Root, ".stangent", "spec", "failed.lock");

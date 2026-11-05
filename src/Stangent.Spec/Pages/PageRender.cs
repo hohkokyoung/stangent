@@ -11,7 +11,8 @@ public static class PageRender
 
     /// <param name="pathOf">The page path for an id that has a page of its own (endpoints, shared components), or null.</param>
     /// <param name="lines">The page's line citations (<see cref="PageLines"/>), or null before it has any.</param>
-    public static string Markdown(JsonObject page, Func<string, string?> pathOf, JsonObject? lines = null)
+    /// <param name="marks">A person's corrections on this page (T.1), so a reader can see which words are a person's.</param>
+    public static string Markdown(JsonObject page, Func<string, string?> pathOf, JsonObject? lines = null, (IReadOnlyDictionary<string, string> Corrected, IReadOnlyList<JsonObject> Removed)? marks = null)
     {
         var md = new StringBuilder();
         var self = pathOf((string)page["id"]!) ?? "";
@@ -37,8 +38,14 @@ public static class PageRender
                 md.Append($"- **{(string)s["id"]!}** {(string)s["text"]!} {string.Join("", refs)}");
                 if (s["endpoints"] is JsonArray eps && eps.Count > 0)
                     md.Append(" → " + string.Join(", ", eps.Select(e => Link((string)e!, pathOf, self))));
+                if (marks?.Corrected.GetValueOrDefault((string)s["id"]!) is { } correction) md.Append($" *(corrected by a person, {correction})*");
                 md.Append('\n');
             }
+        }
+        if (marks?.Removed is { Count: > 0 } removed)
+        {
+            md.Append("\n## Removed by a person\n\n");
+            foreach (var c in removed) md.Append($"- {(string)c["id"]!}: \"{(string)c["was"]!}\", because {(string)c["why"]!}\n");
         }
 
         var unknowns = page["unknowns"]!.AsArray();

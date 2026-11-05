@@ -121,16 +121,16 @@ public static class Staleness
 
     /// <summary>The page was written again, so what a person said about the old one has been dealt with: it goes back to them to look at. Returns what stopped that, if the trace file can't be read:
     /// the page is already paid for and recorded, and the mark stays until the file is fixed and the page runs again.</summary>
-    public static string? ClearReportedWrong(string root, string pageId)
+    public static string? ClearReportedWrong(string root, string pageId, string? statement = null, string reason = "the page was regenerated")
     {
         if (!File.Exists(Trace.TraceFile.PathIn(root))) return null;
         using var _ = Fsd.LinkRun.Lock(root);
         Entries(root, out var problem);
         if (problem is not null) return problem;
         var trace = Trace.TraceFile.Load(root);
-        var marked = trace["entries"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["decision"] == "page-wrong" && (string?)e["page"]?["id"] == pageId).ToList();
+        var marked = trace["entries"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["decision"] == "page-wrong" && (string?)e["page"]?["id"] == pageId && (statement is null || (string?)e["page"]?["statement"] == statement)).ToList();
         foreach (var e in marked)
-            Trace.TraceFindings.DropDecision(root, e, StateActor.Code("stangent spec"), "the page was regenerated");
+            Trace.TraceFindings.DropDecision(root, e, StateActor.Code("stangent spec"), reason);
         if (marked.Count > 0) Trace.TraceFile.Save(root, trace);
         return null;
     }
