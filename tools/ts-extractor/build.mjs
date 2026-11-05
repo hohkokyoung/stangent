@@ -19,6 +19,22 @@ await build({
   logLevel: "warning",
 });
 
+// A Playwright spec's steps (D149): a bundle of its own, so the extractor above, whose hash is in the graph's, doesn't move with it.
+await build({
+  entryPoints: ["src/testStepsMain.ts"],
+  bundle: true,
+  platform: "node",
+  format: "esm",
+  target: "node20",
+  outfile: "dist/stangent-test-steps.mjs",
+  legalComments: "external",
+  banner: {
+    js: "import { createRequire as __cr } from 'module'; import { fileURLToPath as __fu } from 'url'; import { dirname as __dn } from 'path';"
+      + " const require = __cr(import.meta.url); const __filename = __fu(import.meta.url); const __dirname = __dn(__filename);",
+  },
+  logLevel: "warning",
+});
+
 // TypeScript looks for its standard library (lib.es2022.d.ts, lib.dom.d.ts…) next to the file
 // that runs it. Without these, Promise, Array and the DOM have no types and many links are lost.
 mkdirSync("dist", { recursive: true });
