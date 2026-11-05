@@ -364,3 +364,23 @@ On a copy of the clone, through the app's agents on Opus, with `shared-through` 
 **Found by this run: a decision is lost when a re-judge quotes less of the same statement.** X-0025's and X-0029's decisions dropped, and they came back as `gone` with new undecided findings (X-0033, X-0031), because the judge quoted the first part of the same statement and a link's id follows the quote. X-0008, X-0014 and X-0021 quoted it the same and kept theirs. 2 of 5. This is what batch 2 of §8 said to look at first (D122). Not fixed; in `questions.md`.
 
 **Tokens:** writer 60K, judge 82K, checker 72K, about 215K against 130K estimated; the checker wasn't in the estimate, and the slip added more to the judge. The 5-hour limit moved 0 to 8, weekly 84 to 86.
+
+## The disprove step on Login's 9 findings (2026-11-05, D137, D119, one use case, counts only)
+
+The first run on real findings from a real FSD, on the same copy: the step reads code, not pages. Decisions were cleared on the copy so all 9 went through. One agent on Opus, 147K tokens against 70K estimated: the step makes one call per finding, which the estimate missed.
+
+| | Stands | Refuted |
+|---|---|---|
+| The 5 read as real (X-0008, X-0014, X-0021, X-0031, X-0033) | 5 | 0 |
+| The 4 the checker made (X-0027, X-0030, X-0032, X-0034) | 0 | 4 |
+
+**What this shows:** on this section, with the code in front of it, the step did what D137 asks: the 4 false alarms went and the 5 real ones stayed. The cited lines were read against the code by the assistant and hold.
+
+**What it doesn't show:**
+- **One section, one run, no rate,** and "real" and "false" are the assistant's reading, not an independent one. The agent wasn't told that reading.
+- **Not independent between findings:** the step is built for one fresh call per finding, and this was one agent for all nine, at about a quarter of the cost. It read bundles 3 to 9 from the claim onward and assumed what came before was the same. It also ran `wc -l` against its brief, which changed nothing.
+- **X-0027 was refuted without proving "red":** the CSS wasn't in its bundle, only the error class. The answer is right, by a reading of `constant.css`, but this is a code bundle's gap.
+- **X-0034's close is inferred:** the parent that hides the pop-up wasn't in its bundle.
+- **X-0014 stands on a bundle that left out the caller:** it says nothing makes the caller send the saved value, and `twitter_login.js:35` does, from the login response. So in normal use it's checked against the saved id, and only a direct call can get around it. Standing is still right, and the wording overstates it.
+- **Nothing here catches a real finding wrongly refuted,** the cost D137 names, since none was.
+
