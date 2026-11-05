@@ -57,6 +57,17 @@ static class FsdCommands
         var show = new Command("show", "One section's text. Code only.") { docArgument, showSection, viewFormat };
         show.SetAction(pr => Cli.Run(pr, "fsd show", ctx => FsdOutline.Show(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(showSection)!), pr.GetValue(viewFormat) == "text" ? FsdOutline.ShowText : null));
         fsd.Subcommands.Add(show);
+        var claimSection = new Option<string?>("--section") { Description = "Only this section: its number or permanent id (S-0001)." };
+        var claims = new Command("claims", "A document's sections cut into claims by code, with a check that their words are the section's. Prints only. Off unless components.fsd-claims is on (D143).") { docArgument, claimSection, viewFormat };
+        claims.SetAction(pr => Cli.Run(pr, "fsd claims", ctx =>
+        {
+            if (!Stangent.Core.StangentComponents.IsOn(ctx.Repo.Config, FsdClaims.Component)) return FsdClaims.Off();
+            var report = FsdClaims.Report(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(claimSection));
+            ctx.Span.Attributes["stangent.artifact.count"] = (int)report["claimCount"]!;
+            if ((int)report["mismatchCount"]! > 0) throw new CheckFailed("claim_words_differ", "The claims' words aren't the section's words; see result.mismatches.", report);
+            return report;
+        }, pr.GetValue(viewFormat) == "text" ? FsdClaims.Text : null));
+        fsd.Subcommands.Add(claims);
         var exportOut = new Option<string?>("--out") { Description = "Where to write (default: .stangent/fsd/<doc>/export/, which git ignores)." };
         var exportMax = new Option<int?>("--max-lines") { Description = "A chapter over this many lines is cut at its next heading level (default: fsd.exportMaxLines, 1500)." };
         var export = new Command("export", "One Markdown file per top-level heading, generated and never read back (D122). Code only.") { docArgument, exportOut, exportMax };
