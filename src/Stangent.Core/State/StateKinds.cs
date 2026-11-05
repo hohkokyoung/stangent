@@ -33,7 +33,7 @@ public static class StateKinds
     public const string Requirement = "requirement", Question = "question", TraceDecision = "trace-decision", FindingSeverity = "finding-severity",
         Proof = "proof", ProofConfirmation = "proof-confirmation", DraftPosted = "draft-posted",
         PageRun = "page-run", PageCorrection = "page-correction", LinkRun = "link-run", ReqRun = "req-run", TicketMatch = "ticket-match", TicketStep = "ticket-step",
-        FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FindingVerdict = "finding-verdict", FindingReview = "finding-review", DisproveRun = "disprove-run",
+        FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FsdSectionAnswer = "fsd-section-answer", FindingVerdict = "finding-verdict", FindingReview = "finding-review", DisproveRun = "disprove-run",
         FindingStanding = "finding-standing", FindingSecurity = "finding-security", SectionCoverage = "section-coverage";
 
     // Committed state gets committed history; run state in .stangent/ gets history beside it, ignored the same way.
@@ -172,6 +172,13 @@ public static class StateKinds
             .. Each(Person, "doubtful", "same", "new", "removed"), By(Person, "same", "same"), By(Person, "same", "new"), By(Person, "new", "same"),
             By(Person, "removed", "same"), By(Code, "same", "doubtful"),
         ], Field: "state"),
+
+        // D150: with section-approval on, a person approves or rejects each changed section. The id holds the exact text on both sides,
+        // so an answer drops by itself when that text changes: code never moves one.
+        new(FsdSectionAnswer, FsdHistory, ["unanswered"],
+        [
+            .. Each(Person, "unanswered", "approved", "rejected"), By(Person, "approved", "rejected"), By(Person, "rejected", "approved"),
+        ], Field: "answer", NullState: "unanswered"),
     ];
 
     public static StateKind Get(string name) => All.FirstOrDefault(k => k.Name == name)

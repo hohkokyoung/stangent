@@ -65,6 +65,7 @@ public static class StangentComponents
         new("candidate-finder", "The AI that names pages when code finds none", "components.candidate-finder", true, Links, ["ai"]),
         new("agree-checker", "The fresh check of each agree link", "components.agree-checker", true, Links, ["ai"]),
         new("requirements-links", "Judging by requirement when a section's are built", "components.requirements-links", true, Links, []),
+        new("section-approval", "A person approves or rejects each changed section of a new version, and promote applies only what was approved, with --partial imports and readable section files (D128, D142, D150)", "components.section-approval", false, ["fsd import", "fsd approve", "fsd reject", "fsd diff", "fsd promote"], []),
         new("first-import-approval", "A person approves a document's first import before anything reads it", "components.first-import-approval", false, ["fsd import", "fsd approve"], []),
         new("attachment-home", "A section of its own for files with no place in a document's text, such as those attached to a PDF", "fsd.attachmentHome", false, ["fsd import", "fsd reread"], []),
         new("attachments-in-checks", "A section's attachments in the link judge's and disprove bundles, and quotes from them accepted", "fsd.attachmentsInChecks", false, [.. Links, "fsd disprove prepare", "fsd disprove check", "fsd disprove estimate", "fsd promote"], []),

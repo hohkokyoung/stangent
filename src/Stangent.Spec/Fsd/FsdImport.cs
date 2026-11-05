@@ -22,7 +22,7 @@ public static class FsdImport
     public static string DefaultId(string file) =>
         Regex.Replace(Path.GetFileNameWithoutExtension(file).ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-') is { Length: > 0 } s ? s : "document";
 
-    public static JsonObject Import(StangentRepo repo, string file, string? id = null, bool flat = false, bool acceptChanges = false, IReadOnlyList<string>? allowLabels = null)
+    public static JsonObject Import(StangentRepo repo, string file, string? id = null, bool flat = false, bool acceptChanges = false, IReadOnlyList<string>? allowLabels = null, bool partial = false)
     {
         if (!File.Exists(file)) throw new StangentException("not_found", $"No file at {file}.", ExitCodes.NotFound);
         var options = ImportOptions.From(repo.Config, flat, acceptChanges, allowLabels);
@@ -41,6 +41,10 @@ public static class FsdImport
         var dir = DocDir(repo.Root, id);
         var jsonPath = Path.Combine(dir, "document.json");
         var current = File.Exists(jsonPath) ? JsonNode.Parse(File.ReadAllText(jsonPath)) as JsonObject : null;
+        if (partial && !FsdSectionApproval.On(repo.Config))
+            throw new StangentException("section_approval_off", "--partial needs components.section-approval on in stangent.yaml: only section approval can keep what a changes-only file doesn't hold (D150).", ExitCodes.Usage);
+        if (partial && current is null)
+            throw new StangentException("usage", $"--partial says the file holds only changes, and {id} has no current version to change. Import the whole document first.", ExitCodes.Usage);
         // The same file is imported once, unless --flat asks for a different shape than what's recorded.
         if (current is not null && (string?)current["original"]?["hash"] == hash
             && flat == (current["sections"]?.AsArray() is { Count: 1 } only && (string?)only[0]?["id"] == FsdSections.FlatId))
@@ -59,7 +63,7 @@ public static class FsdImport
         var archived = new JsonObject { ["name"] = archive.Name, ["path"] = archivedPath };
         if (current is not null)
         {
-            var offered = FsdVersions.Offer(repo.Root, id, current, doc, converted, hash, flat, archived);
+            var offered = FsdVersions.Offer(repo.Root, id, current, doc, converted, hash, flat, archived, partial: partial);
             offered["steps"] = import.StepsJson();
             return offered;
         }
@@ -81,6 +85,7 @@ public static class FsdImport
         WriteText(dir, converted, doc);
         File.WriteAllText(jsonPath, CanonicalJson.Serialize(doc));
         ImportReport.Write(dir, doc);
+        if (FsdSectionApproval.On(repo.Config)) FsdSectionFiles.Write(repo.Root, id, doc);
         return ImportReport.AddTo(new JsonObject
         {
             ["id"] = id, ["status"] = "imported", ["hash"] = hash, ["sections"] = converted.Sections.Count,

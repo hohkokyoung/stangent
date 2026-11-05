@@ -77,7 +77,7 @@ public static class FsdVersions
     }
 
     /// <summary>A changed file for a document already here: it waits beside the current version. The same file again keeps what people settled; a different one starts over.</summary>
-    internal static JsonObject Offer(string root, string doc, JsonObject current, JsonObject document, ConvertedDocument converted, string hash, bool flat, JsonObject archive, string why = "a changed file came in")
+    internal static JsonObject Offer(string root, string doc, JsonObject current, JsonObject document, ConvertedDocument converted, string hash, bool flat, JsonObject archive, string why = "a changed file came in", bool partial = false)
     {
         EnsureIds(root, doc, current);
         var dir = CandidateDir(root, doc);
@@ -85,7 +85,7 @@ public static class FsdVersions
         {
             var waiting = Load(root, doc);
             // The same file read the same way waits as it is. A newer build reading it differently is a newer candidate.
-            if ((string)waiting["to"]! == hash && (bool)waiting["flat"]! == flat && File.ReadAllText(Path.Combine(dir, "document.md")) == converted.Markdown
+            if ((string)waiting["to"]! == hash && (bool)waiting["flat"]! == flat && ((bool?)waiting["partial"] == true) == partial && File.ReadAllText(Path.Combine(dir, "document.md")) == converted.Markdown
                 && FsdAttachments.Same(JsonNode.Parse(File.ReadAllText(Pending(root, doc)))!.AsObject(), document))
                 return Result(doc, waiting, document, "waiting", archive);
             StateChanges.Apply(root, waiting, StateKinds.FsdCandidate, CandidateKey(doc, (string)waiting["to"]!), "replaced", Code, $"a newer file came in: {hash[..12]}");
@@ -98,6 +98,8 @@ public static class FsdVersions
 
         var key = CandidateKey(doc, hash);
         var entries = FsdSectionDiff.Compare(current["sections"]!.AsArray(), document["sections"]!.AsArray());
+        // D128 and D150: a file that holds only changes proposes no removals. The person importing says so; code never guesses.
+        if (partial) entries = [.. entries.Where(e => (string)e["kind"]! != "removed")];
         foreach (var e in entries.Where(e => (string)e["kind"]! == "doubtful"))
             StateChanges.Apply(root, e, StateKinds.FsdSectionMatch, MatchKey(key, e), "doubtful", Code, "shares a sentence or a heading, and nothing exact matches");
         var diff = new JsonObject
@@ -105,6 +107,7 @@ public static class FsdVersions
             ["version"] = 1, ["doc"] = doc, ["from"] = (string)current["original"]!["hash"]!, ["to"] = hash, ["flat"] = flat,
             ["sections"] = new JsonArray([.. entries.Select(e => (JsonNode)e)]),
         };
+        if (partial) diff["partial"] = true;
         if (WholeDocumentFiles(current, document) is { Count: > 0 } files) diff["attachmentsWithNoSection"] = files;
         StateChanges.Apply(root, diff, StateKinds.FsdCandidate, key, "candidate", Code, why);
         Save(root, doc, diff);
@@ -170,7 +173,7 @@ public static class FsdVersions
     }
 
     /// <summary>A person approves a first import, and it becomes the current version. Only then does it get its ids and anything can read it.</summary>
-    public static JsonObject Approve(string root, string doc, string who)
+    public static JsonObject Approve(string root, string doc, string who, bool sectionFiles = false)
     {
         var diff = Load(root, doc);
         if (!IsFirst(diff))
@@ -189,13 +192,16 @@ public static class FsdVersions
         ImportReport.Write(dir, pending);
         StateChanges.Apply(root, diff, StateKinds.FsdCandidate, CandidateKey(doc, (string)diff["to"]!), "approved", StateActor.Person(who), "first import approved");
         Directory.Delete(candidate, recursive: true);
+        if (sectionFiles) FsdSectionFiles.Write(root, doc, pending);
         return ImportReport.AddTo(new JsonObject
         {
             ["id"] = doc, ["status"] = "imported", ["hash"] = (string)diff["to"]!, ["sections"] = pending["sections"]!.AsArray().Count, ["approvedBy"] = who,
         }, pending, $"specs/fsd/{doc}");
     }
 
-    static JsonArray Open(JsonObject diff) => new([.. diff["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful")
+    // In a changes-only file (D150), a current section left doubtful simply stays: only a person's --removed takes it out.
+    static JsonArray Open(JsonObject diff) => new([.. diff["sections"]!.AsArray().OfType<JsonObject>()
+        .Where(e => (string?)e["state"] == "doubtful" && !((bool?)diff["partial"] == true && (string?)e["side"] == "current"))
         .Select(e => (JsonNode)((string?)e["to"] ?? (string)e["permanentId"]!))]);
 
     /// <summary>The waiting candidate's diff: the same JSON that's on disk.</summary>
@@ -292,10 +298,17 @@ public static class FsdVersions
         if (left.Count > 0)
             throw new StangentException("doubtful_sections_remain", $"{left.Count} section(s) of {doc}'s candidate are doubtful. Settle each with `stangent fsd resolve`.", ExitCodes.Failed, [.. left.Select(o => (string)o!)]);
         var current = JsonNode.Parse(File.ReadAllText(JsonPath(root, doc)))!.AsObject();
-        if ((string)current["original"]!["hash"]! != (string)diff["from"]!)
-            throw new StangentException("candidate_out_of_date", $"{doc}'s candidate was compared with a version that isn't current any more. Import the file again.", ExitCodes.Failed);
         var pending = JsonNode.Parse(File.ReadAllText(Pending(root, doc)))!.AsObject();
+        var approval = FsdSectionApproval.On(repo.Config);
+        if ((string)current["original"]!["hash"]! != (string)diff["from"]!)
+        {
+            // D150 names the sections, so a person can compare again. There's no three-way merge: the file is imported again.
+            if (approval && FsdSectionApproval.Drift(diff, current, pending) is { Count: > 0 } drift)
+                throw new StangentException("candidate_out_of_date", $"{doc}'s candidate was compared with a version that isn't current any more, and {drift.Count} section(s) compare differently now. Import the file again to compare it with today's version.", ExitCodes.Failed, drift);
+            throw new StangentException("candidate_out_of_date", $"{doc}'s candidate was compared with a version that isn't current any more. Import the file again.", ExitCodes.Failed);
+        }
         var entries = diff["sections"]!.AsArray().OfType<JsonObject>().ToList();
+        var answers = approval ? FsdSectionApproval.Answers(root, doc, diff, current, pending) : null;
 
         // Who each candidate section is: an exact match or a person's word keeps the id; anything else is new.
         var oldById = current["sections"]!.AsArray().OfType<JsonObject>().ToDictionary(s => (string)s["permanentId"]!, StringComparer.Ordinal);
@@ -305,24 +318,37 @@ public static class FsdVersions
             if ((string)e["kind"]! == "doubtful") { if ((string)e["state"]! == "same") kept[(string)e["to"]!] = ((string)e["same_as"]!, "settled"); }
             else if ((string)e["kind"]! != "added") kept[(string)e["to"]!] = ((string)e["permanentId"]!, (string)e["kind"]!);
         }
+        // D150: with a rejection, or a changes-only file, the result is built from the answers; with everything approved it's the candidate, as before.
+        FsdSectionApproval.Merged? merged = null;
+        if (answers is not null && (answers.Any(a => a.Answer == "rejected") || (bool?)diff["partial"] == true))
+        {
+            merged = FsdSectionApproval.Merge(root, doc, current, pending, diff, kept, answers);
+            pending["sections"] = new JsonArray([.. merged.Sections]);
+            pending["problems"] = merged.Problems;
+        }
         var sections = pending["sections"]!.AsArray().OfType<JsonObject>().ToList();
-        foreach (var s in sections.Where(s => kept.ContainsKey((string)s["id"]!))) s["permanentId"] = kept[(string)s["id"]!].Id;
-        IssueIds(root, doc, current, sections.Where(s => !kept.ContainsKey((string)s["id"]!)));
+        bool Old(JsonObject s) => merged?.FromCurrent.Contains(s) == true;
+        foreach (var s in sections.Where(s => !Old(s) && kept.ContainsKey((string)s["id"]!))) s["permanentId"] = kept[(string)s["id"]!].Id;
+        IssueIds(root, doc, current, sections.Where(s => !Old(s) && !kept.ContainsKey((string)s["id"]!)));
         FsdObjects.Assign(root, doc, current, pending);
         ImportProblems.Upgrade(pending);
         ImportProblems.Attach(pending);
         pending["schemaVersion"] = 3;
         Validate(pending);
 
-        var claimed = kept.Values.Select(k => k.Id).ToHashSet(StringComparer.Ordinal);
+        var claimed = merged is null ? kept.Values.Select(k => k.Id).ToHashSet(StringComparer.Ordinal)
+            : sections.Select(s => (string)s["permanentId"]!).Where(oldById.ContainsKey).ToHashSet(StringComparer.Ordinal);
         var gone = oldById.Where(o => !claimed.Contains(o.Key)).Select(o => o.Value).ToList();
-        var pairs = sections.Where(s => kept.ContainsKey((string)s["id"]!))
-            .Select(s => new FsdCarry.Pair(oldById[kept[(string)s["id"]!].Id], s, kept[(string)s["id"]!].Kind)).ToList();
+        var pairs = sections.Where(s => Old(s) || kept.ContainsKey((string)s["id"]!))
+            .Select(s => Old(s) ? new FsdCarry.Pair(oldById[(string)s["permanentId"]!], s, "unchanged")
+                : new FsdCarry.Pair(oldById[kept[(string)s["id"]!].Id], s, kept[(string)s["id"]!].Kind)).ToList();
         // With attachments in the checks, what a judge saw includes them, so a run's hash is worked out with them on both sides, and a changed file means a new run.
         if (repo.Config.Fsd.AttachmentsInChecks)
         {
             foreach (var s in oldById.Values) AttachmentChecks.Fill(s, current, FsdImport.DocDir(root, doc), false, repo.Config.Fsd.AttachmentChars);
-            foreach (var s in sections) AttachmentChecks.Fill(s, pending, CandidateDir(root, doc), true, repo.Config.Fsd.AttachmentChars);
+            foreach (var s in sections)
+                if (Old(s)) AttachmentChecks.Fill(s, current, FsdImport.DocDir(root, doc), false, repo.Config.Fsd.AttachmentChars);
+                else AttachmentChecks.Fill(s, pending, CandidateDir(root, doc), true, repo.Config.Fsd.AttachmentChars);
         }
         var carried = FsdCarry.Apply(root, doc, pairs, gone, sections.Select(s => (string)s["id"]!).ToHashSet(StringComparer.Ordinal), repo.Config.Fsd.Findings, repo.Config.Fsd.JudgeFinerVerdicts);
         foreach (var s in sections) s.Remove(AttachmentChecks.Key);
@@ -334,9 +360,11 @@ public static class FsdVersions
         if (Directory.Exists(Path.Combine(dir, "images"))) Directory.Delete(Path.Combine(dir, "images"), recursive: true);
         if (Directory.Exists(Path.Combine(candidate, "images"))) Directory.Move(Path.Combine(candidate, "images"), Path.Combine(dir, "images"));
         FsdAttachments.Move(candidate, dir, pending);
-        File.Move(Path.Combine(candidate, "document.md"), Path.Combine(dir, "document.md"), overwrite: true);
+        if (merged is null) File.Move(Path.Combine(candidate, "document.md"), Path.Combine(dir, "document.md"), overwrite: true);
+        else Quotes.WriteAtomic(Path.Combine(dir, "document.md"), merged.Markdown);
         Quotes.WriteAtomic(JsonPath(root, doc), CanonicalJson.Serialize(pending));
         ImportReport.Write(dir, pending);
+        var sectionFiles = approval ? FsdSectionFiles.Write(root, doc, pending) : null;
 
         StateChanges.Apply(root, diff, StateKinds.FsdCandidate, CandidateKey(doc, (string)diff["to"]!), "promoted", StateActor.Person(who), "promoted");
         var log = new JsonObject
@@ -344,15 +372,27 @@ public static class FsdVersions
             ["at"] = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", System.Globalization.CultureInfo.InvariantCulture),
             ["from"] = (string)diff["from"]!, ["to"] = (string)diff["to"]!, ["by"] = who, ["counts"] = diff["counts"]!.DeepClone(), ["carried"] = carried.DeepClone(),
         };
+        if (answers is not null) log["answers"] = Answered(answers);
+        if (merged is not null) { log["rejected"] = merged.Rejected.DeepClone(); if ((bool?)diff["partial"] == true) log["partial"] = true; }
         File.AppendAllText(Path.Combine(dir, "promotions.jsonl"), CanonicalJson.SerializeCompact(log) + "\n");
         Directory.Delete(candidate, recursive: true);
 
         // The existing drop-back (D58): a decision whose quote is gone goes back to undecided, here rather than at the next CI run.
         var check = Trace.TraceCheck.Run(root, null, null, fix: true);
-        return ImportReport.AddTo(new JsonObject
+        var result = ImportReport.AddTo(new JsonObject
         {
             ["id"] = doc, ["hash"] = (string)diff["to"]!, ["from"] = (string)diff["from"]!, ["sections"] = sections.Count, ["counts"] = diff["counts"]!.DeepClone(),
             ["carried"] = carried, ["staleQuotes"] = check["staleQuotes"]!.DeepClone(), ["traceProblems"] = check["problems"]!.DeepClone(),
         }, pending, $"specs/fsd/{doc}");
+        if (answers is not null)
+        {
+            result["answers"] = Answered(answers);
+            if (merged is not null) { result["rejected"] = merged.Rejected.DeepClone(); result["frontMatterKept"] = merged.FrontKept; }
+            result["sectionFiles"] = sectionFiles!.Count;
+        }
+        return result;
     }
+
+    static JsonArray Answered(List<(FsdSectionApproval.Change Change, string Answer, string By)> answers) =>
+        new([.. answers.Select(a => (JsonNode)new JsonObject { ["section"] = a.Change.Label, ["change"] = a.Change.Kind, ["answer"] = a.Answer, ["by"] = a.By })]);
 }

@@ -160,7 +160,7 @@ public partial class StateChangesTests
         git.WaitForExit();
         var check = Process.Start(new ProcessStartInfo("git", ["check-ignore", "-q", StateKinds.Get(name).HistoryFile]) { WorkingDirectory = temp.Root })!;
         check.WaitForExit();
-        var committed = name is StateKinds.Requirement or StateKinds.Question or StateKinds.TraceDecision or StateKinds.FindingSeverity or StateKinds.FindingVerdict or StateKinds.FindingReview or StateKinds.FsdCandidate or StateKinds.FsdSectionMatch or StateKinds.FindingStanding or StateKinds.FindingSecurity or StateKinds.SectionCoverage;
+        var committed = name is StateKinds.Requirement or StateKinds.Question or StateKinds.TraceDecision or StateKinds.FindingSeverity or StateKinds.FindingVerdict or StateKinds.FindingReview or StateKinds.FsdCandidate or StateKinds.FsdSectionMatch or StateKinds.FsdSectionAnswer or StateKinds.FindingStanding or StateKinds.FindingSecurity or StateKinds.SectionCoverage;
         Assert.Equal(committed ? 1 : 0, check.ExitCode);   // check-ignore: 0 ignored, 1 not
     }
 
