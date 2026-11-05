@@ -73,6 +73,9 @@ static class FsdCommands
         var export = new Command("export", "One Markdown file per top-level heading, generated and never read back (D122). Code only.") { docArgument, exportOut, exportMax };
         export.SetAction(pr => Cli.Run(pr, "fsd export", ctx => FsdExport.Run(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(exportOut), pr.GetValue(exportMax) ?? ctx.Repo.Config.Fsd.ExportMaxLines)));
         fsd.Subcommands.Add(export);
+        var workflows = new Command("workflows", "One readable file per flow under specs/workflows/<doc>/, with a count per use case, written by code and never read back (D144, D147). Off unless components.workflow-files is on.") { docArgument };
+        workflows.SetAction(pr => Cli.Run(pr, "workflows", ctx => WorkflowFiles.Command(ctx.Repo.Config, ctx.Repo.Root, pr.GetValue(docArgument)!)));
+        root.Subcommands.Add(workflows);
 
         var candidates = new Command("candidates", "Candidate pages for each section, found by code: names, field labels, endpoints (D53). No AI.") { docOption };
         candidates.SetAction(pr => Cli.Run(pr, "fsd candidates", ctx =>
