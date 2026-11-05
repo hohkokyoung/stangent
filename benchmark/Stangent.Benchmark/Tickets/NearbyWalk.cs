@@ -8,7 +8,7 @@ using Stangent.Tickets;
 namespace Stangent.Benchmark.Tickets;
 
 /// <summary>
-/// Would the "nearby page" rule explain a fix that no page cites? (Retrieval redesign, decisions.md open questions,
+/// Would the "nearby page" rule explain a fix that no page cites? (Retrieval redesign, decisions/answered-questions.md,
 /// 2026-11-02; no AI, no bar.) For each bug, start from the files the real fix changed, so this tests explaining, not
 /// finding. Walk the slice walk's own lines in reverse (<see cref="SliceBuilder.Forward"/>: no <c>tests</c>,
 /// <c>triggered-by</c> or <c>maps</c>, which point back at callers or at side effects), by shortest path, and stop at
