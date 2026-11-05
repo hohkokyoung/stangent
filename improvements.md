@@ -20,7 +20,7 @@ Here's the full list, grouped by area. Each section ends with a line on why it's
 - ✅ Ids are never renumbered or reused, so links from findings, answers and the FSD stay valid.  
   *Built in 2.3 (D118): the same words, or a rephrase with the same symbols alone in its section, keep the id. A retired number never returns, and a link citing one drops back, reported.*
 - ⬜ Pages follow how people use the app. Journeys are cut by step ("what happens at step 4" lives in one place), alongside list, report and admin pages. The team switched to this after a pilot.  
-  *Pages are per screen and endpoint today (D54, D63). Recommend: decide after results.*
+  *Pages are per screen and endpoint today (D54, D63). Recommend: decide after results. J.1 adds the order without changing the pages.*
 - 🟡 Shared behaviour is written once (lifecycles, shared steps) and linked. Feature pages only describe what's different.  
   *Shared components and endpoints have their own pages. Lifecycles and shared steps don't. Recommend: decide with the page shape.*
 - ✅ Three kinds of statement are kept apart: what the app does today, the required behaviour for a new app, and findings or open questions (`X` and `Q` ids). Opinions can't pass as facts.  
@@ -334,7 +334,7 @@ Marked down, not built. A ☑️ with a test note is taken in and stays off unti
 - ☑️ X.8 · Finer verdicts, grouping, ask.  
   *Test: Sonarr key, on and off.*
 - ☑️ X.9 · Requirements layer.  
-  *Test: Sonarr key, on and off; can't show catching wrong reports.*
+  *Test: Sonarr key, on and off; can't show catching wrong reports. So far: requirement level 24/30, 44% false alarms; section level 27/30, 31.3%; separate runs (D129).*
 - ☑️ X.10 · Git history.  
   *Test: Existing benchmark; about 2.5 points so far.*
 - ☑️ X.11 · Playwright as evidence.  
@@ -368,6 +368,17 @@ Marked down, not built. A ☑️ with a test note is taken in and stays off unti
   *Tuned numbers; can flip meaning silently.*
 - ❌ A repo survey agent.  
   *The graph does this job.*
+
+## 10. From comparing a step-by-step journey workflow (2026-11-05, D129)
+
+- ☑️ J.1 · Journeys read from end-to-end tests by code: page, clicks, fields and checks in order, each step linked to its reference page.  
+  *No AI. Off by default, after the use-case runs, eShop first. Only tested flows appear, and there are no actors without readable test steps.*
+- ✅ J.2 · The FSD's journeys and scenarios stay.  
+  *Extraction built; Sonarr gave 0 journeys from 109 requirements, and no real document has produced one yet.*
+- ⬜ J.3 · The page verifier also reads the tests.  
+  *Today it reads the bundle only, and tests aren't a separate source. Recommend: decide after J.1, which has to read those tests anyway.*
+- ⬜ J.4 · Batch runs send the output schema only once.  
+  *`spec-run.sh` sends it in the bundle and through `--json-schema`, about 2.5k characters a page. It's in the input hash, so removing it alone would regenerate every page. Recommend: leave it; if trimmed, take it out of the hash in the same change.*
 
 ## Two caveats
 

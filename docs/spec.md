@@ -349,5 +349,6 @@ The FSD stays the record. On top of it, one AI pass per section builds items, ea
 - **Ids** are plain numbers, assigned once: `F-`, `R-`, `D-` (definitions), `J-`, `S-`, `Q-`. On a re-run an item with the same quotes and words keeps its id, as does one reworded
   item alone on its quotes; ids whose quotes are gone are retired. A change to the title, statement, kind, quotes, criteria or the definitions it uses, or any answer from the checker but `ok`, drops an approved item to
   `proposed`. Reconcile (not built) replaces this with carrying items forward by code.
-- **Not built yet:** approval, links, reconcile across documents and renumbering, a pass for clashes between sections, Jira and as-built sources, diagrams. Journeys are within one
+- **Links:** judged one requirement at a time when a section's requirements are built, unless `requirements-links` is off.
+- **Not built yet:** approval, reconcile across documents and renumbering, a pass for clashes between sections, Jira and as-built sources, diagrams. Journeys are within one
   section, since extraction sees one section at a time.

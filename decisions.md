@@ -2434,6 +2434,26 @@ Follows D15, D16, D18, D20, D66, D75, D120, D121 and D125. Items T.2, T.4, T.5, 
 **Why:** a spec only people's approvals can change is one anyone can trust, and clients will keep sending Word files whatever Stangent says.
 **Cost:** more work for a BA or PM, and a light rewrite can look like many changes. The repo can differ from what a client signed unless Stangent can export it. Roughly 150-250K tokens, not measured.
 
+## D129 · Journeys come from both sides: the FSD's stay, and end-to-end tests add what the app does — 2026-11-05 (owner: "but the journey should be by the code test also no?"; "nvm keep them, make sure we record our improvements already"; decided, not built)
+- **D99's journeys and scenarios stay (owner).** The assistant proposed freezing them and cutting them if a use-case run came back empty; the owner said to keep them. They say what the client asked for, and they're the only journeys a new feature or a project with no end-to-end tests can have.
+- **Journeys are also read from end-to-end tests (owner).** They say what the app does. For each test, in order: the page, what's clicked and filled in, and what's checked.
+- **Assistant's call, reversible (the owner said to record these; none was asked one at a time):**
+  - Code reads them, with no AI, and each step links to the existing reference page. No new AI pages, so D54 and D63 stand and journey-shaped pages stay undecided.
+  - Built off by default with its own switch (D120), after the use-case runs.
+  - eShop first, because its 3 test files can be checked step by step by hand; then Actual and bonds.
+  - The contract change is settled when it's built (D20).
+- **Measured today (2026-11-05):**
+  - **No real D99 journey exists yet.** Sonarr's extraction gave 109 requirements and 0 journeys (all 21 feature files), and extraction hasn't run on cyberbullying. Why Sonarr gave none wasn't checked. One cyberbullying use case would show whether the writer produces any; a paid step, proposed to the owner and not answered.
+  - **End-to-end test files:** bonds 32, Actual 35, Sonarr 19, eShop 3, cyberbullying 0, RealWorld's app repo 0 (its spec repo isn't cloned).
+  - **Requirement-level links scored worse than section-level on the one key:** 24/30 with 44% false alarms, against 2b's 27/30 with 31.3%. Two separate runs, not a controlled comparison; X.9 is the proper test.
+- **Limits, known before building:**
+  - Only tested flows appear, so this can't replace the per-screen pages.
+  - None of these projects has `.feature` files or `test.step`, so there are no actors; a role could only come from the login a test uses, or stay blank.
+  - Steps inside helpers have to be followed. Linking `goto`s alone resolved 123 of 249 (D115), and clicks are harder.
+- **Not settled:** comparing an FSD journey with a test journey (needs real ones of both, and no project has that yet); the requirements layer (X.9); security review (Open questions).
+**Why:** nothing in Stangent can say which screens are visited in which order, and FSD journeys can't: they're built from the FSD alone and never touch the graph. A test already holds that order, and code can read it.
+**Cost:** the helper and click following is real work, not sized yet, and it does nothing for a project without end-to-end tests. D99's journeys stay in the writer's prompt and checks with no proof yet that they earn it.
+
 ## Open questions
 
 - **The spec in its own git repo? (owner asked, 2026-11-05, so a PM or BA sees an easier diff; owner: "okay we can keep it for now"):** the graph is settled, it isn't committed anywhere (D25). For the spec, recommended: stay in the app's repo (D7, D12) and fix the diff itself, with spec-only PRs and the generated files collapsed. Kept in the app's repo for now. Move when a real project needs what only a split gives: BAs without access to the code, client text kept away from developers, or one spec over several code repos. **A split would cost:** one PR no longer holds both spec and code (D7's reason), each link has to record two commits, a code branch and a spec branch can disagree, and paths are written in about 23 C# files.
@@ -2524,7 +2544,7 @@ Follows D15, D16, D18, D20, D66, D75, D120, D121 and D125. Items T.2, T.4, T.5, 
   for 34 runs, estimated from the proof's cost (no fix agent has run), on the owner's OK. The saved tests predate the finder and may need rechecking.
   Sonarr is public, so the result may look better than on a private repo.
 - **Where does security review go? (2026-11-02):** the owner's brief lists it in the pipeline; no decision or phase holds it.
-  Recommended: a checked step in Phase 6's review package, grilled with that phase.
+  Recommended: a checked step in Phase 6's review package, grilled with that phase. Put to the owner again on 2026-11-05, not answered.
 - **Flakiness of the proof (2026-11-02):** only one full run, and a unit test runs once. Running a test more than once per proof
   needs no AI. Not decided. The Sonarr re-run gives a second result to compare.
 - **The not-bug bar on Sonarr (proposed 2026-11-02, not decided):** report D79's "catches wrong reports" as "can't be

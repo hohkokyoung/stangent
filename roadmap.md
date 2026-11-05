@@ -83,7 +83,8 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 | What | Decisions | Phase |
 |---|---|---|
 | Table facts from constants and SQL seed data, beside API fields and enums; an AI proposing `table-map.yaml` for a person to approve. Both after the owner answers D68's question | D124, D68 | 2b |
-| Features, requirements, acceptance criteria, journeys, scenarios and data, with stable ids; `stangent spec req <id>` | D99, D10, D11 | 2c |
+| Features, requirements, acceptance criteria, journeys, scenarios and data, with stable ids; `stangent spec req <id>` | D99, D10, D11, D129 | 2c |
+| Journeys read from end-to-end tests by code, each step linked to its reference page; off by default, after the use-case runs, eShop first | D129 | 2a |
 | Requirement ↔ page statement ↔ code links, scored on the planted FSD's key | D99, D10 | 2c |
 | The BA approves each requirement by tick boxes in a spec-only PR; `decided_by` from git | D99, D58 | 2c |
 | Spec change states (proposed → verified → implemented, or provisional); developers' changes found later become proposed | D11 | 2c |
