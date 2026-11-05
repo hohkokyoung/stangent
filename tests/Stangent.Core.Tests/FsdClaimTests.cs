@@ -129,12 +129,63 @@ public class FsdClaimTests
     }
 
     [Fact]
-    public void A_step_cut_across_two_rows_stays_in_two_listed_pieces()
+    public void A_step_cut_across_two_rows_is_joined_and_its_words_still_check()
     {
-        var claims = Split("| A | B |\n|---|---|\n|  | 1. It checks the password matches the |\n\n|  | hashed one on file. 2. It answers. |\n|---|---|\n");
-        Assert.Equal(("1. It checks the password matches the", FsdClaims.Problems.EndsOpen), (claims[1].Words, claims[1].Problem));
-        Assert.Equal(("hashed one on file.", FsdClaims.Problems.StartsMidStep), (claims[2].Words, claims[2].Problem));
-        Assert.Equal(("2. It answers.", (string?)null), (claims[3].Words, claims[3].Problem));
+        const string text = "| A | B |\n|---|---|\n|  | 1. It checks the password matches the |\n\n|  | hashed one on file. 2. It answers. |\n|---|---|\n";
+        var claims = Split(text);
+        Assert.Equal(("1. It checks the password matches the hashed one on file.", (string?)null), (claims[1].Words, claims[1].Problem));
+        Assert.NotNull(claims[1].Join);
+        Assert.Equal(("2. It answers.", (string?)null), (claims[2].Words, claims[2].Problem));
+        Assert.Equal(3, claims.Count);
+        Assert.Null(FsdClaims.CheckWords(text, claims));
+    }
+
+    [Fact]
+    public void A_joined_part_read_after_another_claim_goes_back_where_the_section_has_it()
+    {
+        const string text = "| User | System |\n|---|---|\n| 1. Enter it. | 2. It confirms the value matches the |\n| 3. Press save. | hashed one on file. |\n";
+        var claims = Split(text);
+        Assert.Equal(["User | System", "1. Enter it.", "2. It confirms the value matches the hashed one on file.", "3. Press save."], Words(claims));
+        Assert.Equal(4, claims[2].Join!.TailAfter);
+        Assert.Null(claims[2].Problem);
+        Assert.Null(FsdClaims.CheckWords(text, claims));
+    }
+
+    [Fact]
+    public void A_join_with_a_word_changed_or_the_wrong_place_fails_the_words_check()
+    {
+        const string text = "| User | System |\n|---|---|\n| 1. Enter it. | 2. It confirms the value matches the |\n| 3. Press save. | hashed one on file. |\n";
+        var claims = Split(text);
+        var wrongPlace = claims.Select((c, i) => i == 2 ? c with { Join = c.Join! with { TailAfter = 3 } } : c).ToList();
+        Assert.NotNull(FsdClaims.CheckWords(text, wrongPlace));
+        var changed = claims.Select((c, i) => i == 2 ? c with { Words = c.Words.Replace("hashed", "salted") } : c).ToList();
+        Assert.NotNull(FsdClaims.CheckWords(text, changed));
+    }
+
+    [Fact]
+    public void Two_steps_cut_in_one_row_each_join_their_own_column()
+    {
+        const string text = "| User | System |\n|---|---|\n| 1. It enters the | 2. It stores the |\n| name of the user. | name in a table |\n";
+        var claims = Split(text);
+        Assert.Equal(["User | System", "1. It enters the name of the user.", "2. It stores the name in a table"], Words(claims));
+        Assert.Equal(FsdClaims.Problems.EndsOpen, claims[2].Problem);
+        Assert.Null(FsdClaims.CheckWords(text, claims));
+    }
+
+    [Theory]
+    [InlineData("| A | B |\n|---|---|\n|  | 1. It checks the |\n|  | Hashed one on file. |\n", "a capital isn't a continuation")]
+    [InlineData("| A | B | C |\n|---|---|---|\n|  | 1. It checks the |  |\n|  |  | hashed one on file. |\n", "another column")]
+    [InlineData("| A | B | C |\n|---|---|---|\n|  | 1. It checks the |  |\n|  | hashed one | other value. |\n", "a plain row that isn't all continuation")]
+    [InlineData("| A | B | C |\n|---|---|---|\n|  | 1. It checks the |  |\n|  | hashed one on file. | and more |\n", "two starts for one open step")]
+    [InlineData("| A | B |\n|---|---|\n|  | 1. It checks the |\n|  | 2. hashed one on file. |\n", "numbered")]
+    [InlineData("| A | B |\n|---|---|\n|  | 1. It checks it. |\n|  | hashed one on file. |\n", "the step above is closed")]
+    [InlineData("| A | B |\n|---|---|\n|  | 1. It checks the |\n|  |  |\n|  | hashed one on file. |\n", "a row between")]
+    public void What_is_not_clear_stays_apart(string text, string why)
+    {
+        var claims = Split(text);
+        Assert.True(claims.All(c => c.Join is null), why);
+        Assert.Contains(claims, c => c.Words.StartsWith("1. It checks", StringComparison.Ordinal) && !c.Words.Contains("hashed", StringComparison.Ordinal));
+        Assert.Null(FsdClaims.CheckWords(text, claims));
     }
 
     // ---- flows ----

@@ -6,11 +6,14 @@ using Stangent.Core;
 namespace Stangent.Spec.Fsd;
 
 /// <summary>One claim in a section: its words as written, its place, and the nearest text before it that introduces its steps. <c>Problem</c> says why it isn't clean.</summary>
-public sealed record FsdClaim(int Position, string? Flow, string Kind, string Words, string? Problem = null, string? SetAside = null)
+public sealed record FsdClaim(int Position, string? Flow, string Kind, string Words, string? Problem = null, string? SetAside = null, FsdJoin? Join = null)
 {
     /// <summary>What a link judge does with it (D145): <c>claim</c> is judged; anything else is set aside by where it sits, and only given as context.</summary>
     public string JudgeKind => SetAside ?? (Kind is FsdClaims.Kinds.FlowLabel or FsdClaims.Kinds.Figure ? Kind : FsdClaims.JudgeKinds.Claim);
 }
+
+/// <summary>A step a page break cut in two, joined (D146). <c>TailAt</c> is where its second part starts in <c>Words</c>; in the section that part sits after the claim at position <c>TailAfter</c>, which may be another claim's.</summary>
+public sealed record FsdJoin(int TailAt, int TailAfter);
 
 /// <summary>Where the claims' words first differ from the section's. Null from <see cref="FsdClaims.CheckWords"/> means they match.</summary>
 public sealed record FsdWordMismatch(int At, string? Section, string? Claims, int SectionWords, int ClaimWords);
@@ -345,7 +348,18 @@ public static partial class FsdClaims
                     break;
                 case Table table:
                     var flows = Flows(table.Rows, flow);
-                    for (var r = 0; r < table.Rows.Count; r++) AddRow(table.Rows[r], flows[r], Add);
+                    var tails = Tails(table.Rows, flows);
+                    var open = new Dictionary<int, int>();
+                    for (var r = 0; r < table.Rows.Count; r++)
+                    {
+                        var above = open;
+                        open = [];
+                        AddRow(table.Rows[r], flows[r], Add, tails[r], column => open[column] = claims.Count - 1, (column, tail) =>
+                        {
+                            var head = claims[above[column]];
+                            claims[above[column]] = head with { Words = $"{head.Words} {tail}", Problem = EndsSentence(tail) ? null : Problems.EndsOpen, Join = new FsdJoin(head.Words.Length + 1, claims.Count) };
+                        });
+                    }
                     flow = table.Rows[^1].HasSteps ? flows[^1].Flow : null;
                     break;
             }
@@ -353,12 +367,45 @@ public static partial class FsdClaims
         return claims;
     }
 
-    static void AddRow(Row row, RowFlow at, Action<string?, string, string, string?, string?> add)
+    /// <summary>
+    /// Which cells of each row finish a step the row above left open (D146), by position and punctuation only. A step with no end stop at the end of its cell, and in the same column of the next row, text with
+    /// no number before it, starting in lower case. Strict: every such start in the row has to sit under an open step, or a start that belongs to nothing says the columns can't be trusted, and the whole row stays
+    /// apart. A row of plain values goes only if all its cells do, and a row that labels a flow never goes. Anything left apart keeps its tags.
+    /// </summary>
+    static HashSet<int>[] Tails(List<Row> rows, RowFlow[] flows)
+    {
+        var tails = new HashSet<int>[rows.Count];
+        for (var r = 0; r < rows.Count; r++)
+        {
+            tails[r] = [];
+            if (r == 0 || !rows[r - 1].Closed || !rows[r].Closed || flows[r].Label) continue;
+            var open = OpenColumns(rows[r - 1]);
+            var starts = rows[r].Cells.Where((_, i) => StartsLower(rows[r].Steps![i])).Select(c => c.Column).ToHashSet();
+            if (open.Count == 0 || starts.Count == 0 || !starts.IsSubsetOf(open)) continue;
+            if (!rows[r].HasSteps && starts.Count != rows[r].Cells.Count) continue;
+            tails[r] = starts;
+        }
+        return tails;
+    }
+
+    /// <summary>The columns of a row whose last step ends with no end stop.</summary>
+    static HashSet<int> OpenColumns(Row row) =>
+        [.. row.Cells.Where((_, i) => row.Steps![i].Steps.Count > 0 && !EndsSentence(row.Steps[i].Steps[^1])).Select(c => c.Column)];
+
+    /// <summary>The cell opens with text that has no number before it, in lower case.</summary>
+    static bool StartsLower(CellParts cell) => !cell.OutOfOrder && (cell.Steps.Count > 0 ? cell.Lead : cell.Text) is { Length: > 0 } start && char.IsLower(start[0]);
+
+    static void AddRow(Row row, RowFlow at, Action<string?, string, string, string?, string?> add, HashSet<int> tails, Action<int> opened, Action<int, string> takeTail)
     {
         if (row.Cells.Count == 0) return;
         if (!row.Closed) { add(at.Flow, Kinds.Block, row.Raw, Problems.RowNotClosed, null); return; }
         if (!row.HasSteps)
         {
+            if (tails.Count > 0)
+            {
+                foreach (var (column, text) in row.Cells) takeTail(column, text);
+                return;
+            }
             var outOfOrder = row.Steps!.Any(c => c.OutOfOrder);
             var problem = outOfOrder ? Problems.NumbersOutOfOrder : at.Continues ? Problems.ContinuesAbove : null;
             add(at.Flow, at.Label ? Kinds.FlowLabel : Kinds.TableRow, row.Joined, problem, at.SetAside);
@@ -371,14 +418,27 @@ public static partial class FsdClaims
             if (plain.Count > 0) add(at.Label ? null : at.Flow, at.Label ? Kinds.FlowLabel : Kinds.TableRow, string.Join(" | ", plain), null, null);
             plain.Clear();
         }
-        foreach (var cell in row.Steps!)
+        for (var i = 0; i < row.Steps!.Count; i++)
         {
+            var cell = row.Steps[i];
+            var column = row.Cells[i].Column;
             if (cell.OutOfOrder) { FlushPlain(); add(at.Flow, Kinds.TableRow, cell.Text, Problems.NumbersOutOfOrder, null); continue; }
-            if (cell.Steps.Count == 0) { plain.Add(cell.Text); continue; }
+            if (cell.Steps.Count == 0)
+            {
+                if (!tails.Contains(column)) { plain.Add(cell.Text); continue; }
+                FlushPlain();
+                takeTail(column, cell.Text);
+                continue;
+            }
             FlushPlain();
-            if (cell.Lead is not null) add(at.Flow, Kinds.Step, cell.Lead, Problems.StartsMidStep, null);
+            if (cell.Lead is not null)
+            {
+                if (tails.Contains(column)) takeTail(column, cell.Lead);
+                else add(at.Flow, Kinds.Step, cell.Lead, Problems.StartsMidStep, null);
+            }
             for (var s = 0; s < cell.Steps.Count; s++)
                 add(at.Flow, Kinds.Step, cell.Steps[s], s == cell.Steps.Count - 1 && !EndsSentence(cell.Steps[s]) ? Problems.EndsOpen : null, null);
+            if (!EndsSentence(cell.Steps[^1])) opened(column);
         }
         FlushPlain();
     }
@@ -402,11 +462,20 @@ public static partial class FsdClaims
 
     static string[] Words(string text) => CellBar().Replace(text, " ").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
 
-    /// <summary>Whether the claims' words, together and in order, are the section's words. Null when they are.</summary>
+    /// <summary>
+    /// Whether the claims' words, together and in order, are the section's words. Null when they are. A joined claim's second part is read where the section has it, after the claim its join names,
+    /// so a join can't hide a word that's moved, lost or added: it's the claim's own words that get cut and put back.
+    /// </summary>
     public static FsdWordMismatch? CheckWords(string text, IEnumerable<FsdClaim> claims)
     {
         var expected = SectionWords(text);
-        var got = claims.SelectMany(c => Words(c.Words)).ToList();
+        var all = claims.ToList();
+        var got = new List<string>();
+        foreach (var c in all)
+        {
+            got.AddRange(Words(c.Join is null ? c.Words : c.Words[..c.Join.TailAt]));
+            foreach (var joined in all.Where(j => j.Join?.TailAfter == c.Position)) got.AddRange(Words(joined.Words[joined.Join!.TailAt..]));
+        }
         for (var i = 0; i < Math.Max(expected.Count, got.Count); i++)
         {
             var e = i < expected.Count ? expected[i] : null;
@@ -439,6 +508,7 @@ public static partial class FsdClaims
         var reasons = new SortedDictionary<string, int>(StringComparer.Ordinal);
         var kinds = new SortedDictionary<string, int>(StringComparer.Ordinal);
         var total = 0;
+        var joined = 0;
         foreach (var s in chosen)
         {
             var text = (string)s["text"]!;
@@ -460,11 +530,12 @@ public static partial class FsdClaims
                 ["section"] = id, ["number"] = number, ["title"] = (string)s["title"]!,
                 ["claims"] = new JsonArray([.. claims.Select(c => (JsonNode)ClaimJson(id, c, held?.At(id, c.Position)))]),
             });
+            joined += claims.Count(c => c.Join is not null);
         }
         var result = new JsonObject
         {
             ["doc"] = doc, ["split"] = true,
-            ["sectionCount"] = chosen.Count, ["claimCount"] = total, ["notCleanCount"] = notClean.Count, ["mismatchCount"] = mismatches.Count,
+            ["sectionCount"] = chosen.Count, ["claimCount"] = total, ["joinedCount"] = joined, ["notCleanCount"] = notClean.Count, ["mismatchCount"] = mismatches.Count,
             ["kinds"] = Counts(kinds), ["notCleanByReason"] = Counts(reasons),
             ["notClean"] = notClean, ["mismatches"] = mismatches, ["sections"] = sections,
         };
@@ -479,6 +550,7 @@ public static partial class FsdClaims
         var o = new JsonObject { ["section"] = section, ["position"] = c.Position, ["flow"] = c.Flow, ["kind"] = c.Kind, ["words"] = c.Words };
         if (held is not null) { o["id"] = held.Id; o["judgeKind"] = held.Kind; }
         if (c.Problem is not null) o["problem"] = c.Problem;
+        if (c.Join is not null) o["joined"] = true;
         return o;
     }
 
@@ -504,6 +576,7 @@ public static partial class FsdClaims
                 var flow = (string?)c["flow"] ?? "-";
                 if ((string?)c["id"] is { } id) sb.Append(id).Append(' ').Append((string)c["judgeKind"]!).Append(" | ");
                 sb.Append(flow).Append(" | ").Append(words);
+                if ((bool?)c["joined"] == true) sb.Append(" [joined]");
                 if ((string?)c["problem"] is { } problem) sb.Append(" [").Append(problem).Append(']');
                 sb.Append('\n');
             }
