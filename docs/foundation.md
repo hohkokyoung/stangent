@@ -56,6 +56,7 @@ components: { page-verifier: false, git-history: false, detector-config-keys: fa
 | `attachment-home` | `fsd.attachmentHome` | off | A file with no place in a document's text, such as one attached to a PDF, has no section, and no link or check reaches it. On, those files get a section at the end, which changes that document's text and sections (I.8). |
 | `attachments-in-checks` | `fsd.attachmentsInChecks` | off | A section's attachments stay out of every bundle and hash, and a quote from one is refused (D123). |
 | `ticket-excel-text` | `components.` | off | A ticket's workbook, zip or a file inside its attachment is only saved under `converted/`; `ticket.json`, and so every ticket hash, is what it was (D123). |
+| `root-screens` | `components.root-screens` | off | Off, a screen needs a route. On, `graph build` also adds a page for each screen a React app's root shows with no route (`docs/code-graph.md`), so `spec pages` lists more |
 | `table-facts` | `fsd.compareTables` | off | `graph build` reads no enums and removes any on file; `fsd compare-tables` writes nothing and says `compared: false` (D124). |
 | `judge-finer-verdicts` | `fsd.judgeFinerVerdicts` | off | The link judge's and requirement judge's prompts and schemas are the old ones, so no hash moves (D124). |
 | `group-sections` | `fsd.groupSections` | off | Each section is judged alone. Turned off after a group ran, each section's own saved links go back with no call (D124). |

@@ -164,4 +164,6 @@ Headless calls were refused on a weekly limit, so this ran through the app's age
 
 **Why the gaps:** the use case describes a screen, and the only candidates were two backend endpoints. The screen is rendered directly from the app's root, not through a route, so the graph lists no page for it, though its files exist. Spot-checked in the code: the modal, cancel, tooltip and redirect are all there. This is a miss in what the graph treats as a screen, not a disagreement.
 
+**The fix (off by default, on in that clone):** a new switch, `root-screens`, adds a page for what the app's root shows with no route. Screens 3 to 5, pages 36 to 38, ❓ 0. The use case's section now gets the new screen plus 2 endpoints; before, 2 endpoints. Sections with candidates 113 to 117. The 2 recorded pages still read current and the links still pass. Of the 2 new screens, 1 is a real screen and 1 is a spinner the rule can't tell apart by code. The judge hasn't been rerun.
+
 **Not shown yet:** the owner's rulings; whether fixing it lowers the false alarms; anything beyond one use case. One use case is too small for a rate. The earlier "3 screens" matched the route lines only, so it undercounted the app's screens.

@@ -128,7 +128,7 @@ function jsxComponents(ctx: Context, e: ts.Node): Target {
 }
 
 /** `() => import('./x').then(m => m.Thing)` → the Thing symbol; `() => import('./x')` → the module's default export. */
-function lazyTarget(ctx: Context, e: ts.Expression): ts.Symbol | undefined {
+export function lazyTarget(ctx: Context, e: ts.Expression): ts.Symbol | undefined {
   let found: ts.Symbol | undefined;
   const visit = (n: ts.Node) => {
     if (found) return;
@@ -172,7 +172,7 @@ function jsxRoute(ctx: Context, el: ts.JsxElement | ts.JsxSelfClosingElement, pr
       if ((ts.isJsxElement(child) || ts.isJsxSelfClosingElement(child)) && tagName(child) === "Route") jsxRoute(ctx, child, full);
 }
 
-function addPage(ctx: Context, at: ts.Node, route: string, target: Target) {
+export function addPage(ctx: Context, at: ts.Node, route: string, target: Target) {
   const id = `page:${ctx.o.projectId.replace(/^project:/, "")}|${route}`;
   const file = ctx.rel(at.getSourceFile().fileName);
   const line = ctx.line(at);

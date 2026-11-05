@@ -5,6 +5,7 @@ import { Output, type Options } from "./model.ts";
 import { angularTemplates, collectAngular, type AngularIndex } from "./angular.ts";
 import { httpFacts } from "./http.ts";
 import { pages } from "./routes.ts";
+import { rootScreens } from "./rootScreens.ts";
 
 /**
  * The compiler's part of the frontend map (D31): points for declarations, ✅ lines for what the
@@ -73,6 +74,7 @@ export function extract(o: Options): Output {
   for (const sf of files) references(ctx, sf);
   for (const sf of files) angularTemplates(ctx, sf);
   for (const sf of files) pages(ctx, sf);
+  if (o.rootScreens) rootScreens(ctx, files);
   for (const sf of files) httpFacts(ctx, sf);
   if (o.enums) for (const sf of files) enums(ctx, sf);
   return out;
@@ -201,7 +203,7 @@ function isWrappedComponent(init: ts.Expression | undefined): boolean {
 }
 
 /** A React function component: a capitalised function whose body contains JSX. */
-function isReactComponent(decl: ts.Node): boolean {
+export function isReactComponent(decl: ts.Node): boolean {
   const name = qualifiedName(decl);
   if (!name || name.includes(".") || !/^[A-Z]/.test(name)) return false;
   let found = false;

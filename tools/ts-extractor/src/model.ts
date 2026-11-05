@@ -20,6 +20,8 @@ export interface Options {
   settings: Record<string, Record<string, string[]>>;
   /** Also print enums, members and values (C.2). Off, the output is what it always was. */
   enums?: boolean;
+  /** Also a page for each screen the app's root shows with no route. Off, the output is what it always was. */
+  rootScreens?: boolean;
 }
 
 /** Collects lines, dropping duplicate nodes and edges, in the order they were first seen. */

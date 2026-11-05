@@ -41,6 +41,7 @@ public static class StangentComponents
         Detector("config-keys", "Configuration keys"),
         Detector("http-services", "Backend HTTP calls to endpoints", "detector-aspnetcore-routes"),
         Detector("frontend-http", "Frontend calls to endpoints from any routes detector, fields to properties"),
+        new("root-screens", "A page for each screen a React app's root shows with no route, read from its JSX. Adds pages to a repo that has them, so it's off by default", "components.root-screens", false, [Graph, "spec pages"], []),
         new("python", "Python files on the map, by parsing only: never imported or run. Off, a repo's Python and plain React apps aren't read", "components.python", true, [Graph], []),
         Detector("flask-routes", "Flask routes, blueprints and URL rules", "python"),
         new("detector-playwright-specs", "Playwright lines: existing specs' goto to screens", "detectors", true, [Graph, "graph screen-tests"], [],

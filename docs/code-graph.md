@@ -31,7 +31,7 @@ Every point has an id, a kind, a display name, its project, and a file and line 
 | `type`, `method`, `property`, `field` (TypeScript) | `ts\|<file>#<Name>`, e.g. `ts\|UI/Web/src/app/_services/series.service.ts#SeriesService.getSeries` | the TypeScript extractor |
 | `component` | an Angular `@Component` class or a React function component (capitalised, returns JSX) | the TypeScript extractor |
 | `template` | `ts\|<template file>#<Component>.template`: an Angular component's template, spanning its lines | the TypeScript extractor |
-| `page` | `page:<tsconfig path>\|<route>`: an Angular Router or React Router route | the TypeScript extractor |
+| `page` | `page:<tsconfig path>\|<route>`: an Angular Router or React Router route; with `root-screens` on, also `page:<tsconfig path>\|(no route) <Component>` | the TypeScript extractor |
 | `project` (Python) | `project:<path/to/requirements.txt>`, or `project:python` when no dependency file is above the code | the Python extractor |
 | `type`, `method`, `property`, `field` (Python) | `py\|<file>#<Name>`, e.g. `py\|shop/service.py#OrderService.place`; a nested function is `outer.inner`; module and class variables are fields | the Python extractor |
 | `endpoint` (Flask) | `endpoint:python\|<VERB> <route>`, or `endpoint:python:<dir>\|…` for a project in a folder | `flask-routes` |
@@ -106,6 +106,33 @@ impact walk never follows them.
 With `table-facts` on (`fsd.compareTables`), `graph build` also reads each enum's name, members and values from the C# and TypeScript extractors, and writes them to `.stangent/graph-enums.json`, with the commit they were read at. A value the compiler can't work out is null, never a guess.
 
 **Kept apart.** They aren't points, lines or facts, and the file isn't the graph. So the impact walk can't see them, and `graph export` gives the same bytes with the switch on or off, which a test holds. `code-graph` stays v4. CI sharing an exported graph doesn't get them: `fsd compare-tables` then says to run `graph build`. Turned on with no file there, the next build reads every project again. Off, the file is removed.
+
+## Screens with no route: `root-screens` (D127)
+
+A React app can show a component straight from its root, with no route: `token ? <Routed/> : <SignIn/>`. With the component
+`root-screens` on (`components: { root-screens: true }`, off by default because it adds pages), each one is a `page` point named
+`(no route) <Component>`, with a ✅ `routes-to` line to it, so it gets a reference page and can be a candidate for an FSD section.
+Two components of one name are told apart by file. Worked out from the JSX by the TypeScript compiler. No component or folder name decides.
+
+The root is what `render`, `createRoot(…).render` or `hydrateRoot` from `react-dom` mounts, outside tests. Its outermost component is walked, not counted, unless
+it renders nothing of its own: then it's the only screen. Library wrappers (providers, routers) and elements are walked through. Inside:
+
+| What the code says | Counts as |
+|---|---|
+| On another branch from the routes: the other side of `?:`, or another `return` | a screen |
+| Always shown beside the routes, or wrapped round them | layout, not a screen |
+| Has routes in its own body | the path to the routes: walked, not counted |
+| Already routed elsewhere | no second page |
+| No routes under this root at all | every component the root shows is a screen |
+| Shown by a condition beside the routes (`{open && <X/>}`) | ❓, could be a screen or a pop-up |
+| `<Picked/>` from a prop or a variable, `{views[name]}`, a component wrapped in a call | ❓, never a guess |
+
+❓ is a blind spot from detector `root-screens`. With the component on, `graph build`'s result has `rootScreens: { screens, unresolved }`.
+
+**What code can't tell.** With no routes, layout looks like a screen. A spinner shown alone by an early return is a screen by this rule, and only a person can say otherwise.
+A prop or state holding an element (`{view}`) has no JSX to read and is taken for text, with no ❓.
+
+Off, the output is the same as before the component existed.
 
 ## Screen tests: 🟡 `opens-screen` (D115)
 

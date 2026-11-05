@@ -125,7 +125,7 @@ public static class FrontendScanner
     /// <summary>Runs the extractor and reads its JSON lines into a fragment; warnings come back separately.</summary>
     public static (ProjectFragment Fragment, List<string> Warnings, string? Error) Extract(
         string root, FrontendProject p, string fingerprint, IReadOnlyDictionary<string, Dictionary<string, List<string>>> settings,
-        string? extractorOverride = null, bool enums = false)
+        string? extractorOverride = null, bool enums = false, bool rootScreens = false)
     {
         var fragment = new ProjectFragment { ProjectId = p.Id, Fingerprint = fingerprint };
         var warnings = new List<string>();
@@ -133,7 +133,7 @@ public static class FrontendScanner
         if (extractor is null)
             return (fragment, warnings, $"{p.RelativeTsConfig}: the TypeScript extractor isn't installed with this stangent build");
         var settingsJson = JsonSerializer.Serialize(settings);
-        var args = $"\"{extractor}\" --tsconfig \"{p.TsConfig}\" --root \"{root}\" --project \"{p.Id}\" --settings {Quote(settingsJson)}" + (enums ? " --enums" : "");
+        var args = $"\"{extractor}\" --tsconfig \"{p.TsConfig}\" --root \"{root}\" --project \"{p.Id}\" --settings {Quote(settingsJson)}" + (enums ? " --enums" : "") + (rootScreens ? " --root-screens" : "");
         var (code, output) = Run("node", args, root, TimeSpan.FromMinutes(10), splitStderr: true);
         if (code != 0) return (fragment, warnings, $"{p.RelativeTsConfig}: TypeScript extractor failed (exit {code}): {Tail(output)}");
 

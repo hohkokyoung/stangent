@@ -161,3 +161,99 @@ test("enums are printed only when asked for, with members, values and lines", ()
   // The rest of the output is what it always was.
   assert.deepEqual(extract({ ...options, enums: true }).lines.filter((l) => l.t !== "enum"), extract(options).lines);
 });
+
+// ---- Screens with no route (root-screens) ------------------------------------------------------
+
+function noRoute(files: Record<string, string>, on = true) {
+  const root = project(Object.fromEntries(Object.entries(files).map(([name, text]) => [`src/${name}`, text])));
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "project:tsconfig.json", settings: {}, rootScreens: on }).lines;
+  return {
+    screens: lines.flatMap((l) => (l.t === "node" && l.kind === "page" && l.name.startsWith("(no route) ") ? [l.name.slice("(no route) ".length)] : [])).sort(),
+    targets: lines.flatMap((l) => (l.t === "edge" && l.kind === "routes-to" && l.source.includes("(no route)") ? [l.target] : [])).sort(),
+    unknown: lines.flatMap((l) => (l.t === "blind" && l.detector === "root-screens" ? [l.reason] : [])),
+    lines,
+  };
+}
+const REACT_DOM = `declare module "react-dom" { export function render(e: any, at: any): void; }
+declare module "react-dom/client" { export function createRoot(at: any): { render(e: any): void }; }
+declare module "react-router-dom" { export const Route: any; export const Routes: any; export const BrowserRouter: any; }
+declare module "acme-ui" { export const Theme: any; export const Toast: any; }`;
+const INDEX = `import { createRoot } from "react-dom/client"; import App from "./App"; createRoot(document.body).render(<App />);`;
+const WIDGET = (name: string) => `export default function ${name}() { return <div>${name}</div>; }`;
+
+test("a component on another branch from the routes is a screen; the path to the routes isn't", () => {
+  const r = noRoute({
+    "types.d.ts": REACT_DOM, "index.tsx": INDEX, "Door.tsx": WIDGET("Door"), "Tasks.tsx": WIDGET("Tasks"),
+    "Shell.tsx": `import { Routes, Route } from "react-router-dom"; import Tasks from "./Tasks"; export default function Shell() { return <Routes><Route path="/tasks" element={<Tasks />} /></Routes>; }`,
+    "App.tsx": `import Door from "./Door"; import Shell from "./Shell"; export default function App({ who }: any) { return <div>{who ? <Shell /> : <Door />}</div>; }`,
+  });
+  assert.deepEqual(r.screens, ["Door"]);
+  assert.deepEqual(r.targets, ["ts|src/Door.tsx#Door"]);
+  assert.deepEqual(r.unknown, []);
+});
+
+test("an early return is a branch too, and library wrappers are walked through", () => {
+  const r = noRoute({
+    "types.d.ts": REACT_DOM, "index.tsx": INDEX, "Wait.tsx": WIDGET("Wait"),
+    "App.tsx": `import { BrowserRouter, Routes } from "react-router-dom"; import { Theme } from "acme-ui"; import Wait from "./Wait";
+      export default function App({ busy }: any) { if (busy) return <Wait />; return <Theme><BrowserRouter><Routes /></BrowserRouter></Theme>; }`,
+  });
+  assert.deepEqual(r.screens, ["Wait"]);
+});
+
+test("layout always shown beside the routes or round them isn't a screen", () => {
+  const r = noRoute({
+    "types.d.ts": REACT_DOM, "index.tsx": INDEX, "Bar.tsx": WIDGET("Bar"), "Frame.tsx": `export default function Frame({ children }: any) { return <main>{children}</main>; }`,
+    "App.tsx": `import { Routes } from "react-router-dom"; import Bar from "./Bar"; import Frame from "./Frame";
+      export default function App() { return <div><Bar /><Frame><Routes /></Frame></div>; }`,
+  });
+  assert.deepEqual(r.screens, []);
+  assert.deepEqual(r.unknown, []);
+});
+
+test("a condition beside the routes and a component picked at runtime are unknown, never a guess", () => {
+  const r = noRoute({
+    "types.d.ts": REACT_DOM, "index.tsx": INDEX, "Note.tsx": WIDGET("Note"), "A.tsx": WIDGET("A"), "B.tsx": WIDGET("B"),
+    "App.tsx": `import { Routes } from "react-router-dom"; import Note from "./Note"; import A from "./A"; import B from "./B";
+      const views: any = { A, B };
+      export default function App({ open, which, Pick }: any) { const Chosen = which ? A : B; return <div>{open && <Note />}<Routes />{views[which]}<Chosen /><Pick /></div>; }`,
+  });
+  assert.deepEqual(r.screens, []);
+  assert.equal(r.unknown.length, 4);
+  assert.ok(r.unknown.some((u) => u.includes("Note") && u.includes("beside the routes")));
+  assert.ok(r.unknown.some((u) => u.includes("views[which]")));
+  assert.ok(r.unknown.some((u) => u.includes("<Chosen>")));
+  assert.ok(r.unknown.some((u) => u.includes("<Pick>")));
+});
+
+test("with no routes, what the root shows counts; a root showing only itself is the screen", () => {
+  assert.deepEqual(noRoute({
+    "types.d.ts": REACT_DOM, "index.tsx": INDEX, "One.tsx": WIDGET("One"), "Two.tsx": WIDGET("Two"),
+    "App.tsx": `import One from "./One"; import Two from "./Two"; export default function App({ a }: any) { return a ? <One /> : <Two />; }`,
+  }).screens, ["One", "Two"]);
+  assert.deepEqual(noRoute({ "types.d.ts": REACT_DOM, "index.tsx": INDEX, "App.tsx": WIDGET("App") }).screens, ["App"]);
+});
+
+test("already routed components get no second page; test files and other render calls aren't roots", () => {
+  const r = noRoute({
+    "types.d.ts": REACT_DOM, "index.tsx": INDEX, "Door.tsx": WIDGET("Door"),
+    "App.tsx": `import { Routes, Route } from "react-router-dom"; import Door from "./Door";
+      export default function App({ who }: any) { return who ? <Routes><Route path="/door" element={<Door />} /></Routes> : <Door />; }`,
+    "App.test.tsx": `import ReactDOM from "react-dom"; import Door from "./Door"; it("mounts", () => { ReactDOM.render(<Door />, document.body); });`,
+    "other.tsx": `import Door from "./Door"; declare const engine: any; engine.render(<Door />);`,
+  });
+  assert.deepEqual(r.screens, []);
+});
+
+test("off, the output doesn't change; lazy, class and React.render roots are read; same names stay apart", () => {
+  const files = {
+    "types.d.ts": REACT_DOM, "index.tsx": `import ReactDOM from "react-dom"; import App from "./App"; ReactDOM.render(<App />, document.body);`,
+    "a/Form.tsx": WIDGET("Form"), "b/Form.tsx": WIDGET("Form"), "Late.tsx": WIDGET("Late"),
+    "App.tsx": `import { lazy } from "react"; import { Routes } from "react-router-dom"; import F from "./a/Form"; import G from "./b/Form";
+      const Late = lazy(() => import("./Late"));
+      export default class App { props: any; render() { const p = this.props; if (p.a) return <F />; if (p.b) return <G />; if (p.c) return <Late />; return <Routes />; } }`,
+  };
+  assert.deepEqual(noRoute(files).screens, ["Late", "src/a/Form", "src/b/Form"]);
+  const off = noRoute(files, false);
+  assert.deepEqual([off.screens, off.unknown], [[], []]);
+});
