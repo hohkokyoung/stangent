@@ -53,6 +53,22 @@ static class SpecCommands
         }, r => (string)r!["text"]!));
         spec.Subcommands.Add(bundle);
 
+        var assembleFile = new Argument<string>("file") { Description = "A step's input file, as `next.prompt` names it." };
+        var assembleInPlace = new Option<bool>("--in-place") { Description = "Write the full text back to the file, for a subagent that reads the file itself." };
+        var assembleBatch = new Option<bool>("--for-batch") { Description = "This call also sends the schema through Claude Code's option: with schema-once on, it's left out of the text (J.4)." };
+        var assemble = new Command("assemble", "Print a step's whole input: its stored file with the shared instructions and schema put back, byte for byte (D130). Any other file comes back as it is.") { assembleFile, assembleInPlace, assembleBatch };
+        assemble.SetAction(pr => Cli.Run(pr, "spec assemble", ctx =>
+        {
+            var file = pr.GetValue(assembleFile)!;
+            // A step's "previous attempt" may be missing when the agent wrote nothing: an empty input part, as `cat` gave.
+            var stored = File.Exists(file) ? File.ReadAllText(file) : "";
+            var once = pr.GetValue(assembleBatch) && ctx.HasRepo && Stangent.Core.StangentComponents.IsOn(ctx.Repo.Config, "schema-once");
+            var text = SharedHead.Assemble(stored, once);
+            if (pr.GetValue(assembleInPlace) && !ReferenceEquals(text, stored)) File.WriteAllText(file, text);
+            return new JsonObject { ["text"] = pr.GetValue(assembleInPlace) ? "" : text };
+        }, r => (string)r!["text"]!));
+        spec.Subcommands.Add(assemble);
+
         var schemaArg = new Argument<string>("name") { Description = "A step's output schema, as `next.schema` names it (page-writer-output.v1.json)." };
         var schema = new Command("schema", "Print an AI step's output schema (for drivers that ask Claude Code for structured output, D66).") { schemaArg };
         schema.SetAction(pr => Cli.Run(pr, "spec schema", ctx =>

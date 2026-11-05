@@ -1,7 +1,7 @@
 ---
 description: Link an imported FSD to the reference pages (Phase 2b) and list the gaps, conflicts and undocumented items.
 argument-hint: "<doc id> [section id]"
-allowed-tools: Bash(stangent fsd:*), Bash(stangent trace:*), Bash(*spec-run.sh:*), Task
+allowed-tools: Bash(stangent fsd:*), Bash(stangent spec assemble:*), Bash(stangent trace:*), Bash(*spec-run.sh:*), Task
 ---
 
 Link the agreed FSD to the reference pages with stangent (D53, D62). Code decides every step; you only run the
@@ -19,7 +19,7 @@ stangent trace check
 **One section** (`<doc id> <section id>`), here in this session:
 
 1. Run `stangent fsd prepare "<doc>" "<section>"` and read `result.next`.
-2. While `result.next.action` isn't `none`: start the subagent in `result.next.agent` (`stangent-candidate-finder`,
+2. While `result.next.action` isn't `none`: run `stangent spec assemble --in-place <file>` for each `.stangent/` file the prompt says to read (a stored bundle holds only what's unique to it, D130), then start the subagent in `result.next.agent` (`stangent-candidate-finder`,
    `stangent-link-judge` or `stangent-agree-checker`) with exactly `result.next.prompt`, wait, then run
    `stangent fsd check "<doc>" "<section>"` and read `result.next` again (exit 1 means a retry or a failure; keep
    following `result.next`).

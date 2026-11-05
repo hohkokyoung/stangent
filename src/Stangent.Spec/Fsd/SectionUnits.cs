@@ -71,7 +71,7 @@ public static class SectionUnits
 
         AiPolicy.EnsureAllowed(repo.Config, "fsd prepare");
         var work = LinkRun.Fresh(repo.Root, doc, leader);
-        File.WriteAllText(Path.Combine(work, "judge.md"), bundle);
+        File.WriteAllText(Path.Combine(work, "judge.md"), SharedHead.Store(bundle));
         var state = new JsonObject
         {
             ["doc"] = doc, ["section"] = leader, ["inputs"] = inputs, ["retryUsed"] = false, ["level"] = "group", ["sections"] = new JsonArray([.. ids.Select(i => (JsonNode)i)]),
@@ -85,8 +85,7 @@ public static class SectionUnits
 
     static string Bundle(List<JsonObject> unit, string doc, IEnumerable<string> pages, SpecIndex index, bool finer)
     {
-        var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions(finer ? "link-judge-finer.md" : "link-judge.md")).Append(Bundles.Instructions("link-judge-group.md"));
-        sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText(finer ? LinkRun.GroupFinerJudgeSchema : LinkRun.GroupJudgeSchema).TrimEnd('\n')).Append("\n```\n\n");
+        var sb = new StringBuilder(SharedHead.Text(false, [finer ? "link-judge-finer.md" : "link-judge.md", "link-judge-group.md"], finer ? LinkRun.GroupFinerJudgeSchema : LinkRun.GroupJudgeSchema));
         foreach (var s in unit) sb.Append(LinkRun.SectionBlock(s, doc)).Append(AttachmentChecks.Block(s)).Append('\n');
         sb.Append(LinkRun.PagesBlock(pages, index));
         return sb.ToString();

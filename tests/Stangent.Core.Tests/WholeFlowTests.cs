@@ -7,6 +7,8 @@ using Stangent.Graph;
 using Stangent.Spec.Fsd;
 using Stangent.Spec.Trace;
 
+using Stangent.Spec.Pages;
+
 namespace Stangent.Core.Tests;
 
 /// <summary>
@@ -186,7 +188,7 @@ public sealed class WholeFlow : IDisposable
 
         var step = Ok("fsd", "prepare", "shop", "1");
         Saw["judge.prepare"] = step;
-        Saw["judge.bundle"] = File.ReadAllText(Path.Combine(Root, Path.GetDirectoryName((string)step["next"]!["output"]!)!, "judge.md"));
+        Saw["judge.bundle"] = SharedHead.Assemble(File.ReadAllText(Path.Combine(Root, Path.GetDirectoryName((string)step["next"]!["output"]!)!, "judge.md")));
         // First a made-up quote: code refuses it and gives one retry.
         Answer(step, Links(
             Link("conflict", "Orders over 75 need approval.", Post, "R1", "Every order is placed", "FSD 75, code 1")));
@@ -258,7 +260,7 @@ public sealed class WholeFlow : IDisposable
         {
             var step = Ok("fsd", "disprove", "prepare", "shop", section);
             if (step["next"] is null) throw new InvalidOperationException($"section {section}, answer {i}: {step.ToJsonString()}");
-            first ??= File.ReadAllText(Path.Combine(Root, Path.GetDirectoryName((string)step["next"]!["output"]!)!, "bundle.md"));
+            first ??= SharedHead.Assemble(File.ReadAllText(Path.Combine(Root, Path.GetDirectoryName((string)step["next"]!["output"]!)!, "bundle.md")));
             Answer(step, answers[i]);
             Ok("fsd", "disprove", "check", "shop", section);
         }
@@ -353,7 +355,7 @@ public sealed class WholeFlow : IDisposable
 
         var step = Ok("spec", "prepare", Post);
         Saw["regenerate.prepare"] = step;
-        Saw["regenerate.bundle"] = File.ReadAllText(Path.Combine(Root, Path.GetDirectoryName((string)step["next"]!["output"]!)!, "bundle.md"));
+        Saw["regenerate.bundle"] = SharedHead.Assemble(File.ReadAllText(Path.Combine(Root, Path.GetDirectoryName((string)step["next"]!["output"]!)!, "bundle.md")));
         Answer(step, WriterPost(null, Rephrased, S("The endpoint reads the Shop:Region setting.", CreateOrder)));
         Answer(Ok("spec", "check", Post), new JsonObject { ["findings"] = new JsonArray() });
         Saw["regenerate.recorded"] = Ok("spec", "check", Post);

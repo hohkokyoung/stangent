@@ -93,7 +93,7 @@ public class FsdLinkTests
         var graph = GraphStore.Load(GraphStore.PathFor(app.Repo))!;
         var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
         Assert.Equal(("judge", LinkRun.Judge), (step.Action, step.Agent));
-        var bundle = File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "judge.md"));
+        var bundle = SharedHead.Assemble(File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "judge.md")));
         Assert.Contains("Orders over 50 need approval.", bundle);
         Assert.Contains("**R1** (rules) Orders over 100 are refused", bundle);
 
@@ -448,7 +448,7 @@ public class FsdLinkTests
         using var app = WithRequirements();
         var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
         Assert.Equal(LinkRun.RequirementJudge, step.Agent);
-        var input = File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output)!, "judge.md"));
+        var input = SharedHead.Assemble(File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output)!, "judge.md")));
         Assert.Contains("**R-0002** Orders over 50 need approval.", input);
 
         Write(app, step, ReqLinks(
@@ -457,7 +457,7 @@ public class FsdLinkTests
             ReqLink("agree", "R-0003", SpecApp.Post, "E1", "Placing an order publishes OrderPlaced, which sends a receipt.")));
         step = LinkRun.Check(app.Pages(), app.Repo, app.Graph, "shop", "1", null);
         Assert.Equal(LinkRun.Checker, step.Agent);
-        var checker = File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output)!, "checker.md"));
+        var checker = SharedHead.Assemble(File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output)!, "checker.md")));
         Assert.Contains("R-0001 \"The orders screen has a Place order button.\"", checker);
         Assert.Contains("judge the requirement's own words", checker);
 

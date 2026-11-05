@@ -99,12 +99,18 @@ export PLUGIN_DIR="${PLUGIN_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 # One call with no tools: every .stangent/ file the prompt names goes into the input, Claude Code enforces the output
 # schema, and the structured answer is written where the step wants it. The input hash is the same in both modes.
 single_turn() {
-  local step="$1" usage="$2" out schema input label f raw="$2.raw"
+  local step="$1" usage="$2" out schema input label f text raw="$2.raw"
   out="$(jq -r '.result.next.output' <<<"$step")"
   schema="$($STANGENT spec schema "$(jq -r '.result.next.schema' <<<"$step")")"
   input=""
   while IFS=$'\t' read -r label f; do
-    input+="# $label"$'\n\n'"$(cat "$f")"$'\n\n'
+    # A stored bundle holds only what's unique to it; code puts the shared text back just before the call (D130).
+    if ! text="$($STANGENT spec assemble --for-batch "$f")"; then
+      printf '{"type":"result","is_error":true,"result":"stangent spec assemble failed on %s"}\n' "$f" >"$usage"
+      : >"$raw"; : >"$2.err"
+      return
+    fi
+    input+="# $label"$'\n\n'"$text"$'\n\n'
   done < <(jq -r '.result.next.prompt' <<<"$step" | grep -E ': \.stangent/' | grep -v '^Write' | sed -E 's/^(.*): (\.stangent\/.*)$/\1\t\2/')
   rm -f "$out"
   # stream-json for the same result line plus any usage-limit event (T.2); the result is what's read.
@@ -124,7 +130,7 @@ no_envelope() { ! jq -e 'type == "object" and has("ok")' <<<"$1" >/dev/null 2>&1
 
 # Runs the steps until none is left. $step holds the first; it holds the last when this returns. "$@" is the check command.
 run_steps() {
-  local page="$1" usage="$2" action agent prompt; shift 2
+  local page="$1" usage="$2" action agent prompt f; shift 2
   if no_envelope "$step"; then
     printf 'error\t%s\tstangent prepare gave no result\n' "$page"
     rm -f "$usage"
@@ -140,6 +146,8 @@ run_steps() {
       exit 255
     fi
     if [ -n "$AGENTS" ]; then
+      # A subagent reads files itself, so each file its prompt names goes back to its full text first (D130).
+      while IFS= read -r f; do $STANGENT spec assemble --in-place "$f" >/dev/null || true; done < <(jq -r '.result.next.prompt' <<<"$step" | grep -E ': \.stangent/' | grep -v '^Write' | sed -E 's/^.*: (\.stangent\/.*)$/\1/')
       # Absolute rules and each command back in the repo (D89): a `cd` mustn't change what the rules allow.
       CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1 $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" ${MODEL:+--model "$MODEL"} ${CALL_BUDGET:+--max-budget-usd "$CALL_BUDGET"} \
         --settings "$READ_ONLY_SETTINGS" --permission-mode dontAsk --allowedTools "Read(/$(pwd -P)/.stangent/**)" "Edit(/$(pwd -P)/.stangent/**)" --output-format json "$prompt" >"$usage" 2>"$usage.err" || true

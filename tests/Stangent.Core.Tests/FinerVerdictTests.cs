@@ -15,7 +15,7 @@ public class FinerVerdictTests
 
     static SpecApp Finer(bool findings = true) => App(On, findings);
 
-    static string Bundle(SpecApp app, RunStep step) => File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "judge.md"));
+    static string Bundle(SpecApp app, RunStep step) => SharedHead.Assemble(File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "judge.md")));
 
     static JsonObject Partial(string covered = "the limit's existence", string missing = "who approves") =>
         new()

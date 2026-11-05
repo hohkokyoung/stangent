@@ -41,10 +41,7 @@ public static class Bundles
         var slice = set.Slices[page.Id];
         var source = set.Source;
         var sb = new StringBuilder();
-        sb.Append("# stangent page bundle\n\n");
-        sb.Append("## Instructions\n\n").Append(Instructions("page-writer.md")).Append('\n');
-        sb.Append("## Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText(WriterSchema).TrimEnd('\n')).Append("\n```\n\n");
-
+        sb.Append(SharedHead.Text(true, [SharedHead.WriterInstructions], WriterSchema));
         sb.Append("## Page\n\n");
         sb.Append($"- id: `{page.Id}`\n- kind: {page.Kind}\n- entry point: `{page.Entry}`\n- from the code: {page.CodeTitle()}\n");
         sb.Append($"- slice: the walk from the entry point, at most {slice.Depth} lines deep ({set.Settings.Describe()})\n\n");

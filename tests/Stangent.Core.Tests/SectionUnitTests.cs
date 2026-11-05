@@ -37,7 +37,7 @@ public class SectionUnitTests
 
     static List<JsonObject> Entries(SpecApp app) => TraceFile.Load(app.Root)["entries"]!.AsArray().OfType<JsonObject>().ToList();
 
-    static string Input(SpecApp app, RunStep step) => File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "judge.md"));
+    static string Input(SpecApp app, RunStep step) => SharedHead.Assemble(File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "judge.md")));
 
     static JsonObject Plain(JsonObject e) => new() { ["id"] = (string)e["id"]!, ["note"] = (string?)e["note"], ["quote"] = (string?)e["fsd"]!["quote"] };
 
@@ -125,7 +125,7 @@ public class SectionUnitTests
         Write(app, Prepare(app), Links(On("1", Link("agree", Button, "page:/orders", "A1", "The Place order button posts the order."))));
         var step = Check(app);
         Assert.Equal(LinkRun.Checker, step.Agent);
-        var checker = File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "checker.md"));
+        var checker = SharedHead.Assemble(File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "checker.md")));
         Assert.Contains(Over, checker);
         Assert.Contains(Points, checker);
         Write(app, step, new JsonObject { ["checks"] = new JsonArray(new JsonObject { ["link"] = "K1", ["verdict"] = "confirm", ["note"] = "same" }) });
@@ -249,7 +249,7 @@ public class SwitchedOffStaysTheSameTests
     static (string Bundle, string Trace, string Runs, string Output) Run(SpecApp app)
     {
         var step = Stangent.Spec.Fsd.LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
-        var bundle = File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "judge.md"));
+        var bundle = SharedHead.Assemble(File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "judge.md")));
         return (bundle, File.Exists(TraceFile.PathIn(app.Root)) ? File.ReadAllText(TraceFile.PathIn(app.Root)) : "",
             File.Exists(Stangent.Spec.Fsd.LinkRun.RunsFile(app.Root)) ? File.ReadAllText(Stangent.Spec.Fsd.LinkRun.RunsFile(app.Root)) : "", step.Output!);
     }

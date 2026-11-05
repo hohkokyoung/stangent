@@ -101,7 +101,7 @@ public static class PageRun
         var work = paths.Work(page);
         if (Directory.Exists(work)) Directory.Delete(work, recursive: true);
         Directory.CreateDirectory(work);
-        File.WriteAllText(Path.Combine(work, "bundle.md"), bundle.Text + Staleness.ReportedWrongNote(wrong));
+        File.WriteAllText(Path.Combine(work, "bundle.md"), SharedHead.Store(bundle.Text + Staleness.ReportedWrongNote(wrong)));
         var state = new JsonObject
         {
             ["page"] = page.Id, ["inputHash"] = bundle.InputHash, ["attempts"] = 0,
@@ -155,7 +155,7 @@ public static class PageRun
                 }
                 Stage(paths, page, state, "verify", "the writer's output passed the code check");
                 Save(work, state);
-                File.WriteAllText(Path.Combine(work, "verify.md"), VerifyPage(page, (JsonObject)output));
+                File.WriteAllText(Path.Combine(work, "verify.md"), SharedHead.Store(VerifyPage(page, (JsonObject)output)));
                 return new RunStep("verify", "verify", Verifier,
                     $"Bundle: {paths.Relative(Path.Combine(work, "bundle.md"))}\nPage to check: {paths.Relative(Path.Combine(work, "verify.md"))}\n" +
                     $"Write your findings as JSON to: {paths.Relative(Path.Combine(work, "verifier.json"))}",
@@ -243,10 +243,8 @@ public static class PageRun
 
     static string VerifyPage(PageDef page, JsonObject output)
     {
-        var sb = new StringBuilder();
-        sb.Append("# Instructions\n\n").Append(Bundles.Instructions("page-verifier.md"));
-        sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText(Bundles.VerifierSchema).TrimEnd('\n')).Append("\n```\n");
-        sb.Append($"\n# The page\n\n- id: `{page.Id}`\n- title: {(string?)output["title"]}\n");
+        var sb = new StringBuilder(SharedHead.Step(SharedHead.VerifierInstructions, Bundles.VerifierSchema));
+        sb.Append($"# The page\n\n- id: `{page.Id}`\n- title: {(string?)output["title"]}\n");
         foreach (var section in PageChecks.Sections)
         {
             sb.Append($"\n## {section}\n\n");

@@ -24,6 +24,7 @@ It prints `<status>\t<page id>` per page. Report the counts by status and list a
 1. Run `stangent spec prepare "<page id>"`. It prints one JSON envelope; read `result.next`.
 2. While `result.next.action` isn't `none`: start the subagent named in `result.next.agent`
    (`stangent-page-writer` or `stangent-page-verifier`) with exactly `result.next.prompt` as its prompt, and wait for it.
+   First run `stangent spec assemble --in-place <file>` for each `.stangent/` file the prompt says to read: a stored bundle holds only what's unique to it (D130).
    Then run `stangent spec check "<page id>"` and read `result.next` again. `spec check` exits 1 when the writer must retry
    or the page failed; that's expected, keep following `result.next`.
 3. When the action is `none`, report `result.status`: `current` (inputs unchanged, no AI ran), `recorded` (the page is in

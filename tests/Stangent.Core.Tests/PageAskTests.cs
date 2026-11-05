@@ -199,7 +199,7 @@ public class PageAskTests
     {
         using var app = App();
         var step = LinkRun_prepare(app);
-        var bundle = File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "judge.md"));
+        var bundle = SharedHead.Assemble(File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "judge.md")));
         Assert.DoesNotContain("stangent-page-asker", bundle);
         Assert.DoesNotContain("as the pages describe it", bundle);
     }

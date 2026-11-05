@@ -47,6 +47,7 @@ components: { page-verifier: false, git-history: false, detector-config-keys: fa
 | `git-history` | `history.enabled` | on | `historyStatus: off` on the graph. |
 | `detector-<name>` (8) | `detectors` | on | It doesn't run; the graph lists those that did. `http-services` and `frontend-http` need `aspnetcore-routes`. |
 | `detector-playwright-specs` | `detectors` | on | The Playwright lines. `graph screen-tests` says `playwrightSpecs: off`, not none. |
+| `schema-once` | `components.schema-once` | off | Batch runs send the schema twice, in the text and through Claude Code's option. On, only through the option (J.4, D130). No hash moves either way. |
 | `page-verifier` | `components.` | on | Recorded as written, with `verification.off: true` on the page and a warning. |
 | `line-citations` | `components.` | on | No `<path>.lines.json`, an old one removed, so no `code` evidence; `spec cite` says `lineCitations: off`. |
 | `candidate-finder` | `components.` | on | A section code finds no page for gets status `off`, `candidatesBy: off`, and no gap. |

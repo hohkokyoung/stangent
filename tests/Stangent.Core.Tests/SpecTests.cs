@@ -278,7 +278,7 @@ public class SpecTests
         Assert.DoesNotContain(stale["stale"]!.AsArray(), s => (string)s!["id"]! == "page:/orders"); // the screen stops at the endpoint
         var rerun = PageRun.Prepare(app.Pages(), page, app.Repo);
         Assert.Equal("write", rerun.Action);
-        Assert.Contains("Orders over 100 are refused", File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(rerun.Output!)!, "bundle.md")));
+        Assert.Contains("Orders over 100 are refused", SharedHead.Assemble(File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(rerun.Output!)!, "bundle.md"))));
     }
 
     [Fact]

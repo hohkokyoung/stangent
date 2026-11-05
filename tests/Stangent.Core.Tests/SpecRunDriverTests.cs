@@ -44,6 +44,40 @@ public sealed class SpecRunDriverTests : IDisposable
     }
 
     [Fact]
+    public void Code_assembles_each_input_just_before_the_call_d130()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        OnePage();
+        Assert.Equal(0, rig.Run(Script, "p1").Exit);
+        var calls = rig.Calls().ToList();
+        Assert.True(calls.IndexOf("stangent spec assemble --for-batch .stangent/in.md") < calls.FindIndex(c => c.StartsWith("claude -p")));
+        Assert.Contains("INPUT-TEXT", rig.ClaudeStdin);
+    }
+
+    [Fact]
+    public void A_failed_assembly_never_reaches_the_ai()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        rig.Stangent($"""
+            "spec prepare p1"*) echo '{Step}' ;;
+            "spec assemble "*) exit 2 ;;
+            """);
+        var run = rig.Run(Script, "--max-cost", "none", "p1");
+        Assert.NotEqual(0, run.Exit);
+        Assert.Empty(rig.ClaudeCalls());
+        Assert.Contains("assemble failed", run.Out);
+    }
+
+    [Fact]
+    public void A_subagent_gets_the_full_file_in_place()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        OnePage();
+        rig.Run(Script, "--max-cost", "none", "--agents", "p1");
+        Assert.Contains("stangent spec assemble --in-place .stangent/in.md", rig.Calls());
+    }
+
+    [Fact]
     public void A_page_runs_prepare_then_claude_with_its_input_then_check()
     {
         if (OperatingSystem.IsWindows()) return;

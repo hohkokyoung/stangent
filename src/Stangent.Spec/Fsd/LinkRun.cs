@@ -132,7 +132,7 @@ public static class LinkRun
         if ((string?)run?["inputs"] == inputs && (run?["unit"] is null || SectionUnits.RestoreOwn(repo.Root, doc, section, inputs))) return new RunStep("current", "none");
         AiPolicy.EnsureAllowed(repo.Config, "fsd prepare");
         var work = Fresh(repo.Root, doc, sectionId);
-        File.WriteAllText(Path.Combine(work, "judge.md"), judgeBundle);
+        File.WriteAllText(Path.Combine(work, "judge.md"), SharedHead.Store(judgeBundle));
         var state = new JsonObject
         {
             ["doc"] = doc, ["section"] = sectionId, ["inputs"] = inputs, ["retryUsed"] = false,
@@ -252,7 +252,7 @@ public static class LinkRun
                 state.Remove("schema");
                 state["retryUsed"] = false; // the checker gets its own one retry
                 Save(work, state);
-                File.WriteAllText(Path.Combine(work, "checker.md"), CheckerBundle(section, doc, candidates, index, agrees, byRequirement ? Requirements(repo.Root, doc, section) : null, unit?.Values));
+                File.WriteAllText(Path.Combine(work, "checker.md"), SharedHead.Store(CheckerBundle(section, doc, candidates, index, agrees, byRequirement ? Requirements(repo.Root, doc, section) : null, unit?.Values)));
                 return Step(repo.Root, work, Checker, "checker.md", "checker.json", "Section, pages and the links to check");
             }
             case "confirm":
@@ -530,16 +530,14 @@ public static class LinkRun
 
     static string JudgeBundle(JsonObject section, string doc, IEnumerable<string> pages, SpecIndex index, bool finer = false)
     {
-        var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions(finer ? "link-judge-finer.md" : "link-judge.md"));
-        sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText(finer ? FinerJudgeSchema : JudgeSchema).TrimEnd('\n')).Append("\n```\n\n");
+        var sb = new StringBuilder(SharedHead.Step(finer ? "link-judge-finer.md" : "link-judge.md", finer ? FinerJudgeSchema : JudgeSchema));
         sb.Append(SectionBlock(section, doc)).Append(AttachmentChecks.Block(section)).Append(PagesBlock(pages, index));
         return sb.ToString();
     }
 
     static string RequirementJudgeBundle(JsonObject section, string doc, IEnumerable<string> pages, SpecIndex index, List<JsonObject> requirements, bool finer = false)
     {
-        var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions(finer ? "requirement-judge-finer.md" : "requirement-judge.md"));
-        sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText(finer ? FinerRequirementJudgeSchema : RequirementJudgeSchema).TrimEnd('\n')).Append("\n```\n\n");
+        var sb = new StringBuilder(SharedHead.Step(finer ? "requirement-judge-finer.md" : "requirement-judge.md", finer ? FinerRequirementJudgeSchema : RequirementJudgeSchema));
         sb.Append(SectionBlock(section, doc)).Append(AttachmentChecks.Block(section)).Append("\n# The requirements\n\n");
         foreach (var r in requirements) sb.Append(RequirementLine(r));
         sb.Append(PagesBlock(pages, index));
@@ -563,8 +561,7 @@ public static class LinkRun
 
     static string CheckerBundle(JsonObject section, string doc, IEnumerable<string> pages, SpecIndex index, List<JsonObject> agrees, List<JsonObject>? requirements = null, IEnumerable<JsonObject>? unit = null)
     {
-        var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions(requirements is null ? "agree-checker.md" : "requirement-agree-checker.md"));
-        sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText("agree-checker-output.v1.json").TrimEnd('\n')).Append("\n```\n\n");
+        var sb = new StringBuilder(SharedHead.Step(requirements is null ? "agree-checker.md" : "requirement-agree-checker.md", "agree-checker-output.v1.json"));
         foreach (var s in unit ?? [section]) sb.Append(SectionBlock(s, doc)).Append(AttachmentChecks.Block(s));
         sb.Append(PagesBlock(pages, index)).Append("\n# The links to check\n\n");
         for (var i = 0; i < agrees.Count; i++)

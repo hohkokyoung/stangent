@@ -61,7 +61,7 @@ public class SavedWorkTests
         var step = PageRun.Prepare(app.Pages(), def, app.Repo);
         File.WriteAllText(Path.Combine(app.Root, step.Output!), output.ToJsonString());
         step = PageRun.Check(app.Pages(), def, app.Repo, null);
-        var verify = File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "verify.md"));
+        var verify = SharedHead.Assemble(File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, "verify.md")));
         File.WriteAllText(Path.Combine(app.Root, step.Output!), "{\"findings\":[]}");
         Assert.Equal("recorded", PageRun.Check(app.Pages(), def, app.Repo, null).Status);
         return verify;

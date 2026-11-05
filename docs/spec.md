@@ -34,6 +34,12 @@ drivers share are written whole (temp file, then rename) under a lock. A section
 version is reported as failed, never turned into a gap. `ai.enabled: false` stops every `prepare` with exit
 code 4 (D24); `spec stale`, `spec cite`, `fsd import`, `fsd diff`, `fsd resolve`, `fsd promote`, `fsd discard`, `fsd candidates`, `fsd undocumented` and `trace check` are code only.
 
+## What a bundle stores (D130)
+
+A page writer's, page verifier's, link judge's or agree checker's file under `.stangent/` holds a pointer on its first line and what's unique to it. The one copy of the instructions and schema is in the program. `stangent spec assemble <file>` puts them back, byte for byte; the driver does this just before each call, and `--in-place` does it for a subagent that reads the file itself. Input hashes are taken on the full text, so saved pages and links stay valid, with `SavedWorkTests` and `SharedHeadTests` pinning it. Only the first line is ever read as a pointer. `spec bundle <page>` prints the full text, for people.
+
+`schema-once` (off): batch runs send the schema through Claude Code's schema option only, not also in the text (J.4), about 2.5K characters a page. No hash moves, but what the AI reads changes, so it's off until a test (D120).
+
 ## Reference pages (2a, D54, D55)
 
 - `stangent spec pages`: every page the graph calls for.
