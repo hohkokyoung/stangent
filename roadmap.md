@@ -63,8 +63,9 @@ Stop there. Phase 4 needs the owner: the order after 2.x, and the questions unde
 
 **Proposed, not decided.** The assistant proposed this and the owner said "ok what we gonna do next"; see "Open questions" in `decisions.md`. Until the owner confirms it, D120 and D125 stand as written.
 
-1. **Build I and T first (owner, 2026-11-05):** about 500–700K tokens, in two batches. Batch 1 is built (D126). Left for batch 2: I.1 to I.4, I.6, T.1, T.3, T.7. Held until a real repo or document needs them: T.9, T.10, I.12.
-2. **Then the first real pilot.** On a reputable public project Stangent hasn't been tuned on, since the owner has none of their own (recommended, not yet confirmed: RealWorld's C# app first, whose written spec and tests let us test links; then umbraco/Umbraco-CMS, with no FSD): pages, impact, one real ticket. Everything free first; the cost is stated and the owner says yes before any AI step. Results go in a phase file.
+1. **Python support, then the links on the owner's own project (D127):** a Python extractor and Flask detector, roughly 200–350K tokens, then `cyberbullying-detection-system` a chapter at a time from Chapter 6, the owner ruling on findings. Each AI step has its cost stated and the owner's OK. Counts only in the repo.
+1a. **Then the rest of I and T (owner, 2026-11-05):** batch 1 is built (D126). Left for batch 2, about 350–450K tokens: I.1 to I.4, I.6, T.1, T.3, T.7. Held until a real repo or document needs them: T.9, T.10, I.12.
+2. **Then the pilots on public C# projects, where Stangent hasn't been tuned** (RealWorld's C# app chosen first by the owner, whose written spec and tests let us test links; then umbraco/Umbraco-CMS, with no FSD): pages, impact, one real ticket. Everything free first; the cost is stated and the owner says yes before any AI step. Results go in a phase file.
 3. Make the test material.
 4. Start the test phase: the re-score after Nov 7 (the owner chooses how), then on/off runs against bars frozen first.
 5. **"Does the bundle help a fix?", moved earlier:** run in the test phase, not left to Phase 4's grill, because Phase 4 is built on the answer. The fix agent on the same bugs three ways (open question in `decisions.md`). Paid, on the owner's OK.
