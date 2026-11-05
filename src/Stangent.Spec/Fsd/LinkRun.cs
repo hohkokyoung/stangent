@@ -484,10 +484,7 @@ public static class LinkRun
             var copy = (JsonObject)e.DeepClone();
             if (keepDecisions.TryGetValue((string)e["id"]!, out var was))
             {
-                copy["decision"] = was["decision"]?.DeepClone();
-                copy["decided_by"] = was["decided_by"]?.DeepClone();
-                // What it was decided on stays too, or a re-judged link would tie an old decision to new words.
-                if (was["decided_on"] is not null) copy["decided_on"] = was["decided_on"]!.DeepClone();
+                KeepRuling(copy, was);
                 if (was["carried_from"] is not null) copy["carried_from"] = was["carried_from"]!.DeepClone();
                 // The same link is the same finding: its id, its grade and its evidence stay with it (D118).
                 foreach (var carried in TraceFile.FindingFields.Where(f => was[f] is not null)) copy[carried] = was[carried]!.DeepClone();
@@ -515,6 +512,14 @@ public static class LinkRun
         TraceFile.Save(root, trace);
     }
 
+    /// <summary>The same link keeps a person's decision. What it was decided on stays too, or a re-judged link would tie an old decision to new words.</summary>
+    static void KeepRuling(JsonObject to, JsonObject from)
+    {
+        to["decision"] = from["decision"]?.DeepClone();
+        to["decided_by"] = from["decided_by"]?.DeepClone();
+        if (from["decided_on"] is not null) to["decided_on"] = from["decided_on"]!.DeepClone();
+    }
+
     /// <summary>
     /// The first time a section is judged by claim ids, links from before have other ids (D145). A person's word on one goes to the new entries that are the same link, by <see cref="ClaimLinks.SameLink"/>,
     /// and all of them, since one answer can cover a sentence repeated across flows. The finding's id, grade and evidence go to the first, because an <c>X-</c> id belongs to one entry. Matches with different words are ambiguous, so none is taken.
@@ -532,9 +537,7 @@ public static class LinkRun
             {
                 var e = targets[i];
                 taken.Add((string)e["id"]!);
-                e["decision"] = was["decision"]?.DeepClone();
-                e["decided_by"] = was["decided_by"]?.DeepClone();
-                if (was["decided_on"] is not null) e["decided_on"] = was["decided_on"]!.DeepClone();
+                KeepRuling(e, was);
                 e["carried_from"] = id;
                 if (i == 0)
                     foreach (var field in TraceFile.FindingFields.Where(f => was[f] is not null)) e[field] = was[field]!.DeepClone();
