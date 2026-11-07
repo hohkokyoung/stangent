@@ -143,7 +143,7 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D110 · The core stays C#; no port to Python
 - D111 · Stangent imports PDF and Excel as well as Word, by code only, listing what can't come in exactly
 
-## D112–D162: the overhaul; new decisions go here
+## D112–D163: the overhaul; new decisions go here
 
 [`decisions/6-overhaul.md`](decisions/6-overhaul.md)
 
@@ -198,4 +198,5 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D160 · FSD journeys are built by code from a use case's numbered steps, with no AI, and compared step by step with flows
 - D161 · Every AI run's model and effort are pinned in `stangent.yaml` and recorded; a run refuses without them; a three-run repeat check compares answers by code
 - D162 · Every AI step runs through the batch drivers; the plugin's in-session subagent route goes
+- D163 · The code graph reads what flows need, checked on Sonarr and Kavita; `code-graph` v5 (G1–G8 fixed)
 

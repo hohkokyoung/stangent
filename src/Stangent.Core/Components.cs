@@ -38,6 +38,7 @@ public static class StangentComponents
         Detector("microsoft-di", "Microsoft DI registrations"),
         Detector("publish-handle", "Publish and handle links"),
         Detector("entity-tables", "Entity to table links"),
+        Detector("validation", "Validation rules on the properties they check"),
         Detector("config-keys", "Configuration keys"),
         Detector("http-services", "Backend HTTP calls to endpoints", "detector-aspnetcore-routes"),
         Detector("frontend-http", "Frontend calls to endpoints from any routes detector, fields to properties"),

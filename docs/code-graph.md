@@ -1,11 +1,13 @@
-# Code graph (contract `code-graph` v4)
+# Code graph (contract `code-graph` v5)
 
 The map of the code that impact analysis walks (decisions D25–D28, frontends D30–D32, history D34–D42).
 It's built by code from the code and its git history; it's never committed and has no AI in it. v2
 (Phase 1b) added frontends: components, templates, pages, and the `renders` and `maps-field` lines.
 Python and Flask (D127) grew v4 in place: new id forms and one new line kind, in the same shape.
 v3 (Phase 1c) adds 📜 `changes-with` lines from git history and `meta.history`. v4 (the overhaul, 1.1 and 1.2) adds
-`opens-screen` lines from Playwright specs, `meta.dirtyFiles` and `meta.notInCommit`.
+`opens-screen` lines from Playwright specs, `meta.dirtyFiles` and `meta.notInCommit`. v5 (rebuild layer 2,
+`phases/r2-graph-for-flows.md`) adds what flows need: `writes` and `reads` lines, the facts in "What flows read" below,
+the `validation` detector, a React component's own handlers as points, and real verbs from an app's own verb attributes.
 
 ## Where it lives
 
@@ -58,6 +60,7 @@ everything that can reach X by following lines backwards.
 | `calls-http` | calling method → endpoint in another service, or frontend code → backend endpoint | yes |
 | `renders` | component → its template; template or JSX → a child component | yes |
 | `maps-field` | frontend property → the backend property with the same JSON name | yes |
+| `writes`, `reads` | method → table it saves to or reads (v5): `DbSet<T>` calls, `Add`/`Remove` on an entity's navigation collection, a generic repository's write- or read-named methods (`IBasicRepository<Series>.Insert`) | no |
 | `contains` | project → file → type → member, table → column | no (structure) |
 | `imports` | a Python file → the file or symbol it imports | no (structure) |
 | `opens-screen` | a Playwright spec's `goto` → the screen it opens; stored apart (below) | no, and no other reader sees it |
@@ -105,7 +108,7 @@ impact walk never follows them.
 
 With `table-facts` on (`fsd.compareTables`), `graph build` also reads each enum's name, members and values from the C# and TypeScript extractors, and writes them to `.stangent/graph-enums.json`, with the commit they were read at. A value the compiler can't work out is null, never a guess.
 
-**Kept apart.** They aren't points, lines or facts, and the file isn't the graph. So the impact walk can't see them, and `graph export` gives the same bytes with the switch on or off, which a test holds. `code-graph` stays v4. CI sharing an exported graph doesn't get them: `fsd compare-tables` then says to run `graph build`. Turned on with no file there, the next build reads every project again. Off, the file is removed.
+**Kept apart.** They aren't points, lines or facts, and the file isn't the graph. So the impact walk can't see them, and `graph export` gives the same bytes with the switch on or off, which a test holds. `code-graph`'s version doesn't move for them. CI sharing an exported graph doesn't get them: `fsd compare-tables` then says to run `graph build`. Turned on with no file there, the next build reads every project again. Off, the file is removed.
 
 ## Screens with no route: `root-screens` (D127)
 
@@ -196,6 +199,7 @@ them; list names to run only those; `[none]` runs none. Per-detector settings go
 | `publish-handle` | `handlerInterfaces: [Ns.IHandler`1]`, added to the built-ins (MediatR, MassTransit); `busInterfaces: [...]` for message buses that route by type name, whose same-named events in other assemblies also link (e.g. eShop's `IIntegrationEventHandler`1`) |
 | `entity-tables` | `entityBaseTypes: [Ns.BaseEntity]`, for ORMs mapped by convention |
 | `config-keys` | — |
+| `validation` | — (v5: rules as `rule` facts, below) |
 | `http-services` | `services: ["stock-api=Shop.Stock"]`, for service names without an Aspire AppHost |
 | `playwright-specs` | — (below) |
 | `flask-routes` | — (under Python, below) |
@@ -207,6 +211,36 @@ mapped by convention rather than in code (CleanArchitecture registers each `IEnd
 
 Each detector extracts facts per project (with Roslyn), then links once across the whole graph
 (without Roslyn). That split is what lets incremental builds re-extract only changed projects.
+
+## What flows read (v5, D154)
+
+Facts code reads to lay out a flow; no AI. Each is a row in the `facts` table (`owner`, `kind`, `data`).
+
+| Kind | On | Data | From |
+|---|---|---|---|
+| `ui-event` | the component (React) or template (Angular) | `element`, `event` (`onPress`, `click`), `handler` (a point id; `inline`; `prop:…`), `keys` (text keys passed to `translate`/`t`/the `translate` pipe, `\|`-separated), `text` (literal text and label attributes) | the TypeScript extractor |
+| `guard` | a page | `guard` (id), `name`, `via` (`canActivate`, `canMatch`…); a parent route's guards hold for its children | the TypeScript extractor |
+| `auth` | a controller action | `rule` (`authorize`/`anonymous`), `policy`, `roles`, `from` (`method`, `class X`): `[AllowAnonymous]` on the method wins, `[Authorize]` is read up the base controllers | `aspnetcore-routes` |
+| `fallback-auth` | the project | `authenticatedUser` (`required`), `schemes`: `options.FallbackPolicy = …`, which holds for actions with no marker of their own | `aspnetcore-routes` |
+| `rule` | the property checked | `rule` (`Required`, `GreaterThan`, `SetValidator`…), `args` (constants as values), `via` (`attribute`/`fluentvalidation`), `set` (`PostValidator`), `message`, `conditional` | `validation` |
+| `access` | a method | `entity`, `mode` (`write`/`read`), `via`; linking turns it into `writes`/`reads` when the entity has a table | `entity-tables` |
+
+Also read by flows:
+- **Handlers are points (G5).** A function a React component declares in its own body (`const handleSave = useCallback(…)`) is
+  `Component.handleSave`; the component `uses` it, so impact and screen slices still reach what it calls, one step deeper.
+  A value bound from a call (`const { addSeries } = useAddSeries()`) used in a handler gives a `calls` line to that function.
+- **Wrappers' API root (G2).** A configured wrapper whose body passes its URL to a function returning `urlBase + apiRoot + path`
+  puts that root on its calls (`{base}/api/v5/series`), so only that API version matches.
+- **Verbs (G1).** Attributes derived from `HttpPostAttribute` etc., or implementing `IActionHttpMethodProvider` with literal
+  `HttpMethods`, give the verb; templates come from a base constructor (`: base("{id:int}")`) or a `Template` property.
+  Overrides of a `[NonAction]` method (`Controller.OnActionExecuting`) aren't actions.
+- **Outside calls (G4).** Through Flurl or an app's own client type (`IHttpClient`, `…HttpClient`): a whole literal URL is a
+  `call` fact; otherwise ❓ `outside HTTP <VERB> through <client>…`, naming the URL's known start. Never silent.
+- **Tables (G3).** Besides `DbSet<T>`: entities EF reaches through navigations from a mapped one (table named after the class, 🟡)
+  and an app's own `Entity<T>("Name")` map (🟡).
+
+Not read yet: constants' values (G9), SignalR messages (G10), background jobs marked as such (G11), minimal APIs'
+`RequireAuthorization()`, React route-guard wrappers, and resolving text keys to the words in the language file.
 
 ## Building
 

@@ -13,6 +13,7 @@ public static class DetectorRegistry
         new DiDetector(),
         new PublishHandleDetector(),
         new EntityTablesDetector(),
+        new ValidationDetector(), // rules as facts on the properties they check (G7)
         new ConfigKeysDetector(),
         new HttpServicesDetector(), // after routes: it links calls to their endpoints
         new FrontendHttpDetector(), // after routes too: frontend calls → endpoints, fields → properties

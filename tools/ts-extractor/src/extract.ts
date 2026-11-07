@@ -3,6 +3,7 @@ import * as path from "node:path";
 import ts from "typescript";
 import { Output, type Options } from "./model.ts";
 import { angularTemplates, collectAngular, type AngularIndex } from "./angular.ts";
+import { reactEvents } from "./ui.ts";
 import { httpFacts } from "./http.ts";
 import { pages } from "./routes.ts";
 import { rootScreens } from "./rootScreens.ts";
@@ -73,6 +74,7 @@ export function extract(o: Options): Output {
   for (const sf of files) collectAngular(ctx, sf);
   for (const sf of files) references(ctx, sf);
   for (const sf of files) angularTemplates(ctx, sf);
+  for (const sf of files) reactEvents(ctx, sf);
   for (const sf of files) pages(ctx, sf);
   if (o.rootScreens) rootScreens(ctx, files);
   for (const sf of files) httpFacts(ctx, sf);
@@ -135,6 +137,8 @@ export function qualifiedName(decl: ts.Node): string | null {
       && (ts.isSourceFile(parent.parent.parent) || ts.isModuleBlock(parent.parent.parent))) {
     return decl.name.text;
   }
+  const handler = componentHandler(decl);
+  if (handler) return handler;
   if ((ts.isMethodDeclaration(decl) || ts.isPropertyDeclaration(decl) || ts.isGetAccessorDeclaration(decl)
       || ts.isSetAccessorDeclaration(decl) || ts.isConstructorDeclaration(decl)) && ts.isClassLike(parent)) {
     const owner = qualifiedName(parent);
@@ -153,6 +157,39 @@ export function qualifiedName(decl: ts.Node): string | null {
     return owner && name ? `${owner}.${name}` : null;
   }
   return null;
+}
+
+/**
+ * G5: a function a React component declares in its body (`const handleAddSeriesPress = useCallback(() => …)`,
+ * `const onSave = () => …`, `function onClick() {}`) is a point of its own, `Component.handler`, so a button
+ * can say which handler it runs. Only directly in a capitalised component's body.
+ */
+function componentHandler(decl: ts.Node): string | null {
+  let name: string | null = null;
+  let statement: ts.Node | undefined;
+  if (ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && isHandlerInit(decl.initializer)
+      && ts.isVariableDeclarationList(decl.parent) && ts.isVariableStatement(decl.parent.parent)) {
+    name = decl.name.text;
+    statement = decl.parent.parent;
+  } else if (ts.isFunctionDeclaration(decl) && decl.name && decl.body) {
+    name = decl.name.text;
+    statement = decl;
+  }
+  const block = statement?.parent;
+  if (!name || !block || !ts.isBlock(block)) return null;
+  const fn = block.parent;
+  const owner = ts.isFunctionDeclaration(fn) ? qualifiedName(fn)
+    : (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) && ts.isVariableDeclaration(fn.parent) ? qualifiedName(fn.parent) : null;
+  return owner && /^[A-Z]/.test(owner) && !owner.includes(".") ? `${owner}.${name}` : null;
+}
+
+function isHandlerInit(e: ts.Expression | undefined): boolean {
+  if (!e) return false;
+  if (ts.isArrowFunction(e) || ts.isFunctionExpression(e)) return true;
+  if (!ts.isCallExpression(e)) return false;
+  const callee = ts.isPropertyAccessExpression(e.expression) ? e.expression.name.text : ts.isIdentifier(e.expression) ? e.expression.text : "";
+  const first = e.arguments[0];
+  return callee === "useCallback" && !!first && (ts.isArrowFunction(first) || ts.isFunctionExpression(first));
 }
 
 function declId(decl: ts.Node, rel: (f: string) => string): string | null {
@@ -185,6 +222,7 @@ function kindOf(decl: ts.Node): string {
       || ts.isGetAccessorDeclaration(decl) || ts.isSetAccessorDeclaration(decl) || ts.isMethodSignature(decl)) {
     return isReactComponent(decl) ? "component" : "method";
   }
+  if (componentHandler(decl)) return "method";
   if (ts.isVariableDeclaration(decl)) {
     if (isFunctionLike(decl.initializer) || isWrappedComponent(decl.initializer)) return isReactComponent(decl) ? "component" : "method";
     return "field";
@@ -252,6 +290,7 @@ function declare(ctx: Context, sf: ts.SourceFile) {
       ctx.out.edge(container, id, "contains");
       // A component renders as a unit: a change to any of its members changes what its page shows.
       if (ts.isClassDeclaration(n.parent) && isAngularComponent(n.parent)) ctx.out.edge(container, id, "uses");
+      if (container && componentHandler(n)) ctx.out.edge(container, id, "uses"); // same for a React component's handlers
     }
     const test = testName(n);
     if (test) {
@@ -323,8 +362,14 @@ function references(ctx: Context, sf: ts.SourceFile) {
       if (symbol) contextualCache.set(n, { symbol });
     }
     if (ts.isIdentifier(n) && !isDeclarationName(n)) {
-      const target = ctx.symbolId(checker.getSymbolAtLocation(n));
+      const symbol = checker.getSymbolAtLocation(n);
+      const target = ctx.symbolId(symbol);
       if (target) out.edge(ctx.ownerId(n), target, edgeKind(n));
+      else {
+        // `const { addSeries } = useAddSeries()` then `addSeries(…)` in a handler: the handler calls the hook (G5).
+        const from = resultOf(ctx, symbol);
+        if (from && from !== ctx.ownerId(n)) out.edge(ctx.ownerId(n), from, "calls");
+      }
     } else if (contextualProperty(n)) {
       // `{ roles: [...] }` where an UpdateUserRequest is expected, `<Cell errorMessage={…} />`, and
       // `const { roles } = req`: the name refers to the interface's field through the expected type.
@@ -374,6 +419,19 @@ function isDeclarationName(id: ts.Identifier): boolean {
   return (p as { name?: ts.Node }).name === id && (ts.isDeclarationStatement(p) || ts.isClassElement(p)
     || ts.isTypeElement(p) || ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isEnumMember(p)
     || ts.isBindingElement(p) || ts.isPropertyAssignment(p) || ts.isImportSpecifier(p) || ts.isExportSpecifier(p));
+}
+
+/** For a local bound from a call's result (`const x = f()`, `const { a } = f()`), the called function's id. */
+function resultOf(ctx: Context, symbol: ts.Symbol | undefined): string | null {
+  const d = symbol?.declarations?.length === 1 ? symbol.declarations[0] : null;
+  if (!d) return null;
+  let v: ts.Node = d;
+  while (ts.isBindingElement(v) || ts.isObjectBindingPattern(v) || ts.isArrayBindingPattern(v)) v = v.parent;
+  if (!ts.isVariableDeclaration(v) || !v.initializer) return null;
+  const init = ts.isAwaitExpression(v.initializer) ? v.initializer.expression : v.initializer;
+  if (!ts.isCallExpression(init)) return null;
+  const callee = ts.isPropertyAccessExpression(init.expression) ? init.expression.name : init.expression;
+  return ctx.symbolId(ctx.checker.getSymbolAtLocation(callee));
 }
 
 function edgeKind(id: ts.Identifier): string {

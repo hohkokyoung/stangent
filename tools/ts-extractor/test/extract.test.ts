@@ -343,3 +343,40 @@ test("route guards are facts on each page they hold for, a parent's included (G8
   assert.deepEqual(guards("/list"), ["authGuard"]);
   assert.deepEqual(guards("/admin"), ["adminGuard", "authGuard"]);
 });
+
+test("a React button says which handler it runs and what it shows; the handler is a point that calls the hook (G5, G6)", () => {
+  const root = project({
+    "src/hooks.ts": "export function useAddSeries() { return { addSeries: (x: number) => x }; }\nexport function translate(key: string, o?: object) { return key; }\nexport function useCallback<T>(f: T, deps: unknown[]): T { return f; }",
+    "src/Modal.tsx": [
+      "import { useAddSeries, translate, useCallback } from './hooks';",
+      "declare const Button: (p: { onPress?: () => void; children?: unknown }) => any;",
+      "declare const Modal: (p: { onClose?: () => void; children?: unknown }) => any;",
+      "export function AddModal(p: { title: string }) {",
+      "  const { addSeries } = useAddSeries();",
+      "  const handleAddPress = useCallback(() => { addSeries(1); }, [addSeries]);",
+      "  return <Modal onClose={() => addSeries(0)}><Button onPress={handleAddPress}>{translate('AddSeriesWithTitle', { title: p.title })}</Button><Button onPress={() => addSeries(2)}>Cancel</Button></Modal>;",
+      "}",
+    ].join("\n"),
+  }, { jsx: "preserve" });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const handler = "ts|src/Modal.tsx#AddModal.handleAddPress";
+  assert.ok(lines.some((l) => l.t === "node" && l.id === handler && l.kind === "method"), "the handler is a point");
+  assert.ok(lines.some((l) => l.t === "edge" && l.kind === "calls" && l.source === handler && l.target.endsWith("hooks.ts#useAddSeries")), "it calls the hook it got addSeries from");
+  assert.ok(lines.some((l) => l.t === "edge" && l.kind === "uses" && l.source.endsWith("#AddModal") && l.target === handler), "the component uses it");
+  const events = lines.flatMap((l) => l.t === "fact" && l.kind === "ui-event" ? [`${l.data.element} ${l.data.event} ${l.data.handler.split("#").pop()} [${l.data.keys}] [${l.data.text}]`] : []).sort();
+  assert.deepEqual(events, ["Button onPress AddModal.handleAddPress [AddSeriesWithTitle] []", "Button onPress inline [] [Cancel]", "Modal onClose inline [] []"]);
+});
+
+test("an Angular (click) says which method it calls and what the element shows (G5, G6)", () => {
+  const root = project({
+    "src/stub.d.ts": "declare module '@angular/core' { export function Component(m: object): ClassDecorator; }",
+    "src/star.component.ts": [
+      "import { Component } from '@angular/core';",
+      "@Component({ selector: 'app-star', template: '<button (click)=\"toggle()\" ngbTooltip=\"{{on ? t(\\'remove-from-want-to-read\\') : t(\\'add-to-want-to-read\\')}}\"><span>Star</span></button>' })",
+      "export class StarComponent { on = false; toggle() {} t(k: string) { return k; } }",
+    ].join("\n"),
+  }, { experimentalDecorators: true });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const events = lines.flatMap((l) => l.t === "fact" && l.kind === "ui-event" ? [`${l.data.element} ${l.data.event} ${l.data.handler.split("#").pop()} [${l.data.keys}] [${l.data.text}]`] : []);
+  assert.deepEqual(events, ["button click StarComponent.toggle [remove-from-want-to-read|add-to-want-to-read] [Star]"]);
+});

@@ -4,6 +4,7 @@ import ts from "typescript";
 import { parseTemplate } from "@angular/compiler";
 import type { Context } from "./extract.ts";
 import { isAngularComponent } from "./extract.ts";
+import { LABEL_ATTRS, TEXT_CALLS } from "./ui.ts";
 
 export interface AngularComponent {
   id: string;
@@ -115,6 +116,7 @@ export function angularTemplates(ctx: Context, sf: ts.SourceFile) {
       if (Array.isArray(node)) { node.forEach(walk); return; }
       const o = node as Record<string, unknown>;
       element(ctx, id, o);
+      angularEvents(ctx, c, id, t, o);
       expression(ctx, c, id, o);
       for (const [k, v] of Object.entries(o)) if (k !== "sourceSpan" && k !== "startSourceSpan" && k !== "endSourceSpan" && k !== "keySpan" && k !== "valueSpan" && k !== "nameSpan") walk(v);
     };
@@ -157,4 +159,59 @@ function expression(ctx: Context, c: AngularComponent, templateId: string, o: Re
     const targets = ctx.angular.pipes.get(o.name) ?? [];
     for (const target of targets) ctx.out.edge(templateId, target, "uses", targets.length === 1 ? 0 : 1, "angular");
   }
+}
+
+const ctorName = (o: unknown) => ((o as { constructor?: { name?: string } } | null)?.constructor?.name ?? "");
+const SKIP = new Set(["sourceSpan", "startSourceSpan", "endSourceSpan", "keySpan", "valueSpan", "nameSpan", "handlerSpan"]);
+
+/**
+ * G5 + G6: each `(click)="toggleWantToRead()"` is a `ui-event` fact on the template: the element, the event, the
+ * component method it calls, and what the element shows (text, label attributes, and keys passed to t()/translate).
+ */
+function angularEvents(ctx: Context, c: AngularComponent, templateId: string, t: NonNullable<AngularComponent["template"]>, o: Record<string, unknown>) {
+  const tag = typeof o.name === "string" && Array.isArray(o.attributes) && Array.isArray(o.children) && Array.isArray(o.outputs) ? o.name : null;
+  if (!tag) return;
+  for (const out of o.outputs as Record<string, unknown>[]) {
+    const event = typeof out.name === "string" ? out.name : null;
+    if (!event) continue;
+    const calls: string[] = [];
+    collect(out.handler, (n) => {
+      const recv = n.receiver as Record<string, unknown> | undefined;
+      if (/^Call|SafeCall/.test(ctorName(n)) && recv && typeof recv.name === "string" && c.members.has(recv.name)
+          && /ImplicitReceiver|ThisReceiver/.test(ctorName(recv.receiver))) {
+        const id = `${c.id}.${recv.name}`;
+        if (!calls.includes(id)) calls.push(id);
+      }
+    });
+    const keys: string[] = [], texts: string[] = [];
+    const add = (list: string[], v: string) => { v = v.replace(/\s+/g, " ").trim(); if (v && !list.includes(v)) list.push(v); };
+    // An element holding other elements with events is a container: only its own attributes label it.
+    let container = false;
+    collect(o.children, (n) => { if (Array.isArray(n.outputs) && n.outputs.length > 0) container = true; });
+    collect(container ? [o.attributes, o.inputs] : [o.attributes, o.inputs, o.children], (n) => {
+      const ctor = ctorName(n);
+      if (ctor === "Text" && typeof n.value === "string") add(texts, n.value);
+      if (ctor === "TextAttribute" && typeof n.name === "string" && LABEL_ATTRS.has(n.name) && typeof n.value === "string") add(texts, n.value);
+      const recv = n.receiver as Record<string, unknown> | undefined;
+      const args = n.args as Record<string, unknown>[] | undefined;
+      if (/^Call|SafeCall/.test(ctor) && recv && typeof recv.name === "string" && TEXT_CALLS.has(recv.name)
+          && args?.[0] && ctorName(args[0]) === "LiteralPrimitive" && typeof args[0].value === "string") add(keys, args[0].value);
+      if (ctor === "BindingPipe" && (n.name === "translate" || n.name === "transloco") && ctorName(n.exp) === "LiteralPrimitive" && typeof (n.exp as { value?: unknown }).value === "string")
+        add(keys, (n.exp as { value: string }).value);
+    });
+    const line = t.line + ((out.sourceSpan as { start?: { line?: number } } | undefined)?.start?.line ?? 0);
+    ctx.out.fact("ui", "ui-event", templateId, t.file, line, {
+      element: tag, event, handler: calls.length === 1 ? calls[0] : calls.length === 0 ? "inline" : calls.join("|"),
+      keys: keys.join("|"), text: texts.join(" "),
+    });
+  }
+}
+
+function collect(node: unknown, visit: (n: Record<string, unknown>) => void, seen = new Set<object>()) {
+  if (!node || typeof node !== "object" || seen.has(node as object)) return;
+  seen.add(node as object);
+  if (Array.isArray(node)) { for (const x of node) collect(x, visit, seen); return; }
+  const o = node as Record<string, unknown>;
+  visit(o);
+  for (const [k, v] of Object.entries(o)) if (!SKIP.has(k)) collect(v, visit, seen);
 }

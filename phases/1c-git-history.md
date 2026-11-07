@@ -1,7 +1,7 @@
 ---
 phase: 1c
 name: git-history
-status: done
+status: needs review
 consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4 }
 provides: {}
 ---

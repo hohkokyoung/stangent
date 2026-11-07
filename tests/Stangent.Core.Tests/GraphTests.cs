@@ -134,6 +134,15 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void Validation_rules_are_facts_on_the_properties_they_check()
+    {
+        string Rules(string prop) => string.Join("; ", shop.Graph.AllFacts.Where(f => f.Kind == "rule" && f.Owner == "Shop.Core|P:Shop.Core.NewOrder." + prop)
+            .Select(f => $"{f["rule"]}({f["args"]}) {f["via"]} '{f["message"]}' {f["conditional"]}".TrimEnd()));
+        Assert.Equal("Required() attribute ''; StringLength(40, MinimumLength = 2) attribute ''", Rules("Customer"));
+        Assert.Equal("GreaterThan(0) fluentvalidation 'Order at least one' yes; NotEmpty() fluentvalidation '' yes", Rules("Quantity"));
+    }
+
+    [Fact]
     public void Routes_are_found_for_minimal_apis_attributes_and_conventional_routes()
     {
         var endpoints = shop.Graph.AllNodes.Where(n => n.Kind == NodeKind.Endpoint).Select(n => n.Name).ToList();
@@ -309,7 +318,9 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     public void Frontend_calls_reach_backend_endpoints_by_url_and_by_nswag_naming()
     {
         Assert.Contains(Edges(EdgeKind.CallsHttp), e => e.Source == Angular + "order.service.ts#OrderService.place" && e.Target == "endpoint:Shop.Web|POST /api/orders");
-        Assert.Contains(Edges(EdgeKind.CallsHttp), e => e.Source == React + "StockPage.tsx#StockPage" && e.Target == "endpoint:Shop.Stock|GET /api/stock/{id:int}");
+        // The fetch is in the component's own handler, a point of its own (G5) that the component uses.
+        Assert.Contains(Edges(EdgeKind.CallsHttp), e => e.Source == React + "StockPage.tsx#StockPage.load" && e.Target == "endpoint:Shop.Stock|GET /api/stock/{id:int}");
+        Assert.Contains(Edges(EdgeKind.Uses), e => e.Source == React + "StockPage.tsx#StockPage" && e.Target == React + "StockPage.tsx#StockPage.load");
         // OrdersClient isn't in the repo (NSwag generates it): createOrder → CreateOrder under /api/orders.
         Assert.Contains(Edges(EdgeKind.CallsHttp), e => e.Source == React + "OrderPage.tsx#OrderPage" && e.Target == "endpoint:Shop.Web|POST /api/orders" && e.Label == Label.Guessed);
     }

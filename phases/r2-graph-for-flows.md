@@ -2,7 +2,7 @@
 phase: r2
 name: graph-for-flows
 status: in progress
-consumes: { code-graph: 4 }
+consumes: { code-graph: 5 }
 provides: {}
 ---
 
@@ -75,3 +75,30 @@ All fixes are code only (D155), no paid AI. Cost is build effort. "Where" says w
 Recommended order: **G4, G3 + G3b, G8, G5 + G6, G7** (Stangent-wide, they make a flow silently short or
 leave out what a user sees), then G9–G11, then G1 and G2 (one app's habit, small, but Sonarr is the bench).
 After the chosen fixes, one narrow fresh check (D158) of these two paths, cost said first.
+
+## 4. Fixed on the owner's go (2026-11-08): G1–G8, `code-graph` v5
+
+Owner: "start batch" with G1 and G2 added. Code only (D155), no paid AI. Contract `code-graph` → v5; 1a reopened;
+1b, 1c, 1d, 2a, 2b, 2c and 3 marked `needs review` (D20), none of their code changed. Tests: 2,155 .NET + 45 extractor, all pass.
+
+| # | What changed | Before → after on the real graphs |
+|---|---|---|
+| G1 | verbs from attributes derived from `HttpXAttribute` or implementing `IActionHttpMethodProvider`; templates from a base constructor or `Template` property; overrides of `[NonAction]` aren't actions | Sonarr `ANY /api/v5/Series` (→ Add, Delete, Update, Get) → `POST /api/v5/Series` → `AddSeries` only; `ANY` endpoints 84+ → only real ones. **Endpoint ids changed** |
+| G2 | a wrapper's own body shows the API root it adds | `useAddSeries` → v3 **and** v5 → v5 only; frontend calls to v3: 5 left (other wrappers) |
+| G3 | EF tables reached through navigations; `Entity<T>("Name")` maps; `writes`/`reads` lines (not walked) | Sonarr tables 0 → 41, `SeriesService.AddSeries` `writes` `Series`; Kavita 62 → 66, `WantToReadController.AddSeries` `writes` `AppUserWantToRead` |
+| G4 | outside calls through Flurl or an app's own client: a `call` fact or ❓ | blind spots Sonarr 96 → 328, Kavita 35 → 116 (Sonarr: 110 of the new ones are in tests); `SkyHookProxy.GetSeriesInfo` now ❓ "outside HTTP GET through IHttpClient" |
+| G5 | a React component's own handlers are points it `uses`; a handler using a hook's result `calls` the hook; `ui-event` facts | Sonarr `SpinnerErrorButton onPress` → `AddNewSeriesModalContent.handleAddSeriesPress` → `calls` `useAddSeries`; Kavita `button click` → `SeriesDetailComponent.toggleWantToRead`. `ui-event` facts: Sonarr 1,725, Kavita 1,120 |
+| G6 | text keys and literal text on each `ui-event`; a container element gets only its own label | Sonarr `AddSeriesWithTitle`; Kavita `add-to-want-to-read` / `remove-from-want-to-read`. Keys aren't turned into words yet |
+| G7 | `validation` detector: DataAnnotations and FluentValidation as `rule` facts | Sonarr `SeriesResource.TvdbId` `GreaterThan(0)`, `SetValidator(SeriesExistsValidator)`, `Title` `NotEmpty` (PostValidator); Kavita 323 attribute rules |
+| G8 | `auth` facts on actions, `fallback-auth` on the project, `guard` facts on pages | Sonarr: `FallbackPolicy` requires a signed-in user (scheme `API`); Kavita `AddSeries` `authorize` from `BaseApiController`; 38 page guards (`/library/:libraryId/series/:seriesId`: `authGuard`, `libraryAccessGuard`) |
+
+Both paths now read end to end from code alone:
+
+- **Sonarr:** `/add/new` → `SpinnerErrorButton onPress` [`AddSeriesWithTitle`] → `handleAddSeriesPress` → `useAddSeries` → `POST /api/v5/Series`
+  (signed-in user, by fallback) → `SeriesController.AddSeries` [rules on `SeriesResource`] → `AddSeriesService` (❓ outside call to SkyHook)
+  → `SeriesService.AddSeries` → writes `Series` → `SeriesAddedHandler` and 2 more.
+- **Kavita:** `/library/:libraryId/series/:seriesId` [`authGuard`, `libraryAccessGuard`] → `button click` [`add-to-want-to-read`] →
+  `toggleWantToRead` → `ActionService` → `MemberService` → `POST /api/want-to-read/add-series` [`[Authorize]`] → `AddSeries` → writes `AppUserWantToRead`.
+
+Still open: G9 constant values, G10 SignalR messages, G11 background jobs; also minimal APIs' `RequireAuthorization()`, React
+guard wrappers, text keys → words, and test-only outside-call blind spots counted with the rest. Not yet checked by a fresh agent (D158).

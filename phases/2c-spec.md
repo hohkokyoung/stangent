@@ -1,7 +1,7 @@
 ---
 phase: 2c
 name: spec
-status: in progress
+status: needs review
 consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 3, trace-links: 4, ticket-bundle: 2, bug-proof: 1 }
 provides: { fsd-claims: 1 }
 ---

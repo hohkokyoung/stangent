@@ -3,7 +3,7 @@ phase: 1a
 name: csharp-map
 status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1 }
-provides: { code-graph: 4, impact-report: 5 }
+provides: { code-graph: 5, impact-report: 5 }
 ---
 
 # Phase 1a · C# map
@@ -317,3 +317,14 @@ The line-level table above and the exact check were re-run after these fixes. eS
 - **Consumers:** 2a and 2b, which consumed v4 and moved to v5 with the change. No other phase consumes it yet.
 
 Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions` v2 → v3. By grep, nothing here reads telemetry, and results are read by name, so `components` beside `result` changes nothing. Moved.
+
+## Reopened by rebuild layer 2 (2026-11-08): `code-graph` v5
+
+What flows need (D154), found missing on Sonarr and Kavita and fixed on the owner's go (`phases/r2-graph-for-flows.md`, G1–G8):
+an app's own verb attributes give real verbs and templates (Sonarr's `ANY` endpoints became `POST`/`GET`/`PUT`/`DELETE`, so
+**endpoint ids changed**); overrides of `[NonAction]` methods aren't actions; outside calls through Flurl and app-owned clients are
+facts or ❓; EF entities reached through navigations and `Entity<T>("Name")` table maps are tables; new lines `writes` and `reads`
+(not walked); facts `auth`, `fallback-auth`, `guard`, `ui-event`, `rule`; a new detector `validation`; a React component's own
+handlers are points (`Component.handler`) that the component `uses`, so a screen reaches its calls one step deeper.
+Every consumer of `code-graph` is `needs review` in `roadmap.md` (D20); none was changed.
+
