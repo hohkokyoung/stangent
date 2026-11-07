@@ -110,18 +110,18 @@
     },
     "findings": 70,
     "unplanted": 46,
-    "falseAlarmShare": 0.259
+    "falseAlarmShare": 0.314
   },
   "handChecked": {
     "false": {
-      "checked": 21,
+      "checked": 28,
       "leftTheQueue": 6,
-      "stillInTheQueue": 15
+      "stillInTheQueue": 22
     },
     "real": {
-      "checked": 23,
+      "checked": 24,
       "leftTheQueue": 0,
-      "stillInTheQueue": 23
+      "stillInTheQueue": 24
     }
   },
   "byVerdict": {
@@ -144,7 +144,7 @@
   "plantedLost": [],
   "bars": {
     "found27of30": false,
-    "falseAlarmsAtMost30Percent": true
+    "falseAlarmsAtMost30Percent": false
   },
   "cost": {
     "finder": {

@@ -143,13 +143,23 @@ Same as the re-score, one change: `components: { page-gap-strict: true }`. Sonne
 | In the BA's queue | 90 | 52 | 70 |
 | Hand-checked real ones taken out | | 2 of 8 | **0 of 23** |
 | Hand-checked false ones taken out | | 9 of 12 | 6 of 21 |
-| False alarms in the queue | 44% | 23.1% | **25.9%** estimated; 21.4% to 32.9% by the 8 unchecked |
+| False alarms in the queue | 44% | 23.1% | **31.4%** (22 of 70), hand-checked: **noise bar missed** |
 
 **What moved:** of the 19 page gaps, 15 became `cant-tell`, 2 `stands`, 1 `refuted`; 1 page gap is left. One `stands` and one `refuted` became `cant-tell`. `refuted` still 19, all waiting for a developer. Verdicts now: 22 stands, 19 refuted, 1 page-gap, 25 cant-tell, 23 untested.
 
 **What it shows:** the losses were the wording. With "nothing settles it" as `cant-tell`, every real finding stays with the BA, and the step still takes out 6 of 21 known false alarms, all by `refuted`. Found can't go past 24 this way; 27 needs the gap finders.
 
-**Not shown:** 8 unplanted findings back in the queue have no hand check (7 `cant-tell` gaps, 1 `stands`), so the noise bar is met on the estimate but not yet called (D61). One run each, so the spread between runs is unmeasured, and the two runs differ only in the wording.
+**The hand check of the 8 back in the queue (same day, fresh agent, 76K tokens against 20-30K estimated):** 7 false, 1 real (the backup interval: the code allows 1 to 7 days, the FSD says 1 to 30). Every unplanted finding in the queue is now hand-checked: **22 of 70 false, 31.4%, so the noise bar (30%) is missed by about one finding.** `benchmark/results/2026-11-07-phase2c-d151-handcheck.json`, merged into `…-handcheck-merged.json`.
+
+**Where the false alarms are, by the AI's verdict:**
+
+| In the BA's queue | Count | Real | False |
+|---|---|---|---|
+| `stands` | 22 | **22** (16 planted) | **0** |
+| not tested (undocumented screens) | 23 | 19 (3 planted) | 4 |
+| `cant-tell` | 25 | 7 (5 planted) | **18** |
+
+So `stands` was right every time, and 18 of the 22 false alarms are `cant-tell`. 44 of 62 bundles hit the 60K code limit, which is the likeliest reason it couldn't tell. One run each, so the spread between runs is unmeasured, and the two runs differ only in the wording.
 
 ## Four more cyberbullying use cases (2026-11-07, counts only)
 
