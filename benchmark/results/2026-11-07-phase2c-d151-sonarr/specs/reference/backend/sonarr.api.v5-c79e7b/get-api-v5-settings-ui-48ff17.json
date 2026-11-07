@@ -1,0 +1,88 @@
+{
+  "codeTitle": "GET /api/v5/settings/ui",
+  "entry": "endpoint:Sonarr.Api.V5|GET /api/v5/settings/ui",
+  "generated": {
+    "bundleHash": "597c694e7b853fde501259407e094d5c398a97dbc9d62a5c94f242e42a223026",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 17245,
+      "cutOff": 32,
+      "depth": 4,
+      "points": 19
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 10170,
+      "calls": 1,
+      "costUsd": 0.041389,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2286,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 8726,
+      "calls": 1,
+      "costUsd": 0.042524,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4409,
+      "outputTokens": 734
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|GET /api/v5/settings/ui",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/settings/ui",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Settings.SettingsController`1.GetConfig"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/settings/ui"
+        ],
+        "id": "A1",
+        "text": "A caller requests the current UI settings with GET /api/v5/settings/ui and receives the settings resource."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Settings.SettingsController`1.GetConfig",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Settings.SettingsController`1.GetResourceById(System.Int32)"
+        ],
+        "id": "R1",
+        "text": "The returned resource always has Id set to 1."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Settings.SettingsController`1.GetConfig",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Settings.UiSettingsController.ToResource(NzbDrone.Core.Configuration.IConfigFileProvider,NzbDrone.Core.Configuration.IConfigService)"
+        ],
+        "id": "S1",
+        "text": "Returns the UI settings resource as JSON with an OK response."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Settings.UiSettingsController.ToResource(NzbDrone.Core.Configuration.IConfigFileProvider,NzbDrone.Core.Configuration.IConfigService)"
+        ],
+        "id": "S2",
+        "text": "The UI settings resource is built from the config file provider and the config service."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "UI settings (GET /api/v5/settings/ui)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

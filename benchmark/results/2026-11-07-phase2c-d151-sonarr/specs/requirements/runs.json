@@ -1,0 +1,498 @@
+{
+  "sonarr-fsd#1": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 3093,
+      "calls": 1,
+      "costUsd": 0.014246,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2084,
+      "outputTokens": 187
+    },
+    "disputed": 0,
+    "fixes": 0,
+    "inputs": "10fe82dfbbc3b9d7cead06054523a44003183644f70af8c71d5e280242616246",
+    "questions": 0,
+    "requirements": 5,
+    "retries": 0,
+    "spentUsd": 0.043246,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 5919,
+      "calls": 1,
+      "costUsd": 0.029,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3682,
+      "outputTokens": 532
+    }
+  },
+  "sonarr-fsd#1.1": {
+    "background": 2,
+    "checker": {
+      "cacheReadTokens": 1756,
+      "cacheWriteTokens": 6508,
+      "calls": 2,
+      "costUsd": 0.036002,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 10522,
+      "outputTokens": 961
+    },
+    "disputed": 0,
+    "fixes": 1,
+    "inputs": "b0e5bd1fd61b419f6558e7b981d58d110c5a43183d7b03b545f9377a9f9a5c8c",
+    "questions": 1,
+    "requirements": 12,
+    "retries": 0,
+    "spentUsd": 0.11403,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 2010,
+      "cacheWriteTokens": 12432,
+      "calls": 2,
+      "costUsd": 0.078028,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 15242,
+      "outputTokens": 2789
+    }
+  },
+  "sonarr-fsd#1.2": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 1756,
+      "cacheWriteTokens": 6140,
+      "calls": 2,
+      "costUsd": 0.03436,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 7666,
+      "outputTokens": 944
+    },
+    "disputed": 0,
+    "fixes": 1,
+    "inputs": "be887fa0372ec282b5d6c73d98e57dc05ff44b6bfda65c07558d9e91f1010466",
+    "questions": 0,
+    "requirements": 12,
+    "retries": 0,
+    "spentUsd": 0.111624,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 2010,
+      "cacheWriteTokens": 11956,
+      "calls": 2,
+      "costUsd": 0.077264,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 15944,
+      "outputTokens": 2903
+    }
+  },
+  "sonarr-fsd#2": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 878,
+      "cacheWriteTokens": 2827,
+      "calls": 1,
+      "costUsd": 0.014478,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4498,
+      "outputTokens": 299
+    },
+    "disputed": 0,
+    "fixes": 0,
+    "inputs": "24dbdaef3d82bdbefbf3b245b6302c3efe019c198ce62b4183822dcc593c10b9",
+    "questions": 0,
+    "requirements": 10,
+    "retries": 0,
+    "spentUsd": 0.050416,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 6146,
+      "calls": 1,
+      "costUsd": 0.035938,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6328,
+      "outputTokens": 1135
+    }
+  },
+  "sonarr-fsd#3": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 878,
+      "cacheWriteTokens": 2051,
+      "calls": 1,
+      "costUsd": 0.009514,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2012,
+      "outputTokens": 113
+    },
+    "disputed": 0,
+    "fixes": 0,
+    "inputs": "ef5db04458aaf0901d88eb16c51a16bac29277efe411ddd3a22b216f597f5f98",
+    "questions": 0,
+    "requirements": 2,
+    "retries": 0,
+    "spentUsd": 0.028614,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 2010,
+      "cacheWriteTokens": 3881,
+      "calls": 1,
+      "costUsd": 0.0191,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2726,
+      "outputTokens": 317
+    }
+  },
+  "sonarr-fsd#3.1": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 878,
+      "cacheWriteTokens": 2631,
+      "calls": 1,
+      "costUsd": 0.013284,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2556,
+      "outputTokens": 258
+    },
+    "disputed": 0,
+    "fixes": 0,
+    "inputs": "29272106a3ac7b2ed55340c386edb0a71be4a86c6d76372bbcce0db9ae29f617",
+    "questions": 0,
+    "requirements": 7,
+    "retries": 0,
+    "spentUsd": 0.03901,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 2010,
+      "cacheWriteTokens": 4155,
+      "calls": 1,
+      "costUsd": 0.025726,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5354,
+      "outputTokens": 870
+    }
+  },
+  "sonarr-fsd#3.2": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 878,
+      "cacheWriteTokens": 2494,
+      "calls": 1,
+      "costUsd": 0.014686,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4393,
+      "outputTokens": 453
+    },
+    "disputed": 0,
+    "fixes": 0,
+    "inputs": "db196d0b3c7f42e6a86d9b29a01d97aef2038cebbc2b7a56c1b29ff1372fef89",
+    "questions": 1,
+    "requirements": 5,
+    "retries": 0,
+    "spentUsd": 0.038746,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 2010,
+      "cacheWriteTokens": 4081,
+      "calls": 1,
+      "costUsd": 0.02406,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4840,
+      "outputTokens": 733
+    }
+  },
+  "sonarr-fsd#Settings / General / Backups": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 878,
+      "cacheWriteTokens": 2552,
+      "calls": 1,
+      "costUsd": 0.012808,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2933,
+      "outputTokens": 242
+    },
+    "disputed": 0,
+    "fixes": 0,
+    "inputs": "3e5768d7840b6ab74547903271ed2caffb927c9b761de9dd0fea22e3f55e159c",
+    "questions": 1,
+    "requirements": 6,
+    "retries": 0,
+    "spentUsd": 0.037504,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 2010,
+      "cacheWriteTokens": 3995,
+      "calls": 1,
+      "costUsd": 0.024696,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5265,
+      "outputTokens": 831
+    }
+  },
+  "sonarr-fsd#Settings / General / Logging": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 1756,
+      "cacheWriteTokens": 4654,
+      "calls": 2,
+      "costUsd": 0.022946,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 6027,
+      "outputTokens": 397
+    },
+    "disputed": 0,
+    "fixes": 1,
+    "inputs": "25393c89934a93fc260f304ae5a186aebb893f183db33eb5d46c1a843cd451d1",
+    "questions": 0,
+    "requirements": 4,
+    "retries": 0,
+    "spentUsd": 0.070206,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 4020,
+      "cacheWriteTokens": 8572,
+      "calls": 2,
+      "costUsd": 0.04726,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 7758,
+      "outputTokens": 1216
+    }
+  },
+  "sonarr-fsd#Settings / Interface": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 878,
+      "cacheWriteTokens": 2697,
+      "calls": 1,
+      "costUsd": 0.013908,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2954,
+      "outputTokens": 294
+    },
+    "disputed": 0,
+    "fixes": 0,
+    "inputs": "70ab3e0bbbad653305a8f9fd537ce68f0df7aed3099358836a5e114f520b2d78",
+    "questions": 2,
+    "requirements": 9,
+    "retries": 0,
+    "spentUsd": 0.041108,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 2010,
+      "cacheWriteTokens": 4041,
+      "calls": 1,
+      "costUsd": 0.0272,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6208,
+      "outputTokens": 1063
+    }
+  },
+  "sonarr-fsd#Settings / Profiles / Delay profiles": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 878,
+      "cacheWriteTokens": 2548,
+      "calls": 1,
+      "costUsd": 0.012742,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4716,
+      "outputTokens": 237
+    },
+    "disputed": 0,
+    "fixes": 0,
+    "inputs": "8ac5f6ed4a70b45cf1ed6ed5a56f5378ebfd177bcdea37ffa09b7c636b108115",
+    "questions": 0,
+    "requirements": 6,
+    "retries": 0,
+    "spentUsd": 0.037338,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 2010,
+      "cacheWriteTokens": 4095,
+      "calls": 1,
+      "costUsd": 0.024596,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4866,
+      "outputTokens": 781
+    }
+  },
+  "sonarr-fsd#Settings / Profiles / Quality profiles": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 878,
+      "cacheWriteTokens": 2424,
+      "calls": 1,
+      "costUsd": 0.011846,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2203,
+      "outputTokens": 197
+    },
+    "disputed": 0,
+    "fixes": 0,
+    "inputs": "d815929b83190e962c0d8ffc00fb12849e854656a26791593e31948c908aff2c",
+    "questions": 0,
+    "requirements": 5,
+    "retries": 0,
+    "spentUsd": 0.03512,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 2010,
+      "cacheWriteTokens": 4077,
+      "calls": 1,
+      "costUsd": 0.023274,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4249,
+      "outputTokens": 656
+    }
+  },
+  "sonarr-fsd#Settings / Quality definitions": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 878,
+      "cacheWriteTokens": 2144,
+      "calls": 1,
+      "costUsd": 0.009906,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1923,
+      "outputTokens": 115
+    },
+    "disputed": 0,
+    "fixes": 0,
+    "inputs": "06d611a0d9c20cc1c0b0b49dc68896e01dd2c47afdd60c1f021573e5b3e9b7db",
+    "questions": 0,
+    "requirements": 2,
+    "retries": 0,
+    "spentUsd": 0.029822,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 2010,
+      "cacheWriteTokens": 3970,
+      "calls": 1,
+      "costUsd": 0.019916,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3045,
+      "outputTokens": 363
+    }
+  },
+  "sonarr-fsd#Settings / Tags": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 878,
+      "cacheWriteTokens": 2983,
+      "calls": 1,
+      "costUsd": 0.015532,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4969,
+      "outputTokens": 342
+    },
+    "disputed": 0,
+    "fixes": 0,
+    "inputs": "8464576d6f77dfef15a89c783f0abaab5382bdda87ba79a2a26a98ee5e563512",
+    "questions": 2,
+    "requirements": 11,
+    "retries": 0,
+    "spentUsd": 0.045994,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 2010,
+      "cacheWriteTokens": 4124,
+      "calls": 1,
+      "costUsd": 0.030462,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7988,
+      "outputTokens": 1356
+    }
+  },
+  "sonarr-fsd#System / Backups": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 878,
+      "cacheWriteTokens": 2483,
+      "calls": 1,
+      "costUsd": 0.012362,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2965,
+      "outputTokens": 225
+    },
+    "disputed": 0,
+    "fixes": 0,
+    "inputs": "9c00afe1d3e82a4614067ef6cf008ab7452352e2d4b042f7e23eca3fd1660926",
+    "questions": 1,
+    "requirements": 6,
+    "retries": 0,
+    "spentUsd": 0.036452,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 2010,
+      "cacheWriteTokens": 4006,
+      "calls": 1,
+      "costUsd": 0.02409,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4889,
+      "outputTokens": 766
+    }
+  },
+  "sonarr-fsd#Wanted / Missing episodes": {
+    "background": 0,
+    "checker": {
+      "cacheReadTokens": 878,
+      "cacheWriteTokens": 2870,
+      "calls": 1,
+      "costUsd": 0.01432,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2839,
+      "outputTokens": 266
+    },
+    "disputed": 0,
+    "fixes": 0,
+    "inputs": "6eb930d3ca48ea4607df76203af5c9ab5ae1a6d96d18e31fe5f1775f1f1014df",
+    "questions": 2,
+    "requirements": 7,
+    "retries": 0,
+    "spentUsd": 0.042846,
+    "unchecked": 0,
+    "writer": {
+      "cacheReadTokens": 2010,
+      "cacheWriteTokens": 4125,
+      "calls": 1,
+      "costUsd": 0.028526,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6744,
+      "outputTokens": 1162
+    }
+  }
+}

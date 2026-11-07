@@ -1,0 +1,267 @@
+{
+  "codeTitle": "ImportListSyncService.Execute(ImportListSyncCommand)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)",
+  "generated": {
+    "bundleHash": "9de723d8feda40a966a48fb1ef361038b06ab1803e459b12c0e834a46aba513b",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 60132,
+      "cutOff": 50,
+      "depth": 4,
+      "points": 153
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 33211,
+      "calls": 1,
+      "costUsd": 0.137933,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5570,
+      "outputTokens": 491
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 27736,
+      "calls": 1,
+      "costUsd": 0.158264,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 23942,
+      "outputTokens": 4704
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.Execute(NzbDrone.Core.ImportLists.ImportListSyncCommand)"
+        ],
+        "id": "A1",
+        "text": "When the command carries a definition id, syncs only that import list; otherwise syncs all lists with automatic add enabled."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.SyncAll"
+        ],
+        "id": "A2",
+        "text": "A full sync fetches items from all automatic-add lists, processes them, removes synced tags from series no longer on lists, then tries to clean the library."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.SyncList(NzbDrone.Core.ImportLists.ImportListDefinition)"
+        ],
+        "id": "A3",
+        "text": "A single-list sync fetches that list, processes its items, removes synced tags, then tries to clean the library."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.SyncAll"
+        ],
+        "id": "R1",
+        "text": "A full sync does nothing (logs \"No import lists with automatic add enabled\") if no list has automatic add enabled."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListFactory.AutomaticAddEnabled(System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListFactory.FilterBlockedImportLists(System.Collections.Generic.IEnumerable{NzbDrone.Core.ImportLists.IImportList})"
+        ],
+        "id": "R2",
+        "text": "Lists blocked due to recent failures are skipped when fetching all lists."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.FetchAndParseImportListService.Fetch"
+        ],
+        "id": "R3",
+        "text": "A list is skipped in a full fetch if its last sync plus its minimum refresh interval is still in the future."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.ProcessListItems(System.Collections.Generic.List{NzbDrone.Core.Parser.Model.ImportListItemInfo})"
+        ],
+        "id": "R4",
+        "text": "Items from lists that do not have automatic add enabled are ignored."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.ProcessListItems(System.Collections.Generic.List{NzbDrone.Core.Parser.Model.ImportListItemInfo})"
+        ],
+        "id": "R5",
+        "text": "An item without a TVDB id is mapped by IMDb id, then TMDb id, then AniList id, then MAL id. Items with an AniList or MAL id that can't be mapped are rejected."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.ProcessListItems(System.Collections.Generic.List{NzbDrone.Core.Parser.Model.ImportListItemInfo})"
+        ],
+        "id": "R6",
+        "text": "Items still without a TVDB id (0) are rejected."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.ProcessListItems(System.Collections.Generic.List{NzbDrone.Core.Parser.Model.ImportListItemInfo})"
+        ],
+        "id": "R7",
+        "text": "Items whose TVDB id is in the list exclusions are rejected."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.ProcessListItems(System.Collections.Generic.List{NzbDrone.Core.Parser.Model.ImportListItemInfo})",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.QueueTagsOnPendingSeries(NzbDrone.Core.ImportLists.ImportListDefinition,System.Collections.Generic.Dictionary{System.Int32,System.Collections.Generic.HashSet{System.Int32}},System.Int32)"
+        ],
+        "id": "R8",
+        "text": "Series already in the library are not added again. Their tags are queued for update only if the list's tag-existing setting is not None and the list has tags."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.ProcessListItems(System.Collections.Generic.List{NzbDrone.Core.Parser.Model.ImportListItemInfo})"
+        ],
+        "id": "R9",
+        "text": "A new series takes its settings from the list: root folder, quality profile, series type, language, season folder, tags, monitor-new-items and search-for-missing-episodes. It is monitored unless the list's monitor type is None."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.ProcessListItems(System.Collections.Generic.List{NzbDrone.Core.Parser.Model.ImportListItemInfo})"
+        ],
+        "id": "R10",
+        "text": "If an item provides seasons, the add monitor option is Skip; otherwise the list's monitor setting is used."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.ProcessListItems(System.Collections.Generic.List{NzbDrone.Core.Parser.Model.ImportListItemInfo})"
+        ],
+        "id": "R11",
+        "text": "If a series is already queued to add from another list, that list's tags are added to the queued series instead of adding it twice."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.RemoveTagsFromSeriesNotOnLists",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.HasSyncedSuccessfully(System.Int32)"
+        ],
+        "id": "R12",
+        "text": "A tag is removed from a series only if its list has tag-existing type Sync, every automatic-add list with that tag synced successfully (not disabled and synced before), and the series is on none of those lists."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.IsSeriesOnList(NzbDrone.Core.Tv.Series,System.Collections.Generic.IEnumerable{NzbDrone.Core.Parser.Model.ImportListItemInfo})"
+        ],
+        "id": "R13",
+        "text": "A series matches a list item by TVDB id, IMDb id, TMDb id, MAL id or AniList id."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.TryCleanLibrary",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.AllListsSuccessfulWithAPendingClean"
+        ],
+        "id": "R14",
+        "text": "Library cleaning is skipped if the list sync level is Disabled. Otherwise it runs only when every automatic-add list has synced without being disabled and at least one has removed items since the last clean."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.CleanLibrary"
+        ],
+        "id": "R15",
+        "text": "For library series not on any list: LogOnly logs a message; KeepAndUnmonitor unmonitors monitored series; KeepAndTag adds the configured list-sync tag if missing."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.FetchAndParseImportListService.Fetch",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.FetchAndParseImportListService.FetchSingleList(NzbDrone.Core.ImportLists.ImportListDefinition)"
+        ],
+        "id": "R16",
+        "text": "A list's items are only recorded and its status updated when its fetch had no failure."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.SyncAll",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.SyncList(NzbDrone.Core.ImportLists.ImportListDefinition)",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.ProcessListItems(System.Collections.Generic.List{NzbDrone.Core.Parser.Model.ImportListItemInfo})"
+        ],
+        "id": "S1",
+        "text": "Logs progress messages such as \"Starting Import List Sync\", \"Starting Import List Refresh for List {name}\", \"Processing {n} list items\" and \"Import List Sync Completed. Items found: {n}, Series added: {n}\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.ProcessListItems(System.Collections.Generic.List{NzbDrone.Core.Parser.Model.ImportListItemInfo})"
+        ],
+        "id": "S2",
+        "text": "Logs \"No list items to process\" when the fetched list has no items."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.ProcessListItems(System.Collections.Generic.List{NzbDrone.Core.Parser.Model.ImportListItemInfo})",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.IAddSeriesService.AddSeries(System.Collections.Generic.List{NzbDrone.Core.Tv.Series},System.Boolean)"
+        ],
+        "id": "E1",
+        "text": "Adds new series to the library via the add-series service, ignoring errors."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.UpdateTagsOnPendingSeries(System.Collections.Generic.Dictionary{System.Int32,System.Collections.Generic.HashSet{System.Int32}})",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.UpdateTags(System.Collections.Generic.List{NzbDrone.Core.Tv.Series})"
+        ],
+        "id": "E2",
+        "text": "Adds list tags to existing series and saves the changed tags."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.UpdateTags(System.Collections.Generic.List{NzbDrone.Core.Tv.Series})",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesController.Handle(NzbDrone.Core.Tv.Events.SeriesBulkEditedEvent)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Series.SeriesController.Handle(NzbDrone.Core.Tv.Events.SeriesBulkEditedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadService.Handle(NzbDrone.Core.Tv.Events.SeriesBulkEditedEvent)"
+        ],
+        "id": "E3",
+        "text": "Saving series tags publishes a SeriesBulkEditedEvent, handled by the V3 and V5 series controllers and the tracked download service."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.RemoveTagsFromSeriesNotOnLists"
+        ],
+        "id": "E4",
+        "text": "Removes Sync tags from series no longer on their lists and saves the series tags."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.FetchAndParseImportListService.Fetch",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.FetchAndParseImportListService.FetchSingleList(NzbDrone.Core.ImportLists.ImportListDefinition)"
+        ],
+        "id": "E5",
+        "text": "Fetching stores each successfully fetched list's items and updates the list's sync status, including whether items were removed."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.CleanLibrary"
+        ],
+        "id": "E6",
+        "text": "Library cleaning saves unmonitored or tagged series without moving files, then marks the lists as cleaned."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.SearchForNewSeriesByImdbId(System.String,NzbDrone.Core.Languages.Language)",
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.SearchForNewSeriesByTmdbId(System.Int32,NzbDrone.Core.Languages.Language)",
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.SearchForNewSeriesByAniListId(System.Int32,NzbDrone.Core.Languages.Language)",
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.SearchForNewSeriesByMyAnimeListId(System.Int32,NzbDrone.Core.Languages.Language)"
+        ],
+        "id": "E7",
+        "text": "Looks up TVDB ids through the metadata source by IMDb, TMDb, AniList or MAL id."
+      }
+    ]
+  },
+  "title": "Import List Sync (command handler)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "codeTitle": "ANY /api/v5/Health",
+  "entry": "endpoint:Sonarr.Api.V5|ANY /api/v5/Health",
+  "generated": {
+    "bundleHash": "a42e413b3b7a0049fc632071b4220cf419abba09e8df8e02ca4ee492ec16a02e",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 9856,
+      "cutOff": 0,
+      "depth": 4,
+      "points": 3
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6093,
+      "calls": 1,
+      "costUsd": 0.025081,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2542,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4557,
+      "calls": 1,
+      "costUsd": 0.026828,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5697,
+      "outputTokens": 832
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|ANY /api/v5/Health",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/Health"
+        ],
+        "id": "A1",
+        "text": "A caller requests a single resource by id; the resource is looked up and returned as JSON."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R1",
+        "text": "For actions marked to validate the id, the id argument is validated before the action runs, unless validation is skipped for that action."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R2",
+        "text": "For POST and PUT requests, each resource in the request body is validated; on PUT, a body resource with Id 0 takes the id from the route."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "Returns the requested resource as JSON with an OK result when it is found."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "Returns a Not Found result when the resource for the given id does not exist."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "E1",
+        "text": "If the controller or action is marked deprecated, a warning with the caller's user agent is logged and the response gets the header Deprecation: true."
+      }
+    ]
+  },
+  "title": "Health API endpoint (get by id)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "codeTitle": "/serieseditor",
+  "entry": "page:tsconfig.json|/serieseditor",
+  "generated": {
+    "bundleHash": "9997ac7a820e46c7685efc105c2b40ace3c0266c033db4623c1a24cbece8aa02",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 6184,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 1
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 4128,
+      "calls": 1,
+      "costUsd": 0.017221,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1484,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3188,
+      "calls": 1,
+      "costUsd": 0.015082,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2335,
+      "outputTokens": 205
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/serieseditor",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [],
+    "rules": [],
+    "shows": [
+      {
+        "cites": [
+          "page:tsconfig.json|/serieseditor"
+        ],
+        "id": "S1",
+        "text": "The page is registered as a route at the path /serieseditor."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Series Editor (/serieseditor)",
+  "unknowns": [
+    {
+      "file": "frontend/src/App/AppRoutes.tsx",
+      "in": "page:tsconfig.json|/serieseditor",
+      "line": 60,
+      "reason": "page /serieseditor: its component couldn't be resolved"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

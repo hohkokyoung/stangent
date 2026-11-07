@@ -1,0 +1,94 @@
+{
+  "codeTitle": "GET /api/v3/DelayProfile",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/DelayProfile",
+  "generated": {
+    "bundleHash": "e0285a8c77fde3fc139a7e3e942bf175f8bb3e1fee73e567b6a8cdc250086238",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 9973,
+      "cutOff": 6,
+      "depth": 4,
+      "points": 32
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6723,
+      "calls": 1,
+      "costUsd": 0.027601,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2977,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 5160,
+      "calls": 1,
+      "costUsd": 0.02945,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5526,
+      "outputTokens": 853
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/DelayProfile",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Delay.DelayProfileController.GetAll",
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Delay.DelayProfileService.All"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/DelayProfile"
+        ],
+        "id": "A1",
+        "text": "A caller sends GET /api/v3/DelayProfile and receives every stored delay profile, with no filtering or paging."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Delay.DelayProfileResourceMapper.ToResource(NzbDrone.Core.Profiles.Delay.DelayProfile)"
+        ],
+        "id": "R1",
+        "text": "If a delay profile is null, its mapped resource is null."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Delay.DelayProfileService.All",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.All"
+        ],
+        "id": "R2",
+        "text": "The list is read from the repository in the order the repository returns it. The code applies no sorting."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Delay.DelayProfileController.GetAll"
+        ],
+        "id": "S1",
+        "text": "Returns a JSON list of all delay profiles."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Delay.DelayProfileResourceMapper.ToResource(NzbDrone.Core.Profiles.Delay.DelayProfile)"
+        ],
+        "id": "S2",
+        "text": "Each delay profile in the list has: Id, EnableUsenet, EnableTorrent, PreferredProtocol, UsenetDelay, TorrentDelay, BypassIfHighestQuality, BypassIfAboveCustomFormatScore, MinimumCustomFormatScore, Order and Tags (a set of tag ids)."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "List delay profiles (GET /api/v3/DelayProfile)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

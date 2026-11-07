@@ -1,0 +1,116 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0017"
+doc: "sonarr-fsd"
+section: "Settings / General / Backups"
+title: "Backups"
+parent: "F-0016"
+children: []
+textHash: "a2b074f4f45f312ab3fa049c060c252b8405631fe9212f3ff598bc4851985e60"
+requirements:
+  - id: "R-0085"
+    title: "Backup folder setting"
+    kind: "data"
+    statement: "The Folder setting defines where backups are written."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / General / Backups"
+        text: "Folder: where backups are written; a relative path is inside Sonarr's data folder."
+        hash: "04fd98a2595c658b32601446c6ae9177d4ac51817f60e03f3815f17ca6c431f9"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "07c37ad6bcd79dc60bb93a1a5abb94091e1af3085c720f4aeb46b7d9dba70e58"
+  - id: "R-0086"
+    title: "Relative backup path"
+    kind: "rule"
+    statement: "A relative backup folder path is located inside Sonarr's data folder."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / General / Backups"
+        text: "Folder: where backups are written; a relative path is inside Sonarr's data folder."
+        hash: "04fd98a2595c658b32601446c6ae9177d4ac51817f60e03f3815f17ca6c431f9"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "0cd7ed8e167fa597a6be3b8bc6c5e5336bd9630ecfe1af49181e2f49a91af03a"
+  - id: "R-0087"
+    title: "Backup interval setting"
+    kind: "data"
+    statement: "The Interval setting defines how often an automatic backup is taken."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / General / Backups"
+        text: "Interval: how often an automatic backup is taken, from 1 to 30 days."
+        hash: "e23d206880218b731fdda4cfb9ff094e48e058eda7ffbbb3dbbe374d44499945"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "8295eb926ad92b019450dd2b3cec6723976b96f1d2dcef4889e388b6c93b205d"
+  - id: "R-0088"
+    title: "Interval range 1 to 30 days"
+    kind: "validation"
+    statement: "The backup interval must be from 1 to 30 days."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / General / Backups"
+        text: "Interval: how often an automatic backup is taken, from 1 to 30 days."
+        hash: "e23d206880218b731fdda4cfb9ff094e48e058eda7ffbbb3dbbe374d44499945"
+    acceptance:
+      - text: "An interval of 30 days is accepted."
+        quotes:
+          - doc: "sonarr-fsd"
+            section: "Settings / General / Backups"
+            text: "Interval: how often an automatic backup is taken, from 1 to 30 days."
+            hash: "e23d206880218b731fdda4cfb9ff094e48e058eda7ffbbb3dbbe374d44499945"
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "3eabb3530cd202f00b31a112063ae6dfa02bfa7e2f404aaba120453ea70a0f6c"
+  - id: "R-0089"
+    title: "Backup retention setting"
+    kind: "data"
+    statement: "The Retention setting defines how long backups are kept."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / General / Backups"
+        text: "Retention: how long backups are kept, up to 365 days."
+        hash: "bac224af4ea94d3818cc6d9464afa7769f167d8c531dd2004be2e7daf05b6b98"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "3139bcdd8f9e3f010824bddf5b58896d217654a3eb9b88e120c76985ec5b1ea7"
+  - id: "R-0090"
+    title: "Retention up to 365 days"
+    kind: "validation"
+    statement: "Backup retention can be at most 365 days."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / General / Backups"
+        text: "Retention: how long backups are kept, up to 365 days."
+        hash: "bac224af4ea94d3818cc6d9464afa7769f167d8c531dd2004be2e7daf05b6b98"
+    acceptance:
+      - text: "A retention of 365 days is accepted."
+        quotes:
+          - doc: "sonarr-fsd"
+            section: "Settings / General / Backups"
+            text: "Retention: how long backups are kept, up to 365 days."
+            hash: "bac224af4ea94d3818cc6d9464afa7769f167d8c531dd2004be2e7daf05b6b98"
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "5fcebf72a33eabf9c5e59ef4c7f72603bc8610040b1916d0e76d654f65fdffcd"
+definitions: []
+journeys: []
+background: []
+retired: []

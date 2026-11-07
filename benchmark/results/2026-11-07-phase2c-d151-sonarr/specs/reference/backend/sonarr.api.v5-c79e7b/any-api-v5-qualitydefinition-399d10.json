@@ -1,0 +1,121 @@
+{
+  "codeTitle": "ANY /api/v5/QualityDefinition",
+  "entry": "endpoint:Sonarr.Api.V5|ANY /api/v5/QualityDefinition",
+  "generated": {
+    "bundleHash": "ef7f34ac8cd70306240604937032ffcae11500cfae3a441adf47f509f81419ad",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 19000,
+      "cutOff": 9,
+      "depth": 4,
+      "points": 56
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 11675,
+      "calls": 1,
+      "costUsd": 0.049689,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3816,
+      "outputTokens": 281
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 9495,
+      "calls": 1,
+      "costUsd": 0.05256,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8011,
+      "outputTokens": 1430
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|ANY /api/v5/QualityDefinition",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Qualities.QualityDefinitionController.Update(Sonarr.Api.V5.Qualities.QualityDefinitionResource)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Qualities.QualityDefinitionResourceMapper.ToModel(Sonarr.Api.V5.Qualities.QualityDefinitionResource)"
+        ],
+        "id": "A1",
+        "text": "Updates a quality definition from a JSON body: the resource is mapped to a model (Id, Quality, Title, Weight) and saved."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Qualities.QualityDefinitionController.Update(Sonarr.Api.V5.Qualities.QualityDefinitionResource)"
+        ],
+        "id": "R1",
+        "text": "Profile size limits are updated only when the model has a MinSize, MaxSize or PreferredSize value."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R2",
+        "text": "On PUT, if the body resource Id is 0 and the route has an id, the route id is used as the resource Id."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R3",
+        "text": "Resources in POST and PUT bodies are validated before the action runs, unless validation is skipped for the action."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R4",
+        "text": "Calls to endpoints marked deprecated are logged as a warning and get a Deprecation: true response header."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.TypedAccepted(System.Int32)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Qualities.QualityDefinitionController.Update(Sonarr.Api.V5.Qualities.QualityDefinitionResource)"
+        ],
+        "id": "S1",
+        "text": "Returns an Accepted response containing the updated quality definition resource, with a location URL pointing to the get-by-id action, or NotFound."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "The get-by-id action returns the resource as Ok, or NotFound when the model is not found."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Qualities.QualityDefinitionService.Update(NzbDrone.Core.Qualities.QualityDefinition)"
+        ],
+        "id": "E1",
+        "text": "The quality definition is saved to the repository and the service cache is cleared."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfileService.UpdateAllSizeLimits(NzbDrone.Core.Profiles.Qualities.QualityProfileSizeLimit[])",
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfileSizeLimit.#ctor(NzbDrone.Core.Qualities.QualityDefinition)"
+        ],
+        "id": "E2",
+        "text": "When size values are present, every quality profile's matching quality item (or group member) gets its MinSize, MaxSize and PreferredSize overwritten, and all profiles are saved."
+      }
+    ]
+  },
+  "title": "Update Quality Definition (API v5)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

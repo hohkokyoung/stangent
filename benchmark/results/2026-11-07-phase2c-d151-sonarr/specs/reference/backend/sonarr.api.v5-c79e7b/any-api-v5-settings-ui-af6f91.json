@@ -1,0 +1,195 @@
+{
+  "codeTitle": "ANY /api/v5/settings/ui",
+  "entry": "endpoint:Sonarr.Api.V5|ANY /api/v5/settings/ui",
+  "generated": {
+    "bundleHash": "d36d17a78b4278df3bc561784fc6586d71d048ddb235aa2d03ea37edea5fd086",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 29240,
+      "cutOff": 18,
+      "depth": 4,
+      "points": 56
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 17556,
+      "calls": 1,
+      "costUsd": 0.074083,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7579,
+      "outputTokens": 368
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 13816,
+      "calls": 1,
+      "costUsd": 0.086164,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 16221,
+      "outputTokens": 3062
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|ANY /api/v5/settings/ui",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Settings.SettingsController`1.SaveSettings(`0)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Settings.GeneralSettingsController.SaveSettings(Sonarr.Api.V5.Settings.GeneralSettingsResource)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/settings/ui"
+        ],
+        "id": "A1",
+        "text": "Save general settings with a JSON body; every public property of the resource is written to both the config file and the database config store."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/settings/ui"
+        ],
+        "id": "A2",
+        "text": "Fetch a settings resource by id."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Settings.GeneralSettingsController.SaveSettings(Sonarr.Api.V5.Settings.GeneralSettingsResource)",
+          "Sonarr.Common|M:NzbDrone.Common.Network.IPNetworkParser.NormalizeList(System.String)"
+        ],
+        "id": "R1",
+        "text": "Trusted networks are normalized: split on commas, trimmed, empty entries removed and rejoined with \", \"; blank input becomes an empty string."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Settings.GeneralSettingsController.SaveSettings(Sonarr.Api.V5.Settings.GeneralSettingsResource)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.IsNotNullOrWhiteSpace(System.String)"
+        ],
+        "id": "R2",
+        "text": "The user is created or updated only when both username and password are non-blank. If the password equals the private placeholder, null is passed as the password."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Settings.GeneralSettingsController.SaveSettings(Sonarr.Api.V5.Settings.GeneralSettingsResource)"
+        ],
+        "id": "R3",
+        "text": "If the OIDC client secret, SSL certificate password or proxy password equals the private placeholder, the currently stored value is kept instead."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})"
+        ],
+        "id": "R4",
+        "text": "The ApiKey value is never changed by a save to the config file."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})",
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigService.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})"
+        ],
+        "id": "R5",
+        "text": "Only keys that already exist with a non-null current value and whose new value differs from the current one are written. Config-service entries with a null new value are skipped."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R6",
+        "text": "On PUT or POST, a body resource with Id 0 on a PUT takes its id from the route; resources are validated unless validation is skipped."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R7",
+        "text": "Calls to endpoints marked deprecated are logged as a warning and get a \"Deprecation: true\" response header."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.TypedAccepted(System.Int32)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Settings.SettingsController`1.SaveSettings(`0)"
+        ],
+        "id": "S1",
+        "text": "A successful save returns 202 Accepted with the saved settings resource and a link to the GET-by-id action for it."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "Reading a resource by id returns it as JSON with 200 OK, or 404 Not Found when no such resource exists."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Settings.SettingsController`1.SaveSettings(`0)"
+        ],
+        "id": "S3",
+        "text": "Save returns NotFound as an alternative result."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})",
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.SetValue(System.String,System.Object)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.FirstCharToUpper(System.String)"
+        ],
+        "id": "E1",
+        "text": "Changed values are written to the XML config file with the first letter of the key upper-cased, and the config cache is cleared."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigService.SetValue(System.String,System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigService.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})"
+        ],
+        "id": "E2",
+        "text": "Changed values are upserted into the database under the lower-cased key, and the cache is cleared."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})",
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)",
+          "Sonarr.Http|M:Sonarr.Http.Authentication.OidcOptionsChangeTokenSource.Handle(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)"
+        ],
+        "id": "E3",
+        "text": "When any config-file value changed, a ConfigFileSavedEvent is published. Logging is reconfigured and the OIDC options change token source handles it."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigService.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Pending.PendingReleaseService.Handle(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Jobs.TaskManager.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Localization.LocalizationService.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)",
+          "Sonarr.Http|M:NzbDrone.Http.Authentication.UiAuthorizationHandler.Handle(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)"
+        ],
+        "id": "E4",
+        "text": "When any database config value changed, a ConfigSavedEvent is published. Pending releases, the task manager, localization and UI authorization handle it."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.IUserService.Upsert(System.String,System.String)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Settings.GeneralSettingsController.SaveSettings(Sonarr.Api.V5.Settings.GeneralSettingsResource)"
+        ],
+        "id": "E5",
+        "text": "Saving with a username and password creates or updates the stored user."
+      }
+    ]
+  },
+  "title": "General settings (save and read) API",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

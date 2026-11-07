@@ -1,0 +1,192 @@
+{
+  "codeTitle": "/system/logs/files/update · UpdateLogFiles",
+  "entry": "page:tsconfig.json|/system/logs/files/update",
+  "generated": {
+    "bundleHash": "0f7dc7ef053e5c876a2eb6bf6af844968bee97bf44d934b4712e5dd5fa50b206",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 23813,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 93
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 14526,
+      "calls": 1,
+      "costUsd": 0.062893,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7691,
+      "outputTokens": 461
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 26035,
+      "calls": 2,
+      "costUsd": 0.14347,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 21685,
+      "outputTokens": 3877
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/system/logs/files/update",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/Update/UpdateLogFiles.tsx#UpdateLogFiles",
+          "ts|frontend/src/System/Logs/useLogFiles.ts#useUpdateLogFiles"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/log/file/update",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/log/file/update"
+        ],
+        "id": "A1",
+        "text": "Pressing Refresh re-fetches the updater log file list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/Update/UpdateLogFiles.tsx#UpdateLogFiles",
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "A2",
+        "text": "Pressing Clear runs the DeleteUpdateLogFiles command, then re-fetches the list when the command finishes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogsNavMenu.tsx#LogsNavMenu"
+        ],
+        "id": "A3",
+        "text": "Choosing an item in the logs menu navigates to the Log Files or Updater Log Files page."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R1",
+        "text": "Running the same command again within 5 seconds of the previous one is ignored, and a console warning is logged."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles"
+        ],
+        "id": "R2",
+        "text": "The \"log level default\" note is shown only when the current view is \"Log Files\". It does not appear on this updater page."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/useLogFiles.ts#useUpdateLogFiles",
+          "ts|frontend/src/System/Logs/Update/UpdateLogFiles.tsx#UpdateLogFiles"
+        ],
+        "id": "R3",
+        "text": "The file list is loaded from the /log/file/update path. It defaults to an empty list until data arrives."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Log Files\" and has a heading \"Log Files\" with the scope \"System\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles",
+          "ts|frontend/src/System/Logs/LogsNavMenu.tsx#LogsNavMenu"
+        ],
+        "id": "S2",
+        "text": "A logs menu button in the toolbar shows the current view, which is \"Updater Log Files\" on this page. Its menu links to \"Log Files\" (/system/logs/files) and \"Updater Log Files\" (/system/logs/files/update)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles",
+          "ts|frontend/src/Commands/useCommands.ts#useCommandExecuting",
+          "ts|frontend/src/System/Logs/Update/UpdateLogFiles.tsx#UpdateLogFiles"
+        ],
+        "id": "S3",
+        "text": "The toolbar has \"Refresh\" and \"Clear\" buttons. The Refresh icon spins while log files are being fetched. The Clear icon spins while the delete-update-log-files command is queued or started."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles",
+          "ts|frontend/src/Utilities/String/combinePath.ts#combinePath",
+          "ts|frontend/src/System/Status/useSystemStatus.ts#useSystemStatusData"
+        ],
+        "id": "S4",
+        "text": "An alert shows the log files location. It is the app data folder plus \"UpdateLogs\", joined with a backslash on Windows and a forward slash otherwise."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles"
+        ],
+        "id": "S5",
+        "text": "A loading indicator shows while log files are being fetched."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles",
+          "ts|frontend/src/System/Logs/LogFilesTableRow.tsx#LogFilesTableRow"
+        ],
+        "id": "S6",
+        "text": "When not fetching and there are files, a table lists them. Each row shows the filename, the last write time as a relative date, and a \"Download\" link that opens in a new tab."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles"
+        ],
+        "id": "S7",
+        "text": "When not fetching and there are no files, an info alert shows the \"No log files\" message (translation key NoLogFiles)."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand",
+          "ts|frontend/src/System/Logs/Update/UpdateLogFiles.tsx#UpdateLogFiles"
+        ],
+        "id": "E1",
+        "text": "Pressing Clear posts a command named DeleteUpdateLogFiles to /command. The command is stored in the local command cache on success."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+          "ts|frontend/src/System/Logs/useLogFiles.ts#useUpdateLogFiles"
+        ],
+        "id": "E2",
+        "text": "Loading the list sends a GET request with the API key and client headers."
+      }
+    ]
+  },
+  "title": "Updater Log Files",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "The location Alert is rendered without a kind (only the NoLogFiles alert has kind={kinds.INFO}), so the source doesn't show it as an info alert.",
+        "id": "F1",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Removed the word \"info\" from the location alert statement, since that alert has no kind set.",
+        "statement": "S4",
+        "statementText": "An info alert shows the log files location. It is the app data folder plus \"UpdateLogs\", joined with a backslash on Windows and a forward slash otherwise."
+      }
+    ]
+  }
+}

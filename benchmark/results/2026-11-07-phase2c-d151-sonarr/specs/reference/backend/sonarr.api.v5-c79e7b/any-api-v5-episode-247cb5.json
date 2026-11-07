@@ -1,0 +1,164 @@
+{
+  "codeTitle": "ANY /api/v5/Episode",
+  "entry": "endpoint:Sonarr.Api.V5|ANY /api/v5/Episode",
+  "generated": {
+    "bundleHash": "3fae66c84d5bdf49509c64fd100a5e1ea2a5c7cc0dd9ae461425a8b383d902c0",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 26062,
+      "cutOff": 59,
+      "depth": 4,
+      "points": 123
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 15852,
+      "calls": 1,
+      "costUsd": 0.066517,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3703,
+      "outputTokens": 293
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 12695,
+      "calls": 1,
+      "costUsd": 0.076,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 14402,
+      "outputTokens": 2494
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|ANY /api/v5/Episode",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Episodes.EpisodeController.SetEpisodeMonitored(System.Int32,Sonarr.Api.V5.Episodes.EpisodeResource)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/Episode"
+        ],
+        "id": "A1",
+        "text": "A PUT to the episode by id with a JSON body sets that episode's monitored flag to the body's Monitored value and returns the updated episode."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/Episode"
+        ],
+        "id": "A2",
+        "text": "A GET by id returns the episode resource, or Not Found."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Episodes.EpisodeController.SetEpisodeMonitored(System.Int32,Sonarr.Api.V5.Episodes.EpisodeResource)"
+        ],
+        "id": "R1",
+        "text": "The monitored update accepts only application/json bodies."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R2",
+        "text": "On a PUT, if the body resource's Id is 0 and the route has an id, the route id is copied into the resource before validation."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R3",
+        "text": "POST and PUT body resources are validated, and the route id is validated for actions that need id validation, unless validation is skipped for the action."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R4",
+        "text": "Calls to endpoints marked deprecated are logged as a warning and get the response header Deprecation: true."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.EpisodeFiles.EpisodeFileResourceMapper.ToResource(NzbDrone.Core.MediaFiles.EpisodeFile,NzbDrone.Core.Tv.Series,NzbDrone.Core.DecisionEngine.Specifications.IUpgradableSpecification,NzbDrone.Core.CustomFormats.ICustomFormatCalculationService)",
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfile.CalculateCustomFormatScore(System.Collections.Generic.List{NzbDrone.Core.CustomFormats.CustomFormat})"
+        ],
+        "id": "R5",
+        "text": "An episode file's path is the series path combined with the file's relative path, and its custom format score is the sum of the quality profile scores of the matching formats (0 if there is no profile)."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Episodes.EpisodeResourceMapper.ToResource(NzbDrone.Core.Tv.Episode)"
+        ],
+        "id": "S1",
+        "text": "The update returns the saved episode as JSON with fields such as id, seriesId, tvdbId, episodeFileId, season and episode numbers, title, air dates, runtime, finale type, overview, last search time, hasFile and monitored."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Episodes.EpisodeResourceMapper.ToResource(NzbDrone.Core.Tv.Episode)"
+        ],
+        "id": "S2",
+        "text": "The returned episode also includes absolute episode number and scene absolute, episode and season numbers, and the unverified scene numbering flag."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Episodes.EpisodeController.SetEpisodeMonitored(System.Int32,Sonarr.Api.V5.Episodes.EpisodeResource)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Episodes.EpisodeControllerWithSignalR.MapToResource(NzbDrone.Core.Tv.Episode,System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "S3",
+        "text": "After a monitored update the response does not include series, episode file or images, because they are not requested."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Episodes.EpisodeControllerWithSignalR.MapToResource(NzbDrone.Core.Tv.Episode,System.Boolean,System.Boolean,System.Boolean)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.EpisodeFiles.EpisodeFileResourceMapper.ToResource(NzbDrone.Core.MediaFiles.EpisodeFile,NzbDrone.Core.Tv.Series,NzbDrone.Core.DecisionEngine.Specifications.IUpgradableSpecification,NzbDrone.Core.CustomFormats.ICustomFormatCalculationService)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Series.SeriesResourceMapper.ToResource(NzbDrone.Core.Tv.Series,System.Boolean)"
+        ],
+        "id": "S4",
+        "text": "When series, episode file or images are requested, the resource can also carry the series details, the episode file details (path, size, quality, media info, custom formats and score, cutoff-not-met flag) and the episode images."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S5",
+        "text": "Getting an episode by id returns 200 with the resource, or 404 Not Found when the model is not found."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeService.SetEpisodeMonitored(System.Int32,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.IEpisodeRepository.SetMonitoredFlat(NzbDrone.Core.Tv.Episode,System.Boolean)"
+        ],
+        "id": "E1",
+        "text": "Setting monitored loads the episode by id and updates its monitored flag through the episode repository."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeService.SetEpisodeMonitored(System.Int32,System.Boolean)"
+        ],
+        "id": "E2",
+        "text": "A debug log entry records that the episode's monitored flag was set to the new value."
+      }
+    ]
+  },
+  "title": "Episode API: set monitored / get episode",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

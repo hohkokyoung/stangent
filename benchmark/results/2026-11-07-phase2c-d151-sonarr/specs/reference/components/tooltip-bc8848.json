@@ -1,0 +1,171 @@
+{
+  "codeTitle": "Tooltip",
+  "entry": "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip",
+  "generated": {
+    "bundleHash": "45e1c9df2fae5f2eaebe80082099472fd1c6f2854a1c1856eb1fa9c6d00490b8",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 9641,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 18
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6639,
+      "calls": 1,
+      "costUsd": 0.028145,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2848,
+      "outputTokens": 141
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 10563,
+      "calls": 2,
+      "costUsd": 0.071182,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 15332,
+      "outputTokens": 2837
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip"
+        ],
+        "id": "A1",
+        "text": "Hovering the anchor opens the tooltip; it stays open while the pointer moves toward the tooltip through a safe polygon."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip"
+        ],
+        "id": "A2",
+        "text": "Focusing the anchor opens the tooltip when the content role is 'tooltip'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip",
+          "ts|frontend/src/Utilities/browser.ts#isMobile"
+        ],
+        "id": "A3",
+        "text": "Clicking the anchor toggles the tooltip on mobile browsers or when the content role is 'dialog'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip"
+        ],
+        "id": "A4",
+        "text": "The tooltip can be dismissed with the standard dismiss interactions (such as Escape or an outside press)."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip"
+        ],
+        "id": "R1",
+        "text": "A tooltip never shows when isDisabled is true; isDisabled defaults to false."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip"
+        ],
+        "id": "R2",
+        "text": "The content role defaults to 'tooltip'; when it is 'dialog', the anchor gets role button and the content is wrapped in a non-modal focus manager with no initial focus."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip"
+        ],
+        "id": "R3",
+        "text": "The anchor is keyboard focusable (tabIndex 0) by default, unless isAnchorFocusable is false."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip"
+        ],
+        "id": "R4",
+        "text": "The tooltip is offset 10 px from the anchor and may flip and shift to stay in the viewport; flipping is allowed by default (canFlip true)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip"
+        ],
+        "id": "R5",
+        "text": "The floating box's maximum width and height are limited to the available space in the viewport, never below 0."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/browser.ts#isMobile"
+        ],
+        "id": "R6",
+        "text": "Mobile is detected by a mobile-device check on the browser."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip"
+        ],
+        "id": "R7",
+        "text": "The tooltip kind defaults to the default kind and affects the styling of the arrow and box; its placement comes from the position prop."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip"
+        ],
+        "id": "S1",
+        "text": "Shows an anchor element inline; the tooltip content is displayed in a floating box next to it when open."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip"
+        ],
+        "id": "S2",
+        "text": "The floating box contains a small arrow pointing to the anchor and the tooltip body content."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip"
+        ],
+        "id": "S3",
+        "text": "The floating content is rendered in the portal root element and is not rendered when the tooltip is closed or disabled."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip"
+        ],
+        "id": "S4",
+        "text": "The anchor carries an optional accessible label as its aria-label."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Tooltip",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "Code uses useHover with safePolygon, but that it opens on hover is fine; however 'stays open while pointer moves toward it' is supported. Minor: no issue found beyond this.",
+        "id": "F1",
+        "kind": "unsupported",
+        "outcome": "rejected",
+        "reason": "The reviewer concedes the statement is supported; useHover with safePolygon is in the source.",
+        "statement": "A1",
+        "statementText": "Hovering the anchor opens the tooltip; the tooltip stays open while the pointer moves toward it through a safe polygon.",
+        "supportQuote": "handleClose: safePolygon(),"
+      }
+    ]
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "codeTitle": "BlocklistService.Handle(DownloadFailedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+  "generated": {
+    "bundleHash": "f4042aae742f119c6404636df97d6ad2a397ea46b53f853c723d7b8de77cda40",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 8990,
+      "cutOff": 2,
+      "depth": 4,
+      "points": 64
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6142,
+      "calls": 1,
+      "costUsd": 0.026497,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2886,
+      "outputTokens": 175
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4450,
+      "calls": 1,
+      "costUsd": 0.02729,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5759,
+      "outputTokens": 921
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)"
+        ],
+        "id": "R1",
+        "text": "The published date is required: it is parsed from the event data key \"publishedDate\" and the handler fails if it is missing or invalid."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)"
+        ],
+        "id": "R2",
+        "text": "Size defaults to 0 when the event data has no \"size\" value."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)"
+        ],
+        "id": "R3",
+        "text": "The torrent info hash is the tracked download's download id when the tracked download uses the torrent protocol. Otherwise it comes from the event data key \"torrentInfoHash\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)"
+        ],
+        "id": "R4",
+        "text": "Indexer flags are set only when the event data \"indexerFlags\" value parses (case-insensitive) as an indexer flags value. Release type is set only when \"releaseType\" parses as a release type."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)"
+        ],
+        "id": "R5",
+        "text": "The blocklist date is the current UTC time."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Insert(`0)"
+        ],
+        "id": "E1",
+        "text": "On a download failed event, a blocklist entry is built from the event's series, episodes, source title, quality, message, source, languages and data (indexer, protocol, size, published date), then inserted into the blocklist repository."
+      }
+    ]
+  },
+  "title": "Blocklist release on download failure",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,214 @@
+{
+  "codeTitle": "ANY /api/v3/Metadata",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/Metadata",
+  "generated": {
+    "bundleHash": "edffdcd4ee902bf93aa31a94e46a14a755b2414e81c8efa35928b3ae88c9616a",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 54587,
+      "cutOff": 150,
+      "depth": 4,
+      "points": 112
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 30248,
+      "calls": 1,
+      "costUsd": 0.124311,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6305,
+      "outputTokens": 314
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 27036,
+      "calls": 1,
+      "costUsd": 0.133154,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 13664,
+      "outputTokens": 2473
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/Metadata",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.CreateProvider(`0,System.Boolean)"
+        ],
+        "id": "A1",
+        "text": "Create a provider from a JSON body; optional forceSave query flag (default false)."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean)"
+        ],
+        "id": "A2",
+        "text": "Update a provider by id from a JSON body; optional forceSave flag (default false). Falls back to the id in the body if none is found by route id."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.DeleteProvider(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Delete(System.Int32)"
+        ],
+        "id": "A3",
+        "text": "Delete a provider by id."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "A4",
+        "text": "Fetch a provider by id."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.GetDefinition(`0,`3,System.Boolean,System.Boolean,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.CreateProvider(`0,System.Boolean)"
+        ],
+        "id": "R1",
+        "text": "On create, settings are validated only when the definition is enabled; warnings count as failures unless forceSave is set."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.CreateProvider(`0,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.Test(`3,System.Boolean)"
+        ],
+        "id": "R2",
+        "text": "On create, an enabled definition is tested before saving, with warnings included unless forceSave is set."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean)"
+        ],
+        "id": "R3",
+        "text": "On update, the definition is tested only if it is enabled, forceSave is not set and the definition or its settings changed."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean)"
+        ],
+        "id": "R4",
+        "text": "On update, the provider is saved only when the definition or settings changed."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.VerifyValidationResult(FluentValidation.Results.ValidationResult,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Validation.NzbDroneValidationResult.#ctor(System.Collections.Generic.IEnumerable{FluentValidation.Results.ValidationFailure})"
+        ],
+        "id": "R5",
+        "text": "A validation failure throws a validation exception: with warnings included it contains errors and warnings, otherwise only errors; with warnings not included, warnings alone pass."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R6",
+        "text": "On PUT, a body resource with Id 0 takes the id from the route."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)"
+        ],
+        "id": "R7",
+        "text": "Password and API key fields sent with the private placeholder value keep the existing stored value."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Metadata.MetadataResourceMapper.ToModel(Sonarr.Api.V3.Metadata.MetadataResource,NzbDrone.Core.Extras.Metadata.MetadataDefinition)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderResourceMapper`2.ToModel(`0,`1)"
+        ],
+        "id": "R8",
+        "text": "A metadata resource maps its Enable flag onto the definition, along with name, implementation, config contract, message, tags and settings fields."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Created(System.Int32)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.CreateProvider(`0,System.Boolean)"
+        ],
+        "id": "S1",
+        "text": "Create returns the saved metadata provider resource with a Created response pointing at the get-by-id action."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean)",
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Accepted(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "Update returns the stored resource with an Accepted response, or NotFound if no provider exists for the id."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S3",
+        "text": "Get by id returns the resource as JSON, or NotFound when the model is not found."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.DeleteProvider(System.Int32)"
+        ],
+        "id": "S4",
+        "text": "Delete returns an empty object."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Create(`1)"
+        ],
+        "id": "E1",
+        "text": "Creating a provider inserts it in the repository and publishes a ProviderAddedEvent."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Update(`1)"
+        ],
+        "id": "E2",
+        "text": "Updating a provider saves it and publishes a ProviderUpdatedEvent."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Delete(System.Int32)"
+        ],
+        "id": "E3",
+        "text": "Deleting a provider removes it from the repository and publishes a ProviderDeletedEvent."
+      }
+    ]
+  },
+  "title": "Metadata provider API (/api/v3/Metadata)",
+  "unknowns": [
+    {
+      "file": "src/NzbDrone.Common/Reflection/ReflectionExtensions.cs",
+      "in": "Sonarr.Common|F:NzbDrone.Common.Reflection.ReflectionExtensions.CoreAssembly",
+      "line": 10,
+      "reason": "reflection: Assembly.Load"
+    },
+    {
+      "file": "src/NzbDrone.Common/Reflection/ReflectionExtensions.cs",
+      "in": "Sonarr.Common|M:NzbDrone.Common.Reflection.ReflectionExtensions.FindTypeByName(System.Reflection.Assembly,System.String)",
+      "line": 72,
+      "reason": "reflection: Assembly.GetExportedTypes"
+    },
+    {
+      "file": "src/Sonarr.Http/ClientSchema/SchemaBuilder.cs",
+      "in": "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)",
+      "line": 58,
+      "reason": "reflection: Activator.CreateInstance"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

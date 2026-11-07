@@ -1,0 +1,148 @@
+{
+  "codeTitle": "SceneMappingService.Handle(SeriesAddedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.Handle(NzbDrone.Core.Tv.Events.SeriesAddedEvent)",
+  "generated": {
+    "bundleHash": "98b961fb942502c15a99593a68ec89544a6574283acb15909b7a9f8105cfe08e",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 20071,
+      "cutOff": 7,
+      "depth": 4,
+      "points": 40
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 12453,
+      "calls": 1,
+      "costUsd": 0.053061,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3860,
+      "outputTokens": 307
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 9816,
+      "calls": 1,
+      "costUsd": 0.057904,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 10125,
+      "outputTokens": 1836
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.Handle(NzbDrone.Core.Tv.Events.SeriesAddedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.Handle(NzbDrone.Core.Tv.Events.SeriesAddedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.UpdateMappings"
+        ],
+        "id": "A1",
+        "text": "When a series is added, the scene mappings are refreshed from all providers, but only if they haven't yet been updated since startup."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.Handle(NzbDrone.Core.Tv.Events.SeriesAddedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.UpdateMappings"
+        ],
+        "id": "R1",
+        "text": "The update runs only when no update has happened since startup; the flag is set as soon as an update begins."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.UpdateMappings",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.IsNullOrWhiteSpace(System.String)"
+        ],
+        "id": "R2",
+        "text": "Mappings with a blank title or blank search term are skipped with a warning."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.UpdateMappings"
+        ],
+        "id": "R3",
+        "text": "Mappings with a blank MappingId are skipped with a warning."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.UpdateMappings"
+        ],
+        "id": "R4",
+        "text": "An empty list from a provider is not applied; a warning is logged and the existing mappings are kept."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.UpdateMappings",
+          "Sonarr.Core|M:NzbDrone.Core.Parser.Parser.CleanSeriesTitle(System.String)"
+        ],
+        "id": "R5",
+        "text": "Each mapping gets a cleaned title as its parse term and the provider's class name as its type."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.UpdateMappings",
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingRepository.GetAllByType(System.String)"
+        ],
+        "id": "R6",
+        "text": "Fetched mappings are matched to stored mappings of the same type by MappingId. Matches are updated, new ones inserted, and stored ones not fetched are deleted."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.UpdateMappings"
+        ],
+        "id": "R7",
+        "text": "A failure in one provider is logged as an error and does not stop the other providers."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.DeleteMany(System.Collections.Generic.List{`0})",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.UpdateMany(System.Collections.Generic.IList{`0})",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.InsertMany(System.Collections.Generic.IList{`0})"
+        ],
+        "id": "E1",
+        "text": "Stored scene mappings are deleted, updated and inserted per provider."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.ServicesProvider.GetSceneMappings",
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Xem.XemService.GetSceneMappings"
+        ],
+        "id": "E2",
+        "text": "Mappings are fetched from the providers: the scene mapping service proxy and the Xem service."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.RefreshCache",
+          "Sonarr.Common|M:NzbDrone.Common.Cache.CachedDictionary`1.Update(System.Collections.Generic.IDictionary{System.String,`0})"
+        ],
+        "id": "E3",
+        "text": "After the update, the in-memory caches (by parse term and by TVDB id) are rebuilt from all stored mappings."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.UpdateMappings",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Events.IEventAggregator.PublishEvent``1(``0)"
+        ],
+        "id": "E4",
+        "text": "A SceneMappingsUpdatedEvent is published after the update."
+      }
+    ]
+  },
+  "title": "Scene mapping refresh on series added",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

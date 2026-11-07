@@ -1,0 +1,262 @@
+{
+  "codeTitle": "ANY /api/v5/ImportList",
+  "entry": "endpoint:Sonarr.Api.V5|ANY /api/v5/ImportList",
+  "generated": {
+    "bundleHash": "bfb3f3f7cdef9b374bbc1a29b1d382206393671cba7379b77128983b599fc3e2",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 54665,
+      "cutOff": 154,
+      "depth": 4,
+      "points": 109
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 31814,
+      "calls": 1,
+      "costUsd": 0.131025,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4775,
+      "outputTokens": 359
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 27443,
+      "calls": 1,
+      "costUsd": 0.147982,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 19794,
+      "outputTokens": 3793
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|ANY /api/v5/ImportList",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.CreateProvider(`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/ImportList"
+        ],
+        "id": "A1",
+        "text": "Create an import list: the body is mapped to a definition, validated, tested if enabled, then saved."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/ImportList"
+        ],
+        "id": "A2",
+        "text": "Update an import list by id: looks up the existing definition, maps the body onto it, and saves it only if something changed."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.DeleteProvider(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/ImportList"
+        ],
+        "id": "A3",
+        "text": "Delete an import list by id."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/ImportList"
+        ],
+        "id": "A4",
+        "text": "Fetch a single import list by id."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.CreateProvider(`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R1",
+        "text": "Create and update accept the query flags skipTesting (default false) and skipValidation (default None)."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.CreateProvider(`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R2",
+        "text": "On create, the connection test runs only if the definition is enabled and skipTesting is not set."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R3",
+        "text": "On update, the test runs only if the definition is enabled, skipTesting is not set, and the definition or its settings changed."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R4",
+        "text": "On update, the definition is saved only when it or its settings changed; otherwise nothing is saved."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.GetDefinition(`0,`3,Sonarr.Api.V5.Provider.SkipValidation,System.Boolean)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Validate(`3,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R5",
+        "text": "Settings are validated when mapping, unless skipValidation is All, and only if the definition is enabled or validation is forced."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.VerifyValidationResult(FluentValidation.Results.ValidationResult,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R6",
+        "text": "With skipValidation None, a validation exception is thrown for any error or warning."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.VerifyValidationResult(FluentValidation.Results.ValidationResult,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R7",
+        "text": "With skipValidation Warnings, a validation exception is thrown only for errors, not warnings."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.ImportLists.ImportListResourceMapper.ToModel(Sonarr.Api.V5.ImportLists.ImportListResource,NzbDrone.Core.ImportLists.ImportListDefinition)"
+        ],
+        "id": "R8",
+        "text": "If the import list language is not given, it defaults to English."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)"
+        ],
+        "id": "R9",
+        "text": "A masked API key or password field value keeps the existing stored value when the definition is updated."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R10",
+        "text": "On a PUT with resource id 0, the id from the route is copied into the body resource."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R11",
+        "text": "Calls to endpoints marked deprecated get a Deprecation: true response header and a logged warning."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.CreateProvider(`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)",
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.TypedCreated(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "Creating a provider returns a Created result with the saved resource and a link to fetch it by id."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)",
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.TypedAccepted(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "Updating a provider returns an Accepted result with the resource and a link to fetch it by id, or NotFound when the id does not exist."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.DeleteProvider(System.Int32)"
+        ],
+        "id": "S3",
+        "text": "Deleting a provider returns No Content."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S4",
+        "text": "Getting a resource by id returns Ok with the resource, or NotFound when the model is not found."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.ImportLists.ImportListResourceMapper.ToModel(Sonarr.Api.V5.ImportLists.ImportListResource,NzbDrone.Core.ImportLists.ImportListDefinition)"
+        ],
+        "id": "S5",
+        "text": "An import list resource carries these settings: automatic add, search for missing episodes, should monitor, monitor new items, root folder path, quality profile, series type, language, season folder, list type, minimum refresh interval and tag existing."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Create(`1)"
+        ],
+        "id": "E1",
+        "text": "Creating inserts the definition into the repository and publishes a ProviderAddedEvent."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Update(`1)",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListUpdatedHandler.Handle(NzbDrone.Core.ThingiProvider.Events.ProviderUpdatedEvent{NzbDrone.Core.ImportLists.IImportList})"
+        ],
+        "id": "E2",
+        "text": "Updating saves the definition and publishes a ProviderUpdatedEvent, which the import list updated handler receives."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Delete(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListItems.ImportListItemService.HandleAsync(NzbDrone.Core.ThingiProvider.Events.ProviderDeletedEvent{NzbDrone.Core.ImportLists.IImportList})",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.HandleAsync(NzbDrone.Core.ThingiProvider.Events.ProviderDeletedEvent{NzbDrone.Core.ImportLists.IImportList})",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.Status.ProviderStatusServiceBase`2.HandleAsync(NzbDrone.Core.ThingiProvider.Events.ProviderDeletedEvent{`0})"
+        ],
+        "id": "E3",
+        "text": "Deleting removes the definition from the repository and publishes a ProviderDeletedEvent, which the import list item service, import list sync service and provider status service handle."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListFactory.Test(NzbDrone.Core.ImportLists.ImportListDefinition)"
+        ],
+        "id": "E4",
+        "text": "Testing a saved import list (id not 0) records a success or failure in the import list status service."
+      }
+    ]
+  },
+  "title": "Import List provider API (create, update, delete)",
+  "unknowns": [
+    {
+      "file": "src/NzbDrone.Common/Reflection/ReflectionExtensions.cs",
+      "in": "Sonarr.Common|F:NzbDrone.Common.Reflection.ReflectionExtensions.CoreAssembly",
+      "line": 10,
+      "reason": "reflection: Assembly.Load"
+    },
+    {
+      "file": "src/NzbDrone.Common/Reflection/ReflectionExtensions.cs",
+      "in": "Sonarr.Common|M:NzbDrone.Common.Reflection.ReflectionExtensions.FindTypeByName(System.Reflection.Assembly,System.String)",
+      "line": 72,
+      "reason": "reflection: Assembly.GetExportedTypes"
+    },
+    {
+      "file": "src/Sonarr.Http/ClientSchema/SchemaBuilder.cs",
+      "in": "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)",
+      "line": 58,
+      "reason": "reflection: Activator.CreateInstance"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -12,7 +12,7 @@ The build order (decisions.md D19) and how phases stay in step with each other (
   failed (24/30, 44% false alarms); 1d part 2 (deferred).
 - **Out of date:** the saved proof numbers predate the finder, D95, D104, D106 and D107 (D109).
 - **Overhaul (2026-11-04), local on `claude/phase2c-spec`, not pushed:** slices 0.1 to 2.6 landed, then the whole-flow test and §8's four batches (D120): switches, seams, import report, Excel, attachments, and table comparison, finer verdicts, grouping and ask, built off.
-- **Disprove re-score (finished and hand-checked 2026-11-07, $8.59 in all):** false alarms 44% to **23%**, noise bar met; found 24 to 19 of 30, found bar not met. The 7 real findings it took out were all filed `page-gap` with reasons that say `cant-tell`. Login with `claim-links`: rulings move by ids, but the judge raised no gap or conflict (`phases/2c-spec.md`).
+- **Disprove re-score (finished and hand-checked 2026-11-07, $8.59 in all):** false alarms 44% to 23%, found 24 to 19 of 30. **With D151's `page-gap-strict` ($7.92): found 24 of 30, none lost, false alarms about 26% (21-33% until 8 more are hand-checked).** Found bar (27) still not met: that needs the gap finders. Login with `claim-links`: rulings move by ids, but the judge raised no gap or conflict (`phases/2c-spec.md`).
 - **§9's batch 1 (2026-11-05), local, not pushed:** T.2, T.4, T.5, T.6, T.8, I.5, I.7, I.8 (off), I.9, I.10, I.11 (D126). Every paid step now needs a cap or `none`, so a script or CI needs `STANGENT_MAX_COST`.
 - **§9's batch 2 (2026-11-05), local, not pushed:** D130 and J.4 (`schema-once`, off), `shared-candidates` removed, a warning on a hand-edited `document.md`, T.1, T.3, T.7, I.1, I.2, I.3, I.4, I.6 (D131). Fakes only. Off until a test: `schema-once`, `page-corrections`, `page-exclusions`, `follow-moves`, `statement-update`, `disprove-small`.
 - **Unchecked:** §8's and §9's batches had no fresh check (D120), and none has met a real FSD or real AI. Next is "What's next" below.
@@ -108,7 +108,7 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 **The list.** Some are built and off, some not built yet.
 
 - X.1 · Disprove step. *Re-scored and hand-checked 2026-11-07: 23% false alarms, 19 of 30 found.*
-- D151 · A page gap only when the code settles it, waiting for a person to confirm. *Built, off: `page-gap-strict`. No AI has read it. Test: the same 62 Sonarr findings asked again (about $7), scored with the merged hand check, counting planted items back and false alarms.*
+- D151 · A page gap only when the code settles it, waiting for a person to confirm. *Built, off: `page-gap-strict`. Run on Sonarr 2026-11-07: found 24 of 30 with none lost, 0 of 23 hand-checked real ones taken out, about 26% false alarms. Left: a hand check of 8, then turning it on by default (owner's call).*
 - X.2 · Page verifier: keep or drop. *Test: Sonarr key, on and off.*
 - X.3 · Each rule tested for whether it can trigger. *Test: Sonarr plus planted dead rules.*
 - X.4 · A short guide per app. *Test: Sonarr key; a small effect may not show.*

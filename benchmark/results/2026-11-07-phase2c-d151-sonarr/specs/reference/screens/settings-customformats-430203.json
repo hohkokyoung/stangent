@@ -1,0 +1,319 @@
+{
+  "codeTitle": "/settings/customformats · CustomFormatSettingsPage",
+  "entry": "page:tsconfig.json|/settings/customformats",
+  "generated": {
+    "bundleHash": "a1000fc92521db1f1150c5441bf87910bedf7428feeef98f86ff061aef014ba4",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 113565,
+      "cutOff": 95,
+      "depth": 6,
+      "points": 308
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 57202,
+      "calls": 1,
+      "costUsd": 0.233907,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7823,
+      "outputTokens": 492
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 52338,
+      "calls": 1,
+      "costUsd": 0.251072,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 24693,
+      "outputTokens": 4144
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/settings/customformats",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormatSettingsPage.tsx#CustomFormatSettingsPage"
+        ],
+        "id": "A1",
+        "text": "Pressing 'Manage Formats' opens the Manage Custom Formats modal."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/CustomFormats.tsx#CustomFormats"
+        ],
+        "id": "A2",
+        "text": "Pressing the 'Add Custom Format' card opens an empty edit modal."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/CustomFormat.tsx#CustomFormat",
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/CustomFormats.tsx#CustomFormats"
+        ],
+        "id": "A3",
+        "text": "Pressing a card opens its edit modal; its clone action opens an add modal pre-filled from that format; its export action opens the export modal."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/CustomFormat.tsx#CustomFormat",
+          "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider"
+        ],
+        "id": "A4",
+        "text": "Delete in the edit modal opens a confirmation; confirming deletes the custom format."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/Manage/ManageCustomFormatsModalContent.tsx#ManageCustomFormatsModalContentInner"
+        ],
+        "id": "A5",
+        "text": "In the manage modal, columns can be sorted by name or include-when-renaming, toggling direction on repeat press; the default is name ascending."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/Manage/ManageCustomFormatsModalContent.tsx#ManageCustomFormatsModalContentInner",
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/useCustomFormats.ts#useBulkDeleteCustomFormats"
+        ],
+        "id": "A6",
+        "text": "Selected formats can be bulk deleted after confirmation."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/Manage/ManageCustomFormatsModalContent.tsx#ManageCustomFormatsModalContentInner",
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/Manage/Edit/ManageCustomFormatsEditModalContent.tsx#ManageCustomFormatsEditModalContent",
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/useCustomFormats.ts#useBulkEditCustomFormats"
+        ],
+        "id": "A7",
+        "text": "Selected formats can be bulk edited to set 'include when renaming' via an Edit modal with Apply Changes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/EditCustomFormatModalContent.tsx#EditCustomFormatModalContent",
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/Specifications/AddSpecificationModalContent.tsx#AddSpecificationModalContent",
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/Specifications/Specification.tsx#Specification",
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/useCustomFormats.ts#useManageCustomFormat"
+        ],
+        "id": "A8",
+        "text": "In the edit modal, conditions can be added from a schema list, edited, cloned and deleted."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/ImportCustomFormatModalContent.tsx#ImportCustomFormatModalContent",
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/EditCustomFormatModalContent.tsx#EditCustomFormatModalContent"
+        ],
+        "id": "A9",
+        "text": "Import accepts pasted JSON, resolves conditions against the schema, and fills the edit form with name, rename flag and conditions."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/EditCustomFormatModalContent.tsx#EditCustomFormatModalContent"
+        ],
+        "id": "A10",
+        "text": "Saving the custom format calls the save action; the modal closes when saving finishes without error."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/useCustomFormats.ts#useManageCustomFormat"
+        ],
+        "id": "R1",
+        "text": "A cloned format gets id 0 and a name from the 'DefaultNameCopiedProfile' text; cloning a missing id throws an error."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/useCustomFormats.ts#useManageCustomFormat",
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/useCustomFormats.ts#getNextSpecId"
+        ],
+        "id": "R2",
+        "text": "A cloned condition gets the next id (max id + 1, or 1 if none) and a copied-name default."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/Manage/ManageCustomFormatsModalContent.tsx#ManageCustomFormatsModalContentInner"
+        ],
+        "id": "R3",
+        "text": "Bulk Delete and Edit buttons are disabled when nothing is selected."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/Manage/Edit/ManageCustomFormatsEditModalContent.tsx#ManageCustomFormatsEditModalContent"
+        ],
+        "id": "R4",
+        "text": "Bulk edit sends nothing if 'include when renaming' is left at no change; the modal then closes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/ImportCustomFormatModalContent.tsx#ImportCustomFormatModalContent"
+        ],
+        "id": "R5",
+        "text": "Import fails with an error for an unknown condition implementation or unknown option; missing negate/required default to false and missing name to empty."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/ExportCustomFormatModalContent.tsx#replacer"
+        ],
+        "id": "R6",
+        "text": "Exported JSON omits some properties and flattens fields to name/value pairs."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useManageProviderSettings"
+        ],
+        "id": "R7",
+        "text": "Existing providers saved with no pending changes skip testing and all validation."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/EditCustomFormatModalContent.tsx#EditCustomFormatModalContent"
+        ],
+        "id": "R8",
+        "text": "The Delete button in the edit modal appears only for an existing format."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormatSettingsPage.tsx#CustomFormatSettingsPage"
+        ],
+        "id": "S1",
+        "text": "The page is titled 'Custom Formats' under the 'Settings' scope, with a section heading 'Custom Formats' and a description text, and has no Save button."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormatSettingsPage.tsx#CustomFormatSettingsPage"
+        ],
+        "id": "S2",
+        "text": "A toolbar item 'Manage Formats' is shown in the extras group."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/CustomFormats.tsx#CustomFormats",
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/useCustomFormats.ts#useSortedCustomFormats"
+        ],
+        "id": "S3",
+        "text": "Custom formats are listed as cards sorted by name, followed by an 'Add Custom Format' card."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/CustomFormats.tsx#CustomFormats"
+        ],
+        "id": "S4",
+        "text": "If loading the list fails, the section shows the 'CustomFormatsLoadError' message."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/CustomFormat.tsx#CustomFormat"
+        ],
+        "id": "S5",
+        "text": "Each custom format card shows its name, a status with the conditions count, and a label per condition (default, green if required, red if negated)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/CustomFormat.tsx#CustomFormat"
+        ],
+        "id": "S6",
+        "text": "The status dot is active when the format has at least one condition, otherwise muted. Labels are shown only when there are conditions."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/Manage/ManageCustomFormatsModalContent.tsx#ManageCustomFormatsModalContent"
+        ],
+        "id": "S7",
+        "text": "The Manage Custom Formats modal shows a loading indicator while first fetching, and an error message if loading fails."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/Manage/ManageCustomFormatsModalContent.tsx#ManageCustomFormatsModalContentInner",
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/Manage/ManageCustomFormatsModalRow.tsx#ManageCustomFormatsModalRow"
+        ],
+        "id": "S8",
+        "text": "The manage modal shows a table with selection checkboxes, name and 'include when renaming' (Yes/No) per row, and an edit button. If there are none, it shows 'No custom formats found' text."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/EditCustomFormatModalContent.tsx#EditCustomFormatModalContent"
+        ],
+        "id": "S9",
+        "text": "The edit/add modal has Name and 'Include Custom Format When Renaming' fields, a Conditions list with an 'Add Condition' card, and Delete (existing only), Import, Cancel and Save buttons."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/Specifications/Specification.tsx#Specification"
+        ],
+        "id": "S10",
+        "text": "Each condition card shows its name, implementation name, and 'Negated' and 'Required' labels when set."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/ExportCustomFormatModalContent.tsx#ExportCustomFormatModalContent"
+        ],
+        "id": "S11",
+        "text": "The export modal shows the custom format as formatted JSON with a copy-to-clipboard button, a loading indicator, or an error message."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/useCustomFormats.ts#useBulkEditCustomFormats",
+          "endpoint:Sonarr.Api.V3|PUT /api/v3/CustomFormat/bulk"
+        ],
+        "id": "E1",
+        "text": "Bulk edit sends a PUT to the custom format bulk endpoint and updates the cached list with the returned formats."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/CustomFormats/CustomFormats/useCustomFormats.ts#useBulkDeleteCustomFormats",
+          "endpoint:Sonarr.Api.V3|DELETE /api/v3/CustomFormat/bulk"
+        ],
+        "id": "E2",
+        "text": "Bulk delete sends a DELETE to the custom format bulk endpoint and removes the deleted ids from the cached list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider"
+        ],
+        "id": "E3",
+        "text": "Deleting a single custom format sends a DELETE for its id and removes it from the cached list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation"
+        ],
+        "id": "E4",
+        "text": "API requests include X-Api-Key and X-Sonarr-Client headers."
+      }
+    ]
+  },
+  "title": "Custom Formats settings",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useProviderSettings",
+      "line": 78,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider",
+      "line": 403,
+      "reason": "HTTP DELETE to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

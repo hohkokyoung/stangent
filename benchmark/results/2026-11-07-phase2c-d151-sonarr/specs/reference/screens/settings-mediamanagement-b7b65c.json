@@ -1,0 +1,364 @@
+{
+  "codeTitle": "/settings/mediamanagement · MediaManagement",
+  "entry": "page:tsconfig.json|/settings/mediamanagement",
+  "generated": {
+    "bundleHash": "7b467e74c3bd2319c9ced324c28b375e4d5019457b09a3f07d9edc6d4bd32acb",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 112856,
+      "cutOff": 17,
+      "depth": 6,
+      "points": 449
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 52985,
+      "calls": 1,
+      "costUsd": 0.219009,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8396,
+      "outputTokens": 689
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 48402,
+      "calls": 1,
+      "costUsd": 0.233948,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 29415,
+      "outputTokens": 4006
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/settings/mediamanagement",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/MediaManagement.tsx#MediaManagement"
+        ],
+        "id": "A1",
+        "text": "Pressing save on the settings page saves the media management settings and the naming settings together."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/MediaManagement.tsx#MediaManagement",
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings"
+        ],
+        "id": "A2",
+        "text": "Editing any field records a pending change that is saved only on save."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/Naming/Naming.tsx#Naming"
+        ],
+        "id": "A3",
+        "text": "Pressing '?' next to a naming format field opens the token modal for that format (standard, daily, anime, series folder, season folder, specials folder)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/Naming/NamingModal.tsx#NamingModal"
+        ],
+        "id": "A4",
+        "text": "Clicking a token in the naming modal inserts it at the caret (or appends it); a full-filename preset replaces the whole value."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/RootFolder/AddRootFolder.tsx#AddRootFolder",
+          "ts|frontend/src/Components/FileBrowser/FileBrowserModalContent.tsx#FileBrowserModalContent"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/RootFolder",
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/RootFolder"
+        ],
+        "id": "A5",
+        "text": "'Add Root Folder' opens a file browser; confirming with Ok adds the chosen path as a root folder."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/FileBrowser/FileBrowserModalContent.tsx#FileBrowserModalContent",
+          "ts|frontend/src/Path/usePaths.ts#usePaths"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/FileSystem",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/FileSystem"
+        ],
+        "id": "A6",
+        "text": "The file browser lists directories and files from the file system; selecting a row navigates to it, and Cancel or Ok close it."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/RootFolderRow.tsx#RootFolderRow",
+          "ts|frontend/src/RootFolder/useRootFolders.ts#useDeleteRootFolder"
+        ],
+        "id": "A7",
+        "text": "Each root folder row has an 'Import' button (hidden when unavailable) and a remove button that opens a confirmation modal before deleting."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/MediaManagement.tsx#MediaManagement"
+        ],
+        "id": "R1",
+        "text": "The Folders and Importing sections, and advanced rows, appear only when advanced settings are shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/MediaManagement.tsx#MediaManagement"
+        ],
+        "id": "R2",
+        "text": "The Permissions section (Set Permissions, chmod folder, chown group) appears only when advanced settings are shown and the system is not Windows."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/MediaManagement.tsx#MediaManagement"
+        ],
+        "id": "R3",
+        "text": "The import script path appears only when 'Import Using Script' is checked; the extra file extensions field appears only when 'Import Extra Files' is checked."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/MediaManagement.tsx#MediaManagement",
+          "ts|frontend/src/Settings/MediaManagement/MediaManagement.tsx#getSeasonPackUpgradeThresholdExamples"
+        ],
+        "id": "R4",
+        "text": "The season pack upgrade threshold field appears only when season pack upgrade is 'threshold'; it is a percent from 0 to 100 in steps of 0.01, with examples shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/MediaManagement.tsx#getSeasonPackUpgradeThresholdExamples"
+        ],
+        "id": "R5",
+        "text": "Threshold examples are not shown if the threshold is not a number or is outside 0 to 100."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/MediaManagement.tsx#MediaManagement"
+        ],
+        "id": "R6",
+        "text": "Warnings show when season pack upgrade is 'any' and when Download Propers and Repacks is 'doNotPrefer'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/MediaManagement.tsx#MediaManagement"
+        ],
+        "id": "R7",
+        "text": "Minimum free space is a number in MB; Recycling Bin Cleanup days is a number with minimum 0."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/Naming/Naming.tsx#Naming"
+        ],
+        "id": "R8",
+        "text": "The Standard, Daily and Anime episode format fields appear only when Rename Episodes is on."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/Naming/Naming.tsx#Naming"
+        ],
+        "id": "R9",
+        "text": "Colon Replacement appears only when Replace Illegal Characters is on, and the custom colon replacement field only when its value is 5 (Custom)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/Naming/Naming.tsx#Naming"
+        ],
+        "id": "R10",
+        "text": "Series Folder Format and Specials Folder Format rows are advanced-only."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/Naming/Naming.tsx#Naming",
+          "ts|frontend/src/Helpers/Hooks/useDebounce.ts#useDebounce"
+        ],
+        "id": "R11",
+        "text": "Naming examples are requested with the naming settings debounced by 300 ms."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/Naming/NamingModal.tsx#NamingModal",
+          "ts|frontend/src/Settings/MediaManagement/Naming/NamingOption.tsx#NamingOption"
+        ],
+        "id": "R12",
+        "text": "The token modal's default separator is a space and default capitalization is 'title'; lower or upper capitalization changes the inserted token's case."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/Naming/NamingModal.tsx#getNamingTokenGroups"
+        ],
+        "id": "R13",
+        "text": "Presets appear only for episode formats; daily and anime presets and absolute-number tokens only for those types; season tokens only when season or season title applies."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/FileBrowser/FileBrowserModalContent.tsx#FileBrowserModalContent"
+        ],
+        "id": "R14",
+        "text": "The file browser shows a mapped network drives warning on Windows when running as a service."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/selectSettings.ts#selectSettings",
+          "ts|frontend/src/Utilities/selectSettings.ts#getFailures"
+        ],
+        "id": "R15",
+        "text": "Settings validation errors and warnings from a 400 save response are attached to the matching field by property name."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/MediaManagement.tsx#MediaManagement"
+        ],
+        "id": "S1",
+        "text": "The page is titled 'Media Management Settings' and has a heading 'Media Management' under the scope 'Settings'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/MediaManagement.tsx#MediaManagement"
+        ],
+        "id": "S2",
+        "text": "While settings load, a loading indicator is shown in a 'Naming Settings' field set; if loading fails, a danger alert 'MediaManagementSettingsLoadError' is shown there instead."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/Naming/Naming.tsx#Naming"
+        ],
+        "id": "S3",
+        "text": "The 'Episode Naming' section shows checkboxes 'Rename Episodes' and 'Replace Illegal Characters', plus a Multi Episode Style select with options Extend, Duplicate, Repeat, Scene, Range and Prefixed Range, each with an example hint."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/Naming/Naming.tsx#Naming"
+        ],
+        "id": "S4",
+        "text": "The Episode Naming section shows a loading indicator while fetching and a danger alert if naming settings fail to load."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/Naming/Naming.tsx#Naming"
+        ],
+        "id": "S5",
+        "text": "Naming format fields show example output as help text, or an invalid-format error when the server returns no example for that format."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/MediaManagement.tsx#MediaManagement"
+        ],
+        "id": "S6",
+        "text": "The File Management section shows: Unmonitor Deleted Episodes, Download Propers and Repacks, Analyse Video Files, Rescan Series Folder After Refresh, Change File Date, Recycling Bin, and Recycling Bin Cleanup."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/MediaManagement.tsx#MediaManagement",
+          "ts|frontend/src/RootFolder/RootFolders.tsx#RootFolders",
+          "ts|frontend/src/RootFolder/RootFolderRow.tsx#RootFolderRow"
+        ],
+        "id": "S7",
+        "text": "A Root Folders section lists each root folder with its path, a count of folders to import or 'nothing to import', and free space when known."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/RootFolderRow.tsx#renderBadge"
+        ],
+        "id": "S8",
+        "text": "A root folder row shows an 'Unavailable' badge when not accessible, or an 'Empty' badge when empty."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/RootFolders.tsx#RootFolders"
+        ],
+        "id": "S9",
+        "text": "The root folder list shows a loading indicator on first load and a danger alert 'RootFoldersLoadError' on error."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/RootFolder/AddRootFolder.tsx#AddRootFolder"
+        ],
+        "id": "S10",
+        "text": "If adding a root folder fails, an alert lists the error messages returned."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/Naming/NamingModal.tsx#NamingModal"
+        ],
+        "id": "S11",
+        "text": "The naming token modal is titled 'File Name Tokens' for episode formats and 'Folder Name Tokens' otherwise, and shows grouped tokens with examples, separator and capitalization selects."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings"
+        ],
+        "id": "E1",
+        "text": "Saving writes the settings with a PUT to the settings path and clears pending changes on success."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/useRootFolders.ts#useAddRootFolder"
+        ],
+        "id": "E2",
+        "text": "Adding a root folder POSTs the path to the root folder API and adds the result to the cached list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/useRootFolders.ts#useDeleteRootFolder"
+        ],
+        "id": "E3",
+        "text": "Confirming removal sends a DELETE for the root folder and refreshes the root folder list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MediaManagement/Naming/useNamingSettings.ts#useNamingExamples"
+        ],
+        "id": "E4",
+        "text": "Naming examples are fetched with a GET to the naming examples endpoint using the current naming values."
+      }
+    ]
+  },
+  "title": "Media Management Settings",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/RootFolder/useRootFolders.ts",
+      "in": "ts|frontend/src/RootFolder/useRootFolders.ts#useDeleteRootFolder",
+      "line": 61,
+      "reason": "HTTP DELETE {base}rootFolder/{*} matched no backend endpoint"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSettings",
+      "line": 12,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+      "line": 29,
+      "reason": "HTTP PUT to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,1160 @@
+{
+  "sonarr-fsd#1": {
+    "candidates": [
+      {
+        "page": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.HandleAsync(NzbDrone.Core.ThingiProvider.Events.ProviderDeletedEvent{NzbDrone.Core.ImportLists.IImportList})",
+        "why": "name"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 911,
+      "cacheWriteTokens": 8674,
+      "calls": 1,
+      "costUsd": 0.040682,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7004,
+      "outputTokens": 580
+    },
+    "disputed": 0,
+    "finder": {
+      "cacheReadTokens": 757,
+      "cacheWriteTokens": 8629,
+      "calls": 1,
+      "costUsd": 0.037391,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3923,
+      "outputTokens": 272
+    },
+    "finderInputs": "046f2dc4b0bb74adbd01bedc39e66dac5b23e0440433117dedcd105431bc1c49",
+    "inputs": "9fab774611b72676a30a9382d2054b41d28fcb3a8b54d80544e6e1a8ab8ba2df",
+    "judge": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 3866,
+      "calls": 1,
+      "costUsd": 0.019078,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3430,
+      "outputTokens": 361
+    },
+    "links": 5,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#1.1": {
+    "candidates": [
+      {
+        "page": "page:/add/new",
+        "why": "name"
+      },
+      {
+        "page": "page:/series",
+        "why": "name"
+      },
+      {
+        "page": "page:/series/:titleSlug",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Series",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/series/lookup",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/Series",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|GET /api/v5/series/lookup",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Episode",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|DELETE /api/v3/series/editor",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|POST /api/v3/SeasonPass",
+        "why": "endpoint"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 911,
+      "cacheWriteTokens": 14264,
+      "calls": 1,
+      "costUsd": 0.063912,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5840,
+      "outputTokens": 667
+    },
+    "disprover": {
+      "cacheReadTokens": 15386,
+      "cacheWriteTokens": 633696,
+      "calls": 16,
+      "costUsd": 2.620538,
+      "inputTokens": 32,
+      "model": "claude-sonnet-5-5",
+      "ms": 86276,
+      "outputTokens": 8261
+    },
+    "disputed": 3,
+    "inputs": "4829e92847af3efc131a1bc35e085f76c3d2410823e2fdc27c7f0637c78e7e5e",
+    "judge": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 15314,
+      "calls": 1,
+      "costUsd": 0.07431,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7521,
+      "outputTokens": 1305
+    },
+    "links": 12,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#1.2": {
+    "candidates": [
+      {
+        "page": "page:/series/:titleSlug",
+        "why": "name"
+      },
+      {
+        "page": "page:/series",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/EpisodeFile",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|PUT /api/v3/Episode/monitor",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/EpisodeFile",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|PUT /api/v5/Episode/monitor",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|DELETE /api/v3/series/editor",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|POST /api/v3/SeasonPass",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|PUT /api/v3/series/editor",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|DELETE /api/v5/series/editor",
+        "why": "endpoint"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 12073,
+      "calls": 1,
+      "costUsd": 0.055876,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5544,
+      "outputTokens": 758
+    },
+    "disprover": {
+      "cacheReadTokens": 81402,
+      "cacheWriteTokens": 392583,
+      "calls": 13,
+      "costUsd": 1.651216,
+      "inputTokens": 26,
+      "model": "claude-sonnet-5-5",
+      "ms": 62881,
+      "outputTokens": 6455
+    },
+    "disputed": 2,
+    "inputs": "724e691eb8ce5ff7dca3f5a0b576c0837a13bd47fca6c6d828d7e9f4a053f489",
+    "judge": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 12270,
+      "calls": 1,
+      "costUsd": 0.060274,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6852,
+      "outputTokens": 1119
+    },
+    "links": 12,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#2": {
+    "candidates": [
+      {
+        "page": "page:/calendar",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Calendar",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/EpisodeFile",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/Calendar",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/EpisodeFile",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/Calendar",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|GET /api/v5/Calendar",
+        "why": "name"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 9644,
+      "calls": 1,
+      "costUsd": 0.0426,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3669,
+      "outputTokens": 402
+    },
+    "disprover": {
+      "cacheReadTokens": 5495,
+      "cacheWriteTokens": 230036,
+      "calls": 6,
+      "costUsd": 0.945488,
+      "inputTokens": 12,
+      "model": "claude-sonnet-5-5",
+      "ms": 29289,
+      "outputTokens": 2422
+    },
+    "disputed": 0,
+    "inputs": "2058163a7a0513341081502ad813b9e46a7ae98bf569717755cf6b09afd4d30d",
+    "judge": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 9751,
+      "calls": 1,
+      "costUsd": 0.049198,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5767,
+      "outputTokens": 1019
+    },
+    "links": 10,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#3": {
+    "candidates": [
+      {
+        "page": "page:/activity/blocklist",
+        "why": "name"
+      },
+      {
+        "page": "page:/activity/history",
+        "why": "name"
+      },
+      {
+        "page": "page:/activity/queue",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Blocklist",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Episode",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Queue",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/queue/details",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/queue/status",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|DELETE /api/v3/Blocklist/bulk",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|POST /api/v3/History/failed/{id}",
+        "why": "endpoint"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 911,
+      "cacheWriteTokens": 9562,
+      "calls": 1,
+      "costUsd": 0.040074,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2390,
+      "outputTokens": 164
+    },
+    "disputed": 0,
+    "inputs": "b104a71174ac963345062d52634879764e9e3e95b24c501bc06e6de6ba7f7633",
+    "judge": {
+      "cacheReadTokens": 963,
+      "cacheWriteTokens": 9836,
+      "calls": 1,
+      "costUsd": 0.042181,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3412,
+      "outputTokens": 264
+    },
+    "links": 2,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#3.1": {
+    "candidates": [
+      {
+        "page": "page:/activity/queue",
+        "why": "name"
+      },
+      {
+        "page": "ts|frontend/src/Activity/Queue/QueueDetails.tsx#QueueDetails",
+        "why": "name"
+      },
+      {
+        "page": "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus",
+        "why": "name"
+      },
+      {
+        "page": "ts|frontend/src/Activity/Queue/Details/QueueDetailsProvider.tsx#QueueDetailsProvider",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Episode",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Queue",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/queue/details",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/queue/status",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/Queue",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/Queue",
+        "why": "name"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 911,
+      "cacheWriteTokens": 10093,
+      "calls": 1,
+      "costUsd": 0.046688,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6792,
+      "outputTokens": 613
+    },
+    "disprover": {
+      "cacheReadTokens": 13188,
+      "cacheWriteTokens": 136352,
+      "calls": 12,
+      "costUsd": 0.605156,
+      "inputTokens": 24,
+      "model": "claude-sonnet-5-5",
+      "ms": 52583,
+      "outputTokens": 5706
+    },
+    "disputed": 3,
+    "inputs": "840c2610de0fa27d6910170a9f77a2ea2ec0590d0addbca19d413296c706846d",
+    "judge": {
+      "cacheReadTokens": 963,
+      "cacheWriteTokens": 10240,
+      "calls": 1,
+      "costUsd": 0.050797,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6125,
+      "outputTokens": 964
+    },
+    "links": 7,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#3.2": {
+    "candidates": [
+      {
+        "page": "page:/activity/history",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Episode",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|POST /api/v3/History/failed/{id}",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|GET /api/v5/History/episode",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|POST /api/v5/History/failed/{id:int}",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/History",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|GET /api/v5/History",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/History/series",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/History/since",
+        "why": "name"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 911,
+      "cacheWriteTokens": 8541,
+      "calls": 1,
+      "costUsd": 0.04128,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7179,
+      "outputTokens": 693
+    },
+    "disprover": {
+      "cacheReadTokens": 8792,
+      "cacheWriteTokens": 329316,
+      "calls": 8,
+      "costUsd": 1.359636,
+      "inputTokens": 16,
+      "model": "claude-sonnet-5-5",
+      "ms": 37440,
+      "outputTokens": 4058
+    },
+    "disputed": 2,
+    "inputs": "f4f93e6380fa094a6379651db8de25c0bdea23f7d6889c8a06ffb1700eeb0f41",
+    "judge": {
+      "cacheReadTokens": 963,
+      "cacheWriteTokens": 8657,
+      "calls": 1,
+      "costUsd": 0.041365,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4834,
+      "outputTokens": 654
+    },
+    "links": 5,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#Settings / General / Backups": {
+    "candidates": [
+      {
+        "page": "page:/system/backups",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/system/backup",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|POST /api/v3/system/backup/restore/{id:int}",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/system/backup",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|POST /api/v5/system/backup/restore/{id:int}",
+        "why": "endpoint"
+      },
+      {
+        "page": "page:/settings/general",
+        "why": "chapter"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/system/backup",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|POST /api/v3/System/restart",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|POST /api/v5/System/restart",
+        "why": "endpoint"
+      },
+      {
+        "page": "page:/series/:titleSlug",
+        "why": "fields"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 911,
+      "cacheWriteTokens": 9595,
+      "calls": 1,
+      "costUsd": 0.041766,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2995,
+      "outputTokens": 320
+    },
+    "disprover": {
+      "cacheReadTokens": 243565,
+      "cacheWriteTokens": 236536,
+      "calls": 12,
+      "costUsd": 1.046336,
+      "inputTokens": 24,
+      "model": "claude-sonnet-5-5",
+      "ms": 55634,
+      "outputTokens": 5143
+    },
+    "disputed": 3,
+    "inputs": "0032c98c3d9efd8a292dd8d0ba5bc070034090632813e427d325473034d5c1d4",
+    "judge": {
+      "cacheReadTokens": 963,
+      "cacheWriteTokens": 10019,
+      "calls": 1,
+      "costUsd": 0.045173,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4136,
+      "outputTokens": 490
+    },
+    "links": 6,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#Settings / General / Logging": {
+    "candidates": [
+      {
+        "page": "page:/settings/general",
+        "why": "chapter"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|POST /api/v3/System/restart",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|POST /api/v5/System/restart",
+        "why": "endpoint"
+      },
+      {
+        "page": "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)",
+        "why": "name"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 911,
+      "cacheWriteTokens": 5109,
+      "calls": 1,
+      "costUsd": 0.026112,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5887,
+      "outputTokens": 549
+    },
+    "disprover": {
+      "cacheReadTokens": 48626,
+      "cacheWriteTokens": 96514,
+      "calls": 8,
+      "costUsd": 0.442294,
+      "inputTokens": 16,
+      "model": "claude-sonnet-5-5",
+      "ms": 38705,
+      "outputTokens": 4648
+    },
+    "disputed": 3,
+    "inputs": "0d21652fe7a44d7ba58e0f26708de947f9be91cb86f846c03f420ea61731a5bd",
+    "judge": {
+      "cacheReadTokens": 963,
+      "cacheWriteTokens": 5173,
+      "calls": 1,
+      "costUsd": 0.029889,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6508,
+      "outputTokens": 900
+    },
+    "links": 4,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#Settings / Interface": {
+    "candidates": [
+      {
+        "page": "page:/settings/ui",
+        "why": "ai"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|GET /api/v5/settings/ui",
+        "why": "ai"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/settings/ui",
+        "why": "ai"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/config/ui",
+        "why": "ai"
+      }
+    ],
+    "candidatesBy": "ai",
+    "checker": {
+      "cacheReadTokens": 911,
+      "cacheWriteTokens": 5181,
+      "calls": 1,
+      "costUsd": 0.02465,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3464,
+      "outputTokens": 374
+    },
+    "disprover": {
+      "cacheReadTokens": 86460,
+      "cacheWriteTokens": 329628,
+      "calls": 9,
+      "costUsd": 1.383257,
+      "inputTokens": 26,
+      "model": "claude-sonnet-5-5",
+      "ms": 47817,
+      "outputTokens": 4740
+    },
+    "disputed": 0,
+    "finder": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 15797,
+      "calls": 1,
+      "costUsd": 0.065762,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2738,
+      "outputTokens": 257
+    },
+    "finderInputs": "b1e471201ee309c17b604f17191b7dd52c979728e4ff6039caafe0bc57cd7359",
+    "inputs": "3392b639610145708436c1fc849a23e8f02ddc231f39720953041b9cbbf68f50",
+    "judge": {
+      "cacheReadTokens": 963,
+      "cacheWriteTokens": 5111,
+      "calls": 1,
+      "costUsd": 0.031201,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5935,
+      "outputTokens": 1056
+    },
+    "links": 11,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#Settings / Profiles / Delay profiles": {
+    "candidates": [
+      {
+        "page": "page:/settings/profiles",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/DelayProfile",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/DelayProfile",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/DelayProfile",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|GET /api/v5/DelayProfile",
+        "why": "name"
+      },
+      {
+        "page": "page:/settings/tags",
+        "why": "fields"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/tag/detail",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/Tag",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/tag/detail",
+        "why": "endpoint"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 911,
+      "cacheWriteTokens": 10212,
+      "calls": 1,
+      "costUsd": 0.044604,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3592,
+      "outputTokens": 357
+    },
+    "disprover": {
+      "cacheReadTokens": 14287,
+      "cacheWriteTokens": 267035,
+      "calls": 13,
+      "costUsd": 1.129782,
+      "inputTokens": 26,
+      "model": "claude-sonnet-5-5",
+      "ms": 57649,
+      "outputTokens": 5873
+    },
+    "disputed": 3,
+    "inputs": "64dd305046a5bc44b63d77b9b17e036ede7840250895b0ace1db5cb511f62537",
+    "judge": {
+      "cacheReadTokens": 963,
+      "cacheWriteTokens": 10469,
+      "calls": 1,
+      "costUsd": 0.050153,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5878,
+      "outputTokens": 808
+    },
+    "links": 6,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#Settings / Profiles / Quality profiles": {
+    "candidates": [
+      {
+        "page": "page:/settings/profiles",
+        "why": "name"
+      },
+      {
+        "page": "page:/settings/quality",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/QualityProfile",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/QualityProfile",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/QualityProfile",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|GET /api/v5/QualityProfile",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/QualityDefinition",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/QualityDefinition",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/QualityDefinition",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|GET /api/v5/QualityDefinition",
+        "why": "endpoint"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 911,
+      "cacheWriteTokens": 8541,
+      "calls": 1,
+      "costUsd": 0.03713,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4746,
+      "outputTokens": 278
+    },
+    "disprover": {
+      "cacheReadTokens": 10990,
+      "cacheWriteTokens": 312144,
+      "calls": 10,
+      "costUsd": 1.288466,
+      "inputTokens": 20,
+      "model": "claude-sonnet-5-5",
+      "ms": 41759,
+      "outputTokens": 3765
+    },
+    "disputed": 1,
+    "inputs": "578512fe40e1e0393cdeb886de866403babff2d914da41baabcd29ed91164c9b",
+    "judge": {
+      "cacheReadTokens": 963,
+      "cacheWriteTokens": 8916,
+      "calls": 1,
+      "costUsd": 0.041551,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4343,
+      "outputTokens": 569
+    },
+    "links": 5,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#Settings / Quality definitions": {
+    "candidates": [
+      {
+        "page": "page:/settings/quality",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/QualityDefinition",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/QualityDefinition",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/QualityDefinition",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|GET /api/v5/QualityDefinition",
+        "why": "name"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 911,
+      "cacheWriteTokens": 4360,
+      "calls": 1,
+      "costUsd": 0.022276,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8352,
+      "outputTokens": 465
+    },
+    "disprover": {
+      "cacheReadTokens": 6594,
+      "cacheWriteTokens": 183886,
+      "calls": 6,
+      "costUsd": 0.763098,
+      "inputTokens": 12,
+      "model": "claude-sonnet-5-5",
+      "ms": 24818,
+      "outputTokens": 2621
+    },
+    "disputed": 0,
+    "inputs": "e17a83fefe307cd6f3334a2936406624859678091025bb4e46d7cbfeebd82453",
+    "judge": {
+      "cacheReadTokens": 963,
+      "cacheWriteTokens": 4586,
+      "calls": 1,
+      "costUsd": 0.020941,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3009,
+      "outputTokens": 240
+    },
+    "links": 2,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#Settings / Tags": {
+    "candidates": [
+      {
+        "page": "page:/settings/tags",
+        "why": "name"
+      },
+      {
+        "page": "ts|frontend/src/Components/TagList.tsx#TagList",
+        "why": "name"
+      },
+      {
+        "page": "ts|frontend/src/Components/SeriesTagList.tsx#SeriesTagList",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/Tag",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/Tag",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|GET /api/v5/Tag",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/tag/detail",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/tag/detail",
+        "why": "endpoint"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 911,
+      "cacheWriteTokens": 7201,
+      "calls": 1,
+      "costUsd": 0.03769,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8753,
+      "outputTokens": 870
+    },
+    "disprover": {
+      "cacheReadTokens": 12089,
+      "cacheWriteTokens": 213500,
+      "calls": 11,
+      "costUsd": 0.906754,
+      "inputTokens": 22,
+      "model": "claude-sonnet-5-5",
+      "ms": 45647,
+      "outputTokens": 5029
+    },
+    "disputed": 1,
+    "inputs": "2bb3bbf943eae326a281ca242dce1ddf1d1ac238cb47bd970884fcd57a40ffd5",
+    "judge": {
+      "cacheReadTokens": 963,
+      "cacheWriteTokens": 7341,
+      "calls": 1,
+      "costUsd": 0.041321,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6573,
+      "outputTokens": 1176
+    },
+    "links": 11,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#System / Backups": {
+    "candidates": [
+      {
+        "page": "page:/system/backups",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/system/backup",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|POST /api/v3/system/backup/restore/{id:int}",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/system/backup",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|POST /api/v5/system/backup/restore/{id:int}",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/system/backup",
+        "why": "name"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 911,
+      "cacheWriteTokens": 5615,
+      "calls": 1,
+      "costUsd": 0.030396,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7380,
+      "outputTokens": 775
+    },
+    "disprover": {
+      "cacheReadTokens": 4396,
+      "cacheWriteTokens": 168996,
+      "calls": 4,
+      "costUsd": 0.69254,
+      "inputTokens": 8,
+      "model": "claude-sonnet-5-5",
+      "ms": 17485,
+      "outputTokens": 1566
+    },
+    "disputed": 1,
+    "inputs": "0accf9c8939774f9ca9ad36d0e540a0cae3b92b4b890c6d139a963f7f99d5701",
+    "judge": {
+      "cacheReadTokens": 963,
+      "cacheWriteTokens": 5776,
+      "calls": 1,
+      "costUsd": 0.028811,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5735,
+      "outputTokens": 551
+    },
+    "links": 6,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  },
+  "sonarr-fsd#Wanted / Missing episodes": {
+    "candidates": [
+      {
+        "page": "page:/wanted/missing",
+        "why": "name"
+      },
+      {
+        "page": "page:/wanted/cutoffunmet",
+        "why": "chapter"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/wanted/missing",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|PUT /api/v3/Episode/monitor",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/wanted/missing",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|PUT /api/v5/Episode/monitor",
+        "why": "endpoint"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/Episode",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V3|GET /api/v3/Episode",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|ANY /api/v5/Episode",
+        "why": "name"
+      },
+      {
+        "page": "endpoint:Sonarr.Api.V5|GET /api/v5/Episode",
+        "why": "name"
+      }
+    ],
+    "candidatesBy": "code",
+    "checker": {
+      "cacheReadTokens": 911,
+      "cacheWriteTokens": 9349,
+      "calls": 1,
+      "costUsd": 0.039492,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3157,
+      "outputTokens": 191
+    },
+    "disprover": {
+      "cacheReadTokens": 10990,
+      "cacheWriteTokens": 405495,
+      "calls": 10,
+      "costUsd": 1.67707,
+      "inputTokens": 20,
+      "model": "claude-sonnet-5-5",
+      "ms": 49983,
+      "outputTokens": 5285
+    },
+    "disputed": 0,
+    "inputs": "b276c0d776e8517be2d137f75bb6d675e2d94539ec9d406bfbcf43888f106306",
+    "judge": {
+      "cacheReadTokens": 963,
+      "cacheWriteTokens": 9909,
+      "calls": 1,
+      "costUsd": 0.046583,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4698,
+      "outputTokens": 675
+    },
+    "links": 7,
+    "rejected": 0,
+    "retries": 0,
+    "unchecked": 0
+  }
+}

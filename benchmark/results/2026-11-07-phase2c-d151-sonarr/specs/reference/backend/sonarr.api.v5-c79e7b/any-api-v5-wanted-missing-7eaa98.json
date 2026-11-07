@@ -1,0 +1,128 @@
+{
+  "codeTitle": "ANY /api/v5/wanted/missing",
+  "entry": "endpoint:Sonarr.Api.V5|ANY /api/v5/wanted/missing",
+  "generated": {
+    "bundleHash": "cd662b2b6b3908b065a3cc6b1b064785f9470c436e319d34f086a9fccab57eda",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 9904,
+      "cutOff": 0,
+      "depth": 4,
+      "points": 3
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6725,
+      "calls": 1,
+      "costUsd": 0.029859,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3738,
+      "outputTokens": 278
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4742,
+      "calls": 1,
+      "costUsd": 0.032138,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8021,
+      "outputTokens": 1289
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|ANY /api/v5/wanted/missing",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/wanted/missing"
+        ],
+        "id": "A1",
+        "text": "A caller can fetch a single resource by its id; the result is OK with the resource or Not Found."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R1",
+        "text": "For POST and PUT requests, every resource in the action arguments (single or a list) is validated before the action runs."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R2",
+        "text": "On a PUT, if the body resource has Id 0 and the route has an id, the route id is used as the resource Id."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R3",
+        "text": "The id argument is validated only when the action carries an id-validation attribute and validation is not skipped."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R4",
+        "text": "A skip-validation attribute on the action can turn off validation, and can separately skip shared validation."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "Get-by-id returns the resource as JSON with an OK result when it is found."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "Get-by-id returns a Not Found result when the resource is not found (a model-not-found error)."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "S3",
+        "text": "Calls to a deprecated endpoint get a response header Deprecation set to true."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "E1",
+        "text": "A warning \"API call made to deprecated endpoint from {user agent}\" is logged when the controller or action is marked deprecated."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "E2",
+        "text": "On a PUT, the route id may be written into the body resource's Id."
+      }
+    ]
+  },
+  "title": "Wanted / Missing endpoint (REST controller base behaviour)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

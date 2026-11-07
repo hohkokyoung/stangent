@@ -1,0 +1,174 @@
+{
+  "codeTitle": "SelectSeriesModal",
+  "entry": "ts|frontend/src/InteractiveImport/Series/SelectSeriesModal.tsx#SelectSeriesModal",
+  "generated": {
+    "bundleHash": "6a3afc4df45b71d9da371cbd3535edc24b5bd6ccc74e1c83505581ed1c76207b",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 25795,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 111
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 14993,
+      "calls": 1,
+      "costUsd": 0.063361,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5212,
+      "outputTokens": 321
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 12497,
+      "calls": 1,
+      "costUsd": 0.067728,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 9802,
+      "outputTokens": 1746
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/InteractiveImport/Series/SelectSeriesModal.tsx#SelectSeriesModal",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModalContent.tsx#SelectSeriesModalContent"
+        ],
+        "id": "A1",
+        "text": "Typing in the filter box narrows the list of series."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModalContent.tsx#Row",
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModalContent.tsx#SelectSeriesModalContent",
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModal.tsx#SelectSeriesModalProps.onSeriesSelect"
+        ],
+        "id": "A2",
+        "text": "Pressing a series row selects that series and passes the full series to the onSeriesSelect callback."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModalContent.tsx#SelectSeriesModalContent",
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModal.tsx#SelectSeriesModalProps.onModalClose"
+        ],
+        "id": "A3",
+        "text": "Pressing Cancel closes the modal."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModalContent.tsx#SelectSeriesModalContent",
+          "ts|frontend/src/Utilities/Array/sortByProp.ts#sortByProp"
+        ],
+        "id": "R1",
+        "text": "Series are sorted by sortTitle using numeric-aware string comparison."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModalContent.tsx#SelectSeriesModalContent"
+        ],
+        "id": "R2",
+        "text": "The filter is case-insensitive and matches series whose title contains the text, or whose TVDB id or IMDb id contains it."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModalContent.tsx#Row"
+        ],
+        "id": "R3",
+        "text": "A row selection only fires when the series has a truthy id."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/useSeries.ts#useSeries"
+        ],
+        "id": "R4",
+        "text": "Series data is fetched from '/series' and considered fresh for 5 minutes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModalContent.tsx#SelectSeriesModalContent"
+        ],
+        "id": "R5",
+        "text": "The list is virtualized with a fixed row height of 38."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModalContent.tsx#SelectSeriesModalContent"
+        ],
+        "id": "S1",
+        "text": "A modal dialog whose header reads \"<modalTitle> - Select Series\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModalContent.tsx#SelectSeriesModalContent",
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "S2",
+        "text": "A filter text box with focus on open and a placeholder from the translation key 'FilterSeriesPlaceholder'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModalTableHeader.tsx#SelectSeriesModalTableHeader"
+        ],
+        "id": "S3",
+        "text": "A table of series with a header row; only columns marked visible are shown in the header."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesRow.tsx#SelectSeriesRow"
+        ],
+        "id": "S4",
+        "text": "Each series row shows title, year, TVDB id as a label, and IMDb id as a label (the IMDb label is omitted when there is no IMDb id)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/useSeries.ts#useSeries",
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModalContent.tsx#SelectSeriesModalContent"
+        ],
+        "id": "S5",
+        "text": "The list of series comes from the series query and is empty while no data has loaded."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModalContent.tsx#SelectSeriesModalContent"
+        ],
+        "id": "S6",
+        "text": "A footer has a Cancel button."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModalContent.tsx#SelectSeriesModalContent",
+          "ts|frontend/src/InteractiveImport/Series/SelectSeriesModal.tsx#SelectSeriesModal"
+        ],
+        "id": "E1",
+        "text": "Selecting a series calls the parent's onSeriesSelect callback; closing calls onModalClose. The modal itself saves nothing."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/useSeries.ts#useSeries"
+        ],
+        "id": "E2",
+        "text": "Opening the modal loads the series list from '/series'."
+      }
+    ]
+  },
+  "title": "Select Series modal",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

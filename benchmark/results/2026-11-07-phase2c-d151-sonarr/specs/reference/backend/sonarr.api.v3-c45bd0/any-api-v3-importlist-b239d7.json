@@ -1,0 +1,232 @@
+{
+  "codeTitle": "ANY /api/v3/ImportList",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/ImportList",
+  "generated": {
+    "bundleHash": "4bea87c1c13ecf8817ceb9d009f9f6e14b77550880b9ba699a6c2abb78da5be5",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 54605,
+      "cutOff": 150,
+      "depth": 4,
+      "points": 112
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 30504,
+      "calls": 1,
+      "costUsd": 0.125825,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4010,
+      "outputTokens": 363
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 27035,
+      "calls": 1,
+      "costUsd": 0.1358,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 15212,
+      "outputTokens": 2738
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/ImportList",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.CreateProvider(`0,System.Boolean)"
+        ],
+        "id": "A1",
+        "text": "Create an import list from a JSON body; an optional forceSave query flag skips warning checks and the connection test failure on warnings."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean)"
+        ],
+        "id": "A2",
+        "text": "Update an import list by id with a JSON body; returns Not Found if no list exists for the route id or the body id."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.DeleteProvider(System.Int32)"
+        ],
+        "id": "A3",
+        "text": "Delete an import list by id."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "A4",
+        "text": "Get an import list by id."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.CreateProvider(`0,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.GetDefinition(`0,`3,System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "R1",
+        "text": "On create, settings are validated when the definition is enabled; if enabled, a connection test is also run, with warnings included unless forceSave is set."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean)"
+        ],
+        "id": "R2",
+        "text": "On update, the test runs only if the definition is enabled, forceSave is not set, and the definition or its settings changed."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean)"
+        ],
+        "id": "R3",
+        "text": "On update, the stored record is only saved when the definition or its settings changed."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.VerifyValidationResult(FluentValidation.Results.ValidationResult,System.Boolean)"
+        ],
+        "id": "R4",
+        "text": "Validation fails with a validation exception on any error; warnings also cause failure when warnings are included."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R5",
+        "text": "On PUT, if the body id is 0 the route id is used."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)"
+        ],
+        "id": "R6",
+        "text": "When a password or API key field is sent with the masked placeholder value, the existing stored value is kept."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ImportLists.ImportListResourceMapper.ToModel(Sonarr.Api.V3.ImportLists.ImportListResource,NzbDrone.Core.ImportLists.ImportListDefinition)"
+        ],
+        "id": "R7",
+        "text": "If no language is provided, the import list language defaults to English."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "Fetching a single import list by id returns the resource, or Not Found when the model is not found."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Created(System.Int32)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.CreateProvider(`0,System.Boolean)"
+        ],
+        "id": "S2",
+        "text": "Creating returns a Created response containing the newly saved provider resource, located via the get-by-id action."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Accepted(System.Int32)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean)"
+        ],
+        "id": "S3",
+        "text": "Updating returns an Accepted response containing the resource, located via the get-by-id action."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.DeleteProvider(System.Int32)"
+        ],
+        "id": "S4",
+        "text": "Deleting returns an empty object."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ImportLists.ImportListResourceMapper.ToModel(Sonarr.Api.V3.ImportLists.ImportListResource,NzbDrone.Core.ImportLists.ImportListDefinition)"
+        ],
+        "id": "S5",
+        "text": "Import list fields mapped from the request include automatic add, search for missing episodes, monitor, monitor new items, root folder path, quality profile, series type, language, season folder, list type, minimum refresh interval and tag existing."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Create(`1)"
+        ],
+        "id": "E1",
+        "text": "Creating inserts the definition and publishes a provider-added event."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Update(`1)"
+        ],
+        "id": "E2",
+        "text": "Updating saves the definition and publishes a provider-updated event."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Delete(System.Int32)"
+        ],
+        "id": "E3",
+        "text": "Deleting removes the record and publishes a provider-deleted event."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListFactory.Test(NzbDrone.Core.ImportLists.ImportListDefinition)"
+        ],
+        "id": "E4",
+        "text": "Testing an existing import list (id not 0) records a success or failure in the import list status service."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListUpdatedHandler.Handle(NzbDrone.Core.ThingiProvider.Events.ProviderUpdatedEvent{NzbDrone.Core.ImportLists.IImportList})"
+        ],
+        "id": "E5",
+        "text": "On update, an import list handler reacts to the provider-updated event."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.HandleAsync(NzbDrone.Core.ThingiProvider.Events.ProviderDeletedEvent{NzbDrone.Core.ImportLists.IImportList})",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListItems.ImportListItemService.HandleAsync(NzbDrone.Core.ThingiProvider.Events.ProviderDeletedEvent{NzbDrone.Core.ImportLists.IImportList})"
+        ],
+        "id": "E6",
+        "text": "On delete, the import list sync service and import list item service handle the provider-deleted event."
+      }
+    ]
+  },
+  "title": "Import List API (/api/v3/ImportList)",
+  "unknowns": [
+    {
+      "file": "src/NzbDrone.Common/Reflection/ReflectionExtensions.cs",
+      "in": "Sonarr.Common|F:NzbDrone.Common.Reflection.ReflectionExtensions.CoreAssembly",
+      "line": 10,
+      "reason": "reflection: Assembly.Load"
+    },
+    {
+      "file": "src/NzbDrone.Common/Reflection/ReflectionExtensions.cs",
+      "in": "Sonarr.Common|M:NzbDrone.Common.Reflection.ReflectionExtensions.FindTypeByName(System.Reflection.Assembly,System.String)",
+      "line": 72,
+      "reason": "reflection: Assembly.GetExportedTypes"
+    },
+    {
+      "file": "src/Sonarr.Http/ClientSchema/SchemaBuilder.cs",
+      "in": "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)",
+      "line": 58,
+      "reason": "reflection: Activator.CreateInstance"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

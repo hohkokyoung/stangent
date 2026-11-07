@@ -1,0 +1,189 @@
+{
+  "codeTitle": "GET /api/v3/series/lookup",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/series/lookup",
+  "generated": {
+    "bundleHash": "77d503a8a1cbdbb7db09caeeb2e6010201618bd605be0142f2a2d10c32a08cef",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 35808,
+      "cutOff": 78,
+      "depth": 4,
+      "points": 167
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 20289,
+      "calls": 1,
+      "costUsd": 0.084875,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3922,
+      "outputTokens": 354
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 16426,
+      "calls": 1,
+      "costUsd": 0.097554,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 16352,
+      "outputTokens": 3157
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/series/lookup",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesLookupController.Search(System.String,System.Nullable{System.Int32})",
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.SearchForNewSeries(System.String,NzbDrone.Core.Languages.Language)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/series/lookup"
+        ],
+        "id": "A1",
+        "text": "Search for series by a term and an optional language id; returns matching series from the metadata source."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.SearchForNewSeries(System.String,NzbDrone.Core.Languages.Language)"
+        ],
+        "id": "A2",
+        "text": "Search with a term starting with \"tvdb:\" or \"tvdbid:\" followed by a TVDB id to look up a single series by id."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesLookupController.Search(System.String,System.Nullable{System.Int32})"
+        ],
+        "id": "R1",
+        "text": "The language defaults to English when not supplied."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesLookupController.Search(System.String,System.Nullable{System.Int32})",
+          "Sonarr.Http|M:Sonarr.Http.REST.BadRequestException.#ctor(System.Object)",
+          "Sonarr.Core|M:NzbDrone.Core.Parser.IsoLanguages.Get(NzbDrone.Core.Languages.Language)"
+        ],
+        "id": "R2",
+        "text": "If the language id is unknown or has no ISO language, the request fails with a bad request \"Invalid language: {id}\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.SearchForNewSeries(System.String,NzbDrone.Core.Languages.Language)",
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.InvalidSearchTermException.#ctor(System.String,System.Object[])",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.PathExtensions.IsPathValid(System.String,NzbDrone.Common.Disk.PathValidationType)"
+        ],
+        "id": "R3",
+        "text": "A search term that is a valid path (for any OS) is rejected with a bad request \"Invalid search term '{term}'\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.SearchForNewSeries(System.String,NzbDrone.Core.Languages.Language)"
+        ],
+        "id": "R4",
+        "text": "For a tvdb:/tvdbid: term, an empty, whitespace-containing, non-numeric or non-positive id returns an empty list; a series not found also returns an empty list."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.SearchForNewSeries(System.String,NzbDrone.Core.Languages.Language)",
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.GetSeriesInfo(System.Int32,NzbDrone.Core.Languages.Language,System.String)"
+        ],
+        "id": "R5",
+        "text": "For a tvdb id lookup, a series already in the library is returned; otherwise its info is fetched from the metadata source."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.SearchForNewSeries(System.String,NzbDrone.Core.Languages.Language)",
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.MapSearchResult(NzbDrone.Core.MetadataSource.SkyHook.Resource.ShowResource)"
+        ],
+        "id": "R6",
+        "text": "For a text search, the lowercased, trimmed term and the language's three-letter code are sent to the metadata search; results already in the library replace the remote ones."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.SearchForNewSeries(System.String,NzbDrone.Core.Languages.Language)",
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookException.#ctor(System.String,System.Exception,System.Object[])"
+        ],
+        "id": "R7",
+        "text": "If communication with the metadata source fails or its response is invalid, the search fails with a service-unavailable error."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaCover.MediaCoverService.ConvertToLocalUrls(System.Int32,System.Collections.Generic.IEnumerable{NzbDrone.Core.MediaCover.MediaCover},System.Nullable{System.DateTime})"
+        ],
+        "id": "R8",
+        "text": "Cover URLs for series not yet in the library (id 0) are routed through a proxy registration of the remote URL."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesLookupController.Search(System.String,System.Nullable{System.Int32})",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesResourceMapper.ToResource(NzbDrone.Core.Tv.Series,System.Boolean)"
+        ],
+        "id": "S1",
+        "text": "Returns a list of series matching the search term, each mapped to a series resource with title, overview, images, seasons, translations, ids and other series fields."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesLookupController.MapToResource(System.Collections.Generic.IEnumerable{NzbDrone.Core.Tv.Series})"
+        ],
+        "id": "S2",
+        "text": "Each result includes a remote poster URL when the series has a poster image."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesLookupController.MapToResource(System.Collections.Generic.IEnumerable{NzbDrone.Core.Tv.Series})",
+          "Sonarr.Core|M:NzbDrone.Core.Organizer.FileNameBuilder.GetSeriesFolder(NzbDrone.Core.Tv.Series,System.String,NzbDrone.Core.Organizer.NamingConfig)"
+        ],
+        "id": "S3",
+        "text": "Each result includes a folder name built from the series folder naming format, plus one folder per translation, each with its language and a folder name built from the translated title."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesStatisticsResourceMapper.ToResource(NzbDrone.Core.SeriesStats.SeriesStatistics,System.Collections.Generic.List{Sonarr.Api.V3.Series.SeasonResource})",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesLookupController.MapToResource(System.Collections.Generic.IEnumerable{NzbDrone.Core.Tv.Series})"
+        ],
+        "id": "S4",
+        "text": "Each result includes empty statistics (zero counts) with a season count of seasons numbered above 0."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesTranslationResourceMapper.ToResource(NzbDrone.Core.Tv.SeriesTranslation)"
+        ],
+        "id": "S5",
+        "text": "Each result lists translations with language, title and overview."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.SearchForNewSeries(System.String,NzbDrone.Core.Languages.Language)",
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.GetSeriesInfo(System.Int32,NzbDrone.Core.Languages.Language,System.String)"
+        ],
+        "id": "E1",
+        "text": "Calls the external SkyHook metadata service to search for series or fetch series info; nothing is saved by this endpoint."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaCover.MediaCoverService.ConvertToLocalUrls(System.Int32,System.Collections.Generic.IEnumerable{NzbDrone.Core.MediaCover.MediaCover},System.Nullable{System.DateTime})"
+        ],
+        "id": "E2",
+        "text": "Registers remote cover URLs with the media cover proxy for series not yet in the library."
+      }
+    ]
+  },
+  "title": "Series lookup (search for new series)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

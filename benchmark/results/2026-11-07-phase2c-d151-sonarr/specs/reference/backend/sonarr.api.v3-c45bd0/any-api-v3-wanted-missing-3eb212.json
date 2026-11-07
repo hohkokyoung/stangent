@@ -1,0 +1,121 @@
+{
+  "codeTitle": "ANY /api/v3/wanted/missing",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/wanted/missing",
+  "generated": {
+    "bundleHash": "6af4b434379f22d7fd18858f6a270be54926e216ee7101c7db8adc497a3ef922",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 9904,
+      "cutOff": 0,
+      "depth": 4,
+      "points": 3
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6624,
+      "calls": 1,
+      "costUsd": 0.029015,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3549,
+      "outputTokens": 234
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4740,
+      "calls": 1,
+      "costUsd": 0.03105,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7269,
+      "outputTokens": 1181
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/wanted/missing",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/wanted/missing"
+        ],
+        "id": "A1",
+        "text": "Fetch a single resource by id; returns it as JSON, or NotFound if it does not exist."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R1",
+        "text": "For POST and PUT requests, every resource in the action arguments (single or a collection) is validated before the action runs."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R2",
+        "text": "On a PUT, if the body resource's Id is 0 and the route has an id, the route id is used as the resource Id."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R3",
+        "text": "The id argument is validated only when the action carries an id-validation attribute and validation is not skipped via the skip-validation attribute."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R4",
+        "text": "A skip-validation attribute on the action can skip validation and can skip shared validation."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "A get-by-id action returns the requested resource as JSON with an Ok result."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "When the resource is not found (model not found), the get-by-id action returns a NotFound result."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "S3",
+        "text": "Calls to a deprecated controller or action get a response header Deprecation set to true."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "E1",
+        "text": "A call to a deprecated endpoint writes a warning log entry including the caller's user agent."
+      }
+    ]
+  },
+  "title": "Wanted/Missing API endpoint (shared REST controller behaviour)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

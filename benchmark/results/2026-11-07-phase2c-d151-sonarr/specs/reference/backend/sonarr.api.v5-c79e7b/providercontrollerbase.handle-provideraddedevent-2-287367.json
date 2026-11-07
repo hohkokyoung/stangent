@@ -1,0 +1,90 @@
+{
+  "codeTitle": "ProviderControllerBase.Handle(ProviderAddedEvent{`2})",
+  "entry": "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Handle(NzbDrone.Core.ThingiProvider.Events.ProviderAddedEvent{`2})",
+  "generated": {
+    "bundleHash": "6c9e82e89b59581ddfeba76362a83d549af1c04ed170757c2cf968fa06604289",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 7753,
+      "cutOff": 0,
+      "depth": 4,
+      "points": 5
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 5593,
+      "calls": 1,
+      "costUsd": 0.023081,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1870,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3954,
+      "calls": 1,
+      "costUsd": 0.024556,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5180,
+      "outputTokens": 846
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Handle(NzbDrone.Core.ThingiProvider.Events.ProviderAddedEvent{`2})",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Handle(NzbDrone.Core.ThingiProvider.Events.ProviderAddedEvent{`2})"
+        ],
+        "id": "A1",
+        "text": "When a provider is added, the handler broadcasts a Created change for the new provider's definition id."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestControllerWithSignalR`2.BroadcastResourceChange(NzbDrone.Core.Datastore.Events.ModelAction,System.Int32)"
+        ],
+        "id": "R1",
+        "text": "Nothing is broadcast when the real-time (SignalR) broadcaster is not connected."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestControllerWithSignalR`2.BroadcastResourceChange(NzbDrone.Core.Datastore.Events.ModelAction,System.Int32)"
+        ],
+        "id": "R2",
+        "text": "For any action other than Deleted, the resource is loaded by id and that resource is broadcast with the action."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestControllerWithSignalR`2.BroadcastResourceChange(NzbDrone.Core.Datastore.Events.ModelAction,System.Int32)"
+        ],
+        "id": "R3",
+        "text": "For a Deleted action, a new resource carrying only the id is broadcast instead of loading it."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Handle(NzbDrone.Core.ThingiProvider.Events.ProviderAddedEvent{`2})",
+          "Sonarr.Http|M:Sonarr.Http.REST.RestControllerWithSignalR`2.BroadcastResourceChange(NzbDrone.Core.Datastore.Events.ModelAction,System.Int32)"
+        ],
+        "id": "E1",
+        "text": "Connected clients receive a real-time Created notification for the newly added provider resource."
+      }
+    ]
+  },
+  "title": "Provider added event handler (live update broadcast)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

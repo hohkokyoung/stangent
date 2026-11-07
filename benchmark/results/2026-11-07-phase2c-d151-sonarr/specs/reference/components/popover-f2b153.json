@@ -1,0 +1,75 @@
+{
+  "codeTitle": "Popover",
+  "entry": "ts|frontend/src/Components/Tooltip/Popover.tsx#Popover",
+  "generated": {
+    "bundleHash": "06cf5f7d309af9a856a8288932a8ed2c6123749f8b560ae7a5fcd98a223cb22c",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 6785,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 8
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 4469,
+      "calls": 1,
+      "costUsd": 0.018585,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2621,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3339,
+      "calls": 1,
+      "costUsd": 0.017406,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2882,
+      "outputTokens": 377
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Components/Tooltip/Popover.tsx#Popover",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Popover.tsx#Popover"
+        ],
+        "id": "R1",
+        "text": "All other properties passed to the popover are forwarded unchanged to the underlying tooltip."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Popover.tsx#Popover"
+        ],
+        "id": "S1",
+        "text": "Shows a popover with a title above a body, both supplied by the caller."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Tooltip/Popover.tsx#Popover",
+          "ts|frontend/src/Components/Tooltip/Tooltip.tsx#Tooltip"
+        ],
+        "id": "S2",
+        "text": "The title and body are displayed as the content of a tooltip."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Popover",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

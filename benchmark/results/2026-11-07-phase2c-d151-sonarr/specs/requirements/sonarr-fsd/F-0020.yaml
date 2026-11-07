@@ -1,0 +1,104 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0020"
+doc: "sonarr-fsd"
+section: "System / Backups"
+title: "Backups"
+parent: "F-0019"
+children: []
+textHash: "6367159e0c7b3e770deb11c41bcb0f2b8a1f5aadf121f1b85df634dd0c3c7505"
+requirements:
+  - id: "R-0100"
+    title: "Backups list shows made backups"
+    kind: "data"
+    statement: "The backups screen lists the backups Sonarr has made, with their type, size and date."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "System / Backups"
+        text: "The backups screen lists the backups Sonarr has made, newest first, with their type, size and date."
+        hash: "2d1b09ddbe0a58cbbcd585527c1000dafb98c5f5c8d2104d968000cb8a5988f7"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "45f85849cbd2408f81d4cbd127f409bc8188c97647012ad4f71d560110032f2d"
+  - id: "R-0101"
+    title: "Backups listed newest first"
+    kind: "rule"
+    statement: "The backups list is ordered newest first."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "System / Backups"
+        text: "The backups screen lists the backups Sonarr has made, newest first, with their type, size and date."
+        hash: "2d1b09ddbe0a58cbbcd585527c1000dafb98c5f5c8d2104d968000cb8a5988f7"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "a53bce36f0edf13301cde3ccec25e8fabf6166c2bb2c171856d14bb8c0469c03"
+  - id: "R-0102"
+    title: "Take a backup now"
+    kind: "flow"
+    statement: "The user can take a backup now."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "System / Backups"
+        text: "The user can take a backup now, restore from a backup in the list, or restore from a backup file they upload."
+        hash: "352f53990d1ad41a4fc630edef0a695db36ef0df80d31367f175fdff9643b3de"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "90fe18d857abbd4c4c10f3e8f4a0435bc77e9bcd9afa4c4469f288970b277714"
+  - id: "R-0103"
+    title: "Restore from a listed backup"
+    kind: "flow"
+    statement: "The user can restore from a backup in the list."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "System / Backups"
+        text: "The user can take a backup now, restore from a backup in the list, or restore from a backup file they upload."
+        hash: "352f53990d1ad41a4fc630edef0a695db36ef0df80d31367f175fdff9643b3de"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "b885172f63fb760f76840fd4028a6c80879e74a0341e2c8c2bace3abb74ed801"
+  - id: "R-0104"
+    title: "Restore from an uploaded backup file"
+    kind: "flow"
+    statement: "The user can restore from a backup file they upload."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "System / Backups"
+        text: "The user can take a backup now, restore from a backup in the list, or restore from a backup file they upload."
+        hash: "352f53990d1ad41a4fc630edef0a695db36ef0df80d31367f175fdff9643b3de"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "243e515e58ab06429307ae636cac3984f5957628ec2978c61c841cb0b189dfb0"
+  - id: "R-0105"
+    title: "Backups can be copied to S3"
+    kind: "rule"
+    statement: "Backups can be copied automatically to an S3 bucket."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "System / Backups"
+        text: "Backups can be copied automatically to an S3 bucket."
+        hash: "8e8abfddd82a3bc006addd8239fc6c6e9e598e179a87dc6c60de803e93219bc9"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "3539405d3040f53fb7d37845d619613239a6f4e0d98e23aa63632b589b25101f"
+definitions: []
+journeys: []
+background: []
+retired: []

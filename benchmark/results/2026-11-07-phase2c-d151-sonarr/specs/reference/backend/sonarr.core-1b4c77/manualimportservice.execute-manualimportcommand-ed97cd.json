@@ -1,0 +1,188 @@
+{
+  "codeTitle": "ManualImportService.Execute(ManualImportCommand)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+  "generated": {
+    "bundleHash": "6797b94868b4d24a5888223544aa2541b5432f26ea26d7cd5695c0efce6866d8",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 61376,
+      "cutOff": 42,
+      "depth": 4,
+      "points": 300
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 33196,
+      "calls": 1,
+      "costUsd": 0.136733,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4361,
+      "outputTokens": 377
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 28187,
+      "calls": 1,
+      "costUsd": 0.154808,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 21950,
+      "outputTokens": 4178
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "Sonarr.Common|M:NzbDrone.Common.Instrumentation.Extensions.LoggerExtensions.ProgressTrace(NLog.Logger,System.String,System.Object[])"
+        ],
+        "id": "A1",
+        "text": "Runs a manual import of the files in the command, one at a time, using the command's import mode, and logs progress such as \"Processing file X of Y\" and \"Manually imported N files\"."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.ISeriesService.GetSeries(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.IEpisodeService.GetEpisodes(System.Collections.Generic.IEnumerable{System.Int32})"
+        ],
+        "id": "R1",
+        "text": "Each file is imported with the series and episodes chosen by the user (series id and episode ids). The release group, quality, indexer flags and release type chosen by the user override values detected by the aggregation step."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Languages.Language.IsValid(System.Boolean)"
+        ],
+        "id": "R2",
+        "text": "The user-chosen languages replace the detected languages only when at least one language is given and all of them are non-null and valid."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.PathExtensions.IsParentPath(System.String,System.String)"
+        ],
+        "id": "R3",
+        "text": "A file counts as an existing file when its path is inside the series path. Otherwise it is treated as a new download."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Parser.Parser.ParsePath(System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Parser.Model.ParsedEpisodeInfo.#ctor"
+        ],
+        "id": "R4",
+        "text": "File and folder names are parsed for episode info. If the path can't be parsed, an empty parsed info is used."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Parser.Parser.ParseTitle(System.String)"
+        ],
+        "id": "R5",
+        "text": "When a folder name is given, it is parsed as the folder episode info. The file is marked as a scene source when it is not an existing file."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.ITrackedDownloadService.Find(System.String)"
+        ],
+        "id": "R6",
+        "text": "When a download id is given, the tracked download is looked up and its parsed info and download item are attached to the file."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.ILocalEpisodeCustomFormatCalculationService.UpdateEpisodeCustomFormats(NzbDrone.Core.Parser.Model.LocalEpisode)"
+        ],
+        "id": "R7",
+        "text": "Custom formats are recalculated for the file before import."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.IImportApprovedEpisodes.Import(System.Collections.Generic.List{NzbDrone.Core.MediaFiles.EpisodeImport.ImportDecision},System.Boolean,NzbDrone.Core.Download.DownloadClientItem,NzbDrone.Core.MediaFiles.EpisodeImport.ImportMode)"
+        ],
+        "id": "R8",
+        "text": "A file without a tracked download is imported as a new download only if it is not an existing file. A file with a tracked download is always imported as a new download."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.FolderExists(System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.IDownloadedEpisodesImportService.ShouldDeleteFolder(System.IO.DirectoryInfo,NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R9",
+        "text": "A tracked download's output folder is deleted only if it exists, it is judged safe to delete, and the download item can move files."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DownloadedEpisodesImportService.ShouldDeleteFolder(System.IO.DirectoryInfo,NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R10",
+        "text": "A folder is judged safe to delete only if all its video files are samples and no RAR file larger than 10 MB is present. Unparseable files, non-sample files, RAR files over 10 MB, a missing folder or any error all mean it is kept."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)"
+        ],
+        "id": "R11",
+        "text": "A tracked download is marked Imported only when the number of imported episodes is at least the number of episodes in its remote episode (minimum 1)."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.IImportApprovedEpisodes.Import(System.Collections.Generic.List{NzbDrone.Core.MediaFiles.EpisodeImport.ImportDecision},System.Boolean,NzbDrone.Core.Download.DownloadClientItem,NzbDrone.Core.MediaFiles.EpisodeImport.ImportMode)"
+        ],
+        "id": "E1",
+        "text": "Each file is imported through the import step, which imports the file for the chosen series and episodes."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.UntrackedDownloadCompletedEvent.#ctor(NzbDrone.Core.Tv.Series,System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Collections.Generic.List{NzbDrone.Core.MediaFiles.EpisodeFile},NzbDrone.Core.Parser.Model.ParsedEpisodeInfo,System.String)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.PathExtensions.GetLongestCommonPath(System.Collections.Generic.List{System.String})",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)"
+        ],
+        "id": "E2",
+        "text": "For successfully imported files without a tracked download, one UntrackedDownloadCompletedEvent is published per series and season. The event carries the files' longest common source path. Notification handling listens for it."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadCompletedEvent.#ctor(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,NzbDrone.Core.Tv.Series,System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Collections.Generic.List{NzbDrone.Core.MediaFiles.EpisodeFile},NzbDrone.Core.Parser.Model.GrabbedReleaseInfo)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistoryService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)"
+        ],
+        "id": "E3",
+        "text": "When all episodes of a tracked download are imported, its state is set to Imported and a DownloadCompletedEvent is published. The download event hub, download history and notifications handle it."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.DeleteFolder(System.String,System.Boolean)"
+        ],
+        "id": "E4",
+        "text": "The output folder of a tracked download is deleted recursively from disk when it passes the deletion checks."
+      }
+    ]
+  },
+  "title": "Manual import of episode files",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

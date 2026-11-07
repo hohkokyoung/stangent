@@ -1,0 +1,142 @@
+{
+  "codeTitle": "DownloadEventHub.Handle(DownloadFailedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+  "generated": {
+    "bundleHash": "b2de40b0399924f89853b7900c8d853632244c44aa413046e2e39e0284331365",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 36861,
+      "cutOff": 77,
+      "depth": 4,
+      "points": 194
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 21587,
+      "calls": 1,
+      "costUsd": 0.088997,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3609,
+      "outputTokens": 247
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 18929,
+      "calls": 1,
+      "costUsd": 0.094836,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 10146,
+      "outputTokens": 1884
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.RemoveFromDownloadClient(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,NzbDrone.Core.Download.IDownloadClient)"
+        ],
+        "id": "A1",
+        "text": "When a download-failed event arrives, the handler may remove the failed download from its download client and stop tracking it."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadFailedEvent)"
+        ],
+        "id": "R1",
+        "text": "Nothing happens if the event has no tracked download or the download item cannot be removed."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadFailedEvent)"
+        ],
+        "id": "R2",
+        "text": "Nothing happens unless the download client definition has RemoveFailedDownloads enabled."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.RemoveFromDownloadClient(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,NzbDrone.Core.Download.IDownloadClient)"
+        ],
+        "id": "R3",
+        "text": "The download is removed from the client with deleteData set to true."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.RemoveFromDownloadClient(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,NzbDrone.Core.Download.IDownloadClient)"
+        ],
+        "id": "R4",
+        "text": "If the client does not support removal, a warning is logged and nothing else happens. Any other error is logged as an error and not rethrown."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.Pneumatic.Pneumatic.RemoveItem(NzbDrone.Core.Download.DownloadClientItem,System.Boolean)"
+        ],
+        "id": "R5",
+        "text": "Pneumatic does not support removal and throws NotSupportedException."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.Blackhole.TorrentBlackhole.RemoveItem(NzbDrone.Core.Download.DownloadClientItem,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.Blackhole.UsenetBlackhole.RemoveItem(NzbDrone.Core.Download.DownloadClientItem,System.Boolean)"
+        ],
+        "id": "R6",
+        "text": "The Torrent and Usenet Blackhole clients refuse removal without deleting data, and otherwise delete the item data."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.Sabnzbd.Sabnzbd.RemoveItem(NzbDrone.Core.Download.DownloadClientItem,System.Boolean)"
+        ],
+        "id": "R7",
+        "text": "Sabnzbd removes the item from the queue if it is still queued, otherwise from history."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.IDownloadClient.RemoveItem(NzbDrone.Core.Download.DownloadClientItem,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadClientBase`1.RemoveItem(NzbDrone.Core.Download.DownloadClientItem,System.Boolean)"
+        ],
+        "id": "E1",
+        "text": "The item is removed in the download client, with the client-specific behaviour of its RemoveItem implementation."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadService.StopTracking(System.String)"
+        ],
+        "id": "E2",
+        "text": "Stopping tracking removes the download from the tracked-downloads cache."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadService.StopTracking(System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadsRemovedEvent.#ctor(System.Collections.Generic.List{NzbDrone.Core.Download.TrackedDownloads.TrackedDownload})"
+        ],
+        "id": "E3",
+        "text": "A TrackedDownloadsRemovedEvent is published containing the removed tracked download."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.DownloadMonitoringService.Handle(NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadsRemovedEvent)"
+        ],
+        "id": "E4",
+        "text": "DownloadMonitoringService handles the TrackedDownloadsRemovedEvent."
+      }
+    ]
+  },
+  "title": "Remove failed download from download client",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

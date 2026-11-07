@@ -133,6 +133,24 @@ Verdicts: 21 stands, 19 refuted, 19 page-gap, 8 cant-tell, 23 not tested (undocu
 
 **So the step took out 7 real findings** (5 planted, 2 hand-checked), all as `page-gap`, against 9 hand-checked false ones. The range's top passes 30%, and one run gives no run-to-run spread. The 4 false undocumented are redirects (`/`, `/seasonpass`, `/serieseditor`) and the settings index page, which the step can't test.
 
+## D151 on Sonarr: `page-gap-strict` on, the same 62 asked again (2026-11-07, owner: "just run it now")
+
+Same as the re-score, one change: `components: { page-gap-strict: true }`. Sonnet, Claude Code's default effort (the script starts it with no user settings), build `6141369`, cap $10. **66 calls, $7.92** (4 retries). Score: `benchmark/results/2026-11-07-phase2c-d151-score.json`, with the merged hand check; `specs/` and the run's lines in `…-d151-sonarr/`.
+
+| | Before (2c) | D119 wording | **`page-gap-strict`** |
+|---|---|---|---|
+| Planted found | 24 of 30 | 19 | **24: none lost** |
+| In the BA's queue | 90 | 52 | 70 |
+| Hand-checked real ones taken out | | 2 of 8 | **0 of 23** |
+| Hand-checked false ones taken out | | 9 of 12 | 6 of 21 |
+| False alarms in the queue | 44% | 23.1% | **25.9%** estimated; 21.4% to 32.9% by the 8 unchecked |
+
+**What moved:** of the 19 page gaps, 15 became `cant-tell`, 2 `stands`, 1 `refuted`; 1 page gap is left. One `stands` and one `refuted` became `cant-tell`. `refuted` still 19, all waiting for a developer. Verdicts now: 22 stands, 19 refuted, 1 page-gap, 25 cant-tell, 23 untested.
+
+**What it shows:** the losses were the wording. With "nothing settles it" as `cant-tell`, every real finding stays with the BA, and the step still takes out 6 of 21 known false alarms, all by `refuted`. Found can't go past 24 this way; 27 needs the gap finders.
+
+**Not shown:** 8 unplanted findings back in the queue have no hand check (7 `cant-tell` gaps, 1 `stands`), so the noise bar is met on the estimate but not yet called (D61). One run each, so the spread between runs is unmeasured, and the two runs differ only in the wording.
+
 ## Four more cyberbullying use cases (2026-11-07, counts only)
 
 Stream Tweets, Vectorize Tweets, Predict Cyberbullying Tweets and Logout (7.2.1.2.1-3, 5), the rest of the owner's first five, on a copy with `shared-through` and `disprove` on, headless Opus. 6 calls, $0.20. **Nothing to read from it:** code gave none of the four a candidate, the finder could pick only from the 3 written pages (Login's), and the judge wrote 11 gaps with no page, all `cant-tell` to the disprover. Why, read in the code: three run from `back_end/twitter_stream.py`, a script that is neither a screen nor an endpoint, so the graph has no page for it; Logout is in `front_end/src/components/navigation.js`, a component no page was written for. Open question in `questions.md`.

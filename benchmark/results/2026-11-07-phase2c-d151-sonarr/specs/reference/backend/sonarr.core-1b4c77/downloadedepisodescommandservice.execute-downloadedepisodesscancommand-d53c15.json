@@ -1,0 +1,147 @@
+{
+  "codeTitle": "DownloadedEpisodesCommandService.Execute(DownloadedEpisodesScanCommand)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DownloadedEpisodesCommandService.Execute(NzbDrone.Core.MediaFiles.Commands.DownloadedEpisodesScanCommand)",
+  "generated": {
+    "bundleHash": "2074efe7422ccf8d574ff86c37e9d18b7a3c582837bae531c627fe5585a9a559",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 33760,
+      "cutOff": 40,
+      "depth": 4,
+      "points": 138
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 19717,
+      "calls": 1,
+      "costUsd": 0.081587,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3421,
+      "outputTokens": 254
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 16287,
+      "calls": 1,
+      "costUsd": 0.091658,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 14472,
+      "outputTokens": 2623
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DownloadedEpisodesCommandService.Execute(NzbDrone.Core.MediaFiles.Commands.DownloadedEpisodesScanCommand)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DownloadedEpisodesCommandService.Execute(NzbDrone.Core.MediaFiles.Commands.DownloadedEpisodesScanCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DownloadedEpisodesCommandService.ProcessPath(NzbDrone.Core.MediaFiles.Commands.DownloadedEpisodesScanCommand)"
+        ],
+        "id": "A1",
+        "text": "Runs a downloaded-episodes scan for a given path: imports episodes found at that folder or file."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DownloadedEpisodesCommandService.ProcessPath(NzbDrone.Core.MediaFiles.Commands.DownloadedEpisodesScanCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadService.Find(System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.CompletedDownloadService.VerifyImport(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,System.Collections.Generic.List{NzbDrone.Core.MediaFiles.EpisodeImport.ImportResult})"
+        ],
+        "id": "A2",
+        "text": "When a download client id is supplied and a matching tracked download is known, imports the path for that download's series and download item, then verifies the import against the tracked download."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DownloadedEpisodesCommandService.Execute(NzbDrone.Core.MediaFiles.Commands.DownloadedEpisodesScanCommand)"
+        ],
+        "id": "R1",
+        "text": "A path is required; if it is null or whitespace the command throws an ArgumentException \"A path must be provided\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DownloadedEpisodesCommandService.ProcessPath(NzbDrone.Core.MediaFiles.Commands.DownloadedEpisodesScanCommand)"
+        ],
+        "id": "R2",
+        "text": "If the path is neither an existing folder nor an existing file, a warning is logged and nothing is imported."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DownloadedEpisodesCommandService.ProcessPath(NzbDrone.Core.MediaFiles.Commands.DownloadedEpisodesScanCommand)"
+        ],
+        "id": "R3",
+        "text": "If a download client id is given but no tracked download is found, a warning is logged and a normal import of the path is attempted using the command's import mode."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DownloadedEpisodesCommandService.Execute(NzbDrone.Core.MediaFiles.Commands.DownloadedEpisodesScanCommand)"
+        ],
+        "id": "R4",
+        "text": "If there are no import results or none has result Imported, the command logs \"Failed to import\" and reports the result as Unsuccessful, but still completes without error."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.CompletedDownloadService.VerifyImport(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,System.Collections.Generic.List{NzbDrone.Core.MediaFiles.EpisodeImport.ImportResult})"
+        ],
+        "id": "R5",
+        "text": "A download counts as fully imported when imported episodes number at least the larger of 1 and the release's episode count, or when history shows all its episodes already imported."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.CommandResultReporter.Report(NzbDrone.Core.Messaging.Commands.CommandResult)",
+          "Sonarr.Core|M:NzbDrone.Core.ProgressMessaging.ProgressMessageContext.LockReentrancy"
+        ],
+        "id": "R6",
+        "text": "The unsuccessful result is only recorded when a command is in the current progress context and the reentrancy lock can be taken."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.CommandResultReporter.Report(NzbDrone.Core.Messaging.Commands.CommandResult)",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.CommandQueueManager.SetResult(NzbDrone.Core.Messaging.Commands.CommandModel,NzbDrone.Core.Messaging.Commands.CommandResult)"
+        ],
+        "id": "E1",
+        "text": "Reporting Unsuccessful sets the result on the running command in the command queue."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.CompletedDownloadService.VerifyImport(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,System.Collections.Generic.List{NzbDrone.Core.MediaFiles.EpisodeImport.ImportResult})",
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadCompletedEvent.#ctor(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,NzbDrone.Core.Tv.Series,System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Collections.Generic.List{NzbDrone.Core.MediaFiles.EpisodeFile},NzbDrone.Core.Parser.Model.GrabbedReleaseInfo)"
+        ],
+        "id": "E2",
+        "text": "When all episodes are imported, the tracked download state is set to Imported and a DownloadCompletedEvent is published, with grabbed release info when grabbed history exists."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistoryService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)"
+        ],
+        "id": "E3",
+        "text": "DownloadCompletedEvent is handled by the download event hub, download history service and notification service."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.CompletedDownloadService.VerifyImport(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,System.Collections.Generic.List{NzbDrone.Core.MediaFiles.EpisodeImport.ImportResult})",
+          "Sonarr.Common|M:NzbDrone.Common.Instrumentation.Extensions.SentryLoggerExtensions.WriteSentryWarn(NLog.LogEventBuilder,System.String[])"
+        ],
+        "id": "E4",
+        "text": "If no episode was just imported but history shows all were imported, a debug event with a Sentry warning \"DownloadHistoryIncomplete\" is written."
+      }
+    ]
+  },
+  "title": "Downloaded episodes scan command",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

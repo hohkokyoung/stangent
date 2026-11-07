@@ -1,0 +1,124 @@
+{
+  "codeTitle": "SelectInput",
+  "entry": "ts|frontend/src/Components/Form/SelectInput.tsx#SelectInput",
+  "generated": {
+    "bundleHash": "5926088c4e32892ad3750721cccd1f7bd62e421366b7e687e9efc4eb8e1de1e3",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 7360,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 19
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 5043,
+      "calls": 1,
+      "costUsd": 0.021851,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4304,
+      "outputTokens": 150
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3506,
+      "calls": 1,
+      "costUsd": 0.022304,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4988,
+      "outputTokens": 800
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Components/Form/SelectInput.tsx#SelectInput",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/SelectInput.tsx#SelectInput"
+        ],
+        "id": "A1",
+        "text": "Choosing an option calls onChange with the input's name and the selected option's value."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/SelectInput.tsx#SelectInput"
+        ],
+        "id": "A2",
+        "text": "Leaving the field calls onBlur."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/SelectInput.tsx#SelectInput"
+        ],
+        "id": "R1",
+        "text": "The dropdown is disabled when isDisabled is true; it defaults to false."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/SelectInput.tsx#SelectInput"
+        ],
+        "id": "R2",
+        "text": "Autofocus defaults to false."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/SelectInput.tsx#SelectInput"
+        ],
+        "id": "R3",
+        "text": "Any extra properties on an option (other than key and value) are passed through to the option element."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/SelectInput.tsx#SelectInput"
+        ],
+        "id": "S1",
+        "text": "Displays a dropdown list with one option per entry in the supplied values list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/SelectInput.tsx#SelectInput"
+        ],
+        "id": "S2",
+        "text": "Each option uses its key as the option value, and its label is either the text given or the result of calling it when it is a function."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/SelectInput.tsx#SelectInput"
+        ],
+        "id": "S3",
+        "text": "The dropdown shows the currently selected value passed in."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/SelectInput.tsx#SelectInput"
+        ],
+        "id": "S4",
+        "text": "Shows an error state when hasError is set and a warning state when hasWarning is set."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/SelectInput.tsx#SelectInput"
+        ],
+        "id": "S5",
+        "text": "Shows a disabled appearance when isDisabled is true."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Select input (dropdown)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}
