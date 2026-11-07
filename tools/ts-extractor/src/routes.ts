@@ -70,7 +70,7 @@ function loadChildrenTargets(ctx: Context): Set<ts.Node> {
   return (loadChildrenCache = targets);
 }
 
-function routeArray(ctx: Context, arr: ts.ArrayLiteralExpression, prefix: string, visiting: Set<ts.Node>) {
+function routeArray(ctx: Context, arr: ts.ArrayLiteralExpression, prefix: string, visiting: Set<ts.Node>, inherited: Guard[] = []) {
   if (visiting.has(arr)) return;
   visiting.add(arr);
   for (const el of arr.elements) {
@@ -79,16 +79,43 @@ function routeArray(ctx: Context, arr: ts.ArrayLiteralExpression, prefix: string
     const own = isIndex ? "" : stringValue(prop(el, "path") ?? undefined, ctx.checker);
     const full = join(prefix, own ?? "");
     const target = componentOf(ctx, el);
-    if (own !== null && (target.ids.length > 0 || target.unresolved)) addPage(ctx, el, full, target);
+    // A parent's guards hold for its children too (G8): Kavita puts canActivate on a path-less parent.
+    const guards = [...inherited, ...guardsOf(ctx, el)];
+    if (own !== null && (target.ids.length > 0 || target.unresolved)) {
+      addPage(ctx, el, full, target);
+      for (const g of guards) ctx.out.fact("routes", "guard", pageId(ctx, full), g.file, g.line, { guard: g.id, name: g.name, via: g.via });
+    }
     const children = prop(el, "children");
-    if (children && ts.isArrayLiteralExpression(children)) routeArray(ctx, children, full, visiting);
+    if (children && ts.isArrayLiteralExpression(children)) routeArray(ctx, children, full, visiting, guards);
     const load = prop(el, "loadChildren");
     if (load) {
       for (const d of lazyTarget(ctx, load)?.declarations ?? [])
-        if (ts.isVariableDeclaration(d) && d.initializer && ts.isArrayLiteralExpression(d.initializer)) routeArray(ctx, d.initializer, full, visiting);
+        if (ts.isVariableDeclaration(d) && d.initializer && ts.isArrayLiteralExpression(d.initializer)) routeArray(ctx, d.initializer, full, visiting, guards);
     }
   }
 }
+
+interface Guard { id: string; name: string; via: string; file: string; line: number }
+
+/** `canActivate: [authGuard]`, `canMatch`, `canActivateChild`, `canLoad`: each guard, by id when it resolves. */
+function guardsOf(ctx: Context, route: ts.ObjectLiteralExpression): Guard[] {
+  const out: Guard[] = [];
+  for (const via of ["canActivate", "canMatch", "canActivateChild", "canLoad"]) {
+    const list = prop(route, via);
+    if (!list || !ts.isArrayLiteralExpression(list)) continue;
+    for (const e of list.elements) {
+      const head = ts.isCallExpression(e) ? e.expression : e;   // roleGuard('admin') → roleGuard
+      let symbol = ctx.checker.getSymbolAtLocation(ts.isPropertyAccessExpression(head) ? head.name : head);
+      if (symbol && symbol.flags & ts.SymbolFlags.Alias) {
+        try { symbol = ctx.checker.getAliasedSymbol(symbol); } catch { /* keep the alias */ }
+      }
+      out.push({ id: ctx.symbolId(symbol) ?? "", name: e.getText(), via, file: ctx.rel(e.getSourceFile().fileName), line: ctx.line(e) });
+    }
+  }
+  return out;
+}
+
+const pageId = (ctx: Context, route: string) => `page:${ctx.o.projectId.replace(/^project:/, "")}|${route}`;
 
 interface Target { ids: string[]; unresolved: boolean }
 
@@ -197,7 +224,7 @@ function renderedBy(ctx: Context, e: ts.Expression): Target {
 }
 
 export function addPage(ctx: Context, at: ts.Node, route: string, target: Target, detector = "routes") {
-  const id = `page:${ctx.o.projectId.replace(/^project:/, "")}|${route}`;
+  const id = pageId(ctx, route);
   const file = ctx.rel(at.getSourceFile().fileName);
   const line = ctx.line(at);
   ctx.out.node({ id, kind: "page", name: route, project: ctx.o.projectId, file, line, endLine: line, isTest: false });

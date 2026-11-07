@@ -40,6 +40,12 @@ public sealed class RoutesDetector : IDetector
             var root = file.Tree.GetRoot();
             foreach (var cls in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
                 if (file.Model.GetDeclaredSymbol(cls) is INamedTypeSymbol type) Controller(ctx, type, cls);
+            // G8: options.FallbackPolicy = … holds for every action with no [Authorize]/[AllowAnonymous] of its own.
+            foreach (var set in root.DescendantNodes().OfType<AssignmentExpressionSyntax>())
+                if (set.Left is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "FallbackPolicy" })
+                    ctx.AddFact(Name, "fallback-auth", ctx.ProjectId, set,
+                        ("authenticatedUser", set.Right.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Any(i => i.Identifier.ValueText == "RequireAuthenticatedUser") ? "required" : ""),
+                        ("schemes", string.Join(",", set.Right.DescendantNodes().OfType<LiteralExpressionSyntax>().Select(l => l.Token.ValueText))));
             foreach (var call in root.DescendantNodes().OfType<InvocationExpressionSyntax>())
             {
                 var name = ExtractContext.InvokedName(call);
@@ -74,14 +80,14 @@ public sealed class RoutesDetector : IDetector
             foreach (var method in t.GetMembers().OfType<IMethodSymbol>())
             {
                 if (method.MethodKind != MethodKind.Ordinary || method.DeclaredAccessibility != Accessibility.Public || method.IsStatic) continue;
-                if (method.GetAttributes().Any(a => a.AttributeClass?.Name == "NonActionAttribute")) continue;
+                // [NonAction] is inherited: Controller.OnActionExecuting's overrides aren't actions either.
+                if (Overrides(method).Any(m => m.GetAttributes().Any(a => a.AttributeClass?.Name == "NonActionAttribute"))) continue;
                 var methodId = ctx.NodeId(method);
                 if (methodId is null) continue;
                 ApiShapes.Record(ctx, Name, method, methodId, ctx.ShapesSeen);
+                Auth(ctx, type, method, methodId);
                 var actionName = Attr(method, "ActionNameAttribute") ?? (method.Name.EndsWith("Async", StringComparison.Ordinal) ? method.Name[..^5] : method.Name);
-                var verbs = method.GetAttributes()
-                    .Select(a => a.AttributeClass?.Name is { } n && HttpAttributes.TryGetValue(n, out var v) ? (v, Arg(a)) : (null, null))
-                    .Where(v => v.Item1 is not null).ToList();
+                var verbs = method.GetAttributes().SelectMany(a => HttpVerbs(a).Select(v => ((string?)v.Verb, v.Template))).ToList();
                 var methodRoutes = RouteTemplates(method);
                 var location = method.Locations.FirstOrDefault(l => l.IsInSource);
                 var line = location is null ? 0 : location.GetLineSpan().StartLinePosition.Line + 1;
@@ -114,6 +120,47 @@ public sealed class RoutesDetector : IDetector
         }
     }
 
+    /// <summary>
+    /// G8: an action's authorisation as a fact: [AllowAnonymous] on the method wins; otherwise every [Authorize]
+    /// (or attribute derived from it) on the method and up its controller's base types, with policy and roles.
+    /// No fact means the app's fallback policy decides (a <c>fallback-auth</c> fact when the code sets one).
+    /// </summary>
+    const string Detector = "aspnetcore-routes";
+
+    static void Auth(ExtractContext ctx, INamedTypeSymbol controller, IMethodSymbol method, string methodId)
+    {
+        var found = new List<(string Rule, string Policy, string Roles, string From)>();
+        void Read(ISymbol symbol, string from)
+        {
+            foreach (var a in symbol.GetAttributes())
+            {
+                if (Is(a, "AllowAnonymousAttribute")) found.Add(("anonymous", "", "", from));
+                else if (Is(a, "AuthorizeAttribute"))
+                    found.Add(("authorize", Named(a, "Policy") ?? (a.ConstructorArguments.FirstOrDefault().Value as string) ?? "", Named(a, "Roles") ?? "", from));
+            }
+        }
+        Read(method, "method");
+        for (var t = controller; t is not null && t.SpecialType != SpecialType.System_Object; t = t.BaseType) Read(t, "class " + t.Name);
+        var anonymous = found.FirstOrDefault(f => f.Rule == "anonymous");
+        var facts = anonymous.Rule is not null && (anonymous.From == "method" || !found.Any(f => f.Rule == "authorize" && f.From == "method"))
+            ? [anonymous] : found.Where(f => f.Rule == "authorize").Distinct().ToList();
+        foreach (var f in facts)
+            ctx.AddFact(Detector, "auth", methodId, null, ("rule", f.Rule), ("policy", f.Policy), ("roles", f.Roles), ("from", f.From));
+    }
+
+    static bool Is(AttributeData a, string name)
+    {
+        for (var c = a.AttributeClass; c is not null; c = c.BaseType) if (c.Name == name) return true;
+        return false;
+    }
+
+    static string? Named(AttributeData a, string name) => a.NamedArguments.FirstOrDefault(n => n.Key == name).Value.Value as string;
+
+    static IEnumerable<IMethodSymbol> Overrides(IMethodSymbol method)
+    {
+        for (var m = method; m is not null; m = m.OverriddenMethod) yield return m;
+    }
+
     static IEnumerable<string> Combine(List<string> classRoutes, string template)
     {
         if (template.StartsWith('/') || template.StartsWith("~/", StringComparison.Ordinal) || classRoutes.Count == 0)
@@ -127,8 +174,42 @@ public sealed class RoutesDetector : IDetector
     /// </summary>
     static List<string> RouteTemplates(ISymbol symbol) =>
         [.. symbol.GetAttributes().Select(a => a.AttributeClass?.Name == "RouteAttribute" ? Arg(a)
-            : !HttpAttributes.ContainsKey(a.AttributeClass?.Name ?? "") && a.AttributeClass is { } c && Implements(c, "IRouteTemplateProvider") ? CustomTemplate(a) : null)
+            : HttpVerbs(a).Count == 0 && a.AttributeClass is { } c && Implements(c, "IRouteTemplateProvider") ? CustomTemplate(a) : null)
             .OfType<string>()];
+
+    /// <summary>
+    /// The verbs an attribute gives an action, with its template: [HttpPost("x")], an attribute derived from one
+    /// (Sonarr's [RestPostById] : HttpPostAttribute, [RestDeleteById] : HttpDeleteAttribute with base("{id:int}")),
+    /// or one implementing IActionHttpMethodProvider whose HttpMethods lists literals ([RestGetById]).
+    /// </summary>
+    static List<(string Verb, string? Template)> HttpVerbs(AttributeData a)
+    {
+        for (var c = a.AttributeClass; c is not null; c = c.BaseType)
+            if (HttpAttributes.TryGetValue(c.Name, out var verb))
+                return [(verb, Arg(a) ?? (SymbolEqualityComparer.Default.Equals(c, a.AttributeClass) ? null : CustomTemplate(a)))];
+        if (a.AttributeClass is not { } k || !Implements(k, "IActionHttpMethodProvider")) return [];
+        var methods = PropertyExpression(k, "HttpMethods")?.DescendantNodesAndSelf().OfType<LiteralExpressionSyntax>()
+            .Where(l => l.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StringLiteralExpression))
+            .Select(l => l.Token.ValueText.ToUpperInvariant()).Distinct().ToList() ?? [];
+        var template = CustomTemplate(a);
+        return [.. methods.Select(m => (m, template))];
+    }
+
+    /// <summary>The expression a property returns (<c>=> x</c> or <c>get => x</c> / <c>get { return x; }</c>), searched up the base types.</summary>
+    static ExpressionSyntax? PropertyExpression(INamedTypeSymbol type, string name)
+    {
+        for (var t = type; t is not null; t = t.BaseType)
+            foreach (var p in t.GetMembers(name).OfType<IPropertySymbol>())
+                if (p.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() is PropertyDeclarationSyntax syntax)
+                {
+                    if (syntax.ExpressionBody is { } body) return body.Expression;
+                    var getter = syntax.AccessorList?.Accessors.FirstOrDefault(x => x.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.GetAccessorDeclaration));
+                    if (getter?.ExpressionBody is { } gb) return gb.Expression;
+                    if (getter?.Body?.Statements.OfType<ReturnStatementSyntax>().FirstOrDefault()?.Expression is { } r) return r;
+                    if (syntax.Initializer is { } init) return init.Value;
+                }
+        return null;
+    }
 
     static bool Implements(INamedTypeSymbol type, string name) => type.AllInterfaces.Any(i => i.Name == name);
 
@@ -145,7 +226,10 @@ public sealed class RoutesDetector : IDetector
         }
         for (var depth = 0; ctor is not null && depth < 5; depth++)
         {
-            if (ctor.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() is not ConstructorDeclarationSyntax syntax) return null;
+            if (HttpAttributes.ContainsKey(ctor.ContainingType.Name) || ctor.ContainingType.Name == "RouteAttribute")
+                return values.GetValueOrDefault("template");
+            if (ctor.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() is not ConstructorDeclarationSyntax syntax)
+                return attribute.AttributeClass is { } own && PropertyExpression(own, "Template") is { } property ? Evaluate(property, values) : null;
             var assignment = syntax.Body?.Statements.OfType<ExpressionStatementSyntax>().Select(e => e.Expression).OfType<AssignmentExpressionSyntax>()
                 .FirstOrDefault(a => a.Left is IdentifierNameSyntax { Identifier.ValueText: "Template" } or MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Template" });
             if (assignment is not null) return Evaluate(assignment.Right, values);

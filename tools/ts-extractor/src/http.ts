@@ -50,6 +50,56 @@ function verbFromName(fn: string): string {
   return "GET";
 }
 
+const prefixes = new Map<ts.Node, string | null>();
+
+/**
+ * What a wrapper puts in front of its URL, read from its own body: a call there passes the URL property
+ * (`getQueryPath(path)`, `getQueryPath(options.path)`) to a function returning one concatenation that ends
+ * with that parameter (`urlBase + apiRoot + path` → `{base}/api/v5`). Null when the code doesn't show it.
+ */
+function wrapperPrefix(ctx: Context, callee: ts.Expression, urlProp: string): string | null {
+  const fn = declaredFunction(ctx.checker, callee);
+  if (!fn?.body) return null;
+  if (prefixes.has(fn)) return prefixes.get(fn)!;
+  let found: string | null = null;
+  const visit = (n: ts.Node) => {
+    if (found !== null) return;
+    if (ts.isCallExpression(n) && n.arguments.length === 1) {
+      const a = n.arguments[0];
+      const passes = (ts.isIdentifier(a) && a.text === urlProp) || (ts.isPropertyAccessExpression(a) && a.name.text === urlProp);
+      const inner = passes ? declaredFunction(ctx.checker, n.expression) : null;
+      const returned = inner ? returnedExpression(inner) : null;
+      const value = returned ? stringValue(returned, ctx.checker) : null;
+      // Exactly one runtime part, at the end: the parameter itself.
+      if (value && value.endsWith(RUNTIME) && value.indexOf(RUNTIME) === value.length - RUNTIME.length && value.length > RUNTIME.length)
+        found = value.slice(0, -RUNTIME.length);
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(fn.body);
+  prefixes.set(fn, found);
+  return found;
+}
+
+function declaredFunction(checker: ts.TypeChecker, callee: ts.Expression): ts.FunctionLikeDeclaration | null {
+  let symbol = checker.getSymbolAtLocation(ts.isPropertyAccessExpression(callee) ? callee.name : callee);
+  if (symbol && symbol.flags & ts.SymbolFlags.Alias) {
+    try { symbol = checker.getAliasedSymbol(symbol); } catch { return null; }
+  }
+  const d = symbol?.declarations?.length === 1 ? symbol.declarations[0] : null;
+  if (!d) return null;
+  if (ts.isFunctionDeclaration(d)) return d;
+  if (ts.isVariableDeclaration(d) && d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer))) return d.initializer;
+  return null;
+}
+
+function returnedExpression(fn: ts.FunctionLikeDeclaration): ts.Expression | null {
+  if (!fn.body) return null;
+  if (!ts.isBlock(fn.body)) return fn.body;
+  const returns = fn.body.statements.filter(ts.isReturnStatement);
+  return returns.length === 1 ? returns[0].expression ?? null : null;
+}
+
 /** `#N` → the call's Nth argument; anything else → that property of the object in the first argument. */
 function wrapperValue(n: ts.CallExpression, prop: string, checker: ts.TypeChecker): string | null {
   if (/^#\d+$/.test(prop)) return stringValue(n.arguments[Number(prop.slice(1))], checker);
@@ -73,9 +123,13 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
     let url: string | null = url0;
     const v = w.verbProp ? wrapperValue(n, w.verbProp, checker) : null;
     const verb = v ? v.toUpperCase() : w.verb;
-    // Wrappers add the API root themselves (Sonarr: getQueryPath(path) = urlBase + apiRoot + path),
-    // so a relative path is matched against the end of endpoint paths.
-    if (url !== null && !/^(https?:|\{base\})/.test(url)) url = BASE + url.replace(/^\//, "");
+    // Wrappers add the API root themselves (Sonarr: getQueryPath(path) = urlBase + apiRoot + path). When the
+    // wrapper's own code shows that root, it is added (G2); otherwise a relative path is matched against the
+    // end of endpoint paths.
+    if (url !== null && !/^(https?:|\{base\})/.test(url)) {
+      const prefix = w.urlProp ? wrapperPrefix(ctx, callee, w.urlProp) : null;
+      url = prefix ? `${prefix.replace(/\/$/, "")}/${url.replace(/^\//, "")}` : BASE + url.replace(/^\//, "");
+    }
     emit(ctx, owner, file, line, verb, url, `wrapper:${w.fn}`, typeArg(ctx, n, 0), typeArg(ctx, n, 1));
     return;
   }

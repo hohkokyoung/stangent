@@ -135,6 +135,25 @@ test("configured wrappers: a fixed verb, the verb read off the name, and URL and
   assert.deepEqual(calls, [`DELETE ${BASE}items/1`, `PATCH ${BASE}items/2`, `PUT ${BASE}items/3`]);
 });
 
+test("a wrapper's own body shows the API root it adds (G2)", () => {
+  const root = project({
+    "src/fetch.ts": "declare const window: { App: { urlBase: string } };\nexport const urlBase = window.App.urlBase;\nexport const apiRoot = '/api/v5';",
+    "src/path.ts": "import { apiRoot, urlBase } from './fetch';\nconst getQueryPath = (path: string) => {\n  return urlBase + apiRoot + path;\n};\nexport default getQueryPath;",
+    "src/hooks.ts": [
+      "import getQueryPath from './path';",
+      "declare function fetchJson(o: { path: string }): void;",
+      "export function useApiMutation(options: { path: string; method: string }) { fetchJson({ path: getQueryPath(options.path) }); }",
+      "export function useApiQuery(o: { path: string }) { const { path } = o; fetchJson({ path: getQueryPath(path) }); }",
+      "export function useRaw(o: { path: string }) { fetchJson({ path: o.path }); }",
+    ].join("\n"),
+    "src/use.ts": "import { useApiMutation, useApiQuery, useRaw } from './hooks';\nexport function a() { useApiMutation({ path: '/series', method: 'POST' }); useApiQuery({ path: '/series/lookup' }); useRaw({ path: '/raw' }); }",
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p",
+    settings: { "frontend-http": { wrappers: ["useApiMutation:path:method", "useApiQuery:path", "useRaw:path"] } } }).lines;
+  const calls = lines.filter((l) => l.t === "fact" && l.kind === "call").map((l) => l.t === "fact" ? `${l.data.verb} ${l.data.url}` : "").sort();
+  assert.deepEqual(calls, [`GET ${BASE}/api/v5/series/lookup`, `GET ${BASE}raw`, `POST ${BASE}/api/v5/series`]);
+});
+
 test("a verb is read off whole words of a wrapper's name, never part of one", () => {
   const root = project({
     "src/api.ts": [
@@ -299,4 +318,28 @@ test("off, the output doesn't change; a route naming its component keeps it; nes
   assert.deepEqual(on.pages, ["/a", "/n/m"]);
   assert.deepEqual(on.targets, ["/a -> Tasks"]);
   assert.deepEqual(rendered(ROUTE_FILES(`<Route path="/z" component={Tasks} render={() => <Help />} />`)).targets, []);
+});
+
+test("route guards are facts on each page they hold for, a parent's included (G8)", () => {
+  const root = project({
+    "src/stub.d.ts": "declare module '@angular/core' { export function Component(m: object): ClassDecorator; }",
+    "src/list.component.ts": "import { Component } from '@angular/core';\n@Component({ selector: 'app-list', template: '<p></p>' })\nexport class ListComponent {}",
+    "src/guards.ts": "export const authGuard = () => true;\nexport const adminGuard = () => true;",
+    "src/routes.ts": [
+      "import { ListComponent } from './list.component';",
+      "import { authGuard, adminGuard } from './guards';",
+      "export const routes = [",
+      "  { path: 'open', component: ListComponent },",
+      "  { path: '', canActivate: [authGuard], children: [",
+      "    { path: 'list', component: ListComponent },",
+      "    { path: 'admin', component: ListComponent, canActivate: [adminGuard] },",
+      "  ] },",
+      "];",
+    ].join("\n"),
+  }, { experimentalDecorators: true });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const guards = (page: string) => lines.flatMap((l) => l.t === "fact" && l.kind === "guard" && l.node.endsWith(`|${page}`) ? [l.data.guard.split("#")[1]] : []).sort();
+  assert.deepEqual(guards("/open"), []);
+  assert.deepEqual(guards("/list"), ["authGuard"]);
+  assert.deepEqual(guards("/admin"), ["adminGuard", "authGuard"]);
 });

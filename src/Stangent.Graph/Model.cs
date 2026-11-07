@@ -72,6 +72,14 @@ public static class EdgeKind
     /// </summary>
     public const string OpensScreen = "opens-screen";
 
+    /// <summary>
+    /// 🟡/✅ A method saves to a table (code-graph v5, G3): <c>DbSet&lt;T&gt;.Add/Update/Remove</c>, <c>Add/Remove</c> on an
+    /// entity's navigation collection, or a write-named method of a generic repository over <c>T</c>. Not walked by impact.
+    /// </summary>
+    public const string Writes = "writes";
+    /// <summary>A method reads a table (code-graph v5): a <c>DbSet&lt;T&gt;</c> used for anything but a write, or a read-named repository method. Not walked.</summary>
+    public const string Reads = "reads";
+
     /// <summary>Lines a change travels back along: behaviour flows through these.</summary>
     public static readonly HashSet<string> Propagating =
         [Calls, Uses, DispatchesTo, RoutesTo, TriggeredBy, Maps, ReadsConfig, Binds, CallsHttp, Tests, WiredTo, Renders, MapsField];

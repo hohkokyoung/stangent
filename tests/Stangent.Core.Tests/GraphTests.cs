@@ -90,6 +90,50 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void Verbs_and_templates_come_from_an_apps_own_verb_attributes()
+    {
+        var endpoints = shop.Graph.AllNodes.Where(n => n.Kind == NodeKind.Endpoint && n.Name.Contains("/api/shelf")).Select(n => n.Name).Order().ToList();
+        // : HttpPostAttribute; : HttpDeleteAttribute with base("{id:int}"); IActionHttpMethodProvider + a Template property.
+        Assert.Equal(["DELETE /api/shelf/{id:int}", "GET /api/shelf/{id:int}", "POST /api/shelf"], endpoints);
+        Assert.Contains(Edges(EdgeKind.RoutesTo), e => e.Source == "endpoint:Shop.Web|POST /api/shelf"
+            && e.Target == "Shop.Web|M:Shop.Web.Controllers.ShelfController.Add" && e.Label == Label.Certain);
+    }
+
+    [Fact]
+    public void Outside_calls_through_other_clients_are_facts_or_blind_spots()
+    {
+        const string proxy = "Shop.Web|M:Shop.Web.RatesProxy.";
+        var spots = shop.Graph.AllBlindSpots.Where(b => b.Owner.StartsWith(proxy, StringComparison.Ordinal)).Select(b => (b.Owner[proxy.Length..], b.Reason)).ToList();
+        Assert.Contains(spots, b => b.Item1.StartsWith("Rates(", StringComparison.Ordinal) && b.Reason == "outside HTTP GET through IHttpClient: URL built at runtime");
+        Assert.Contains(spots, b => b.Item1.StartsWith("Report(", StringComparison.Ordinal) && b.Reason == "outside HTTP POST through Flurl to https://audit.example…: rest of the URL built at runtime");
+        // A whole literal URL is a call; its host is no service here, so linking says so.
+        Assert.Contains(spots, b => b.Item1 == "Fixed" && b.Reason.Contains("rates.example", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Saves_and_reads_reach_their_tables()
+    {
+        Assert.Contains(Edges(EdgeKind.Maps), e => e.Source == "table:Shop.Core|ShelfItem" && e.Target == "Shop.Core|T:Shop.Core.ShelfItem" && e.Label == Label.Guessed);
+        Assert.Contains(Edges(EdgeKind.Maps), e => e.Source == "table:Shop.Core|Ledgers" && e.Target == "Shop.Core|T:Shop.Core.Ledger");
+        string Lines(string kind, string method) => string.Join(",", Edges(kind).Where(e => e.Source.StartsWith("Shop.Core|M:Shop.Core." + method, StringComparison.Ordinal)).Select(e => e.Target).Order());
+        Assert.Equal("table:Shop.Core|Shelves", Lines(EdgeKind.Writes, "ShelfService.Open"));
+        Assert.Equal("table:Shop.Core|ShelfItem", Lines(EdgeKind.Writes, "ShelfService.Stock"));
+        Assert.Equal("table:Shop.Core|Shelves", Lines(EdgeKind.Reads, "ShelfService.Count"));
+        Assert.Equal("", Lines(EdgeKind.Writes, "ShelfService.Count"));
+        Assert.Equal("table:Shop.Core|Ledgers", Lines(EdgeKind.Writes, "LedgerService.Record"));
+        Assert.Equal("table:Shop.Core|Ledgers", Lines(EdgeKind.Reads, "LedgerService.Find"));
+    }
+
+    [Fact]
+    public void Authorisation_markers_are_facts_on_actions()
+    {
+        string Auth(string method) => string.Join(";", shop.Graph.AllFacts.Where(f => f.Kind == "auth" && f.Owner == "Shop.Web|M:Shop.Web.Controllers.ShelfController." + method)
+            .Select(f => $"{f["rule"]} {f["policy"]} {f["from"]}"));
+        Assert.Equal("authorize Staff class StaffController", Auth("Add"));   // inherited from a base controller
+        Assert.Equal("anonymous  method", Auth("Get(System.Int32)"));        // the method's own [AllowAnonymous] wins
+    }
+
+    [Fact]
     public void Routes_are_found_for_minimal_apis_attributes_and_conventional_routes()
     {
         var endpoints = shop.Graph.AllNodes.Where(n => n.Kind == NodeKind.Endpoint).Select(n => n.Name).ToList();
