@@ -120,7 +120,18 @@ Verdicts: 21 stands, 19 refuted, 19 page-gap, 8 cant-tell, 23 not tested (undocu
 
 **The 5 lost are all `page-gap`, and each answer's own reason says the code shown can't settle it** ("the bundle can't prove no digest exists elsewhere", "the server-side validator isn't in the bundle"). That is `cant-tell`'s meaning, which stays with the BA; `page-gap` goes to a developer. So the step isn't wrongly refuting real findings here: it files doubt as a page gap. G6 and G10 are gaps, C5, C9 and C10 conflicts.
 
-**Not shown:** a fresh hand check of the 52 left (D61), so no bar is called; the 2 real ones that left are among the 5 above or not, unchecked; one run, so run-to-run difference is unmeasured.
+**The fresh hand check (same day, D61; one fresh agent, 91K tokens):** all 33 unplanted findings left in the BA's queue and the 2 hand-checked real ones taken out, blind to verdicts, who found them and the key. `benchmark/results/2026-11-07-phase2c-disprove-handcheck.json`; merged with Nov 3's in `…-handcheck-merged.json`; score `…-disprove-score-handchecked.json`.
+
+| | |
+|---|---|
+| Unplanted in the queue | 33: 21 real, 12 false (8 gaps, 4 undocumented) |
+| **False alarms in the queue** | **12 of 52, 23.1%** (95% range 12-35%): **noise bar met** |
+| Found | 19 of 30: found bar not met (was 24) |
+| Agreement with Nov 3's checker | 9 of 9 both read |
+| The 2 real ones taken out | both real again, both `page-gap` |
+| In the queue, by verdict | `cant-tell` 7, all false; `stands` 6, 5 real; untested undocumented 20, 16 real |
+
+**So the step took out 7 real findings** (5 planted, 2 hand-checked), all as `page-gap`, against 9 hand-checked false ones. The range's top passes 30%, and one run gives no run-to-run spread. The 4 false undocumented are redirects (`/`, `/seasonpass`, `/serieseditor`) and the settings index page, which the step can't test.
 
 ## Four more cyberbullying use cases (2026-11-07, counts only)
 

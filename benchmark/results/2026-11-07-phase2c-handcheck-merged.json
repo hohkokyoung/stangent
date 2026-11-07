@@ -1,0 +1,223 @@
+{
+  "_checker": "merged: 2026-11-03 fresh agent (D67), then 2026-11-07 fresh agent (D61) on the 33 unplanted left in the BA queue and the 2 real ones taken out; they agree on all 9 both read",
+  "L8b9d3b8755": {
+    "verdict": "false",
+    "reason": "The stored preferred protocol is Usenet or Torrent, as the FSD says; the page only left the values out. The edit screen also offers 'Only Usenet' and 'Only Torrent', but those set the separate enable flags and don't add a preferred value.",
+    "evidence": "frontend/src/Settings/Profiles/Delay/useDelayProfiles.ts:16 has preferredProtocol: 'usenet' | 'torrent'; EditDelayProfileModalContent.tsx:111-129 maps all four options onto those two values."
+  },
+  "Ld526d74cfb": {
+    "verdict": "false",
+    "reason": "The code has separate Usenet and Torrent delays, in minutes, and rejects negative values, exactly as the FSD says. The page just didn't state the rule.",
+    "evidence": "src/Sonarr.Api.V3/Profiles/Delay/DelayProfileController.cs:24-25 validates UsenetDelay and TorrentDelay GreaterThanOrEqualTo(0); frontend/src/Settings/Profiles/Delay/EditDelayProfileModalContent.tsx:174-194 shows both fields with unit=\"minutes\"."
+  },
+  "L9c796c0564": {
+    "verdict": "false",
+    "reason": "A series gets the first delay profile, by order, that shares one of its tags or has no tags, which is what the FSD describes. The page only showed the tags on the row.",
+    "evidence": "src/NzbDrone.Core/Profiles/Delay/DelayProfileService.cs:97-102 filters on r.Tags.Intersect(tagIds).Any() || r.Tags.Empty(); src/NzbDrone.Core/DecisionEngine/Specifications/RssSync/DelaySpecification.cs:41 calls BestForTags(subject.Series.Tags)."
+  },
+  "L3b4e14ba3e": {
+    "verdict": "false",
+    "reason": "/seasonpass is only a redirect to /series.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:65-67"
+  },
+  "L7738f7bdc4": {
+    "verdict": "false",
+    "reason": "The details screen shows every item the FSD lists: poster, status, size on disk, network, path, overview and seasons with their episodes. The page covered only part of the header.",
+    "evidence": "frontend/src/Series/Details/SeriesDetails.tsx:597 poster, :771 sizeOnDisk, :824 status, :861 network, :868 path, :877 overview, :922-924 seasons; SeriesDetailsSeason.tsx:484-496 renders EpisodeRow under each season."
+  },
+  "L5b8e20c169": {
+    "verdict": "real",
+    "reason": "Download clients settings is a real screen; the FSD mentions download clients only in passing (queue, tags).",
+    "evidence": "frontend/src/App/AppRoutes.tsx:117-120; FSD 3.1 and Tags mention download clients but no settings screen"
+  },
+  "Lc87617cd19": {
+    "verdict": "real",
+    "reason": "Queue items have no priority field and there is no way to change one; the queue model and service carry nothing like it.",
+    "evidence": "src/NzbDrone.Core/Queue/Queue.cs:13-43 (no Priority); src/NzbDrone.Core/Queue/QueueService.cs:14-19 (only Get/Find/Remove); frontend/src/Activity/Queue/Queue.tsx:315-367 ('priority' only toolbar layout)"
+  },
+  "Lcd18ef7eee": {
+    "verdict": "real",
+    "reason": "Backup retention is validated to 1-90 days, not up to 365 (interval is also 1-7, not 1-30).",
+    "evidence": "src/Sonarr.Api.V3/Config/HostConfigController.cs:132-133"
+  },
+  "La1cb5f357f": {
+    "verdict": "real",
+    "reason": "System > Events (log table) is a real user screen; the FSD's System part covers only Backups.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:151 (LogsTable); FSD 'System' has only 'Backups'"
+  },
+  "Lf698bcabf4": {
+    "verdict": "real",
+    "reason": "System > Log files (list and download of app log files) is a real screen not described; the FSD only gives log level and file size settings.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:153 (AppLogFiles); FSD General/Logging covers settings only, System covers only Backups"
+  },
+  "L48a0bdaca1": {
+    "verdict": "false",
+    "reason": "Trace is a selectable log level in the settings dropdown, as the FSD says. The finding only looked at a backend method that isn't where the choice is made.",
+    "evidence": "frontend/src/Settings/General/LoggingSettings.tsx:15-34 lists info, debug and trace; :64-70 renders them as a select on logLevel."
+  },
+  "Laad4cdfb0e": {
+    "verdict": "false",
+    "reason": "Both delays are validated as greater than or equal to zero.",
+    "evidence": "src/Sonarr.Api.V3/Profiles/Delay/DelayProfileController.cs:24-25"
+  },
+  "L0c6d91c33a": {
+    "verdict": "real",
+    "reason": "Import lists settings is a real screen not described in the FSD (only named as a tag target).",
+    "evidence": "frontend/src/App/AppRoutes.tsx:122 (ImportListSettings); FSD Tags section only names import lists"
+  },
+  "L03b08d81c3": {
+    "verdict": "false",
+    "reason": "Series type does change how searches are made: daily and anime series take their own search paths. The page only described the popover.",
+    "evidence": "src/NzbDrone.Core/IndexerSearch/ReleaseSearchService.cs:63-71 SearchDaily for Daily, :74-84 SearchAnime for Anime, :118-125 the same split for season searches."
+  },
+  "Lc5075fde86": {
+    "verdict": "real",
+    "reason": "Import Series (choose a folder of existing series to import) is a real user screen; the FSD only covers Add New.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:56; frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx:63-79; FSD 1.1 covers only Add New search"
+  },
+  "L669384f23d": {
+    "verdict": "false",
+    "reason": "Debug is a selectable log level in the settings dropdown, as the FSD says. The finding only looked at a backend method that isn't where the choice is made.",
+    "evidence": "frontend/src/Settings/General/LoggingSettings.tsx:22-27 has the debug option; :64-70 renders the select; src/NzbDrone.Core/Configuration/ConfigFileProvider.cs:270 reads LogLevel, default debug."
+  },
+  "L9be2055e2e": {
+    "verdict": "false",
+    "reason": "Closest call in the sample. The calendar's All / Monitored Only filter shows or hides unmonitored episodes, and downloaded episodes are marked, which is the sensible meaning of the sentence; read word for word, though, monitored episodes themselves can't be hidden.",
+    "evidence": "frontend/src/Calendar/useCalendar.ts:17-34 filters All and Monitored Only, :36-41 custom filter on 'unmonitored' only; frontend/src/Calendar/getStatusStyle.ts:13-14 returns 'downloaded'; frontend/src/Calendar/Legend/Legend.tsx:103 has a downloaded legend item."
+  },
+  "L48708cba00": {
+    "verdict": "false",
+    "reason": "The series' quality profile does decide what gets downloaded, because releases are checked against it. The page only listed the field.",
+    "evidence": "src/NzbDrone.Core/DecisionEngine/Specifications/QualityAllowedByProfileSpecification.cs:22-26 reads subject.Series.QualityProfile.Value and checks qualityOrGroup.Allowed."
+  },
+  "L1637b1c24c": {
+    "verdict": "real",
+    "reason": "Media management settings (naming, root folders, file handling) is a real screen absent from the FSD.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:104 (MediaManagement); no Media Management section in the FSD"
+  },
+  "L27fcdfab08": {
+    "verdict": "false",
+    "reason": "Series are stored as library records and the Series index screen lists them all.",
+    "evidence": "src/NzbDrone.Core/Tv/Series.cs:26-71; frontend/src/App/AppRoutes.tsx:52 (/series -> SeriesIndex)"
+  },
+  "L32446f053d": {
+    "verdict": "false",
+    "reason": "Every series carries a root folder, a quality profile, a series type and tags, as the FSD says.",
+    "evidence": "src/NzbDrone.Core/Tv/Series.cs:41 (QualityProfileId), :46 (SeriesType), :57 (RootFolderPath), :71 (Tags)"
+  },
+  "L50ac40099e": {
+    "verdict": "false",
+    "reason": "Every series carries a root folder, a quality profile, a series type and tags, as the FSD says.",
+    "evidence": "src/NzbDrone.Core/Tv/Series.cs:41 (QualityProfileId), :46 (SeriesType), :57 (RootFolderPath), :71 (Tags)"
+  },
+  "L6a6df308c4": {
+    "verdict": "false",
+    "reason": "Every series carries a root folder, a quality profile, a series type and tags, as the FSD says.",
+    "evidence": "src/NzbDrone.Core/Tv/Series.cs:41 (QualityProfileId), :46 (SeriesType), :57 (RootFolderPath), :71 (Tags)"
+  },
+  "Lff273e64c8": {
+    "verdict": "false",
+    "reason": "Every series carries a root folder, a quality profile, a series type and tags, as the FSD says.",
+    "evidence": "src/NzbDrone.Core/Tv/Series.cs:41 (QualityProfileId), :46 (SeriesType), :57 (RootFolderPath), :71 (Tags)"
+  },
+  "L588c423915": {
+    "verdict": "real",
+    "reason": "Automatic search exists for series, season and episode, and interactive search exists for season and episode, but there is no interactive search for the whole series: the series toolbar only has Search Monitored. The sentence as written is not fully met.",
+    "evidence": "frontend/src/Series/Details/SeriesDetails.tsx:488-500 (only 'search-monitored', SeriesSearch command); src/NzbDrone.Core/IndexerSearch/SeriesSearchService.cs:33-77 (automatic only); frontend/src/Series/Details/SeriesDetailsSeason.tsx:91,380-387,441-446 (season auto + interactive); frontend/src/Episode/Search/EpisodeSearch.tsx:7-29 (episode interactive)"
+  },
+  "L7bfa1b7cf6": {
+    "verdict": "real",
+    "reason": "Same sentence: every combination exists except interactive search of the whole series, which the series details toolbar does not offer.",
+    "evidence": "frontend/src/Series/Details/SeriesDetails.tsx:488-500; frontend/src/Series/Details/SeriesDetailsSeason.tsx:380-387,441-446; frontend/src/Episode/Search/EpisodeSearch.tsx:7-29"
+  },
+  "La78a2bd376": {
+    "verdict": "false",
+    "reason": "The queue is an in-memory list built from tracked downloads reported by the download clients; it is not persisted.",
+    "evidence": "src/NzbDrone.Core/Queue/QueueService.cs:24 (static in-memory List<Queue>), :31-34, :46-80 (MapQueueItem from trackedDownload.DownloadItem)"
+  },
+  "L16a37387bd": {
+    "verdict": "real",
+    "reason": "The Dates section also has a Time Zone select, which the FSD's Interface section (short/long date, time format, relative dates) never mentions.",
+    "evidence": "frontend/src/Settings/UI/UISettings.tsx:202-254 (TimeZone at :242-246); FSD 'Interface' lists only first day of week, column headers, date/time formats, relative dates, theme, language, font size"
+  },
+  "L7f5beac7d2": {
+    "verdict": "false",
+    "reason": "Upgrades Allowed is on the profile form and the decision engine rejects upgrades when it is off and stops at the cutoff when on.",
+    "evidence": "frontend/src/Settings/Profiles/Quality/EditQualityProfileModalContent.tsx:379-388; src/NzbDrone.Core/DecisionEngine/Specifications/UpgradableSpecification.cs:37-40,60-65,124-132"
+  },
+  "Lb6acc306f6": {
+    "verdict": "real",
+    "reason": "The quality definitions screen only shows the quality and an editable title; sizes are no longer shown there (a notice says size limits moved to quality profiles).",
+    "evidence": "frontend/src/Settings/Quality/Definition/QualityDefinitions.tsx:74,85-86; frontend/src/Settings/Quality/Definition/QualityDefinition.tsx:30-38; src/NzbDrone.Core/Localization/Core/en.json:1848"
+  },
+  "La9913a6a46": {
+    "verdict": "real",
+    "reason": "Tags have only a label, no colour; tag lists render every tag with the same label kind.",
+    "evidence": "src/NzbDrone.Core/Tags/Tag.cs:5-7; frontend/src/Components/TagList.tsx:15-34 (kind defaults to INFO for all)"
+  },
+  "L90d600ed7e": {
+    "verdict": "false",
+    "reason": "'/' is just a redirect to /series, not a screen.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:46"
+  },
+  "L035853bf41": {
+    "verdict": "real",
+    "reason": "The import screen for a root folder (match and import existing series folders) is user-facing and not described in the FSD.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:58 (ImportSeries); FSD has no library-import section"
+  },
+  "Lb4c1509ec9": {
+    "verdict": "real",
+    "reason": "The series index (the library list) is the main screen, but the FSD only states the library holds every series and never describes this screen.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:52 (SeriesIndex); FSD section 1 has no description of the list screen, only 1.1 Add New and 1.2 Series details"
+  },
+  "L1e9be2b070": {
+    "verdict": "false",
+    "reason": "/serieseditor is only a redirect to /series.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:60-62"
+  },
+  "L1b9db44ca8": {
+    "verdict": "false",
+    "reason": "The settings index is a navigation hub of links with one-line summaries to each settings page, not something a BA would spec on its own.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:102; frontend/src/Settings/Settings.tsx:23-48 (title + summary links)"
+  },
+  "L4e5e31ff42": {
+    "verdict": "real",
+    "reason": "Connect (notification) settings is a real settings screen; the FSD only mentions notifications as something tags link to.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:124 (NotificationSettings); FSD Settings covers only Tags, Profiles, Quality definitions, General, Interface"
+  },
+  "Lcbcd6d63a8": {
+    "verdict": "real",
+    "reason": "Custom formats settings is a real user screen not described anywhere in the FSD.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:110-113; FSD Settings sections: Tags, Profiles, Quality definitions, General, Interface"
+  },
+  "L2b6e5c1412": {
+    "verdict": "real",
+    "reason": "Indexers settings is a real screen not described in the FSD (only named as a tag target).",
+    "evidence": "frontend/src/App/AppRoutes.tsx:115 (IndexerSettings); FSD 1.1 and Tags only name indexers"
+  },
+  "L2f56538dff": {
+    "verdict": "real",
+    "reason": "Metadata settings (metadata file writers) is a real screen absent from the FSD.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:126 (MetadataSettings); no metadata section in the FSD"
+  },
+  "Lcfb05fda6f": {
+    "verdict": "real",
+    "reason": "Metadata source settings lets the user set a preferred metadata language; a user-facing setting the FSD doesn't mention.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:128-131; frontend/src/Settings/MetadataSource/MetadataSettingsModalContent.tsx:50-85 (PreferredMetadataLanguage); not in FSD"
+  },
+  "Ld42d286b27": {
+    "verdict": "real",
+    "reason": "Update log files is a separate user-visible log-files view not covered by the FSD.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:155 (UpdateLogFiles); FSD System covers only Backups"
+  },
+  "L2e3de4a2e0": {
+    "verdict": "real",
+    "reason": "System > Status (health, disk space, about) is a real screen absent from the FSD.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:143 (Status); FSD System covers only Backups"
+  },
+  "Lda9946bc4a": {
+    "verdict": "real",
+    "reason": "System > Updates (available versions, install) is a real screen absent from the FSD.",
+    "evidence": "frontend/src/App/AppRoutes.tsx:149 (Updates); FSD System covers only Backups"
+  }
+}
