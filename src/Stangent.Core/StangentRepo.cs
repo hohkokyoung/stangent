@@ -39,6 +39,18 @@ public sealed class StangentConfig
     {
         /// <summary>False turns off every AI step; only code-only parts run (D24).</summary>
         public bool Enabled { get; set; } = true;
+        /// <summary>The model every AI step runs on, unless <see cref="Steps"/> names another (D161). Unset with no run flag: a run refuses.</summary>
+        public string? Model { get; set; }
+        /// <summary>Claude Code's effort level for every AI step: low, medium, high, xhigh or max (D161).</summary>
+        public string? Effort { get; set; }
+        /// <summary>Per-step settings by agent name (<c>stangent-link-judge</c>); either field may be left to the global one.</summary>
+        public Dictionary<string, AiStepConfig> Steps { get; set; } = [];
+    }
+
+    public sealed class AiStepConfig
+    {
+        public string? Model { get; set; }
+        public string? Effort { get; set; }
     }
 
     /// <summary>

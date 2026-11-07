@@ -259,6 +259,7 @@ static class SpecCommands
         ctx.Span.Attributes["gen_ai.usage.input_tokens"] = usage.InputTokens + usage.CacheReadTokens + usage.CacheWriteTokens;
         ctx.Span.Attributes["gen_ai.usage.output_tokens"] = usage.OutputTokens;
         ctx.Span.Attributes["gen_ai.usage.cost_usd"] = usage.CostUsd;
+        if (usage.Run is { } run) { ctx.Span.Attributes["stangent.ai.effort"] = run.Effort; ctx.Span.Attributes["stangent.ai.mode"] = run.Mode; }
         return usage;
     }
 

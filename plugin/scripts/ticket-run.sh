@@ -7,7 +7,7 @@
 #   [--resolution <base..head>]  stangent ticket draft --kind resolution → stangent-summary-writer → check
 # The logic lives in `stangent ticket`; this only runs the subagent each step names and hands its result back.
 #
-# usage: ticket-run.sh [--jobs N] [--max-cost USD|none] [--stop-at-usage PCT] [--estimate] [--model M] [--no-pull] [--refind] [--no-find] [--match] [--prove] [--hint TEXT] [--questions] [--resolution RANGE] [--tone T] <KEY>...
+# usage: ticket-run.sh [--jobs N] [--max-cost USD|none] [--stop-at-usage PCT] [--estimate] [--model M] [--effort E] [--no-pull] [--refind] [--no-find] [--match] [--prove] [--hint TEXT] [--questions] [--resolution RANGE] [--tone T] (<KEY>... | --repeat N --call <id>...)
 # --no-pull works from the ticket already pulled (a benchmark re-run, no Jira call). --refind searches for the ticket's
 # files again although the ticket is unchanged (its answer is otherwise kept, marked stale once the code moves on).
 # --no-find skips the file finder (a benchmark searches at each ticket's own commit later, in its `files` phase).
@@ -24,12 +24,18 @@
 set -euo pipefail
 
 source "$(dirname "$0")/cost-guard.sh"
+# --model, --effort (D161): this run's settings over stangent.yaml's; neither pinned anywhere and the run refuses before any call.
+# --repeat N --call <id> (D161): a recorded one-turn call N times on the identical input and settings, compared by code.
+source "$(dirname "$0")/ai-run.sh"
 TYPED="$(printf '%q ' "$0" "$@")"
 
 usage() { sed -n 's/^# usage: //p' "$0" >&2; exit 2; }
 
 JOBS=1
 MODEL=""
+EFFORT=""
+REPEAT=""
+CALLS=()
 PROVE=""
 MATCH=""
 HINT=""
@@ -44,13 +50,16 @@ STOPUSAGE=""
 ESTIMATE=""
 KEYS=()
 while [ $# -gt 0 ]; do
-  case "$1" in --jobs|--model|--hint|--resolution|--tone|--max-cost|--stop-at-usage) [ $# -ge 2 ] || usage ;; esac
+  case "$1" in --jobs|--model|--effort|--repeat|--call|--hint|--resolution|--tone|--max-cost|--stop-at-usage) [ $# -ge 2 ] || usage ;; esac
   case "$1" in
     --jobs) JOBS="$2"; shift 2 ;;
     --max-cost) MAXCOST="$2"; shift 2 ;;
     --stop-at-usage) STOPUSAGE="$2"; shift 2 ;;
     --estimate) ESTIMATE=1; shift ;;
     --model) MODEL="$2"; shift 2 ;;
+    --effort) EFFORT="$2"; shift 2 ;;
+    --repeat) REPEAT="$2"; shift 2 ;;
+    --call) CALLS+=("$2"); shift 2 ;;
     --prove) PROVE=1; shift ;;
     --match) MATCH=1; shift ;;
     --no-pull) NOPULL=1; shift ;;
@@ -64,34 +73,34 @@ while [ $# -gt 0 ]; do
     *) KEYS+=("$1"); shift ;;
   esac
 done
-[ ${#KEYS[@]} -gt 0 ] || usage
+if [ -n "$REPEAT" ]; then
+  # The repeat check stands alone: recorded calls only, no tickets, nothing recorded in the project.
+  case "$REPEAT" in 0|1|*[!0-9]*) usage ;; esac
+  [ ${#CALLS[@]} -gt 0 ] && [ ${#KEYS[@]} -eq 0 ] && [ -z "$ESTIMATE" ] || usage
+else
+  [ ${#CALLS[@]} -eq 0 ] || usage
+  [ ${#KEYS[@]} -gt 0 ] || usage
+fi
 case "$JOBS" in ''|0|*[!0-9]*) usage ;; esac
 
-export STANGENT="${STANGENT:-stangent}" CLAUDE="${CLAUDE:-claude}" MODEL PROVE MATCH HINT QUESTIONS RESOLUTION TONE NOPULL REFIND NOFIND
+export STANGENT="${STANGENT:-stangent}" CLAUDE="${CLAUDE:-claude}" MODEL EFFORT PROVE MATCH HINT QUESTIONS RESOLUTION TONE NOPULL REFIND NOFIND
 export PLUGIN_DIR="${PLUGIN_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 # One call with no tools (D66): the step's input files go into the prompt, the output schema is enforced, and the
 # structured answer is written where the step wants it. Every call here has auto memory off: no AI step may see notes an
 # earlier session left about this repo (a benchmark clone's could hold its fixes).
 single_turn() {
-  local step="$1" usage="$2" out schema input label f raw="$2.raw"
+  local step="$1" usage="$2" out schema schema_name agent input label f raw="$2.raw"
   out="$(jq -r '.result.next.output' <<<"$step")"
-  schema="$($STANGENT spec schema "$(jq -r '.result.next.schema' <<<"$step")")"
+  schema_name="$(jq -r '.result.next.schema' <<<"$step")"
+  agent="$(jq -r '.result.next.agent' <<<"$step")"
+  schema="$($STANGENT spec schema "$schema_name")"
   input=""
   while IFS=$'\t' read -r label f; do
     input+="# $label"$'\n\n'"$(cat "$f")"$'\n\n'
   done < <(jq -r '.result.next.prompt' <<<"$step" | grep -E ': \.stangent/' | grep -v '^Write' | sed -E 's/^(.*): (\.stangent\/.*)$/\1\t\2/')
-  rm -f "$out"
-  # stream-json for the same result line plus any usage-limit event (T.2); the result is what's read.
-  printf '%s' "$input" | $CLAUDE -p ${MODEL:+--model "$MODEL"} ${CALL_BUDGET:+--max-budget-usd "$CALL_BUDGET"} --tools "" --setting-sources "" --settings '{"autoMemoryEnabled":false}' --disable-slash-commands \
-    --strict-mcp-config --exclude-dynamic-system-prompt-sections --no-session-persistence --output-format stream-json --verbose \
-    --json-schema "$schema" \
-    --system-prompt "You are one of stangent's AI steps. The input holds your instructions, the only evidence you may use, and on a retry your previous attempt and what to fix. Where the instructions say to write a result file, return that JSON as your structured output instead. Reply with nothing else." \
-    >"$raw" 2>"$2.err" || true
-  jq -Rc 'fromjson? | select(type == "object" and .type == "result")' "$raw" 2>/dev/null | tail -n 1 >"$usage" || true
-  if jq -e '.type == "result" and (.is_error | not)' "$usage" >/dev/null 2>&1; then
-    jq -c '.structured_output // empty' "$usage" >"$out" || true
-  fi
+  # Kept exactly as sent, so --repeat can ask the same again (D161). stream-json for the result line plus any usage-limit event (T.2).
+  recorded_one_turn "$agent" "$schema_name" "$schema" "$input" "$key $name" '["--settings","{\"autoMemoryEnabled\":false}"]' "$raw" "$2.err" "$usage" "$out"
 }
 
 # The file finder (D101): the step's input files go in on stdin (it may not read stangent's folder), it searches a
@@ -141,7 +150,7 @@ agent_search() {
   # In a subshell with its own trap: the worktree goes however this ends (Ctrl+C, a timeout, a kill).
   (
     if [ -n "$tmp" ]; then trap 'git worktree remove --force "'"$tmp"'/repo" >/dev/null 2>&1; rm -rf "'"$tmp"'"' EXIT INT TERM; fi
-    printf '%s' "$input" | (cd "$dir" && $CLAUDE -p ${MODEL:+--model "$MODEL"} --tools "$(jq -r '.tools' <<<"$limits")" --allowedTools "${allowed[@]}" \
+    printf '%s' "$input" | (cd "$dir" && $CLAUDE -p --model "$AI_MODEL" --effort "$AI_EFFORT" --tools "$(jq -r '.tools' <<<"$limits")" --allowedTools "${allowed[@]}" \
       ${denied[@]+--disallowedTools "${denied[@]}"} --permission-mode "$(jq -r '.permissionMode' <<<"$limits")" \
       --setting-sources "" --settings "$FINDER_SETTINGS" --strict-mcp-config --disable-slash-commands --no-session-persistence \
       --max-turns "$(jq -r '.maxTurns' <<<"$limits")" --max-budget-usd "$(jq -r '.maxBudgetUsd' <<<"$limits")" \
@@ -196,7 +205,7 @@ multi_turn() {
   fi
   # No user or project settings (their allow rules would widen the reproducer's), no MCP but the browser given here.
   # Each command starts back in the repo (D89): a `cd src` mustn't make the repo-relative commands it may run miss.
-  CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1 $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" ${MODEL:+--model "$MODEL"} ${mcp[@]+"${mcp[@]}"} \
+  CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1 $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" --model "$AI_MODEL" --effort "$AI_EFFORT" ${mcp[@]+"${mcp[@]}"} \
     --setting-sources "" --settings '{"autoMemoryEnabled":false}' --strict-mcp-config \
     --permission-mode "$(jq -r '.permissionMode' <<<"$limits")" --allowedTools "${tools[@]}" \
     --max-turns "$(jq -r '.maxTurns' <<<"$limits")" --max-budget-usd "$(jq -r '.maxBudgetUsd' <<<"$limits")" \
@@ -231,6 +240,17 @@ run_step() {
     local own=""
     if [ "$name" = prove ]; then own="$(jq -r '.result.next.limits.maxBudgetUsd // empty' <<<"$first")"
     elif [ "$name" = points ]; then own="$(jq -r '.result.next.limits.maxBudgetUsd // empty' <<<"$step")"; fi
+    # The step's model and effort (D161): none pinned is the run's stop, never a default. Every step is checked before
+    # the first call, so a config pinning only some steps stops before anything is paid.
+    local agent
+    agent="$(jq -r '.result.next.agent // empty' <<<"$([ "$name" = prove ] && printf '%s' "$first" || printf '%s' "$step")")"
+    if [ -z "$agent" ]; then case "$name" in points) agent=stangent-file-finder ;; prove) agent=stangent-bug-reproducer ;; esac; fi
+    if { [ -z "$AI_ALL_CHECKED" ] && ! ai_settings_all; } || ! ai_settings "$agent"; then
+      printf 'error\t%s\t%s\t%s\n' "$key" "$name" "$AI_SETTINGS_ERROR"
+      rm -f "$usage"
+      exit 255
+    fi
+    AI_ALL_CHECKED=1
     if ! guard_before_call "$own"; then
       guard_stopped_line "$key" | sed "s/\$/\t$name/"
       rm -f "$usage" "$usage.raw" "$usage.err"
@@ -254,6 +274,7 @@ run_step() {
       rm -f "$usage"
       exit 255
     fi
+    stamp_usage "$usage" "$agent" "$(case "$name" in prove|points) echo agentic ;; *) echo batch ;; esac)"
     step="$($STANGENT ticket check "$key" --step "$name" --usage "$usage" || true)"
     stop_if_no_envelope "$step" "$key" "$name" "$usage"
     # A reproducer's retry runs under what's left of the attempt's cap: the check returns the new limits and prompt.
@@ -314,6 +335,14 @@ git worktree prune 2>/dev/null || true
 if [ -n "$PROVE" ] && [ "$JOBS" -gt 1 ]; then echo "note: --prove runs one ticket at a time (the app's port)" >&2; JOBS=1; fi
 
 guard_init "$MAXCOST" "$STOPUSAGE" "$JOBS" "$TYPED"
+if [ -n "$REPEAT" ]; then
+  for id in "${CALLS[@]}"; do
+    rc=0; repeat_call "$id" "$REPEAT" || rc=$?
+    [ "$rc" -ne 255 ] || break
+    [ "$rc" -eq 0 ] || guard_mark_refused '{"ok":false}' "$id"
+  done
+  guard_finish 0
+fi
 # An estimate before anything runs (T.2). "At least": the steps asked for; the file finder only runs where it's needed,
 # and a retry adds more. A ticket's real count can only be known once its pull and points are done.
 per=0

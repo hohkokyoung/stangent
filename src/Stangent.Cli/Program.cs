@@ -46,7 +46,7 @@ status.SetAction(pr => Cli.Run(pr, "status", ctx =>
     {
         ["root"] = ctx.Repo.Root,
         ["version"] = TelemetryWriter.ServiceVersion,
-        ["ai"] = new JsonObject { ["enabled"] = ctx.Repo.Config.Ai.Enabled },
+        ["ai"] = new JsonObject { ["enabled"] = ctx.Repo.Config.Ai.Enabled, ["model"] = ctx.Repo.Config.Ai.Model, ["effort"] = ctx.Repo.Config.Ai.Effort },
         ["artifacts"] = new JsonObject { ["total"] = entries.Count, ["byType"] = byType },
         ["detectors"] = new JsonArray([.. ctx.Repo.Config.Detectors.Select(d => (JsonNode)d)]),
         ["telemetryDir"] = ctx.Telemetry.Dir,
@@ -284,6 +284,7 @@ graph.Subcommands.Add(import);
 SpecCommands.Add(root);
 FsdCommands.Add(root);
 ReqCommands.Add(root);
+AiCommands.Add(root);
 JiraCommands.Add(root);
 TicketCommands.Add(root);
 

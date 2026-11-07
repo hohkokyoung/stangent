@@ -275,3 +275,24 @@ Every paid step goes through `plugin/scripts/cost-guard.sh`, from `spec-run.sh`,
 | Can't promise | Claude Code checks `--max-budget-usd` between turns, so one long answer can pass it. The cap can be overrun by that much |
 
 Nothing here has met real Claude Code: fakes only (D120).
+
+## AI settings and the repeat check (D161)
+
+Every AI call runs on a model and effort someone chose, and says so.
+
+- **Pinned in `stangent.yaml`:** `ai: { model: claude-sonnet-5-5, effort: medium, steps: { stangent-link-judge: { model: claude-opus-5-5, effort: high } } }`. A driver's `--model` and `--effort` override them for one run. `stangent ai settings <agent> [--model] [--effort]` says what a step runs with and where each value came from (`--model`, `ai.steps.<agent>.model`, `ai.model`). Effort is one of Claude Code's levels: `low`, `medium`, `high`, `xhigh`, `max`.
+- **Nothing pinned, nothing runs.** With no model or no effort for a step, `ai settings` refuses (`ai_settings_missing`, exit 2). Before a job's first AI call the drivers check every step at once (`ai settings --all`, the 16 agents in `plugin/agents/`, a test holding the list equal), so a config pinning only some steps stops before anything is paid, not halfway through a page; the line is `error\t<id>\t<why>`. A run with nothing paid to do never asks. There's no default: a default is how the earlier runs ended up at an effort nobody chose or recorded.
+- **Every call is told both:** the one-turn calls, `--agents` subagents, the file finder and the reproducer all get `--model` and `--effort`.
+- **Recorded:** the driver adds a `stangent_run` block to Claude Code's result before `check --usage` reads it: the agent, the model asked for, effort, mode (`batch`, `agents`, `agentic`) and `claude --version`. Each usage record then carries `settings` beside the model Claude reports. A call no driver described (by hand with `--usage`, or from before D161) reads `unknown`; a record summing calls that differ reads `mixed`. `reference-page` v1 grew an optional `settings` on its usage records in place: old pages still validate and nothing reads it but `ai runs`, so nothing needs review.
+- **Settings are in no input hash.** Changing them re-runs nothing by itself. `stangent ai runs [--differs]` lists every saved usage record under `specs/`, `.stangent/tickets/` and `.stangent/spec-ask/` (all reused while their inputs match), with its settings, and with `--differs` only those made under other settings than are pinned now, or not known. Re-running them is a person's call.
+
+**Every one-turn call is kept as sent:** `.stangent/calls/<id>/` holds `input.txt`, `schema.json`, `call.json` (agent, schema name, target, model, effort, the driver's extra Claude Code options as `extraArgs`, time) and `answer.json`. The call reads its stdin from `input.txt`, so the bytes kept are the bytes sent. The id is a hash of all of it but the time and target, so the same call twice is one folder.
+
+**The repeat check:** `spec-run.sh --repeat N --call <id>...` (or `ticket-run.sh`, the same) asks a recorded call N more times, on that input file, with the model, effort and extra options it was recorded with (a run's `--model` doesn't change them). It needs a cap like any paid run, runs no `prepare` or `check`, and records nothing in the project: the answers go to `.stangent/calls/<id>/repeat-<time>/1.json…N.json`, with `compare.json`. One line per call: `repeat:steady|unsteady\t<id>\t<agreed>/<items>`, or `repeat:failed\t<id>\t<why>` when a call gave no answer or the compare failed (exit 1): failed calls never read as steady.
+
+`stangent ai compare <answer>... --schema <file>` compares by code. A field is dropped as free text only when its name is on a fixed list (`note`, `reason`, `why`, `text`, `title`, `statement` and the like) **and** the call's own schema leaves it a plain string everywhere: a field with a pattern, an enum or a constant is a decision whatever it's called, so a judge's `statement` id stays and a writer's `statement` sentence goes. Quotes and words code checks (`extra`) always stay. `ignored` lists what was dropped. Lists count as sets, and each top-level field, or each element of a top-level list, is one item. A step is steady only when every run answered and every run gives every item; `missing` lists runs with no answer, `differ` each item not in every run, with the runs that gave it.
+
+**No in-session route (D162).** The plugin's commands run every AI step through the batch drivers, never as a subagent in the session, which couldn't pin effort; no command allows `Task`, and a test holds that.
+
+**Limits:** only one-turn calls are kept and repeated, not the file finder's or reproducer's searches. A recorded call holds the assembled input, up to the bundle's size; `.stangent/` is never committed. Fakes only so far: no real Claude Code has run through it.
+

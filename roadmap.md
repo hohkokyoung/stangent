@@ -60,6 +60,7 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 
 | What | Decisions | Phase |
 |---|---|---|
+| **Next, ground up (D156):** (1) foundation: model, effort and settings on every run record, a three-run repeatability check (*built 2026-11-08 as D161, fakes only; its fresh check (D158) next*); (2) code graph checked for what flows need on Sonarr, Kavita, nopCommerce, rebuilt where it falls short; (3) areas → flows (D154); (4) pages word only code's facts (P1); (5) linking: sentence ids, no AI candidate finder, sentences not requirements (P2–P4); (6) tickets: matcher parked, code signals first, comment templates (P5–P7); (7) unproven AI switches cut (P8) | D154, D155, D156, D138 | 0, 1, 2c, 3 |
 | A code-reading check answers "is it true?" before a finding reaches a PM, with a way of catching real findings it throws away; false alarms counted from it, not from PM rulings. What does the check isn't settled | D137, D119 | 2c |
 | Requirements citing claims, once `claim-links` has been tried with a real judge | D145, D143, D99 | 2c |
 | Table facts from constants and SQL seed data, beside API fields and enums; an AI proposing `table-map.yaml` for a person to approve. Both after the owner answers D68's question | D124, D68 | 2b |
@@ -154,5 +155,5 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 
 ## Checks owed
 
-**Checks owed:** every build under D120 (no fresh check while building); the hard stop, `stream-json` on one-turn calls and the read-only hook against real Claude Code, on the first paid run (D126); the proof re-run (D109); a real-FSD dry run (D56); 1d part 2, context scoping (D45); 2b's noise re-measure (D68); hand
+**Checks owed:** every build under D120 (no fresh check while building); D161 against real Claude Code (`--effort` on every call kind, the stamped result, a real `--repeat`), on the first paid run, and the benchmark configs pinning `ai.model` and `ai.effort` first (the owner's choice; until then every paid run refuses); the hard stop, `stream-json` on one-turn calls and the read-only hook against real Claude Code, on the first paid run (D126); the proof re-run (D109); a real-FSD dry run (D56); 1d part 2, context scoping (D45); 2b's noise re-measure (D68); hand
 checks on 1b, 1c (D28), 2a, 2b (D67); a third repo of another shape (D94); a sign-in approved with only D82's scopes.

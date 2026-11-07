@@ -30,7 +30,17 @@
         "cacheReadTokens": { "type": "integer", "minimum": 0 },
         "cacheWriteTokens": { "type": "integer", "minimum": 0 },
         "costUsd": { "type": "number", "minimum": 0 },
-        "ms": { "type": "integer", "minimum": 0 }
+        "ms": { "type": "integer", "minimum": 0 },
+        "settings": {
+          "description": "What the driver ran the calls with (D161); unknown when no driver said, mixed when calls differed.",
+          "type": "object",
+          "required": ["agent", "model", "effort", "mode", "claudeVersion"],
+          "additionalProperties": false,
+          "properties": {
+            "agent": { "type": "string" }, "model": { "type": "string" }, "effort": { "type": "string" },
+            "mode": { "type": "string" }, "claudeVersion": { "type": "string" }
+          }
+        }
       }
     }
   },

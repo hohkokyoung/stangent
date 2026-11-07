@@ -92,8 +92,9 @@ public sealed class SpecRunDriverTests : IDisposable
         Assert.Contains("--no-session-persistence", claude);
         Assert.Contains("INPUT-TEXT", rig.ClaudeStdin);
         Assert.Equal("""{"done":true}""", File.ReadAllText(Path.Combine(rig.Work, ".stangent/out.json")).Trim());
-        Assert.Equal(["stangent spec prepare p1", "stangent spec schema page-writer-output.v1.json"], rig.StangentCalls().Take(2));
-        Assert.StartsWith("stangent spec check p1 --usage ", rig.StangentCalls()[2]);
+        Assert.Contains("--effort medium", claude);
+        Assert.Equal(["stangent spec prepare p1", "stangent ai settings --all --model sonnet", "stangent ai settings stangent-page-writer --model sonnet", "stangent spec schema page-writer-output.v1.json"], rig.StangentCalls().Take(4));
+        Assert.StartsWith("stangent spec check p1 --usage ", rig.StangentCalls()[4]);
     }
 
     [Fact]

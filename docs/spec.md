@@ -23,7 +23,7 @@ Every AI step is the same small loop. The CLI holds all the logic; a driver only
 
 Drivers: `/stangent:spec-generate` and `/stangent:fsd-link` in a Claude Code session, and
 `plugin/scripts/spec-run.sh` for batches and CI (headless `claude -p --output-format json`, so tokens, cost, model and
-time are recorded per step; `--jobs N` runs pages side by side). The batch driver makes **one turn per call** (D66):
+time are recorded per step, with the model and effort it ran under (D161, `docs/foundation.md`); `--jobs N` runs pages side by side). The batch driver makes **one turn per call** (D66):
 the step's input files go into the prompt, Claude Code runs with no tools and none of the user's settings, skills or
 MCP servers (`--tools "" --setting-sources "" --disable-slash-commands --strict-mcp-config`), the output schema is
 enforced with `--json-schema` (`next.schema`; `stangent spec schema <name>` prints it), and the driver writes the

@@ -7,7 +7,7 @@
 # The logic lives in `stangent spec`, `stangent fsd` and `stangent req`; this only runs the subagent each step names,
 # then hands its result back.
 #
-# usage: spec-run.sh [--jobs N] [--max-cost USD|none] [--stop-at-usage PCT] [--estimate] [--model M] [--retry-failed] [--agents] [--chapter N] (<page id>... | --for-fsd <doc> | --for-ticket <key> | --all | --stale | --new | --fsd <doc> | --disprove <doc> | --req <doc> | --ask <question>)
+# usage: spec-run.sh [--jobs N] [--max-cost USD|none] [--stop-at-usage PCT] [--estimate] [--model M] [--effort E] [--retry-failed] [--agents] [--chapter N] (<page id>... | --repeat N --call <id>... | --for-fsd <doc> | --for-ticket <key> | --all | --stale | --new | --fsd <doc> | --disprove <doc> | --req <doc> | --ask <question>)
 # --for-fsd <doc> (with --chapter N) and --for-ticket <key>: the normal way to make pages (I.1): only the ones that document's sections or that ticket's bundle need, and aren't written.
 # --stale: pages already written whose code changed; --new adds every page never written; --all is every page the graph calls for.
 # --ask <question>: one question from the reference pages (spec.ask, E.2); prints its status line, then the result as one JSON line.
@@ -24,6 +24,10 @@
 set -euo pipefail
 
 source "$(dirname "$0")/cost-guard.sh"
+# --model, --effort (D161): this run's settings over stangent.yaml's. Neither pinned anywhere: the run refuses before any call.
+# --repeat N --call <id> (D161): a recorded one-turn call (.stangent/calls/<id>) N times on the identical input and settings,
+# compared by code; nothing in the project is recorded.
+source "$(dirname "$0")/ai-run.sh"
 TYPED="$(printf '%q ' "$0" "$@")"
 
 usage() { sed -n 's/^# usage: //p' "$0" >&2; exit 2; }
@@ -42,6 +46,9 @@ add_ids() {
 JOBS=1
 MODE=spec
 MODEL=""
+EFFORT=""
+REPEAT=""
+CALLS=()
 AGENTS=""
 RETRY=""
 NAMED=""
@@ -61,13 +68,16 @@ STOPUSAGE=""
 ESTIMATE=""
 DOC=""
 while [ $# -gt 0 ]; do
-  case "$1" in --jobs|--model|--fsd|--for-fsd|--for-ticket|--disprove|--req|--only|--chapter|--ask|--max-cost|--stop-at-usage) [ $# -ge 2 ] || usage ;; esac
+  case "$1" in --jobs|--model|--effort|--repeat|--call|--fsd|--for-fsd|--for-ticket|--disprove|--req|--only|--chapter|--ask|--max-cost|--stop-at-usage) [ $# -ge 2 ] || usage ;; esac
   case "$1" in
     --jobs) JOBS="$2"; shift 2 ;;
     --max-cost) MAXCOST="$2"; shift 2 ;;
     --stop-at-usage) STOPUSAGE="$2"; shift 2 ;;
     --estimate) ESTIMATE=1; shift ;;
     --model) MODEL="$2"; shift 2 ;;
+    --effort) EFFORT="$2"; shift 2 ;;
+    --repeat) REPEAT="$2"; shift 2 ;;
+    --call) CALLS+=("$2"); shift 2 ;;
     --retry-failed) RETRY="--retry-failed"; shift ;;
     --agents) AGENTS=1; shift ;;
     --all) add_ids '.result.pages[].id' spec pages; shift ;;
@@ -85,7 +95,14 @@ while [ $# -gt 0 ]; do
     *) PAGES+=("$1"); NAMED=1; shift ;;
   esac
 done
-[ -n "$NAMED" ] || usage
+if [ -n "$REPEAT" ]; then
+  # The repeat check stands alone: recorded calls only, no pages, nothing recorded in the project.
+  case "$REPEAT" in 0|1|*[!0-9]*) usage ;; esac
+  [ ${#CALLS[@]} -gt 0 ] && [ -z "$NAMED" ] && [ -z "$AGENTS" ] && [ -z "$ESTIMATE" ] || usage
+else
+  [ ${#CALLS[@]} -eq 0 ] || usage
+  [ -n "$NAMED" ] || usage
+fi
 [ -z "$CHAPTER" ] || [ -n "$CHAPTERED" ] || usage
 case "$JOBS" in ''|0|*[!0-9]*) usage ;; esac
 
@@ -98,15 +115,17 @@ if [ ${#ONLY[@]} -gt 0 ]; then
   PAGES=(${KEPT[@]+"${KEPT[@]}"})
 fi
 
-export STANGENT="${STANGENT:-stangent}" CLAUDE="${CLAUDE:-claude}" MODEL RETRY MODE AGENTS
+export STANGENT="${STANGENT:-stangent}" CLAUDE="${CLAUDE:-claude}" MODEL EFFORT RETRY MODE AGENTS
 export PLUGIN_DIR="${PLUGIN_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 # One call with no tools: every .stangent/ file the prompt names goes into the input, Claude Code enforces the output
 # schema, and the structured answer is written where the step wants it. The input hash is the same in both modes.
 single_turn() {
-  local step="$1" usage="$2" out schema input label f text raw="$2.raw"
+  local step="$1" usage="$2" out schema schema_name agent input label f text raw="$2.raw"
   out="$(jq -r '.result.next.output' <<<"$step")"
-  schema="$($STANGENT spec schema "$(jq -r '.result.next.schema' <<<"$step")")"
+  schema_name="$(jq -r '.result.next.schema' <<<"$step")"
+  agent="$(jq -r '.result.next.agent' <<<"$step")"
+  schema="$($STANGENT spec schema "$schema_name")"
   input=""
   while IFS=$'\t' read -r label f; do
     # A stored bundle holds only what's unique to it; code puts the shared text back just before the call (D130).
@@ -117,17 +136,8 @@ single_turn() {
     fi
     input+="# $label"$'\n\n'"$text"$'\n\n'
   done < <(jq -r '.result.next.prompt' <<<"$step" | grep -E ': \.stangent/' | grep -v '^Write' | sed -E 's/^(.*): (\.stangent\/.*)$/\1\t\2/')
-  rm -f "$out"
-  # stream-json for the same result line plus any usage-limit event (T.2); the result is what's read.
-  printf '%s' "$input" | $CLAUDE -p ${MODEL:+--model "$MODEL"} ${CALL_BUDGET:+--max-budget-usd "$CALL_BUDGET"} --tools "" --setting-sources "" --disable-slash-commands \
-    --strict-mcp-config --exclude-dynamic-system-prompt-sections --no-session-persistence --output-format stream-json --verbose \
-    --json-schema "$schema" \
-    --system-prompt "You are one of stangent's AI steps. The input holds your instructions, the only evidence you may use, and on a retry your previous attempt and what to fix. Where the instructions say to write a result file, return that JSON as your structured output instead. Reply with nothing else." \
-    >"$raw" 2>"$2.err" || true
-  jq -Rc 'fromjson? | select(type == "object" and .type == "result")' "$raw" 2>/dev/null | tail -n 1 >"$usage" || true
-  if jq -e '.type == "result" and (.is_error | not)' "$usage" >/dev/null 2>&1; then
-    jq -c '.structured_output // empty' "$usage" >"$out" || true
-  fi
+  # Kept exactly as sent, so --repeat can ask the same again (D161). stream-json for the result line plus any usage-limit event (T.2).
+  recorded_one_turn "$agent" "$schema_name" "$schema" "$input" "$page" '[]' "$raw" "$2.err" "$usage" "$out"
 }
 
 # stangent crashed: no envelope, so no next step to read. Without this the loop below would call Claude on nothing, forever.
@@ -145,6 +155,14 @@ run_steps() {
   while [ "$action" != "none" ]; do
     agent="$(jq -r '.result.next.agent' <<<"$step")"
     prompt="$(jq -r '.result.next.prompt' <<<"$step")"
+    # The step's model and effort (D161): none pinned is the run's stop, never a default. Every step is checked before
+    # the first call, so a config pinning only some steps stops before anything is paid, not halfway through a page.
+    if { [ -z "$AI_ALL_CHECKED" ] && ! ai_settings_all; } || ! ai_settings "$agent"; then
+      printf 'error\t%s\t%s\n' "$page" "$AI_SETTINGS_ERROR"
+      rm -f "$usage"
+      exit 255
+    fi
+    AI_ALL_CHECKED=1
     if ! guard_before_call; then
       guard_stopped_line "$page"
       rm -f "$usage" "$usage.raw" "$usage.err"
@@ -154,7 +172,7 @@ run_steps() {
       # A subagent reads files itself, so each file its prompt names goes back to its full text first (D130).
       while IFS= read -r f; do $STANGENT spec assemble --in-place "$f" >/dev/null || true; done < <(jq -r '.result.next.prompt' <<<"$step" | grep -E ': \.stangent/' | grep -v '^Write' | sed -E 's/^.*: (\.stangent\/.*)$/\1/')
       # Absolute rules and each command back in the repo (D89): a `cd` mustn't change what the rules allow.
-      CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1 $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" ${MODEL:+--model "$MODEL"} ${CALL_BUDGET:+--max-budget-usd "$CALL_BUDGET"} \
+      CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1 $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:$agent" --model "$AI_MODEL" --effort "$AI_EFFORT" ${CALL_BUDGET:+--max-budget-usd "$CALL_BUDGET"} \
         --settings "$READ_ONLY_SETTINGS" --permission-mode dontAsk --allowedTools "Read(/$(pwd -P)/.stangent/**)" "Edit(/$(pwd -P)/.stangent/**)" --output-format json "$prompt" >"$usage" 2>"$usage.err" || true
       cp "$usage" "$usage.raw" 2>/dev/null || : >"$usage.raw"
     else
@@ -175,6 +193,7 @@ run_steps() {
       rm -f "$usage"
       exit 255
     fi
+    stamp_usage "$usage" "$agent" "$([ -n "$AGENTS" ] && echo agents || echo batch)"
     step="$($STANGENT "$@" --usage "$usage" || true)"
     if no_envelope "$step"; then
       printf 'error\t%s\tstangent check gave no result\n' "$page"
@@ -228,9 +247,17 @@ run_page() {
 export -f run_page run_steps disprove single_turn no_envelope
 export -f guard_before_call guard_after_call guard_stop guard_stopped_line guard_lock guard_unlock guard_mark_refused
 
-[ ${#PAGES[@]} -gt 0 ] || exit 0
+[ ${#PAGES[@]} -gt 0 ] || [ -n "$REPEAT" ] || exit 0
 
 guard_init "$MAXCOST" "$STOPUSAGE" "$JOBS" "$TYPED"
+if [ -n "$REPEAT" ]; then
+  for id in "${CALLS[@]}"; do
+    rc=0; repeat_call "$id" "$REPEAT" || rc=$?
+    [ "$rc" -ne 255 ] || break
+    [ "$rc" -eq 0 ] || guard_mark_refused '{"ok":false}' "$id"
+  done
+  guard_finish 0
+fi
 # An estimate before anything runs (T.2). "At least": each kind's fewest calls per item; a retry adds more.
 case "$MODE" in
   spec) guard_estimate "spec check" $((${#PAGES[@]} * 2)) ;;

@@ -11,6 +11,7 @@ public sealed class DriverRig : IDisposable
 {
     const string ClaudeBody = """
         #!/bin/bash
+        if [ "$1" = --version ]; then echo "9.9.9 (Claude Code)"; exit 0; fi
         printf 'claude %s\n' "$*" >>"$FAKE_LOG"
         printf 'claude-cwd %s\n' "$(pwd -P)" >>"$FAKE_LOG"
         cat >>"$FAKE_DIR/claude-stdin"
@@ -62,6 +63,10 @@ public sealed class DriverRig : IDisposable
         "spec assemble --in-place "*) ;;
         "spec assemble "*) cat "${@: -1}" ;;
         "run-check "*) echo '{"ok":true,"result":{"checked":true}}' ;;
+        "ai settings "*) a="$3"; m=fake-model; e=medium; shift 3
+          while [ $# -gt 0 ]; do case "$1" in --model) m="$2"; shift ;; --effort) e="$2"; shift ;; esac; shift; done
+          printf '{"ok":true,"result":{"agent":"%s","model":"%s","effort":"%s"}}\n' "$a" "$m" "$e" ;;
+        "ai compare "*) echo '{"ok":true,"result":{"steady":true,"agreed":1,"decisions":1}}' ;;
         "cost estimate "*) echo '{"ok":true,"result":{"estimateUsd":null,"basis":"fake"}}' ;;
         *) echo "fake stangent: unexpected: $*" >&2; exit 99 ;;
         esac
