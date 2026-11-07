@@ -8,70 +8,70 @@ provides: {}
 
 # Rebuild layer 2: is the code graph ready for flows? (D156, D154, D159)
 
-Checked 2026-11-08 on **Sonarr only** (owner's call: Kavita and nopCommerce skipped to save tokens).
-No paid AI. Graph built with this branch's code at `be858cd` on Sonarr commit `0bffefe`:
-38,898 points, 180,020 lines, 96 blind spots, no load errors, ~50 s.
+Checked 2026-11-08 on **Sonarr** (React + .NET, Dapper) and **Kavita** (Angular + .NET, Entity Framework),
+so each gap can be called Stangent-wide or one app's habit. nopCommerce (Razor) not checked yet (owner:
+save tokens; Razor is its own step). No paid AI. Graphs built with this branch's code at `be858cd`:
+
+| Repo | Commit | Points | Lines | Blind spots | Load errors | Time |
+|---|---|---|---|---|---|---|
+| Sonarr | `0bffefe` | 38,898 | 180,020 | 96 | 0 | ~50 s |
+| Kavita | `2d22536` (pinned, shallow clone, no 📜) | 32,358 | 153,841 | 35 | 0 | ~70 s |
 
 ## Bottom line
 
-The "Add series" path is **mostly there** from screen to database, but three breaks would make a
-flow wrong, not just thin: the endpoint can't tell Add from Delete (verbs lost), the call is linked to
-two API versions, and the database write stops at a generic `Insert` with no table. Labels, validation
-rules and authorisation are **not read at all**.
+Both paths reach from the screen to the save. Kavita's frontend half is clean (exact verb and URL);
+Sonarr's breaks on its own verb attributes and base-URL constant. The **Stangent-wide** gaps are on the
+back half and in the facts: which table a save writes, outside calls (missing with no blind spot),
+events sent to the browser, and labels, validation and authorisation, which aren't read on either app.
 
-## 1. Add series: click → database
+## 1. One action per repo: click → database
 
-| Step | Result | Evidence |
+**Sonarr, "Add series"** (`AddNewSeriesModalContent`, button `onPress={handleAddSeriesPress}`).
+**Kavita, the star button "Add to Want to Read"** (`series-detail.component.html:99`, `(click)="toggleWantToRead()"`).
+
+| Step | Sonarr | Kavita |
 |---|---|---|
-| Route → screen | works | `page:tsconfig.json\|/add/new` renders down to `AddNewSeriesModalContent` in 4 `renders` steps |
-| Button → handler | **missing** | `onPress={handleAddSeriesPress}` (line 367) is a `useCallback` inside the component, not a point; the graph only knows the whole component calls `useAddSeries` |
-| Handler → HTTP call | partly | `useAddSeries` (a react-query hook, not Redux: Sonarr moved this screen off Redux) `calls-http` 🟡 → `ANY /api/v5/Series` **and** `ANY /api/v3/Series`. The code says `method: 'POST'`, and `apiRoot = '/api/v5'` |
-| HTTP → endpoint | **wrong** | `ANY /api/v5/Series` routes to `AddSeries`, `DeleteSeries`, `UpdateSeries`, `GetResourceByIdWithErrorHandler`. Sonarr's `[RestPostById]` derives from `HttpPostAttribute`, `[RestGetById]` implements `IActionHttpMethodProvider`; the detector doesn't read either, so verb and `{id}` are lost |
-| Endpoint → service | works | `SeriesController.AddSeries` → `IAddSeriesService.AddSeries` → `AddSeriesService.AddSeries` → `SeriesService.AddSeries` (depth 1–4, `calls` + `dispatches-to`) |
-| Service → database write | partly | reaches `IBasicRepository`1.Insert` → `BasicRepository`1.Insert` (depth 5–6), but as the open generic. **No `table` points exist in Sonarr** (`select count(*) from nodes where kind='table'` = 0): Sonarr maps tables with its own Dapper `TableMapping`, which `entity-tables` doesn't read |
-| Published event | works | `triggered-by` gives `SeriesAddedHandler.Handle`, `SceneMappingService.Handle`, `TrackedDownloadService.Handle` from `SeriesService.AddSeries`; the event type is in `facts` (`handle`), not on the line |
-| Outside call | **missing, silently** | `AddSkyhookData` → `IProvideSeriesInfo.GetSeriesInfo` → SkyHook over `_requestBuilder.Create()…` + `_httpClient.Get`. No `call` fact, no `calls-http` line, **and no blind spot** for it |
+| Route → screen | works: `page:tsconfig.json\|/add/new` → modal in 4 `renders` | works (not re-traced; 51 pages, 303 templates) |
+| Button → handler | **missing**: inline `useCallback` isn't a point; only "component calls `useAddSeries`" | partly: `SeriesDetailComponent.template` `calls` `toggleWantToRead`, but not from which element (the template has 180 lines out) |
+| Handler → HTTP call | partly: `useAddSeries` (react-query, not Redux) 🟡 → `ANY /api/v5/Series` **and** `ANY /api/v3/Series`; code says `POST`, `apiRoot = '/api/v5'` | works: `toggleWantToRead` → `ActionService.addMultipleSeriesToWantToReadList` → `MemberService.addSeriesToWantToRead` 🟡 → `POST /api/want-to-read/add-series` only |
+| HTTP → endpoint | **wrong**: `ANY /api/v5/Series` routes to Add, Delete, Update and Get (`[RestPostById]` derives from `HttpPostAttribute`, `[RestGetById]` implements `IActionHttpMethodProvider`; neither read) | works: → `WantToReadController.AddSeries` |
+| Endpoint → service | works: → `IAddSeriesService` → `AddSeriesService` → `SeriesService.AddSeries` | works: → `IUserRepository.GetUserByUsernameAsync`, `HasAccessToSeries`, `IUnitOfWork.CommitAsync` |
+| Save → table | partly: reaches `BasicRepository`1.Insert` as the open generic; **0 table points** (Dapper `TableMapping` not read) | partly: `uses` `AppUserWantToRead` + `AppUser.WantToRead`, but **no table `AppUserWantToRead`**: it has no `DbSet`, only a navigation and `ToTable` in the model snapshot. 62 tables found |
+| Write vs read | missing: `Insert` not classed as a write | missing: the write is `user.WantToRead.Add(…)` + `CommitAsync`; nothing marks it a write |
+| Events | works: `triggered-by` → `SeriesAddedHandler.Handle` and 2 others | missing: 0 `triggered-by`; Kavita sends events to the browser with SignalR (`SendMessageAsync(MessageFactory…)`, 34 files), not read |
+| Background work | — | partly: `BackgroundJob.Enqueue(() => ScrobbleWantToReadUpdate…)` is a plain `calls`, not marked "runs later" |
+| Outside call | **missing, silently**: SkyHook via `_requestBuilder.Create()` + `_httpClient.Get`, no fact, no blind spot | **missing, silently**: Flurl in 23 files; no C# outside-call fact or blind spot (the 417 `call` facts are the frontend's) |
 
 ## 2. Facts code can read
 
-| Need | Result | Evidence |
+| Need | Sonarr | Kavita |
 |---|---|---|
-| Button's visible label | missing | `translate('AddSeriesWithTitle', { title })` is only a `calls` → `translate`; the key and its `en.json` text are not stored (`en.json` is already in `tickets.textFiles`) |
-| Authorisation markers | missing | `[Authorize(Policy="UI")]`, `[AllowAnonymous]` exist in `Sonarr.Http`; no fact kind records attributes. Sonarr's frontend has no route guards to read |
-| Validation rules | missing | `SeriesController` builds 15 FluentValidation rules (`PostValidator.RuleFor(s => s.TvdbId).GreaterThan(0)`, `.Title).NotEmpty()`…); none recorded. Fact kinds are only `call, handle, bind, read, endpoint-types, json-shape, shape` |
-| Constants as facts | partly | constants are points with `uses` lines (`kinds.PRIMARY`, `inputTypes.TAG`), but their values aren't stored |
-| Writes vs reads | missing | no tables, so no write/read split; repository method names (`Insert` vs `Get`) aren't classed |
-| Outside calls | partly | `http-services` finds literal URLs (`call` facts: 103, mostly tests); builder-made URLs are missed with no blind spot |
-| Published events | works | 1,188 `triggered-by` lines; 313 `handle` facts |
+| Visible label | missing: `translate('AddSeriesWithTitle')` key not stored | missing: `t('add-to-want-to-read')` in `ngbTooltip` not stored (key in `assets/langs/en.json`) |
+| Authorisation | missing: `[Authorize(Policy="UI")]`, `[AllowAnonymous]` not stored | missing: `[Authorize]` on `BaseApiController` not stored |
+| Route guards | none in the app | partly: `routes` `uses` `authGuard`, but not which route has it (`canActivate` at lines 16, 58, 82) |
+| Validation | missing: 15 FluentValidation rules in `SeriesController` | missing: 103 DataAnnotations in DTOs (`[Required]`, `[Range]`…); this action's DTO has none |
+| Constant values | partly: constants are points, values not stored | same |
+| Published events | works (`IHandle<T>`, 1,188 lines) | missing (SignalR) |
 
-## 3. Blind spots that break a flow's path
+## 3. Combined gap list (nothing fixed yet, D159)
 
-Ranked by how badly they break a flow:
+All fixes are code only (D155), no paid AI. Cost is build effort. "Where" says what the two apps show.
 
-1. **Custom verb attributes → `ANY`** (no blind spot recorded): one endpoint stands for four actions.
-2. **Base URL from an exported constant** (`apiRoot`): every frontend call matches v3 and v5.
-3. **Generic repository with no table**: the write's target is unknown.
-4. **Builder-made outside URLs**: missing with no blind spot, so a flow looks complete when it isn't.
-5. **Inline handlers**: a screen with several buttons can't say which button does what.
-6. Recorded blind spots (96: reflection 38, runtime-built frontend URLs 17, config 2…) don't touch this flow.
+| # | Gap | Where | Recommended fix | Rough cost |
+|---|---|---|---|---|
+| G1 | Custom verb attributes → `ANY` | Sonarr only | read `IActionHttpMethodProvider` / `HttpMethodAttribute` base types and `IRouteTemplateProvider` through Roslyn | small |
+| G2 | Base URL from an exported constant | Sonarr only | resolve an exported string constant used as base URL | small |
+| G3 | Save doesn't reach a table | **both** (Dapper map; EF tables without `DbSet`) | EF: entities reached through navigations and `ToTable`; Dapper: `Mapper.Entity<T>("Name")`; generic `Repository<T>` calls resolve to `T`'s table | medium |
+| G3b | Write vs read | **both** | a fixed rule: repository `Insert/Update/Delete`, EF `Add/Remove` on a set or navigation + `SaveChanges/Commit` = write; else read | small, after G3 |
+| G4 | Outside calls silent | **both** (request builder; Flurl) | blind spot for any HTTP client call with a non-literal URL, plus Flurl's string-extension calls as `call` facts | small–medium |
+| G5 | Button → handler | **both** (React inline handlers; Angular template-level only) | React: inline handlers become points; both: the element (`onPress`/`(click)`) becomes the line's source | medium |
+| G6 | Button label | **both** | store `translate('k')` / `t('k')` keys on the element; look them up in configured text files | small–medium, after G5 |
+| G7 | Validation rules | **both** (FluentValidation; DataAnnotations) | rules as facts: property, rule, constant | medium |
+| G8 | Authorisation and guards | **both** | `[Authorize]`/`[AllowAnonymous]`/policy on endpoints (inherited from base controllers); Angular `canActivate` per route | small |
+| G9 | Constant values | **both** | store literal values of `const` fields and exports | small |
+| G10 | Events to the browser (SignalR) | Kavita seen; Sonarr also has SignalR | hub sends as `publishes` facts: message name, from where | small–medium |
+| G11 | Background jobs look like direct calls | Kavita (Hangfire) | mark `BackgroundJob.Enqueue/Schedule` lambdas as "runs later" | small |
 
-## Gaps for the owner (nothing fixed yet, D159)
-
-All fixes are code only (D155), no paid AI. Cost is build effort in this repo.
-
-| # | Gap | Recommended fix | Rough cost |
-|---|---|---|---|
-| G1 | Verbs lost on custom attributes | read `IActionHttpMethodProvider` / `HttpMethodAttribute` base types and `IRouteTemplateProvider` templates through Roslyn, not attribute names | small |
-| G2 | Two API versions matched | the extractor resolves an exported string constant used as base URL; match only that prefix | small |
-| G3 | No table, generic `Insert` | read Sonarr-style `Mapper.Entity<T>("Name")` table maps; resolve `BasicRepository<T>` calls to `T`'s table; class methods as write/read by a fixed name list | medium |
-| G4 | Builder-made outside URLs silent | record a blind spot whenever an HTTP client method is called with a non-literal request; resolving the host from config is later | small (blind spot only) |
-| G5 | Button → handler | make inline `const handleX = …` handlers points, and JSX `onX={handleX}` a line from the element to it | medium |
-| G6 | Button label | store `translate('Key')` keys on the element and look them up in the configured text files | small–medium (after G5) |
-| G7 | Validation rules | FluentValidation `RuleFor(x => x.P).Rule(args)` and DataAnnotations as facts: property, rule, constant | medium |
-| G8 | Authorisation | `[Authorize]`/`[AllowAnonymous]`/policy as facts on endpoints, plus the app's fallback policy | small |
-| G9 | Constant values | store literal values of `const` fields and exports | small |
-
-Recommended order: G1, G2, G4 first (they make a flow **wrong** or **silently short**), then G3, then G5–G9.
-After the chosen fixes, one narrow fresh check (D158) of this Add-series path.
-
-Not checked: Kavita (Angular route guards, Angular templates) and nopCommerce (Razor views, D159).
+Recommended order: **G4, G3 + G3b, G8, G5 + G6, G7** (Stangent-wide, they make a flow silently short or
+leave out what a user sees), then G9–G11, then G1 and G2 (one app's habit, small, but Sonarr is the bench).
+After the chosen fixes, one narrow fresh check (D158) of these two paths, cost said first.
