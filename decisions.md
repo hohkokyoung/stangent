@@ -143,7 +143,7 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D110 · The core stays C#; no port to Python
 - D111 · Stangent imports PDF and Excel as well as Word
 
-## D112–D150: the overhaul; new decisions go here
+## D112–D151: the overhaul; new decisions go here
 
 [`decisions/6-overhaul.md`](decisions/6-overhaul.md)
 
@@ -186,3 +186,4 @@ Every settled decision, one line each, settled while grilling `spec.md`. Each fu
 - D148 · A security flag is built: the disprove step sets it, any verdict can carry it, and only a person answers it (`security-flag`, off); builds D141
 - D149 · Journeys read from end-to-end tests are built ahead of the use-case runs, and compare nothing (`test-journeys`, off); builds D129's J.1
 - D150 · D128 at section level: a person approves or rejects each changed section, promote applies only what was approved, `--partial`, readable section files (`section-approval`, off); settles D128's section-or-requirement question, builds D142
+- D151 · A page gap means the code settles it, and waits for a person to confirm it; nothing settling it is `cant-tell` (`page-gap-strict`, off)

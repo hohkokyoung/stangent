@@ -283,7 +283,7 @@ public static partial class WorkflowFiles
         {
             "confirmed" => $"verdict {verdict}, confirmed by {(string?)e["review_note"]?["by"]}",
             "sent-back" => $"verdict {verdict}, sent back",
-            _ => verdict is "refuted" or "unreachable" ? $"verdict {verdict}, not confirmed" : $"verdict {verdict}",
+            _ => TraceFindings.NeedsConfirm(e) ? $"verdict {verdict}, not confirmed" : $"verdict {verdict}",
         };
     }
 

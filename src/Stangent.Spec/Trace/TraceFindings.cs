@@ -34,22 +34,36 @@ public static partial class TraceFindings
     /// <summary>A queue of its own, beside the others (D148): a flagged finding is listed here as well as wherever its verdict sends it, so <see cref="GoesTo"/> doesn't move.</summary>
     public const string SecurityQueue = "security";
 
+    /// <summary>On a disproof asked with <c>page-gap-strict</c> on (D151).</summary>
+    public const string StrictPageGap = "strict";
+
+    /// <summary>
+    /// A verdict that waits for a person before it leaves the BA's queue for good: refuted or unreachable (D119), and a page gap asked under the strict rule (D151).
+    /// A page gap asked without it goes to a developer as before.
+    /// </summary>
+    public static bool NeedsConfirm(JsonObject e) => (string?)e["verdict"] switch
+    {
+        "refuted" or "unreachable" => true,
+        "page-gap" => (string?)e["disproof"]?["pageGap"] == StrictPageGap,
+        _ => false,
+    };
+
     /// <summary>What a person can answer a flag with.</summary>
     public static readonly string[] SecurityAnswers = ["confirmed", "not-security"];
 
     /// <summary>Who's next with this finding (D119): <c>ba</c> by default, including one that stands, can't be told, or was sent back; <c>developer</c> for a page gap;
-    /// <c>developer-confirm</c> when the AI says refuted or unreachable, because code proved its quote exists and only a person can say it supports the verdict (D18);
+    /// <c>developer-confirm</c> when the AI says refuted or unreachable, or a page gap under <c>page-gap-strict</c> (D151), because code proved its quote exists and only a person can say it supports the verdict (D18);
     /// <c>closed</c> once a person confirmed that, kept and listed; <c>page-owner</c> when a person said the page is wrong; <c>decided</c> otherwise.</summary>
     public static string GoesTo(JsonObject e) => Standing(e) == "gone" ? "gone" : (string?)e["decision"] switch
     {
         "page-wrong" => "page-owner",
         not null => "decided",
-        _ => ((string?)e["verdict"], ReviewHolds(e) ? (string?)e["review"] : null) switch
+        _ => (NeedsConfirm(e), (string?)e["verdict"], ReviewHolds(e) ? (string?)e["review"] : null) switch
         {
-            (_, "sent-back") => "ba",
-            ("refuted" or "unreachable", "confirmed") => "closed",
-            ("refuted" or "unreachable", _) => "developer-confirm",
-            ("page-gap", _) => "developer",
+            (_, _, "sent-back") => "ba",
+            (true, _, "confirmed") => "closed",
+            (true, _, _) => "developer-confirm",
+            (false, "page-gap", _) => "developer",
             _ => "ba",
         },
     };
@@ -199,10 +213,10 @@ public static partial class TraceFindings
             ?? throw new StangentException("not_found", $"No finding {id} in specs/trace.yaml.", ExitCodes.NotFound);
         var now = GoesTo(e);
         var allowed = to == "confirmed"
-            ? (string?)e["verdict"] is "refuted" or "unreachable" && now is "developer-confirm" or "ba"
+            ? NeedsConfirm(e) && now is "developer-confirm" or "ba"
             : now is "developer-confirm" or "closed";
         if (!allowed)
-            throw new StangentException("not_reviewable", $"{id} is with {now}{((string?)e["verdict"] is { } v ? $", verdict {v}" : "")}: only a refuted or unreachable verdict nobody has decided can be {to}.", ExitCodes.Usage);
+            throw new StangentException("not_reviewable", $"{id} is with {now}{((string?)e["verdict"] is { } v ? $", verdict {v}" : "")}: only a refuted or unreachable verdict, or a page gap asked under page-gap-strict, nobody has decided can be {to}.", ExitCodes.Usage);
         var note = new JsonObject { ["by"] = who, ["why"] = why ?? (to == "confirmed" ? "the quote supports the verdict" : $"{who} sent it back") };
         if (to == "confirmed" && DecidedOn(e, SpecIndex.Load(root)) is { } on) note["on"] = on;
         WriteReview(root, e, to, note, StateActor.Person(who), why ?? (to == "confirmed" ? "confirmed by a person" : "sent back by a person"));

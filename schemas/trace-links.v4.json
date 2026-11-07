@@ -304,6 +304,10 @@
                 "description": "`small`: judged from a smaller bundle (disprove-small, I.3), watched against cant-tell. Absent otherwise.",
                 "enum": ["small"]
               },
+              "pageGap": {
+                "description": "`strict`: asked with page-gap-strict on (D151), so a page gap waits for a person to confirm it, as refuted does. Absent otherwise.",
+                "enum": ["strict"]
+              },
               "agent": {
                 "type": "string"
               },

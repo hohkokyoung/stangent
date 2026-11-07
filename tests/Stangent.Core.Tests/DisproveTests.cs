@@ -902,4 +902,79 @@ public class DisproveTests
         Assert.Contains(bundle.Missing, m => m.Contains(huge, StringComparison.Ordinal) && m.EndsWith("size limit", StringComparison.Ordinal));
         Assert.Equal(1, (int)DisproveRun.Estimate(app.Pages(), app.Repo, "shop")["withSomethingNotShown"]!);
     }
+
+    // ---- page-gap-strict (D151) ----
+
+    const string LooseGap = "or neither the page nor the code here settles it";
+    const string StrictGap = "the answer is `cant-tell`, not `page-gap`";
+
+    [Fact]
+    public void Off_the_instructions_and_the_hash_stay_as_they_were()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        var bundle = Built(app);
+        Assert.Contains(LooseGap, bundle.Text);
+        Assert.DoesNotContain(StrictGap, bundle.Text);
+        Assert.Equal(DisproveRun.BaseInstructions(false), Bundles.Instructions("finding-disprover.md"));
+        app.Repo.Config.Components["page-gap-strict"] = true;
+        Assert.NotEqual(bundle.Inputs, Built(app).Inputs);
+    }
+
+    [Fact]
+    public void On_the_page_gap_line_is_replaced_not_added_to()
+    {
+        using var app = App();
+        app.Repo.Config.Components["page-gap-strict"] = true;
+        Save(app, Conflict());
+        var bundle = Bundle(app, Prepare(app));
+        Assert.Contains(StrictGap, bundle);
+        Assert.DoesNotContain(LooseGap, bundle);
+        Assert.Single(bundle.Split("**page-gap**").Skip(1));
+    }
+
+    [Fact]
+    public void On_a_page_gap_waits_for_a_developer_and_closes_only_when_a_person_confirms_it()
+    {
+        using var app = App();
+        app.Repo.Config.Components["page-gap-strict"] = true;
+        Save(app, Conflict());
+        Assert.Equal("recorded", Answer(app, Prepare(app), Quoted("page-gap")).Status);
+        var e = Entry(app);
+        Assert.Equal(TraceFindings.StrictPageGap, (string?)e["disproof"]!["pageGap"]);
+        Assert.Equal("developer-confirm", TraceFindings.GoesTo(e));
+        var report = TraceCheck.Run(app.Root, GraphStore.Load(GraphStore.PathFor(app.Repo)), null, false);
+        Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report).Select(p => (string)p!)));
+        Assert.Equal("X-0001", (string)report["queues"]!["developer-confirm"]![0]!);
+
+        TraceFindings.Review(app.Root, "X-0001", "confirmed", "pat", "the page leaves it out");
+        Assert.Equal("closed", TraceFindings.GoesTo(Entry(app)));
+    }
+
+    [Fact]
+    public void A_page_gap_asked_with_it_off_still_goes_to_a_developer_and_cant_be_confirmed()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        Assert.Equal("recorded", Answer(app, Prepare(app), Quoted("page-gap")).Status);
+        // The rule the answer was asked under decides, not the switch now.
+        app.Repo.Config.Components["page-gap-strict"] = true;
+        var e = Entry(app);
+        Assert.Null(e["disproof"]!["pageGap"]);
+        Assert.Equal("developer", TraceFindings.GoesTo(e));
+        Assert.Equal("not_reviewable", Assert.Throws<StangentException>(() => TraceFindings.Review(app.Root, "X-0001", "confirmed", "pat", null)).Code);
+    }
+
+    [Fact]
+    public void A_strict_page_gap_whose_quote_fails_twice_is_cant_tell_with_the_ba()
+    {
+        using var app = App();
+        app.Repo.Config.Components["page-gap-strict"] = true;
+        Save(app, Conflict());
+        var retry = Answer(app, Prepare(app), Quoted("page-gap", "this line is nowhere in the code at all"));
+        Answer(app, retry, Quoted("page-gap", "still nowhere in the code at all, sorry"));
+        var e = Entry(app);
+        Assert.Equal("cant-tell", (string)e["verdict"]!);
+        Assert.Equal("ba", TraceFindings.GoesTo(e));
+    }
 }

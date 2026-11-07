@@ -4,6 +4,9 @@ Moved word for word from "Open questions" in `decisions.md` on 2026-11-05 (D136)
 
 ## Answered
 
+### `page-gap` answers that can't settle it: D151, built off
+- **`page-gap` answers that say the code can't settle it (found 2026-11-07, Sonarr re-score):** all 7 real findings the disprover took out of the BA's queue (5 planted, 2 hand-checked) were `page-gap`, each with a reason saying the code shown can't prove it. With the hand check, the queue is now 23% false alarms, so the noise bar holds at about 30% even if a few false ones come back. Recommended: code keeps a `page-gap` in the BA's queue unless its cited lines show the behaviour, the same check `stands` and `refuted` already pass; and the instructions say "can't see it" is `cant-tell`. Switched, off, then the same 62 re-asked (about $7). **Cost:** fewer findings leave the queue, so the 21% rises some. **Answered 2026-11-07 (owner: "Yes, build it"): D151, built off; routing to `developer-confirm` instead of the BA's queue, the assistant's call there.**
+
 ### The spec in its own git repo: kept in the app's repo for now
 - **The spec in its own git repo? (owner asked, 2026-11-05, so a PM or BA sees an easier diff; owner: "okay we can keep it for now"):** the graph is settled, it isn't committed anywhere (D25). For the spec, recommended: stay in the app's repo (D7, D12) and fix the diff itself, with spec-only PRs and the generated files collapsed. Kept in the app's repo for now. Move when a real project needs what only a split gives: BAs without access to the code, client text kept away from developers, or one spec over several code repos. **A split would cost:** one PR no longer holds both spec and code (D7's reason), each link has to record two commits, a code branch and a spec branch can disagree, and paths are written in about 23 C# files.
 

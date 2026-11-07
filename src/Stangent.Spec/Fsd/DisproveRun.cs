@@ -43,6 +43,22 @@ public static class DisproveRun
     /// <summary>What <c>security-flag</c> adds to the instructions (D148).</summary>
     const string SecurityInstructions = "finding-disprover-security.md";
 
+    /// <summary>With <c>page-gap-strict</c> on (D151), this replaces the base instructions' <c>page-gap</c> line, which also allowed "neither the page nor the code here settles it".</summary>
+    const string PageGapInstructions = "finding-disprover-page-gap.md";
+
+    /// <summary>The base instructions' <c>page-gap</c> line, word for word. Replaced, not added to, so the agent never reads both.</summary>
+    const string PageGapLine = "   - **page-gap**: the page doesn't cover this. Either the code settles it but the page doesn't say so, and the claim was about the page,\n     not the application; or neither the page nor the code here settles it. Quote the code nearest to it.\n";
+
+    /// <summary>The base instructions, with the strict <c>page-gap</c> line when the switch is on. Throws if the line has moved, so the switch can't silently do nothing.</summary>
+    internal static string BaseInstructions(bool strict)
+    {
+        var text = Bundles.Instructions("finding-disprover.md");
+        if (!strict) return text;
+        if (!text.Contains(PageGapLine, StringComparison.Ordinal))
+            throw new StangentException("missing_instructions", "finding-disprover.md no longer holds the page-gap line page-gap-strict replaces.");
+        return text.Replace(PageGapLine, Bundles.Instructions(PageGapInstructions), StringComparison.Ordinal);
+    }
+
     /// <summary>The detector whose lines run from frontend code to an endpoint. A line from another service isn't a frontend caller.</summary>
     const string FrontendHttp = "frontend-http";
 
@@ -85,18 +101,19 @@ public static class DisproveRun
 
         var entry = (string)state["entry"]!;
         var inputs = (string)state["inputs"]!;
+        var strict = (string?)state["pageGap"] == TraceFindings.StrictPageGap;
         if (errors.Count > 0)
         {
             // Kept only when it's a verdict at all: anything else would break the file's own schema, and the first error already says what came back.
             var claimed = output?["verdict"] is JsonValue said && said.TryGetValue<string>(out var word) && StateKinds.Verdicts.Contains(word) ? word : null;
             // A flag with nothing to back it is no flag (D18), and what it said stays on file, so it isn't dropped silently.
             var claimedSecurity = output?["security"]?["touches"] is JsonValue touches && touches.TryGetValue<bool>(out var flagged) && flagged && output["security"]?["why"] is JsonValue said2 && said2.TryGetValue<string>(out var saidWhy) ? saidWhy : null;
-            Write(repo, entry, "cant-tell", Disproof(inputs, $"The answer failed the code check twice: {errors[0]}", model, claimed: claimed, small: set.Settings.DisproveSmall, claimedSecurity: claimedSecurity), "its answer failed the code check twice");
+            Write(repo, entry, "cant-tell", Disproof(inputs, $"The answer failed the code check twice: {errors[0]}", model, claimed: claimed, small: set.Settings.DisproveSmall, claimedSecurity: claimedSecurity, strict: strict), "its answer failed the code check twice");
         }
         else
         {
             var verdict = (string)output!["verdict"]!;
-            var disproof = Disproof(inputs, (string)output["why"]!, model, suggested: (string?)output["suggestedSeverity"], small: set.Settings.DisproveSmall);
+            var disproof = Disproof(inputs, (string)output["why"]!, model, suggested: (string?)output["suggestedSeverity"], small: set.Settings.DisproveSmall, strict: strict);
             if (verdict != "cant-tell")
             {
                 disproof["path"] = (string)output["path"]!;
@@ -162,9 +179,11 @@ public static class DisproveRun
         return flag;
     }
 
-    static JsonObject Disproof(string inputs, string why, string? agent, string? suggested = null, string? claimed = null, bool small = false, string? claimedSecurity = null)
+    static JsonObject Disproof(string inputs, string why, string? agent, string? suggested = null, string? claimed = null, bool small = false, string? claimedSecurity = null, bool strict = false)
     {
         var o = new JsonObject { ["inputs"] = inputs, ["why"] = why };
+        // The rule the answer was asked under (D151), as with the schema: it decides where a page gap goes, whatever the switch says later.
+        if (strict) o["pageGap"] = TraceFindings.StrictPageGap;
         if (agent is not null) o["agent"] = agent;
         if (suggested is not null) o["suggestedSeverity"] = suggested;
         if (claimed is not null) o["claimed"] = claimed;
@@ -209,6 +228,7 @@ public static class DisproveRun
                 ["doc"] = doc, ["section"] = sectionId, ["entry"] = entry, ["inputs"] = bundle.Inputs, ["commit"] = SymbolLines.CommitOf(set.Graph), ["retryUsed"] = false, ["agent"] = Disprover,
             };
             if (set.Settings.SecurityFlag) state["schema"] = SecurityOutputSchema;
+            if (set.Settings.PageGapStrict) state["pageGap"] = TraceFindings.StrictPageGap;
             StateChanges.Apply(repo.Root, state, StateKinds.DisproveRun, LinkRun.Key(doc, sectionId), "disprove", Who, "prepared");
             Save(work, state);
             return LinkRun.Step(repo.Root, work, Disprover, "bundle.md", "output.json", "Finding and code", (string?)state["schema"]);
@@ -276,7 +296,7 @@ public static class DisproveRun
         var rests = new StringBuilder();
         void Both(string text) { sb.Append(text); rests.Append(text); }
 
-        Both("# Instructions\n\n" + Bundles.Instructions("finding-disprover.md"));
+        Both("# Instructions\n\n" + BaseInstructions(set.Settings.PageGapStrict));
         if (set.Settings.DisproveCallers) Both("\n" + Bundles.Instructions(CallersInstructions));
         if (set.Settings.SecurityFlag) Both("\n" + Bundles.Instructions(SecurityInstructions));
         Both("\n# Output schema\n\n```json\n" + SchemaRegistry.EmbeddedText(set.Settings.SecurityFlag ? SecurityOutputSchema : OutputSchema).TrimEnd('\n') + "\n```\n\n");

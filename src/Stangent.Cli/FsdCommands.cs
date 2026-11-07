@@ -246,10 +246,10 @@ static class FsdCommands
 
         var findingArg = new Argument<string>("finding") { Description = "The finding's X- id, or its entry id." };
         var whyOption = new Option<string?>("--why") { Description = "Why, in your words. It's kept beside your name." };
-        var confirm = new Command("confirm", "A person closes a finding the AI called refuted or unreachable, having read its quote at its lines (D119). Who comes from git.") { findingArg, whyOption };
+        var confirm = new Command("confirm", "A person closes a finding the AI called refuted or unreachable, or a page gap under page-gap-strict, having read its quote at its lines (D119). Who comes from git.") { findingArg, whyOption };
         confirm.SetAction(pr => Cli.Run(pr, "trace confirm", ctx => TraceFindings.Review(ctx.Repo.Root, pr.GetValue(findingArg)!, "confirmed", TicketCommands.Who(ctx), pr.GetValue(whyOption))));
         trace.Subcommands.Add(confirm);
-        var sendBack = new Command("send-back", "A person sends a finding the AI called refuted or unreachable back to the BA's queue (D119). Who comes from git.") { findingArg, whyOption };
+        var sendBack = new Command("send-back", "A person sends a finding the AI called refuted or unreachable, or a page gap under page-gap-strict, back to the BA's queue (D119). Who comes from git.") { findingArg, whyOption };
         sendBack.SetAction(pr => Cli.Run(pr, "trace send-back", ctx => TraceFindings.Review(ctx.Repo.Root, pr.GetValue(findingArg)!, "sent-back", TicketCommands.Who(ctx), pr.GetValue(whyOption))));
         trace.Subcommands.Add(sendBack);
         var securityAnswer = new Argument<string>("answer") { Description = "confirmed: it touches security. not-security: it doesn't." };

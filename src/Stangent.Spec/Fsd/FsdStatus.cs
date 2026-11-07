@@ -72,7 +72,7 @@ public static class FsdStatus
         if (waiting is not null) return Do("a person", "Make the waiting candidate the current version.", $"stangent fsd promote {doc}");
         if (uncovered.Count > 0) return Do("a person or the AI", $"{uncovered.Count} section(s) have no link and no mark. Link them (this is a paid AI run), or mark one that isn't about the code: `stangent fsd not-in-code {doc} {Arg((string)uncovered[0]["section"]!)} --why <why>`.", $"plugin/scripts/spec-run.sh --fsd {doc}");
         if (ba.Count > 0) return Do("the BA", $"Decide {ba.Count} finding(s), by editing `decision` in specs/trace.yaml in a PR. `stangent trace check` lists them.", "stangent trace check");
-        if (confirm.Count > 0) return Do("a developer", $"Read what the AI called refuted or unreachable, starting with {confirm[0]}, and confirm or send it back.", $"stangent trace confirm {confirm[0]} --why <why>");
+        if (confirm.Count > 0) return Do("a developer", $"Read what the AI called refuted, unreachable or a strict page gap, starting with {confirm[0]}, and confirm or send it back.", $"stangent trace confirm {confirm[0]} --why <why>");
         if (developer.Count > 0) return Do("a developer", $"Look at {developer.Count} finding(s) the AI reads as gaps in a page. `stangent trace check` lists them.", "stangent trace check");
         if (pageOwner.Count > 0) return Do("the page's owner", $"Write again the pages behind {pageOwner.Count} finding(s) a person said the page has wrong (a paid AI run).", "plugin/scripts/spec-run.sh --stale");
         if (toApprove > 0) return Do("the BA", $"Approve {toApprove} agree link(s), a chapter at a time.", $"stangent trace approve {doc} <chapter>");

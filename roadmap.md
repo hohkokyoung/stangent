@@ -107,7 +107,8 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 
 **The list.** Some are built and off, some not built yet.
 
-- X.1 · Disprove step. *Test: Sonarr key; re-score after Nov 7.*
+- X.1 · Disprove step. *Re-scored and hand-checked 2026-11-07: 23% false alarms, 19 of 30 found.*
+- D151 · A page gap only when the code settles it, waiting for a person to confirm. *Built, off: `page-gap-strict`. No AI has read it. Test: the same 62 Sonarr findings asked again (about $7), scored with the merged hand check, counting planted items back and false alarms.*
 - X.2 · Page verifier: keep or drop. *Test: Sonarr key, on and off.*
 - X.3 · Each rule tested for whether it can trigger. *Test: Sonarr plus planted dead rules.*
 - X.4 · A short guide per app. *Test: Sonarr key; a small effect may not show.*
