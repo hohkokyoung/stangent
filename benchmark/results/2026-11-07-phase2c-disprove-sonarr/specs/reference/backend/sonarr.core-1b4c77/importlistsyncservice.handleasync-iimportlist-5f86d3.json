@@ -1,0 +1,139 @@
+{
+  "codeTitle": "ImportListSyncService.HandleAsync(IImportList})",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.HandleAsync(NzbDrone.Core.ThingiProvider.Events.ProviderDeletedEvent{NzbDrone.Core.ImportLists.IImportList})",
+  "generated": {
+    "bundleHash": "4627522e02964d2c3d2e806af6c4cf435515a841272f1fc1a2d863301a83780a",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 18813,
+      "cutOff": 23,
+      "depth": 4,
+      "points": 69
+    },
+    "verifier": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 12393,
+      "calls": 1,
+      "costUsd": 0.051886,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2943,
+      "outputTokens": 231
+    },
+    "writer": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 10385,
+      "calls": 1,
+      "costUsd": 0.058534,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 11764,
+      "outputTokens": 1699
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.HandleAsync(NzbDrone.Core.ThingiProvider.Events.ProviderDeletedEvent{NzbDrone.Core.ImportLists.IImportList})",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.HandleAsync(NzbDrone.Core.ThingiProvider.Events.ProviderDeletedEvent{NzbDrone.Core.ImportLists.IImportList})",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.TryCleanLibrary"
+        ],
+        "id": "A1",
+        "text": "Handling a deleted import list event triggers an attempt to clean the library."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.TryCleanLibrary",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.CleanLibrary"
+        ],
+        "id": "R1",
+        "text": "Nothing happens if the list sync level is Disabled."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.AllListsSuccessfulWithAPendingClean",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListFactory.AutomaticAddEnabled(System.Boolean)"
+        ],
+        "id": "R2",
+        "text": "The clean only runs if every list with automatic add enabled (including blocked ones) has no disabled-till value and has been synced at least once, and at least one of them has removed an item since the last clean."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.IsSeriesOnList(NzbDrone.Core.Tv.Series,System.Collections.Generic.IEnumerable{NzbDrone.Core.Parser.Model.ImportListItemInfo})",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.IsNotNullOrWhiteSpace(System.String)"
+        ],
+        "id": "R3",
+        "text": "A series counts as on a list if any list item matches its TVDB id, its TMDB id, its IMDb id (when both are non-blank), one of its MAL ids or one of its AniList ids."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.CleanLibrary"
+        ],
+        "id": "R4",
+        "text": "With LogOnly, a series not on any list is only logged as one to consider unmonitoring or removing."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.CleanLibrary"
+        ],
+        "id": "R5",
+        "text": "With KeepAndUnmonitor, a monitored series not on any list is set to unmonitored."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.CleanLibrary"
+        ],
+        "id": "R6",
+        "text": "With KeepAndTag, a series not on any list that lacks the list sync tag gets that tag added."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.HandleAsync(NzbDrone.Core.ThingiProvider.Events.ProviderDeletedEvent{NzbDrone.Core.ImportLists.IImportList})",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.CleanLibrary"
+        ],
+        "id": "S1",
+        "text": "When an import list is deleted, series in the library that are not on any import list are logged, unmonitored or tagged, depending on the list sync level."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.CleanLibrary",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.ISeriesService.UpdateSeries(System.Collections.Generic.List{NzbDrone.Core.Tv.Series},System.Boolean)"
+        ],
+        "id": "E1",
+        "text": "Changed series are saved without moving files."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListStatusService.MarkListsAsCleaned",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.CleanLibrary"
+        ],
+        "id": "E2",
+        "text": "After cleaning, every import list status has its removed-item-since-last-clean flag reset to false and is saved."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListSyncService.CleanLibrary"
+        ],
+        "id": "E3",
+        "text": "Info log messages are written for each series that is not found in the lists and is affected by the sync level."
+      }
+    ]
+  },
+  "title": "Import list deleted: library clean-up",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

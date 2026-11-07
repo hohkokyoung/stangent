@@ -104,6 +104,42 @@ Stopped partway, it picks up where it was: an answered finding with an unchanged
 
 **The key.** The score uses `answer-key.json` and the frozen matching rule in `FsdScore`, reused, not copied. `match-key.json` isn't read.
 
+## The disprove re-score, finished (2026-11-07, owner: "ok go")
+
+Run with this branch's build at `277b853` (the disprover's instructions unchanged since Nov 4; `disprove-small`, `disprove-callers`, `security-flag` off), Sonnet, cap $10. **61 calls, $7.30 today; $8.59 with Nov 4's 11.** The 10 calls past the 51 left are most likely retries after a failed code check (3 of 14 sections' last answers used one), the tenth the estimate allowed; nothing from Nov 4 was paid twice. Score: `benchmark/results/2026-11-07-phase2c-disprove-score.json`; `specs/` and the run's lines in `benchmark/results/2026-11-07-phase2c-disprove-sonarr/`.
+
+| | Before (2c) | After |
+|---|---|---|
+| Findings in the BA's queue | 90 | 52 |
+| False alarms, from the 20 hand-checked before | 44% (29-59%) | **21%**: noise bar (30%) met, not yet called (D61) |
+| Planted found | 24 of 30 | **19 of 30**: 5 planted items lost |
+| Hand-checked false alarms that left the queue | | 9 of 12 |
+| Hand-checked real findings that left the queue | | 2 of 8 |
+
+Verdicts: 21 stands, 19 refuted, 19 page-gap, 8 cant-tell, 23 not tested (undocumented screens).
+
+**The 5 lost are all `page-gap`, and each answer's own reason says the code shown can't settle it** ("the bundle can't prove no digest exists elsewhere", "the server-side validator isn't in the bundle"). That is `cant-tell`'s meaning, which stays with the BA; `page-gap` goes to a developer. So the step isn't wrongly refuting real findings here: it files doubt as a page gap. G6 and G10 are gaps, C5, C9 and C10 conflicts.
+
+**Not shown:** a fresh hand check of the 52 left (D61), so no bar is called; the 2 real ones that left are among the 5 above or not, unchecked; one run, so run-to-run difference is unmeasured.
+
+## Four more cyberbullying use cases (2026-11-07, counts only)
+
+Stream Tweets, Vectorize Tweets, Predict Cyberbullying Tweets and Logout (7.2.1.2.1-3, 5), the rest of the owner's first five, on a copy with `shared-through` and `disprove` on, headless Opus. 6 calls, $0.20. **Nothing to read from it:** code gave none of the four a candidate, the finder could pick only from the 3 written pages (Login's), and the judge wrote 11 gaps with no page, all `cant-tell` to the disprover. Why, read in the code: three run from `back_end/twitter_stream.py`, a script that is neither a screen nor an endpoint, so the graph has no page for it; Logout is in `front_end/src/components/navigation.js`, a component no page was written for. Open question in `questions.md`.
+
+## Login with `claim-links` (2026-11-07, D145, one use case, counts only)
+
+A fresh copy of the owner's project with `shared-through`, `fsd-claims`, `claim-links` and `disprove` on, `page-verifier` off as on Nov 5, headless Opus: the pop-up's page (1 call), then judge and checker (2 calls), $0.32. Judged a second time: no call, inputs unchanged, as built. 88 claims, 1 not cut cleanly.
+
+| | Before (owner's rulings) | After |
+|---|---|---|
+| Judge's links | 36 | 34, grouped to 68 agree and 1 undocumented by claim |
+| Findings open | 13 (all ruled) | 1 |
+| Rulings | 13 | 1 carried (`id-moved`); 12 went `gone`, a history line each, as D145 says when the new judging doesn't find the link |
+
+**What it shows:** the id part works on a real judge: a ruling moved by ids, and the rest went the documented way. The checker confirmed every agree.
+
+**What's lost:** the judge found no gap and no conflict. Of the 5 that Nov 5's run kept and the disprover upheld, at least 4 aren't raised: the Twitter-ID conflict and three undocumented limits. The conflict sits in a flow's title, which D143 sets aside as `flow-label`, so the judge saw it only as a flow name. **Two things changed at once** (headless one-turn against the app's agents on Nov 5, and `claim-links`), so the drop can't be put on `claim-links` alone. Not run: the same judge headless with `claim-links` off.
+
 ## 2.6: 2c's leftovers (2026-11-04)
 Read at the lines noted, which still line up.
 - **`LinkRun.cs:181`, a real defect, fixed.** After the finder ran, the judge was prepared with no run record, so the same pages paid the judge again. It now reads the record. If the inputs match, there's no call, and the finder's cost is still recorded.

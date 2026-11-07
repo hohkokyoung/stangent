@@ -1,0 +1,117 @@
+{
+  "codeTitle": "PUT /api/v3/Episode/monitor",
+  "entry": "endpoint:Sonarr.Api.V3|PUT /api/v3/Episode/monitor",
+  "generated": {
+    "bundleHash": "ff58071ba3131db81bf872ae7fbf4b0d94de4787319d60859c3717c4ae5b268f",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 27071,
+      "cutOff": 106,
+      "depth": 4,
+      "points": 92
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 15226,
+      "calls": 1,
+      "costUsd": 0.061613,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2760,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 13020,
+      "calls": 1,
+      "costUsd": 0.06734,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8769,
+      "outputTokens": 1498
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|PUT /api/v3/Episode/monitor",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeController.SetEpisodesMonitored(Sonarr.Api.V3.Episodes.EpisodesMonitoredResource,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeService.SetEpisodeMonitored(System.Int32,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeService.SetMonitored(System.Collections.Generic.IEnumerable{System.Int32},System.Boolean)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|PUT /api/v3/Episode/monitor"
+        ],
+        "id": "A1",
+        "text": "Sets the monitored flag of the given episode ids to the requested value. A single id is handled as a single-episode update; several ids are updated together."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeController.SetEpisodesMonitored(Sonarr.Api.V3.Episodes.EpisodesMonitoredResource,System.Boolean)"
+        ],
+        "id": "R1",
+        "text": "The request body is JSON with a list of episode ids and a monitored value. An optional includeImages query parameter defaults to false."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeController.SetEpisodesMonitored(Sonarr.Api.V3.Episodes.EpisodesMonitoredResource,System.Boolean)"
+        ],
+        "id": "R2",
+        "text": "When exactly one episode id is supplied, the single-episode path is used. Otherwise the bulk path is used."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeController.SetEpisodesMonitored(Sonarr.Api.V3.Episodes.EpisodesMonitoredResource,System.Boolean)"
+        ],
+        "id": "S1",
+        "text": "Returns the updated episodes as a list of episode resources, with HTTP status Accepted."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeResourceMapper.ToResource(NzbDrone.Core.Tv.Episode)"
+        ],
+        "id": "S2",
+        "text": "Each returned episode includes id, series id, TVDB id, episode file id, season and episode numbers, title, air dates, runtime, finale type, overview, last search time, has-file, monitored, absolute and scene numbering and unverified scene numbering."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeController.SetEpisodesMonitored(Sonarr.Api.V3.Episodes.EpisodesMonitoredResource,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeControllerWithSignalR.MapToResource(System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "S3",
+        "text": "The returned episodes never include series or episode file details. Images are included only when includeImages is true."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeService.SetEpisodeMonitored(System.Int32,System.Boolean)"
+        ],
+        "id": "E1",
+        "text": "For a single episode, the episode is loaded and its monitored flag is saved through the episode repository. A debug log line records the new value."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeService.SetMonitored(System.Collections.Generic.IEnumerable{System.Int32},System.Boolean)"
+        ],
+        "id": "E2",
+        "text": "For several episodes, the monitored flag is updated through the episode repository for all the ids."
+      }
+    ]
+  },
+  "title": "Set episodes monitored (PUT /api/v3/Episode/monitor)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

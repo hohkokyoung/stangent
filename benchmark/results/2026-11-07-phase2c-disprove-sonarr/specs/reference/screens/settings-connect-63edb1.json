@@ -1,0 +1,274 @@
+{
+  "codeTitle": "/settings/connect · NotificationSettings",
+  "entry": "page:tsconfig.json|/settings/connect",
+  "generated": {
+    "bundleHash": "363601ecc6ba23ab6f5bfed6c908c63bd569db4548a58a4d8d7e54c0abdf779d",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 62578,
+      "cutOff": 44,
+      "depth": 6,
+      "points": 228
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 31269,
+      "calls": 1,
+      "costUsd": 0.131485,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7895,
+      "outputTokens": 623
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 58541,
+      "calls": 2,
+      "costUsd": 0.290994,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 33979,
+      "outputTokens": 5627
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/settings/connect",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/Notifications.tsx#Notifications"
+        ],
+        "id": "A1",
+        "text": "Pressing the Add Connection card opens the Add Connection dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/Notifications.tsx#Notifications",
+          "ts|frontend/src/Settings/Notifications/Notifications/AddNotificationItem.tsx#AddNotificationItem"
+        ],
+        "id": "A2",
+        "text": "Selecting a connection type or preset closes the add dialog and opens the edit dialog for that schema."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/Notification.tsx#Notification"
+        ],
+        "id": "A3",
+        "text": "Pressing a connection card opens its edit dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/EditNotificationModalContent.tsx#EditNotificationModalContent",
+          "ts|frontend/src/Settings/useProviderSettings.ts#useManageProviderSettings"
+        ],
+        "id": "A4",
+        "text": "Test runs a test of the connection with current values; Save saves it; Cancel closes the dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/Notification.tsx#Notification",
+          "ts|frontend/src/Settings/Notifications/useConnections.ts#useDeleteConnection"
+        ],
+        "id": "A5",
+        "text": "Delete in the edit dialog closes it and opens a confirmation (Delete Notification); confirming deletes the connection."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/EditNotificationModalContent.tsx#EditNotificationModalContent",
+          "ts|frontend/src/Settings/advancedSettingsStore.ts#useShowAdvancedSettings"
+        ],
+        "id": "A6",
+        "text": "An advanced settings toggle in the edit dialog controls whether advanced fields are shown."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/useConnections.ts#useManageConnection"
+        ],
+        "id": "R1",
+        "text": "A new connection starts with its name set to the implementation name, and the triggers On Grab, On File Import, On File Upgrade, On Import Complete, On Rename, On Series Add, On Series Delete, On Episode File Delete, On Episode File Delete For Upgrade, On Application Update and On Manual Interaction Required each on only if the schema supports it."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/NotificationEventItems.tsx#NotificationEventItems"
+        ],
+        "id": "R2",
+        "text": "Each trigger checkbox is disabled when the connection type does not support it."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/NotificationEventItems.tsx#NotificationEventItems"
+        ],
+        "id": "R3",
+        "text": "On File Upgrade checkbox shows only when On File Import is checked; Episode File Delete For Upgrade only when Episode File Delete is checked; Include Health Warnings only when Health Issue or Health Restored is checked."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/EditNotificationModalContent.tsx#EditNotificationModalContent"
+        ],
+        "id": "R4",
+        "text": "The edit dialog closes automatically after a save finishes without error."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useManageProviderSettings"
+        ],
+        "id": "R5",
+        "text": "Saving an existing connection with no changes skips testing and all validation; resaving identical settings skips testing; after a warnings-only result, warning validation is skipped on the next save or test."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSchema.ts#useSelectedSchema"
+        ],
+        "id": "R6",
+        "text": "Choosing a schema or preset that isn't found raises an error."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/NotificationSettings.tsx#NotificationSettings"
+        ],
+        "id": "S1",
+        "text": "The page is titled Connect, with a Connections section whose description is the NotificationsSectionDescription text."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/NotificationSettings.tsx#NotificationSettings"
+        ],
+        "id": "S2",
+        "text": "The page has no save button (showSave is false)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/Notifications.tsx#Notifications",
+          "ts|frontend/src/Settings/Notifications/useConnections.ts#useSortedConnections",
+          "ts|frontend/src/Utilities/Array/sortByProp.ts#sortByProp"
+        ],
+        "id": "S3",
+        "text": "Connections are listed as cards sorted by name (numeric-aware), followed by an Add Connection card."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/Notifications.tsx#Notifications"
+        ],
+        "id": "S4",
+        "text": "If connections fail to load, the ConnectionsLoadError message is shown; loading state is shown while fetching."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/Notification.tsx#Notification"
+        ],
+        "id": "S5",
+        "text": "Each connection card shows its name, an Enabled or Disabled status (active or muted dot), and tags if it has any."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/Notification.tsx#Notification"
+        ],
+        "id": "S6",
+        "text": "A card is Enabled when any of its event triggers is on; it shows a label per active trigger the connection supports (e.g. On Grab, On File Import, On Rename, On Health Issue)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/Notification.tsx#Notification"
+        ],
+        "id": "S7",
+        "text": "The On File Upgrade label shows only when On File Import and upgrade are both on; the On Episode File Delete For Upgrade label requires both episode file delete options on."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/AddNotificationModalContent.tsx#AddNotificationModalContent",
+          "ts|frontend/src/Settings/useProviderSchema.ts#useProviderSchema"
+        ],
+        "id": "S8",
+        "text": "The Add Connection dialog lists available connection types from the schema, shows a loading indicator while loading, and shows an AddConnectionError alert on failure."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/AddNotificationItem.tsx#AddNotificationItem"
+        ],
+        "id": "S9",
+        "text": "Each connection type item shows its name, a Presets menu when presets exist, and a More Info link."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/EditNotificationModalContent.tsx#EditNotificationModalContent"
+        ],
+        "id": "S10",
+        "text": "The edit dialog has a Name field, notification triggers checkboxes, the connection-specific fields, and Tags, with a message alert if the item has one."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/EditNotificationModalContent.tsx#EditNotificationModalContent"
+        ],
+        "id": "S11",
+        "text": "The edit dialog title reads Edit Connection or Add Connection with the implementation name, depending on whether an id exists."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Notifications/Notifications/EditNotificationModalContent.tsx#EditNotificationModalContent"
+        ],
+        "id": "S12",
+        "text": "The Delete button appears in the edit dialog only for existing connections."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider"
+        ],
+        "id": "E1",
+        "text": "Confirming delete sends a DELETE for the connection and removes it from the cached list on success."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useManageProviderSettings"
+        ],
+        "id": "E2",
+        "text": "Saving and testing send the connection settings to the server, including its fields."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useManageProviderSettings"
+        ],
+        "id": "E3",
+        "text": "After a successful save, pending changes and field changes are cleared."
+      }
+    ]
+  },
+  "title": "Connect Settings (Notifications)",
+  "unknowns": [
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useProviderSettings",
+      "line": 78,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider",
+      "line": 403,
+      "reason": "HTTP DELETE to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "The defaults cover only some triggers. onHealthIssue and onHealthRestored (and includeHealthWarnings) get no default from the schema's supports flags in useManageConnection, so 'each trigger' is too broad.",
+        "id": "F1",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Rule now lists only the triggers that useManageConnection defaults from the schema's supports flags, excluding health issue/restored and include health warnings.",
+        "statement": "R1",
+        "statementText": "A new connection starts with name set to the implementation name and each trigger on only if the schema supports it."
+      }
+    ]
+  }
+}

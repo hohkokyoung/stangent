@@ -1,0 +1,155 @@
+{
+  "codeTitle": "POST /api/v3/DownloadClient/test",
+  "entry": "endpoint:Sonarr.Api.V3|POST /api/v3/DownloadClient/test",
+  "generated": {
+    "bundleHash": "bcb17e46279613c3aec98212ecc58f68159f31a300d2e76c738b202f4229a016",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 32157,
+      "cutOff": 159,
+      "depth": 4,
+      "points": 58
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 17562,
+      "calls": 1,
+      "costUsd": 0.074347,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4443,
+      "outputTokens": 392
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 15045,
+      "calls": 1,
+      "costUsd": 0.07857,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 10990,
+      "outputTokens": 1811
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|POST /api/v3/DownloadClient/test",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.Test(`0,System.Boolean)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/DownloadClient/test"
+        ],
+        "id": "A1",
+        "text": "A caller posts a download client definition as JSON, with an optional forceTest query flag (default false), to test it without saving it."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.Test(`0,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.IProviderFactory`2.Find(System.Int32)",
+          "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)"
+        ],
+        "id": "A2",
+        "text": "When the posted id is above 0, the existing saved definition is looked up. Its stored settings are used to fill in masked API key and password values."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderResourceMapper`2.ToModel(`0,`1)",
+          "Sonarr.Common|M:NzbDrone.Common.Reflection.ReflectionExtensions.FindTypeByName(System.Reflection.Assembly,System.String)"
+        ],
+        "id": "R1",
+        "text": "The posted resource is converted to a definition. The settings type is found by case-insensitive name match on the config contract, and the settings values are read from the posted fields."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.DownloadClient.DownloadClientResourceMapper.ToModel(Sonarr.Api.V3.DownloadClient.DownloadClientResource,NzbDrone.Core.Download.DownloadClientDefinition)"
+        ],
+        "id": "R2",
+        "text": "The download client definition also takes Enable, Protocol, Priority, RemoveCompletedDownloads and RemoveFailedDownloads from the posted resource."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.Test(`0,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.GetDefinition(`0,`3,System.Boolean,System.Boolean,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.Validate(`3,System.Boolean)"
+        ],
+        "id": "R3",
+        "text": "The settings are always validated before the connection test, even if the client is not enabled. Warnings count as failures unless forceTest is true."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.Test(`0,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.Test(`3,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.VerifyValidationResult(FluentValidation.Results.ValidationResult,System.Boolean)"
+        ],
+        "id": "R4",
+        "text": "The connection test always treats warnings as failures. Any error always fails the request."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.Test(`0,System.Boolean)"
+        ],
+        "id": "S1",
+        "text": "On success the endpoint returns the text \"{}\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.VerifyValidationResult(FluentValidation.Results.ValidationResult,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Validation.NzbDroneValidationResult.#ctor(System.Collections.Generic.IEnumerable{FluentValidation.Results.ValidationFailure})"
+        ],
+        "id": "S2",
+        "text": "On failure it raises a validation exception listing the failures. With warnings included, the list holds errors followed by warnings. Otherwise it holds errors only."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadClientFactory.Test(NzbDrone.Core.Download.DownloadClientDefinition)"
+        ],
+        "id": "E1",
+        "text": "For a saved download client (id not 0), a passing test records a success and a failing test records a failure in the download client status service. An unsaved definition (id 0) records nothing."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Test(`1)"
+        ],
+        "id": "E2",
+        "text": "The test runs the download client's own test against the configured client."
+      }
+    ]
+  },
+  "title": "Test download client settings",
+  "unknowns": [
+    {
+      "file": "src/NzbDrone.Common/Reflection/ReflectionExtensions.cs",
+      "in": "Sonarr.Common|F:NzbDrone.Common.Reflection.ReflectionExtensions.CoreAssembly",
+      "line": 10,
+      "reason": "reflection: Assembly.Load"
+    },
+    {
+      "file": "src/NzbDrone.Common/Reflection/ReflectionExtensions.cs",
+      "in": "Sonarr.Common|M:NzbDrone.Common.Reflection.ReflectionExtensions.FindTypeByName(System.Reflection.Assembly,System.String)",
+      "line": 72,
+      "reason": "reflection: Assembly.GetExportedTypes"
+    },
+    {
+      "file": "src/Sonarr.Http/ClientSchema/SchemaBuilder.cs",
+      "in": "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)",
+      "line": 58,
+      "reason": "reflection: Activator.CreateInstance"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,182 @@
+{
+  "codeTitle": "GET /api/v3/Calendar",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/Calendar",
+  "generated": {
+    "bundleHash": "3473a64e71156a342552db9152c48a3b02849fcccd65bc331d347deec60f50b8",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 29154,
+      "cutOff": 103,
+      "depth": 4,
+      "points": 107
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 17827,
+      "calls": 1,
+      "costUsd": 0.074857,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5030,
+      "outputTokens": 337
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 13839,
+      "calls": 1,
+      "costUsd": 0.088456,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 16892,
+      "outputTokens": 3282
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/Calendar",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Calendar.CalendarController.GetCalendar(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.String)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Calendar"
+        ],
+        "id": "A1",
+        "text": "A caller requests the calendar with optional start, end, unmonitored, includeSeries, includeEpisodeFile, includeEpisodeImages and tags (comma-separated) parameters."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Calendar.CalendarController.GetCalendar(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.String)"
+        ],
+        "id": "R1",
+        "text": "If start is not given it defaults to today; if end is not given it defaults to two days after today."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Calendar.CalendarController.GetCalendar(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.String)"
+        ],
+        "id": "R2",
+        "text": "unmonitored, includeSeries, includeEpisodeFile and includeEpisodeImages default to false, and tags defaults to empty."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Calendar.CalendarController.GetCalendar(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.IEpisodeService.EpisodesBetweenDates(System.DateTime,System.DateTime,System.Boolean,System.Boolean)"
+        ],
+        "id": "R3",
+        "text": "Unmonitored episodes are included only when unmonitored is true; specials are always included."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeService.EpisodesBetweenDates(System.DateTime,System.DateTime,System.Boolean,System.Boolean)"
+        ],
+        "id": "R4",
+        "text": "The start and end dates are converted to UTC before episodes are looked up."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Calendar.CalendarController.GetCalendar(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.String)"
+        ],
+        "id": "R5",
+        "text": "Episodes whose series cannot be found are left out."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Calendar.CalendarController.GetCalendar(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.String)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.EnumerableExtensions.None``1(System.Collections.Generic.IEnumerable{``0},System.Func{``0,System.Boolean})"
+        ],
+        "id": "R6",
+        "text": "When tags are given, only episodes whose series has at least one of the listed tags are returned."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tags.TagService.GetTag(System.String)"
+        ],
+        "id": "R7",
+        "text": "Each entry in tags is treated as a tag id if it is all digits, otherwise as a tag label."
+      },
+      {
+        "cites": [
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.IsNotNullOrWhiteSpace(System.String)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Calendar.CalendarController.GetCalendar(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.String)"
+        ],
+        "id": "R8",
+        "text": "The tags filter applies only when the tags text is not null or whitespace."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeControllerWithSignalR.MapToResource(System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "R9",
+        "text": "The episode file is attached only if the episode has a file (episode file id not 0)."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfile.CalculateCustomFormatScore(System.Collections.Generic.List{NzbDrone.Core.CustomFormats.CustomFormat})",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.EpisodeFiles.EpisodeFileResourceMapper.ToResource(NzbDrone.Core.MediaFiles.EpisodeFile,NzbDrone.Core.Tv.Series,NzbDrone.Core.DecisionEngine.Specifications.IUpgradableSpecification,NzbDrone.Core.CustomFormats.ICustomFormatCalculationService)"
+        ],
+        "id": "R10",
+        "text": "The custom format score is the sum of the quality profile scores for the file's matching custom formats, or 0 if there is no quality profile."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Calendar.CalendarController.GetCalendar(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.String)"
+        ],
+        "id": "S1",
+        "text": "Returns a list of episodes airing in the requested date range, sorted by air date (UTC) ascending."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeResourceMapper.ToResource(NzbDrone.Core.Tv.Episode)"
+        ],
+        "id": "S2",
+        "text": "Each episode includes id, series id, TVDB id, episode file id, season and episode numbers, title, air date and air date UTC, runtime, finale type, overview, last search time, has-file, monitored, absolute and scene numbering fields."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesResourceMapper.ToResource(NzbDrone.Core.Tv.Series,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeControllerWithSignalR.MapToResource(System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "S3",
+        "text": "When series is requested, each episode carries its series details (title, overview, network, air time, images, seasons, path, quality profile, monitored flag, external ids, genres, tags, ratings and more)."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.EpisodeFiles.EpisodeFileResourceMapper.ToResource(NzbDrone.Core.MediaFiles.EpisodeFile,NzbDrone.Core.Tv.Series,NzbDrone.Core.DecisionEngine.Specifications.IUpgradableSpecification,NzbDrone.Core.CustomFormats.ICustomFormatCalculationService)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeControllerWithSignalR.MapToResource(System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "S4",
+        "text": "When episode file is requested, episodes that have a file carry file details: path, size, date added, scene name, release group, languages, quality, media info, quality-cutoff-not-met flag, custom formats, custom format score, indexer flags and release type."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.EpisodeFiles.MediaInfoResourceMapper.ToResource(NzbDrone.Core.MediaFiles.MediaInfo.MediaInfoModel,System.String)"
+        ],
+        "id": "S5",
+        "text": "Media info shows audio and video codec, bitrates, channels, languages, stream count, bit depth, fps, dynamic range, resolution as WxH, runtime, scan type and subtitles."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Episodes.EpisodeControllerWithSignalR.MapToResource(System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "S6",
+        "text": "When episode images are requested, each episode carries its images."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Calendar (GET /api/v3/Calendar)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

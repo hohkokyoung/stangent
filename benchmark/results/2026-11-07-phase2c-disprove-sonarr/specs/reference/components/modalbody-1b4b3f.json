@@ -1,0 +1,103 @@
+{
+  "codeTitle": "ModalBody",
+  "entry": "ts|frontend/src/Components/Modal/ModalBody.tsx#ModalBody",
+  "generated": {
+    "bundleHash": "dabb1c2e9b29d9a398a4517c9fd8864cab9ad46969bd94a5149e4f797e6497d5",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 7229,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 11
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 4937,
+      "calls": 1,
+      "costUsd": 0.020457,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2186,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3502,
+      "calls": 1,
+      "costUsd": 0.021108,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4270,
+      "outputTokens": 682
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Components/Modal/ModalBody.tsx#ModalBody",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Modal/ModalBody.tsx#ModalBody"
+        ],
+        "id": "R1",
+        "text": "The scroll direction defaults to 'vertical'. Any value other than 'none' counts as scrolling enabled."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Modal/ModalBody.tsx#ModalBody"
+        ],
+        "id": "R2",
+        "text": "If no class name is supplied, a scrolling style is used when scrolling is enabled and a plain body style when it is 'none'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Modal/ModalBody.tsx#ModalBody"
+        ],
+        "id": "R3",
+        "text": "The inner container uses a default inner style unless a different one is supplied."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Modal/ModalBody.tsx#ModalBody",
+          "ts|frontend/src/Components/Scroller/Scroller.tsx#Scroller"
+        ],
+        "id": "R4",
+        "text": "Other supplied properties and the ref are passed on to the scroller."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Modal/ModalBody.tsx#ModalBody"
+        ],
+        "id": "S1",
+        "text": "Displays the modal's content inside a scroller, with the scroll top fixed at 0."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Modal/ModalBody.tsx#ModalBody"
+        ],
+        "id": "S2",
+        "text": "When scrolling is enabled, the children are wrapped in an inner container."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Modal/ModalBody.tsx#ModalBody"
+        ],
+        "id": "S3",
+        "text": "When scrolling is 'none', the children are shown directly without an inner container."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Modal Body",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

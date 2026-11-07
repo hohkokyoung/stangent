@@ -1,0 +1,208 @@
+{
+  "codeTitle": "/system/logs/files · AppLogFiles",
+  "entry": "page:tsconfig.json|/system/logs/files",
+  "generated": {
+    "bundleHash": "e8090815e8b8493c25aedc64f1125f362dd4ca29895431445641d072424a2be7",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 23625,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 93
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 14332,
+      "calls": 1,
+      "costUsd": 0.063187,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5448,
+      "outputTokens": 568
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 25731,
+      "calls": 2,
+      "costUsd": 0.140164,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 23105,
+      "outputTokens": 3668
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/system/logs/files",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/App/AppLogFiles.tsx#AppLogFiles",
+          "ts|frontend/src/System/Logs/useLogFiles.ts#useLogFiles"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/log/file",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/log/file"
+        ],
+        "id": "A1",
+        "text": "Pressing Refresh re-fetches the list of log files."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/App/AppLogFiles.tsx#AppLogFiles",
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "A2",
+        "text": "Pressing Clear runs the DeleteLogFiles command and, when the command finishes, re-fetches the file list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogsNavMenu.tsx#LogsNavMenu"
+        ],
+        "id": "A3",
+        "text": "Choosing an entry in the nav menu navigates to the Log Files or Updater Log Files page."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R1",
+        "text": "The same command is not sent again if it was run within the last 5 seconds; a warning is logged to the console instead."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useCommandExecuting"
+        ],
+        "id": "R2",
+        "text": "The Clear button shows as executing only while the command status is queued or started."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/App/AppLogFiles.tsx#AppLogFiles",
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles"
+        ],
+        "id": "R3",
+        "text": "This page is the application log view (type \"app\"), so it uses the \"logs\" folder."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Log Files\" with the heading scope \"System\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles"
+        ],
+        "id": "S2",
+        "text": "A toolbar shows a logs navigation menu labelled with the current view, plus \"Refresh\" and \"Clear\" buttons."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogsNavMenu.tsx#LogsNavMenu"
+        ],
+        "id": "S3",
+        "text": "The nav menu offers two entries: \"Log Files\" (/system/logs/files) and \"Updater Log Files\" (/system/logs/files/update)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles",
+          "ts|frontend/src/Utilities/String/combinePath.ts#combinePath"
+        ],
+        "id": "S4",
+        "text": "An info box shows the log files location, built from the app data folder and the \"logs\" subfolder (or \"UpdateLogs\" for the updater view), joined with a backslash on Windows and a slash otherwise."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles"
+        ],
+        "id": "S5",
+        "text": "When the current view is \"Log Files\", the info box also shows a note about the default log level."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles"
+        ],
+        "id": "S6",
+        "text": "A loading indicator is shown while log files are being fetched."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles"
+        ],
+        "id": "S7",
+        "text": "When not fetching and files exist, a table lists the files, with one row per file."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFilesTableRow.tsx#LogFilesTableRow"
+        ],
+        "id": "S8",
+        "text": "Each row shows the filename, the last write time as a relative date, and a \"Download\" link that opens in a new tab."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles"
+        ],
+        "id": "S9",
+        "text": "When not fetching and there are no files, an info message for \"no log files\" is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/LogFiles.tsx#LogFiles",
+          "ts|frontend/src/Commands/useCommands.ts#useCommandExecuting"
+        ],
+        "id": "S10",
+        "text": "The Refresh icon spins while fetching, and the Clear icon spins while the delete-log-files command is queued or started."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "E1",
+        "text": "Clear posts a new command to /command, and on success the command is added to the cached command list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Logs/useLogFiles.ts#useLogFiles",
+          "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery"
+        ],
+        "id": "E2",
+        "text": "Loading the page requests the log file list from /log/file with the API key and client headers."
+      }
+    ]
+  },
+  "title": "System Log Files",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "The source only shows translate('NoLogFiles'). The literal text \"No log files\" is not in the slice, because translation values aren't shown.",
+        "id": "F1",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Removed the literal text and key; the statement now describes the message generically.",
+        "statement": "S9",
+        "statementText": "When not fetching and there are no files, an info message \"No log files\" key (NoLogFiles) is shown."
+      }
+    ]
+  }
+}

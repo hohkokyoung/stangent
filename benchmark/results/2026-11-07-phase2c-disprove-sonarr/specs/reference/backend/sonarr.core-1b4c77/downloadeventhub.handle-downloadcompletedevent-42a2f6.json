@@ -1,0 +1,177 @@
+{
+  "codeTitle": "DownloadEventHub.Handle(DownloadCompletedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+  "generated": {
+    "bundleHash": "4f46320cc7eb9d9292791b6c69a62c4883d27c3734c70e04e749645d9110c567",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 49122,
+      "cutOff": 105,
+      "depth": 4,
+      "points": 204
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 28057,
+      "calls": 1,
+      "costUsd": 0.115547,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3954,
+      "outputTokens": 314
+    },
+    "writer": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 25692,
+      "calls": 1,
+      "costUsd": 0.132322,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 15748,
+      "outputTokens": 2955
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.MarkItemAsImported(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,NzbDrone.Core.Download.IDownloadClient)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.IProvideDownloadClient.Get(System.Int32)"
+        ],
+        "id": "A1",
+        "text": "On a download-completed event, gets the download client for the tracked download and marks the item as imported in that client."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.RemoveFromDownloadClient(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,NzbDrone.Core.Download.IDownloadClient)"
+        ],
+        "id": "A2",
+        "text": "After marking, removes the item from the download client (with data deletion requested) and stops tracking the download, when the removal conditions are met."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)"
+        ],
+        "id": "R1",
+        "text": "The item is removed only if it can be removed, its status is not Downloading, and the client definition has RemoveCompletedDownloads enabled."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCompletedEvent)"
+        ],
+        "id": "R2",
+        "text": "Marking as imported happens before the removal checks, regardless of them."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadClientBase`1.MarkItemAsImported(NzbDrone.Core.Download.DownloadClientItem)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.MarkItemAsImported(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,NzbDrone.Core.Download.IDownloadClient)"
+        ],
+        "id": "R3",
+        "text": "By default a client does not support marking as imported and throws a not-supported error, which is logged at debug level only."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.MarkItemAsImported(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,NzbDrone.Core.Download.IDownloadClient)"
+        ],
+        "id": "R4",
+        "text": "Other errors while marking as imported are logged as errors and do not stop the handler."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.RemoveFromDownloadClient(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,NzbDrone.Core.Download.IDownloadClient)"
+        ],
+        "id": "R5",
+        "text": "If the client does not support removal, a warning is logged; any other removal error is logged as an error. Neither is rethrown."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.Deluge.Deluge.MarkItemAsImported(NzbDrone.Core.Download.DownloadClientItem)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.QBittorrent.QBittorrent.MarkItemAsImported(NzbDrone.Core.Download.DownloadClientItem)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.RTorrent.RTorrent.MarkItemAsImported(NzbDrone.Core.Download.DownloadClientItem)"
+        ],
+        "id": "R6",
+        "text": "Deluge, qBittorrent and rTorrent set the post-import label only when an imported category is set and differs from the TV category."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.Transmission.Transmission.MarkItemAsImported(NzbDrone.Core.Download.DownloadClientItem)"
+        ],
+        "id": "R7",
+        "text": "Transmission marks imported only if it supports labels; otherwise it throws not-supported. It replaces the TV category label with the imported category."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.UTorrent.UTorrent.MarkItemAsImported(NzbDrone.Core.Download.DownloadClientItem)"
+        ],
+        "id": "R8",
+        "text": "uTorrent sets the imported label and removes the old TV category label if one is set."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.Flood.Flood.MarkItemAsImported(NzbDrone.Core.Download.DownloadClientItem)"
+        ],
+        "id": "R9",
+        "text": "Flood adds the configured post-import tags to the torrent's existing tags when any are configured."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.Pneumatic.Pneumatic.RemoveItem(NzbDrone.Core.Download.DownloadClientItem,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.Blackhole.TorrentBlackhole.RemoveItem(NzbDrone.Core.Download.DownloadClientItem,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.Blackhole.UsenetBlackhole.RemoveItem(NzbDrone.Core.Download.DownloadClientItem,System.Boolean)"
+        ],
+        "id": "R10",
+        "text": "Pneumatic does not support removal. Blackhole (torrent and usenet) supports removal only with data deletion."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.QBittorrent.QBittorrent.MarkItemAsImported(NzbDrone.Core.Download.DownloadClientItem)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.Flood.Flood.MarkItemAsImported(NzbDrone.Core.Download.DownloadClientItem)"
+        ],
+        "id": "E1",
+        "text": "Marking as imported changes the item's label or tags in the download client, for clients that support it."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.RemoveFromDownloadClient(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,NzbDrone.Core.Download.IDownloadClient)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Clients.Deluge.Deluge.RemoveItem(NzbDrone.Core.Download.DownloadClientItem,System.Boolean)"
+        ],
+        "id": "E2",
+        "text": "Removal deletes the item from the download client, and data too where the client supports it."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadService.StopTracking(System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadsRemovedEvent.#ctor(System.Collections.Generic.List{NzbDrone.Core.Download.TrackedDownloads.TrackedDownload})"
+        ],
+        "id": "E3",
+        "text": "Stopping tracking removes the download from the tracked-download cache and publishes a TrackedDownloadsRemovedEvent."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.DownloadMonitoringService.Handle(NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadsRemovedEvent)"
+        ],
+        "id": "E4",
+        "text": "The TrackedDownloadsRemovedEvent is handled by the download monitoring service."
+      }
+    ]
+  },
+  "title": "Download completed handler (mark imported and remove from client)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

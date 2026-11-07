@@ -1,0 +1,194 @@
+{
+  "codeTitle": "EpisodeSearchService.Execute(MissingEpisodeSearchCommand)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)",
+  "generated": {
+    "bundleHash": "fb062078de6c89776dbd7f7283bca622d72cbada4a57e3d07d9c595315c72cfc",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 51791,
+      "cutOff": 90,
+      "depth": 4,
+      "points": 137
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 27511,
+      "calls": 1,
+      "costUsd": 0.115173,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5821,
+      "outputTokens": 495
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 50584,
+      "calls": 2,
+      "costUsd": 0.263866,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 31886,
+      "outputTokens": 6097
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)"
+        ],
+        "id": "A1",
+        "text": "Runs a missing-episode search for the command: it selects missing episodes, drops those already in the download queue, and searches indexers for the rest."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.SearchForBulkEpisodes(System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean)"
+        ],
+        "id": "A2",
+        "text": "Groups the episodes by series and season. A group with more than one episode gets a season search; a group with one episode gets an episode search."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.DateTimeExtensions.Before(System.DateTime,System.DateTime)"
+        ],
+        "id": "R1",
+        "text": "When the command has a series id, episodes come from that series. They must have the command's monitored value, have no file, have an air date, and have aired (air date is now or earlier)."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)"
+        ],
+        "id": "R2",
+        "text": "Without a series id, episodes without files are loaded across all series, specials included, sorted by Id ascending in a single page of 1,000,000."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)"
+        ],
+        "id": "R3",
+        "text": "If monitored is true, only episodes that are monitored and whose series is monitored are included. Otherwise, episodes that are unmonitored or belong to an unmonitored series are included."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)"
+        ],
+        "id": "R4",
+        "text": "Optional filters narrow the episodes by series ids, quality profile ids and series type when given. Series tags are passed to the missing-episode query."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.GetQueuedEpisodeIds"
+        ],
+        "id": "R5",
+        "text": "Episodes already in the download queue are excluded from the search."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.MissingEpisodeSearchCommand)"
+        ],
+        "id": "R6",
+        "text": "The search counts as user-invoked only when the command trigger is Manual."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.SearchForBulkEpisodes(System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean)"
+        ],
+        "id": "R7",
+        "text": "Groups are searched in order of their oldest last-search time, with never-searched episodes first."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.SearchForBulkEpisodes(System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean)"
+        ],
+        "id": "R8",
+        "text": "If a search for a group fails, the error is logged and that group is skipped. The remaining groups continue."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.EpisodeSearch(NzbDrone.Core.Tv.Episode,System.Boolean,System.Boolean)"
+        ],
+        "id": "R9",
+        "text": "A daily series episode with no air date fails the search with \"Air date is missing\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.Dispatch(System.Func{NzbDrone.Core.Indexers.IIndexer,System.Threading.Tasks.Task{System.Collections.Generic.IList{NzbDrone.Core.Parser.Model.ReleaseInfo}}},NzbDrone.Core.IndexerSearch.Definitions.SearchCriteriaBase)"
+        ],
+        "id": "R10",
+        "text": "Indexers used are those enabled for automatic search (or interactive search, if interactive). Only untagged indexers, or ones sharing a tag with the series, are used."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.DeDupeDecisions(System.Collections.Generic.List{NzbDrone.Core.DecisionEngine.DownloadDecision})"
+        ],
+        "id": "R11",
+        "text": "Duplicate releases are removed by guid, keeping the one with the fewest rejections and then the better indexer priority."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.SearchForBulkEpisodes(System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean)"
+        ],
+        "id": "S1",
+        "text": "Returns nothing; it runs a search for missing episodes and logs progress: \"Performing search for {0} episodes\" at the start and \"Completed search for {0} episodes. {1} reports downloaded.\" at the end."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.SearchForBulkEpisodes(System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.ProcessDownloadDecisions.ProcessDecisions(System.Collections.Generic.List{NzbDrone.Core.DecisionEngine.DownloadDecision})"
+        ],
+        "id": "E1",
+        "text": "After each group's search, the resulting decisions are processed for download, and the number of grabbed releases is added to the reported total."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.Dispatch(System.Func{NzbDrone.Core.Indexers.IIndexer,System.Threading.Tasks.Task{System.Collections.Generic.IList{NzbDrone.Core.Parser.Model.ReleaseInfo}}},NzbDrone.Core.IndexerSearch.Definitions.SearchCriteriaBase)"
+        ],
+        "id": "E2",
+        "text": "When at least one indexer is searched, the last search time of the searched episodes is set to now and saved."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.ProcessDownloadDecisions.ProcessDecisions(System.Collections.Generic.List{NzbDrone.Core.DecisionEngine.DownloadDecision})"
+        ],
+        "id": "E3",
+        "text": "Releases that are delayed or can't be sent because the download client is unavailable are added to the pending releases."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.Dispatch(System.Func{NzbDrone.Core.Indexers.IIndexer,System.Threading.Tasks.Task{System.Collections.Generic.IList{NzbDrone.Core.Parser.Model.ReleaseInfo}}},NzbDrone.Core.IndexerSearch.Definitions.SearchCriteriaBase)"
+        ],
+        "id": "E4",
+        "text": "Each search calls the Fetch method of every selected indexer."
+      }
+    ]
+  },
+  "title": "Missing Episode Search (backend command)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "The slice shows indexers being called through IIndexer.Fetch. It doesn't show that this goes over the network, because the indexer implementations are outside the slice.",
+        "id": "F1",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Replaced the network claim with a statement that each selected indexer's Fetch is called, which the slice shows.",
+        "statement": "E4",
+        "statementText": "Indexers are queried over the network for each search."
+      }
+    ]
+  }
+}

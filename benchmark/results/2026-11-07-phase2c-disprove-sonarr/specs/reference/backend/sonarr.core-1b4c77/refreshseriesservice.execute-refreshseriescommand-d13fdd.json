@@ -1,0 +1,216 @@
+{
+  "codeTitle": "RefreshSeriesService.Execute(RefreshSeriesCommand)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.Execute(NzbDrone.Core.Tv.Commands.RefreshSeriesCommand)",
+  "generated": {
+    "bundleHash": "8f172842a1af88b3d41043d43d19ad13dc5e53692466196133d59f9b7ba27b64",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 70562,
+      "cutOff": 125,
+      "depth": 4,
+      "points": 192
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 37966,
+      "calls": 1,
+      "costUsd": 0.157053,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5530,
+      "outputTokens": 501
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 33345,
+      "calls": 1,
+      "costUsd": 0.172,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 20377,
+      "outputTokens": 3834
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.Execute(NzbDrone.Core.Tv.Commands.RefreshSeriesCommand)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.Execute(NzbDrone.Core.Tv.Commands.RefreshSeriesCommand)"
+        ],
+        "id": "A1",
+        "text": "Runs a refresh for the series ids in the command, or for all series ordered by sort title when no ids are given."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.RefreshSeriesInfo(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.MetadataSource.SkyHook.SkyHookProxy.GetSeriesInfo(System.Int32,NzbDrone.Core.Languages.Language,System.String)"
+        ],
+        "id": "A2",
+        "text": "Refreshing a series fetches its info and episodes from the metadata source by TVDB id, language and season type."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.Execute(NzbDrone.Core.Tv.Commands.RefreshSeriesCommand)"
+        ],
+        "id": "R1",
+        "text": "When no series ids are given, a series is refreshed if the trigger is Manual or the refresh check says so; otherwise it is skipped with the log \"Skipping refresh of series\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.ShouldRefreshSeries.ShouldRefresh(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R2",
+        "text": "The refresh check returns true when the last info sync was over 30 days ago or an aired non-special episode has the title \"TBA\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.ShouldRefreshSeries.ShouldRefresh(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R3",
+        "text": "The refresh check returns false if synced less than 6 hours ago. Otherwise it returns true if the series is not ended or its last episode aired within 30 days, and false if not. It returns true on error."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.RescanSeries(NzbDrone.Core.Tv.Series,System.Boolean,NzbDrone.Core.Messaging.Commands.CommandTrigger)"
+        ],
+        "id": "R4",
+        "text": "Rescan after refresh: a new series is always rescanned. With setting Never the rescan is skipped. With AfterManual it is skipped unless the trigger is Manual. Each skip publishes a scan-skipped event."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.UpdateSeasons(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R5",
+        "text": "Newly seen seasons are monitored only if the series monitors new items as All. A new season 0 is ignored and set to unmonitored. Existing seasons keep their monitored flag."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.RefreshSeriesInfo(System.Int32)"
+        ],
+        "id": "R6",
+        "text": "If the metadata source returns a different TVDB id, the series is updated to the new id and a warning notes it replaced a duplicate."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.Execute(NzbDrone.Core.Tv.Commands.RefreshSeriesCommand)"
+        ],
+        "id": "R7",
+        "text": "If a series fails to refresh with an ID-listed run, tags are still updated and a rescan is still done, and the result is reported Indeterminate. A not-found series reports Indeterminate without tags or rescan."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.RescanSeries(NzbDrone.Core.Tv.Series,System.Boolean,NzbDrone.Core.Messaging.Commands.CommandTrigger)"
+        ],
+        "id": "R8",
+        "text": "A failed rescan is logged as an error and does not stop the run."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.RefreshSeriesInfo(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.Execute(NzbDrone.Core.Tv.Commands.RefreshSeriesCommand)"
+        ],
+        "id": "S1",
+        "text": "If the series is not found on TheTVDB, the series status is set to Deleted and an error \"Series '{0}' (tvdbid {1}) was not found, it may have been removed from TheTVDB.\" is logged."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.RefreshSeriesInfo(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "A progress message \"Updating {0}\" with the series title is logged for each series being refreshed."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.Execute(NzbDrone.Core.Tv.Commands.RefreshSeriesCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.Events.SeriesRefreshStartingEvent.#ctor(System.Boolean)"
+        ],
+        "id": "E1",
+        "text": "At the start a series-refresh-starting event is published, flagged manual when the trigger is Manual. At the end a series-refresh-complete event is published."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.RefreshSeriesInfo(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesTranslationService.UpdateTranslations(System.Int32,System.Collections.Generic.List{NzbDrone.Core.Tv.SeriesTranslation})"
+        ],
+        "id": "E2",
+        "text": "A refreshed series is saved with the updated metadata, seasons, a new last-info-sync time and a normalised path. Its translations and episodes are also updated."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshEpisodeService.RefreshEpisodeInfo(NzbDrone.Core.Tv.Series,System.Collections.Generic.IEnumerable{NzbDrone.Core.Tv.Episode})"
+        ],
+        "id": "E3",
+        "text": "Episode refresh deletes episodes no longer in the source, updates existing ones, inserts new ones, then publishes an episode-info-refreshed event."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.RefreshSeriesInfo(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Xem.XemService.Handle(NzbDrone.Core.Tv.Events.SeriesUpdatedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Pending.PendingReleaseService.Handle(NzbDrone.Core.Tv.Events.SeriesUpdatedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaCover.MediaCoverService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesUpdatedEvent)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesController.Handle(NzbDrone.Core.Tv.Events.SeriesUpdatedEvent)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Series.SeriesController.Handle(NzbDrone.Core.Tv.Events.SeriesUpdatedEvent)"
+        ],
+        "id": "E4",
+        "text": "After a series refresh a series-updated event is published. It is handled by the Xem service, pending releases, media covers, and the series API controllers."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Scene.SceneMappingService.Handle(NzbDrone.Core.Tv.Events.SeriesRefreshStartingEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.DataAugmentation.Xem.XemService.Handle(NzbDrone.Core.Tv.Events.SeriesRefreshStartingEvent)"
+        ],
+        "id": "E5",
+        "text": "The refresh-starting event is handled by the scene mapping and Xem services."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadService.Handle(NzbDrone.Core.Tv.Events.EpisodeInfoRefreshedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeRefreshedService.Handle(NzbDrone.Core.Tv.Events.EpisodeInfoRefreshedEvent)"
+        ],
+        "id": "E6",
+        "text": "The episode-info-refreshed event is handled by the tracked download service and the episode refreshed service."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.UpdateTags(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.UpdateAutoTaggingTags(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "E7",
+        "text": "Auto-tagging tags are updated for each series, and the series is saved if any tag was added or removed."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.RefreshSeriesService.RescanSeries(NzbDrone.Core.Tv.Series,System.Boolean,NzbDrone.Core.Messaging.Commands.CommandTrigger)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScanSkippedEvent)"
+        ],
+        "id": "E8",
+        "text": "A rescan scans the series' disk folder. A skipped scan event is handled by the series scanned handler."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.CommandResultReporter.Report(NzbDrone.Core.Messaging.Commands.CommandResult)",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.CommandQueueManager.SetResult(NzbDrone.Core.Messaging.Commands.CommandModel,NzbDrone.Core.Messaging.Commands.CommandResult)"
+        ],
+        "id": "E9",
+        "text": "Reporting Indeterminate sets the result on the current command."
+      }
+    ]
+  },
+  "title": "Refresh Series command",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

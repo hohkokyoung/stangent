@@ -1,0 +1,325 @@
+{
+  "codeTitle": "/settings/tags · TagSettings",
+  "entry": "page:tsconfig.json|/settings/tags",
+  "generated": {
+    "bundleHash": "6a9811f7b3de0dc93fe309f6678782bc896d46911ab7ae7384818be59ea7b4c3",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 93980,
+      "cutOff": 56,
+      "depth": 6,
+      "points": 320
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 48000,
+      "calls": 1,
+      "costUsd": 0.197109,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5669,
+      "outputTokens": 493
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 43543,
+      "calls": 1,
+      "costUsd": 0.211892,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 21385,
+      "outputTokens": 3744
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/settings/tags",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/Tag.tsx#Tag"
+        ],
+        "id": "A1",
+        "text": "Clicking a tag card opens its details modal."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/Tag.tsx#Tag",
+          "ts|frontend/src/Tags/useTags.ts#useDeleteTag"
+        ],
+        "id": "A2",
+        "text": "Delete in the tag details modal closes it and opens a confirmation (Delete Tag); confirming deletes the tag via the API."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Tags/useTags.ts#useTags",
+          "ts|frontend/src/Tags/useTagDetails.ts#useTagDetails"
+        ],
+        "id": "A3",
+        "text": "The page loads tags and tag details from the API."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/AutoTagging/AutoTaggings.tsx#AutoTaggings",
+          "ts|frontend/src/Settings/Tags/AutoTagging/AutoTagging.tsx#AutoTagging"
+        ],
+        "id": "A4",
+        "text": "Clicking the add card opens an empty Add Auto Tag modal; clicking a card opens it for editing; the clone icon opens the modal prefilled from that auto tag."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/AutoTagging/EditAutoTaggingModalContent.tsx#EditAutoTaggingModalContent",
+          "ts|frontend/src/Settings/Tags/AutoTagging/useAutoTaggings.ts#useManageAutoTagging"
+        ],
+        "id": "A5",
+        "text": "Save in the auto tagging modal saves it, and the modal closes after a successful save."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/AutoTagging/AutoTagging.tsx#AutoTagging",
+          "ts|frontend/src/Settings/Tags/AutoTagging/EditAutoTaggingModalContent.tsx#EditAutoTaggingModalContent",
+          "ts|frontend/src/Settings/Tags/AutoTagging/useAutoTaggings.ts#useDeleteAutoTagging"
+        ],
+        "id": "A6",
+        "text": "Delete in the edit modal (existing auto tags only) closes it and opens a confirmation; confirming deletes the auto tag."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/AutoTagging/EditAutoTaggingModalContent.tsx#EditAutoTaggingModalContent",
+          "ts|frontend/src/Settings/Tags/AutoTagging/Specifications/AddSpecificationModalContent.tsx#AddSpecificationModalContent"
+        ],
+        "id": "A7",
+        "text": "Add Condition opens a type picker; choosing a type (or preset) opens the condition edit modal, and saving adds the condition to the auto tag."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/AutoTagging/Specifications/Specification.tsx#Specification",
+          "ts|frontend/src/Settings/Tags/AutoTagging/useAutoTaggings.ts#useManageAutoTagging"
+        ],
+        "id": "A8",
+        "text": "Conditions can be edited, cloned or deleted (with confirmation)."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/Details/TagDetailsModalContent.tsx#TagDetailsModalContent"
+        ],
+        "id": "R1",
+        "text": "A tag's Delete button in the details modal is disabled, with the tooltip \"TagCannotBeDeletedWhileInUse\", while the tag is used by anything."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/Tag.tsx#Tag"
+        ],
+        "id": "R2",
+        "text": "A tag counts as used if any of series, delay profiles, import lists, connections, release profiles, indexers, download clients or auto tags reference it."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/Tag.tsx#Tag"
+        ],
+        "id": "R3",
+        "text": "Release profile usage merges restriction and excluded release profile ids without duplicates."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/AutoTagging/useAutoTaggings.ts#useManageAutoTagging"
+        ],
+        "id": "R4",
+        "text": "A cloned auto tag gets a default name based on the source name and id 0."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/AutoTagging/useAutoTaggings.ts#getNextSpecId",
+          "ts|frontend/src/Settings/Tags/AutoTagging/useAutoTaggings.ts#useManageAutoTagging"
+        ],
+        "id": "R5",
+        "text": "A new condition gets an id one higher than the current maximum, or 1 if there are none; a cloned condition gets a copied-name default."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/AutoTagging/Specifications/EditSpecificationModalContent.tsx#EditSpecificationModalContent"
+        ],
+        "id": "R6",
+        "text": "The Delete button on a condition appears only when the condition already has an id."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useManageProviderSettings"
+        ],
+        "id": "R7",
+        "text": "Existing providers saved with no changes skip testing and validation; saving the same settings again skips testing."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/TagSettings.tsx#TagSettings"
+        ],
+        "id": "S1",
+        "text": "The page is titled Tags under Settings and has two sections: Tags and Auto Tagging, each with a heading and a description."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/Tags.tsx#Tags",
+          "ts|frontend/src/Tags/useTags.ts#useSortedTagList",
+          "ts|frontend/src/Settings/Tags/Tag.tsx#Tag"
+        ],
+        "id": "S2",
+        "text": "The Tags section lists tags as cards sorted by label, each card showing the tag label."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/Tags.tsx#Tags"
+        ],
+        "id": "S3",
+        "text": "When there are no tags, the Tags section shows an info alert \"NoTagsHaveBeenAddedYet\" instead of cards."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/Tags.tsx#Tags"
+        ],
+        "id": "S4",
+        "text": "The Tags section shows a load error message (TagsLoadError) if tags or tag details fail to load, and a loading state while fetching."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/Tag.tsx#Tag",
+          "ts|frontend/src/Settings/Tags/TagInUse.tsx#TagInUse"
+        ],
+        "id": "S5",
+        "text": "Each tag card shows labels with counts of what uses the tag: series, delay profiles, import lists, connections, release profiles, indexers, download clients and auto tagging. Counts of zero are hidden."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/Tag.tsx#Tag"
+        ],
+        "id": "S6",
+        "text": "A tag card that is not used by anything shows \"NoLinks\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/Details/TagDetailsModalContent.tsx#TagDetailsModalContent",
+          "ts|frontend/src/Settings/Tags/Details/TagDetailsModalContent.tsx#useMatchingSeries"
+        ],
+        "id": "S7",
+        "text": "The tag details modal lists the series (sorted by sort title), delay profiles, connections, import lists, release profiles (required and ignored terms), indexers, download clients and auto tags that use the tag. Sections with no items are hidden."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/Details/TagDetailsModalContent.tsx#TagDetailsModalContent"
+        ],
+        "id": "S8",
+        "text": "The tag details modal shows a message that the tag is not used and can be deleted when nothing uses it."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/Details/TagDetailsDelayProfile.tsx#TagDetailsDelayProfile"
+        ],
+        "id": "S9",
+        "text": "Delay profiles in the details modal show preferred protocol, and usenet and torrent delay times or a disabled message."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/AutoTagging/AutoTaggings.tsx#AutoTaggings",
+          "ts|frontend/src/Settings/Tags/AutoTagging/useAutoTaggings.ts#useSortedAutoTaggings"
+        ],
+        "id": "S10",
+        "text": "The Auto Tagging section lists auto tagging cards sorted by name, plus an \"AddAutoTag\" add card. It shows a load error message (AutoTaggingLoadError) on failure."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/AutoTagging/AutoTagging.tsx#AutoTagging"
+        ],
+        "id": "S11",
+        "text": "Each auto tagging card shows its name, a conditions count, its tags when it has any, and a label per condition. Required conditions are marked success, negated ones danger."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/AutoTagging/EditAutoTaggingModalContent.tsx#EditAutoTaggingModalContent"
+        ],
+        "id": "S12",
+        "text": "The auto tagging edit modal has Name, Remove Tags Automatically and Tags fields and a Conditions list with an Add Condition card. Its title is Add Auto Tag or Edit Auto Tag."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/AutoTagging/Specifications/Specification.tsx#Specification"
+        ],
+        "id": "S13",
+        "text": "Each condition card shows its name, implementation name, and Negated and Required labels when set."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/AutoTagging/Specifications/AddSpecificationModalContent.tsx#AddSpecificationModalContent"
+        ],
+        "id": "S14",
+        "text": "The Add Condition modal lists available condition types, with a loading indicator and an error alert if the list fails to load."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/AutoTagging/Specifications/EditSpecificationModalContent.tsx#EditSpecificationModalContent"
+        ],
+        "id": "S15",
+        "text": "The condition edit modal has Name, the condition's own fields, Negate and Required checkboxes. For fields labelled Regular Expression it shows an info alert with regex help links."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Tags/useTags.ts#useDeleteTag"
+        ],
+        "id": "E1",
+        "text": "Confirming tag deletion sends a DELETE to the tag API and updates the cached tag list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider"
+        ],
+        "id": "E2",
+        "text": "Confirming auto tag deletion sends a DELETE to the API and removes it from the cached list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Tags/Tags.tsx#Tags"
+        ],
+        "id": "E3",
+        "text": "Opening the page also loads delay profiles, release profiles, connections, indexers, import lists and download clients, and invalidates the cached release profiles."
+      }
+    ]
+  },
+  "title": "Tag Settings",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useProviderSettings",
+      "line": 78,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider",
+      "line": 403,
+      "reason": "HTTP DELETE to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

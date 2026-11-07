@@ -1,0 +1,159 @@
+{
+  "codeTitle": "POST /api/v5/DownloadClient/test",
+  "entry": "endpoint:Sonarr.Api.V5|POST /api/v5/DownloadClient/test",
+  "generated": {
+    "bundleHash": "4517e1987ecfcd8c39ec770354ae5dec8a802b923656ebf36e490922b703bd4c",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 31861,
+      "cutOff": 159,
+      "depth": 4,
+      "points": 59
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 17915,
+      "calls": 1,
+      "costUsd": 0.075109,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3918,
+      "outputTokens": 327
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 15246,
+      "calls": 1,
+      "costUsd": 0.080924,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 11144,
+      "outputTokens": 1966
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|POST /api/v5/DownloadClient/test",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Test(`0,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|POST /api/v5/DownloadClient/test"
+        ],
+        "id": "A1",
+        "text": "A caller posts a JSON download client definition, with an optional skipValidation query value (default None), to test it without saving it."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Test(`0,Sonarr.Api.V5.Provider.SkipValidation)",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.IProviderFactory`2.Find(System.Int32)"
+        ],
+        "id": "R1",
+        "text": "If the posted resource has an Id greater than 0, the existing saved definition is looked up and used. Otherwise no existing definition is used."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.GetDefinition(`0,`3,Sonarr.Api.V5.Provider.SkipValidation,System.Boolean)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Validate(`3,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R2",
+        "text": "Settings are validated before the test unless skipValidation is All. Validation is forced for a test, even if the client is not enabled."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderResourceMapper`2.ToModel(`0,`1)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.DownloadClient.DownloadClientResourceMapper.ToModel(Sonarr.Api.V5.DownloadClient.DownloadClientResource,NzbDrone.Core.Download.DownloadClientDefinition)"
+        ],
+        "id": "R3",
+        "text": "The posted resource is mapped to a definition: name, implementation, config contract, message, tags, and settings built from the posted fields. For a download client it also takes Enable, Protocol, Priority, RemoveCompletedDownloads and RemoveFailedDownloads."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)"
+        ],
+        "id": "R4",
+        "text": "A password or API key field sent with the private placeholder value keeps the value from the existing definition, when one exists."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.VerifyValidationResult(FluentValidation.Results.ValidationResult,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R5",
+        "text": "With skipValidation None, a validation exception is thrown if the result has any errors or any warnings."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.VerifyValidationResult(FluentValidation.Results.ValidationResult,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R6",
+        "text": "With skipValidation Warnings, a validation exception is thrown only for errors. Warnings are ignored."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Test(`0,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "S1",
+        "text": "On success the endpoint returns an empty No Content response."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.VerifyValidationResult(FluentValidation.Results.ValidationResult,Sonarr.Api.V5.Provider.SkipValidation)",
+          "Sonarr.Core|M:NzbDrone.Core.Validation.NzbDroneValidationResult.#ctor(System.Collections.Generic.IEnumerable{FluentValidation.Results.ValidationFailure})"
+        ],
+        "id": "S2",
+        "text": "When validation fails, a validation exception is raised carrying the failures, with errors listed before warnings."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadClientFactory.Test(NzbDrone.Core.Download.DownloadClientDefinition)",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Test(`1)"
+        ],
+        "id": "E1",
+        "text": "The download client factory runs the client's own connection test. When the definition has a non-zero Id, it records the client's status as a success if the result is valid, or as a failure otherwise."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadClientFactory.Test(NzbDrone.Core.Download.DownloadClientDefinition)"
+        ],
+        "id": "E2",
+        "text": "A definition with Id 0 (not yet saved) gets no status recorded."
+      }
+    ]
+  },
+  "title": "Test download client (POST /api/v5/DownloadClient/test)",
+  "unknowns": [
+    {
+      "file": "src/NzbDrone.Common/Reflection/ReflectionExtensions.cs",
+      "in": "Sonarr.Common|F:NzbDrone.Common.Reflection.ReflectionExtensions.CoreAssembly",
+      "line": 10,
+      "reason": "reflection: Assembly.Load"
+    },
+    {
+      "file": "src/NzbDrone.Common/Reflection/ReflectionExtensions.cs",
+      "in": "Sonarr.Common|M:NzbDrone.Common.Reflection.ReflectionExtensions.FindTypeByName(System.Reflection.Assembly,System.String)",
+      "line": 72,
+      "reason": "reflection: Assembly.GetExportedTypes"
+    },
+    {
+      "file": "src/Sonarr.Http/ClientSchema/SchemaBuilder.cs",
+      "in": "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)",
+      "line": 58,
+      "reason": "reflection: Activator.CreateInstance"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

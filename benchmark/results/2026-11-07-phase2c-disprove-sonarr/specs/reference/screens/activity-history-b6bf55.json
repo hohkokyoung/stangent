@@ -1,0 +1,328 @@
+{
+  "codeTitle": "/activity/history · History",
+  "entry": "page:tsconfig.json|/activity/history",
+  "generated": {
+    "bundleHash": "051c491ddc8c7fb89572914e76a17b21bc9f3b125b94f73ad4c3312990409d1f",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 72500,
+      "cutOff": 2,
+      "depth": 6,
+      "points": 396
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 37783,
+      "calls": 1,
+      "costUsd": 0.156521,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5753,
+      "outputTokens": 521
+    },
+    "writer": {
+      "cacheReadTokens": 36474,
+      "cacheWriteTokens": 37282,
+      "calls": 1,
+      "costUsd": 0.225261,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 34860,
+      "outputTokens": 6883
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/activity/history",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/History.tsx#History"
+        ],
+        "id": "A1",
+        "text": "Refresh resets to page 1 and refetches history."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/History.tsx#History"
+        ],
+        "id": "A2",
+        "text": "Options opens a table options modal to change columns and page size."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/History.tsx#History",
+          "ts|frontend/src/Activity/History/HistoryFilterModal.tsx#HistoryFilterModal"
+        ],
+        "id": "A3",
+        "text": "Selecting a filter in the filter menu sets the selected history filter; a filter modal supports custom filters of type history."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/History.tsx#History"
+        ],
+        "id": "A4",
+        "text": "Clicking a column header sorts the table."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/History.tsx#History",
+          "ts|frontend/src/Helpers/Hooks/usePage.ts#usePage"
+        ],
+        "id": "A5",
+        "text": "The pager moves between pages."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/HistoryRow.tsx#HistoryRow",
+          "ts|frontend/src/Activity/History/Details/HistoryDetailsModal.tsx#HistoryDetailsModal"
+        ],
+        "id": "A6",
+        "text": "The Details button on a row opens a modal with event details and a Close button."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/Details/HistoryDetailsModal.tsx#HistoryDetailsModal",
+          "ts|frontend/src/Activity/History/useHistory.ts#useMarkAsFailed"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|POST /api/v5/History/failed/{id:int}"
+        ],
+        "id": "A7",
+        "text": "For grabbed events the details modal has a Mark as failed button that posts to the history failed endpoint."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/useHistory.ts#useHistory",
+          "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery"
+        ],
+        "id": "R1",
+        "text": "History is requested from /history with page, page size, sort key, sort direction and the selected filters; total pages is at least 1."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/useEpisodes.ts#useEpisodes",
+          "ts|frontend/src/Utilities/Object/selectUniqueIds.ts#selectUniqueIds"
+        ],
+        "id": "R2",
+        "text": "Episodes for the listed records are fetched by their unique episode ids, and only when there is at least one id."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/usePage.ts#pageStore",
+          "ts|frontend/src/Helpers/Hooks/usePage.ts#usePage",
+          "ts|frontend/src/Activity/History/History.tsx#History"
+        ],
+        "id": "R3",
+        "text": "The current page defaults to 1 and resets to 1 on back/forward navigation; changing page size returns to page 1."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/Filter/findSelectedFilters.ts#findSelectedFilters"
+        ],
+        "id": "R4",
+        "text": "If the selected filter key is empty, no filters are applied; an unmatched key logs an error and applies none."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/Details/HistoryDetailsModal.tsx#HistoryDetailsModal"
+        ],
+        "id": "R5",
+        "text": "Mark as failed appears only for grabbed events."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/useHistory.ts#useMarkAsFailed"
+        ],
+        "id": "R6",
+        "text": "If marking as failed fails, the error 'Error marking history item as failed' is set."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/History.tsx#History"
+        ],
+        "id": "S1",
+        "text": "The page is titled History, with the heading scope Activity and title History."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/History.tsx#History"
+        ],
+        "id": "S2",
+        "text": "A loading indicator shows while history or episodes are loading and the page is not yet fully populated."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/History.tsx#History"
+        ],
+        "id": "S3",
+        "text": "If history or episodes fail to load (and nothing is fetching), a danger alert shows the HistoryLoadError message."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/History.tsx#History"
+        ],
+        "id": "S4",
+        "text": "When history has loaded without error and has no records, the page shows the NoHistoryFound message."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/History.tsx#History"
+        ],
+        "id": "S5",
+        "text": "When populated, without error and with records, a table of history rows is shown with a pager (page, total pages, total records)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/History.tsx#History",
+          "ts|frontend/src/Filters/useCustomFilters.ts#useCustomFiltersList"
+        ],
+        "id": "S6",
+        "text": "The toolbar has Refresh and Options buttons and a filter menu with built-in and custom history filters; the Refresh icon spins while fetching."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/HistoryRow.tsx#HistoryRow"
+        ],
+        "id": "S7",
+        "text": "Each row can show columns: event type icon (with tooltip), series, episode number, episode title, languages, quality, custom formats, date, download client, indexer, custom format score, release group, source title, and a details button. Only visible columns are rendered."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/HistoryRow.tsx#HistoryRow"
+        ],
+        "id": "S8",
+        "text": "A row is not rendered until both its series and episode are available."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/HistoryEventTypeCell.tsx#getIconName",
+          "ts|frontend/src/Activity/History/HistoryEventTypeCell.tsx#getIconKind",
+          "ts|frontend/src/Activity/History/HistoryEventTypeCell.tsx#HistoryEventTypeCell"
+        ],
+        "id": "S9",
+        "text": "Event type icons: grabbed and downloadFailed use a downloading icon, seriesFolderImported a drive, downloadFolderImported a downloaded icon, episodeFileDeleted a missing-file icon when the reason is MissingFromDisk otherwise delete, renamed an organize icon, ignored an ignore icon, others unknown. downloadFailed is shown in danger color."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/HistoryEventTypeCell.tsx#getTooltip"
+        ],
+        "id": "S10",
+        "text": "The event type cell tooltip text depends on the event type; grabbed mentions the indexer and download client."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/Number/formatCustomFormatScore.ts#formatCustomFormatScore",
+          "ts|frontend/src/Activity/History/HistoryRow.tsx#HistoryRow"
+        ],
+        "id": "S11",
+        "text": "The custom format score cell shows +N, -N, '+0' (when there are custom formats and score is zero), or blank, with a tooltip listing the custom formats."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/HistoryRow.tsx#HistoryRow"
+        ],
+        "id": "S12",
+        "text": "The download client column shows the download client name, falling back to the download client, else blank. Indexer and release group show blank when absent from the event data."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/Details/HistoryDetailsModal.tsx#getHeaderTitle"
+        ],
+        "id": "S13",
+        "text": "The details modal title depends on event type: Grabbed, DownloadFailed, EpisodeImported, EpisodeFileDeleted, EpisodeFileRenamed, DownloadIgnored, otherwise Unknown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/Details/HistoryDetails.tsx#HistoryDetails"
+        ],
+        "id": "S14",
+        "text": "For grabbed events the details show Name, Indexer, Release Group, Custom Format Score (if non-zero), Series Match Type, Release Source, Info URL link, Download Client, Grab Id, Age When Grabbed, Published Date and Size, each only when present."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/Details/HistoryDetails.tsx#HistoryDetails"
+        ],
+        "id": "S15",
+        "text": "For downloadFailed events the details show Name, Grab Id, Indexer, Message and Source; for downloadIgnored they show Name, Grab Id and Message."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/Details/HistoryDetails.tsx#HistoryDetails"
+        ],
+        "id": "S16",
+        "text": "For imported events the details show Name, Source (dropped path), Imported To, Custom Format Score (if non-zero) and File Size."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/Details/HistoryDetails.tsx#HistoryDetails"
+        ],
+        "id": "S17",
+        "text": "For deleted file events the details show Name, Reason (Manual, missing from disk, or upgrade), Custom Format Score (if non-zero) and File Size."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/Details/HistoryDetails.tsx#HistoryDetails"
+        ],
+        "id": "S18",
+        "text": "For renamed file events the details show source path, source relative path, destination path and destination relative path; other event types show only Name."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/useHistory.ts#useMarkAsFailed"
+        ],
+        "id": "E1",
+        "text": "Marking a history item as failed sends POST /history/failed/{id} and, on success, invalidates the cached history queries."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/History.tsx#History",
+          "ts|frontend/src/Utilities/pagePopulator.ts#registerPagePopulator",
+          "ts|frontend/src/Utilities/pagePopulator.ts#unregisterPagePopulator"
+        ],
+        "id": "E2",
+        "text": "The page registers a populator that refetches history, and unregisters it when leaving."
+      }
+    ]
+  },
+  "title": "Activity History",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/usePagedApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery",
+      "line": 79,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Utilities/Fetch/fetchJson.ts",
+      "in": "ts|frontend/src/Utilities/Fetch/fetchJson.ts#fetchJson",
+      "line": 56,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

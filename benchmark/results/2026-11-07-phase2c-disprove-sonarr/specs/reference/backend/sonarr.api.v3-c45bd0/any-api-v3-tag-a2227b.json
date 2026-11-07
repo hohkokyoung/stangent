@@ -1,0 +1,204 @@
+{
+  "codeTitle": "ANY /api/v3/Tag",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag",
+  "generated": {
+    "bundleHash": "a245fa65aae1cf806bfe655a6e174ae2ca82f70e7d61c09856b5304dc7b97f75",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 22411,
+      "cutOff": 30,
+      "depth": 4,
+      "points": 41
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 14780,
+      "calls": 1,
+      "costUsd": 0.061749,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4917,
+      "outputTokens": 245
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 11619,
+      "calls": 1,
+      "costUsd": 0.072416,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 12647,
+      "outputTokens": 2566
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagController.Create(Sonarr.Api.V3.Tags.TagResource)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagResourceMapper.ToModel(Sonarr.Api.V3.Tags.TagResource)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag"
+        ],
+        "id": "A1",
+        "text": "Create a tag by posting a JSON tag with an id and label; the tag is added through the tag service."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagController.Update(Sonarr.Api.V3.Tags.TagResource)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag"
+        ],
+        "id": "A2",
+        "text": "Update a tag by putting a JSON tag."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagController.DeleteTag(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag"
+        ],
+        "id": "A3",
+        "text": "Delete a tag by id."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag"
+        ],
+        "id": "A4",
+        "text": "Fetch a tag by id."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tags.TagService.Add(NzbDrone.Core.Tags.Tag)"
+        ],
+        "id": "R1",
+        "text": "Adding a tag whose label already exists returns the existing tag and does not insert a new one."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tags.TagService.Add(NzbDrone.Core.Tags.Tag)",
+          "Sonarr.Core|M:NzbDrone.Core.Tags.TagService.Update(NzbDrone.Core.Tags.Tag)"
+        ],
+        "id": "R2",
+        "text": "Tag labels are converted to lower case when a tag is added or updated."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tags.TagService.Delete(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.ModelConflictException.#ctor(System.Type,System.Int32,System.String)"
+        ],
+        "id": "R3",
+        "text": "A tag that is still in use cannot be deleted; a conflict error says \"'<label>' cannot be deleted since it's still in use\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tags.TagService.Details(System.Int32)"
+        ],
+        "id": "R4",
+        "text": "Use is checked against delay profiles, import lists, notifications, release profiles, excluded release profiles, series, indexers, auto tags and download clients."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagController.Create(Sonarr.Api.V3.Tags.TagResource)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagController.Update(Sonarr.Api.V3.Tags.TagResource)"
+        ],
+        "id": "R5",
+        "text": "Create and update accept only application/json bodies."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R6",
+        "text": "On PUT, if the body id is 0 and the route has an id, the route id is used. Resources are validated on POST and PUT."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R7",
+        "text": "Calls to deprecated endpoints are logged as a warning and get a \"Deprecation: true\" response header."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "Getting a tag by id returns the tag as JSON, or a not-found result when the tag does not exist."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Created(System.Int32)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagController.Create(Sonarr.Api.V3.Tags.TagResource)"
+        ],
+        "id": "S2",
+        "text": "Creating a tag responds with the created tag, located via the get-by-id action."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Accepted(System.Int32)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagController.Update(Sonarr.Api.V3.Tags.TagResource)"
+        ],
+        "id": "S3",
+        "text": "Updating a tag responds with an Accepted result containing the tag."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tags.TagService.Add(NzbDrone.Core.Tags.Tag)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Insert(`0)",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Events.IEventAggregator.PublishEvent``1(``0)"
+        ],
+        "id": "E1",
+        "text": "Adding a new tag inserts it in the repository and publishes a TagsUpdatedEvent."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tags.TagService.Update(NzbDrone.Core.Tags.Tag)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Update(`0)"
+        ],
+        "id": "E2",
+        "text": "Updating a tag saves it in the repository and publishes a TagsUpdatedEvent."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tags.TagService.Delete(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Delete(System.Int32)"
+        ],
+        "id": "E3",
+        "text": "Deleting an unused tag removes it from the repository and publishes a TagsUpdatedEvent."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagController.Handle(NzbDrone.Core.Tags.TagsUpdatedEvent)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Tags.TagController.Handle(NzbDrone.Core.Tags.TagsUpdatedEvent)"
+        ],
+        "id": "E4",
+        "text": "TagsUpdatedEvent is handled by the V3 and V5 tag controllers."
+      }
+    ]
+  },
+  "title": "Tag API (/api/v3/Tag)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

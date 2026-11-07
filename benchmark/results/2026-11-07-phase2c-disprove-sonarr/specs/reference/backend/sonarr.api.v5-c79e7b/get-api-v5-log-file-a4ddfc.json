@@ -1,0 +1,133 @@
+{
+  "codeTitle": "GET /api/v5/log/file",
+  "entry": "endpoint:Sonarr.Api.V5|GET /api/v5/log/file",
+  "generated": {
+    "bundleHash": "a95f819e776bf88e922ca1edf12da1efde7776a2dd5ae2c4d3fb3d1ca6e9b2f9",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 13540,
+      "cutOff": 10,
+      "depth": 4,
+      "points": 37
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 8850,
+      "calls": 1,
+      "costUsd": 0.037359,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2389,
+      "outputTokens": 178
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 6809,
+      "calls": 1,
+      "costUsd": 0.040846,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7576,
+      "outputTokens": 1333
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|GET /api/v5/log/file",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/log/file",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Logs.LogFileControllerBase.GetLogFilesResponse"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/log/file"
+        ],
+        "id": "A1",
+        "text": "A caller requests the list of log files and receives it as JSON."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Logs.LogFileControllerBase.GetLogFilesResponse"
+        ],
+        "id": "R1",
+        "text": "Results are ordered by last write time, newest first."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Logs.LogFileController.GetLogFiles",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.PathExtensions.GetLogFolder(NzbDrone.Common.EnvironmentInfo.IAppFolderInfo)",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.GetFiles(System.String,System.Boolean)"
+        ],
+        "id": "R2",
+        "text": "For the standard log controller, files come from the application's logs folder, non-recursively."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Logs.UpdateLogFileController.GetLogFiles",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.FolderExists(System.String)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.PathExtensions.GetUpdateLogFolder(NzbDrone.Common.EnvironmentInfo.IAppFolderInfo)"
+        ],
+        "id": "R3",
+        "text": "For the update log controller, the list is empty if the update log folder doesn't exist."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Logs.UpdateLogFileController.GetLogFiles"
+        ],
+        "id": "R4",
+        "text": "For the update log controller, only files in the update log folder (non-recursive) whose names match the log file route pattern, case-insensitively, are listed."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Logs.LogFileControllerBase.GetLogFilesResponse"
+        ],
+        "id": "S1",
+        "text": "Returns a JSON list of log files, each with Id, Filename, LastWriteTime, ContentsUrl and DownloadUrl."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Logs.LogFileControllerBase.GetLogFilesResponse"
+        ],
+        "id": "S2",
+        "text": "Id is the file's 1-based position in the list before sorting; Filename is the file name without its folder path."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Logs.LogFileControllerBase.GetLogFilesResponse",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.FileGetLastWrite(System.String)"
+        ],
+        "id": "S3",
+        "text": "LastWriteTime is the file's last write time read from disk."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Logs.LogFileControllerBase.GetLogFilesResponse"
+        ],
+        "id": "S4",
+        "text": "ContentsUrl and DownloadUrl are built from the configured URL base plus the log resource route and file name."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Log files list (GET /api/v5/log/file)",
+  "unknowns": [
+    {
+      "file": "src/NzbDrone.Host/Bootstrap.cs",
+      "in": "Sonarr.Common|P:NzbDrone.Common.Options.ServerOptions.UrlBase",
+      "line": 112,
+      "reason": "configuration section 'Sonarr:Server' is in no appsettings file of this project (environment variable or secret?)"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

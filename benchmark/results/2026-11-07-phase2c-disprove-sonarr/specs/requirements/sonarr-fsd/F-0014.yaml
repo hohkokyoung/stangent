@@ -1,0 +1,179 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0014"
+doc: "sonarr-fsd"
+section: "Settings / Tags"
+title: "Tags"
+parent: "F-0010"
+children: []
+textHash: "c742581a233ac983a44233e357844fd10418bd6ece20af7526ebaef669f3ea92"
+requirements:
+  - id: "R-0072"
+    title: "Tags link to delay profiles"
+    kind: "data"
+    statement: "A tag can link a series to delay profiles."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Tags"
+        text: "Tags link series to delay profiles, release profiles, indexers, import lists, notifications and download clients."
+        hash: "d42a4ba2c419f6589d8d3684de8c8c215719065990c2f8c4e3e6d7b0cbf5eda8"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "04be3fea99c0379291e75545f8807175ca601d657e377066a83dedd418057b73"
+  - id: "R-0073"
+    title: "Tags link to release profiles"
+    kind: "data"
+    statement: "A tag can link a series to release profiles."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Tags"
+        text: "Tags link series to delay profiles, release profiles, indexers, import lists, notifications and download clients."
+        hash: "d42a4ba2c419f6589d8d3684de8c8c215719065990c2f8c4e3e6d7b0cbf5eda8"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "8043b0dfd357c8a244972aef8cf89652e11054d13ceafa4abdc68051b71a3021"
+  - id: "R-0074"
+    title: "Tags link to indexers"
+    kind: "data"
+    statement: "A tag can link a series to indexers."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Tags"
+        text: "Tags link series to delay profiles, release profiles, indexers, import lists, notifications and download clients."
+        hash: "d42a4ba2c419f6589d8d3684de8c8c215719065990c2f8c4e3e6d7b0cbf5eda8"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "6d85850a870b1552da9e8c1bbd4e67050f2d0ac48fa8fbafd0696be1905bab6a"
+  - id: "R-0075"
+    title: "Tags link to import lists"
+    kind: "data"
+    statement: "A tag can link a series to import lists."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Tags"
+        text: "Tags link series to delay profiles, release profiles, indexers, import lists, notifications and download clients."
+        hash: "d42a4ba2c419f6589d8d3684de8c8c215719065990c2f8c4e3e6d7b0cbf5eda8"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "5da9471c630f82e94159db13fb55bdf02deabbee7775ff602f86dec0c9ed6d0f"
+  - id: "R-0076"
+    title: "Tags link to notifications"
+    kind: "data"
+    statement: "A tag can link a series to notifications."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Tags"
+        text: "Tags link series to delay profiles, release profiles, indexers, import lists, notifications and download clients."
+        hash: "d42a4ba2c419f6589d8d3684de8c8c215719065990c2f8c4e3e6d7b0cbf5eda8"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "3d893625b12e4b0f1285d2eaa684f5b1014757da115760477e97252e4b6c8c70"
+  - id: "R-0077"
+    title: "Tags link to download clients"
+    kind: "data"
+    statement: "A tag can link a series to download clients."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Tags"
+        text: "Tags link series to delay profiles, release profiles, indexers, import lists, notifications and download clients."
+        hash: "d42a4ba2c419f6589d8d3684de8c8c215719065990c2f8c4e3e6d7b0cbf5eda8"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "d419d5605212183532170ad25d5e6c4db2fdfc4a761343ec1a5cdc88e3176f5f"
+  - id: "R-0078"
+    title: "Tags screen lists tags with usage counts"
+    kind: "flow"
+    statement: "The tags screen lists every tag with the number of things that use it."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Tags"
+        text: "The tags screen lists every tag with the number of things that use it."
+        hash: "5e1d3ce9195786b3bf381bc6cb5f2b3dcae08c336560f4e25a72f2dd5d44b8d5"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "ac43da5d719e0b8d48584d5c5f2332bfebf2e0287fe65bba11d5140539197159"
+  - id: "R-0079"
+    title: "Allowed characters in tag labels"
+    kind: "validation"
+    statement: "Tag labels may contain letters, numbers, spaces and underscores."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Tags"
+        text: "Tag labels may contain letters, numbers, spaces and underscores."
+        hash: "2e789b8777b56d0e5b8888977783bd205fc6e11c91958ff9f33598cce16b151c"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "5e7a9efcfb6a4ce9aac413196eca0d86e59c3e9a6869cdb9f54921d9ee7528c7"
+  - id: "R-0080"
+    title: "Deleting a tag removes it everywhere"
+    kind: "rule"
+    statement: "Deleting a tag removes it from every series, profile and indexer that uses it."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Tags"
+        text: "Deleting a tag removes it from every series, profile and indexer that uses it."
+        hash: "56b4430d010de1f36d52c35ac6dbfc3cf01339c0e1d8d140553fef40043c15cc"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "378c3e743cbe9a580a27b435e33cfb097dfb7b6c97e4bff924d2e95ee4cc383f"
+  - id: "R-0081"
+    title: "Tag colour from 12-colour palette"
+    kind: "data"
+    statement: "Each tag has a colour chosen from a palette of 12 colours."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Tags"
+        text: "Each tag has a colour, chosen from a palette of 12 colours, which is shown wherever the tag appears."
+        hash: "cd43eef8fcd42f56d1976b8549a962b219fd571f45c50900b9b000deedf92e59"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "b51060c1aad3301110a47de68b859e0d4a63fefe3e9ae670118d5ed45bf88580"
+  - id: "R-0082"
+    title: "Tag colour shown wherever tag appears"
+    kind: "rule"
+    statement: "A tag's colour is shown wherever the tag appears."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Tags"
+        text: "Each tag has a colour, chosen from a palette of 12 colours, which is shown wherever the tag appears."
+        hash: "cd43eef8fcd42f56d1976b8549a962b219fd571f45c50900b9b000deedf92e59"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "9661318c760c7fa33995c31cd4fa8e173e4bc523870f6ba8c633f396bd3d19c3"
+definitions: []
+journeys: []
+background: []
+retired: []

@@ -1,0 +1,140 @@
+{
+  "codeTitle": "TaskManager.Handle(ApplicationStartedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Jobs.TaskManager.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+  "generated": {
+    "bundleHash": "5a6a60dcdd35db1f7b9fe23bda32582f8d6aa9d98512057bf4812d9f0606cb85",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 14151,
+      "cutOff": 2,
+      "depth": 4,
+      "points": 38
+    },
+    "verifier": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 9615,
+      "calls": 1,
+      "costUsd": 0.041384,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6095,
+      "outputTokens": 292
+    },
+    "writer": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 7824,
+      "calls": 1,
+      "costUsd": 0.04643,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8697,
+      "outputTokens": 1513
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Jobs.TaskManager.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Jobs.TaskManager.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)"
+        ],
+        "id": "A1",
+        "text": "When the application starts, the task manager builds the default list of scheduled tasks and synchronises it with the stored scheduled tasks."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Jobs.TaskManager.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)"
+        ],
+        "id": "R1",
+        "text": "Default tasks and intervals in minutes: RefreshMonitoredDownloads 1 (high priority); MessagingCleanup 5; ClearExpiredCache 5; ImportListSync 5; ApplicationUpdateCheck 360; UpdateSceneMapping 180; CheckHealth 360; RefreshSeries 720; Housekeeping 1440; CleanUpRecycleBin 1440."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Jobs.TaskManager.GetBackupInterval"
+        ],
+        "id": "R2",
+        "text": "The Backup task interval comes from the configured backup interval in days, limited to between 1 and 7 days, and converted to minutes (days × 60 × 24)."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Jobs.TaskManager.GetRssSyncInterval"
+        ],
+        "id": "R3",
+        "text": "The RSS sync interval is the configured value. Values from 1 to 9 become 10, and negative values become 0."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Jobs.ScheduledTask.#ctor",
+          "Sonarr.Core|M:NzbDrone.Core.Jobs.TaskManager.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)"
+        ],
+        "id": "R4",
+        "text": "A scheduled task has Low priority unless one is set. Only RefreshMonitoredDownloads is set to High."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Jobs.TaskManager.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Delete(System.Int32)"
+        ],
+        "id": "R5",
+        "text": "A stored task that has no matching default task type is deleted."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Jobs.TaskManager.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)"
+        ],
+        "id": "R6",
+        "text": "For a stored task that matches a default, the stored record is kept. Its interval and priority are overwritten with the default values."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Jobs.TaskManager.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)"
+        ],
+        "id": "R7",
+        "text": "A default task with no stored record is treated as new. Its last execution time is set to the current UTC time."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.All"
+        ],
+        "id": "E1",
+        "text": "Existing scheduled tasks are read from the repository."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Delete(System.Int32)"
+        ],
+        "id": "E2",
+        "text": "Stored tasks that are no longer defaults are deleted from the database."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Upsert(`0)"
+        ],
+        "id": "E3",
+        "text": "Each default task is saved to the database with an upsert."
+      },
+      {
+        "cites": [
+          "Sonarr.Common|M:NzbDrone.Common.Cache.ICached`1.Set(System.String,`0,System.Nullable{System.TimeSpan})"
+        ],
+        "id": "E4",
+        "text": "Each task is also stored in the cache under its type name."
+      }
+    ]
+  },
+  "title": "Scheduled task initialisation on application start",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

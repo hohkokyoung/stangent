@@ -1,0 +1,104 @@
+{
+  "codeTitle": "EpisodeLanguages",
+  "entry": "ts|frontend/src/Episode/EpisodeLanguages.tsx#EpisodeLanguages",
+  "generated": {
+    "bundleHash": "f3117a7bb777094ce2abb42ea09a5ad139777c689d72a320c484eca281602396",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 8452,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 26
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 5604,
+      "calls": 1,
+      "costUsd": 0.023125,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1988,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4087,
+      "calls": 1,
+      "costUsd": 0.024218,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5231,
+      "outputTokens": 759
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Episode/EpisodeLanguages.tsx#EpisodeLanguages",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Episode/EpisodeLanguages.tsx#EpisodeLanguages"
+        ],
+        "id": "R1",
+        "text": "The label uses the inverse style when the cutoff is not met and the default style otherwise; isCutoffNotMet defaults to true."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "R2",
+        "text": "Translation falls back to the key itself when no translation exists, and {token} placeholders are replaced from the supplied tokens, with appName always set to 'Sonarr'."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Episode/EpisodeLanguages.tsx#EpisodeLanguages"
+        ],
+        "id": "S1",
+        "text": "When the episode has no languages (missing or empty list), nothing is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/EpisodeLanguages.tsx#EpisodeLanguages"
+        ],
+        "id": "S2",
+        "text": "When the episode has exactly one language, a label with that language's name is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/EpisodeLanguages.tsx#EpisodeLanguages",
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "S3",
+        "text": "When the episode has more than one language, a label with the translated text 'MultiLanguages' is shown as the anchor of a popover."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/EpisodeLanguages.tsx#EpisodeLanguages",
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "S4",
+        "text": "The popover is titled with the translated text 'Languages' and its body is a list with one item per language name."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/EpisodeLanguages.tsx#EpisodeLanguages"
+        ],
+        "id": "S5",
+        "text": "The popover is positioned to the left of its anchor."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Episode Languages",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

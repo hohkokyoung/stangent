@@ -1,0 +1,161 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0018"
+doc: "sonarr-fsd"
+section: "Settings / Interface"
+title: "Interface"
+parent: "F-0010"
+children: []
+textHash: "2573848bd5a6ff14deb68b0045c0ca35b336ee054fc0121e2a38bab25b3b000d"
+requirements:
+  - id: "R-0091"
+    title: "Set first day of the week"
+    kind: "rule"
+    statement: "The interface settings set the first day of the week."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Interface"
+        text: "The interface settings set the first day of the week and the column headers of the calendar."
+        hash: "093e9abdd6dc5af35e529a8746381dd6c62a553081b9f47bc9e07369143f8f0b"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "daa772a673bd708ae2037b18619e70b7909d3c0c6bea2bd758d3cf67af434d1c"
+  - id: "R-0092"
+    title: "Set calendar column headers"
+    kind: "rule"
+    statement: "The interface settings set the column headers of the calendar."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Interface"
+        text: "The interface settings set the first day of the week and the column headers of the calendar."
+        hash: "093e9abdd6dc5af35e529a8746381dd6c62a553081b9f47bc9e07369143f8f0b"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "fbc499be651d85999604dbd45e69e758f9390699e6943f6c663a8f9ef7a5fda9"
+  - id: "R-0093"
+    title: "Choose short date format"
+    kind: "rule"
+    statement: "The short date format can be chosen."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Interface"
+        text: "The short date format, long date format and time format can be chosen, and dates can be shown relative to today."
+        hash: "5c0582fbf5e167a535cf37e47e2f120d0fe0ff506920f18d480d8e6056d6fb64"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "ea6cc90bb4f1b39027f6de93d12abf1a0c437c9bd169b3beb8a7543bb265f0da"
+  - id: "R-0094"
+    title: "Choose long date format"
+    kind: "rule"
+    statement: "The long date format can be chosen."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Interface"
+        text: "The short date format, long date format and time format can be chosen, and dates can be shown relative to today."
+        hash: "5c0582fbf5e167a535cf37e47e2f120d0fe0ff506920f18d480d8e6056d6fb64"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "9969a8f376a74533408ccbb5c70544e53960d52c4ae18c8aa20250cc8c306902"
+  - id: "R-0095"
+    title: "Choose time format"
+    kind: "rule"
+    statement: "The time format can be chosen."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Interface"
+        text: "The short date format, long date format and time format can be chosen, and dates can be shown relative to today."
+        hash: "5c0582fbf5e167a535cf37e47e2f120d0fe0ff506920f18d480d8e6056d6fb64"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "fd54f9590511568c938f0781e7eb336621be1d741041d4dbc274c2c2f932c74d"
+  - id: "R-0096"
+    title: "Show dates relative to today"
+    kind: "rule"
+    statement: "Dates can be shown relative to today."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Interface"
+        text: "The short date format, long date format and time format can be chosen, and dates can be shown relative to today."
+        hash: "5c0582fbf5e167a535cf37e47e2f120d0fe0ff506920f18d480d8e6056d6fb64"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "63231f56478afd51c77c79744bc8517d42f81ad240aff78f766f988f35c68c4c"
+  - id: "R-0097"
+    title: "Choose theme"
+    kind: "rule"
+    statement: "The theme can be Light, Dark or Auto."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Interface"
+        text: "Theme: Light, Dark or Auto."
+        hash: "3d138706013dcce0b6bbb92fb5296c6c93e8c2f56ef0dd389b175ac2621bce42"
+    acceptance:
+      - text: "The theme can be set to Dark."
+        quotes:
+          - doc: "sonarr-fsd"
+            section: "Settings / Interface"
+            text: "Theme: Light, Dark or Auto."
+            hash: "3d138706013dcce0b6bbb92fb5296c6c93e8c2f56ef0dd389b175ac2621bce42"
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "0529239c1fa0deb6f3b3f63e868205b57ae6d7062d95b8e23015af856b5ea409"
+  - id: "R-0098"
+    title: "Choose interface language"
+    kind: "rule"
+    statement: "The language of the interface can be chosen."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Interface"
+        text: "The language of the interface can be chosen."
+        hash: "0b83957aba8737b5f23763ec0d5b20a52f92b25edb6f3338237a08bf522307bb"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "f36e1f5419210362597e830ae057f03d0dc6cb950a4d406ae2dadbd58a31ab2b"
+  - id: "R-0099"
+    title: "Set font size"
+    kind: "rule"
+    statement: "The font size can be set to small, medium or large."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Interface"
+        text: "The font size can be set to small, medium or large."
+        hash: "a522a7da9eb36b585b0775557093b1e36584a4d2a03cf68981531d35ea881031"
+    acceptance:
+      - text: "The font size can be set to medium."
+        quotes:
+          - doc: "sonarr-fsd"
+            section: "Settings / Interface"
+            text: "The font size can be set to small, medium or large."
+            hash: "a522a7da9eb36b585b0775557093b1e36584a4d2a03cf68981531d35ea881031"
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "96792ec03f3b8bf8478b18465bc7b3fafdd349fc52115013acad4ad21a700625"
+definitions: []
+journeys: []
+background: []
+retired: []

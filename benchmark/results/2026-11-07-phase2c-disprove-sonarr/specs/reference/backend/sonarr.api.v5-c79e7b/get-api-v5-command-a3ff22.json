@@ -1,0 +1,110 @@
+{
+  "codeTitle": "GET /api/v5/Command",
+  "entry": "endpoint:Sonarr.Api.V5|GET /api/v5/Command",
+  "generated": {
+    "bundleHash": "30b3027a696e6a6eee343f4117db05b13f4247a7facadf31cfb68f3e11d39fb4",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 10256,
+      "cutOff": 13,
+      "depth": 4,
+      "points": 46
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6811,
+      "calls": 1,
+      "costUsd": 0.027953,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1833,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4999,
+      "calls": 1,
+      "costUsd": 0.031296,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6675,
+      "outputTokens": 1102
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|GET /api/v5/Command",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/Command",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandController.GetStartedCommands"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/Command"
+        ],
+        "id": "A1",
+        "text": "A caller requests the list of commands with GET and receives them all with no filter."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandController.GetStartedCommands"
+        ],
+        "id": "R1",
+        "text": "Commands are ordered by Status using the command priority comparer, then by Priority from highest to lowest."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandController.GetStartedCommands",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.IManageCommandQueue.All"
+        ],
+        "id": "S1",
+        "text": "Returns a JSON list of all commands currently held by the command queue manager."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandResourceMapper.ToResource(NzbDrone.Core.Messaging.Commands.CommandModel)"
+        ],
+        "id": "S2",
+        "text": "Each command shows Id, Name, Message, Body, Priority, Status, Result, Exception and Trigger, with queued, started and ended times (Queued, Started, Ended) and Duration."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandResourceMapper.ToResource(NzbDrone.Core.Messaging.Commands.CommandModel)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.SplitCamelCase(System.String)"
+        ],
+        "id": "S3",
+        "text": "Each command also has a CommandName, which is the Name with spaces inserted at camel-case word boundaries."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandResourceMapper.ToResource(NzbDrone.Core.Messaging.Commands.CommandModel)"
+        ],
+        "id": "S4",
+        "text": "CompletionMessage and LastExecutionTime are taken from the command body."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandResourceMapper.ToResource(NzbDrone.Core.Messaging.Commands.CommandModel)",
+          "Sonarr.Common|M:NzbDrone.Common.Http.UserAgentParser.SimplifyUserAgent(System.String)"
+        ],
+        "id": "S5",
+        "text": "ClientUserAgent is the client user agent from the command body, or null when it is null or starts with \"Mozilla/5.0\"."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "List Commands (GET /api/v5/Command)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

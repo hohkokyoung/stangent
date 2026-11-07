@@ -1,0 +1,88 @@
+{
+  "codeTitle": "GET /api/v3/Tag",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/Tag",
+  "generated": {
+    "bundleHash": "fe1d5f6e9222f56732ade1318b63ada2ed4efe7d5c3b1c1915d89e8f93039d14",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 8827,
+      "cutOff": 5,
+      "depth": 4,
+      "points": 14
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6021,
+      "calls": 1,
+      "costUsd": 0.024793,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3436,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4676,
+      "calls": 1,
+      "costUsd": 0.025314,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4445,
+      "outputTokens": 633
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/Tag",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Tag",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagController.GetAll"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Tag"
+        ],
+        "id": "A1",
+        "text": "A caller requests all tags and receives them as a list of tag resources."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tags.TagService.All"
+        ],
+        "id": "R1",
+        "text": "Tags are returned ordered by Label."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagResourceMapper.ToResource(System.Collections.Generic.IEnumerable{NzbDrone.Core.Tags.Tag})",
+          "Sonarr.Core|M:NzbDrone.Core.Tags.TagService.All"
+        ],
+        "id": "R2",
+        "text": "The response is always a list; it is empty when there are no tags."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagController.GetAll",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Tags.TagResourceMapper.ToResource(NzbDrone.Core.Tags.Tag)"
+        ],
+        "id": "S1",
+        "text": "Returns a JSON list of all tags, each with an Id and a Label."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "List tags (GET /api/v3/Tag)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

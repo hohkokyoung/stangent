@@ -1,0 +1,187 @@
+{
+  "codeTitle": "ReconfigureLogging.HandleAsync(ConfigFileSavedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)",
+  "generated": {
+    "bundleHash": "c36945c09dbe041dc731b6f0bc9221b8b9e7b872b4a2864350521e9f816714a1",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 18828,
+      "cutOff": 23,
+      "depth": 4,
+      "points": 75
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 12163,
+      "calls": 1,
+      "costUsd": 0.051141,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2862,
+      "outputTokens": 231
+    },
+    "writer": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 10515,
+      "calls": 1,
+      "costUsd": 0.064414,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 12734,
+      "outputTokens": 2235
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.Reconfigure"
+        ],
+        "id": "A1",
+        "text": "When a config file saved event is received, the handler re-applies the logging configuration."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.Reconfigure",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.IsNotNullOrWhiteSpace(System.String)"
+        ],
+        "id": "R1",
+        "text": "The console minimum log level is the configured console log level if it is not blank. Otherwise it is the main log level if that is above Info, else Info."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.Reconfigure"
+        ],
+        "id": "R2",
+        "text": "The Info log file is enabled from Info level only when the log level is Info or lower, otherwise it is turned off."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.Reconfigure"
+        ],
+        "id": "R3",
+        "text": "The Debug log file is enabled from Debug level only when the log level is Debug or lower, otherwise it is turned off."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.Reconfigure"
+        ],
+        "id": "R4",
+        "text": "The Trace log file is enabled from Trace level only when the log level is Trace, otherwise it is turned off."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.SetMinimumLogLevel(System.Collections.Generic.IList{NLog.Config.LoggingRule},System.String,NLog.LogLevel)",
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.SetMinimumLogLevel(NLog.Config.LoggingRule,NLog.LogLevel)",
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.GetLogLevels"
+        ],
+        "id": "R5",
+        "text": "For each rule targeting a named target, levels below the minimum are disabled and levels from the minimum up (Trace, Debug, Info, Warn, Error, Fatal) are enabled."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.Reconfigure",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.IsNotNullOrWhiteSpace(System.String)"
+        ],
+        "id": "R6",
+        "text": "A syslog target is set up only when a syslog server is configured and not blank."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.SetSyslogParameters(System.String,System.Int32,NLog.LogLevel)"
+        ],
+        "id": "R7",
+        "text": "The syslog target sends over UDP to the configured server and port, using RFC 5424 with the instance name as app name, a 500 retry base delay, and a rule for all loggers at the syslog level."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.ReconfigureSentry"
+        ],
+        "id": "R8",
+        "text": "Sentry is enabled when running in production with analytics enabled, or when running in development."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.ReconfigureFile",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.NumberExtensions.Megabytes(System.Int32)"
+        ],
+        "id": "R9",
+        "text": "The log size limit is configured in megabytes and converted to bytes for the archive size."
+      },
+      {
+        "cites": [
+          "Sonarr.Common|M:NzbDrone.Common.Instrumentation.NzbDroneLogger.ConfigureConsoleLayout(NLog.Targets.ColoredConsoleTarget,NzbDrone.Common.Instrumentation.ConsoleLogFormat)",
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.ReconfigureConsole"
+        ],
+        "id": "R10",
+        "text": "The console layout is the Clef format when the console log format is Clef, otherwise the cleansing console layout."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.ReconfigureFile"
+        ],
+        "id": "E1",
+        "text": "Log file targets get their maximum archive file count from the configured log rotate value and their archive size limit from the configured log size limit."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.ReconfigureConsole"
+        ],
+        "id": "E2",
+        "text": "The console target's layout is changed according to the configured console log format."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.Reconfigure"
+        ],
+        "id": "E3",
+        "text": "The SQL logging flag is set from the configured LogSql value."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.ReconfigureSentry"
+        ],
+        "id": "E4",
+        "text": "The Sentry target's enabled state and event filtering are updated from configuration."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.SetSyslogParameters(System.String,System.Int32,NLog.LogLevel)"
+        ],
+        "id": "E5",
+        "text": "A syslog target and a logging rule for it are added to the logging configuration."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.Reconfigure"
+        ],
+        "id": "E6",
+        "text": "All existing loggers are reconfigured after the changes."
+      }
+    ]
+  },
+  "title": "Reconfigure logging on config save",
+  "unknowns": [
+    {
+      "file": "src/NzbDrone.Host/Bootstrap.cs",
+      "in": "Sonarr.Common|P:NzbDrone.Common.Options.LogOptions.Level",
+      "line": 113,
+      "reason": "configuration section 'Sonarr:Log' is in no appsettings file of this project (environment variable or secret?)"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

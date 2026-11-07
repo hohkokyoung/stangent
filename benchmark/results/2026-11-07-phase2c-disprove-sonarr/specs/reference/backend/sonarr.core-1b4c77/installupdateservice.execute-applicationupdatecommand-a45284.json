@@ -1,0 +1,241 @@
+{
+  "codeTitle": "InstallUpdateService.Execute(ApplicationUpdateCommand)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.Execute(NzbDrone.Core.Update.Commands.ApplicationUpdateCommand)",
+  "generated": {
+    "bundleHash": "68fa0cd1fdfafab8619ab63b98bf37e39886145bffeae3ea544aa9a272a4b087",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 64467,
+      "cutOff": 66,
+      "depth": 4,
+      "points": 155
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 34417,
+      "calls": 1,
+      "costUsd": 0.142887,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6569,
+      "outputTokens": 504
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 29769,
+      "calls": 1,
+      "costUsd": 0.157886,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 21787,
+      "outputTokens": 3853
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.Execute(NzbDrone.Core.Update.Commands.ApplicationUpdateCommand)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.Execute(NzbDrone.Core.Update.Commands.ApplicationUpdateCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.InstallUpdate(NzbDrone.Core.Update.UpdatePackage)"
+        ],
+        "id": "A1",
+        "text": "Runs the application update: looks for an available update and, if one is allowed, downloads, verifies, extracts and installs it, then logs that Sonarr is restarting to apply updates."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.GetUpdatePackage(NzbDrone.Core.Messaging.Commands.CommandTrigger,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Update.CheckUpdateService.AvailableUpdate"
+        ],
+        "id": "R1",
+        "text": "No update is installed when none is available for the configured branch and current version."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.GetUpdatePackage(NzbDrone.Core.Messaging.Commands.CommandTrigger,System.Boolean)"
+        ],
+        "id": "R2",
+        "text": "A major version update is skipped unless the command allows installing major updates; the user is told to update manually from System: Updates."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.GetUpdatePackage(NzbDrone.Core.Messaging.Commands.CommandTrigger,System.Boolean)"
+        ],
+        "id": "R3",
+        "text": "If automatic updates are not enabled, the update is only installed when the command was triggered manually."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.GetUpdatePackage(NzbDrone.Core.Messaging.Commands.CommandTrigger,System.Boolean)"
+        ],
+        "id": "R4",
+        "text": "The built-in updater is disabled inside a docker container, and when an external update mechanism is in use. With an external mechanism, only the Script update mechanism can still install."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.EnsureAppDataSafety",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.PathExtensions.IsParentPath(System.String,System.String)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.PathExtensions.PathEquals(System.String,System.String,System.Nullable{System.StringComparison})"
+        ],
+        "id": "R5",
+        "text": "The update fails if the application's startup folder is the same as, or a parent of, the app data folder, because configuration would be lost during the upgrade."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.InstallUpdate(NzbDrone.Core.Update.UpdatePackage)",
+          "Sonarr.Core|M:NzbDrone.Core.Update.UpdateFolderNotWritableException.#ctor(System.String,System.Object[])"
+        ],
+        "id": "R6",
+        "text": "Unless the update mechanism is Script, both the startup folder and its UI subfolder must be writable, otherwise the update fails."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.InstallUpdate(NzbDrone.Core.Update.UpdatePackage)"
+        ],
+        "id": "R7",
+        "text": "When the startup folder ends with '_output' (developer environment), no update is performed."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.InstallUpdate(NzbDrone.Core.Update.UpdatePackage)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.NumberExtensions.Gigabytes(System.Int32)"
+        ],
+        "id": "R8",
+        "text": "A warning is logged when the temporary location has less than 1 GB free space."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.UpdateVerification.Verify(NzbDrone.Core.Update.UpdatePackage,System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.InstallUpdate(NzbDrone.Core.Update.UpdatePackage)"
+        ],
+        "id": "R9",
+        "text": "The downloaded package must match the expected SHA256 hash (case-insensitive), otherwise the update fails with 'Update file ... is invalid'."
+      },
+      {
+        "cites": [
+          "Sonarr.Common|M:NzbDrone.Common.ArchiveService.Extract(System.String,System.String)",
+          "Sonarr.Common|M:NzbDrone.Common.ArchiveService.ExtractZip(System.String,System.String)"
+        ],
+        "id": "R10",
+        "text": "Archives ending in .zip are extracted as zip, others as tgz. Zip extraction validates the archive and rejects entries that would land outside the target folder."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.InstallUpdateWithScript(System.String)",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.DiskProviderBase.FileExists(System.String,System.StringComparison)"
+        ],
+        "id": "R11",
+        "text": "With the Script mechanism, the script path must be set and the file must exist (case-sensitive match), otherwise the update fails."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.InstallUpdate(NzbDrone.Core.Update.UpdatePackage)"
+        ],
+        "id": "R12",
+        "text": "With the built-in mechanism, if the update client executable does not exist after preparing the client, the update is aborted with a warning."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.InstallUpdate(NzbDrone.Core.Update.UpdatePackage)"
+        ],
+        "id": "R13",
+        "text": "On macOS and Linux the update client executable is given permissions 755."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.GetUpdaterArgs(System.String)"
+        ],
+        "id": "R14",
+        "text": "The updater is started with arguments: current process id, the quoted sandbox folder, the quoted executing application, and the preserved startup arguments."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.GetUpdatePackage(NzbDrone.Core.Messaging.Commands.CommandTrigger,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.InstallUpdate(NzbDrone.Core.Update.UpdatePackage)"
+        ],
+        "id": "S1",
+        "text": "Progress messages are logged while the update runs, such as 'Checking for updates', 'No update available', 'Downloading update {version}', 'Verifying update package', 'Extracting Update package' and 'Sonarr will restart shortly.'."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.Execute(NzbDrone.Core.Update.Commands.ApplicationUpdateCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.CommandFailedException.#ctor(System.Exception)"
+        ],
+        "id": "S2",
+        "text": "When the update fails, the command fails with the message 'Startup folder not writable by user ...', 'Downloaded update package is corrupt', or a generic 'Failed' wrapping the original error."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.InstallUpdate(NzbDrone.Core.Update.UpdatePackage)",
+          "Sonarr.Common|M:NzbDrone.Common.Http.HttpClient.DownloadFileAsync(System.String,System.String,System.Threading.CancellationToken)"
+        ],
+        "id": "E1",
+        "text": "Any existing update sandbox folder is deleted, then the update package is downloaded into it and extracted there."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.Backup(NzbDrone.Core.Backup.BackupType)",
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.BackupDatabase",
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.BackupConfigFile",
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.CreateVersionInfo(System.DateTime)"
+        ],
+        "id": "E2",
+        "text": "A backup of type Update is created before installing, containing config.xml, the database (SQLite only), a version INFO file, zipped."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.EnsureValidBranch(NzbDrone.Core.Update.UpdatePackage)"
+        ],
+        "id": "E3",
+        "text": "If the package's branch differs from the configured branch, the Branch setting is saved to the package's branch. Failure to save is logged and does not stop the update."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})",
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)",
+          "Sonarr.Http|M:Sonarr.Http.Authentication.OidcOptionsChangeTokenSource.Handle(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)"
+        ],
+        "id": "E4",
+        "text": "Saving a changed config value publishes a ConfigFileSavedEvent, handled by logging reconfiguration and OIDC options change handlers."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.InstallUpdate(NzbDrone.Core.Update.UpdatePackage)",
+          "Sonarr.Common|M:NzbDrone.Common.Processes.IProcessProvider.Start(System.String,System.String,System.Collections.Specialized.StringDictionary,System.Action{System.String},System.Action{System.String})"
+        ],
+        "id": "E5",
+        "text": "With the built-in mechanism, the update client folder is moved from the extracted package into the sandbox folder and the update client process is started to restart Sonarr."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Update.InstallUpdateService.InstallUpdateWithScript(System.String)"
+        ],
+        "id": "E6",
+        "text": "With the Script mechanism, the Sonarr.Update client folder is deleted and the configured update script is started."
+      }
+    ]
+  },
+  "title": "Application Update Command (Install Update)",
+  "unknowns": [
+    {
+      "file": "src/NzbDrone.Host/Bootstrap.cs",
+      "in": "Sonarr.Common|P:NzbDrone.Common.Options.UpdateOptions.Mechanism",
+      "line": 114,
+      "reason": "configuration section 'Sonarr:Update' is in no appsettings file of this project (environment variable or secret?)"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

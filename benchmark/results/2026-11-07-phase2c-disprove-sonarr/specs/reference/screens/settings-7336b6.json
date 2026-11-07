@@ -1,0 +1,119 @@
+{
+  "codeTitle": "/settings · Settings",
+  "entry": "page:tsconfig.json|/settings",
+  "generated": {
+    "bundleHash": "04f7cb246118995893f02a3ba25264d0c3fa4c27f29b91129c7ee57751a23ef1",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 11866,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 34
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 7291,
+      "calls": 1,
+      "costUsd": 0.031503,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6706,
+      "outputTokens": 216
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 5715,
+      "calls": 1,
+      "costUsd": 0.0317,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5362,
+      "outputTokens": 856
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/settings",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Settings.tsx#buildSections",
+          "ts|frontend/src/Settings/Settings.tsx#Settings"
+        ],
+        "id": "A1",
+        "text": "Clicking a card opens that section: /settings/mediamanagement, /profiles, /quality, /customformats, /indexers, /downloadclients, /importlists, /connect, /metadata, /metadatasource, /tags, /general or /ui (all under /settings)."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "page:tsconfig.json|/settings"
+        ],
+        "id": "R1",
+        "text": "The page is reached at the route /settings."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Settings.tsx#Settings"
+        ],
+        "id": "R2",
+        "text": "The settings page wrapper is rendered with the save option turned off."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "R3",
+        "text": "Translation replaces {token} placeholders with supplied values, and {appName} is always \"Sonarr\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "R4",
+        "text": "In non-production mode, a missing translation key logs a console warning."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Settings.tsx#Settings"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Settings\" and shows a heading \"Settings\" above a grid of cards, one per settings section."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Settings.tsx#Settings"
+        ],
+        "id": "S2",
+        "text": "Each card shows an icon, a section title and a short summary text."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Settings.tsx#buildSections"
+        ],
+        "id": "S3",
+        "text": "The cards are, in order: MediaManagement, Profiles, Quality, CustomFormats, Indexers, DownloadClients, ImportLists, Connect, Metadata, MetadataSource, Tags, General, Ui."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Settings.tsx#buildSections",
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "S4",
+        "text": "Titles and summaries are translated text; an untranslated key is shown as the key itself."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Settings",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

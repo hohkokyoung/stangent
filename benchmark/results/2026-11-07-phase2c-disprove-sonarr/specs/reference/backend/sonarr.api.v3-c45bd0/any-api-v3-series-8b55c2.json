@@ -1,0 +1,257 @@
+{
+  "codeTitle": "ANY /api/v3/Series",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/Series",
+  "generated": {
+    "bundleHash": "ec18bfcc1863b8cb6434c21369849c968ba5d1a6f6876dae4b4ca5df2921f9d3",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 63907,
+      "cutOff": 104,
+      "depth": 4,
+      "points": 194
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 36856,
+      "calls": 1,
+      "costUsd": 0.152823,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5302,
+      "outputTokens": 522
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 67901,
+      "calls": 2,
+      "costUsd": 0.362434,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 44097,
+      "outputTokens": 9027
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/Series",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesController.GetResourceByIdWithErrorHandler(System.Int32,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesController.GetSeriesResourceById(System.Int32,System.Boolean)"
+        ],
+        "id": "A1",
+        "text": "Get a series by id, optionally with includeSeasonImages (default false)."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesController.AddSeries(Sonarr.Api.V3.Series.SeriesResource)"
+        ],
+        "id": "A2",
+        "text": "Add a series by posting a series resource (JSON); it is passed to the add-series service."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesController.UpdateSeries(Sonarr.Api.V3.Series.SeriesResource,System.Boolean)"
+        ],
+        "id": "A3",
+        "text": "Update a series by putting a series resource (JSON), with optional moveFiles flag (default false)."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesController.DeleteSeries(System.Int32,System.Boolean,System.Boolean)"
+        ],
+        "id": "A4",
+        "text": "Delete a series by id, with optional deleteFiles and addImportListExclusion flags (both default false)."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.AddSeriesService.AddSkyhookData(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R1",
+        "text": "On add, the series is looked up by TVDB id; if not found a validation error 'A series with this ID was not found' is raised on TvdbId."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.AddSeriesService.AddSkyhookData(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R2",
+        "text": "On add, if seasons are supplied they are used, otherwise the seasons from the lookup are used."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.AddSeriesService.SetPropertiesAndValidate(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R3",
+        "text": "On add, an empty path becomes the root folder path plus a generated series folder name."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.AddSeriesService.SetPropertiesAndValidate(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R4",
+        "text": "On add, if add options monitor is None the series is set to not monitored."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.AddSeriesService.SetPropertiesAndValidate(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.AddSeriesService.AddSeries(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R5",
+        "text": "On add, the series is validated and a validation exception with the errors is thrown if invalid; a null series is rejected."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesResourceMapper.ToModel(Sonarr.Api.V3.Series.SeriesResource)"
+        ],
+        "id": "R6",
+        "text": "When mapping a resource to a series, season type defaults to Official and language defaults to English."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesController.UpdateSeries(Sonarr.Api.V3.Series.SeriesResource,System.Boolean)"
+        ],
+        "id": "R7",
+        "text": "On update, the season type of an existing series is never changed, and language falls back to the stored language if none is supplied."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.UpdateSeries(NzbDrone.Core.Tv.Series,System.String,System.String,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.GetSeriesIdsWithPendingMove"
+        ],
+        "id": "R8",
+        "text": "On update, if a move is already queued or started for the series, the path stays the source path and the path change is skipped with a warning; the rest of the update still runs."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.UpdateSeries(NzbDrone.Core.Tv.Series,System.String,System.String,System.Boolean)"
+        ],
+        "id": "R9",
+        "text": "On update with moveFiles, the path stays the source and the destination is stored as the pending path until files are moved; without moveFiles the path is set to the destination and pending path cleared."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.UpdateSeries(NzbDrone.Core.Tv.Series,System.Boolean,System.Boolean)"
+        ],
+        "id": "R10",
+        "text": "On update, add options are never changed, and episodes are set monitored to match any season whose monitored flag changed."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R11",
+        "text": "For POST and PUT, the body resource is validated, and for PUT a zero id in the body is filled from the route id."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesResourceMapper.ToResource(NzbDrone.Core.Tv.Series,System.Boolean)"
+        ],
+        "id": "S1",
+        "text": "Get by id returns a series resource with title, overview, status, network, images, seasons, season types, path, quality profile, monitored flags, external ids, genres, tags, ratings and language."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesController.GetSeriesResource(NzbDrone.Core.Tv.Series,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesController.PopulateAlternateTitles(Sonarr.Api.V3.Series.SeriesResource)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesController.LinkRootFolderPath(Sonarr.Api.V3.Series.SeriesResource)"
+        ],
+        "id": "S2",
+        "text": "The returned series also has cover image URLs mapped to local URLs, series statistics, alternate titles from scene mappings, translations and a root folder path."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesController.GetResourceByIdWithErrorHandler(System.Int32,System.Boolean)"
+        ],
+        "id": "S3",
+        "text": "Get by id returns NotFound when the series does not exist."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Created(System.Int32)",
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Accepted(System.Int32)"
+        ],
+        "id": "S4",
+        "text": "Add returns a Created response pointing to the get-by-id action with the new series; update returns an Accepted response the same way."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.AddSeriesService.AddSeries(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "E1",
+        "text": "Adding a series saves it through the series service."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.UpdateSeries(NzbDrone.Core.Tv.Series,System.String,System.String,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.MoveSeriesService.Execute(NzbDrone.Core.Tv.Commands.MoveSeriesCommand)"
+        ],
+        "id": "E2",
+        "text": "Updating a series with moveFiles queues a manual MoveSeriesCommand with series id, source and destination paths."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.UpdateSeries(NzbDrone.Core.Tv.Series,System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesEditedService.Handle(NzbDrone.Core.Tv.Events.SeriesEditedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Pending.PendingReleaseService.Handle(NzbDrone.Core.Tv.Events.SeriesEditedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadService.Handle(NzbDrone.Core.Tv.Events.SeriesEditedEvent)"
+        ],
+        "id": "E3",
+        "text": "Updating a series saves it and publishes a SeriesEditedEvent, which other services handle."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.DeleteSeries(System.Collections.Generic.List{System.Int32},System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.Events.SeriesDeletedEvent.#ctor(System.Collections.Generic.List{NzbDrone.Core.Tv.Series},System.Boolean,System.Boolean)"
+        ],
+        "id": "E4",
+        "text": "Deleting a series removes it from the repository and publishes a SeriesDeletedEvent carrying the deleteFiles and addImportListExclusion flags."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistoryService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Pending.PendingReleaseService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Files.ExtraFileService`1.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.History.HistoryService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.Exclusions.ImportListExclusionService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaCover.MediaCoverService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.MediaFileDeletionService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.MediaFileService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesTranslationService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)"
+        ],
+        "id": "E5",
+        "text": "SeriesDeletedEvent is handled by services for blocklist, download history, pending releases, tracked downloads, extra files, history, import list exclusions, media covers, media file deletion, media files, notifications, episodes and translations."
+      }
+    ]
+  },
+  "title": "Series API (/api/v3/Series)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "Only the path update is skipped. The rest of the update still runs, because UpdateSeries(series, true, true) is called afterwards.",
+        "id": "F1",
+        "kind": "contradicted",
+        "outcome": "fixed",
+        "quote": "_logger.Warn(\"Series '{0}' is already being moved from {1} to {2}, skipping path update.\", series.Title, series.Path, series.PendingPath);",
+        "reason": "Reworded: only the path change is skipped; the rest of the update still runs.",
+        "statement": "R8",
+        "statementText": "On update, if a move is already queued or started for the series, the path stays the source path and the update is skipped with a warning."
+      }
+    ]
+  }
+}

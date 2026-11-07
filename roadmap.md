@@ -12,7 +12,7 @@ The build order (decisions.md D19) and how phases stay in step with each other (
   failed (24/30, 44% false alarms); 1d part 2 (deferred).
 - **Out of date:** the saved proof numbers predate the finder, D95, D104, D106 and D107 (D109).
 - **Overhaul (2026-11-04), local on `claude/phase2c-spec`, not pushed:** slices 0.1 to 2.6 landed, then the whole-flow test and §8's four batches (D120): switches, seams, import report, Excel, attachments, and table comparison, finer verdicts, grouping and ask, built off.
-- **Disprove re-score:** stopped at 11 of 62 calls on a weekly limit, resuming after Nov 7, so no bar is called. It can't lift found above 24 of 30.
+- **Disprove re-score (finished 2026-11-07, $8.59 in all):** false alarms 44% to 21%, found 24 to 19 of 30. The 5 lost were all filed `page-gap` with reasons that say `cant-tell`. No bar called until a fresh hand check (D61). Login with `claim-links`: rulings move by ids, but the judge raised no gap or conflict (`phases/2c-spec.md`).
 - **§9's batch 1 (2026-11-05), local, not pushed:** T.2, T.4, T.5, T.6, T.8, I.5, I.7, I.8 (off), I.9, I.10, I.11 (D126). Every paid step now needs a cap or `none`, so a script or CI needs `STANGENT_MAX_COST`.
 - **§9's batch 2 (2026-11-05), local, not pushed:** D130 and J.4 (`schema-once`, off), `shared-candidates` removed, a warning on a hand-edited `document.md`, T.1, T.3, T.7, I.1, I.2, I.3, I.4, I.6 (D131). Fakes only. Off until a test: `schema-once`, `page-corrections`, `page-exclusions`, `follow-moves`, `statement-update`, `disprove-small`.
 - **Unchecked:** §8's and §9's batches had no fresh check (D120), and none has met a real FSD or real AI. Next is "What's next" below.

@@ -1,0 +1,67 @@
+{
+  "codeTitle": "SeriesTagList",
+  "entry": "ts|frontend/src/Components/SeriesTagList.tsx#SeriesTagList",
+  "generated": {
+    "bundleHash": "e71889dc081002896bfb859784a190792024ffa80a2e25764539580358af4972",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 6916,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 9
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 4635,
+      "calls": 1,
+      "costUsd": 0.019249,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1754,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3564,
+      "calls": 1,
+      "costUsd": 0.017656,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2572,
+      "outputTokens": 312
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Components/SeriesTagList.tsx#SeriesTagList",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [],
+    "rules": [],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/SeriesTagList.tsx#SeriesTagList"
+        ],
+        "id": "S1",
+        "text": "Shows a list of tags for a series, passed in as the series' tags."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/SeriesTagList.tsx#SeriesTagList",
+          "ts|frontend/src/Tags/useTags.ts#useTagList"
+        ],
+        "id": "S2",
+        "text": "The tag list is displayed together with the full list of available tags loaded from the tags data."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Series Tag List",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

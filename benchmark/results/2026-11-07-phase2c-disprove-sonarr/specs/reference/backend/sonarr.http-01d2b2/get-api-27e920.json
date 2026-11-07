@@ -1,0 +1,86 @@
+{
+  "codeTitle": "GET /api",
+  "entry": "endpoint:Sonarr.Http|GET /api",
+  "generated": {
+    "bundleHash": "f3f4a354cc83865760c42b1b48174bb5c793007fff08b6559156ef2aca9b6769",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 6630,
+      "cutOff": 0,
+      "depth": 4,
+      "points": 5
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 4470,
+      "calls": 1,
+      "costUsd": 0.018589,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3607,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3263,
+      "calls": 1,
+      "costUsd": 0.018382,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3957,
+      "outputTokens": 505
+    }
+  },
+  "group": "Sonarr.Http",
+  "id": "endpoint:Sonarr.Http|GET /api",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Http|GET /api",
+          "Sonarr.Http|M:NzbDrone.Http.ApiInfoController.GetApiInfo"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Http|GET /api"
+        ],
+        "id": "A1",
+        "text": "A caller sends GET /api and receives a 200 OK response with the API info as application/json."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:NzbDrone.Http.ApiInfoController.GetApiInfo"
+        ],
+        "id": "R1",
+        "text": "The current and deprecated version values are fixed in code (current \"v5\", deprecated [\"v3\"]), not read from settings or data."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:NzbDrone.Http.ApiInfoController.GetApiInfo"
+        ],
+        "id": "S1",
+        "text": "Returns a JSON object with the current API version \"v5\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:NzbDrone.Http.ApiInfoController.GetApiInfo"
+        ],
+        "id": "S2",
+        "text": "Returns a list of deprecated API versions, which contains only \"v3\"."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "API version info",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "codeTitle": "GET /api/v3/Parse",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/Parse",
+  "generated": {
+    "bundleHash": "27dbfafcd9fca544531567044a032a9fdf76a727bb914ff209d2525261738412",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 49249,
+      "cutOff": 46,
+      "depth": 4,
+      "points": 218
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 23532,
+      "calls": 1,
+      "costUsd": 0.097837,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5867,
+      "outputTokens": 353
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 20797,
+      "calls": 1,
+      "costUsd": 0.103788,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 11580,
+      "outputTokens": 2032
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/Parse",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Parse.ParseController.Parse(System.String,System.String)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Parse"
+        ],
+        "id": "A1",
+        "text": "A caller supplies a title and optionally a path; the endpoint parses it and returns the matched series, episodes, languages and custom format information."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Parse.ParseController.Parse(System.String,System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Parser.Parser.ParsePath(System.String)"
+        ],
+        "id": "R1",
+        "text": "If a path is given, it is parsed as a file path; otherwise the title is parsed."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Parse.ParseController.Parse(System.String,System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Parser.Parser.ParseSeasonTitle(System.String)"
+        ],
+        "id": "R2",
+        "text": "If title parsing fails and no path was given, the title is parsed as a season title."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Parse.ParseController.Parse(System.String,System.String)"
+        ],
+        "id": "R3",
+        "text": "The series and episodes are looked up with tvdb id 0, tv rage id 0 and no imdb id."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Parse.ParseController.Parse(System.String,System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfile.CalculateCustomFormatScore(System.Collections.Generic.List{NzbDrone.Core.CustomFormats.CustomFormat})"
+        ],
+        "id": "R4",
+        "text": "Custom formats are calculated with size 0, and the score is the quality profile's custom format score, or 0 when the series has no quality profile."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfile.CalculateCustomFormatScore(System.Collections.Generic.List{NzbDrone.Core.CustomFormats.CustomFormat})"
+        ],
+        "id": "R5",
+        "text": "The custom format score is the sum of scores of the profile's format items whose format matched."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Parser.Parser.ParseSeasonTitle(System.String)"
+        ],
+        "id": "R6",
+        "text": "A season-title parse sets the result as a full season with no season number, and unparsable titles with leftover brackets return null."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.Aggregation.RemoteEpisodeAggregationService.Augment(NzbDrone.Core.Parser.Model.RemoteEpisode)"
+        ],
+        "id": "R7",
+        "text": "Aggregators run on the matched release one by one; a failure in one is logged as a warning and does not stop the others."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Parse.ParseController.Parse(System.String,System.String)"
+        ],
+        "id": "S1",
+        "text": "Returns a parse result containing the title, parsed episode info, matched series, matched episodes, languages, custom formats and custom format score."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Parse.ParseController.Parse(System.String,System.String)"
+        ],
+        "id": "S2",
+        "text": "When the title is blank, nothing (null) is returned."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Parse.ParseController.Parse(System.String,System.String)"
+        ],
+        "id": "S3",
+        "text": "When the title cannot be parsed, the result contains only the title."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Parse.ParseController.Parse(System.String,System.String)"
+        ],
+        "id": "S4",
+        "text": "When parsing works but no series/episodes are matched, the result contains the title and the parsed episode info only."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Parse.ParsedEpisodeInfoResourceMapper.ToResource(NzbDrone.Core.Parser.Model.ParsedEpisodeInfo)"
+        ],
+        "id": "S5",
+        "text": "Parsed episode info includes release title, series title, quality, season/episode/absolute numbers, air date, languages, release group, release hash, release type and flags such as full season, daily, special and multi-season. Season number is -1 when none is parsed."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Parse.ParseController.Parse(System.String,System.String)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.CustomFormats.CustomFormatResourceMapper.ToResource(NzbDrone.Core.CustomFormats.CustomFormat,System.Boolean)"
+        ],
+        "id": "S6",
+        "text": "Custom formats in the result are returned without details (only id and name)."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Parse.ParseController.Parse(System.String,System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Aggregation.RemoteEpisodeAggregationService.Augment(NzbDrone.Core.Parser.Model.RemoteEpisode)"
+        ],
+        "id": "E1",
+        "text": "The matched release is augmented by the aggregation service before custom formats are calculated."
+      }
+    ]
+  },
+  "title": "Parse release title (GET /api/v3/Parse)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

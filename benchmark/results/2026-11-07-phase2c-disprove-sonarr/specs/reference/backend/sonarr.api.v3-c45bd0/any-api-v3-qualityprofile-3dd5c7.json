@@ -1,0 +1,174 @@
+{
+  "codeTitle": "ANY /api/v3/QualityProfile",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/QualityProfile",
+  "generated": {
+    "bundleHash": "6fc2ce4fdbe849907a5bb77f33aac8efa91cd9f5718f74d9a7a3161f0671303f",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 26550,
+      "cutOff": 12,
+      "depth": 4,
+      "points": 92
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 16319,
+      "calls": 1,
+      "costUsd": 0.068015,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5132,
+      "outputTokens": 256
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 13402,
+      "calls": 1,
+      "costUsd": 0.076848,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 12132,
+      "outputTokens": 2296
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/QualityProfile",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.QualityProfileController.Create(Sonarr.Api.V3.Profiles.Quality.QualityProfileResource)",
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Created(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/QualityProfile"
+        ],
+        "id": "A1",
+        "text": "Create a quality profile with a JSON body. The saved profile is returned as a created response pointing to the get-by-id action."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.QualityProfileController.Update(Sonarr.Api.V3.Profiles.Quality.QualityProfileResource)",
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Accepted(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/QualityProfile"
+        ],
+        "id": "A2",
+        "text": "Update a quality profile with a JSON body. The updated profile is returned as an accepted response pointing to the get-by-id action."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.QualityProfileController.DeleteProfile(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/QualityProfile"
+        ],
+        "id": "A3",
+        "text": "Delete a quality profile by id."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfileService.Delete(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfileInUseException.#ctor(System.String)"
+        ],
+        "id": "R1",
+        "text": "A profile cannot be deleted while any series or import list uses it. The call fails with 400 Bad Request and the message \"QualityProfile [name] is in use.\""
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R2",
+        "text": "On PUT, if the body resource id is 0 and the route has an id, the route id is used."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R3",
+        "text": "POST and PUT bodies are validated before the action runs, and the id argument is validated for actions that require it unless validation is skipped."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.QualityProfileController.Create(Sonarr.Api.V3.Profiles.Quality.QualityProfileResource)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.QualityProfileController.Update(Sonarr.Api.V3.Profiles.Quality.QualityProfileResource)"
+        ],
+        "id": "R4",
+        "text": "Create and update accept only application/json request bodies."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "Getting a quality profile by id returns it as JSON with 200 OK, or 404 Not Found when the profile does not exist."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.ProfileResourceMapper.ToModel(Sonarr.Api.V3.Profiles.Quality.QualityProfileResource)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.ProfileResourceMapper.ToModel(Sonarr.Api.V3.Profiles.Quality.ProfileFormatItemResource)"
+        ],
+        "id": "S2",
+        "text": "A quality profile carries an id, name, upgrade-allowed flag, cutoff, quality items, minimum format score, cutoff format score, minimum upgrade format score and custom format items (format id and score)."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Profiles.Quality.ProfileResourceMapper.ToModel(Sonarr.Api.V3.Profiles.Quality.QualityProfileQualityItemResource)"
+        ],
+        "id": "S3",
+        "text": "Each quality item has an id, name, quality, nested items, allowed flag, min size, max size and preferred size."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfileService.Add(NzbDrone.Core.Profiles.Qualities.QualityProfile)"
+        ],
+        "id": "E1",
+        "text": "Creating a profile inserts it and then updates its ranks."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfileService.Update(NzbDrone.Core.Profiles.Qualities.QualityProfile)"
+        ],
+        "id": "E2",
+        "text": "Updating a profile saves it, updates its ranks and publishes a QualityProfileUpdatedEvent."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.Pending.PendingReleaseService.Handle(NzbDrone.Core.Profiles.Qualities.QualityProfileUpdatedEvent)"
+        ],
+        "id": "E3",
+        "text": "The pending release service handles the QualityProfileUpdatedEvent."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfileService.Delete(System.Int32)"
+        ],
+        "id": "E4",
+        "text": "Deleting a profile removes it and then deletes its ranks."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "E5",
+        "text": "A call to a deprecated endpoint logs a warning and sets the response header Deprecation: true."
+      }
+    ]
+  },
+  "title": "Quality Profile API (create, update, delete, get)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

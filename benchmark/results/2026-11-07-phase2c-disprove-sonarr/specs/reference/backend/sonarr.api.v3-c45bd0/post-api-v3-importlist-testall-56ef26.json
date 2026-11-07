@@ -1,0 +1,123 @@
+{
+  "codeTitle": "POST /api/v3/ImportList/testall",
+  "entry": "endpoint:Sonarr.Api.V3|POST /api/v3/ImportList/testall",
+  "generated": {
+    "bundleHash": "f621cccb3bcb4903c5bd5c14707cfb899bde5772a044fc2de7a6ecc1e678ab1f",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 17585,
+      "cutOff": 11,
+      "depth": 4,
+      "points": 52
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 10668,
+      "calls": 1,
+      "costUsd": 0.043381,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3917,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 8617,
+      "calls": 1,
+      "costUsd": 0.048028,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7821,
+      "outputTokens": 1328
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|POST /api/v3/ImportList/testall",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.TestAll",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.IProviderFactory`2.All",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.IProviderFactory`2.Test(`1)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/ImportList/testall"
+        ],
+        "id": "A1",
+        "text": "Tests every enabled import list with valid settings in one call and returns the combined results."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.TestAll",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.IProviderConfig.Validate"
+        ],
+        "id": "R1",
+        "text": "Only definitions that are enabled and whose settings validate are tested."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.TestAll",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.IProviderFactory`2.Test(`1)"
+        ],
+        "id": "R2",
+        "text": "Each result's failures combine the settings validation errors with the errors from the provider's connection test."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Test(`1)",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.GetInstance(`1)",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.IProvider.Test"
+        ],
+        "id": "R3",
+        "text": "The provider test runs on an instance built from the definition by the factory."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.TestAll",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderTestAllResult.#ctor"
+        ],
+        "id": "S1",
+        "text": "Returns a list with one result per tested import list, each holding the list's Id and its validation failures."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.TestAll"
+        ],
+        "id": "S2",
+        "text": "Responds with HTTP 400 and the result list if any tested item has failures; otherwise responds with 200 and the result list."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListFactory.Test(NzbDrone.Core.ImportLists.ImportListDefinition)",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.Status.IProviderStatusServiceBase`1.RecordSuccess(System.Int32)"
+        ],
+        "id": "E1",
+        "text": "For a saved import list (Id not 0), a passing test records a success in the import list status service."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.ImportListFactory.Test(NzbDrone.Core.ImportLists.ImportListDefinition)",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.Status.IProviderStatusServiceBase`1.RecordFailure(System.Int32,System.TimeSpan)"
+        ],
+        "id": "E2",
+        "text": "For a saved import list (Id not 0), a failing test records a failure in the import list status service."
+      }
+    ]
+  },
+  "title": "Test all import lists",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

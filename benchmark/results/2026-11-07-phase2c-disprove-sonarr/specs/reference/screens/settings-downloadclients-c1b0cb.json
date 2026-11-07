@@ -1,0 +1,373 @@
+{
+  "codeTitle": "/settings/downloadclients · DownloadClientSettings",
+  "entry": "page:tsconfig.json|/settings/downloadclients",
+  "generated": {
+    "bundleHash": "5b9121bc9ea4c40a3bc9ecf1498b1c189c85dd2c01d795488fc6d72cbfdeb0cf",
+    "checkRetries": 1,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 151884,
+      "cutOff": 71,
+      "depth": 6,
+      "points": 474
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 74138,
+      "calls": 1,
+      "costUsd": 0.302941,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8518,
+      "outputTokens": 621
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 142640,
+      "calls": 2,
+      "costUsd": 0.6671,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 55944,
+      "outputTokens": 9598
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/settings/downloadclients",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClientSettings.tsx#DownloadClientSettings",
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/useDownloadClients.ts#useTestAllDownloadClients"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/DownloadClient/testall",
+          "endpoint:Sonarr.Api.V5|POST /api/v5/DownloadClient/testall"
+        ],
+        "id": "A1",
+        "text": "\"Test All Clients\" tests all download clients and shows the result per card."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClientSettings.tsx#DownloadClientSettings"
+        ],
+        "id": "A2",
+        "text": "\"Manage Clients\" opens the Manage Download Clients dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClientSettings.tsx#DownloadClientSettings",
+          "ts|frontend/src/Settings/DownloadClients/Options/DownloadClientOptions.tsx#DownloadClientOptions"
+        ],
+        "id": "A3",
+        "text": "The Save action of the page saves the Completed Download Handling options."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/DownloadClients.tsx#DownloadClients",
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/AddDownloadClientItem.tsx#AddDownloadClientItem"
+        ],
+        "id": "A4",
+        "text": "Clicking the Add card opens the client type picker. Choosing a type (or preset) opens the add dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/DownloadClient.tsx#DownloadClient",
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/DownloadClients.tsx#DownloadClients"
+        ],
+        "id": "A5",
+        "text": "Clicking a client card opens its edit dialog. The clone action on a card opens a new client dialog prefilled from it."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/EditDownloadClientModalContent.tsx#EditDownloadClientModalContent",
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/DownloadClient.tsx#DownloadClient"
+        ],
+        "id": "A6",
+        "text": "In the client dialog the user can Test, Cancel, Save, toggle advanced settings, and Delete (existing clients only). Delete asks for confirmation."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/Manage/ManageDownloadClientsModalContent.tsx#ManageDownloadClientsModalContentInner"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|DELETE /api/v3/DownloadClient/bulk",
+          "endpoint:Sonarr.Api.V5|DELETE /api/v5/DownloadClient/bulk",
+          "endpoint:Sonarr.Api.V3|PUT /api/v3/DownloadClient/bulk",
+          "endpoint:Sonarr.Api.V5|PUT /api/v5/DownloadClient/bulk"
+        ],
+        "id": "A7",
+        "text": "In the Manage dialog the user can select clients and Delete, Edit or Set Tags for the selected ones, or Close. Delete asks for confirmation."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/Manage/Edit/ManageDownloadClientsEditModalContent.tsx#ManageDownloadClientsEditModalContent"
+        ],
+        "id": "A8",
+        "text": "The bulk Edit dialog can change Enabled, Priority, Remove Completed and Remove Failed for selected clients, then Apply Changes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/Manage/Tags/TagsModalContent.tsx#TagsModalContent"
+        ],
+        "id": "A9",
+        "text": "The Tags dialog applies chosen tags to selected clients by add, remove or replace, and previews the resulting tags."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/RemotePathMappings/RemotePathMappings.tsx#RemotePathMappings",
+          "ts|frontend/src/Settings/DownloadClients/RemotePathMappings/RemotePathMapping.tsx#RemotePathMapping",
+          "ts|frontend/src/Settings/DownloadClients/RemotePathMappings/EditRemotePathMappingModalContent.tsx#EditRemotePathMappingModalContent"
+        ],
+        "id": "A10",
+        "text": "Users can add, edit and delete remote path mappings; delete asks for confirmation."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/EditDownloadClientModalContent.tsx#EditDownloadClientModalContent",
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/Manage/Edit/ManageDownloadClientsEditModalContent.tsx#ManageDownloadClientsEditModalContent"
+        ],
+        "id": "R1",
+        "text": "Client priority must be between 1 and 50, both in the single and bulk edit dialogs."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/DownloadClient.tsx#DownloadClient"
+        ],
+        "id": "R2",
+        "text": "Priority is shown on a card only when greater than 1."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/useDownloadClients.ts#useManageDownloadClient"
+        ],
+        "id": "R3",
+        "text": "A cloned client gets a copied name and has its API key and password field values cleared."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ProviderTestAllResult.ts#getProviderTestAllResults"
+        ],
+        "id": "R4",
+        "text": "A test-all response with status 400 and an array body is treated as results, not an error."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/Manage/ManageDownloadClientsModalContent.tsx#ManageDownloadClientsModalContentInner"
+        ],
+        "id": "R5",
+        "text": "In Manage, Delete, Edit and Set Tags are disabled until at least one client is selected."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/Manage/Edit/ManageDownloadClientsEditModalContent.tsx#ManageDownloadClientsEditModalContent"
+        ],
+        "id": "R6",
+        "text": "Bulk edit sends only fields changed from \"no change\", and nothing is sent if none changed."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useManageProviderSettings"
+        ],
+        "id": "R7",
+        "text": "Saving an existing client with no changes skips testing and validation. Re-saving identical settings skips testing. After a warnings-only result, warning validation is skipped on the next save."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/EditDownloadClientModalContent.tsx#EditDownloadClientModalContent"
+        ],
+        "id": "R8",
+        "text": "The client dialog closes automatically after a save finishes without error."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClientSettings.tsx#DownloadClientSettings"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Download Clients\" under the \"Settings\" scope, with a section heading \"Download Clients\" and a description."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClientSettings.tsx#DownloadClientSettings"
+        ],
+        "id": "S2",
+        "text": "The toolbar has \"Test All Clients\" and \"Manage Clients\" items. The test item spins while a test is running."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClientSettings.tsx#DownloadClientSettings"
+        ],
+        "id": "S3",
+        "text": "A status indicator shows \"Testing all download clients\", a completed message, or a failed message, depending on the test-all state. It is hidden when none applies; it uses the alert role on error."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/DownloadClients.tsx#DownloadClients",
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/useDownloadClients.ts#useSortedDownloadClients"
+        ],
+        "id": "S4",
+        "text": "Download clients are shown as cards sorted by name ascending, followed by an \"Add Download Client\" card. A load error message is shown if loading fails."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/DownloadClient.tsx#DownloadClient"
+        ],
+        "id": "S5",
+        "text": "Each client card shows its name, an Enabled or Disabled status, the priority when greater than 1, the last test status, a protocol label, and tags when present."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/ProviderTestAllResult.ts#getProviderTestStatus",
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/DownloadClients.tsx#DownloadClients"
+        ],
+        "id": "S6",
+        "text": "After a test-all, each card shows its result as not tested, failed (any non-warning failure), warning (only warnings), or passed."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/AddDownloadClientModalContent.tsx#AddDownloadClientModalContent"
+        ],
+        "id": "S7",
+        "text": "The Add Download Client dialog lists available client types in Usenet and Torrents groups, with a loading indicator and an error alert if the schema fails to load."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/AddDownloadClientItem.tsx#AddDownloadClientItem"
+        ],
+        "id": "S8",
+        "text": "Each client type in the Add dialog has a \"Presets\" menu when presets exist and a \"More Info\" link."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/EditDownloadClientModalContent.tsx#EditDownloadClientModalContent"
+        ],
+        "id": "S9",
+        "text": "The add/edit client dialog has Name, Enable, provider fields, Client Priority (advanced), Tags, and Completed Download Handling options (Remove Completed, Remove Failed)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/Options/DownloadClientOptions.tsx#DownloadClientOptions"
+        ],
+        "id": "S10",
+        "text": "A \"Completed Download Handling\" fieldset is shown only when advanced settings are on and settings loaded without error. It has Enable, Auto Redownload Failed, and (when that is on) the interactive search option."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/Options/DownloadClientOptions.tsx#DownloadClientOptions"
+        ],
+        "id": "S11",
+        "text": "The options area shows a loading indicator while fetching and an error alert if loading fails."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/RemotePathMappings/RemotePathMappings.tsx#RemotePathMappings"
+        ],
+        "id": "S12",
+        "text": "Remote Path Mappings are listed with Host, Remote Path and Local Path columns, an info alert with a wiki link, and an \"Add Remote Path Mapping\" link."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/Manage/ManageDownloadClientsModalContent.tsx#ManageDownloadClientsModalContentInner"
+        ],
+        "id": "S13",
+        "text": "The Manage Download Clients dialog shows a table with row selection and sorting, a loading indicator, an error message, or \"No download clients found\" when empty."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/Manage/ManageDownloadClientsModalRow.tsx#ManageDownloadClientsModalRow"
+        ],
+        "id": "S14",
+        "text": "Each manage row shows name, protocol, implementation, enabled Yes/No, priority, remove completed Yes/No, remove failed Yes/No, and tags."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/RemotePathMappings/EditRemotePathMappingModalContent.tsx#EditRemotePathMappingModalContent",
+          "ts|frontend/src/DownloadClient/useDownloadClientHostOptions.ts#useDownloadClientHostOptions"
+        ],
+        "id": "S15",
+        "text": "The remote path mapping dialog offers Host as a select of hosts from existing download clients, a Remote Path text input and a Local Path path input."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/useDownloadClients.ts#useTestAllDownloadClients"
+        ],
+        "id": "E1",
+        "text": "Test All calls POST DownloadClient/testall."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/useDownloadClients.ts#useBulkEditDownloadClients"
+        ],
+        "id": "E2",
+        "text": "Bulk edit sends PUT DownloadClient/bulk and merges the returned clients into the cached list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/DownloadClients/DownloadClients/useDownloadClients.ts#useBulkDeleteDownloadClients"
+        ],
+        "id": "E3",
+        "text": "Bulk delete sends DELETE DownloadClient/bulk and removes the deleted clients from the cached list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider"
+        ],
+        "id": "E4",
+        "text": "Deleting a single client or remote path mapping sends a DELETE request for its id and removes it from the cached list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings"
+        ],
+        "id": "E5",
+        "text": "Saving the completed download handling options sends a PUT and updates the cached settings."
+      }
+    ]
+  },
+  "title": "Download Client Settings",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useProviderSettings",
+      "line": 78,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider",
+      "line": 403,
+      "reason": "HTTP DELETE to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSettings",
+      "line": 12,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+      "line": 29,
+      "reason": "HTTP PUT to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

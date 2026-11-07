@@ -1,0 +1,260 @@
+{
+  "codeTitle": "/activity/blocklist · Blocklist",
+  "entry": "page:tsconfig.json|/activity/blocklist",
+  "generated": {
+    "bundleHash": "654c02b5ec48dcad34438d529cab9d1fbf5aa46291927f70dc5f111d8969932a",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 50784,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 274
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 27525,
+      "calls": 1,
+      "costUsd": 0.112959,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3514,
+      "outputTokens": 268
+    },
+    "writer": {
+      "cacheReadTokens": 27171,
+      "cacheWriteTokens": 27197,
+      "calls": 1,
+      "costUsd": 0.16687,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 29040,
+      "outputTokens": 5264
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/activity/blocklist",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/Blocklist.tsx#BlocklistContent",
+          "ts|frontend/src/Activity/Blocklist/useBlocklist.ts#useRemoveBlocklistItems"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|DELETE /api/v5/Blocklist/bulk",
+          "endpoint:Sonarr.Api.V3|DELETE /api/v3/Blocklist/bulk"
+        ],
+        "id": "A1",
+        "text": "Remove Selected opens a confirmation; on confirm it deletes the selected items in bulk."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/Blocklist.tsx#BlocklistContent"
+        ],
+        "id": "A2",
+        "text": "Clear opens a confirmation; on confirm it runs the ClearBlocklist command, then returns to page 1 and refetches."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/BlocklistRow.tsx#BlocklistRow",
+          "ts|frontend/src/Activity/Blocklist/useBlocklist.ts#useRemoveBlocklistItem"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|DELETE /api/v5/Blocklist/bulk",
+          "endpoint:Sonarr.Api.V3|DELETE /api/v3/Blocklist/bulk"
+        ],
+        "id": "A3",
+        "text": "The remove icon on a row removes that single item from the blocklist."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/BlocklistRow.tsx#BlocklistRow",
+          "ts|frontend/src/Activity/Blocklist/BlocklistDetailsModal.tsx#BlocklistDetailsModal"
+        ],
+        "id": "A4",
+        "text": "The info icon on a row opens the Details modal, which has a Close button."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/Blocklist.tsx#BlocklistContent",
+          "ts|frontend/src/Activity/Blocklist/BlocklistFilterModal.tsx#BlocklistFilterModal"
+        ],
+        "id": "A5",
+        "text": "Users can pick a filter, build a custom filter, change sort, change table options and page size, and go to another page."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/Blocklist.tsx#BlocklistContent"
+        ],
+        "id": "R1",
+        "text": "Remove Selected is disabled when nothing is selected."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/Blocklist.tsx#BlocklistContent"
+        ],
+        "id": "R2",
+        "text": "Clear is disabled when there are no records."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/Blocklist.tsx#BlocklistContent"
+        ],
+        "id": "R3",
+        "text": "Changing the page size resets to page 1."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/BlocklistRow.tsx#BlocklistRow"
+        ],
+        "id": "R4",
+        "text": "A row is not rendered if its series is not found."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery"
+        ],
+        "id": "R5",
+        "text": "Total pages is at least 1, computed as total records divided by page size, rounded up."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/useBlocklist.ts#useBlocklist",
+          "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery"
+        ],
+        "id": "R6",
+        "text": "The list is requested from /blocklist with page, page size, sort key, sort direction and the selected filters, and keeps the previous data while refetching."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R7",
+        "text": "The same command cannot be run again within 5 seconds."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/usePage.ts#usePage"
+        ],
+        "id": "R8",
+        "text": "Going back in browser history resets the blocklist page to 1."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/Blocklist.tsx#BlocklistContent"
+        ],
+        "id": "S1",
+        "text": "The page is titled Blocklist, with the heading scope Activity."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/Blocklist.tsx#BlocklistContent"
+        ],
+        "id": "S2",
+        "text": "A loading indicator shows while the first load is in progress."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/Blocklist.tsx#BlocklistContent"
+        ],
+        "id": "S3",
+        "text": "If loading fails, a danger alert shows the blocklist load error message."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/Blocklist.tsx#BlocklistContent"
+        ],
+        "id": "S4",
+        "text": "When there are no records, a message shows: the 'no blocklist items' text if the selected filter is 'all', otherwise the 'filter has no items' text."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/Blocklist.tsx#BlocklistContent"
+        ],
+        "id": "S5",
+        "text": "When records exist, they are shown in a table with a select-all checkbox and a pager showing page, total pages and total records."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/BlocklistRow.tsx#BlocklistRow"
+        ],
+        "id": "S6",
+        "text": "Each row can show columns: series title (link), source title, languages, quality, custom formats, date, indexer and actions; only visible columns are rendered."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/Blocklist.tsx#BlocklistContent",
+          "ts|frontend/src/Filters/useCustomFilters.ts#useCustomFiltersList"
+        ],
+        "id": "S7",
+        "text": "The toolbar has Remove Selected, Clear, Options buttons and a filter menu with custom filters of type blocklist."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/BlocklistDetailsModal.tsx#BlocklistDetailsModal"
+        ],
+        "id": "S8",
+        "text": "The Details modal shows Name and Protocol, plus Indexer and Message when a message exists, and Source when a source exists."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/useBlocklist.ts#useRemoveBlocklistItems",
+          "ts|frontend/src/Activity/Blocklist/useBlocklist.ts#useRemoveBlocklistItem"
+        ],
+        "id": "E1",
+        "text": "After a successful removal, the cached blocklist queries are invalidated so the list reloads."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand",
+          "ts|frontend/src/Activity/Blocklist/Blocklist.tsx#BlocklistContent"
+        ],
+        "id": "E2",
+        "text": "Clear posts a ClearBlocklist command to the command endpoint."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Blocklist/Blocklist.tsx#BlocklistContent",
+          "ts|frontend/src/Utilities/pagePopulator.ts#registerPagePopulator",
+          "ts|frontend/src/Utilities/pagePopulator.ts#unregisterPagePopulator"
+        ],
+        "id": "E3",
+        "text": "The page registers a repopulate function that refetches the list, and unregisters it on leaving."
+      }
+    ]
+  },
+  "title": "Blocklist",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/usePagedApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery",
+      "line": 79,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Utilities/Fetch/fetchJson.ts",
+      "in": "ts|frontend/src/Utilities/Fetch/fetchJson.ts#fetchJson",
+      "line": 56,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

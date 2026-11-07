@@ -1,0 +1,46 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0003"
+doc: "sonarr-fsd"
+section: "3"
+title: "Activity"
+parent: null
+children:
+  - "F-0004"
+  - "F-0006"
+textHash: "1f2a6acf2a242ed664fe9b9202e2db21078b1134b5eeaa98e57926c7906b668c"
+requirements:
+  - id: "R-0016"
+    title: "Activity shows current downloads"
+    kind: "rule"
+    statement: "Activity shows what Sonarr is downloading now."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3"
+        text: "Activity shows what Sonarr is downloading now and what it has done."
+        hash: "1f2a6acf2a242ed664fe9b9202e2db21078b1134b5eeaa98e57926c7906b668c"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "4f5a1d10a93cdc040bca507b3c60a986ccf3cdebb6f50a681af2d0387aee9c58"
+  - id: "R-0017"
+    title: "Activity shows past actions"
+    kind: "rule"
+    statement: "Activity shows what Sonarr has done."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3"
+        text: "Activity shows what Sonarr is downloading now and what it has done."
+        hash: "1f2a6acf2a242ed664fe9b9202e2db21078b1134b5eeaa98e57926c7906b668c"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "96920494115090101491ad1c3a846dd29970b73afc527c71bf8f74328ef090c0"
+definitions: []
+journeys: []
+background: []
+retired: []

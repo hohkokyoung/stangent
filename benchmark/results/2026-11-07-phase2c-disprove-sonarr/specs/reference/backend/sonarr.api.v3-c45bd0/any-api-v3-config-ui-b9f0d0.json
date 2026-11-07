@@ -1,0 +1,186 @@
+{
+  "codeTitle": "ANY /api/v3/config/ui",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/config/ui",
+  "generated": {
+    "bundleHash": "a0fb75375a2decd05d085dec7022f80a8ee26ac573d039fa980503b95617e467",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 26652,
+      "cutOff": 12,
+      "depth": 4,
+      "points": 35
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 15948,
+      "calls": 1,
+      "costUsd": 0.070111,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5389,
+      "outputTokens": 614
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 28072,
+      "calls": 2,
+      "costUsd": 0.168238,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 27734,
+      "outputTokens": 5539
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/config/ui",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Config.UiConfigController.SaveConfig(Sonarr.Api.V3.Config.UiConfigResource)",
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})",
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigService.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/config/ui"
+        ],
+        "id": "A1",
+        "text": "A caller saves the UI configuration by sending a resource in the request body. The resource's public properties are offered to the config file settings and the database config settings, which save only the values that qualify."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/config/ui"
+        ],
+        "id": "A2",
+        "text": "A caller fetches a resource by id and gets 200 OK or 404 Not Found."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R1",
+        "text": "On POST or PUT, a PUT resource with id 0 takes its id from the route id when the route has one. The resource is then validated."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R2",
+        "text": "When the action requires an id and validation isn't skipped, the id argument is validated."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})"
+        ],
+        "id": "R3",
+        "text": "The config file save skips the ApiKey key. It also skips keys that have no current value, and it writes only values that differ from the current ones."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigService.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})"
+        ],
+        "id": "R4",
+        "text": "The database config save skips keys that have no current value and keys whose submitted value is null. It writes only values that differ from the current ones."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.SetValue(System.String,System.Object)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.FirstCharToUpper(System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigService.SetValue(System.String,System.String)"
+        ],
+        "id": "R5",
+        "text": "In the config file, keys are written with the first character in upper case and values are trimmed. In the database, keys are stored in lower case."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Accepted(System.Int32)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Config.UiConfigController.SaveConfig(Sonarr.Api.V3.Config.UiConfigResource)"
+        ],
+        "id": "S1",
+        "text": "A save returns the saved UI config resource, looked up by its id, with an Accepted result that points to the get-by-id action."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "Getting a resource by id returns it as JSON with 200 OK, or 404 Not Found when the resource isn't found."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})",
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.SetValue(System.String,System.Object)",
+          "Sonarr.Common|M:NzbDrone.Common.Cache.ICached.Clear"
+        ],
+        "id": "E1",
+        "text": "Changed values are written to the config file, and the config file cache is cleared."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigService.SetValue(System.String,System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigService.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})"
+        ],
+        "id": "E2",
+        "text": "Changed values are upserted into the database config store, and the config cache is cleared."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Events.IEventAggregator.PublishEvent``1(``0)",
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)",
+          "Sonarr.Http|M:Sonarr.Http.Authentication.OidcOptionsChangeTokenSource.Handle(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)"
+        ],
+        "id": "E3",
+        "text": "If any config file value changed, a ConfigFileSavedEvent is published. The logging reconfiguration and the OIDC options change token source handle it."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigService.SaveConfigDictionary(System.Collections.Generic.Dictionary{System.String,System.Object})",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Events.IEventAggregator.PublishEvent``1(``0)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Pending.PendingReleaseService.Handle(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Jobs.TaskManager.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Localization.LocalizationService.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)",
+          "Sonarr.Http|M:NzbDrone.Http.Authentication.UiAuthorizationHandler.Handle(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)"
+        ],
+        "id": "E4",
+        "text": "If any database config value changed, a ConfigSavedEvent is published. The pending release service, task manager, localization service and UI authorization handler handle it."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "E5",
+        "text": "Calls to a deprecated endpoint are logged as a warning, and the response gets a Deprecation: true header."
+      }
+    ]
+  },
+  "title": "UI configuration API (/api/v3/config/ui)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "Not every public property is written. ApiKey is skipped in the config file, keys with no current value are skipped, and only values that differ from the current ones are saved.",
+        "id": "F1",
+        "kind": "contradicted",
+        "outcome": "fixed",
+        "quote": "if (configValue.Key.Equals(\"ApiKey\", StringComparison.InvariantCultureIgnoreCase))",
+        "reason": "Reworded the save action so it no longer claims every property is written; it now says values are offered and only qualifying ones are saved.",
+        "statement": "A1",
+        "statementText": "A caller saves the UI configuration by sending a resource in the request body. Every public property of the resource is written to the config file settings and to the database config settings."
+      }
+    ]
+  }
+}

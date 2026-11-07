@@ -1,0 +1,121 @@
+{
+  "codeTitle": "CommandController.Handle(CommandUpdatedEvent)",
+  "entry": "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandController.Handle(NzbDrone.Core.ProgressMessaging.CommandUpdatedEvent)",
+  "generated": {
+    "bundleHash": "3746e1ac0447390e85b442067fdad583357be57543c42dd48b42db43ef722c54",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 9784,
+      "cutOff": 0,
+      "depth": 4,
+      "points": 85
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6937,
+      "calls": 1,
+      "costUsd": 0.029407,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2410,
+      "outputTokens": 148
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4854,
+      "calls": 1,
+      "costUsd": 0.032706,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7674,
+      "outputTokens": 1301
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandController.Handle(NzbDrone.Core.ProgressMessaging.CommandUpdatedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandController.Handle(NzbDrone.Core.ProgressMessaging.CommandUpdatedEvent)"
+        ],
+        "id": "A1",
+        "text": "On a CommandUpdatedEvent, the handler records the command's resource as a pending update keyed by command id, then triggers the debouncer."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandController.Handle(NzbDrone.Core.ProgressMessaging.CommandUpdatedEvent)"
+        ],
+        "id": "R1",
+        "text": "Only commands whose body has SendUpdatesToClient set are handled; others are ignored."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandController.Handle(NzbDrone.Core.ProgressMessaging.CommandUpdatedEvent)"
+        ],
+        "id": "R2",
+        "text": "A newer update for the same command id replaces the pending one."
+      },
+      {
+        "cites": [
+          "Sonarr.Common|M:NzbDrone.Common.TPL.Debouncer.Execute"
+        ],
+        "id": "R3",
+        "text": "The debouncer starts its timer only when it is not paused; the trigger is remembered either way."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandResourceMapper.ToResource(NzbDrone.Core.Messaging.Commands.CommandModel)"
+        ],
+        "id": "S1",
+        "text": "The command resource built for a client update carries id, name, a spaced-out command name, message, body, priority, status, result, queued/started/ended times, duration, exception and trigger."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandResourceMapper.ToResource(NzbDrone.Core.Messaging.Commands.CommandModel)"
+        ],
+        "id": "S2",
+        "text": "The resource also carries the body's completion message and last execution time."
+      },
+      {
+        "cites": [
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.SplitCamelCase(System.String)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandResourceMapper.ToResource(NzbDrone.Core.Messaging.Commands.CommandModel)"
+        ],
+        "id": "S3",
+        "text": "The command name is shown with spaces inserted before each camel-case match (SplitCamelCase of the name)."
+      },
+      {
+        "cites": [
+          "Sonarr.Common|M:NzbDrone.Common.Http.UserAgentParser.SimplifyUserAgent(System.String)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandResourceMapper.ToResource(NzbDrone.Core.Messaging.Commands.CommandModel)"
+        ],
+        "id": "S4",
+        "text": "The client user agent is shown as-is, except it is empty when it is null or starts with \"Mozilla/5.0\"."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Commands.CommandController.Handle(NzbDrone.Core.ProgressMessaging.CommandUpdatedEvent)",
+          "Sonarr.Common|M:NzbDrone.Common.TPL.Debouncer.Execute"
+        ],
+        "id": "E1",
+        "text": "Pending command updates are stored in a lock-protected collection and the debouncer is triggered, which starts its timer when not paused."
+      }
+    ]
+  },
+  "title": "Command updated event handler (client updates)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}
