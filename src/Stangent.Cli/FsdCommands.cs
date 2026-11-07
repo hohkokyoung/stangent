@@ -244,6 +244,11 @@ static class FsdCommands
         traceLinks.SetAction(pr => Cli.Run(pr, "trace links", ctx => TraceLinks.Run(ctx.Repo.Root, pr.GetValue(docArg)!, pr.GetValue(linkSection)), null));
         trace.Subcommands.Add(traceLinks);
 
+        var findingsOut = new Option<string?>("--out") { Description = "Where to write (default: specs/fsd/<doc>/findings.md)." };
+        var traceFindings = new Command("findings", "The BA's queue for a document as one readable Markdown file, strongest evidence first (D152). By code, no AI; nothing reads it back, and answers still go in specs/trace.yaml.") { docArg, findingsOut };
+        traceFindings.SetAction(pr => Cli.Run(pr, "trace findings", ctx => FindingsReport.Run(ctx.Repo.Root, pr.GetValue(docArg)!, pr.GetValue(findingsOut))));
+        trace.Subcommands.Add(traceFindings);
+
         var findingArg = new Argument<string>("finding") { Description = "The finding's X- id, or its entry id." };
         var whyOption = new Option<string?>("--why") { Description = "Why, in your words. It's kept beside your name." };
         var confirm = new Command("confirm", "A person closes a finding the AI called refuted or unreachable, or a page gap under page-gap-strict, having read its quote at its lines (D119). Who comes from git.") { findingArg, whyOption };

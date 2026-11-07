@@ -161,6 +161,22 @@ Same as the re-score, one change: `components: { page-gap-strict: true }`. Sonne
 
 So `stands` was right every time, and 18 of the 22 false alarms are `cant-tell`. 44 of 62 bundles hit the 60K code limit, which is the likeliest reason it couldn't tell. One run each, so the spread between runs is unmeasured, and the two runs differ only in the wording.
 
+## Judge spread, `disprove-small` checked free, and `trace findings` (2026-11-07, owner: "lets do what we need + 1 and 2")
+
+**The judge run three times on Login (counts only).** One copy of the owner's project with `shared-through` on, `claim-links` and `disprove` off, the pop-up's page written once ($0.05), then copied three ways so each judge read the same input. Headless Opus, judge and checker, $0.25 each.
+
+| Run | Links | Findings |
+|---|---|---|
+| a | 15 agree | 0 |
+| b | 17 agree, 2 undocumented | 2 |
+| c | 17 agree, 2 undocumented | 2 |
+
+The same 2 findings both times they came. **What it shows:** run to run, the judge is fairly steady on what it raises. **What it found instead:** it raises little. Nov 5's run through the app's agents linked 36 with 8 gaps and a conflict; here no gap and no conflict, and the 4 findings Nov 5 kept and the disprover upheld (the Twitter-ID conflict, three undocumented limits) aren't in any run. Code rejected nothing: the judge's own answer holds only agrees and skips the other sentences, though its instructions say a claim with no match is a gap. Nothing checks that every sentence got an answer when `claim-links` is off. So today's Login loss with `claim-links` wasn't `claim-links`: it's the headless one-turn judge, or its default effort (the script starts Claude Code with no user settings). Not tested which.
+
+**`disprove-small` wasn't run: a free check showed it wouldn't help.** Rebuilding each `cant-tell` finding's bundle by code: 5 have no code at all (gaps with no page), and most of the rest are filled to the 60K limit with shared form and table widgets, often with no backend code. Screens stop at their endpoints (`splitAtEndpoints`), so a screen's bundle never holds the validator or service behind it, which is what the `cant-tell` reasons ask for. With `disprove-small` the same findings still have no backend code, so it wasn't paid for. `disprove-callers` adds the other direction, frontend callers of an endpoint, so it wouldn't help either.
+
+**`trace findings` (D152)** on Sonarr's queue after D151: 70 findings in three groups (22, 23, 25), 20 counted as with a developer. Not read by a person yet.
+
 ## Four more cyberbullying use cases (2026-11-07, counts only)
 
 Stream Tweets, Vectorize Tweets, Predict Cyberbullying Tweets and Logout (7.2.1.2.1-3, 5), the rest of the owner's first five, on a copy with `shared-through` and `disprove` on, headless Opus. 6 calls, $0.20. **Nothing to read from it:** code gave none of the four a candidate, the finder could pick only from the 3 written pages (Login's), and the judge wrote 11 gaps with no page, all `cant-tell` to the disprover. Why, read in the code: three run from `back_end/twitter_stream.py`, a script that is neither a screen nor an endpoint, so the graph has no page for it; Logout is in `front_end/src/components/navigation.js`, a component no page was written for. Open question in `questions.md`.

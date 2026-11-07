@@ -46,7 +46,7 @@ public static class TraceLinks
         return result;
     }
 
-    static JsonObject Link(JsonObject e, SpecIndex index)
+    internal static JsonObject Link(JsonObject e, SpecIndex index)
     {
         var pageId = (string?)e["page"]?["id"];
         var statementId = (string?)e["page"]?["statement"];

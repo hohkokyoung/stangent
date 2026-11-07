@@ -108,6 +108,7 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 **The list.** Some are built and off, some not built yet.
 
 - X.1 · Disprove step. *Re-scored and hand-checked 2026-11-07: 23% false alarms, 19 of 30 found.*
+- D152 · `trace findings`, the BA's queue as one readable file. *Built (no switch): not read by a person yet. Test: a BA reads it on a real document and answers from it.*
 - D151 · A page gap only when the code settles it, waiting for a person to confirm. *Built, off: `page-gap-strict`. Run on Sonarr 2026-11-07: found 24 of 30 with none lost, 0 real ones taken out, 31.4% false alarms (hand-checked). Left: the owner's call on the default and on `cant-tell` (`questions.md`).*
 - X.2 · Page verifier: keep or drop. *Test: Sonarr key, on and off.*
 - X.3 · Each rule tested for whether it can trigger. *Test: Sonarr plus planted dead rules.*

@@ -977,4 +977,53 @@ public class DisproveTests
         Assert.Equal("cant-tell", (string)e["verdict"]!);
         Assert.Equal("ba", TraceFindings.GoesTo(e));
     }
+
+    // ---- trace findings (D152) ----
+
+    static string Report(SpecApp app) => File.ReadAllText(Path.Combine(app.Root, FindingsReport.DefaultPath("shop")));
+
+    [Fact]
+    public void The_bas_queue_reads_strongest_evidence_first_and_an_unchanged_queue_writes_nothing()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        Answer(app, Prepare(app), Quoted("stands"));
+        var result = FindingsReport.Run(app.Root, "shop", null);
+        Assert.Equal((1, 0, true), ((int)result["findings"]!, (int)result["withDeveloper"]!, (bool)result["written"]!));
+        Assert.Equal(1, (int)result["groups"]!["code-shows"]!);
+        var text = Report(app);
+        Assert.Contains("## The code shows the difference (1)", text);
+        Assert.Contains(RealLine, text);
+        Assert.Contains("Core/OrderService.cs:5", text);
+        Assert.Contains($"entry `{(string)Entry(app)["id"]!}`", text);
+        Assert.Contains($"\"{Fsd50}\"", text);
+        Assert.False((bool)FindingsReport.Run(app.Root, "shop", null)["written"]!);
+    }
+
+    [Fact]
+    public void A_finding_with_a_developer_or_decided_is_counted_or_left_out_never_listed()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        Answer(app, Prepare(app), Quoted("refuted"));
+        var result = FindingsReport.Run(app.Root, "shop", null);
+        Assert.Equal((0, 1), ((int)result["findings"]!, (int)result["withDeveloper"]!));
+        Assert.DoesNotContain("### ", Report(app));
+
+        var trace = TraceFile.Load(app.Root);
+        trace["entries"]![0]!["decision"] = "code-wrong";
+        TraceFile.Save(app.Root, trace);
+        Assert.Equal((0, 0), ((int)FindingsReport.Run(app.Root, "shop", null)["findings"]!, (int)FindingsReport.Run(app.Root, "shop", null)["withDeveloper"]!));
+    }
+
+    [Fact]
+    public void With_no_code_check_a_finding_is_listed_as_not_checked_and_a_cant_tell_comes_last()
+    {
+        using var app = App();
+        Save(app, Conflict());
+        Assert.Equal("not-tested", FindingsReport.Group(Entry(app)));
+        Assert.Equal(1, (int)FindingsReport.Run(app.Root, "shop", null)["groups"]!["not-tested"]!);
+        Assert.Equal("cant-tell", FindingsReport.Group(new JsonObject { ["state"] = "gap", ["verdict"] = "cant-tell" }));
+        Assert.Equal(["code-shows", "sent-back", "not-tested", "cant-tell", "other"], FindingsReport.Groups.Select(g => g.Key));
+    }
 }
