@@ -40,7 +40,8 @@ public sealed class EntityTablesDetector : IDetector
                 {
                     var sets = type.GetMembers().OfType<IPropertySymbol>()
                         .Where(p => DbSetEntity(p.Type) is not null).Select(p => (Prop: p, Entity: DbSetEntity(p.Type)!)).ToList();
-                    foreach (var (prop, entity) in sets) Entity(ctx, entity, prop.Name, "dbset", decl);
+                    var contextId = ctx.NodeId(type) ?? "";
+                    foreach (var (prop, entity) in sets) Entity(ctx, entity, prop.Name, "dbset", decl, contextId);
                     // EF also maps every entity reached through a navigation from a mapped one, table named after the class (G3).
                     var seen = new HashSet<INamedTypeSymbol>(sets.Select(s => s.Entity), SymbolEqualityComparer.Default);
                     var queue = new Queue<INamedTypeSymbol>(seen);
@@ -48,7 +49,7 @@ public sealed class EntityTablesDetector : IDetector
                         foreach (var next in Navigations(ctx, queue.Dequeue(), notNavigations))
                             if (seen.Add(next))
                             {
-                                Entity(ctx, next, next.Name, "navigation", decl);
+                                Entity(ctx, next, next.Name, "navigation", decl, contextId);
                                 queue.Enqueue(next);
                             }
                 }
@@ -81,11 +82,17 @@ public sealed class EntityTablesDetector : IDetector
         }
     }
 
-    void Entity(ExtractContext ctx, INamedTypeSymbol entity, string defaultTable, string source, SyntaxNode at)
+    // R4: an entity's columns once per project and build, however many sources name it. Keyed by the extraction itself:
+    // this detector object is shared by every build in the process.
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ExtractContext, HashSet<string>> columnsDone = new();
+
+    void Entity(ExtractContext ctx, INamedTypeSymbol entity, string defaultTable, string source, SyntaxNode at, string context = "", string? assembly = null)
     {
         if (ctx.NodeId(entity) is not { } entityId) return;
         ctx.AddFact(Name, "entity", entityId, at, ("entity", entityId), ("table", defaultTable), ("source", source),
-            ("assembly", ctx.AssemblyName), ("project", ctx.ProjectId));
+            ("assembly", assembly ?? ctx.AssemblyName), ("project", ctx.ProjectId), ("context", context));
+        var done = columnsDone.GetOrCreateValue(ctx);
+        lock (done) if (!done.Add(entityId)) return;
         for (var t = entity; t is not null && ctx.InRepo(t); t = t.BaseType)
             foreach (var prop in t.GetMembers().OfType<IPropertySymbol>())
                 if (!prop.IsStatic && IsScalar(prop.Type) && ctx.NodeId(prop) is { } propId
@@ -115,20 +122,33 @@ public sealed class EntityTablesDetector : IDetector
     /// </summary>
     void Snapshot(ExtractContext ctx, SourceFile file, ClassDeclarationSyntax snapshot)
     {
-        foreach (var call in snapshot.DescendantNodes().OfType<InvocationExpressionSyntax>())
+        // R3: the snapshot belongs to the DbContext its [DbContext(typeof(X))] names, which may live in another project.
+        var context = file.Model.GetDeclaredSymbol(snapshot)?.GetAttributes()
+            .FirstOrDefault(a => a.AttributeClass?.Name == "DbContextAttribute")?.ConstructorArguments.FirstOrDefault().Value as INamedTypeSymbol;
+        var contextId = context is null ? "" : ctx.NodeId(context) ?? "";
+        var assembly = context?.ContainingAssembly?.Name ?? ctx.AssemblyName;
+        var blocks = snapshot.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Where(c => ExtractContext.InvokedName(c) == "Entity" && c.Expression is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.ValueText: "modelBuilder" } }
+                && c.ArgumentList.Arguments.Count >= 2 && c.ArgumentList.Arguments[1].Expression is LambdaExpressionSyntax)
+            .Select(c => (Call: c, Type: ExtractContext.StringValue(c.ArgumentList.Arguments[0].Expression, file.Model), Lambda: (LambdaExpressionSyntax)c.ArgumentList.Arguments[1].Expression))
+            .Where(b => b.Type is not null).ToList();
+        foreach (var (call, typeName, lambda) in blocks)
         {
-            if (ExtractContext.InvokedName(call) != "Entity" || call.Expression is not MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax receiver }
-                || receiver.Identifier.ValueText != "modelBuilder" || call.ArgumentList.Arguments.Count < 2
-                || ExtractContext.StringValue(call.ArgumentList.Arguments[0].Expression, file.Model) is not { } typeName
-                || call.ArgumentList.Arguments[1].Expression is not LambdaExpressionSyntax lambda) continue;
             // ToTable said directly in this entity's block, not in a nested owned type's.
             var toTable = lambda.Body.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()
                 .FirstOrDefault(i => ExtractContext.InvokedName(i) == "ToTable"
                     && !i.Ancestors().TakeWhile(a => a != lambda).OfType<InvocationExpressionSyntax>().Any(a => ExtractContext.InvokedName(a) is "OwnsOne" or "OwnsMany"));
             if (toTable is null || ExtractContext.StringValue(toTable.ArgumentList.Arguments.FirstOrDefault()?.Expression, file.Model) is not { } table) continue;
-            var type = file.Model.Compilation.GetTypeByMetadataName(typeName);
-            if (type is not null && ctx.NodeId(type) is not null) Entity(ctx, type, table, "snapshot", call);
-            else ctx.AddFact(Name, "snapshot-table", ctx.ProjectId, call, ("table", table), ("type", typeName), ("assembly", ctx.AssemblyName), ("project", ctx.ProjectId));
+            var type = file.Model.Compilation.GetTypeByMetadataName(typeName!);
+            if (type is not null && ctx.NodeId(type) is not null) { Entity(ctx, type, table, "snapshot", call, contextId, assembly); continue; }
+            // A join table: the types it links are the HasOne(…) of its blocks (EF writes relationships in a later block of the same name).
+            var links = blocks.Where(b => b.Type == typeName).SelectMany(b => b.Lambda.Body.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>())
+                .Where(i => ExtractContext.InvokedName(i) == "HasOne")
+                .Select(i => ExtractContext.StringValue(i.ArgumentList.Arguments.FirstOrDefault()?.Expression, file.Model))
+                .OfType<string>().Select(n => file.Model.Compilation.GetTypeByMetadataName(n) is { } t ? ctx.NodeId(t) : null).OfType<string>()
+                .Distinct().Order(StringComparer.Ordinal).ToList();
+            ctx.AddFact(Name, "snapshot-table", ctx.ProjectId, call, ("table", table), ("type", typeName!), ("assembly", assembly), ("project", ctx.ProjectId),
+                ("context", contextId), ("links", string.Join(";", links))); // ids hold "|"
         }
     }
 
@@ -157,9 +177,7 @@ public sealed class EntityTablesDetector : IDetector
     static bool StartsWord(string name, string word) =>
         name.StartsWith(word, StringComparison.Ordinal) && (name.Length == word.Length || !char.IsLower(name[word.Length]));
 
-    /// <summary>LINQ and EF query calls on a DbSet: a read. Anything else that names no write or read is neither (F2).</summary>
-    static readonly string[] QueryWords = ["As", "Include", "Then", "Select", "Order", "Take", "Skip", "To", "Project", "Sum", "Max", "Min", "Average",
-        "Contains", "Last", "Distinct", "Group", "Join", "Long", "Element", "Ignore", "From", "Tag", "Where"];
+
 
     /// <summary>
     /// Which entity a call saves or reads (G3, G3b): DbSet&lt;T&gt; methods, Add/Remove on a navigation collection,
@@ -181,7 +199,8 @@ public sealed class EntityTablesDetector : IDetector
         else if (DbSetEntity(receiverType) is { } set)
         {
             (entity, via) = (set, "dbset");
-            mode = Mode(method.Name) ?? (QueryWords.Any(w => StartsWord(method.Name, w)) ? "read" : null);
+            // R1: anything on a DbSet that isn't a write reads it: LINQ, EF, and the app's own query extensions (Includes, ApplyStatsFilter).
+            mode = Mode(method.Name) is "write" ? "write" : method.Name == "Entry" ? null : "read";
         }
         else if (ExtractContext.IsOrDerives(receiverType, "Microsoft.EntityFrameworkCore.DbContext")
                  && method.Name is "Add" or "AddAsync" or "AddRange" or "AddRangeAsync" or "Update" or "UpdateRange" or "Remove" or "RemoveRange" or "Attach" or "AttachRange"
@@ -236,11 +255,20 @@ public sealed class EntityTablesDetector : IDetector
 
         var tables = new Dictionary<string, (string Id, Label Label)>(StringComparer.Ordinal);
         // D164: where EF's snapshot is there, it's the list; a navigation guess it doesn't hold isn't a table.
-        var snapshot = facts.Where(f => f.Kind == "entity" && f["source"] == "snapshot").Select(f => f["entity"]).ToHashSet(StringComparer.Ordinal);
-        var snapshotAssemblies = facts.Where(f => (f.Kind == "entity" && f["source"] == "snapshot") || f.Kind == "snapshot-table").Select(f => f["assembly"]).ToHashSet(StringComparer.Ordinal);
+        // Per DbContext (R3): a navigation guess goes when its context's snapshot doesn't hold it. A snapshot with no
+        // [DbContext] attribute speaks for the contexts in its own assembly.
+        var snapshotFacts = facts.Where(f => (f.Kind == "entity" && f["source"] == "snapshot") || f.Kind == "snapshot-table").ToList();
+        var held = snapshotFacts.Where(f => f.Kind == "entity").Select(f => (f["context"], f["entity"])).ToHashSet();
+        var heldByAssembly = snapshotFacts.Where(f => f.Kind == "entity" && f["context"] == "").Select(f => (f["assembly"], f["entity"])).ToHashSet();
+        var snapshotContexts = snapshotFacts.Select(f => f["context"]).Where(c => c.Length > 0).ToHashSet(StringComparer.Ordinal);
+        var snapshotAssemblies = snapshotFacts.Where(f => f["context"] == "").Select(f => f["assembly"]).ToHashSet(StringComparer.Ordinal);
+        bool Dropped(Fact f) => f["source"] == "navigation"
+            && ((snapshotContexts.Contains(f["context"]) && !held.Contains((f["context"], f["entity"])))
+                || (snapshotAssemblies.Contains(f["assembly"]) && !heldByAssembly.Contains((f["assembly"], f["entity"]))));
         int Rank(string source) => source switch { "snapshot" => 0, "dbset" => 1, "mapping" => 2, _ => 3 };
-        foreach (var entity in facts.Where(f => f.Kind == "entity" && !(f["source"] == "navigation" && snapshotAssemblies.Contains(f["assembly"]) && !snapshot.Contains(f["entity"])))
-                     .OrderBy(f => Rank(f["source"])).ThenBy(f => f["entity"], StringComparer.Ordinal))
+        foreach (var entity in facts.Where(f => f.Kind == "entity" && !Dropped(f))
+                     .OrderBy(f => Rank(f["source"])).ThenBy(f => f["entity"], StringComparer.Ordinal)
+                     .ThenBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line))
         {
             var entityId = entity["entity"];
             if (tables.ContainsKey(entityId)) continue; // one table per entity: the snapshot, then a DbSet, then a map, then a navigation
@@ -259,12 +287,24 @@ public sealed class EntityTablesDetector : IDetector
             }
         }
     
+        var joins = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var t in facts.Where(f => f.Kind == "snapshot-table"))
-            ctx.AddNode(new Node($"table:{t["assembly"]}|{t["table"]}", NodeKind.Table, t["table"], t["project"], t.File, t.Line, t.Line));
+        {
+            var id = $"table:{t["assembly"]}|{t["table"]}";
+            ctx.AddNode(new Node(id, NodeKind.Table, t["table"], t["project"], t.File, t.Line, t.Line));
+            if (t["links"].Split(';') is [var a, var b]) joins.TryAdd($"{a};{b}", id);
+        }
         foreach (var access in facts.Where(f => f.Kind == "access").OrderBy(f => f.Owner, StringComparer.Ordinal))
         {
             // F3: an Add on a list counts only when the list's holder is a mapped entity; a many-to-many add writes a join table we don't name.
-            if (access["via"] == "join" || (access["via"] == "navigation" && !tables.ContainsKey(access["holder"]))) continue;
+            if (access["via"] == "join")
+            {
+                // R2: a many-to-many add writes the join table the snapshot says links the two types.
+                var pair = string.Join(";", new[] { access["entity"], access["holder"] }.Order(StringComparer.Ordinal));
+                if (joins.TryGetValue(pair, out var join)) ctx.AddEdge(access.Owner, join, EdgeKind.Writes, Label.Guessed, Name);
+                continue;
+            }
+            if (access["via"] == "navigation" && !tables.ContainsKey(access["holder"])) continue;
             if (tables.TryGetValue(access["entity"], out var table))
                 ctx.AddEdge(access.Owner, table.Id, access["mode"] == "write" ? EdgeKind.Writes : EdgeKind.Reads,
                     access["via"] == "dbset" ? table.Label : Label.Guessed, Name);

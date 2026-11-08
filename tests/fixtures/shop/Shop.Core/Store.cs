@@ -27,6 +27,12 @@ namespace Microsoft.EntityFrameworkCore
 namespace Microsoft.EntityFrameworkCore.Infrastructure
 {
     public abstract class ModelSnapshot;
+
+    [System.AttributeUsage(System.AttributeTargets.Class)]
+    public sealed class DbContextAttribute(System.Type contextType) : System.Attribute
+    {
+        public System.Type ContextType { get; } = contextType;
+    }
 }
 
 namespace Shop.Core
@@ -61,8 +67,32 @@ namespace Shop.Core
         public void Replace(Shelf shelf) => db.Update(shelf);
         public Task<int> Empty() => db.Shelves.Where(_ => false).ExecuteDeleteAsync();
         public IEnumerable<Shelf> Tracked() => db.Shelves.AsTracking();
+        // R1: the app's own query extension reads too.
+        public IEnumerable<Shelf> Load() => db.Shelves.Includes(1);
         // F3: a list on a plain object isn't a table.
         public void Plan(ShelfPlan plan) => plan.Items.Add(new ShelfItem());
+    }
+
+    public static class QueryExtensions
+    {
+        public static IEnumerable<T> Includes<T>(this DbSet<T> set, int what) => [];
+    }
+
+    // R3: a context whose snapshot sits in another project (Shop.Web).
+    public class Archive
+    {
+        public int Id { get; set; }
+        public List<ArchiveNote> Notes { get; set; } = [];
+    }
+
+    public class ArchiveNote
+    {
+        public int Id { get; set; }
+    }
+
+    public class ArchiveDb : DbContext
+    {
+        public DbSet<Archive> Archives { get; set; } = new();
     }
 
     public class ShelfPlan

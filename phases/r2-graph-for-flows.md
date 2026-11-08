@@ -161,3 +161,16 @@ One fresh agent on `ea483ef` + `41ed292`, read-only, ~141K tokens. Tests pass. 5
 Holds: F1/F8 (every documented operation is in the graph, checked by parameter names too, so Sonarr's 0 isn't loose matching),
 F2 writes (all 38 point at real tables), F3, tables (81 = the snapshot's, none mapped twice), F4–F7, F9, F10, a deterministic report.
 Older gaps found: inline `loadChildren: () => [...]` gives no page (Kavita `/theme`); `RuleForEach` isn't read. Nothing fixed yet: owner's call.
+
+## 8. R1–R5 fixed, 2026-11-08
+
+Owner: "Yes, fix R1–R5". Code only. Tests: 2,156 .NET + 46 extractor pass. Rebuilt graphs:
+- R1: Kavita `reads` 1,109 lines; `ChapterRepository.GetChapterAsync` reads `Chapter` again (any non-write DbSet call reads).
+- R2: many-to-many adds write their join table, read from the snapshot's `HasOne` pair: `AccountController.InviteUser`,
+  `UpdateAccount`, `LibraryController.AddLibrary` write `AppUserLibrary`; 22 writes to `AppUserLibrary`, `ChapterGenre`, `ChapterTag`.
+- R3: a snapshot speaks for the context its `[DbContext(typeof(X))]` names, in X's assembly (fixture: a snapshot in Shop.Web for
+  a Shop.Core context); the cross-check groups by context.
+- R4: column facts 1,678 → 839.
+- R5: each OpenAPI file read on its own; one that can't be read, or where under one in five operations fit (someone else's API), is `ignored`.
+Cross-check after: Sonarr 0 disagreements; Kavita 0 on the API, 2 true on EF (`AspNetRoles`, `AspNetUserRoles`, from Identity's base context).
+Not done: the older gaps the check found (inline `loadChildren` pages, `RuleForEach`), G9–G11, nopCommerce. No third fresh round.

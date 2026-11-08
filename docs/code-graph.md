@@ -242,8 +242,11 @@ Also read by flows:
   columns or owned; dropped where a snapshot exists and doesn't hold them).
 - **Writes and reads.** Writes: `DbSet` Add/Update/Remove/Attach, `context.Add/Update/Remove(x)`, `Entry(x).State =` (not
   Unchanged/Detached), `ExecuteDelete`/`ExecuteUpdate` back to their DbSet, `Add`/`Remove` on a mapped entity's collection
-  (many-to-many adds skipped), and a generic repository's write-named methods. Reads: LINQ/EF query calls on a DbSet and
-  read-named repository methods. A name word must be whole (`All`, `AllAsync`, never `Allow`); anything else is neither.
+  (a many-to-many add writes the join table the snapshot's `HasOne` pair names; without a snapshot, nothing), and a generic
+  repository's write-named methods. Reads: any other call on a DbSet (LINQ, EF, the app's own query extensions; not `Entry`)
+  and read-named repository methods. A name word must be whole (`All`, `AllAsync`, never `Allow`).
+- **Which context a snapshot speaks for.** Its `[DbContext(typeof(X))]`, even in another project; its tables take X's assembly,
+  and only X's navigation guesses are dropped. A snapshot without the attribute speaks for its own assembly.
 
 ## Cross-check against the framework's own answer (D164)
 
@@ -253,8 +256,10 @@ file would mislead it.
 - **OpenAPI.** Each `*openapi*.json` / `*swagger*.json` outside `node_modules`, `bin`, `obj`: its operations against the endpoints of
   the project whose folder holds it (the whole repo when none does), by verb and path shape (`{id:int?}` = `{id}`; `ANY` fits any
   verb): `missingFromGraph` and `notInOpenapi`.
-- **EF snapshot.** Per assembly with a snapshot: entities our rules found that it doesn't hold (`foundByRulesOnly`), and ones it holds
-  that no rule found (`inSnapshotOnly`).
+- **EF snapshot.** Per DbContext with a snapshot: entities our rules found that it doesn't hold (`foundByRulesOnly`), and ones it
+  holds that no rule found (`inSnapshotOnly`).
+- A file that can't be read, or of whose operations fewer than one in five fit any endpoint (a client's spec for someone else's
+  API), is listed as `ignored` with the reason and counts for nothing.
 
 Not read yet: constants' values (G9), SignalR messages (G10), background jobs marked as such (G11), minimal APIs'
 `RequireAuthorization()`, React route-guard wrappers, and resolving text keys to the words in the language file.

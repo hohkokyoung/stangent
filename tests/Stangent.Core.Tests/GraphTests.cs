@@ -137,6 +137,15 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.Equal("table:Shop.Core|Shelves", Lines(EdgeKind.Writes, "ShelfService.Replace"));
         Assert.Equal("table:Shop.Core|Shelves", Lines(EdgeKind.Writes, "ShelfService.Empty"));
         Assert.Equal("table:Shop.Core|Shelves", Lines(EdgeKind.Reads, "ShelfService.Tracked"));
+        Assert.Equal("table:Shop.Core|Shelves", Lines(EdgeKind.Reads, "ShelfService.Load"));   // R1
+        // R2: a many-to-many add writes the join table the snapshot says links the two.
+        Assert.Contains(Edges(EdgeKind.Writes), e => e.Source == "Shop.Web|M:Shop.Web.Data.CouponService.Tag(Shop.Web.Data.Coupon)" && e.Target == "table:Shop.Web|CouponCouponTag");
+        // R3: a snapshot in another project names its context's tables, under the context's assembly; its navigation guesses go.
+        Assert.Contains(Edges(EdgeKind.Maps), e => e.Source == "table:Shop.Core|Archives" && e.Label == Label.Certain);
+        Assert.DoesNotContain(shop.Graph.AllNodes, n => n.Kind == NodeKind.Table && n.Name == "ArchiveNote");
+        Assert.Contains(shop.Graph.AllNodes, n => n.Id == "table:Shop.Core|ShelfItem");   // another context's guess stays
+        // R4: one set of column facts per entity.
+        Assert.Single(shop.Graph.AllFacts, f => f.Kind == "column" && f.Owner == "Shop.Web|P:Shop.Web.Data.Coupon.Id");
         // F3: a list on an object that isn't an entity; F10: Allowed isn't All.
         Assert.Equal("", Lines(EdgeKind.Writes, "ShelfService.Plan"));
         Assert.Equal("", Lines(EdgeKind.Reads, "LedgerService.May"));
@@ -173,7 +182,9 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     {
         Assert.NotNull(shop.Stats.CrossCheck);
         var report = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(CrossCheck.PathFor(shop.Root)))!;
-        var api = report["openapi"]!.AsArray().Single()!;
+        var api = report["openapi"]!.AsArray().Single(a => (string?)a!["file"] == "Shop.Web/openapi.json")!;
+        // R5: someone else's API (a client's spec) is set aside, not counted.
+        Assert.Contains("not this repo's API", (string?)report["openapi"]!.AsArray().Single(a => (string?)a!["file"] == "vendor/payments-openapi.json")!["ignored"]);
         Assert.Equal("project:Shop.Web/Shop.Web.csproj", (string?)api["scope"]);
         // GET /api/stock/{id} is Shop.Stock's: served elsewhere in the repo, so not missing.
         Assert.Equal(["GET /api/gone"], api["missingFromGraph"]!.AsArray().Select(x => (string)x!).ToList());
@@ -181,7 +192,8 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.Contains("POST /api/shelf", notInOpenapi);
         Assert.DoesNotContain("POST /api/orders", notInOpenapi);
         Assert.DoesNotContain("GET /api/shelf/{id:int}", notInOpenapi);   // {id:int} and {id} are the same shape
-        var ef = report["efSnapshot"]!.AsArray().Single()!;
+        var ef = report["efSnapshot"]!.AsArray().Single(e => (string?)e!["context"] == "Shop.Web|T:Shop.Web.Data.WebDb")!;
+        Assert.Contains(report["efSnapshot"]!.AsArray(), e => (string?)e!["context"] == "Shop.Core|T:Shop.Core.ArchiveDb" && (int?)e["tables"] == 1);
         Assert.Equal(["Shop.Web|T:Shop.Web.Data.CouponNote"], ef["foundByRulesOnly"]!.AsArray().Select(x => (string)x!).ToList());
         Assert.Empty(ef["inSnapshotOnly"]!.AsArray());
         Assert.Equal("/content/{}", CrossCheck.Normalize("/content/{**path:regex(^(?!api/).*)}"));

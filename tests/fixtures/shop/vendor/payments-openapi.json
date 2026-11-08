@@ -1,0 +1,8 @@
+{
+  "openapi": "3.0.1",
+  "info": { "title": "A payment service this shop calls", "version": "1" },
+  "paths": {
+    "/v1/charges": { "post": {} }, "/v1/charges/{id}": { "get": {} }, "/v1/refunds": { "post": {} },
+    "/v1/customers": { "get": {}, "post": {} }, "/v1/balance": { "get": {} }
+  }
+}

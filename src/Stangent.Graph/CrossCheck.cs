@@ -29,47 +29,33 @@ public static class CrossCheck
         var endpoints = graph.AllNodes.Where(n => n.Kind == NodeKind.Endpoint).ToList();
         foreach (var file in OpenApiFiles(root))
         {
-            if (Read(file) is not { } doc || doc["paths"] is not JsonObject paths) continue;
             var rel = Path.GetRelativePath(root, file).Replace('\\', '/');
-            var scope = ProjectOf(root, file);
-            var inScope = endpoints.Where(e => scope is null || e.Project == scope).ToList();
-            var basePath = (string?)doc["basePath"] ?? "";
-            var documented = new HashSet<(string Verb, string Path)>();
-            foreach (var (route, item) in paths)
-                if (item is JsonObject ops)
-                    foreach (var verb in Verbs.Where(ops.ContainsKey))
-                        documented.Add((verb.ToUpperInvariant(), Normalize(basePath.TrimEnd('/') + route)));
-            static (string Verb, string Path, string Name) Shape(Node e) => (e.Name[..e.Name.IndexOf(' ')], Normalize(e.Name[(e.Name.IndexOf(' ') + 1)..]), e.Name);
-            var mapped = inScope.Select(Shape).ToList();
-            // A host's OpenAPI documents every project it serves (Sonarr's lists Sonarr.Http's login and ping): an operation is
-            // missing only when no endpoint anywhere fits it; an endpoint is undocumented only when it's the file's own project's.
-            var everywhere = endpoints.Select(Shape).ToList();
-            var notInOpenapi = mapped.Where(m => !documented.Any(d => d.Path == m.Path && (m.Verb == "ANY" || d.Verb == m.Verb))).Select(m => m.Name).Distinct().Order(StringComparer.Ordinal).ToList();
-            var missing = documented.Where(d => !everywhere.Any(m => m.Path == d.Path && (m.Verb == "ANY" || m.Verb == d.Verb))).Select(d => $"{d.Verb} {d.Path}").Order(StringComparer.Ordinal).ToList();
+            JsonObject? entry;
+            try { entry = CompareOpenApi(root, file, rel, endpoints); }
+            catch (Exception e) when (e is not OperationCanceledException) { entry = new JsonObject { ["file"] = rel, ["ignored"] = $"couldn't be read: {e.GetType().Name}" }; }
+            if (entry is null) continue;
+            openapi.Add(entry);
+            if (entry.ContainsKey("ignored")) continue;
             sources++;
-            disagreements += notInOpenapi.Count + missing.Count;
-            openapi.Add(new JsonObject
-            {
-                ["file"] = rel, ["scope"] = scope ?? "(whole repo)", ["operations"] = documented.Count, ["endpoints"] = inScope.Count,
-                ["missingFromGraph"] = new JsonArray([.. missing.Select(m => (JsonNode)m)]),
-                ["notInOpenapi"] = new JsonArray([.. notInOpenapi.Select(m => (JsonNode)m)]),
-            });
+            disagreements += entry["missingFromGraph"]!.AsArray().Count + entry["notInOpenapi"]!.AsArray().Count;
         }
         report["openapi"] = openapi;
 
         var ef = new JsonArray();
         var entities = graph.AllFacts.Where(f => f.Detector == "entity-tables" && f.Kind == "entity").ToList();
-        foreach (var assembly in entities.Where(f => f["source"] == "snapshot").Select(f => f["assembly"]).Distinct().Order(StringComparer.Ordinal))
+        // Per DbContext its snapshot names (R3); a snapshot without [DbContext] speaks for its assembly.
+        static string Key(Fact f) => f["context"].Length > 0 ? f["context"] : "assembly:" + f["assembly"];
+        foreach (var key in entities.Where(f => f["source"] == "snapshot").Select(Key).Distinct().Order(StringComparer.Ordinal))
         {
-            var snapshot = entities.Where(f => f["assembly"] == assembly && f["source"] == "snapshot").ToDictionary(f => f["entity"], f => f["table"], StringComparer.Ordinal);
-            var byRules = entities.Where(f => f["assembly"] == assembly && f["source"] != "snapshot").Select(f => f["entity"]).ToHashSet(StringComparer.Ordinal);
+            var snapshot = entities.Where(f => f["source"] == "snapshot" && Key(f) == key).GroupBy(f => f["entity"]).ToDictionary(g => g.Key, g => g.First()["table"], StringComparer.Ordinal);
+            var byRules = entities.Where(f => f["source"] is "dbset" or "navigation" && Key(f) == key).Select(f => f["entity"]).ToHashSet(StringComparer.Ordinal);
             var rulesOnly = byRules.Where(e => !snapshot.ContainsKey(e)).Order(StringComparer.Ordinal).ToList();
             var snapshotOnly = snapshot.Keys.Where(e => !byRules.Contains(e)).Order(StringComparer.Ordinal).Select(e => $"{e} ({snapshot[e]})").ToList();
             sources++;
             disagreements += rulesOnly.Count + snapshotOnly.Count;
             ef.Add(new JsonObject
             {
-                ["assembly"] = assembly, ["tables"] = snapshot.Count,
+                ["context"] = key, ["tables"] = snapshot.Count,
                 ["foundByRulesOnly"] = new JsonArray([.. rulesOnly.Select(e => (JsonNode)e)]),
                 ["inSnapshotOnly"] = new JsonArray([.. snapshotOnly.Select(e => (JsonNode)e)]),
             });
@@ -85,6 +71,37 @@ public static class CrossCheck
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, report.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) + "\n");
         return new CrossCheckStats(sources, disagreements);
+    }
+
+    /// <summary>One OpenAPI file against the endpoints; null when it isn't one. R5: a file almost none of whose operations fit any
+    /// endpoint documents someone else's API (a client's spec), so it's set aside, not counted.</summary>
+    static JsonObject? CompareOpenApi(string root, string file, string rel, List<Node> endpoints)
+    {
+        if (Read(file) is not { } doc || doc["paths"] is not JsonObject paths) return null;
+        var scope = ProjectOf(root, file);
+        var inScope = endpoints.Where(e => scope is null || e.Project == scope).ToList();
+        var basePath = doc["basePath"] is JsonValue v && v.TryGetValue<string>(out var b) ? b : "";
+        var documented = new HashSet<(string Verb, string Path)>();
+        foreach (var (route, item) in paths)
+            if (item is JsonObject ops)
+                foreach (var verb in Verbs.Where(ops.ContainsKey))
+                    documented.Add((verb.ToUpperInvariant(), Normalize(basePath.TrimEnd('/') + route)));
+        static (string Verb, string Path, string Name) Shape(Node e) => (e.Name[..e.Name.IndexOf(' ')], Normalize(e.Name[(e.Name.IndexOf(' ') + 1)..]), e.Name);
+        // A host's OpenAPI documents every project it serves (Sonarr's lists Sonarr.Http's login and ping): an operation is
+        // missing only when no endpoint anywhere fits it; an endpoint is undocumented only when it's the file's own project's.
+        var everywhere = endpoints.Select(Shape).ToList();
+        var mapped = inScope.Select(Shape).ToList();
+        bool Fits((string Verb, string Path) d) => everywhere.Any(m => m.Path == d.Path && (m.Verb == "ANY" || m.Verb == d.Verb));
+        var missing = documented.Where(d => !Fits(d)).Select(d => $"{d.Verb} {d.Path}").Order(StringComparer.Ordinal).ToList();
+        if (documented.Count >= 5 && (documented.Count - missing.Count) * 5 < documented.Count)
+            return new JsonObject { ["file"] = rel, ["ignored"] = $"only {documented.Count - missing.Count} of {documented.Count} operations fit any endpoint: not this repo's API" };
+        var notInOpenapi = mapped.Where(m => !documented.Any(d => d.Path == m.Path && (m.Verb == "ANY" || d.Verb == m.Verb))).Select(m => m.Name).Distinct().Order(StringComparer.Ordinal).ToList();
+        return new JsonObject
+        {
+            ["file"] = rel, ["scope"] = scope ?? "(whole repo)", ["operations"] = documented.Count, ["endpoints"] = inScope.Count,
+            ["missingFromGraph"] = new JsonArray([.. missing.Select(m => (JsonNode)m)]),
+            ["notInOpenapi"] = new JsonArray([.. notInOpenapi.Select(m => (JsonNode)m)]),
+        };
     }
 
     /// <summary>A path compared by shape: lower case, no trailing slash, every <c>{…}</c> the same.</summary>
@@ -131,7 +148,7 @@ public static class CrossCheck
             if (new FileInfo(file).Length > 50_000_000) return null;
             return JsonNode.Parse(File.ReadAllText(file)) is JsonObject o && (o.ContainsKey("openapi") || o.ContainsKey("swagger")) ? o : null;
         }
-        catch (Exception e) when (e is JsonException or IOException) { return null; }
+        catch (Exception e) when (e is JsonException or IOException or InvalidOperationException or FormatException) { return null; }
     }
 
     /// <summary>The project whose folder holds the file (its nearest .csproj up to the repo root), or null for the whole repo.</summary>
