@@ -265,3 +265,33 @@ facts (468, 522), Kavita's own filters (above), Sonarr's one ❓ (above).
 | a server-written URL in a script (`'@Url.Action("Add")'`) is ❓, not resolved to its endpoint | yes, a common MVC pattern |
 | a partial looked up through the requesting controller's folder | partly: shared views calling controller-specific partials |
 | an inline handler isn't a point: its calls belong to the view | yes, but a flow can still join button → binding → view |
+
+## 11. Third fresh check (D158) of N1–N5, 2026-11-08
+
+One fresh agent on `af0a8e2` + `0474b12`, read-only, against the existing nopCommerce graph (no rebuild). **~199K tokens, over the
+120–170K said.** Sampled ~40 forms, 20 buttons, 14 action → view lines, all 8,166 auth facts, all 37 button → script joins, the routing
+area split, and Register step by step. Plugin forms couldn't be checked (compiled only at runtime). 13 findings, all general;
+1–4 confirmed by hand (source line and graph row). Nothing fixed yet: owner's call.
+
+| # | Severity | Finding | Fix suggested |
+|---|---|---|---|
+| T1 | wrong ✅ | a tag-helper form with no `method` is read as GET (`RazorViewsDetector` `?? "get"`); ASP.NET's form tag helper writes `post`. 48 forms reach the display action, not the `[HttpPost]` one; Admin "Clear cache" is ❓ though its endpoint exists | `post` when the tag helper builds the form; GET only for a plain `<form>` |
+| T2 | wrong ✅ | a plain-script global declared in two files resolves to one: `addAntiForgeryToken`, `setLocation`… in both `admin.common.js` and `public.common.js`; 74 ✅ calls go to the admin file, 17 from storefront pages that never load it | several declarations → 🟡 to each (or by which layout loads which script) |
+| T3 | wrong ✅ | a button's `formaction`/`formmethod` is ignored: Save, Save & continue and Delete all post to the form's action (`ProductSpecAttributeAddOrEdit.cshtml:36–65`) | `formaction` gives the button its own target; server-written → ❓ |
+| T4 | silent gap | 0 of 87 view components reach their view: they call the base helper `NopViewComponent.ViewAsync`, which has the only ❓ | `Components/{name}/Default` per derived component (🟡), or ❓ on each |
+| T5 | silent gap | access filters at the action stage whose names don't say Access/Permission are missed (`[ValidateIpAddress]` on every admin action, `[ForceMultiFactorAuthentication]`, `[ValidatePassword]`), and so are global filters (`options.Filters.Add<…>`) | global filters as `auth` `from: global`; an action filter that sets `context.Result` → 🟡 or ❓ |
+| T6 | misleading | non-access filters count as `auth` only by their stage: HTTPS/WWW redirects, external sign-out, the honeypot (~3,788 of 8,166) | stage-only matches 🟡, or kept out unless the name or a 401/403/challenge says so |
+| T7 | misleading | a script handler collapses to the one repo function it calls (jQuery calls don't resolve): all 37 button → script joins point at helpers (`updateTable` 29) | a handler is a function only when its body is that one call; else inline |
+| T8 | silent | nopCommerce's theme rule (`ThemeableViewLocationExpander`) isn't modelled: the theme's `Head.cshtml` wins at run time but has no `renders` line | with a view location expander present, same-named views under other roots as 🟡 candidates, or ❓ |
+| T9 | silent gap | 143 submit buttons in partials (form in the parent view) get `handler ""` and no ❓; one ❓ says GET where the parent posts | join to the form around the `<partial>` call (🟡); a button's `name` against action selectors |
+| T10 | minor | 130 POST forms link to both the `ANY` and the `POST` endpoint of a path; routing prefers the one with the verb | drop `ANY` when a same-path endpoint has the form's verb |
+| T11 | minor | a partial named with a folder and no extension is ❓ (`../ReviewType/List`) though MVC finds it | add `.cshtml` when missing |
+| T12 | suspect | any method starting `With`/`When`/`Unless` is a modifier, so a custom `.Within(…)` validator would vanish; none on nopCommerce | decide by receiver: options builder vs rule builder |
+| T13 | minor | third-party libraries in a plugin's `Content/js` (`purify.js`, `marked.umd.js`) read as the app's own | skip UMD-wrapped or licence-headed files |
+
+**Holds:** Register, all 7 steps against source; named-route forms; explicit admin POST forms (plus T10's extra `ANY`); forms with no
+action are 🟡 and fall back to the view's action; 3 of the 5 ❓ forms are truly unknowable (the other 2 are T1 and T9); localizer keys
+14/14; action → view 14/14, `[ActionName]` and area folders included, none ✅; no admin action outside `/Admin/…` and no public one
+inside; `ignore = true` on 48 facts; enums by name; `WithMessageAwait` kept as an expression; script file choice; a literal jQuery
+URL 🟡 to the right endpoint. Older, outside N1–N5: Install's form reaches `ANY /{*}`; action choice by a button's name
+(`FormValueRequired`) isn't modelled, but `routes-to` is 🟡, so it's honest.
