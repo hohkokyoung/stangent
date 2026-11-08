@@ -67,8 +67,8 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     {
         Assert.Empty(shop.Stats.LoadErrors);
         Assert.Equal(4, shop.Stats.Projects);
-        Assert.Equal(2, shop.Stats.Frontends);
-        Assert.Equal(6, shop.Graph.AllNodes.Count(n => n.Kind == NodeKind.Project)); // 4 C# + 2 frontends
+        Assert.Equal(3, shop.Stats.Frontends);   // Angular, React, and Shop.Web's plain scripts (N5)
+        Assert.Equal(7, shop.Graph.AllNodes.Count(n => n.Kind == NodeKind.Project)); // 4 C# + 3 frontends
     }
 
     [Fact]
@@ -190,6 +190,70 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.Equal("GreaterThan(0) fluentvalidation 'Order at least one' yes; NotEmpty() fluentvalidation ''", Rules("Quantity"));
         // F9: each rule carries its own line.
         Assert.Equal(2, shop.Graph.AllFacts.Where(f => f.Kind == "rule" && f.Owner == "Shop.Core|P:Shop.Core.NewOrder.Quantity").Select(f => f.Line).Distinct().Count());
+    }
+
+    [Fact]
+    public void Razor_views_are_points_with_their_forms_buttons_and_what_they_render()
+    {
+        const string view = "view:Shop.Web/Views/Account/Register.cshtml";
+        const string register = "endpoint:Shop.Web|POST /{lang}/register";
+        const string account = "Shop.Web|M:Shop.Web.Controllers.AccountController.";
+        string View(string path) => "view:Shop.Web/Views/" + path;
+        bool Has(string kind, string source, string target, Label? label = null) =>
+            Edges(kind).Any(e => e.Source == source && e.Target == target && (label is null || e.Label == label));
+
+        // N1: a point per view, its @model, what it renders.
+        Assert.Equal(NodeKind.View, NodeById(view)?.Kind);
+        Assert.Equal("Shop.Web/Views/Account/Register.cshtml", NodeById(view)?.File);
+        Assert.True(Has(EdgeKind.Uses, view, "Shop.Web|T:Shop.Web.Models.RegisterModel"));
+        Assert.True(Has(EdgeKind.Uses, view, "Shop.Web|P:Shop.Web.Models.RegisterModel.Email"));   // asp-for
+        Assert.True(Has(EdgeKind.Renders, view, View("Account/_Consent.cshtml")));                // <partial>, beside the view
+        Assert.True(Has(EdgeKind.Renders, view, "Shop.Web|T:Shop.Web.Components.NewsletterViewComponent"));
+        Assert.True(Has(EdgeKind.Renders, "Shop.Web|M:Shop.Web.Components.NewsletterViewComponent.Invoke", View("Shared/Components/Newsletter/Default.cshtml")));
+
+        // Forms reach their endpoints: by route name through a constant, and by Html.BeginForm's action and controller.
+        Assert.True(Has(EdgeKind.CallsHttp, view + "#form1", register, Label.Certain));
+        Assert.True(Has(EdgeKind.CallsHttp, view + "#form3", register, Label.Certain));
+        Assert.Equal("POST", shop.Graph.AllFacts.Single(f => f.Kind == "form" && f.Owner == view + "#form1")["method"]);
+        // Close has no route, so its form reaches nothing: said, not silent.
+        Assert.Contains(shop.Graph.AllBlindSpots, b => b.Owner == view + "#form2" && b.Reason.Contains("matched no endpoint"));
+
+        // Buttons: which form they submit, their text keys, their line.
+        var events = shop.Graph.AllFacts.Where(f => f.Kind == "ui-event" && f.Owner == view)
+            .Select(f => $"{f.Line} {f["element"]} {f["event"]} {f["handler"].Replace(view, "")} [{f["keys"]}] '{f["text"]}' {f["id"]}").ToList();
+        Assert.Equal([
+            "10 button submit #form1 [Account.Register.Button] '' register-button",
+            "14 input submit #form2 [] 'Close account' ",
+            "18 button submit #form3 [] 'Register again' ",
+            "20 button click  [Account.CheckEmail] '' check-email",
+        ], events);
+
+        // N2: View(…) reaches its view by MVC's lookup rules: the action's name, a name given, a partial in Shared.
+        Assert.True(Has(EdgeKind.Renders, account + "Register", view));
+        Assert.True(Has(EdgeKind.Renders, account + "Register(Shop.Web.Models.RegisterModel)", view));
+        Assert.True(Has(EdgeKind.Renders, account + "Welcome", View("Account/Done.cshtml")));
+        Assert.True(Has(EdgeKind.Renders, account + "Close", View("Shared/_Closed.cshtml")));
+
+        // An area: [Area] from a base controller, ASP.NET's {area:exists} route, the form's default controller, a partial beside its view.
+        const string admin = "view:Shop.Web/Areas/Admin/Views/StockAdmin/Clear.cshtml";
+        Assert.True(Has(EdgeKind.CallsHttp, admin + "#form1", "endpoint:Shop.Web|POST /Admin/StockAdmin/Clear/{id?}"));
+        Assert.True(Has(EdgeKind.Renders, "Shop.Web|M:Shop.Web.Areas.Admin.Controllers.StockAdminController.Clear", admin));
+        Assert.True(Has(EdgeKind.Renders, admin, "view:Shop.Web/Areas/Admin/Views/StockAdmin/_Row.cshtml"));
+
+        // N5: the app's own plain script: its jQuery call reaches an endpoint, and the button it binds by id calls it. Libraries and
+        // minified files aren't read. The view's inline script belongs to the view.
+        const string script = "ts|Shop.Web/wwwroot/js/shop.cart.js#checkEmail";
+        Assert.True(Has(EdgeKind.Calls, view, script, Label.Guessed));
+        Assert.True(Has(EdgeKind.CallsHttp, script, "endpoint:Shop.Web|POST /api/orders"));
+        Assert.True(Has(EdgeKind.CallsHttp, view, "endpoint:Shop.Web|POST /api/legacy/place"));
+        Assert.DoesNotContain(shop.Graph.AllNodes, n => n.File is { } f && (f.Contains("wwwroot/lib/") || f.EndsWith(".min.js", StringComparison.Ordinal)));
+        Assert.Contains(shop.Graph.AllFacts, f => f.Kind == "dom-event" && f.Owner == view && f["selector"] == "#register-button" && f.Line == 22);
+        // A URL the server writes into the script ('@Url.Action("Close")') is made at runtime: ❓, never a made-up path, even after
+        // a comment holding a quote.
+        Assert.Contains(shop.Graph.AllBlindSpots, b => b.Owner == view && b.Line == 25 && b.Reason == "HTTP POST to a URL built at runtime");
+
+        // A view the compiler made nothing for is a blind spot.
+        Assert.Contains(shop.Graph.AllBlindSpots, b => b.File == "Shop.Web/Views/Legacy/Old.cshtml" && b.Reason.StartsWith("view not read", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -461,7 +525,7 @@ public class GraphBuildTests
             File.AppendAllText(Path.Combine(root, "Shop.Stock", "Extra.cs"), "namespace Shop.Stock;\npublic static class Extra { public static int Twice(int x) => x * 2; }\n");
             var (incremental, stats) = await GraphBuilder.BuildAsync(repo, new BuildOptions(Restore: false), ct);
             Assert.Equal(1, stats.Extracted);   // only Shop.Stock: nothing references it
-            Assert.Equal(5, stats.Reused);      // the other 3 C# projects and both frontends
+            Assert.Equal(6, stats.Reused);      // the other 3 C# projects and the 3 frontends
             var (full, _) = await GraphBuilder.BuildAsync(repo, new BuildOptions(Restore: false, Full: true), ct);
             Assert.Equal(Export(full, root, "c"), Export(incremental, root, "d"));
             Assert.Contains(incremental.AllNodes, n => n.Name == "Extra.Twice");
@@ -492,7 +556,7 @@ public class GraphBuildTests
 
             // Reload: the config is read when the repo is discovered.
             var (graph, stats) = await GraphBuilder.BuildAsync(StangentRepo.Discover(root), new BuildOptions(Restore: false), ct);
-            Assert.Equal(6, stats.Extracted); // 4 C# projects and 2 frontends
+            Assert.Equal(7, stats.Extracted); // 4 C# projects and 3 frontends
             Assert.DoesNotContain(graph.AllNodes, n => n.Id == "table:Shop.Core|Order");
         }
         finally

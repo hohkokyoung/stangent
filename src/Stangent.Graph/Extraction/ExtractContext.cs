@@ -23,6 +23,10 @@ public sealed class ExtractContext(
     public Compilation Compilation { get; } = compilation;
     public string AssemblyName => Compilation.AssemblyName ?? "";
     public IReadOnlyList<SourceFile> Files { get; } = files;
+    /// <summary>N1: the Razor compiler's C# for each view, with the view's repo path as <see cref="SourceFile.RelativePath"/>. Detectors other than <c>razor-views</c> never see it.</summary>
+    public IReadOnlyList<SourceFile> RazorFiles { get; init; } = [];
+    /// <summary>N1: every <c>.cshtml</c> file the project owns (absolute paths), so a view the compiler made nothing for is a blind spot.</summary>
+    public IReadOnlyList<string> ViewFiles { get; init; } = [];
     public ProjectFragment Fragment { get; } = fragment;
     /// <summary>This detector's settings from <c>stangent.yaml</c> (empty when none).</summary>
     public IReadOnlyDictionary<string, List<string>> Settings { get; set; } = settings;

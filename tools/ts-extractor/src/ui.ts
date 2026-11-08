@@ -157,3 +157,62 @@ export function constantValues(ctx: Context, sf: ts.SourceFile) {
     }
   }
 }
+
+const JQUERY_EVENTS = new Set(["click", "submit", "change", "input", "keyup", "keydown", "dblclick", "focus", "blur"]);
+
+/**
+ * N5: plain JavaScript's event bindings, as `dom-event` facts: `$('#id').on('click', fn)`, `$('#id').click(fn)`,
+ * `$(document).on('click', '#id', fn)`, `document.getElementById('id').addEventListener('click', fn)`. The selector is
+ * what joins them to a server-rendered view's buttons; the handler is a point when it resolves (as for React).
+ */
+export function domEvents(ctx: Context, sf: ts.SourceFile) {
+  const value = (e: ts.Expression | undefined) => (e ? stringValue(e, ctx.checker) : null);
+  const jquery = (e: ts.Expression): string | null => {
+    if (!ts.isCallExpression(e) || !ts.isIdentifier(e.expression) || (e.expression.text !== "$" && e.expression.text !== "jQuery")) return null;
+    const arg = e.arguments[0];
+    if (!arg) return null;
+    if (ts.isIdentifier(arg) && (arg.text === "document" || arg.text === "window")) return arg.text;
+    const v = value(arg);
+    return v && v !== RUNTIME && !v.includes("{*}") ? v : null;
+  };
+  const dom = (e: ts.Expression): string | null => {
+    if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression)) return null;
+    const by = e.expression.name.text;
+    const v = value(e.arguments[0]);
+    if (!v || v === RUNTIME || v.includes("{*}")) return null;
+    return by === "getElementById" ? `#${v}` : by === "querySelector" || by === "querySelectorAll" ? v : null;
+  };
+  const visit = (n: ts.Node) => {
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) {
+      const name = n.expression.name.text;
+      const target = n.expression.expression;
+      let selector: string | null = null;
+      let event: string | null = null;
+      let handler: ts.Expression | undefined;
+      const sel = jquery(target);
+      if (sel !== null) {
+        if (["on", "one", "bind", "delegate"].includes(name) && n.arguments.length >= 2) {
+          event = value(n.arguments[0]);
+          const delegated = n.arguments.length >= 3 ? value(n.arguments[1]) : null;
+          selector = delegated && delegated !== RUNTIME ? delegated : sel;
+          handler = n.arguments[n.arguments.length - 1];
+        } else if (JQUERY_EVENTS.has(name) && n.arguments.length >= 1) {
+          event = name;
+          selector = sel;
+          handler = n.arguments[n.arguments.length - 1];
+        }
+      } else if (name === "addEventListener") {
+        selector = dom(target) ?? (ts.isIdentifier(target) && (target.text === "document" || target.text === "window") ? target.text : null);
+        event = value(n.arguments[0]);
+        handler = n.arguments[1];
+      }
+      if (selector && event && event !== RUNTIME && handler) {
+        ctx.out.fact("ui", "dom-event", ctx.ownerId(n), ctx.rel(sf.fileName), ctx.line(n), {
+          selector, event: event.split(".")[0], handler: handlerOf(ctx, handler),
+        });
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+}

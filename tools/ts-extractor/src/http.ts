@@ -157,6 +157,24 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
     return;
   }
 
+  // N5: jQuery: $.ajax({ url, type | method }), $.ajax(url, { type }), $.get/post/getJSON(url).
+  if (receiver && ts.isIdentifier(receiver) && (receiver.text === "$" || receiver.text === "jQuery")) {
+    const first = n.arguments[0];
+    if (name === "ajax") {
+      const settings = first && ts.isObjectLiteralExpression(first) ? first : n.arguments[1];
+      const urlArg = first && ts.isObjectLiteralExpression(first) ? objProp(first, "url") ?? undefined : first;
+      const verbArg = settings && ts.isObjectLiteralExpression(settings) ? objProp(settings, "type") ?? objProp(settings, "method") : null;
+      const verb = verbArg ? stringValue(verbArg, checker)?.toUpperCase() ?? "ANY" : "GET";
+      emit(ctx, owner, file, line, verb, stringValue(urlArg, checker), "jquery", null, null);
+      return;
+    }
+    const JQUERY_VERBS: Record<string, string> = { get: "GET", post: "POST", getJSON: "GET" };
+    if (JQUERY_VERBS[name] && first) {
+      emit(ctx, owner, file, line, JQUERY_VERBS[name], stringValue(first, checker), "jquery", null, null);
+      return;
+    }
+  }
+
   // A generated API client whose file isn't in the repo (NSwag writes it at build time).
   if (receiver) {
     const client = generatedClientName(ctx, receiver);

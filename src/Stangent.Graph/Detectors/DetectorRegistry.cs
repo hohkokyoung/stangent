@@ -10,6 +10,7 @@ public static class DetectorRegistry
     [
         new RoutesDetector(),
         new FlaskRoutesDetector(), // Python's routes (D127), before anything links calls to endpoints
+        new RazorViewsDetector(), // after routes: server-rendered views, their forms → endpoints, View() → views (N1, N2)
         new DiDetector(),
         new PublishHandleDetector(),
         new EntityTablesDetector(),

@@ -415,3 +415,33 @@ test("constants' values and SignalR listeners, a list's items and enum members i
   const on = lines.flatMap((l) => l.t === "fact" && l.kind === "signalr-on" ? [l.data.name] : []).sort();
   assert.deepEqual(on, ["", "ScanSeries", "SeriesAdded", "receiveMessage"]);
 });
+
+test("plain scripts and a view's inline scripts: jQuery calls and event bindings (N5)", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "stangent-js-"));
+  fs.mkdirSync(path.join(root, "js"));
+  fs.writeFileSync(path.join(root, "js/site.js"), [
+    "function check() {",
+    "  $.ajax({ url: '/api/orders', type: 'POST' });",
+    "}",
+    "$(function () { $('#check-email').click(check); $(document).on('click.cart', '.add', function () { $.get('/api/cart'); }); });",
+    "document.getElementById('save').addEventListener('click', check);",
+  ].join("\n"));
+  const lines = extract({
+    tsconfig: root, root, projectId: "p", settings: {}, files: [path.join(root, "js/site.js")],
+    inline: [{ owner: "view:V.cshtml", file: "V.cshtml", line: 7, text: "\n  $.post('/api/x');\n  check();\n  $.post('__server_value__'); // don't\n  $.get('/api/__server_value__/items');" }],
+  }).lines;
+  const calls = lines.flatMap((l) => l.t === "fact" && l.kind === "call" ? [`${l.node} ${l.data.verb} ${l.data.url} ${l.file}:${l.line}`] : []).sort();
+  assert.deepEqual(calls, [
+    "ts|js/site.js#check POST /api/orders js/site.js:2",
+    "file:js/site.js GET /api/cart js/site.js:4",
+    "view:V.cshtml POST /api/x V.cshtml:8",
+    "view:V.cshtml GET /api/{*}/items V.cshtml:11",
+  ].sort());
+  // A URL the server writes whole is made at runtime: ❓.
+  assert.ok(lines.some((l) => l.t === "blind" && l.node === "view:V.cshtml" && l.line === 10 && l.reason === "HTTP POST to a URL built at runtime"));
+  const events = lines.flatMap((l) => l.t === "fact" && l.kind === "dom-event" ? [`${l.data.selector} ${l.data.event} ${l.data.handler}`] : []).sort();
+  assert.deepEqual(events, [".add click inline", "#check-email click ts|js/site.js#check", "#save click ts|js/site.js#check"].sort());
+  // The inline script's code belongs to the view: what it calls is the view's line, and it declares no points of its own.
+  assert.ok(lines.some((l) => l.t === "edge" && l.source === "view:V.cshtml" && l.target === "ts|js/site.js#check"));
+  assert.ok(!lines.some((l) => l.t === "node" && l.file === "V.cshtml"));
+});

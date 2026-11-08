@@ -1,9 +1,9 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import ts from "typescript";
-import { Output, type Options } from "./model.ts";
+import { Output, type InlineScript, type Options } from "./model.ts";
 import { angularTemplates, collectAngular, type AngularIndex } from "./angular.ts";
-import { constantValues, reactEvents, signalrListeners } from "./ui.ts";
+import { constantValues, domEvents, reactEvents, signalrListeners } from "./ui.ts";
 import { httpFacts } from "./http.ts";
 import { pages } from "./routes.ts";
 import { rootScreens } from "./rootScreens.ts";
@@ -34,51 +34,71 @@ export interface Context {
 
 export function extract(o: Options): Output {
   const out = new Output();
-  // A plain React project has only a package.json (D127): its settings are the ones its toolchain assumes.
-  const plain = path.basename(o.tsconfig) === "package.json";
-  const tsconfig = plain ? o.tsconfig : resolveProjectConfig(o.tsconfig, out);
-  const cfg = plain ? { config: plainReactConfig() } : ts.readConfigFile(tsconfig, ts.sys.readFile);
-  if ("error" in cfg && cfg.error) out.warning(`tsconfig: ${ts.flattenDiagnosticMessageText(cfg.error.messageText, " ")}`);
-  const json = cfg.config ?? {};
-  // .js/.jsx files are part of the map even when the project doesn't type-check them.
-  json.compilerOptions = { ...(json.compilerOptions ?? {}), allowJs: true, noEmit: true };
-  const parsed = ts.parseJsonConfigFileContent(json, ts.sys, path.dirname(tsconfig), undefined, tsconfig);
-  const program = ts.createProgram({
-    rootNames: parsed.fileNames,
-    options: { ...parsed.options, noEmit: true, allowJs: true, skipLibCheck: true, checkJs: false },
-  });
-  const checker = program.getTypeChecker();
   const root = path.resolve(o.root);
-  const projectDir = path.dirname(path.resolve(o.tsconfig));
+  // N5: plain browser scripts (no tsconfig), and views' inline scripts as files of their own that belong to the view.
+  const scripts = o.files !== undefined;
+  const inline = new Map<string, InlineScript>();
+  (o.inline ?? []).forEach((s, i) => inline.set(path.join(root, `${s.file}.script${i + 1}.js`), s));
+  let program: ts.Program;
+  if (scripts) {
+    const options: ts.CompilerOptions = { allowJs: true, checkJs: false, noEmit: true, skipLibCheck: true, target: ts.ScriptTarget.ES2020, lib: ["lib.es2020.d.ts", "lib.dom.d.ts"] };
+    const host = ts.createCompilerHost(options);
+    const { getSourceFile, fileExists, readFile } = host;
+    host.getSourceFile = (f, v, onError, create) => (inline.has(path.resolve(f)) ? ts.createSourceFile(f, inline.get(path.resolve(f))!.text, v, true, ts.ScriptKind.JS) : getSourceFile.call(host, f, v, onError, create));
+    host.fileExists = (f) => inline.has(path.resolve(f)) || fileExists.call(host, f);
+    host.readFile = (f) => (inline.has(path.resolve(f)) ? inline.get(path.resolve(f))!.text : readFile.call(host, f));
+    program = ts.createProgram({ rootNames: [...o.files!, ...inline.keys()], options, host });
+  } else {
+    // A plain React project has only a package.json (D127): its settings are the ones its toolchain assumes.
+    const plain = path.basename(o.tsconfig) === "package.json";
+    const tsconfig = plain ? o.tsconfig : resolveProjectConfig(o.tsconfig, out);
+    const cfg = plain ? { config: plainReactConfig() } : ts.readConfigFile(tsconfig, ts.sys.readFile);
+    if ("error" in cfg && cfg.error) out.warning(`tsconfig: ${ts.flattenDiagnosticMessageText(cfg.error.messageText, " ")}`);
+    const json = cfg.config ?? {};
+    // .js/.jsx files are part of the map even when the project doesn't type-check them.
+    json.compilerOptions = { ...(json.compilerOptions ?? {}), allowJs: true, noEmit: true };
+    const parsed = ts.parseJsonConfigFileContent(json, ts.sys, path.dirname(tsconfig), undefined, tsconfig);
+    program = ts.createProgram({
+      rootNames: parsed.fileNames,
+      options: { ...parsed.options, noEmit: true, allowJs: true, skipLibCheck: true, checkJs: false },
+    });
+  }
+  const checker = program.getTypeChecker();
+  const projectDir = scripts ? path.resolve(o.tsconfig) : path.dirname(path.resolve(o.tsconfig));
   const typed = fs.existsSync(path.join(projectDir, "node_modules")) || fs.existsSync(path.join(root, "node_modules"));
-  if (!typed) out.warning("node_modules is missing: library types don't resolve, so calls are matched by name (🟡)");
+  if (!typed && !scripts) out.warning("node_modules is missing: library types don't resolve, so calls are matched by name (🟡)");
 
-  const rel = (f: string) => path.relative(root, path.resolve(f)).split(path.sep).join("/");
+  const ownRel = (f: string) => path.relative(root, path.resolve(f)).split(path.sep).join("/");
+  // An inline script's file is its view; its code belongs to the view, and its lines are the view's.
+  const rel = (f: string) => inline.get(path.resolve(f))?.file ?? ownRel(f);
+  const isInline = (sf: ts.SourceFile) => inline.has(path.resolve(sf.fileName));
   const isOwn = (sf: ts.SourceFile) => {
     const f = path.resolve(sf.fileName);
-    return f.startsWith(root + path.sep) && !f.includes(`${path.sep}node_modules${path.sep}`) && !sf.isDeclarationFile;
+    return f.startsWith(root + path.sep) && !f.includes(`${path.sep}node_modules${path.sep}`) && !sf.isDeclarationFile && !isInline(sf);
   };
   const files = program.getSourceFiles().filter(isOwn).sort((a, b) => cmp(rel(a.fileName), rel(b.fileName)));
+  const inlineFiles = program.getSourceFiles().filter(isInline).sort((a, b) => cmp(ownRel(a.fileName), ownRel(b.fileName)));
 
   const ctx: Context = {
     o, out, program, checker, rel, isOwn, typed,
     declId: (d) => declId(d, rel),
     symbolId: (s) => symbolId(s, checker, isOwn, rel),
-    ownerId: (n) => ownerId(n, rel),
-    line: (n) => n.getSourceFile().getLineAndCharacterOfPosition(n.getStart()).line + 1,
+    ownerId: (n) => inline.get(path.resolve(n.getSourceFile().fileName))?.owner ?? ownerId(n, rel),
+    line: (n) => n.getSourceFile().getLineAndCharacterOfPosition(n.getStart()).line + (inline.get(path.resolve(n.getSourceFile().fileName))?.line ?? 1),
     angular: { components: new Map(), selectors: new Map(), pipes: new Map() },
   };
 
   out.node({ id: o.projectId, kind: "project", name: projectName(projectDir), project: o.projectId, file: null, line: 0, endLine: 0, isTest: false });
   for (const sf of files) declare(ctx, sf);
   for (const sf of files) collectAngular(ctx, sf);
-  for (const sf of files) references(ctx, sf);
+  for (const sf of [...files, ...inlineFiles]) references(ctx, sf);
   for (const sf of files) angularTemplates(ctx, sf);
   for (const sf of files) reactEvents(ctx, sf);
   for (const sf of files) { signalrListeners(ctx, sf); constantValues(ctx, sf); }
   for (const sf of files) pages(ctx, sf);
   if (o.rootScreens) rootScreens(ctx, files);
-  for (const sf of files) httpFacts(ctx, sf);
+  for (const sf of [...files, ...inlineFiles]) httpFacts(ctx, sf);
+  if (scripts) for (const sf of [...files, ...inlineFiles]) domEvents(ctx, sf);
   if (o.enums) for (const sf of files) enums(ctx, sf);
   return out;
 }

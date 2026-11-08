@@ -2,6 +2,9 @@ import ts from "typescript";
 
 /** Marks a part of a URL known only at runtime; it matches any one path segment. */
 export const RUNTIME = "{*}";
+/** A value a server-rendered view writes into its inline script (N5): made at runtime wherever it sits. */
+export const SERVER_VALUE = "__server_value__";
+const server = (text: string) => text.split(SERVER_VALUE).join(RUNTIME);
 /** Marks a base URL prefix (environment.apiUrl, this.baseUrl, apiRoot…): matched against the end of an endpoint's path. */
 export const BASE = "{base}";
 
@@ -16,14 +19,14 @@ const BASE_NAMES = /(^|\.)(base|api|root|url|host|endpoint|server)[a-z]*$/i;
 export function stringValue(expr: ts.Expression | undefined, checker: ts.TypeChecker, depth = 0): string | null {
   if (!expr || depth > 6) return null;
   expr = skipOuter(expr);
-  if (ts.isStringLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr)) return expr.text;
+  if (ts.isStringLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr)) return expr.text === SERVER_VALUE ? null : server(expr.text);
   if (ts.isNumericLiteral(expr)) return expr.text;
   if (expr.kind === ts.SyntaxKind.TrueKeyword) return "true";
   if (expr.kind === ts.SyntaxKind.FalseKeyword) return "false";
   if (ts.isTemplateExpression(expr)) {
-    let s = expr.head.text;
+    let s = server(expr.head.text);
     expr.templateSpans.forEach((span, i) => {
-      s += part(span.expression, checker, depth, i === 0 && expr.head.text === "") + span.literal.text;
+      s += part(span.expression, checker, depth, i === 0 && expr.head.text === "") + server(span.literal.text);
     });
     return s;
   }

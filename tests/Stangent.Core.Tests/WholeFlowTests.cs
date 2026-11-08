@@ -723,7 +723,7 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         var graph = flow.Seen("graph");
         Assert.Empty(graph["loadErrors"]!.AsArray());
         Assert.Equal(0, (int?)graph["dirtyFiles"]);
-        Assert.Equal(2, (int?)graph["frontends"]);
+        Assert.Equal(3, (int?)graph["frontends"]);   // Angular, React, Shop.Web's plain scripts (N5)
     }
 
     [Fact]

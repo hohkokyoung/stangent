@@ -32,6 +32,10 @@ public static class NodeKind
     public const string Page = "page";
     /// <summary>A SignalR message a server sends and a frontend listens for: <c>message:signalr|&lt;name&gt;</c> (code-graph v5, G10).</summary>
     public const string Message = "message";
+    /// <summary>A server-rendered view (Razor <c>.cshtml</c>): <c>view:&lt;repo path&gt;</c> (code-graph v5, N1).</summary>
+    public const string View = "view";
+    /// <summary>A form in a view, the handler its submit buttons run: <c>view:&lt;repo path&gt;#form&lt;n&gt;</c> (code-graph v5, N1).</summary>
+    public const string Form = "form";
 }
 
 /// <summary>

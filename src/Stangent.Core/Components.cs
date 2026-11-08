@@ -45,6 +45,7 @@ public static class StangentComponents
         Detector("http-services", "Backend HTTP calls to endpoints", "detector-aspnetcore-routes"),
         Detector("frontend-http", "Frontend calls to endpoints from any routes detector, fields to properties"),
         Detector("signalr", "SignalR messages sent and listened for"),
+        Detector("razor-views", "Server-rendered views (Razor), their forms to endpoints, and the views actions render", "detector-aspnetcore-routes"),
         new("root-screens", "A page for each screen a React app's root shows with no route, read from its JSX. Adds pages to a repo that has them, so it's off by default", "components.root-screens", false, [Graph, "spec pages"], []),
         new("route-render", "A page for each React route written with render or children, read from the JSX it shows. Adds pages to a repo that has them, so it's off by default", "components.route-render", false, [Graph, "spec pages"], []),
         new("python", "Python files on the map, by parsing only: never imported or run. Off, a repo's Python isn't read, nor its plain React apps unless root-screens or route-render is on", "components.python", true, [Graph], []),

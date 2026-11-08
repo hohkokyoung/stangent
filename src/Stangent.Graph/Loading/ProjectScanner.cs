@@ -68,7 +68,7 @@ public static class ProjectScanner
         Walk(p.Directory, d => d == p.Directory || !projectDirs.Contains(d))
             .Where(f => f.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
                 || f.EndsWith(".json", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".props", StringComparison.OrdinalIgnoreCase)
-                || f.EndsWith(".targets", StringComparison.OrdinalIgnoreCase))
+                || f.EndsWith(".targets", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".cshtml", StringComparison.OrdinalIgnoreCase))
             .Order(StringComparer.Ordinal);
 
     /// <summary>

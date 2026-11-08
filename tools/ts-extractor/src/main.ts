@@ -17,8 +17,14 @@ if (!tsconfig || !root || !project) {
   process.stderr.write("usage: stangent-ts-extract --tsconfig <path> --root <repo> --project <id> [--settings <json>] [--enums] [--root-screens] [--route-render]\n");
   process.exit(2);
 }
+// N5: --files <list> (one absolute path a line) reads plain scripts; --inline <json> adds views' inline scripts.
+import * as fs from "node:fs";
+const filesArg = arg("--files");
+const inlineArg = arg("--inline");
 // Absolute paths: the compiler reports file names the way it was given them.
-const options: Options = { tsconfig: path.resolve(tsconfig), root: path.resolve(root), projectId: project, settings: JSON.parse(arg("--settings") ?? "{}"), enums: process.argv.includes("--enums"), rootScreens: process.argv.includes("--root-screens"), routeRender: process.argv.includes("--route-render") };
+const options: Options = { tsconfig: path.resolve(tsconfig), root: path.resolve(root), projectId: project, settings: JSON.parse(arg("--settings") ?? "{}"), enums: process.argv.includes("--enums"), rootScreens: process.argv.includes("--root-screens"), routeRender: process.argv.includes("--route-render"),
+  files: filesArg ? fs.readFileSync(filesArg, "utf8").split("\n").filter((l) => l.length > 0).map((f) => path.resolve(f)) : undefined,
+  inline: inlineArg ? JSON.parse(fs.readFileSync(inlineArg, "utf8")) : undefined };
 const out = extract(options);
 const chunks: string[] = [];
 for (const line of out.lines) chunks.push(JSON.stringify(line));

@@ -94,6 +94,7 @@ public static class GraphBuilder
             warnings.AddRange(workspace.Diagnostics.Select(d => ErrorFor(repo.Root, changed, d.Message)).Distinct().Order(StringComparer.Ordinal));
 
             extract.Start();
+            var projectDirs = projects.Select(x => x.Directory).ToHashSet(StringComparer.Ordinal);
             var fragments = new ProjectFragment[changed.Count];
             await Parallel.ForEachAsync(Enumerable.Range(0, changed.Count), ct, async (i, token) =>
             {
@@ -111,7 +112,21 @@ public static class GraphBuilder
                         .Select(t => new SourceFile(t, compilation.GetSemanticModel(t), ProjectScanner.Rel(repo.Root, t.FilePath)))
                         .OrderBy(f => f.RelativePath, StringComparer.Ordinal)
                         .ToList();
-                    var ctx = new ExtractContext(repo.Root, p.Id, p.Directory, compilation, files, fragment, new Dictionary<string, List<string>>());
+                    // N1: the Razor compiler's own output for each view, found by the generator's folder; the view's path is the file.
+                    var razor = new List<SourceFile>();
+                    foreach (var doc in await project.GetSourceGeneratedDocumentsAsync(token))
+                    {
+                        if (doc.FilePath is not { } path || !doc.HintName.EndsWith("_cshtml.g.cs", StringComparison.Ordinal)
+                            || !path.Contains("RazorSourceGenerator", StringComparison.Ordinal)) continue;
+                        if (compilation.SyntaxTrees.FirstOrDefault(t => t.FilePath == path) is not { } tree) continue;
+                        if (RazorViewsDetector.ViewPath(tree) is not { } view) continue;
+                        razor.Add(new SourceFile(tree, compilation.GetSemanticModel(tree), ProjectScanner.Rel(repo.Root, Path.Combine(p.Directory, view.TrimStart('/')))));
+                    }
+                    var ctx = new ExtractContext(repo.Root, p.Id, p.Directory, compilation, files, fragment, new Dictionary<string, List<string>>())
+                    {
+                        RazorFiles = [.. razor.OrderBy(f => f.RelativePath, StringComparer.Ordinal)],
+                        ViewFiles = [.. ProjectScanner.OwnFiles(p, projectDirs).Where(f => f.EndsWith(".cshtml", StringComparison.OrdinalIgnoreCase))],
+                    };
                     CSharpExtractor.Extract(ctx);
                     foreach (var detector in detectors)
                     {
@@ -143,6 +158,7 @@ public static class GraphBuilder
         // Screens with no route (root-screens) and render routes (route-render) change what's extracted, so turning one on or off re-reads each frontend.
         var frontendSalt = salt + "\n" + FrontendScanner.ExtractorHash() + (rootScreensOn ? "\nroot-screens" : "") + (routeRenderOn ? "\nroute-render" : "");
         var frontendDirs = frontends.Select(f => f.Directory).ToList();
+        frontends.AddRange(FrontendScanner.Scripts(repo.Root, projects, frontends, graph));   // N5: plain scripts and views' inline ones
         var frontendPrints = frontends.ToDictionary(f => f.Id,
             f => CanonicalJson.Hash(FrontendScanner.Fingerprint(repo.Root, f, frontendDirs) + "\n" + frontendSalt), StringComparer.Ordinal);
         var frontendChanged = frontends.Where(f => previous?.Fragments.GetValueOrDefault(f.Id)?.Fingerprint != frontendPrints[f.Id]).ToList();
@@ -161,7 +177,7 @@ public static class GraphBuilder
             {
                 if (options.Restore)
                     foreach (var f in frontendChanged)
-                        if (FrontendScanner.Restore(f, log) is { } problem) warnings.Add(problem);
+                        if (f.Files is null && FrontendScanner.Restore(f, log) is { } problem) warnings.Add(problem);
                 var results = new (ProjectFragment, List<string>, string?)[frontendChanged.Count];
                 await Parallel.ForEachAsync(Enumerable.Range(0, frontendChanged.Count), new ParallelOptions { MaxDegreeOfParallelism = 2, CancellationToken = ct }, (i, _) =>
                 {

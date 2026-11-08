@@ -69,7 +69,9 @@ public sealed class RoutesDetector : IDetector
         if (type.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() != syntax) return;
 
         var controllerName = type.Name.EndsWith("Controller", StringComparison.Ordinal) ? type.Name[..^"Controller".Length] : type.Name;
-        var area = Attr(type, "AreaAttribute");
+        // [Area] is inherited (nopCommerce puts it on a base admin controller), as ASP.NET reads it.
+        string? area = null;
+        for (var t = type; t is not null && area is null; t = t.BaseType) area = Attr(t, "AreaAttribute");
         // Route attributes are inherited (Kavita puts [Route("api/[controller]")] on a base controller).
         var classRoutes = new List<string>();
         for (var t = type; t is not null && classRoutes.Count == 0; t = t.BaseType) classRoutes = RouteTemplates(t);
@@ -91,6 +93,11 @@ public sealed class RoutesDetector : IDetector
                 ApiShapes.Record(ctx, Name, method, methodId, ctx.ShapesSeen);
                 Auth(ctx, type, method, methodId);
                 var actionName = Attr(method, "ActionNameAttribute") ?? (method.Name.EndsWith("Async", StringComparison.Ordinal) ? method.Name[..^5] : method.Name);
+                var allVerbs = Overrides(method).FirstOrDefault(m => m.GetAttributes().Any(a => HttpVerbs(a).Count > 0)) is { } withVerbs
+                    ? withVerbs.GetAttributes().SelectMany(a => HttpVerbs(a).Select(v => v.Verb)).Distinct().Order(StringComparer.Ordinal).ToList() : [];
+                // N1: every action by controller and name, so a server-rendered form finds the endpoint its action is served at.
+                ctx.AddFact(Name, "mvc-action", methodId, null, ("controller", controllerName), ("action", actionName), ("area", area ?? ""),
+                    ("verbs", string.Join(",", allVerbs)), ("assembly", ctx.AssemblyName));
                 // Verb and route attributes are inherited by overrides (ASP.NET reads them with inherit: true): the nearest that has any.
                 var source = Overrides(method).FirstOrDefault(m => m.GetAttributes().Any(a => HttpVerbs(a).Count > 0) || RouteTemplates(m).Count > 0) ?? method;
                 var verbs = source.GetAttributes().SelectMany(a => HttpVerbs(a).Select(v => ((string?)v.Verb, v.Template))).ToList();
@@ -457,7 +464,7 @@ public sealed class RoutesDetector : IDetector
     {
         var owner = ctx.OwnerId(call, file.Model);
         if (owner is null) return;
-        string? pattern, area = null;
+        string? pattern, area = null, routeName = null;
         AnonymousObjectCreationExpressionSyntax? defaults = null;
         if (name == "MapDefaultControllerRoute")
             pattern = "{controller=Home}/{action=Index}/{id?}";
@@ -470,6 +477,7 @@ public sealed class RoutesDetector : IDetector
             var offset = name == "MapAreaControllerRoute" ? 1 : 0;
             if (name == "MapAreaControllerRoute") area = ExtractContext.StringValue(Named("areaName", 1), file.Model);
             pattern = ExtractContext.StringValue(Named("pattern", 1 + offset) ?? Named("template", 1 + offset), file.Model);
+            routeName = ExtractContext.StringValue(Named("name", 0), file.Model);
             defaults = Named("defaults", 2 + offset) as AnonymousObjectCreationExpressionSyntax;
         }
         if (pattern is null)
@@ -491,7 +499,7 @@ public sealed class RoutesDetector : IDetector
         var generic = pattern.Contains("{controller", StringComparison.Ordinal) || pattern.Contains("{action", StringComparison.Ordinal);
         ctx.AddFact(Name, "conventional", owner, call,
             ("pattern", pattern), ("controller", generic ? "" : controller ?? ""), ("action", generic ? "" : action ?? ""),
-            ("area", area ?? Default("area") ?? ""), ("assembly", ctx.AssemblyName), ("project", ctx.ProjectId));
+            ("area", area ?? Default("area") ?? ""), ("assembly", ctx.AssemblyName), ("project", ctx.ProjectId), ("name", routeName ?? ""));
     }
 
     public void Link(LinkContext ctx)
@@ -504,7 +512,9 @@ public sealed class RoutesDetector : IDetector
         foreach (var route in conventional)
         {
             var assembly = route["assembly"];
-            var matches = actions.Where(a => Same(a["area"], route["area"])
+            // A pattern with an {area} token ({area:exists}/{controller}/…, ASP.NET's own area template) serves actions that have an area.
+            var areaToken = System.Text.RegularExpressions.Regex.IsMatch(route["pattern"], "\\{area(:[^}]*)?(=[^}]*)?\\}");
+            var matches = actions.Where(a => (areaToken ? a["area"].Length > 0 : Same(a["area"], route["area"]))
                 && (route["controller"].Length == 0 || string.Equals(a["controller"], route["controller"], StringComparison.OrdinalIgnoreCase))
                 && (route["action"].Length == 0 || string.Equals(a["action"], route["action"], StringComparison.OrdinalIgnoreCase)))
                 .ToList();
