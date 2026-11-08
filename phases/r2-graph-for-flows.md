@@ -327,3 +327,58 @@ were one ❓ in the base helper); T9's 19 buttons with no form. Form ❓ 5 → 4
 
 **Sonarr and Kavita rebuilt:** no point or line lost; blind spots 327 and 122, unchanged; cross-check 0 and 2. Kavita's 1,029 `auth`
 facts unchanged. Sonarr's `rule` facts 619 → 606 (T12, above).
+
+## 13. Fresh check (D158) of T1–T12, 2026-11-08
+
+One fresh session on `f45cd1d` (code) + `e56a8ac`, read-only, against the graphs already rebuilt with it (nopCommerce, Sonarr, Kavita).
+**~95K tokens (estimate), inside the 100–150K said.** No agents, no paid AI, nothing fixed. Sampled 12 forms and all 5 GET forms,
+the 3 `formaction` buttons and 22 `<button asp-action>` buttons, 10 of 79 partial → form lines (and every one of the 47 partials
+behind them), 12 of 52 component → view lines and the 6 components with none, the theme line, all 13,162 filter facts by filter and
+basis (against each filter's source), the one global filter, the `addAntiForgeryToken` fan-out, the remaining button → script line,
+all 19 "submit button outside any form" ❓, Sonarr's 13 dropped rules and Kavita's 1,029 auth facts.
+
+**Bottom line: no wrong ✅.** Every ✅ sampled is proved by the code. Ten findings, all labelled honestly as 🟡 or ❓ but some say the
+wrong thing: the biggest are V1 (MVC's controller-folder lookup missing for view components: ❓ "not found" on views MVC finds) and
+V2 (half of T9's partial → form lines come from buttons that cancel their own submit). All ten are general (none is nopCommerce-only polish); V7
+matters mostly for apps that load modules at run time.
+
+| # | Severity | Finding | Evidence (source · graph) | Suggested general fix | Scope |
+|---|---|---|---|---|---|
+| V1 | misleading ❓ | a view component's view, and partials that view renders, are looked up without the calling page's controller folder (`Views/{controller}/Components/…`, `Views/{controller}/_X`). `RazorViewsDetector.cs:366` uses `r["controller"]`, empty for a component | `BlogMonths`, `BlogTags`, `ProfileInfo` ❓ "view Default not found" though `Views/Blog/Components/BlogMonths/Default.cshtml` and `Views/Profile/Components/ProfileInfo/Default.cshtml` exist; `Components/OrderSummary/Default.cshtml:86` `_GiftCardBox` ❓ "not found" (it is `Views/ShoppingCart/_GiftCardBox.cshtml`, the cart page's folder), so its button `_GiftCardBox.cshtml:12` is ❓ "outside any form" though it sits in `shopping-cart-form` (`OrderSummary/Default.cshtml:27–187`) | for a component's view and what it renders, try `Views/{c}/…` for each controller `c` whose views invoke the component (🟡), then Shared | general (MVC's own lookup) |
+| V2 | misleading 🟡 | T9 links a partial to its parent's form when its only submit buttons cancel the submit: `onclick="…; return false;"` popup openers, and hidden refresh buttons whose script click handler returns false. 24 of the 47 partials with a partial → form line are only these | `Category/_CreateOrUpdate.Products.cshtml:61–62` (`OpenWindow('@(Url.Action("ProductAddPopup", "Category", …))'…); return false;`), `:66` hidden `btnRefreshProducts`, its handler `:70–75` returns false · `_CreateOrUpdate.Products.cshtml → Category/Edit.cshtml#form1` and `→ Create.cshtml#form1`, both 🟡. The popup's own target (`ProductAddPopup`) isn't read | a submit button whose inline handler ends `return false` (or a bound handler returns false / calls `preventDefault`) doesn't submit; read a constant `@Url.Action` in it as its target (🟡), as T3 does for `formaction` | general (HTML idiom) |
+| V3 | misleading ❓ | a button with its own target (T3) in a partial gets GET: `ButtonTarget` takes `form?.Method ?? "get"` (`RazorViewsDetector.cs:991`) before T9 finds the parent's form | `Setting/_GeneralCommon.Localization.cshtml:13` `<button type="submit" asp-action="UploadLocalePattern">`, rendered inside `GeneralCommon.cshtml:58` (POST form) · form fact `method: GET`, ❓ "form GET Setting.UploadLocalePattern matched no endpoint", though `POST /Admin/Setting/UploadLocalePattern/{id?}` exists (`[HttpPost]`, `SettingController.cs:1813`). 1 row | such a button takes its method from the forms T9 finds around its partial (🟡); none → ❓ about the method, not the endpoint | general |
+| V4 | misleading 🟡 | `denies` misses refusals by 404/400, and reads only the filter's own members, not its base class (`RoutesDetector.cs:210`) | Kavita `ProfilePrivacyAttribute.cs:34–36` (`ContentResult` 400) → 19 facts 🟡 `stage`; the `Series/Volume/Chapter/Library/Person/ReadingListAccess` filters refuse in their base `AccessAttribute` (`EntityAccessAttribute.cs:125, 135`, `NotFoundResult`) and read by `name` only (114 facts); a filter like these without an access word in its name would be 🟡 `stage` or gone | at the authorisation stage, any short-circuit result with a 4xx (`NotFound`, `BadRequest`, `StatusCode = 4xx`) is `denies`; read members up the base chain | general |
+| V5 | misleading | T12 makes `.AsWarning()` a modifier (right), but nothing on the rule says it only warns: Sonarr shows the message and still saves | `SeedCriteriaSettings.cs:12–14` `GreaterThan(0.0).When(…).AsWarning().WithMessage(…)` · fact line 12 `rule: GreaterThan`, `conditional: yes`, no severity; 13 such rules | keep each rule's modifiers by name (`modifiers: "AsWarning"`) and read a constant `WithSeverity(Severity.X)` as `severity` | general (FluentValidation) |
+| V6 | silent gap | T9 doesn't carry a form into a view component rendered inside it, only into partials | `Components/OrderTotals/Default.cshtml:111` `removegiftcard-…` ❓ "outside any form"; `OrderTotals` is invoked at `OrderSummary/Default.cshtml:93`, inside the form | treat `Component.InvokeAsync` inside a form like a `<partial>` for T9 (🟡) | general |
+| V7 | silent gap | a global filter's fact sits on the project that registers it; a plugin's applies to the whole host app, which has no reference to it | `Nop.Plugin.Misc.PunchOut/Infrastructure/NopStartup.cs:30` `options.Filters.Add<PunchOutSessionGuardAttribute>(0)` · `auth` on `project:…PunchOut`, `from: global`; nothing joins it to Nop.Web's actions. Same shape as Sonarr's `fallback-auth` on Sonarr.Host while actions are in Sonarr.Api.V3 (a reference exists there) | say in `docs/code-graph.md` that a project's global facts apply to every action the running app hosts; a module loaded at run time → ❓ "applies to the host app" | general rule; matters for apps with run-time modules |
+| V8 | minor | section 12's account of the 19 formless-button ❓ ("a script submits, or in the layout") is partly off: 8 are dashboard card buttons with no `type` and no form anywhere (they do nothing), 2 are V1/V6 | `Home/_CustomerStatistics.cshtml:16–19`, `_LatestOrders.cshtml:15`… (`data-card-widget="collapse"`) | a button with no form and no `type` in a view no form reaches: not a submit, no ❓ | general |
+| V9 | minor (latent) | with a view location expander, a view named by path (`~/…`, `/…`, `….cshtml`) turns 🟡 and gets theme candidates, but MVC never runs expanders for paths (`RazorViewsDetector.cs:339, 376`) | 0 rows on nopCommerce: its 229 path names are all plugin views the graph can't read | expanders affect only names MVC looks up; paths keep ✅ and get no alternatives | general |
+| V10 | minor | `ViewAsync(null, model)`: a constant null view name is MVC's `Default`, read as ❓ | `SelectedCheckoutAttributesViewComponent.cs:19` · ❓ "ViewAsync chosen at runtime: null" | a null or empty constant name → `Default` | general |
+
+Older, outside T1–T12, seen in passing: a script handler named by a function declared inside `$(function(){…})` stays `prop:name` with
+no ❓ (8 `dom-event` facts, `Customer/UserAgreement.cshtml:10`, `public.countryselect.js:47`): local functions aren't points. Button →
+script joins use `#id` selectors only, so `button[name='plugin-reload-grid']` (`Plugin/List.cshtml:31`) joins nothing.
+
+**Holds:**
+- **T1:** the rule is ASP.NET's (the form tag helper writes `post` when it builds the form: asp-* or no `action`); 12 forms right; the
+  5 GET forms are 4 written `method="get"` (search boxes) and V3. Admin "Clear cache" (`_AdminLayout.cshtml:118`) is POST to `ClearCache`.
+- **T3:** `ProductSpecAttributeAddOrEdit.cshtml:36, 44, 63` reach their own POST endpoints, 🟡 (controller from the view's folder,
+  honest); Save and Save & continue keep the form's `ProductSpecAttrUpdate`. `@Url.Action` is read through Roslyn's binding (constants
+  only), so a non-constant argument stays ❓. The 22 `<button asp-action="Export…">` buttons get their own targets.
+- **T9:** 10 sampled lines reach the right parent forms, nested ones too (`_CreateOrUpdate.Products` → `Create` and `Edit` through
+  `_CreateOrUpdate`); the other 23 partials do submit (Maintenance's delete buttons, Campaign's send-test-email).
+- **T10:** form → endpoint lines are 272 POST + 25 ANY (forms to verb-less actions); no form has both. 3 forms reach two POST endpoints,
+  the plain path and the `/{*}/` language-prefixed one, both kept: right, MVC has both.
+- **T11:** `../ReviewType/List` → `ReviewType/List.cshtml`, 🟡.
+- **T4:** 52 components reach `Components/{name}/Default` 🟡; 12 sampled right. **T8:** `_Root.Head.cshtml` renders both
+  `Views/Shared/Head.cshtml` and `Themes/DefaultClean/Views/Shared/Head.cshtml`, 🟡.
+- **T5/T6:** the basis counts add up (denies 5,225 = `AuthorizeAdmin`, `ValidateIpAddress`, `CheckPermission`, `ValidateVendor`,
+  `CheckAccessPublicStore`); each of those five sets a challenge or an AccessDenied redirect in its source (e.g.
+  `ValidateIpAddressAttribute.cs:96`, `ValidateVendorAttribute.cs:96`, `CheckAccessPublicStoreAttribute.cs:90`), so `denies` does mean
+  the code refuses. `CheckAccessClosedStore` is `name` (it redirects to "store closed", `:134`). `CheckLanguageSeoCode` is 🟡 `result`:
+  an SEO redirect, and its basis says so. nopCommerce has one global filter in its source, and it is found.
+- **T2:** `addAntiForgeryToken`: each file's own call ✅ to its own copy; 59 views 🟡 to both. **T7:** single-call bodies resolve
+  (`Plugin/List.cshtml:31` → `showThrobber`); longer bodies are `inline`; the one button → script line left is `_AdminLayout` → `showThrobber`.
+- **T12:** Sonarr's 13 dropped rules are exactly its 13 `.AsWarning()` calls (source grep); their messages now sit on the rule they
+  follow. The only other `IRuleBuilderOptions` extensions across the three repos are nopCommerce's `WithMessageAwait` (modifiers, right).
+- **Kavita:** 1,029 `auth` facts, as before, now with a basis each (`KPlus` denies; the access filters by name; `ProfilePrivacy`, V4).
