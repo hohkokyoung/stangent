@@ -18,7 +18,10 @@ namespace FluentValidation
         public static IRuleBuilderOptions<T, P> GreaterThan<T, P>(this IRuleBuilder<T, P> rule, P value) => null!;
         public static IRuleBuilderOptions<T, P> WithMessage<T, P>(this IRuleBuilderOptions<T, P> rule, string message) => rule;
         public static IRuleBuilderOptions<T, P> When<T, P>(this IRuleBuilderOptions<T, P> rule, Func<T, bool> condition) => rule;
+        public static IRuleBuilderOptions<T, P> WithSeverity<T, P>(this IRuleBuilderOptions<T, P> rule, Severity severity) => rule;
     }
+
+    public enum Severity { Error, Warning, Info }
 }
 
 namespace Shop.Core
@@ -34,6 +37,9 @@ namespace Shop.Core
 
         // T12: an app's own rule whose name starts like a modifier's; it's on the rule builder, so it's a rule.
         public static IRuleBuilderOptions<T, P> Within<T, P>(this IRuleBuilder<T, P> rule, int most) => null!;
+
+        // V5: an app's own modifier that makes the rule only warn, the way Sonarr's AsWarning does.
+        public static IRuleBuilderOptions<T, P> AsWarning<T, P>(this IRuleBuilderOptions<T, P> rule) => rule;
     }
 
     public class NewOrder
@@ -42,6 +48,8 @@ namespace Shop.Core
         public string Customer { get; set; } = "";
 
         public int Quantity { get; set; }
+
+        public string Note { get; set; } = "";
     }
 
     public class NewOrderValidator : AbstractValidator<NewOrder>
@@ -53,6 +61,7 @@ namespace Shop.Core
             RuleFor(o => o.Quantity).GreaterThan(Smallest).WithMessage("Order at least one").When(o => o.Customer != "")
                 .NotEmpty();
             RuleFor(o => o.Customer).NotEmpty().WithMessageAwait(Texts.Get("Order.Customer.Required")).Within(40);
+            RuleFor(o => o.Note).NotEmpty().AsWarning().GreaterThan("").WithSeverity(Severity.Info);
         }
     }
 }

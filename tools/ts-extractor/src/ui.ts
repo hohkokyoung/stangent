@@ -209,12 +209,26 @@ export function domEvents(ctx: Context, sf: ts.SourceFile) {
       if (selector && event && event !== RUNTIME && handler) {
         ctx.out.fact("ui", "dom-event", ctx.ownerId(n), ctx.rel(sf.fileName), ctx.line(n), {
           selector, event: event.split(".")[0], handler: scriptHandlerOf(ctx, handler),
+          cancels: cancels(handler, sel !== null) ? "yes" : "",
         });
       }
     }
     ts.forEachChild(n, visit);
   };
   visit(sf);
+}
+
+/**
+ * V2: the handler always stops the browser's own action (a submit button's submit): a statement of its own body, not one
+ * inside an `if` or a nested function, calls `preventDefault()` or, for jQuery (which honours it), returns `false`.
+ */
+function cancels(handler: ts.Expression, jquery: boolean): boolean {
+  if (!ts.isArrowFunction(handler) && !ts.isFunctionExpression(handler)) return false;
+  if (!ts.isBlock(handler.body)) return jquery && handler.body.kind === ts.SyntaxKind.FalseKeyword;
+  return handler.body.statements.some((st) =>
+    (jquery && ts.isReturnStatement(st) && st.expression?.kind === ts.SyntaxKind.FalseKeyword)
+    || (ts.isExpressionStatement(st) && ts.isCallExpression(st.expression) && ts.isPropertyAccessExpression(st.expression.expression)
+      && st.expression.expression.name.text === "preventDefault"));
 }
 
 /**

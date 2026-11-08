@@ -173,7 +173,8 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.Equal("CheckAccessStore(ignore = false) other class AccountController", Filters("Register(Shop.Web.Models.RegisterModel)"));
         // [AllowAnonymous] doesn't stop a filter: only the filter's own code could.
         // T5, T6: the evidence for each: code that refuses, a name, or (🟡) only the stage it runs at or a result of its own. SaveLastPage is none.
-        Assert.Equal("CheckAccessStore name; HttpsOnly stage; Maintenance result; ValidateIp denies", string.Join("; ", shop.Graph.AllFacts
+        // V4: OwnedOnly refuses with "not found", in its base class: a refusal at the authorisation stage.
+        Assert.Equal("CheckAccessStore name; HttpsOnly stage; Maintenance result; OwnedOnly denies; ValidateIp denies", string.Join("; ", shop.Graph.AllFacts
             .Where(f => f.Kind == "auth" && f.Owner == "Shop.Web|M:Shop.Web.Controllers.AccountController.Settings" && f["rule"] == "filter")
             .Select(f => $"{f["filter"]} {f["basis"]}").Order(StringComparer.Ordinal)));
         // T5: a global filter holds for every action: on the project, from "global".
@@ -194,6 +195,9 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.Equal("DataType(EmailAddress)", string.Join("; ", shop.Graph.AllFacts
             .Where(f => f.Kind == "rule" && f.Owner == "Shop.Web|P:Shop.Web.Models.RegisterModel.Email").Select(f => $"{f["rule"]}({f["args"]})")));
         Assert.Equal("GreaterThan(0) fluentvalidation 'Order at least one' yes; NotEmpty() fluentvalidation ''", Rules("Quantity"));
+        // V5: other modifiers stay on the rule they follow, by name; WithSeverity's value is the rule's severity.
+        Assert.Equal("NotEmpty AsWarning ; GreaterThan WithSeverity Info", string.Join("; ", shop.Graph.AllFacts
+            .Where(f => f.Kind == "rule" && f.Owner == "Shop.Core|P:Shop.Core.NewOrder.Note").Select(f => $"{f["rule"]} {f["modifiers"]} {f["severity"]}")));
         // F9: each rule carries its own line.
         Assert.Equal(2, shop.Graph.AllFacts.Where(f => f.Kind == "rule" && f.Owner == "Shop.Core|P:Shop.Core.NewOrder.Quantity").Select(f => f.Line).Distinct().Count());
     }
@@ -295,6 +299,29 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.True(Has(EdgeKind.Renders, welcome, "view:Shop.Web/Themes/Dark/Views/Account/Done.cshtml", Label.Guessed));
         // T11: a partial named with a folder and no extension.
         Assert.True(Has(EdgeKind.Renders, view, "view:Shop.Web/Views/Shared/_Closed.cshtml"));
+
+        // V1: a component's view in the page's controller folder; a partial of a shared component view, there too, with its form.
+        Assert.True(Has(EdgeKind.Renders, comps + "TipsViewComponent.Invoke", "view:Shop.Web/Views/Account/Components/Tips/Default.cshtml", Label.Guessed));
+        const string summary = "view:Shop.Web/Views/Shared/Components/Summary/Default.cshtml";
+        Assert.True(Has(EdgeKind.Renders, summary, "view:Shop.Web/Views/Account/_Gift.cshtml", Label.Guessed));
+        Assert.True(Has(EdgeKind.Calls, "view:Shop.Web/Views/Account/_Gift.cshtml", summary + "#form1", Label.Guessed));
+        // V2: buttons that cancel their own submit don't submit the form around their partial; a popup opener reaches the page it opens (🟡).
+        const string popup = "view:Shop.Web/Views/Account/_Popup.cshtml";
+        Assert.False(Has(EdgeKind.Calls, popup, view + "#form1"));
+        var opener = shop.Graph.AllFacts.Single(f => f.Kind == "ui-event" && f.Owner == popup && f["text"] == "Add note");
+        Assert.Equal("click", opener["event"]);
+        Assert.True(Has(EdgeKind.CallsHttp, opener["handler"], ep + "ANY /account/notes", Label.Guessed));
+        Assert.DoesNotContain(shop.Graph.AllBlindSpots, b => b.Owner == popup);
+        // A button written in a script's text isn't the page's markup.
+        Assert.DoesNotContain(shop.Graph.AllFacts, f => f.Kind == "ui-event" && f.Owner == popup && f["text"] == "Edit");
+        // …by GET first; with none, by whatever verb the action serves (its script may post it).
+        var archive = shop.Graph.AllFacts.Single(f => f.Kind == "ui-event" && f.Owner == popup && f["text"] == "Archive selected")["handler"];
+        Assert.True(Has(EdgeKind.CallsHttp, archive, ep + "POST /account/archive", Label.Guessed));
+        // V3: a button's own target with no form in its file takes the method of the form around its partial (🟡); none: ❓.
+        var upload = shop.Graph.AllFacts.Single(f => f.Kind == "ui-event" && f.Owner == "view:Shop.Web/Views/Account/_Upload.cshtml")["handler"];
+        Assert.Equal([ep + "POST /account/notes"], Targets(upload));
+        Assert.True(Has(EdgeKind.CallsHttp, upload, ep + "POST /account/notes", Label.Guessed));
+        Assert.Contains(shop.Graph.AllBlindSpots, b => b.File == "Shop.Web/Views/Account/_Orphan.cshtml" && b.Reason.StartsWith("button with its own target outside any form", StringComparison.Ordinal));
     }
 
     [Fact]

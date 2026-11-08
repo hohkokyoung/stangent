@@ -50,7 +50,7 @@ public sealed class ValidationDetector : IDetector
         var body = selector?.ExpressionBody;
         if (body is null || file.Model.GetSymbolInfo(body).Symbol is not IPropertySymbol target || ctx.NodeId(target) is not { } propId) return;
         var set = ruleFor.Expression is MemberAccessExpressionSyntax m ? m.Expression.ToString() : "";
-        var rules = new List<(string Rule, string Args, SyntaxNode At, string Message, bool Conditional)>();
+        var rules = new List<(string Rule, string Args, SyntaxNode At, string Message, bool Conditional, string Modifiers, string Severity)>();
         // RuleFor(…).A().B(): each call's parent is a member access whose parent is the next invocation.
         for (SyntaxNode node = ruleFor; node.Parent is MemberAccessExpressionSyntax access && access.Parent is InvocationExpressionSyntax next; node = next)
         {
@@ -59,7 +59,7 @@ public sealed class ValidationDetector : IDetector
             // T12: a modifier is a call on the rule's options (IRuleBuilderOptions); a rule, a call on the rule builder. By name only when unknown.
             var receiver = file.Model.GetSymbolInfo(next).Symbol is IMethodSymbol bound ? (bound.ReducedFrom is { } ext ? ext.Parameters[0].Type : bound.IsExtensionMethod ? bound.Parameters[0].Type : bound.ContainingType)?.Name : null;
             var modifier = Modifiers.Contains(name) || (receiver is null || !receiver.StartsWith("IRuleBuilder", StringComparison.Ordinal) ? Modifier(name) : receiver.StartsWith("IRuleBuilderOptions", StringComparison.Ordinal));
-            if (!modifier) rules.Add((name, args, access.Name, "", false)); // F9: the rule's own line
+            if (!modifier) rules.Add((name, args, access.Name, "", false, "", "")); // F9: the rule's own line
             else if (Message(name))
             {
                 if (rules.Count > 0) rules[^1] = rules[^1] with { Message = MessageText(file.Model, next) };
@@ -67,11 +67,18 @@ public sealed class ValidationDetector : IDetector
             // F9: When/Unless guard the rules before them, not those chained after.
             else if (Condition(name))
                 for (var i = 0; i < rules.Count; i++) rules[i] = rules[i] with { Conditional = true };
+            // V5: any other modifier belongs to the rule before it, by name (Sonarr's AsWarning: it only warns); WithSeverity's value too.
+            else if (rules.Count > 0)
+                rules[^1] = rules[^1] with
+                {
+                    Modifiers = rules[^1].Modifiers.Length > 0 ? $"{rules[^1].Modifiers}|{name}" : name,
+                    Severity = name == "WithSeverity" && next.ArgumentList.Arguments.Count == 1 ? args : rules[^1].Severity,
+                };
 
         }
         foreach (var r in rules)
             ctx.AddFact(Name, "rule", propId, r.At, ("rule", r.Rule), ("args", r.Args), ("via", "fluentvalidation"), ("set", set),
-                ("message", r.Message), ("conditional", r.Conditional ? "yes" : ""));
+                ("message", r.Message), ("conditional", r.Conditional ? "yes" : ""), ("modifiers", r.Modifiers), ("severity", r.Severity));
     }
 
     /// <summary>A constant's value; otherwise the expression's own text with its type (<c>seriesExistsValidator: SeriesExistsValidator</c>).</summary>

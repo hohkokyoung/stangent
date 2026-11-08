@@ -239,7 +239,7 @@ public sealed class RazorViewsDetector : IDetector
             Fact("form", id, f.Line, ("method", f.Method), ("route", f.Route ?? ""), ("action", f.Action ?? ""), ("controller", f.Controller ?? ""),
                 ("area", f.Area ?? ""), ("url", f.Url ?? ""), ("runtime", f.Runtime ? "yes" : ""), ("view", viewId),
                 ("viewController", viewController), ("viewArea", viewArea), ("viewAction", Path.GetFileNameWithoutExtension(pathInProject)),
-                ("assembly", ctx.AssemblyName));
+                ("assembly", ctx.AssemblyName), ("via", f.Via));
             return id;
         }
         var points = new Dictionary<Page.FormRecord, string>(ReferenceEqualityComparer.Instance);
@@ -353,36 +353,60 @@ public sealed class RazorViewsDetector : IDetector
         static bool IsPath(string name) => name.Contains('/') || name.EndsWith(".cshtml", StringComparison.OrdinalIgnoreCase);
         static string File(string name) => name.EndsWith(".cshtml", StringComparison.OrdinalIgnoreCase) ? name : name + ".cshtml";
 
-        // N2: MVC's view lookup.
-        foreach (var r in facts.Where(f => f.Kind == "renders-view"))
+        // V1: the {controller} in MVC's lookup is the request's, not the view's folder: a view shows on the pages of these controllers.
+        var pages = new Dictionary<string, HashSet<(string Controller, string Area)>>(StringComparer.Ordinal);
+        HashSet<(string Controller, string Area)> Pages(string view) => pages.TryGetValue(view, out var s) ? s : pages[view] = [];
+        foreach (var v in views.Where(v => v["controller"].Length > 0)) Pages(v.Owner).Add((v["controller"], v["area"]));
+        string? First(string dir, IEnumerable<string> places) => places.Select(p => At(dir, p)).FirstOrDefault(h => h is not null);
+
+        // N2: MVC's view lookup: an action's view.
+        foreach (var r in facts.Where(f => f.Kind == "renders-view" && f["component"].Length == 0))
         {
             var dir = r["projectDir"];
-            var component = r["component"];
-            var name = r["name"].Length > 0 ? r["name"] : component.Length > 0 ? "Default" : r["action"];
-            string? hit;
-            if (IsPath(name)) hit = At(dir, name) ?? ByPath(dir, name);
-            else
-            {
-                var file = File(component.Length > 0 ? $"Components/{component}/{name}" : name);
-                var area = r["area"];
-                IEnumerable<string> places = component.Length > 0
-                    ? [$"Views/{r["controller"]}/{file}", $"Views/Shared/{file}", .. views.Where(v => v["area"].Length > 0).Select(v => $"Areas/{v["area"]}/Views/Shared/{file}").Distinct()]
-                    : area.Length > 0 ? [$"Areas/{area}/Views/{r["controller"]}/{file}", $"Areas/{area}/Views/Shared/{file}", $"Views/Shared/{file}"]
-                    : [$"Views/{r["controller"]}/{file}", $"Views/Shared/{file}"];
-                hit = places.Select(p => At(dir, p)).FirstOrDefault(h => h is not null);
-            }
+            var name = r["name"].Length > 0 ? r["name"] : r["action"];
+            var area = r["area"];
+            var hit = IsPath(name) ? At(dir, name) ?? ByPath(dir, name)
+                : First(dir, area.Length > 0 ? [$"Areas/{area}/Views/{r["controller"]}/{File(name)}", $"Areas/{area}/Views/Shared/{File(name)}", $"Views/Shared/{File(name)}"]
+                    : [$"Views/{r["controller"]}/{File(name)}", $"Views/Shared/{File(name)}"]);
             if (hit is not null)
             {
                 ctx.AddEdge(r.Owner, hit, EdgeKind.Renders, r["name"].Length > 0 && IsPath(name) && !expander ? Label.Certain : Label.Guessed, Name);
                 Alternatives(r.Owner, hit);
+                if (r["controller"].Length > 0) Pages(hit).Add((r["controller"], area));
             }
             else ctx.AddBlindSpot(r.Owner, r.File, r.Line, $"view {name} not found by MVC's lookup rules", Name);
         }
 
-        // Partials: beside the view, then the shared folders.
-        foreach (var r in facts.Where(f => f.Kind == "renders-partial"))
+        // V1: the views that invoke each component, by its name: a component's view shows on their pages.
+        var componentOf = facts.Where(f => f.Kind == "view-component").GroupBy(f => f.Owner).ToDictionary(g => g.Key, g => g.First()["name"], StringComparer.Ordinal);
+        var invokers = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        void Invoked(string component, string view) => (invokers.TryGetValue(component, out var s) ? s : invokers[component] = []).Add(view);
+        foreach (var e in ctx.Graph.AllEdges.Where(e => e.Kind == EdgeKind.Renders && e.Source.StartsWith("view:", StringComparison.Ordinal) && componentOf.ContainsKey(e.Target)))
+            Invoked(componentOf[e.Target], e.Source);
+        foreach (var r in facts.Where(f => f.Kind == "renders-component")) Invoked(r["name"], r.Owner);
+
+        // A component's view, and a partial: their hits under what's known of the pages they show on.
+        var componentViews = facts.Where(f => f.Kind == "renders-view" && f["component"].Length > 0).ToList();
+        var partials = facts.Where(f => f.Kind == "renders-partial" && viewOf.ContainsKey(f.Owner)).ToList();
+        List<string> ComponentHits(Fact r)
         {
-            if (!viewOf.TryGetValue(r.Owner, out var v)) continue;
+            var dir = r["projectDir"];
+            var name = r["name"].Length > 0 ? r["name"] : "Default";
+            if (IsPath(name)) return [.. new[] { At(dir, name) ?? ByPath(dir, name) }.OfType<string>()];
+            var file = File($"Components/{r["component"]}/{name}");
+            var shown = (invokers.GetValueOrDefault(r["component"]) ?? []).SelectMany(Pages).Distinct().ToList();
+            var hits = shown.Select(p => First(dir, p.Area.Length > 0
+                    ? [$"Areas/{p.Area}/Views/{p.Controller}/{file}", $"Areas/{p.Area}/Views/Shared/{file}", $"Views/Shared/{file}"]
+                    : [$"Views/{p.Controller}/{file}", $"Views/Shared/{file}"]))
+                .OfType<string>().Distinct().ToList();
+            if (hits.Count == 0 && First(dir, [$"Views/Shared/{file}", .. views.Where(v => v["area"].Length > 0).Select(v => $"Areas/{v["area"]}/Views/Shared/{file}").Distinct()]) is { } any)
+                hits.Add(any);
+            return hits;
+        }
+        // Partials: beside the view, then the shared folders; a shared or component view's partial also in each page's controller folder (V1).
+        List<string> PartialHits(Fact r)
+        {
+            var v = viewOf[r.Owner];
             var dir = v["projectDir"];
             var name = r["name"];
             var here = Path.GetDirectoryName(v["path"])?.Replace('\\', '/') ?? "";
@@ -390,16 +414,52 @@ public sealed class RazorViewsDetector : IDetector
             // T11: MVC adds the extension a name with a folder leaves out.
             var relative = IsPath(name) && !name.StartsWith('~') && !name.StartsWith('/') ? Relative(here, File(name)) : null;
             var hit = IsPath(name) ? (relative is null ? null : At(dir, relative)) ?? At(dir, File(name)) ?? ByPath(dir, File(name))
-                : new[] { $"{here}/{File(name)}", v["area"].Length > 0 ? $"Areas/{v["area"]}/Views/Shared/{File(name)}" : null, $"Views/Shared/{File(name)}" }
-                    .OfType<string>().Select(p => At(dir, p)).FirstOrDefault(h => h is not null);
-            if (hit is not null)
+                : First(dir, new[] { $"{here}/{File(name)}", v["area"].Length > 0 ? $"Areas/{v["area"]}/Views/Shared/{File(name)}" : null, $"Views/Shared/{File(name)}" }.OfType<string>());
+            var hits = hit is null ? new List<string>() : [hit];
+            if (!IsPath(name) && v["controller"].Length == 0)
+                hits.AddRange(Pages(r.Owner).Select(p => First(dir, p.Area.Length > 0
+                        ? [$"Areas/{p.Area}/Views/{p.Controller}/{File(name)}", $"Areas/{p.Area}/Views/Shared/{File(name)}", $"Views/Shared/{File(name)}"]
+                        : [$"Views/{p.Controller}/{File(name)}", $"Views/Shared/{File(name)}"]))
+                    .OfType<string>().Where(h => !hits.Contains(h)).Distinct().ToList());
+            return hits;
+        }
+        // Pages flow down: from a view to its partials, from a component's invokers to its view; until nothing new.
+        for (var grew = true; grew;)
+        {
+            grew = false;
+            foreach (var r in partials)
+                foreach (var h in PartialHits(r))
+                    foreach (var p in Pages(r.Owner).ToList()) grew |= Pages(h).Add(p);
+            foreach (var r in componentViews)
+            {
+                var shown = (invokers.GetValueOrDefault(r["component"]) ?? []).SelectMany(Pages).Distinct().ToList();
+                foreach (var h in ComponentHits(r))
+                    foreach (var p in shown) grew |= Pages(h).Add(p);
+            }
+        }
+
+        foreach (var r in componentViews)
+        {
+            var hits = ComponentHits(r);
+            var name = r["name"].Length > 0 ? r["name"] : "Default";
+            foreach (var hit in hits)
+            {
+                ctx.AddEdge(r.Owner, hit, EdgeKind.Renders, r["name"].Length > 0 && IsPath(name) && !expander ? Label.Certain : Label.Guessed, Name);
+                Alternatives(r.Owner, hit);
+            }
+            if (hits.Count == 0) ctx.AddBlindSpot(r.Owner, r.File, r.Line, $"view {name} not found by MVC's lookup rules", Name);
+        }
+        foreach (var r in partials)
+        {
+            var hits = PartialHits(r);
+            foreach (var hit in hits)
             {
                 ctx.AddEdge(r.Owner, hit, EdgeKind.Renders, Label.Guessed, Name);
                 Alternatives(r.Owner, hit);
                 if (r["form"].Length > 0) (partialForms.TryGetValue(hit, out var list) ? list : partialForms[hit] = []).Add(r["form"]);
                 else plainPartials.Add((r.Owner, hit));
             }
-            else ctx.AddBlindSpot(r.Owner, r.File, r.Line, $"partial view {name} not found", Name);
+            if (hits.Count == 0) ctx.AddBlindSpot(r.Owner, r.File, r.Line, $"partial view {r["name"]} not found", Name);
         }
 
         // A partial rendered with no form around it, inside a partial that has one, sits in that form too (Create → _CreateOrUpdate → _Values).
@@ -414,8 +474,20 @@ public sealed class RazorViewsDetector : IDetector
                 }
         }
 
+        // V2: a button whose script binding (the view's own, else the one in the project's scripts) always cancels doesn't submit.
+        var byId = ctx.Facts("ui").Where(f => f.Kind == "dom-event" && f["selector"].StartsWith('#') && f["event"] is "click" or "submit")
+            .ToLookup(f => f["selector"][1..], StringComparer.Ordinal);
+        bool Cancelled(Fact b)
+        {
+            if (b["id"].Length == 0) return false;
+            var all = byId[b["id"]].ToList();
+            var own = all.Where(x => x.Owner == b.Owner).ToList();
+            var fit = own.Count > 0 ? own : all.Where(x => !x.Owner.StartsWith("view:", StringComparison.Ordinal)).ToList();
+            return fit.Count == 1 && fit[0]["cancels"] == "yes" || own.Count > 0 && own.All(x => x["cancels"] == "yes");
+        }
+
         // T9: a submit button with no form of its own submits the form around the <partial> that rendered its view (🟡); with none, ❓.
-        foreach (var group in facts.Where(f => f.Kind == "ui-event" && f["event"] == "submit" && f["handler"].Length == 0).GroupBy(f => f.Owner))
+        foreach (var group in facts.Where(f => f.Kind == "ui-event" && f["event"] == "submit" && f["handler"].Length == 0 && !Cancelled(f)).GroupBy(f => f.Owner))
         {
             var around = partialForms.GetValueOrDefault(group.Key)?.Distinct().ToList() ?? [];
             foreach (var form in around) ctx.AddEdge(group.Key, form, EdgeKind.Calls, Label.Guessed, Name);
@@ -440,7 +512,7 @@ public sealed class RazorViewsDetector : IDetector
             if (hits.Count == 0) ctx.AddBlindSpot(r.Owner, r.File, r.Line, $"view component {r["name"]} not found", Name);
         }
 
-        Forms(ctx, facts.Where(f => f.Kind == "form").ToList());
+        Forms(ctx, facts.Where(f => f.Kind == "form").ToList(), partialForms);
         Scripts(ctx, facts);
     }
 
@@ -465,34 +537,48 @@ public sealed class RazorViewsDetector : IDetector
     }
 
     /// <summary>A form reaches the endpoint it posts to: by route name, by action and controller (the view's own by default), or by a literal URL.</summary>
-    void Forms(LinkContext ctx, List<Fact> forms)
+    void Forms(LinkContext ctx, List<Fact> forms, Dictionary<string, List<string>> partialForms)
     {
         if (forms.Count == 0) return;
+        var formById = forms.GroupBy(f => f.Owner).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         var routes = ctx.Facts("aspnetcore-routes").ToList();
         var conventional = routes.Where(f => f.Kind == "conventional" && f.Data.ContainsKey("name")).ToList();
         var actions = routes.Where(f => f.Kind == "mvc-action").ToList();
         var endpoints = ctx.Graph.AllNodes.Where(n => n.Kind == NodeKind.Endpoint).ToDictionary(n => n.Id, StringComparer.Ordinal);
         var routedTo = ctx.Graph.AllEdges.Where(e => e.Kind == EdgeKind.RoutesTo && endpoints.ContainsKey(e.Source)).ToLookup(e => e.Target, e => e.Source);
         static bool Same(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
-        bool Fits(string endpointId, string verb) => endpoints[endpointId].Name.StartsWith(verb + " ", StringComparison.Ordinal) || endpoints[endpointId].Name.StartsWith("ANY ", StringComparison.Ordinal);
+        bool Fits(string endpointId, string verb) => verb == "*" || endpoints[endpointId].Name.StartsWith(verb + " ", StringComparison.Ordinal) || endpoints[endpointId].Name.StartsWith("ANY ", StringComparison.Ordinal);
 
         foreach (var f in forms)
         {
-            var verb = f["method"];
             if (f["runtime"] == "yes")
             {
                 ctx.AddBlindSpot(f.Owner, f.File, f.Line, "form target built at runtime", Name);
                 continue;
             }
+            // V3: a button's own target with no form in its file takes the method of each form around the partial that renders it (🟡).
+            var verbs = f["method"].Length > 0 ? [f["method"]]
+                : (partialForms.GetValueOrDefault(f["view"]) ?? []).Select(id => formById.GetValueOrDefault(id)?["method"]).OfType<string>().Where(m => m.Length > 0).Distinct().ToList();
+            if (verbs.Count == 0)
+                ctx.AddBlindSpot(f.Owner, f.File, f.Line, "button with its own target outside any form the graph can see: its method is unknown", Name);
+            // V2: an onclick's page by GET first; its script may send it another way ("*": any verb the action serves).
+            if (f["via"] == "onclick") { if (Reach(f, "GET", false, report: false) == 0) Reach(f, "*", false); }
+            else foreach (var verb in verbs) Reach(f, verb, f["method"].Length == 0);
+        }
+
+        int Reach(Fact f, string verb, bool inherited, bool report = true)
+        {
             var hits = new List<string>();
-            var label = Label.Certain;
+            var label = inherited || f["via"] == "onclick" ? Label.Guessed : Label.Certain;
             if (f["route"].Length > 0)
             {
                 var named = conventional.Where(c => c["name"] == f["route"]).OrderBy(c => c["assembly"] == f["assembly"] ? 0 : 1).FirstOrDefault();
                 if (named is not null && named["controller"].Length > 0)
                 {
                     var path = RoutesDetector.Normalize(Regex.Replace(named["pattern"], "\\{(\\w+)=([^}]+)\\}", "{$1}"));
-                    hits.AddRange(new[] { verb, "ANY" }.Select(v => RoutesDetector.EndpointId(named["assembly"], v, path)).Where(endpoints.ContainsKey).Take(1));
+                    string[] tried = verb == "*" ? ["GET", "POST", "PUT", "PATCH", "DELETE", "ANY"] : [verb, "ANY"];
+                    var ids = tried.Select(v => RoutesDetector.EndpointId(named["assembly"], v, path)).Where(endpoints.ContainsKey);
+                    hits.AddRange(verb == "*" ? ids : ids.Take(1));
                 }
             }
             if (f["url"].Length > 0)
@@ -517,8 +603,9 @@ public sealed class RazorViewsDetector : IDetector
             hits = [.. hits.Distinct().Where(h => !(endpoints[h].Name.StartsWith("ANY ", StringComparison.Ordinal) && withVerb.Contains(endpoints[h].Name[4..])))];
             if (hits.Count > 1) label = Label.Guessed;
             foreach (var h in hits) ctx.AddEdge(f.Owner, h, EdgeKind.CallsHttp, label, Name);
-            if (hits.Count == 0)
-                ctx.AddBlindSpot(f.Owner, f.File, f.Line, $"form {verb} {(f["route"].Length > 0 ? "route " + f["route"] : f["url"].Length > 0 ? f["url"] : $"{controller}.{action}")} matched no endpoint", Name);
+            if (hits.Count == 0 && report)
+                ctx.AddBlindSpot(f.Owner, f.File, f.Line, $"form {(verb == "*" ? "(any verb)" : verb)} {(f["route"].Length > 0 ? "route " + f["route"] : f["url"].Length > 0 ? f["url"] : $"{controller}.{action}")} matched no endpoint", Name);
+            return hits.Count;
         }
     }
 
@@ -765,7 +852,11 @@ public sealed class RazorViewsDetector : IDetector
     /// <summary>The view's markup rebuilt as one string, C# values as markers, then read for forms, buttons and scripts.</summary>
     sealed class Page
     {
-        public sealed record FormRecord(int Line, string Method, string? Route, string? Action, string? Controller, string? Area, string? Url, bool Runtime);
+        public sealed record FormRecord(int Line, string Method, string? Route, string? Action, string? Controller, string? Area, string? Url, bool Runtime)
+        {
+            /// <summary>"onclick" when the target is read from a button's onclick (V2), a guess at what its script does.</summary>
+            public string Via { get; init; } = "";
+        }
         /// <summary>T9: the form around each place the view renders a partial (by html offset), for the partial's buttons.</summary>
         readonly List<(int Start, int End, FormRecord Form)> formSpans = [];
         readonly List<int> exprAt = [];
@@ -857,8 +948,11 @@ public sealed class RazorViewsDetector : IDetector
         {
             var text = html.ToString();
             var forms = new Stack<(FormRecord Form, int Start)>();
+            var scriptEnd = -1;
             foreach (Match m in Tag.Matches(text))
             {
+                // Markup in a script's text (a grid column's '<button …>' string) isn't the page's own.
+                if (m.Index < scriptEnd) continue;
                 var name = m.Groups[2].Value.ToLowerInvariant();
                 if (m.Groups[1].Value == "/")
                 {
@@ -890,13 +984,18 @@ public sealed class RazorViewsDetector : IDetector
                         var inner = name == "button" ? Inner(text, m, "button") : Get(attrs, "value") ?? "";
                         var (keys, words) = Words(inner);
                         var formNow = forms.Count > 0 ? forms.Peek().Form : null;
+                        // V2: an inline handler that ends `return false` stops the submit.
+                        var onclick = raw.GetValueOrDefault("onclick") ?? "";
+                        var submit = type is "submit" or "image" && !CancelsSubmit.IsMatch(onclick);
                         // T3: <button asp-action="…">, formaction="…" or formmethod="…": its own target, else its form's.
+                        // V2: a button that doesn't submit, with one constant @Url.Action/RouteUrl in its onclick, opens that (🟡 GET).
                         var own = el is not null && (el.Props.ContainsKey("Action") || el.Props.ContainsKey("Route") || el.Props.ContainsKey("Controller"))
                             || raw.ContainsKey("formaction") || raw.ContainsKey("formmethod")
-                            ? ButtonTarget(el, attrs, raw, line, formNow) : null;
-                        Buttons.Add(new Button(line, name, type, type is "submit" or "image", formNow, own, keys, words, Get(attrs, "id") ?? "", Get(attrs, "name") ?? ""));
+                            ? ButtonTarget(el, attrs, raw, line, formNow) : !submit ? OnclickTarget(onclick, line) : null;
+                        Buttons.Add(new Button(line, name, type, submit, formNow, own, keys, words, Get(attrs, "id") ?? "", Get(attrs, "name") ?? ""));
                         break;
                     case "script":
+                        scriptEnd = text.IndexOf("</script", m.Index + m.Length, StringComparison.OrdinalIgnoreCase);
                         if (Get(attrs, "src") is not null) break;
                         var body = Inner(text, m, "script");
                         var bodyStart = m.Index + m.Length;
@@ -988,7 +1087,8 @@ public sealed class RazorViewsDetector : IDetector
         /// <summary>T3: a button's own target: its tag helper's asp-*, else formaction (literal, or @Url.Action/RouteUrl), with formmethod or its form's method.</summary>
         FormRecord ButtonTarget(ElemSeg? el, Dictionary<string, string?> attrs, Dictionary<string, string> raw, int line, FormRecord? form)
         {
-            var verb = (Get(attrs, "formmethod") ?? form?.Method ?? "get").ToUpperInvariant();
+            // V3: with no form in this file, the method is the form's around the partial that renders it: "" until linking.
+            var verb = (Get(attrs, "formmethod") ?? form?.Method ?? "").ToUpperInvariant();
             if (raw.ContainsKey("formmethod") && Get(attrs, "formmethod") is null) return new FormRecord(line, "GET", null, null, null, null, null, true);
             if (Targets(el))
             {
@@ -1000,6 +1100,18 @@ public sealed class RazorViewsDetector : IDetector
                 return form is null ? new FormRecord(line, verb, null, null, null, null, null, false) : form with { Line = line, Method = verb };
             var (url, route, action, controller, area, rt) = Address(given, false);
             return new FormRecord(line, verb, route, action, controller, area, url, rt);
+        }
+
+        static readonly Regex CancelsSubmit = new(@"(?:^|;|javascript:)\s*return\s+false\s*;?\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        /// <summary>V2: an onclick holding one server value, a constant <c>@Url.Action</c>/<c>@Url.RouteUrl</c>: the page it opens (🟡 GET).</summary>
+        FormRecord? OnclickTarget(string onclick, int line)
+        {
+            var values = Regex.Matches(onclick, "\u0001\\d+\u0002");
+            if (values.Count != 1) return null;
+            var (_, route, action, controller, area, runtime) = Address(values[0].Value, false);
+            return runtime || action is null && route is null ? null
+                : new FormRecord(line, "GET", route, action, controller, area, null, false) { Via = "onclick" };
         }
 
         /// <summary>An action/formaction value: a literal URL; <c>@Url.Action("Add", "Cart")</c> or <c>@Url.RouteUrl("Name")</c> with constants; else made at runtime.</summary>

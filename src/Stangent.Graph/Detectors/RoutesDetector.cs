@@ -174,6 +174,8 @@ public sealed class RoutesDetector : IDetector
 
     /// <summary>A result that refuses the request: a challenge, forbid, 401/403, or a redirect to access-denied or sign-in.</summary>
     static readonly Regex Refusal = new(@"Challenge|Forbid|Unauthori[sz]ed|AccessDenied|SignIn|Login|Status40[13]|\b40[13]\b", RegexOptions.CultureInvariant);
+    /// <summary>V4: any other 4xx (404, 400…): a refusal when an authorisation filter short-circuits with it.</summary>
+    static readonly Regex ClientError = new(@"NotFound|BadRequest|Conflict|UnprocessableEntity|Status4\d\d|\b4\d\d\b", RegexOptions.CultureInvariant);
     static readonly ConditionalWeakTable<INamedTypeSymbol, string> ResultsSeen = new();
 
     /// <summary>
@@ -199,23 +201,28 @@ public sealed class RoutesDetector : IDetector
     {
         var authorization = filter is not null && (Implements(filter, "IAuthorizationFilter") || Implements(filter, "IAsyncAuthorizationFilter"));
         var results = filter is null ? "" : ResultsSeen.GetValue(filter, Results);
-        var basis = results == "denies" ? "denies" : AccessWords.Any(w => name.Contains(w, StringComparison.Ordinal)) ? "name"
-            : authorization ? "stage" : results == "sets" ? "result" : null;
+        var basis = results == "denies" || results == "4xx" && authorization ? "denies" : AccessWords.Any(w => name.Contains(w, StringComparison.Ordinal)) ? "name"
+            : authorization ? "stage" : results is "sets" or "4xx" ? "result" : null;
         return basis is null ? null : (name, authorization ? "authorization" : "other", basis);
     }
 
-    /// <summary>What a filter's own code does with <c>context.Result</c>: <c>denies</c>, <c>sets</c>, or nothing.</summary>
+    /// <summary>
+    /// What a filter's code, its own or a base class's in the repo (V4), does with <c>context.Result</c>: <c>denies</c>, <c>4xx</c>
+    /// (another client error), <c>sets</c>, or nothing.
+    /// </summary>
     static string Results(INamedTypeSymbol filter)
     {
-        var sets = false;
-        foreach (var r in filter.GetMembers().OfType<IMethodSymbol>().SelectMany(m => m.DeclaringSyntaxReferences))
-            foreach (var set in r.GetSyntax().DescendantNodes().OfType<AssignmentExpressionSyntax>())
-                if (set.Left is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Result" })
-                {
-                    if (Refusal.IsMatch(set.Right.ToString())) return "denies";
-                    sets = true;
-                }
-        return sets ? "sets" : "";
+        var found = "";
+        for (var t = filter; t is not null && t.SpecialType != SpecialType.System_Object; t = t.BaseType)
+            foreach (var r in t.GetMembers().OfType<IMethodSymbol>().SelectMany(m => m.DeclaringSyntaxReferences))
+                foreach (var set in r.GetSyntax().DescendantNodes().OfType<AssignmentExpressionSyntax>())
+                    if (set.Left is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Result" })
+                    {
+                        var right = set.Right.ToString();
+                        if (Refusal.IsMatch(right)) return "denies";
+                        found = ClientError.IsMatch(right) ? "4xx" : found.Length == 0 ? "sets" : found;
+                    }
+        return found;
     }
 
     /// <summary>T5: <c>options.Filters.Add&lt;X&gt;()</c>, <c>Add(typeof(X))</c>, <c>Add(new X())</c>, <c>AddService…</c>: an access filter for every action.</summary>

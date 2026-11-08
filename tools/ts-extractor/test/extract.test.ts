@@ -463,3 +463,19 @@ test("a global in several plain scripts is a guess to each, and a handler is a f
   const events = lines.flatMap((l) => l.t === "fact" && l.kind === "dom-event" ? [`${l.data.selector} ${l.data.handler}`] : []).sort();
   assert.deepEqual(events, ["#many inline", "#one ts|js/page.js#go"]);
 });
+
+test("a handler that always stops the browser's own action says so (V2)", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "stangent-js-"));
+  fs.mkdirSync(path.join(root, "js"));
+  fs.writeFileSync(path.join(root, "js/page.js"), [
+    "$('#refresh').click(function () { reload(); return false; });",
+    "$('#maybe').click(function () { if (busy) return false; reload(); });",
+    "document.getElementById('plain').addEventListener('click', function () { return false; });",
+    "document.getElementById('stop').addEventListener('submit', function (e) { e.preventDefault(); reload(); });",
+    "function reload() {}",
+  ].join("\n"));
+  const lines = extract({ tsconfig: root, root, projectId: "p", settings: {}, files: [path.join(root, "js/page.js")] }).lines;
+  const events = lines.flatMap((l) => l.t === "fact" && l.kind === "dom-event" ? [`${l.data.selector} ${l.data.cancels}`] : []).sort();
+  // jQuery honours `return false`; addEventListener doesn't; a conditional one isn't "always".
+  assert.deepEqual(events, ["#maybe ", "#plain ", "#refresh yes", "#stop yes"]);
+});

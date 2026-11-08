@@ -382,3 +382,26 @@ script joins use `#id` selectors only, so `button[name='plugin-reload-grid']` (`
 - **T12:** Sonarr's 13 dropped rules are exactly its 13 `.AsWarning()` calls (source grep); their messages now sit on the rule they
   follow. The only other `IRuleBuilderOptions` extensions across the three repos are nopCommerce's `WithMessageAwait` (modifiers, right).
 - **Kavita:** 1,029 `auth` facts, as before, now with a basis each (`KPlus` denies; the access filters by name; `ProfilePrivacy`, V4).
+
+## 14. V1–V5 fixed, 2026-11-08 (D168)
+
+Owner: "sure lets do those" (V1–V5, on the recommendation; V6–V10 left). Code only, no paid AI. Tests: 2,159 .NET + 50 extractor
+pass; `phases check` ok. Fixtures in `tests/fixtures/shop`: `Components/PageViewComponents.cs` with `Views/Account/Components/Tips/`
+and `Views/Shared/Components/Summary/` (+ `_Gift`), `Views/Account/_Popup`, `_Upload`, a button in `_Orphan`, `OwnedOnly` in
+`AccountController.cs`, `Note` in `Shop.Core/Rules.cs`.
+
+| # | Fix | Before → after |
+|---|---|---|
+| V1 | MVC's `{controller}` is the request's: a view shows on the pages of the controllers whose views reach it (a controller folder, an action's `View()`, then down through partials and the views that invoke a component). A component's view is looked up in each such controller's folder first; so is a partial of a view outside a controller folder (Shared, component views). 🟡 | nop component → view 52 → 55 (`BlogMonths`, `BlogTags`, `ProfileInfo`); `_GiftCardBox` found, and its button now submits the cart form; formless-button ❓ 19 → 17 |
+| V2 | a submit button whose inline `onclick` ends `return false`, or whose script binding always cancels (new `dom-event` `cancels`: `preventDefault()`, or jQuery's `return false`, as a statement of the handler's own body), doesn't submit. A button that doesn't submit, with one constant `@Url.Action`/`@Url.RouteUrl` in its `onclick`, gets a `form` point for the page (`via: onclick`), 🟡 | nop partial → form lines 79 → 24 (47 partials → 19; every one dropped checked: each button cancels); 65 onclick targets, all reach an endpoint 🟡 (60 by GET, 5 POST-only actions their scripts post to) |
+| V3 | a button's own target with no form in its file has no method of its own: linking takes the method of each form around its partial, 🟡; none → ❓ "its method is unknown" | `_GeneralCommon.Localization.cshtml:13` → `POST /Admin/Setting/UploadLocalePattern/{id?}` 🟡 (was ❓ "GET … matched no endpoint") |
+| V4 | at the authorisation stage any other 4xx short-circuit (not found, bad request) is `denies`; a filter's base classes in the repo are read for what it sets | Kavita: all 255 filter facts `denies` (were 16 `denies`, 220 `name`, 19 🟡 `stage`); each of its 9 filters refuses in code (404 or 400). nop unchanged |
+| V5 | a rule keeps its other modifiers by name (`modifiers`, `\|`-joined) and a constant `WithSeverity(…)`'s member (`severity`) | Sonarr: 53 rules carry modifiers (`WithErrorCode` 18, `AsWarning` 13, `WithName` 12, `OverridePropertyName` 10); 606 rules, unchanged |
+
+**Past the suggested fix, said plainly (D155):** an onclick target is tried by GET first and, when the action serves no GET, by any
+verb it serves (the 5 nop actions its scripts post to; without this they were 5 new ❓); onclick targets cover `type="button"` buttons
+too, not only cancelled submits; and markup inside a `<script>`'s text (a grid column's `'<button …>'` string) is no longer read as
+the page's own: 23 nop buttons, which had kept 5 partial → form lines with a cut-off `onclick`.
+
+**nopCommerce blind spots 767 → 760.** Sonarr and Kavita rebuilt: no point or line lost, cross-check 0 and 2 (unchanged); Sonarr has no
+views, Kavita's only change is the filter basis.
