@@ -200,4 +200,5 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D162 · Every AI step runs through the batch drivers; the plugin's in-session subagent route goes
 - D163 · The code graph reads what flows need, checked on Sonarr and Kavita; `code-graph` v5 (G1–G8 fixed)
 - D164 · The framework's own answer first: tables from EF's snapshot; every build cross-checks endpoints with OpenAPI and tables with the snapshot
+- D165 · Razor views are read from the Razor compiler's own output (forms → endpoints, buttons, `View()` → view); an app's own access filters and plain scripts are read (nopCommerce N1–N5)
 

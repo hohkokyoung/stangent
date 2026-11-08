@@ -37,6 +37,9 @@ Every point has an id, a kind, a display name, its project, and a file and line 
 | `project` (Python) | `project:<path/to/requirements.txt>`, or `project:python` when no dependency file is above the code | the Python extractor |
 | `type`, `method`, `property`, `field` (Python) | `py\|<file>#<Name>`, e.g. `py\|shop/service.py#OrderService.place`; a nested function is `outer.inner`; module and class variables are fields | the Python extractor |
 | `endpoint` (Flask) | `endpoint:python\|<VERB> <route>`, or `endpoint:python:<dir>\|…` for a project in a folder | `flask-routes` |
+| `view` | `view:<path/to/X.cshtml>`: a server-rendered Razor view, spanning its lines (N1) | `razor-views` |
+| `form` | `view:<path>#form<n>`: a form in a view, in the order written; the handler its submit buttons run (N1) | `razor-views` |
+| `project` (plain scripts) | `project:<C# project folder>/scripts`: that project's own `.js` and its views' inline scripts (N5) | the TypeScript extractor |
 
 Test methods (xUnit, NUnit and MSTest attributes; `it`/`test` cases inside `describe` blocks, named
 `Suite › case`; Python's `test_…` in `test_*.py` and `*_test.py`, or on a `TestCase`) are marked `isTest`. Ids are the same ones the
@@ -219,10 +222,15 @@ Facts code reads to lay out a flow; no AI. Each is a row in the `facts` table (`
 | Kind | On | Data | From |
 |---|---|---|---|
 | `ui-event` | the component (React) or template (Angular) | `element`, `event` (`onPress`, `click`), `handler` (a point id; `inline`; `prop:…`), `keys` (text keys passed to `translate`/`t`/the `translate` pipe, `\|`-separated), `text` (literal text and label attributes) | the TypeScript extractor |
+| `ui-event` | a view (Razor) | `element` (`button`, `input`), `event` (`submit`, `click`), `handler` (the `form` point a submit runs; `""` for a plain button), `keys` (keys passed to anything typed `…Localizer`: nop's `@T("…")`, `@Localizer["…"]`), `text`, `id`, `name`, `type` | `razor-views` |
+| `form` | a `form` point | `method` (as written; HTML's GET when not, POST for `Html.BeginForm`), `route`, `action`, `controller`, `area` (tag helper values, constants resolved), `url` (a literal `action`), `runtime` (`yes`: a target made at runtime) | `razor-views` |
+| `view` | a view | `path` (in its project), `model` (the `@model` type), `controller`, `area` (from its folder), `kind` (`mvc.1.0.view`, `mvc.1.0.razor-page`) | `razor-views` |
+| `dom-event` | the function binding it, or the view (inline scripts) | `selector` (`#id`, `.class`, `document`), `event`, `handler` (a point id; `inline`) | the TypeScript extractor |
 | `guard` | a page | `guard` (id), `name`, `via` (`canActivate`, `canMatch`…); a parent route's guards hold for its children | the TypeScript extractor |
 | `auth` | a controller action | `rule` (`authorize`/`anonymous`), `policy`, `roles`, `from` (`method`, `class X`): `[AllowAnonymous]` on the method wins, `[Authorize]` is read up the base controllers | `aspnetcore-routes` |
+| `auth` (an app's own filter, N3) | a controller action | `rule` `filter`, `filter` (`CheckPermission`), `args` (by parameter name, constants and enum members resolved: `permission = "Accounts.Manage", deny = Json`), `stage` (`authorization` when the filter runs there, else `other`), `from`. An MVC filter attribute (from `TypeFilterAttribute`/`ServiceFilterAttribute`, or a filter itself) counts when it runs at the authorisation stage or its name says Authorize, Authorization, Permission, Access or Role. `[AllowAnonymous]` doesn't remove it: only the filter's own code could | `aspnetcore-routes` |
 | `fallback-auth` | the project | `authenticatedUser` (`required`), `schemes`: `options.FallbackPolicy = …`, which holds for actions with no marker of their own | `aspnetcore-routes` |
-| `rule` | the property checked | `rule` (`Required`, `GreaterThan`, `SetValidator`…), `args` (constants as values), `via` (`attribute`/`fluentvalidation`), `set` (`PostValidator`), `message`, `conditional` | `validation` |
+| `rule` | the property checked | `rule` (`Required`, `GreaterThan`, `SetValidator`…), `args` (constants as values, enum members by name: `DataType(EmailAddress)`), `via` (`attribute`/`fluentvalidation`), `set` (`PostValidator`), `message` (any `WithMessage…`: a constant's text, else the expression), `conditional`. Chained `With…`, `When…`, `Unless…` calls are modifiers, never rules (N4) | `validation` |
 | `access` | a method | `entity`, `mode` (`write`/`read`), `via`; linking turns it into `writes`/`reads` when the entity has a table | `entity-tables` |
 
 Also read by flows:
@@ -245,6 +253,27 @@ Also read by flows:
   (a many-to-many add writes the join table the snapshot's `HasOne` pair names; without a snapshot, nothing), and a generic
   repository's write-named methods. Reads: any other call on a DbSet (LINQ, EF, the app's own query extensions; not `Entry`)
   and read-named repository methods. A name word must be whole (`All`, `AllAsync`, never `Allow`).
+- **Server-rendered views (N1, N2).** Read from the C# the SDK's own Razor compiler makes for each `.cshtml` (its source
+  generator, already run inside the compilation the graph loads), so markup, tag helper values and the view's C# are what the
+  build sees; nothing is parsed twice. A view `uses` its `@model` and whatever repo code it names (`asp-for` properties,
+  injected services); `renders` its partials (`<partial>`, `Html.PartialAsync`: beside the view, then the shared folders; a
+  name with a folder or an extension is relative to the view) and view components (by type, or by name to the class MVC's
+  rules make a component). Each form is a `form` point linked to the endpoint it posts to (`calls-http`): by route name (a
+  conventional route's `name`), by action and controller (the view's own folder and name by default, 🟡), or by a literal URL.
+  An action's or view component's `View(…)`/`PartialView(…)` `renders` its view by MVC's lookup: `Views/{controller}/{name}`,
+  `Views/Shared/{name}`, `Areas/{area}/Views/…` first for an area, `Components/{component}/{name}` for a component; a path
+  (`~/Plugins/X/Views/Y.cshtml`) by its longest tail that names a view in the project. Never silent: a `.cshtml` the compiler
+  made nothing for, a Razor Page, a form or view name made at runtime, and any lookup that finds nothing is ❓.
+- **Areas.** `[Area]` is read up the base controllers; a conventional pattern with an `{area}` token (ASP.NET's
+  `{area:exists}/{controller}/{action}`) serves the actions that have an area. Every action is an `mvc-action` fact
+  (`controller`, `action`, `area`, `verbs`), which forms resolve against.
+- **Plain scripts (N5).** Each C# project's own `.js` with no tsconfig (a server-rendered app's `wwwroot/js`) and its views'
+  inline `<script>` blocks are a frontend of their own, read as browser scripts by the same extractor. Skipped: `lib`,
+  `lib_npm`, `vendor`, `bower_components`, `gulp`, minified files, `gulpfile.js`, `*.config.js`, anything inside a tsconfig
+  project. jQuery's `$.ajax`/`$.get`/`$.post`/`$.getJSON` are calls like `fetch`. An inline script's code belongs to its view
+  (lines are the view's); a value the server writes into it (`'@Url.Action("Add")'`) is made at runtime, so the call is ❓. A
+  view's button whose `id` a script binds (`$('#check-email').click(checkEmail)`) `calls` that handler, 🟡: the view's own
+  scripts first, else the project's when only one binding fits.
 - **Which context a snapshot speaks for.** Its `[DbContext(typeof(X))]`, even in another project; its tables take X's assembly,
   and only X's navigation guesses are dropped. A snapshot without the attribute speaks for its own assembly.
 
@@ -261,8 +290,10 @@ file would mislead it.
 - A file that can't be read, or of whose operations fewer than one in five fit any endpoint (a client's spec for someone else's
   API), is listed as `ignored` with the reason and counts for nothing.
 
-Not read yet: constants' values (G9), SignalR messages (G10), background jobs marked as such (G11), minimal APIs'
-`RequireAuthorization()`, React route-guard wrappers, and resolving text keys to the words in the language file.
+Not read yet: minimal APIs' `RequireAuthorization()`, React route-guard wrappers, resolving text keys to the words in the
+language file, views compiled only at runtime (nopCommerce's plugins: a ❓ per view), Razor Pages' handlers as endpoints,
+links (`<a asp-action>`) and redirects as navigation, and a partial looked up through the requesting controller's folder rather
+than the view's own.
 
 ## Building
 

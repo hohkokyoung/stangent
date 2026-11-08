@@ -210,3 +210,57 @@ Owner: "close g9 - g11 then run on nopcommerce". Code only. Tests: 2,157 .NET + 
 | N5 | plain JavaScript (291 `.js` files outside `lib`, e.g. `public.ajaxcart.js`; jQuery AJAX in views) unread | read `.js` outside a tsconfig with the same extractor (allowJs), and inline `<script>` from N1 | medium |
 
 Recommended order: N3, N4 (small, now), then N1 + N2 together (the screen half of every server-rendered flow), then N5.
+
+## 10. N1–N5 fixed, 2026-11-08 (D165)
+
+Owner: "lets do it in new session", on the order N3, N4, then N1 + N2, then N5. Code only, no paid AI. Tests: 2,158 .NET + 48 extractor
+pass; `phases check` ok. Each fix has a fixture in `tests/fixtures/shop` (`AccountController`, `Views/`, `Areas/Admin/`, `wwwroot/js/`).
+
+| # | Built | nopCommerce | Elsewhere |
+|---|---|---|---|
+| N3 | an app's own MVC filter attributes (`TypeFilterAttribute`/`ServiceFilterAttribute` subclasses, or filters themselves) are `auth` facts (`rule: filter`) with their arguments by name, when they run at the authorisation stage or their name says Authorize/Permission/Access/Role; `[AllowAnonymous]` doesn't remove them | 8,166 filter facts on 1,478 actions: `CheckAccessPublicStore(ignore = true)` on `Register`, `CheckPermission(permission = "…")`, `AuthorizeAdmin`; captcha, "save last page" and language filters left out | Kavita +255: its own `DisallowRole(roles = ["Read Only"])`, `SeriesAccess(seriesIdKey = "seriesId")`, `LibraryAccess`… Sonarr none |
+| N4 | `With…`/`When…`/`Unless…` are modifiers by prefix (`WithMessageAwait` sets the message, as text or expression); enum arguments by member name | `DataType(EmailAddress)`, not `DataType(10)`; no `WithMessageAwait` rules | — |
+| N1 | views read from the C# the SDK's Razor compiler makes (already inside the loaded compilation): `view` points, `@model` (`uses`), what the view's code names, `form` points → endpoints (`calls-http`), buttons as `ui-event` facts with localizer keys, partials and view components (`renders`), inline `<script>` kept for N5; a `.cshtml` the compiler made nothing for, a Razor Page and any lookup that fails is ❓ | 779 views; 295 forms, 290 reach an endpoint, 5 ❓; 835 buttons (724 with text keys); 1,150 `renders` from views | no `.cshtml` in either |
+| N2 | `View(…)`/`PartialView(…)` in actions and view components `renders` the view MVC's lookup finds (area, shared, `Components/{name}`, a deployed path by its tail); a base class's or helper's `View()` is ❓ | 541 actions render their view | — |
+| N5 | each C# project's own `.js` (no tsconfig; `lib`, `lib_npm`, `vendor`, `gulp`, minified, `*.config.js` skipped) and its views' inline scripts are a plain-scripts frontend; jQuery `$.ajax/get/post/getJSON` are calls; `dom-event` facts for bindings; a button whose `id` a script binds `calls` the handler (🟡); a server-written URL in a script is ❓ | 2 plain-scripts frontends (`Nop.Web`, `Misc.Forums`); 180 bindings; 37 buttons joined to their handler; script calls are nearly all ❓ (URLs passed in or written by the server) | Sonarr +1 ❓: `$.ajax(options)` inside its own `createAjaxRequest` wrapper (calls through the wrapper match as before) |
+
+**Register, end to end** (`stangent graph build` on nopCommerce, then `.stangent/graph.sqlite`):
+
+| Step | Point | Evidence |
+|---|---|---|
+| Screen | `view:…/Views/Customer/Register.cshtml` | `uses` `RegisterModel`; rendered by both `CustomerController.Register` actions (N2) |
+| Button | `ui-event` line 459 | `button submit`, `id register-button`, keys `Account.Register.Button`, handler `…Register.cshtml#form1` |
+| Form | `…#form1` line 18 | `POST`, `route Register` (`NopRouteNames.Standard.REGISTER`, a constant the compiler resolved) |
+| Endpoint | `endpoint:Nop.Web\|POST /{*}/register` | `calls-http` ✅ (the route's `{lang}` segment is built at runtime, so `{*}`) |
+| Action | `CustomerController.Register(RegisterModel, …)` | `routes-to`; auth: `CheckAccessPublicStore(ignore = true)` on the method; `WwwRequirement`, `HttpsRequirement`, `CheckAccessClosedStore`… from base controllers; `ValidateHoneypot` |
+| Service | `ICustomerRegistrationService.RegisterCustomerAsync` → `CustomerRegistrationService` | `dispatches-to`; calls `ICustomerService.UpdateCustomerAsync`, `InsertCustomerPasswordAsync` |
+| Write | `CustomerService.UpdateCustomerAsync` | `writes` `table:Nop.Core\|Customer` |
+
+**Changes against the plan, said plainly (D155):**
+- **N1 doesn't use the standalone Razor parser.** `Microsoft.AspNetCore.Razor.Language` (last standalone release 6.0.36) keeps its syntax tree
+  internal. The SDK's own Razor compiler already runs as a source generator inside every compilation the graph loads, so the graph reads
+  its output: the same parser and version the build uses, no new package, constants and types already resolved.
+- **Two routing faults fixed on the way, both general.** `[Area]` is now read up the base controllers (nopCommerce puts it on
+  `BaseAdminController`), and a conventional pattern with an `{area}` token (ASP.NET's `{area:exists}/{controller}/{action}`) serves
+  the actions that have an area. Before, nopCommerce's admin actions had no area and were served by the non-area route; now they're under
+  `/Admin/…`. Sonarr's and Kavita's endpoints are unchanged.
+- **Section 9's 291 `.js` files** included `lib_npm`; nopCommerce's own scripts are about 25.
+- **A full nopCommerce build takes ~110 s, up from ~45 s**: reading the Razor compiler's output for 779 views. Incremental builds are
+  unchanged in kind (a view's project re-extracts when one of its `.cshtml` files changes; they're now in the project's fingerprint).
+
+**Blind spots on nopCommerce, 199 → 641**, all said where they were silent: `razor-views` 323 (171 views in 17 plugins compiled only at
+runtime, and most of the rest are lookups of those plugins' views), `frontend-http` 120 (script URLs passed in or written by the server).
+
+**Sonarr and Kavita rebuilt:** no point or line lost; cross-check Sonarr 0, Kavita 2 (Identity tables, as before). Added: `mvc-action`
+facts (468, 522), Kavita's own filters (above), Sonarr's one ❓ (above).
+
+**Left, not fixed** (by the owner's rule, only general ones are worth doing; none is needed for Register):
+
+| Gap | General? |
+|---|---|
+| views compiled only at runtime (nopCommerce's plugin projects use the plain SDK): ❓ per view | no: a plugin architecture's choice |
+| Razor Pages' handlers aren't endpoints: ❓ per page | yes, for Razor Pages apps; none of the three uses them |
+| links (`<a asp-action>`) and `RedirectToAction` as navigation | yes: D154's "hand-off" stop for server-rendered apps |
+| a server-written URL in a script (`'@Url.Action("Add")'`) is ❓, not resolved to its endpoint | yes, a common MVC pattern |
+| a partial looked up through the requesting controller's folder | partly: shared views calling controller-specific partials |
+| an inline handler isn't a point: its calls belong to the view | yes, but a flow can still join button → binding → view |
