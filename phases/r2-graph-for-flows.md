@@ -174,3 +174,39 @@ Owner: "Yes, fix R1–R5". Code only. Tests: 2,156 .NET + 46 extractor pass. Reb
 - R5: each OpenAPI file read on its own; one that can't be read, or where under one in five operations fit (someone else's API), is `ignored`.
 Cross-check after: Sonarr 0 disagreements; Kavita 0 on the API, 2 true on EF (`AspNetRoles`, `AspNetUserRoles`, from Identity's base context).
 Not done: the older gaps the check found (inline `loadChildren` pages, `RuleForEach`), G9–G11, nopCommerce. No third fresh round.
+
+## 9. G9–G11 closed, and nopCommerce (server-rendered MVC with Razor), 2026-11-08
+
+Owner: "close g9 - g11 then run on nopcommerce". Code only. Tests: 2,157 .NET + 47 extractor pass. Commit `7181f4d`.
+
+| # | Built | On the real graphs |
+|---|---|---|
+| G9 | `constants` detector + extractor: `value` facts for `const` and `static readonly` fields and top-level TS consts; TS enum members resolve as values | Sonarr 422, Kavita 561 values; nopCommerce `NopRouteNames.Standard.REGISTER` = `Register` |
+| G10 | `signalr` detector: `message:signalr|<name>` points, `sends` (direct, or through an app's wrapper behind an interface) and `listens` (frontend `connection.on`, a list's items included) | Kavita 34 messages, 33 joined server → screen (`ProcessSeriesAsync` sends `ScanSeries`, `MessageHubService` listens); Sonarr `receiveMessage` joined |
+| G11 | `background-jobs` detector: Hangfire `Enqueue`/`Schedule`/`AddOrUpdate` as `job` facts (runs, via, id, schedule) | Kavita 147 jobs (`ScheduleTasks` → `scan-libraries`, `backup`); a schedule from settings shows empty |
+
+**nopCommerce** (shallow clone at pinned `77d112f`, 130 MB, `benchmark/configs/nopcommerce.yaml` and `.global.json`): 41 projects,
+43,020 points, 199 blind spots, no load errors, ~45 s. Traced **Register** (`Views/Customer/Register.cshtml`, a form post):
+
+| Step | Result | Evidence |
+|---|---|---|
+| Screen (Razor view), form, button, label | **missing, silently** | 0 points from 527 `.cshtml` files; no blind spot. `<form asp-route="@NopRouteNames.Standard.REGISTER" method="post">`, `<button id="register-button">@T("Account.Register.Button")</button>` unread |
+| Form post → endpoint | works | `POST /{lang}/register` → `CustomerController.Register(RegisterModel, …)`; the GET goes to `Register(string)` |
+| Action → service → writes | works | → `CustomerRegistrationService.RegisterCustomerAsync` → `IRepository<T>.InsertAsync`; writes `Customer`, `CustomerPassword`, `CustomerCustomerRoleMapping`, `GenericAttribute`, … (159 tables by `BaseEntity` convention) |
+| Events | works | plugins' `EventConsumer.HandleEventAsync` via `triggered-by` |
+| Validation | partly | 1,213 rule facts; `RegisterModel.Email` `NotEmpty`, `IsEmailAddress`. Noise: nop's `WithMessageAwait` read as a rule; `DataType(10)` shows the enum's number |
+| Authorisation | **missing** | no `[Authorize]` in nopCommerce: `[CheckAccessPublicStore]`, `[CheckPermission(StandardPermission…)]`, `[AuthorizeAdmin]` are its own filter attributes, unread |
+| Outside calls | works | ❓ PayPal (35), Zettle (21) clients flagged |
+| Controller → view | missing | `return View(model)` (and 24 more in `CustomerController`) doesn't link to its `.cshtml` |
+
+**Gaps for the owner (nothing fixed yet, D159):**
+
+| # | Gap | Recommended fix | Rough cost |
+|---|---|---|---|
+| N1 | Razor views unread, silently: no screen, form, button or label for any server-rendered page | read `.cshtml` with Razor's own parser (`Microsoft.AspNetCore.Razor.Language`, deterministic): a `view` point per file; `@model`; `<form asp-route/asp-action/asp-controller method>` → the endpoint; buttons and `@T("key")` labels as `ui-event`-style facts; partials and view components as `renders`; until built, a blind spot per view file | medium–large |
+| N2 | `return View(…)` doesn't reach its view | link an action to `Views/{Controller}/{Action}.cshtml` (or the named view) by MVC's lookup rules | small, with N1 |
+| N3 | an app's own access filters unread | any filter attribute on an action or its controllers (`TypeFilterAttribute`, `IAuthorizationFilter`, names with Authorize/Permission/Access) as an `auth` fact with its arguments' values | small |
+| N4 | validation noise | message modifiers by prefix (`WithMessage…`); enum arguments by member name | small |
+| N5 | plain JavaScript (nopCommerce's `public.*.js`, jQuery AJAX in views) unread | read `.js` outside a tsconfig with the same extractor (allowJs), and inline `<script>` from N1 | medium |
+
+Recommended order: N3, N4 (small, now), then N1 + N2 together (the screen half of every server-rendered flow), then N5.
