@@ -190,14 +190,14 @@ Owner: "close g9 - g11 then run on nopcommerce". Code only. Tests: 2,157 .NET + 
 
 | Step | Result | Evidence |
 |---|---|---|
-| Screen (Razor view), form, button, label | **missing, silently** | 0 points from 527 `.cshtml` files; no blind spot. `<form asp-route="@NopRouteNames.Standard.REGISTER" method="post">`, `<button id="register-button">@T("Account.Register.Button")</button>` unread |
+| Screen (Razor view), form, button, label | **missing, silently** | 0 points from 986 `.cshtml` files; no blind spot. `<form asp-route="@NopRouteNames.Standard.REGISTER" method="post">`, `<button id="register-button">@T("Account.Register.Button")</button>` unread |
 | Form post → endpoint | works | `POST /{lang}/register` → `CustomerController.Register(RegisterModel, …)`; the GET goes to `Register(string)` |
 | Action → service → writes | works | → `CustomerRegistrationService.RegisterCustomerAsync` → `IRepository<T>.InsertAsync`; writes `Customer`, `CustomerPassword`, `CustomerCustomerRoleMapping`, `GenericAttribute`, … (159 tables by `BaseEntity` convention) |
 | Events | works | plugins' `EventConsumer.HandleEventAsync` via `triggered-by` |
 | Validation | partly | 1,213 rule facts; `RegisterModel.Email` `NotEmpty`, `IsEmailAddress`. Noise: nop's `WithMessageAwait` read as a rule; `DataType(10)` shows the enum's number |
 | Authorisation | **missing** | no `[Authorize]` in nopCommerce: `[CheckAccessPublicStore]`, `[CheckPermission(StandardPermission…)]`, `[AuthorizeAdmin]` are its own filter attributes, unread |
 | Outside calls | works | ❓ PayPal (35), Zettle (21) clients flagged |
-| Controller → view | missing | `return View(model)` (and 24 more in `CustomerController`) doesn't link to its `.cshtml` |
+| Controller → view | missing | `return View(…)` (47 in `CustomerController` alone) doesn't link to its `.cshtml` |
 
 **Gaps for the owner (nothing fixed yet, D159):**
 
@@ -207,6 +207,6 @@ Owner: "close g9 - g11 then run on nopcommerce". Code only. Tests: 2,157 .NET + 
 | N2 | `return View(…)` doesn't reach its view | link an action to `Views/{Controller}/{Action}.cshtml` (or the named view) by MVC's lookup rules | small, with N1 |
 | N3 | an app's own access filters unread | any filter attribute on an action or its controllers (`TypeFilterAttribute`, `IAuthorizationFilter`, names with Authorize/Permission/Access) as an `auth` fact with its arguments' values | small |
 | N4 | validation noise | message modifiers by prefix (`WithMessage…`); enum arguments by member name | small |
-| N5 | plain JavaScript (nopCommerce's `public.*.js`, jQuery AJAX in views) unread | read `.js` outside a tsconfig with the same extractor (allowJs), and inline `<script>` from N1 | medium |
+| N5 | plain JavaScript (291 `.js` files outside `lib`, e.g. `public.ajaxcart.js`; jQuery AJAX in views) unread | read `.js` outside a tsconfig with the same extractor (allowJs), and inline `<script>` from N1 | medium |
 
 Recommended order: N3, N4 (small, now), then N1 + N2 together (the screen half of every server-rendered flow), then N5.
