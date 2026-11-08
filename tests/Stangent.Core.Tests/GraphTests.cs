@@ -164,6 +164,17 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
             .Select(f => $"{f["rule"]} {f["policy"]} {f["from"]}"));
         Assert.Equal("authorize Staff class StaffController", Auth("Add"));   // inherited from a base controller
         Assert.Equal("anonymous  method", Auth("Get(System.Int32)"));        // the method's own [AllowAnonymous] wins
+
+        // N3: an app's own access filters, with their arguments' values; other filters aren't access rules.
+        string Filters(string method) => string.Join("; ", shop.Graph.AllFacts
+            .Where(f => f.Kind == "auth" && f.Owner == "Shop.Web|M:Shop.Web.Controllers.AccountController." + method)
+            .Select(f => f["rule"] == "filter" ? $"{f["filter"]}({f["args"]}) {f["stage"]} {f["from"]}" : $"{f["rule"]} {f["from"]}").Order(StringComparer.Ordinal));
+        Assert.Equal("CheckAccessStore(ignore = false) other class AccountController", Filters("Register"));
+        Assert.Equal("CheckAccessStore(ignore = false) other class AccountController", Filters("Register(Shop.Web.Models.RegisterModel)"));
+        // [AllowAnonymous] doesn't stop a filter: only the filter's own code could.
+        Assert.Equal("CheckAccessStore(ignore = false) other class AccountController; CheckPermission(permission = \"Accounts.Manage\", deny = Json) "
+            + "authorization method; SignedInFilter(type = typeof(SignedInFilter)) authorization method; anonymous method",
+            Filters("Close"));
     }
 
     [Fact]
@@ -171,7 +182,11 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     {
         string Rules(string prop) => string.Join("; ", shop.Graph.AllFacts.Where(f => f.Kind == "rule" && f.Owner == "Shop.Core|P:Shop.Core.NewOrder." + prop)
             .Select(f => $"{f["rule"]}({f["args"]}) {f["via"]} '{f["message"]}' {f["conditional"]}".TrimEnd()));
-        Assert.Equal("Required() attribute ''; StringLength(40, MinimumLength = 2) attribute ''", Rules("Customer"));
+        Assert.Equal("Required() attribute ''; StringLength(40, MinimumLength = 2) attribute ''; "
+            + "NotEmpty() fluentvalidation 'Texts.Get(\"Order.Customer.Required\")'", Rules("Customer"));   // N4: WithMessageAwait is a message
+        // N4: an enum argument by member name.
+        Assert.Equal("DataType(EmailAddress)", string.Join("; ", shop.Graph.AllFacts
+            .Where(f => f.Kind == "rule" && f.Owner == "Shop.Web|P:Shop.Web.Models.RegisterModel.Email").Select(f => $"{f["rule"]}({f["args"]})")));
         Assert.Equal("GreaterThan(0) fluentvalidation 'Order at least one' yes; NotEmpty() fluentvalidation ''", Rules("Quantity"));
         // F9: each rule carries its own line.
         Assert.Equal(2, shop.Graph.AllFacts.Where(f => f.Kind == "rule" && f.Owner == "Shop.Core|P:Shop.Core.NewOrder.Quantity").Select(f => f.Line).Distinct().Count());

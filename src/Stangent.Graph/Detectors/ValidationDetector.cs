@@ -14,9 +14,15 @@ public sealed class ValidationDetector : IDetector
 {
     public string Name => "validation";
 
-    /// <summary>Chained calls that change the rule before them rather than add one.</summary>
-    static readonly HashSet<string> Modifiers = ["WithMessage", "WithName", "WithErrorCode", "WithSeverity", "When", "Unless", "WhenAsync", "UnlessAsync",
-        "Cascade", "OverridePropertyName", "WithState", "DependentRules"];
+    /// <summary>
+    /// Chained calls that change the rule before them rather than add one. N4: by prefix, as FluentValidation names them, so an
+    /// app's own (nopCommerce's <c>WithMessageAwait</c>) is one too: <c>With…</c>, <c>When…</c>, <c>Unless…</c>.
+    /// </summary>
+    static readonly HashSet<string> Modifiers = ["Cascade", "OverridePropertyName", "DependentRules", "Configure"];
+
+    static bool Message(string name) => name.StartsWith("WithMessage", StringComparison.Ordinal);
+    static bool Condition(string name) => name.StartsWith("When", StringComparison.Ordinal) || name.StartsWith("Unless", StringComparison.Ordinal);
+    static bool Modifier(string name) => name.StartsWith("With", StringComparison.Ordinal) || Condition(name) || Modifiers.Contains(name);
 
     public void Extract(ExtractContext ctx)
     {
@@ -50,11 +56,14 @@ public sealed class ValidationDetector : IDetector
         {
             var name = access.Name.Identifier.ValueText;
             var args = string.Join(", ", next.ArgumentList.Arguments.Select(a => Value(file.Model, a.Expression)));
-            if (name == "WithMessage" && rules.Count > 0) rules[^1] = rules[^1] with { Message = args.Trim('"') };
+            if (Message(name))
+            {
+                if (rules.Count > 0) rules[^1] = rules[^1] with { Message = MessageText(file.Model, next) };
+            }
             // F9: When/Unless guard the rules before them, not those chained after.
-            else if (name is "When" or "Unless" or "WhenAsync" or "UnlessAsync")
+            else if (Condition(name))
                 for (var i = 0; i < rules.Count; i++) rules[i] = rules[i] with { Conditional = true };
-            else if (!Modifiers.Contains(name)) rules.Add((name, args, access.Name, "", false)); // F9: the rule's own line
+            else if (!Modifier(name)) rules.Add((name, args, access.Name, "", false)); // F9: the rule's own line
         }
         foreach (var r in rules)
             ctx.AddFact(Name, "rule", propId, r.At, ("rule", r.Rule), ("args", r.Args), ("via", "fluentvalidation"), ("set", set),
@@ -65,17 +74,22 @@ public sealed class ValidationDetector : IDetector
     static string Value(SemanticModel model, ExpressionSyntax e)
     {
         var constant = model.GetConstantValue(e);
+        if (constant.HasValue && model.GetTypeInfo(e).Type is INamedTypeSymbol { TypeKind: TypeKind.Enum } en
+            && AttributeValues.EnumMember(en, constant.Value) is { } member) return member;
         if (constant.HasValue) return constant.Value switch { string s => $"\"{s}\"", null => "null", var v => Convert.ToString(v, System.Globalization.CultureInfo.InvariantCulture)! };
         var type = model.GetTypeInfo(e).Type;
         return e is LambdaExpressionSyntax || type is null ? e.ToString() : $"{e}: {type.Name}";
     }
 
-    static string Args(AttributeData a) => string.Join(", ", a.ConstructorArguments.Select(Typed)
-        .Concat(a.NamedArguments.Where(n => n.Key != "ErrorMessage").Select(n => $"{n.Key} = {Typed(n.Value)}")));
+    /// <summary>The message: a constant's text, else the expression that makes it (<c>loc.GetResourceAsync("Account.Email.Required")</c>).</summary>
+    static string MessageText(SemanticModel model, InvocationExpressionSyntax call)
+    {
+        if (call.ArgumentList.Arguments.FirstOrDefault()?.Expression is not { } e) return "";
+        return model.GetConstantValue(e) is { HasValue: true, Value: string s } ? s : e.ToString();
+    }
 
-    static string Typed(TypedConstant c) => c.Kind == TypedConstantKind.Array
-        ? "[" + string.Join(", ", c.Values.Select(Typed)) + "]"
-        : c.Value is string s ? $"\"{s}\"" : Convert.ToString(c.Value, System.Globalization.CultureInfo.InvariantCulture) ?? "null";
+    static string Args(AttributeData a) => string.Join(", ", a.ConstructorArguments.Select(AttributeValues.Format)
+        .Concat(a.NamedArguments.Where(n => n.Key != "ErrorMessage").Select(n => $"{n.Key} = {AttributeValues.Format(n.Value)}")));
 
     static string Short(string attribute) => attribute.EndsWith("Attribute", StringComparison.Ordinal) ? attribute[..^"Attribute".Length] : attribute;
 

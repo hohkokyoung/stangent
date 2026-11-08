@@ -136,6 +136,7 @@ public sealed class RoutesDetector : IDetector
     static void Auth(ExtractContext ctx, INamedTypeSymbol controller, IMethodSymbol method, string methodId)
     {
         var found = new List<(string Rule, string Policy, string Roles, string From)>();
+        var filters = new List<(string Filter, string Args, string Stage, string From)>();
         void Read(ISymbol symbol, string from)
         {
             foreach (var a in symbol.GetAttributes())
@@ -143,6 +144,7 @@ public sealed class RoutesDetector : IDetector
                 if (Is(a, "AllowAnonymousAttribute")) found.Add(("anonymous", "", "", from));
                 else if (Is(a, "AuthorizeAttribute"))
                     found.Add(("authorize", Named(a, "Policy") ?? (a.ConstructorArguments.FirstOrDefault().Value as string) ?? "", Named(a, "Roles") ?? "", from));
+                else if (AccessFilter(a) is { } f) filters.Add((f.Name, AttributeValues.Named(a, k => k is "Order" or "IsReusable"), f.Stage, from));
             }
         }
         foreach (var m in Overrides(method)) Read(m, "method");
@@ -152,7 +154,53 @@ public sealed class RoutesDetector : IDetector
         var facts = anonymous.Rule is not null ? [anonymous] : found.Where(f => f.Rule == "authorize").Distinct().ToList();
         foreach (var f in facts)
             ctx.AddFact(Detector, "auth", methodId, null, ("rule", f.Rule), ("policy", f.Policy), ("roles", f.Roles), ("from", f.From));
+        // N3: an app's own access filters run whatever [AllowAnonymous] says (only the filter's own code can honour it).
+        foreach (var f in filters.Distinct())
+            ctx.AddFact(Detector, "auth", methodId, null, ("rule", "filter"), ("policy", ""), ("roles", ""), ("from", f.From),
+                ("filter", f.Filter), ("args", f.Args), ("stage", f.Stage));
     }
+
+    static readonly string[] AccessWords = ["Authorize", "Authorization", "Permission", "Access", "Role"];
+
+    /// <summary>
+    /// N3: an attribute that is an MVC filter (derived from <c>TypeFilterAttribute</c>/<c>ServiceFilterAttribute</c>, or itself
+    /// a filter) counts as access control when the filter runs at the authorisation stage (<c>IAuthorizationFilter</c>,
+    /// <c>IAsyncAuthorizationFilter</c>), or when its name says so (Authorize, Permission, Access, Role). Other filters
+    /// (captcha, "save last page") aren't access rules.
+    /// </summary>
+    static (string Name, string Stage)? AccessFilter(AttributeData a)
+    {
+        if (a.AttributeClass is not { } cls) return null;
+        INamedTypeSymbol? filter = null;
+        if (Is(a, "TypeFilterAttribute") || Is(a, "ServiceFilterAttribute"))
+            // [TypeFilter(typeof(X))] names it; a subclass passes it to its base constructor.
+            filter = a.ConstructorArguments.FirstOrDefault(c => c.Kind == TypedConstantKind.Type).Value as INamedTypeSymbol ?? FilterOf(cls);
+        else if (Implements(cls, "IFilterMetadata")) filter = cls;
+        else return null;
+        var direct = cls.Name is "TypeFilterAttribute" or "ServiceFilterAttribute";
+        var name = Short(direct && filter is not null ? filter.Name : cls.Name);
+        var stage = filter is not null && (Implements(filter, "IAuthorizationFilter") || Implements(filter, "IAsyncAuthorizationFilter")) ? "authorization" : "other";
+        return stage == "authorization" || AccessWords.Any(w => name.Contains(w, StringComparison.Ordinal)) ? (name, stage) : null;
+    }
+
+    /// <summary>The filter type a <c>TypeFilterAttribute</c> subclass passes up (<c>: base(typeof(CheckPermissionFilter))</c>), by name.</summary>
+    static INamedTypeSymbol? FilterOf(INamedTypeSymbol attribute)
+    {
+        foreach (var ctor in attribute.Constructors)
+            foreach (var r in ctor.DeclaringSyntaxReferences)
+                if (r.GetSyntax() is ConstructorDeclarationSyntax { Initializer: { } init })
+                    foreach (var t in init.ArgumentList.Arguments.Select(x => x.Expression).OfType<TypeOfExpressionSyntax>())
+                    {
+                        var simple = t.Type is QualifiedNameSyntax q ? q.Right.Identifier.ValueText : (t.Type as SimpleNameSyntax)?.Identifier.ValueText;
+                        if (simple is null) continue;
+                        var hit = attribute.GetTypeMembers(simple).FirstOrDefault()
+                            ?? attribute.ContainingNamespace.GetTypeMembers(simple).FirstOrDefault();
+                        if (hit is not null) return hit;
+                    }
+        return null;
+    }
+
+    static string Short(string name) => name.EndsWith("Attribute", StringComparison.Ordinal) ? name[..^"Attribute".Length] : name;
 
     static bool Is(AttributeData a, string name)
     {

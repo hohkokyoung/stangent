@@ -23,6 +23,14 @@ namespace Shop.Core
 {
     using FluentValidation;
 
+    // N4: an app's own message modifier, the way nopCommerce writes one; a modifier, not a rule.
+    public static class Texts
+    {
+        public static Task<string> Get(string key) => Task.FromResult(key);
+
+        public static IRuleBuilder<T, P> WithMessageAwait<T, P>(this IRuleBuilder<T, P> rule, Task<string> message) => rule;
+    }
+
     public class NewOrder
     {
         [Required, StringLength(40, MinimumLength = 2)]
@@ -39,6 +47,7 @@ namespace Shop.Core
         {
             RuleFor(o => o.Quantity).GreaterThan(Smallest).WithMessage("Order at least one").When(o => o.Customer != "")
                 .NotEmpty();
+            RuleFor(o => o.Customer).NotEmpty().WithMessageAwait(Texts.Get("Order.Customer.Required"));
         }
     }
 }
