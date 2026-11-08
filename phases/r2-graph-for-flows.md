@@ -245,8 +245,9 @@ pass; `phases check` ok. Each fix has a fixture in `tests/fixtures/shop` (`Accou
   the actions that have an area. Before, nopCommerce's admin actions had no area and were served by the non-area route; now they're under
   `/Admin/…`. Sonarr's and Kavita's endpoints are unchanged.
 - **Section 9's 291 `.js` files** included `lib_npm`; nopCommerce's own scripts are about 25.
-- **A full nopCommerce build takes ~110 s, up from ~45 s**: reading the Razor compiler's output for 779 views. Incremental builds are
-  unchanged in kind (a view's project re-extracts when one of its `.cshtml` files changes; they're now in the project's fingerprint).
+- **A full nopCommerce build takes ~54 s warm (all 43 projects re-read), up from ~45 s**: reading the Razor compiler's output for
+  779 views. The first, cold run took ~110 s (restore and first load). A view's project re-extracts when one of its `.cshtml` files
+  changes; they're now in the project's fingerprint.
 
 **Blind spots on nopCommerce, 199 → 641**, all said where they were silent: `razor-views` 323 (171 views in 17 plugins compiled only at
 runtime, and most of the rest are lookups of those plugins' views), `frontend-http` 120 (script URLs passed in or written by the server).
