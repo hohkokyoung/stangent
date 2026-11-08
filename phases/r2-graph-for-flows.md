@@ -405,3 +405,48 @@ the page's own: 23 nop buttons, which had kept 5 partial → form lines with a c
 
 **nopCommerce blind spots 767 → 760.** Sonarr and Kavita rebuilt: no point or line lost, cross-check 0 and 2 (unchanged); Sonarr has no
 views, Kavita's only change is the filter basis.
+
+## 15. Fresh check (D158) of V1–V5, 2026-11-08
+
+One fresh session on `1ec352c`, read-only, against the graphs already rebuilt with it (nopCommerce, Sonarr, Kavita). **~60K tokens
+(estimate), inside the 50–70K said.** No agents, no paid AI, nothing fixed. Checked: every V1 page-controller line (only 4 exist on
+nop, so no sample of 10), 10 of the 65 `via: onclick` forms by hand and the script call behind all 65, every partial with submit
+buttons and no form of its own (30, independently of section 14's numbers) and the handlers of 5 dropped buttons, the `<script>` skip
+across all nop views, all 255 Kavita filter facts by filter, nop's basis counts, V3's one row, Sonarr's 53 rules with modifiers.
+
+**Bottom line: no wrong ✅, and V1–V5's own lines hold.** One silent gap the `<script>` skip made (W1), two minor latent ones (W2, W3).
+All three general.
+
+| # | Severity | Finding | Evidence (source · graph) | Suggested general fix | Scope |
+|---|---|---|---|---|---|
+| W1 | silent gap | V2's `<script>` skip drops submit buttons that a script builds (grid column renderers) and that really submit the form around them: no button, no partial → form line, no ❓ | `Admin/Views/Common/_Maintenance.DBBackups.cshtml:88, 91` `'<button type="submit" … onclick="submitBackupAction(…)">'`; `submitBackupAction` (`:51–56`) only adds hidden inputs, so the button submits Maintenance's form · the partial has no facts and no `calls` → `#form` line (it had one before, through the cut-off markup: right by luck). Same shape inside a form of the view's own: `Plugin/List.cshtml:277, 279` (install/uninstall, in `plugins-form-local` `:16–325`), `Menu/MenuItemSelectProductPopup.cshtml:104` (Select, in the form `:23–114`); their forms' endpoint lines stay, the buttons are gone | a submit button found inside a script's string isn't the page's markup, but say it exists: a ❓ "submit button built by a script" on the view, or a 🟡 button marked `built: script` in the form around the `<script>` (and T9's partial forms) | general (jQuery/DataTables grids) |
+| W2 | minor (latent) | an onclick target is tried by GET first whatever the onclick calls; a helper that posts (`AjaxCart.addproducttocart_details`, `uploadSelectedShipments` → `$.ajax({ type: "POST" })`, `Order/ShipmentList.cshtml:332–336`) to an action that serves both GET and POST would reach the GET one. And the form fact keeps `method: GET` when its line reached POST | the 5 POST-reached rows are exactly these two helpers (2 + 3), so right today; `Views/Product/_AddToWishlist.cshtml:23` fact `method: GET`, line → `POST /addproducttocart/details/…` | write the verb the line reached on the fact (or `""`); when the onclick calls a function whose body posts, try POST first | general |
+| W3 | minor (latent) | V4's "any 4xx at the authorisation stage = denies" also counts a 400 for missing input | `Kavita.Server/Attributes/ProfilePrivacyAttribute.cs:34–36` (no `userId` → 400) is an input check; the refusal is `:51–55` (profile not shared → 400). The basis is per filter, so `denies` is still right for ProfilePrivacy; a filter whose only 4xx is an input check would be called `denies` | keep the status in the basis (`denies` with `status: 400/404`), so a flow can tell "not allowed" from "bad request" | general |
+
+Seen in passing, not checked on data: for a partial name with no folder or extension, MVC looks in `Views/{controller}` (the
+request's) and Shared, not beside the calling view (that is the Razor Pages rule). `PartialHits` looks beside the view first and
+applies V1's page controllers only to views outside a controller folder, so a controller-folder view shown on another controller's
+page gets its own folder's partial. nop's component views that render partials beside them all name them with `.cshtml`
+(`MainMenu/Default.cshtml:21–31`, `FooterMenu/Default.cshtml:14`), where looking beside the view is MVC's rule, so those lines are right.
+
+**Holds:**
+- **V1:** the 4 page-controller lines are all right: `BlogMonths`/`BlogTags` → `Views/Blog/Components/…` (invoked only from
+  `Blog/BlogPost.cshtml:16, 18`, `Blog/List.cshtml:15, 17`), `ProfileInfo` → `Views/Profile/Components/…` (`Profile/Index.cshtml:16`),
+  `OrderSummary/Default.cshtml:86` → `Views/ShoppingCart/_GiftCardBox.cshtml`. OrderSummary is also invoked from 8 Checkout views, which
+  have no `_GiftCardBox`; the partial renders only `if (Model.IsEditable)` (`:81`), the cart page, so no candidate is missing.
+  No Shared or Admin view gained a line to a controller folder beyond that one.
+- **V2 onclick targets:** 10 sampled reach the URL the onclick opens or sends (`setLocation`, `location.href`, `OpenWindow` popups,
+  e.g. `Vendor/_CreateOrUpdate.Info.cshtml:94` → `ANY /Admin/Vendor/AddCustomerToVendorPopup`, `ViewPM.cshtml:40` → privatemessages).
+  All 65 by script call: `OpenWindow` 31, `setLocation` 23, `location.href` 6 (all navigations, GET), `uploadSelectedShipments` 3 and
+  `AjaxCart.addproducttocart_details` 2 (both post, and both reach POST).
+- **V2 dropped lines:** 19 partials keep a partial → form line (matches section 14). Every other partial with submit buttons and no
+  form either cancels them (inline `return false`, or a `$('#id').click(…return false)` binding: checked `CustomerRole/_CreateOrUpdate:110–121`,
+  `Vendor/_CreateOrUpdate.Info:110–119`, `Menu/_MenuItemCreateOrUpdate:330–339`, `Product/_CreateOrUpdate.Info:581–586`), has its own
+  target (V3, onclick popups), or is W1.
+- **`<script>` skip:** every nop view's `<script>` tags close (open = close count in every file); `</script` appears only as closers.
+  An unclosed script leaves `scriptEnd` at -1 and hides nothing; a `</script` inside a script string ends the script for the browser too.
+- **V3:** `_GeneralCommon.Localization.cshtml:13` has method `""` and one line, `POST /Admin/Setting/UploadLocalePattern/{id?}` 🟡.
+- **V4:** Kavita's 9 filters all `denies` (255 facts); `DisallowRole` refuses with 400 (`DisallowRoleAttribute.cs:28–38`); nop's
+  basis counts unchanged (denies 5,225, name 338, result 3,811, stage 3,788).
+- **V5:** Sonarr's 53 rules = `WithErrorCode` 18 + `AsWarning` 13 + `WithName` 12 + `OverridePropertyName` 10; Sonarr has no
+  `WithSeverity`, so `severity` is empty everywhere, right.
