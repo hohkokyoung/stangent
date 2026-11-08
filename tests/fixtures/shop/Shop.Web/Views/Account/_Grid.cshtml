@@ -1,0 +1,7 @@
+@* W1: a grid column a script writes: its submit button submits the form around the partial; one that returns false doesn't. *@
+<script>
+    function actions(row) {
+        return '<button type="submit" name="restore" onclick="mark(\'' + row + '\')">Restore</button>'
+            + '<button onclick="edit(\'' + row + '\'); return false;">Change</button>';
+    }
+</script>

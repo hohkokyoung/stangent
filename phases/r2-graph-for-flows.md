@@ -450,3 +450,14 @@ page gets its own folder's partial. nop's component views that render partials b
   basis counts unchanged (denies 5,225, name 338, result 3,811, stage 3,788).
 - **V5:** Sonarr's 53 rules = `WithErrorCode` 18 + `AsWarning` 13 + `WithName` 12 + `OverridePropertyName` 10; Sonarr has no
   `WithSeverity`, so `severity` is empty everywhere, right.
+
+## 16. W1 fixed, 2026-11-08 (D169)
+
+Owner: "okay lets do it then" (W1, on the recommendation; W2, W3 and V6–V10 left for when a flow needs them). Code only, no paid AI.
+Tests: 2,159 .NET + 50 extractor pass. Fixture: `tests/fixtures/shop/Shop.Web/Views/Account/_Grid.cshtml`, rendered inside Settings' form.
+
+| # | Fix | nopCommerce (before → after) |
+|---|---|---|
+| W1 | markup in a `<script>`'s text is still not the page's, but a submit button written there (`type="submit"`, or a `<button>` with no type) submits the form around the script, or through T9 the form around its partial: a `ui-event` with `built: script`, 🟡; one whose tag's own text returns false doesn't | 5 buttons, the 5 W1 named: `_Maintenance.DBBackups.cshtml:88, 91` → Maintenance's form (partial → form 24 → 25); `Plugin/List.cshtml:277, 279` → `plugins-form-local`; `Menu/MenuItemSelectProductPopup.cshtml:104` → its form. Blind spots 760, unchanged |
+
+Sonarr and Kavita have no Razor views, so they were not rebuilt.

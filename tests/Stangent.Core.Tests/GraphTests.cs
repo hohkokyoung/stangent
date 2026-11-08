@@ -314,6 +314,10 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.DoesNotContain(shop.Graph.AllBlindSpots, b => b.Owner == popup);
         // A button written in a script's text isn't the page's markup.
         Assert.DoesNotContain(shop.Graph.AllFacts, f => f.Kind == "ui-event" && f.Owner == popup && f["text"] == "Edit");
+        // W1: …but a submit button a script writes submits the form around it (🟡, built: script); one that returns false doesn't.
+        const string grid = "view:Shop.Web/Views/Account/_Grid.cshtml";
+        Assert.Equal("Restore script", string.Join("; ", shop.Graph.AllFacts.Where(f => f.Kind == "ui-event" && f.Owner == grid).Select(f => $"{f["text"]} {f["built"]}")));
+        Assert.True(Has(EdgeKind.Calls, grid, view + "#form1", Label.Guessed));
         // …by GET first; with none, by whatever verb the action serves (its script may post it).
         var archive = shop.Graph.AllFacts.Single(f => f.Kind == "ui-event" && f.Owner == popup && f["text"] == "Archive selected")["handler"];
         Assert.True(Has(EdgeKind.CallsHttp, archive, ep + "POST /account/archive", Label.Guessed));

@@ -222,7 +222,7 @@ Facts code reads to lay out a flow; no AI. Each is a row in the `facts` table (`
 | Kind | On | Data | From |
 |---|---|---|---|
 | `ui-event` | the component (React) or template (Angular) | `element`, `event` (`onPress`, `click`), `handler` (a point id; `inline`; `prop:…`), `keys` (text keys passed to `translate`/`t`/the `translate` pipe, `\|`-separated), `text` (literal text and label attributes) | the TypeScript extractor |
-| `ui-event` | a view (Razor) | `element` (`button`, `input`), `event` (`submit`, `click`), `handler` (the `form` point a submit runs, or the page an `onclick` opens; `""` for a plain button); a submit button whose inline `onclick` ends `return false` is a `click` (V2), `keys` (keys passed to anything typed `…Localizer`: nop's `@T("…")`, `@Localizer["…"]`), `text`, `id`, `name`, `type` | `razor-views` |
+| `ui-event` | a view (Razor) | `element` (`button`, `input`), `event` (`submit`, `click`), `handler` (the `form` point a submit runs, or the page an `onclick` opens; `""` for a plain button); a submit button whose inline `onclick` ends `return false` is a `click` (V2), `keys` (keys passed to anything typed `…Localizer`: nop's `@T("…")`, `@Localizer["…"]`), `text`, `id`, `name`, `type`, `built` (`script`: written by a script's text, so a guess, W1) | `razor-views` |
 | `form` | a `form` point | `method` (as written; else POST when the form tag helper builds it or `Html.BeginForm`, GET for a plain `<form>`, T1), `route`, `action`, `controller`, `area` (tag helper values, constants resolved), `url` (a literal `action`), `runtime` (`yes`: a target made at runtime), `via` (`onclick`: read from a button's `onclick`, V2). A button's own target with no form in its file has `method` `""`: linking takes it from the forms around its partial (V3) | `razor-views` |
 | `view` | a view | `path` (in its project), `model` (the `@model` type), `controller`, `area` (from its folder), `kind` (`mvc.1.0.view`, `mvc.1.0.razor-page`) | `razor-views` |
 | `dom-event` | the function binding it, or the view (inline scripts) | `selector` (`#id`, `.class`, `document`), `event`, `handler` (a point id; `inline`), `cancels` (`yes` when a statement of the handler's own body calls `preventDefault()` or, for jQuery, returns `false`, V2) | the TypeScript extractor |
@@ -268,7 +268,8 @@ Also read by flows:
   `return false`, or a script binding to its id whose handler always cancels (`dom-event` `cancels`). Such a button, or a
   `type="button"`, with one constant `@Url.Action`/`@Url.RouteUrl` in its `onclick` gets a `form` point for the page it opens
   (`via: onclick`, 🟡: by GET, else by any verb the action serves, since what its script does with the URL is a guess). Markup
-  inside a `<script>`'s text (a grid column's `'<button …>'` string) isn't read as the page's.
+  inside a `<script>`'s text (a grid column's `'<button …>'` string) isn't read as the page's, except a submit button there: it
+  submits the form around the script (or, through T9, around the partial), 🟡, `built: script`, unless its tag's own text returns false (W1).
   An action's or view component's `View(…)`/`PartialView(…)` `renders` its view by MVC's lookup: `Views/{controller}/{name}`,
   `Views/Shared/{name}`, `Areas/{area}/Views/…` first for an area, `Components/{component}/{name}` for a component. MVC's `{controller}`
   is the request's, so a component's view is looked up in the folder of each controller whose pages show it (through the views that

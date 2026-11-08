@@ -277,7 +277,7 @@ public sealed class RazorViewsDetector : IDetector
         {
             var handler = b.Target is { } own ? FormPoint(own) : b.Submit && b.Form is { } form ? points[form] : "";
             Fact("ui-event", viewId, b.Line, ("element", b.Element), ("event", b.Submit ? "submit" : "click"), ("handler", handler),
-                ("keys", string.Join("|", b.Keys)), ("text", b.Text), ("id", b.Id), ("name", b.NameAttr), ("type", b.Type));
+                ("keys", string.Join("|", b.Keys)), ("text", b.Text), ("id", b.Id), ("name", b.NameAttr), ("type", b.Type), ("built", b.Built));
         }
         foreach (var s in page.Scripts)
             Fact("script", viewId, s.Line, ("text", s.Text));
@@ -860,7 +860,11 @@ public sealed class RazorViewsDetector : IDetector
         /// <summary>T9: the form around each place the view renders a partial (by html offset), for the partial's buttons.</summary>
         readonly List<(int Start, int End, FormRecord Form)> formSpans = [];
         readonly List<int> exprAt = [];
-        public sealed record Button(int Line, string Element, string Type, bool Submit, FormRecord? Form, FormRecord? Target, IReadOnlyList<string> Keys, string Text, string Id, string NameAttr);
+        public sealed record Button(int Line, string Element, string Type, bool Submit, FormRecord? Form, FormRecord? Target, IReadOnlyList<string> Keys, string Text, string Id, string NameAttr)
+        {
+            /// <summary>"script" when a script's text writes it (W1): what the script does with it is a guess.</summary>
+            public string Built { get; init; } = "";
+        }
         public sealed record Script(int Line, string Text);
 
         readonly StringBuilder html = new();
@@ -951,9 +955,24 @@ public sealed class RazorViewsDetector : IDetector
             var scriptEnd = -1;
             foreach (Match m in Tag.Matches(text))
             {
-                // Markup in a script's text (a grid column's '<button …>' string) isn't the page's own.
-                if (m.Index < scriptEnd) continue;
                 var name = m.Groups[2].Value.ToLowerInvariant();
+                // Markup in a script's text (a grid column's '<button …>' string) isn't the page's own. W1: but a submit button a
+                // script writes submits the form around the script (🟡, built: script), unless its tag's own text returns false.
+                if (m.Index < scriptEnd)
+                {
+                    if (m.Groups[1].Value != "/" && name is "button" or "input")
+                    {
+                        var (sa, _) = Attributes(m.Groups[3].Value, null);
+                        var st = (Get(sa, "type") ?? (name == "button" ? "submit" : "text")).ToLowerInvariant();
+                        if (st is "submit" or "image" && !ReturnsFalse.IsMatch(m.Groups[3].Value))
+                        {
+                            var (sk, sw) = Words(name == "button" ? Inner(text, m, "button") : Get(sa, "value") ?? "");
+                            Buttons.Add(new Button(Line(m.Index), name, st, true, forms.Count > 0 ? forms.Peek().Form : null, null, sk, sw,
+                                Get(sa, "id") ?? "", Get(sa, "name") ?? "") { Built = "script" });
+                        }
+                    }
+                    continue;
+                }
                 if (m.Groups[1].Value == "/")
                 {
                     if (name == "form" && forms.Count > 0)
@@ -1102,6 +1121,7 @@ public sealed class RazorViewsDetector : IDetector
             return new FormRecord(line, verb, route, action, controller, area, url, rt);
         }
 
+        static readonly Regex ReturnsFalse = new(@"return\s+false", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         static readonly Regex CancelsSubmit = new(@"(?:^|;|javascript:)\s*return\s+false\s*;?\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         /// <summary>V2: an onclick holding one server value, a constant <c>@Url.Action</c>/<c>@Url.RouteUrl</c>: the page it opens (🟡 GET).</summary>
