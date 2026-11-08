@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Stangent.Graph.Extraction;
@@ -50,6 +52,7 @@ public sealed class RoutesDetector : IDetector
             {
                 var name = ExtractContext.InvokedName(call);
                 if (name is null) continue;
+                GlobalFilter(ctx, file, call, name);
                 if (MapMethods.ContainsKey(name) || name == "MapMethods") MinimalApi(ctx, file, call, name);
                 else if (name is "MapControllerRoute" or "MapAreaControllerRoute" or "MapDefaultControllerRoute" or "MapRoute") Conventional(ctx, file, call, name);
                 else if (name.StartsWith("MapDynamicControllerRoute", StringComparison.Ordinal) || name == "MapFallbackToController")
@@ -143,7 +146,7 @@ public sealed class RoutesDetector : IDetector
     static void Auth(ExtractContext ctx, INamedTypeSymbol controller, IMethodSymbol method, string methodId)
     {
         var found = new List<(string Rule, string Policy, string Roles, string From)>();
-        var filters = new List<(string Filter, string Args, string Stage, string From)>();
+        var filters = new List<(string Filter, string Args, string Stage, string Basis, string From)>();
         void Read(ISymbol symbol, string from)
         {
             foreach (var a in symbol.GetAttributes())
@@ -151,7 +154,7 @@ public sealed class RoutesDetector : IDetector
                 if (Is(a, "AllowAnonymousAttribute")) found.Add(("anonymous", "", "", from));
                 else if (Is(a, "AuthorizeAttribute"))
                     found.Add(("authorize", Named(a, "Policy") ?? (a.ConstructorArguments.FirstOrDefault().Value as string) ?? "", Named(a, "Roles") ?? "", from));
-                else if (AccessFilter(a) is { } f) filters.Add((f.Name, AttributeValues.Named(a, k => k is "Order" or "IsReusable"), f.Stage, from));
+                else if (AccessFilter(a) is { } f) filters.Add((f.Name, AttributeValues.Named(a, k => k is "Order" or "IsReusable"), f.Stage, f.Basis, from));
             }
         }
         foreach (var m in Overrides(method)) Read(m, "method");
@@ -164,30 +167,72 @@ public sealed class RoutesDetector : IDetector
         // N3: an app's own access filters run whatever [AllowAnonymous] says (only the filter's own code can honour it).
         foreach (var f in filters.Distinct())
             ctx.AddFact(Detector, "auth", methodId, null, ("rule", "filter"), ("policy", ""), ("roles", ""), ("from", f.From),
-                ("filter", f.Filter), ("args", f.Args), ("stage", f.Stage));
+                ("filter", f.Filter), ("args", f.Args), ("stage", f.Stage), ("basis", f.Basis));
     }
 
     static readonly string[] AccessWords = ["Authorize", "Authorization", "Permission", "Access", "Role"];
 
+    /// <summary>A result that refuses the request: a challenge, forbid, 401/403, or a redirect to access-denied or sign-in.</summary>
+    static readonly Regex Refusal = new(@"Challenge|Forbid|Unauthori[sz]ed|AccessDenied|SignIn|Login|Status40[13]|\b40[13]\b", RegexOptions.CultureInvariant);
+    static readonly ConditionalWeakTable<INamedTypeSymbol, string> ResultsSeen = new();
+
     /// <summary>
-    /// N3: an attribute that is an MVC filter (derived from <c>TypeFilterAttribute</c>/<c>ServiceFilterAttribute</c>, or itself
-    /// a filter) counts as access control when the filter runs at the authorisation stage (<c>IAuthorizationFilter</c>,
-    /// <c>IAsyncAuthorizationFilter</c>), or when its name says so (Authorize, Permission, Access, Role). Other filters
-    /// (captcha, "save last page") aren't access rules.
+    /// N3, T5, T6: an attribute that is an MVC filter (derived from <c>TypeFilterAttribute</c>/<c>ServiceFilterAttribute</c>, or itself a
+    /// filter) as an access rule, with the evidence for it (<c>basis</c>): <c>denies</c>, its code sets <c>context.Result</c> to a refusal;
+    /// <c>name</c>, its name says Authorize, Permission, Access or Role; <c>stage</c> (🟡), it runs at the authorisation stage;
+    /// <c>result</c> (🟡), an action filter that sets <c>context.Result</c>. None of these: not an access rule (captcha, "save last page").
     /// </summary>
-    static (string Name, string Stage)? AccessFilter(AttributeData a)
+    static (string Name, string Stage, string Basis)? AccessFilter(AttributeData a)
     {
         if (a.AttributeClass is not { } cls) return null;
-        INamedTypeSymbol? filter = null;
+        INamedTypeSymbol? filter;
         if (Is(a, "TypeFilterAttribute") || Is(a, "ServiceFilterAttribute"))
             // [TypeFilter(typeof(X))] names it; a subclass passes it to its base constructor.
             filter = a.ConstructorArguments.FirstOrDefault(c => c.Kind == TypedConstantKind.Type).Value as INamedTypeSymbol ?? FilterOf(cls);
         else if (Implements(cls, "IFilterMetadata")) filter = cls;
         else return null;
         var direct = cls.Name is "TypeFilterAttribute" or "ServiceFilterAttribute";
-        var name = Short(direct && filter is not null ? filter.Name : cls.Name);
-        var stage = filter is not null && (Implements(filter, "IAuthorizationFilter") || Implements(filter, "IAsyncAuthorizationFilter")) ? "authorization" : "other";
-        return stage == "authorization" || AccessWords.Any(w => name.Contains(w, StringComparison.Ordinal)) ? (name, stage) : null;
+        return Classify(Short(direct && filter is not null ? filter.Name : cls.Name), filter);
+    }
+
+    static (string Name, string Stage, string Basis)? Classify(string name, INamedTypeSymbol? filter)
+    {
+        var authorization = filter is not null && (Implements(filter, "IAuthorizationFilter") || Implements(filter, "IAsyncAuthorizationFilter"));
+        var results = filter is null ? "" : ResultsSeen.GetValue(filter, Results);
+        var basis = results == "denies" ? "denies" : AccessWords.Any(w => name.Contains(w, StringComparison.Ordinal)) ? "name"
+            : authorization ? "stage" : results == "sets" ? "result" : null;
+        return basis is null ? null : (name, authorization ? "authorization" : "other", basis);
+    }
+
+    /// <summary>What a filter's own code does with <c>context.Result</c>: <c>denies</c>, <c>sets</c>, or nothing.</summary>
+    static string Results(INamedTypeSymbol filter)
+    {
+        var sets = false;
+        foreach (var r in filter.GetMembers().OfType<IMethodSymbol>().SelectMany(m => m.DeclaringSyntaxReferences))
+            foreach (var set in r.GetSyntax().DescendantNodes().OfType<AssignmentExpressionSyntax>())
+                if (set.Left is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Result" })
+                {
+                    if (Refusal.IsMatch(set.Right.ToString())) return "denies";
+                    sets = true;
+                }
+        return sets ? "sets" : "";
+    }
+
+    /// <summary>T5: <c>options.Filters.Add&lt;X&gt;()</c>, <c>Add(typeof(X))</c>, <c>Add(new X())</c>, <c>AddService…</c>: an access filter for every action.</summary>
+    void GlobalFilter(ExtractContext ctx, SourceFile file, InvocationExpressionSyntax call, string name)
+    {
+        if (name is not ("Add" or "AddService") || call.Expression is not MemberAccessExpressionSyntax { Expression: var on }
+            || (on is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Filters" } ? false : on is not IdentifierNameSyntax { Identifier.ValueText: "Filters" })) return;
+        if (file.Model.GetSymbolInfo(call).Symbol is not IMethodSymbol m || m.ContainingType.Name != "FilterCollection") return;
+        var first = call.ArgumentList.Arguments.FirstOrDefault()?.Expression;
+        var type = m.IsGenericMethod ? m.TypeArguments[0] as INamedTypeSymbol
+            : first is TypeOfExpressionSyntax t ? file.Model.GetTypeInfo(t.Type).Type as INamedTypeSymbol
+            : first is not null ? file.Model.GetTypeInfo(first).Type as INamedTypeSymbol : null;
+        if (type is null) return;
+        var filter = ExtractContext.IsOrDerives(type, "Microsoft.AspNetCore.Mvc.TypeFilterAttribute") ? FilterOf(type) ?? type : type;
+        if (Classify(Short(type.Name), filter) is not { } f) return;
+        ctx.AddFact(Name, "auth", ctx.ProjectId, call, ("rule", "filter"), ("policy", ""), ("roles", ""), ("from", "global"),
+            ("filter", f.Name), ("args", ""), ("stage", f.Stage), ("basis", f.Basis));
     }
 
     /// <summary>The filter type a <c>TypeFilterAttribute</c> subclass passes up (<c>: base(typeof(CheckPermissionFilter))</c>), by name.</summary>

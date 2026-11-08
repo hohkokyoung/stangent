@@ -56,14 +56,18 @@ public sealed class ValidationDetector : IDetector
         {
             var name = access.Name.Identifier.ValueText;
             var args = string.Join(", ", next.ArgumentList.Arguments.Select(a => Value(file.Model, a.Expression)));
-            if (Message(name))
+            // T12: a modifier is a call on the rule's options (IRuleBuilderOptions); a rule, a call on the rule builder. By name only when unknown.
+            var receiver = file.Model.GetSymbolInfo(next).Symbol is IMethodSymbol bound ? (bound.ReducedFrom is { } ext ? ext.Parameters[0].Type : bound.IsExtensionMethod ? bound.Parameters[0].Type : bound.ContainingType)?.Name : null;
+            var modifier = Modifiers.Contains(name) || (receiver is null || !receiver.StartsWith("IRuleBuilder", StringComparison.Ordinal) ? Modifier(name) : receiver.StartsWith("IRuleBuilderOptions", StringComparison.Ordinal));
+            if (!modifier) rules.Add((name, args, access.Name, "", false)); // F9: the rule's own line
+            else if (Message(name))
             {
                 if (rules.Count > 0) rules[^1] = rules[^1] with { Message = MessageText(file.Model, next) };
             }
             // F9: When/Unless guard the rules before them, not those chained after.
             else if (Condition(name))
                 for (var i = 0; i < rules.Count; i++) rules[i] = rules[i] with { Conditional = true };
-            else if (!Modifier(name)) rules.Add((name, args, access.Name, "", false)); // F9: the rule's own line
+
         }
         foreach (var r in rules)
             ctx.AddFact(Name, "rule", propId, r.At, ("rule", r.Rule), ("args", r.Args), ("via", "fluentvalidation"), ("set", set),

@@ -55,6 +55,30 @@ public sealed class SaveLastPageFilter : IActionFilter
     public void OnActionExecuted(ActionExecutedContext context) { }
 }
 
+/// <summary>T5: an action filter whose name says nothing, but whose code refuses the request.</summary>
+public sealed class ValidateIpAttribute : TypeFilterAttribute
+{
+    public ValidateIpAttribute() : base(typeof(ValidateIpFilter)) { }
+
+    sealed class ValidateIpFilter : IActionFilter
+    {
+        public void OnActionExecuting(ActionExecutingContext context) => context.Result = new RedirectToActionResult("AccessDenied", "Account", null);
+        public void OnActionExecuted(ActionExecutedContext context) { }
+    }
+}
+
+/// <summary>T6: runs at the authorisation stage but only redirects to HTTPS: 🟡, not proof of an access rule.</summary>
+public sealed class HttpsOnlyAttribute : Attribute, IAuthorizationFilter
+{
+    public void OnAuthorization(AuthorizationFilterContext context) => context.Result = new RedirectResult("https://shop.example/");
+}
+
+/// <summary>T5: an action filter that ends the request with a result of its own: 🟡.</summary>
+public sealed class MaintenanceAttribute : ActionFilterAttribute
+{
+    public override void OnActionExecuting(ActionExecutingContext context) => context.Result = new ContentResult { Content = "Back soon" };
+}
+
 public sealed class SignedInFilter : IAuthorizationFilter
 {
     public void OnAuthorization(AuthorizationFilterContext context) { }
@@ -74,6 +98,19 @@ public class AccountController : Controller
     }
 
     public IActionResult Welcome() => View("Done");
+
+    // Attribute-routed pages for the form cases (T1, T3, T10).
+    [HttpGet("account/settings"), ValidateIp, HttpsOnly, Maintenance, SaveLastPage]
+    public IActionResult Settings() => View();
+
+    [HttpPost("account/settings")]
+    public IActionResult Settings(RegisterModel model) => View();
+
+    [Route("account/notes")]
+    public IActionResult Notes() => Content("");
+
+    [HttpPost("account/notes")]
+    public IActionResult Notes(RegisterModel model) => Content("");
 
     [CheckPermission(Permissions.ManageAccounts, DenyAs.Json), TypeFilter(typeof(SignedInFilter)), Microsoft.AspNetCore.Authorization.AllowAnonymous]
     public IActionResult Close() => PartialView("_Closed");

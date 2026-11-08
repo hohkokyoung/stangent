@@ -385,7 +385,10 @@ function references(ctx: Context, sf: ts.SourceFile) {
     if (ts.isIdentifier(n) && !isDeclarationName(n)) {
       const symbol = checker.getSymbolAtLocation(n);
       const target = ctx.symbolId(symbol);
-      if (target) out.edge(ctx.ownerId(n), target, edgeKind(n));
+      // T2: a plain script's global declared in several files (admin.common.js and public.common.js) could be either: 🟡 to each.
+      const several = target ? declaredIn(ctx, symbol!) : [];
+      if (several.length > 1) for (const id of several) out.edge(ctx.ownerId(n), id, edgeKind(n), 1);
+      else if (target) out.edge(ctx.ownerId(n), target, edgeKind(n));
       else {
         // `const { addSeries } = useAddSeries()` then `addSeries(…)` in a handler: the handler calls the hook (G5).
         const from = resultOf(ctx, symbol);
@@ -407,6 +410,13 @@ function references(ctx: Context, sf: ts.SourceFile) {
     ts.forEachChild(n, visit);
   };
   visit(sf);
+}
+
+/** Every own declaration of a symbol, when they sit in more than one file. */
+function declaredIn(ctx: Context, symbol: ts.Symbol): string[] {
+  const decls = (symbol.declarations ?? []).filter((d) => ctx.isOwn(d.getSourceFile()));
+  if (new Set(decls.map((d) => d.getSourceFile().fileName)).size < 2) return [];
+  return [...new Set(decls.map((d) => ctx.declId(d)).filter((id): id is string => !!id))];
 }
 
 function contextualProperty(n: ts.Node): { symbol: ts.Symbol | undefined } | null {

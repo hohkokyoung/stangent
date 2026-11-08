@@ -208,11 +208,28 @@ export function domEvents(ctx: Context, sf: ts.SourceFile) {
       }
       if (selector && event && event !== RUNTIME && handler) {
         ctx.out.fact("ui", "dom-event", ctx.ownerId(n), ctx.rel(sf.fileName), ctx.line(n), {
-          selector, event: event.split(".")[0], handler: handlerOf(ctx, handler),
+          selector, event: event.split(".")[0], handler: scriptHandlerOf(ctx, handler),
         });
       }
     }
     ts.forEachChild(n, visit);
   };
   visit(sf);
+}
+
+/**
+ * T7: a plain script's handler is a function only when it is one, or its body is that single call; anything more is `inline`.
+ * jQuery calls don't resolve, so "the one repo function it calls" would pick a helper out of a body that does much more.
+ */
+function scriptHandlerOf(ctx: Context, expr: ts.Expression): string {
+  if (!ts.isArrowFunction(expr) && !ts.isFunctionExpression(expr)) return handlerOf(ctx, expr);
+  let only: ts.Expression | undefined;
+  if (!ts.isBlock(expr.body)) only = expr.body;
+  else if (expr.body.statements.length === 1) {
+    const st = expr.body.statements[0];
+    only = ts.isExpressionStatement(st) ? st.expression : ts.isReturnStatement(st) ? st.expression : undefined;
+  }
+  if (!only || !ts.isCallExpression(only)) return "inline";
+  const callee = only.expression;
+  return ts.isIdentifier(callee) || ts.isPropertyAccessExpression(callee) ? (handlerOf(ctx, callee).startsWith("prop:") ? "inline" : handlerOf(ctx, callee)) : "inline";
 }

@@ -445,3 +445,21 @@ test("plain scripts and a view's inline scripts: jQuery calls and event bindings
   assert.ok(lines.some((l) => l.t === "edge" && l.source === "view:V.cshtml" && l.target === "ts|js/site.js#check"));
   assert.ok(!lines.some((l) => l.t === "node" && l.file === "V.cshtml"));
 });
+
+test("a global in several plain scripts is a guess to each, and a handler is a function only when it is one (T2, T7)", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "stangent-js-"));
+  fs.mkdirSync(path.join(root, "js"));
+  fs.writeFileSync(path.join(root, "js/admin.js"), "function setLocation(url) { window.location = url; }");
+  fs.writeFileSync(path.join(root, "js/public.js"), "function setLocation(url) { window.location.href = url; }");
+  fs.writeFileSync(path.join(root, "js/page.js"), [
+    "function go() { setLocation('/x'); }",
+    "$('#many').click(function () { $.get('/api/a'); go(); });",
+    "$('#one').click(function () { go(); });",
+  ].join("\n"));
+  const files = ["admin.js", "public.js", "page.js"].map((f) => path.join(root, "js", f));
+  const lines = extract({ tsconfig: root, root, projectId: "p", settings: {}, files }).lines;
+  const calls = lines.flatMap((l) => l.t === "edge" && l.source === "ts|js/page.js#go" && l.kind === "calls" ? [`${l.target} ${l.label}`] : []).sort();
+  assert.deepEqual(calls, ["ts|js/admin.js#setLocation 1", "ts|js/public.js#setLocation 1"]);
+  const events = lines.flatMap((l) => l.t === "fact" && l.kind === "dom-event" ? [`${l.data.selector} ${l.data.handler}`] : []).sort();
+  assert.deepEqual(events, ["#many inline", "#one ts|js/page.js#go"]);
+});

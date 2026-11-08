@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace FluentValidation
 {
     public interface IRuleBuilder<T, TProperty>;
+    public interface IRuleBuilderOptions<T, TProperty> : IRuleBuilder<T, TProperty>;
 
     public abstract class AbstractValidator<T>
     {
@@ -12,10 +13,11 @@ namespace FluentValidation
 
     public static class RuleBuilderExtensions
     {
-        public static IRuleBuilder<T, P> NotEmpty<T, P>(this IRuleBuilder<T, P> rule) => rule;
-        public static IRuleBuilder<T, P> GreaterThan<T, P>(this IRuleBuilder<T, P> rule, P value) => rule;
-        public static IRuleBuilder<T, P> WithMessage<T, P>(this IRuleBuilder<T, P> rule, string message) => rule;
-        public static IRuleBuilder<T, P> When<T, P>(this IRuleBuilder<T, P> rule, Func<T, bool> condition) => rule;
+        // As FluentValidation has it: rules on the rule builder, modifiers on the rule's options (T12).
+        public static IRuleBuilderOptions<T, P> NotEmpty<T, P>(this IRuleBuilder<T, P> rule) => null!;
+        public static IRuleBuilderOptions<T, P> GreaterThan<T, P>(this IRuleBuilder<T, P> rule, P value) => null!;
+        public static IRuleBuilderOptions<T, P> WithMessage<T, P>(this IRuleBuilderOptions<T, P> rule, string message) => rule;
+        public static IRuleBuilderOptions<T, P> When<T, P>(this IRuleBuilderOptions<T, P> rule, Func<T, bool> condition) => rule;
     }
 }
 
@@ -28,7 +30,10 @@ namespace Shop.Core
     {
         public static Task<string> Get(string key) => Task.FromResult(key);
 
-        public static IRuleBuilder<T, P> WithMessageAwait<T, P>(this IRuleBuilder<T, P> rule, Task<string> message) => rule;
+        public static IRuleBuilderOptions<T, P> WithMessageAwait<T, P>(this IRuleBuilderOptions<T, P> rule, Task<string> message) => rule;
+
+        // T12: an app's own rule whose name starts like a modifier's; it's on the rule builder, so it's a rule.
+        public static IRuleBuilderOptions<T, P> Within<T, P>(this IRuleBuilder<T, P> rule, int most) => null!;
     }
 
     public class NewOrder
@@ -47,7 +52,7 @@ namespace Shop.Core
         {
             RuleFor(o => o.Quantity).GreaterThan(Smallest).WithMessage("Order at least one").When(o => o.Customer != "")
                 .NotEmpty();
-            RuleFor(o => o.Customer).NotEmpty().WithMessageAwait(Texts.Get("Order.Customer.Required"));
+            RuleFor(o => o.Customer).NotEmpty().WithMessageAwait(Texts.Get("Order.Customer.Required")).Within(40);
         }
     }
 }

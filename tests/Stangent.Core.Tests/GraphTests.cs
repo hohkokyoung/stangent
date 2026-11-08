@@ -172,6 +172,12 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.Equal("CheckAccessStore(ignore = false) other class AccountController", Filters("Register"));
         Assert.Equal("CheckAccessStore(ignore = false) other class AccountController", Filters("Register(Shop.Web.Models.RegisterModel)"));
         // [AllowAnonymous] doesn't stop a filter: only the filter's own code could.
+        // T5, T6: the evidence for each: code that refuses, a name, or (🟡) only the stage it runs at or a result of its own. SaveLastPage is none.
+        Assert.Equal("CheckAccessStore name; HttpsOnly stage; Maintenance result; ValidateIp denies", string.Join("; ", shop.Graph.AllFacts
+            .Where(f => f.Kind == "auth" && f.Owner == "Shop.Web|M:Shop.Web.Controllers.AccountController.Settings" && f["rule"] == "filter")
+            .Select(f => $"{f["filter"]} {f["basis"]}").Order(StringComparer.Ordinal)));
+        // T5: a global filter holds for every action: on the project, from "global".
+        Assert.Contains(shop.Graph.AllFacts, f => f.Kind == "auth" && f.Owner == "project:Shop.Web/Shop.Web.csproj" && f["from"] == "global" && f["filter"] == "ValidateIp" && f["basis"] == "denies");
         Assert.Equal("CheckAccessStore(ignore = false) other class AccountController; CheckPermission(permission = \"Accounts.Manage\", deny = Json) "
             + "authorization method; SignedInFilter(type = typeof(SignedInFilter)) authorization method; anonymous method",
             Filters("Close"));
@@ -183,7 +189,7 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         string Rules(string prop) => string.Join("; ", shop.Graph.AllFacts.Where(f => f.Kind == "rule" && f.Owner == "Shop.Core|P:Shop.Core.NewOrder." + prop)
             .Select(f => $"{f["rule"]}({f["args"]}) {f["via"]} '{f["message"]}' {f["conditional"]}".TrimEnd()));
         Assert.Equal("Required() attribute ''; StringLength(40, MinimumLength = 2) attribute ''; "
-            + "NotEmpty() fluentvalidation 'Texts.Get(\"Order.Customer.Required\")'", Rules("Customer"));   // N4: WithMessageAwait is a message
+            + "NotEmpty() fluentvalidation 'Texts.Get(\"Order.Customer.Required\")'; Within(40) fluentvalidation ''", Rules("Customer"));   // N4: WithMessageAwait is a message; T12: Within is a rule
         // N4: an enum argument by member name.
         Assert.Equal("DataType(EmailAddress)", string.Join("; ", shop.Graph.AllFacts
             .Where(f => f.Kind == "rule" && f.Owner == "Shop.Web|P:Shop.Web.Models.RegisterModel.Email").Select(f => $"{f["rule"]}({f["args"]})")));
@@ -254,6 +260,41 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
 
         // A view the compiler made nothing for is a blind spot.
         Assert.Contains(shop.Graph.AllBlindSpots, b => b.File == "Shop.Web/Views/Legacy/Old.cshtml" && b.Reason.StartsWith("view not read", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Razor_forms_follow_the_form_tag_helper_and_each_buttons_own_target()
+    {
+        const string view = "view:Shop.Web/Views/Account/Settings.cshtml";
+        const string ep = "endpoint:Shop.Web|";
+        bool Has(string kind, string source, string target, Label? label = null) =>
+            Edges(kind).Any(e => e.Source == source && e.Target == target && (label is null || e.Label == label));
+        IEnumerable<string> Targets(string source) => Edges(EdgeKind.CallsHttp).Where(e => e.Source == source).Select(e => e.Target);
+        string Handler(string text) => shop.Graph.AllFacts.Single(f => f.Kind == "ui-event" && f.Owner == view && f["text"] == text)["handler"];
+
+        // T1: the form tag helper writes method="post" when it builds the form; a plain <form action> stays GET.
+        Assert.Equal([ep + "POST /account/settings"], Targets(view + "#form1"));
+        Assert.Equal([ep + "GET /account/settings"], Targets(view + "#form2"));
+        // T3: formaction="@Url.Action(…)" with formmethod gives the button its own target; a server value that isn't one is ❓.
+        Assert.Equal([ep + "GET /account/settings"], Targets(Handler("Preview")));
+        Assert.Contains(shop.Graph.AllBlindSpots, b => b.Owner == Handler("Elsewhere") && b.Reason == "form target built at runtime");
+        // T10: the endpoint with the form's verb wins over ANY at the same path.
+        Assert.Equal([ep + "POST /account/notes"], Targets(view + "#form3"));
+        // T9: a partial's submit button submits the form around the <partial>; with no form around it, ❓.
+        Assert.True(Has(EdgeKind.Calls, "view:Shop.Web/Views/Account/_SaveButtons.cshtml", view + "#form1", Label.Guessed));
+        Assert.Contains(shop.Graph.AllBlindSpots, b => b.Owner == "view:Shop.Web/Views/Account/_Orphan.cshtml" && b.Reason.StartsWith("submit button outside", StringComparison.Ordinal));
+        // …and so does one in a partial of that partial.
+        Assert.True(Has(EdgeKind.Calls, "view:Shop.Web/Views/Account/_DeleteButton.cshtml", view + "#form1", Label.Guessed));
+        // T4: a component calling its base class's helper renders its own view: its default, or the name it passes.
+        const string comps = "Shop.Web|M:Shop.Web.Components.";
+        Assert.True(Has(EdgeKind.Renders, comps + "CartViewComponent.InvokeAsync", "view:Shop.Web/Views/Shared/Components/Cart/Default.cshtml", Label.Guessed));
+        Assert.True(Has(EdgeKind.Renders, comps + "BadgeViewComponent.InvokeAsync", "view:Shop.Web/Views/Shared/Components/Badge/Small.cshtml", Label.Guessed));
+        // T8: with an app's own view location rule, the theme's view of the same path is a candidate too, and neither is ✅.
+        const string welcome = "Shop.Web|M:Shop.Web.Controllers.AccountController.Welcome";
+        Assert.True(Has(EdgeKind.Renders, welcome, "view:Shop.Web/Views/Account/Done.cshtml", Label.Guessed));
+        Assert.True(Has(EdgeKind.Renders, welcome, "view:Shop.Web/Themes/Dark/Views/Account/Done.cshtml", Label.Guessed));
+        // T11: a partial named with a folder and no extension.
+        Assert.True(Has(EdgeKind.Renders, view, "view:Shop.Web/Views/Shared/_Closed.cshtml"));
     }
 
     [Fact]

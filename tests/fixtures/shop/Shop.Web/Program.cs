@@ -2,7 +2,7 @@ using Shop.Core;
 using Shop.Web;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(o => o.Filters.Add<Shop.Web.Controllers.ValidateIpAttribute>());   // T5: a global filter
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.Configure<PaymentOptions>(builder.Configuration.GetSection("Payment"));
 builder.Services.AddHttpClient<StockClient>(c => c.BaseAddress = new("http://stock-api"));

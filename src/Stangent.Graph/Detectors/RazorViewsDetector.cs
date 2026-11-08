@@ -52,12 +52,21 @@ public sealed class RazorViewsDetector : IDetector
     {
         var root = file.Tree.GetRoot();
         foreach (var cls in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
-            if (file.Model.GetDeclaredSymbol(cls) is INamedTypeSymbol type && ComponentName(type) is { } component && ctx.NodeId(type) is { } typeId
-                && type.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() == cls)
-                ctx.AddFact(Name, "view-component", typeId, cls, ("name", component));
+        {
+            if (file.Model.GetDeclaredSymbol(cls) is not INamedTypeSymbol type || ctx.NodeId(type) is not { } typeId
+                || type.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() != cls) continue;
+            if (ComponentName(type) is { } component) ctx.AddFact(Name, "view-component", typeId, cls, ("name", component));
+            // T8: an app's own view location rule (themes): MVC's lookup is then only a guess.
+            if (type.AllInterfaces.Any(i => i.Name == "IViewLocationExpander")) ctx.AddFact(Name, "view-expander", typeId, cls, ("type", type.Name));
+        }
         foreach (var call in root.DescendantNodes().OfType<InvocationExpressionSyntax>())
         {
-            if (ExtractContext.InvokedName(call) is not ("View" or "PartialView")) continue;
+            var invoked = ExtractContext.InvokedName(call);
+            if (invoked is not ("View" or "PartialView"))
+            {
+                Forwarded(ctx, file, call, projectDir);
+                continue;
+            }
             if (file.Model.GetSymbolInfo(call).Symbol is not IMethodSymbol m) continue;
             var isController = ExtractContext.IsOrDerives(m.ContainingType, "Microsoft.AspNetCore.Mvc.Controller");
             if (!isController && !ExtractContext.IsOrDerives(m.ContainingType, "Microsoft.AspNetCore.Mvc.ViewComponent")) continue;
@@ -88,6 +97,63 @@ public sealed class RazorViewsDetector : IDetector
                 ("area", isController ? Area(host) : ""), ("component", isController ? "" : ComponentName(host) ?? Short(host.Name, "ViewComponent")),
                 ("projectDir", projectDir));
         }
+    }
+
+    /// <summary>
+    /// T4: a call to a base class's helper that forwards to <c>View(…)</c> (nopCommerce's <c>NopViewComponent.ViewAsync(model)</c>) renders
+    /// the caller's view: the view name it passes when the helper forwards one, else the caller's default (🟡 at linking).
+    /// </summary>
+    void Forwarded(ExtractContext ctx, SourceFile file, InvocationExpressionSyntax call, string projectDir)
+    {
+        if (file.Model.GetSymbolInfo(call).Symbol is not IMethodSymbol m) return;
+        var isController = ExtractContext.IsOrDerives(m.ContainingType, "Microsoft.AspNetCore.Mvc.Controller");
+        if (!isController && !ExtractContext.IsOrDerives(m.ContainingType, "Microsoft.AspNetCore.Mvc.ViewComponent")) return;
+        if (Forwarder(m.OriginalDefinition) is not var (forwarded, constant, partial)) return;
+        if (EnclosingMethod(file.Model, call) is not { } method || method.ContainingType.IsAbstract || ctx.OwnerId(call, file.Model) is not { } owner) return;
+        var name = constant;
+        if (forwarded is not null)
+        {
+            var args = call.ArgumentList.Arguments;
+            var index = m.Parameters.ToList().FindIndex(p => p.Name == forwarded);
+            var arg = args.FirstOrDefault(a => a.NameColon?.Name.Identifier.ValueText == forwarded) ?? (index >= 0 && index < args.Count && args[index].NameColon is null ? args[index] : null);
+            if (arg is not null)
+            {
+                if (file.Model.GetConstantValue(arg.Expression) is { HasValue: true, Value: string v }) name = v;
+                else
+                {
+                    ctx.AddBlindSpot(owner, call, $"{m.Name} chosen at runtime: {arg.Expression}", Name);
+                    return;
+                }
+            }
+        }
+        var host = method.ContainingType;
+        ctx.AddFact(Name, "renders-view", owner, call, ("name", name), ("partial", partial ? "yes" : ""),
+            ("controller", isController ? Short(host.Name, "Controller") : ""), ("action", isController ? ActionName(method) : ""),
+            ("area", isController ? Area(host) : ""), ("component", isController ? "" : ComponentName(host) ?? Short(host.Name, "ViewComponent")),
+            ("projectDir", projectDir), ("via", m.Name));
+    }
+
+    /// <summary>A helper whose body calls <c>View(…)</c>/<c>PartialView(…)</c>: the parameter it passes as the view's name, or a constant name.</summary>
+    static (string? Forwarded, string Constant, bool Partial)? Forwarder(IMethodSymbol m)
+    {
+        if (m.Name is "View" or "PartialView" || m.MethodKind != MethodKind.Ordinary) return null;
+        foreach (var r in m.DeclaringSyntaxReferences)
+        {
+            if (r.GetSyntax() is not MethodDeclarationSyntax decl) continue;
+            foreach (var inner in decl.DescendantNodes().OfType<InvocationExpressionSyntax>())
+            {
+                if (ExtractContext.InvokedName(inner) is not ("View" or "PartialView") || inner.Expression is MemberAccessExpressionSyntax { Expression: not BaseExpressionSyntax and not ThisExpressionSyntax }) continue;
+                var partial = ExtractContext.InvokedName(inner) == "PartialView";
+                foreach (var a in inner.ArgumentList.Arguments)
+                {
+                    if (a.Expression is LiteralExpressionSyntax lit && lit.Token.Value is string text) return (null, text, partial);
+                    if (a.Expression is IdentifierNameSyntax id && m.Parameters.FirstOrDefault(p => p.Name == id.Identifier.ValueText) is { Type.SpecialType: SpecialType.System_String } p)
+                        return (p.Name, "", partial);
+                }
+                return (null, "", partial);
+            }
+        }
+        return null;
     }
 
     static IMethodSymbol? EnclosingMethod(SemanticModel model, SyntaxNode node)
@@ -161,7 +227,26 @@ public sealed class RazorViewsDetector : IDetector
             ctx.AddEdge(viewId, target, symbol is IMethodSymbol ? EdgeKind.Calls : EdgeKind.Uses, Label.Certain, Name);
         }
 
-        // View components and partials named in the view's code.
+        // The markup, rebuilt from the compiler's writes in order, with its forms as points.
+        var execute = cls?.Members.OfType<MethodDeclarationSyntax>().FirstOrDefault(md => md.Identifier.ValueText == "ExecuteAsync");
+        var page = execute?.Body is null ? null : new Page(new Walker(file.Model, Statics(cls!, file.Model)).Block(execute.Body.Statements), lines, file.Model);
+        var formIndex = 0;
+        string FormPoint(Page.FormRecord f)
+        {
+            var id = $"{viewId}#form{++formIndex}";
+            ctx.Fragment.Nodes.Add(new Node(id, NodeKind.Form, $"{pathInProject} form {formIndex}", ctx.ProjectId, rel, f.Line, f.Line));
+            ctx.AddEdge(viewId, id, EdgeKind.Contains, Label.Certain);
+            Fact("form", id, f.Line, ("method", f.Method), ("route", f.Route ?? ""), ("action", f.Action ?? ""), ("controller", f.Controller ?? ""),
+                ("area", f.Area ?? ""), ("url", f.Url ?? ""), ("runtime", f.Runtime ? "yes" : ""), ("view", viewId),
+                ("viewController", viewController), ("viewArea", viewArea), ("viewAction", Path.GetFileNameWithoutExtension(pathInProject)),
+                ("assembly", ctx.AssemblyName));
+            return id;
+        }
+        var points = new Dictionary<Page.FormRecord, string>(ReferenceEqualityComparer.Instance);
+        foreach (var f in page?.Forms ?? []) points[f] = FormPoint(f);
+        string FormId(Page.FormRecord? f) => f is not null && points.TryGetValue(f, out var id) ? id : "";
+
+        // View components and partials named in the view's code; a partial keeps the form around it (T9).
         foreach (var call in file.Tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>())
         {
             if (file.Model.GetSymbolInfo(call).Symbol is not IMethodSymbol m) continue;
@@ -177,35 +262,17 @@ public sealed class RazorViewsDetector : IDetector
             }
             else if (m.Name is "Partial" or "PartialAsync" or "RenderPartial" or "RenderPartialAsync" && m.ContainingType.Name.Contains("HtmlHelper", StringComparison.Ordinal))
             {
-                if (first is not null && file.Model.GetConstantValue(first) is { HasValue: true, Value: string name }) Fact("renders-partial", viewId, line, ("name", name));
+                if (first is not null && file.Model.GetConstantValue(first) is { HasValue: true, Value: string name })
+                    Fact("renders-partial", viewId, line, ("name", name), ("form", FormId(page?.FormAround(call))));
                 else ctx.Fragment.BlindSpots.Add(new BlindSpot(viewId, rel, line, $"partial view chosen at runtime: {call}", Name));
             }
         }
-
-        // The markup, rebuilt from the compiler's writes in order.
-        var execute = cls?.Members.OfType<MethodDeclarationSyntax>().FirstOrDefault(md => md.Identifier.ValueText == "ExecuteAsync");
-        if (execute?.Body is null) return;
-        var walker = new Walker(file.Model, Statics(cls!, file.Model));
-        var page = new Page(walker.Block(execute.Body.Statements), lines, file.Model);
+        if (page is null) return;
 
         foreach (var el in page.Elements.Where(e => e.Tag == "partial"))
-            if (el.Props.GetValueOrDefault("Name") is { } name) Fact("renders-partial", viewId, page.LineOf(el), ("name", name));
+            if (el.Props.GetValueOrDefault("Name") is { } name) Fact("renders-partial", viewId, page.LineOf(el), ("name", name), ("form", FormId(page.PartialForms.GetValueOrDefault(el))));
             else if (el.Props.ContainsKey("Name")) ctx.Fragment.BlindSpots.Add(new BlindSpot(viewId, rel, page.LineOf(el), "partial view chosen at runtime", Name));
 
-        var formIndex = 0;
-        string FormPoint(Page.FormRecord f)
-        {
-            var id = $"{viewId}#form{++formIndex}";
-            ctx.Fragment.Nodes.Add(new Node(id, NodeKind.Form, $"{pathInProject} form {formIndex}", ctx.ProjectId, rel, f.Line, f.Line));
-            ctx.AddEdge(viewId, id, EdgeKind.Contains, Label.Certain);
-            Fact("form", id, f.Line, ("method", f.Method), ("route", f.Route ?? ""), ("action", f.Action ?? ""), ("controller", f.Controller ?? ""),
-                ("area", f.Area ?? ""), ("url", f.Url ?? ""), ("runtime", f.Runtime ? "yes" : ""), ("view", viewId),
-                ("viewController", viewController), ("viewArea", viewArea), ("viewAction", Path.GetFileNameWithoutExtension(pathInProject)),
-                ("assembly", ctx.AssemblyName));
-            return id;
-        }
-        var points = new Dictionary<Page.FormRecord, string>();
-        foreach (var f in page.Forms) points[f] = FormPoint(f);
         foreach (var b in page.Buttons)
         {
             var handler = b.Target is { } own ? FormPoint(own) : b.Submit && b.Form is { } form ? points[form] : "";
@@ -256,6 +323,23 @@ public sealed class RazorViewsDetector : IDetector
         var byPath = new Dictionary<(string, string), string>();
         foreach (var v in views) byPath.TryAdd((v["projectDir"], v["path"].ToLowerInvariant()), v.Owner);
         var viewOf = views.ToDictionary(v => v.Owner, StringComparer.Ordinal);
+        var partialForms = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var plainPartials = new List<(string Parent, string Child)>();
+        // T8: with an app's own view location rule (nopCommerce's themes), a view by the same path under another root may win at runtime.
+        var expander = facts.Any(f => f.Kind == "view-expander");
+        string? Key(Fact v)
+        {
+            var path = v["path"];
+            var at = path.StartsWith("Views/", StringComparison.OrdinalIgnoreCase) ? 0 : path.IndexOf("/Views/", StringComparison.OrdinalIgnoreCase) + 1;
+            return at < 0 || at == 0 && !path.StartsWith("Views/", StringComparison.OrdinalIgnoreCase) ? null
+                : $"{v["projectDir"]}|{v["area"]}|{path[at..].ToLowerInvariant()}";
+        }
+        var sameKey = expander ? views.Select(v => (Key: Key(v), v.Owner)).Where(x => x.Key is not null).ToLookup(x => x.Key!, x => x.Owner) : null;
+        void Alternatives(string owner, string hit)
+        {
+            if (sameKey is null || !viewOf.TryGetValue(hit, out var v) || Key(v) is not { } key) return;
+            foreach (var other in sameKey[key].Where(o => o != hit)) ctx.AddEdge(owner, other, EdgeKind.Renders, Label.Guessed, Name);
+        }
 
         string? At(string projectDir, string path) => byPath.GetValueOrDefault((projectDir, path.TrimStart('~', '/').ToLowerInvariant()));
         // A path written for where the app is deployed (~/Plugins/X/Views/Y.cshtml): the longest tail that names a view in the project.
@@ -287,7 +371,11 @@ public sealed class RazorViewsDetector : IDetector
                     : [$"Views/{r["controller"]}/{file}", $"Views/Shared/{file}"];
                 hit = places.Select(p => At(dir, p)).FirstOrDefault(h => h is not null);
             }
-            if (hit is not null) ctx.AddEdge(r.Owner, hit, EdgeKind.Renders, r["name"].Length > 0 && IsPath(name) ? Label.Certain : Label.Guessed, Name);
+            if (hit is not null)
+            {
+                ctx.AddEdge(r.Owner, hit, EdgeKind.Renders, r["name"].Length > 0 && IsPath(name) && !expander ? Label.Certain : Label.Guessed, Name);
+                Alternatives(r.Owner, hit);
+            }
             else ctx.AddBlindSpot(r.Owner, r.File, r.Line, $"view {name} not found by MVC's lookup rules", Name);
         }
 
@@ -299,12 +387,40 @@ public sealed class RazorViewsDetector : IDetector
             var name = r["name"];
             var here = Path.GetDirectoryName(v["path"])?.Replace('\\', '/') ?? "";
             // A path not rooted with ~/ or / is relative to the view (MVC's rule for names with a folder or an extension).
-            var relative = IsPath(name) && !name.StartsWith('~') && !name.StartsWith('/') ? Relative(here, name) : null;
-            var hit = IsPath(name) ? (relative is null ? null : At(dir, relative)) ?? At(dir, name) ?? ByPath(dir, name)
+            // T11: MVC adds the extension a name with a folder leaves out.
+            var relative = IsPath(name) && !name.StartsWith('~') && !name.StartsWith('/') ? Relative(here, File(name)) : null;
+            var hit = IsPath(name) ? (relative is null ? null : At(dir, relative)) ?? At(dir, File(name)) ?? ByPath(dir, File(name))
                 : new[] { $"{here}/{File(name)}", v["area"].Length > 0 ? $"Areas/{v["area"]}/Views/Shared/{File(name)}" : null, $"Views/Shared/{File(name)}" }
                     .OfType<string>().Select(p => At(dir, p)).FirstOrDefault(h => h is not null);
-            if (hit is not null) ctx.AddEdge(r.Owner, hit, EdgeKind.Renders, Label.Guessed, Name);
+            if (hit is not null)
+            {
+                ctx.AddEdge(r.Owner, hit, EdgeKind.Renders, Label.Guessed, Name);
+                Alternatives(r.Owner, hit);
+                if (r["form"].Length > 0) (partialForms.TryGetValue(hit, out var list) ? list : partialForms[hit] = []).Add(r["form"]);
+                else plainPartials.Add((r.Owner, hit));
+            }
             else ctx.AddBlindSpot(r.Owner, r.File, r.Line, $"partial view {name} not found", Name);
+        }
+
+        // A partial rendered with no form around it, inside a partial that has one, sits in that form too (Create → _CreateOrUpdate → _Values).
+        for (var changed = true; changed;)
+        {
+            changed = false;
+            foreach (var (parent, child) in plainPartials)
+                if (partialForms.TryGetValue(parent, out var outer))
+                {
+                    var inner = partialForms.TryGetValue(child, out var have) ? have : partialForms[child] = [];
+                    foreach (var f in outer.Where(f => !inner.Contains(f)).ToList()) { inner.Add(f); changed = true; }
+                }
+        }
+
+        // T9: a submit button with no form of its own submits the form around the <partial> that rendered its view (🟡); with none, ❓.
+        foreach (var group in facts.Where(f => f.Kind == "ui-event" && f["event"] == "submit" && f["handler"].Length == 0).GroupBy(f => f.Owner))
+        {
+            var around = partialForms.GetValueOrDefault(group.Key)?.Distinct().ToList() ?? [];
+            foreach (var form in around) ctx.AddEdge(group.Key, form, EdgeKind.Calls, Label.Guessed, Name);
+            if (around.Count == 0)
+                foreach (var b in group) ctx.AddBlindSpot(b.Owner, b.File, b.Line, "submit button outside any form the graph can see", Name);
         }
 
         static string? Relative(string folder, string name)
@@ -396,6 +512,9 @@ public sealed class RazorViewsDetector : IDetector
                 if (local.Count > 0) candidates = local;
                 hits.AddRange(candidates.SelectMany(a => routedTo[a.Owner]).Where(e => Fits(e, verb)).Distinct());
             }
+            // T10: routing prefers the endpoint with the form's verb over ANY at the same path.
+            var withVerb = hits.Where(h => endpoints[h].Name.StartsWith(verb + " ", StringComparison.Ordinal)).Select(h => endpoints[h].Name[(verb.Length + 1)..]).ToHashSet();
+            hits = [.. hits.Distinct().Where(h => !(endpoints[h].Name.StartsWith("ANY ", StringComparison.Ordinal) && withVerb.Contains(endpoints[h].Name[4..])))];
             if (hits.Count > 1) label = Label.Guessed;
             foreach (var h in hits) ctx.AddEdge(f.Owner, h, EdgeKind.CallsHttp, label, Name);
             if (hits.Count == 0)
@@ -417,6 +536,8 @@ public sealed class RazorViewsDetector : IDetector
         /// <summary>Tag helper properties (<c>Action</c>, <c>Route</c>, <c>Method</c>…); null is a value made at runtime.</summary>
         public Dictionary<string, string?> Props { get; } = new(StringComparer.Ordinal);
         public Dictionary<string, string?> Attrs { get; } = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>The tag helpers the compiler ran on the element (<c>FormTagHelper</c>…).</summary>
+        public HashSet<string> Helpers { get; } = new(StringComparer.Ordinal);
         public bool BeginForm { get; init; }
     }
 
@@ -496,6 +617,13 @@ public sealed class RazorViewsDetector : IDetector
                         buffer = null;
                         return;
                     }
+                }
+                // __X = CreateTagHelper<FormTagHelper>(): a tag helper runs on the element.
+                if (current is not null && right is InvocationExpressionSyntax { Expression: GenericNameSyntax { Identifier.ValueText: "CreateTagHelper" } created })
+                {
+                    var helper = created.TypeArgumentList.Arguments.LastOrDefault()?.ToString() ?? "";
+                    current.Helpers.Add(helper[(helper.LastIndexOf('.') + 1)..]);
+                    return;
                 }
                 if (current is not null && a.Left is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax id } ma
                     && id.Identifier.ValueText.StartsWith("__", StringComparison.Ordinal) && !left.StartsWith("__tagHelperExecutionContext", StringComparison.Ordinal))
@@ -638,6 +766,9 @@ public sealed class RazorViewsDetector : IDetector
     sealed class Page
     {
         public sealed record FormRecord(int Line, string Method, string? Route, string? Action, string? Controller, string? Area, string? Url, bool Runtime);
+        /// <summary>T9: the form around each place the view renders a partial (by html offset), for the partial's buttons.</summary>
+        readonly List<(int Start, int End, FormRecord Form)> formSpans = [];
+        readonly List<int> exprAt = [];
         public sealed record Button(int Line, string Element, string Type, bool Submit, FormRecord? Form, FormRecord? Target, IReadOnlyList<string> Keys, string Text, string Id, string NameAttr);
         public sealed record Script(int Line, string Text);
 
@@ -677,6 +808,7 @@ public sealed class RazorViewsDetector : IDetector
                         var span = x.Node.GetLocation().GetMappedLineSpan();
                         if (span.HasMappedPath) cursor = Math.Max(cursor, lines.Offset(span.StartLinePosition.Line, span.StartLinePosition.Character));
                         map.Add((html.Length, cursor));
+                        exprAt.Add(html.Length);
                         html.Append('\u0001').Append(exprs.Count).Append('\u0002');
                         exprs.Add(x.Node);
                         break;
@@ -724,24 +856,31 @@ public sealed class RazorViewsDetector : IDetector
         void Scan()
         {
             var text = html.ToString();
-            var forms = new Stack<FormRecord>();
+            var forms = new Stack<(FormRecord Form, int Start)>();
             foreach (Match m in Tag.Matches(text))
             {
                 var name = m.Groups[2].Value.ToLowerInvariant();
                 if (m.Groups[1].Value == "/")
                 {
-                    if (name == "form" && forms.Count > 0) forms.Pop();
+                    if (name == "form" && forms.Count > 0)
+                    {
+                        var (open, start) = forms.Pop();
+                        formSpans.Add((start, m.Index, open));
+                    }
                     continue;
                 }
                 var el = ElemMark.Match(m.Groups[3].Value) is { Success: true } em ? Elements[int.Parse(em.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture)] : null;
-                var attrs = Attributes(m.Groups[3].Value, el);
+                var (attrs, raw) = Attributes(m.Groups[3].Value, el);
                 var line = el is not null ? LineOf(el) : Line(m.Index);
                 switch (name)
                 {
                     case "form":
-                        var form = FormOf(el, attrs, line, null);
+                        var form = FormOf(el, attrs, raw, line, null);
                         Forms.Add(form);
-                        forms.Push(form);
+                        forms.Push((form, m.Index));
+                        break;
+                    case "partial" when el is not null:
+                        PartialForms[el] = forms.Count > 0 ? forms.Peek().Form : null;
                         break;
                     case "button":
                     case "input":
@@ -750,10 +889,11 @@ public sealed class RazorViewsDetector : IDetector
                         if (type == "reset") break;
                         var inner = name == "button" ? Inner(text, m, "button") : Get(attrs, "value") ?? "";
                         var (keys, words) = Words(inner);
-                        var formNow = forms.Count > 0 ? forms.Peek() : null;
-                        // <button asp-action="…"> (formaction): its own target, with its form's method.
+                        var formNow = forms.Count > 0 ? forms.Peek().Form : null;
+                        // T3: <button asp-action="…">, formaction="…" or formmethod="…": its own target, else its form's.
                         var own = el is not null && (el.Props.ContainsKey("Action") || el.Props.ContainsKey("Route") || el.Props.ContainsKey("Controller"))
-                            ? FormOf(el, attrs, line, formNow?.Method) : null;
+                            || raw.ContainsKey("formaction") || raw.ContainsKey("formmethod")
+                            ? ButtonTarget(el, attrs, raw, line, formNow) : null;
                         Buttons.Add(new Button(line, name, type, type is "submit" or "image", formNow, own, keys, words, Get(attrs, "id") ?? "", Get(attrs, "name") ?? ""));
                         break;
                     case "script":
@@ -764,6 +904,18 @@ public sealed class RazorViewsDetector : IDetector
                         break;
                 }
             }
+            while (forms.Count > 0) { var (open, start) = forms.Pop(); formSpans.Add((start, text.Length, open)); }
+        }
+
+        public Dictionary<ElemSeg, FormRecord?> PartialForms { get; } = [];
+
+        /// <summary>The form around a C# value the view writes (<c>@await Html.PartialAsync("_Row")</c>), innermost first.</summary>
+        public FormRecord? FormAround(SyntaxNode node)
+        {
+            var i = exprs.FindIndex(e => e.Span.Contains(node.Span) && e.SyntaxTree == node.SyntaxTree);
+            if (i < 0) return null;
+            var at = exprAt[i];
+            return formSpans.Where(f => f.Start <= at && at < f.End).OrderByDescending(f => f.Start).Select(f => f.Form).FirstOrDefault();
         }
 
         /// <summary>
@@ -799,28 +951,90 @@ public sealed class RazorViewsDetector : IDetector
 
         static string? Get(Dictionary<string, string?> attrs, string name) => attrs.TryGetValue(name, out var v) ? v : null;
 
-        Dictionary<string, string?> Attributes(string raw, ElemSeg? el)
+        /// <summary>Attribute values: plain (null when the server writes any of it) and raw (with the server's values as markers).</summary>
+        (Dictionary<string, string?> Plain, Dictionary<string, string> Raw) Attributes(string text, ElemSeg? el)
         {
-            var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-            foreach (Match a in Attr.Matches(ElemMark.Replace(raw, " ")))
+            var plain = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            var raw = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (Match a in Attr.Matches(ElemMark.Replace(text, " ")))
             {
                 var value = a.Groups[2].Success ? a.Groups[2].Value : a.Groups[3].Success ? a.Groups[3].Value : a.Groups[4].Success ? a.Groups[4].Value : "";
-                result[a.Groups[1].Value] = value.Contains('\u0001') ? null : value;
+                plain[a.Groups[1].Value] = value.Contains('\u0001') ? null : value;
+                raw[a.Groups[1].Value] = value;
             }
-            if (el is not null) foreach (var (k, v) in el.Attrs) result[k] = v;
-            return result;
+            if (el is not null)
+                foreach (var (k, v) in el.Attrs)
+                {
+                    plain[k] = v;
+                    raw[k] = v ?? "\u0001?\u0002";
+                }
+            return (plain, raw);
         }
 
-        FormRecord FormOf(ElemSeg? el, Dictionary<string, string?> attrs, int line, string? method)
+        static bool Targets(ElemSeg? el) => el is not null && (el.Props.ContainsKey("Action") || el.Props.ContainsKey("Route") || el.Props.ContainsKey("Controller"));
+
+        FormRecord FormOf(ElemSeg? el, Dictionary<string, string?> attrs, Dictionary<string, string> raw, int line, string? method)
         {
             string? Prop(string name) => el is not null && el.Props.TryGetValue(name, out var v) ? v : null;
             var runtime = el is not null && el.Props.Where(p => p.Key is "Action" or "Controller" or "Area" or "Route").Any(p => p.Value is null);
-            var verb = method ?? (el is not null && el.Props.TryGetValue("Method", out var pm) ? pm : Get(attrs, "method")) ?? "get";
-            var url = el is null || !(el.Props.ContainsKey("Action") || el.Props.ContainsKey("Route") || el.Props.ContainsKey("Controller"))
-                ? Get(attrs, el?.Tag == "button" ? "formaction" : "action") : null;
-            if (url is not null && (url.Length == 0 || url.StartsWith('#'))) url = null;
-            if (el is null && attrs.ContainsKey("action") && Get(attrs, "action") is null) runtime = true;
-            return new FormRecord(line, verb.ToUpperInvariant(), Prop("Route"), Prop("Action"), Prop("Controller"), Prop("Area"), url, runtime);
+            // T1: the form tag helper writes method="post" when it builds the form (asp-* given, or no action of its own); a plain <form> is GET.
+            var built = el is not null && el.Helpers.Contains("FormTagHelper") && (Targets(el) || !raw.ContainsKey("action"));
+            var verb = method ?? (el is not null && el.Props.TryGetValue("Method", out var pm) ? pm : Get(attrs, "method")) ?? (built ? "post" : "get");
+            string? url = null, route = Prop("Route"), action = Prop("Action"), controller = Prop("Controller"), area = Prop("Area");
+            if (!Targets(el) && raw.TryGetValue("action", out var given)) (url, route, action, controller, area, runtime) = Address(given, runtime);
+            return new FormRecord(line, verb.ToUpperInvariant(), route, action, controller, area, url, runtime);
+        }
+
+        /// <summary>T3: a button's own target: its tag helper's asp-*, else formaction (literal, or @Url.Action/RouteUrl), with formmethod or its form's method.</summary>
+        FormRecord ButtonTarget(ElemSeg? el, Dictionary<string, string?> attrs, Dictionary<string, string> raw, int line, FormRecord? form)
+        {
+            var verb = (Get(attrs, "formmethod") ?? form?.Method ?? "get").ToUpperInvariant();
+            if (raw.ContainsKey("formmethod") && Get(attrs, "formmethod") is null) return new FormRecord(line, "GET", null, null, null, null, null, true);
+            if (Targets(el))
+            {
+                string? Prop(string name) => el!.Props.TryGetValue(name, out var v) ? v : null;
+                var runtime = el!.Props.Where(p => p.Key is "Action" or "Controller" or "Area" or "Route").Any(p => p.Value is null);
+                return new FormRecord(line, verb, Prop("Route"), Prop("Action"), Prop("Controller"), Prop("Area"), null, runtime);
+            }
+            if (!raw.TryGetValue("formaction", out var given))
+                return form is null ? new FormRecord(line, verb, null, null, null, null, null, false) : form with { Line = line, Method = verb };
+            var (url, route, action, controller, area, rt) = Address(given, false);
+            return new FormRecord(line, verb, route, action, controller, area, url, rt);
+        }
+
+        /// <summary>An action/formaction value: a literal URL; <c>@Url.Action("Add", "Cart")</c> or <c>@Url.RouteUrl("Name")</c> with constants; else made at runtime.</summary>
+        (string? Url, string? Route, string? Action, string? Controller, string? Area, bool Runtime) Address(string value, bool runtime)
+        {
+            if (!value.Contains('\u0001'))
+                return (value.Length == 0 || value.StartsWith('#') ? null : value, null, null, null, null, runtime);
+            var single = Regex.Match(value.Trim(), "^\u0001(\\d+)\u0002$");
+            if (single.Success && exprs[int.Parse(single.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture)] is InvocationExpressionSyntax call
+                && model.GetSymbolInfo(call).Symbol is IMethodSymbol { Name: "Action" or "RouteUrl" } m && m.ContainingType.Name.Contains("UrlHelper", StringComparison.Ordinal))
+            {
+                string? route = null, action = null, controller = null, area = null;
+                var known = true;
+                var args = call.ArgumentList.Arguments;
+                for (var i = 0; i < args.Count; i++)
+                {
+                    var p = args[i].NameColon is { } nc ? m.Parameters.FirstOrDefault(x => x.Name == nc.Name.Identifier.ValueText) : i < m.Parameters.Length ? m.Parameters[i] : null;
+                    string? Const() => model.GetConstantValue(args[i].Expression) is { HasValue: true, Value: string v } ? v : null;
+                    switch (p?.Name)
+                    {
+                        case "action": action = Const(); known &= action is not null; break;
+                        case "controller": controller = Const(); known &= controller is not null; break;
+                        case "routeName": route = Const(); known &= route is not null; break;
+                        case "values" when args[i].Expression is AnonymousObjectCreationExpressionSyntax anon:
+                            if (anon.Initializers.FirstOrDefault(x => x.NameEquals?.Name.Identifier.ValueText == "area") is { } a)
+                            {
+                                area = model.GetConstantValue(a.Expression) is { HasValue: true, Value: string v } ? v : null;
+                                known &= area is not null;
+                            }
+                            break;
+                    }
+                }
+                if (known && (action is not null || route is not null)) return (null, route, action, controller, area, runtime);
+            }
+            return (null, null, null, null, null, true);
         }
 
         static string Inner(string text, Match open, string tag)
