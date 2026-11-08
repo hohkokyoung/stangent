@@ -223,14 +223,14 @@ Facts code reads to lay out a flow; no AI. Each is a row in the `facts` table (`
 |---|---|---|---|
 | `ui-event` | the component (React) or template (Angular) | `element`, `event` (`onPress`, `click`), `handler` (a point id; `inline`; `prop:…`), `keys` (text keys passed to `translate`/`t`/the `translate` pipe, `\|`-separated), `text` (literal text and label attributes) | the TypeScript extractor |
 | `ui-event` | a view (Razor) | `element` (`button`, `input`), `event` (`submit`, `click`), `handler` (the `form` point a submit runs; `""` for a plain button), `keys` (keys passed to anything typed `…Localizer`: nop's `@T("…")`, `@Localizer["…"]`), `text`, `id`, `name`, `type` | `razor-views` |
-| `form` | a `form` point | `method` (as written; HTML's GET when not, POST for `Html.BeginForm`), `route`, `action`, `controller`, `area` (tag helper values, constants resolved), `url` (a literal `action`), `runtime` (`yes`: a target made at runtime) | `razor-views` |
+| `form` | a `form` point | `method` (as written; else POST when the form tag helper builds it or `Html.BeginForm`, GET for a plain `<form>`, T1), `route`, `action`, `controller`, `area` (tag helper values, constants resolved), `url` (a literal `action`), `runtime` (`yes`: a target made at runtime) | `razor-views` |
 | `view` | a view | `path` (in its project), `model` (the `@model` type), `controller`, `area` (from its folder), `kind` (`mvc.1.0.view`, `mvc.1.0.razor-page`) | `razor-views` |
 | `dom-event` | the function binding it, or the view (inline scripts) | `selector` (`#id`, `.class`, `document`), `event`, `handler` (a point id; `inline`) | the TypeScript extractor |
 | `guard` | a page | `guard` (id), `name`, `via` (`canActivate`, `canMatch`…); a parent route's guards hold for its children | the TypeScript extractor |
 | `auth` | a controller action | `rule` (`authorize`/`anonymous`), `policy`, `roles`, `from` (`method`, `class X`): `[AllowAnonymous]` on the method wins, `[Authorize]` is read up the base controllers | `aspnetcore-routes` |
-| `auth` (an app's own filter, N3) | a controller action | `rule` `filter`, `filter` (`CheckPermission`), `args` (by parameter name, constants and enum members resolved: `permission = "Accounts.Manage", deny = Json`), `stage` (`authorization` when the filter runs there, else `other`), `from`. An MVC filter attribute (from `TypeFilterAttribute`/`ServiceFilterAttribute`, or a filter itself) counts when it runs at the authorisation stage or its name says Authorize, Authorization, Permission, Access or Role. `[AllowAnonymous]` doesn't remove it: only the filter's own code could | `aspnetcore-routes` |
+| `auth` (an app's own filter, N3) | a controller action | `rule` `filter`, `filter` (`CheckPermission`), `args` (by parameter name, constants and enum members resolved: `permission = "Accounts.Manage", deny = Json`), `stage` (`authorization` when the filter runs there, else `other`), `basis` (the evidence: `denies`, its code sets `context.Result` to a refusal — challenge, forbid, 401/403, access denied, sign-in; `name`, its name says Authorize, Authorization, Permission, Access or Role; 🟡 `stage`, it only runs at the authorisation stage; 🟡 `result`, an action filter that sets `context.Result`), `from` (`method`, `class X`, or `global` on the project for `options.Filters.Add…`). An MVC filter attribute (from `TypeFilterAttribute`/`ServiceFilterAttribute`, or a filter itself) with none of these isn't one. Only `denies` and `name` claim access. `[AllowAnonymous]` doesn't remove it: only the filter's own code could | `aspnetcore-routes` |
 | `fallback-auth` | the project | `authenticatedUser` (`required`), `schemes`: `options.FallbackPolicy = …`, which holds for actions with no marker of their own | `aspnetcore-routes` |
-| `rule` | the property checked | `rule` (`Required`, `GreaterThan`, `SetValidator`…), `args` (constants as values, enum members by name: `DataType(EmailAddress)`), `via` (`attribute`/`fluentvalidation`), `set` (`PostValidator`), `message` (any `WithMessage…`: a constant's text, else the expression), `conditional`. Chained `With…`, `When…`, `Unless…` calls are modifiers, never rules (N4) | `validation` |
+| `rule` | the property checked | `rule` (`Required`, `GreaterThan`, `SetValidator`…), `args` (constants as values, enum members by name: `DataType(EmailAddress)`), `via` (`attribute`/`fluentvalidation`), `set` (`PostValidator`), `message` (any `WithMessage…`: a constant's text, else the expression), `conditional`. A chained call on the rule's options (`IRuleBuilderOptions`: `WithMessage`, `When`, an app's `AsWarning`) is a modifier, one on the rule builder a rule (T12); by its `With…`/`When…`/`Unless…` name only when the type isn't known (N4) | `validation` |
 | `access` | a method | `entity`, `mode` (`write`/`read`), `via`; linking turns it into `writes`/`reads` when the entity has a table | `entity-tables` |
 
 Also read by flows:
@@ -259,10 +259,16 @@ Also read by flows:
   injected services); `renders` its partials (`<partial>`, `Html.PartialAsync`: beside the view, then the shared folders; a
   name with a folder or an extension is relative to the view) and view components (by type, or by name to the class MVC's
   rules make a component). Each form is a `form` point linked to the endpoint it posts to (`calls-http`): by route name (a
-  conventional route's `name`), by action and controller (the view's own folder and name by default, 🟡), or by a literal URL.
+  conventional route's `name`), by action and controller (the view's own folder and name by default, 🟡), or by a literal URL; the
+  endpoint with the form's verb wins over `ANY` at the same path (T10). A button's `asp-action`, `formaction` or `formmethod` makes its
+  own `form` point (T3); `@Url.Action(…)`/`@Url.RouteUrl(…)` with constants is read as its action or route, any other server value is ❓.
+  A submit button with no form submits the form around the `<partial>` that renders its view, through partials of partials: the partial
+  `calls` that form point, 🟡 (T9); with none, ❓.
   An action's or view component's `View(…)`/`PartialView(…)` `renders` its view by MVC's lookup: `Views/{controller}/{name}`,
   `Views/Shared/{name}`, `Areas/{area}/Views/…` first for an area, `Components/{component}/{name}` for a component; a path
-  (`~/Plugins/X/Views/Y.cshtml`) by its longest tail that names a view in the project. Never silent: a `.cshtml` the compiler
+  (`~/Plugins/X/Views/Y.cshtml`) by its longest tail that names a view in the project; a call to a base class helper that forwards to
+  `View(…)` (`NopViewComponent.ViewAsync(model)`) as a `View()` of the caller (T4). With an app's own `IViewLocationExpander` (themes),
+  every lookup is 🟡 and a view of the same path under another root (`Themes/X/Views/…`) is a 🟡 candidate too (T8). Never silent: a `.cshtml` the compiler
   made nothing for, a Razor Page, a form or view name made at runtime, and any lookup that finds nothing is ❓.
 - **Areas.** `[Area]` is read up the base controllers; a conventional pattern with an `{area}` token (ASP.NET's
   `{area:exists}/{controller}/{action}`) serves the actions that have an area. Every action is an `mvc-action` fact
@@ -273,7 +279,8 @@ Also read by flows:
   project. jQuery's `$.ajax`/`$.get`/`$.post`/`$.getJSON` are calls like `fetch`. An inline script's code belongs to its view
   (lines are the view's); a value the server writes into it (`'@Url.Action("Add")'`) is made at runtime, so the call is ❓. A
   view's button whose `id` a script binds (`$('#check-email').click(checkEmail)`) `calls` that handler, 🟡: the view's own
-  scripts first, else the project's when only one binding fits.
+  scripts first, else the project's when only one binding fits. A handler is a function only when it is one or its body is that
+  single call, else `inline` (T7). A global declared in several plain scripts gets a 🟡 line to each declaration (T2).
 - **Which context a snapshot speaks for.** Its `[DbContext(typeof(X))]`, even in another project; its tables take X's assembly,
   and only X's navigation guesses are dropped. A snapshot without the attribute speaks for its own assembly.
 

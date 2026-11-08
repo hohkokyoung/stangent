@@ -295,3 +295,35 @@ action are 🟡 and fall back to the view's action; 3 of the 5 ❓ forms are tru
 inside; `ignore = true` on 48 facts; enums by name; `WithMessageAwait` kept as an expression; script file choice; a literal jQuery
 URL 🟡 to the right endpoint. Older, outside N1–N5: Install's form reaches `ANY /{*}`; action choice by a button's name
 (`FormValueRequired`) isn't modelled, but `routes-to` is 🟡, so it's honest.
+
+## 12. T1–T12 fixed, 2026-11-08 (D167)
+
+Owner: "Yes, fix T1–T12" (T13 skipped). Code only, no paid AI. Tests: 2,159 .NET + 49 extractor pass; `phases check` ok. Fixtures in
+`tests/fixtures/shop`: `Views/Account/Settings.cshtml` and its partials, `Components/ShopViewComponent.cs`, `ThemeExpander.cs` and
+`Themes/Dark/`, the filters in `AccountController.cs`, the global filter in `Program.cs`, the rule builders in `Shop.Core/Rules.cs`.
+
+| # | Fix | nopCommerce (before → after) |
+|---|---|---|
+| T1 | a form the form tag helper builds (asp-*, or no `action` of its own) is POST, as ASP.NET writes it; a plain `<form>` stays GET | POST forms 240 → 293; forms reaching an endpoint 290 → 294; Admin "Clear cache" reaches it |
+| T3 | a button's `asp-action`, `formaction` or `formmethod` gives it its own target; `@Url.Action(…)`/`@Url.RouteUrl(…)` with constants is read as action/controller/route; anything else the server writes is ❓ | 3 buttons with targets of their own (Save & continue, Delete…) |
+| T9 | a submit button with no form submits the form around the `<partial>` (or `Html.PartialAsync`) that renders its view, through partials of partials (🟡); none found → ❓ | 79 partial → form lines; 19 ❓ (buttons a script submits, or in the layout) |
+| T10 | the endpoint with the form's verb wins over `ANY` at the same path | form → endpoint lines 420 → 297 |
+| T11 | a partial named with a folder and no extension gets `.cshtml` | `../ReviewType/List` found |
+| T4 | a call to a base class helper that forwards to `View(…)` (`NopViewComponent.ViewAsync(model)`) renders the caller's view: the name it passes, or `Components/{name}/Default` (🟡) | component → view 0 → 52 (the rest are plugins' views, compiled only at runtime: ❓) |
+| T8 | with an app's own `IViewLocationExpander`, MVC's lookup is 🟡 and a view of the same path under another root (`Themes/X/Views/…`) is a 🟡 candidate | the theme's `Head.cshtml` |
+| T5 | global filters (`options.Filters.Add<X>()`, `AddService`, `typeof`, `new`) are `auth` facts on the project, `from: global`; an action filter whose code sets `context.Result` counts | `ValidateIpAddress` on every admin action; `ValidatePassword`, `ForceMultiFactorAuthentication`; `PunchOutSessionGuard` global |
+| T6 | every filter fact says its evidence, `basis`: `denies` (its code sets a refusal: challenge, forbid, 401/403, access denied, sign-in), `name`, or 🟡 `stage` / `result` | 13,162 facts: denies 5,225, name 338, 🟡 result 3,811, 🟡 stage 3,788 (HTTPS/WWW redirects, external sign-out, honeypot) |
+| T12 | a chained call is a modifier when it's on the rule's options (`IRuleBuilderOptions`), a rule when it's on the rule builder; by name only when unknown | unchanged; Sonarr: its 13 `.AsWarning()` are modifiers now, so their messages land on the rule they follow |
+| T2 | a plain script's global declared in several files gets 🟡 lines to each declaration | 150 calls (`addAntiForgeryToken`, `setLocation`…) |
+| T7 | a script handler is a function only when it is one or its body is that single call; else `inline` | button → script 37 → 1 (36 were helpers picked out of bigger handlers) |
+
+**Past the suggested fix, said plainly (D155):** T3 reads constant `@Url.Action`/`@Url.RouteUrl` targets instead of marking every
+server-written one ❓; T9 carries a form down through partials of partials; T5's global filters sit on the project (like
+`fallback-auth`), not on every action; T6 keeps stage-only filters as 🟡 `auth` facts with their basis rather than dropping them; T7
+applies to plain scripts only, React's handler rule (G5) is unchanged.
+
+**Blind spots on nopCommerce 641 → 767:** T4's plugin components now name their views, which are compiled only at runtime (~100 ❓,
+were one ❓ in the base helper); T9's 19 buttons with no form. Form ❓ 5 → 4.
+
+**Sonarr and Kavita rebuilt:** no point or line lost; blind spots 327 and 122, unchanged; cross-check 0 and 2. Kavita's 1,029 `auth`
+facts unchanged. Sonarr's `rule` facts 619 → 606 (T12, above).

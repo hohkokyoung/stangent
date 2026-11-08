@@ -202,4 +202,5 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D164 · The framework's own answer first: tables from EF's snapshot; every build cross-checks endpoints with OpenAPI and tables with the snapshot
 - D165 · Razor views are read from the Razor compiler's own output (forms → endpoints, buttons, `View()` → view); an app's own access filters and plain scripts are read (nopCommerce N1–N5)
 - D166 · The graph's guesses and blind spots are checked after the first flows exist, only those a flow uses; blind spots sorted by cause; runtime evidence opt-in, apart from the graph
+- D167 · The fresh check's T1–T12 fixed (forms POST, button targets, partials' forms, base-class view helpers, themes, global and evidence-marked access filters, script globals and handlers)
 
