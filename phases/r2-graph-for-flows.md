@@ -102,3 +102,22 @@ Both paths now read end to end from code alone:
 
 Still open: G9 constant values, G10 SignalR messages, G11 background jobs; also minimal APIs' `RequireAuthorization()`, React
 guard wrappers, text keys → words, and test-only outside-call blind spots counted with the rest. Not yet checked by a fresh agent (D158).
+
+## 5. Fresh check (D158), 2026-11-08
+
+One fresh agent, one round, read-only; ~171K tokens (said ~100–150K). Tests re-run: pass. 10 findings; 1–3 confirmed by hand on the graphs.
+
+| # | Severity | Finding | Fix |
+|---|---|---|---|
+| F1 | wrong | override chains: a derived override's verb attribute on the base is missed (`GeneralSettingsController.SaveSettings` → `ANY`, the `PUT` goes to the base method); a base method still routed after a `[NonAction]` override (`GET /api/v3/Series/{id:int}` → both) | walk most-derived methods, skip overridden bases, read verb/route/NonAction/auth along the override chain |
+| F2 | wrong | EF `Entry(x).State = Modified` gives no line (30 sites; Kavita `SeriesRepository.Update` has none); `ExecuteDelete/Update` read as `reads` | treat those as writes; an unknown DbSet method is neither |
+| F3 | wrong | navigation writes fire on any in-repo list (Sonarr: 67, e.g. `ReleaseSearchService.GetSceneSeasonMappings` `writes Episodes`); many-to-many adds name the wrong table | require the owner type to have a table; join adds as join writes or skipped |
+| F4 | wrong, older | `{id:int?}` cut at `?` in `FrontendHttpDetector.Segments`, so Sonarr's Edit series `PUT` matches nothing | split the query only outside braces |
+| F5 | misleading | a JSON-converted property became a table (`HighlightSlot`) | skip `.Property(…)`/`HasConversion`/owned types |
+| F6 | misleading | Flurl `WithHeader` chains treated as URL-building; one `{*}` URL became a call fact | only path/query calls change the URL; call facts need no `{*}` |
+| F7 | misleading | lazy route arrays named `routes` walked twice; copies show no guard | don't root-walk any `loadChildren` target |
+| F8 | minor | class `[AllowAnonymous]` + method `[Authorize]` read as authorize (ASP.NET: anonymous) | any AllowAnonymous on the chain wins |
+| F9 | minor | `.When()` marks rules after it; every rule fact has the `RuleFor` line | condition per chain position; line from the rule's name |
+| F10 | minor | name words without a boundary (`All` ↔ `Allow…`); test mocks add ~70 write facts | word must end the name or be followed by a capital |
+
+Holds: G1 (one `ANY` left, F1), G2 (97 of 97 wrapper calls on v5), G4 (outside-call spots real HTTP), G3 on Sonarr (41 tables = 41 maps), G5/G6 (all handler ids resolve), G7 (bar F9). Nothing fixed yet: owner's call.
