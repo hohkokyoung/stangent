@@ -30,6 +30,8 @@ public static class NodeKind
     public const string Template = "template";
     /// <summary>A frontend route: the frontend's entry point (code-graph v2).</summary>
     public const string Page = "page";
+    /// <summary>A SignalR message a server sends and a frontend listens for: <c>message:signalr|&lt;name&gt;</c> (code-graph v5, G10).</summary>
+    public const string Message = "message";
 }
 
 /// <summary>
@@ -79,6 +81,11 @@ public static class EdgeKind
     public const string Writes = "writes";
     /// <summary>A method reads a table (code-graph v5): a <c>DbSet&lt;T&gt;</c> used for anything but a write, or a read-named repository method. Not walked.</summary>
     public const string Reads = "reads";
+
+    /// <summary>🟡 A method sends a SignalR message (code-graph v5, G10): method → <c>message:signalr|name</c>. Not walked.</summary>
+    public const string Sends = "sends";
+    /// <summary>🟡 Frontend code listens for a SignalR message (G10): function → <c>message:signalr|name</c>. Not walked.</summary>
+    public const string Listens = "listens";
 
     /// <summary>Lines a change travels back along: behaviour flows through these.</summary>
     public static readonly HashSet<string> Propagating =

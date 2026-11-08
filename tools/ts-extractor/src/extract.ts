@@ -3,7 +3,7 @@ import * as path from "node:path";
 import ts from "typescript";
 import { Output, type Options } from "./model.ts";
 import { angularTemplates, collectAngular, type AngularIndex } from "./angular.ts";
-import { reactEvents } from "./ui.ts";
+import { constantValues, reactEvents, signalrListeners } from "./ui.ts";
 import { httpFacts } from "./http.ts";
 import { pages } from "./routes.ts";
 import { rootScreens } from "./rootScreens.ts";
@@ -75,6 +75,7 @@ export function extract(o: Options): Output {
   for (const sf of files) references(ctx, sf);
   for (const sf of files) angularTemplates(ctx, sf);
   for (const sf of files) reactEvents(ctx, sf);
+  for (const sf of files) { signalrListeners(ctx, sf); constantValues(ctx, sf); }
   for (const sf of files) pages(ctx, sf);
   if (o.rootScreens) rootScreens(ctx, files);
   for (const sf of files) httpFacts(ctx, sf);

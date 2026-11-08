@@ -200,6 +200,23 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void Constants_messages_and_background_jobs_are_read()
+    {
+        string Value(string field) => shop.Graph.AllFacts.Single(f => f.Kind == "value" && f.Owner == "Shop.Web|F:Shop.Web.Messages." + field)["value"];
+        Assert.Equal(("ShelfChanged", "Restocked", "12"), (Value("ShelfChanged"), Value("Restocked"), Value("MaxShelves")));   // G9
+        // G10: sent through a wrapper behind an interface, sent directly, and listened for by the screen.
+        const string message = "message:signalr|ShelfChanged";
+        Assert.Contains(Edges(EdgeKind.Sends), e => e.Source == "Shop.Web|M:Shop.Web.ShelfNotifier.Changed" && e.Target == message);
+        Assert.Contains(Edges(EdgeKind.Sends), e => e.Source == "Shop.Web|M:Shop.Web.EventHub.Ping" && e.Target == "message:signalr|ping");
+        Assert.Contains(Edges(EdgeKind.Listens), e => e.Source == React + "ShelfLive.tsx#ShelfLive.listen" && e.Target == message);
+        Assert.Equal(NodeKind.Message, NodeById(message)?.Kind);
+        // G11: queued work says what it runs and when.
+        var jobs = shop.Graph.AllFacts.Where(f => f.Kind == "job" && f.Owner.StartsWith("Shop.Web|M:Shop.Web.ShelfNotifier.", StringComparison.Ordinal))
+            .Select(f => $"{f.Owner[(f.Owner.LastIndexOf('.') + 1)..]} {f["runs"][(f["runs"].LastIndexOf('.') + 1)..]} {f["id"]} {f["schedule"]}".Trim()).Order().ToList();
+        Assert.Equal(["Later Recount  now, in the background", "Nightly Recount recount 0 3 * * *"], jobs);
+    }
+
+    [Fact]
     public void Routes_are_found_for_minimal_apis_attributes_and_conventional_routes()
     {
         var endpoints = shop.Graph.AllNodes.Where(n => n.Kind == NodeKind.Endpoint).Select(n => n.Name).ToList();

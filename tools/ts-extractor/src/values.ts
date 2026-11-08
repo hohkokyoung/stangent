@@ -18,6 +18,8 @@ export function stringValue(expr: ts.Expression | undefined, checker: ts.TypeChe
   expr = skipOuter(expr);
   if (ts.isStringLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr)) return expr.text;
   if (ts.isNumericLiteral(expr)) return expr.text;
+  if (expr.kind === ts.SyntaxKind.TrueKeyword) return "true";
+  if (expr.kind === ts.SyntaxKind.FalseKeyword) return "false";
   if (ts.isTemplateExpression(expr)) {
     let s = expr.head.text;
     expr.templateSpans.forEach((span, i) => {
@@ -73,6 +75,7 @@ function initializer(expr: ts.Identifier | ts.PropertyAccessExpression, checker:
   const decls = symbol?.declarations ?? [];
   if (decls.length !== 1) return null;
   const d = decls[0];
+  if (ts.isEnumMember(d) && d.initializer) return d.initializer;   // EVENTS.ScanSeries = 'ScanSeries'
   if ((ts.isVariableDeclaration(d) || ts.isPropertyDeclaration(d)) && d.initializer) {
     if (ts.isVariableDeclaration(d) && !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) && reassigned(d, checker)) return null;
     return d.initializer;
@@ -98,4 +101,9 @@ function reassigned(d: ts.VariableDeclaration, checker: ts.TypeChecker): boolean
   };
   visit(scope);
   return other;
+}
+
+/** The single initialiser a name is bound to, exported for the readers that need the expression itself. */
+export function boundTo(expr: ts.Identifier | ts.PropertyAccessExpression, checker: ts.TypeChecker): ts.Expression | null {
+  return initializer(expr, checker);
 }

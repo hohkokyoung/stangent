@@ -1,5 +1,6 @@
 import ts from "typescript";
 import type { Context } from "./extract.ts";
+import { boundTo, RUNTIME, BASE, stringValue } from "./values.ts";
 
 /** Calls whose first argument is a text key: translate('AddSeries'), t('add'), i18n.t('x'), formatMessage({ id }). */
 export const TEXT_CALLS = new Set(["translate", "t", "i18n", "formatMessage", "$t"]);
@@ -89,4 +90,70 @@ function labelOf(element: ts.Node, sf: ts.SourceFile): { keys: string[]; texts: 
   visit(element);
   void sf;
   return { keys, texts };
+}
+
+/**
+ * G10: `connection.on('receiveMessage', handler)` on a SignalR HubConnection is a `signalr-on` fact on the code that
+ * listens, one per message name. A name from a loop over a known list (`events.forEach(e => connection.on(e, …))`,
+ * `for (const e of [...])`) gives one fact per item; a name known only at runtime gives a fact with no name (❓ later).
+ */
+export function signalrListeners(ctx: Context, sf: ts.SourceFile) {
+  const visit = (n: ts.Node) => {
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.name.text === "on" && n.arguments.length >= 2
+        && isHubConnection(ctx, n.expression.expression)) {
+      const names = namesOf(ctx, n.arguments[0]);
+      for (const name of names.length > 0 ? names : [""])
+        ctx.out.fact("frontend-http", "signalr-on", ctx.ownerId(n), ctx.rel(sf.fileName), ctx.line(n), { name });
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+}
+
+function isHubConnection(ctx: Context, receiver: ts.Expression): boolean {
+  const type = ctx.checker.getTypeAtLocation(receiver);
+  const name = type.getSymbol()?.getName() ?? type.aliasSymbol?.getName() ?? "";
+  if (name === "HubConnection") return true;
+  // Without packages the type is unknown: go by the receiver's name.
+  return (name === "" || name === "__type" || (type.flags & ts.TypeFlags.Any) !== 0) && /(hub)?connection(\.current)?$/i.test(receiver.getText());
+}
+
+const known = (v: string | null): v is string => v !== null && !v.includes(RUNTIME) && !v.includes(BASE);
+
+function namesOf(ctx: Context, e: ts.Expression): string[] {
+  const direct = stringValue(e, ctx.checker);
+  if (known(direct)) return [direct];
+  if (!ts.isIdentifier(e)) return [];
+  const symbol = ctx.checker.getSymbolAtLocation(e);
+  const d = symbol?.declarations?.[0];
+  if (!d) return [];
+  let list: ts.Expression | undefined;
+  // events.forEach(event => …): the list forEach runs over.
+  if (ts.isParameter(d) && (ts.isArrowFunction(d.parent) || ts.isFunctionExpression(d.parent)) && d.parent.parameters[0] === d
+      && ts.isCallExpression(d.parent.parent) && ts.isPropertyAccessExpression(d.parent.parent.expression) && d.parent.parent.expression.name.text === "forEach")
+    list = d.parent.parent.expression.expression;
+  // for (const event of list)
+  if (ts.isVariableDeclaration(d) && ts.isVariableDeclarationList(d.parent) && ts.isForOfStatement(d.parent.parent)) list = d.parent.parent.expression;
+  if (list && (ts.isIdentifier(list) || ts.isPropertyAccessExpression(list))) list = boundTo(list, ctx.checker) ?? list;
+  if (!list || !ts.isArrayLiteralExpression(list)) return [];
+  const names = list.elements.map((x) => stringValue(x, ctx.checker));
+  return names.every(known) ? names as string[] : [];
+}
+
+/** G9: a top-level `const X = 'literal'` (or number, boolean) is a `value` fact on its point. */
+export function constantValues(ctx: Context, sf: ts.SourceFile) {
+  for (const st of sf.statements) {
+    if (!ts.isVariableStatement(st) || !(st.declarationList.flags & ts.NodeFlags.Const)) continue;
+    for (const d of st.declarationList.declarations) {
+      if (!ts.isIdentifier(d.name) || !d.initializer) continue;
+      const init = ts.isAsExpression(d.initializer) ? d.initializer.expression : d.initializer;
+      if (!(ts.isStringLiteral(init) || ts.isNoSubstitutionTemplateLiteral(init) || ts.isNumericLiteral(init) || ts.isTemplateExpression(init)
+            || ts.isBinaryExpression(init) || init.kind === ts.SyntaxKind.TrueKeyword || init.kind === ts.SyntaxKind.FalseKeyword
+            || (ts.isPrefixUnaryExpression(init) && ts.isNumericLiteral(init.operand)))) continue;
+      const value = ts.isPrefixUnaryExpression(init) ? (init.operator === ts.SyntaxKind.MinusToken ? "-" : "") + (init.operand as ts.NumericLiteral).text
+        : stringValue(init, ctx.checker);
+      const id = ctx.declId(d);
+      if (id && known(value)) ctx.out.fact("constants", "value", id, ctx.rel(sf.fileName), ctx.line(d), { value, kind: "const" });
+    }
+  }
 }

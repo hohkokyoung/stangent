@@ -394,3 +394,24 @@ test("a lazy route array is walked once, under its parent's path and guards, wha
   assert.deepEqual(pages, ["/browse/genres"]);
   assert.ok(lines.some((l) => l.t === "fact" && l.kind === "guard" && l.node.endsWith("|/browse/genres")));
 });
+
+test("constants' values and SignalR listeners, a list's items and enum members included (G9, G10)", () => {
+  const root = project({
+    "src/events.ts": "export enum EVENTS { ScanSeries = 'ScanSeries', SeriesAdded = 'SeriesAdded' }\nexport const PRIMARY = 'primary';\nexport const LIMIT = -5;\nexport const ON = true;",
+    "src/hub.ts": [
+      "import { EVENTS } from './events';",
+      "declare const connection: { on(name: string, f: (x: unknown) => void): void };",
+      "const listed = [EVENTS.ScanSeries, EVENTS.SeriesAdded];",
+      "export function listen(name: string) {",
+      "  connection.on('receiveMessage', () => {});",
+      "  listed.forEach(event => connection.on(event, () => {}));",
+      "  connection.on(name, () => {});",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const values = lines.flatMap((l) => l.t === "fact" && l.kind === "value" ? [`${l.node.split("#")[1]}=${l.data.value}`] : []).sort();
+  assert.deepEqual(values, ["LIMIT=-5", "ON=true", "PRIMARY=primary"]);
+  const on = lines.flatMap((l) => l.t === "fact" && l.kind === "signalr-on" ? [l.data.name] : []).sort();
+  assert.deepEqual(on, ["", "ScanSeries", "SeriesAdded", "receiveMessage"]);
+});

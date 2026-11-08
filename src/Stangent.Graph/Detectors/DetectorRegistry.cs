@@ -14,9 +14,12 @@ public static class DetectorRegistry
         new PublishHandleDetector(),
         new EntityTablesDetector(),
         new ValidationDetector(), // rules as facts on the properties they check (G7)
+        new ConstantsDetector(), // constants' values (G9)
+        new BackgroundJobsDetector(), // work queued to run later (G11)
         new ConfigKeysDetector(),
         new HttpServicesDetector(), // after routes: it links calls to their endpoints
         new FrontendHttpDetector(), // after routes too: frontend calls → endpoints, fields → properties
+        new SignalRDetector(), // after DI: messages sent, through wrappers behind interfaces, and the frontend's listeners (G10)
         new PlaywrightDetector(), // existing specs' goto → screens, stored apart and never walked (D115)
     ];
 
