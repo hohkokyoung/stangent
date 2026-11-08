@@ -236,8 +236,25 @@ Also read by flows:
   Overrides of a `[NonAction]` method (`Controller.OnActionExecuting`) aren't actions.
 - **Outside calls (G4).** Through Flurl or an app's own client type (`IHttpClient`, `…HttpClient`): a whole literal URL is a
   `call` fact; otherwise ❓ `outside HTTP <VERB> through <client>…`, naming the URL's known start. Never silent.
-- **Tables (G3).** Besides `DbSet<T>`: entities EF reaches through navigations from a mapped one (table named after the class, 🟡)
-  and an app's own `Entity<T>("Name")` map (🟡).
+- **Tables (G3, D164).** EF's own `*ModelSnapshot.cs` first: each top-level `modelBuilder.Entity("Ns.Type", b => b.ToTable("Name"))`
+  is a table (✅); owned types inside it aren't; a name that isn't a type (a join table) is a table with no entity. Then `DbSet<T>`
+  (✅), an app's own `Entity<T>("Name")` map (🟡), and entities EF reaches through navigations (🟡; not properties configured as
+  columns or owned; dropped where a snapshot exists and doesn't hold them).
+- **Writes and reads.** Writes: `DbSet` Add/Update/Remove/Attach, `context.Add/Update/Remove(x)`, `Entry(x).State =` (not
+  Unchanged/Detached), `ExecuteDelete`/`ExecuteUpdate` back to their DbSet, `Add`/`Remove` on a mapped entity's collection
+  (many-to-many adds skipped), and a generic repository's write-named methods. Reads: LINQ/EF query calls on a DbSet and
+  read-named repository methods. A name word must be whole (`All`, `AllAsync`, never `Allow`); anything else is neither.
+
+## Cross-check against the framework's own answer (D164)
+
+Every `graph build` compares the graph with what the framework wrote down, when the repo has it, and writes each disagreement to
+`.stangent/graph-crosscheck.json` (git-ignored; counts in the build result as `crossCheck`). It never changes the graph: a stale
+file would mislead it.
+- **OpenAPI.** Each `*openapi*.json` / `*swagger*.json` outside `node_modules`, `bin`, `obj`: its operations against the endpoints of
+  the project whose folder holds it (the whole repo when none does), by verb and path shape (`{id:int?}` = `{id}`; `ANY` fits any
+  verb): `missingFromGraph` and `notInOpenapi`.
+- **EF snapshot.** Per assembly with a snapshot: entities our rules found that it doesn't hold (`foundByRulesOnly`), and ones it holds
+  that no rule found (`inSnapshotOnly`).
 
 Not read yet: constants' values (G9), SignalR messages (G10), background jobs marked as such (G11), minimal APIs'
 `RequireAuthorization()`, React route-guard wrappers, and resolving text keys to the words in the language file.

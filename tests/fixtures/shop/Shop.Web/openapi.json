@@ -4,6 +4,7 @@
   "paths": {
     "/api/orders": { "post": {} },
     "/api/shelf/{id}": { "get": {}, "delete": {} },
-    "/api/gone": { "get": {} }
+    "/api/gone": { "get": {} },
+    "/api/stock/{id}": { "get": {} }
   }
 }

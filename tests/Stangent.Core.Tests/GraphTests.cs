@@ -95,6 +95,7 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         var endpoints = shop.Graph.AllNodes.Where(n => n.Kind == NodeKind.Endpoint && n.Name.Contains("/api/shelf")).Select(n => n.Name).Order().ToList();
         // : HttpPostAttribute; : HttpDeleteAttribute with base("{id:int}"); IActionHttpMethodProvider + a Template property.
         Assert.Equal(["DELETE /api/shelf/{id:int}", "GET /api/shelf/{id:int}", "POST /api/shelf", "PUT /api/shelf/{id:int?}"], endpoints);
+        Assert.Contains(shop.Graph.AllNodes, n => n.Kind == NodeKind.Endpoint && n.Name == "GET /feed/v2/calendar/shop.ics");
         // F1: the override answers the PUT; the base method it overrides isn't routed, nor is a [NonAction] override's base.
         Assert.Equal(["Shop.Web|M:Shop.Web.Controllers.ShelfController.Save(System.Int32)"],
             Edges(EdgeKind.RoutesTo).Where(e => e.Source == "endpoint:Shop.Web|PUT /api/shelf/{id:int?}").Select(e => e.Target).ToList());
@@ -174,6 +175,7 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         var report = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(CrossCheck.PathFor(shop.Root)))!;
         var api = report["openapi"]!.AsArray().Single()!;
         Assert.Equal("project:Shop.Web/Shop.Web.csproj", (string?)api["scope"]);
+        // GET /api/stock/{id} is Shop.Stock's: served elsewhere in the repo, so not missing.
         Assert.Equal(["GET /api/gone"], api["missingFromGraph"]!.AsArray().Select(x => (string)x!).ToList());
         var notInOpenapi = api["notInOpenapi"]!.AsArray().Select(x => (string)x!).ToList();
         Assert.Contains("POST /api/shelf", notInOpenapi);
@@ -182,6 +184,7 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         var ef = report["efSnapshot"]!.AsArray().Single()!;
         Assert.Equal(["Shop.Web|T:Shop.Web.Data.CouponNote"], ef["foundByRulesOnly"]!.AsArray().Select(x => (string)x!).ToList());
         Assert.Empty(ef["inSnapshotOnly"]!.AsArray());
+        Assert.Equal("/content/{}", CrossCheck.Normalize("/content/{**path:regex(^(?!api/).*)}"));
     }
 
     [Fact]

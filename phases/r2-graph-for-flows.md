@@ -121,3 +121,27 @@ One fresh agent, one round, read-only; ~171K tokens (said ~100–150K). Tests re
 | F10 | minor | name words without a boundary (`All` ↔ `Allow…`); test mocks add ~70 write facts | word must end the name or be followed by a capital |
 
 Holds: G1 (one `ANY` left, F1), G2 (97 of 97 wrapper calls on v5), G4 (outside-call spots real HTTP), G3 on Sonarr (41 tables = 41 maps), G5/G6 (all handler ids resolve), G7 (bar F9). Nothing fixed yet: owner's call.
+
+## 6. F1–F10 fixed, and the framework's own answer as the key (D164), 2026-11-08
+
+Owner: "okay do it". Code only, no paid AI. Tests: 2,156 .NET + 46 extractor pass; `phases check` ok. Still `code-graph` v5
+(its consumers were already `needs review`); this round moves more endpoint ids on Sonarr (the calendar feed) and table ids on Kavita.
+
+| # | Checked on the rebuilt graphs |
+|---|---|
+| F1 | `GET /api/v3/Series/{id:int}` → `SeriesController` only; `PUT /api/v5/settings/general/{id:int?}` → `GeneralSettingsController.SaveSettings` |
+| F2 | Kavita `SeriesRepository.Update` writes `Series`, `SeriesMetadata`; `MediaErrorRepository.DeleteAll` writes `MediaError`; `AnnotationRepository.Update` writes `AppUserAnnotation` |
+| F3 | Sonarr `GetSceneSeasonMappings` writes nothing (was `Episodes`) |
+| F4 | Sonarr Edit series reaches `PUT /api/v5/Series/{id:int?}` |
+| F5 | no `HighlightSlot` table; Kavita tables = the snapshot's 81 (join tables included) |
+| F6 | the GitHub releases URL is a call fact, linked as "no service in this repo" |
+| F7 | `/genres` only as `/browse/genres`, with its guard |
+| F8–F10 | fixture tests (no case on either app) |
+| also | the cross-check found Sonarr's calendar feed at `GET /Sonarr.ics`: a template built from a property set the line before. Now `GET /feed/v5/calendar/Sonarr.ics` |
+
+**Cross-check on every build** (`.stangent/graph-crosscheck.json`):
+- Sonarr: v3 and v5 OpenAPI files, 0 disagreements (240 and 242 operations). No EF.
+- Kavita: OpenAPI 522 operations = 522 endpoints, 0 disagreements. EF snapshot: 2 tables no rule finds, `AspNetRoles` and
+  `AspNetUserRoles` (from Identity's generic base context); the snapshot supplies them.
+
+Still open: G9 constant values, G10 SignalR messages, G11 background jobs, text keys → words, nopCommerce (Razor). No second fresh round.

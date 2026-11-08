@@ -327,4 +327,6 @@ facts or ❓; EF entities reached through navigations and `Entity<T>("Name")` ta
 (not walked); facts `auth`, `fallback-auth`, `guard`, `ui-event`, `rule`; a new detector `validation`; a React component's own
 handlers are points (`Component.handler`) that the component `uses`, so a screen reaches its calls one step deeper.
 Every consumer of `code-graph` is `needs review` in `roadmap.md` (D20); none was changed.
+Same day, after its fresh check (D164): F1–F10 fixed, tables from EF's snapshot first, and every build cross-checks endpoints with
+OpenAPI files and tables with the snapshot (`.stangent/graph-crosscheck.json`); still v5.
 

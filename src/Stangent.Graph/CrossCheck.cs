@@ -8,7 +8,8 @@ public sealed record CrossCheckStats(int Sources, int Disagreements);
 
 /// <summary>
 /// D164: the framework's own answer as the key. Every build compares the graph's endpoints with each OpenAPI file in the
-/// repo (scoped to the project the file sits in), and the tables our rules find with EF's snapshot. Every disagreement is
+/// repo (an operation no endpoint fits; an endpoint of the file's own project it doesn't list), and the tables our rules
+/// find with EF's snapshot. Every disagreement is
 /// written to <c>.stangent/graph-crosscheck.json</c>; nothing here changes the graph, since a stale file would mislead it.
 /// </summary>
 public static class CrossCheck
@@ -38,9 +39,13 @@ public static class CrossCheck
                 if (item is JsonObject ops)
                     foreach (var verb in Verbs.Where(ops.ContainsKey))
                         documented.Add((verb.ToUpperInvariant(), Normalize(basePath.TrimEnd('/') + route)));
-            var mapped = inScope.Select(e => (Verb: e.Name[..e.Name.IndexOf(' ')], Path: Normalize(e.Name[(e.Name.IndexOf(' ') + 1)..]), e.Name)).ToList();
+            static (string Verb, string Path, string Name) Shape(Node e) => (e.Name[..e.Name.IndexOf(' ')], Normalize(e.Name[(e.Name.IndexOf(' ') + 1)..]), e.Name);
+            var mapped = inScope.Select(Shape).ToList();
+            // A host's OpenAPI documents every project it serves (Sonarr's lists Sonarr.Http's login and ping): an operation is
+            // missing only when no endpoint anywhere fits it; an endpoint is undocumented only when it's the file's own project's.
+            var everywhere = endpoints.Select(Shape).ToList();
             var notInOpenapi = mapped.Where(m => !documented.Any(d => d.Path == m.Path && (m.Verb == "ANY" || d.Verb == m.Verb))).Select(m => m.Name).Distinct().Order(StringComparer.Ordinal).ToList();
-            var missing = documented.Where(d => !mapped.Any(m => m.Path == d.Path && (m.Verb == "ANY" || m.Verb == d.Verb))).Select(d => $"{d.Verb} {d.Path}").Order(StringComparer.Ordinal).ToList();
+            var missing = documented.Where(d => !everywhere.Any(m => m.Path == d.Path && (m.Verb == "ANY" || m.Verb == d.Verb))).Select(d => $"{d.Verb} {d.Path}").Order(StringComparer.Ordinal).ToList();
             sources++;
             disagreements += notInOpenapi.Count + missing.Count;
             openapi.Add(new JsonObject
@@ -85,9 +90,19 @@ public static class CrossCheck
     /// <summary>A path compared by shape: lower case, no trailing slash, every <c>{…}</c> the same.</summary>
     public static string Normalize(string path)
     {
-        var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries)
-            .Select(s => s.StartsWith('{') && s.EndsWith('}') ? "{}" : s.ToLowerInvariant());
-        return "/" + string.Join("/", segments);
+        // Split at slashes outside braces: {**path:regex(^(?!api/).*)} is one segment.
+        var segments = new List<string>();
+        var depth = 0;
+        var current = new System.Text.StringBuilder();
+        foreach (var c in path)
+        {
+            if (c == '{') depth++;
+            else if (c == '}') depth--;
+            if (c == '/' && depth == 0) { if (current.Length > 0) segments.Add(current.ToString()); current.Clear(); }
+            else current.Append(c);
+        }
+        if (current.Length > 0) segments.Add(current.ToString());
+        return "/" + string.Join("/", segments.Select(s => s.StartsWith('{') && s.EndsWith('}') ? "{}" : s.ToLowerInvariant()));
     }
 
     static IEnumerable<string> OpenApiFiles(string root)

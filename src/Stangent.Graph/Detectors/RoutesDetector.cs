@@ -236,9 +236,14 @@ public sealed class RoutesDetector : IDetector
                 return values.GetValueOrDefault("template");
             if (ctor.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() is not ConstructorDeclarationSyntax syntax)
                 return attribute.AttributeClass is { } own && PropertyExpression(own, "Template") is { } property ? Evaluate(property, values) : null;
-            var assignment = syntax.Body?.Statements.OfType<ExpressionStatementSyntax>().Select(e => e.Expression).OfType<AssignmentExpressionSyntax>()
-                .FirstOrDefault(a => a.Left is IdentifierNameSyntax { Identifier.ValueText: "Template" } or MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Template" });
-            if (assignment is not null) return Evaluate(assignment.Right, values);
+            // Assignments in order, so a Template built from a property set just before it (Version = version;
+            // Template = $"feed/v{Version}/{resource}", Sonarr's feed controllers) is known.
+            foreach (var assignment in syntax.Body?.Statements.OfType<ExpressionStatementSyntax>().Select(e => e.Expression).OfType<AssignmentExpressionSyntax>() ?? [])
+            {
+                var target = assignment.Left switch { IdentifierNameSyntax id => id.Identifier.ValueText, MemberAccessExpressionSyntax m => m.Name.Identifier.ValueText, _ => null };
+                if (target == "Template") return Evaluate(assignment.Right, values);
+                if (target is not null && Evaluate(assignment.Right, values) is { } known) values[target] = known;
+            }
             if (syntax.Initializer is not { } init || ctor.ContainingType.BaseType is not { } baseType) return null;
             var next = baseType.InstanceConstructors.FirstOrDefault(c => c.Parameters.Length >= init.ArgumentList.Arguments.Count
                 && c.Parameters.Skip(init.ArgumentList.Arguments.Count).All(p => p.HasExplicitDefaultValue));

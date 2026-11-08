@@ -52,3 +52,25 @@ public class ShelfController : StaffController
     [NonAction]
     public override int Find(int id) => id;
 }
+
+// A route attribute whose Template reads a property set just before it (Sonarr's feed controllers).
+public class FeedAttribute : System.Attribute, IRouteTemplateProvider
+{
+    public FeedAttribute(int version, string resource)
+    {
+        Version = version;
+        Template = $"feed/v{Version}/{resource}";
+    }
+
+    public string? Template { get; private set; }
+    public int? Order => 0;
+    public string? Name { get; set; }
+    public int Version { get; private set; }
+}
+
+[Feed(2, "calendar")]
+public class CalendarFeedController : Controller
+{
+    [HttpGet("shop.ics")]
+    public string Feed() => "";
+}
