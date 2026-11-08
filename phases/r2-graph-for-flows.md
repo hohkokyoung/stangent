@@ -145,3 +145,19 @@ Owner: "okay do it". Code only, no paid AI. Tests: 2,156 .NET + 46 extractor pas
   `AspNetUserRoles` (from Identity's generic base context); the snapshot supplies them.
 
 Still open: G9 constant values, G10 SignalR messages, G11 background jobs, text keys → words, nopCommerce (Razor). No second fresh round.
+
+## 7. Second fresh check (D158), 2026-11-08
+
+One fresh agent on `ea483ef` + `41ed292`, read-only, ~141K tokens. Tests pass. 5 findings; R1 and R2 confirmed by hand.
+
+| # | Severity | Finding | Fix |
+|---|---|---|---|
+| R1 | wrong | F2 went too far: a DbSet call whose name isn't on the lists records nothing, so the app's own query extensions (`Includes`, `ApplyStatsFilter`, `IsLikedBy`…, ~60 sites on Kavita) lose their read; `ChapterRepository.GetChapterAsync` has no `reads` | a non-write call on a DbSet that returns a query, a list or a Task is a read |
+| R2 | misleading | many-to-many adds (53 on Kavita, e.g. `lib.AppUsers.Add(user)` granting library access) write nothing; 9 join tables have no lines | read the two types each join table links from the snapshot's `HasOne` block, and write that table |
+| R3 | misleading, no case here | the snapshot logic assumes the snapshot and the DbContext share an assembly; with migrations in their own project, guesses survive and the cross-check misfires | tie a snapshot to its `[DbContext(typeof(X))]` and key on that context's assembly |
+| R4 | minor | column facts doubled for snapshot entities (1,678 for 839) | add columns once |
+| R5 | minor | any OpenAPI file counts as the repo's own (a vendored client spec would list all as missing); an odd file could throw after the graph is saved | catch per file; skip a file almost none of whose paths fit |
+
+Holds: F1/F8 (every documented operation is in the graph, checked by parameter names too, so Sonarr's 0 isn't loose matching),
+F2 writes (all 38 point at real tables), F3, tables (81 = the snapshot's, none mapped twice), F4–F7, F9, F10, a deterministic report.
+Older gaps found: inline `loadChildren: () => [...]` gives no page (Kavita `/theme`); `RuleForEach` isn't read. Nothing fixed yet: owner's call.
