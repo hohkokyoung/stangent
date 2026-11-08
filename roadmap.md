@@ -4,20 +4,15 @@ The build order (decisions.md D19) and how phases stay in step with each other (
 
 **Read this first.** The file an item sits in is its status (D134): decided and unbuilt here, not decided in [`improvements.md`](improvements.md), built or rejected in [`improvements-done.md`](improvements-done.md). Open questions: [`questions.md`](questions.md). Every decision: [`decisions.md`](decisions.md). How a phase is recorded and changed: [`docs/phases.md`](docs/phases.md).
 
-## Where we are (2026-11-05)
+## Where we are (2026-11-08)
 
-- **Built and measured:** the foundation (0), the code graph (1a–1c), reference pages (2a), FSD import and links (2b,
-  findings off; PDF import added by D111), and Phase 3: pull, the file finder with code checks, the bundle, the bug proof (advice only), drafts.
-- **Not passing:** proof is real, catches wrong reports (needs 2c and a project whose FSD covers those tickets); 2c's links, both bars
-  failed (24/30, 44% false alarms); 1d part 2 (deferred).
-- **Out of date:** the saved proof numbers predate the finder, D95, D104, D106 and D107 (D109).
-- **Overhaul (2026-11-04), local on `claude/phase2c-spec`, not pushed:** slices 0.1 to 2.6 landed, then the whole-flow test and §8's four batches (D120): switches, seams, import report, Excel, attachments, and table comparison, finer verdicts, grouping and ask, built off.
-- **Disprove re-score (finished and hand-checked 2026-11-07, $8.59 in all):** false alarms 44% to 23%, found 24 to 19 of 30. **With D151's `page-gap-strict` ($7.92): found 24 of 30, none lost, false alarms 31.4%, hand-checked: noise bar missed by about one finding. `stands` 22 of 22 real; 18 of 22 false alarms are `cant-tell`.** Found bar (27) still not met: that needs the gap finders. Login with `claim-links`: rulings move by ids, but the judge raised no gap or conflict (`phases/2c-spec.md`).
-- **§9's batch 1 (2026-11-05), local, not pushed:** T.2, T.4, T.5, T.6, T.8, I.5, I.7, I.8 (off), I.9, I.10, I.11 (D126). Every paid step now needs a cap or `none`, so a script or CI needs `STANGENT_MAX_COST`.
-- **§9's batch 2 (2026-11-05), local, not pushed:** D130 and J.4 (`schema-once`, off), `shared-candidates` removed, a warning on a hand-edited `document.md`, T.1, T.3, T.7, I.1, I.2, I.3, I.4, I.6 (D131). Fakes only. Off until a test: `schema-once`, `page-corrections`, `page-exclusions`, `follow-moves`, `statement-update`, `disprove-small`.
-- **Unchecked:** §8's and §9's batches had no fresh check (D120), and none has met a real FSD or real AI. Next is "What's next" below.
-- No private-repo check and no proof run on bitwarden (owner): Phase 3's report says so.
-- **The overhaul's order of work is finished** (slices 0.1 to 2.6, D112). It stopped before Phase 4, which needs the owner: the order after 2.x, and the questions in `questions.md`.
+- **Ground-up rebuild (D156), in layers; nothing above a layer is touched until it passes.** Local on `claude/phase2c-spec`, not pushed.
+  - **Layer 1, foundation (D161, D162): built and fresh-checked** (8 faults, all fixed). Fakes only: a real-Claude-Code check is owed on the first paid run.
+  - **Layer 2, code graph (D163–D165, row r2): built and checked** on Sonarr, Kavita and nopCommerce; G1–G11 and N1–N5 fixed, cross-check by code on every build (D164). The fresh check (D158) of N1–N5 is running. Guesses and blind spots are checked later, on flows only (D166).
+  - **Layer 3, areas → flows (D154, D160): next.** Decided, not built; to be grilled first.
+  - **Layers 4–7** (pages P1, linking P2–P4, tickets P5–P7, cuts P8): not started. The old versions still run, and their numbers below stand until the rebuild replaces them.
+- **Old measurements, still true of the old layers:** 2c's links with D151 `page-gap-strict`: found 24 of 30, false alarms 31.4% (bars 27 and 30%); Phase 3's proof ships as advice only, its numbers out of date (D109). Off switches and their tests: "Off until its test says so" below.
+- **"What's next" below is the pre-rebuild order** (D125, never confirmed); D156's layers come first.
 
 ## What's next (D125, with the order proposed 2026-11-04)
 
@@ -61,7 +56,8 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
 
 | What | Decisions | Phase |
 |---|---|---|
-| **Next, ground up (D156):** (1) foundation: model, effort and settings on every run record, a three-run repeatability check (*built 2026-11-08 as D161, fakes only; its fresh check (D158) next*); (2) code graph checked for what flows need on Sonarr, Kavita, nopCommerce, rebuilt where it falls short; (3) areas → flows (D154); (4) pages word only code's facts (P1); (5) linking: sentence ids, no AI candidate finder, sentences not requirements (P2–P4); (6) tickets: matcher parked, code signals first, comment templates (P5–P7); (7) unproven AI switches cut (P8) | D154, D155, D156, D138 | 0, 1, 2c, 3 |
+| **Next, ground up (D156):** (1) foundation: model, effort and settings on every run record, a three-run repeatability check (*built 2026-11-08 as D161, fakes only; fresh-checked, faults fixed*); (2) code graph checked for what flows need on Sonarr, Kavita, nopCommerce, rebuilt where it falls short (*built, D163–D165; fresh check of N1–N5 running*); (3) areas → flows (D154); (4) pages word only code's facts (P1); (5) linking: sentence ids, no AI candidate finder, sentences not requirements (P2–P4); (6) tickets: matcher parked, code signals first, comment templates (P5–P7); (7) unproven AI switches cut (P8) | D154, D155, D156, D138 | 0, 1, 2c, 3 |
+| Check the graph's 🟡 guesses and ❓ blind spots that sit on a flow, once the first flows exist: blind spots sorted by cause (code fix, a person once in `stangent.yaml`, a stop that says so, or runtime evidence); runtime evidence opt-in and kept apart from the graph: the framework's lists at startup first, then the app's own test traces where tests exist | D166, D154, D155 | after layer 3 (areas → flows) |
 | A code-reading check answers "is it true?" before a finding reaches a PM, with a way of catching real findings it throws away; false alarms counted from it, not from PM rulings. What does the check isn't settled | D137, D119 | 2c |
 | Requirements citing claims, once `claim-links` has been tried with a real judge | D145, D143, D99 | 2c |
 | Table facts from constants and SQL seed data, beside API fields and enums; an AI proposing `table-map.yaml` for a person to approve. Both after the owner answers D68's question | D124, D68 | 2b |

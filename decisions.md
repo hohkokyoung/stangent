@@ -143,7 +143,7 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D110 · The core stays C#; no port to Python
 - D111 · Stangent imports PDF and Excel as well as Word, by code only, listing what can't come in exactly
 
-## D112–D164: the overhaul; new decisions go here
+## D112–D166: the overhaul; new decisions go here
 
 [`decisions/6-overhaul.md`](decisions/6-overhaul.md)
 
@@ -201,4 +201,5 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D163 · The code graph reads what flows need, checked on Sonarr and Kavita; `code-graph` v5 (G1–G8 fixed)
 - D164 · The framework's own answer first: tables from EF's snapshot; every build cross-checks endpoints with OpenAPI and tables with the snapshot
 - D165 · Razor views are read from the Razor compiler's own output (forms → endpoints, buttons, `View()` → view); an app's own access filters and plain scripts are read (nopCommerce N1–N5)
+- D166 · The graph's guesses and blind spots are checked after the first flows exist, only those a flow uses; blind spots sorted by cause; runtime evidence opt-in, apart from the graph
 
