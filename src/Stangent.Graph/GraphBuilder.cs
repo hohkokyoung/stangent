@@ -17,7 +17,8 @@ public sealed record BuildStats(
     int HistoryLines = 0, string HistoryStatus = "", long HistoryMs = 0, int DirtyFiles = 0,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] PythonStats? Python = null,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] RootScreenStats? RootScreens = null,
-    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] RouteRenderStats? RouteRender = null);
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] RouteRenderStats? RouteRender = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] CrossCheckStats? CrossCheck = null);
 
 /// <summary>Screens with no route on the map, and the ❓ the rule couldn't settle. Only with <c>root-screens</c> on.</summary>
 public sealed record RootScreenStats(int Screens, int Unresolved)
@@ -246,6 +247,7 @@ public static class GraphBuilder
             log.WriteLine($"stangent: {dirty.Count} file(s) differ from {graph.Commit}; `graph where` won't cite their lines.");
 
         GraphStore.Save(graph, GraphStore.PathFor(repo));
+        var crossCheck = CrossCheck.Run(repo.Root, graph); // D164: against OpenAPI files and EF's snapshot, reported only
         total.Stop();
         var stats = new BuildStats(graph.Commit, projects.Count, frontends.Count, changed.Count + frontendChanged.Count + pythonChanged.Count,
             projects.Count + frontends.Count + pythonProjects.Count - changed.Count - frontendChanged.Count - pythonChanged.Count,
@@ -255,7 +257,8 @@ public static class GraphBuilder
             graph.HistoryLines.Count, graph.History?.Status ?? "", history.ElapsedMilliseconds, graph.DirtyFiles?.Count ?? 0,
             pythonProjects.Count > 0 ? PythonStats.From(graph, pythonProjects.Count) : null,
             rootScreensOn ? RootScreenStats.From(graph) : null,
-            routeRenderOn ? RouteRenderStats.From(graph) : null);
+            routeRenderOn ? RouteRenderStats.From(graph) : null,
+            crossCheck);
         return (graph, stats);
     }
 

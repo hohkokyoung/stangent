@@ -59,11 +59,16 @@ public sealed class HttpServicesDetector : IDetector
         {
             // "https://x".AppendPathSegment(id).WithHeader(…).PostJsonAsync(…): the URL starts at the chain's first receiver.
             var root = access.Expression;
+            var changed = false;
             while (root is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax inner } link
                    && file.Model.GetSymbolInfo(link).Symbol is IMethodSymbol m && m.ContainingNamespace?.ToDisplayString().StartsWith("Flurl", StringComparison.Ordinal) == true)
+            {
+                // F6: only path, query and fragment calls change the URL; WithHeader, WithTimeout, AllowHttpStatus keep it.
+                if (UrlChanging.Any(w => m.Name.StartsWith(w, StringComparison.Ordinal))) changed = true;
                 root = inner.Expression;
+            }
             start = ExtractContext.StringValue(root, file.Model);
-            if (ReferenceEquals(root, access.Expression)) url = start;
+            if (!changed && start is not null && !start.Contains("{*}", StringComparison.Ordinal)) url = start;
         }
         var via = flurl ? "Flurl" : receiver!.Name;
         if (url is null)
@@ -75,6 +80,8 @@ public sealed class HttpServicesDetector : IDetector
         }
         ctx.AddFact(Name, "call", owner, call, ("method", verb), ("url", url), ("client", ""));
     }
+
+    static readonly string[] UrlChanging = ["AppendPathSegment", "AppendQueryParam", "SetQueryParam", "RemoveQueryParam", "SetFragment", "RemoveFragment", "ResetToRoot", "RemovePath", "AppendPath"];
 
     static bool IsClient(INamedTypeSymbol type) =>
         type.Name == "IHttpClient" || type.Name.EndsWith("HttpClient", StringComparison.Ordinal) || type.AllInterfaces.Any(i => i.Name == "IHttpClient");

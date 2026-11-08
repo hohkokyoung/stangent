@@ -7,6 +7,7 @@ namespace Flurl.Http
         public static string AppendPathSegment(this string url, object segment) => url + "/" + segment;
         public static Task<T> GetJsonAsync<T>(this string url) => Task.FromResult(default(T)!);
         public static Task PostJsonAsync(this string url, object body) => Task.CompletedTask;
+        public static string WithHeader(this string url, string name, string value) => url;
     }
 }
 
@@ -22,5 +23,6 @@ namespace Shop.Web
         public string Rates(string currency) => http.Get(new Request("https://rates.example/" + currency));
         public Task<int> Fixed() => "https://rates.example/fixed".GetJsonAsync<int>();
         public Task Report(int id) => "https://audit.example".AppendPathSegment(id).PostJsonAsync(new { id });
+        public Task<int> Ping() => "https://audit.example/ping".WithHeader("Accept", "json").GetJsonAsync<int>();
     }
 }

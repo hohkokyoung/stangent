@@ -47,15 +47,17 @@ function isRouteArray(arr: ts.ArrayLiteralExpression): boolean {
 }
 
 function referencedByLoadChildren(ctx: Context, arr: ts.ArrayLiteralExpression): boolean {
-  // export const SERIES_ROUTES = [...] — also reachable from some loadChildren; walked from there when it is.
+  // export const routes = [...] in a lazy module — reachable from some loadChildren, so walked from there, under its
+  // parent's path and guards; never also as a root (F7: Kavita's lazy arrays are named `routes` too).
   const decl = arr.parent;
-  return ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && /routes?$/i.test(decl.name.text)
-    && !/^(app)?routes?$/i.test(decl.name.text) && loadChildrenTargets(ctx).has(decl);
+  return ts.isVariableDeclaration(decl) && loadChildrenTargets(ctx).has(decl);
 }
 
-let loadChildrenCache: Set<ts.Node> | null = null;
+// Per program: a test runs several extracts in one process.
+const loadChildrenCache = new WeakMap<ts.Program, Set<ts.Node>>();
 function loadChildrenTargets(ctx: Context): Set<ts.Node> {
-  if (loadChildrenCache) return loadChildrenCache;
+  const cached = loadChildrenCache.get(ctx.program);
+  if (cached) return cached;
   const targets = new Set<ts.Node>();
   for (const sf of ctx.program.getSourceFiles().filter(ctx.isOwn)) {
     const visit = (n: ts.Node) => {
@@ -67,7 +69,8 @@ function loadChildrenTargets(ctx: Context): Set<ts.Node> {
     };
     visit(sf);
   }
-  return (loadChildrenCache = targets);
+  loadChildrenCache.set(ctx.program, targets);
+  return targets;
 }
 
 function routeArray(ctx: Context, arr: ts.ArrayLiteralExpression, prefix: string, visiting: Set<ts.Node>, inherited: Guard[] = []) {

@@ -37,7 +37,8 @@ namespace Shop.Core
 
         public NewOrderValidator()
         {
-            RuleFor(o => o.Quantity).GreaterThan(Smallest).WithMessage("Order at least one").NotEmpty().When(o => o.Customer != "");
+            RuleFor(o => o.Quantity).GreaterThan(Smallest).WithMessage("Order at least one").When(o => o.Customer != "")
+                .NotEmpty();
         }
     }
 }

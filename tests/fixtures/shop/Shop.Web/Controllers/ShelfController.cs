@@ -20,7 +20,14 @@ public class GetShelfAttribute : System.Attribute, IActionHttpMethodProvider, IR
 }
 
 [Microsoft.AspNetCore.Authorization.Authorize(Policy = "Staff")]
-public abstract class StaffController : Controller;
+public abstract class StaffController : Controller
+{
+    [HttpPut("{id:int?}")]
+    public virtual int Save(int id) => id;
+
+    [GetShelf]
+    public virtual int Find(int id) => id;
+}
 
 [ApiController]
 [Route("api/shelf")]
@@ -37,4 +44,11 @@ public class ShelfController : StaffController
 
     [GetShelf, Microsoft.AspNetCore.Authorization.AllowAnonymous]
     public int Get(int id) => id;
+
+    // F1: inherits the base's [HttpPut]; the base method isn't routed apart.
+    public override int Save(int id) => id + 1;
+
+    // F1: [NonAction] on an override takes the base method out too.
+    [NonAction]
+    public override int Find(int id) => id;
 }

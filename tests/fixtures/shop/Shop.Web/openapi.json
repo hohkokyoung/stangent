@@ -1,0 +1,9 @@
+{
+  "openapi": "3.0.1",
+  "info": { "title": "Shop.Web", "version": "v1" },
+  "paths": {
+    "/api/orders": { "post": {} },
+    "/api/shelf/{id}": { "get": {}, "delete": {} },
+    "/api/gone": { "get": {} }
+  }
+}

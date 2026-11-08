@@ -73,7 +73,18 @@ public sealed class FrontendHttpDetector : IDetector
         }
     }
 
-    static string[] Segments(string path) => path.Split('?')[0].Split('/', StringSplitOptions.RemoveEmptyEntries);
+    /// <summary>Path segments, the query cut at a <c>?</c> outside braces only, so <c>{id:int?}</c> stays whole (F4).</summary>
+    static string[] Segments(string path) => StripQuery(path).Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+    static string StripQuery(string path)
+    {
+        var depth = 0;
+        for (var i = 0; i < path.Length; i++)
+            if (path[i] == '{') depth++;
+            else if (path[i] == '}') depth--;
+            else if (path[i] == '?' && depth == 0) return path[..i];
+        return path;
+    }
 
     /// <summary>The endpoints that fit a call best: same verb (or ANY), path scored segment by segment.</summary>
     static List<Endpoint> Match(string verb, string url, List<Endpoint> endpoints)

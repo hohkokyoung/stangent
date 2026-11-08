@@ -45,19 +45,20 @@ public sealed class ValidationDetector : IDetector
         if (body is null || file.Model.GetSymbolInfo(body).Symbol is not IPropertySymbol target || ctx.NodeId(target) is not { } propId) return;
         var set = ruleFor.Expression is MemberAccessExpressionSyntax m ? m.Expression.ToString() : "";
         var rules = new List<(string Rule, string Args, SyntaxNode At, string Message, bool Conditional)>();
-        var conditional = false;
         // RuleFor(…).A().B(): each call's parent is a member access whose parent is the next invocation.
         for (SyntaxNode node = ruleFor; node.Parent is MemberAccessExpressionSyntax access && access.Parent is InvocationExpressionSyntax next; node = next)
         {
             var name = access.Name.Identifier.ValueText;
             var args = string.Join(", ", next.ArgumentList.Arguments.Select(a => Value(file.Model, a.Expression)));
             if (name == "WithMessage" && rules.Count > 0) rules[^1] = rules[^1] with { Message = args.Trim('"') };
-            else if (name is "When" or "Unless" or "WhenAsync" or "UnlessAsync") conditional = true;
-            else if (!Modifiers.Contains(name)) rules.Add((name, args, next, "", false));
+            // F9: When/Unless guard the rules before them, not those chained after.
+            else if (name is "When" or "Unless" or "WhenAsync" or "UnlessAsync")
+                for (var i = 0; i < rules.Count; i++) rules[i] = rules[i] with { Conditional = true };
+            else if (!Modifiers.Contains(name)) rules.Add((name, args, access.Name, "", false)); // F9: the rule's own line
         }
         foreach (var r in rules)
             ctx.AddFact(Name, "rule", propId, r.At, ("rule", r.Rule), ("args", r.Args), ("via", "fluentvalidation"), ("set", set),
-                ("message", r.Message), ("conditional", conditional ? "yes" : ""));
+                ("message", r.Message), ("conditional", r.Conditional ? "yes" : ""));
     }
 
     /// <summary>A constant's value; otherwise the expression's own text with its type (<c>seriesExistsValidator: SeriesExistsValidator</c>).</summary>

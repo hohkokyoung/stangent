@@ -74,12 +74,16 @@ public sealed class RoutesDetector : IDetector
         var classRoutes = new List<string>();
         for (var t = type; t is not null && classRoutes.Count == 0; t = t.BaseType) classRoutes = RouteTemplates(t);
 
+        // F1: a base method overridden lower down isn't an action of its own; the override speaks for it.
+        var overridden = new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
         for (var t = type; t is not null && t.SpecialType != SpecialType.System_Object; t = t.BaseType)
         {
             if (!ctx.InRepo(t) && !SymbolEqualityComparer.Default.Equals(t, type)) break;
             foreach (var method in t.GetMembers().OfType<IMethodSymbol>())
             {
                 if (method.MethodKind != MethodKind.Ordinary || method.DeclaredAccessibility != Accessibility.Public || method.IsStatic) continue;
+                if (overridden.Contains(method.OriginalDefinition)) continue;
+                foreach (var m in Overrides(method).Skip(1)) overridden.Add(m.OriginalDefinition);
                 // [NonAction] is inherited: Controller.OnActionExecuting's overrides aren't actions either.
                 if (Overrides(method).Any(m => m.GetAttributes().Any(a => a.AttributeClass?.Name == "NonActionAttribute"))) continue;
                 var methodId = ctx.NodeId(method);
@@ -87,8 +91,10 @@ public sealed class RoutesDetector : IDetector
                 ApiShapes.Record(ctx, Name, method, methodId, ctx.ShapesSeen);
                 Auth(ctx, type, method, methodId);
                 var actionName = Attr(method, "ActionNameAttribute") ?? (method.Name.EndsWith("Async", StringComparison.Ordinal) ? method.Name[..^5] : method.Name);
-                var verbs = method.GetAttributes().SelectMany(a => HttpVerbs(a).Select(v => ((string?)v.Verb, v.Template))).ToList();
-                var methodRoutes = RouteTemplates(method);
+                // Verb and route attributes are inherited by overrides (ASP.NET reads them with inherit: true): the nearest that has any.
+                var source = Overrides(method).FirstOrDefault(m => m.GetAttributes().Any(a => HttpVerbs(a).Count > 0) || RouteTemplates(m).Count > 0) ?? method;
+                var verbs = source.GetAttributes().SelectMany(a => HttpVerbs(a).Select(v => ((string?)v.Verb, v.Template))).ToList();
+                var methodRoutes = RouteTemplates(source);
                 var location = method.Locations.FirstOrDefault(l => l.IsInSource);
                 var line = location is null ? 0 : location.GetLineSpan().StartLinePosition.Line + 1;
                 var file = location?.SourceTree is { } tree ? ctx.RelPath(tree) : null;
@@ -121,8 +127,8 @@ public sealed class RoutesDetector : IDetector
     }
 
     /// <summary>
-    /// G8: an action's authorisation as a fact: [AllowAnonymous] on the method wins; otherwise every [Authorize]
-    /// (or attribute derived from it) on the method and up its controller's base types, with policy and roles.
+    /// G8: an action's authorisation as a fact: any [AllowAnonymous] on the method's override chain or its controller's
+    /// base types wins (ASP.NET's rule); otherwise every [Authorize] (or attribute derived from it) there, with policy and roles.
     /// No fact means the app's fallback policy decides (a <c>fallback-auth</c> fact when the code sets one).
     /// </summary>
     const string Detector = "aspnetcore-routes";
@@ -139,11 +145,11 @@ public sealed class RoutesDetector : IDetector
                     found.Add(("authorize", Named(a, "Policy") ?? (a.ConstructorArguments.FirstOrDefault().Value as string) ?? "", Named(a, "Roles") ?? "", from));
             }
         }
-        Read(method, "method");
+        foreach (var m in Overrides(method)) Read(m, "method");
         for (var t = controller; t is not null && t.SpecialType != SpecialType.System_Object; t = t.BaseType) Read(t, "class " + t.Name);
+        // F8: ASP.NET skips [Authorize] whenever [AllowAnonymous] is on the action or its controller.
         var anonymous = found.FirstOrDefault(f => f.Rule == "anonymous");
-        var facts = anonymous.Rule is not null && (anonymous.From == "method" || !found.Any(f => f.Rule == "authorize" && f.From == "method"))
-            ? [anonymous] : found.Where(f => f.Rule == "authorize").Distinct().ToList();
+        var facts = anonymous.Rule is not null ? [anonymous] : found.Where(f => f.Rule == "authorize").Distinct().ToList();
         foreach (var f in facts)
             ctx.AddFact(Detector, "auth", methodId, null, ("rule", f.Rule), ("policy", f.Policy), ("roles", f.Roles), ("from", f.From));
     }

@@ -380,3 +380,17 @@ test("an Angular (click) says which method it calls and what the element shows (
   const events = lines.flatMap((l) => l.t === "fact" && l.kind === "ui-event" ? [`${l.data.element} ${l.data.event} ${l.data.handler.split("#").pop()} [${l.data.keys}] [${l.data.text}]`] : []);
   assert.deepEqual(events, ["button click StarComponent.toggle [remove-from-want-to-read|add-to-want-to-read] [Star]"]);
 });
+
+test("a lazy route array is walked once, under its parent's path and guards, whatever it's called (F7)", () => {
+  const root = project({
+    "src/stub.d.ts": "declare module '@angular/core' { export function Component(m: object): ClassDecorator; }",
+    "src/list.component.ts": "import { Component } from '@angular/core';\n@Component({ selector: 'app-list', template: '<p></p>' })\nexport class ListComponent {}",
+    "src/guards.ts": "export const authGuard = () => true;",
+    "src/browse.routes.ts": "import { ListComponent } from './list.component';\nexport const routes = [{ path: 'genres', component: ListComponent }];",
+    "src/app.routes.ts": "import { authGuard } from './guards';\nexport const routes = [{ path: 'browse', canActivate: [authGuard], loadChildren: () => import('./browse.routes').then(m => m.routes) }];",
+  }, { experimentalDecorators: true, module: "esnext" });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const pages = lines.flatMap((l) => l.t === "node" && l.kind === "page" ? [l.name] : []).sort();
+  assert.deepEqual(pages, ["/browse/genres"]);
+  assert.ok(lines.some((l) => l.t === "fact" && l.kind === "guard" && l.node.endsWith("|/browse/genres")));
+});

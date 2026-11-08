@@ -94,7 +94,15 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     {
         var endpoints = shop.Graph.AllNodes.Where(n => n.Kind == NodeKind.Endpoint && n.Name.Contains("/api/shelf")).Select(n => n.Name).Order().ToList();
         // : HttpPostAttribute; : HttpDeleteAttribute with base("{id:int}"); IActionHttpMethodProvider + a Template property.
-        Assert.Equal(["DELETE /api/shelf/{id:int}", "GET /api/shelf/{id:int}", "POST /api/shelf"], endpoints);
+        Assert.Equal(["DELETE /api/shelf/{id:int}", "GET /api/shelf/{id:int}", "POST /api/shelf", "PUT /api/shelf/{id:int?}"], endpoints);
+        // F1: the override answers the PUT; the base method it overrides isn't routed, nor is a [NonAction] override's base.
+        Assert.Equal(["Shop.Web|M:Shop.Web.Controllers.ShelfController.Save(System.Int32)"],
+            Edges(EdgeKind.RoutesTo).Where(e => e.Source == "endpoint:Shop.Web|PUT /api/shelf/{id:int?}").Select(e => e.Target).ToList());
+        // F4: a call that leaves off the optional id still reaches it.
+        Assert.Contains(Edges(EdgeKind.CallsHttp), e => e.Source == React + "ShelfPage.tsx#ShelfPage.save" && e.Target == "endpoint:Shop.Web|PUT /api/shelf/{id:int?}");
+        Assert.DoesNotContain(Edges(EdgeKind.RoutesTo), e => e.Target.Contains(".Find(", StringComparison.Ordinal));
+        Assert.Equal(["Shop.Web|M:Shop.Web.Controllers.ShelfController.Get(System.Int32)"],
+            Edges(EdgeKind.RoutesTo).Where(e => e.Source == "endpoint:Shop.Web|GET /api/shelf/{id:int}").Select(e => e.Target).ToList());
         Assert.Contains(Edges(EdgeKind.RoutesTo), e => e.Source == "endpoint:Shop.Web|POST /api/shelf"
             && e.Target == "Shop.Web|M:Shop.Web.Controllers.ShelfController.Add" && e.Label == Label.Certain);
     }
@@ -106,8 +114,9 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         var spots = shop.Graph.AllBlindSpots.Where(b => b.Owner.StartsWith(proxy, StringComparison.Ordinal)).Select(b => (b.Owner[proxy.Length..], b.Reason)).ToList();
         Assert.Contains(spots, b => b.Item1.StartsWith("Rates(", StringComparison.Ordinal) && b.Reason == "outside HTTP GET through IHttpClient: URL built at runtime");
         Assert.Contains(spots, b => b.Item1.StartsWith("Report(", StringComparison.Ordinal) && b.Reason == "outside HTTP POST through Flurl to https://audit.example…: rest of the URL built at runtime");
-        // A whole literal URL is a call; its host is no service here, so linking says so.
+        // A whole literal URL is a call; its host is no service here, so linking says so. F6: headers don't change the URL.
         Assert.Contains(spots, b => b.Item1 == "Fixed" && b.Reason.Contains("rates.example", StringComparison.Ordinal));
+        Assert.Contains(spots, b => b.Item1 == "Ping" && b.Reason.Contains("audit.example", StringComparison.Ordinal) && !b.Reason.Contains("runtime", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -122,6 +131,20 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.Equal("", Lines(EdgeKind.Writes, "ShelfService.Count"));
         Assert.Equal("table:Shop.Core|Ledgers", Lines(EdgeKind.Writes, "LedgerService.Record"));
         Assert.Equal("table:Shop.Core|Ledgers", Lines(EdgeKind.Reads, "LedgerService.Find"));
+        // F2: Entry(x).State =, context.Update(x) and ExecuteDelete are writes; AsTracking is a read.
+        Assert.Equal("table:Shop.Core|Shelves", Lines(EdgeKind.Writes, "ShelfService.Edit"));
+        Assert.Equal("table:Shop.Core|Shelves", Lines(EdgeKind.Writes, "ShelfService.Replace"));
+        Assert.Equal("table:Shop.Core|Shelves", Lines(EdgeKind.Writes, "ShelfService.Empty"));
+        Assert.Equal("table:Shop.Core|Shelves", Lines(EdgeKind.Reads, "ShelfService.Tracked"));
+        // F3: a list on an object that isn't an entity; F10: Allowed isn't All.
+        Assert.Equal("", Lines(EdgeKind.Writes, "ShelfService.Plan"));
+        Assert.Equal("", Lines(EdgeKind.Reads, "LedgerService.May"));
+        // F5: a property configured as a column isn't a navigation.
+        Assert.DoesNotContain(shop.Graph.AllNodes, n => n.Id == "table:Shop.Core|Label");
+        // D164: the snapshot names the table; an owned type and a navigation it doesn't hold aren't tables; a join table is one.
+        Assert.Contains(Edges(EdgeKind.Maps), e => e.Source == "table:Shop.Web|CouponCodes" && e.Target == "Shop.Web|T:Shop.Web.Data.Coupon" && e.Label == Label.Certain);
+        Assert.DoesNotContain(shop.Graph.AllNodes, n => n.Kind == NodeKind.Table && (n.Name is "Coupons" or "NotATable" or "CouponNote"));
+        Assert.Contains(shop.Graph.AllNodes, n => n.Id == "table:Shop.Web|CouponShelf");
     }
 
     [Fact]
@@ -139,7 +162,26 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         string Rules(string prop) => string.Join("; ", shop.Graph.AllFacts.Where(f => f.Kind == "rule" && f.Owner == "Shop.Core|P:Shop.Core.NewOrder." + prop)
             .Select(f => $"{f["rule"]}({f["args"]}) {f["via"]} '{f["message"]}' {f["conditional"]}".TrimEnd()));
         Assert.Equal("Required() attribute ''; StringLength(40, MinimumLength = 2) attribute ''", Rules("Customer"));
-        Assert.Equal("GreaterThan(0) fluentvalidation 'Order at least one' yes; NotEmpty() fluentvalidation '' yes", Rules("Quantity"));
+        Assert.Equal("GreaterThan(0) fluentvalidation 'Order at least one' yes; NotEmpty() fluentvalidation ''", Rules("Quantity"));
+        // F9: each rule carries its own line.
+        Assert.Equal(2, shop.Graph.AllFacts.Where(f => f.Kind == "rule" && f.Owner == "Shop.Core|P:Shop.Core.NewOrder.Quantity").Select(f => f.Line).Distinct().Count());
+    }
+
+    [Fact]
+    public void Every_build_cross_checks_endpoints_with_openapi_and_tables_with_the_snapshot()
+    {
+        Assert.NotNull(shop.Stats.CrossCheck);
+        var report = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(CrossCheck.PathFor(shop.Root)))!;
+        var api = report["openapi"]!.AsArray().Single()!;
+        Assert.Equal("project:Shop.Web/Shop.Web.csproj", (string?)api["scope"]);
+        Assert.Equal(["GET /api/gone"], api["missingFromGraph"]!.AsArray().Select(x => (string)x!).ToList());
+        var notInOpenapi = api["notInOpenapi"]!.AsArray().Select(x => (string)x!).ToList();
+        Assert.Contains("POST /api/shelf", notInOpenapi);
+        Assert.DoesNotContain("POST /api/orders", notInOpenapi);
+        Assert.DoesNotContain("GET /api/shelf/{id:int}", notInOpenapi);   // {id:int} and {id} are the same shape
+        var ef = report["efSnapshot"]!.AsArray().Single()!;
+        Assert.Equal(["Shop.Web|T:Shop.Web.Data.CouponNote"], ef["foundByRulesOnly"]!.AsArray().Select(x => (string)x!).ToList());
+        Assert.Empty(ef["inSnapshotOnly"]!.AsArray());
     }
 
     [Fact]
