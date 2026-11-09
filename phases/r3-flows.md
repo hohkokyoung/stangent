@@ -91,7 +91,7 @@ When Stangent and the key disagree, the quoted code line decides, and the ruling
   | refresh-series | 38 | 24 | 40 | 3 | 13 | 0 |
 
   Checked by code: 306 items, every `at` a tracked line whose text holds its `code`. Spot-read by hand: add-series's
-  controller → add service → insert → `SeriesAddedEvent` (3 handlers) → `RefreshSeriesCommand` queued. Owner approval: pending.
+  controller → add service → insert → `SeriesAddedEvent` (3 handlers) → `RefreshSeriesCommand` queued. **Owner approved `add-series` (2026-11-09, "Approve add-series")**: Sonarr's approved key (D177).
   The agent's own caveats: V5 controllers only (the frontend's root is `/api/v5`); delete's options act in event
   handlers, so they sit as extra `conditions` on two links; save-indexer's connection test stops at the depth limit and
   only Newznab's settings rules are listed; series-details leaves four `GET /series` mappers unwalked.
