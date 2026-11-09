@@ -93,7 +93,11 @@ Each is brought to the owner one at a time, with a recommendation; none is appli
 - **R3, ruled 2026-11-09 (owner: "Yes, keep it", on the recommendation): confirm-order is the multi-step checkout.** The key
   follows `CheckoutController.ConfirmOrder`; the one-page `OpcConfirmOrder` is its own flow by D171, built but not scored. No
   change to the key or the scorer.
-- **R4, open (listed at step 2): `return InvokeHttp404()`** (2 product-page exits): not on D176's fixed list, so not an exit.
+- **R4, ruled 2026-11-09 (owner: "Yes, make it an exit", on the recommendation; D186): `return InvokeHttp404()` is an early
+  exit.** Its body sets `Response.StatusCode = 404` and returns, so the code ends the request there. D176's list grows by one
+  general rule: a returned call to an app's own helper that sets a constant 4xx/5xx status, or returns only listed results, is an
+  exit. Built in layer 2 (18 such exits on nopCommerce); the key's 2 product-page exits and their 2 conditions are now found
+  (nopCommerce item 2: 84.2% → 84.7%). No change to the key.
 - **R5, open (listed at step 2): access filters setting `context.Result`** (Kavita `EntityAccessAttribute` ×4, nopCommerce
   `CheckAccessPublicStore` ×2, `ValidateHoneypot`): Stangent now walks the filters as steps (D184) but, per D181, an assignment
   to `context.Result` isn't an exit.
@@ -169,22 +173,22 @@ facts (each call's line), a hook's own functions as points, `filterType` on acce
 |---|---|---|---|
 | Flows built (click / screen / job / handler) | 367 | 281 | 944 |
 | 1. No wrong ✅ (code check: a ✅ call's line names what it calls) | 51 flagged of 48,840 | 5 of 23,707 | 10 of 75,196 |
-| 2. Key steps, ends and conditions found (≥95%), after R1 | **187 / 284 = 66%** | **398 / 511 = 78%** | **646 / 767 = 84%** |
+| 2. Key steps, ends and conditions found (≥95%), after R1 | **187 / 284 = 66%** | **398 / 511 = 78%** | **650 / 767 = 85%** (after R4) |
 | — before R1 | 175 / 284 = 62% | 354 / 511 = 69% | 590 / 767 = 77% |
 | — steps | 91 / 126 | 207 / 228 | 187 / 210 |
-| — ends (incl. exits), after R1 | 38 / 73 | 82 / 128 | 149 / 202 |
-| — conditions | 58 / 85 | 109 / 155 | 310 / 355 |
+| — ends (incl. exits), after R1 | 38 / 73 | 82 / 128 | 151 / 202 |
+| — conditions | 58 / 85 | 109 / 155 | 312 / 355 |
 | (links, not in item 2) | 28 / 45 | 4 / 12 | 16 / 46 |
 | (checks, not in item 2) | 8 / 25 | 0 / 2 | 26 / 60 |
 | 3. Every 🟡 and ❓ with a reason | pass (10,680 🟡, 705 ❓) | pass (1,182, 119) | pass (7,271, 269) |
 | 4. Byte for byte (two builds, and disk) | pass | pass | pass |
 | 5. No silent skips (starts → flows or stated reasons) | pass (2,678 starts) | pass (1,305) | pass (1,244) |
 
-**Bottom line: items 3–5 pass on all three; item 2 fails (66%, 78%, 84% against 95%, after R1); item 1 isn't settled** — the samples read
+**Bottom line: items 3–5 pass on all three; item 2 fails (66%, 78%, 85% against 95%, after R1 and R4); item 1 isn't settled** — the samples read
 are the checker's limits (a hook's function returned under another name, `goToPage: handleGoToPage`; a chain over 10 lines) plus
 one extractor quirk (Kavita's route resolvers' `on-load` lines point at a blank line). Steps are mostly found (72%, 91%, 89%);
 ends are what fail. Where the misses sit: the key stopping a branch one call earlier than the code does (R1, ruled: counted);
-filters' `context.Result` and app helpers not on D176's exit list (R4, R5); calls into packages and navigation, which the graph
+filters' `context.Result` (R5; app helpers ruled exits, R4); calls into packages and navigation, which the graph
 doesn't hold (R6; `screen` ends: none built); a URL built at runtime (Sonarr's save-indexer stops at a ❓ before the server, 3 of
 30 steps); the key walking into hubs (R7). Per-flow numbers: `--score-flows` output (`flows[].items`, `flows[].missed`).
 

@@ -60,3 +60,14 @@ public class FlowsTests(ShopGraph shop) : IClassFixture<ShopGraph>
             || s.Kind == "click" && s.Reason.Contains("handler", StringComparison.Ordinal));
     }
 }
+
+public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
+{
+    [Fact]
+    public void An_apps_own_helper_that_ends_the_request_is_an_exit_where_it_is_returned()
+    {
+        var exits = shop.Graph.AllFacts.Where(f => f.Kind == "exit" && f.Owner.Contains("PageHelpers.Show", StringComparison.Ordinal))
+            .Select(f => $"{f["kind"]} {f["status"]} {f["result"]}").Order(StringComparer.Ordinal).ToList();
+        Assert.Equal(["Forbid  Refuse", "StatusCode 404 Gone"], exits);
+    }
+}

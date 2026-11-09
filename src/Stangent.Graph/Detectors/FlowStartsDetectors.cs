@@ -183,7 +183,7 @@ public sealed class ConditionsDetector : IDetector
         if (file.Model.GetSymbolInfo(call).Symbol is not IMethodSymbol method || ctx.OwnerId(call, file.Model) is not { } owner) return;
         var target = ctx.NodeId(method);
         var ns = method.ContainingNamespace?.ToDisplayString() ?? "";
-        if (Exit(method, call, file.Model) is var (kind, status) && Returned(call))
+        if (Returned(call) && Exit(method, call, file.Model) is var (kind, status))
             ctx.AddFact(Name, "exit", owner, call, ("kind", kind), ("result", call is InvocationExpressionSyntax ? method.Name : method.ContainingType.Name),
                 ("status", status), ("text", call.ToString()), ("exception", ""), ("conditions", Json(Around(call, ctx))));
         if (target is null && (ns == "System" || ns.StartsWith("System.", StringComparison.Ordinal)) && !ns.StartsWith("System.Net.Http", StringComparison.Ordinal)) return;
@@ -213,7 +213,8 @@ public sealed class ConditionsDetector : IDetector
     static (string Kind, string Status)? Exit(IMethodSymbol method, ExpressionSyntax call, SemanticModel model)
     {
         var type = method.ContainingType;
-        if (type?.ContainingNamespace?.ToDisplayString().StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal) != true) return null;
+        if (type?.ContainingNamespace?.ToDisplayString().StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal) != true)
+            return call is InvocationExpressionSyntax ? Helpers.GetValue(method.OriginalDefinition, m => new HelperBox(HelperExit(m, model, 0))).Value : null;
         var name = call is InvocationExpressionSyntax ? method.Name : type.Name;
         if (call is BaseObjectCreationExpressionSyntax && !name.EndsWith("Result", StringComparison.Ordinal)) return null;
         string? kind = null;
@@ -223,6 +224,51 @@ public sealed class ConditionsDetector : IDetector
         if (!name.StartsWith("StatusCode", StringComparison.Ordinal)) return null;
         var args = call is InvocationExpressionSyntax i ? i.ArgumentList.Arguments : ((BaseObjectCreationExpressionSyntax)call).ArgumentList?.Arguments ?? default;
         return args.Count > 0 && model.GetConstantValue(args[0].Expression) is { HasValue: true, Value: int code } && code >= 400 ? ("StatusCode", code.ToString(System.Globalization.CultureInfo.InvariantCulture)) : null;
+    }
+
+    /// <summary>
+    /// D186 (ruling R4): an app's own method that ends the request itself is an exit where it's returned. Its body sets the
+    /// response's status to a constant 4xx/5xx (<c>Response.StatusCode = 404</c>) and returns, or every value it returns is a
+    /// result on D176's list (through such helpers, two deep). Read from its source; a method with none isn't one.
+    /// </summary>
+    sealed record HelperBox((string Kind, string Status)? Value);
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IMethodSymbol, HelperBox> Helpers = new();
+
+    static (string Kind, string Status)? HelperExit(IMethodSymbol method, SemanticModel model, int depth)
+    {
+        if (depth > 2 || method.DeclaringSyntaxReferences is not [var reference] || reference.GetSyntax() is not MethodDeclarationSyntax decl) return null;
+        if (!model.Compilation.ContainsSyntaxTree(decl.SyntaxTree)) return null;
+        var own = model.Compilation.GetSemanticModel(decl.SyntaxTree);
+        var body = (SyntaxNode?)decl.Body ?? decl.ExpressionBody;
+        if (body is null) return null;
+        foreach (var set in body.DescendantNodes().OfType<AssignmentExpressionSyntax>())
+            if (set.Left is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "StatusCode" } left
+                && own.GetSymbolInfo(left).Symbol is IPropertySymbol { ContainingType.Name: "HttpResponse" }
+                && own.GetConstantValue(set.Right) is { HasValue: true, Value: int code } && code >= 400)
+                return ("StatusCode", code.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        var returns = decl.ExpressionBody is { } arrow ? [arrow.Expression]
+            : body.DescendantNodes(n => n is not (LocalFunctionStatementSyntax or LambdaExpressionSyntax)).OfType<ReturnStatementSyntax>().Select(r => r.Expression).ToList();
+        if (returns.Count == 0 || returns.Any(r => r is null)) return null;
+        (string Kind, string Status)? kind = null;
+        var values = new List<ExpressionSyntax>();
+        void Arms(ExpressionSyntax x)
+        {
+            while (x is ParenthesizedExpressionSyntax p) x = p.Expression;
+            if (x is ConditionalExpressionSyntax c) { Arms(c.WhenTrue); Arms(c.WhenFalse); } else values.Add(x);
+        }
+        foreach (var r in returns) Arms(r!);
+        foreach (var r in values)
+        {
+            var e = r;
+            while (e is AwaitExpressionSyntax or ParenthesizedExpressionSyntax or CastExpressionSyntax)
+                e = e switch { AwaitExpressionSyntax a => a.Expression, ParenthesizedExpressionSyntax p => p.Expression, CastExpressionSyntax c => c.Expression, _ => e };
+            if (e is not (InvocationExpressionSyntax or BaseObjectCreationExpressionSyntax) || own.GetSymbolInfo(e).Symbol is not IMethodSymbol m) return null;
+            var inner = m.ContainingType?.ContainingNamespace?.ToDisplayString().StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal) == true
+                ? Exit(m, e, own) : e is InvocationExpressionSyntax ? HelperExit(m, own, depth + 1) : null;
+            if (inner is null || kind is not null && kind != inner) return null;
+            kind = inner;
+        }
+        return kind;
     }
 
     /// <summary>The value the member returns: under <c>return</c>, an expression body, or a lambda's body, through parentheses, <c>await</c>, casts and <c>?:</c>.</summary>
