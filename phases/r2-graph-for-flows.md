@@ -553,3 +553,10 @@ condition, a `throw`) sits earlier in the same block, has no `else`, always leav
 | Z1 | A guard inside a `switch` case section gives the rest of that section no `unless` (the rule reads blocks only), C# and TypeScript; general but rare | Kavita `ScrobblingService.cs:2006–2007`; `event-title.pipe.ts:61–62`; 16 such in Kavita, 0 in Sonarr | read a case section's statements as a block | tiny |
 
 Minor, by the existing rule: a `PartialView(…)` chosen at runtime isn't a page load (nopCommerce `TopicController.TopicDetailsPopup`), as no `PartialView` is.
+
+## 21. Z1 fixed, 2026-11-09 (D182)
+
+Owner: "Yes, fix Z1". Code only, commit `6910875`. A `switch` case's statements are read as a block: a guard there puts the rest of the case
+under `unless`, before the case itself (C# and TypeScript). Tests: 2,165 .NET + 55 extractor pass (a case added to each). Kavita: 11 more calls
+and exits carry an `unless` (12,397 → 12,408), `ScrobblingService.cs:2007` now under `unless auditEntry.SeriesId == null || auditEntry.UserId == null`;
+Sonarr and nopCommerce unchanged (no such guards). Lines and blind spots unchanged. No further check (the owner chose the fix without one).
