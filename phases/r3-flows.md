@@ -87,8 +87,9 @@ Each is brought to the owner one at a time, with a recommendation; none is appli
   The code line decides: such a key end counts as found when Stangent's step on that line leads, through its own steps (and
   `sameAs`), to an end of the same kind (`database`, `outside-call`, `message`); a key `unknown`/`depth` counts when Stangent walks
   on from that step. The key isn't edited. Effect on item 2: Sonarr 62% → 66%, Kavita 69% → 78%, nopCommerce 77% → 84%.
-- **R2, open (listed at step 2): Kavita's `unitOfWork.CommitAsync` as `hub` vs `database`.** Stangent ends it `hub` too
-  (its body names no table), so the kinds agree; the key's detail "writes AppUserWantToRead" isn't checked.
+- **R2, ruled 2026-11-09 (owner: "Yes, leave it", on the recommendation): Kavita's `unitOfWork.CommitAsync` stays `hub`.**
+  Its body saves through the database context and names no table on that line, so Stangent ends it `hub` (289 callers), as the
+  key does; the key's detail "writes AppUserWantToRead" isn't scored. No change to the key or the scorer.
 - **R3, open (listed at step 2): one-page checkout.** Stangent's confirm-order flow is the multi-step `ConfirmOrder` (61 of 63
   steps found); `OpcConfirmOrder` is its own flow. No disagreement.
 - **R4, open (listed at step 2): `return InvokeHttp404()`** (2 product-page exits): not on D176's fixed list, so not an exit.
