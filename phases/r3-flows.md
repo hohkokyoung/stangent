@@ -90,8 +90,9 @@ Each is brought to the owner one at a time, with a recommendation; none is appli
 - **R2, ruled 2026-11-09 (owner: "Yes, leave it", on the recommendation): Kavita's `unitOfWork.CommitAsync` stays `hub`.**
   Its body saves through the database context and names no table on that line, so Stangent ends it `hub` (289 callers), as the
   key does; the key's detail "writes AppUserWantToRead" isn't scored. No change to the key or the scorer.
-- **R3, open (listed at step 2): one-page checkout.** Stangent's confirm-order flow is the multi-step `ConfirmOrder` (61 of 63
-  steps found); `OpcConfirmOrder` is its own flow. No disagreement.
+- **R3, ruled 2026-11-09 (owner: "Yes, keep it", on the recommendation): confirm-order is the multi-step checkout.** The key
+  follows `CheckoutController.ConfirmOrder`; the one-page `OpcConfirmOrder` is its own flow by D171, built but not scored. No
+  change to the key or the scorer.
 - **R4, open (listed at step 2): `return InvokeHttp404()`** (2 product-page exits): not on D176's fixed list, so not an exit.
 - **R5, open (listed at step 2): access filters setting `context.Result`** (Kavita `EntityAccessAttribute` ×4, nopCommerce
   `CheckAccessPublicStore` ×2, `ValidateHoneypot`): Stangent now walks the filters as steps (D184) but, per D181, an assignment
