@@ -508,3 +508,32 @@ test("a URL built from a parameter takes each value its callers pass, paired wit
   ]);
   assert.equal(lines.filter((l) => l.t === "blind").length, 0);
 });
+
+test("a plain script's object methods are points; a URL only a view passes is open; jQuery's callbacks are calls (D191)", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "stangent-js-"));
+  const file = path.join(root, "cart.js");
+  fs.writeFileSync(file, [
+    "var Cart = {",
+    "  add: function (urladd, form) {",
+    "    this.send(urladd, form);",
+    "  },",
+    "  send: function (requestUrl, data) {",
+    "    $.ajax({",
+    "      url: requestUrl,",
+    "      type: 'POST',",
+    "      success: this.done,",
+    "      error: this.failed",
+    "    });",
+    "  },",
+    "  done: function (response) { },",
+    "  failed: function () { }",
+    "};",
+  ].join("\n"));
+  const lines = extract({ root, tsconfig: root, projectId: "p", settings: {}, files: [file] }).lines;
+  const methods = lines.filter((l) => l.t === "node" && l.kind === "method").map((l) => l.t === "node" ? l.name : "").sort();
+  assert.deepEqual(methods, ["Cart.add", "Cart.done", "Cart.failed", "Cart.send"]);
+  const opens = lines.filter((l) => l.t === "fact" && l.kind === "call-open").map((l) => l.t === "fact" ? `${l.data.verb} ${l.data.open.split("#")[1]}` : "");
+  assert.deepEqual(opens, ["POST Cart.add@0"]);
+  const callbacks = lines.filter((l) => l.t === "fact" && l.kind === "call-site" && l.data.callback).map((l) => l.t === "fact" ? `${l.line} ${l.data.callback} ${l.data.target.split("#")[1]}` : "");
+  assert.deepEqual(callbacks, ["9 success Cart.done", "10 error Cart.failed"]);
+});

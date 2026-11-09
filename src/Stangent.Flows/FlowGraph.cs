@@ -25,6 +25,8 @@ internal sealed partial class FlowGraph
     public ILookup<string, string> HandlersByEvent { get; }
     /// <summary>Command type → the job methods running it (<c>is-job</c> facts of kind <c>command</c>).</summary>
     public ILookup<string, string> JobsByCommand { get; }
+    /// <summary>D191: a script's own functions by their global name (<c>AjaxCart.send_ajax</c>), for a view's onclick to call.</summary>
+    public ILookup<string, string> ScriptPoints { get; }
     /// <summary>Entity type → the table that maps it.</summary>
     public Dictionary<string, string> TableOf { get; }
     readonly Dictionary<string, string[]> fileLines = new(StringComparer.Ordinal);
@@ -49,6 +51,8 @@ internal sealed partial class FlowGraph
         rulesByType = facts.Where(f => f.Kind == "rule" && DocIds.ContainingType(f.Owner) is not null)
             .OrderBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line).ThenBy(f => f.Owner, StringComparer.Ordinal)
             .ToLookup(f => DocIds.ContainingType(f.Owner)!, StringComparer.Ordinal);
+        ScriptPoints = Nodes.Values.Where(n => n.Kind == NodeKind.Method && n.Id.StartsWith("ts|", StringComparison.Ordinal) && !n.IsTest && n.File is not null && n.File.EndsWith(".js", StringComparison.Ordinal))
+            .OrderBy(n => n.Id, StringComparer.Ordinal).ToLookup(n => n.Name, n => n.Id, StringComparer.Ordinal);
         TableOf = edges.Where(e => e.Kind == EdgeKind.Maps && Nodes.TryGetValue(e.Source, out var t) && t.Kind == NodeKind.Table)
             .GroupBy(e => e.Target, StringComparer.Ordinal).ToDictionary(g => g.Key, g => Nodes[g.Select(e => e.Source).Order(StringComparer.Ordinal).First()].Name, StringComparer.Ordinal);
     }

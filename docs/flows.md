@@ -47,7 +47,9 @@ the same lines are read in source-line order; each line gives, in this order:
 
 1. an HTTP call the graph matched (`http-match`): a step `calls VERB url` (🟡 with the match's reason when it isn't ✅; for a URL
    its callers give, D190, only the values given by the flow's own code: an `origin` on the branch, reached, or called by a
-   point on it or the component or hook holding one; none such → every value), then the
+   point on it or the component or hook holding one; none such → every value). A button whose onclick calls a script function
+   with the route (D191) runs that function first, 🟡, and the route is the request on the script's line that sends to that
+   argument (its `call-open`), 🟡; never reached → at the button. Then the
    endpoint's action as the next step, at the line its name is written on. The route hop isn't a call. Calls on that line aren't walked.
 2. a table read or saved (`access` with a mapped table): ends `database`.
 3. an outside call (`call` facts from `http-services`): ends `outside-call`.

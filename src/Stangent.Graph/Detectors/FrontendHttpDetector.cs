@@ -64,7 +64,7 @@ public sealed class FrontendHttpDetector : IDetector
             {
                 var at = (call.Owner, call.File, call.Line);
                 if (!paramMatched.Contains(at) && paramSaid.Add(at))
-                    ctx.AddBlindSpot(call.Owner, call.File, call.Line, $"HTTP call to a URL its callers give ({call["of"]} values), none matching a backend endpoint", Name);
+                    ctx.AddBlindSpot(call.Owner, call.File, call.Line, $"HTTP call to a URL its callers give ({call["of"]} {(call["of"] == "1" ? "value" : "values")}) matched no backend endpoint", Name);
                 continue;
             }
             if (matches.Count == 0)

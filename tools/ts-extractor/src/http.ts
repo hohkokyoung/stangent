@@ -146,9 +146,11 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
     const [verb, urlArg, bodyArg] = name === "request"
       ? [stringValue(n.arguments[0], checker)?.toUpperCase() ?? "ANY", n.arguments[1], n.arguments[2]]
       : [ANGULAR_VERBS[name], n.arguments[0], n.arguments[1]];
-    emit(ctx, owner, file, line, verb, stringValue(urlArg, checker), ctx.typed ? "angular-http" : "angular-http-by-name",
-      typeArg(ctx, n, 0), name === "post" || name === "put" || name === "patch" ? valueType(ctx, bodyArg) : null,
-      name !== "request" ? "library" : verb === "ANY" ? "runtime" : "literal");
+    const via = ctx.typed ? "angular-http" : "angular-http-by-name";
+    const body = name === "post" || name === "put" || name === "patch" ? valueType(ctx, bodyArg) : null;
+    const url = stringValue(urlArg, checker);
+    if (blind(url) && fromParameters(ctx, owner, file, line, urlArg, name === "request" ? n.arguments[0] : undefined, verb, name !== "request" ? "library" : "runtime", (u) => u, via, typeArg(ctx, n, 0), body)) return;
+    emit(ctx, owner, file, line, verb, url, via, typeArg(ctx, n, 0), body, name !== "request" ? "library" : verb === "ANY" ? "runtime" : "literal");
     return;
   }
 
@@ -161,13 +163,16 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
     // still matched as GET, as before, but the verb is unknown (D175).
     const unknown = (method && !written) || (opts && !ts.isObjectLiteralExpression(opts));
     const verb = written ?? "GET";
-    emit(ctx, owner, file, line, verb, stringValue(n.arguments[0], checker), "fetch", typeArg(ctx, n, 0), null,
-      unknown ? "runtime" : method ? "literal" : "library");
+    const url = stringValue(n.arguments[0], checker);
+    if (blind(url) && fromParameters(ctx, owner, file, line, n.arguments[0], method ?? undefined, verb, unknown ? "runtime" : "library", (u) => u, "fetch", typeArg(ctx, n, 0), null)) return;
+    emit(ctx, owner, file, line, verb, url, "fetch", typeArg(ctx, n, 0), null, unknown ? "runtime" : method ? "literal" : "library");
     return;
   }
   if (receiver && ts.isIdentifier(receiver) && receiver.text === "axios" && ANGULAR_VERBS[name]) {
-    emit(ctx, owner, file, line, ANGULAR_VERBS[name], stringValue(n.arguments[0], checker), "axios", typeArg(ctx, n, 0),
-      name === "post" || name === "put" || name === "patch" ? valueType(ctx, n.arguments[1]) : null, "library");
+    const body = name === "post" || name === "put" || name === "patch" ? valueType(ctx, n.arguments[1]) : null;
+    const url = stringValue(n.arguments[0], checker);
+    if (blind(url) && fromParameters(ctx, owner, file, line, n.arguments[0], undefined, ANGULAR_VERBS[name], "library", (u) => u, "axios", typeArg(ctx, n, 0), body)) return;
+    emit(ctx, owner, file, line, ANGULAR_VERBS[name], url, "axios", typeArg(ctx, n, 0), body, "library");
     return;
   }
 
@@ -179,8 +184,10 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
       const urlArg = first && ts.isObjectLiteralExpression(first) ? objProp(first, "url") ?? undefined : first;
       const verbArg = settings && ts.isObjectLiteralExpression(settings) ? objProp(settings, "type") ?? objProp(settings, "method") : null;
       const verb = verbArg ? stringValue(verbArg, checker)?.toUpperCase() ?? "ANY" : "GET";
-      emit(ctx, owner, file, line, verb, stringValue(urlArg, checker), "jquery", null, null,
-        verb === "ANY" ? "runtime" : verbArg ? "literal" : "library");
+      if (settings && ts.isObjectLiteralExpression(settings)) callbacks(ctx, owner, file, settings);
+      const url = stringValue(urlArg, checker);
+      if (blind(url) && fromParameters(ctx, owner, file, line, urlArg, verbArg ?? undefined, verb === "ANY" ? "GET" : verb, verbArg ? "runtime" : "library", (u) => u, "jquery", null, null)) return;
+      emit(ctx, owner, file, line, verb, url, "jquery", null, null, verb === "ANY" ? "runtime" : verbArg ? "literal" : "library");
       return;
     }
     const JQUERY_VERBS: Record<string, string> = { get: "GET", post: "POST", getJSON: "GET" };
@@ -219,15 +226,24 @@ function fromParameters(ctx: Context, owner: string, file: string, line: number,
   if (!urls) return false;
   const verbs = verbExpr ? valuesOf(ctx, verbExpr) : null;
   const combos: { verb: string; verbFrom: string; url: string; origin: string; path: string[] }[] = [];
+  const opens = new Map<string, string>();
   for (const u of urls) {
     for (const v of verbs ?? [{ value: defaultVerb, origin: null, via: [], when: {} }]) {
       const both = join(u, { ...v, value: "" });
       if (!both) continue;
       const known = verbs !== null && !v.value.includes(RUNTIME);
       const url = rooted(u.value);
-      if (blind(url)) continue;
+      if (blind(url)) {
+        // D191: the whole URL is an argument some caller outside the scripts passes (a view's onclick): said, for that caller.
+        if (both.open && u.value === RUNTIME) opens.set(`${both.open}\u0000${known ? v.value.toUpperCase() : defaultVerb}`, known ? "literal" : verbs ? "runtime" : defaultFrom);
+        continue;
+      }
       combos.push({ verb: known ? v.value.toUpperCase() : defaultVerb, verbFrom: known ? "literal" : verbs ? "runtime" : defaultFrom, url, origin: both.origin ?? "", path: both.via });
     }
+  }
+  for (const [key, verbFrom] of [...opens].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+    const [open, verb] = key.split("\u0000");
+    ctx.out.fact(DETECTOR, "call-open", owner, file, line, { verb, verbFrom, open, via });
   }
   if (combos.length === 0) return false;
   const values = new Set(combos.map((c) => c.url.split("?")[0])).size;
@@ -243,6 +259,22 @@ function fromParameters(ctx: Context, owner: string, file: string, line: number,
     });
   }
   return true;
+}
+
+/**
+ * D191: what jQuery runs when the request answers (`success: this.success_process`, `error`, `complete`, `beforeSend`): a call
+ * from the code making the request, at the option's line, so a flow walks on into it. An inline function is the caller's own code.
+ */
+function callbacks(ctx: Context, owner: string, file: string, settings: ts.ObjectLiteralExpression) {
+  for (const p of settings.properties) {
+    if (!ts.isPropertyAssignment(p) || !ts.isIdentifier(p.name) || !["beforeSend", "success", "error", "complete"].includes(p.name.text)) continue;
+    const v = p.initializer;
+    if (!ts.isIdentifier(v) && !ts.isPropertyAccessExpression(v)) continue;
+    const target = ctx.symbolId(ctx.checker.getSymbolAtLocation(ts.isPropertyAccessExpression(v) ? v.name : v));
+    if (!target || target === owner) continue;
+    ctx.out.edge(owner, target, "calls");
+    ctx.out.fact("call-sites", "call-site", owner, file, ctx.line(p), { target, label: "0", kind: "calls", callback: p.name.text });
+  }
 }
 
 function emit(ctx: Context, owner: string, file: string, line: number, verb: string, url: string | null, via: string,

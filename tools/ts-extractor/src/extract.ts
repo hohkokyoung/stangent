@@ -177,6 +177,14 @@ export function qualifiedName(decl: ts.Node): string | null {
     const name = text(nameOf(decl));
     return owner && name ? `${owner}.${name}` : null;
   }
+  // D191: a function written as a property of a top-level object (`var AjaxCart = { send_ajax: function () {…} }`), the way
+  // plain scripts group their code: a point of its own, `AjaxCart.send_ajax`.
+  if (((ts.isPropertyAssignment(decl) && isFunctionLike(decl.initializer)) || ts.isMethodDeclaration(decl))
+      && ts.isObjectLiteralExpression(parent) && ts.isVariableDeclaration(parent.parent) && parent.parent.initializer === parent) {
+    const owner = qualifiedName(parent.parent);
+    const name = text(decl.name);
+    return owner && name ? `${owner}.${name}` : null;
+  }
   if (ts.isEnumMember(decl)) {
     const owner = qualifiedName(parent);
     const name = text(decl.name);
@@ -251,6 +259,7 @@ function kindOf(decl: ts.Node): string {
     return isReactComponent(decl) ? "component" : "method";
   }
   if (componentHandler(decl) || effectName(decl)) return "method";
+  if (ts.isPropertyAssignment(decl) && isFunctionLike(decl.initializer)) return "method";
   if (ts.isVariableDeclaration(decl)) {
     if (isFunctionLike(decl.initializer) || isWrappedComponent(decl.initializer)) return isReactComponent(decl) ? "component" : "method";
     return "field";

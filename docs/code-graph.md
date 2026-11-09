@@ -372,7 +372,14 @@ A project that can't be loaded is listed in `loadErrors` and its code is ❓. MS
     `""` or starts with `?` adds a query string. A verb and a URL under the same side of one `?:` (`id ? 'PUT' : 'POST'`)
     pair up. One `call` fact per value, `from` `parameter`, `origin` (the point that gave the constant), `path` (the points
     it went through), `of` (how many values); each match is 🟡 ("the URL is a parameter…") and carries `origin`. Values
-    fitting no endpoint are one ❓, only when none fits. Over 40 values, or none known: ❓ as before.
+    fitting no endpoint are one ❓, only when none fits. Over 40 values, or none known: ❓ as before. It applies to configured
+    wrappers, `fetch`, axios, Angular's `HttpClient` and jQuery (D191). A value that reaches a function no script code calls
+    is that function's argument: a `call-open` fact (`verb`, `open` = `point@argument`), beside the ❓, for a caller outside
+    the scripts (a view's onclick, D191) to fill in.
+  - **Plain scripts (D191):** a function written as a property of a top-level object (`var AjaxCart = { send_ajax: function … }`)
+    is a point, `AjaxCart.send_ajax`; jQuery's `beforeSend`/`success`/`error`/`complete` options naming a function are
+    `call-site` facts at the option's line, with `callback`. A view's onclick that starts by calling a named function with
+    the route adds `script` and `scriptArg` to its `form` fact.
   - **generated clients** whose file isn't in the repo use NSwag's naming
     (`TodoListsClient.getTodoLists()` → the `GetTodoLists` action in `TodoLists`).
   - **fields:** typed results and bodies give `maps-field` lines, matched by JSON name (C# side:

@@ -242,10 +242,10 @@ public sealed class RazorViewsDetector : IDetector
             var id = $"{viewId}#form{++formIndex}";
             ctx.Fragment.Nodes.Add(new Node(id, NodeKind.Form, $"{pathInProject} form {formIndex}", ctx.ProjectId, rel, f.Line, f.Line));
             ctx.AddEdge(viewId, id, EdgeKind.Contains, Label.Certain);
-            Fact("form", id, f.Line, ("method", f.Method), ("route", f.Route ?? ""), ("action", f.Action ?? ""), ("controller", f.Controller ?? ""),
+            Fact("form", id, f.Line, [("method", f.Method), ("route", f.Route ?? ""), ("action", f.Action ?? ""), ("controller", f.Controller ?? ""),
                 ("area", f.Area ?? ""), ("url", f.Url ?? ""), ("runtime", f.Runtime ? "yes" : ""), ("view", viewId),
                 ("viewController", viewController), ("viewArea", viewArea), ("viewAction", Path.GetFileNameWithoutExtension(pathInProject)),
-                ("assembly", ctx.AssemblyName), ("via", f.Via));
+                ("assembly", ctx.AssemblyName), ("via", f.Via), .. (f.Script != "" ? [("script", f.Script), ("scriptArg", f.ScriptArg.ToString(System.Globalization.CultureInfo.InvariantCulture))] : Array.Empty<(string, string)>())]);
             return id;
         }
         var points = new Dictionary<Page.FormRecord, string>(ReferenceEqualityComparer.Instance);
@@ -874,6 +874,9 @@ public sealed class RazorViewsDetector : IDetector
         {
             /// <summary>"onclick" when the target is read from a button's onclick (V2), a guess at what its script does.</summary>
             public string Via { get; init; } = "";
+            /// <summary>D191: the script function an onclick calls with the URL (<c>AjaxCart.addproducttocart_details</c>), and which argument it is.</summary>
+            public string Script { get; init; } = "";
+            public int ScriptArg { get; init; } = -1;
         }
         /// <summary>T9: the form around each place the view renders a partial (by html offset), for the partial's buttons.</summary>
         readonly List<(int Start, int End, FormRecord Form)> formSpans = [];
@@ -1148,8 +1151,34 @@ public sealed class RazorViewsDetector : IDetector
             var values = Regex.Matches(onclick, "\u0001\\d+\u0002");
             if (values.Count != 1) return null;
             var (_, route, action, controller, area, runtime) = Address(values[0].Value, false);
-            return runtime || action is null && route is null ? null
-                : new FormRecord(line, "GET", route, action, controller, area, null, false) { Via = "onclick" };
+            if (runtime || action is null && route is null) return null;
+            var (script, arg) = ScriptCall(onclick, values[0].Value);
+            return new FormRecord(line, "GET", route, action, controller, area, null, false) { Via = "onclick", Script = script, ScriptArg = arg };
+        }
+
+        static readonly Regex Called = new(@"^\s*(?:return\s+)?([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*\(", RegexOptions.CultureInvariant);
+
+        /// <summary>
+        /// D191: an onclick that starts by calling a named function (<c>AjaxCart.addproducttocart_details('@Url.RouteUrl(…)', '#form')</c>):
+        /// the function, and the argument (counted from 0, at the call's own level) holding the URL. ("", -1) when it isn't one.
+        /// </summary>
+        static (string Script, int Arg) ScriptCall(string onclick, string marker)
+        {
+            var m = Called.Match(onclick);
+            if (!m.Success) return ("", -1);
+            int depth = 0, arg = 0;
+            char quote = '\0';
+            for (var i = m.Length; i < onclick.Length; i++)
+            {
+                var c = onclick[i];
+                if (quote != '\0') { if (c == quote && onclick[i - 1] != '\\') quote = '\0'; }
+                else if (c is '\'' or '"' or '`') quote = c;
+                else if (c is '(' or '[' or '{') depth++;
+                else if (c is ')' or ']' or '}') { if (depth-- == 0) return ("", -1); }
+                else if (c == ',' && depth == 0) arg++;
+                if (string.CompareOrdinal(onclick, i, marker, 0, marker.Length) == 0) return (m.Groups[1].Value, arg);
+            }
+            return ("", -1);
         }
 
         /// <summary>An action/formaction value: a literal URL; <c>@Url.Action("Add", "Cart")</c> or <c>@Url.RouteUrl("Name")</c> with constants; else made at runtime.</summary>

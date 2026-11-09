@@ -227,3 +227,4 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D188 · Ruling R6: a C# call into a package (not `System.*`, EF Core or logging) is a `call-site` with no target; flows show it as a step ending "a package's code, not walked"
 - D189 · Shared flows: each hub and depth stop a flow continues into is its own flow (kind `shared`, walked once, transitively), named by the link's `flow`; the scorer follows them; a field or property read is no step
 - D190 · A frontend URL built from parameters takes each value the repo's own callers pass (🟡, with the point that gave it); a flow keeps the values its own code gave
+- D191 · A view's onclick walks into the script function it calls, the route placed where the script sends to that argument; a top-level object's functions are points; jQuery's callbacks are calls; D190 applies to every HTTP call style

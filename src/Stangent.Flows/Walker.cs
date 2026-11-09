@@ -22,6 +22,8 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
     readonly Item root = new() { Step = new Step { What = "start", At = flow.Start.At, Kind = "start" } };
     readonly Dictionary<string, Item> walked = new(StringComparer.Ordinal);
     readonly HashSet<string> endpointsSeen = new(StringComparer.Ordinal);
+    /// <summary>D191: an onclick's route, waiting for the line in its script that sends to the URL the onclick passed (<c>point@arg</c>).</summary>
+    readonly Dictionary<string, List<Fact>> pending = new(StringComparer.Ordinal);
     string? firstAction;
     public HashSet<Fact>? OnLoadSeen { get; init; }
     public bool ActorFixed { get; init; }
@@ -99,10 +101,29 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 FlowGraph.ConditionsOf(conds.FirstOrDefault(c => target is not null && c["target"] == target) ?? conds.FirstOrDefault() ?? Empty);
             var consumed = new HashSet<string>(StringComparer.Ordinal);
 
-            foreach (var http in Narrow(g.Facts(point, "http-match").Where(f => f.Line == line), branch).OrderBy(f => f["endpoint"], StringComparer.Ordinal))
+            var https = Narrow(g.Facts(point, "http-match").Where(f => f.Line == line), branch).OrderBy(f => f["endpoint"], StringComparer.Ordinal).ToList();
+            if (https.Count > 0 && OnclickScript(point, line) is { } script)
+            {
+                // D191: the button's onclick runs a script function with the route as an argument; the script is walked, and the
+                // route is the request where the script sends to that argument. If it never does, the route stays here.
+                var key = $"{script.Point}@{script.Arg}";
+                pending[key] = https;
+                var item = Add(parent, new Step { What = $"runs {g.Name(script.Point)}, the button's onclick", At = at, Kind = "call", Point = script.Point, Depth = depth,
+                    Guessed = true, GuessReason = "the view's onclick calls a script function by its global name; which script files the page loads isn't read" });
+                Into(item, script.Point, depth, branch);
+                if (pending.Remove(key, out var left)) https = left; else https = [];
+            }
+            foreach (var http in https)
             {
                 Http(http, at, CondsFor(null), parent, depth, branch);
                 consumed.UnionWith(sites.Select(x => x["target"]));
+            }
+            var opened = false;
+            foreach (var open in g.Facts(point, "call-open").Where(f => f.Line == line).OrderBy(f => f["open"], StringComparer.Ordinal))
+            {
+                if (!pending.Remove(open["open"], out var routes)) continue;
+                opened = true;
+                foreach (var http in routes) Http(http, at, CondsFor(null), parent, depth, branch, $"the URL is the one the button's onclick passes ({open["verb"]} here)");
             }
             foreach (var access in g.Facts(point, "access").Where(f => f.Line == line && g.TableOf.ContainsKey(f["entity"])).OrderBy(f => f["entity"], StringComparer.Ordinal))
             {
@@ -163,7 +184,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 if (consumed.Contains(target) || later.Contains(target)) continue;
                 Call(point, site, target, at, CondsFor(target), parent, depth, branch);
             }
-            foreach (var blind in g.BlindByOwner[point].Where(b => b.Line == line).OrderBy(b => b.Reason, StringComparer.Ordinal))
+            foreach (var blind in g.BlindByOwner[point].Where(b => b.Line == line && !(opened && b.Reason.EndsWith("URL built at runtime", StringComparison.Ordinal))).OrderBy(b => b.Reason, StringComparer.Ordinal))
                 Add(parent, new Step
                 {
                     What = $"can't be followed: {blind.Reason}", At = new At(blind.File, blind.Line, g.Code(blind.File, blind.Line)),
@@ -192,6 +213,16 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             }
         var kept = given.Where(f => context.Contains(f["origin"])).ToList();
         return kept.Count == 0 ? all : all.Where(f => f["origin"] == "" || kept.Contains(f));
+    }
+
+    /// <summary>D191: the script function a form's onclick calls with its route, when exactly one script point has that name.</summary>
+    (string Point, string Arg)? OnclickScript(string point, int line)
+    {
+        var form = g.Facts(point, "form").FirstOrDefault(f => f.Line == line && f["script"] != "");
+        if (form is null) return null;
+        var name = form["script"];
+        var named = g.ScriptPoints[name].ToList();
+        return named.Count == 1 ? (named[0], form["scriptArg"]) : null;
     }
 
     /// <summary>A point and the points holding it: <c>ts|f.tsx#A.b.c</c> → itself, <c>…#A.b</c>, <c>…#A</c>.</summary>
@@ -228,6 +259,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             return;
         }
         var kind = site["kind"] == "renders" ? "renders" : "call";
+        var callback = site["callback"];
         var guessedSite = site["label"] == "1";
         // G5: a value taken from a hook's result (`const { refetch } = useX()`) and called: the hook stands for it, a guess.
         var byValue = !guessedSite && IsHook(target) && !at.Code.Contains(FlowGraph.ShortName(tnode), StringComparison.Ordinal);
@@ -262,7 +294,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             var several = runs.Count > 1;
             var item = Add(parent, new Step
             {
-                What = kind == "renders" ? $"shows {g.Name(run)}" : $"calls {g.Name(run)}", At = at, Kind = kind, Point = run, Conditions = conds, Depth = depth,
+                What = kind == "renders" ? $"shows {g.Name(run)}" : callback != "" ? $"when the request answers ({callback}), runs {g.Name(run)}" : $"calls {g.Name(run)}", At = at, Kind = kind, Point = run, Conditions = conds, Depth = depth,
                 Guessed = several || guessedSite || byValue,
                 GuessReason = several ? $"one of {runs.Count}: {string.Join(", ", runs.Select(g.Name))}" : guessedSite ? OverloadReason
                     : byValue ? $"calls a value taken from {tnode.Name}'s result; what it runs isn't known, so the hook stands for it" : null,
@@ -304,14 +336,15 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         }
     }
 
-    void Http(Fact http, At at, List<Condition> conds, Item parent, int depth, List<string> branch)
+    void Http(Fact http, At at, List<Condition> conds, Item parent, int depth, List<string> branch, string? because = null)
     {
         var endpoint = http["endpoint"];
-        var guessed = http["label"] != "certain";
+        var guessed = http["label"] != "certain" || because is not null;
+        var reason = string.Join("; ", new[] { because, http["reason"] }.Where(r => !string.IsNullOrEmpty(r)));
         var item = Add(parent, new Step
         {
             What = $"calls {http["verb"]} {http["url"]}".TrimEnd(), At = at, Kind = "http", Point = endpoint, Conditions = conds, Depth = depth,
-            Guessed = guessed, GuessReason = guessed ? (http["reason"] != "" ? http["reason"] : "no reason recorded") : null,
+            Guessed = guessed, GuessReason = guessed ? (reason != "" ? reason : "no reason recorded") : null,
         });
         var actions = endpoint == "" ? [] : g.Out(endpoint, EdgeKind.RoutesTo).Select(e => e.Target).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         if (actions.Count == 0)

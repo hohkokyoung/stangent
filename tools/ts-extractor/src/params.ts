@@ -8,7 +8,7 @@ import { BASE, RUNTIME, boundTo, isBaseName, stringValue } from "./values.ts";
  * (`origin`: the point whose call passes a constant), every point it passed through (`via`), and which side of each `?:` it
  * took (`when`, by the condition's text), so a verb and a URL written under the same condition pair up.
  */
-export interface Valued { value: string; origin: string | null; via: string[]; when: Record<string, boolean> }
+export interface Valued { value: string; origin: string | null; via: string[]; when: Record<string, boolean>; open?: string }
 
 const MAX = 40;   // more values than this: not followed
 const DEPTH = 8;  // functions passed through
@@ -16,7 +16,7 @@ const DEPTH = 8;  // functions passed through
 /** The values, when at least one comes from a caller's argument; null when the expression doesn't depend on one. */
 export function paramValues(ctx: Context, expr: ts.Expression | undefined): Valued[] | null {
   const r = values(ctx, expr, new Map(), 0);
-  return r && r.some((v) => v.origin !== null) ? dedupe(r) : null;
+  return r && r.some((v) => v.origin !== null || v.open) ? dedupe(r) : null;
 }
 
 /** Every value an expression can take, read as {@link paramValues} does; null when the code shows none. */
@@ -28,7 +28,7 @@ export function valuesOf(ctx: Context, expr: ts.Expression | undefined): Valued[
 /** Two values joined, or null when they took opposite sides of one condition. */
 export function join(a: Valued, b: Valued): Valued | null {
   for (const [k, v] of Object.entries(b.when)) if (k in a.when && a.when[k] !== v) return null;
-  return { value: a.value + b.value, origin: a.origin ?? b.origin, via: [...new Set([...a.via, ...b.via])], when: { ...a.when, ...b.when } };
+  return { value: a.value + b.value, origin: a.origin ?? b.origin, via: [...new Set([...a.via, ...b.via])], when: { ...a.when, ...b.when }, open: a.open ?? b.open };
 }
 
 const one = (value: string): Valued[] => [{ value, origin: null, via: [], when: {} }];
@@ -36,7 +36,7 @@ const one = (value: string): Valued[] => [{ value, origin: null, via: [], when: 
 function dedupe(vs: Valued[]): Valued[] {
   const seen = new Map<string, Valued>();
   for (const v of vs) {
-    const key = `${v.value}\u0000${v.origin}\u0000${JSON.stringify(Object.entries(v.when).sort())}`;
+    const key = `${v.value}\u0000${v.origin}\u0000${v.open}\u0000${JSON.stringify(Object.entries(v.when).sort())}`;
     if (!seen.has(key)) seen.set(key, v);
   }
   return [...seen.values()];
@@ -163,7 +163,12 @@ function fromCallers(ctx: Context, param: ts.ParameterDeclaration, prop: string 
   if (!ts.isFunctionLike(fn)) return null;
   const index = fn.parameters.indexOf(param);
   const calls = callers(ctx).get(fn) ?? [];
-  if (calls.length === 0) return null;
+  if (calls.length === 0) {
+    // D191: no code in the repo's scripts calls it, so its caller is outside them (a view's onclick): the value is that
+    // caller's argument, said as `open` (the point and the argument), for whoever knows the call to fill in.
+    const point = pointOf(ctx, fn);
+    return point ? [{ value: RUNTIME, origin: null, via: [], when: {}, open: `${point}@${index}${prop !== null ? `.${prop}` : ""}` }] : null;
+  }
   const out: Valued[] = [];
   for (const c of calls) {
     let arg: ts.Expression | undefined = c.arguments[index] ?? param.initializer;
@@ -174,10 +179,15 @@ function fromCallers(ctx: Context, param: ts.ParameterDeclaration, prop: string 
     const owner = ctx.ownerId(c);
     const vs = arg ? values(ctx, arg, new Map(), depth + 4) ?? one(RUNTIME) : one(RUNTIME);
     for (const v of vs)
-      out.push({ value: v.value, origin: v.origin ?? (v.value.includes(RUNTIME) ? null : owner), via: [owner, ...v.via.filter((x) => x !== owner)], when: v.when });
+      out.push({ value: v.value, origin: v.origin ?? (v.value.includes(RUNTIME) ? null : owner), via: [owner, ...v.via.filter((x) => x !== owner)], when: v.when, open: v.open });
     if (out.length > MAX) return null;
   }
   return out;
+}
+
+/** The point a function is: its own declaration, or the variable or object property it's written as. */
+function pointOf(ctx: Context, fn: ts.SignatureDeclaration): string | null {
+  return ctx.declId(fn) ?? (fn.parent && (ts.isVariableDeclaration(fn.parent) || ts.isPropertyAssignment(fn.parent)) ? ctx.declId(fn.parent) : null);
 }
 
 function property(o: ts.ObjectLiteralExpression, name: string): ts.Expression | undefined {
@@ -216,5 +226,7 @@ export function declaredFunction(checker: ts.TypeChecker, callee: ts.Expression)
   if (!d) return null;
   if (ts.isFunctionDeclaration(d)) return d;
   if (ts.isVariableDeclaration(d) && d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer))) return d.initializer;
+  if (ts.isPropertyAssignment(d) && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer))) return d.initializer;
+  if (ts.isMethodDeclaration(d)) return d;
   return null;
 }

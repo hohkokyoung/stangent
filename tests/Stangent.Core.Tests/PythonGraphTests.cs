@@ -184,9 +184,10 @@ public class PythonGraphTests(FlaskShop shop) : IClassFixture<FlaskShop>
         Assert.True(Line(app + "loadItem", Endpoint("GET /items/{item_id}"), EdgeKind.CallsHttp));
         Assert.True(Line(app + "loadLevels", Endpoint("GET /api/stock/levels"), EdgeKind.CallsHttp));
         Assert.Contains(Reasons(app + "loadNothing"), r => r.Contains("matched no backend endpoint"));
-        Assert.Contains(Reasons(app + "loadBuilt"), r => r.Contains("built at runtime"));
+        // D190: `loadBuilt("/x")` gives its URL, so it's read from the caller, and fits no route.
+        Assert.Contains(Reasons(app + "loadBuilt"), r => r.Contains("its callers give (1 value) matched no backend endpoint"));
         var python = shop.Stats.Python!;
-        Assert.Equal((5, 4, 1, 1), (python.FrontendCalls, python.FrontendCallsMatched, python.FrontendCallsUnmatched, python.FrontendCallsRuntimeUrl));
+        Assert.Equal((6, 4, 2, 0), (python.FrontendCalls, python.FrontendCallsMatched, python.FrontendCallsUnmatched, python.FrontendCallsRuntimeUrl));
     }
 
     [Fact]
