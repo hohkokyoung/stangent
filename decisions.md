@@ -217,3 +217,4 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D178 · Areas by a fixed folder rule (screen's home folder; shared folders never a home; jobs by who links to them; split over 40 flows; never merged by code); ties listed for a person
 - D179 · Every flow shows name, start, actor (fixed rule from guards and access), inputs, checks, steps, ends, scenarios (main path plus one per early exit), links, guesses, settings; all by code
 - D180 · Flows and areas committed under `specs/` (`flows/<id>.json|.md`, `index.json`, `areas.yaml` by folders with ties); `stangent flows build|show|check`, `areas propose|check`; contracts `flows` v1, `areas` v1
+- D181 · Layer 2's rules for load (`on-load`, effect points), jobs (`is-job`, `jobInterfaces`), queues (a command made in a call's argument → its handler), conditions and exits (quoted, D176's list), and the ✅ URL rule (`http-match` reasons)

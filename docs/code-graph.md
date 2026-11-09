@@ -8,6 +8,8 @@ v3 (Phase 1c) adds 📜 `changes-with` lines from git history and `meta.history`
 `opens-screen` lines from Playwright specs, `meta.dirtyFiles` and `meta.notInCommit`. v5 (rebuild layer 2,
 `phases/r2-graph-for-flows.md`) adds what flows need: `writes` and `reads` lines, the facts in "What flows read" below,
 the `validation` detector, a React component's own handlers as points, and real verbs from an app's own verb attributes.
+Rebuild layer 3's step 1 (`phases/r3-flows.md`, D171–D176) grew v5 in place: what runs on load, what a job is, `queues` lines,
+conditions and early exits, and ✅ for a URL match code proves.
 
 ## Where it lives
 
@@ -67,10 +69,14 @@ everything that can reach X by following lines backwards.
 | `contains` | project → file → type → member, table → column | no (structure) |
 | `imports` | a Python file → the file or symbol it imports | no (structure) |
 | `opens-screen` | a Playwright spec's `goto` → the screen it opens; stored apart (below) | no, and no other reader sees it |
+| `queues` | code that queues work → the job that runs it later (D173): a queued command's type → its handler (🟡, `jobs`), a background-job lambda → its method (✅, `background-jobs`) | yes, like `triggered-by` |
 
 ### Labels
 
-- ✅ `certain`: the compiler proved it. In Python, where there's no compiler: one binding in scope, in the same module or through a relative import.
+- ✅ `certain`: **proved by code** (D175): the compiler proved it, or one exact match of constant text. In Python, where there's no
+  compiler: one binding in scope, in the same module or through a relative import. A frontend call or a form's target is ✅ when
+  its verb is constant, its path is constant text (only route-parameter values from runtime), its API root is constant, and
+  exactly one endpoint fits (below, `http-match`).
 - 🟡 `guessed`: a detector inferred it from a pattern.
 - 📜 `usually changes together`: from git history (below). Never walked.
 - ❓ **blind spots** are stored separately: a place, a reason and the detector that recorded it.
@@ -203,10 +209,13 @@ them; list names to run only those; `[none]` runs none. Per-detector settings go
 | `entity-tables` | `entityBaseTypes: [Ns.BaseEntity]`, for ORMs mapped by convention |
 | `config-keys` | — |
 | `validation` | — (v5: rules as `rule` facts, below) |
+| `jobs` | `jobInterfaces: [Ns.IExecute`1, Ns.IScheduleTask]`: an app's own job interfaces, added to the built-ins (Quartz's `IJob`, Coravel's `IInvocable`; a .NET `BackgroundService`'s `ExecuteAsync`) |
+| `conditions` | — (conditions and early exits, below) |
+| `on-load` | — (MVC GET actions returning a view, below) |
 | `http-services` | `services: ["stock-api=Shop.Stock"]`, for service names without an Aspire AppHost |
 | `playwright-specs` | — (below) |
 | `flask-routes` | — (under Python, below) |
-| `frontend-http` | `wrappers: ["useApiQuery:path", "useApiMutation:path:method"]`: in-house call helpers as `name:urlProperty[:verbProperty][@VERB]` (a plain `name` takes the URL as its first argument; `#N` names the Nth argument instead of a property, e.g. `send:#1:#0`; `@VERB` gives the verb, else it's read off the name: delete/remove, put/update, patch, post/save/mutation, else GET) |
+| `frontend-http` | `wrappers: ["useApiQuery:path", "useApiMutation:path:method"]`: in-house call helpers as `name:urlProperty[:verbProperty][@VERB]` (a plain `name` takes the URL as its first argument; `#N` names the Nth argument instead of a property, e.g. `send:#1:#0`; `@VERB` gives the verb, else it's read off the name: delete/remove, put/update, patch, post/save/mutation, else GET; a verb read off the name is 🟡, D175) |
 
 `aspnetcore-routes` also takes `groupConventions: ["Ns.IEndpointGroup=/api/{type}"]` for route groups
 mapped by convention rather than in code (CleanArchitecture registers each `IEndpointGroup` at
@@ -232,8 +241,21 @@ Facts code reads to lay out a flow; no AI. Each is a row in the `facts` table (`
 | `fallback-auth` | the project | `authenticatedUser` (`required`), `schemes`: `options.FallbackPolicy = …`, which holds for actions with no marker of their own | `aspnetcore-routes` |
 | `rule` | the property checked | `rule` (`Required`, `GreaterThan`, `SetValidator`…), `args` (constants as values, enum members by name: `DataType(EmailAddress)`), `via` (`attribute`/`fluentvalidation`), `set` (`PostValidator`), `message` (any `WithMessage…`: a constant's text, else the expression), `conditional`, `modifiers` (the rule's other modifiers by name, `|`-joined: Sonarr's `AsWarning` means it only warns, V5), `severity` (a constant `WithSeverity(…)`'s member). A chained call on the rule's options (`IRuleBuilderOptions`: `WithMessage`, `When`, an app's `AsWarning`) is a modifier, one on the rule builder a rule (T12); by its `With…`/`When…`/`Unless…` name only when the type isn't known (N4) | `validation` |
 | `access` | a method | `entity`, `mode` (`write`/`read`), `via`; linking turns it into `writes`/`reads` when the entity has a table | `entity-tables` |
+| `on-load` | a component, a hook, a page or an MVC action | what runs as a screen opens (D171, D176): `framework` (`react`, `angular`, `router`, `mvc`), `hook` (`useEffect`, `useLayoutEffect`, a component's own `use…` hook, `componentDidMount`, `ngOnInit`, `resolve`, `loader`, `View`), `handler` (the point that runs: an effect's own point `Component.effectN`, the method, the resolver's `resolve`, the action), `deps` (an effect's dependencies, `\|`-joined as written), `runs` (`first render`; `first render, then again when a dependency changes`; `first render, then after every render` for an effect with no list; `first render, then every render` for a hook; `before the screen opens`; `when the page is requested`), `key` (a resolver's key), `view`, `verbs` (MVC) | the TypeScript extractor; `on-load` (MVC, while linking) |
+| `is-job` | the method a job runs | a system job (D171): `kind` (`command`: a generic job interface's handler, `command` its type; `scheduled`: a non-generic one; `hosted`: a `BackgroundService`; `recurring`: a Hangfire `RecurringJob.AddOrUpdate`, with `id` and `schedule`), `interface` | `jobs`; `background-jobs` (recurring) |
+| `queue` | the method that queues | a command made in a call's argument (`Push(new RefreshSeriesCommand(…))`, also inside a lambda or a list) and handed to a method taking any command: a parameter typed as the job interface's constraint (`where TCommand : Command`), a type parameter constrained to it, or a list of either. `type`, `via` (`IManageCommandQueue.Push`), `arg` (as written). Linking draws `queues` to each `is-job` of that `type`, else ❓. One passed along from a parameter, field, property or type parameter isn't queued by this call; one whose type is made at runtime (`Deserialize<Command>(…)`) is ❓ | `jobs` |
+| `condition` | the calling method or function | a call under at least one condition of its own member (D174): `call` (`Type.Method`; C#: calls to the repo or to anything outside `System.*`, `System.Net.Http` kept; TypeScript: every call), `target` (its point, when on the map), `conditions` (JSON, innermost first: `kind` `if`/`else` (also `?:`), `case` with the `switch` value as `text` and the label as `case`, `catch` (its declaration and `when` filter), `loop` (its header as written), `null` (C#'s `x ?? throw`); `text` quoted exactly; `line`) | `conditions`; the TypeScript extractor |
+| `exit` | the method or function | an early exit (D174, D176's fixed list): `kind` (`BadRequest`, `NotFound`, `Unauthorized`, `Forbid`, `Challenge`, `Redirect` (also `LocalRedirect…`), `StatusCode` with a constant code of 400 or more, `throw`), `result` (the method or result type: `RedirectToRoute`, `NotFoundResult`), `status`, `text` (the returned expression or the `throw`, exactly), `exception` (the thrown type), `conditions`. Only an ASP.NET Core result that the member returns (through `await`, casts and `?:`; a `return`, an expression body or a lambda's body) counts; a filter setting `context.Result` doesn't | `conditions`; the TypeScript extractor (`throw`) |
+| `http-match` | the calling method, function or form | each frontend call's or form's match, its verdict and why (D175): `endpoint`, `label` (`certain`/`guessed`), `reason` (`""` when ✅; else each failed test: `verb read off the wrapper's name…`, `verb unknown`, `2 endpoints fit (GET /api/v3/series and GET /api/v5/series)`, `path built at runtime (…)`, `API root read at runtime ({base} stands for /api)`, a form's `method taken from the forms around its partial`, `controller or action taken from the view's own folder and name`, `opened by a button's onclick script…`, a generated client's `matched by nswag's naming…`), `verb`, `url`. A line is ✅ when any call behind it is. Written while linking | `frontend-http`, `razor-views` |
 
 Also read by flows:
+- **Runs on load (D171, D176).** Every React effect written directly in a component's or hook's body runs on first render; its
+  function is a point of its own, `Component.effectN` (N counts that body's effects from 1), which the component `uses`, so impact
+  still reaches what it calls. An effect anywhere else (inside a condition, in a plain function) or with dependencies that aren't
+  a written list is ❓, never guessed. `componentDidUpdate`, `ngOnChanges` and `ngAfterViewInit` aren't read.
+- **Verbs for D175.** A call's `verbFrom`: `literal` (written at the call), `library` (fixed by the API: `http.get`, `axios.post`,
+  `fetch` with no method), `setting` (a wrapper's `@VERB`), `name` (read off the wrapper's name), `runtime`. Only the first three are
+  constant. A const object's property (`export const environment = { apiUrl: '/api/' }`) is a constant value, as written in that file.
 - **Handlers are points (G5).** A function a React component declares in its own body (`const handleSave = useCallback(…)`) is
   `Component.handleSave`; the component `uses` it, so impact and screen slices still reach what it calls, one step deeper.
   A value bound from a call (`const { addSeries } = useAddSeries()`) used in a handler gives a `calls` line to that function.
@@ -306,7 +328,8 @@ file would mislead it.
 - A file that can't be read, or of whose operations fewer than one in five fit any endpoint (a client's spec for someone else's
   API), is listed as `ignored` with the reason and counts for nothing.
 
-Not read yet: minimal APIs' `RequireAuthorization()`, React route-guard wrappers, resolving text keys to the words in the
+Not read yet: a guard clause before a call (`if (!x) return;` puts what follows under "not x", r2 X1), hooks that rerun on change
+(`componentDidUpdate`, `ngOnChanges`), jobs scheduled by type name, minimal APIs' `RequireAuthorization()`, React route-guard wrappers, resolving text keys to the words in the
 language file, views compiled only at runtime (nopCommerce's plugins: a ❓ per view), Razor Pages' handlers as endpoints,
 links (`<a asp-action>`) and redirects as navigation, and a partial looked up through the requesting controller's folder rather
 than the view's own.

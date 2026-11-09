@@ -461,3 +461,49 @@ Tests: 2,159 .NET + 50 extractor pass. Fixture: `tests/fixtures/shop/Shop.Web/Vi
 | W1 | markup in a `<script>`'s text is still not the page's, but a submit button written there (`type="submit"`, or a `<button>` with no type) submits the form around the script, or through T9 the form around its partial: a `ui-event` with `built: script`, 🟡; one whose tag's own text returns false doesn't | 5 buttons, the 5 W1 named: `_Maintenance.DBBackups.cshtml:88, 91` → Maintenance's form (partial → form 24 → 25); `Plugin/List.cshtml:277, 279` → `plugins-form-local`; `Menu/MenuItemSelectProductPopup.cshtml:104` → its form. Blind spots 760, unchanged |
 
 Sonarr and Kavita have no Razor views, so they were not rebuilt.
+
+## 17. What layer 3 needs: load, jobs, queues, conditions and exits, ✅ URL rule, 2026-11-09 (D171–D176, D181)
+
+Owner: "Yes, new session" (r3 step 1, `phases/r3-flows.md`). Code only, no paid AI, no agents. Commit `18277b3`.
+Tests: 2,165 .NET (6 new, `FlowStartsTests`) + 55 extractor (5 new, `flow.test.ts`) pass. Fixtures: React and Angular projects
+in `flow.test.ts`; the shop's `Shop.Core/Jobs.cs` (job interfaces, a queue, a runtime-typed command), `Shop.Web/Guards.cs`
+(exits), `Messages.cs` (a Hangfire wrapper), its Razor `AccountController` (GET pages). Rules: D181; docs: `docs/code-graph.md`.
+
+| # | Built | Sonarr | Kavita | nopCommerce |
+|---|---|---|---|---|
+| Runs on load | `on-load` facts: React effects (each a point, `Component.effectN`), a component's own hooks, `componentDidMount`; Angular `ngOnInit`, route resolvers and loaders; MVC GET actions returning a view. ❓ for an effect outside a body or with unlisted dependencies | 878: 190 `useEffect`, 10 `useLayoutEffect`, 678 own hooks; 0 ❓ | 139: 108 `ngOnInit`, 31 resolvers | 406 MVC actions |
+| Is a job | `is-job` facts from job interfaces (`jobInterfaces`; Quartz, Coravel, `BackgroundService` built in) and Hangfire recurring registrations | 38 command handlers (`IExecute`1`) | 27 recurring (`scan-libraries` → `TaskScheduler.EnqueueScanLibraries`) | 17 scheduled tasks (`IScheduleTask`) |
+| Queues | 🟡 `queues`: a command made in a queue call's argument → its handler; ✅ for Hangfire lambdas, also through an app's own wrapper passing its expression on | 17 🟡 (18 `Push`/`PushMany` sites); 4 ❓ for commands typed at runtime (the command API, the executor) | 144 ✅, 12 through `ScanJobQueue`; 4 ❓ resolved | none (no queue in code) |
+| Conditions | `condition` facts: per call, `if`/`else`/`?:`/case/`catch`/loop, quoted, innermost first | 10,163 | 11,000 | 18,795 |
+| Early exits | `exit` facts: D176's framework results returned, and every `throw` | 854 (821 `throw`, 15 `NotFound`, 12 `Redirect`…) | 939 (447 `throw`, 350 `BadRequest`, 69 `NotFound`, 62 `Unauthorized`…) | 2,388 (1,324 `Redirect…`, 962 `throw`, 89 `Challenge`…) |
+| ✅ URL rule | `http-match` facts, each 🟡 with the test it failed; a line is ✅ when a call behind it is | calls-http ✅ 0 → **86**, 🟡 129 → 43 | ✅ 0 → **405**, 🟡 445 → 35 | forms unchanged (✅ 248, 🟡 115, each now with its reason); its one script call 🟡 → ✅ |
+
+**Totals** (before → after): Sonarr 40,413 → 40,613 points, 183,499 → 184,151 lines, blind spots 327 → 331 (+4 runtime-typed
+commands). Kavita 32,403 points, 156,300 → 156,432 lines, blind spots 122 → 115 (4 Hangfire ❓ resolved through the wrapper; 3 fewer
+URL ❓). nopCommerce 44,072 points, 204,784 lines, 760 blind spots, all unchanged (new facts only). Load errors 0; cross-checks unchanged.
+
+**The D177 trial's starts are covered:**
+- Sonarr **Add series**: `useAddSeries` → ✅ `POST /api/v5/Series`; `SeriesAddedHandler.Handle` → 🟡 `queues` → `RefreshSeriesService.Execute`,
+  an `is-job` (`RefreshSeriesCommand`). **Series details** opens with 9 hooks and 3 effects. Before, only tests reached `Execute` by `calls`.
+- Kavita **Want to Read**: all five want-to-read calls ✅. **Series detail** and **the manga reader**: `ngOnInit` facts. **Scan libraries**:
+  `is-job` (recurring, `scan-libraries`) on `EnqueueScanLibraries`, which ✅ `queues` `IScannerService.ScanLibraries` through `ScanJobQueue.Enqueue`.
+- nopCommerce **Register**: 59 conditioned calls and 7 exits; D174's example comes out exactly: `RedirectToRoute(NopRouteNames.Standard.REGISTER_RESULT,
+  new { resultId = (int)UserRegistrationType.Disabled, returnUrl })` under `if _customerSettings.UserRegistrationType == UserRegistrationType.Disabled`;
+  `RegisterCustomerAsync` under `if ModelState.IsValid`. **QueuedMessagesSendTask**: an `is-job`. The GET `Register` is an `on-load`.
+
+**What changed in matching, and why:** Kavita's `environment.apiUrl` is now read as written (`http://localhost:5000/api/`), so its calls match whole
+routes instead of their tails: 19 lines dropped, all tail matches to the wrong controller (`getChapterMetadata` → `GET /api/ColorScape/chapter` and 4
+more; the right `GET /api/Chapter` stays, now ✅); 14 added (1 right, `getExternalSeriesDetails`; 13 🟡 where the path is mostly runtime). Sonarr's
+config now states `@GET` on its four query helpers (they fetch with GET when no method is given), as a setting, not code.
+
+**Faults found, general, not fixed (the owner's call):**
+
+| # | Fault | Where it shows | Suggested fix | Size |
+|---|---|---|---|---|
+| X1 | A call after an early exit (`if (!x) return;`, `if (…) throw …;`) isn't marked as running only when that condition is false: D174 reads the conditions *around* a call, not guard clauses before it | handlers and services written guard-first, on every stack | add an `after-exit` condition: the guard's text, meaning "only if not" | small |
+| X2 | A URL whose only fixed part is the API root (`/api/{*}`) matches every endpoint with that many segments, 🟡 | Kavita `saveFilter`, `encodeFilter`: 2 calls → 6 lines | ❓ when no fixed segment past the root | small |
+| X3 | The API root comes from the default build's file (Angular `environment.ts`); a build that swaps the file (`fileReplacements`) could change the path and give a wrong ✅ | Kavita: prod uses `${BASE_URL}api/`, same path, so no wrong ✅ today | read `fileReplacements` and require every variant to give the same path | small–medium |
+| X4 | A runtime route value next to a fixed route of the same shape is "2 endpoints fit", 🟡, even when the value's type rules the fixed one out | Sonarr `DELETE /api/v5/Queue/{*}` vs `/Queue/bulk` (5 calls); Kavita `getSeries` | use the value's type (a number can't be `bulk`) | small |
+| X5 | Hooks that rerun on change aren't read: `componentDidUpdate`, `ngOnChanges`; nor jobs scheduled by type name (Sonarr's `TaskManager`: `TypeName = typeof(RefreshSeriesCommand).FullName`) | Sonarr's 12-hour Refresh series schedule | read when a flow needs it | small each |
+
+Next (D158): a narrow fresh check of these additions only, estimated at 60–100K tokens, on the owner's go.
