@@ -175,7 +175,35 @@ public sealed class ConditionsDetector : IDetector
             {
                 if (node is InvocationExpressionSyntax or BaseObjectCreationExpressionSyntax) Call(ctx, file, (ExpressionSyntax)node);
                 if (node is ThrowStatementSyntax or ThrowExpressionSyntax) Throw(ctx, file, node);
+                if (node is AssignmentExpressionSyntax set) FilterResult(ctx, file, set);
             }
+    }
+
+    /// <summary>
+    /// D187 (ruling R5): a filter's <c>context.Result = …</c> stops the request before the action runs, so it's an exit there:
+    /// the <c>Result</c> of an ASP.NET filter context (<c>Microsoft.AspNetCore.Mvc.Filters</c>), set to a result on D176's list or
+    /// an app's helper making one (D186).
+    /// </summary>
+    void FilterResult(ExtractContext ctx, SourceFile file, AssignmentExpressionSyntax set)
+    {
+        if (set.Left is not MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Result" } left
+            || file.Model.GetSymbolInfo(left).Symbol is not IPropertySymbol prop
+            || !Derives(prop.ContainingType, "Microsoft.AspNetCore.Mvc.Filters")
+            || ctx.OwnerId(set, file.Model) is not { } owner) return;
+        var value = set.Right;
+        while (value is ParenthesizedExpressionSyntax or CastExpressionSyntax or AwaitExpressionSyntax)
+            value = value switch { ParenthesizedExpressionSyntax p => p.Expression, CastExpressionSyntax c => c.Expression, AwaitExpressionSyntax a => a.Expression, _ => value };
+        if (value is not (InvocationExpressionSyntax or BaseObjectCreationExpressionSyntax) || file.Model.GetSymbolInfo(value).Symbol is not IMethodSymbol method) return;
+        if (Exit(method, value, file.Model) is not var (kind, status)) return;
+        ctx.AddFact(Name, "exit", owner, set, ("kind", kind), ("result", value is InvocationExpressionSyntax ? method.Name : method.ContainingType.Name),
+            ("status", status), ("text", set.ToString()), ("exception", ""), ("conditions", Json(Around(set, ctx))));
+    }
+
+    static bool Derives(INamedTypeSymbol? type, string ns)
+    {
+        for (var t = type; t is not null; t = t.BaseType)
+            if (t.ContainingNamespace?.ToDisplayString() == ns) return true;
+        return false;
     }
 
     void Call(ExtractContext ctx, SourceFile file, ExpressionSyntax call)

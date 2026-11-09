@@ -66,6 +66,9 @@ public class FlowStartsTests(ShopGraph shop) : IClassFixture<ShopGraph>
     {
         var exits = Facts("conditions", "exit").Where(f => f.File is "Shop.Web/Guards.cs" or "Shop.Web/Controllers/AccountController.cs")
             .Select(f => $"{f["kind"]} {f["status"]} {f["text"]} | {string.Join(" < ", Conditions(f))}").ToList();
+        // D187 (ruling R5): a filter setting context.Result to a listed result stops the request: an exit.
+        Assert.Contains(exits, e => e.StartsWith("Redirect  context.Result = new RedirectToActionResult", StringComparison.Ordinal));
+        exits = [.. exits.Where(e => !e.Contains("context.Result", StringComparison.Ordinal))];
         Assert.Equal(
         [
             "Redirect  RedirectToAction(nameof(Welcome)) | unless !ModelState.IsValid",
@@ -76,9 +79,8 @@ public class FlowStartsTests(ShopGraph shop) : IClassFixture<ShopGraph>
             "NotFound  Results.NotFound() | if id is null < case mode = \"one\"",
             "BadRequest  Results.BadRequest() | unless id is null < case mode = \"one\"",
         ], exits);
-        // `return View(model)` and `Results.Ok(id)` aren't exits; neither is a filter setting context.Result.
-        Assert.DoesNotContain(Facts("conditions", "exit"), f => f["text"].StartsWith("View(", StringComparison.Ordinal) || f["text"].Contains("Ok(", StringComparison.Ordinal)
-            || f["text"].Contains("NotFoundResult", StringComparison.Ordinal));
+        // `return View(model)` and `Results.Ok(id)` aren't exits.
+        Assert.DoesNotContain(Facts("conditions", "exit"), f => f["text"].StartsWith("View(", StringComparison.Ordinal) || f["text"].Contains("Ok(", StringComparison.Ordinal));
     }
 
     [Fact]

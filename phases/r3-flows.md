@@ -98,9 +98,10 @@ Each is brought to the owner one at a time, with a recommendation; none is appli
   general rule: a returned call to an app's own helper that sets a constant 4xx/5xx status, or returns only listed results, is an
   exit. Built in layer 2 (18 such exits on nopCommerce); the key's 2 product-page exits and their 2 conditions are now found
   (nopCommerce item 2: 84.2% → 84.7%). No change to the key.
-- **R5, open (listed at step 2): access filters setting `context.Result`** (Kavita `EntityAccessAttribute` ×4, nopCommerce
-  `CheckAccessPublicStore` ×2, `ValidateHoneypot`): Stangent now walks the filters as steps (D184) but, per D181, an assignment
-  to `context.Result` isn't an exit.
+- **R5, ruled 2026-11-09 (owner: "Yes, an exit", on the recommendation; D187): a filter setting `context.Result` to a refusal is
+  an early exit**, changing D181. Setting it stops the request before the action runs. Built in layer 2; flows already walk the
+  filters first (D184). The key's 7 such exits (Kavita `EntityAccessAttribute` ×4, nopCommerce `CheckAccessPublicStore` ×2,
+  `ValidateHoneypot`) and their conditions are now found: Kavita 77.9% → 80.6%, nopCommerce 84.7% → 85.9%. No change to the key.
 - **R6, open: calls into packages** (ASP.NET Identity's `userManager`, MailKit's `client.ConnectAsync`/`smtpClient.SendAsync`,
   RxJS subjects): the graph keeps only the repo's own points, so these are no steps. A layer 2 gap, not a key error.
 - **R7, open: the key walks into code the graph counts as a hub** (≥10 callers by distinct calling methods, through interfaces),
@@ -173,22 +174,22 @@ facts (each call's line), a hook's own functions as points, `filterType` on acce
 |---|---|---|---|
 | Flows built (click / screen / job / handler) | 367 | 281 | 944 |
 | 1. No wrong ✅ (code check: a ✅ call's line names what it calls) | 51 flagged of 48,840 | 5 of 23,707 | 10 of 75,196 |
-| 2. Key steps, ends and conditions found (≥95%), after R1 | **187 / 284 = 66%** | **398 / 511 = 78%** | **650 / 767 = 85%** (after R4) |
+| 2. Key steps, ends and conditions found (≥95%), after R1 | **187 / 284 = 66%** | **412 / 511 = 81%** | **659 / 767 = 86%** (after R1, R4, R5) |
 | — before R1 | 175 / 284 = 62% | 354 / 511 = 69% | 590 / 767 = 77% |
 | — steps | 91 / 126 | 207 / 228 | 187 / 210 |
-| — ends (incl. exits), after R1 | 38 / 73 | 82 / 128 | 151 / 202 |
-| — conditions | 58 / 85 | 109 / 155 | 312 / 355 |
+| — ends (incl. exits), after rulings | 38 / 73 | 86 / 128 | 154 / 202 |
+| — conditions | 58 / 85 | 119 / 155 | 318 / 355 |
 | (links, not in item 2) | 28 / 45 | 4 / 12 | 16 / 46 |
 | (checks, not in item 2) | 8 / 25 | 0 / 2 | 26 / 60 |
 | 3. Every 🟡 and ❓ with a reason | pass (10,680 🟡, 705 ❓) | pass (1,182, 119) | pass (7,271, 269) |
 | 4. Byte for byte (two builds, and disk) | pass | pass | pass |
 | 5. No silent skips (starts → flows or stated reasons) | pass (2,678 starts) | pass (1,305) | pass (1,244) |
 
-**Bottom line: items 3–5 pass on all three; item 2 fails (66%, 78%, 85% against 95%, after R1 and R4); item 1 isn't settled** — the samples read
+**Bottom line: items 3–5 pass on all three; item 2 fails (66%, 81%, 86% against 95%, after R1, R4 and R5); item 1 isn't settled** — the samples read
 are the checker's limits (a hook's function returned under another name, `goToPage: handleGoToPage`; a chain over 10 lines) plus
 one extractor quirk (Kavita's route resolvers' `on-load` lines point at a blank line). Steps are mostly found (72%, 91%, 89%);
 ends are what fail. Where the misses sit: the key stopping a branch one call earlier than the code does (R1, ruled: counted);
-filters' `context.Result` (R5; app helpers ruled exits, R4); calls into packages and navigation, which the graph
+filter and helper exits (ruled exits, R4, R5); calls into packages and navigation, which the graph
 doesn't hold (R6; `screen` ends: none built); a URL built at runtime (Sonarr's save-indexer stops at a ❓ before the server, 3 of
 30 steps); the key walking into hubs (R7). Per-flow numbers: `--score-flows` output (`flows[].items`, `flows[].missed`).
 

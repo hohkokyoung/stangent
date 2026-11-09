@@ -23,3 +23,15 @@ public class PageHelpers
         return Plain();
     }
 }
+
+// D187 (ruling R5): a filter setting context.Result to a refusal stops the request: an exit; one setting anything else isn't.
+public class OpenStoreFilter : Microsoft.AspNetCore.Mvc.Filters.IAuthorizationFilter
+{
+    public void OnAuthorization(Microsoft.AspNetCore.Mvc.Filters.AuthorizationFilterContext context)
+    {
+        if (context.HttpContext.User.Identity?.IsAuthenticated != true)
+            context.Result = new ChallengeResult();
+        else
+            context.Result = new EmptyResult();
+    }
+}

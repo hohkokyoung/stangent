@@ -70,4 +70,13 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
             .Select(f => $"{f["kind"]} {f["status"]} {f["result"]}").Order(StringComparer.Ordinal).ToList();
         Assert.Equal(["Forbid  Refuse", "StatusCode 404 Gone"], exits);
     }
+
+    [Fact]
+    public void A_filter_setting_its_contexts_result_to_a_refusal_is_an_exit()
+    {
+        var exits = shop.Graph.AllFacts.Where(f => f.Kind == "exit" && f.Owner.Contains("OpenStoreFilter.OnAuthorization", StringComparison.Ordinal)).ToList();
+        var exit = Assert.Single(exits);
+        Assert.Equal("Challenge", exit["kind"]);
+        Assert.Contains("IsAuthenticated", exit["conditions"], StringComparison.Ordinal);
+    }
 }

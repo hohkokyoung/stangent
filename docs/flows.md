@@ -83,5 +83,5 @@ matched to its job by type), the actor. `unknowns` lists every ❓ with why. `fl
 - Calls into packages (ASP.NET Identity, MailKit's SMTP client, EF's own methods) aren't on the map, so they're no steps; an SMTP
   send isn't an `outside-call` (only HTTP clients are, G4).
 - Navigation (`router.navigate`, `<Link>`, `location.href`) isn't in the graph, so no `screen` ends yet.
-- A filter setting `context.Result` isn't an exit (D181). An app's own helper that ends the request is one (D186).
+- (Exits now include an app's own helper that ends the request, D186, and a filter's `context.Result` refusal, D187.)
 - Angular templates' child components have no call-site lines, so a screen's children are reached only through code.
