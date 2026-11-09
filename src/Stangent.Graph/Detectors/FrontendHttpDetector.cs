@@ -51,11 +51,22 @@ public sealed class FrontendHttpDetector : IDetector
             var reason = Proof(call, matches, endpoints);
             if (reason.Length == 0) proved.Add((call.Owner, matches[0].Node.Id));
             foreach (var e in matches)
-                ctx.AddFact(Name, "http-match", call.Owner, call.File, call.Line, ("endpoint", e.Node.Id), ("label", reason.Length == 0 ? "certain" : "guessed"),
-                    ("reason", reason), ("verb", call["verb"]), ("url", call["url"]));
+                ctx.AddFact(Name, "http-match", call.Owner, call.File, call.Line, [("endpoint", e.Node.Id), ("label", reason.Length == 0 ? "certain" : "guessed"),
+                    ("reason", reason), ("verb", call["verb"]), ("url", call["url"]), .. (call["from"] == "parameter" ? [("origin", call["origin"])] : Array.Empty<(string, string)>())]);
         }
+        // D190: a call written once with a URL its callers give is several facts, one per value; values that fit no endpoint are
+        // said once, and only when none fits.
+        var paramMatched = calls.Where(c => c.Call["from"] == "parameter" && c.Matches.Count > 0).Select(c => (c.Call.Owner, c.Call.File, c.Call.Line)).ToHashSet();
+        var paramSaid = new HashSet<(string, string?, int)>();
         foreach (var (call, matches) in calls)
         {
+            if (matches.Count == 0 && call["from"] == "parameter")
+            {
+                var at = (call.Owner, call.File, call.Line);
+                if (!paramMatched.Contains(at) && paramSaid.Add(at))
+                    ctx.AddBlindSpot(call.Owner, call.File, call.Line, $"HTTP call to a URL its callers give ({call["of"]} values), none matching a backend endpoint", Name);
+                continue;
+            }
             if (matches.Count == 0)
             {
                 ctx.AddBlindSpot(call.Owner, call.File, call.Line, $"HTTP {call["verb"]} {call["url"]} matched no backend endpoint", Name);
@@ -98,6 +109,8 @@ public sealed class FrontendHttpDetector : IDetector
     {
         var failed = new List<string>();
         var verb = call["verb"];
+        if (call["from"] == "parameter")
+            failed.Add($"the URL is a parameter: one of {call["of"]} values its callers pass, this one given in {Short(call["origin"])}");
         switch (call["verbFrom"])
         {
             case "literal" or "library" or "setting" when verb != "ANY": break;
@@ -124,6 +137,8 @@ public sealed class FrontendHttpDetector : IDetector
         else if (fits.Count == 1 && !(matches.Count == 1 && fits[0] == matches[0])) failed.Add("the best match isn't the one endpoint that fits");
         return string.Join("; ", failed);
     }
+
+    static string Short(string id) => id.Length == 0 ? "a caller" : id[(Math.Max(id.IndexOf('#'), id.IndexOf('|')) + 1)..];
 
     static (string Path, bool Suffix) PathOf(string url)
     {

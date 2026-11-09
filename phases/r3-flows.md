@@ -181,7 +181,7 @@ Each is brought to the owner one at a time, with a recommendation; none is appli
   ends, not exits); terms-of-service is a page-script check; repository-level entity-event consumers aren't listed;
   model-factory sub-builders, `PrepareAndValidate*`, OAuth helpers and payment plugins end `unknown`.
 
-## Step 3: the flow code — built 2026-11-09, scored; the bar is not passed (rescored after D185's amendment and D189)
+## Step 3: the flow code — built 2026-11-09, scored; the bar is not passed (rescored after D185's amendment, D189 and D190)
 
 `stangent flows build|show|check` (contract `flows` v1, `docs/flows.md`, D184), a flows scorer in `Stangent.Benchmark`
 (`--score-flows <clone> <key-dir>`), built on the three clones at the key's commits. Layer 2 grew for it (D184): `call-site`
@@ -189,29 +189,30 @@ facts (each call's line), a hook's own functions as points, `filterType` on acce
 
 | Bar item | Sonarr | Kavita | nopCommerce |
 |---|---|---|---|
-| Flows built (click / screen / job / handler / shared) | 1,540 (116 / 31 / 38 / 182 / 1,173) | 532 (232 / 26 / 23 / 0 / 251) | 1,330 (325 / 399 / 17 / 203 / 386) |
-| 1. No wrong ✅ (code check: a ✅ call's line names what it calls) | 71 flagged of 77,170 | 5 of 27,503 | 11 of 93,950 |
-| 2. Key steps, ends and conditions found (≥95%), after R1 (tightened), R4–R6, D189 | **189 / 279 = 67.7%** | **428 / 507 = 84.4%** | **643 / 729 = 88.2%** |
+| Flows built (click / screen / job / handler / shared) | 1,652 (116 / 31 / 38 / 182 / 1,285) | 532 (232 / 26 / 23 / 0 / 251) | 1,330 (325 / 399 / 17 / 203 / 386) |
+| 1. No wrong ✅ (code check: a ✅ call's line names what it calls) | 71 flagged of 89,556 | 5 of 27,503 | 11 of 93,950 |
+| 2. Key steps, ends and conditions found (≥95%), after R1 (tightened), R4–R6, D189, D190 | **236 / 275 = 85.8%** | **428 / 507 = 84.4%** | **643 / 729 = 88.2%** |
+| — before D190 (URLs callers give; Kavita and nopCommerce unchanged by it) | 189 / 279 = 67.7% | 428 / 507 = 84.4% | 643 / 729 = 88.2% |
 | — before D189 (R1 tightened, old flows) | 181 / 279 = 64.9% | 420 / 508 = 82.7% | 637 / 731 = 87.1% |
 | — before R1 was tightened | 187 / 284 = 66% | 427 / 511 = 84% | 674 / 767 = 88% |
 | — before any ruling | 175 / 284 = 62% | 354 / 511 = 69% | 590 / 767 = 77% |
-| — steps | 95 / 126 | 215 / 228 | 193 / 210 |
-| — ends (incl. exits) | 36 / 68 | 82 / 124 | 124 / 164 |
-| — conditions | 58 / 85 | 131 / 155 | 326 / 355 |
-| (key ends left out: they only say the key didn't follow a call, R1) | 5 | 4 | 38 |
-| (links, not in item 2) | 29 / 45 | 4 / 12 | 16 / 46 |
-| (checks, not in item 2) | 8 / 25 | 0 / 2 | 26 / 60 |
-| 3. Every 🟡 and ❓ with a reason | pass (16,160 🟡, 984 ❓) | pass (1,272, 146) | pass (8,979, 314) |
+| — steps | 122 / 126 | 215 / 228 | 193 / 210 |
+| — ends (incl. exits) | 43 / 64 | 82 / 124 | 124 / 164 |
+| — conditions | 71 / 85 | 131 / 155 | 326 / 355 |
+| (key ends left out: they only say the key didn't follow a call, R1) | 9 | 4 | 38 |
+| (links, not in item 2) | 35 / 45 | 4 / 12 | 16 / 46 |
+| (checks, not in item 2) | 11 / 25 | 0 / 2 | 26 / 60 |
+| 3. Every 🟡 and ❓ with a reason | pass (21,056 🟡, 1,089 ❓) | pass (1,272, 146) | pass (8,979, 314) |
 | 4. Byte for byte (two builds, and disk) | pass | pass | pass |
 | 5. No silent skips (starts → flows or stated reasons) | pass (2,678 starts) | pass (1,305) | pass (1,244) |
 
-**Bottom line: items 3–5 pass on all three; item 2 fails (67.7%, 84.4%, 88.2% against 95%, after R1 tightened, R4–R6 and
-D189); item 1 isn't settled** (more ✅ steps to check now that shared flows are written: Sonarr's flags rose 51 → 71) — the samples read
+**Bottom line: items 3–5 pass on all three; item 2 fails (85.8%, 84.4%, 88.2% against 95%, after R1 tightened, R4–R6, D189
+and D190); item 1 isn't settled** (more ✅ steps to check now that shared flows are written: Sonarr's flags rose 51 → 71) — the samples read
 are the checker's limits (a hook's function returned under another name, `goToPage: handleGoToPage`; a chain over 10 lines) plus
 one extractor quirk (Kavita's route resolvers' `on-load` lines point at a blank line). Steps are mostly found (72%, 91%, 89%);
 ends are what fail. Where the misses sit: the key stopping a branch one call earlier than the code does (R1, ruled: counted);
 filter and helper exits (ruled exits, R4, R5); navigation, which the graph doesn't hold (`screen` ends: none built; package calls now steps, R6); a URL built at runtime (Sonarr's save-indexer stops at a ❓ before the server, 3 of
-30 steps); inside shared code, a key `hub` where the hub reads a table (Stangent ends `database`, D172) and nopCommerce's LINQ
+30 steps, now followed by D190: save-indexer's steps 30 of 30); inside shared code, a key `hub` where the hub reads a table (Stangent ends `database`, D172) and nopCommerce's LINQ
 reads over a repository's `Table`, which layer 2 doesn't record (R7's recount). Per-flow numbers: `--score-flows` output (`flows[].items`, `flows[].missed`).
 
 ## Left open, on purpose

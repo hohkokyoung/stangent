@@ -99,7 +99,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 FlowGraph.ConditionsOf(conds.FirstOrDefault(c => target is not null && c["target"] == target) ?? conds.FirstOrDefault() ?? Empty);
             var consumed = new HashSet<string>(StringComparer.Ordinal);
 
-            foreach (var http in g.Facts(point, "http-match").Where(f => f.Line == line).OrderBy(f => f["endpoint"], StringComparer.Ordinal))
+            foreach (var http in Narrow(g.Facts(point, "http-match").Where(f => f.Line == line), branch).OrderBy(f => f["endpoint"], StringComparer.Ordinal))
             {
                 Http(http, at, CondsFor(null), parent, depth, branch);
                 consumed.UnionWith(sites.Select(x => x["target"]));
@@ -171,6 +171,36 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                     Kind = blind.Reason.StartsWith("HTTP ", StringComparison.Ordinal) ? "http" : "unknown", End = new End("unknown", blind.Reason), Depth = depth,
                 });
         }
+    }
+
+    /// <summary>
+    /// D190: a URL its callers give is one match per value, each saying which point gave it (<c>origin</c>). A flow keeps those its
+    /// own code gave: an origin on its branch, reached, or called by a point on the branch or the component or hook holding one
+    /// (the component that called <c>useManageIndexer</c>). None of them → every value, 🟡 as each already is.
+    /// </summary>
+    IEnumerable<Fact> Narrow(IEnumerable<Fact> matches, List<string> branch)
+    {
+        var all = matches.ToList();
+        var given = all.Where(f => f["origin"] != "").ToList();
+        if (given.Count == 0) return all;
+        var context = new HashSet<string>(flow.Reached, StringComparer.Ordinal);
+        foreach (var p in branch.Append(flow.Start.Point))
+            foreach (var holder in Holders(p))
+            {
+                context.Add(holder);
+                foreach (var site in g.Facts(holder, "call-site")) context.Add(site["target"]);
+            }
+        var kept = given.Where(f => context.Contains(f["origin"])).ToList();
+        return kept.Count == 0 ? all : all.Where(f => f["origin"] == "" || kept.Contains(f));
+    }
+
+    /// <summary>A point and the points holding it: <c>ts|f.tsx#A.b.c</c> → itself, <c>…#A.b</c>, <c>…#A</c>.</summary>
+    static IEnumerable<string> Holders(string point)
+    {
+        yield return point;
+        var hash = point.IndexOf('#');
+        if (hash < 0) yield break;
+        for (var dot = point.LastIndexOf('.'); dot > hash; dot = point.LastIndexOf('.', dot - 1)) yield return point[..dot];
     }
 
     static readonly Fact Empty = new("", "", "", null, 0, new Dictionary<string, string>());

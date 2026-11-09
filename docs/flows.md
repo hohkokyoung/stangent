@@ -45,7 +45,9 @@ reaches none ("display only", D176 item 5), and on-load code no route's screen r
 A flow is a tree walked forward from its start. For each point, its **call sites** (`call-site` facts, D184) and the facts at
 the same lines are read in source-line order; each line gives, in this order:
 
-1. an HTTP call the graph matched (`http-match`): a step `calls VERB url` (🟡 with the match's reason when it isn't ✅), then the
+1. an HTTP call the graph matched (`http-match`): a step `calls VERB url` (🟡 with the match's reason when it isn't ✅; for a URL
+   its callers give, D190, only the values given by the flow's own code: an `origin` on the branch, reached, or called by a
+   point on it or the component or hook holding one; none such → every value), then the
    endpoint's action as the next step, at the line its name is written on. The route hop isn't a call. Calls on that line aren't walked.
 2. a table read or saved (`access` with a mapped table): ends `database`.
 3. an outside call (`call` facts from `http-services`): ends `outside-call`.

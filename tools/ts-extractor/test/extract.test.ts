@@ -479,3 +479,32 @@ test("a handler that always stops the browser's own action says so (V2)", () => 
   // jQuery honours `return false`; addEventListener doesn't; a conditional one isn't "always".
   assert.deepEqual(events, ["#maybe ", "#plain ", "#refresh yes", "#stop yes"]);
 });
+
+test("a URL built from a parameter takes each value its callers pass, paired with the verb under the same condition (D190)", () => {
+  const root = project({
+    "src/path.ts": "export const apiRoot = '/api/v5';\nconst getQueryPath = (path: string) => {\n  return apiRoot + path;\n};\nexport default getQueryPath;",
+    "src/query.ts": "const getQueryString = (q?: Record<string, string>) => {\n  if (!q) {\n    return '';\n  }\n  return `?${new URLSearchParams(q)}`;\n};\nexport default getQueryString;",
+    "src/save.ts": [
+      "import getQueryPath from './path';",
+      "import getQueryString from './query';",
+      "declare function fetchJson(o: { path: string; method?: string }): void;",
+      "export const useSave = (id: number | undefined, path: string) => {",
+      "  const save = () => fetchJson({ path: getQueryPath(id ? `${path}/${id}` : path) + getQueryString({}), method: id ? 'PUT' : 'POST' });",
+      "  return save;",
+      "};",
+      "export const useManage = (id: number | undefined, path: string) => useSave(id, path);",
+    ].join("\n"),
+    "src/indexers.ts": "import { useManage } from './save';\nconst PATH = '/indexer';\nexport const useManageIndexer = (id?: number) => useManage(id, PATH);",
+    "src/lists.ts": "import { useManage } from './save';\nexport const useManageList = (id?: number) => useManage(id, '/importlist');",
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p",
+    settings: { "frontend-http": { wrappers: ["fetchJson:path:method@GET"] } } }).lines;
+  const calls = lines.filter((l) => l.t === "fact" && l.kind === "call").map((l) => l.t === "fact" ? `${l.data.verb} ${l.data.url} ${l.data.from} ${String(l.data.origin).split("#")[1]} ${l.data.of}` : "").sort();
+  assert.deepEqual(calls, [
+    `POST ${BASE}api/v5/importlist parameter useManageList 4`,
+    `POST ${BASE}api/v5/indexer parameter useManageIndexer 4`,
+    `PUT ${BASE}api/v5/importlist/{*} parameter useManageList 4`,
+    `PUT ${BASE}api/v5/indexer/{*} parameter useManageIndexer 4`,
+  ]);
+  assert.equal(lines.filter((l) => l.t === "blind").length, 0);
+});

@@ -1,6 +1,7 @@
 import ts from "typescript";
 import type { Context } from "./extract.ts";
 import { BASE, RUNTIME, isBaseName, stringValue } from "./values.ts";
+import { join, paramValues, valuesOf } from "./params.ts";
 
 const DETECTOR = "frontend-http";
 const ANGULAR_VERBS: Record<string, string> = { get: "GET", post: "POST", put: "PUT", delete: "DELETE", patch: "PATCH", head: "HEAD" };
@@ -128,10 +129,14 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
     // Wrappers add the API root themselves (Sonarr: getQueryPath(path) = urlBase + apiRoot + path). When the
     // wrapper's own code shows that root, it is added (G2); otherwise a relative path is matched against the
     // end of endpoint paths.
-    if (url !== null && !/^(https?:|\{base\})/.test(url)) {
+    const rooted = (u: string) => {
+      if (/^(https?:|\{base\})/.test(u)) return u;
       const prefix = w.urlProp ? wrapperPrefix(ctx, callee, w.urlProp) : null;
-      url = prefix ? `${prefix.replace(/\/$/, "")}/${url.replace(/^\//, "")}` : BASE + url.replace(/^\//, "");
-    }
+      return prefix ? `${prefix.replace(/\/$/, "")}/${u.replace(/^\//, "")}` : BASE + u.replace(/^\//, "");
+    };
+    if (url !== null) url = rooted(url);
+    if (blind(url) && fromParameters(ctx, owner, file, line, w.urlProp ? wrapperExpr(n, w.urlProp) : n.arguments[0],
+        w.verbProp ? wrapperExpr(n, w.verbProp) : undefined, w.verb, w.fixed ? "setting" : "name", rooted, `wrapper:${w.fn}`, typeArg(ctx, n, 0), typeArg(ctx, n, 1))) return;
     emit(ctx, owner, file, line, verb, url, `wrapper:${w.fn}`, typeArg(ctx, n, 0), typeArg(ctx, n, 1), verbFrom);
     return;
   }
@@ -190,6 +195,54 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
     const client = generatedClientName(ctx, receiver);
     if (client) ctx.out.fact(DETECTOR, "generated-call", owner, file, line, { client, method: name, generator: "nswag" });
   }
+}
+
+/** `#N` → the call's Nth argument; anything else → that property of the object in the first argument: the expression itself. */
+function wrapperExpr(n: ts.CallExpression, prop: string): ts.Expression | undefined {
+  if (/^#\d+$/.test(prop)) return n.arguments[Number(prop.slice(1))];
+  const arg = n.arguments[0];
+  return arg && ts.isObjectLiteralExpression(arg) ? objProp(arg, prop) ?? undefined : undefined;
+}
+
+function blind(url: string | null): boolean {
+  return url === null || url === RUNTIME || url.replace(BASE, "").replace(/\{\*\}/g, "").replace(/[/?&=]/g, "") === "";
+}
+
+/**
+ * D190: a URL the call's own code doesn't show, built from its function's parameters: one `call` fact per value the callers
+ * pass (`from` "parameter", `origin` the point that gave it, `via` the points it passed through, `of` how many), each verb
+ * paired with the URLs written under the same side of a `?:`. False when no caller's value is known, so the call stays ❓.
+ */
+function fromParameters(ctx: Context, owner: string, file: string, line: number, urlExpr: ts.Expression | undefined, verbExpr: ts.Expression | undefined,
+                        defaultVerb: string, defaultFrom: string, rooted: (u: string) => string, via: string, responseType: string | null, bodyType: string | null): boolean {
+  const urls = paramValues(ctx, urlExpr);
+  if (!urls) return false;
+  const verbs = verbExpr ? valuesOf(ctx, verbExpr) : null;
+  const combos: { verb: string; verbFrom: string; url: string; origin: string; path: string[] }[] = [];
+  for (const u of urls) {
+    for (const v of verbs ?? [{ value: defaultVerb, origin: null, via: [], when: {} }]) {
+      const both = join(u, { ...v, value: "" });
+      if (!both) continue;
+      const known = verbs !== null && !v.value.includes(RUNTIME);
+      const url = rooted(u.value);
+      if (blind(url)) continue;
+      combos.push({ verb: known ? v.value.toUpperCase() : defaultVerb, verbFrom: known ? "literal" : verbs ? "runtime" : defaultFrom, url, origin: both.origin ?? "", path: both.via });
+    }
+  }
+  if (combos.length === 0) return false;
+  const values = new Set(combos.map((c) => c.url.split("?")[0])).size;
+  combos.sort((a, b) => (a.verb + a.url + a.origin < b.verb + b.url + b.origin ? -1 : a.verb + a.url + a.origin > b.verb + b.url + b.origin ? 1 : 0));
+  const seen = new Set<string>();
+  for (const c of combos) {
+    const key = `${c.verb} ${c.url.split("?")[0]} ${c.origin}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    ctx.out.fact(DETECTOR, "call", owner, file, line, {
+      verb: c.verb, url: c.url.split("?")[0], via, responseType: responseType ?? "", bodyType: bodyType ?? "", verbFrom: c.verbFrom,
+      from: "parameter", origin: c.origin, path: c.path.join("|"), of: String(values),
+    });
+  }
+  return true;
 }
 
 function emit(ctx: Context, owner: string, file: string, line: number, verb: string, url: string | null, via: string,
