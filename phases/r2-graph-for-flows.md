@@ -539,3 +539,17 @@ to `FlowStartsTests` and `flow.test.ts`; fixtures `AccountController.Themed`, `S
 
 Lines and blind spots otherwise unchanged (Sonarr 184,151 / 331; Kavita 156,435 / 115; nopCommerce 204,784 / 760). X2–X5 stay open.
 Another fresh check (D158) of these three fixes only would be small (estimate 30–50K tokens); the owner's call.
+
+## 20. Fresh check (D158) of D182, 2026-11-09
+
+One fresh agent, read only, on the owner's go ("Yes, check the fixes"); ~81K tokens, over the 30–50K estimate (and run on the session's model,
+not Sonnet as D61 says). 13 spot checks, 12 held. **No wrong fact**: Y1's 4 runtime-view page loads are exactly the GET actions with a runtime
+view (the 5th is a POST, a 6th a `PartialView`); `viewFrom` `action`/`name` right; Kavita's 3 self `queues` lines each requeue themselves and no
+other line kind points at itself; `scheduleCode` matches the source; every hand-read `unless` (C# and TypeScript, nested guards, a multi-line
+condition, a `throw`) sits earlier in the same block, has no `else`, always leaves and is quoted exactly; no `break`/`continue` guard leaks out of its loop.
+
+| # | Finding (verified) | Example | Fix idea | Size |
+|---|---|---|---|---|
+| Z1 | A guard inside a `switch` case section gives the rest of that section no `unless` (the rule reads blocks only), C# and TypeScript; general but rare | Kavita `ScrobblingService.cs:2006–2007`; `event-title.pipe.ts:61–62`; 16 such in Kavita, 0 in Sonarr | read a case section's statements as a block | tiny |
+
+Minor, by the existing rule: a `PartialView(…)` chosen at runtime isn't a page load (nopCommerce `TopicController.TopicDetailsPopup`), as no `PartialView` is.
