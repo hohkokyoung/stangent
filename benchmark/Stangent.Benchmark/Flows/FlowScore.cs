@@ -139,7 +139,13 @@ public static partial class FlowScore
             if (k["end"] is JsonObject end)
             {
                 var endKind = (string)end["kind"]!;
-                Tally("ends", match.Any(s => (string?)s["end"]?["kind"] == endKind), k, match.Count == 0 ? $"end {endKind}: no step there" : $"end {endKind}: built {string.Join(",", match.Select(s => (string?)s["end"]?["kind"] ?? "none").Distinct())}");
+                // R1 (owner, 2026-11-09): the code line decides where a table is touched. A key end on a call Stangent walks into
+                // counts when Stangent's step there leads, through its own steps, to an end of the same kind; a key `unknown` or
+                // `depth` that only says the key didn't follow it counts when Stangent walks it.
+                var endFound = match.Any(s => (string?)s["end"]?["kind"] == endKind)
+                    || (endKind is "database" or "outside-call" or "message" && match.Any(s => Below(steps, (int)s["n"]!).Any(d => (string?)d["end"]?["kind"] == endKind)))
+                    || (endKind is "unknown" or "depth" && match.Any(s => s["end"] is null && Below(steps, (int)s["n"]!).Any()));
+                Tally("ends", endFound, k, match.Count == 0 ? $"end {endKind}: no step there" : $"end {endKind}: built {string.Join(",", match.Select(s => (string?)s["end"]?["kind"] ?? "none").Distinct())}");
             }
             foreach (var c in Objects(k["conditions"]))
                 Tally("conditions", match.Any(s => Objects(s["conditions"]).Any(bc => (string?)bc["at"] == (string)c["at"]!)), c, $"on step {at}");
@@ -166,6 +172,27 @@ public static partial class FlowScore
             Tally("checks", (b?.Checks ?? []).Any(c => Same((string)k["at"]!, (string)k["code"]!, c) || ((string?)c["at"])?.Split(':')[0] == ((string)k["at"]!).Split(':')[0] && Lines((string)k["at"]!, (string)k["code"]!).Contains((string)c["at"]!)), k);
         var found = counts.Where(c => c.Key is "steps" or "ends" or "conditions").Sum(c => c.Value.Item1);
         return new ItemResult(new JsonObject([.. counts.OrderBy(c => c.Key, StringComparer.Ordinal).Select(c => KeyValuePair.Create(c.Key, (JsonNode?)Count(c.Value.Item1, c.Value.Item2)))]), missed, found);
+    }
+
+    /// <summary>Every step under step <paramref name="n"/>, through <c>from</c>, following <c>sameAs</c> to the steps walked there.</summary>
+    static IEnumerable<JsonObject> Below(List<JsonObject> steps, int n)
+    {
+        var children = steps.Where(s => s["from"] is not null).ToLookup(s => (int)s["from"]!);
+        var byN = steps.ToDictionary(s => (int)s["n"]!);
+        var seen = new HashSet<int>();
+        var stack = new Stack<int>([n]);
+        if (byN.TryGetValue(n, out var self) && self["sameAs"] is { } sa) stack.Push((int)sa);
+        while (stack.Count > 0)
+        {
+            var at = stack.Pop();
+            if (!seen.Add(at)) continue;
+            foreach (var c in children[at])
+            {
+                yield return c;
+                stack.Push((int)c["n"]!);
+                if (c["sameAs"] is { } same) stack.Push((int)same);
+            }
+        }
     }
 
     /// <summary>The lines a key quote spans (D183: it may run over lines), for a check one rule of a chain sits on.</summary>

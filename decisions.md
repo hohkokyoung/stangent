@@ -221,3 +221,4 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D182 · The fresh check's Y1 (on-load for MVC pages with a runtime view), Y2 (a job requeuing itself keeps its line) and X1 (guard clauses as `unless` conditions) fixed
 - D183 · The frozen key's format: one JSON per flow under `benchmark/expected/flows/<repo>/`, every item a code line (`at` + exact `code`), steps a tree by `from`; written from git-tracked source only, checked by code
 - D184 · Layer 3's walk: `call-site` facts (each call's line), a hook's own functions as points, `filterType` on access filters; filters, `OnActionExecuting` and route guards walked first; a hub reading a table ends `database`; handler flows; the flows scorer's matching rules
+- D185 · Ruling R1: a key end on a call Stangent walks into counts when Stangent's steps below it end the same way (database, outside call, message), or when Stangent walks a call the key didn't; the key isn't edited
