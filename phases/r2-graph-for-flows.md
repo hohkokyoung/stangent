@@ -507,3 +507,21 @@ config now states `@GET` on its four query helpers (they fetch with GET when no 
 | X5 | Hooks that rerun on change aren't read: `componentDidUpdate`, `ngOnChanges`; nor jobs scheduled by type name (Sonarr's `TaskManager`: `TypeName = typeof(RefreshSeriesCommand).FullName`) | Sonarr's 12-hour Refresh series schedule | read when a flow needs it | small each |
 
 Next (D158): a narrow fresh check of these additions only, estimated at 60–100K tokens, on the owner's go.
+
+## 18. Fresh check (D158) of section 17, 2026-11-09
+
+One fresh agent, read only, on the owner's go ("Yes, run the check"); ~116K tokens, over the 60–100K estimate. About 32 spot checks, 30 held.
+**No wrong ✅**: 12 random ✅ frontend lines and 10 parameterised ✅ matches (Sonarr, Kavita) each reach their one endpoint; all 17 Sonarr
+🟡 `queues` lines match the source's `Push(new …)` one for one; Kavita's ✅ `queues` hold, through `ScanJobQueue` too; `is-job` complete on
+Sonarr (38) and nopCommerce (17); React effects 200 of 201 (the other is commented out); Angular `ngOnInit` 108 of 108; conditions quoted
+exactly and innermost first; exits right on Sonarr, Kavita and nopCommerce `Register`. The three trial chains hold.
+
+Findings (verified against the graphs), both general, not fixed:
+
+| # | Finding | Example | Fix idea | Size |
+|---|---|---|---|---|
+| Y1 | An MVC action whose view name is made at runtime gets no `on-load` (only the ❓ for the view): "calls `View(…)`" doesn't need the name | nopCommerce: 5 actions, `CatalogController.Category`, `Manufacturer`, `ProductController.ProductDetails` (**the D177 trial's product page**), `ProductReviewsAdd`, `TopicController.TopicDetails` | write `on-load` for these too, `view` unknown | small |
+| Y2 | A job that queues itself again has no line: the graph drops every line from a point to itself | Kavita `TaskScheduler.cs:542` `ScanJobQueue.Schedule(() => EnqueueScanLibraries(force), runAt)` (and 573, 646): "busy, try again in 3 hours" is lost | allow a self `queues` line, or a `requeues` field on the `job` fact | small |
+
+Minor: a recurring job's `schedule` is empty when it's a Hangfire `Cron.Daily` (a method, not text; Kavita `TaskScheduler.cs:168`); an MVC `on-load`
+for `View(model)` has `view: ""` where MVC's default is the action's name. Both read as "not known" today, never wrong.
