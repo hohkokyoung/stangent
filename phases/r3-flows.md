@@ -113,7 +113,26 @@ When Stangent and the key disagree, the quoted code line decides, and the ruling
   `ScannerService.ScanLibraries` (a `runs-later` link, D173), so the scan's own work isn't in the key. Agent's caveats:
   route guards and resolvers are first steps of the screen flows; login's `apiKey` path, series-detail's SignalR and
   fragment subscriptions and the reader's settings auto-save aren't walked; Identity calls end as `database`.
-- nopCommerce: not started; on the owner's go.
+- **nopCommerce** (commit `77d112f365`), written 2026-11-09 by a fresh Sonnet agent from git-tracked source only (~250K tokens):
+
+  | Flow | Steps | Ends | Conditions | Exits | Links | Checks |
+  |---|---|---|---|---|---|---|
+  | register | 56 | 46 | 134 | 11 | 12 | 39 |
+  | add-to-cart | 45 | 34 | 50 | 1 | 15 | 10 |
+  | confirm-order | 63 | 42 | 134 | 23 | 15 | 11 |
+  | product-page-opens | 29 | 25 | 24 | 7 | 4 | 0 |
+  | queued-messages-send-task | 17 | 12 | 13 | 1 | 0 | 0 |
+
+  Checked by code: 724 items, 0 problems. Spot-read by hand: the email task's two loops, SMTP send, `catch` that logs
+  and `finally` that saves `SentTries` hold. Owner approval: pending.
+  Open for a ruling when scored: (a) confirm-order follows the multi-step `CheckoutController.ConfirmOrder`, whose first
+  exit sends the shopper to one-page checkout when `OnePageCheckoutEnabled` (the installer sets it true,
+  `InstallRequiredData.cs:1870`); the one-page `OpcConfirmOrder` is its own flow by D171 and isn't in the key.
+  (b) 2 product-page exits are `return InvokeHttp404()`, an app helper that sets 404, not on D176's fixed list.
+  (c) 2 exits are access filters setting `context.Result` (register's redirect, add-to-cart's `Challenge`), not results
+  the action returns (D181). Agent's caveats: add-to-cart's redirects are JSON values the page script follows (`screen`
+  ends, not exits); terms-of-service is a page-script check; repository-level entity-event consumers aren't listed;
+  model-factory sub-builders, `PrepareAndValidate*`, OAuth helpers and payment plugins end `unknown`.
 
 ## Left open, on purpose
 

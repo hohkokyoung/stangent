@@ -1,0 +1,1031 @@
+{
+  "repo": "nopcommerce",
+  "commit": "77d112f365e210ebdfa2f9790c8202a0e3b1c74e",
+  "id": "add-to-cart",
+  "name": "Add to cart",
+  "kind": "click",
+  "start": {
+    "what": "the Add to cart button on the product page (its onclick posts the product form through AjaxCart)",
+    "at": "src/Presentation/Nop.Web/Views/Product/_AddToCart.cshtml:87",
+    "code": "<button type=\"button\" id=\"add-to-cart-button-@Model.ProductId\" class=\"button-1 add-to-cart-button\" data-productid=\"@Model.ProductId\" onclick=\"AjaxCart.addproducttocart_details("
+  },
+  "actor": {
+    "who": "any shopper (guests included) while the store allows navigation and the shopping cart permission is on for them",
+    "why": "the action has no [AllowAnonymous]; BasePublicController applies [CheckAccessPublicStore], and AddToCartAsync requires the EnableShoppingCart permission",
+    "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1591",
+    "code": "if (shoppingCartType == ShoppingCartType.ShoppingCart && !await _permissionService.AuthorizeAsync(StandardPermission.PublicStore.ENABLE_SHOPPING_CART, customer))"
+  },
+  "checks": [
+    {
+      "what": "antiforgery token must be valid (the serialized form carries it)",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:45",
+      "code": "[AutoValidateAntiforgeryToken]"
+    },
+    {
+      "what": "product must exist (otherwise the JSON tells the page to go home)",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:794",
+      "code": "if (product == null)"
+    },
+    {
+      "what": "only simple products can be added",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:803",
+      "code": "if (product.ProductType != ProductType.SimpleProduct)"
+    },
+    {
+      "what": "a passed cart item must belong to this product",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:843",
+      "code": "if (updatecartitem != null && product.Id != updatecartitem.ProductId)"
+    },
+    {
+      "what": "shopping cart must be enabled for the customer",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1591",
+      "code": "if (shoppingCartType == ShoppingCartType.ShoppingCart && !await _permissionService.AuthorizeAsync(StandardPermission.PublicStore.ENABLE_SHOPPING_CART, customer))"
+    },
+    {
+      "what": "search engine accounts cannot add to cart",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1603",
+      "code": "if (customer.IsSearchEngineAccount())"
+    },
+    {
+      "what": "quantity must be positive",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1609",
+      "code": "if (quantity <= 0)"
+    },
+    {
+      "what": "cart must not exceed MaximumShoppingCartItems",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1670",
+      "code": "if (cart.Count >= _shoppingCartSettings.MaximumShoppingCartItems)"
+    },
+    {
+      "what": "item warnings (stock, quantity limits, required attributes) must be empty",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1653",
+      "code": "warnings.AddRange(await GetShoppingCartItemWarningsAsync(customer, shoppingCartType, product,"
+    },
+    {
+      "what": "any warning makes the response a failure message",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:347",
+      "code": "if (addToCartWarnings.Any())"
+    }
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "the Add to cart button's onclick calls AjaxCart.addproducttocart_details with the AJAX URL and the product form",
+      "at": "src/Presentation/Nop.Web/Views/Product/_AddToCart.cshtml:87",
+      "code": "<button type=\"button\" id=\"add-to-cart-button-@Model.ProductId\" class=\"button-1 add-to-cart-button\" data-productid=\"@Model.ProductId\" onclick=\"AjaxCart.addproducttocart_details("
+    },
+    {
+      "n": 2,
+      "from": 1,
+      "what": "serializes the product details form and sends it",
+      "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:123",
+      "code": "this.send_ajax(urladd, $(formselector).serialize());",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:118",
+          "code": "if (this.loadWaiting !== false) {"
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "from": 2,
+      "what": "POSTs to /addproducttocart/details/{productId}/{shoppingCartTypeId}",
+      "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:140",
+      "code": "$.ajax({"
+    },
+    {
+      "n": 4,
+      "from": 3,
+      "what": "controller action AddProductToCart_Details receives the product id, cart type and form",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:791",
+      "code": "public virtual async Task<IActionResult> AddProductToCart_Details(int productId, int shoppingCartTypeId, IFormCollection form, int? customwishlistid = null)"
+    },
+    {
+      "n": 5,
+      "from": 4,
+      "what": "loads the product",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:793",
+      "code": "var product = await _productService.GetProductByIdAsync(productId);",
+      "end": {
+        "kind": "hub",
+        "detail": "IProductService.GetProductByIdAsync: 264 call sites of _productService.GetProductByIdAsync( in src; reads the Product table"
+      }
+    },
+    {
+      "n": 6,
+      "from": 4,
+      "what": "loads the cart to find the item being updated",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:829",
+      "code": "var cart = await _shoppingCartService.GetShoppingCartAsync(await _workContext.GetCurrentCustomerAsync(),",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:824",
+          "code": "if (_shoppingCartSettings.AllowCartItemEditing && updatecartitemid > 0)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:803",
+          "code": "if (product.ProductType != ProductType.SimpleProduct)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:794",
+          "code": "if (product == null)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "IShoppingCartService.GetShoppingCartAsync: 83 call sites of _shoppingCartService.GetShoppingCartAsync( in src; reads ShoppingCartItem"
+      }
+    },
+    {
+      "n": 7,
+      "from": 4,
+      "what": "parses the customer-entered price",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:856",
+      "code": "var customerEnteredPriceConverted = await _productAttributeParser.ParseCustomerEnteredPriceAsync(product, form);",
+      "end": {
+        "kind": "unknown",
+        "detail": "IProductAttributeParser.ParseCustomerEnteredPriceAsync not walked"
+      }
+    },
+    {
+      "n": 8,
+      "from": 4,
+      "what": "parses the entered quantity",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:859",
+      "code": "var quantity = _productAttributeParser.ParseEnteredQuantity(product, form);",
+      "end": {
+        "kind": "unknown",
+        "detail": "IProductAttributeParser.ParseEnteredQuantity not walked"
+      }
+    },
+    {
+      "n": 9,
+      "from": 4,
+      "what": "parses the product and gift card attributes from the form",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:862",
+      "code": "var attributes = await _productAttributeParser.ParseProductAttributesAsync(product, form, addToCartWarnings);",
+      "end": {
+        "kind": "unknown",
+        "detail": "IProductAttributeParser.ParseProductAttributesAsync (7 call sites) not walked"
+      }
+    },
+    {
+      "n": 10,
+      "from": 4,
+      "what": "parses the rental dates",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:865",
+      "code": "_productAttributeParser.ParseRentalDates(product, form, out var rentalStartDate, out var rentalEndDate);",
+      "end": {
+        "kind": "unknown",
+        "detail": "IProductAttributeParser.ParseRentalDates not walked"
+      }
+    },
+    {
+      "n": 11,
+      "from": 4,
+      "what": "saves the item",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:871",
+      "code": "await SaveItemAsync(updatecartitem, addToCartWarnings, product, cartType, attributes, customerEnteredPriceConverted, rentalStartDate, rentalEndDate, quantity);"
+    },
+    {
+      "n": 12,
+      "from": 11,
+      "what": "adds a new item to the cart",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:314",
+      "code": "addToCartWarnings.AddRange(await _shoppingCartService.AddToCartAsync(customer,",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:311",
+          "code": "if (updatecartitem == null)"
+        }
+      ]
+    },
+    {
+      "n": 13,
+      "from": 12,
+      "what": "checks the customer may use the shopping cart",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1591",
+      "code": "if (shoppingCartType == ShoppingCartType.ShoppingCart && !await _permissionService.AuthorizeAsync(StandardPermission.PublicStore.ENABLE_SHOPPING_CART, customer))",
+      "end": {
+        "kind": "hub",
+        "detail": "IPermissionService.AuthorizeAsync: 81 call sites of _permissionService.AuthorizeAsync( in src"
+      }
+    },
+    {
+      "n": 14,
+      "from": 12,
+      "what": "resets the saved checkout data of the customer",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1616",
+      "code": "await ResetCheckoutDataAsync(customer, storeId);"
+    },
+    {
+      "n": 15,
+      "from": 14,
+      "what": "clears the reward points flag",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1955",
+      "code": "await _genericAttributeService.SaveAttributeAsync(customer, NopCustomerDefaults.UseRewardPointsDuringCheckoutAttribute, false, storeId);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1954",
+          "code": "if (clearRewardPoints)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "IGenericAttributeService.SaveAttributeAsync: 90 call sites; writes the GenericAttribute table"
+      }
+    },
+    {
+      "n": 16,
+      "from": 14,
+      "what": "clears the selected shipping option",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1960",
+      "code": "await _genericAttributeService.SaveAttributeAsync<ShippingOption>(customer, NopCustomerDefaults.SelectedShippingOptionAttribute, null, storeId);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1958",
+          "code": "if (clearShippingMethod)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "IGenericAttributeService.SaveAttributeAsync: 90 call sites; writes the GenericAttribute table"
+      }
+    },
+    {
+      "n": 17,
+      "from": 14,
+      "what": "clears the selected payment method",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1968",
+      "code": "await _genericAttributeService.SaveAttributeAsync<string>(customer, NopCustomerDefaults.SelectedPaymentMethodAttribute, null, storeId);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1967",
+          "code": "if (clearPaymentMethod)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "IGenericAttributeService.SaveAttributeAsync: 90 call sites; writes the GenericAttribute table"
+      }
+    },
+    {
+      "n": 18,
+      "from": 14,
+      "what": "publishes ResetCheckoutDataEvent",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1970",
+      "code": "await _eventPublisher.PublishAsync(new ResetCheckoutDataEvent(customer, storeId));",
+      "end": {
+        "kind": "message",
+        "detail": "ResetCheckoutDataEvent (no consumers found in src)"
+      }
+    },
+    {
+      "n": 19,
+      "from": 12,
+      "what": "sets the cart vendor to none",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1618",
+      "code": "await SetShoppingCartVendorAsync(customer, null, storeId);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1617",
+          "code": "if (_shoppingCartSettings.VendorEnabled)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "SetShoppingCartVendorAsync writes GenericAttribute; not walked"
+      }
+    },
+    {
+      "n": 20,
+      "from": 12,
+      "what": "loads the customer's cart",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1620",
+      "code": "var cart = await GetShoppingCartAsync(customer, shoppingCartType, storeId);",
+      "end": {
+        "kind": "hub",
+        "detail": "IShoppingCartService.GetShoppingCartAsync: 83 call sites"
+      }
+    },
+    {
+      "n": 21,
+      "from": 12,
+      "what": "looks for the same product already in the cart",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1622",
+      "code": "var shoppingCartItem = await FindShoppingCartItemInTheCartAsync(cart,",
+      "end": {
+        "kind": "unknown",
+        "detail": "in-memory search of the loaded cart; not walked"
+      }
+    },
+    {
+      "n": 22,
+      "from": 12,
+      "what": "checks warnings for the item when it is already in the cart",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1636",
+      "code": "warnings.AddRange(await GetShoppingCartItemWarningsAsync(customer, shoppingCartType, product,",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ShoppingCartService.GetShoppingCartItemWarningsAsync: 14 call sites; checks stock, quantity limits, attributes, prices"
+      }
+    },
+    {
+      "n": 23,
+      "from": 12,
+      "what": "updates the existing cart item with the added quantity",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1648",
+      "code": "await _sciRepository.UpdateAsync(shoppingCartItem);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1641",
+          "code": "if (warnings.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1633",
+          "code": "if (warnings.Any())"
+        },
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "ShoppingCartItem table (UPDATE; also publishes EntityUpdatedEvent<ShoppingCartItem>)"
+      }
+    },
+    {
+      "n": 24,
+      "from": 12,
+      "what": "checks warnings for a new cart item",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1653",
+      "code": "warnings.AddRange(await GetShoppingCartItemWarningsAsync(customer, shoppingCartType, product,",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ShoppingCartService.GetShoppingCartItemWarningsAsync: 14 call sites"
+      }
+    },
+    {
+      "n": 25,
+      "from": 12,
+      "what": "inserts the new cart item",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1706",
+      "code": "await _sciRepository.InsertAsync(shoppingCartItem);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1663",
+          "code": "if (warnings.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1658",
+          "code": "if (warnings.Any())"
+        },
+        {
+          "kind": "else",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "ShoppingCartItem table (INSERT; also publishes EntityInsertedEvent<ShoppingCartItem>)"
+      }
+    },
+    {
+      "n": 26,
+      "from": 12,
+      "what": "updates the customer's HasShoppingCartItems flag",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1708",
+      "code": "await UpdateHasShoppingCartItemsAsync(customer);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ]
+    },
+    {
+      "n": 27,
+      "from": 26,
+      "what": "saves the customer when the flag changed",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:212",
+      "code": "await _customerService.UpdateCustomerAsync(customer);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:209",
+          "code": "if (hasShoppingCartItems != customer.HasShoppingCartItems)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Customer table (UPDATE)"
+      }
+    },
+    {
+      "n": 28,
+      "from": 11,
+      "what": "loads the cart of the item being updated",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:321",
+      "code": "var cart = await _shoppingCartService.GetShoppingCartAsync(customer, updatecartitem.ShoppingCartType, store.Id);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:311",
+          "code": "if (updatecartitem == null)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "IShoppingCartService.GetShoppingCartAsync: 83 call sites"
+      }
+    },
+    {
+      "n": 29,
+      "from": 11,
+      "what": "finds another cart item with the same parameters",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:323",
+      "code": "var otherCartItemWithSameParameters = await _shoppingCartService.FindShoppingCartItemInTheCartAsync(",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:311",
+          "code": "if (updatecartitem == null)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "IShoppingCartService.FindShoppingCartItemInTheCartAsync not walked"
+      }
+    },
+    {
+      "n": 30,
+      "from": 11,
+      "what": "updates the existing cart item",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:333",
+      "code": "addToCartWarnings.AddRange(await _shoppingCartService.UpdateShoppingCartItemAsync(customer,",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:311",
+          "code": "if (updatecartitem == null)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "IShoppingCartService.UpdateShoppingCartItemAsync (3 call sites) updates the ShoppingCartItem row; not walked"
+      }
+    },
+    {
+      "n": 31,
+      "from": 11,
+      "what": "deletes the other cart item with the same parameters",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:339",
+      "code": "await _shoppingCartService.DeleteShoppingCartItemAsync(otherCartItemWithSameParameters);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:336",
+          "code": "if (otherCartItemWithSameParameters != null && !addToCartWarnings.Any())"
+        },
+        {
+          "kind": "else",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:311",
+          "code": "if (updatecartitem == null)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "ShoppingCartItem table (DELETE)"
+      }
+    },
+    {
+      "n": 32,
+      "from": 4,
+      "what": "builds the JSON response",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:874",
+      "code": "return await GetProductToCartDetailsAsync(addToCartWarnings, cartType, product, updatecartitem, customwishlistid);"
+    },
+    {
+      "n": 33,
+      "from": 32,
+      "what": "logs the PublicStore.AddToShoppingCart activity",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:429",
+      "code": "await _customerActivityService.InsertActivityAsync(\"PublicStore.AddToShoppingCart\",",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:425",
+          "code": "case ShoppingCartType.ShoppingCart:"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:347",
+          "code": "if (addToCartWarnings.Any())"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ICustomerActivityService.InsertActivityAsync: 214 call sites; inserts an ActivityLog row"
+      }
+    },
+    {
+      "n": 34,
+      "from": 32,
+      "what": "loads the cart to count the items",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:442",
+      "code": "var shoppingCarts = await _shoppingCartService.GetShoppingCartAsync(customer, ShoppingCartType.ShoppingCart, store.Id);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:432",
+          "code": "if (_shoppingCartSettings.DisplayCartAfterAddingProduct)"
+        },
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:425",
+          "code": "case ShoppingCartType.ShoppingCart:"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:347",
+          "code": "if (addToCartWarnings.Any())"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "IShoppingCartService.GetShoppingCartAsync: 83 call sites"
+      }
+    },
+    {
+      "n": 35,
+      "from": 32,
+      "what": "renders the flyout cart",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:449",
+      "code": "? await RenderViewComponentToStringAsync(typeof(FlyoutShoppingCartViewComponent))",
+      "conditions": [
+        {
+          "kind": "ternary",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:448",
+          "code": "var updateFlyoutCartSectionHtml = _shoppingCartSettings.MiniShoppingCartEnabled"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:432",
+          "code": "if (_shoppingCartSettings.DisplayCartAfterAddingProduct)"
+        },
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:425",
+          "code": "case ShoppingCartType.ShoppingCart:"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:347",
+          "code": "if (addToCartWarnings.Any())"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "FlyoutShoppingCartViewComponent not walked"
+      }
+    },
+    {
+      "n": 36,
+      "from": 3,
+      "what": "on success the response is handled by success_process",
+      "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:145",
+      "code": "success: this.success_process,"
+    },
+    {
+      "n": 37,
+      "from": 36,
+      "what": "replaces the top cart quantity text",
+      "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:153",
+      "code": "$(AjaxCart.topcartselector).html(response.updatetopcartsectionhtml);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:152",
+          "code": "if (response.updatetopcartsectionhtml) {"
+        }
+      ],
+      "end": {
+        "kind": "screen",
+        "detail": "same product page: top cart header updated"
+      }
+    },
+    {
+      "n": 38,
+      "from": 36,
+      "what": "replaces the flyout cart",
+      "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:159",
+      "code": "$(AjaxCart.flyoutcartselector).replaceWith(response.updateflyoutcartsectionhtml);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:158",
+          "code": "if (response.updateflyoutcartsectionhtml) {"
+        }
+      ],
+      "end": {
+        "kind": "screen",
+        "detail": "same product page: flyout cart replaced"
+      }
+    },
+    {
+      "n": 39,
+      "from": 36,
+      "what": "shows a popup notification on success",
+      "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:166",
+      "code": "displayPopupNotification(response.message, 'success', true);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:165",
+          "code": "if (AjaxCart.usepopupnotifications === true) {"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:163",
+          "code": "if (response.success === true) {"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:161",
+          "code": "if (response.message) {"
+        }
+      ],
+      "end": {
+        "kind": "screen",
+        "detail": "same product page: popup notification"
+      }
+    },
+    {
+      "n": 40,
+      "from": 36,
+      "what": "shows a bar notification on success (3.5 seconds)",
+      "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:170",
+      "code": "displayBarNotification(response.message, 'success', 3500);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:165",
+          "code": "if (AjaxCart.usepopupnotifications === true) {"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:163",
+          "code": "if (response.success === true) {"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:161",
+          "code": "if (response.message) {"
+        }
+      ],
+      "end": {
+        "kind": "screen",
+        "detail": "same product page: bar notification"
+      }
+    },
+    {
+      "n": 41,
+      "from": 36,
+      "what": "shows the warnings as a popup error",
+      "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:176",
+      "code": "displayPopupNotification(response.message, 'error', true);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:175",
+          "code": "if (AjaxCart.usepopupnotifications === true) {"
+        },
+        {
+          "kind": "else",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:163",
+          "code": "if (response.success === true) {"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:161",
+          "code": "if (response.message) {"
+        }
+      ],
+      "end": {
+        "kind": "screen",
+        "detail": "same product page: popup error"
+      }
+    },
+    {
+      "n": 42,
+      "from": 36,
+      "what": "shows the warnings as a bar error",
+      "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:180",
+      "code": "displayBarNotification(response.message, 'error', 0);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:175",
+          "code": "if (AjaxCart.usepopupnotifications === true) {"
+        },
+        {
+          "kind": "else",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:163",
+          "code": "if (response.success === true) {"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:161",
+          "code": "if (response.message) {"
+        }
+      ],
+      "end": {
+        "kind": "screen",
+        "detail": "same product page: bar error"
+      }
+    },
+    {
+      "n": 43,
+      "from": 36,
+      "what": "navigates to the URL in the response",
+      "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:186",
+      "code": "location.href = response.redirect;",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:185",
+          "code": "if (response.redirect) {"
+        }
+      ],
+      "end": {
+        "kind": "screen",
+        "detail": "shopping cart page (DisplayCartAfterAddingProduct) or home page (unknown product)"
+      }
+    },
+    {
+      "n": 44,
+      "from": 3,
+      "what": "on failure shows an alert",
+      "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:197",
+      "code": "alert(AjaxCart.localized_data.AjaxCartFailure);",
+      "end": {
+        "kind": "screen",
+        "detail": "same product page: browser alert"
+      }
+    },
+    {
+      "n": 45,
+      "from": 3,
+      "what": "on completion clears the loading flag",
+      "at": "src/Presentation/Nop.Web/wwwroot/js/public.ajaxcart.js:146",
+      "code": "complete: this.resetLoadWaiting,"
+    }
+  ],
+  "exits": [
+    {
+      "what": "Challenge when the customer lacks public store navigation permission (filter on BasePublicController)",
+      "at": "src/Presentation/Nop.Web.Framework/Mvc/Filters/CheckAccessPublicStoreAttribute.cs:90",
+      "code": "context.Result = new ChallengeResult();",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web.Framework/Mvc/Filters/CheckAccessPublicStoreAttribute.cs:86",
+          "code": "if (await _permissionService.AuthorizeAsync(StandardPermission.PublicStore.PUBLIC_STORE_ALLOW_NAVIGATION))"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web.Framework/Mvc/Filters/CheckAccessPublicStoreAttribute.cs:82",
+          "code": "if (actionFilter?.IgnoreFilter ?? _ignoreFilter)"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "kind": "message",
+      "to": "EntityInsertedEvent<ShoppingCartItem> consumer: CustomerEventConsumer.HandleEventAsync",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1706",
+      "code": "await _sciRepository.InsertAsync(shoppingCartItem);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "EntityInsertedEvent<ShoppingCartItem> consumer: Brevo EventConsumer.HandleEventAsync",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1706",
+      "code": "await _sciRepository.InsertAsync(shoppingCartItem);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "EntityInsertedEvent<ShoppingCartItem> consumer: Omnisend EventConsumer.HandleEventAsync",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1706",
+      "code": "await _sciRepository.InsertAsync(shoppingCartItem);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "EntityInsertedEvent<ShoppingCartItem> consumer: RFQ EventConsumer.HandleEventAsync",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1706",
+      "code": "await _sciRepository.InsertAsync(shoppingCartItem);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "EntityInsertedEvent<ShoppingCartItem> consumer: FacebookPixel EventConsumer.HandleEventAsync",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1706",
+      "code": "await _sciRepository.InsertAsync(shoppingCartItem);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "EntityInsertedEvent<ShoppingCartItem> consumer: GoogleAnalytics EventConsumer.HandleEventAsync",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1706",
+      "code": "await _sciRepository.InsertAsync(shoppingCartItem);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "EntityUpdatedEvent<ShoppingCartItem> consumer: CustomerEventConsumer.HandleEventAsync",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1648",
+      "code": "await _sciRepository.UpdateAsync(shoppingCartItem);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "EntityUpdatedEvent<ShoppingCartItem> consumer: Brevo EventConsumer.HandleEventAsync",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1648",
+      "code": "await _sciRepository.UpdateAsync(shoppingCartItem);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "EntityUpdatedEvent<ShoppingCartItem> consumer: Omnisend EventConsumer.HandleEventAsync",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1648",
+      "code": "await _sciRepository.UpdateAsync(shoppingCartItem);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "EntityUpdatedEvent<ShoppingCartItem> consumer: RFQ EventConsumer.HandleEventAsync",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1648",
+      "code": "await _sciRepository.UpdateAsync(shoppingCartItem);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "EntityUpdatedEvent<ShoppingCartItem> consumer: ModelCacheEventConsumer.HandleEventAsync",
+      "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1648",
+      "code": "await _sciRepository.UpdateAsync(shoppingCartItem);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/ShoppingCartService.cs:1626",
+          "code": "if (shoppingCartItem != null)"
+        }
+      ]
+    },
+    {
+      "kind": "screen",
+      "to": "Shopping cart page (the page navigates there when DisplayCartAfterAddingProduct is on)",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:437",
+      "code": "redirect = Url.RouteUrl(NopRouteNames.General.CART)",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:432",
+          "code": "if (_shoppingCartSettings.DisplayCartAfterAddingProduct)"
+        },
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:425",
+          "code": "case ShoppingCartType.ShoppingCart:"
+        }
+      ]
+    },
+    {
+      "kind": "screen",
+      "to": "Home page (the page navigates there when the product is not found)",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:798",
+      "code": "redirect = Url.RouteUrl(NopRouteNames.General.HOMEPAGE)",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:794",
+          "code": "if (product == null)"
+        }
+      ]
+    },
+    {
+      "kind": "continues",
+      "to": "hub: IShoppingCartService.GetShoppingCartAsync (83 call sites)",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:829",
+      "code": "var cart = await _shoppingCartService.GetShoppingCartAsync(await _workContext.GetCurrentCustomerAsync(),"
+    },
+    {
+      "kind": "continues",
+      "to": "hub: ICustomerActivityService.InsertActivityAsync (214 call sites)",
+      "at": "src/Presentation/Nop.Web/Controllers/ShoppingCartController.cs:429",
+      "code": "await _customerActivityService.InsertActivityAsync(\"PublicStore.AddToShoppingCart\","
+    }
+  ],
+  "notes": [
+    "Route: RouteProvider.cs:206 maps \"addproducttocart/details/{productId}/{shoppingCartTypeId}\" to ShoppingCart/AddProductToCart_Details; the view builds the URL with shoppingCartTypeId = ShoppingCartType.ShoppingCart.",
+    "The action always returns JSON, so none of its returns are listed as exits; the page decides what to do from the JSON (redirect, message, updatetopcartsectionhtml, updateflyoutcartsectionhtml).",
+    "The Wishlist case in GetProductToCartDetailsAsync (line 363) is used by the Add to wishlist button, not this button, so it is not walked.",
+    "If the product is not a simple product or does not match the passed cart item, the JSON carries success=false and a message; the page shows it as an error notification.",
+    "Not walked: the unit-price and stock checks inside GetShoppingCartItemWarningsAsync, required-product auto add (addRequiredProductsToCartAsync), the update branch of the service."
+  ]
+}

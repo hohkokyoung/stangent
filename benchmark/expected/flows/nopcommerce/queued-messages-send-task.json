@@ -1,0 +1,289 @@
+{
+  "repo": "nopcommerce",
+  "commit": "77d112f365e210ebdfa2f9790c8202a0e3b1c74e",
+  "id": "queued-messages-send-task",
+  "name": "Queued messages send task",
+  "kind": "job",
+  "start": {
+    "what": "the scheduled task's ExecuteAsync",
+    "at": "src/Libraries/Nop.Services/Messages/QueuedMessagesSendTask.cs:41",
+    "code": "public virtual async Task ExecuteAsync()"
+  },
+  "actor": {
+    "who": "system (the \"Send emails\" scheduled task, every 60 seconds)",
+    "why": "registered as a ScheduleTask row of this type; no user starts it",
+    "at": "src/Libraries/Nop.Services/Installation/InstallRequiredData.cs:3488",
+    "code": "Type = \"Nop.Services.Messages.QueuedMessagesSendTask, Nop.Services\","
+  },
+  "checks": [],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "asks the queued-email service for unsent emails due to be sent with fewer than 3 tries, grouped by email account",
+      "at": "src/Libraries/Nop.Services/Messages/QueuedMessagesSendTask.cs:44",
+      "code": "var queuedEmails = (await _queuedEmailService.SearchEmailsAsync(null, null, null, null,"
+    },
+    {
+      "n": 2,
+      "from": 1,
+      "what": "filters QueuedEmail rows (not sent, DontSendBeforeDateUtc due, SentTries < maxSendTries, by priority) and pages them",
+      "at": "src/Libraries/Nop.Services/Messages/QueuedEmailService.cs:177",
+      "code": "var queuedEmails = await query.ToPagedListAsync(pageIndex, pageSize);",
+      "end": {
+        "kind": "database",
+        "detail": "QueuedEmail table (read)"
+      }
+    },
+    {
+      "n": 3,
+      "from": null,
+      "what": "loads the email account of each group",
+      "at": "src/Libraries/Nop.Services/Messages/QueuedMessagesSendTask.cs:49",
+      "code": "var emailAccount = await _emailAccountService.GetEmailAccountByIdAsync(item.Key);",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/Libraries/Nop.Services/Messages/QueuedMessagesSendTask.cs:47",
+          "code": "foreach (var item in queuedEmails)"
+        }
+      ]
+    },
+    {
+      "n": 4,
+      "from": 3,
+      "what": "reads the email account row",
+      "at": "src/Libraries/Nop.Services/Messages/EmailAccountService.cs:114",
+      "code": "return await _emailAccountRepository.GetByIdAsync(emailAccountId, cache => default);",
+      "end": {
+        "kind": "database",
+        "detail": "EmailAccount table (read, cached)"
+      }
+    },
+    {
+      "n": 5,
+      "from": null,
+      "what": "sends one queued email through the email sender (up to MaxNumberOfEmails per account)",
+      "at": "src/Libraries/Nop.Services/Messages/QueuedMessagesSendTask.cs:62",
+      "code": "await _emailSender.SendEmailAsync(emailAccount,",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/Libraries/Nop.Services/Messages/QueuedMessagesSendTask.cs:51",
+          "code": "foreach (var queuedEmail in item.Take(emailAccount.MaxNumberOfEmails))"
+        },
+        {
+          "kind": "loop",
+          "at": "src/Libraries/Nop.Services/Messages/QueuedMessagesSendTask.cs:47",
+          "code": "foreach (var item in queuedEmails)"
+        }
+      ]
+    },
+    {
+      "n": 6,
+      "from": 5,
+      "what": "adds the file attachment when the queued email has a file path that exists",
+      "at": "src/Libraries/Nop.Services/Messages/EmailSender.cs:171",
+      "code": "multipart.Add(await CreateMimeAttachmentAsync(attachmentFilePath, attachmentFileName));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Messages/EmailSender.cs:170",
+          "code": "if (!string.IsNullOrEmpty(attachmentFilePath) && _fileProvider.FileExists(attachmentFilePath))"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "reads the attachment bytes from the file system through INopFileProvider; not walked"
+      }
+    },
+    {
+      "n": 7,
+      "from": 5,
+      "what": "loads the attached download",
+      "at": "src/Libraries/Nop.Services/Messages/EmailSender.cs:176",
+      "code": "var download = await _downloadService.GetDownloadByIdAsync(attachedDownloadId);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Messages/EmailSender.cs:174",
+          "code": "if (attachedDownloadId > 0)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Download table (read)"
+      }
+    },
+    {
+      "n": 8,
+      "from": 5,
+      "what": "builds the SMTP client for the email account",
+      "at": "src/Libraries/Nop.Services/Messages/EmailSender.cs:185",
+      "code": "using var smtpClient = await _smtpBuilder.BuildAsync(emailAccount);"
+    },
+    {
+      "n": 9,
+      "from": 8,
+      "what": "connects to the SMTP host",
+      "at": "src/Libraries/Nop.Services/Messages/SmtpBuilder.cs:132",
+      "code": "await client.ConnectAsync(",
+      "end": {
+        "kind": "outside-call",
+        "detail": "SMTP connect to emailAccount.Host:Port"
+      }
+    },
+    {
+      "n": 10,
+      "from": 8,
+      "what": "logs in with username and password",
+      "at": "src/Libraries/Nop.Services/Messages/SmtpBuilder.cs:140",
+      "code": "await client.AuthenticateAsync(new SaslMechanismLogin(emailAccount.Username, emailAccount.Password));",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Libraries/Nop.Services/Messages/SmtpBuilder.cs:139",
+          "code": "case EmailAuthenticationMethod.Login:"
+        }
+      ],
+      "end": {
+        "kind": "outside-call",
+        "detail": "SMTP AUTH LOGIN"
+      }
+    },
+    {
+      "n": 11,
+      "from": 8,
+      "what": "authenticates with Gmail OAuth2 credentials",
+      "at": "src/Libraries/Nop.Services/Messages/SmtpBuilder.cs:143",
+      "code": "await client.AuthenticateAsync(await GetGmailCredentialsAsync(emailAccount));",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Libraries/Nop.Services/Messages/SmtpBuilder.cs:142",
+          "code": "case EmailAuthenticationMethod.GmailOAuth2:"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "GetGmailCredentialsAsync not walked"
+      }
+    },
+    {
+      "n": 12,
+      "from": 8,
+      "what": "authenticates with Microsoft OAuth2 credentials",
+      "at": "src/Libraries/Nop.Services/Messages/SmtpBuilder.cs:146",
+      "code": "await client.AuthenticateAsync(await GetExchangeCredentialsAsync(emailAccount));",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Libraries/Nop.Services/Messages/SmtpBuilder.cs:145",
+          "code": "case EmailAuthenticationMethod.MicrosoftOAuth2:"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "GetExchangeCredentialsAsync not walked"
+      }
+    },
+    {
+      "n": 13,
+      "from": 8,
+      "what": "authenticates with NTLM",
+      "at": "src/Libraries/Nop.Services/Messages/SmtpBuilder.cs:149",
+      "code": "await client.AuthenticateAsync(new SaslMechanismNtlm());",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Libraries/Nop.Services/Messages/SmtpBuilder.cs:148",
+          "code": "case EmailAuthenticationMethod.Ntlm:"
+        }
+      ],
+      "end": {
+        "kind": "outside-call",
+        "detail": "SMTP AUTH NTLM"
+      }
+    },
+    {
+      "n": 14,
+      "from": 5,
+      "what": "sends the MIME message",
+      "at": "src/Libraries/Nop.Services/Messages/EmailSender.cs:186",
+      "code": "await smtpClient.SendAsync(message);",
+      "end": {
+        "kind": "outside-call",
+        "detail": "SMTP send of the email message (MailKit SmtpClient)"
+      }
+    },
+    {
+      "n": 15,
+      "from": null,
+      "what": "logs the send failure",
+      "at": "src/Libraries/Nop.Services/Messages/QueuedMessagesSendTask.cs:81",
+      "code": "await _logger.ErrorAsync($\"Error sending email. {exc.Message}\", exc);",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "src/Libraries/Nop.Services/Messages/QueuedMessagesSendTask.cs:79",
+          "code": "catch (Exception exc)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ILogger.ErrorAsync: 86 call sites of ErrorAsync( in src"
+      }
+    },
+    {
+      "n": 16,
+      "from": null,
+      "what": "saves the queued email with its SentOnUtc and incremented SentTries",
+      "at": "src/Libraries/Nop.Services/Messages/QueuedMessagesSendTask.cs:86",
+      "code": "await _queuedEmailService.UpdateQueuedEmailAsync(queuedEmail);",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/Libraries/Nop.Services/Messages/QueuedMessagesSendTask.cs:51",
+          "code": "foreach (var queuedEmail in item.Take(emailAccount.MaxNumberOfEmails))"
+        },
+        {
+          "kind": "loop",
+          "at": "src/Libraries/Nop.Services/Messages/QueuedMessagesSendTask.cs:47",
+          "code": "foreach (var item in queuedEmails)"
+        }
+      ]
+    },
+    {
+      "n": 17,
+      "from": 16,
+      "what": "updates the QueuedEmail row",
+      "at": "src/Libraries/Nop.Services/Messages/QueuedEmailService.cs:46",
+      "code": "await _queuedEmailRepository.UpdateAsync(queuedEmail);",
+      "end": {
+        "kind": "database",
+        "detail": "QueuedEmail table (UPDATE; EntityRepository.UpdateAsync, which also publishes EntityUpdatedEvent<QueuedEmail>)"
+      }
+    }
+  ],
+  "exits": [
+    {
+      "what": "throws NopException when connecting or authenticating against the SMTP server fails (caught by the try in ExecuteAsync, which logs it)",
+      "at": "src/Libraries/Nop.Services/Messages/SmtpBuilder.cs:158",
+      "code": "throw new NopException(ex.Message, ex);",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "src/Libraries/Nop.Services/Messages/SmtpBuilder.cs:155",
+          "code": "catch (Exception ex)"
+        }
+      ]
+    }
+  ],
+  "links": [],
+  "notes": [
+    "Nothing queues this task from the flow itself: other flows insert QueuedEmail rows; this job picks them up.",
+    "EntityRepository.UpdateAsync publishes EntityUpdatedEvent<QueuedEmail>; no consumer of that event was found, so no message links.",
+    "Per email: the try/catch/finally in ExecuteAsync means a send failure is logged, then SentTries is incremented and the row saved anyway; SentOnUtc is set only on success.",
+    "Not walked: MimeMessage building in SendEmailAsync, certificate validation callback, the OAuth credential helpers."
+  ]
+}

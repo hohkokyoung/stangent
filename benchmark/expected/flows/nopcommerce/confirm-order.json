@@ -1,0 +1,1863 @@
+{
+  "repo": "nopcommerce",
+  "commit": "77d112f365e210ebdfa2f9790c8202a0e3b1c74e",
+  "id": "confirm-order",
+  "name": "Confirm order",
+  "kind": "click",
+  "start": {
+    "what": "the confirm-order form on the multi-step Confirm page (its button .confirm-order-next-step-button submits it)",
+    "at": "src/Presentation/Nop.Web/Views/Checkout/Confirm.cshtml:20",
+    "code": "<form asp-route=\"@NopRouteNames.Standard.CHECKOUT_CONFIRM\" method=\"post\" id=\"confirm-order-form\">"
+  },
+  "actor": {
+    "who": "any shopper with items in the cart; guests only when AnonymousCheckoutAllowed is on",
+    "why": "the action returns Challenge() for guests when anonymous checkout is not allowed",
+    "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+    "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+  },
+  "checks": [
+    {
+      "what": "antiforgery token must be valid",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:32",
+      "code": "[AutoValidateAntiforgeryToken]"
+    },
+    {
+      "what": "CAPTCHA must be valid for guests when enabled on the checkout page",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1276",
+      "code": "[ValidateCaptcha]"
+    },
+    {
+      "what": "CAPTCHA result is checked for guest customers",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1304",
+      "code": "if (isCaptchaSettingEnabled && !captchaValid)"
+    },
+    {
+      "what": "terms of service must be ticked when shown (browser-side only, blocks the submit)",
+      "at": "src/Presentation/Nop.Web/Views/Checkout/Confirm.cshtml:26",
+      "code": "if ($('#termsofservice').length > 0) {"
+    },
+    {
+      "what": "checkout must not be disabled",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+      "code": "if (_orderSettings.CheckoutDisabled)"
+    },
+    {
+      "what": "cart must not be empty",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+      "code": "if (!cart.Any())"
+    },
+    {
+      "what": "guests need AnonymousCheckoutAllowed",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+      "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+    },
+    {
+      "what": "minimum order placement interval must have passed",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1313",
+      "code": "if (!await IsMinimumOrderPlacementIntervalValidAsync(customer))"
+    },
+    {
+      "what": "minimum order subtotal",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:519",
+      "code": "if (!await ValidateMinOrderSubtotalAmountAsync(details.Cart))"
+    },
+    {
+      "what": "minimum order total",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:526",
+      "code": "if (!await ValidateMinOrderTotalAmountAsync(details.Cart))"
+    },
+    {
+      "what": "cart and cart item warnings must be empty",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:503",
+      "code": "if (warnings.Any())"
+    }
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "the Confirm form posts to the checkout confirm route (POST /checkout/confirm)",
+      "at": "src/Presentation/Nop.Web/Views/Checkout/Confirm.cshtml:20",
+      "code": "<form asp-route=\"@NopRouteNames.Standard.CHECKOUT_CONFIRM\" method=\"post\" id=\"confirm-order-form\">"
+    },
+    {
+      "n": 2,
+      "from": 1,
+      "what": "ConfirmOrder action (the \"Confirm\" POST action) runs",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1278",
+      "code": "public virtual async Task<IActionResult> ConfirmOrder(bool captchaValid)"
+    },
+    {
+      "n": 3,
+      "from": 2,
+      "what": "loads the customer's cart",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1286",
+      "code": "var cart = await _shoppingCartService.GetShoppingCartAsync(customer, ShoppingCartType.ShoppingCart, store.Id);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "IShoppingCartService.GetShoppingCartAsync: 83 call sites of _shoppingCartService.GetShoppingCartAsync( in src"
+      }
+    },
+    {
+      "n": 4,
+      "from": 2,
+      "what": "checks whether the customer is a guest (anonymous checkout rule)",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+      "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ICustomerService.IsGuestAsync: 114 call sites of _customerService.IsGuestAsync( in src"
+      }
+    },
+    {
+      "n": 5,
+      "from": 2,
+      "what": "prepares the confirm-order model",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1298",
+      "code": "var model = await _checkoutModelFactory.PrepareConfirmOrderModelAsync(cart);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "ICheckoutModelFactory.PrepareConfirmOrderModelAsync not walked"
+      }
+    },
+    {
+      "n": 6,
+      "from": 2,
+      "what": "adds the wrong-CAPTCHA warning",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1306",
+      "code": "model.Warnings.Add(await _localizationService.GetResourceAsync(\"Common.WrongCaptchaMessage\"));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1304",
+          "code": "if (isCaptchaSettingEnabled && !captchaValid)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ILocalizationService.GetResourceAsync: 1733 call sites"
+      }
+    },
+    {
+      "n": 7,
+      "from": 2,
+      "what": "checks the minimum interval since the last order",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1313",
+      "code": "if (!await IsMinimumOrderPlacementIntervalValidAsync(customer))",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "n": 8,
+      "from": 7,
+      "what": "searches the customer's last order",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:142",
+      "code": "var lastOrder = (await _orderService.SearchOrdersAsync(storeId: store.Id,",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:137",
+          "code": "if (_orderSettings.MinimumOrderPlacementInterval == 0)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Order table (read: last order of the customer in the store)"
+      }
+    },
+    {
+      "n": 9,
+      "from": 2,
+      "what": "reads the saved process-payment request",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1317",
+      "code": "var processPaymentRequest = await _orderProcessingService.GetProcessPaymentRequestAsync();",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "n": 10,
+      "from": 9,
+      "what": "reads the ProcessPaymentRequest attribute",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:3325",
+      "code": "var json = await _genericAttributeService.GetAttributeAsync<string>(customer, NopCustomerDefaults.ProcessPaymentRequestAttribute, store.Id);",
+      "end": {
+        "kind": "hub",
+        "detail": "IGenericAttributeService.GetAttributeAsync: 143 call sites; reads the GenericAttribute table"
+      }
+    },
+    {
+      "n": 11,
+      "from": 2,
+      "what": "checks whether a payment step is required",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1321",
+      "code": "if (await _orderProcessingService.IsPaymentWorkflowRequiredAsync(cart))",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1318",
+          "code": "if (processPaymentRequest == null)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "n": 12,
+      "from": 11,
+      "what": "computes the cart total to see whether it is zero",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:3248",
+      "code": "var shoppingCartTotalBase = (await _orderTotalCalculationService.GetShoppingCartTotalAsync(cart, useRewardPoints: useRewardPoints, usePaymentMethodAdditionalFee: false)).shoppingCartTotal;",
+      "end": {
+        "kind": "unknown",
+        "detail": "IOrderTotalCalculationService.GetShoppingCartTotalAsync not walked"
+      }
+    },
+    {
+      "n": 13,
+      "from": 2,
+      "what": "reads the selected payment method",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1329",
+      "code": "processPaymentRequest.PaymentMethodSystemName = await _genericAttributeService.GetAttributeAsync<string>(customer,",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "IGenericAttributeService.GetAttributeAsync: 143 call sites"
+      }
+    },
+    {
+      "n": 14,
+      "from": 2,
+      "what": "saves the process-payment request",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1331",
+      "code": "await _orderProcessingService.SetProcessPaymentRequestAsync(processPaymentRequest);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "n": 15,
+      "from": 14,
+      "what": "writes the ProcessPaymentRequest attribute",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:3368",
+      "code": "await _genericAttributeService.SaveAttributeAsync(customer, NopCustomerDefaults.ProcessPaymentRequestAttribute, json, store.Id);",
+      "end": {
+        "kind": "database",
+        "detail": "GenericAttribute table (INSERT/UPDATE)"
+      }
+    },
+    {
+      "n": 16,
+      "from": 2,
+      "what": "places the order",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1332",
+      "code": "var placeOrderResult = await _orderProcessingService.PlaceOrderAsync(processPaymentRequest);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "n": 17,
+      "from": 16,
+      "what": "prepares and validates the order details (customer, cart, addresses, shipping, totals)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1602",
+      "code": "var details = await PreparePlaceOrderDetailsAsync(processPaymentRequest);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1598",
+          "code": "if (processPaymentRequest.OrderGuid == Guid.Empty)"
+        }
+      ]
+    },
+    {
+      "n": 18,
+      "from": 17,
+      "what": "validates the customer (throws NopException on failure)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:293",
+      "code": "await PrepareAndValidateCustomerAsync(details, processPaymentRequest, currentCurrency);",
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareAndValidate* method not walked; its throws are listed under exits"
+      }
+    },
+    {
+      "n": 19,
+      "from": 17,
+      "what": "validates the cart and checkout attributes (throws NopException on failure)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:294",
+      "code": "await PrepareAndValidateShoppingCartAndCheckoutAttributesAsync(details, processPaymentRequest, currentCurrency);",
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareAndValidate* method not walked; its throws are listed under exits"
+      }
+    },
+    {
+      "n": 20,
+      "from": 17,
+      "what": "validates the billing address (throws NopException on failure)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:295",
+      "code": "await PrepareAndValidateBillingAddressAsync(details);",
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareAndValidate* method not walked; its throws are listed under exits"
+      }
+    },
+    {
+      "n": 21,
+      "from": 17,
+      "what": "validates the shipping info (throws NopException on failure)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:296",
+      "code": "await PrepareAndValidateShippingInfoAsync(details, processPaymentRequest);",
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareAndValidate* method not walked; its throws are listed under exits"
+      }
+    },
+    {
+      "n": 22,
+      "from": 17,
+      "what": "validates the totals (throws NopException on failure)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:297",
+      "code": "await PrepareAndValidateTotalsAsync(details, processPaymentRequest);",
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareAndValidate* method not walked; its throws are listed under exits"
+      }
+    },
+    {
+      "n": 23,
+      "from": 16,
+      "what": "processes the payment",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1611",
+      "code": "await GetProcessPaymentResultAsync(processPaymentRequest, placeOrderContainer)"
+    },
+    {
+      "n": 24,
+      "from": 23,
+      "what": "asks the payment service to process the payment (skipped when no payment is required)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1424",
+      "code": "processPaymentResult = await _paymentService.ProcessPaymentAsync(processPaymentRequest);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1411",
+          "code": "if (details.IsRecurringShoppingCart)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1400",
+          "code": "if (await IsPaymentWorkflowRequiredAsync(details.Cart))"
+        }
+      ]
+    },
+    {
+      "n": 25,
+      "from": 24,
+      "what": "calls the payment plugin to charge the customer",
+      "at": "src/Libraries/Nop.Services/Payments/PaymentService.cs:67",
+      "code": "return await paymentMethod.ProcessPaymentAsync(processPaymentRequest);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Libraries/Nop.Services/Payments/PaymentService.cs:53",
+          "code": "if (processPaymentRequest.OrderTotal == decimal.Zero)"
+        }
+      ],
+      "end": {
+        "kind": "outside-call",
+        "detail": "IPaymentMethod.ProcessPaymentAsync of the selected payment plugin (payment gateway call)"
+      }
+    },
+    {
+      "n": 26,
+      "from": 16,
+      "what": "saves the order",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1616",
+      "code": "var order = await SaveOrderDetailsAsync(processPaymentRequest, processPaymentResult,",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "n": 27,
+      "from": 26,
+      "what": "inserts the billing address",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:775",
+      "code": "await _addressService.InsertAddressAsync(details.BillingAddress);",
+      "end": {
+        "kind": "hub",
+        "detail": "IAddressService.InsertAddressAsync: 29 call sites; writes the Address table"
+      }
+    },
+    {
+      "n": 28,
+      "from": 26,
+      "what": "inserts the order",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:800",
+      "code": "await _orderService.InsertOrderAsync(order);",
+      "end": {
+        "kind": "database",
+        "detail": "Order table (INSERT; also publishes EntityInsertedEvent<Order>)"
+      }
+    },
+    {
+      "n": 29,
+      "from": 26,
+      "what": "sets the custom order number and updates the order",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:804",
+      "code": "await _orderService.UpdateOrderAsync(order);",
+      "end": {
+        "kind": "database",
+        "detail": "Order table (UPDATE)"
+      }
+    },
+    {
+      "n": 30,
+      "from": 16,
+      "what": "moves the cart items to order items",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1621",
+      "code": "await MoveShoppingCartItemsToOrderItemsAsync(placeOrderContainer, order);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "n": 31,
+      "from": 30,
+      "what": "inserts the order item",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1334",
+      "code": "await _orderService.InsertOrderItemAsync(orderItem);",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1285",
+          "code": "foreach (var sc in details.Cart)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "OrderItem table (INSERT)"
+      }
+    },
+    {
+      "n": 32,
+      "from": 30,
+      "what": "reduces the product stock",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1340",
+      "code": "await _productService.AdjustInventoryAsync(product, -sc.Quantity, sc.AttributesXml,",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1285",
+          "code": "foreach (var sc in details.Cart)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "IProductService.AdjustInventoryAsync (9 call sites) updates Product / ProductAttributeCombination stock and StockQuantityHistory; not walked"
+      }
+    },
+    {
+      "n": 33,
+      "from": 30,
+      "what": "publishes ShoppingCartItemMovedToOrderItemEvent",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1343",
+      "code": "await _eventPublisher.PublishAsync(new ShoppingCartItemMovedToOrderItemEvent(sc, orderItem));",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1285",
+          "code": "foreach (var sc in details.Cart)"
+        }
+      ],
+      "end": {
+        "kind": "message",
+        "detail": "ShoppingCartItemMovedToOrderItemEvent"
+      }
+    },
+    {
+      "n": 34,
+      "from": 30,
+      "what": "clears the customer's shopping cart",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1346",
+      "code": "await _shoppingCartService.ClearShoppingCartAsync(details.Customer, order.StoreId);",
+      "end": {
+        "kind": "database",
+        "detail": "ShoppingCartItem table (DELETE)"
+      }
+    },
+    {
+      "n": 35,
+      "from": 16,
+      "what": "saves the discount usage history",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1624",
+      "code": "await SaveDiscountUsageHistoryAsync(placeOrderContainer, order);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "n": 36,
+      "from": 35,
+      "what": "inserts the discount usage",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1472",
+      "code": "await _discountService.InsertDiscountUsageHistoryAsync(new DiscountUsageHistory",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1466",
+          "code": "foreach (var discount in details.AppliedDiscounts)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1463",
+          "code": "if (details.AppliedDiscounts == null || !details.AppliedDiscounts.Any())"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "DiscountUsageHistory table (INSERT)"
+      }
+    },
+    {
+      "n": 37,
+      "from": 16,
+      "what": "saves the gift card usage history",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1627",
+      "code": "await SaveGiftCardUsageHistoryAsync(placeOrderContainer, order);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "n": 38,
+      "from": 37,
+      "what": "inserts the gift card usage",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1445",
+      "code": "await _giftCardService.InsertGiftCardUsageHistoryAsync(new GiftCardUsageHistory",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1443",
+          "code": "foreach (var agc in details.AppliedGiftCards)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1440",
+          "code": "if (details.AppliedGiftCards == null || !details.AppliedGiftCards.Any())"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "GiftCardUsageHistory table (INSERT)"
+      }
+    },
+    {
+      "n": 39,
+      "from": 16,
+      "what": "creates the first recurring payment",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1631",
+      "code": "await CreateFirstRecurringPaymentAsync(processPaymentRequest, order);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1630",
+          "code": "if (placeOrderContainer.IsRecurringShoppingCart)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "CreateFirstRecurringPaymentAsync not walked"
+      }
+    },
+    {
+      "n": 40,
+      "from": 16,
+      "what": "adds the notes and queues the \"order placed\" emails",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1634",
+      "code": "await SendNotificationsAndSaveNotesAsync(order);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "n": 41,
+      "from": 40,
+      "what": "adds the \"Order placed\" order note",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:827",
+      "code": "await AddOrderNoteAsync(order, _workContext.OriginalCustomerIfImpersonated != null",
+      "end": {
+        "kind": "hub",
+        "detail": "AddOrderNoteAsync: 44 call sites in src; inserts an OrderNote row"
+      }
+    },
+    {
+      "n": 42,
+      "from": 40,
+      "what": "queues the store owner notification",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:832",
+      "code": "var orderPlacedStoreOwnerNotificationQueuedEmailIds = await _workflowMessageService.SendOrderPlacedStoreOwnerNotificationAsync(order, _localizationSettings.DefaultAdminLanguageId);"
+    },
+    {
+      "n": 43,
+      "from": 42,
+      "what": "builds and queues the email",
+      "at": "src/Libraries/Nop.Services/Messages/WorkflowMessageService.cs:484",
+      "code": "return await SendNotificationAsync(messageTemplate, emailAccount, languageId, tokens, toEmail, toName,",
+      "end": {
+        "kind": "hub",
+        "detail": "WorkflowMessageService.SendNotificationAsync: 59 call sites in src; its last step inserts a QueuedEmail row (WorkflowMessageService.cs:2894)"
+      }
+    },
+    {
+      "n": 44,
+      "from": 40,
+      "what": "queues the customer notification",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:840",
+      "code": "var orderPlacedCustomerNotificationQueuedEmailIds = await _workflowMessageService"
+    },
+    {
+      "n": 45,
+      "from": 44,
+      "what": "builds and queues the email",
+      "at": "src/Libraries/Nop.Services/Messages/WorkflowMessageService.cs:768",
+      "code": "return await SendNotificationAsync(messageTemplate, emailAccount, languageId, tokens, toEmail, toName,",
+      "end": {
+        "kind": "hub",
+        "detail": "WorkflowMessageService.SendNotificationAsync: 59 call sites in src; its last step inserts a QueuedEmail row"
+      }
+    },
+    {
+      "n": 46,
+      "from": 40,
+      "what": "queues a notification to each vendor in the order",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:848",
+      "code": "var orderPlacedVendorNotificationQueuedEmailIds = await _workflowMessageService.SendOrderPlacedVendorNotificationAsync(order, vendor, _localizationSettings.DefaultAdminLanguageId);",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:846",
+          "code": "foreach (var vendor in vendors)"
+        }
+      ]
+    },
+    {
+      "n": 47,
+      "from": 46,
+      "what": "builds and queues the email",
+      "at": "src/Libraries/Nop.Services/Messages/WorkflowMessageService.cs:441",
+      "code": "return await SendNotificationAsync(messageTemplate, emailAccount, languageId, tokens, toEmail, toName);",
+      "end": {
+        "kind": "hub",
+        "detail": "WorkflowMessageService.SendNotificationAsync: 59 call sites in src; its last step inserts a QueuedEmail row"
+      }
+    },
+    {
+      "n": 48,
+      "from": 40,
+      "what": "queues the affiliate notification",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:856",
+      "code": "var orderPlacedAffiliateNotificationQueuedEmailIds = await _workflowMessageService.SendOrderPlacedAffiliateNotificationAsync(order, _localizationSettings.DefaultAdminLanguageId);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:853",
+          "code": "if (order.AffiliateId == 0)"
+        }
+      ]
+    },
+    {
+      "n": 49,
+      "from": 48,
+      "what": "builds and queues the email",
+      "at": "src/Libraries/Nop.Services/Messages/WorkflowMessageService.cs:533",
+      "code": "return await SendNotificationAsync(messageTemplate, emailAccount, languageId, tokens, toEmail, toName);",
+      "end": {
+        "kind": "hub",
+        "detail": "WorkflowMessageService.SendNotificationAsync: 59 call sites in src; its last step inserts a QueuedEmail row"
+      }
+    },
+    {
+      "n": 50,
+      "from": 16,
+      "what": "resets the checkout data (coupon codes and checkout attributes too)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1637",
+      "code": "await _shoppingCartService.ResetCheckoutDataAsync(placeOrderContainer.Customer,",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "ResetCheckoutDataAsync (9 call sites) clears GenericAttribute values and publishes ResetCheckoutDataEvent; not walked"
+      }
+    },
+    {
+      "n": 51,
+      "from": 16,
+      "what": "clears the shopping cart vendor",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1639",
+      "code": "await _shoppingCartService.SetShoppingCartVendorAsync(placeOrderContainer.Customer, null, processPaymentRequest.StoreId);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "SetShoppingCartVendorAsync writes GenericAttribute; not walked"
+      }
+    },
+    {
+      "n": 52,
+      "from": 16,
+      "what": "logs the PublicStore.PlaceOrder activity",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1641",
+      "code": "await _customerActivityService.InsertActivityAsync(\"PublicStore.PlaceOrder\",",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ICustomerActivityService.InsertActivityAsync: 214 call sites; inserts an ActivityLog row"
+      }
+    },
+    {
+      "n": 53,
+      "from": 16,
+      "what": "publishes OrderPlacedEvent",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1646",
+      "code": "await _eventPublisher.PublishAsync(new OrderPlacedEvent(order));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ],
+      "end": {
+        "kind": "message",
+        "detail": "OrderPlacedEvent"
+      }
+    },
+    {
+      "n": 54,
+      "from": 16,
+      "what": "checks and saves the order status",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1649",
+      "code": "await CheckOrderStatusAsync(order);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "n": 55,
+      "from": 54,
+      "what": "updates the order when its status changed",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1549",
+      "code": "await _orderService.UpdateOrderAsync(order);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1548",
+          "code": "if (!isOrderSaved)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Order table (UPDATE)"
+      }
+    },
+    {
+      "n": 56,
+      "from": 16,
+      "what": "processes an order that is already paid",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1652",
+      "code": "await ProcessOrderPaidAsync(order);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1651",
+          "code": "if (order.PaymentStatus == PaymentStatus.Paid)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "ProcessOrderPaidAsync publishes OrderPaidEvent and handles reward points and gift card activation; not walked"
+      }
+    },
+    {
+      "n": 57,
+      "from": 16,
+      "what": "logs an order placement error",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1665",
+      "code": "await _logger.ErrorAsync(exc.Message, exc);",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1663",
+          "code": "catch (Exception exc)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ILogger.ErrorAsync: 86 call sites in src"
+      }
+    },
+    {
+      "n": 58,
+      "from": 2,
+      "what": "clears the saved process-payment request",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1335",
+      "code": "await _orderProcessingService.SetProcessPaymentRequestAsync(null);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1333",
+          "code": "if (placeOrderResult.Success)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "GenericAttribute table (UPDATE: ProcessPaymentRequest attribute cleared)"
+      }
+    },
+    {
+      "n": 59,
+      "from": 2,
+      "what": "runs the payment post-processing",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1341",
+      "code": "await _paymentService.PostProcessPaymentAsync(postProcessPaymentRequest);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1333",
+          "code": "if (placeOrderResult.Success)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "n": 60,
+      "from": 59,
+      "what": "calls the payment plugin to post-process the payment (skipped when already paid)",
+      "at": "src/Libraries/Nop.Services/Payments/PaymentService.cs:86",
+      "code": "await paymentMethod.PostProcessPaymentAsync(postProcessPaymentRequest);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Libraries/Nop.Services/Payments/PaymentService.cs:78",
+          "code": "if (postProcessPaymentRequest.Order.PaymentStatus == PaymentStatus.Paid)"
+        }
+      ],
+      "end": {
+        "kind": "outside-call",
+        "detail": "IPaymentMethod.PostProcessPaymentAsync of the payment plugin (may redirect to an external payment page)"
+      }
+    },
+    {
+      "n": 61,
+      "from": 2,
+      "what": "redirects to the order completed page",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1349",
+      "code": "return RedirectToRoute(NopRouteNames.Standard.CHECKOUT_COMPLETED, new { orderId = placeOrderResult.PlacedOrder.Id });",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1333",
+          "code": "if (placeOrderResult.Success)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ],
+      "end": {
+        "kind": "screen",
+        "detail": "Checkout completed page (Completed action)"
+      }
+    },
+    {
+      "n": 62,
+      "from": 2,
+      "what": "logs the failure as a warning",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1357",
+      "code": "await _logger.WarningAsync(exc.Message, exc);",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1355",
+          "code": "catch (Exception exc)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ILogger.WarningAsync: 23 call sites in src"
+      }
+    },
+    {
+      "n": 63,
+      "from": 2,
+      "what": "redisplays the Confirm page with the warnings",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1362",
+      "code": "return View(model);",
+      "end": {
+        "kind": "screen",
+        "detail": "Confirm page redisplayed with the warnings"
+      }
+    }
+  ],
+  "exits": [
+    {
+      "what": "redirects to the cart when checkout is disabled",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1282",
+      "code": "return RedirectToRoute(NopRouteNames.General.CART);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to the cart when the cart is empty",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1289",
+      "code": "return RedirectToRoute(NopRouteNames.General.CART);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to one-page checkout when it is enabled (the default setting)",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1292",
+      "code": "return RedirectToRoute(NopRouteNames.Standard.CHECKOUT_ONE_PAGE);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "what": "Challenge when the customer is a guest and anonymous checkout is not allowed",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1295",
+      "code": "return Challenge();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to the payment info page when the saved payment request is missing and payment is required",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1322",
+      "code": "return RedirectToRoute(NopRouteNames.Standard.CHECKOUT_PAYMENT_INFO);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1321",
+          "code": "if (await _orderProcessingService.IsPaymentWorkflowRequiredAsync(cart))"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1318",
+          "code": "if (processPaymentRequest == null)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to the order completed page after a successful order",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1349",
+      "code": "return RedirectToRoute(NopRouteNames.Standard.CHECKOUT_COMPLETED, new { orderId = placeOrderResult.PlacedOrder.Id });",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1333",
+          "code": "if (placeOrderResult.Success)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "what": "throws Exception when an order was placed too recently (caught by the action's catch, shown as a warning)",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1314",
+      "code": "throw new Exception(await _localizationService.GetResourceAsync(\"Checkout.MinOrderPlacementInterval\"));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1313",
+          "code": "if (!await IsMinimumOrderPlacementIntervalValidAsync(customer))"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "what": "throws Exception when the order GUID is not generated",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1599",
+      "code": "throw new Exception(\"Order GUID is not generated\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1598",
+          "code": "if (processPaymentRequest.OrderGuid == Guid.Empty)"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when the shipping total cannot be calculated",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:370",
+      "code": "throw new NopException(\"Shipping total couldn't be calculated\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:369",
+          "code": "if (!orderShippingTotalInclTax.HasValue || !orderShippingTotalExclTax.HasValue)"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when the order total cannot be calculated",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:401",
+      "code": "throw new NopException(\"Order total couldn't be calculated\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:400",
+          "code": "if (!orderTotal.HasValue)"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when the shipping address is not provided",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:453",
+      "code": "throw new NopException(\"Shipping address is not provided\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:452",
+          "code": "if (details.Customer.ShippingAddressId == null)"
+        },
+        {
+          "kind": "else",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:433",
+          "code": "if (_shippingSettings.AllowPickupInStore && pickupPoint != null)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:429",
+          "code": "if (await _shoppingCartService.ShoppingCartRequiresShippingAsync(details.Cart))"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when the shipping email is not valid",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:458",
+      "code": "throw new NopException(\"Email is not valid\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:457",
+          "code": "if (!CommonHelper.IsValidEmail(shippingAddress?.Email))"
+        },
+        {
+          "kind": "else",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:433",
+          "code": "if (_shippingSettings.AllowPickupInStore && pickupPoint != null)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:429",
+          "code": "if (await _shoppingCartService.ShoppingCartRequiresShippingAsync(details.Cart))"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when the shipping country does not allow shipping",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:464",
+      "code": "throw new NopException($\"Country '{shippingCountry.Name}' is not allowed for shipping\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:463",
+          "code": "if (await _countryService.GetCountryByAddressAsync(details.ShippingAddress) is Country shippingCountry && !shippingCountry.AllowsShipping)"
+        },
+        {
+          "kind": "else",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:433",
+          "code": "if (_shippingSettings.AllowPickupInStore && pickupPoint != null)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:429",
+          "code": "if (await _shoppingCartService.ShoppingCartRequiresShippingAsync(details.Cart))"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when the cart is empty",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:499",
+      "code": "throw new NopException(\"Cart is empty\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:498",
+          "code": "if (!details.Cart.Any())"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when the cart has warnings",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:504",
+      "code": "throw new NopException(warnings.Aggregate(string.Empty, (current, next) => $\"{current}{next};\"));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:503",
+          "code": "if (warnings.Any())"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when a cart item has warnings",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:515",
+      "code": "throw new NopException(sciWarnings.Aggregate(string.Empty, (current, next) => $\"{current}{next};\"));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:514",
+          "code": "if (sciWarnings.Any())"
+        },
+        {
+          "kind": "loop",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:507",
+          "code": "foreach (var sci in details.Cart)"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when the minimum order subtotal is not reached",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:522",
+      "code": "throw new NopException(string.Format(await _localizationService.GetResourceAsync(\"Checkout.MinOrderSubtotalAmount\"),",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:519",
+          "code": "if (!await ValidateMinOrderSubtotalAmountAsync(details.Cart))"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when the minimum order total is not reached",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:529",
+      "code": "throw new NopException(string.Format(await _localizationService.GetResourceAsync(\"Checkout.MinOrderTotalAmount\"),",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:526",
+          "code": "if (!await ValidateMinOrderTotalAmountAsync(details.Cart))"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when the billing address is not provided",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:543",
+      "code": "throw new NopException(\"Billing address is not provided\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:542",
+          "code": "if (details.Customer.BillingAddressId is null)"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when the billing email is not valid",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:548",
+      "code": "throw new NopException(\"Email is not valid\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:547",
+          "code": "if (!CommonHelper.IsValidEmail(billingAddress?.Email))"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when the billing country does not allow billing",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:553",
+      "code": "throw new NopException($\"Country '{billingCountry.Name}' is not allowed for billing\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:552",
+          "code": "if (await _countryService.GetCountryByAddressAsync(details.BillingAddress) is Country billingCountry && !billingCountry.AllowsBilling)"
+        }
+      ]
+    },
+    {
+      "what": "throws ArgumentException when the customer is not set",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:569",
+      "code": "throw new ArgumentException(\"Customer is not set\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:568",
+          "code": "if (details.Customer == null)"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when a guest checks out and anonymous checkout is not allowed",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:573",
+      "code": "throw new NopException(\"Anonymous checkout is not allowed\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:572",
+          "code": "if (await _customerService.IsGuestAsync(details.Customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "kind": "message",
+      "to": "OrderPlacedEvent consumer: Brevo EventConsumer.HandleEventAsync(OrderPlacedEvent)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1646",
+      "code": "await _eventPublisher.PublishAsync(new OrderPlacedEvent(order));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "OrderPlacedEvent consumer: Omnisend EventConsumer.HandleEventAsync(OrderPlacedEvent)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1646",
+      "code": "await _eventPublisher.PublishAsync(new OrderPlacedEvent(order));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "OrderPlacedEvent consumer: Avalara EventConsumer.HandleEventAsync(OrderPlacedEvent)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1646",
+      "code": "await _eventPublisher.PublishAsync(new OrderPlacedEvent(order));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "OrderPlacedEvent consumer: FacebookPixel EventConsumer.HandleEventAsync(OrderPlacedEvent)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1646",
+      "code": "await _eventPublisher.PublishAsync(new OrderPlacedEvent(order));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "OrderPlacedEvent consumer: GoogleAnalytics EventConsumer.HandleEventAsync(OrderPlacedEvent)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1646",
+      "code": "await _eventPublisher.PublishAsync(new OrderPlacedEvent(order));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "ShoppingCartItemMovedToOrderItemEvent consumer: RFQ EventConsumer.HandleEventAsync(ShoppingCartItemMovedToOrderItemEvent)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1343",
+      "code": "await _eventPublisher.PublishAsync(new ShoppingCartItemMovedToOrderItemEvent(sc, orderItem));",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1285",
+          "code": "foreach (var sc in details.Cart)"
+        }
+      ]
+    },
+    {
+      "kind": "runs-later",
+      "to": "Queued messages send task (order placed email to the store owner)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:832",
+      "code": "var orderPlacedStoreOwnerNotificationQueuedEmailIds = await _workflowMessageService.SendOrderPlacedStoreOwnerNotificationAsync(order, _localizationSettings.DefaultAdminLanguageId);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "kind": "runs-later",
+      "to": "Queued messages send task (order placed email to the customer)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:840",
+      "code": "var orderPlacedCustomerNotificationQueuedEmailIds = await _workflowMessageService",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "kind": "runs-later",
+      "to": "Queued messages send task (order placed email to each vendor)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:848",
+      "code": "var orderPlacedVendorNotificationQueuedEmailIds = await _workflowMessageService.SendOrderPlacedVendorNotificationAsync(order, vendor, _localizationSettings.DefaultAdminLanguageId);",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:846",
+          "code": "foreach (var vendor in vendors)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "kind": "runs-later",
+      "to": "Queued messages send task (order placed email to the affiliate)",
+      "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:856",
+      "code": "var orderPlacedAffiliateNotificationQueuedEmailIds = await _workflowMessageService.SendOrderPlacedAffiliateNotificationAsync(order, _localizationSettings.DefaultAdminLanguageId);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:853",
+          "code": "if (order.AffiliateId == 0)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Orders/OrderProcessingService.cs:1614",
+          "code": "if (processPaymentResult.Success)"
+        }
+      ]
+    },
+    {
+      "kind": "screen",
+      "to": "Checkout completed page",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1349",
+      "code": "return RedirectToRoute(NopRouteNames.Standard.CHECKOUT_COMPLETED, new { orderId = placeOrderResult.PlacedOrder.Id });",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1333",
+          "code": "if (placeOrderResult.Success)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "kind": "screen",
+      "to": "Payment info page",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1322",
+      "code": "return RedirectToRoute(NopRouteNames.Standard.CHECKOUT_PAYMENT_INFO);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1321",
+          "code": "if (await _orderProcessingService.IsPaymentWorkflowRequiredAsync(cart))"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1318",
+          "code": "if (processPaymentRequest == null)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1294",
+          "code": "if (await _customerService.IsGuestAsync(customer) && !_orderSettings.AnonymousCheckoutAllowed)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "kind": "screen",
+      "to": "Shopping cart page",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1282",
+      "code": "return RedirectToRoute(NopRouteNames.General.CART);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "kind": "screen",
+      "to": "One-page checkout page",
+      "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1292",
+      "code": "return RedirectToRoute(NopRouteNames.Standard.CHECKOUT_ONE_PAGE);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1291",
+          "code": "if (_orderSettings.OnePageCheckoutEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1288",
+          "code": "if (!cart.Any())"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CheckoutController.cs:1281",
+          "code": "if (_orderSettings.CheckoutDisabled)"
+        }
+      ]
+    },
+    {
+      "kind": "continues",
+      "to": "hub: WorkflowMessageService.SendNotificationAsync (59 call sites)",
+      "at": "src/Libraries/Nop.Services/Messages/WorkflowMessageService.cs:768",
+      "code": "return await SendNotificationAsync(messageTemplate, emailAccount, languageId, tokens, toEmail, toName,"
+    }
+  ],
+  "notes": [
+    "Followed the multi-step path: Confirm.cshtml form -> POST /checkout/confirm (RouteProvider.cs:316) -> CheckoutController.ConfirmOrder.",
+    "The action redirects to one-page checkout when OrderSettings.OnePageCheckoutEnabled is on (line 1291); the installer sets OnePageCheckoutEnabled = true (InstallRequiredData.cs:1870), so with default settings the order is placed by the one-page path (OpcConfirmOrder action, Views/Checkout/OpcConfirmOrder.cshtml), which is not walked here.",
+    "The terms-of-service check is only in the page script (Confirm.cshtml); the server does not check it in ConfirmOrder.",
+    "PlaceOrderAsync runs placeOrder either directly or under a mutex when OrderSettings.PlaceOrderWithLock is on (O:1681); both run the same steps.",
+    "Exceptions thrown while preparing the order details (PreparePlaceOrderDetailsAsync runs outside the placeOrder try) travel to the controller catch; exceptions inside placeOrder are caught at O:1663 and returned as errors, which the controller adds to model.Warnings.",
+    "Entity inserts/updates publish EntityInsertedEvent/EntityUpdatedEvent through the repositories; those consumers are not listed.",
+    "Not walked: CheckoutModelFactory.PrepareConfirmOrderModelAsync, the PrepareAndValidate* methods, tax and discount computations, ProcessOrderPaidAsync, recurring payments."
+  ]
+}
