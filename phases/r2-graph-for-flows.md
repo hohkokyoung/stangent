@@ -525,3 +525,17 @@ Findings (verified against the graphs), both general, not fixed:
 
 Minor: a recurring job's `schedule` is empty when it's a Hangfire `Cron.Daily` (a method, not text; Kavita `TaskScheduler.cs:168`); an MVC `on-load`
 for `View(model)` has `view: ""` where MVC's default is the action's name. Both read as "not known" today, never wrong.
+
+## 19. Y1, Y2 and X1 fixed, 2026-11-09 (D182)
+
+Owner: "Yes, fix them" (on the recommendation). Code only, no paid AI. Commit `f3fb7ca`. Tests: 2,165 .NET + 55 extractor pass (cases added
+to `FlowStartsTests` and `flow.test.ts`; fixtures `AccountController.Themed`, `ShelfSweeper.Retry`/`Daily`).
+
+| # | Fix | Sonarr | Kavita | nopCommerce |
+|---|---|---|---|---|
+| Y1 | an MVC GET action returning a view chosen at runtime is an `on-load` (`viewFrom: runtime`); every MVC `on-load` says how its view is known, the default named by its action | — | — | on-load 406 → 410: `Category`, `Manufacturer`, **`ProductDetails`** (the D177 product page), `TopicDetails`; `ProductReviewsAdd` is a POST, rightly out |
+| Y2 | a `queues` line may point at itself; a recurring schedule that isn't text keeps its code | — | queues 144 → 147: `EnqueueScanLibraries`, `EnqueueScanLibrary`, `EnqueueScanSeries` requeue themselves; `scan-libraries` `scheduleCode` `Cron.Daily` | — |
+| X1 | a guard (`if` with no `else` that always returns, throws, breaks or continues) puts the rest of its block under `unless <condition>` | conditioned calls 10,163 → 12,885; 5,953 with an `unless`; 266 exits too | 11,000 → 18,067; 11,923 | 18,795 → 28,050; 16,160. `Register`: `RegisterCustomerAsync` under `if ModelState.IsValid` and `unless …UserRegistrationType == UserRegistrationType.Disabled` |
+
+Lines and blind spots otherwise unchanged (Sonarr 184,151 / 331; Kavita 156,435 / 115; nopCommerce 204,784 / 760). X2–X5 stay open.
+Another fresh check (D158) of these three fixes only would be small (estimate 30–50K tokens); the owner's call.
