@@ -39,3 +39,18 @@ namespace Shop.Web
         public void Recount() { }
     }
 }
+
+namespace Shop.Web
+{
+    // D173: an app's own wrapper that hands its expression parameter straight to Hangfire; a lambda passed to it queues its method.
+    public static class ShelfJobs
+    {
+        public static string Enqueue(System.Linq.Expressions.Expression<Action> job) => Hangfire.BackgroundJob.Enqueue(job);
+    }
+
+    public sealed class ShelfSweeper
+    {
+        public void Sweep() { }
+        public void Later() => ShelfJobs.Enqueue(() => Sweep());
+    }
+}

@@ -561,7 +561,8 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
     [Fact]
     public void A_backend_field_change_reaches_the_frontend_page_that_shows_it()
     {
-        var report = new ImpactAnalyzer(shop.Graph).Analyze(new ChangeSpec("symbol", "Shop.Core|P:Shop.Core.Order.Total"), shop.Root);
+        // The whole code group: answers show 5 items per group, and which 5 depends on how many lines are ✅ (D175).
+        var report = new ImpactAnalyzer(shop.Graph).Analyze(new ChangeSpec("symbol", "Shop.Core|P:Shop.Core.Order.Total"), shop.Root, expand: "code");
         Assert.Empty(SchemaRegistry.Embedded.Validate("impact-report.v5.json", report.ToJsonString()));
         var pages = Names(report["groups"]!.AsArray().First(g => (string)g!["name"]! == "pages")!);
         Assert.Contains("/orders", pages);

@@ -17,7 +17,7 @@ const BASE_NAMES = /(^|\.)(base|api|root|url|host|endpoint|server)[a-z]*$/i;
  * becomes {base}. Null when nothing at all is known.
  */
 export function stringValue(expr: ts.Expression | undefined, checker: ts.TypeChecker, depth = 0): string | null {
-  if (!expr || depth > 6) return null;
+  if (!expr || depth > 16) return null; // each `+`, template hole and followed name is one level
   expr = skipOuter(expr);
   if (ts.isStringLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr)) return expr.text === SERVER_VALUE ? null : server(expr.text);
   if (ts.isNumericLiteral(expr)) return expr.text;
@@ -79,6 +79,9 @@ function initializer(expr: ts.Identifier | ts.PropertyAccessExpression, checker:
   if (decls.length !== 1) return null;
   const d = decls[0];
   if (ts.isEnumMember(d) && d.initializer) return d.initializer;   // EVENTS.ScanSeries = 'ScanSeries'
+  // D175: a property of a const object literal (`export const environment = { apiUrl: '…' }`), as written in that file.
+  if (ts.isPropertyAssignment(d) && ts.isObjectLiteralExpression(d.parent) && ts.isVariableDeclaration(d.parent.parent)
+      && d.parent.parent.initializer === d.parent && ts.getCombinedNodeFlags(d.parent.parent) & ts.NodeFlags.Const) return d.initializer;
   if ((ts.isVariableDeclaration(d) || ts.isPropertyDeclaration(d)) && d.initializer) {
     if (ts.isVariableDeclaration(d) && !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) && reassigned(d, checker)) return null;
     return d.initializer;

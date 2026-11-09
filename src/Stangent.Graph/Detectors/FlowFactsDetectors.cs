@@ -79,6 +79,15 @@ public sealed class SignalRDetector : IDetector
     static bool IsClientProxy(ITypeSymbol? type) =>
         type is not null && (type.Name is "IClientProxy" or "ISingleClientProxy" || type.AllInterfaces.Any(i => i.Name is "IClientProxy" or "ISingleClientProxy"));
 
+    /// <summary><c>A|M:Ns.Type.Method(…)</c> → <c>Type.Method</c>.</summary>
+    static string ShortName(string id)
+    {
+        var body = id[(id.IndexOf(':') + 1)..];
+        if (body.IndexOf('(') is var paren and >= 0) body = body[..paren];
+        var parts = body.Split('.');
+        return parts.Length >= 2 ? $"{parts[^2]}.{parts[^1]}" : body;
+    }
+
     public void Link(LinkContext ctx)
     {
         var facts = ctx.Facts(Name).ToList();
@@ -109,6 +118,9 @@ public sealed class SignalRDetector : IDetector
 /// G11: work queued to run later (Hangfire <c>BackgroundJob.Enqueue/Schedule</c>, <c>RecurringJob.AddOrUpdate</c>,
 /// <c>IBackgroundJobClient</c>), as a <c>job</c> fact on the method that queues it: the method the job runs, how it's queued,
 /// and a recurring job's id and schedule. The plain <c>calls</c> line to that method stays; the fact says it doesn't run now.
+/// D173: each <c>job</c> becomes a ✅ <c>queues</c> line. An app's own wrapper that hands its expression parameter straight to
+/// Hangfire (Kavita's <c>ScanJobQueue.Enqueue(Expression&lt;Func&lt;Task&gt;&gt; job)</c>) is a <c>job-wrapper</c>; a lambda passed
+/// to it queues its method too (linked, through an interface member that dispatches to the wrapper as well).
 /// </summary>
 public sealed class BackgroundJobsDetector : IDetector
 {
@@ -125,17 +137,79 @@ public sealed class BackgroundJobsDetector : IDetector
                 if (file.Model.GetSymbolInfo(call).Symbol is not IMethodSymbol method
                     || method.ContainingNamespace?.ToDisplayString().StartsWith("Hangfire", StringComparison.Ordinal) != true) continue;
                 if (ctx.OwnerId(call, file.Model) is not { } owner) continue;
-                var lambda = call.ArgumentList.Arguments.Select(a => a.Expression).OfType<LambdaExpressionSyntax>().FirstOrDefault();
-                var body = lambda?.ExpressionBody is AwaitExpressionSyntax aw ? aw.Expression : lambda?.ExpressionBody;
-                var target = body is InvocationExpressionSyntax inner && file.Model.GetSymbolInfo(inner).Symbol is IMethodSymbol runs ? ctx.NodeId(runs.OriginalDefinition) : null;
-                if (target is null) { ctx.AddBlindSpot(owner, call, $"background job ({name}) whose method isn't followed", Name); continue; }
+                var target = Runs(ctx, file, call.ArgumentList);
+                if (target is null)
+                {
+                    // A wrapper passing its own expression parameter on: its callers' lambdas say what runs (linked).
+                    if (call.ArgumentList.Arguments.Select(a => file.Model.GetSymbolInfo(a.Expression).Symbol).OfType<IParameterSymbol>()
+                            .FirstOrDefault(p => p.Type.Name == "Expression" && p.ContainingSymbol is IMethodSymbol) is { } forwarded
+                        && ctx.NodeId(((IMethodSymbol)forwarded.ContainingSymbol).OriginalDefinition) is { } wrapper)
+                    {
+                        ctx.AddFact(Name, "job-wrapper", wrapper, call, ("index", forwarded.Ordinal.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                            ("via", $"{method.ContainingType.Name}.{name}"), ("schedule", name == "Schedule" ? "delayed" : name == "AddOrUpdate" ? "recurring" : "now, in the background"));
+                        continue;
+                    }
+                    ctx.AddBlindSpot(owner, call, $"background job ({name}) whose method isn't followed", Name);
+                    continue;
+                }
                 var recurring = name == "AddOrUpdate";
                 var strings = call.ArgumentList.Arguments.Select(a => ExtractContext.StringValue(a.Expression, file.Model)).ToList();
-                ctx.AddFact(Name, "job", owner, call, ("runs", target), ("via", $"{method.ContainingType.Name}.{name}"),
-                    ("id", recurring ? strings.FirstOrDefault() ?? "" : ""),
-                    ("schedule", recurring ? strings.Skip(1).FirstOrDefault(s => s is not null) ?? "" : name == "Schedule" ? "delayed" : "now, in the background"));
+                var id = recurring ? strings.FirstOrDefault() ?? "" : "";
+                var schedule = recurring ? strings.Skip(1).FirstOrDefault(s => s is not null) ?? "" : name == "Schedule" ? "delayed" : "now, in the background";
+                ctx.AddFact(Name, "job", owner, call, ("runs", target), ("via", $"{method.ContainingType.Name}.{name}"), ("id", id), ("schedule", schedule));
+                // D171: a recurring registration makes the method it runs a system job.
+                if (recurring)
+                    ctx.AddFact("jobs", "is-job", target, call, ("interface", ""), ("kind", "recurring"), ("command", ""), ("id", id), ("schedule", schedule));
+            }
+        // Calls handing a lambda to a parameter typed Expression<…>: candidates for an app's job wrapper, decided while linking.
+        foreach (var file in ctx.Files)
+            foreach (var call in file.Tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>())
+            {
+                if (file.Model.GetSymbolInfo(call).Symbol is not IMethodSymbol m || m.ContainingNamespace?.ToDisplayString().StartsWith("Hangfire", StringComparison.Ordinal) == true) continue;
+                if (ctx.NodeId(m.OriginalDefinition) is not { } wrapper || ctx.OwnerId(call, file.Model) is not { } owner) continue;
+                var args = call.ArgumentList.Arguments;
+                for (var i = 0; i < args.Count && i < m.Parameters.Length; i++)
+                    if (args[i].Expression is LambdaExpressionSyntax && m.Parameters[i].Type.Name == "Expression"
+                        && Runs(ctx, file, call.ArgumentList, i) is { } runs)
+                        ctx.AddFact(Name, "wrapper-call", owner, call, ("wrapper", wrapper), ("index", i.ToString(System.Globalization.CultureInfo.InvariantCulture)), ("runs", runs));
             }
     }
 
-    public void Link(LinkContext ctx) { }
+    /// <summary>The method a job's lambda runs (the first lambda argument, or the one at <paramref name="index"/>), when the compiler resolves it.</summary>
+    static string? Runs(ExtractContext ctx, SourceFile file, ArgumentListSyntax args, int index = -1)
+    {
+        var lambda = index >= 0 ? args.Arguments[index].Expression as LambdaExpressionSyntax
+            : args.Arguments.Select(a => a.Expression).OfType<LambdaExpressionSyntax>().FirstOrDefault();
+        var body = lambda?.ExpressionBody is AwaitExpressionSyntax aw ? aw.Expression : lambda?.ExpressionBody;
+        return body is InvocationExpressionSyntax inner && file.Model.GetSymbolInfo(inner).Symbol is IMethodSymbol runs ? ctx.NodeId(runs.OriginalDefinition) : null;
+    }
+
+    /// <summary>D173: the queuing method → the method the job runs, ✅: Hangfire's own call, and the compiler resolved the lambda's method.</summary>
+    /// <summary><c>A|M:Ns.Type.Method(…)</c> → <c>Type.Method</c>.</summary>
+    static string ShortName(string id)
+    {
+        var body = id[(id.IndexOf(':') + 1)..];
+        if (body.IndexOf('(') is var paren and >= 0) body = body[..paren];
+        var parts = body.Split('.');
+        return parts.Length >= 2 ? $"{parts[^2]}.{parts[^1]}" : body;
+    }
+
+    public void Link(LinkContext ctx)
+    {
+        var facts = ctx.Facts(Name).ToList();
+        foreach (var job in facts.Where(f => f.Kind == "job"))
+            ctx.AddEdge(job.Owner, job["runs"], EdgeKind.Queues, Label.Certain, Name);
+        var wrappers = facts.Where(f => f.Kind == "job-wrapper").GroupBy(f => (f.Owner, Index: f["index"])).ToDictionary(g => g.Key, g => g.First());
+        if (wrappers.Count == 0) return;
+        var dispatch = ctx.Graph.AllEdges.Where(e => e.Kind == EdgeKind.DispatchesTo).ToLookup(e => e.Source, e => e.Target, StringComparer.Ordinal);
+        foreach (var call in facts.Where(f => f.Kind == "wrapper-call"))
+        {
+            var key = (call["wrapper"], call["index"]);
+            var w = wrappers.GetValueOrDefault(key) ?? dispatch[call["wrapper"]].Select(t => wrappers.GetValueOrDefault((t, call["index"]))).FirstOrDefault(x => x is not null);
+            if (w is null) continue;
+            ctx.AddEdge(call.Owner, call["runs"], EdgeKind.Queues, Label.Certain, Name);
+            ctx.AddFact(Name, "job", call.Owner, call.File, call.Line, ("runs", call["runs"]), ("via", $"{w["via"]} through {ShortName(w.Owner)}"),
+                ("id", ""), ("schedule", w["schedule"]));
+        }
+    }
 }

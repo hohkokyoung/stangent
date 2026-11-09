@@ -8,9 +8,13 @@ ai:
   enabled: true
 detectors: []
 detectorSettings:
+  jobs:
+    # D171, D173: Sonarr's commands run later, by its command queue (IManageCommandQueue.Push) or its scheduler.
+    jobInterfaces: ["NzbDrone.Core.Messaging.Commands.IExecute`1"]
   frontend-http:
-    # Sonarr's own API helpers (frontend/src/Helpers/Hooks, Utilities/Fetch): name:urlProperty[:verbProperty].
-    wrappers: ["useApiQuery:path", "usePagedApiQuery:path", "useApiMutation:path:method", "fetchJson:path:method", "createAjaxRequest:url:method"]
+    # Sonarr's own API helpers (frontend/src/Helpers/Hooks, Utilities/Fetch): name:urlProperty[:verbProperty][@VERB]; with no
+    # method they fetch with GET, fetch's own default (D175).
+    wrappers: ["useApiQuery:path:method@GET", "usePagedApiQuery:path:method@GET", "useApiMutation:path:method", "fetchJson:path:method@GET", "createAjaxRequest:url:method@GET"]
   publish-handle:
     # IHandle<TEvent> and IHandleAsync<TEvent> for events; IExecute<TCommand> for commands, which Sonarr's
     # scheduler and its command API run (src/NzbDrone.Core/Messaging).

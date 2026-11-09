@@ -73,7 +73,7 @@ function loadChildrenTargets(ctx: Context): Set<ts.Node> {
   return targets;
 }
 
-function routeArray(ctx: Context, arr: ts.ArrayLiteralExpression, prefix: string, visiting: Set<ts.Node>, inherited: Guard[] = []) {
+function routeArray(ctx: Context, arr: ts.ArrayLiteralExpression, prefix: string, visiting: Set<ts.Node>, inherited: Guard[] = [], loads: Guard[] = []) {
   if (visiting.has(arr)) return;
   visiting.add(arr);
   for (const el of arr.elements) {
@@ -84,16 +84,22 @@ function routeArray(ctx: Context, arr: ts.ArrayLiteralExpression, prefix: string
     const target = componentOf(ctx, el);
     // A parent's guards hold for its children too (G8): Kavita puts canActivate on a path-less parent.
     const guards = [...inherited, ...guardsOf(ctx, el)];
+    // D171: a parent's resolvers and loaders run as its children open, too.
+    const loaders = [...loads, ...loadersOf(ctx, el)];
     if (own !== null && (target.ids.length > 0 || target.unresolved)) {
       addPage(ctx, el, full, target);
       for (const g of guards) ctx.out.fact("routes", "guard", pageId(ctx, full), g.file, g.line, { guard: g.id, name: g.name, via: g.via });
+      for (const l of loaders) {
+        if (l.id) ctx.out.fact("on-load", "on-load", pageId(ctx, full), l.file, l.line, { framework: "router", hook: l.via, handler: l.id, deps: "", runs: "before the screen opens", key: l.name });
+        else ctx.out.blind(pageId(ctx, full), l.file, l.line, `route ${l.via} the graph can't follow: ${l.name}`, "on-load");
+      }
     }
     const children = prop(el, "children");
-    if (children && ts.isArrayLiteralExpression(children)) routeArray(ctx, children, full, visiting, guards);
+    if (children && ts.isArrayLiteralExpression(children)) routeArray(ctx, children, full, visiting, guards, loaders);
     const load = prop(el, "loadChildren");
     if (load) {
       for (const d of lazyTarget(ctx, load)?.declarations ?? [])
-        if (ts.isVariableDeclaration(d) && d.initializer && ts.isArrayLiteralExpression(d.initializer)) routeArray(ctx, d.initializer, full, visiting, guards);
+        if (ts.isVariableDeclaration(d) && d.initializer && ts.isArrayLiteralExpression(d.initializer)) routeArray(ctx, d.initializer, full, visiting, guards, loaders);
     }
   }
 }
@@ -115,6 +121,33 @@ function guardsOf(ctx: Context, route: ts.ObjectLiteralExpression): Guard[] {
       out.push({ id: ctx.symbolId(symbol) ?? "", name: e.getText(), via, file: ctx.rel(e.getSourceFile().fileName), line: ctx.line(e) });
     }
   }
+  return out;
+}
+
+/**
+ * Angular's `resolve: { series: SeriesResolver }` (a class: its `resolve` method; a function: itself) and React Router's
+ * `loader: seriesLoader`: code that runs before the screen opens. `name` holds the resolver's key, or the loader's text.
+ */
+function loadersOf(ctx: Context, route: ts.ObjectLiteralExpression): Guard[] {
+  const out: Guard[] = [];
+  const point = (e: ts.Expression, via: string, name: string) => {
+    let symbol = ctx.checker.getSymbolAtLocation(ts.isPropertyAccessExpression(e) ? e.name : e);
+    if (symbol && symbol.flags & ts.SymbolFlags.Alias) {
+      try { symbol = ctx.checker.getAliasedSymbol(symbol); } catch { /* keep the alias */ }
+    }
+    let id = ctx.symbolId(symbol) ?? "";
+    const cls = symbol?.declarations?.find(ts.isClassDeclaration);
+    const resolve = cls?.members.find((m) => ts.isMethodDeclaration(m) && m.name.getText() === "resolve");
+    if (resolve) id = ctx.declId(resolve) ?? id;
+    if (ts.isArrowFunction(e) || ts.isFunctionExpression(e)) id = "";
+    out.push({ id, name, via, file: ctx.rel(e.getSourceFile().fileName), line: ctx.line(e) });
+  };
+  const resolve = prop(route, "resolve");
+  if (resolve && ts.isObjectLiteralExpression(resolve))
+    for (const p of resolve.properties)
+      if (ts.isPropertyAssignment(p)) point(p.initializer, "resolve", p.name.getText());
+  const loader = prop(route, "loader");
+  if (loader) point(loader, "loader", loader.getText());
   return out;
 }
 

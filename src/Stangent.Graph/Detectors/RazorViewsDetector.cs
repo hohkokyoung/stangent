@@ -602,7 +602,19 @@ public sealed class RazorViewsDetector : IDetector
             var withVerb = hits.Where(h => endpoints[h].Name.StartsWith(verb + " ", StringComparison.Ordinal)).Select(h => endpoints[h].Name[(verb.Length + 1)..]).ToHashSet();
             hits = [.. hits.Distinct().Where(h => !(endpoints[h].Name.StartsWith("ANY ", StringComparison.Ordinal) && withVerb.Contains(endpoints[h].Name[4..])))];
             if (hits.Count > 1) label = Label.Guessed;
-            foreach (var h in hits) ctx.AddEdge(f.Owner, h, EdgeKind.CallsHttp, label, Name);
+            // D175: why a form's match is a guess, in the words of the test it fails.
+            var reasons = new List<string>();
+            if (inherited) reasons.Add("method taken from the forms around its partial");
+            if (f["via"] == "onclick") reasons.Add("opened by a button's onclick script, so the verb is a guess");
+            if (f["route"].Length == 0 && f["url"].Length == 0 && (f["controller"].Length == 0 || f["action"].Length == 0))
+                reasons.Add("controller or action taken from the view's own folder and name");
+            if (hits.Count > 1) reasons.Add($"{hits.Count} endpoints fit ({string.Join(" and ", hits.Take(3).Select(h => endpoints[h].Name))}{(hits.Count > 3 ? " …" : "")})");
+            foreach (var h in hits)
+            {
+                ctx.AddEdge(f.Owner, h, EdgeKind.CallsHttp, label, Name);
+                ctx.AddFact(Name, "http-match", f.Owner, f.File, f.Line, ("endpoint", h), ("label", label == Label.Certain ? "certain" : "guessed"),
+                    ("reason", label == Label.Certain ? "" : string.Join("; ", reasons)), ("verb", verb), ("url", f["url"]));
+            }
             if (hits.Count == 0 && report)
                 ctx.AddBlindSpot(f.Owner, f.File, f.Line, $"form {(verb == "*" ? "(any verb)" : verb)} {(f["route"].Length > 0 ? "route " + f["route"] : f["url"].Length > 0 ? f["url"] : $"{controller}.{action}")} matched no endpoint", Name);
             return hits.Count;

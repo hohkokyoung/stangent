@@ -51,7 +51,7 @@ public static class GraphStore
                 Exec(db, "INSERT INTO fragments VALUES ($p, $f)", ("$p", f.ProjectId), ("$f", f.Fingerprint));
                 WriteParts(db, f.ProjectId, f.Nodes, f.Edges, f.BlindSpots, f.Facts);
             }
-            WriteParts(db, LinkedOwner, graph.LinkedNodes, graph.LinkedEdges, graph.LinkedBlindSpots, []);
+            WriteParts(db, LinkedOwner, graph.LinkedNodes, graph.LinkedEdges, graph.LinkedBlindSpots, graph.LinkedFacts);
             foreach (var e in graph.LoadErrors.Order(StringComparer.Ordinal))
                 Exec(db, "INSERT INTO load_errors VALUES ($m)", ("$m", e));
             if (graph.History is { } history)
@@ -261,7 +261,7 @@ public static class GraphStore
     static IEnumerable<(string, List<Node>, List<Edge>, List<BlindSpot>, List<Fact>)> Owners(CodeGraph graph)
     {
         foreach (var f in graph.Fragments.Values) yield return (f.ProjectId, f.Nodes, f.Edges, f.BlindSpots, f.Facts);
-        yield return (LinkedOwner, graph.LinkedNodes, graph.LinkedEdges, graph.LinkedBlindSpots, []);
+        yield return (LinkedOwner, graph.LinkedNodes, graph.LinkedEdges, graph.LinkedBlindSpots, graph.LinkedFacts);
     }
 
     static void WriteParts(SqliteConnection db, string owner, List<Node> nodes, List<Edge> edges, List<BlindSpot> spots, List<Fact> facts)
@@ -294,7 +294,7 @@ public static class GraphStore
     {
         if (owner == LinkedOwner)
         {
-            (nodes, edges, spots, facts) = (graph.LinkedNodes, graph.LinkedEdges, graph.LinkedBlindSpots, null);
+            (nodes, edges, spots, facts) = (graph.LinkedNodes, graph.LinkedEdges, graph.LinkedBlindSpots, graph.LinkedFacts);
             return nodes;
         }
         var f = graph.Fragments[owner];

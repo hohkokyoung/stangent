@@ -23,7 +23,7 @@ export function httpFacts(ctx: Context, sf: ts.SourceFile) {
   visit(sf);
 }
 
-interface Wrapper { fn: string; urlProp: string | null; verbProp: string | null; verb: string }
+interface Wrapper { fn: string; urlProp: string | null; verbProp: string | null; verb: string; fixed: boolean }
 
 /**
  * "useApiQuery:path" (object argument with a `path` property), "useApiMutation:path:method", "api.get" (URL as first
@@ -35,7 +35,7 @@ function parseWrappers(specs: string[]): Wrapper[] {
   return specs.map((s) => {
     const [spec, fixed] = s.split("@");
     const [fn, urlProp = null, verbProp = null] = spec.split(":");
-    return { fn, urlProp, verbProp, verb: fixed ? fixed.toUpperCase() : verbFromName(fn) };
+    return { fn, urlProp, verbProp, verb: fixed ? fixed.toUpperCase() : verbFromName(fn), fixed: !!fixed };
   });
 }
 
@@ -123,6 +123,8 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
     let url: string | null = url0;
     const v = w.verbProp ? wrapperValue(n, w.verbProp, checker) : null;
     const verb = v ? v.toUpperCase() : w.verb;
+    // D175: where the verb came from: written at the call, given in the setting (`@VERB`), or read off the wrapper's name.
+    const verbFrom = v && !v.includes(RUNTIME) ? "literal" : w.fixed ? "setting" : "name";
     // Wrappers add the API root themselves (Sonarr: getQueryPath(path) = urlBase + apiRoot + path). When the
     // wrapper's own code shows that root, it is added (G2); otherwise a relative path is matched against the
     // end of endpoint paths.
@@ -130,7 +132,7 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
       const prefix = w.urlProp ? wrapperPrefix(ctx, callee, w.urlProp) : null;
       url = prefix ? `${prefix.replace(/\/$/, "")}/${url.replace(/^\//, "")}` : BASE + url.replace(/^\//, "");
     }
-    emit(ctx, owner, file, line, verb, url, `wrapper:${w.fn}`, typeArg(ctx, n, 0), typeArg(ctx, n, 1));
+    emit(ctx, owner, file, line, verb, url, `wrapper:${w.fn}`, typeArg(ctx, n, 0), typeArg(ctx, n, 1), verbFrom);
     return;
   }
 
@@ -140,20 +142,27 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
       ? [stringValue(n.arguments[0], checker)?.toUpperCase() ?? "ANY", n.arguments[1], n.arguments[2]]
       : [ANGULAR_VERBS[name], n.arguments[0], n.arguments[1]];
     emit(ctx, owner, file, line, verb, stringValue(urlArg, checker), ctx.typed ? "angular-http" : "angular-http-by-name",
-      typeArg(ctx, n, 0), name === "post" || name === "put" || name === "patch" ? valueType(ctx, bodyArg) : null);
+      typeArg(ctx, n, 0), name === "post" || name === "put" || name === "patch" ? valueType(ctx, bodyArg) : null,
+      name !== "request" ? "library" : verb === "ANY" ? "runtime" : "literal");
     return;
   }
 
   // fetch(url, { method }) and axios.get/post/…(url) or axios({ url, method }).
   if (ts.isIdentifier(callee) && name === "fetch") {
     const opts = n.arguments[1];
-    const verb = opts && ts.isObjectLiteralExpression(opts) ? stringValue(objProp(opts, "method") ?? undefined, checker)?.toUpperCase() ?? "GET" : "GET";
-    emit(ctx, owner, file, line, verb, stringValue(n.arguments[0], checker), "fetch", typeArg(ctx, n, 0), null);
+    const method = opts && ts.isObjectLiteralExpression(opts) ? objProp(opts, "method") : null;
+    const written = method ? stringValue(method, checker)?.toUpperCase() ?? null : null;
+    // No options, or options without `method`: fetch's own default, GET. Options or a method the code doesn't show are
+    // still matched as GET, as before, but the verb is unknown (D175).
+    const unknown = (method && !written) || (opts && !ts.isObjectLiteralExpression(opts));
+    const verb = written ?? "GET";
+    emit(ctx, owner, file, line, verb, stringValue(n.arguments[0], checker), "fetch", typeArg(ctx, n, 0), null,
+      unknown ? "runtime" : method ? "literal" : "library");
     return;
   }
   if (receiver && ts.isIdentifier(receiver) && receiver.text === "axios" && ANGULAR_VERBS[name]) {
     emit(ctx, owner, file, line, ANGULAR_VERBS[name], stringValue(n.arguments[0], checker), "axios", typeArg(ctx, n, 0),
-      name === "post" || name === "put" || name === "patch" ? valueType(ctx, n.arguments[1]) : null);
+      name === "post" || name === "put" || name === "patch" ? valueType(ctx, n.arguments[1]) : null, "library");
     return;
   }
 
@@ -165,12 +174,13 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
       const urlArg = first && ts.isObjectLiteralExpression(first) ? objProp(first, "url") ?? undefined : first;
       const verbArg = settings && ts.isObjectLiteralExpression(settings) ? objProp(settings, "type") ?? objProp(settings, "method") : null;
       const verb = verbArg ? stringValue(verbArg, checker)?.toUpperCase() ?? "ANY" : "GET";
-      emit(ctx, owner, file, line, verb, stringValue(urlArg, checker), "jquery", null, null);
+      emit(ctx, owner, file, line, verb, stringValue(urlArg, checker), "jquery", null, null,
+        verb === "ANY" ? "runtime" : verbArg ? "literal" : "library");
       return;
     }
     const JQUERY_VERBS: Record<string, string> = { get: "GET", post: "POST", getJSON: "GET" };
     if (JQUERY_VERBS[name] && first) {
-      emit(ctx, owner, file, line, JQUERY_VERBS[name], stringValue(first, checker), "jquery", null, null);
+      emit(ctx, owner, file, line, JQUERY_VERBS[name], stringValue(first, checker), "jquery", null, null, "library");
       return;
     }
   }
@@ -183,13 +193,13 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
 }
 
 function emit(ctx: Context, owner: string, file: string, line: number, verb: string, url: string | null, via: string,
-              responseType: string | null, bodyType: string | null) {
+              responseType: string | null, bodyType: string | null, verbFrom: string) {
   if (url === null || url === RUNTIME || url.replace(BASE, "").replace(/\{\*\}/g, "").replace(/[/?&=]/g, "") === "") {
     ctx.out.blind(owner, file, line, `HTTP ${verb} to a URL built at runtime`, DETECTOR);
     return;
   }
   ctx.out.fact(DETECTOR, "call", owner, file, line, {
-    verb, url: url.split("?")[0], via, responseType: responseType ?? "", bodyType: bodyType ?? "",
+    verb, url: url.split("?")[0], via, responseType: responseType ?? "", bodyType: bodyType ?? "", verbFrom,
   });
 }
 

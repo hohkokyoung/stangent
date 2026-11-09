@@ -6,6 +6,9 @@ ai:
   enabled: true
 detectors: []
 detectorSettings:
+  jobs:
+    # D171: nopCommerce's scheduled tasks.
+    jobInterfaces: ["Nop.Services.ScheduleTasks.IScheduleTask"]
   entity-tables:
     # nopCommerce maps entities with linq2db by convention: every BaseEntity subclass is a table.
     entityBaseTypes: [Nop.Core.BaseEntity]

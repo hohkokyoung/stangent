@@ -221,4 +221,8 @@ public sealed class LinkContext(CodeGraph graph, IReadOnlyDictionary<string, Lis
 
     public void AddBlindSpot(string owner, string? file, int line, string reason, string detector) =>
         Graph.LinkedBlindSpots.Add(new BlindSpot(owner, file ?? "", line, reason, detector));
+
+    /// <summary>A fact found while linking; kept in the order added, so detectors add them in a fixed order.</summary>
+    public void AddFact(string detector, string kind, string owner, string? file, int line, params (string Key, string Value)[] data) =>
+        Graph.LinkedFacts.Add(new Fact(detector, kind, owner, file, line, data.ToDictionary(d => d.Key, d => d.Value, StringComparer.Ordinal)));
 }

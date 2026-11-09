@@ -7,6 +7,7 @@ import { constantValues, domEvents, reactEvents, signalrListeners } from "./ui.t
 import { httpFacts } from "./http.ts";
 import { pages } from "./routes.ts";
 import { rootScreens } from "./rootScreens.ts";
+import { conditionFacts, effectName, onLoadFacts } from "./flow.ts";
 
 /**
  * The compiler's part of the frontend map (D31): points for declarations, ✅ lines for what the
@@ -98,6 +99,8 @@ export function extract(o: Options): Output {
   for (const sf of files) pages(ctx, sf);
   if (o.rootScreens) rootScreens(ctx, files);
   for (const sf of [...files, ...inlineFiles]) httpFacts(ctx, sf);
+  for (const sf of files) onLoadFacts(ctx, sf); // D171, D176
+  for (const sf of [...files, ...inlineFiles]) conditionFacts(ctx, sf); // D174
   if (scripts) for (const sf of [...files, ...inlineFiles]) domEvents(ctx, sf);
   if (o.enums) for (const sf of files) enums(ctx, sf);
   return out;
@@ -160,6 +163,8 @@ export function qualifiedName(decl: ts.Node): string | null {
   }
   const handler = componentHandler(decl);
   if (handler) return handler;
+  const effect = effectName(decl);
+  if (effect) return effect;
   if ((ts.isMethodDeclaration(decl) || ts.isPropertyDeclaration(decl) || ts.isGetAccessorDeclaration(decl)
       || ts.isSetAccessorDeclaration(decl) || ts.isConstructorDeclaration(decl)) && ts.isClassLike(parent)) {
     const owner = qualifiedName(parent);
@@ -243,7 +248,7 @@ function kindOf(decl: ts.Node): string {
       || ts.isGetAccessorDeclaration(decl) || ts.isSetAccessorDeclaration(decl) || ts.isMethodSignature(decl)) {
     return isReactComponent(decl) ? "component" : "method";
   }
-  if (componentHandler(decl)) return "method";
+  if (componentHandler(decl) || effectName(decl)) return "method";
   if (ts.isVariableDeclaration(decl)) {
     if (isFunctionLike(decl.initializer) || isWrappedComponent(decl.initializer)) return isReactComponent(decl) ? "component" : "method";
     return "field";
@@ -311,7 +316,7 @@ function declare(ctx: Context, sf: ts.SourceFile) {
       ctx.out.edge(container, id, "contains");
       // A component renders as a unit: a change to any of its members changes what its page shows.
       if (ts.isClassDeclaration(n.parent) && isAngularComponent(n.parent)) ctx.out.edge(container, id, "uses");
-      if (container && componentHandler(n)) ctx.out.edge(container, id, "uses"); // same for a React component's handlers
+      if (container && (componentHandler(n) || effectName(n))) ctx.out.edge(container, id, "uses"); // same for a React component's handlers and effects
     }
     const test = testName(n);
     if (test) {

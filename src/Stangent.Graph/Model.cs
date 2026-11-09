@@ -91,9 +91,15 @@ public static class EdgeKind
     /// <summary>🟡 Frontend code listens for a SignalR message (G10): function → <c>message:signalr|name</c>. Not walked.</summary>
     public const string Listens = "listens";
 
+    /// <summary>
+    /// Code that queues work → the job that runs it later (code-graph v5, D173): a queued command's type → the handler of that
+    /// type (🟡), a background-job lambda → its method (✅). Walked by impact like <c>triggered-by</c>: the queuer depends on the job.
+    /// </summary>
+    public const string Queues = "queues";
+
     /// <summary>Lines a change travels back along: behaviour flows through these.</summary>
     public static readonly HashSet<string> Propagating =
-        [Calls, Uses, DispatchesTo, RoutesTo, TriggeredBy, Maps, ReadsConfig, Binds, CallsHttp, Tests, WiredTo, Renders, MapsField];
+        [Calls, Uses, DispatchesTo, RoutesTo, TriggeredBy, Maps, ReadsConfig, Binds, CallsHttp, Tests, WiredTo, Renders, MapsField, Queues];
 
     /// <summary>Lines followed only from the changed points themselves (a base change affects what derives from it).</summary>
     public static readonly HashSet<string> FirstStepOnly = [Inherits, Implements, Overrides];
@@ -167,6 +173,8 @@ public sealed class CodeGraph
     public List<Node> LinkedNodes { get; } = [];
     public List<Edge> LinkedEdges { get; } = [];
     public List<BlindSpot> LinkedBlindSpots { get; } = [];
+    /// <summary>Facts a detector writes while linking (D175's match reasons, MVC's on-load actions), kept with the linked lines.</summary>
+    public List<Fact> LinkedFacts { get; } = [];
     public List<string> LoadErrors { get; } = [];
     /// <summary>📜 lines (code-graph v3): kept apart from <see cref="AllEdges"/>, so the walk never sees them.</summary>
     public List<HistoryLine> HistoryLines { get; } = [];
@@ -187,5 +195,5 @@ public sealed class CodeGraph
     public IEnumerable<Node> AllNodes => Fragments.Values.SelectMany(f => f.Nodes).Concat(LinkedNodes);
     public IEnumerable<Edge> AllEdges => Fragments.Values.SelectMany(f => f.Edges).Concat(LinkedEdges);
     public IEnumerable<BlindSpot> AllBlindSpots => Fragments.Values.SelectMany(f => f.BlindSpots).Concat(LinkedBlindSpots);
-    public IEnumerable<Fact> AllFacts => Fragments.Values.SelectMany(f => f.Facts);
+    public IEnumerable<Fact> AllFacts => Fragments.Values.SelectMany(f => f.Facts).Concat(LinkedFacts);
 }
