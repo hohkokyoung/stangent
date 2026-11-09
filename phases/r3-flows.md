@@ -77,7 +77,7 @@ The 15 starts:
 
 When Stangent and the key disagree, the quoted code line decides, and the ruling is written here.
 
-## Step 2 progress: the key
+## Step 2: the key — done 2026-11-09 (15 flows, three approved, one per repo)
 
 - Format: `benchmark/expected/flows/README.md` (D183). Every counted item is `at` + exact `code`.
 - **Sonarr** (commit `0bffefe7c8`), written 2026-11-09 by a fresh Sonnet agent from git-tracked source only (~230K tokens):
@@ -124,7 +124,7 @@ When Stangent and the key disagree, the quoted code line decides, and the ruling
   | queued-messages-send-task | 17 | 12 | 13 | 1 | 0 | 0 |
 
   Checked by code: 724 items, 0 problems. Spot-read by hand: the email task's two loops, SMTP send, `catch` that logs
-  and `finally` that saves `SentTries` hold. Owner approval: pending.
+  and `finally` that saves `SentTries` hold. **Owner approved `queued-messages-send-task` (2026-11-09, "Approve the email job")**: nopCommerce's approved key (D177).
   Open for a ruling when scored: (a) confirm-order follows the multi-step `CheckoutController.ConfirmOrder`, whose first
   exit sends the shopper to one-page checkout when `OnePageCheckoutEnabled` (the installer sets it true,
   `InstallRequiredData.cs:1870`); the one-page `OpcConfirmOrder` is its own flow by D171 and isn't in the key.
