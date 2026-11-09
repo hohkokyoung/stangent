@@ -46,6 +46,33 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             if (g.Nodes.ContainsKey(c) && walked.TryAdd(c, root)) Visit(c, root, 0, [point, c]);
     }
 
+    /// <summary>
+    /// A shared flow's start (D189): the hub or depth stop's own code, walked once for every flow that continues into it. A point
+    /// written to an interface runs its implementations, one branch each (🟡 when several), as a call to it would.
+    /// </summary>
+    public void RootShared(string point)
+    {
+        walked[point] = root;
+        var runs = Runs(point);
+        if (runs.Count == 1 && runs[0] == point) { Visit(point, root, 0, [point]); return; }
+        foreach (var run in runs)
+        {
+            var node = g.Nodes[run];
+            var line = g.NameLine(node);
+            var item = Add(root, new Step
+            {
+                What = $"runs {node.Name}", At = new At(node.File ?? "", line, g.Code(node.File, line)), Kind = "call", Point = run, Depth = 0,
+                Guessed = runs.Count > 1, GuessReason = runs.Count > 1 ? $"one of {runs.Count}: {string.Join(", ", runs.Select(g.Name))}" : null,
+            });
+            Into(item, run, 0, [point]);
+        }
+    }
+
+    /// <summary>What a shared flow for a call to <paramref name="target"/> starts at: the one point it runs, else the target itself.</summary>
+    string SharedPoint(string target) => Runs(target) is [var only] ? only : target;
+
+    List<string> Runs(string target) => [.. g.Dispatch(target).Where(t => g.Nodes.TryGetValue(t, out var n) && n.File is not null && !n.IsTest)];
+
     // ---- the walk ------------------------------------------------------------------------------------------------------
 
     void Visit(string point, Item parent, int depth, List<string> branch)
@@ -156,6 +183,9 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
     void Call(string point, Fact site, string target, At at, List<Condition> conds, Item parent, int depth, List<string> branch)
     {
         if (!g.Nodes.TryGetValue(target, out var tnode)) return;
+        // D189: reading a field or property (an Angular signal read, `this.seriesId()`) runs no code of its own: no step, no hub.
+        // One that holds a function (`getPageUrl = (n) => …`) is code, called like a method.
+        if (tnode.Kind is NodeKind.Field or NodeKind.Property && !g.HoldsFunction(tnode)) return;
         if (FlowGraph.ConstructedType(target) is { } made)
         {
             // A message sent (D172 item 3): its handlers are linked flows; the walk never goes through the bus. A command a job
@@ -193,10 +223,10 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 End = new End("hub", $"{tnode.Name}: shared code used by {g.Callers(target)} places"), Guessed = guessedSite || byValue,
                 GuessReason = guessedSite ? OverloadReason : byValue ? $"calls a value taken from {tnode.Name}'s result; what it runs isn't known, so the hook stands for it" : null,
             });
-            item.Links.Add(new Link("continues", tnode.Name, null, at, $"Stops here: shared code used by {g.Callers(target)} places; {tnode.Name}'s own walk continues it ({at})", null, false));
+            item.Links.Add(new Link("continues", tnode.Name, SharedPoint(target), at, $"Stops here: shared code used by {g.Callers(target)} places; {tnode.Name}'s own walk continues it ({at})", null, false));
             return;
         }
-        var runs = g.Dispatch(target).Where(t => g.Nodes.TryGetValue(t, out var n) && n.File is not null && !n.IsTest).ToList();
+        var runs = Runs(target);
         foreach (var run in runs)
         {
             var several = runs.Count > 1;
@@ -221,7 +251,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         if (depth + 1 > s.Depth)
         {
             item.Step.End = new End("depth", $"{s.Depth} real calls; not walked: {g.Name(point)}");
-            item.Links.Add(new Link("continues", g.Name(point), null, item.Step.At, $"Stops here: {s.Depth} calls deep; {g.Name(point)}'s own walk continues it ({item.Step.At})", null, false));
+            item.Links.Add(new Link("continues", g.Name(point), point, item.Step.At, $"Stops here: {s.Depth} calls deep; {g.Name(point)}'s own walk continues it ({item.Step.At})", null, false));
             return;
         }
         walked[point] = item;

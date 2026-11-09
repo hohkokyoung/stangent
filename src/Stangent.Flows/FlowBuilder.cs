@@ -8,7 +8,8 @@ public sealed record FlowSet(string Commit, FlowSettings Settings, List<Flow> Fl
 
 /// <summary>
 /// Lays out flows from the code graph (D170–D184), code only. A flow starts at a click or submit, a screen opening or a system job
-/// (D171), plus one per event handler, the flows a sent message links to (D173). Each is a tree walked forward from its start,
+/// (D171), plus one per event handler, the flows a sent message links to (D173), and one per hub or depth stop a flow continues
+/// into (<c>shared</c>, D189). Each is a tree walked forward from its start,
 /// step by step through the call sites the graph recorded (D184), each branch ending as D172 and D174 say.
 /// </summary>
 public static class FlowBuilder
@@ -32,11 +33,14 @@ public static class FlowBuilder
             skipped.Add(new Skipped("screen-opens", f.Owner, new At(f.File ?? "", f.Line, g.Code(f.File, f.Line)),
                 "runs on load in code no route's screen reaches (a dialog, or a component shown only from another flow)"));
 
+        Shared(g, settings, flows);
+
         AssignIds(flows);
         var byPoint = flows.Where(f => f.Kind is "job" or "handler").GroupBy(f => f.Start.Point, StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.First().Id, StringComparer.Ordinal);
+        var shared = flows.Where(f => f.Kind == "shared").ToDictionary(f => f.Start.Point, f => f.Id, StringComparer.Ordinal);
         foreach (var flow in flows)
             for (var i = 0; i < flow.Links.Count; i++)
-                if (flow.Links[i].ToFlow is { } point && byPoint.TryGetValue(point, out var id)) flow.Links[i] = flow.Links[i] with { ToFlow = id };
+                if (flow.Links[i].ToFlow is { } point && (flow.Links[i].Kind == "continues" ? shared : byPoint).TryGetValue(point, out var id)) flow.Links[i] = flow.Links[i] with { ToFlow = id };
                 else if (flow.Links[i].ToFlow is not null) flow.Links[i] = flow.Links[i] with { ToFlow = null };
         skipped.Sort((a, b) => string.CompareOrdinal($"{a.Kind}\u0000{a.At}\u0000{a.Point}", $"{b.Kind}\u0000{b.At}\u0000{b.Point}"));
         return new FlowSet(graph.Commit, settings, [.. flows.OrderBy(f => f.Id, StringComparer.Ordinal)], skipped);
@@ -157,6 +161,34 @@ public static class FlowBuilder
             flows.Add(flow);
         }
     }
+
+    /// <summary>
+    /// D189 (D173's promise): each hub or depth stop a flow continues into is a flow of its own, kind <c>shared</c>, walked once
+    /// from that point; the shared flows' own stops get theirs too, until none is left.
+    /// </summary>
+    static void Shared(FlowGraph g, FlowSettings s, List<Flow> flows)
+    {
+        var done = new HashSet<string>(StringComparer.Ordinal);
+        var todo = new SortedSet<string>(Continues(flows), StringComparer.Ordinal);
+        while (todo.Count > 0)
+        {
+            var point = todo.Min!;
+            todo.Remove(point);
+            if (!done.Add(point) || !g.Nodes.TryGetValue(point, out var node)) continue;
+            var line = g.NameLine(node);
+            var at = new At(node.File ?? "", line, g.Code(node.File, line));
+            var flow = NewFlow(g, "shared", node.Name, new StartInfo("shared code, walked once for the flows that continue into it", at, point, []), point);
+            flow.Actor = new Actor("the flow that continues here", "shared code: it runs as part of each flow that links to it", null, false);
+            var walker = new Walker(g, s, flow) { ActorFixed = true };
+            walker.RootShared(point);
+            walker.Finish();
+            flows.Add(flow);
+            foreach (var next in Continues([flow])) if (!done.Contains(next)) todo.Add(next);
+        }
+    }
+
+    static IEnumerable<string> Continues(IEnumerable<Flow> flows) =>
+        flows.SelectMany(f => f.Links).Where(l => l.Kind == "continues" && l.ToFlow is not null).Select(l => l.ToFlow!);
 
     static Flow NewFlow(FlowGraph g, string kind, string name, StartInfo start, string point)
     {

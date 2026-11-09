@@ -30,6 +30,12 @@ public static partial class FlowScore
             .Select(p => JsonNode.Parse(File.ReadAllText(p))!.AsObject())
             .Select(j => new Built((string)j["id"]!, (string)j["kind"]!, j, Objects(j["steps"]), Objects(j["exits"]), Objects(j["links"]), Objects(j["checks"])))
             .ToList();
+        var graph = GraphStore.Load(Path.Combine(clone, ".stangent", "graph.sqlite")) ?? throw new InvalidOperationException("no graph in the clone");
+        // The key names an entity ("AppUserProgress"), a built end the table mapping it ("AppUserProgresses"): the graph's own map.
+        var nodes = graph.AllNodes.GroupBy(n => n.Id, StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.First(), StringComparer.Ordinal);
+        tables = graph.AllEdges.Where(e => e.Kind == EdgeKind.Maps && nodes.TryGetValue(e.Source, out var t) && t.Kind == NodeKind.Table && nodes.ContainsKey(e.Target))
+            .GroupBy(e => TypeShort(nodes[e.Target].Name), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(x => x.Key, x => x.Select(e => nodes[e.Source].Name).ToHashSet(StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase);
         var flows = new JsonArray();
         var totals = new Dictionary<string, (int Found, int Of)>(StringComparer.Ordinal);
         foreach (var keyFile in Directory.EnumerateFiles(keyDir, "*.json").Order(StringComparer.Ordinal))
@@ -44,7 +50,6 @@ public static partial class FlowScore
             flows.Add(result);
         }
         var bar2 = new[] { "steps", "ends", "conditions" }.Aggregate((Found: 0, Of: 0), (a, n) => (a.Found + totals.GetValueOrDefault(n).Found, a.Of + totals.GetValueOrDefault(n).Of));
-        var graph = GraphStore.Load(Path.Combine(clone, ".stangent", "graph.sqlite")) ?? throw new InvalidOperationException("no graph in the clone");
         var wrong = WrongCertain(clone, built);
         var check = FlowFiles.Check(clone, graph, new FlowSettings());
         // Item 4: two builds from the same graph, rendered, must be the same bytes (the check above compares one with the disk).
@@ -105,7 +110,8 @@ public static partial class FlowScore
         var candidates = built.Where(b => b.Kind == kind && (b.Start == startAt || b.Triggers.Any(t => t.EndsWith($"({startAt})", StringComparison.Ordinal))
             || b.Steps.Any(s => Same(startAt, startCode, s)) || ((string)b.Json["start"]!["code"]! is { Length: > 3 } c && Norm(startCode).StartsWith(Norm(c), StringComparison.Ordinal) && b.Start.StartsWith(startAt[..startAt.LastIndexOf(':')] + ":", StringComparison.Ordinal)))).ToList();
         if (candidates.Count == 0) candidates = built.Where(b => b.Kind == kind && keySteps.Take(3).Any(k => b.Steps.Any(s => Same((string)k["at"]!, (string)k["code"]!, s)))).ToList();
-        var scored = candidates.Select(c => (Flow: c, Result: Items(key, keySteps, keyExits, c))).OrderByDescending(x => x.Result.Found).ThenBy(x => x.Flow.Id, StringComparer.Ordinal).ToList();
+        var byId = built.ToDictionary(b => b.Id, StringComparer.Ordinal);
+        var scored = candidates.Select(c => (Flow: c, Result: Items(key, keySteps, keyExits, Expand(c, byId)))).OrderByDescending(x => x.Result.Found).ThenBy(x => x.Flow.Id, StringComparer.Ordinal).ToList();
         var best = scored.FirstOrDefault();
         var items = best.Flow is null ? Items(key, keySteps, keyExits, null) : best.Result;
         return new JsonObject
@@ -139,14 +145,23 @@ public static partial class FlowScore
             if (k["end"] is JsonObject end)
             {
                 var endKind = (string)end["kind"]!;
-                // R1 (owner, 2026-11-09): the code line decides where a table is touched. A key end on a call Stangent walks into
-                // counts when Stangent's step there leads, through its own steps, to an end of the same kind; a key `unknown` or
-                // `depth` that only says the key didn't follow it counts when Stangent walks it.
-                var endFound = match.Any(s => (string?)s["end"]?["kind"] == endKind)
-                    || (endKind is "database" or "outside-call" or "message" && match.Any(s => Below(steps, (int)s["n"]!).Any(d => (string?)d["end"]?["kind"] == endKind)))
-                    || (endKind is "unknown" or "depth" && match.Any(s => s["end"] is null && Below(steps, (int)s["n"]!).Any()));
+                var detail = (string?)end["detail"] ?? "";
+                // R1 (D185, tightened 2026-11-09): the code line decides where a table is touched. A key end on a call Stangent
+                // walks into counts when Stangent's steps below it reach an end of the same kind, and for `database` the same table
+                // the key names. A key `unknown` or `depth` that only says the key didn't follow the call is no claim about the
+                // code: where Stangent walks on, it leaves the count (neither found nor missed).
+                var direct = match.Any(s => (string?)s["end"]?["kind"] == endKind);
+                if (!direct && NotFollowed(endKind, detail) && match.Any(s => Below(steps, (int)s["n"]!).Any()))
+                {
+                    Tally("endsLeftOut", true, k);
+                    goto Conditions;
+                }
+                var endFound = direct
+                    || (endKind == "database" && match.Any(s => Below(steps, (int)s["n"]!).Any(d => (string?)d["end"]?["kind"] == "database" && SameTable(detail, (string?)d["end"]!["detail"] ?? ""))))
+                    || (endKind is "outside-call" or "message" && match.Any(s => Below(steps, (int)s["n"]!).Any(d => (string?)d["end"]?["kind"] == endKind)));
                 Tally("ends", endFound, k, match.Count == 0 ? $"end {endKind}: no step there" : $"end {endKind}: built {string.Join(",", match.Select(s => (string?)s["end"]?["kind"] ?? "none").Distinct())}");
             }
+            Conditions:
             foreach (var c in Objects(k["conditions"]))
                 Tally("conditions", match.Any(s => Objects(s["conditions"]).Any(bc => (string?)bc["at"] == (string)c["at"]!)), c, $"on step {at}");
         }
@@ -172,6 +187,90 @@ public static partial class FlowScore
             Tally("checks", (b?.Checks ?? []).Any(c => Same((string)k["at"]!, (string)k["code"]!, c) || ((string?)c["at"])?.Split(':')[0] == ((string)k["at"]!).Split(':')[0] && Lines((string)k["at"]!, (string)k["code"]!).Contains((string)c["at"]!)), k);
         var found = counts.Where(c => c.Key is "steps" or "ends" or "conditions").Sum(c => c.Value.Item1);
         return new ItemResult(new JsonObject([.. counts.OrderBy(c => c.Key, StringComparer.Ordinal).Select(c => KeyValuePair.Create(c.Key, (JsonNode?)Count(c.Value.Item1, c.Value.Item2)))]), missed, found);
+    }
+
+    /// <summary>A key end that only says the key didn't follow the call (R1): a depth stop, or an <c>unknown</c> "not walked" or "same … as".</summary>
+    static bool NotFollowed(string kind, string detail) =>
+        kind == "depth" || kind == "unknown" && NotFollowedText().IsMatch(detail);
+
+    [GeneratedRegex(@"not walked|^same |same code as|^re-runs ")]
+    private static partial Regex NotFollowedText();
+
+    /// <summary>
+    /// The key's <c>database</c> detail and a built one name a table in common (R1). The key names tables before any "(": "Series
+    /// table", "Volume and Chapter", "Library rows for the user"; a built end lists them before " (": "Series, Episodes (…)".
+    /// </summary>
+    static bool SameTable(string keyDetail, string builtDetail)
+    {
+        static string Head(string d) => d.IndexOf('(') is var i and >= 0 ? d[..i] : d;
+        var want = TableSplit().Split(Head(keyDetail)).Select(p => p.Trim().Split(' ')[0]).Where(t => t.Length > 0).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var name in want.ToList()) if (Tables.TryGetValue(name, out var mapped)) want.UnionWith(mapped);
+        return Head(builtDetail).Split(',').Select(t => t.Trim()).Any(want.Contains);
+    }
+
+    [ThreadStatic] static Dictionary<string, HashSet<string>>? tables;
+    static Dictionary<string, HashSet<string>> Tables => tables ?? [];
+
+    static string TypeShort(string name)
+    {
+        var lt = name.IndexOf('<');
+        var head = lt >= 0 ? name[..lt] : name;
+        return head[(head.LastIndexOf('.') + 1)..];
+    }
+
+    [GeneratedRegex(@",| and | with |/")]
+    private static partial Regex TableSplit();
+
+    /// <summary>
+    /// D189: a flow with the shared flows its <c>continues</c> links point at merged in, transitively: each shared flow's steps hang
+    /// under the hub step, renumbered after the flow's own, its exits and links moved with them. A shared flow reached a second
+    /// time isn't merged again; that hub step is <c>sameAs</c> the first.
+    /// </summary>
+    static Built Expand(Built b, Dictionary<string, Built> byId)
+    {
+        static JsonObject Copy(JsonObject o) => o.DeepClone().AsObject();
+        var steps = b.Steps.Select(Copy).ToList();
+        var exits = b.Exits.Select(Copy).ToList();
+        var links = b.Links.Select(Copy).ToList();
+        var byN = steps.ToDictionary(s => (int)s["n"]!);
+        var next = steps.Count == 0 ? 0 : byN.Keys.Max();
+        var merged = new Dictionary<string, int>(StringComparer.Ordinal);
+        var todo = new Queue<JsonObject>(links.Where(Continues));
+        while (todo.Count > 0)
+        {
+            var link = todo.Dequeue();
+            var id = (string)link["flow"]!;
+            var hub = (int)link["step"]!;
+            if (merged.TryGetValue(id, out var first))
+            {
+                if (first != hub && byN[hub]["sameAs"] is null) byN[hub]["sameAs"] = first;
+                continue;
+            }
+            if (!byId.TryGetValue(id, out var shared)) continue;
+            merged[id] = hub;
+            var offset = next;
+            int Moved(JsonNode? n) => n is null ? hub : (int)n + offset;
+            foreach (var st in shared.Steps.Select(Copy))
+            {
+                st["n"] = (int)st["n"]! + offset;
+                st["from"] = Moved(st["from"]);
+                if (st["sameAs"] is { } sa) st["sameAs"] = (int)sa + offset;
+                if (st["backTo"] is { } bt) st["backTo"] = (int)bt == 0 ? hub : (int)bt + offset;
+                steps.Add(st);
+                byN[(int)st["n"]!] = st;
+                next = Math.Max(next, (int)st["n"]!);
+            }
+            foreach (var e in shared.Exits.Select(Copy)) { e["step"] = Moved(e["step"]); exits.Add(e); }
+            foreach (var l in shared.Links.Select(Copy))
+            {
+                l["step"] = Moved(l["step"]);
+                links.Add(l);
+                if (Continues(l)) todo.Enqueue(l);
+            }
+        }
+        return b with { Steps = steps, Exits = exits, Links = links };
+
+        static bool Continues(JsonObject l) => (string?)l["kind"] == "continues" && l["flow"] is not null && l["step"] is not null;
     }
 
     /// <summary>Every step under step <paramref name="n"/>, through <c>from</c>, following <c>sameAs</c> to the steps walked there.</summary>

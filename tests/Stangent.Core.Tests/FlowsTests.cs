@@ -59,6 +59,50 @@ public class FlowsTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.Contains(set.Skipped, s => s.Kind == "click" && s.Reason.StartsWith("screen behaviour only", StringComparison.Ordinal)
             || s.Kind == "click" && s.Reason.Contains("handler", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void Each_hub_and_depth_stop_a_flow_continues_into_is_a_shared_flow_walked_once()
+    {
+        // D189: low limits so the fixture has hubs and depth stops.
+        var set = FlowBuilder.Build(shop.Graph, shop.Root, new FlowSettings(HubCallers: 2, Depth: 1));
+        var shared = set.Flows.Where(f => f.Kind == "shared").ToList();
+        Assert.NotEmpty(shared);
+        Assert.Equal(shared.Count, shared.Select(f => f.Start.Point).Distinct(StringComparer.Ordinal).Count());
+        var ids = shared.Select(f => f.Id).ToHashSet(StringComparer.Ordinal);
+        var continues = set.Flows.SelectMany(f => f.Links).Where(l => l.Kind == "continues").ToList();
+        Assert.NotEmpty(continues);
+        // Every continues link, the shared flows' own included, names the shared flow that walks on from it.
+        Assert.All(continues, l => Assert.Contains(l.ToFlow ?? "(none)", ids));
+        Assert.All(shared, f => Assert.Equal("the flow that continues here", f.Actor.Who));
+        Assert.Equal(FlowFiles.Render(set), FlowFiles.Render(FlowBuilder.Build(shop.Graph, shop.Root, new FlowSettings(HubCallers: 2, Depth: 1))));
+    }
+
+    [Fact]
+    public void A_field_or_property_holding_a_function_is_code_and_one_holding_a_value_is_not()
+    {
+        // D189: `this.seriesId()` reads a signal, no step; `getPageUrl = (n) => …` is a function, called like a method.
+        var root = Directory.CreateTempSubdirectory("stangent-props-").FullName;
+        try
+        {
+            File.WriteAllLines(Path.Combine(root, "c.ts"), [
+                "export class C {",
+                "  seriesId = input.required<number>();",
+                "  getPageUrl = (pageNum: number, chapterId: number = this.chapterId()) => {",
+                "    return `${pageNum}`;",
+                "  }",
+                "  load = async id => this.http.get(id);",
+                "  total = computed(() => this.seriesId() * 2);",
+                "}",
+            ]);
+            var g = new FlowGraph(shop.Graph, root);
+            Node Prop(int line, int end = 0) => new("ts|c.ts#C.x", NodeKind.Property, "C.x", null, "c.ts", line, end == 0 ? line : end);
+            Assert.False(g.HoldsFunction(Prop(2)));
+            Assert.True(g.HoldsFunction(Prop(3, 5)));
+            Assert.True(g.HoldsFunction(Prop(6)));
+            Assert.False(g.HoldsFunction(Prop(7)));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }
 
 public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>

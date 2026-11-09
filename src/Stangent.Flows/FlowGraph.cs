@@ -11,7 +11,7 @@ public sealed record FlowSettings(int HubCallers = 10, int Depth = 8);
 public sealed record Condition(string Kind, string Code, string File, int Line, string? Case = null);
 
 /// <summary>The graph, indexed for the walk. Read only; built once per build.</summary>
-internal sealed class FlowGraph
+internal sealed partial class FlowGraph
 {
     public CodeGraph Graph { get; }
     public string Root { get; }
@@ -174,4 +174,16 @@ internal sealed class FlowGraph
         || Facts(id, "queue").Any() || Facts(id, "job").Any() || Facts(id, "on-load").Any();
 
     public static string? ConstructedType(string id) => DocIds.ConstructedType(id);
+
+    /// <summary>A field or property whose value is a function written in place: <c>x = (a) =&gt; …</c>, <c>x = async a =&gt; …</c>, <c>x = function …</c>.</summary>
+    public bool HoldsFunction(Node node)
+    {
+        var lines = Lines(node.File);
+        if (node.Line < 1 || node.Line > lines.Length) return false;
+        var end = Math.Min(Math.Max(node.EndLine, node.Line), Math.Min(lines.Length, node.Line + 3));
+        return FunctionValue().IsMatch(string.Join(" ", lines[(node.Line - 1)..end]));
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"=\s*(async\s+)?(function\b|(\((?:[^()]|\([^()]*\))*\)|[A-Za-z_$][\w$]*)\s*(:[^=;]*?)?=>)")]
+    private static partial System.Text.RegularExpressions.Regex FunctionValue();
 }

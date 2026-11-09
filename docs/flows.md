@@ -2,7 +2,7 @@
 
 A **flow** is one thing a person or the system does, laid out by code from the code graph: who starts it, what they
 enter, what's checked, the steps with the conditions around them, where each branch ends, and the flows it leads to.
-No AI anywhere (D155, D176). Decisions: D170–D180, D183, D184; plan and scores: `phases/r3-flows.md`.
+No AI anywhere (D155, D176). Decisions: D170–D180, D183, D184, D186–D189; plan and scores: `phases/r3-flows.md`.
 
 ## Commands
 
@@ -34,6 +34,7 @@ runs it), `actor` (`who`, `why`, `at`, `label`), `inputs`, `checks`, `steps`, `e
 | `screen-opens` | each route (`page`): its guards, its resolvers and loaders, then the screen it shows; each MVC GET action returning a view (`on-load` `mvc`) | the route; the action's route |
 | `job` | each `is-job` method (commands, scheduled tasks, recurring registrations) | the command's type, the recurring job's id, else the method |
 | `handler` | each event handler (`handle` facts) that isn't a job: the flows a sent message links to (D173) | `Handler on Event` |
+| `shared` | each hub and depth stop a flow continues into (D189): the point a `continues` link names, walked once; a call written to an interface walks its implementations at the root, one branch each (🟡 when several); built transitively, so a shared flow's own stops get theirs | the point |
 
 Not a flow, and said so in `index.json`'s `skipped`: a button with no handler, an inline or prop handler, a handler not on the
 map, a click that reaches no server call, save, message or queued work ("screen behaviour only", D171), a screen whose opening
@@ -51,7 +52,8 @@ the same lines are read in source-line order; each line gives, in this order:
 4. queued work (`queue`, `job`): a step `queues X, which runs later`, linked `runs-later` to the job's flow (D173).
 5. an early exit (`exit`): one of `exits`, with its conditions (D174, D176 item 4).
 6. a route's on-load hook (`on-load`): a step `runs on open`, walked into.
-7. each call: a constructor of an event some handler handles ends `message`, one `message` link per handler (the bus is never
+7. each call (a field or property read, such as an Angular signal `this.seriesId()`, is none, D189; one holding a function
+   written in place, `getPageUrl = (n) => …`, is): a constructor of an event some handler handles ends `message`, one `message` link per handler (the bus is never
    walked); a callee with 10 or more callers, counted through the interface or base member it implements, is a `hub`, shown
    and not walked, unless its own body reads or saves a table, which ends `database` (D172's order); otherwise each
    implementation it dispatches to (several → one 🟡 branch each) is a step, walked into.
@@ -62,7 +64,9 @@ Before an action runs, its access filters (global, controller, action: the `auth
 `OnActionExecuting` overrides are steps `runs first`, walked like calls. A route's guards are the first steps of its screen.
 
 A point already on its branch is `backTo` that step (a loop, D176 item 1); one already walked elsewhere in the flow is
-`sameAs` that step, not walked again. At 8 real calls a branch ends `depth`, with a `continues` link. A child component whose walk
+`sameAs` that step, not walked again. At 8 real calls a branch ends `depth`, with a `continues` link. Every `continues` link
+(a hub's or a depth stop's) carries `flow`: the `shared` flow that walks on from there (D189). A reader, or the scorer, follows
+it to see the shared code's steps; its actor is "the flow that continues here". A child component whose walk
 reaches no HTTP call, save, message or queued work is display only: named in `displayOnly`, not shown as steps (D176 item 5).
 Steps are numbered in walk order, depth first; `from` is the step they come from (null: the start).
 
@@ -85,4 +89,6 @@ matched to its job by type), the actor. `unknowns` lists every ❓ with why. `fl
   aren't recorded.
 - Navigation (`router.navigate`, `<Link>`, `location.href`) isn't in the graph, so no `screen` ends yet.
 - (Exits now include an app's own helper that ends the request, D186, and a filter's `context.Result` refusal, D187.)
+- A shared flow runs once per point, not per caller: what a caller passes in isn't known there, so its conditions aren't narrowed.
+- Flow files are large on big repos (Sonarr ~160 MB, nopCommerce ~196 MB with the Markdown), shared flows about a third of Sonarr's.
 - Angular templates' child components have no call-site lines, so a screen's children are reached only through code.

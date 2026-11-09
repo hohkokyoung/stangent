@@ -221,7 +221,8 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D182 · The fresh check's Y1 (on-load for MVC pages with a runtime view), Y2 (a job requeuing itself keeps its line) and X1 (guard clauses as `unless` conditions) fixed
 - D183 · The frozen key's format: one JSON per flow under `benchmark/expected/flows/<repo>/`, every item a code line (`at` + exact `code`), steps a tree by `from`; written from git-tracked source only, checked by code
 - D184 · Layer 3's walk: `call-site` facts (each call's line), a hook's own functions as points, `filterType` on access filters; filters, `OnActionExecuting` and route guards walked first; a hub reading a table ends `database`; handler flows; the flows scorer's matching rules
-- D185 · Ruling R1: a key end on a call Stangent walks into counts when Stangent's steps below it end the same way (database, outside call, message), or when Stangent walks a call the key didn't; the key isn't edited
+- D185 · Ruling R1: a key end on a call Stangent walks into counts when Stangent's steps below it end the same way (outside call, message; database only on the key's table); a key end that only says it didn't follow the call leaves the count where Stangent walks on (amended); the key isn't edited
 - D186 · Ruling R4: a returned call to an app's own helper that sets a 4xx/5xx status or returns only listed results is an early exit (D176's list grows by that rule)
 - D187 · Ruling R5: a filter setting `context.Result` to a listed result (or a D186 helper's) is an early exit, changing D181
 - D188 · Ruling R6: a C# call into a package (not `System.*`, EF Core or logging) is a `call-site` with no target; flows show it as a step ending "a package's code, not walked"
+- D189 · Shared flows: each hub and depth stop a flow continues into is its own flow (kind `shared`, walked once, transitively), named by the link's `flow`; the scorer follows them; a field or property read is no step

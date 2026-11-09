@@ -87,6 +87,12 @@ Each is brought to the owner one at a time, with a recommendation; none is appli
   The code line decides: such a key end counts as found when Stangent's step on that line leads, through its own steps (and
   `sameAs`), to an end of the same kind (`database`, `outside-call`, `message`); a key `unknown`/`depth` counts when Stangent walks
   on from that step. The key isn't edited. Effect on item 2: Sonarr 62% → 66%, Kavita 69% → 78%, nopCommerce 77% → 84%.
+  **Tightened 2026-11-09 (owner: "sure", after a review found it too loose; D185 amended):** a key `database` end counts through
+  Stangent's steps below only when they reach a table the key names (read through the graph's entity→table map, since the key
+  names entities); a key `unknown`/`depth` that only says the key didn't follow the call ("not walked", "same … as", a depth
+  stop) leaves the count where Stangent walks on (`endsLeftOut`), instead of counting as found. 44 such ends left out (Sonarr 5,
+  Kavita 3, nopCommerce 36); 6 credits lost that reach another table (1, 4, 1). Item 2: Sonarr 66% → 64.9%, Kavita 84% →
+  82.7%, nopCommerce 88% → 87.1% (on the flows built before D189).
 - **R2, ruled 2026-11-09 (owner: "Yes, leave it", on the recommendation): Kavita's `unitOfWork.CommitAsync` stays `hub`.**
   Its body saves through the database context and names no table on that line, so Stangent ends it `hub` (289 callers), as the
   key does; the key's detail "writes AppUserWantToRead" isn't scored. No change to the key or the scorer.
@@ -107,8 +113,16 @@ Each is brought to the owner one at a time, with a recommendation; none is appli
   Kavita 8,908, nopCommerce 12,940); a flow shows each as "calls X in the package Y", ending `unknown`, "a package's code, not
   walked". TypeScript's aren't recorded; SMTP as an `outside-call` is a separate question. Kavita 80.6% → 83.6%, nopCommerce
   85.9% → 87.9%. No change to the key.
-- **R7, open: the key walks into code the graph counts as a hub** (≥10 callers by distinct calling methods, through interfaces),
-  and lists steps inside it; D172 stops there.
+- **R7, withdrawn 2026-11-09: a Stangent bug, fixed by D189.** The key walks into code the graph counts as a hub and lists steps
+  inside it; Stangent stopped there with a `continues` link to a shared walk D173 promised but never built. Now each hub and
+  depth stop a flow continues into is a `shared` flow, and the scorer follows the links into them (D189); a field or property
+  read (an Angular signal) is no longer a step or a hub. Recount, by item: 25 key items now found in shared code (Sonarr 4 steps,
+  4 ends; Kavita 3 steps, 4 ends, 2 conditions; nopCommerce 7 ends, 1 condition), 3 more "not walked" ends left out (Kavita 1,
+  nopCommerce 2), none lost. Item 2: Sonarr 64.9% → 67.7%, Kavita 82.7% → 84.4%, nopCommerce 87.1% → 88.2%. Most of R7's
+  ~40 items by line were not separate misses: what's left in shared code is a key `hub` where Stangent ends `database` (the hub
+  reads a table, D172's order: Sonarr 4, Kavita 3, nopCommerce 4), and nopCommerce reads written as LINQ over a repository's
+  `Table` (`_customerRepository.Table.Where(…)`), which layer 2 records as no read, so the shared flow stops at
+  `FirstOrDefaultAsync` (a hub) instead of `Customer` (about 5 ends).
 
 ## Step 2: the key — done 2026-11-09 (15 flows, three approved, one per repo)
 
@@ -167,33 +181,38 @@ Each is brought to the owner one at a time, with a recommendation; none is appli
   ends, not exits); terms-of-service is a page-script check; repository-level entity-event consumers aren't listed;
   model-factory sub-builders, `PrepareAndValidate*`, OAuth helpers and payment plugins end `unknown`.
 
-## Step 3: the flow code — built 2026-11-09, scored; the bar is not passed
+## Step 3: the flow code — built 2026-11-09, scored; the bar is not passed (rescored after D185's amendment and D189)
 
 `stangent flows build|show|check` (contract `flows` v1, `docs/flows.md`, D184), a flows scorer in `Stangent.Benchmark`
 (`--score-flows <clone> <key-dir>`), built on the three clones at the key's commits. Layer 2 grew for it (D184): `call-site`
-facts (each call's line), a hook's own functions as points, `filterType` on access filters; graphs rebuilt. Builds take ~4 s.
+facts (each call's line), a hook's own functions as points, `filterType` on access filters; graphs rebuilt. Builds take ~4 s; with shared flows (D189) 6 s on Sonarr, 12 s on nopCommerce.
 
 | Bar item | Sonarr | Kavita | nopCommerce |
 |---|---|---|---|
-| Flows built (click / screen / job / handler) | 367 | 281 | 944 |
-| 1. No wrong ✅ (code check: a ✅ call's line names what it calls) | 51 flagged of 48,840 | 5 of 23,707 | 10 of 75,196 |
-| 2. Key steps, ends and conditions found (≥95%), after R1 | **187 / 284 = 66%** | **427 / 511 = 84%** | **674 / 767 = 88%** (after R1, R4–R6) |
-| — before R1 | 175 / 284 = 62% | 354 / 511 = 69% | 590 / 767 = 77% |
-| — steps | 91 / 126 | 212 / 228 | 193 / 210 |
-| — ends (incl. exits), after rulings | 38 / 73 | 86 / 128 | 156 / 202 |
-| — conditions | 58 / 85 | 129 / 155 | 325 / 355 |
-| (links, not in item 2) | 28 / 45 | 4 / 12 | 16 / 46 |
+| Flows built (click / screen / job / handler / shared) | 1,540 (116 / 31 / 38 / 182 / 1,173) | 532 (232 / 26 / 23 / 0 / 251) | 1,330 (325 / 399 / 17 / 203 / 386) |
+| 1. No wrong ✅ (code check: a ✅ call's line names what it calls) | 71 flagged of 77,170 | 5 of 27,503 | 11 of 93,950 |
+| 2. Key steps, ends and conditions found (≥95%), after R1 (tightened), R4–R6, D189 | **189 / 279 = 67.7%** | **428 / 507 = 84.4%** | **643 / 729 = 88.2%** |
+| — before D189 (R1 tightened, old flows) | 181 / 279 = 64.9% | 420 / 508 = 82.7% | 637 / 731 = 87.1% |
+| — before R1 was tightened | 187 / 284 = 66% | 427 / 511 = 84% | 674 / 767 = 88% |
+| — before any ruling | 175 / 284 = 62% | 354 / 511 = 69% | 590 / 767 = 77% |
+| — steps | 95 / 126 | 215 / 228 | 193 / 210 |
+| — ends (incl. exits) | 36 / 68 | 82 / 124 | 124 / 164 |
+| — conditions | 58 / 85 | 131 / 155 | 326 / 355 |
+| (key ends left out: they only say the key didn't follow a call, R1) | 5 | 4 | 38 |
+| (links, not in item 2) | 29 / 45 | 4 / 12 | 16 / 46 |
 | (checks, not in item 2) | 8 / 25 | 0 / 2 | 26 / 60 |
-| 3. Every 🟡 and ❓ with a reason | pass (10,680 🟡, 705 ❓) | pass (1,182, 119) | pass (7,271, 269) |
+| 3. Every 🟡 and ❓ with a reason | pass (16,160 🟡, 984 ❓) | pass (1,272, 146) | pass (8,979, 314) |
 | 4. Byte for byte (two builds, and disk) | pass | pass | pass |
 | 5. No silent skips (starts → flows or stated reasons) | pass (2,678 starts) | pass (1,305) | pass (1,244) |
 
-**Bottom line: items 3–5 pass on all three; item 2 fails (66%, 84%, 88% against 95%, after R1 and R4–R6); item 1 isn't settled** — the samples read
+**Bottom line: items 3–5 pass on all three; item 2 fails (67.7%, 84.4%, 88.2% against 95%, after R1 tightened, R4–R6 and
+D189); item 1 isn't settled** (more ✅ steps to check now that shared flows are written: Sonarr's flags rose 51 → 71) — the samples read
 are the checker's limits (a hook's function returned under another name, `goToPage: handleGoToPage`; a chain over 10 lines) plus
 one extractor quirk (Kavita's route resolvers' `on-load` lines point at a blank line). Steps are mostly found (72%, 91%, 89%);
 ends are what fail. Where the misses sit: the key stopping a branch one call earlier than the code does (R1, ruled: counted);
 filter and helper exits (ruled exits, R4, R5); navigation, which the graph doesn't hold (`screen` ends: none built; package calls now steps, R6); a URL built at runtime (Sonarr's save-indexer stops at a ❓ before the server, 3 of
-30 steps); the key walking into hubs (R7). Per-flow numbers: `--score-flows` output (`flows[].items`, `flows[].missed`).
+30 steps); inside shared code, a key `hub` where the hub reads a table (Stangent ends `database`, D172) and nopCommerce's LINQ
+reads over a repository's `Table`, which layer 2 doesn't record (R7's recount). Per-flow numbers: `--score-flows` output (`flows[].items`, `flows[].missed`).
 
 ## Left open, on purpose
 
