@@ -73,6 +73,8 @@ public class FlowStartsTests(ShopGraph shop) : IClassFixture<ShopGraph>
             "StatusCode 503 Results.StatusCode(503) | if closed < unless id is null",
             "BadRequest  Results.BadRequest() | if id > 100 < unless closed < unless id is null",
             "throw  throw new ArgumentNullException(nameof(name)) | null name",
+            "NotFound  Results.NotFound() | if id is null < case mode = \"one\"",
+            "BadRequest  Results.BadRequest() | unless id is null < case mode = \"one\"",
         ], exits);
         // `return View(model)` and `Results.Ok(id)` aren't exits; neither is a filter setting context.Result.
         Assert.DoesNotContain(Facts("conditions", "exit"), f => f["text"].StartsWith("View(", StringComparison.Ordinal) || f["text"].Contains("Ok(", StringComparison.Ordinal)

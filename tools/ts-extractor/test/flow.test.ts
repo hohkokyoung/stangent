@@ -99,6 +99,9 @@ test("a call's conditions are quoted innermost first; a throw is an exit with it
       "  }",
       "  try { save(0); } catch (e) { save(1); }",
       "}",
+      "export function picked(mode: string, x?: number) {",
+      "  switch (mode) { case 'a': if (!x) return; save(x); break; }",
+      "}",
       "export function guarded(x?: number) {",
       "  if (x === undefined) { return; }",
       "  if (x < 0) throw new Error('neg');",
@@ -113,6 +116,7 @@ test("a call's conditions are quoted innermost first; a throw is an exit with it
     "save: case mode = 'a' < else ok && i > 0 < loop for (const i of items)",
     "Error: case mode = default < else ok && i > 0 < loop for (const i of items)",
     "save: catch e",
+    "save: unless !x < case mode = 'a'",
     "Error: if x < 0 < unless x === undefined",
     "save: unless x < 0 < unless x === undefined",
   ]);

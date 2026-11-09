@@ -12,3 +12,11 @@ public static class Guards
 
     public static string Name(string? name) => name ?? throw new ArgumentNullException(nameof(name));
 }
+
+// Z1: a guard inside a switch case conditions the rest of that case.
+public static class CaseGuards
+{
+    public static IResult Pick(string mode, int? id) {
+        switch (mode) { case "one": if (id is null) return Results.NotFound(); return Results.BadRequest(); default: return Results.Ok(); }
+    }
+}

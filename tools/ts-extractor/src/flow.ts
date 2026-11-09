@@ -149,22 +149,28 @@ export function conditionsAround(ctx: Context, node: ts.Node): Condition[] {
       else if (child === p.whenFalse) out.push({ kind: "else", text: p.condition.getText(sf), line: at(p) });
     } else if (ts.isCaseClause(p) || ts.isDefaultClause(p)) {
       const sw = p.parent.parent as ts.SwitchStatement;
-      if (p.statements.some((s) => s === child))
+      if (p.statements.some((s) => s === child)) {
+        guards(p.statements, child as ts.Statement, out, at); // Z1: a case's statements are a block too
         out.push({ kind: "case", text: sw.expression.getText(sf), line: at(p), case: ts.isCaseClause(p) ? p.expression.getText(sf) : "default" });
+      }
     } else if (ts.isCatchClause(p)) {
       if (child === p.block) out.push({ kind: "catch", text: p.variableDeclaration?.getText(sf) ?? "", line: at(p) });
     } else if (ts.isForStatement(p) || ts.isForOfStatement(p) || ts.isForInStatement(p) || ts.isWhileStatement(p) || ts.isDoStatement(p)) {
       if (child === p.statement) out.push({ kind: "loop", text: loopHeader(p, sf), line: at(p) });
     } else if (ts.isBlock(p)) {
       // X1: an earlier guard in the same block (`if (!x) return;`) means this runs only unless its condition holds; nearest first.
-      const i = p.statements.indexOf(child as ts.Statement);
-      for (let j = i - 1; j >= 0; j--) {
-        const g = p.statements[j];
-        if (ts.isIfStatement(g) && !g.elseStatement && exits(g.thenStatement)) out.push({ kind: "unless", text: g.expression.getText(sf), line: at(g) });
-      }
+      guards(p.statements, child as ts.Statement, out, at);
     }
   }
   return out;
+}
+
+/** X1: an earlier guard among the same statements (`if (!x) return;`): this runs only unless its condition holds; nearest first. */
+function guards(statements: ts.NodeArray<ts.Statement>, child: ts.Statement, out: Condition[], at: (n: ts.Node) => number) {
+  for (let j = statements.indexOf(child) - 1; j >= 0; j--) {
+    const g = statements[j];
+    if (ts.isIfStatement(g) && !g.elseStatement && exits(g.thenStatement)) out.push({ kind: "unless", text: g.expression.getText(), line: at(g) });
+  }
 }
 
 /** A statement that always leaves: return, throw, break, continue, or a block ending in one. */

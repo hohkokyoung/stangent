@@ -253,7 +253,9 @@ public sealed class ConditionsDetector : IDetector
                     list.Add(new("if", c.Condition.ToString(), ctx.Line(c))); break;
                 case ConditionalExpressionSyntax c when child == c.WhenFalse:
                     list.Add(new("else", c.Condition.ToString(), ctx.Line(c))); break;
-                case SwitchSectionSyntax s when s.Statements.Contains(child) && s.Parent is SwitchStatementSyntax sw:
+                case SwitchSectionSyntax s when child is StatementSyntax inCase && s.Statements.Contains(inCase) && s.Parent is SwitchStatementSyntax sw:
+                    // Z1: a case's statements are a block too: its guards first, then the case.
+                    Guards(s.Statements, inCase, list, ctx);
                     list.Add(new("case", sw.Expression.ToString(), ctx.Line(s), string.Join(" | ", s.Labels.Select(Label)))); break;
                 case SwitchExpressionArmSyntax arm when child == arm.Expression && arm.Parent is SwitchExpressionSyntax se:
                     list.Add(new("case", se.GoverningExpression.ToString(), ctx.Line(arm), arm.Pattern + (arm.WhenClause is { } w ? " " + w : ""))); break;
@@ -264,14 +266,19 @@ public sealed class ConditionsDetector : IDetector
                 case DoStatementSyntax d when child == d.Statement:
                     list.Add(new("loop", $"do … while ({d.Condition})", ctx.Line(d))); break;
                 case BlockSyntax block when child is StatementSyntax stmt:
-                    // X1: an earlier guard in the same block (`if (x) return …;`) means this runs only unless x; nearest first.
-                    for (var i = block.Statements.IndexOf(stmt) - 1; i >= 0; i--)
-                        if (block.Statements[i] is IfStatementSyntax { Else: null } guard && Exits(guard.Statement))
-                            list.Add(new("unless", guard.Condition.ToString(), ctx.Line(guard)));
+                    Guards(block.Statements, stmt, list, ctx);
                     break;
             }
         }
         return list;
+    }
+
+    /// <summary>X1: an earlier guard among the same statements (`if (x) return …;`) means this runs only unless x; nearest first.</summary>
+    static void Guards(SyntaxList<StatementSyntax> statements, StatementSyntax stmt, List<Condition> list, ExtractContext ctx)
+    {
+        for (var i = statements.IndexOf(stmt) - 1; i >= 0; i--)
+            if (statements[i] is IfStatementSyntax { Else: null } guard && Exits(guard.Statement))
+                list.Add(new("unless", guard.Condition.ToString(), ctx.Line(guard)));
     }
 
     /// <summary>A statement that always leaves: <c>return</c>, <c>throw</c>, <c>break</c>, <c>continue</c>, or a block ending in one.</summary>
