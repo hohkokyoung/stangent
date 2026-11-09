@@ -56,6 +56,7 @@ the same lines are read in source-line order; each line gives, in this order:
    and not walked, unless its own body reads or saves a table, which ends `database` (D172's order); otherwise each
    implementation it dispatches to (several → one 🟡 branch each) is a step, walked into.
 8. a ❓ the graph recorded there: ends `unknown`, with its reason.
+9. a call into a package (D188): a step `calls X in the package Y`, ending `unknown`, "a package's code, not walked"; not a ❓.
 
 Before an action runs, its access filters (global, controller, action: the `auth` facts' `filterType`) and the controller's own
 `OnActionExecuting` overrides are steps `runs first`, walked like calls. A route's guards are the first steps of its screen.
@@ -80,8 +81,8 @@ matched to its job by type), the actor. `unknowns` lists every ❓ with why. `fl
 
 ## Known gaps
 
-- Calls into packages (ASP.NET Identity, MailKit's SMTP client, EF's own methods) aren't on the map, so they're no steps; an SMTP
-  send isn't an `outside-call` (only HTTP clients are, G4).
+- A package call is a step, not walked (D188), and never an `outside-call` (only HTTP clients are, G4); TypeScript's package calls
+  aren't recorded.
 - Navigation (`router.navigate`, `<Link>`, `location.href`) isn't in the graph, so no `screen` ends yet.
 - (Exits now include an app's own helper that ends the request, D186, and a filter's `context.Result` refusal, D187.)
 - Angular templates' child components have no call-site lines, so a screen's children are reached only through code.

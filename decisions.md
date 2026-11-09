@@ -224,3 +224,4 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D185 · Ruling R1: a key end on a call Stangent walks into counts when Stangent's steps below it end the same way (database, outside call, message), or when Stangent walks a call the key didn't; the key isn't edited
 - D186 · Ruling R4: a returned call to an app's own helper that sets a 4xx/5xx status or returns only listed results is an early exit (D176's list grows by that rule)
 - D187 · Ruling R5: a filter setting `context.Result` to a listed result (or a D186 helper's) is an early exit, changing D181
+- D188 · Ruling R6: a C# call into a package (not `System.*`, EF Core or logging) is a `call-site` with no target; flows show it as a step ending "a package's code, not walked"

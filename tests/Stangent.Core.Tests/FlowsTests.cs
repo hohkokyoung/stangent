@@ -79,4 +79,13 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.Equal("Challenge", exit["kind"]);
         Assert.Contains("IsAuthenticated", exit["conditions"], StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void A_call_into_a_package_is_a_call_site_with_no_target_and_not_one_into_system()
+    {
+        var packages = shop.Graph.AllFacts.Where(f => f.Kind == "call-site" && f["kind"] == "package").ToList();
+        Assert.All(packages, f => Assert.Equal("", f["target"]));
+        Assert.DoesNotContain(packages, f => f["package"].StartsWith("System", StringComparison.Ordinal));
+        Assert.Contains(packages, f => f["package"].StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal));
+    }
 }

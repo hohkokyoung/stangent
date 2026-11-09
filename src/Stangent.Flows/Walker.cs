@@ -125,6 +125,14 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             foreach (var site in sites)
             {
                 var target = site["target"];
+                if (site["kind"] == "package")
+                {
+                    // D188: a package's code is a step, not walked (it isn't on the map).
+                    if (consumed.Count == 0 && !later.Contains(target))
+                        Add(parent, new Step { What = $"calls {site["method"]} in the package {site["package"]}", At = at, Kind = "package", Conditions = CondsFor(""), Depth = depth,
+                            End = new End("unknown", $"a package's code ({site["package"]}), not walked") });
+                    continue;
+                }
                 if (consumed.Contains(target) || later.Contains(target)) continue;
                 Call(point, site, target, at, CondsFor(target), parent, depth, branch);
             }
@@ -374,7 +382,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 if (l.Guessed) flow.Guesses.Add(new Guess(n, l.Sentence, l.Kind == "message" ? "handlers found by the event's type" : "a queued command matched to its job by type"));
             }
             foreach (var u in item.Unknowns) flow.Unknowns.Add(u with { Step = n });
-            if (item.Step.Kind == "unknown" || item.Step.End?.Kind == "unknown") flow.Unknowns.Add(new Unknown(n, item.Step.Point ?? "", item.Step.At, item.Step.End?.Detail ?? item.Step.What));
+            if (item.Step.Kind != "package" && (item.Step.Kind == "unknown" || item.Step.End?.Kind == "unknown")) flow.Unknowns.Add(new Unknown(n, item.Step.Point ?? "", item.Step.At, item.Step.End?.Detail ?? item.Step.What));
             foreach (var (exit, _) in item.Exits)
             {
                 flow.Exits.Add(exit with { Step = n });

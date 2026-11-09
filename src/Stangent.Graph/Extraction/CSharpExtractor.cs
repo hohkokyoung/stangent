@@ -172,6 +172,7 @@ public static class CSharpExtractor
             var target = ExtractContext.Normalize(method)!;
             ctx.AddEdge(owner, ctx.NodeId(target), EdgeKind.Calls, Label.Certain);
             CallSite(ctx, owner, ctx.NodeId(target), invocation, Label.Certain);
+            if (ctx.NodeId(target) is null) PackageCall(ctx, owner, method, invocation);
             var name = $"{ExtractContext.FullName(target.ContainingType)}.{target.Name}";
             if (Reflection.TryGetValue(name, out var reason)) ctx.AddBlindSpot(owner, invocation, reason);
             return;
@@ -201,6 +202,23 @@ public static class CSharpExtractor
     {
         if (owner is null || target is null || owner == target) return;
         ctx.AddFact("call-sites", "call-site", owner, at, ("target", target), ("label", ((int)label).ToString(System.Globalization.CultureInfo.InvariantCulture)), ("kind", "calls"));
+    }
+
+    /// <summary>
+    /// D188 (ruling R6): a call into a package (ASP.NET Identity, MailKit…) is a <c>call-site</c> with no target and the package's
+    /// method, so a flow shows it as a step it doesn't walk. Not .NET's own <c>System.*</c>, not EF Core (its reads and saves are
+    /// already <c>access</c> facts), not logging (a log line isn't behaviour a flow shows).
+    /// </summary>
+    static void PackageCall(ExtractContext ctx, string? owner, IMethodSymbol method, SyntaxNode at)
+    {
+        if (owner is null) return;
+        var ns = method.ContainingNamespace?.ToDisplayString() ?? "";
+        if (ns == "" || ns == "System" || ns.StartsWith("System.", StringComparison.Ordinal) || ns.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal)
+            || ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal) || ns == "NLog" || ns.StartsWith("NLog.", StringComparison.Ordinal)
+            || ns == "Serilog" || ns.StartsWith("Serilog.", StringComparison.Ordinal)) return;
+        var type = method.ContainingType is { } t ? t.Name : "";
+        ctx.AddFact("call-sites", "call-site", owner, at, ("target", ""), ("label", "0"), ("kind", "package"),
+            ("package", method.ContainingAssembly?.Name ?? ""), ("method", $"{type}.{method.Name}"));
     }
 
     static string Short(SyntaxNode expr)

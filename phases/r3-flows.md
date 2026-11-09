@@ -102,8 +102,11 @@ Each is brought to the owner one at a time, with a recommendation; none is appli
   an early exit**, changing D181. Setting it stops the request before the action runs. Built in layer 2; flows already walk the
   filters first (D184). The key's 7 such exits (Kavita `EntityAccessAttribute` ×4, nopCommerce `CheckAccessPublicStore` ×2,
   `ValidateHoneypot`) and their conditions are now found: Kavita 77.9% → 80.6%, nopCommerce 84.7% → 85.9%. No change to the key.
-- **R6, open: calls into packages** (ASP.NET Identity's `userManager`, MailKit's `client.ConnectAsync`/`smtpClient.SendAsync`,
-  RxJS subjects): the graph keeps only the repo's own points, so these are no steps. A layer 2 gap, not a key error.
+- **R6, ruled 2026-11-09 (owner: "Yes, show them", on the recommendation; D188): a call into a package is a step, not
+  walked.** C# calls into packages (not `System.*`, EF Core or logging) are `call-site` facts with no target (Sonarr 24,852,
+  Kavita 8,908, nopCommerce 12,940); a flow shows each as "calls X in the package Y", ending `unknown`, "a package's code, not
+  walked". TypeScript's aren't recorded; SMTP as an `outside-call` is a separate question. Kavita 80.6% → 83.6%, nopCommerce
+  85.9% → 87.9%. No change to the key.
 - **R7, open: the key walks into code the graph counts as a hub** (≥10 callers by distinct calling methods, through interfaces),
   and lists steps inside it; D172 stops there.
 
@@ -174,23 +177,22 @@ facts (each call's line), a hook's own functions as points, `filterType` on acce
 |---|---|---|---|
 | Flows built (click / screen / job / handler) | 367 | 281 | 944 |
 | 1. No wrong ✅ (code check: a ✅ call's line names what it calls) | 51 flagged of 48,840 | 5 of 23,707 | 10 of 75,196 |
-| 2. Key steps, ends and conditions found (≥95%), after R1 | **187 / 284 = 66%** | **412 / 511 = 81%** | **659 / 767 = 86%** (after R1, R4, R5) |
+| 2. Key steps, ends and conditions found (≥95%), after R1 | **187 / 284 = 66%** | **427 / 511 = 84%** | **674 / 767 = 88%** (after R1, R4–R6) |
 | — before R1 | 175 / 284 = 62% | 354 / 511 = 69% | 590 / 767 = 77% |
-| — steps | 91 / 126 | 207 / 228 | 187 / 210 |
-| — ends (incl. exits), after rulings | 38 / 73 | 86 / 128 | 154 / 202 |
-| — conditions | 58 / 85 | 119 / 155 | 318 / 355 |
+| — steps | 91 / 126 | 212 / 228 | 193 / 210 |
+| — ends (incl. exits), after rulings | 38 / 73 | 86 / 128 | 156 / 202 |
+| — conditions | 58 / 85 | 129 / 155 | 325 / 355 |
 | (links, not in item 2) | 28 / 45 | 4 / 12 | 16 / 46 |
 | (checks, not in item 2) | 8 / 25 | 0 / 2 | 26 / 60 |
 | 3. Every 🟡 and ❓ with a reason | pass (10,680 🟡, 705 ❓) | pass (1,182, 119) | pass (7,271, 269) |
 | 4. Byte for byte (two builds, and disk) | pass | pass | pass |
 | 5. No silent skips (starts → flows or stated reasons) | pass (2,678 starts) | pass (1,305) | pass (1,244) |
 
-**Bottom line: items 3–5 pass on all three; item 2 fails (66%, 81%, 86% against 95%, after R1, R4 and R5); item 1 isn't settled** — the samples read
+**Bottom line: items 3–5 pass on all three; item 2 fails (66%, 84%, 88% against 95%, after R1 and R4–R6); item 1 isn't settled** — the samples read
 are the checker's limits (a hook's function returned under another name, `goToPage: handleGoToPage`; a chain over 10 lines) plus
 one extractor quirk (Kavita's route resolvers' `on-load` lines point at a blank line). Steps are mostly found (72%, 91%, 89%);
 ends are what fail. Where the misses sit: the key stopping a branch one call earlier than the code does (R1, ruled: counted);
-filter and helper exits (ruled exits, R4, R5); calls into packages and navigation, which the graph
-doesn't hold (R6; `screen` ends: none built); a URL built at runtime (Sonarr's save-indexer stops at a ❓ before the server, 3 of
+filter and helper exits (ruled exits, R4, R5); navigation, which the graph doesn't hold (`screen` ends: none built; package calls now steps, R6); a URL built at runtime (Sonarr's save-indexer stops at a ❓ before the server, 3 of
 30 steps); the key walking into hubs (R7). Per-flow numbers: `--score-flows` output (`flows[].items`, `flows[].missed`).
 
 ## Left open, on purpose
