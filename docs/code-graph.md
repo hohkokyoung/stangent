@@ -376,6 +376,10 @@ A project that can't be loaded is listed in `loadErrors` and its code is ❓. MS
     wrappers, `fetch`, axios, Angular's `HttpClient` and jQuery (D191). A value that reaches a function no script code calls
     is that function's argument: a `call-open` fact (`verb`, `open` = `point@argument`), beside the ❓, for a caller outside
     the scripts (a view's onclick, D191) to fill in.
+  - **Requests made another way (D193):** Angular's `httpResource(() => url | { url, method })` (`via` `angular-httpResource`):
+    each URL its function returns, at that `return`'s line; an image's `src` set to a URL (`via` `img-src`): GET at that line.
+    The URL reader takes every `return` of a function it reads (each a value; `undefined`/`null` left out); several →
+    `from` `returns`, 🟡.
   - **Navigation (D192, detectors `conditions` and `navigation`):** an Angular `UrlTree` a function returns
     (`router.parseUrl`, `router.createUrlTree`, through `of(…)`, `||`, `??`, `?:`, an arrow's body) is an `exit` of kind
     `Redirect`; so is a navigation call the function returns straight after. Any other navigation is a `navigate` fact

@@ -117,16 +117,24 @@ function values(ctx: Context, expr: ts.Expression | undefined, env: Map<ts.Symbo
     const fn = declaredFunction(ctx.checker, e.expression);
     if (!fn?.body) return null;
     if (queryString(ctx, fn)) return one("");
-    const returned = single(fn);
-    if (!returned) return null;
-    // A function returning one expression is read with its parameters bound to this call's arguments (getQueryPath(path)).
+    const returned = returns(fn);
+    if (returned.length === 0) return null;
+    // A function is read with its parameters bound to this call's arguments (getQueryPath(path)); with several returns,
+    // each is one value it can give (D193). `undefined`/`null` returns give none.
     const inner = new Map<ts.Symbol, Valued[]>();
     fn.parameters.forEach((p, i) => {
       const s = ts.isIdentifier(p.name) ? symbolOf(ctx.checker, p.name) : undefined;
       const arg = e.arguments[i] ?? p.initializer;
       if (s) inner.set(s, arg ? part(ctx, arg, env, depth, i === 0) : one(RUNTIME));
     });
-    return values(ctx, returned, inner, depth + 1);
+    const out: Valued[] = [];
+    for (const r of returned) {
+      const vs = values(ctx, r, inner, depth + 1);
+      if (!vs) return null;
+      out.push(...vs);
+      if (out.length > MAX) return null;
+    }
+    return out;
   }
   return null;
 }
@@ -149,11 +157,20 @@ function queryString(ctx: Context, fn: ts.FunctionLikeDeclaration): boolean {
   });
 }
 
-function single(fn: ts.FunctionLikeDeclaration): ts.Expression | null {
-  if (!fn.body) return null;
-  if (!ts.isBlock(fn.body)) return fn.body;
-  const returns = fn.body.statements.filter(ts.isReturnStatement);
-  return returns.length === 1 && fn.body.statements.length === 1 ? returns[0].expression ?? null : null;
+/** What a function returns: its expression body, or every `return`'s value outside nested functions, `undefined` and `null` left out. */
+export function returns(fn: ts.FunctionLikeDeclaration): ts.Expression[] {
+  if (!fn.body) return [];
+  if (!ts.isBlock(fn.body)) return [fn.body];
+  const out: ts.Expression[] = [];
+  const visit = (n: ts.Node) => {
+    if (ts.isReturnStatement(n)) {
+      const x = n.expression ? skip(n.expression) : undefined;
+      if (x && !(ts.isIdentifier(x) && x.text === "undefined") && x.kind !== ts.SyntaxKind.NullKeyword) out.push(n.expression!);
+    }
+    if (!ts.isFunctionLike(n)) ts.forEachChild(n, visit);
+  };
+  fn.body.statements.forEach(visit);
+  return out;
 }
 
 /** Each in-repo call's argument for the parameter (or that property of it), read in the caller's own code, in file and line order. */
@@ -226,7 +243,7 @@ export function declaredFunction(checker: ts.TypeChecker, callee: ts.Expression)
   if (!d) return null;
   if (ts.isFunctionDeclaration(d)) return d;
   if (ts.isVariableDeclaration(d) && d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer))) return d.initializer;
-  if (ts.isPropertyAssignment(d) && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer))) return d.initializer;
+  if ((ts.isPropertyAssignment(d) || ts.isPropertyDeclaration(d)) && d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer))) return d.initializer;
   if (ts.isMethodDeclaration(d)) return d;
   return null;
 }

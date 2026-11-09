@@ -90,6 +90,13 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             .Concat(g.Facts(point, "on-load").Select(f => f.Line)).Concat(g.BlindByOwner[point].Select(b => b.Line))
             .Concat(g.Facts(point, "navigate").Select(f => f.Line))
             .Distinct().Order().ToList();
+        // D193: a component's fields are made with it: an initialiser that calls something (`x = this.svc.makeResource(…)`) runs
+        // when the component is created, before its own code. A field holding a function runs only when called: not here.
+        if (node.Kind == NodeKind.Component)
+            foreach (var field in g.Out(point, EdgeKind.Contains).Select(e => e.Target).Distinct(StringComparer.Ordinal)
+                         .Where(t => g.Nodes.TryGetValue(t, out var n) && n.Kind is NodeKind.Property or NodeKind.Field && !g.HoldsFunction(n) && g.Facts(t, "call-site").Any())
+                         .OrderBy(t => g.Nodes[t].Line).ThenBy(t => t, StringComparer.Ordinal))
+                if (!branch.Contains(field, StringComparer.Ordinal) && walked.TryAdd(field, parent)) Visit(field, parent, depth, [.. branch, field]);
         var later = g.Facts(point, "job").Select(f => f["runs"]).ToHashSet(StringComparer.Ordinal);
         var conditions = g.Facts(point, "condition").ToLookup(f => f.Line);
 

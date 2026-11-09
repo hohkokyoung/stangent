@@ -589,3 +589,38 @@ test("an error callback is a catch condition on what runs inside it (D192)", () 
   const conds = lines.filter((l) => l.t === "fact" && l.kind === "condition" && l.data.call === "warn").map((l) => l.t === "fact" ? `${l.line} ${JSON.parse(l.data.conditions).map((c: { kind: string; line: number }) => `${c.kind}@${c.line}`).join(",")}` : "");
   assert.deepEqual(conds, ["5 catch@4", "7 catch@7", "8 catch@8"]);
 });
+
+test("httpResource's returned URLs and an image's src are GET requests (D193)", () => {
+  const root = project({
+    "src/svc.ts": [
+      "declare function httpResource<T>(f: () => string | undefined): T;",
+      "export class Svc {",
+      "  baseUrl = 'api/';",
+      "  errors(id: () => number | undefined) {",
+      "    return httpResource<string[]>(() => {",
+      "      const x = id();",
+      "      if (x === undefined) return undefined;",
+      "      return this.baseUrl + `server/errors?seriesId=${x}`;",
+      "    });",
+      "  }",
+      "  pageUrl(c: number, p: number) { return `${this.baseUrl}reader/image?chapterId=${c}&page=${p}`; }",
+      "  bookmarkUrl(s: number) { return `${this.baseUrl}reader/bookmark-image?seriesId=${s}`; }",
+      "}",
+      "export class Reader {",
+      "  constructor(private svc: Svc, private marks: boolean) {}",
+      "  getPageUrl = (page: number, chapter: number) => {",
+      "    if (this.marks) return this.svc.bookmarkUrl(1);",
+      "    return this.svc.pageUrl(chapter, page);",
+      "  }",
+      "  load() { const img = new Image(); img.src = this.getPageUrl(1, 2); }",
+      "}",
+    ].join("\n"),
+  }, { lib: ["ES2022", "DOM"] });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const calls = lines.filter((l) => l.t === "fact" && l.kind === "call").map((l) => l.t === "fact" ? `${l.line} ${l.data.verb} ${l.data.url} ${l.data.via} ${l.data.from ?? ""}` : "").sort();
+  assert.deepEqual(calls, [
+    "20 GET api/reader/bookmark-image img-src returns",
+    "20 GET api/reader/image img-src returns",
+    "8 GET api/server/errors angular-httpResource ",
+  ]);
+});

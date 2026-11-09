@@ -49,7 +49,8 @@ the same lines are read in source-line order; each line gives, in this order:
    its callers give, D190, only the values given by the flow's own code: an `origin` on the branch, reached, or called by a
    point on it or the component or hook holding one; none such → every value). A button whose onclick calls a script function
    with the route (D191) runs that function first, 🟡, and the route is the request on the script's line that sends to that
-   argument (its `call-open`), 🟡; never reached → at the button. Then the
+   argument (its `call-open`), 🟡; never reached → at the button. A component's fields whose initialisers call something are
+   walked when the component is, first (D193). Then the
    endpoint's action as the next step, at the line its name is written on. The route hop isn't a call. Calls on that line aren't walked.
 2. a table read or saved (`access` with a mapped table): ends `database`.
 3. an outside call (`call` facts from `http-services`): ends `outside-call`.

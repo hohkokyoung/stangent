@@ -111,6 +111,8 @@ public sealed class FrontendHttpDetector : IDetector
         var verb = call["verb"];
         if (call["from"] == "parameter")
             failed.Add($"the URL is a parameter: one of {call["of"]} values its callers pass, this one given in {Short(call["origin"])}");
+        if (call["from"] == "returns")
+            failed.Add($"the URL is one of {call["of"]} the code building it can return");
         switch (call["verbFrom"])
         {
             case "literal" or "library" or "setting" when verb != "ANY": break;

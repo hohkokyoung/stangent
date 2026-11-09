@@ -1,7 +1,7 @@
 import ts from "typescript";
 import type { Context } from "./extract.ts";
 import { BASE, RUNTIME, isBaseName, stringValue } from "./values.ts";
-import { join, paramValues, valuesOf } from "./params.ts";
+import { join, paramValues, returns, valuesOf } from "./params.ts";
 
 const DETECTOR = "frontend-http";
 const ANGULAR_VERBS: Record<string, string> = { get: "GET", post: "POST", put: "PUT", delete: "DELETE", patch: "PATCH", head: "HEAD" };
@@ -18,6 +18,7 @@ export function httpFacts(ctx: Context, sf: ts.SourceFile) {
   const wrappers = parseWrappers(ctx.o.settings[DETECTOR]?.wrappers ?? []);
   const visit = (n: ts.Node) => {
     if (ts.isCallExpression(n)) call(ctx, n, wrappers);
+    if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken) imageSource(ctx, n);
     if (ts.isInterfaceDeclaration(n) || ts.isClassDeclaration(n) || (ts.isTypeAliasDeclaration(n) && ts.isTypeLiteralNode(n.type))) shape(ctx, n);
     ts.forEachChild(n, visit);
   };
@@ -176,6 +177,23 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
     return;
   }
 
+  // D193: Angular's httpResource(() => url | { url, method }): Angular makes the request itself, for each URL the function
+  // returns, at the line it's returned on.
+  if (!receiver && name === "httpResource" && isAngularHttp(ctx, callee)) {
+    const fn = n.arguments[0];
+    if (fn && (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn))) {
+      for (const r of returns(fn)) {
+        const x = ts.isParenthesizedExpression(r) ? r.expression : r;
+        const urlExpr = ts.isObjectLiteralExpression(x) ? objProp(x, "url") ?? undefined : x;
+        const verbExpr = ts.isObjectLiteralExpression(x) ? objProp(x, "method") : null;
+        const verb = verbExpr ? stringValue(verbExpr, checker)?.toUpperCase() ?? "ANY" : "GET";
+        emit(ctx, owner, file, ctx.line(r), verb, stringValue(urlExpr, checker), "angular-httpResource", typeArg(ctx, n, 0), null,
+          verbExpr ? (verb === "ANY" ? "runtime" : "literal") : "library");
+      }
+    }
+    return;
+  }
+
   // N5: jQuery: $.ajax({ url, type | method }), $.ajax(url, { type }), $.get/post/getJSON(url).
   if (receiver && ts.isIdentifier(receiver) && (receiver.text === "$" || receiver.text === "jQuery")) {
     const first = n.arguments[0];
@@ -275,6 +293,39 @@ function callbacks(ctx: Context, owner: string, file: string, settings: ts.Objec
     ctx.out.edge(owner, target, "calls");
     ctx.out.fact("call-sites", "call-site", owner, file, ctx.line(p), { target, label: "0", kind: "calls", callback: p.name.text });
   }
+}
+
+/** `httpResource` from Angular's own package, or, with the packages missing, by its name. */
+function isAngularHttp(ctx: Context, callee: ts.Expression): boolean {
+  let s = ctx.checker.getSymbolAtLocation(callee);
+  if (s && s.flags & ts.SymbolFlags.Alias) { try { s = ctx.checker.getAliasedSymbol(s); } catch { return !ctx.typed; } }
+  const decl = s?.declarations?.[0];
+  return (!!decl && /@angular[\\/]common[\\/]/.test(decl.getSourceFile().fileName)) || !ctx.typed;
+}
+
+/**
+ * D193: an image's address set to a URL (`img.src = this.getPageUrl(…)`, the image an `HTMLImageElement` or `new Image()`):
+ * the browser fetches it with GET. One call per URL the value can be, read through the functions that build it.
+ */
+function imageSource(ctx: Context, n: ts.BinaryExpression) {
+  const left = n.left;
+  if (!ts.isPropertyAccessExpression(left) || left.name.text !== "src" || !isImage(ctx, left.expression)) return;
+  const owner = ctx.ownerId(n);
+  const file = ctx.rel(n.getSourceFile().fileName);
+  const line = ctx.line(n);
+  const vs = (valuesOf(ctx, n.right) ?? []).filter((v) => !blind(v.value));
+  if (vs.length === 0) { emit(ctx, owner, file, line, "GET", stringValue(n.right, ctx.checker), "img-src", null, null, "library"); return; }
+  for (const url of [...new Set(vs.map((v) => v.value.split("?")[0]))].sort())
+    ctx.out.fact(DETECTOR, "call", owner, file, line, { verb: "GET", url, via: "img-src", responseType: "", bodyType: "", verbFrom: "library",
+      ...(vs.length > 1 ? { from: "returns", of: String(vs.length) } : {}) });
+}
+
+function isImage(ctx: Context, e: ts.Expression): boolean {
+  const name = ctx.checker.getTypeAtLocation(e).getSymbol()?.getName();
+  if (name === "HTMLImageElement") return true;
+  if (!ts.isIdentifier(e)) return false;
+  const d = ctx.checker.getSymbolAtLocation(e)?.valueDeclaration;
+  return !!d && ts.isVariableDeclaration(d) && !!d.initializer && ts.isNewExpression(d.initializer) && d.initializer.expression.getText() === "Image";
 }
 
 function emit(ctx: Context, owner: string, file: string, line: number, verb: string, url: string | null, via: string,
