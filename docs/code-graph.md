@@ -376,6 +376,11 @@ A project that can't be loaded is listed in `loadErrors` and its code is ❓. MS
     wrappers, `fetch`, axios, Angular's `HttpClient` and jQuery (D191). A value that reaches a function no script code calls
     is that function's argument: a `call-open` fact (`verb`, `open` = `point@argument`), beside the ❓, for a caller outside
     the scripts (a view's onclick, D191) to fill in.
+  - **Navigation (D192, detectors `conditions` and `navigation`):** an Angular `UrlTree` a function returns
+    (`router.parseUrl`, `router.createUrlTree`, through `of(…)`, `||`, `??`, `?:`, an arrow's body) is an `exit` of kind
+    `Redirect`; so is a navigation call the function returns straight after. Any other navigation is a `navigate` fact
+    (`to`, `via`: `router`, `location`, `navigate`, `history`). An error callback (`catchError`, `.catch`, `subscribe({ error })`)
+    is a `catch` condition.
   - **Plain scripts (D191):** a function written as a property of a top-level object (`var AjaxCart = { send_ajax: function … }`)
     is a point, `AjaxCart.send_ajax`; jQuery's `beforeSend`/`success`/`error`/`complete` options naming a function are
     `call-site` facts at the option's line, with `callback`. A view's onclick that starts by calling a named function with

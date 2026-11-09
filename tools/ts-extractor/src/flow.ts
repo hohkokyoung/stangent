@@ -8,7 +8,12 @@ import { isAngularComponent, qualifiedName, testName, type Context } from "./ext
  *   every render. A class component's `componentDidMount`, an Angular component's `ngOnInit`. An unusual shape is ❓.
  * - `condition` (detector `conditions`): per call under at least one `if`/`else`/`case`/`catch`/loop/`?:` of its own
  *   function, or after a guard (`unless`: an earlier `if` in the same block that always leaves), innermost first, quoted exactly.
- * - `exit` (detector `conditions`): a `throw`, with the conditions around it.
+ * - `exit` (detector `conditions`): a `throw`, with the conditions around it; and (D192) a redirect: an Angular `UrlTree`
+ *   returned (`router.parseUrl`, `router.createUrlTree`, also inside `of(…)`, `a || …`, an arrow's body), or a navigation
+ *   the function returns straight after.
+ * - `navigate` (detector `navigation`, D192): any other navigation, a step that leaves for another screen: Angular's
+ *   `router.navigate`/`navigateByUrl`, `location.href = …`/`location.assign|replace(…)`, React's `navigate(…)` (from
+ *   `useNavigate()`) and `history.push|replace(…)`.
  */
 const ON_LOAD = "on-load";
 const CONDITIONS = "conditions";
@@ -153,6 +158,11 @@ export function conditionsAround(ctx: Context, node: ts.Node): Condition[] {
         guards(p.statements, child as ts.Statement, out, at); // Z1: a case's statements are a block too
         out.push({ kind: "case", text: sw.expression.getText(sf), line: at(p), case: ts.isCaseClause(p) ? p.expression.getText(sf) : "default" });
       }
+    } else if ((ts.isArrowFunction(p) || ts.isFunctionExpression(p)) && errorCallback(p)) {
+      // D192: an error callback runs only when what it's attached to fails: RxJS `catchError(…)`, a promise's `.catch(…)`,
+      // `subscribe({ error: … })`.
+      const at0 = errorCallback(p)!;
+      out.push({ kind: "catch", text: at0.getText(sf).split("\n")[0].trim(), line: at(at0) });
     } else if (ts.isCatchClause(p)) {
       if (child === p.block) out.push({ kind: "catch", text: p.variableDeclaration?.getText(sf) ?? "", line: at(p) });
     } else if (ts.isForStatement(p) || ts.isForOfStatement(p) || ts.isForInStatement(p) || ts.isWhileStatement(p) || ts.isDoStatement(p)) {
@@ -200,6 +210,14 @@ export function conditionFacts(ctx: Context, sf: ts.SourceFile) {
         });
       }
     }
+    const nav = navigation(ctx, n);
+    if (nav) {
+      const line = ctx.line(n);
+      if (nav.exit) ctx.out.fact(CONDITIONS, "exit", ctx.ownerId(n), file, line, {
+        kind: "Redirect", result: nav.to, status: "", text: n.getText(sf), exception: "", conditions: JSON.stringify(conditionsAround(ctx, n)),
+      });
+      else ctx.out.fact("navigation", "navigate", ctx.ownerId(n), file, line, { to: nav.to, via: nav.via });
+    }
     if (ts.isThrowStatement(n)) {
       const thrown = n.expression;
       const exception = ts.isNewExpression(thrown) ? thrown.expression.getText(sf) : "";
@@ -211,3 +229,89 @@ export function conditionFacts(ctx: Context, sf: ts.SourceFile) {
   };
   visit(sf);
 }
+
+/**
+ * D192: a node that sends the user to another screen: the target as written, how (`router`, `location`, `navigate`,
+ * `history`), and whether it ends the function there (an exit) or is a step that leaves for another screen.
+ */
+function navigation(ctx: Context, n: ts.Node): { to: string; via: string; exit: boolean } | null {
+  const sf = n.getSourceFile();
+  if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken && isLocation(n.left, "href"))
+    return { to: n.right.getText(sf), via: "location", exit: leavesAfter(n) };
+  if (!ts.isCallExpression(n) || !ts.isPropertyAccessExpression(n.expression) && !ts.isIdentifier(n.expression)) return null;
+  const callee = n.expression;
+  const name = ts.isPropertyAccessExpression(callee) ? callee.name.text : callee.text;
+  const receiver = ts.isPropertyAccessExpression(callee) ? callee.expression : null;
+  const to = n.arguments[0]?.getText(sf) ?? "";
+  if (receiver && (name === "parseUrl" || name === "createUrlTree") && isRouter(ctx, receiver))
+    return returned(n) ? { to, via: "router", exit: true } : null;
+  if (receiver && (name === "navigate" || name === "navigateByUrl") && isRouter(ctx, receiver)) return { to, via: "router", exit: leavesAfter(n) };
+  if (receiver && (name === "assign" || name === "replace") && isLocation(receiver, null)) return { to, via: "location", exit: leavesAfter(n) };
+  if (receiver && (name === "push" || name === "replace") && ts.isIdentifier(receiver) && boundToHook(ctx, receiver, "useHistory", /^history$/)) return { to, via: "history", exit: leavesAfter(n) };
+  if (!receiver && ts.isIdentifier(callee) && boundToHook(ctx, callee, "useNavigate", null)) return { to, via: "navigate", exit: leavesAfter(n) };
+  return null;
+}
+
+/** `this.router`, `router`, `this._router`: Angular's Router by type, or by name when the packages aren't installed. */
+function isRouter(ctx: Context, e: ts.Expression): boolean {
+  const symbol = ctx.checker.getTypeAtLocation(e).getSymbol();
+  const decl = symbol?.declarations?.[0];
+  if (symbol?.getName() === "Router" && decl && /@angular[\\/]router[\\/]/.test(decl.getSourceFile().fileName)) return true;
+  return !ctx.typed && /(^|\.)_?router$/i.test(e.getText());
+}
+
+/** `location`, `window.location`, `document.location` (then `.href` when asked). */
+function isLocation(e: ts.Expression, prop: string | null): boolean {
+  let x = e;
+  if (prop !== null) {
+    if (!ts.isPropertyAccessExpression(x) || x.name.text !== prop) return false;
+    x = x.expression;
+  }
+  const text = x.getText();
+  return text === "location" || text === "window.location" || text === "document.location";
+}
+
+/** A name bound to a hook's result (`const navigate = useNavigate()`), or, failing that, named like it. */
+function boundToHook(ctx: Context, id: ts.Identifier, hook: string, byName: RegExp | null): boolean {
+  const d = ctx.checker.getSymbolAtLocation(id)?.valueDeclaration;
+  if (d && ts.isVariableDeclaration(d) && d.initializer && ts.isCallExpression(d.initializer) && ts.isIdentifier(d.initializer.expression))
+    return d.initializer.expression.text === hook;
+  return byName !== null && byName.test(id.text);
+}
+
+/** The value is what its function returns: through `of(…)`, `a || b`, `a ?? b`, `?:` and parentheses, to a `return` or an arrow's body. */
+function returned(n: ts.Node): boolean {
+  let child = n;
+  for (let p = n.parent; p; child = p, p = p.parent) {
+    if (ts.isReturnStatement(p)) return true;
+    if (ts.isArrowFunction(p)) return p.body === child;
+    if (ts.isParenthesizedExpression(p) || ts.isConditionalExpression(p) && child !== p.condition) continue;
+    if (ts.isBinaryExpression(p) && (p.operatorToken.kind === ts.SyntaxKind.BarBarToken || p.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken) && child === p.right) continue;
+    if (ts.isCallExpression(p) && ts.isIdentifier(p.expression) && p.expression.text === "of" && p.arguments.includes(child as ts.Expression)) continue;
+    return false;
+  }
+  return false;
+}
+
+/** The navigation ends its function: it's returned, or its statement is followed straight away by a `return`. */
+function leavesAfter(n: ts.Node): boolean {
+  if (returned(n)) return true;
+  const statement = n.parent;
+  if (!statement || !ts.isExpressionStatement(statement) || !ts.isBlock(statement.parent)) return false;
+  const list = statement.parent.statements;
+  const next = list[list.indexOf(statement) + 1];
+  return !!next && ts.isReturnStatement(next) && !next.expression;
+}
+
+/** The call or property that makes a function an error callback (`catchError(fn)`, `.catch(fn)`, `{ error: fn }` given to `subscribe`). */
+function errorCallback(fn: ts.ArrowFunction | ts.FunctionExpression): ts.Node | null {
+  const p = fn.parent;
+  if (ts.isCallExpression(p) && p.arguments.includes(fn)) {
+    const name = ts.isIdentifier(p.expression) ? p.expression.text : ts.isPropertyAccessExpression(p.expression) ? p.expression.name.text : "";
+    if (name === "catchError" || name === "catch") return p;
+  }
+  if (ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === "error" && ts.isObjectLiteralExpression(p.parent)
+      && ts.isCallExpression(p.parent.parent) && ts.isPropertyAccessExpression(p.parent.parent.expression) && p.parent.parent.expression.name.text === "subscribe") return p;
+  return null;
+}
+

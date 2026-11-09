@@ -88,6 +88,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             .Concat(g.Facts(point, "queue").Select(f => f.Line)).Concat(g.Facts(point, "job").Select(f => f.Line))
             .Concat(g.Facts(point, "http-match").Select(f => f.Line)).Concat(g.Facts(point, "exit").Select(f => f.Line))
             .Concat(g.Facts(point, "on-load").Select(f => f.Line)).Concat(g.BlindByOwner[point].Select(b => b.Line))
+            .Concat(g.Facts(point, "navigate").Select(f => f.Line))
             .Distinct().Order().ToList();
         var later = g.Facts(point, "job").Select(f => f["runs"]).ToHashSet(StringComparer.Ordinal);
         var conditions = g.Facts(point, "condition").ToLookup(f => f.Line);
@@ -159,6 +160,10 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 item.Links.Add(new Link("runs-later", g.Name(j["runs"]), j["runs"], at, $"Queues {g.Name(j["runs"])}, which runs later, in the background ({at})", null, false));
                 consumed.UnionWith(sites.Select(x => x["target"]));
             }
+            // D192: a navigation that isn't an exit leaves for another screen: a step ending `screen`.
+            foreach (var nav in g.Facts(point, "navigate").Where(f => f.Line == line).OrderBy(f => f["to"], StringComparer.Ordinal))
+                Add(parent, new Step { What = $"goes to {nav["to"]} ({nav["via"]})", At = at, Kind = "navigate", Conditions = CondsFor(null), Depth = depth,
+                    End = new End("screen", nav["to"]) });
             foreach (var exit in g.Facts(point, "exit").Where(f => f.Line == line).OrderBy(f => f["text"], StringComparer.Ordinal))
                 parent.Exits.Add((new Exit(exit["kind"], ExitSentence(exit), at, FlowGraph.ConditionsOf(exit), null, point), parent));
             foreach (var load in g.Facts(point, "on-load").Where(f => f.Line == line && f["framework"] != "mvc").OrderBy(f => f["handler"], StringComparer.Ordinal))

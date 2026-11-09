@@ -62,7 +62,8 @@ the same lines are read in source-line order; each line gives, in this order:
    and not walked, unless its own body reads or saves a table, which ends `database` (D172's order); otherwise each
    implementation it dispatches to (several → one 🟡 branch each) is a step, walked into.
 8. a ❓ the graph recorded there: ends `unknown`, with its reason.
-9. a call into a package (D188): a step `calls X in the package Y`, ending `unknown`, "a package's code, not walked"; not a ❓.
+9. a navigation (`navigate` fact, D192): a step "goes to X" ending `screen`.
+10. a call into a package (D188): a step `calls X in the package Y`, ending `unknown`, "a package's code, not walked"; not a ❓.
 
 Before an action runs, its access filters (global, controller, action: the `auth` facts' `filterType`) and the controller's own
 `OnActionExecuting` overrides are steps `runs first`, walked like calls. A route's guards are the first steps of its screen.
@@ -91,7 +92,9 @@ matched to its job by type), the actor. `unknowns` lists every ❓ with why. `fl
 
 - A package call is a step, not walked (D188), and never an `outside-call` (only HTTP clients are, G4); TypeScript's package calls
   aren't recorded.
-- Navigation (`router.navigate`, `<Link>`, `location.href`) isn't in the graph, so no `screen` ends yet.
+- Navigation (D192): a returned redirect or a navigation the function returns after is an exit; any other is a step ending
+  `screen` (`router.navigate…`, `location.href`, `navigate(…)`, `history.push`), not yet linked to the screen's own flow.
+  `<Link>`/`routerLink` in markup isn't read.
 - (Exits now include an app's own helper that ends the request, D186, and a filter's `context.Result` refusal, D187.)
 - A shared flow runs once per point, not per caller: what a caller passes in isn't known there, so its conditions aren't narrowed.
 - Flow files are large on big repos (Sonarr ~160 MB, nopCommerce ~196 MB with the Markdown), shared flows about a third of Sonarr's.

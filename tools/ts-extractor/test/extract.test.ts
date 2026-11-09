@@ -537,3 +537,55 @@ test("a plain script's object methods are points; a URL only a view passes is op
   const callbacks = lines.filter((l) => l.t === "fact" && l.kind === "call-site" && l.data.callback).map((l) => l.t === "fact" ? `${l.line} ${l.data.callback} ${l.data.target.split("#")[1]}` : "");
   assert.deepEqual(callbacks, ["9 success Cart.done", "10 error Cart.failed"]);
 });
+
+test("a returned UrlTree and a navigation the function leaves after are exits; other navigation is a step (D192)", () => {
+  const root = project({
+    "src/router.ts": "export declare class Router { parseUrl(u: string): object; createUrlTree(c: string[]): object; navigateByUrl(u: string): void; }\nexport declare function of<T>(v: T): T;\nexport declare function map<T>(f: (x: T) => unknown): unknown;",
+    "src/guard.ts": [
+      "import { Router, of, map } from './router';",
+      "export const guard = (router: Router, id: number, ok: boolean) => {",
+      "  if (isNaN(id)) {",
+      "    return of(router.parseUrl('/home'));",
+      "  }",
+      "  map((has: boolean) => has || router.parseUrl('/home'));",
+      "  if (!ok) return router.createUrlTree(['/login']);",
+      "  return true;",
+      "};",
+      "export class Reader {",
+      "  constructor(private router: Router) {}",
+      "  open(id: number | null) {",
+      "    if (id === null) {",
+      "      this.router.navigateByUrl('/home');",
+      "      return;",
+      "    }",
+      "    this.router.navigateByUrl('/reader');",
+      "    location.href = '/x';",
+      "  }",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const exits = lines.filter((l) => l.t === "fact" && l.kind === "exit").map((l) => l.t === "fact" ? `${l.line} ${l.data.kind} ${l.data.result} ${JSON.parse(l.data.conditions).map((c: { text: string }) => c.text).join(",")}` : "");
+  assert.deepEqual(exits, ["4 Redirect '/home' isNaN(id)", "6 Redirect '/home' isNaN(id)", "7 Redirect ['/login'] !ok,isNaN(id)", "14 Redirect '/home' id === null"]);
+  const navs = lines.filter((l) => l.t === "fact" && l.kind === "navigate").map((l) => l.t === "fact" ? `${l.line} ${l.data.to} ${l.data.via}` : "");
+  assert.deepEqual(navs, ["17 '/reader' router", "18 '/x' location"]);
+});
+
+test("an error callback is a catch condition on what runs inside it (D192)", () => {
+  const root = project({
+    "src/a.ts": [
+      "declare function catchError(f: () => unknown): unknown;",
+      "declare function warn(): void;",
+      "export function load(p: Promise<void>, o: { subscribe(x: { error: () => void }): void }) {",
+      "  catchError(() => {",
+      "    warn();",
+      "  });",
+      "  p.catch(() => warn());",
+      "  o.subscribe({ error: () => warn() });",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const conds = lines.filter((l) => l.t === "fact" && l.kind === "condition" && l.data.call === "warn").map((l) => l.t === "fact" ? `${l.line} ${JSON.parse(l.data.conditions).map((c: { kind: string; line: number }) => `${c.kind}@${c.line}`).join(",")}` : "");
+  assert.deepEqual(conds, ["5 catch@4", "7 catch@7", "8 catch@8"]);
+});
