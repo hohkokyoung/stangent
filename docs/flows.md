@@ -1,0 +1,87 @@
+# Flows (contract `flows` v1, rebuild layer 3)
+
+A **flow** is one thing a person or the system does, laid out by code from the code graph: who starts it, what they
+enter, what's checked, the steps with the conditions around them, where each branch ends, and the flows it leads to.
+No AI anywhere (D155, D176). Decisions: D170–D180, D183, D184; plan and scores: `phases/r3-flows.md`.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `stangent flows build` | Builds every flow from `.stangent/graph.sqlite` and writes `specs/flows/` (below). Prints counts by kind, guesses, ❓ and files written, removed or unchanged. |
+| `stangent flows show <id> [--format md]` | One flow as written by the last build: its JSON, or its Markdown. |
+| `stangent flows check` | D177's bar items 3–5 by code: every 🟡 has a reason and every ❓ says why; the files are byte for byte what the graph builds now; every start is a flow or a stated reason. Exit 1 with the problems when one fails. |
+
+Output follows `docs/cli-conventions.md`. A missing graph is `no_graph` (exit 3): run `stangent graph build` first.
+
+## Files (D180)
+
+- `specs/flows/<id>.json`: one flow, contract `flows` v1. Committed; the same graph and settings write the same bytes (D176).
+- `specs/flows/<id>.md`: the same flow as fixed sentences filled in by code (D173), with a generated-file marker. Never read back.
+- `specs/flows/index.json`: every flow (`id`, `name`, `kind`, `home`, `start`, `point`, counts, the flows it links to) and
+  `skipped`: every start code found that isn't a flow, with its reason (D177 item 5).
+
+A flow file holds: `contract`, `version`, `commit`, `settings` (`hubCallers` 10, `depth` 8), `id`, `name`, `kind`, `home`
+(the folder of its start's code, for areas, D178), `start` (`what`, `at`, `code`, `point`, `triggers`: every button or key that
+runs it), `actor` (`who`, `why`, `at`, `label`), `inputs`, `checks`, `steps`, `exits`, `scenarios`, `links`, `guesses`,
+`unknowns`, `displayOnly`. Every `at` is `path:line` at `commit`, with the `code` written there (D173's proof line).
+
+## Starts (D171)
+
+| Kind | Starts at | Name (D176 item 2) |
+|---|---|---|
+| `click` | each `ui-event` handler, one flow per handler, every button that runs it in `triggers` | the button's text key through the app's `en.json` (or `en-US.json`, `en_US.json`; first file in path order holding it), else its literal text, else the handler's name |
+| `screen-opens` | each route (`page`): its guards, its resolvers and loaders, then the screen it shows; each MVC GET action returning a view (`on-load` `mvc`) | the route; the action's route |
+| `job` | each `is-job` method (commands, scheduled tasks, recurring registrations) | the command's type, the recurring job's id, else the method |
+| `handler` | each event handler (`handle` facts) that isn't a job: the flows a sent message links to (D173) | `Handler on Event` |
+
+Not a flow, and said so in `index.json`'s `skipped`: a button with no handler, an inline or prop handler, a handler not on the
+map, a click that reaches no server call, save, message or queued work ("screen behaviour only", D171), a screen whose opening
+reaches none ("display only", D176 item 5), and on-load code no route's screen reaches.
+
+## The walk (D172, D176, D184)
+
+A flow is a tree walked forward from its start. For each point, its **call sites** (`call-site` facts, D184) and the facts at
+the same lines are read in source-line order; each line gives, in this order:
+
+1. an HTTP call the graph matched (`http-match`): a step `calls VERB url` (🟡 with the match's reason when it isn't ✅), then the
+   endpoint's action as the next step, at the line its name is written on. The route hop isn't a call. Calls on that line aren't walked.
+2. a table read or saved (`access` with a mapped table): ends `database`.
+3. an outside call (`call` facts from `http-services`): ends `outside-call`.
+4. queued work (`queue`, `job`): a step `queues X, which runs later`, linked `runs-later` to the job's flow (D173).
+5. an early exit (`exit`): one of `exits`, with its conditions (D174, D176 item 4).
+6. a route's on-load hook (`on-load`): a step `runs on open`, walked into.
+7. each call: a constructor of an event some handler handles ends `message`, one `message` link per handler (the bus is never
+   walked); a callee with 10 or more callers, counted through the interface or base member it implements, is a `hub`, shown
+   and not walked, unless its own body reads or saves a table, which ends `database` (D172's order); otherwise each
+   implementation it dispatches to (several → one 🟡 branch each) is a step, walked into.
+8. a ❓ the graph recorded there: ends `unknown`, with its reason.
+
+Before an action runs, its access filters (global, controller, action: the `auth` facts' `filterType`) and the controller's own
+`OnActionExecuting` overrides are steps `runs first`, walked like calls. A route's guards are the first steps of its screen.
+
+A point already on its branch is `backTo` that step (a loop, D176 item 1); one already walked elsewhere in the flow is
+`sameAs` that step, not walked again. At 8 real calls a branch ends `depth`, with a `continues` link. A child component whose walk
+reaches no HTTP call, save, message or queued work is display only: named in `displayOnly`, not shown as steps (D176 item 5).
+Steps are numbered in walk order, depth first; `from` is the step they come from (null: the start).
+
+**Conditions:** each step carries the conditions of its own call's `condition` fact, innermost first, quoted exactly (D174):
+`if`, `else`, `case`, `catch`, `loop`, `null`, `unless` (a guard earlier in the block, D182). **Scenarios:** the main path, then
+one per exit with the conditions on the way to it, innermost first (D179). **Checks:** the `rule` facts on the properties of each
+endpoint's request body (D179). **Actor:** D179's rule on the first endpoint the flow calls: an access filter whose code or name
+claims access, `[AllowAnonymous]`, `[Authorize]`, else the app's fallback policy (the action's project's, else the repo's only
+one), else 🟡; a screen with no endpoint: its route guards, 🟡; a job or handler: the system.
+
+## Guesses and ❓ (D175)
+
+`guesses` lists every 🟡 with its reason: a step (an HTTP match's failed test, overloads, one of several implementations, a save
+read off a repository method's name), a `message` link (handlers found by the event's type), a `runs-later` link (a command
+matched to its job by type), the actor. `unknowns` lists every ❓ with why. `flows check` fails on any with no reason.
+
+## Known gaps
+
+- Calls into packages (ASP.NET Identity, MailKit's SMTP client, EF's own methods) aren't on the map, so they're no steps; an SMTP
+  send isn't an `outside-call` (only HTTP clients are, G4).
+- Navigation (`router.navigate`, `<Link>`, `location.href`) isn't in the graph, so no `screen` ends yet.
+- A filter setting `context.Result` isn't an exit (D181); a helper returning a fixed-list result (`InvokeHttp404()`) isn't either.
+- Angular templates' child components have no call-site lines, so a screen's children are reached only through code.

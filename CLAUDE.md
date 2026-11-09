@@ -20,6 +20,7 @@ software-engineering pipeline: requirements → code → tests → PR → deploy
 | `docs/foundation.md` | The evidence contract, the permanent-id ledger, the client-data check, coverage, driver tests. |
 | `docs/code-graph.md` | The code graph: points, lines, labels, detectors, Python, impact answers. |
 | `docs/spec.md` | The spec: reference pages, the FSD import, links, findings and decisions (Phase 2). |
+| `docs/flows.md` | Flows (rebuild layer 3): starts, the walk, files under `specs/flows/`, `flows build`, `show`, `check`. |
 | `docs/tickets.md` | Tickets: Jira through the MCP, pull, starting points, the bundle, bug proof, drafts (Phase 3). |
 | `benchmark/README.md` | Running the benchmark: full-history clones, per-repo configs, scoring commands. |
 
@@ -67,6 +68,7 @@ plugin/scripts/spec-run.sh --jobs 4 --max-cost 5 --for-fsd <doc>   # pages a doc
 plugin/scripts/spec-run.sh --jobs 4 --max-cost 5 --all    # --estimate shows the cost first; Phase 2 AI steps through headless Claude Code (STANGENT= to point at a build)
 plugin/scripts/spec-run.sh --disprove <doc>               # D119: only the disprove stage (needs fsd.disprove; `fsd disprove estimate <doc>` is free)
 plugin/scripts/ticket-run.sh --max-cost 5 --prove --questions <KEY>... # Phase 3: pull → points → bundle → proof → drafts, headless
+stangent flows build && stangent flows check              # rebuild layer 3: flows from the graph (D170–D184)
 stangent jira login                                       # browser sign-in to Atlassian's MCP v2; token in the OS keychain
 ```
 

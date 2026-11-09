@@ -1,7 +1,7 @@
 ---
 phase: r3
 name: flows
-status: planned
+status: in progress
 consumes: { code-graph: 5 }
 provides: { flows: 1, areas: 1 }
 ---
@@ -77,6 +77,29 @@ The 15 starts:
 
 When Stangent and the key disagree, the quoted code line decides, and the ruling is written here.
 
+### Rulings (step 3)
+
+Each is brought to the owner one at a time, with a recommendation; none is applied until the owner rules.
+
+- **R1, open: the key stops a branch one call earlier than the code does.** The key ends many branches at a service or
+  repository call (`_episodeService.GetEpisodeBySeries(series.Id)` → `database`), or at a call it didn't follow (`unknown`, "not
+  walked"), where Stangent walks on and finds the table (or more steps) one or more calls down. About 120 key ends (database ~67,
+  unknown ~56). Recommendation: the code line decides that the table is touched further down, so such a key end counts as found
+  when Stangent's step on that line leads, through its own steps, to an end of the same kind (`database`, `outside-call`,
+  `message`), or, for a key `unknown`/`depth` that only says the key didn't follow it, when Stangent walks it; the key isn't edited.
+- **R2, open (listed at step 2): Kavita's `unitOfWork.CommitAsync` as `hub` vs `database`.** Stangent ends it `hub` too
+  (its body names no table), so the kinds agree; the key's detail "writes AppUserWantToRead" isn't checked.
+- **R3, open (listed at step 2): one-page checkout.** Stangent's confirm-order flow is the multi-step `ConfirmOrder` (61 of 63
+  steps found); `OpcConfirmOrder` is its own flow. No disagreement.
+- **R4, open (listed at step 2): `return InvokeHttp404()`** (2 product-page exits): not on D176's fixed list, so not an exit.
+- **R5, open (listed at step 2): access filters setting `context.Result`** (Kavita `EntityAccessAttribute` ×4, nopCommerce
+  `CheckAccessPublicStore` ×2, `ValidateHoneypot`): Stangent now walks the filters as steps (D184) but, per D181, an assignment
+  to `context.Result` isn't an exit.
+- **R6, open: calls into packages** (ASP.NET Identity's `userManager`, MailKit's `client.ConnectAsync`/`smtpClient.SendAsync`,
+  RxJS subjects): the graph keeps only the repo's own points, so these are no steps. A layer 2 gap, not a key error.
+- **R7, open: the key walks into code the graph counts as a hub** (≥10 callers by distinct calling methods, through interfaces),
+  and lists steps inside it; D172 stops there.
+
 ## Step 2: the key — done 2026-11-09 (15 flows, three approved, one per repo)
 
 - Format: `benchmark/expected/flows/README.md` (D183). Every counted item is `at` + exact `code`.
@@ -133,6 +156,34 @@ When Stangent and the key disagree, the quoted code line decides, and the ruling
   the action returns (D181). Agent's caveats: add-to-cart's redirects are JSON values the page script follows (`screen`
   ends, not exits); terms-of-service is a page-script check; repository-level entity-event consumers aren't listed;
   model-factory sub-builders, `PrepareAndValidate*`, OAuth helpers and payment plugins end `unknown`.
+
+## Step 3: the flow code — built 2026-11-09, scored; the bar is not passed
+
+`stangent flows build|show|check` (contract `flows` v1, `docs/flows.md`, D184), a flows scorer in `Stangent.Benchmark`
+(`--score-flows <clone> <key-dir>`), built on the three clones at the key's commits. Layer 2 grew for it (D184): `call-site`
+facts (each call's line), a hook's own functions as points, `filterType` on access filters; graphs rebuilt. Builds take ~4 s.
+
+| Bar item | Sonarr | Kavita | nopCommerce |
+|---|---|---|---|
+| Flows built (click / screen / job / handler) | 367 | 281 | 944 |
+| 1. No wrong ✅ (code check: a ✅ call's line names what it calls) | 51 flagged of 48,840 | 5 of 23,707 | 10 of 75,196 |
+| 2. Key steps, ends and conditions found (≥95%) | **175 / 284 = 62%** | **354 / 511 = 69%** | **590 / 767 = 77%** |
+| — steps | 91 / 126 | 207 / 228 | 187 / 210 |
+| — ends (incl. exits) | 26 / 73 | 38 / 128 | 93 / 202 |
+| — conditions | 58 / 85 | 109 / 155 | 310 / 355 |
+| (links, not in item 2) | 28 / 45 | 4 / 12 | 16 / 46 |
+| (checks, not in item 2) | 8 / 25 | 0 / 2 | 26 / 60 |
+| 3. Every 🟡 and ❓ with a reason | pass (10,680 🟡, 705 ❓) | pass (1,182, 119) | pass (7,271, 269) |
+| 4. Byte for byte (two builds, and disk) | pass | pass | pass |
+| 5. No silent skips (starts → flows or stated reasons) | pass (2,678 starts) | pass (1,305) | pass (1,244) |
+
+**Bottom line: items 3–5 pass on all three; item 2 fails (62%, 69%, 77% against 95%); item 1 isn't settled** — the samples read
+are the checker's limits (a hook's function returned under another name, `goToPage: handleGoToPage`; a chain over 10 lines) plus
+one extractor quirk (Kavita's route resolvers' `on-load` lines point at a blank line). Steps are mostly found (72%, 91%, 89%);
+ends are what fail. Where the misses sit: the key stopping a branch one call earlier than the code does (R1, ~120 ends);
+filters' `context.Result` and app helpers not on D176's exit list (R4, R5); calls into packages and navigation, which the graph
+doesn't hold (R6; `screen` ends: none built); a URL built at runtime (Sonarr's save-indexer stops at a ❓ before the server, 3 of
+30 steps); the key walking into hubs (R7). Per-flow numbers: `--score-flows` output (`flows[].items`, `flows[].missed`).
 
 ## Left open, on purpose
 

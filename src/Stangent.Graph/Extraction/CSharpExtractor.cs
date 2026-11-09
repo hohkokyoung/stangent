@@ -146,6 +146,7 @@ public static class CSharpExtractor
                 if (created is not null)
                 {
                     ctx.AddEdge(owner, ctx.NodeId(created), EdgeKind.Calls, Label.Certain);
+                    CallSite(ctx, owner, ctx.NodeId(created), creation, Label.Certain);
                     ctx.AddEdge(owner, ctx.NodeId(created.ContainingType), EdgeKind.Uses, Label.Certain);
                 }
                 else if (file.Model.GetTypeInfo(creation).Type is { TypeKind: not TypeKind.Error } t)
@@ -170,6 +171,7 @@ public static class CSharpExtractor
         {
             var target = ExtractContext.Normalize(method)!;
             ctx.AddEdge(owner, ctx.NodeId(target), EdgeKind.Calls, Label.Certain);
+            CallSite(ctx, owner, ctx.NodeId(target), invocation, Label.Certain);
             var name = $"{ExtractContext.FullName(target.ContainingType)}.{target.Name}";
             if (Reflection.TryGetValue(name, out var reason)) ctx.AddBlindSpot(owner, invocation, reason);
             return;
@@ -185,9 +187,20 @@ public static class CSharpExtractor
         // in-repo candidate becomes a guessed call; with none, it's a blind spot.
         var inRepo = info.CandidateSymbols.Select(ctx.NodeId).OfType<string>().ToList();
         foreach (var candidate in inRepo) ctx.AddEdge(owner, candidate, EdgeKind.Calls, Label.Guessed);
+        foreach (var candidate in inRepo) CallSite(ctx, owner, candidate, invocation, Label.Guessed);
         // Candidates that are all framework or package methods lose nothing on the map; only a
         // call the compiler can't place at all is a blind spot.
         if (info.CandidateSymbols.Length == 0) ctx.AddBlindSpot(owner, invocation, $"unresolved call: {Short(invocation.Expression)}");
+    }
+
+    /// <summary>
+    /// D184: where a call is written, so a flow can quote its line: a <c>call-site</c> fact on the caller, at the line the call
+    /// expression starts (a chain's first line). A fact, not a line, so impact and the graph's lines are unchanged.
+    /// </summary>
+    static void CallSite(ExtractContext ctx, string? owner, string? target, SyntaxNode at, Label label)
+    {
+        if (owner is null || target is null || owner == target) return;
+        ctx.AddFact("call-sites", "call-site", owner, at, ("target", target), ("label", ((int)label).ToString(System.Globalization.CultureInfo.InvariantCulture)), ("kind", "calls"));
     }
 
     static string Short(SyntaxNode expr)

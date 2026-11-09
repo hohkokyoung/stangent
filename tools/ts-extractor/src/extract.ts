@@ -206,7 +206,9 @@ function componentHandler(decl: ts.Node): string | null {
   const fn = block.parent;
   const owner = ts.isFunctionDeclaration(fn) ? qualifiedName(fn)
     : (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) && ts.isVariableDeclaration(fn.parent) ? qualifiedName(fn.parent) : null;
-  return owner && /^[A-Z]/.test(owner) && !owner.includes(".") ? `${owner}.${name}` : null;
+  // D184: a hook's own functions too (`useProviderSettings.saveProvider`), so a value a handler takes from the hook's result
+  // can lead to the function it is, not to everything the hook does on render.
+  return owner && (/^[A-Z]/.test(owner) || /^use[A-Z0-9]/.test(owner)) && !owner.includes(".") ? `${owner}.${name}` : null;
 }
 
 function isHandlerInit(e: ts.Expression | undefined): boolean {
@@ -398,7 +400,10 @@ function references(ctx: Context, sf: ts.SourceFile) {
         // `const { addSeries } = useAddSeries()` then `addSeries(…)` in a handler: the handler calls the hook (G5).
         const from = resultOf(ctx, symbol);
         if (from && from !== ctx.ownerId(n)) out.edge(ctx.ownerId(n), from, "calls");
+        if (from && from !== ctx.ownerId(n) && edgeKind(n) === "calls") callSite(ctx, sf, n, from, 0);
       }
+      if (edgeKind(n) === "calls" || (edgeKind(n) === "renders" && !ts.isJsxClosingElement(n.parent)))
+        for (const id of several.length > 1 ? several : target ? [target] : []) callSite(ctx, sf, n, id, several.length > 1 ? 1 : 0);
     } else if (contextualProperty(n)) {
       // `{ roles: [...] }` where an UpdateUserRequest is expected, `<Cell errorMessage={…} />`, and
       // `const { roles } = req`: the name refers to the interface's field through the expected type.
@@ -467,7 +472,83 @@ function resultOf(ctx: Context, symbol: ts.Symbol | undefined): string | null {
   const init = ts.isAwaitExpression(v.initializer) ? v.initializer.expression : v.initializer;
   if (!ts.isCallExpression(init)) return null;
   const callee = ts.isPropertyAccessExpression(init.expression) ? init.expression.name : init.expression;
-  return ctx.symbolId(ctx.checker.getSymbolAtLocation(callee));
+  const called = ctx.symbolId(ctx.checker.getSymbolAtLocation(callee));
+  // D184: `const { saveProvider } = useManageIndexer()`: the function the hook hands back under that name, when its returns say.
+  if (d && ts.isBindingElement(d) && ts.isObjectBindingPattern(d.parent) && !d.dotDotDotToken) {
+    const prop = d.propertyName && ts.isIdentifier(d.propertyName) ? d.propertyName.text : ts.isIdentifier(d.name) ? d.name.text : null;
+    const returned = prop ? returnedPoint(ctx, ctx.checker.getSymbolAtLocation(callee), prop, 0) : null;
+    if (returned) return returned;
+  }
+  return called;
+}
+
+/**
+ * D184: the point a function returns under a property name: `return { saveProvider }` (a function declared in its body, which is a
+ * point of its own), `return { ...useOther() }` or `return useOther()` (followed into that function), up to four calls deep. Null when
+ * the returns don't say, so the caller keeps its line to the function itself.
+ */
+function returnedPoint(ctx: Context, symbol: ts.Symbol | undefined, prop: string, depth: number): string | null {
+  if (!symbol || depth > 4) return null;
+  if (symbol.flags & ts.SymbolFlags.Alias) {
+    try { symbol = ctx.checker.getAliasedSymbol(symbol); } catch { return null; }
+  }
+  const decl = symbol.declarations?.find((x) => ctx.isOwn(x.getSourceFile()));
+  const fn = decl && ts.isVariableDeclaration(decl) ? decl.initializer : decl;
+  if (!fn || !(ts.isFunctionDeclaration(fn) || ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) || !fn.body) return null;
+  const results: ts.Expression[] = [];
+  if (ts.isBlock(fn.body)) {
+    const visit = (n: ts.Node) => {
+      if (ts.isReturnStatement(n) && n.expression) results.push(n.expression);
+      if (!ts.isFunctionLike(n)) ts.forEachChild(n, visit);
+    };
+    ts.forEachChild(fn.body, visit);
+  } else results.push(fn.body);
+  const found = new Set<string>();
+  for (const e of results) {
+    const r = pointIn(ctx, e, prop, depth);
+    if (r) found.add(r);
+  }
+  return found.size === 1 ? [...found][0] : null;
+}
+
+/** The point an expression gives under a property name: a call (followed), an object literal, or a local holding one. */
+function pointIn(ctx: Context, e: ts.Expression, prop: string, depth: number): string | null {
+  for (let hops = 0; hops < 4; hops++) {
+    while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression(e)) e = e.expression;
+    if (!ts.isIdentifier(e)) break;
+    const d = ctx.checker.getSymbolAtLocation(e)?.declarations?.[0];
+    if (!d || !ts.isVariableDeclaration(d) || !d.initializer || d.getSourceFile() !== e.getSourceFile()) return null;
+    e = d.initializer;
+  }
+  if (ts.isCallExpression(e))
+    return returnedPoint(ctx, ctx.checker.getSymbolAtLocation(ts.isPropertyAccessExpression(e.expression) ? e.expression.name : e.expression), prop, depth + 1);
+  if (!ts.isObjectLiteralExpression(e)) return null;
+  for (const p of [...e.properties].reverse()) {
+    if ((ts.isShorthandPropertyAssignment(p) || ts.isPropertyAssignment(p)) && ts.isIdentifier(p.name) && p.name.text === prop) {
+      const value = ts.isShorthandPropertyAssignment(p) ? ctx.checker.getShorthandAssignmentValueSymbol(p)
+        : ts.isIdentifier(p.initializer) ? ctx.checker.getSymbolAtLocation(p.initializer) : undefined;
+      const d = value?.declarations?.[0];
+      return d ? ctx.declId(d) : null;
+    }
+    if (ts.isSpreadAssignment(p)) {
+      const r = pointIn(ctx, p.expression, prop, depth + 1);
+      if (r) return r;
+    }
+  }
+  return null;
+}
+
+/**
+ * D184: where a call is written, so a flow can quote its line: one `call-site` fact per call, on the calling point, at the line the
+ * call expression starts (a chain's first line, `this.a.b().c(`), or a JSX element's tag; `kind` says which. A fact, not a line:
+ * impact never reads it.
+ */
+function callSite(ctx: Context, sf: ts.SourceFile, id: ts.Identifier, target: string, label: 0 | 1) {
+  let n: ts.Node = id;
+  if (ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) n = n.parent;
+  const owner = ctx.ownerId(id);
+  if (owner === target) return;
+  ctx.out.fact("call-sites", "call-site", owner, ctx.rel(sf.fileName), ctx.line(n.parent), { target, label: String(label), kind: edgeKind(id) });
 }
 
 function edgeKind(id: ts.Identifier): string {

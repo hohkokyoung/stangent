@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Rebuild layer 3 (D170–D184): flows laid out from the code graph by code, no AI. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Stangent.Core\Stangent.Core.csproj" />
+    <ProjectReference Include="..\Stangent.Graph\Stangent.Graph.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Stangent.Core.Tests" />
+  </ItemGroup>
+</Project>

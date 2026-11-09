@@ -146,7 +146,7 @@ public sealed class RoutesDetector : IDetector
     static void Auth(ExtractContext ctx, INamedTypeSymbol controller, IMethodSymbol method, string methodId)
     {
         var found = new List<(string Rule, string Policy, string Roles, string From)>();
-        var filters = new List<(string Filter, string Args, string Stage, string Basis, string From)>();
+        var filters = new List<(string Filter, string Args, string Stage, string Basis, string From, string Type)>();
         void Read(ISymbol symbol, string from)
         {
             foreach (var a in symbol.GetAttributes())
@@ -154,7 +154,7 @@ public sealed class RoutesDetector : IDetector
                 if (Is(a, "AllowAnonymousAttribute")) found.Add(("anonymous", "", "", from));
                 else if (Is(a, "AuthorizeAttribute"))
                     found.Add(("authorize", Named(a, "Policy") ?? (a.ConstructorArguments.FirstOrDefault().Value as string) ?? "", Named(a, "Roles") ?? "", from));
-                else if (AccessFilter(a) is { } f) filters.Add((f.Name, AttributeValues.Named(a, k => k is "Order" or "IsReusable"), f.Stage, f.Basis, from));
+                else if (AccessFilter(a) is { } f) filters.Add((f.Name, AttributeValues.Named(a, k => k is "Order" or "IsReusable"), f.Stage, f.Basis, from, f.Type is null ? "" : ctx.NodeId(f.Type) ?? ""));
             }
         }
         foreach (var m in Overrides(method)) Read(m, "method");
@@ -167,7 +167,7 @@ public sealed class RoutesDetector : IDetector
         // N3: an app's own access filters run whatever [AllowAnonymous] says (only the filter's own code can honour it).
         foreach (var f in filters.Distinct())
             ctx.AddFact(Detector, "auth", methodId, null, ("rule", "filter"), ("policy", ""), ("roles", ""), ("from", f.From),
-                ("filter", f.Filter), ("args", f.Args), ("stage", f.Stage), ("basis", f.Basis));
+                ("filter", f.Filter), ("args", f.Args), ("stage", f.Stage), ("basis", f.Basis), ("filterType", f.Type));
     }
 
     static readonly string[] AccessWords = ["Authorize", "Authorization", "Permission", "Access", "Role"];
@@ -184,7 +184,7 @@ public sealed class RoutesDetector : IDetector
     /// <c>name</c>, its name says Authorize, Permission, Access or Role; <c>stage</c> (🟡), it runs at the authorisation stage;
     /// <c>result</c> (🟡), an action filter that sets <c>context.Result</c>. None of these: not an access rule (captcha, "save last page").
     /// </summary>
-    static (string Name, string Stage, string Basis)? AccessFilter(AttributeData a)
+    static (string Name, string Stage, string Basis, INamedTypeSymbol? Type)? AccessFilter(AttributeData a)
     {
         if (a.AttributeClass is not { } cls) return null;
         INamedTypeSymbol? filter;
@@ -197,13 +197,13 @@ public sealed class RoutesDetector : IDetector
         return Classify(Short(direct && filter is not null ? filter.Name : cls.Name), filter);
     }
 
-    static (string Name, string Stage, string Basis)? Classify(string name, INamedTypeSymbol? filter)
+    static (string Name, string Stage, string Basis, INamedTypeSymbol? Type)? Classify(string name, INamedTypeSymbol? filter)
     {
         var authorization = filter is not null && (Implements(filter, "IAuthorizationFilter") || Implements(filter, "IAsyncAuthorizationFilter"));
         var results = filter is null ? "" : ResultsSeen.GetValue(filter, Results);
         var basis = results == "denies" || results == "4xx" && authorization ? "denies" : AccessWords.Any(w => name.Contains(w, StringComparison.Ordinal)) ? "name"
             : authorization ? "stage" : results is "sets" or "4xx" ? "result" : null;
-        return basis is null ? null : (name, authorization ? "authorization" : "other", basis);
+        return basis is null ? null : (name, authorization ? "authorization" : "other", basis, filter);
     }
 
     /// <summary>
@@ -239,7 +239,7 @@ public sealed class RoutesDetector : IDetector
         var filter = ExtractContext.IsOrDerives(type, "Microsoft.AspNetCore.Mvc.TypeFilterAttribute") ? FilterOf(type) ?? type : type;
         if (Classify(Short(type.Name), filter) is not { } f) return;
         ctx.AddFact(Name, "auth", ctx.ProjectId, call, ("rule", "filter"), ("policy", ""), ("roles", ""), ("from", "global"),
-            ("filter", f.Name), ("args", ""), ("stage", f.Stage), ("basis", f.Basis));
+            ("filter", f.Name), ("args", ""), ("stage", f.Stage), ("basis", f.Basis), ("filterType", f.Type is null ? "" : ctx.NodeId(f.Type) ?? ""));
     }
 
     /// <summary>The filter type a <c>TypeFilterAttribute</c> subclass passes up (<c>: base(typeof(CheckPermissionFilter))</c>), by name.</summary>
