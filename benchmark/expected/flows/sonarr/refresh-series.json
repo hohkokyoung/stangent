@@ -1,0 +1,729 @@
+{
+  "repo": "sonarr",
+  "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+  "id": "refresh-series",
+  "name": "Refresh series",
+  "kind": "job",
+  "start": {
+    "what": "RefreshSeriesService.Execute, the IExecute<RefreshSeriesCommand> handler",
+    "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:218",
+    "code": "public void Execute(RefreshSeriesCommand message)"
+  },
+  "actor": {
+    "who": "command executor (system); the command is queued by SeriesAddedHandler, the scheduler or a user command",
+    "why": "no HTTP access rule applies to the job itself; RefreshSeriesCommand is queued elsewhere",
+    "at": "src/NzbDrone.Core/Tv/Commands/RefreshSeriesCommand.cs:8",
+    "code": "public class RefreshSeriesCommand : Command"
+  },
+  "checks": [],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "publishes SeriesRefreshStartingEvent",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:222",
+      "code": "_eventAggregator.PublishEvent(new SeriesRefreshStartingEvent(trigger == CommandTrigger.Manual));",
+      "end": {
+        "kind": "message",
+        "detail": "SeriesRefreshStartingEvent"
+      }
+    },
+    {
+      "n": 2,
+      "from": null,
+      "what": "loads the series before refreshing it",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:228",
+      "code": "var series = _seriesService.GetSeries(seriesId);",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:226",
+          "code": "foreach (var seriesId in message.SeriesIds)"
+        },
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:224",
+          "code": "if (message.SeriesIds.Any())"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ISeriesService.GetSeries(int): 63 call sites of _seriesService.GetSeries( in src (non-test)"
+      }
+    },
+    {
+      "n": 3,
+      "from": null,
+      "what": "refreshes the series info",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:232",
+      "code": "series = RefreshSeriesInfo(seriesId);",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:226",
+          "code": "foreach (var seriesId in message.SeriesIds)"
+        },
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:224",
+          "code": "if (message.SeriesIds.Any())"
+        }
+      ]
+    },
+    {
+      "n": 4,
+      "from": 3,
+      "what": "loads the stored series",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:60",
+      "code": "var series = _seriesService.GetSeries(seriesId);",
+      "end": {
+        "kind": "hub",
+        "detail": "ISeriesService.GetSeries(int): 63 call sites of _seriesService.GetSeries( in src (non-test)"
+      }
+    },
+    {
+      "n": 5,
+      "from": 3,
+      "what": "asks the metadata source for the series info and episodes",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:69",
+      "code": "var tuple = _seriesInfo.GetSeriesInfo(series.TvdbId, series.Language, series.SeasonType);"
+    },
+    {
+      "n": 6,
+      "from": 5,
+      "what": "GETs shows/{iso language}/{tvdbId}/{seasonType} from the SkyHook metadata service",
+      "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:54",
+      "code": "var httpResponse = _httpClient.Get<ShowResource>(httpRequest);",
+      "end": {
+        "kind": "outside-call",
+        "detail": "HTTP GET to the SkyHook metadata service (shows/<lang>/<tvdbId>/<seasonType>)"
+      }
+    },
+    {
+      "n": 7,
+      "from": 3,
+      "what": "marks the series as deleted when TheTVDB no longer has it",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:78",
+      "code": "_seriesService.UpdateSeries(series, publishUpdatedEvent: false);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:75",
+          "code": "if (series.Status != SeriesStatusType.Deleted)"
+        },
+        {
+          "kind": "catch",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:73",
+          "code": "catch (SeriesNotFoundException)"
+        }
+      ]
+    },
+    {
+      "n": 8,
+      "from": 7,
+      "what": "updates the series row",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:236",
+      "code": "var updatedSeries = _seriesRepository.Update(series);",
+      "end": {
+        "kind": "database",
+        "detail": "Series table"
+      }
+    },
+    {
+      "n": 9,
+      "from": 3,
+      "what": "publishes SeriesUpdatedEvent for the deleted-on-tvdb series",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:80",
+      "code": "_eventAggregator.PublishEvent(new SeriesUpdatedEvent(series));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:75",
+          "code": "if (series.Status != SeriesStatusType.Deleted)"
+        },
+        {
+          "kind": "catch",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:73",
+          "code": "catch (SeriesNotFoundException)"
+        }
+      ],
+      "end": {
+        "kind": "message",
+        "detail": "SeriesUpdatedEvent"
+      }
+    },
+    {
+      "n": 10,
+      "from": 3,
+      "what": "saves the refreshed series fields (title, overview, images, seasons, ...) without publishing an edit event",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:134",
+      "code": "_seriesService.UpdateSeries(series, publishUpdatedEvent: false);"
+    },
+    {
+      "n": 11,
+      "from": 10,
+      "what": "updates the series row",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:236",
+      "code": "var updatedSeries = _seriesRepository.Update(series);",
+      "end": {
+        "kind": "database",
+        "detail": "Series table"
+      }
+    },
+    {
+      "n": 12,
+      "from": 3,
+      "what": "updates the series translations",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:135",
+      "code": "_seriesTranslationService.UpdateTranslations(series.Id, seriesInfo.Translations);"
+    },
+    {
+      "n": 13,
+      "from": 12,
+      "what": "inserts new translations",
+      "at": "src/NzbDrone.Core/Tv/SeriesTranslationService.cs:62",
+      "code": "_seriesTranslationRepository.InsertMany(toAdd);",
+      "end": {
+        "kind": "database",
+        "detail": "SeriesTranslations table (InsertMany)"
+      }
+    },
+    {
+      "n": 14,
+      "from": 12,
+      "what": "updates existing translations",
+      "at": "src/NzbDrone.Core/Tv/SeriesTranslationService.cs:63",
+      "code": "_seriesTranslationRepository.UpdateMany(toUpdate);",
+      "end": {
+        "kind": "database",
+        "detail": "SeriesTranslations table (UpdateMany)"
+      }
+    },
+    {
+      "n": 15,
+      "from": 12,
+      "what": "deletes translations no longer returned",
+      "at": "src/NzbDrone.Core/Tv/SeriesTranslationService.cs:64",
+      "code": "_seriesTranslationRepository.DeleteMany(existing);",
+      "end": {
+        "kind": "database",
+        "detail": "SeriesTranslations table (DeleteMany)"
+      }
+    },
+    {
+      "n": 16,
+      "from": 3,
+      "what": "refreshes the episodes from the remote list",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:136",
+      "code": "_refreshEpisodeService.RefreshEpisodeInfo(series, episodes);"
+    },
+    {
+      "n": 17,
+      "from": 16,
+      "what": "reads the existing episodes",
+      "at": "src/NzbDrone.Core/Tv/RefreshEpisodeService.cs:35",
+      "code": "var existingEpisodes = _episodeService.GetEpisodeBySeries(series.Id);",
+      "end": {
+        "kind": "database",
+        "detail": "Episodes table (read by series)"
+      }
+    },
+    {
+      "n": 18,
+      "from": 16,
+      "what": "deletes episodes missing from the remote list",
+      "at": "src/NzbDrone.Core/Tv/RefreshEpisodeService.cs:127",
+      "code": "_episodeService.DeleteMany(existingEpisodes);",
+      "end": {
+        "kind": "database",
+        "detail": "Episodes table (DeleteMany)"
+      }
+    },
+    {
+      "n": 19,
+      "from": 16,
+      "what": "updates matching episodes",
+      "at": "src/NzbDrone.Core/Tv/RefreshEpisodeService.cs:128",
+      "code": "_episodeService.UpdateMany(updateList);",
+      "end": {
+        "kind": "database",
+        "detail": "Episodes table (UpdateMany)"
+      }
+    },
+    {
+      "n": 20,
+      "from": 16,
+      "what": "inserts new episodes",
+      "at": "src/NzbDrone.Core/Tv/RefreshEpisodeService.cs:129",
+      "code": "_episodeService.InsertMany(newList);",
+      "end": {
+        "kind": "database",
+        "detail": "Episodes table (InsertMany)"
+      }
+    },
+    {
+      "n": 21,
+      "from": 16,
+      "what": "publishes EpisodeInfoRefreshedEvent",
+      "at": "src/NzbDrone.Core/Tv/RefreshEpisodeService.cs:131",
+      "code": "_eventAggregator.PublishEvent(new EpisodeInfoRefreshedEvent(series, newList, updateList, existingEpisodes));",
+      "end": {
+        "kind": "message",
+        "detail": "EpisodeInfoRefreshedEvent"
+      }
+    },
+    {
+      "n": 22,
+      "from": 3,
+      "what": "publishes SeriesUpdatedEvent",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:139",
+      "code": "_eventAggregator.PublishEvent(new SeriesUpdatedEvent(series));",
+      "end": {
+        "kind": "message",
+        "detail": "SeriesUpdatedEvent"
+      }
+    },
+    {
+      "n": 23,
+      "from": null,
+      "what": "updates auto-tagging tags for the refreshed series",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:233",
+      "code": "UpdateTags(series);",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:226",
+          "code": "foreach (var seriesId in message.SeriesIds)"
+        },
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:224",
+          "code": "if (message.SeriesIds.Any())"
+        }
+      ]
+    },
+    {
+      "n": 24,
+      "from": 23,
+      "what": "evaluates auto-tagging rules for the series",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:210",
+      "code": "var tagsUpdated = _seriesService.UpdateAutoTaggingTags(series);",
+      "end": {
+        "kind": "unknown",
+        "detail": "IAutoTaggingService rule evaluation not walked"
+      }
+    },
+    {
+      "n": 25,
+      "from": 23,
+      "what": "saves the series again when tags changed",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:214",
+      "code": "_seriesService.UpdateSeries(series);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:212",
+          "code": "if (tagsUpdated)"
+        }
+      ]
+    },
+    {
+      "n": 26,
+      "from": 25,
+      "what": "updates the series row",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:236",
+      "code": "var updatedSeries = _seriesRepository.Update(series);",
+      "end": {
+        "kind": "database",
+        "detail": "Series table"
+      }
+    },
+    {
+      "n": 27,
+      "from": null,
+      "what": "rescans the series folder on disk (or skips it)",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:234",
+      "code": "RescanSeries(series, isNew, trigger);",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:226",
+          "code": "foreach (var seriesId in message.SeriesIds)"
+        },
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:224",
+          "code": "if (message.SeriesIds.Any())"
+        }
+      ]
+    },
+    {
+      "n": 28,
+      "from": 27,
+      "what": "publishes SeriesScanSkippedEvent when rescan-after-refresh is Never",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:186",
+      "code": "_eventAggregator.PublishEvent(new SeriesScanSkippedEvent(series, SeriesScanSkippedReason.NeverRescanAfterRefresh));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:183",
+          "code": "else if (rescanAfterRefresh == RescanAfterRefreshType.Never)"
+        },
+        {
+          "kind": "else",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:179",
+          "code": "if (isNew)"
+        }
+      ],
+      "end": {
+        "kind": "message",
+        "detail": "SeriesScanSkippedEvent"
+      }
+    },
+    {
+      "n": 29,
+      "from": 27,
+      "what": "publishes SeriesScanSkippedEvent when rescan is only after manual refresh",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:193",
+      "code": "_eventAggregator.PublishEvent(new SeriesScanSkippedEvent(series, SeriesScanSkippedReason.RescanAfterManualRefreshOnly));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:190",
+          "code": "else if (rescanAfterRefresh == RescanAfterRefreshType.AfterManual && trigger != CommandTrigger.Manual)"
+        },
+        {
+          "kind": "else",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:179",
+          "code": "if (isNew)"
+        }
+      ],
+      "end": {
+        "kind": "message",
+        "detail": "SeriesScanSkippedEvent"
+      }
+    },
+    {
+      "n": 30,
+      "from": 27,
+      "what": "runs the disk scan for the series",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:200",
+      "code": "_diskScanService.Scan(series);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:183",
+          "code": "else if (rescanAfterRefresh == RescanAfterRefreshType.Never)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:190",
+          "code": "else if (rescanAfterRefresh == RescanAfterRefreshType.AfterManual && trigger != CommandTrigger.Manual)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "DiskScanService.Scan is a separate, large flow (reads the series folder, imports files); not walked"
+      }
+    },
+    {
+      "n": 31,
+      "from": null,
+      "what": "no series ids given: loads all series, ordered by sort title",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:258",
+      "code": "var allSeries = _seriesService.GetAllSeries().OrderBy(c => c.SortTitle).ToList();",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:224",
+          "code": "if (message.SeriesIds.Any())"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Series table"
+      }
+    },
+    {
+      "n": 32,
+      "from": null,
+      "what": "decides whether each series needs a refresh",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:263",
+      "code": "if (trigger == CommandTrigger.Manual || _checkIfSeriesShouldBeRefreshed.ShouldRefresh(seriesLocal))",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:260",
+          "code": "foreach (var series in allSeries)"
+        },
+        {
+          "kind": "else",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:224",
+          "code": "if (message.SeriesIds.Any())"
+        }
+      ]
+    },
+    {
+      "n": 33,
+      "from": null,
+      "what": "refreshes the series info (same walk as step c)",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:267",
+      "code": "seriesLocal = RefreshSeriesInfo(seriesLocal.Id);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:263",
+          "code": "if (trigger == CommandTrigger.Manual || _checkIfSeriesShouldBeRefreshed.ShouldRefresh(seriesLocal))"
+        },
+        {
+          "kind": "loop",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:260",
+          "code": "foreach (var series in allSeries)"
+        },
+        {
+          "kind": "else",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:224",
+          "code": "if (message.SeriesIds.Any())"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "same RefreshSeriesInfo walk as step c"
+      }
+    },
+    {
+      "n": 34,
+      "from": null,
+      "what": "updates tags after a refresh attempt",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:279",
+      "code": "UpdateTags(series);",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:260",
+          "code": "foreach (var series in allSeries)"
+        },
+        {
+          "kind": "else",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:224",
+          "code": "if (message.SeriesIds.Any())"
+        }
+      ]
+    },
+    {
+      "n": 35,
+      "from": null,
+      "what": "rescans after a refresh attempt (isNew false)",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:280",
+      "code": "RescanSeries(seriesLocal, false, trigger);",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:260",
+          "code": "foreach (var series in allSeries)"
+        },
+        {
+          "kind": "else",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:224",
+          "code": "if (message.SeriesIds.Any())"
+        }
+      ]
+    },
+    {
+      "n": 36,
+      "from": null,
+      "what": "updates tags when the series is skipped",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:285",
+      "code": "UpdateTags(series);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:263",
+          "code": "if (trigger == CommandTrigger.Manual || _checkIfSeriesShouldBeRefreshed.ShouldRefresh(seriesLocal))"
+        },
+        {
+          "kind": "loop",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:260",
+          "code": "foreach (var series in allSeries)"
+        },
+        {
+          "kind": "else",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:224",
+          "code": "if (message.SeriesIds.Any())"
+        }
+      ]
+    },
+    {
+      "n": 37,
+      "from": null,
+      "what": "rescans when the series is skipped",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:286",
+      "code": "RescanSeries(seriesLocal, false, trigger);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:263",
+          "code": "if (trigger == CommandTrigger.Manual || _checkIfSeriesShouldBeRefreshed.ShouldRefresh(seriesLocal))"
+        },
+        {
+          "kind": "loop",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:260",
+          "code": "foreach (var series in allSeries)"
+        },
+        {
+          "kind": "else",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:224",
+          "code": "if (message.SeriesIds.Any())"
+        }
+      ]
+    },
+    {
+      "n": 38,
+      "from": null,
+      "what": "publishes SeriesRefreshCompleteEvent",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:291",
+      "code": "_eventAggregator.PublishEvent(new SeriesRefreshCompleteEvent());",
+      "end": {
+        "kind": "message",
+        "detail": "SeriesRefreshCompleteEvent"
+      }
+    }
+  ],
+  "exits": [
+    {
+      "what": "rethrows SeriesNotFoundException after marking the series deleted (caught again by Execute and logged)",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:83",
+      "code": "throw;",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:73",
+          "code": "catch (SeriesNotFoundException)"
+        }
+      ]
+    },
+    {
+      "what": "throws SeriesNotFoundException when SkyHook returns 404",
+      "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:60",
+      "code": "throw new SeriesNotFoundException(tvdbSeriesId);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:58",
+          "code": "if (httpResponse.StatusCode == HttpStatusCode.NotFound)"
+        },
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:56",
+          "code": "if (httpResponse.HasHttpError)"
+        }
+      ]
+    },
+    {
+      "what": "throws HttpException when SkyHook returns any other HTTP error",
+      "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:64",
+      "code": "throw new HttpException(httpRequest, httpResponse);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:58",
+          "code": "if (httpResponse.StatusCode == HttpStatusCode.NotFound)"
+        },
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:56",
+          "code": "if (httpResponse.HasHttpError)"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "kind": "message",
+      "to": "SceneMappingService.Handle(SeriesRefreshStartingEvent)",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:222",
+      "code": "_eventAggregator.PublishEvent(new SeriesRefreshStartingEvent(trigger == CommandTrigger.Manual));"
+    },
+    {
+      "kind": "message",
+      "to": "XemService.Handle(SeriesRefreshStartingEvent)",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:222",
+      "code": "_eventAggregator.PublishEvent(new SeriesRefreshStartingEvent(trigger == CommandTrigger.Manual));"
+    },
+    {
+      "kind": "message",
+      "to": "XemService.Handle(SeriesUpdatedEvent)",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:139",
+      "code": "_eventAggregator.PublishEvent(new SeriesUpdatedEvent(series));"
+    },
+    {
+      "kind": "message",
+      "to": "PendingReleaseService.Handle(SeriesUpdatedEvent)",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:139",
+      "code": "_eventAggregator.PublishEvent(new SeriesUpdatedEvent(series));"
+    },
+    {
+      "kind": "message",
+      "to": "MediaCoverService.HandleAsync(SeriesUpdatedEvent)",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:139",
+      "code": "_eventAggregator.PublishEvent(new SeriesUpdatedEvent(series));"
+    },
+    {
+      "kind": "message",
+      "to": "Sonarr.Api.V5 SeriesController.Handle(SeriesUpdatedEvent) - SignalR broadcast",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:139",
+      "code": "_eventAggregator.PublishEvent(new SeriesUpdatedEvent(series));"
+    },
+    {
+      "kind": "message",
+      "to": "Sonarr.Api.V3 SeriesController.Handle(SeriesUpdatedEvent) - SignalR broadcast",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:139",
+      "code": "_eventAggregator.PublishEvent(new SeriesUpdatedEvent(series));"
+    },
+    {
+      "kind": "message",
+      "to": "RemovedSeriesCheck (health check, [CheckOn] SeriesUpdatedEvent)",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:139",
+      "code": "_eventAggregator.PublishEvent(new SeriesUpdatedEvent(series));"
+    },
+    {
+      "kind": "message",
+      "to": "TrackedDownloadService.Handle(EpisodeInfoRefreshedEvent)",
+      "at": "src/NzbDrone.Core/Tv/RefreshEpisodeService.cs:131",
+      "code": "_eventAggregator.PublishEvent(new EpisodeInfoRefreshedEvent(series, newList, updateList, existingEpisodes));"
+    },
+    {
+      "kind": "message",
+      "to": "EpisodeRefreshedService.Handle(EpisodeInfoRefreshedEvent)",
+      "at": "src/NzbDrone.Core/Tv/RefreshEpisodeService.cs:131",
+      "code": "_eventAggregator.PublishEvent(new EpisodeInfoRefreshedEvent(series, newList, updateList, existingEpisodes));"
+    },
+    {
+      "kind": "message",
+      "to": "SeriesScannedHandler.Handle(SeriesScanSkippedEvent)",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:186",
+      "code": "_eventAggregator.PublishEvent(new SeriesScanSkippedEvent(series, SeriesScanSkippedReason.NeverRescanAfterRefresh));"
+    },
+    {
+      "kind": "message",
+      "to": "RemovedSeriesCheck (health check, [CheckOn] SeriesRefreshCompleteEvent)",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:291",
+      "code": "_eventAggregator.PublishEvent(new SeriesRefreshCompleteEvent());"
+    },
+    {
+      "kind": "continues",
+      "to": "DiskScanService.Scan (series rescan)",
+      "at": "src/NzbDrone.Core/Tv/RefreshSeriesService.cs:200",
+      "code": "_diskScanService.Scan(series);"
+    }
+  ],
+  "notes": [
+    "Steps 'b', 'c', 'd', 'e' run inside the foreach over message.SeriesIds when it is not empty; 'f' onward run when it is empty (the scheduled refresh of all series).",
+    "In Execute's catch blocks (SeriesNotFoundException at 236, Exception at 244) the job logs, calls _commandResultReporter.Report(CommandResult.Indeterminate) and (for Exception) UpdateTags and RescanSeries again; those repeat calls are not listed as separate steps.",
+    "RefreshSeriesInfo calls _seriesService.UpdateSeries(series, publishUpdatedEvent: false), so the SeriesEditedEvent publish inside SeriesService.UpdateSeries (guarded by 'if (publishUpdatedEvent)') does not run here.",
+    "Not walked: UpdateSeasons (in-memory season merge), GetActualCasing path fix, MapAbsoluteEpisodeNumbers/AdjustMultiEpisodeAirTime inside RefreshEpisodeInfo, ShouldRefresh's refresh-interval rules.",
+    "In the all-series branch SeriesNotFoundException in step h is caught at line 269 (continue) and any other Exception at line 274; both are logged and not rethrown.",
+    "RefreshSeriesInfo has two SeriesUpdatedEvent publishes: line 80 (series gone from TheTVDB) and line 139 (normal end); both go to the same handlers.",
+    "Series info call: IProvideSeriesInfo.GetSeriesInfo implemented by SkyHookProxy; the steps for that call are shared with Add series."
+  ]
+}

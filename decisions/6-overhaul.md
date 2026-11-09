@@ -298,3 +298,12 @@ Settles the detail D171 and D173–D176 left to the build. All code, no AI; cont
 - **X1:** a guard (an `if` with no `else` whose branch always returns, throws, breaks or continues) puts every later statement of its block under `unless <its condition>`, quoted exactly, in C# and TypeScript. A `switch` case's statements count as a block (Z1, from the fresh check, owner: "Yes, fix Z1"): its guards come before the case.
 
 **Why:** Y1 hid nopCommerce's product page, one of D177's 15 starts; Y2 lost "may run again later"; X1 is the usual guard-first style, and without it a flow would list steps that never run past a failed check. **Cost:** more condition facts (every call after a guard); X2–X5 stay open.
+
+## D183 · The frozen key's format: one JSON per flow, every item a code line (`at` + exact `code`), steps a tree by `from`; written from git-tracked source only — 2026-11-09 (set while building r3 step 2, on the brief's "keep it simple"; for the owner's approval with the first key)
+- **One file per flow,** `benchmark/expected/flows/<repo>/<flow-id>.json`, with the clone's commit: start, actor, checks, steps, exits, links, notes (`benchmark/expected/flows/README.md`).
+- **Every counted item has `at` (`path:line`) and `code`,** quoted exactly; whitespace runs count as one space, so a quote may span lines, but it starts on line `at` and ends within 10 lines. The scorer matches by `at`, then by `code`. Notes don't count.
+- **Steps are a tree written flat:** each step names the step it comes `from`; a branch's `end` sits on its last step (D172's kinds); conditions per step and exit, innermost first, with kinds `if`/`else`/`unless`/`case`/`catch`/`loop`/`ternary` (D174, D182).
+- **The writing agent reads only git-tracked files of the clone:** `.stangent/`, `specs/`, `stangent.yaml` and build output there are Stangent's or the build's, never the key's source.
+- **Checked by code before commit:** every `at` is a tracked file and line, every `code` is found there, every `from` is an earlier step.
+
+**Why:** D177 item 2 counts a key item only if it quotes a code line; a line plus its text lets the scorer match by code and lets a ruling point at one line. **Cost:** a key line moves if the clone's commit changes, so the key names its commit and the scorer runs on that commit only.

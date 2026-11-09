@@ -77,6 +77,26 @@ The 15 starts:
 
 When Stangent and the key disagree, the quoted code line decides, and the ruling is written here.
 
+## Step 2 progress: the key
+
+- Format: `benchmark/expected/flows/README.md` (D183). Every counted item is `at` + exact `code`.
+- **Sonarr** (commit `0bffefe7c8`), written 2026-11-09 by a fresh Sonnet agent from git-tracked source only (~230K tokens):
+
+  | Flow | Steps | Ends | Conditions | Exits | Links | Checks |
+  |---|---|---|---|---|---|---|
+  | add-series | 16 | 6 | 13 | 6 | 5 | 10 |
+  | delete-series | 7 | 3 | 3 | 1 | 15 | 1 |
+  | save-indexer | 30 | 13 | 18 | 5 | 12 | 14 |
+  | series-details-opens | 35 | 12 | 11 | 0 | 0 | 0 |
+  | refresh-series | 38 | 24 | 40 | 3 | 13 | 0 |
+
+  Checked by code: 306 items, every `at` a tracked line whose text holds its `code`. Spot-read by hand: add-series's
+  controller → add service → insert → `SeriesAddedEvent` (3 handlers) → `RefreshSeriesCommand` queued. Owner approval: pending.
+  The agent's own caveats: V5 controllers only (the frontend's root is `/api/v5`); delete's options act in event
+  handlers, so they sit as extra `conditions` on two links; save-indexer's connection test stops at the depth limit and
+  only Newznab's settings rules are listed; series-details leaves four `GET /series` mappers unwalked.
+- Kavita, nopCommerce: not started; each on the owner's go.
+
 ## Left open, on purpose
 
 - How many links along a chain the FSD judge sees: layer 5 (D173).
