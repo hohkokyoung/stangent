@@ -206,3 +206,14 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D168 · The T1–T12 check's V1–V5 fixed (MVC's lookup by the page's controller, cancelled submits, inherited button methods, 4xx refusals, rule modifiers)
 - D169 · A submit button a script writes submits the form around it, as a guess (W1)
 
+- D170 · Layer 3 builds flows first (a screen change stops a flow and links to that screen's load flow); areas are grouped from the flows afterwards; the first bar is on flows
+- D171 · A flow starts at a click or submit (one flow per handler), a screen opening, or a system job; the graph first gains "runs on load" and "is a job" facts (layer 2, fresh-checked)
+- D172 · A flow is a tree walked forward; a branch ends at the database, an outside call, a message sent (handlers are linked flows, never through the bus), another screen, a hub, a ❓ or 8 real calls
+- D173 · Every out-of-bounds end is a link to another flow (handlers, jobs "runs later", screens, "continues in"), explained by a code-made sentence with its proof line; the graph gains "queues" lines
+- D174 · A flow step carries the condition it sits under, quoted from the code; early exits (redirect or error returns, throws) end a branch; validation rules are a "checks" step; facts added in layer 2
+- D175 · A URL match is ✅ when its text is constant and exactly one endpoint fits (✅ = proved by code); other guesses are labelled per step with their reason, listed at the top of the flow
+- D176 · Layer 3 is code only (the paid run moves to layer 5): fixed rules for step order, loops, names, load effects, early exits, display-only parts; the same commit builds the same flows byte for byte
+- D177 · Layer 3's bar, frozen first: 15 flows on Sonarr, Kavita, nopCommerce; key by a fresh agent from source alone, three approved by the owner; no wrong ✅, ≥95% found, every 🟡/❓ explained, byte-for-byte rebuilds, no silent skips
+- D178 · Areas by a fixed folder rule (screen's home folder; shared folders never a home; jobs by who links to them; split over 40 flows; never merged by code); ties listed for a person
+- D179 · Every flow shows name, start, actor (fixed rule from guards and access), inputs, checks, steps, ends, scenarios (main path plus one per early exit), links, guesses, settings; all by code
+- D180 · Flows and areas committed under `specs/` (`flows/<id>.json|.md`, `index.json`, `areas.yaml` by folders with ties); `stangent flows build|show|check`, `areas propose|check`; contracts `flows` v1, `areas` v1
