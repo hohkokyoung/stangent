@@ -107,7 +107,7 @@ When Stangent and the key disagree, the quoted code line decides, and the ruling
 
   Checked by code: 453 items; 2 quotes of `auth.guard.ts:16` (an empty line) moved to `:17`, where the quoted `if` is,
   before commit; then 0 problems. Spot-read by hand: want-to-read's toggle (add or remove), both endpoints, their
-  `Unauthorized`/`NotFound`/`BadRequest` exits and the Hangfire scrobble queued after the commit hold. Owner approval: pending.
+  `Unauthorized`/`NotFound`/`BadRequest` exits and the Hangfire scrobble queued after the commit hold. **Owner approved `want-to-read` (2026-11-09, "Approve want-to-read")**: Kavita's approved key (D177).
   Open for a ruling when scored: saves through `unitOfWork.CommitAsync` (289 callers) are ended `hub` "writes
   `AppUserWantToRead`", where D172's order puts `database` before `hub`. The scan job stops where it queues
   `ScannerService.ScanLibraries` (a `runs-later` link, D173), so the scan's own work isn't in the key. Agent's caveats:
