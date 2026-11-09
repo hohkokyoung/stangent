@@ -154,8 +154,9 @@ public sealed class JobsDetector : IDetector
 /// D174 + D176: the conditions around each call and the early exits of each method, read from C# syntax.
 /// <list type="bullet">
 /// <item><c>condition</c>: a call (to the repo's code, or to a framework's outside <c>System.*</c>) under at least one
-/// <c>if</c>, <c>else</c>, <c>?:</c>, <c>switch</c> case or arm, <c>catch</c> or loop of its own member: those, innermost first,
-/// each with its code quoted exactly.</item>
+/// <c>if</c>, <c>else</c>, <c>?:</c>, <c>switch</c> case or arm, <c>catch</c> or loop of its own member, or after a guard
+/// (<c>unless</c>: an earlier <c>if</c> in the same block that always returns, throws, breaks or continues): those, innermost
+/// first, each with its code quoted exactly.</item>
 /// <item><c>exit</c>: a return of the framework's own <c>BadRequest</c>, <c>NotFound</c>, <c>Unauthorized</c>, <c>Forbid</c>,
 /// <c>Challenge</c>, <c>Redirect…</c>/<c>LocalRedirect…</c> or <c>StatusCode(4xx/5xx)</c> (a call or a <c>new …Result</c>), and
 /// every <c>throw</c>, with its conditions. Anything else returned isn't an exit (D176).</item>
@@ -262,10 +263,25 @@ public sealed class ConditionsDetector : IDetector
                     list.Add(new("loop", Header(p), ctx.Line(p))); break;
                 case DoStatementSyntax d when child == d.Statement:
                     list.Add(new("loop", $"do … while ({d.Condition})", ctx.Line(d))); break;
+                case BlockSyntax block when child is StatementSyntax stmt:
+                    // X1: an earlier guard in the same block (`if (x) return …;`) means this runs only unless x; nearest first.
+                    for (var i = block.Statements.IndexOf(stmt) - 1; i >= 0; i--)
+                        if (block.Statements[i] is IfStatementSyntax { Else: null } guard && Exits(guard.Statement))
+                            list.Add(new("unless", guard.Condition.ToString(), ctx.Line(guard)));
+                    break;
             }
         }
         return list;
     }
+
+    /// <summary>A statement that always leaves: <c>return</c>, <c>throw</c>, <c>break</c>, <c>continue</c>, or a block ending in one.</summary>
+    static bool Exits(StatementSyntax s) => s switch
+    {
+        ReturnStatementSyntax or ThrowStatementSyntax or BreakStatementSyntax or ContinueStatementSyntax => true,
+        YieldStatementSyntax y => y.IsKind(SyntaxKind.YieldBreakStatement),
+        BlockSyntax { Statements: [.., var last] } => Exits(last),
+        _ => false,
+    };
 
     static string Label(SwitchLabelSyntax l) => l switch
     {
@@ -308,14 +324,17 @@ public sealed class OnLoadDetector : IDetector
     {
         var actions = ctx.Facts("aspnetcore-routes").Where(f => f.Kind == "mvc-action").GroupBy(f => f.Owner)
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
-        foreach (var r in ctx.Facts("razor-views").Where(f => f.Kind == "renders-view" && f["partial"] != "yes" && f["controller"].Length > 0)
+        // Y1: a view chosen at runtime is still a page opening; viewFrom says how the view is known.
+        foreach (var r in ctx.Facts("razor-views").Where(f => f.Kind == "runtime-view" || f.Kind == "renders-view" && f["partial"] != "yes" && f["controller"].Length > 0)
                      .OrderBy(f => f.Owner, StringComparer.Ordinal).ThenBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line))
         {
             if (!actions.TryGetValue(r.Owner, out var action)) continue;
             var verbs = action["verbs"];
             if (verbs.Length > 0 && !verbs.Split(',').Contains("GET")) continue;
+            var viewFrom = r.Kind == "runtime-view" ? "runtime" : r["name"].Length > 0 ? "name" : "action";
             ctx.AddFact(Name, "on-load", r.Owner, r.File, r.Line, ("framework", "mvc"), ("hook", r["via"].Length > 0 ? r["via"] : "View"),
-                ("handler", r.Owner), ("deps", ""), ("runs", "when the page is requested"), ("view", r["name"]), ("verbs", verbs.Length > 0 ? verbs : "any"));
+                ("handler", r.Owner), ("deps", ""), ("runs", "when the page is requested"),
+                ("view", viewFrom == "action" ? action["action"] : r["name"]), ("viewFrom", viewFrom), ("verbs", verbs.Length > 0 ? verbs : "any"));
         }
     }
 }

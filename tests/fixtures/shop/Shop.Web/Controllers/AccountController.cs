@@ -125,4 +125,8 @@ public class AccountController : Controller
 
     [CheckPermission(Permissions.ManageAccounts, DenyAs.Json), TypeFilter(typeof(SignedInFilter)), Microsoft.AspNetCore.Authorization.AllowAnonymous]
     public IActionResult Close() => PartialView("_Closed");
+
+    // Y1: a view picked at runtime (a theme or template page) still opens a page.
+    [HttpGet("account/themed")]
+    public IActionResult Themed(string template) => View(template);
 }

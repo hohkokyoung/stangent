@@ -84,8 +84,14 @@ public sealed class RazorViewsDetector : IDetector
                     name = null;
                 }
             }
-            if (name is null) continue;
             var host = method.ContainingType;
+            if (name is null)
+            {
+                // Y1: which view is made at runtime, but the action still returns one: a page opening (on-load) all the same.
+                if (isController && m.Name == "View")
+                    ctx.AddFact(Name, "runtime-view", owner, call, ("controller", Short(host.Name, "Controller")), ("action", ActionName(method)));
+                continue;
+            }
             // A base class's helper, or a controller's non-action: which view it means depends on the action or component calling it.
             if (name.Length == 0 && (host.IsAbstract || isController && method.DeclaredAccessibility != Accessibility.Public))
             {

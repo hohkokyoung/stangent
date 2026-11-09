@@ -99,6 +99,11 @@ test("a call's conditions are quoted innermost first; a throw is an exit with it
       "  }",
       "  try { save(0); } catch (e) { save(1); }",
       "}",
+      "export function guarded(x?: number) {",
+      "  if (x === undefined) { return; }",
+      "  if (x < 0) throw new Error('neg');",
+      "  save(x);",
+      "}",
     ].join("\n"),
   });
   const lines = run(root);
@@ -108,9 +113,11 @@ test("a call's conditions are quoted innermost first; a throw is an exit with it
     "save: case mode = 'a' < else ok && i > 0 < loop for (const i of items)",
     "Error: case mode = default < else ok && i > 0 < loop for (const i of items)",
     "save: catch e",
+    "Error: if x < 0 < unless x === undefined",
+    "save: unless x < 0 < unless x === undefined",
   ]);
   const exits = facts(lines, "exit");
-  assert.equal(exits.length, 1);
+  assert.equal(exits.length, 2);
   assert.equal(exits[0].data.text, "throw new Error('bad');");
   assert.equal(exits[0].data.exception, "Error");
 });

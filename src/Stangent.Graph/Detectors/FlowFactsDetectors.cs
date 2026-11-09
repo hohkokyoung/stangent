@@ -156,10 +156,14 @@ public sealed class BackgroundJobsDetector : IDetector
                 var strings = call.ArgumentList.Arguments.Select(a => ExtractContext.StringValue(a.Expression, file.Model)).ToList();
                 var id = recurring ? strings.FirstOrDefault() ?? "" : "";
                 var schedule = recurring ? strings.Skip(1).FirstOrDefault(s => s is not null) ?? "" : name == "Schedule" ? "delayed" : "now, in the background";
-                ctx.AddFact(Name, "job", owner, call, ("runs", target), ("via", $"{method.ContainingType.Name}.{name}"), ("id", id), ("schedule", schedule));
+                // A schedule that isn't text (Hangfire's Cron.Daily, a setting): its code, quoted, so "not known" is never silent.
+                var args = call.ArgumentList.Arguments;
+                var lambdaAt = args.ToList().FindIndex(a => a.Expression is LambdaExpressionSyntax);
+                var scheduleCode = recurring && schedule.Length == 0 && lambdaAt >= 0 && lambdaAt + 1 < args.Count ? args[lambdaAt + 1].Expression.ToString() : "";
+                ctx.AddFact(Name, "job", owner, call, ("runs", target), ("via", $"{method.ContainingType.Name}.{name}"), ("id", id), ("schedule", schedule), ("scheduleCode", scheduleCode));
                 // D171: a recurring registration makes the method it runs a system job.
                 if (recurring)
-                    ctx.AddFact("jobs", "is-job", target, call, ("interface", ""), ("kind", "recurring"), ("command", ""), ("id", id), ("schedule", schedule));
+                    ctx.AddFact("jobs", "is-job", target, call, ("interface", ""), ("kind", "recurring"), ("command", ""), ("id", id), ("schedule", schedule), ("scheduleCode", scheduleCode));
             }
         // Calls handing a lambda to a parameter typed Expression<…>: candidates for an app's job wrapper, decided while linking.
         foreach (var file in ctx.Files)
@@ -198,7 +202,7 @@ public sealed class BackgroundJobsDetector : IDetector
     {
         var facts = ctx.Facts(Name).ToList();
         foreach (var job in facts.Where(f => f.Kind == "job"))
-            ctx.AddEdge(job.Owner, job["runs"], EdgeKind.Queues, Label.Certain, Name);
+            ctx.AddEdge(job.Owner, job["runs"], EdgeKind.Queues, Label.Certain, Name, self: true);
         var wrappers = facts.Where(f => f.Kind == "job-wrapper").GroupBy(f => (f.Owner, Index: f["index"])).ToDictionary(g => g.Key, g => g.First());
         if (wrappers.Count == 0) return;
         var dispatch = ctx.Graph.AllEdges.Where(e => e.Kind == EdgeKind.DispatchesTo).ToLookup(e => e.Source, e => e.Target, StringComparer.Ordinal);
@@ -207,9 +211,9 @@ public sealed class BackgroundJobsDetector : IDetector
             var key = (call["wrapper"], call["index"]);
             var w = wrappers.GetValueOrDefault(key) ?? dispatch[call["wrapper"]].Select(t => wrappers.GetValueOrDefault((t, call["index"]))).FirstOrDefault(x => x is not null);
             if (w is null) continue;
-            ctx.AddEdge(call.Owner, call["runs"], EdgeKind.Queues, Label.Certain, Name);
+            ctx.AddEdge(call.Owner, call["runs"], EdgeKind.Queues, Label.Certain, Name, self: true);
             ctx.AddFact(Name, "job", call.Owner, call.File, call.Line, ("runs", call["runs"]), ("via", $"{w["via"]} through {ShortName(w.Owner)}"),
-                ("id", ""), ("schedule", w["schedule"]));
+                ("id", ""), ("schedule", w["schedule"]), ("scheduleCode", ""));
         }
     }
 }

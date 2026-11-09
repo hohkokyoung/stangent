@@ -10,6 +10,7 @@ namespace Hangfire
 {
     public static class BackgroundJob { public static string Enqueue(System.Linq.Expressions.Expression<Action> job) => ""; }
     public static class RecurringJob { public static void AddOrUpdate(string id, System.Linq.Expressions.Expression<Action> job, string cron) { } }
+    public static class Cron { public static string Daily() => "0 0 * * *"; }
 }
 
 namespace Shop.Web
@@ -52,5 +53,8 @@ namespace Shop.Web
     {
         public void Sweep() { }
         public void Later() => ShelfJobs.Enqueue(() => Sweep());
+        // Y2: a job that queues itself again; Hangfire's own schedule helper, which isn't text (its code is kept).
+        public void Retry() => ShelfJobs.Enqueue(() => Retry());
+        public void Daily() => Hangfire.RecurringJob.AddOrUpdate("sweep", () => Sweep(), Hangfire.Cron.Daily());
     }
 }

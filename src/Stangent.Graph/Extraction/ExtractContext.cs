@@ -212,9 +212,10 @@ public sealed class LinkContext(CodeGraph graph, IReadOnlyDictionary<string, Lis
         if (nodeIds.Add(node.Id)) Graph.LinkedNodes.Add(node);
     }
 
-    public void AddEdge(string source, string target, string kind, Label label, string detector)
+    /// <param name="self">Keep a line from a point to itself: a job that queues itself again (Y2). Other lines never do.</param>
+    public void AddEdge(string source, string target, string kind, Label label, string detector, bool self = false)
     {
-        if (source == target || !HasNode(source) || !HasNode(target)) return;
+        if ((source == target && !self) || !HasNode(source) || !HasNode(target)) return;
         if (edgeKeys.Add((source, target, kind, detector)))
             Graph.LinkedEdges.Add(new Edge(source, target, kind, label, detector));
     }

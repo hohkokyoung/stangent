@@ -41,6 +41,9 @@ public class FlowStartsTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.Contains(queues, e => e.Source.EndsWith("ShelfSweeper.Later", StringComparison.Ordinal) && e.Target.EndsWith("ShelfSweeper.Sweep", StringComparison.Ordinal) && e.Label == Label.Certain);
         Assert.Contains(Facts("background-jobs", "job"), f => f.Owner.EndsWith("ShelfSweeper.Later", StringComparison.Ordinal) && f["via"] == "BackgroundJob.Enqueue through ShelfJobs.Enqueue");
         Assert.DoesNotContain(shop.Graph.AllBlindSpots, b => b.Detector == "background-jobs" && b.Owner.Contains("ShelfJobs", StringComparison.Ordinal));
+        // Y2: a job queuing itself again keeps its line; a schedule that isn't text keeps its code.
+        Assert.Contains(queues, e => e.Source.EndsWith("ShelfSweeper.Retry", StringComparison.Ordinal) && e.Target == e.Source);
+        Assert.Contains(Facts("jobs", "is-job"), f => f["id"] == "sweep" && f["schedule"] == "" && f["scheduleCode"] == "Hangfire.Cron.Daily()");
     }
 
     [Fact]
@@ -65,10 +68,10 @@ public class FlowStartsTests(ShopGraph shop) : IClassFixture<ShopGraph>
             .Select(f => $"{f["kind"]} {f["status"]} {f["text"]} | {string.Join(" < ", Conditions(f))}").ToList();
         Assert.Equal(
         [
-            "Redirect  RedirectToAction(nameof(Welcome)) | ",
+            "Redirect  RedirectToAction(nameof(Welcome)) | unless !ModelState.IsValid",
             "NotFound  Results.NotFound() | if id is null",
-            "StatusCode 503 Results.StatusCode(503) | if closed",
-            "BadRequest  Results.BadRequest() | if id > 100",
+            "StatusCode 503 Results.StatusCode(503) | if closed < unless id is null",
+            "BadRequest  Results.BadRequest() | if id > 100 < unless closed < unless id is null",
             "throw  throw new ArgumentNullException(nameof(name)) | null name",
         ], exits);
         // `return View(model)` and `Results.Ok(id)` aren't exits; neither is a filter setting context.Result.
@@ -80,9 +83,11 @@ public class FlowStartsTests(ShopGraph shop) : IClassFixture<ShopGraph>
     public void An_MVC_action_serving_GET_that_returns_a_view_runs_as_its_page_opens()
     {
         var loads = Facts("on-load", "on-load").Where(f => f["framework"] == "mvc").Select(f => $"{f.Owner[(f.Owner.IndexOf("AccountController.", StringComparison.Ordinal) + 18)..]} {f["view"]} {f["verbs"]}").ToList();
-        Assert.Contains("Register  GET", loads); // the default view: no name
+        Assert.Contains("Register Register GET", loads); // the default view: the action's name
         Assert.Contains("Welcome Done any", loads);
-        Assert.Contains("Settings  GET", loads);
+        Assert.Contains("Settings Settings GET", loads);
+        // Y1: a view chosen at runtime still opens a page; viewFrom says so.
+        Assert.Contains(Facts("on-load", "on-load"), f => f.Owner.Contains("AccountController.Themed", StringComparison.Ordinal) && f["viewFrom"] == "runtime" && f["view"] == "");
         Assert.DoesNotContain(loads, l => l.StartsWith("Register(Shop.Web.Models.RegisterModel)", StringComparison.Ordinal) || l.StartsWith("Close", StringComparison.Ordinal));
     }
 

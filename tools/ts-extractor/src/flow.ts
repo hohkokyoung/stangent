@@ -7,7 +7,7 @@ import { isAngularComponent, qualifiedName, testName, type Context } from "./ext
  *   dependencies runs again when they change, one with none after every render. A component's own hooks (`use…`) run on
  *   every render. A class component's `componentDidMount`, an Angular component's `ngOnInit`. An unusual shape is ❓.
  * - `condition` (detector `conditions`): per call under at least one `if`/`else`/`case`/`catch`/loop/`?:` of its own
- *   function, those conditions innermost first, their code quoted exactly.
+ *   function, or after a guard (`unless`: an earlier `if` in the same block that always leaves), innermost first, quoted exactly.
  * - `exit` (detector `conditions`): a `throw`, with the conditions around it.
  */
 const ON_LOAD = "on-load";
@@ -155,9 +155,22 @@ export function conditionsAround(ctx: Context, node: ts.Node): Condition[] {
       if (child === p.block) out.push({ kind: "catch", text: p.variableDeclaration?.getText(sf) ?? "", line: at(p) });
     } else if (ts.isForStatement(p) || ts.isForOfStatement(p) || ts.isForInStatement(p) || ts.isWhileStatement(p) || ts.isDoStatement(p)) {
       if (child === p.statement) out.push({ kind: "loop", text: loopHeader(p, sf), line: at(p) });
+    } else if (ts.isBlock(p)) {
+      // X1: an earlier guard in the same block (`if (!x) return;`) means this runs only unless its condition holds; nearest first.
+      const i = p.statements.indexOf(child as ts.Statement);
+      for (let j = i - 1; j >= 0; j--) {
+        const g = p.statements[j];
+        if (ts.isIfStatement(g) && !g.elseStatement && exits(g.thenStatement)) out.push({ kind: "unless", text: g.expression.getText(sf), line: at(g) });
+      }
     }
   }
   return out;
+}
+
+/** A statement that always leaves: return, throw, break, continue, or a block ending in one. */
+function exits(s: ts.Statement): boolean {
+  if (ts.isReturnStatement(s) || ts.isThrowStatement(s) || ts.isBreakStatement(s) || ts.isContinueStatement(s)) return true;
+  return ts.isBlock(s) && s.statements.length > 0 && exits(s.statements[s.statements.length - 1]);
 }
 
 function loopHeader(p: ts.IterationStatement, sf: ts.SourceFile): string {
