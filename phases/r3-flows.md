@@ -95,7 +95,25 @@ When Stangent and the key disagree, the quoted code line decides, and the ruling
   The agent's own caveats: V5 controllers only (the frontend's root is `/api/v5`); delete's options act in event
   handlers, so they sit as extra `conditions` on two links; save-indexer's connection test stops at the depth limit and
   only Newznab's settings rules are listed; series-details leaves four `GET /series` mappers unwalked.
-- Kavita, nopCommerce: not started; each on the owner's go.
+- **Kavita** (commit `2d225367f0`), written 2026-11-09 by a fresh Sonnet agent from git-tracked source only (~260K tokens):
+
+  | Flow | Steps | Ends | Conditions | Exits | Links | Checks |
+  |---|---|---|---|---|---|---|
+  | want-to-read | 13 | 5 | 19 | 5 | 2 | 0 |
+  | login | 21 | 13 | 38 | 5 | 2 | 2 |
+  | series-detail-opens | 115 | 37 | 44 | 18 | 2 | 0 |
+  | manga-reader-opens | 74 | 23 | 48 | 18 | 3 | 0 |
+  | scan-libraries-job | 5 | 4 | 6 | 0 | 3 | 0 |
+
+  Checked by code: 453 items; 2 quotes of `auth.guard.ts:16` (an empty line) moved to `:17`, where the quoted `if` is,
+  before commit; then 0 problems. Spot-read by hand: want-to-read's toggle (add or remove), both endpoints, their
+  `Unauthorized`/`NotFound`/`BadRequest` exits and the Hangfire scrobble queued after the commit hold. Owner approval: pending.
+  Open for a ruling when scored: saves through `unitOfWork.CommitAsync` (289 callers) are ended `hub` "writes
+  `AppUserWantToRead`", where D172's order puts `database` before `hub`. The scan job stops where it queues
+  `ScannerService.ScanLibraries` (a `runs-later` link, D173), so the scan's own work isn't in the key. Agent's caveats:
+  route guards and resolvers are first steps of the screen flows; login's `apiKey` path, series-detail's SignalR and
+  fragment subscriptions and the reader's settings auto-save aren't walked; Identity calls end as `database`.
+- nopCommerce: not started; on the owner's go.
 
 ## Left open, on purpose
 

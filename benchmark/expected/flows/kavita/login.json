@@ -1,0 +1,510 @@
+{
+  "repo": "kavita",
+  "commit": "2d225367f0310ac7354423b772a4c6a7caf63fd2",
+  "id": "login",
+  "name": "Log in",
+  "kind": "click",
+  "start": {
+    "what": "the login form's submit",
+    "at": "UI/Web/src/app/registration/user-login/user-login.component.html:8",
+    "code": "<form [formRoot]=\"formGroup\" (submit)=\"login()\" novalidate class=\"needs-validation\">"
+  },
+  "actor": {
+    "who": "anyone, signed in or not",
+    "why": "[AllowAnonymous] on the Login action",
+    "at": "Kavita.Server/Controllers/AccountController.cs:228",
+    "code": "[AllowAnonymous]"
+  },
+  "checks": [
+    {
+      "what": "username is required (Angular signal form)",
+      "at": "UI/Web/src/app/registration/user-login/user-login.component.ts:47",
+      "code": "required(path.username);"
+    },
+    {
+      "what": "password is required (Angular signal form)",
+      "at": "UI/Web/src/app/registration/user-login/user-login.component.ts:48",
+      "code": "required(path.password);"
+    }
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "form submit calls the component's login() with the form model",
+      "at": "UI/Web/src/app/registration/user-login/user-login.component.ts:141",
+      "code": "this.accountService.login(model).subscribe({"
+    },
+    {
+      "n": 2,
+      "from": 1,
+      "what": "POST api/account/login with {username, password, apiKey}",
+      "at": "UI/Web/src/app/_services/account.service.ts:233",
+      "code": "return this.httpClient.post<User>(this.baseUrl + 'account/login', model).pipe("
+    },
+    {
+      "n": 3,
+      "from": 2,
+      "what": "controller action Login receives LoginDto",
+      "at": "Kavita.Server/Controllers/AccountController.cs:230",
+      "code": "public async Task<ActionResult<UserDto>> Login(LoginDto loginDto)"
+    },
+    {
+      "n": 4,
+      "from": 3,
+      "what": "finds the user by auth key when an ApiKey was sent",
+      "at": "Kavita.Server/Controllers/AccountController.cs:236",
+      "code": "user = await unitOfWork.UserRepository.GetUserByAuthKey(loginDto.ApiKey, HttpContext.RequestAborted);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/AccountController.cs:234",
+          "code": "if (!string.IsNullOrEmpty(loginDto.ApiKey))"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "AppUserAuthKey joined to AppUser and its AuthKeys (UserRepository.GetUserByAuthKey)"
+      }
+    },
+    {
+      "n": 5,
+      "from": 3,
+      "what": "finds the user by normalized user name with preferences and auth keys",
+      "at": "Kavita.Server/Controllers/AccountController.cs:240",
+      "code": "user = await userManager.Users",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "Kavita.Server/Controllers/AccountController.cs:234",
+          "code": "if (!string.IsNullOrEmpty(loginDto.ApiKey))"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "AspNetUsers (AppUser) with UserPreferences and AuthKeys (Identity UserManager)"
+      }
+    },
+    {
+      "n": 6,
+      "from": 3,
+      "what": "reads the user's roles",
+      "at": "Kavita.Server/Controllers/AccountController.cs:254",
+      "code": "var roles = await userManager.GetRolesAsync(user);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:249",
+          "code": "if (user == null)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "AspNetUserRoles / AspNetRoles (Identity UserManager.GetRolesAsync)"
+      }
+    },
+    {
+      "n": 7,
+      "from": 3,
+      "what": "reads the OIDC settings",
+      "at": "Kavita.Server/Controllers/AccountController.cs:257",
+      "code": "var oidcConfig = (await unitOfWork.SettingsRepository.GetSettingsDtoAsync(ct)).OidcConfig;",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:255",
+          "code": "if (!roles.Contains(PolicyConstants.LoginRole)) return Unauthorized(await localizationService.TranslateAsync(user.Id, \"disabled-account\"));"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:249",
+          "code": "if (user == null)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ISettingsRepository.GetSettingsDtoAsync: 77 call sites in non-test .cs; reads ServerSetting"
+      }
+    },
+    {
+      "n": 8,
+      "from": 3,
+      "what": "checks the password and counts the failed attempt (lockoutOnFailure true)",
+      "at": "Kavita.Server/Controllers/AccountController.cs:264",
+      "code": "var result = await signInManager\n.CheckPasswordSignInAsync(user, loginDto.Password, true);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/AccountController.cs:262",
+          "code": "if (string.IsNullOrEmpty(loginDto.ApiKey))"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:260",
+          "code": "if (disablePasswordAuthentication) return Unauthorized(await localizationService.TranslateAsync(user.Id, \"password-authentication-disabled\"));"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:255",
+          "code": "if (!roles.Contains(PolicyConstants.LoginRole)) return Unauthorized(await localizationService.TranslateAsync(user.Id, \"disabled-account\"));"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:249",
+          "code": "if (user == null)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "AspNetUsers (Identity SignInManager updates AccessFailedCount / LockoutEnd)"
+      }
+    },
+    {
+      "n": 9,
+      "from": 3,
+      "what": "rotates the security stamp when the account is locked out",
+      "at": "Kavita.Server/Controllers/AccountController.cs:269",
+      "code": "await userManager.UpdateSecurityStampAsync(user);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/AccountController.cs:267",
+          "code": "if (result.IsLockedOut)"
+        },
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/AccountController.cs:262",
+          "code": "if (string.IsNullOrEmpty(loginDto.ApiKey))"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:260",
+          "code": "if (disablePasswordAuthentication) return Unauthorized(await localizationService.TranslateAsync(user.Id, \"password-authentication-disabled\"));"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:255",
+          "code": "if (!roles.Contains(PolicyConstants.LoginRole)) return Unauthorized(await localizationService.TranslateAsync(user.Id, \"disabled-account\"));"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:249",
+          "code": "if (user == null)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "AspNetUsers (SecurityStamp)"
+      }
+    },
+    {
+      "n": 10,
+      "from": 3,
+      "what": "marks the user modified",
+      "at": "Kavita.Server/Controllers/AccountController.cs:286",
+      "code": "unitOfWork.UserRepository.Update(user);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:260",
+          "code": "if (disablePasswordAuthentication) return Unauthorized(await localizationService.TranslateAsync(user.Id, \"password-authentication-disabled\"));"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:255",
+          "code": "if (!roles.Contains(PolicyConstants.LoginRole)) return Unauthorized(await localizationService.TranslateAsync(user.Id, \"disabled-account\"));"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:249",
+          "code": "if (user == null)"
+        }
+      ]
+    },
+    {
+      "n": 11,
+      "from": 3,
+      "what": "saves the user",
+      "at": "Kavita.Server/Controllers/AccountController.cs:287",
+      "code": "await unitOfWork.CommitAsync(ct);",
+      "end": {
+        "kind": "hub",
+        "detail": "IUnitOfWork.CommitAsync: 289 call sites in non-test .cs; writes AspNetUsers"
+      }
+    },
+    {
+      "n": 12,
+      "from": 3,
+      "what": "builds the UserDto with tokens, roles, keys and preferences",
+      "at": "Kavita.Server/Controllers/AccountController.cs:291",
+      "code": "return Ok(await ConstructUserDto(user, roles, ct: HttpContext.RequestAborted));"
+    },
+    {
+      "n": 13,
+      "from": 12,
+      "what": "creates the JWT access token",
+      "at": "Kavita.Server/Controllers/AccountController.cs:309",
+      "code": "dto.Token = await tokenService.CreateToken(user, ct);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/AccountController.cs:307",
+          "code": "if (includeTokens)"
+        }
+      ]
+    },
+    {
+      "n": 14,
+      "from": 13,
+      "what": "reads roles for the token claims",
+      "at": "Kavita.Services/TokenService.cs:49",
+      "code": "var roles = await userManager.GetRolesAsync(user);",
+      "end": {
+        "kind": "database",
+        "detail": "AspNetUserRoles / AspNetRoles"
+      }
+    },
+    {
+      "n": 15,
+      "from": 12,
+      "what": "creates and stores the refresh token",
+      "at": "Kavita.Server/Controllers/AccountController.cs:310",
+      "code": "dto.RefreshToken = await tokenService.CreateRefreshToken(user, ct);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/AccountController.cs:307",
+          "code": "if (includeTokens)"
+        }
+      ]
+    },
+    {
+      "n": 16,
+      "from": 15,
+      "what": "removes the old refresh token then stores the new one",
+      "at": "Kavita.Services/TokenService.cs:71",
+      "code": "await userManager.RemoveAuthenticationTokenAsync(user, RefreshTokenProviderName, RefreshTokenName);",
+      "end": {
+        "kind": "database",
+        "detail": "AspNetUserTokens (RemoveAuthenticationTokenAsync then SetAuthenticationTokenAsync at TokenService.cs:73)"
+      }
+    },
+    {
+      "n": 17,
+      "from": 12,
+      "what": "loads the user's preferences",
+      "at": "Kavita.Server/Controllers/AccountController.cs:318",
+      "code": "var pref = await unitOfWork.UserRepository.GetPreferencesAsync(user.UserName!, ct);",
+      "end": {
+        "kind": "database",
+        "detail": "AppUserPreferences (UserRepository.GetPreferencesAsync)"
+      }
+    },
+    {
+      "n": 18,
+      "from": 12,
+      "what": "loads the default theme when the preferences have none",
+      "at": "Kavita.Server/Controllers/AccountController.cs:321",
+      "code": "pref.Theme ??= await unitOfWork.SiteThemeRepository.GetDefaultTheme();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/AccountController.cs:319",
+          "code": "if (pref != null)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "SiteTheme (SiteThemeRepository.GetDefaultTheme)"
+      }
+    },
+    {
+      "n": 19,
+      "from": 1,
+      "what": "on success stores the user and starts the refresh timer and SignalR hub",
+      "at": "UI/Web/src/app/_services/account.service.ts:237",
+      "code": "this.setCurrentUser(user);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/_services/account.service.ts:236",
+          "code": "if (user) {"
+        }
+      ],
+      "end": {
+        "kind": "message",
+        "detail": "SignalR hub connection started with the user token (MessageHubService.createHubConnection at account.service.ts:278)"
+      }
+    },
+    {
+      "n": 20,
+      "from": 1,
+      "what": "on success resets the form and goes to the saved page or /home",
+      "at": "UI/Web/src/app/registration/user-login/user-login.component.ts:144",
+      "code": "this.navService.handleLogin()",
+      "end": {
+        "kind": "screen",
+        "detail": "the page the user came from (AUTH_URL_KEY) or /home"
+      }
+    },
+    {
+      "n": 21,
+      "from": 1,
+      "what": "on error shows the server text as a toast",
+      "at": "UI/Web/src/app/registration/user-login/user-login.component.ts:149",
+      "code": "this.toastr.error(err.error);",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "UI/Web/src/app/registration/user-login/user-login.component.ts:148",
+          "code": "error: (err) => {"
+        }
+      ]
+    }
+  ],
+  "exits": [
+    {
+      "what": "401 when no user matches the name or auth key",
+      "at": "Kavita.Server/Controllers/AccountController.cs:252",
+      "code": "return Unauthorized(BadCredentialsMessage);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/AccountController.cs:249",
+          "code": "if (user == null)"
+        }
+      ]
+    },
+    {
+      "what": "401 when the user does not have the Login role (disabled account)",
+      "at": "Kavita.Server/Controllers/AccountController.cs:255",
+      "code": "if (!roles.Contains(PolicyConstants.LoginRole)) return Unauthorized(await localizationService.TranslateAsync(user.Id, \"disabled-account\"));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/AccountController.cs:255",
+          "code": "if (!roles.Contains(PolicyConstants.LoginRole))"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:249",
+          "code": "if (user == null)"
+        }
+      ]
+    },
+    {
+      "what": "401 when OIDC is enabled with password authentication disabled and no ApiKey was sent",
+      "at": "Kavita.Server/Controllers/AccountController.cs:260",
+      "code": "if (disablePasswordAuthentication) return Unauthorized(await localizationService.TranslateAsync(user.Id, \"password-authentication-disabled\"));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/AccountController.cs:260",
+          "code": "if (disablePasswordAuthentication)"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:255",
+          "code": "if (!roles.Contains(PolicyConstants.LoginRole)) return Unauthorized(await localizationService.TranslateAsync(user.Id, \"disabled-account\"));"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:249",
+          "code": "if (user == null)"
+        }
+      ]
+    },
+    {
+      "what": "401 locked-out when too many wrong passwords",
+      "at": "Kavita.Server/Controllers/AccountController.cs:273",
+      "code": "return Unauthorized(errorStr);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/AccountController.cs:267",
+          "code": "if (result.IsLockedOut)"
+        },
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/AccountController.cs:262",
+          "code": "if (string.IsNullOrEmpty(loginDto.ApiKey))"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:260",
+          "code": "if (disablePasswordAuthentication) return Unauthorized(await localizationService.TranslateAsync(user.Id, \"password-authentication-disabled\"));"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:255",
+          "code": "if (!roles.Contains(PolicyConstants.LoginRole)) return Unauthorized(await localizationService.TranslateAsync(user.Id, \"disabled-account\"));"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:249",
+          "code": "if (user == null)"
+        }
+      ]
+    },
+    {
+      "what": "401 wrong password (bad credentials) or email not confirmed",
+      "at": "Kavita.Server/Controllers/AccountController.cs:282",
+      "code": "return Unauthorized(errorStr);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/AccountController.cs:276",
+          "code": "if (!result.Succeeded)"
+        },
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/AccountController.cs:262",
+          "code": "if (string.IsNullOrEmpty(loginDto.ApiKey))"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:260",
+          "code": "if (disablePasswordAuthentication) return Unauthorized(await localizationService.TranslateAsync(user.Id, \"password-authentication-disabled\"));"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:255",
+          "code": "if (!roles.Contains(PolicyConstants.LoginRole)) return Unauthorized(await localizationService.TranslateAsync(user.Id, \"disabled-account\"));"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/AccountController.cs:249",
+          "code": "if (user == null)"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "kind": "screen",
+      "to": "Home / the page the user came from",
+      "at": "UI/Web/src/app/registration/user-login/user-login.component.ts:144",
+      "code": "this.navService.handleLogin()"
+    },
+    {
+      "kind": "message",
+      "to": "SignalR hub connection (MessageHubService.createHubConnection) after setCurrentUser",
+      "at": "UI/Web/src/app/_services/account.service.ts:278",
+      "code": "this.messageHub.createHubConnection(user);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/_services/account.service.ts:276",
+          "code": "if (user && !isSameUser) {"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "The form uses novalidate; required() rules come from the signal form (formRoot), and password length rules are commented out for the login screen.",
+    "The same login() is also called with an apiKey from the apiKey query param (user-login.component.ts:116); this key covers the form submit path.",
+    "Frontend base URL is environment.apiUrl ('.../api/'), so the call is POST /api/account/login.",
+    "The Identity lockout threshold is configured elsewhere; not followed.",
+    "Not followed: OIDC login via the oidc/login link, forgot password link."
+  ]
+}

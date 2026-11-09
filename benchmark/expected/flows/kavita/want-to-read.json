@@ -1,0 +1,321 @@
+{
+  "repo": "kavita",
+  "commit": "2d225367f0310ac7354423b772a4c6a7caf63fd2",
+  "id": "want-to-read",
+  "name": "Toggle Want to Read on a series",
+  "kind": "click",
+  "start": {
+    "what": "the star button on the series detail screen",
+    "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:99",
+    "code": "<button class=\"btn btn-actions\" (click)=\"toggleWantToRead()\""
+  },
+  "actor": {
+    "who": "signed-in user",
+    "why": "WantToReadController derives from BaseApiController, which is [Authorize]; no [AllowAnonymous] on the actions",
+    "at": "Kavita.Server/Controllers/BaseApiController.cs:18",
+    "code": "[Authorize]"
+  },
+  "checks": [],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "handler removes the series from Want to Read when it is already on the list",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:942",
+      "code": "this.actionService.removeMultipleSeriesFromWantToReadList([this.seriesId()]);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:941",
+          "code": "if (this.isWantToRead()) {"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "from": null,
+      "what": "handler adds the series to Want to Read when it is not on the list",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:944",
+      "code": "this.actionService.addMultipleSeriesToWantToReadList([this.seriesId()]);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:941",
+          "code": "if (this.isWantToRead()) {"
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "from": 1,
+      "what": "ActionService.removeMultipleSeriesFromWantToReadList calls MemberService and subscribes",
+      "at": "UI/Web/src/app/_services/action.service.ts:1450",
+      "code": "this.memberService.removeSeriesToWantToRead(seriesIds).subscribe(() => {"
+    },
+    {
+      "n": 4,
+      "from": 2,
+      "what": "ActionService.addMultipleSeriesToWantToReadList calls MemberService and subscribes",
+      "at": "UI/Web/src/app/_services/action.service.ts:1443",
+      "code": "this.memberService.addSeriesToWantToRead(seriesIds).subscribe(() => {"
+    },
+    {
+      "n": 5,
+      "from": 3,
+      "what": "POST api/want-to-read/remove-series with {seriesIds}",
+      "at": "UI/Web/src/app/_services/member.service.ts:60",
+      "code": "return this.httpClient.post(this.baseUrl + 'want-to-read/remove-series', {seriesIds});"
+    },
+    {
+      "n": 6,
+      "from": 4,
+      "what": "POST api/want-to-read/add-series with {seriesIds}",
+      "at": "UI/Web/src/app/_services/member.service.ts:56",
+      "code": "return this.httpClient.post(this.baseUrl + 'want-to-read/add-series', {seriesIds});"
+    },
+    {
+      "n": 7,
+      "from": 5,
+      "what": "controller action RemoveSeries receives UpdateWantToReadDto",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:110",
+      "code": "public async Task<ActionResult> RemoveSeries(UpdateWantToReadDto dto)"
+    },
+    {
+      "n": 8,
+      "from": 6,
+      "what": "controller action AddSeries receives UpdateWantToReadDto",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:72",
+      "code": "public async Task<ActionResult> AddSeries(UpdateWantToReadDto dto)"
+    },
+    {
+      "n": 9,
+      "from": 7,
+      "what": "loads the current user with the WantToRead include (UserRepository.GetUserByUsernameAsync)",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:113",
+      "code": "var user = await unitOfWork.UserRepository.GetUserByUsernameAsync(Username!,",
+      "end": {
+        "kind": "hub",
+        "detail": "IUserRepository.GetUserByUsernameAsync: 27 call sites (git grep 'GetUserByUsernameAsync(' in non-test .cs gives 29 lines incl. interface and definition); reads AppUser with AppUserWantToRead"
+      }
+    },
+    {
+      "n": 10,
+      "from": 7,
+      "what": "commits the removal of the AppUserWantToRead rows",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:126",
+      "code": "if (await unitOfWork.CommitAsync(ct))",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:125",
+          "code": "if (!unitOfWork.HasChanges()) return Ok();"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:115",
+          "code": "if (user == null) return Unauthorized();"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "IUnitOfWork.CommitAsync: 289 call sites in non-test .cs; writes the AppUserWantToRead table (SaveChangesAsync)"
+      }
+    },
+    {
+      "n": 11,
+      "from": 8,
+      "what": "loads the current user with the WantToRead include (UserRepository.GetUserByUsernameAsync)",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:75",
+      "code": "var user = await unitOfWork.UserRepository.GetUserByUsernameAsync(Username!,",
+      "end": {
+        "kind": "hub",
+        "detail": "IUserRepository.GetUserByUsernameAsync: 27 call sites; reads AppUser with AppUserWantToRead"
+      }
+    },
+    {
+      "n": 12,
+      "from": 8,
+      "what": "checks library and age-restriction access to all the requested series",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:78",
+      "code": "if (!await unitOfWork.UserRepository.HasAccessToSeries(user.Id, dto.SeriesIds, ct)) return NotFound();",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:77",
+          "code": "if (user == null) return Unauthorized();"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "IUserRepository.HasAccessToSeries: about 21 call sites (git grep 'HasAccessToSeries(' non-test .cs gives 26 lines incl. interface and two definitions); reads Series, Library and AppUser tables"
+      }
+    },
+    {
+      "n": 13,
+      "from": 8,
+      "what": "adds the new AppUserWantToRead rows to the tracked user and commits",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:92",
+      "code": "if (await unitOfWork.CommitAsync(ct))",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:91",
+          "code": "if (!unitOfWork.HasChanges()) return Ok();"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:78",
+          "code": "if (!await unitOfWork.UserRepository.HasAccessToSeries(user.Id, dto.SeriesIds, ct)) return NotFound();"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:77",
+          "code": "if (user == null) return Unauthorized();"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "IUnitOfWork.CommitAsync: 289 call sites in non-test .cs; writes the AppUserWantToRead table (SaveChangesAsync)"
+      }
+    }
+  ],
+  "exits": [
+    {
+      "what": "401 on add when the user is not found",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:77",
+      "code": "if (user == null) return Unauthorized();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:77",
+          "code": "if (user == null) return Unauthorized();"
+        }
+      ]
+    },
+    {
+      "what": "404 on add when the user lacks access to any of the series",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:78",
+      "code": "if (!await unitOfWork.UserRepository.HasAccessToSeries(user.Id, dto.SeriesIds, ct)) return NotFound();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:78",
+          "code": "if (!await unitOfWork.UserRepository.HasAccessToSeries(user.Id, dto.SeriesIds, ct)) return NotFound();"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:77",
+          "code": "if (user == null) return Unauthorized();"
+        }
+      ]
+    },
+    {
+      "what": "400 on add when the commit did not save anything after changes were detected",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:101",
+      "code": "return BadRequest(await localizationService.TranslateAsync(UserId, \"generic-reading-list-update\"));",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:92",
+          "code": "if (await unitOfWork.CommitAsync(ct))"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:91",
+          "code": "if (!unitOfWork.HasChanges()) return Ok();"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:78",
+          "code": "if (!await unitOfWork.UserRepository.HasAccessToSeries(user.Id, dto.SeriesIds, ct)) return NotFound();"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:77",
+          "code": "if (user == null) return Unauthorized();"
+        }
+      ]
+    },
+    {
+      "what": "401 on remove when the user is not found",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:115",
+      "code": "if (user == null) return Unauthorized();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:115",
+          "code": "if (user == null) return Unauthorized();"
+        }
+      ]
+    },
+    {
+      "what": "400 on remove when the commit did not save anything after changes were detected",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:136",
+      "code": "return BadRequest(await localizationService.TranslateAsync(UserId, \"generic-reading-list-update\"));",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:126",
+          "code": "if (await unitOfWork.CommitAsync(ct))"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:125",
+          "code": "if (!unitOfWork.HasChanges()) return Ok();"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:115",
+          "code": "if (user == null) return Unauthorized();"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "kind": "runs-later",
+      "to": "ScrobblingService.ScrobbleWantToReadUpdate (add)",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:96",
+      "code": "BackgroundJob.Enqueue(() => scrobblingService.ScrobbleWantToReadUpdate(user.Id, sId, true, ct));",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:94",
+          "code": "foreach (var sId in dto.SeriesIds)"
+        },
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:92",
+          "code": "if (await unitOfWork.CommitAsync(ct))"
+        }
+      ]
+    },
+    {
+      "kind": "runs-later",
+      "to": "ScrobblingService.ScrobbleWantToReadUpdate (remove)",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:130",
+      "code": "BackgroundJob.Enqueue(() => scrobblingService.ScrobbleWantToReadUpdate(user.Id, sId, false, ct));",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:128",
+          "code": "foreach (var sId in removedSeriesIds)"
+        },
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/WantToReadController.cs:126",
+          "code": "if (await unitOfWork.CommitAsync(ct))"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Add and remove are one handler (toggleWantToRead) picking by isWantToRead(); the two branches then use two separate backend actions.",
+    "The handler flips the local signal right after calling the service (isWantToRead.update), without waiting for the HTTP result.",
+    "The success toast and callback run in the subscribe of ActionService (action.service.ts:1443 / 1450); not a step.",
+    "The series-preview drawer has an equivalent toggleWantToRead that calls the same ActionService methods; not followed.",
+    "No request validators: UpdateWantToReadDto has no validation attributes and the component has no form.",
+    "On add, ids already on the list are skipped (dto.SeriesIds.Except(existingIds)); if nothing was added HasChanges() is false and 200 is returned early.",
+    "ScrobbleWantToReadUpdate returns immediately when there is no active license (ScrobblingService.cs:743); not walked."
+  ]
+}
