@@ -672,3 +672,37 @@ test("code in a function handed to code that keeps it runs later; a library's ca
   // A function passing the callback only back to itself (applying it down a tree) still never calls it.
   assert.deepEqual(sites, ["10 ", "11 listener:on", "12 kept:keepDeep", "8 kept:keepAll", "9 "]);
 });
+
+test("a function stored as an object's property runs later; a top-level object's function runs where it's called (D191); a stream's callback runs now only when the stream starts with a request (D202)", () => {
+  const root = project({
+    "src/lib.d.ts": [
+      "declare class Observable<T> { pipe(...ops: unknown[]): Observable<T>; subscribe(f?: unknown): void; }",
+      "declare class HttpClient { get(u: string): Observable<string>; }",
+      "declare function switchMap(f: (v: unknown) => unknown): unknown;",
+      "declare function skip(n: number): unknown;",
+      "declare const lib: { ajax(o: { success: () => void }): void };",
+    ].join("\n"),
+    "src/a.ts": [
+      "export function act() {}",
+      "function own(o: { cb: () => void }) { return o; }",
+      "export class Screen {",
+      "  constructor(private http: HttpClient, private changes: Observable<number>) {}",
+      "  load() { return this.http.get('/x'); }",
+      "  open() {",
+      "    const card = { readFunc: () => act() };",
+      "    lib.ajax({ success: () => act() });",
+      "    own({ cb: () => act() });",
+      "    this.http.get('/y').subscribe(() => act());",
+      "    this.load().pipe(switchMap(() => act())).subscribe();",
+      "    this.changes.pipe(skip(1), switchMap(() => act())).subscribe();",
+      "    this.changes.subscribe({ next: () => act() });",
+      "    return card;",
+      "  }",
+      "}",
+      "var Cart = { add: function () { act(); } };",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const sites = lines.filter((l) => l.t === "fact" && l.kind === "call-site" && l.data.target.endsWith("#act")).map((l) => l.t === "fact" ? `${l.line} ${l.data.deferred ?? ""}` : "").sort();
+  assert.deepEqual(sites, ["10 ", "11 ", "12 stream:this.changes", "13 stream:this.changes", "17 ", "7 kept:readFunc", "8 ", "9 kept:cb"]);
+});

@@ -176,6 +176,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             // D192: a navigation that isn't an exit leaves for another screen: a step ending `screen`.
             foreach (var nav in g.Facts(point, "navigate").Where(f => f.Line == line && Now(f)).OrderBy(f => f["to"], StringComparer.Ordinal))
                 Add(parent, new Step { What = $"goes to {nav["to"]} ({nav["via"]})", At = at, Kind = "navigate", Conditions = nav["conditions"] != "" ? FlowGraph.ConditionsOf(nav) : CondsFor(null), Depth = depth,
+                    Guessed = Later(nav) is not null, GuessReason = Later(nav),
                     End = new End("screen", nav["to"]) });
             foreach (var exit in g.Facts(point, "exit").Where(f => f.Line == line && Now(f)).OrderBy(f => f["text"], StringComparer.Ordinal))
                 parent.Exits.Add((new Exit(exit["kind"], ExitSentence(exit), at, FlowGraph.ConditionsOf(exit), null, point), parent));
@@ -326,7 +327,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         var callback = site["callback"];
         var guessedSite = site["label"] == "1";
         // D201: code inside a function registered as an event listener runs when the event comes.
-        var listener = site["deferred"].StartsWith("listener:", StringComparison.Ordinal) ? $"runs when the event comes: a function registered with {site["deferred"][9..]}(…)" : null;
+        var listener = Later(site);
         // G5: a value taken from a hook's result (`const { refetch } = useX()`) and called: the hook stands for it, a guess.
         var byValue = !guessedSite && IsHook(target) && !at.Code.Contains(FlowGraph.ShortName(tnode), StringComparison.Ordinal);
         if (g.Callers(target) >= s.HubCallers && kind == "call")
@@ -383,6 +384,14 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
 
     const string OverloadReason = "the compiler couldn't pick one overload, so each in-repo candidate is a branch";
 
+    /// <summary>D201, D202: why code runs later than its point: a listener's function, or a callback on a stream that isn't a request.</summary>
+    static string? Later(Fact f) => f["deferred"] switch
+    {
+        var d when d.StartsWith("listener:", StringComparison.Ordinal) => $"runs when the event comes: a function registered with {d[9..]}(…)",
+        var d when d.StartsWith("stream:", StringComparison.Ordinal) => $"runs when the stream sends a value ({d[7..]}), not when this code runs",
+        _ => null,
+    };
+
     /// <summary>D201: a method of a handler interface (<c>IConsumer&lt;T&gt;.HandleEventAsync</c>): the bus calls each handler through it.</summary>
     bool IsHandlerInterface(string target)
     {
@@ -429,8 +438,9 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
     void Http(Fact http, At at, List<Condition> conds, Item parent, int depth, List<string> branch, string? because = null)
     {
         var endpoint = http["endpoint"];
-        var guessed = http["label"] != "certain" || because is not null;
-        var reason = string.Join("; ", new[] { because, http["reason"] }.Where(r => !string.IsNullOrEmpty(r)));
+        var later = Later(http);
+        var guessed = http["label"] != "certain" || because is not null || later is not null;
+        var reason = string.Join("; ", new[] { because, later, http["reason"] }.Where(r => !string.IsNullOrEmpty(r)));
         var item = Add(parent, new Step
         {
             // D201: a form's or onclick's match has no URL of its own: the endpoint names it.

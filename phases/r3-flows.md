@@ -193,7 +193,7 @@ Each is brought to the owner one at a time, with a recommendation; none is appli
   ends, not exits); terms-of-service is a page-script check; repository-level entity-event consumers aren't listed;
   model-factory sub-builders, `PrepareAndValidate*`, OAuth helpers and payment plugins end `unknown`.
 
-## Step 3: the flow code — built 2026-11-09, scored; the bar is not passed (rescored after D185's amendment, D189–D193, D196, D198–D201 and rulings R8–R11)
+## Step 3: the flow code — built 2026-11-09, scored; the bar is not passed (rescored after D185's amendment, D189–D193, D196, D198–D202 and rulings R8–R11)
 
 `stangent flows build|show|check` (contract `flows` v1, `docs/flows.md`, D184), a flows scorer in `Stangent.Benchmark`
 (`--score-flows <clone> <key-dir>`), built on the three clones at the key's commits. Layer 2 grew for it (D184): `call-site`
@@ -280,6 +280,15 @@ shape, **a function stored as a property of an object** (`readFunc: (v) => { thi
 `manga-reader.component.ts:803`, a `switchMap` in a stream after `skip(1)` that runs only when a reader setting changes.
 Doubtful, not counted: other card-config functions (`coverFunc`, `actionableFunc`, `downloadItemFunc`) that run when a card
 draws. Report: notes folder `step4-recheck.md`. Item 1 still fails. Not fixed: waits for the owner.
+
+**Fixed 2026-11-11 (owner: "Yes, fix both"; D202):** a function written as an object's property is stored, unless the
+object goes straight to a library call; a stream's callback runs now only when the stream starts with a request, any other
+is 🟡 "runs when the stream sends a value". A first build also stored a top-level script object's own functions
+(`var AjaxCart = { … }`, D191) and dropped nopCommerce to 92.3%; they're points of their own, so they're now left alone.
+Re-read by code: `card-config-factory.service.ts:233` and `:292` are no step, the series page has no `readVolume` or
+mark-unread step, `manga-reader.component.ts:803` is 🟡 with the stream reason (255 such steps on Kavita). The other
+card-config functions (`coverFunc`, …) are stored the same way. Item 1's code check: Sonarr 69, Kavita 0, nopCommerce 8
+flagged (unchanged, the checker's limits). Item 2 unchanged: 95.3%, 96.0%, 95.6%. Not re-checked by a fresh agent.
 
 ## Left open, on purpose
 
