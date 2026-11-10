@@ -307,9 +307,11 @@ by D176 item 5, the link says so), 17 to no screen (runtime values, or `login`, 
 ignored area (109 🟡 on nopCommerce, Admin and public controllers sharing names) and read router paths without a leading
 slash as relative; both fixed. Left of L1: the four key links at a call whose callee navigates (`handleLogin()`,
 `closeReader()`), and `Url.RouteUrl` handed back in a JSON answer for the page script (add-to-cart).
-
-## Left open, on purpose
-
-- How many links along a chain the FSD judge sees: layer 5 (D173).
-- W2, W3, V6–V10 from layer 2: fixed when a flow in the trial needs them (D169).
-- Wording smoother than the templates: layer 4 (P1), checked by code (D173).
+L2 built (D205, owner: "do em all"): a save to a queue-named table that a job reads before saving anything links `runs-later` to the
+job, on the call that made the save. Links nopCommerce 25 → 33/46 (all 8 queued-email sends). Made: nopCommerce 87 distinct link
+sites, all `QueuedEmail` inserts → QueuedMessagesSendTask (a sample of 14 read right: each call sends an email); Sonarr 2 sites
+(search jobs saving `PendingReleases` → RSS sync, which re-checks them); Kavita none. Tried first and dropped: any table a job reads
+(nopCommerce's jobs read Customer, Language, Currency…: 324 links, AutoCancelOrdersTask among the targets because it deletes a
+cancelled order's queued emails), read-and-written-back (Series, Order, Customer), the job's first read (missed RSS sync). Left:
+the Sonarr key's `RefreshSeriesCommand` link is in `SeriesAddedHandler`'s own flow (built there before D205); add-series links
+`message` to that handler, and the scorer doesn't take a handler's links into the flow that sends to it.

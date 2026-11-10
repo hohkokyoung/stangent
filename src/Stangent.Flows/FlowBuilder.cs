@@ -12,7 +12,7 @@ public sealed record FlowSet(string Commit, FlowSettings Settings, List<Flow> Fl
 /// into (<c>shared</c>, D189). Each is a tree walked forward from its start,
 /// step by step through the call sites the graph recorded (D184), each branch ending as D172 and D174 say.
 /// </summary>
-public static class FlowBuilder
+public static partial class FlowBuilder
 {
     public static FlowSet Build(CodeGraph graph, string root, FlowSettings? settings = null)
     {
@@ -51,6 +51,7 @@ public static class FlowBuilder
                     flow.Links[i] = link with { ToFlow = null, Sentence = $"Sends the user to {link.To}; opening it is no flow: {(notBuilt.TryGetValue(screen, out var why) ? why : "no screen-opens flow starts there")} ({link.At})" };
                 else if (link.ToFlow is not null) flow.Links[i] = link with { ToFlow = null };
             }
+        QueuedWork(flows);
         skipped.Sort((a, b) => string.CompareOrdinal($"{a.Kind}\u0000{a.At}\u0000{a.Point}", $"{b.Kind}\u0000{b.At}\u0000{b.Point}"));
         return new FlowSet(graph.Commit, settings, [.. flows.OrderBy(f => f.Id, StringComparer.Ordinal)], skipped);
     }
@@ -194,6 +195,104 @@ public static class FlowBuilder
             flows.Add(flow);
             foreach (var next in Continues([flow])) if (!done.Contains(next)) todo.Add(next);
         }
+    }
+
+    /// <summary>
+    /// D205: work saved for a job to pick up later. A table named as a queue (a word Queue, Queued, Pending or Outbox in its name)
+    /// that a system job reads, directly or in shared code it continues into, is that job's work list: a save to it elsewhere links
+    /// <c>runs-later</c> to the job (🟡). The link sits on the call that entered the method making the save, or continuing into
+    /// shared code that makes it, so it reads as "this call leaves work for the job"; a save in the flow's own start sits where it's written.
+    /// </summary>
+    internal static void QueuedWork(List<Flow> flows)
+    {
+        var byId = flows.ToDictionary(f => f.Id, StringComparer.Ordinal);
+        var reachedOf = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        // The shared flows a flow continues into, transitively (D189).
+        HashSet<string> Reached(Flow f)
+        {
+            if (reachedOf.TryGetValue(f.Id, out var done)) return done;
+            var set = new HashSet<string>(StringComparer.Ordinal);
+            var todo = new Stack<Flow>([f]);
+            while (todo.TryPop(out var x))
+                foreach (var l in x.Links.Where(l => l.Kind == "continues" && l.ToFlow is not null))
+                    if (set.Add(l.ToFlow!) && byId.TryGetValue(l.ToFlow!, out var sh)) todo.Push(sh);
+            return reachedOf[f.Id] = set;
+        }
+        // A save that removes work (a delete, remove or clear) leaves nothing for the job.
+        static bool Adds(Step st) => st.What.StartsWith("saves ", StringComparison.Ordinal) && !RemovesWork(st.At.Code) && !RemovesWork(st.What);
+        static IEnumerable<string> Saved(Flow f) => f.Steps.Where(st => st.Kind == "database" && st.End is not null && Adds(st)).SelectMany(st => TablesIn(st.End!.Detail));
+        HashSet<string> SavedQueues(Flow f) =>
+            [.. Saved(f).Concat(Reached(f).Where(byId.ContainsKey).SelectMany(id => Saved(byId[id]))).Where(IsQueueTable)];
+        // The job's work list: the queue tables it reads before it saves anything, in walk order with the shared code it continues
+        // into taken in place. Reads after a save are the job looking up what it changes, not the work it was left.
+        IEnumerable<Step> InOrder(Flow f, HashSet<string> seen)
+        {
+            if (!seen.Add(f.Id)) yield break;
+            var shared = f.Links.Where(l => l.Kind == "continues" && l.ToFlow is not null && l.Step is not null).ToLookup(l => l.Step!.Value);
+            foreach (var st in f.Steps.OrderBy(st => st.N))
+            {
+                yield return st;
+                foreach (var l in shared[st.N])
+                    if (byId.TryGetValue(l.ToFlow!, out var sh)) foreach (var inner in InOrder(sh, seen)) yield return inner;
+            }
+        }
+        HashSet<string> WorkList(Flow job)
+        {
+            var set = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var st in InOrder(job, new HashSet<string>(StringComparer.Ordinal)).Where(st => st.Kind == "database" && st.End is not null))
+            {
+                if (!st.What.StartsWith("reads ", StringComparison.Ordinal)) break;
+                set.UnionWith(TablesIn(st.End!.Detail).Where(IsQueueTable));
+            }
+            return set;
+        }
+        var jobs = flows.Where(f => f.Kind == "job").OrderBy(f => f.Id, StringComparer.Ordinal)
+            .Select(j => (Job: j, Reads: WorkList(j), Reached: Reached(j))).Where(j => j.Reads.Count > 0).ToList();
+        if (jobs.Count == 0) return;
+        foreach (var flow in flows)
+        {
+            var steps = flow.Steps.ToDictionary(st => st.N);
+            var anchors = new List<(Step At, string Table)>();
+            foreach (var st in flow.Steps.Where(st => st.Kind == "database" && st.End is not null && Adds(st)))
+                foreach (var t in TablesIn(st.End!.Detail).Where(IsQueueTable)) anchors.Add((st.From is { } p ? steps[p] : st, t));
+            foreach (var l in flow.Links.Where(l => l.Kind == "continues" && l.ToFlow is not null && l.Step is not null))
+                if (byId.TryGetValue(l.ToFlow!, out var sh))
+                    foreach (var t in SavedQueues(sh).Order(StringComparer.Ordinal))
+                        anchors.Add((steps[l.Step!.Value] is var st && st.From is { } p ? steps[p] : steps[l.Step!.Value], t));
+            var made = new HashSet<(int, string)>();
+            foreach (var (at, table) in anchors.OrderBy(a => a.At.N).ThenBy(a => a.Table, StringComparer.Ordinal))
+                foreach (var (job, _, reached) in jobs.Where(j => j.Reads.Contains(table)))
+                {
+                    // The job's own saves (marking the work done) aren't work left for it.
+                    if (job == flow || reached.Contains(flow.Id) || !made.Add((at.N, job.Id))) continue;
+                    var sentence = $"Saves {table}, which the job {job.Name} reads and works through later, in the background ({at.At})";
+                    flow.Links.Add(new Link("runs-later", job.Name, job.Id, at.At, sentence, at.N, true));
+                    flow.Guesses.Add(new Guess(at.N, sentence, "a table named as a queue that a system job reads"));
+                }
+        }
+    }
+
+    /// <summary>The tables a database step's end names: <c>Order, OrderNote (IOrderService.Search…, shared code …)</c>.</summary>
+    static IEnumerable<string> TablesIn(string detail) =>
+        (detail.IndexOf(" (", StringComparison.Ordinal) is var i and >= 0 ? detail[..i] : detail).Split(',').Select(t => t.Trim()).Where(t => t.Length > 0);
+
+    static bool RemovesWork(string code) => RemoveCall().IsMatch(code);
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\b(?:Delete|Remove|Clear|Purge|Truncate)\w*\s*[(<]", System.Text.RegularExpressions.RegexOptions.CultureInvariant)]
+    private static partial System.Text.RegularExpressions.Regex RemoveCall();
+
+    /// <summary>A table named as a queue: one of its words (split at capitals, <c>_</c>, <c>-</c>, <c>.</c>) is queue, queued, pending or outbox.</summary>
+    internal static bool IsQueueTable(string table)
+    {
+        var words = new List<string>();
+        var w = new StringBuilder();
+        foreach (var c in table)
+        {
+            if (!char.IsLetterOrDigit(c) || char.IsUpper(c) && w.Length > 0 && !char.IsUpper(w[^1])) { if (w.Length > 0) words.Add(w.ToString()); w.Clear(); }
+            if (char.IsLetterOrDigit(c)) w.Append(c);
+        }
+        if (w.Length > 0) words.Add(w.ToString());
+        return words.Any(x => x.ToLowerInvariant() is "queue" or "queues" or "queued" or "pending" or "outbox");
     }
 
     static IEnumerable<string> Continues(IEnumerable<Flow> flows) =>
