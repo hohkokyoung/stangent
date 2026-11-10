@@ -175,8 +175,10 @@ public static partial class FlowScore
             var match = exits.Where(e => Same(at, (string)k["code"]!, e)).ToList();
             // An exit ends its branch (D174): counted with the ends.
             Tally("ends", match.Count > 0, k, "exit");
+            // R10 (owner, 2026-11-10): an exit's condition counts when it's on the exit or on a step on the way to it (its
+            // scenario, D179): a check written around the call that leads to a throw is the throw's condition too.
             foreach (var c in Objects(k["conditions"]))
-                Tally("conditions", match.Any(e => Objects(e["conditions"]).Any(bc => (string?)bc["at"] == (string)c["at"]!)), c, $"on exit {at}");
+                Tally("conditions", match.Any(e => OnTheWay(e, steps).Any(bc => (string?)bc["at"] == (string)c["at"]!)), c, $"on exit {at}");
         }
         // Links by line and kind, each built link used once.
         var links = (b?.Links ?? []).Select(l => ((string?)l["at"], (string)l["kind"]!)).ToList();
@@ -191,6 +193,16 @@ public static partial class FlowScore
             Tally("checks", (b?.Checks ?? []).Any(c => Same((string)k["at"]!, (string)k["code"]!, c) || ((string?)c["at"])?.Split(':')[0] == ((string)k["at"]!).Split(':')[0] && Lines((string)k["at"]!, (string)k["code"]!).Contains((string)c["at"]!)), k);
         var found = counts.Where(c => c.Key is "steps" or "ends" or "conditions").Sum(c => c.Value.Item1);
         return new ItemResult(new JsonObject([.. counts.OrderBy(c => c.Key, StringComparer.Ordinal).Select(c => KeyValuePair.Create(c.Key, (JsonNode?)Count(c.Value.Item1, c.Value.Item2)))]), missed, found);
+    }
+
+    /// <summary>R10: an exit's own conditions, then those of each step from the one it's in up to the start.</summary>
+    static IEnumerable<JsonObject> OnTheWay(JsonObject exit, List<JsonObject> steps)
+    {
+        foreach (var c in Objects(exit["conditions"])) yield return c;
+        var byN = steps.GroupBy(s => (int)s["n"]!).ToDictionary(g => g.Key, g => g.First());
+        var seen = new HashSet<int>();
+        for (var n = (int?)exit["step"]; n is { } at && seen.Add(at) && byN.TryGetValue(at, out var st); n = (int?)st["from"])
+            foreach (var c in Objects(st["conditions"])) yield return c;
     }
 
     /// <summary>R8: a quoted line holding no letter or digit (`};`, `}`, `)`): punctuation, no code.</summary>
