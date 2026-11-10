@@ -63,7 +63,8 @@ the same lines are read in source-line order; each line gives, in this order:
    and not walked, unless its own body reads or saves a table, which ends `database` (D172's order) and still continues
    into the hub's shared flow (D196); otherwise each
    implementation it dispatches to (several → one 🟡 branch each) is a step, walked into.
-8. a ❓ the graph recorded there: ends `unknown`, with its reason.
+8. a ❓ the graph recorded there: ends `unknown`, with its reason; an outside HTTP call whose URL is built at runtime ends
+   `outside-call`, still a ❓ (D198).
 9. a navigation (`navigate` fact, D192): a step "goes to X" ending `screen`.
 10. a call into a package (D188): a step `calls X in the package Y`, ending `unknown`, "a package's code, not walked"; not a ❓.
 

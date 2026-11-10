@@ -179,7 +179,13 @@ export function conditionsAround(ctx: Context, node: ts.Node): Condition[] {
 function guards(statements: ts.NodeArray<ts.Statement>, child: ts.Statement, out: Condition[], at: (n: ts.Node) => number) {
   for (let j = statements.indexOf(child) - 1; j >= 0; j--) {
     const g = statements[j];
-    if (ts.isIfStatement(g) && !g.elseStatement && exits(g.thenStatement)) out.push({ kind: "unless", text: g.expression.getText(), line: at(g) });
+    if (!ts.isIfStatement(g)) continue;
+    // D198: each branch of an `if … else if …` chain that always leaves is a guard too; a chain ending in a plain `else` isn't.
+    const chain: ts.IfStatement[] = [];
+    for (let x: ts.Statement | undefined = g; x && ts.isIfStatement(x); x = x.elseStatement) chain.push(x);
+    if (chain[chain.length - 1].elseStatement) continue;
+    for (let k = chain.length - 1; k >= 0; k--)
+      if (exits(chain[k].thenStatement)) out.push({ kind: "unless", text: chain[k].expression.getText(), line: at(chain[k]) });
   }
 }
 

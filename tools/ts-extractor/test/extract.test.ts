@@ -624,3 +624,26 @@ test("httpResource's returned URLs and an image's src are GET requests (D193)", 
     "8 GET api/server/errors angular-httpResource ",
   ]);
 });
+
+test("each branch of an earlier if / else if chain that leaves is an unless condition; a chain ending in else isn't (D198)", () => {
+  const root = project({
+    "src/a.ts": [
+      "declare function scan(): void;",
+      "export function refresh(isNew: boolean, never: boolean, manual: boolean) {",
+      "  if (isNew) {",
+      "    scan();",
+      "  } else if (never) {",
+      "    return;",
+      "  } else if (manual) {",
+      "    return;",
+      "  }",
+      "  scan();",
+      "  if (isNew) { return; } else { return; }",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const at10 = lines.find((l) => l.t === "fact" && l.kind === "condition" && l.line === 10);
+  assert.ok(at10 && at10.t === "fact");
+  assert.deepEqual(JSON.parse(at10.data.conditions).map((c: { kind: string; text: string; line: number }) => `${c.kind} ${c.text}@${c.line}`), ["unless manual@7", "unless never@5"]);
+});

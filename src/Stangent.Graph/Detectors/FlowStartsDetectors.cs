@@ -347,12 +347,20 @@ public sealed class ConditionsDetector : IDetector
         return list;
     }
 
-    /// <summary>X1: an earlier guard among the same statements (`if (x) return …;`) means this runs only unless x; nearest first.</summary>
+    /// <summary>X1: an earlier guard among the same statements (`if (x) return …;`, or a branch of an `if … else if` chain that leaves, D198) means this runs only unless x; nearest first.</summary>
     static void Guards(SyntaxList<StatementSyntax> statements, StatementSyntax stmt, List<Condition> list, ExtractContext ctx)
     {
         for (var i = statements.IndexOf(stmt) - 1; i >= 0; i--)
-            if (statements[i] is IfStatementSyntax { Else: null } guard && Exits(guard.Statement))
-                list.Add(new("unless", guard.Condition.ToString(), ctx.Line(guard)));
+        {
+            if (statements[i] is not IfStatementSyntax first) continue;
+            // D198: each branch of an `if … else if …` chain that always leaves is a guard too; a chain ending in an `else`
+            // isn't (some branch always runs). Later branches are nearer.
+            var chain = new List<IfStatementSyntax>();
+            for (var x = first; x is not null; x = x.Else?.Statement as IfStatementSyntax) chain.Add(x);
+            if (chain[^1].Else is not null) continue;
+            for (var j = chain.Count - 1; j >= 0; j--)
+                if (Exits(chain[j].Statement)) list.Add(new("unless", chain[j].Condition.ToString(), ctx.Line(chain[j])));
+        }
     }
 
     /// <summary>A statement that always leaves: <c>return</c>, <c>throw</c>, <c>break</c>, <c>continue</c>, or a block ending in one.</summary>

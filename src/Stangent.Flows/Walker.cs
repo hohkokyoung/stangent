@@ -197,12 +197,23 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 Call(point, site, target, at, CondsFor(target), parent, depth, branch);
             }
             foreach (var blind in g.BlindByOwner[point].Where(b => b.Line == line && !(opened && b.Reason.EndsWith("URL built at runtime", StringComparison.Ordinal))).OrderBy(b => b.Reason, StringComparer.Ordinal))
+            {
+                var bat = new At(blind.File, blind.Line, g.Code(blind.File, blind.Line));
+                // D198: an outside HTTP call whose URL is built at runtime is still an outside call: it ends `outside-call`, ❓ where.
+                if (blind.Reason.StartsWith("outside HTTP ", StringComparison.Ordinal))
+                {
+                    var outside = Add(parent, new Step { What = $"calls outside the app: {blind.Reason}", At = bat, Kind = "outside-call", Conditions = CondsFor(null), Depth = depth,
+                        End = new End("outside-call", blind.Reason) });
+                    outside.Unknowns.Add(new Unknown(null, point, bat, blind.Reason));
+                    continue;
+                }
                 Add(parent, new Step
                 {
-                    What = $"can't be followed: {blind.Reason}", At = new At(blind.File, blind.Line, g.Code(blind.File, blind.Line)),
+                    What = $"can't be followed: {blind.Reason}", At = bat,
                     // An HTTP call the graph couldn't match is still a server call (D171's test), ❓ where it goes.
                     Kind = blind.Reason.StartsWith("HTTP ", StringComparison.Ordinal) ? "http" : "unknown", End = new End("unknown", blind.Reason), Depth = depth,
                 });
+            }
         }
     }
 
