@@ -93,6 +93,7 @@ matched to its job by type), the actor. `unknowns` lists every ❓ with why. `fl
 
 ## Known gaps
 
+- ASP.NET Identity's managers' async calls are steps ending `database` "the Identity user store", 🟡 (D200).
 - A package call is a step, not walked (D188), and never an `outside-call` (only HTTP clients are, G4); TypeScript's package calls
   aren't recorded.
 - Navigation (D192): a returned redirect or a navigation the function returns after is an exit; any other is a step ending

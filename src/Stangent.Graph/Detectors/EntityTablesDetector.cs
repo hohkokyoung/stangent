@@ -250,7 +250,9 @@ public sealed class EntityTablesDetector : IDetector
         switch (model.GetSymbolInfo(expr).Symbol)
         {
             case IPropertySymbol prop when IsQueryable(prop.Type) && (prop.ContainingType.Name.Contains("Repository", StringComparison.Ordinal)
-                    || prop.ContainingType.AllInterfaces.Any(i => i.Name.Contains("Repository", StringComparison.Ordinal))):
+                    || prop.ContainingType.AllInterfaces.Any(i => i.Name.Contains("Repository", StringComparison.Ordinal))
+                    // D200: ASP.NET Identity's `userManager.Users`, `roleManager.Roles`: its store's table of users or roles.
+                    || prop.ContainingType is { Name: "UserManager" or "RoleManager" } && prop.ContainingType.ContainingNamespace?.ToDisplayString() == "Microsoft.AspNetCore.Identity"):
                 return (prop.Type as INamedTypeSymbol)?.TypeArguments.OfType<INamedTypeSymbol>().FirstOrDefault();
             case ILocalSymbol local:
                 foreach (var r in local.DeclaringSyntaxReferences)

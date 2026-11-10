@@ -188,7 +188,12 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 if (site["kind"] == "package")
                 {
                     // D188: a package's code is a step, not walked (it isn't on the map).
-                    if (consumed.Count == 0 && !later.Contains(target))
+                    if (consumed.Count == 0 && !later.Contains(target) && IdentityStore(site) is { } store)
+                        // D200: ASP.NET Identity's managers read and save the user store; which tables, the package's own code picks.
+                        Add(parent, new Step { What = $"reads or saves the Identity user store through {site["method"]}", At = at, Kind = "database", Conditions = CondsFor(""), Depth = depth,
+                            End = new End("database", store), Guessed = true,
+                            GuessReason = "an ASP.NET Identity manager's async call reads or saves its store (the user, role, claim and token tables); which ones, the package's code picks" });
+                    else if (consumed.Count == 0 && !later.Contains(target))
                         Add(parent, new Step { What = $"calls {site["method"]} in the package {site["package"]}", At = at, Kind = "package", Conditions = CondsFor(""), Depth = depth,
                             // D199: an MVC action returning a view or a redirect leads to that screen.
                             End = MvcResult(site, at) is { } screen ? new End("screen", screen) : new End("unknown", $"a package's code ({site["package"]}), not walked") });
@@ -257,6 +262,17 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         var hash = point.IndexOf('#');
         if (hash < 0) yield break;
         for (var dot = point.LastIndexOf('.'); dot > hash; dot = point.LastIndexOf('.', dot - 1)) yield return point[..dot];
+    }
+
+    /// <summary>D200: an async call on ASP.NET Identity's <c>UserManager</c>, <c>SignInManager</c> or <c>RoleManager</c>: its store, named.</summary>
+    static string? IdentityStore(Fact site)
+    {
+        var method = site["method"];
+        var dot = method.LastIndexOf('.');
+        if (dot < 0 || site["package"] is not ("Microsoft.Extensions.Identity.Core" or "Microsoft.AspNetCore.Identity" or "Microsoft.Extensions.Identity.Stores")) return null;
+        var (type, name) = (method[..dot], method[(dot + 1)..]);
+        return type is "UserManager" or "SignInManager" or "RoleManager" && name.EndsWith("Async", StringComparison.Ordinal)
+            ? $"the Identity user store ({method})" : null;
     }
 
     static readonly HashSet<string> MvcResults = ["View", "PartialView", "ViewComponent", "Redirect", "RedirectPermanent", "RedirectToAction", "RedirectToActionPermanent",

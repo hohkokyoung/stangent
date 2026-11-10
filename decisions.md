@@ -236,3 +236,4 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D197 · Ruling R11: a key `hub` end counts on a step that runs that hub and ends `database` (D172 names its table first); the key isn't edited
 - D198 · An outside HTTP call with a runtime URL ends `outside-call` (still ❓ where); each leaving branch of an `if … else if` chain is an `unless` guard
 - D199 · A query's run reads its source's table (repository `IQueryable<T>`, `DbSet<T>`); `SmtpClient` calls are outside calls; returned MVC `View`/`Redirect…` end `screen`; a method calling itself is a call site
+- D200 · ASP.NET Identity's `UserManager`/`SignInManager`/`RoleManager` async calls end `database` (🟡, the Identity user store); `userManager.Users` queries read its table
