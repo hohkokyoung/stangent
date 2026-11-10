@@ -270,7 +270,16 @@ open (1,416 → 744 steps, no `DELETE`), `canvasImage.src = ''` is no step, the 
 steps, nopCommerce 2,188 → 7), script globals have their own reason, HTTP steps name their endpoint, `location.href` has its
 `if`, no read twice on a line, the scan job's guards inside `lock` hold. The code check of item 1 now flags Sonarr 69 of
 87,666, Kavita 0 of 25,771, nopCommerce 8 of 90,728 (the samples read are the checker's limits). Item 2: Sonarr 95.3%,
-Kavita 96.0%, nopCommerce 95.6%. A second fresh check wasn't run.
+Kavita 96.0%, nopCommerce 95.6%.
+
+**Short re-check by a fresh agent (2026-11-10, ~109K tokens against a 40–60K estimate):** 8 of the 9 fixed spots hold.
+The ninth holds only in part: the menu callbacks handed to `applyCallbackToList` are gone, but the same cause has a second
+shape, **a function stored as a property of an object** (`readFunc: (v) => { this.readerService.readVolume(…) }` in
+`card-config-factory.service.ts:292`, and `:233`), walked as if it ran when the screen opens (its subtree sends
+`mark-volume-unread` and deletes progress). Of 24 ✅ re-checked on Kavita, 3 are wrong: those two, and
+`manga-reader.component.ts:803`, a `switchMap` in a stream after `skip(1)` that runs only when a reader setting changes.
+Doubtful, not counted: other card-config functions (`coverFunc`, `actionableFunc`, `downloadItemFunc`) that run when a card
+draws. Report: notes folder `step4-recheck.md`. Item 1 still fails. Not fixed: waits for the owner.
 
 ## Left open, on purpose
 
