@@ -237,6 +237,30 @@ filter and helper exits (ruled exits, R4, R5); navigation, which the graph doesn
 30 steps, now followed by D190: save-indexer's steps 30 of 30); inside shared code, a key `hub` where the hub reads a table (Stangent ends `database`, D172) and nopCommerce's LINQ
 reads over a repository's `Table`, which layer 2 doesn't record (R7's recount). Per-flow numbers: `--score-flows` output (`flows[].items`, `flows[].missed`).
 
+## Step 4: the narrow fresh check — run 2026-11-10 (one fresh agent, ~194K tokens against a 100–150K estimate)
+
+**Bottom line: item 1 fails.** ~145 ✅ steps checked against the code (Sonarr 47, Kavita 46, nopCommerce 52): 0 wrong on
+Sonarr and nopCommerce, 3 wrong on Kavita, each from a general cause (confirmed by reading the code):
+
+1. **A function passed as an argument is walked as if called there.** `action-factory.service.ts:75`
+   `(action, entity) => this.actionService.handleSeriesAction(action, entity),` is a menu callback; the series-detail screen
+   flow shows ✅ `DELETE /api/series/{*}` and other menu actions as happening on open (321 of its 1,416 steps). Same shape:
+   login's `connection.on(event, (resp) => …)`.
+2. **Any `src =` that isn't a URL is read as a GET** (D193): `this.canvasImage.src = '';` (manga reader step 92) is ✅
+   "HTTP GET to a URL built at runtime".
+3. **A parent route's resolver on a lazy child route gets the child file with the parent's line:** step 48 at
+   `manga-reader.router.module.ts:91` (a 22-line file); the resolver is at `app-routing.module.ts:91`.
+
+The tool's own flags read: Sonarr `goToPage(1)` and nopCommerce `ForeignKey` (statement's first line) are the checker's
+limits; Kavita step 48 is real (3 above). All 12 rules added in step 3 (D189–D200) hold, with: rule 5 too wide (cause 2);
+D198 misses a plain `HttpClient.GetAsync` with a runtime URL (ends `unknown`); self-call loops also come from `base.` calls.
+Other general findings (no wrong ✅): guards inside a `lock` block don't reach code after it; `base.X()` dispatched to every
+override (false loops, Mono code calling Windows code); a generic controller's type not narrowing dispatch (save-indexer
+fans out to 32 `Test` implementations, 🟡); `shared-eventaggregator-publishevent` walks all 156 handlers (3,724 steps,
+against "the bus is never walked"); an overload 🟡 reason used for two same-named JS globals; HTTP step text with no path
+("calls *"); `location.href = …` missing its `if`; Kavita repository reads listed twice on one line. Full report: the
+session's notes folder, `step4-fresh-check.md`. Not fixed yet: waits for the owner.
+
 ## Left open, on purpose
 
 - How many links along a chain the FSD judge sees: layer 5 (D173).
