@@ -254,6 +254,7 @@ public static partial class FlowScore
         var steps = b.Steps.Select(Copy).ToList();
         var exits = b.Exits.Select(Copy).ToList();
         var links = b.Links.Select(Copy).ToList();
+        var checks = b.Checks.Select(Copy).ToList();
         var byN = steps.ToDictionary(s => (int)s["n"]!);
         var next = steps.Count == 0 ? 0 : byN.Keys.Max();
         var merged = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -283,6 +284,8 @@ public static partial class FlowScore
                 next = Math.Max(next, (int)st["n"]!);
             }
             foreach (var e in shared.Exits.Select(Copy)) { e["step"] = Moved(e["step"]); exits.Add(e); }
+            // D203: a guard that rejects the input in shared code the flow runs is one of the flow's checks.
+            checks.AddRange(shared.Checks.Select(Copy));
             foreach (var l in shared.Links.Select(Copy))
             {
                 l["step"] = Moved(l["step"]);
@@ -290,7 +293,7 @@ public static partial class FlowScore
                 if (Continues(l)) todo.Enqueue(l);
             }
         }
-        return b with { Steps = steps, Exits = exits, Links = links };
+        return b with { Steps = steps, Exits = exits, Links = links, Checks = checks };
 
         static bool Continues(JsonObject l) => (string?)l["kind"] == "continues" && l["flow"] is not null && l["step"] is not null;
     }

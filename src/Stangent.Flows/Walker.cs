@@ -623,7 +623,8 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         return new Actor("unknown", "the flow calls no endpoint and its screen has no guard", null, true);
     }
 
-    /// <summary>The validation rules on the request body of every endpoint the flow calls (D174, D179).</summary>
+    /// <summary>The validation rules on the request body of every endpoint the flow calls (D174, D179), then every `if` in the code it
+    /// walks that rejects the input (D203), by file and line.</summary>
     void Checks()
     {
         var bodies = flow.Steps.Where(st => st.Kind == "call" && st.Point is { } p && g.Facts(p, "endpoint-types").Any())
@@ -637,5 +638,8 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                     new At(rule.File ?? "", rule.Line, g.Code(rule.File, rule.Line)), rule["message"],
                     rule["modifiers"].Split('|').Contains("AsWarning", StringComparer.Ordinal) || rule["severity"] == "Warning"));
         }
+        foreach (var f in walked.Keys.SelectMany(p => g.Facts(p, "rejects")).Where(f => f.File is not null)
+                     .OrderBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line).ThenBy(f => f.Owner, StringComparer.Ordinal))
+            flow.Checks.Add(new Check($"rejects when `{f["condition"]}`", "guard", f.Owner, new At(f.File!, f.Line, g.Code(f.File, f.Line)), f["message"], false));
     }
 }

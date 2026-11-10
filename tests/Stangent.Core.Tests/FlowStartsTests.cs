@@ -84,6 +84,66 @@ public class FlowStartsTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void An_if_that_only_reports_a_problem_and_leaves_rejects_the_input_with_its_message()
+    {
+        const string code = """
+            using System;
+            using System.Collections.Generic;
+            class Result { public void AddError(string e) { } }
+            class Svc
+            {
+                void Save() { }
+                object Json(object o) => o;
+                Result Register(string email, string name, int qty, List<string> warnings)
+                {
+                    var result = new Result();
+                    if (string.IsNullOrEmpty(email)) { result.AddError("Email is not provided"); return result; }
+                    if (qty <= 0) { warnings.Add("Quantity should be positive"); warnings.Add("again"); return result; }
+                    if (name == "x") throw new InvalidOperationException("Name taken");
+                    if (name == null) throw new ArgumentNullException(nameof(name));
+                    if (qty > 9) return result;
+                    if (qty > 8) { Save(); return result; }
+                    if (qty > 7) { result.AddError(email); return result; }
+                    if (qty > 6) { var min = qty * 2; throw new Exception(string.Format("At least {0}", min)); }
+                    Save();
+                    return result;
+                }
+                object Add(int id)
+                {
+                    if (id < 0) return Json(new { success = false, message = "No such product" });
+                    if (id == 0) return Json(new { redirect = "/" });
+                    if (id > 5) { warnings(); }
+                    return Json(new { success = true });
+                    void warnings() { }
+                }
+                void ValidateId(int id)
+                {
+                    if (id <= 0) { throw new Exception(id + " is not a valid ID"); }
+                }
+            }
+            """;
+        var tree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(code, path: "/r/P/Svc.cs", cancellationToken: TestContext.Current.CancellationToken);
+        var refs = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator).Select(p => Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(p));
+        var compilation = Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create("P", [tree], refs);
+        var fragment = new ProjectFragment { ProjectId = "P", Fingerprint = "" };
+        var ctx = new Stangent.Graph.Extraction.ExtractContext("/r", "P", "/r/P", compilation, [new(tree, compilation.GetSemanticModel(tree), "P/Svc.cs")], fragment, new Dictionary<string, List<string>>());
+        new Stangent.Graph.Detectors.ConditionsDetector().Extract(ctx);
+        var rejects = fragment.Facts.Where(f => f.Kind == "rejects").Select(f => $"{f.Line} {f["condition"]} → \"{f["message"]}\"").ToList();
+        Assert.Equal(
+        [
+            "11 string.IsNullOrEmpty(email) → \"Email is not provided\"",
+            "12 qty <= 0 → \"Quantity should be positive\"",
+            "13 name == \"x\" → \"Name taken\"",
+            // 14: the caller's bug, not the input; 15: only leaves; 16: does other work first
+            "17 qty > 7 → \"\"",                       // reports what it was given: no message of its own
+            "18 qty > 6 → \"At least {0}\"",            // the message made in a local first
+            "24 id < 0 → \"No such product\"",          // an answer saying it failed
+            // 25: a redirect; 26: doesn't leave
+            "32 id <= 0 → \" is not a valid ID\"",      // nothing after it: still a check
+        ], rejects);
+    }
+
+    [Fact]
     public void An_MVC_action_serving_GET_that_returns_a_view_runs_as_its_page_opens()
     {
         var loads = Facts("on-load", "on-load").Where(f => f["framework"] == "mvc").Select(f => $"{f.Owner[(f.Owner.IndexOf("AccountController.", StringComparison.Ordinal) + 18)..]} {f["view"]} {f["verbs"]}").ToList();

@@ -224,7 +224,8 @@ facts (each call's line), a hook's own functions as points, `filterType` on acce
 | — conditions | 83 / 85 | 149 / 153 | 349 / 355 |
 | (key ends left out: they only say the key didn't follow a call, R1) | 9 | 4 | 38 |
 | (links, not in item 2) | 35 / 45 | 4 / 12 | 17 / 46 |
-| (checks, not in item 2) | 11 / 25 | 0 / 2 | 26 / 60 |
+| (checks, not in item 2) | 12 / 25 | 0 / 2 | 45 / 60 |
+| — before D203 (guards that reject the input) | 11 / 25 | 0 / 2 | 26 / 60 |
 | 3. Every 🟡 and ❓ with a reason | pass (16,228 🟡, 1,051 ❓) | pass (1,441, 150) | pass (9,910, 312) |
 | 4. Byte for byte (two builds, and disk) | pass | pass | pass |
 | 5. No silent skips (starts → flows or stated reasons) | pass (2,678 starts) | pass (1,305) | pass (1,244) |
@@ -289,6 +290,15 @@ Re-read by code: `card-config-factory.service.ts:233` and `:292` are no step, th
 mark-unread step, `manga-reader.component.ts:803` is 🟡 with the stream reason (255 such steps on Kavita). The other
 card-config functions (`coverFunc`, …) are stored the same way. Item 1's code check: Sonarr 69, Kavita 0, nopCommerce 8
 flagged (unchanged, the checker's limits). Item 2 unchanged: 95.3%, 96.0%, 95.6%. Not re-checked by a fresh agent.
+
+**Links and checks (not on the bar), 2026-11-11.** The 97 missed were sorted by cause: checks C1 an `if` that rejects the input
+shown only as a condition (~26), C2 request filter attributes (`[ValidateCaptcha]`, 5), C3 FluentValidation rules not tied to
+the flow (rules in a controller's constructor, a provider's settings validator; 13, Sonarr), C4 Angular signal-form rules (2),
+other (4); links L1 a redirect's screen not linked to its opening flow (~16), L2 queued work a job picks up later (~9), L3 a
+generic repository's entity events (11, needs layer 2's type narrowing), L4 handlers registered by an attribute (`[CheckOn]`, 8),
+other (3). C1 built (D203, owner: "Yes, list them"): checks Sonarr 12/25, nopCommerce 45/60; 874 distinct guard checks on the
+three; the scorer now takes checks from the shared flows a flow continues into, as it does steps. Left of C1 on purpose:
+redirect-only guards, `return Challenge()`, and `if`s that add an error and carry on.
 
 ## Left open, on purpose
 

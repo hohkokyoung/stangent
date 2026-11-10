@@ -176,6 +176,8 @@ public sealed class ConditionsDetector : IDetector
                 if (node is InvocationExpressionSyntax or BaseObjectCreationExpressionSyntax) Call(ctx, file, (ExpressionSyntax)node);
                 if (node is ThrowStatementSyntax or ThrowExpressionSyntax) Throw(ctx, file, node);
                 if (node is AssignmentExpressionSyntax set) FilterResult(ctx, file, set);
+                if (node is IfStatementSyntax check && Rejects(check.Statement, file.Model) is { } message && ctx.OwnerId(check, file.Model) is { } owner)
+                    ctx.AddFact(Name, "rejects", owner, check, ("condition", check.Condition.ToString()), ("message", message));
             }
     }
 
@@ -391,6 +393,50 @@ public sealed class ConditionsDetector : IDetector
                 if (Exits(chain[j].Statement)) list.Add(new("unless", chain[j].Condition.ToString(), ctx.Line(chain[j])));
         }
     }
+
+    /// <summary>
+    /// D203: an <c>if</c> whose branch only reports a problem and leaves rejects the input. Its last statement is <c>throw new X(…)</c>
+    /// (not an <c>Argument…Exception</c>, which guards against the caller's bug), or a <c>return</c> of an error result (D176's
+    /// <c>BadRequest</c>, <c>NotFound</c>, a 4xx status, or an object setting <c>success = false</c>), or a <c>return</c> after
+    /// <c>….Add…(…)</c> calls (<c>result.AddError(…); return result;</c>, <c>ModelState.AddModelError(…); return View(model);</c>).
+    /// Before it, only such <c>Add…</c> calls and local declarations (the message being made). The message is the branch's first
+    /// string literal, or "". Anything else: null.
+    /// </summary>
+    static string? Rejects(StatementSyntax branch, SemanticModel model)
+    {
+        var statements = branch is BlockSyntax b ? [.. b.Statements] : new List<StatementSyntax> { branch };
+        if (statements.Count == 0) return null;
+        static bool Adds(StatementSyntax x) => x is ExpressionStatementSyntax { Expression: var e }
+            && (e is AwaitExpressionSyntax a ? a.Expression : e) is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax m }
+            && m.Name.Identifier.Text.StartsWith("Add", StringComparison.Ordinal);
+        var before = statements.SkipLast(1).ToList();
+        if (!before.All(x => Adds(x) || x is LocalDeclarationStatementSyntax)) return null;
+        var rejects = statements[^1] switch
+        {
+            ThrowStatementSyntax { Expression: ObjectCreationExpressionSyntax o } => !Short(o.Type).StartsWith("Argument", StringComparison.Ordinal),
+            ReturnStatementSyntax r => before.Any(Adds) || r.Expression is { } e && ErrorResult(e, model),
+            _ => false,
+        };
+        if (!rejects) return null;
+        var literal = branch.DescendantNodes().OfType<LiteralExpressionSyntax>().FirstOrDefault(l => l.IsKind(SyntaxKind.StringLiteralExpression));
+        return literal?.Token.ValueText ?? "";
+    }
+
+    /// <summary>D203: a returned value that says the request failed: D176's <c>BadRequest</c>/<c>NotFound</c>/4xx, or an object setting <c>success = false</c>.</summary>
+    static bool ErrorResult(ExpressionSyntax e, SemanticModel model)
+    {
+        while (e is AwaitExpressionSyntax or ParenthesizedExpressionSyntax or CastExpressionSyntax)
+            e = e switch { AwaitExpressionSyntax a => a.Expression, ParenthesizedExpressionSyntax p => p.Expression, CastExpressionSyntax c => c.Expression, _ => e };
+        if (e is InvocationExpressionSyntax or BaseObjectCreationExpressionSyntax && model.GetSymbolInfo(e).Symbol is IMethodSymbol m
+            && Exit(m, e, model) is var (kind, status) && (kind is "BadRequest" or "NotFound" || kind == "StatusCode" && status.StartsWith('4')))
+            return true;
+        return e.DescendantNodesAndSelf().OfType<AssignmentExpressionSyntax>().Any(a => a.Parent is InitializerExpressionSyntax or AnonymousObjectMemberDeclaratorSyntax
+                   && a.Left is IdentifierNameSyntax { Identifier.Text: var n } && n.Equals("success", StringComparison.OrdinalIgnoreCase) && a.Right.IsKind(SyntaxKind.FalseLiteralExpression))
+            || e.DescendantNodesAndSelf().OfType<AnonymousObjectMemberDeclaratorSyntax>().Any(a => a.NameEquals?.Name.Identifier.Text.Equals("success", StringComparison.OrdinalIgnoreCase) == true
+                   && a.Expression.IsKind(SyntaxKind.FalseLiteralExpression));
+    }
+
+    static string Short(TypeSyntax t) => t switch { QualifiedNameSyntax q => q.Right.Identifier.Text, SimpleNameSyntax n => n.Identifier.Text, _ => t.ToString() };
 
     /// <summary>A statement that always leaves: <c>return</c>, <c>throw</c>, <c>break</c>, <c>continue</c>, or a block ending in one.</summary>
     static bool Exits(StatementSyntax s) => s switch
