@@ -122,6 +122,9 @@ Each is brought to the owner one at a time, with a recommendation; none is appli
 - **R10, ruled 2026-11-10 (owner: "Yes, count it", on the recommendation; D195): an exit's condition counts when it's on a
   step on the way to the exit.** Sonarr's `OnActionExecuting` wraps `ValidateResource(…)` (whose `throw` is the exit) in an
   `if` and a loop; Stangent records them on that call's step. Sonarr 85.8% → 89.5%, nopCommerce 91.4% → 92.2%.
+- **R11, ruled 2026-11-10 (owner: "Yes, count it", on the recommendation; D197): a key `hub` end counts on a step that runs
+  that hub and ends `database`.** The same shared code; Stangent names the table it reads first (D172). 11 items: Sonarr
+  92.4% → 93.8%, Kavita 93.0% → 93.6%, nopCommerce 92.5% → 93.0%.
 - **R7, withdrawn 2026-11-09: a Stangent bug, fixed by D189.** The key walks into code the graph counts as a hub and lists steps
   inside it; Stangent stopped there with a `continues` link to a shared walk D173 promised but never built. Now each hub and
   depth stop a flow continues into is a `shared` flow, and the scorer follows the links into them (D189); a field or property
@@ -190,7 +193,7 @@ Each is brought to the owner one at a time, with a recommendation; none is appli
   ends, not exits); terms-of-service is a page-script check; repository-level entity-event consumers aren't listed;
   model-factory sub-builders, `PrepareAndValidate*`, OAuth helpers and payment plugins end `unknown`.
 
-## Step 3: the flow code — built 2026-11-09, scored; the bar is not passed (rescored after D185's amendment, D189–D193, D196 and rulings R8–R10)
+## Step 3: the flow code — built 2026-11-09, scored; the bar is not passed (rescored after D185's amendment, D189–D193, D196 and rulings R8–R11)
 
 `stangent flows build|show|check` (contract `flows` v1, `docs/flows.md`, D184), a flows scorer in `Stangent.Benchmark`
 (`--score-flows <clone> <key-dir>`), built on the three clones at the key's commits. Layer 2 grew for it (D184): `call-site`
@@ -200,7 +203,8 @@ facts (each call's line), a hook's own functions as points, `filterType` on acce
 |---|---|---|---|
 | Flows built (click / screen / job / handler / shared) | 1,660 (116 / 31 / 38 / 182 / 1,293) | 558 (233 / 27 / 23 / 0 / 275) | 1,394 (325 / 399 / 17 / 203 / 450) |
 | 1. No wrong ✅ (code check: a ✅ call's line names what it calls) | 71 flagged of 89,602 | 5 of 30,519 | 11 of 94,065 |
-| 2. Key steps, ends and conditions found (≥95%), after R1 (tightened), R4–R6, R8–R10, D189–D193, D196 | **254 / 275 = 92.4%** | **468 / 503 = 93.0%** | **674 / 729 = 92.5%** |
+| 2. Key steps, ends and conditions found (≥95%), after R1 (tightened), R4–R6, R8–R11, D189–D193, D196 | **258 / 275 = 93.8%** | **471 / 503 = 93.6%** | **678 / 729 = 93.0%** |
+| — before R11 | 254 / 275 = 92.4% | 468 / 503 = 93.0% | 674 / 729 = 92.5% |
 | — before D196 (table-reading hubs continue into shared flows) | 246 / 275 = 89.5% | 468 / 503 = 93.0% | 672 / 729 = 92.2% |
 | — before R10 | 236 / 275 = 85.8% | 468 / 503 = 93.0% | 666 / 729 = 91.4% |
 | — before R8, R9 | 236 / 275 = 85.8% | 466 / 507 = 91.9% | 666 / 729 = 91.4% |
@@ -212,7 +216,7 @@ facts (each call's line), a hook's own functions as points, `filterType` on acce
 | — before R1 was tightened | 187 / 284 = 66% | 427 / 511 = 84% | 674 / 767 = 88% |
 | — before any ruling | 175 / 284 = 62% | 354 / 511 = 69% | 590 / 767 = 77% |
 | — steps | 126 / 126 | 222 / 228 | 203 / 210 |
-| — ends (incl. exits) | 47 / 64 | 100 / 122 | 126 / 164 |
+| — ends (incl. exits) | 51 / 64 | 103 / 122 | 130 / 164 |
 | — conditions | 81 / 85 | 146 / 153 | 345 / 355 |
 | (key ends left out: they only say the key didn't follow a call, R1) | 9 | 4 | 38 |
 | (links, not in item 2) | 36 / 45 | 4 / 12 | 17 / 46 |
@@ -221,8 +225,8 @@ facts (each call's line), a hook's own functions as points, `filterType` on acce
 | 4. Byte for byte (two builds, and disk) | pass | pass | pass |
 | 5. No silent skips (starts → flows or stated reasons) | pass (2,678 starts) | pass (1,305) | pass (1,244) |
 
-**Bottom line: items 3–5 pass on all three; item 2 fails (92.4%, 93.0%, 92.5% against 95%, after R1 tightened, R4–R6,
-R8–R10, D189–D193 and D196); item 1 isn't settled** (more ✅ steps to check now that shared flows are written: Sonarr's flags rose 51 → 71) — the samples read
+**Bottom line: items 3–5 pass on all three; item 2 fails (93.8%, 93.6%, 93.0% against 95%, after R1 tightened, R4–R6,
+R8–R11, D189–D193 and D196); item 1 isn't settled** (more ✅ steps to check now that shared flows are written: Sonarr's flags rose 51 → 71) — the samples read
 are the checker's limits (a hook's function returned under another name, `goToPage: handleGoToPage`; a chain over 10 lines) plus
 one extractor quirk (Kavita's route resolvers' `on-load` lines point at a blank line). Steps are mostly found (72%, 91%, 89%);
 ends are what fail. Where the misses sit: the key stopping a branch one call earlier than the code does (R1, ruled: counted);

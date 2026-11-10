@@ -157,7 +157,10 @@ public static partial class FlowScore
                     Tally("endsLeftOut", true, k);
                     goto Conditions;
                 }
+                // R11 (owner, 2026-11-10): a key `hub` end counts on a step that runs that hub and ends `database` (D172 names the
+                // table a hub's own code reads first); a plain table read on the line (no point) doesn't.
                 var endFound = direct
+                    || (endKind == "hub" && match.Any(s => (string?)s["end"]?["kind"] == "database" && s["point"] is not null))
                     || (endKind == "database" && match.Any(s => Below(steps, (int)s["n"]!).Any(d => (string?)d["end"]?["kind"] == "database" && SameTable(detail, (string?)d["end"]!["detail"] ?? ""))))
                     || (endKind is "outside-call" or "message" or "screen" && match.Any(s => Below(steps, (int)s["n"]!).Any(d => (string?)d["end"]?["kind"] == endKind)));
                 Tally("ends", endFound, k, match.Count == 0 ? $"end {endKind}: no step there" : $"end {endKind}: built {string.Join(",", match.Select(s => (string?)s["end"]?["kind"] ?? "none").Distinct())}");

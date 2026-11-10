@@ -233,3 +233,4 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D194 · Rulings R8 (a key item quoting no code, like `};`, leaves the count) and R9 (R1 credits `screen` ends too); the key isn't edited
 - D195 · Ruling R10: a key exit's condition counts when it's on the exit or on a step on the way to it; the key isn't edited
 - D196 · A hub whose own code reads or saves a table keeps its `database` end and continues into its shared flow too
+- D197 · Ruling R11: a key `hub` end counts on a step that runs that hub and ends `database` (D172 names its table first); the key isn't edited
