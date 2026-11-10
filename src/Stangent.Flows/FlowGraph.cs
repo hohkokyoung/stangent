@@ -68,6 +68,117 @@ internal sealed partial class FlowGraph
     public IEnumerable<Edge> In(string id, string kind) => inEdges[(id, kind)];
     public IEnumerable<Fact> Facts(string owner, string kind) => factsByOwner[(owner, kind)];
     public IEnumerable<Fact> AllFacts(string kind) => Graph.AllFacts.Where(f => f.Kind == kind);
+
+    // ---- screens a redirect or navigation opens (D204) ----------------------------------------------------------------------
+
+    List<(string Id, string[] Segments)>? pages;
+    ILookup<string, Fact>? routesByName;
+    ILookup<(string, string), Fact>? actionsByName;
+
+    /// <summary>A screen's name in a link: a page's route, or a controller action's own name.</summary>
+    public string ScreenName(string id) => id.StartsWith("page:", StringComparison.Ordinal) ? id[(id.IndexOf('|') + 1)..] : Name(id);
+
+    /// <summary>
+    /// The frontend pages a navigation's target fits, read from its code: a quoted path (<c>'/home'</c>, a template's <c>${…}</c>
+    /// fitting any one segment), or an array of segments (<c>['/library', id, 'series', seriesId]</c>, a value fitting any one).
+    /// A page's <c>:param</c> fits any segment. A target made at runtime (a variable), or a relative one: none. Only
+    /// the pages of the frontend whose folder holds <paramref name="file"/>.
+    /// </summary>
+    public IReadOnlyList<string> PagesAt(string code, string file, bool fromRoot = false)
+    {
+        pages ??= [.. Nodes.Keys.Where(k => k.StartsWith("page:", StringComparison.Ordinal)).Order(StringComparer.Ordinal)
+            .Select(k => (k, k[(k.IndexOf('|') + 1)..].Split('/', StringSplitOptions.RemoveEmptyEntries)))];
+        var segments = PathSegments(code.Trim(), fromRoot);
+        if (segments is null) return [];
+        // Only the pages of the navigating code's own frontend: the one whose project folder holds its file.
+        var own = pages.Where(p => Frontend(p.Id) is var dir && (dir == "" || file.StartsWith(dir + "/", StringComparison.Ordinal))).ToList();
+        return [.. own.Where(p => p.Segments.Length == segments.Count
+            && p.Segments.Zip(segments).All(x => x.First.StartsWith(':') || x.Second is null || x.First == x.Second)).Select(p => p.Id)];
+    }
+
+    static string Frontend(string page)
+    {
+        var config = page["page:".Length..page.IndexOf('|')];
+        var slash = config.LastIndexOf('/');
+        return slash < 0 ? "" : config[..slash];
+    }
+
+    /// <summary>
+    /// A path's segments from its code, null for a value fitting any one segment: a quoted path, a template (<c>${…}</c>), quoted
+    /// parts joined with <c>+</c>, or an array of such parts. Not a constant path (a variable, a call), or not from the root
+    /// (no leading slash, unless <paramref name="fromRoot"/>): null.
+    /// </summary>
+    static List<string?>? PathSegments(string code, bool fromRoot)
+    {
+        const char Any = '\u0001';
+        static List<string> Split(string code, char by)
+        {
+            var depth = 0; var start = 0; var quote = '\0'; var items = new List<string>();
+            for (var i = 0; i < code.Length; i++)
+            {
+                var c = code[i];
+                if (quote != '\0') { if (c == quote && code[i - 1] != '\\') quote = '\0'; continue; }
+                if (c is '\'' or '"' or '`') quote = c;
+                else if (c is '(' or '[' or '{') depth++;
+                else if (c is ')' or ']' or '}') depth--;
+                else if (c == by && depth == 0) { items.Add(code[start..i].Trim()); start = i + 1; }
+            }
+            items.Add(code[start..].Trim());
+            return items;
+        }
+        // A part's text, a value made at runtime standing as `Any`; null when the part holds no quoted text at all.
+        static string? Text(string part)
+        {
+            var pieces = Split(part, '+');
+            var text = "";
+            var quoted = false;
+            foreach (var piece in pieces)
+                if (piece.Length >= 2 && piece[0] is '\'' or '"' or '`' && piece[^1] == piece[0])
+                {
+                    quoted = true;
+                    text += piece[0] == '`' ? System.Text.RegularExpressions.Regex.Replace(piece[1..^1], @"\$\{[^}]*\}", Any.ToString()) : piece[1..^1];
+                }
+                else text += Any;
+            return quoted ? text : null;
+        }
+        string path;
+        if (code.Length >= 2 && code[0] == '[' && code[^1] == ']')
+        {
+            var items = Split(code[1..^1], ',');
+            if (items.Count == 0 || items[0] == "" || Text(items[0]) is not { } first) return null;
+            path = string.Join("/", new[] { first }.Concat(items.Skip(1).Select(i => Text(i) ?? Any.ToString())));
+        }
+        else if (Text(code) is { } t) path = t;
+        else return null;
+        if (!path.StartsWith('/') && !fromRoot) return null;
+        return [.. path.Split('?', '#')[0].Split('/', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Contains(Any) ? null : x)];
+    }
+
+    /// <summary>
+    /// The actions a server-side redirect opens, from its exit fact's <c>route</c>, or <c>controller</c> and <c>action</c> (D204): a
+    /// named conventional route's controller, action and area, then the actions serving GET with those names in that area (a
+    /// redirect to an action: the area layer 2 read), those in the redirecting
+    /// code's own project first. The text naming the target, and the actions (none when the target is made at runtime).
+    /// </summary>
+    public (string To, IReadOnlyList<string> Screens) RedirectTarget(Fact exit, string from)
+    {
+        routesByName ??= AllFacts("conventional").Where(f => f["name"] != "").ToLookup(f => f["name"], StringComparer.Ordinal);
+        actionsByName ??= AllFacts("mvc-action").ToLookup(f => (f["controller"], f["action"]));
+        var (controller, action, area) = (exit["controller"], exit["action"], exit.Data.TryGetValue("area", out var a) ? a : null);
+        var to = exit["route"] != "" ? $"the route {exit["route"]}" : action != "" ? $"{controller}/{action}" : exit["url"] != "" ? exit["url"] : "";
+        if (exit["route"] is { Length: > 0 } route)
+        {
+            var named = routesByName[route].Select(f => (f["controller"], f["action"], f["area"])).Distinct().ToList();
+            if (named.Count != 1) return (to, []);
+            (controller, action, area) = named[0];
+        }
+        if (controller == "" || action == "") return (to, []);
+        var gets = actionsByName[(controller, action)].Where(f => f["verbs"] == "" || f["verbs"].Split('|', ',', ' ').Contains("GET", StringComparer.Ordinal))
+            .Where(f => area is null || f["area"] == area).Select(f => f.Owner).Where(Nodes.ContainsKey).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var project = Nodes.TryGetValue(from, out var n) ? n.Project : null;
+        var own = gets.Where(id => Nodes[id].Project == project).ToList();
+        return (to, own.Count > 0 ? own : gets);
+    }
     /// <summary>The validation rules on a type's own properties.</summary>
     public IEnumerable<Fact> AllRules(string type) => rulesByType[type];
     /// <summary>

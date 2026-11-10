@@ -226,7 +226,7 @@ export function conditionFacts(ctx: Context, sf: ts.SourceFile) {
     if (nav) {
       const line = ctx.line(n);
       const deferred = deferredOf(ctx, n);
-      const later = deferred ? { deferred } : {};
+      const later = { ...(deferred ? { deferred } : {}), ...(nav.root ? { root: "1" } : {}) };
       if (nav.exit) ctx.out.fact(CONDITIONS, "exit", ctx.ownerId(n), file, line, {
         kind: "Redirect", result: nav.to, status: "", text: n.getText(sf), exception: "", conditions: JSON.stringify(conditionsAround(ctx, n)), ...later,
       });
@@ -249,7 +249,11 @@ export function conditionFacts(ctx: Context, sf: ts.SourceFile) {
  * D192: a node that sends the user to another screen: the target as written, how (`router`, `location`, `navigate`,
  * `history`), and whether it ends the function there (an exit) or is a step that leaves for another screen.
  */
-function navigation(ctx: Context, n: ts.Node): { to: string; via: string; exit: boolean } | null {
+/**
+ * Where code sends the user to another screen. `root`: D204, an Angular router call reads a path without a leading slash from
+ * the app's root (`navigate(['library', id])`, `navigateByUrl('login')`) unless it passes `relativeTo`.
+ */
+function navigation(ctx: Context, n: ts.Node): { to: string; via: string; exit: boolean; root?: boolean } | null {
   const sf = n.getSourceFile();
   if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken && isLocation(n.left, "href"))
     return { to: n.right.getText(sf), via: "location", exit: leavesAfter(n) };
@@ -258,9 +262,12 @@ function navigation(ctx: Context, n: ts.Node): { to: string; via: string; exit: 
   const name = ts.isPropertyAccessExpression(callee) ? callee.name.text : callee.text;
   const receiver = ts.isPropertyAccessExpression(callee) ? callee.expression : null;
   const to = n.arguments[0]?.getText(sf) ?? "";
+  const options = n.arguments[1];
+  const root = name === "navigateByUrl" || name === "parseUrl"
+    || !(options && ts.isObjectLiteralExpression(options) && options.properties.some((p) => p.name?.getText(sf) === "relativeTo"));
   if (receiver && (name === "parseUrl" || name === "createUrlTree") && isRouter(ctx, receiver))
-    return returned(n) ? { to, via: "router", exit: true } : null;
-  if (receiver && (name === "navigate" || name === "navigateByUrl") && isRouter(ctx, receiver)) return { to, via: "router", exit: leavesAfter(n) };
+    return returned(n) ? { to, via: "router", exit: true, root } : null;
+  if (receiver && (name === "navigate" || name === "navigateByUrl") && isRouter(ctx, receiver)) return { to, via: "router", exit: leavesAfter(n), root };
   if (receiver && (name === "assign" || name === "replace") && isLocation(receiver, null)) return { to, via: "location", exit: leavesAfter(n) };
   if (receiver && (name === "push" || name === "replace") && ts.isIdentifier(receiver) && boundToHook(ctx, receiver, "useHistory", /^history$/)) return { to, via: "history", exit: leavesAfter(n) };
   if (!receiver && ts.isIdentifier(callee) && boundToHook(ctx, callee, "useNavigate", null)) return { to, via: "navigate", exit: leavesAfter(n) };

@@ -540,7 +540,7 @@ test("a plain script's object methods are points; a URL only a view passes is op
 
 test("a returned UrlTree and a navigation the function leaves after are exits; other navigation is a step (D192)", () => {
   const root = project({
-    "src/router.ts": "export declare class Router { parseUrl(u: string): object; createUrlTree(c: string[]): object; navigateByUrl(u: string): void; }\nexport declare function of<T>(v: T): T;\nexport declare function map<T>(f: (x: T) => unknown): unknown;",
+    "src/router.ts": "export declare class Router { parseUrl(u: string): object; createUrlTree(c: string[]): object; navigateByUrl(u: string): void; navigate(c: unknown[], o?: object): void; }\nexport declare function of<T>(v: T): T;\nexport declare function map<T>(f: (x: T) => unknown): unknown;",
     "src/guard.ts": [
       "import { Router, of, map } from './router';",
       "export const guard = (router: Router, id: number, ok: boolean) => {",
@@ -560,6 +560,7 @@ test("a returned UrlTree and a navigation the function leaves after are exits; o
       "    }",
       "    this.router.navigateByUrl('/reader');",
       "    location.href = '/x';",
+      "    this.router.navigate(['edit'], { relativeTo: this });",
       "  }",
       "}",
     ].join("\n"),
@@ -567,8 +568,9 @@ test("a returned UrlTree and a navigation the function leaves after are exits; o
   const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
   const exits = lines.filter((l) => l.t === "fact" && l.kind === "exit").map((l) => l.t === "fact" ? `${l.line} ${l.data.kind} ${l.data.result} ${JSON.parse(l.data.conditions).map((c: { text: string }) => c.text).join(",")}` : "");
   assert.deepEqual(exits, ["4 Redirect '/home' isNaN(id)", "6 Redirect '/home' isNaN(id)", "7 Redirect ['/login'] !ok,isNaN(id)", "14 Redirect '/home' id === null"]);
-  const navs = lines.filter((l) => l.t === "fact" && l.kind === "navigate").map((l) => l.t === "fact" ? `${l.line} ${l.data.to} ${l.data.via}` : "");
-  assert.deepEqual(navs, ["17 '/reader' router", "18 '/x' location"]);
+  const navs = lines.filter((l) => l.t === "fact" && l.kind === "navigate").map((l) => l.t === "fact" ? `${l.line} ${l.data.to} ${l.data.via} ${l.data.root ?? ""}` : "");
+  // D204: a router call reads its path from the app's root unless it passes relativeTo.
+  assert.deepEqual(navs, ["17 '/reader' router 1", "18 '/x' location ", "19 ['edit'] router "]);
 });
 
 test("an error callback is a catch condition on what runs inside it (D192)", () => {

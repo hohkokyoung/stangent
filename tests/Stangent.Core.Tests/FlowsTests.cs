@@ -135,4 +135,40 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.DoesNotContain(packages, f => f["package"].StartsWith("System", StringComparison.Ordinal));
         Assert.Contains(packages, f => f["package"].StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void A_redirect_links_to_the_flow_of_the_screen_it_opens()
+    {
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var welcome = set.Flows.Single(f => f.Kind == "screen-opens" && f.Start.Point.EndsWith("AccountController.Welcome", StringComparison.Ordinal));
+        var links = set.Flows.SelectMany(f => f.Links).Where(l => l.Kind == "screen" && l.At.Code.Contains("RedirectToAction(nameof(Welcome))", StringComparison.Ordinal)).ToList();
+        Assert.NotEmpty(links);
+        Assert.All(links, l => { Assert.Equal(welcome.Id, l.ToFlow); Assert.False(l.Guessed); Assert.Equal("AccountController.Welcome", l.To); });
+        // Layer 2 keeps where it goes: the action and, by default, the controller it's written in.
+        Assert.Contains(shop.Graph.AllFacts, f => f.Kind == "exit" && f["text"] == "RedirectToAction(nameof(Welcome))" && f["action"] == "Welcome" && f["controller"] == "Account" && f["area"] == "");
+    }
+
+    [Fact]
+    public void A_navigation_written_as_a_constant_path_fits_the_pages_whose_route_matches()
+    {
+        var g = new FlowGraph(shop.Graph, shop.Root);
+        const string file = "Shop.Web/ClientApp/src/app/order-form.component.ts";
+        var orders = g.PagesAt("'/orders'", file);
+        Assert.Single(orders);
+        Assert.EndsWith("|/orders", orders[0], StringComparison.Ordinal);
+        Assert.Equal(g.PagesAt("'/orders/7'", file), g.PagesAt("['/orders', order.id]", file));
+        Assert.Single(g.PagesAt("`/orders/${id}`", file));
+        Assert.EndsWith("|/orders/:id", g.PagesAt("`/orders/${id}`", file)[0], StringComparison.Ordinal);
+        Assert.Empty(g.PagesAt("returnUrl", file));          // made at runtime
+        Assert.Empty(g.PagesAt("'orders'", file));           // relative to where it is
+        Assert.Empty(g.PagesAt("'/nowhere'", file));
+        // A path joined with `+`; a router path read from the app's root (D204).
+        Assert.EndsWith("|/orders/:id", g.PagesAt("'/orders/' + order.id", file).Single(), StringComparison.Ordinal);
+        Assert.EndsWith("|/orders/:id", g.PagesAt("['orders', order.id]", file, fromRoot: true).Single(), StringComparison.Ordinal);
+        Assert.Empty(g.PagesAt("['orders', order.id]", file));
+        Assert.Empty(g.PagesAt("this.paths(order)", file, fromRoot: true));
+                // Another frontend's pages never fit: the React app's /orders/new isn't the Angular app's.
+        Assert.Single(g.PagesAt("'/orders/new'", "Shop.Web/react-app/src/App.tsx"));
+        Assert.EndsWith("|/orders/:id", g.PagesAt("'/orders/new'", file).Single(), StringComparison.Ordinal);
+    }
 }

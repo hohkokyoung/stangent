@@ -38,10 +38,19 @@ public static class FlowBuilder
         AssignIds(flows);
         var byPoint = flows.Where(f => f.Kind is "job" or "handler").GroupBy(f => f.Start.Point, StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.First().Id, StringComparer.Ordinal);
         var shared = flows.Where(f => f.Kind == "shared").ToDictionary(f => f.Start.Point, f => f.Id, StringComparer.Ordinal);
+        // D204: a screen link goes to the flow of that screen opening.
+        var screens = flows.Where(f => f.Kind == "screen-opens").GroupBy(f => f.Start.Point, StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.Select(f => f.Id).Order(StringComparer.Ordinal).First(), StringComparer.Ordinal);
+        var notBuilt = skipped.Where(x => x.Kind == "screen-opens").GroupBy(x => x.Point, StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.First().Reason, StringComparer.Ordinal);
         foreach (var flow in flows)
             for (var i = 0; i < flow.Links.Count; i++)
-                if (flow.Links[i].ToFlow is { } point && (flow.Links[i].Kind == "continues" ? shared : byPoint).TryGetValue(point, out var id)) flow.Links[i] = flow.Links[i] with { ToFlow = id };
-                else if (flow.Links[i].ToFlow is not null) flow.Links[i] = flow.Links[i] with { ToFlow = null };
+            {
+                var link = flow.Links[i];
+                if (link.ToFlow is { } point && (link.Kind switch { "continues" => shared, "screen" => screens, _ => (Dictionary<string, string>)byPoint }).TryGetValue(point, out var id)) flow.Links[i] = link with { ToFlow = id };
+                // D204: a screen whose opening isn't a flow says why, from the skipped list.
+                else if (link.Kind == "screen" && link.ToFlow is { } screen)
+                    flow.Links[i] = link with { ToFlow = null, Sentence = $"Sends the user to {link.To}; opening it is no flow: {(notBuilt.TryGetValue(screen, out var why) ? why : "no screen-opens flow starts there")} ({link.At})" };
+                else if (link.ToFlow is not null) flow.Links[i] = link with { ToFlow = null };
+            }
         skipped.Sort((a, b) => string.CompareOrdinal($"{a.Kind}\u0000{a.At}\u0000{a.Point}", $"{b.Kind}\u0000{b.At}\u0000{b.Point}"));
         return new FlowSet(graph.Commit, settings, [.. flows.OrderBy(f => f.Id, StringComparer.Ordinal)], skipped);
     }

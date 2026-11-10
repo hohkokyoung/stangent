@@ -175,11 +175,22 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             }
             // D192: a navigation that isn't an exit leaves for another screen: a step ending `screen`.
             foreach (var nav in g.Facts(point, "navigate").Where(f => f.Line == line && Now(f)).OrderBy(f => f["to"], StringComparer.Ordinal))
-                Add(parent, new Step { What = $"goes to {nav["to"]} ({nav["via"]})", At = at, Kind = "navigate", Conditions = nav["conditions"] != "" ? FlowGraph.ConditionsOf(nav) : CondsFor(null), Depth = depth,
+            {
+                var step = Add(parent, new Step { What = $"goes to {nav["to"]} ({nav["via"]})", At = at, Kind = "navigate", Conditions = nav["conditions"] != "" ? FlowGraph.ConditionsOf(nav) : CondsFor(null), Depth = depth,
                     Guessed = Later(nav) is not null, GuessReason = Later(nav),
                     End = new End("screen", nav["to"]) });
+                ScreenLinks(step, at, nav["to"], g.PagesAt(nav["to"], at.File, nav["root"] == "1"));
+            }
             foreach (var exit in g.Facts(point, "exit").Where(f => f.Line == line && Now(f)).OrderBy(f => f["text"], StringComparer.Ordinal))
+            {
                 parent.Exits.Add((new Exit(exit["kind"], ExitSentence(exit), at, FlowGraph.ConditionsOf(exit), null, point), parent));
+                // D204: a redirect leaves for another screen: a link to that screen's opening flow.
+                if (exit["kind"] == "Redirect")
+                {
+                    var (to, screens) = point.StartsWith("ts|", StringComparison.Ordinal) ? (exit["result"], g.PagesAt(exit["result"], at.File, exit["root"] == "1")) : g.RedirectTarget(exit, point);
+                    ScreenLinks(parent, at, to, screens);
+                }
+            }
             foreach (var load in g.Facts(point, "on-load").Where(f => f.Line == line && f["framework"] != "mvc").OrderBy(f => f["handler"], StringComparer.Ordinal))
             {
                 OnLoadSeen?.Add(load);
@@ -380,6 +391,21 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             });
             Into(item, run, depth, branch);
         }
+    }
+
+    /// <summary>D204: a link to each screen a redirect or navigation can open; none known: one link saying where it goes, to no flow.</summary>
+    void ScreenLinks(Item item, At at, string to, IReadOnlyList<string> screens)
+    {
+        if (screens.Count == 0)
+        {
+            item.Links.Add(new Link("screen", to == "" ? "a page chosen at runtime" : to, null, at,
+                $"Sends the user to {(to == "" ? "a page chosen at runtime" : to)}; no screen in the code matches it, so it links to no flow ({at})", null, true));
+            return;
+        }
+        foreach (var screen in screens)
+            item.Links.Add(new Link("screen", g.ScreenName(screen), screen, at,
+                screens.Count == 1 ? $"Sends the user to {g.ScreenName(screen)}, whose opening is its own flow ({at})"
+                    : $"Sends the user to {to}, which {screens.Count} screens fit; {g.ScreenName(screen)} is one ({at})", null, screens.Count > 1));
     }
 
     const string OverloadReason = "the compiler couldn't pick one overload, so each in-repo candidate is a branch";

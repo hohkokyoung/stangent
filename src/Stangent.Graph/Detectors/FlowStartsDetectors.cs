@@ -197,8 +197,58 @@ public sealed class ConditionsDetector : IDetector
             value = value switch { ParenthesizedExpressionSyntax p => p.Expression, CastExpressionSyntax c => c.Expression, AwaitExpressionSyntax a => a.Expression, _ => value };
         if (value is not (InvocationExpressionSyntax or BaseObjectCreationExpressionSyntax) || file.Model.GetSymbolInfo(value).Symbol is not IMethodSymbol method) return;
         if (Exit(method, value, file.Model) is not var (kind, status)) return;
-        ctx.AddFact(Name, "exit", owner, set, ("kind", kind), ("result", value is InvocationExpressionSyntax ? method.Name : method.ContainingType.Name),
-            ("status", status), ("text", set.ToString()), ("exception", ""), ("conditions", Json(Around(set, ctx))));
+        ctx.AddFact(Name, "exit", owner, set, [("kind", kind), ("result", value is InvocationExpressionSyntax ? method.Name : method.ContainingType.Name),
+            ("status", status), ("text", set.ToString()), ("exception", ""), ("conditions", Json(Around(set, ctx))), .. Target(kind, method, value, file.Model)]);
+    }
+
+    /// <summary>
+    /// D204: where a framework redirect sends the user, from the compiler's constant values: <c>route</c> (<c>RedirectToRoute</c>'s
+    /// route name), <c>controller</c> and <c>action</c> (<c>RedirectToAction</c>, the controller defaulting to the one it's in), or
+    /// <c>url</c> (<c>Redirect</c>, <c>LocalRedirect</c>). A value made at runtime is left out; not a framework redirect: nothing.
+    /// </summary>
+    static (string, string)[] Target(string kind, IMethodSymbol method, ExpressionSyntax call, SemanticModel model)
+    {
+        if (kind != "Redirect" || method.ContainingType?.ContainingNamespace?.ToDisplayString().StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal) != true) return [];
+        var args = call is InvocationExpressionSyntax i ? i.ArgumentList.Arguments : ((BaseObjectCreationExpressionSyntax)call).ArgumentList?.Arguments ?? default;
+        string? Arg(string name)
+        {
+            for (var n = 0; n < args.Count; n++)
+            {
+                var p = args[n].NameColon is { } nc ? method.Parameters.FirstOrDefault(x => x.Name == nc.Name.Identifier.Text) : n < method.Parameters.Length ? method.Parameters[n] : null;
+                if (p?.Name == name) return model.GetConstantValue(args[n].Expression) is { HasValue: true, Value: string v } ? v : null;
+            }
+            return null;
+        }
+        var target = new List<(string, string)>();
+        if (Arg("routeName") is { } route) target.Add(("route", route));
+        if (method.Parameters.Any(p => p.Name == "actionName"))
+        {
+            var controller = Arg("controllerName");
+            if (controller is null && !args.Any(a => a.NameColon?.Name.Identifier.Text == "controllerName")
+                && model.GetEnclosingSymbol(call.SpanStart)?.ContainingType is { } own && own.Name.EndsWith("Controller", StringComparison.Ordinal)
+                && method.Parameters.All(p => p.Name != "controllerName" || args.Count <= method.Parameters.IndexOf(p)))
+                controller = own.Name[..^"Controller".Length];
+            if (Arg("actionName") is { } action) target.Add(("action", action));
+            if (controller is not null) target.Add(("controller", controller));
+            // The area: the route values' `area`, else the one of the controller it's written in (MVC keeps it).
+            var values = args.Select((a, n) => (a, p: a.NameColon is { } nc ? method.Parameters.FirstOrDefault(x => x.Name == nc.Name.Identifier.Text) : n < method.Parameters.Length ? method.Parameters[n] : null))
+                .FirstOrDefault(x => x.p?.Name == "routeValues").a?.Expression as AnonymousObjectCreationExpressionSyntax;
+            var given = values?.Initializers.FirstOrDefault(m => (m.NameEquals?.Name.Identifier.Text ?? (m.Expression as IdentifierNameSyntax)?.Identifier.Text) == "area");
+            string? area = given is null ? AreaOf(model.GetEnclosingSymbol(call.SpanStart)?.ContainingType)
+                : model.GetConstantValue(given.Expression) is { HasValue: true, Value: string a } ? a : null;
+            if (area is not null) target.Add(("area", area));
+        }
+        if (Arg("url") is { } url) target.Add(("url", url));
+        return [.. target];
+    }
+
+    /// <summary>A controller's MVC area: its (or a base class's) <c>[Area("…")]</c>, else "".</summary>
+    static string AreaOf(INamedTypeSymbol? type)
+    {
+        for (var t = type; t is not null; t = t.BaseType)
+            if (t.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name is "AreaAttribute" or "Area") is { } attr
+                && attr.ConstructorArguments is [{ Value: string area }]) return area;
+        return "";
     }
 
     static bool Derives(INamedTypeSymbol? type, string ns)
@@ -214,8 +264,8 @@ public sealed class ConditionsDetector : IDetector
         var target = ctx.NodeId(method);
         var ns = method.ContainingNamespace?.ToDisplayString() ?? "";
         if (Returned(call) && Exit(method, call, file.Model) is var (kind, status))
-            ctx.AddFact(Name, "exit", owner, call, ("kind", kind), ("result", call is InvocationExpressionSyntax ? method.Name : method.ContainingType.Name),
-                ("status", status), ("text", call.ToString()), ("exception", ""), ("conditions", Json(Around(call, ctx))));
+            ctx.AddFact(Name, "exit", owner, call, [("kind", kind), ("result", call is InvocationExpressionSyntax ? method.Name : method.ContainingType.Name),
+                ("status", status), ("text", call.ToString()), ("exception", ""), ("conditions", Json(Around(call, ctx))), .. Target(kind, method, call, file.Model)]);
         if (target is null && (ns == "System" || ns.StartsWith("System.", StringComparison.Ordinal)) && !ns.StartsWith("System.Net.Http", StringComparison.Ordinal)) return;
         var conditions = Around(call, ctx);
         if (conditions.Count == 0) return;

@@ -223,7 +223,8 @@ facts (each call's line), a hook's own functions as points, `filterType` on acce
 | — ends (incl. exits) | 53 / 64 | 111 / 122 | 144 / 164 |
 | — conditions | 83 / 85 | 149 / 153 | 349 / 355 |
 | (key ends left out: they only say the key didn't follow a call, R1) | 9 | 4 | 38 |
-| (links, not in item 2) | 35 / 45 | 4 / 12 | 17 / 46 |
+| (links, not in item 2) | 35 / 45 | 8 / 12 | 25 / 46 |
+| — before D204 (screen links) | 35 / 45 | 4 / 12 | 17 / 46 |
 | (checks, not in item 2) | 12 / 25 | 0 / 2 | 45 / 60 |
 | — before D203 (guards that reject the input) | 11 / 25 | 0 / 2 | 26 / 60 |
 | 3. Every 🟡 and ❓ with a reason | pass (16,228 🟡, 1,051 ❓) | pass (1,441, 150) | pass (9,910, 312) |
@@ -299,6 +300,13 @@ generic repository's entity events (11, needs layer 2's type narrowing), L4 hand
 other (3). C1 built (D203, owner: "Yes, list them"): checks Sonarr 12/25, nopCommerce 45/60; 874 distinct guard checks on the
 three; the scorer now takes checks from the shared flows a flow continues into, as it does steps. Left of C1 on purpose:
 redirect-only guards, `return Challenge()`, and `if`s that add an error and carry on.
+L1 built (D204, owner: "Yes, L1 next"): no code made `screen` links before. Now each redirect and navigation links to its screen's
+opening flow: links Kavita 8/12, nopCommerce 25/46. Distinct screen links: nopCommerce 868 to a flow ✅, 1 🟡 (two screens fit),
+54 to an action that opens no flow, 27 to no screen (made at runtime); Kavita 15 to a flow, 29 to display-only screens (skipped
+by D176 item 5, the link says so), 17 to no screen (runtime values, or `login`, an Angular `redirectTo` route). A first build
+ignored area (109 🟡 on nopCommerce, Admin and public controllers sharing names) and read router paths without a leading
+slash as relative; both fixed. Left of L1: the four key links at a call whose callee navigates (`handleLogin()`,
+`closeReader()`), and `Url.RouteUrl` handed back in a JSON answer for the page script (add-to-cart).
 
 ## Left open, on purpose
 
