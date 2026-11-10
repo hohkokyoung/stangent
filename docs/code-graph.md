@@ -380,6 +380,10 @@ A project that can't be loaded is listed in `loadErrors` and its code is ❓. MS
     each URL its function returns, at that `return`'s line; an image's `src` set to a URL (`via` `img-src`): GET at that line.
     The URL reader takes every `return` of a function it reads (each a value; `undefined`/`null` left out); several →
     `from` `returns`, 🟡.
+  - **Query reads and mail (D199):** a call that runs a query (a queryable in, not one out) is an `access` read `via`
+    `query` of the table its query starts from: a repository's `IQueryable<T>` property or a `DbSet<T>`, through the query's
+    local and query syntax (✅). MailKit's and .NET's `SmtpClient` connect, sign-in and send are ❓ "outside SMTP …". A method
+    calling itself is a `call-site` fact (no line).
   - **Navigation (D192, detectors `conditions` and `navigation`):** an Angular `UrlTree` a function returns
     (`router.parseUrl`, `router.createUrlTree`, through `of(…)`, `||`, `??`, `?:`, an arrow's body) is an `exit` of kind
     `Redirect`; so is a navigation call the function returns straight after. Any other navigation is a `navigate` fact

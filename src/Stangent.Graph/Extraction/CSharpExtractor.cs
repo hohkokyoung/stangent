@@ -200,7 +200,8 @@ public static class CSharpExtractor
     /// </summary>
     static void CallSite(ExtractContext ctx, string? owner, string? target, SyntaxNode at, Label label)
     {
-        if (owner is null || target is null || owner == target) return;
+        // D199: a method calling itself is a call site too; a flow shows it going back (D176), the graph draws no line for it.
+        if (owner is null || target is null) return;
         ctx.AddFact("call-sites", "call-site", owner, at, ("target", target), ("label", ((int)label).ToString(System.Globalization.CultureInfo.InvariantCulture)), ("kind", "calls"));
     }
 

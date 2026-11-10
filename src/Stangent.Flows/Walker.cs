@@ -190,7 +190,8 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                     // D188: a package's code is a step, not walked (it isn't on the map).
                     if (consumed.Count == 0 && !later.Contains(target))
                         Add(parent, new Step { What = $"calls {site["method"]} in the package {site["package"]}", At = at, Kind = "package", Conditions = CondsFor(""), Depth = depth,
-                            End = new End("unknown", $"a package's code ({site["package"]}), not walked") });
+                            // D199: an MVC action returning a view or a redirect leads to that screen.
+                            End = MvcResult(site, at) is { } screen ? new End("screen", screen) : new End("unknown", $"a package's code ({site["package"]}), not walked") });
                     continue;
                 }
                 if (consumed.Contains(target) || later.Contains(target)) continue;
@@ -200,7 +201,8 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             {
                 var bat = new At(blind.File, blind.Line, g.Code(blind.File, blind.Line));
                 // D198: an outside HTTP call whose URL is built at runtime is still an outside call: it ends `outside-call`, ❓ where.
-                if (blind.Reason.StartsWith("outside HTTP ", StringComparison.Ordinal))
+                // D199: so is a mail client's (`outside SMTP …`).
+                if (blind.Reason.StartsWith("outside HTTP ", StringComparison.Ordinal) || blind.Reason.StartsWith("outside SMTP ", StringComparison.Ordinal))
                 {
                     var outside = Add(parent, new Step { What = $"calls outside the app: {blind.Reason}", At = bat, Kind = "outside-call", Conditions = CondsFor(null), Depth = depth,
                         End = new End("outside-call", blind.Reason) });
@@ -255,6 +257,20 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         var hash = point.IndexOf('#');
         if (hash < 0) yield break;
         for (var dot = point.LastIndexOf('.'); dot > hash; dot = point.LastIndexOf('.', dot - 1)) yield return point[..dot];
+    }
+
+    static readonly HashSet<string> MvcResults = ["View", "PartialView", "ViewComponent", "Redirect", "RedirectPermanent", "RedirectToAction", "RedirectToActionPermanent",
+        "RedirectToRoute", "RedirectToRoutePermanent", "RedirectToPage", "RedirectToPagePermanent", "LocalRedirect", "LocalRedirectPermanent"];
+
+    /// <summary>D199: ASP.NET MVC's own <c>View(…)</c> or <c>Redirect…(…)</c>, returned on its line: what the user is shown next.</summary>
+    static string? MvcResult(Fact site, At at)
+    {
+        var method = site["method"];
+        var dot = method.LastIndexOf('.');
+        var (type, name) = dot < 0 ? ("", method) : (method[..dot], method[(dot + 1)..]);
+        if (!site["package"].StartsWith("Microsoft.AspNetCore.Mvc", StringComparison.Ordinal) || type is not ("Controller" or "ControllerBase" or "PageModel" or "ViewComponent")
+            || !MvcResults.Contains(name) || !at.Code.TrimStart().StartsWith("return ", StringComparison.Ordinal)) return null;
+        return name.Contains("View", StringComparison.Ordinal) ? $"the view it shows ({name})" : $"the page it sends the user to ({name})";
     }
 
     static readonly Fact Empty = new("", "", "", null, 0, new Dictionary<string, string>());

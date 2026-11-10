@@ -235,3 +235,4 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D196 · A hub whose own code reads or saves a table keeps its `database` end and continues into its shared flow too
 - D197 · Ruling R11: a key `hub` end counts on a step that runs that hub and ends `database` (D172 names its table first); the key isn't edited
 - D198 · An outside HTTP call with a runtime URL ends `outside-call` (still ❓ where); each leaving branch of an `if … else if` chain is an `unless` guard
+- D199 · A query's run reads its source's table (repository `IQueryable<T>`, `DbSet<T>`); `SmtpClient` calls are outside calls; returned MVC `View`/`Redirect…` end `screen`; a method calling itself is a call site

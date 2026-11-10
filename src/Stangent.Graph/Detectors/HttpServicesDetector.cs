@@ -33,7 +33,7 @@ public sealed class HttpServicesDetector : IDetector
                 if (name is null) continue;
                 if (name is "AddProject" or "AddDotnetProject" or "AddCSharpApp") Service(ctx, file, call);
                 else if (name == "AddHttpClient") Client(ctx, file, call);
-                else if (!((Calls.ContainsKey(name) || name == "SendAsync") && Request(ctx, file, call, name))) OtherClient(ctx, file, call);
+                else if (!((Calls.ContainsKey(name) || name == "SendAsync") && Request(ctx, file, call, name)) && !Mail(ctx, file, call)) OtherClient(ctx, file, call);
             }
     }
 
@@ -79,6 +79,27 @@ public sealed class HttpServicesDetector : IDetector
             return;
         }
         ctx.AddFact(Name, "call", owner, call, ("method", verb), ("url", url), ("client", ""));
+    }
+
+    /// <summary>
+    /// D199: a mail client's connect, sign-in or send (MailKit's or .NET's <c>SmtpClient</c>, a short list like G4's HTTP
+    /// clients) talks to a mail server outside the app, whose address is read at runtime: ❓ "outside SMTP …", which a flow
+    /// shows as an outside call.
+    /// </summary>
+    bool Mail(ExtractContext ctx, SourceFile file, InvocationExpressionSyntax call)
+    {
+        if (file.Model.GetSymbolInfo(call).Symbol is not IMethodSymbol method) return false;
+        // The client the call is made on (MailKit's SendAsync is declared on a base class of SmtpClient).
+        var on = call.Expression is MemberAccessExpressionSyntax access ? file.Model.GetTypeInfo(access.Expression).Type : method.ContainingType;
+        INamedTypeSymbol? client = null;
+        for (var t = on as INamedTypeSymbol; t is not null && client is null; t = t.BaseType)
+            if (t.Name == "SmtpClient" && t.ContainingNamespace?.ToDisplayString() is "MailKit.Net.Smtp" or "System.Net.Mail") client = t;
+        if (client is null) return false;
+        var what = method.Name.StartsWith("Connect", StringComparison.Ordinal) ? "connect" : method.Name.StartsWith("Authenticate", StringComparison.Ordinal) ? "sign-in"
+            : method.Name.StartsWith("Send", StringComparison.Ordinal) ? "send" : null;
+        if (what is null || ctx.OwnerId(call, file.Model) is not { } owner) return true;
+        ctx.AddBlindSpot(owner, call, $"outside SMTP {what} through {client.ToDisplayString()}: the mail server is set at runtime", Name);
+        return true;
     }
 
     static readonly string[] UrlChanging = ["AppendPathSegment", "AppendQueryParam", "SetQueryParam", "RemoveQueryParam", "SetFragment", "RemoveFragment", "ResetToRoot", "RemovePath", "AppendPath"];

@@ -216,8 +216,49 @@ public sealed class EntityTablesDetector : IDetector
                  && repo.TypeArguments.OfType<INamedTypeSymbol>().FirstOrDefault(a => a.TypeKind == TypeKind.Class && ctx.InRepo(a)) is { } over
                  && Mode(method.Name) is { } m)
             (entity, mode, via) = (over, m, "repository");
+        else if (receiverExpr is not null && IsQueryable(receiverType) && !IsQueryable(Unwrapped(method.ReturnType)) && QueryOrigin(receiverExpr, file.Model, 0) is { } read && ctx.InRepo(read))
+            // D199: a call that runs a query (a queryable in, not one out: ToListAsync, FirstOrDefaultAsync, an app's
+            // ToPagedListAsync) reads the table the query starts from: a repository's IQueryable<T> property or a DbSet<T>,
+            // followed back through the query's local variable (`var query = _repository.Table; query = query.Where(…)`).
+            (entity, mode, via) = (read, "read", "query");
         if (entity is null || mode is null || ctx.NodeId(entity) is not { } entityId || ctx.OwnerId(call, file.Model) is not { } ownerId) return;
         ctx.AddFact(Name, "access", ownerId, call, ("entity", entityId), ("mode", mode), ("via", via!), ("holder", owner is null ? "" : ctx.NodeId(owner) ?? ""));
+    }
+
+    static bool IsQueryable(ITypeSymbol? type) =>
+        type is INamedTypeSymbol n && (n.OriginalDefinition.ToDisplayString() is "System.Linq.IQueryable<T>" or "System.Linq.IOrderedQueryable<T>"
+            || n.AllInterfaces.Any(i => i.OriginalDefinition.ToDisplayString() == "System.Linq.IQueryable<T>"));
+
+    /// <summary><c>Task&lt;T&gt;</c>, <c>ValueTask&lt;T&gt;</c> → T.</summary>
+    static ITypeSymbol Unwrapped(ITypeSymbol type) =>
+        type is INamedTypeSymbol { Name: "Task" or "ValueTask", TypeArguments: [var inner] } ? inner : type;
+
+    /// <summary>
+    /// D199: the entity a query is over, where the code shows its start: back through the chain's own query calls
+    /// (<c>.Where(…).OrderBy(…)</c>), through a local's initialiser, to a repository's <c>IQueryable&lt;T&gt;</c> property (its
+    /// type's name holds "Repository") or a <c>DbSet&lt;T&gt;</c>.
+    /// </summary>
+    static INamedTypeSymbol? QueryOrigin(ExpressionSyntax expr, SemanticModel model, int depth)
+    {
+        if (depth > 6) return null;
+        while (expr is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax inner } && IsQueryable(model.GetTypeInfo(expr).Type)) expr = inner.Expression;
+        while (expr is ParenthesizedExpressionSyntax p) expr = p.Expression;
+        // `from c in _customerRepository.Table … select c`: the query starts where its first `from` reads.
+        if (expr is QueryExpressionSyntax q) return QueryOrigin(q.FromClause.Expression, model, depth + 1);
+        var type = model.GetTypeInfo(expr).Type;
+        if (DbSetEntity(type) is { } set) return set;
+        switch (model.GetSymbolInfo(expr).Symbol)
+        {
+            case IPropertySymbol prop when IsQueryable(prop.Type) && (prop.ContainingType.Name.Contains("Repository", StringComparison.Ordinal)
+                    || prop.ContainingType.AllInterfaces.Any(i => i.Name.Contains("Repository", StringComparison.Ordinal))):
+                return (prop.Type as INamedTypeSymbol)?.TypeArguments.OfType<INamedTypeSymbol>().FirstOrDefault();
+            case ILocalSymbol local:
+                foreach (var r in local.DeclaringSyntaxReferences)
+                    if (r.GetSyntax() is VariableDeclaratorSyntax { Initializer.Value: var init } && model.SyntaxTree == r.SyntaxTree)
+                        return QueryOrigin(init, model, depth + 1);
+                return null;
+            default: return null;
+        }
     }
 
     /// <summary>Many-to-many: the element also holds a collection of the holder, so the add writes the join table, not either side.</summary>
@@ -307,7 +348,7 @@ public sealed class EntityTablesDetector : IDetector
             if (access["via"] == "navigation" && !tables.ContainsKey(access["holder"])) continue;
             if (tables.TryGetValue(access["entity"], out var table))
                 ctx.AddEdge(access.Owner, table.Id, access["mode"] == "write" ? EdgeKind.Writes : EdgeKind.Reads,
-                    access["via"] == "dbset" ? table.Label : Label.Guessed, Name);
+                    access["via"] is "dbset" or "query" ? table.Label : Label.Guessed, Name); // D199: a query over a DbSet<T> or a repository's IQueryable<T>: the types prove it
         }
     }
 }

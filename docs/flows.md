@@ -66,7 +66,7 @@ the same lines are read in source-line order; each line gives, in this order:
 8. a ❓ the graph recorded there: ends `unknown`, with its reason; an outside HTTP call whose URL is built at runtime ends
    `outside-call`, still a ❓ (D198).
 9. a navigation (`navigate` fact, D192): a step "goes to X" ending `screen`.
-10. a call into a package (D188): a step `calls X in the package Y`, ending `unknown`, "a package's code, not walked"; not a ❓.
+10. a call into a package (D188); a returned ASP.NET MVC `View(…)`/`Redirect…(…)` ends `screen` (D199): a step `calls X in the package Y`, ending `unknown`, "a package's code, not walked"; not a ❓.
 
 Before an action runs, its access filters (global, controller, action: the `auth` facts' `filterType`) and the controller's own
 `OnActionExecuting` overrides are steps `runs first`, walked like calls. A route's guards are the first steps of its screen.
