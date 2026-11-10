@@ -140,6 +140,7 @@ public static partial class FlowScore
         {
             var at = (string)k["at"]!;
             var code = (string)k["code"]!;
+            if (QuotesNothing(code)) { Tally("quotesNothing", true, k); continue; }
             var match = steps.Where(s => Same(at, code, s)).ToList();
             Tally("steps", match.Count > 0, k);
             if (k["end"] is JsonObject end)
@@ -158,7 +159,7 @@ public static partial class FlowScore
                 }
                 var endFound = direct
                     || (endKind == "database" && match.Any(s => Below(steps, (int)s["n"]!).Any(d => (string?)d["end"]?["kind"] == "database" && SameTable(detail, (string?)d["end"]!["detail"] ?? ""))))
-                    || (endKind is "outside-call" or "message" && match.Any(s => Below(steps, (int)s["n"]!).Any(d => (string?)d["end"]?["kind"] == endKind)));
+                    || (endKind is "outside-call" or "message" or "screen" && match.Any(s => Below(steps, (int)s["n"]!).Any(d => (string?)d["end"]?["kind"] == endKind)));
                 Tally("ends", endFound, k, match.Count == 0 ? $"end {endKind}: no step there" : $"end {endKind}: built {string.Join(",", match.Select(s => (string?)s["end"]?["kind"] ?? "none").Distinct())}");
             }
             Conditions:
@@ -168,6 +169,9 @@ public static partial class FlowScore
         foreach (var k in keyExits)
         {
             var at = (string)k["at"]!;
+            // R8 (owner, 2026-11-10): a key item quoting a line with no code on it (`};`) claims nothing the code does: it
+            // leaves the count, its conditions with it.
+            if (QuotesNothing((string)k["code"]!)) { Tally("quotesNothing", true, k); continue; }
             var match = exits.Where(e => Same(at, (string)k["code"]!, e)).ToList();
             // An exit ends its branch (D174): counted with the ends.
             Tally("ends", match.Count > 0, k, "exit");
@@ -188,6 +192,9 @@ public static partial class FlowScore
         var found = counts.Where(c => c.Key is "steps" or "ends" or "conditions").Sum(c => c.Value.Item1);
         return new ItemResult(new JsonObject([.. counts.OrderBy(c => c.Key, StringComparer.Ordinal).Select(c => KeyValuePair.Create(c.Key, (JsonNode?)Count(c.Value.Item1, c.Value.Item2)))]), missed, found);
     }
+
+    /// <summary>R8: a quoted line holding no letter or digit (`};`, `}`, `)`): punctuation, no code.</summary>
+    static bool QuotesNothing(string code) => !code.Any(char.IsLetterOrDigit);
 
     /// <summary>A key end that only says the key didn't follow the call (R1): a depth stop, or an <c>unknown</c> "not walked" or "same … as".</summary>
     static bool NotFollowed(string kind, string detail) =>

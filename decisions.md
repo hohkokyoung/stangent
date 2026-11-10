@@ -230,3 +230,4 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D191 · A view's onclick walks into the script function it calls, the route placed where the script sends to that argument; a top-level object's functions are points; jQuery's callbacks are calls; D190 applies to every HTTP call style
 - D192 · Navigation by code: a returned Angular redirect, or a navigation the function returns straight after, is an exit; any other navigation is a step ending `screen`; error callbacks are `catch` conditions
 - D193 · Requests made another way: Angular's `httpResource` URLs and an image's `src` are GET calls; the URL reader takes every return of a function; a component's field initialisers are walked with it
+- D194 · Rulings R8 (a key item quoting no code, like `};`, leaves the count) and R9 (R1 credits `screen` ends too); the key isn't edited
