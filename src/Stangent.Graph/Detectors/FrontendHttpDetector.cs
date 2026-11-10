@@ -52,7 +52,8 @@ public sealed class FrontendHttpDetector : IDetector
             if (reason.Length == 0) proved.Add((call.Owner, matches[0].Node.Id));
             foreach (var e in matches)
                 ctx.AddFact(Name, "http-match", call.Owner, call.File, call.Line, [("endpoint", e.Node.Id), ("label", reason.Length == 0 ? "certain" : "guessed"),
-                    ("reason", reason), ("verb", call["verb"]), ("url", call["url"]), .. (call["from"] == "parameter" ? [("origin", call["origin"])] : Array.Empty<(string, string)>())]);
+                    ("reason", reason), ("verb", call["verb"]), ("url", call["url"]), .. (call["from"] == "parameter" ? [("origin", call["origin"])] : Array.Empty<(string, string)>()),
+                    .. (call["deferred"] != "" ? [("deferred", call["deferred"])] : Array.Empty<(string, string)>())]);
         }
         // D190: a call written once with a URL its callers give is several facts, one per value; values that fit no endpoint are
         // said once, and only when none fits.

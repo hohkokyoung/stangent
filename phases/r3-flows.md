@@ -193,7 +193,7 @@ Each is brought to the owner one at a time, with a recommendation; none is appli
   ends, not exits); terms-of-service is a page-script check; repository-level entity-event consumers aren't listed;
   model-factory sub-builders, `PrepareAndValidate*`, OAuth helpers and payment plugins end `unknown`.
 
-## Step 3: the flow code — built 2026-11-09, scored; the bar is not passed (rescored after D185's amendment, D189–D193, D196, D198–D200 and rulings R8–R11)
+## Step 3: the flow code — built 2026-11-09, scored; the bar is not passed (rescored after D185's amendment, D189–D193, D196, D198–D201 and rulings R8–R11)
 
 `stangent flows build|show|check` (contract `flows` v1, `docs/flows.md`, D184), a flows scorer in `Stangent.Benchmark`
 (`--score-flows <clone> <key-dir>`), built on the three clones at the key's commits. Layer 2 grew for it (D184): `call-site`
@@ -201,9 +201,10 @@ facts (each call's line), a hook's own functions as points, `filterType` on acce
 
 | Bar item | Sonarr | Kavita | nopCommerce |
 |---|---|---|---|
-| Flows built (click / screen / job / handler / shared) | 1,660 (116 / 31 / 38 / 182 / 1,293) | 558 (233 / 27 / 23 / 0 / 275) | 1,392 (325 / 399 / 17 / 203 / 448) |
-| 1. No wrong ✅ (code check: a ✅ call's line names what it calls) | 71 flagged of 89,757 | 5 of 31,994 | 8 of 92,457 |
-| 2. Key steps, ends and conditions found (≥95%), after R1 (tightened), R4–R6, R8–R11, D189–D193, D196, D198–D200 | **262 / 275 = 95.3% ✓** | **481 / 503 = 95.6% ✓** | **696 / 729 = 95.5% ✓** |
+| Flows built (click / screen / job / handler / shared) | 1,654 (116 / 31 / 38 / 182 / 1,287) | 531 | 1,378 |
+| 1. No wrong ✅ (code check: a ✅ call's line names what it calls) | 69 flagged of 87,666 | 0 of 25,771 | 8 of 90,728 |
+| 2. Key steps, ends and conditions found (≥95%), after R1 (tightened), R4–R6, R8–R11, D189–D193, D196, D198–D201 | **262 / 275 = 95.3% ✓** | **483 / 503 = 96.0% ✓** | **697 / 729 = 95.6% ✓** |
+| — before D201 (step 4's fixes) | 262 / 275 = 95.3% | 481 / 503 = 95.6% | 696 / 729 = 95.5% |
 | — before D200 (ASP.NET Identity's store) | 262 / 275 = 95.3% | 473 / 503 = 94.0% | 696 / 729 = 95.5% |
 | — before D199 (query reads, mail clients, MVC results, self-calls; Sonarr and Kavita unchanged by it) | 262 / 275 = 95.3% | 473 / 503 = 94.0% | 678 / 729 = 93.0% |
 | — before D198 (outside calls with runtime URLs, else-if guards) | 258 / 275 = 93.8% | 471 / 503 = 93.6% | 678 / 729 = 93.0% |
@@ -220,16 +221,17 @@ facts (each call's line), a hook's own functions as points, `filterType` on acce
 | — before any ruling | 175 / 284 = 62% | 354 / 511 = 69% | 590 / 767 = 77% |
 | — steps | 126 / 126 | 223 / 228 | 204 / 210 |
 | — ends (incl. exits) | 53 / 64 | 111 / 122 | 144 / 164 |
-| — conditions | 83 / 85 | 147 / 153 | 348 / 355 |
+| — conditions | 83 / 85 | 149 / 153 | 349 / 355 |
 | (key ends left out: they only say the key didn't follow a call, R1) | 9 | 4 | 38 |
-| (links, not in item 2) | 36 / 45 | 4 / 12 | 17 / 46 |
+| (links, not in item 2) | 35 / 45 | 4 / 12 | 17 / 46 |
 | (checks, not in item 2) | 11 / 25 | 0 / 2 | 26 / 60 |
-| 3. Every 🟡 and ❓ with a reason | pass (21,088 🟡, 1,091 ❓) | pass (1,471, 156) | pass (10,565, 332) |
+| 3. Every 🟡 and ❓ with a reason | pass (16,228 🟡, 1,051 ❓) | pass (1,441, 150) | pass (9,910, 312) |
 | 4. Byte for byte (two builds, and disk) | pass | pass | pass |
 | 5. No silent skips (starts → flows or stated reasons) | pass (2,678 starts) | pass (1,305) | pass (1,244) |
 
-**Bottom line: items 2–5 pass on all three (item 2: Sonarr 95.3%, Kavita 95.6%, nopCommerce 95.5%, after R1 tightened,
-R4–R6, R8–R11, D189–D193, D196 and D198–D200); item 1 isn't settled, which the step 4 fresh check is for** (more ✅ steps to check now that shared flows are written: Sonarr's flags rose 51 → 71) — the samples read
+**Bottom line: items 2–5 pass on all three (item 2: Sonarr 95.3%, Kavita 96.0%, nopCommerce 95.6%, after R1 tightened,
+R4–R6, R8–R11, D189–D193, D196 and D198–D201); item 1: the step 4 fresh check's 3 wrong ✅ are fixed (D201), not re-checked
+by a fresh agent** (more ✅ steps to check now that shared flows are written: Sonarr's flags rose 51 → 71) — the samples read
 are the checker's limits (a hook's function returned under another name, `goToPage: handleGoToPage`; a chain over 10 lines) plus
 one extractor quirk (Kavita's route resolvers' `on-load` lines point at a blank line). Steps are mostly found (72%, 91%, 89%);
 ends are what fail. Where the misses sit: the key stopping a branch one call earlier than the code does (R1, ruled: counted);
@@ -259,7 +261,16 @@ override (false loops, Mono code calling Windows code); a generic controller's t
 fans out to 32 `Test` implementations, 🟡); `shared-eventaggregator-publishevent` walks all 156 handlers (3,724 steps,
 against "the bus is never walked"); an overload 🟡 reason used for two same-named JS globals; HTTP step text with no path
 ("calls *"); `location.href = …` missing its `if`; Kavita repository reads listed twice on one line. Full report: the
-session's notes folder, `step4-fresh-check.md`. Not fixed yet: waits for the owner.
+session's notes folder, `step4-fresh-check.md`.
+
+**Fixed 2026-11-10 (owner: "2"; D201):** all three wrong-✅ causes and seven of the eight others; the generic controller
+narrowing needs layer 2 first. Re-read by code on the spots the check named: Kavita's series page has no menu action on
+open (1,416 → 744 steps, no `DELETE`), `canvasImage.src = ''` is no step, the resolver sits at `app-routing.module.ts:91`,
+`HttpClient` runtime calls end `outside-call`, no `GetMount` loops, the publish flows stop at the handlers (Sonarr 3,724 → 9
+steps, nopCommerce 2,188 → 7), script globals have their own reason, HTTP steps name their endpoint, `location.href` has its
+`if`, no read twice on a line, the scan job's guards inside `lock` hold. The code check of item 1 now flags Sonarr 69 of
+87,666, Kavita 0 of 25,771, nopCommerce 8 of 90,728 (the samples read are the checker's limits). Item 2: Sonarr 95.3%,
+Kavita 96.0%, nopCommerce 95.6%. A second fresh check wasn't run.
 
 ## Left open, on purpose
 

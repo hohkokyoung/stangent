@@ -348,10 +348,39 @@ public sealed class ConditionsDetector : IDetector
     }
 
     /// <summary>X1: an earlier guard among the same statements (`if (x) return …;`, or a branch of an `if … else if` chain that leaves, D198) means this runs only unless x; nearest first.</summary>
-    static void Guards(SyntaxList<StatementSyntax> statements, StatementSyntax stmt, List<Condition> list, ExtractContext ctx)
+    static SyntaxList<StatementSyntax>? Inner(StatementSyntax s) => s switch
     {
+        LockStatementSyntax { Statement: BlockSyntax { Statements.Count: > 0 } b } => b.Statements,
+        UsingStatementSyntax { Statement: BlockSyntax { Statements.Count: > 0 } b } => b.Statements,
+        BlockSyntax { Statements.Count: > 0 } b => b.Statements,
+        _ => null,
+    };
+
+    static void Guards(SyntaxList<StatementSyntax> statements, StatementSyntax stmt, List<Condition> list, ExtractContext ctx, bool includeLast = false)
+    {
+        if (includeLast)
+        {
+            // Read the block's last statement as one before `stmt` too.
+            var last = statements[^1];
+            if (Inner(last) is { } deeper) Guards(deeper, deeper[^1], list, ctx, includeLast: true);
+            else if (last is IfStatementSyntax lastIf)
+            {
+                var chain = new List<IfStatementSyntax>();
+                for (var x = lastIf; x is not null; x = x.Else?.Statement as IfStatementSyntax) chain.Add(x);
+                if (chain[^1].Else is null)
+                    for (var j = chain.Count - 1; j >= 0; j--)
+                        if (Exits(chain[j].Statement)) list.Add(new("unless", chain[j].Condition.ToString(), ctx.Line(chain[j])));
+            }
+        }
         for (var i = statements.IndexOf(stmt) - 1; i >= 0; i--)
         {
+            // D201: a guard inside a block that always runs before this (`lock (x) { if (a) return; … }`, `using`, a bare
+            // block) leaves the method too: its guards hold here, the block's own statements nearest first.
+            if (Inner(statements[i]) is { } inner)
+            {
+                Guards(inner, inner[^1], list, ctx, includeLast: true);
+                continue;
+            }
             if (statements[i] is not IfStatementSyntax first) continue;
             // D198: each branch of an `if … else if …` chain that always leaves is a guard too; a chain ending in an `else`
             // isn't (some branch always runs). Later branches are nearer.

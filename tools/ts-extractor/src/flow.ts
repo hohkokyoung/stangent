@@ -1,3 +1,4 @@
+import { deferredOf } from "./deferred.ts";
 import ts from "typescript";
 import { isAngularComponent, qualifiedName, testName, type Context } from "./extract.ts";
 
@@ -179,6 +180,11 @@ export function conditionsAround(ctx: Context, node: ts.Node): Condition[] {
 function guards(statements: ts.NodeArray<ts.Statement>, child: ts.Statement, out: Condition[], at: (n: ts.Node) => number) {
   for (let j = statements.indexOf(child) - 1; j >= 0; j--) {
     const g = statements[j];
+    // D201: a guard inside a bare block that runs before this leaves the function too.
+    if (ts.isBlock(g) && g.statements.length > 0) {
+      guards(ts.factory.createNodeArray([...g.statements, child]), child, out, at);
+      continue;
+    }
     if (!ts.isIfStatement(g)) continue;
     // D198: each branch of an `if … else if …` chain that always leaves is a guard too; a chain ending in a plain `else` isn't.
     const chain: ts.IfStatement[] = [];
@@ -219,10 +225,13 @@ export function conditionFacts(ctx: Context, sf: ts.SourceFile) {
     const nav = navigation(ctx, n);
     if (nav) {
       const line = ctx.line(n);
+      const deferred = deferredOf(ctx, n);
+      const later = deferred ? { deferred } : {};
       if (nav.exit) ctx.out.fact(CONDITIONS, "exit", ctx.ownerId(n), file, line, {
-        kind: "Redirect", result: nav.to, status: "", text: n.getText(sf), exception: "", conditions: JSON.stringify(conditionsAround(ctx, n)),
+        kind: "Redirect", result: nav.to, status: "", text: n.getText(sf), exception: "", conditions: JSON.stringify(conditionsAround(ctx, n)), ...later,
       });
-      else ctx.out.fact("navigation", "navigate", ctx.ownerId(n), file, line, { to: nav.to, via: nav.via });
+      // D201: a navigation carries the conditions around it (an assignment has no condition fact of its own).
+      else ctx.out.fact("navigation", "navigate", ctx.ownerId(n), file, line, { to: nav.to, via: nav.via, conditions: JSON.stringify(conditionsAround(ctx, n)), ...later });
     }
     if (ts.isThrowStatement(n)) {
       const thrown = n.expression;

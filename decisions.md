@@ -237,3 +237,4 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D198 · An outside HTTP call with a runtime URL ends `outside-call` (still ❓ where); each leaving branch of an `if … else if` chain is an `unless` guard
 - D199 · A query's run reads its source's table (repository `IQueryable<T>`, `DbSet<T>`); `SmtpClient` calls are outside calls; returned MVC `View`/`Redirect…` end `screen`; a method calling itself is a call site
 - D200 · ASP.NET Identity's `UserManager`/`SignInManager`/`RoleManager` async calls end `database` (🟡, the Identity user store); `userManager.Users` queries read its table
+- D201 · Step 4's findings fixed: a kept callback isn't walked where it's handed over (a listener's is 🟡); empty `src`; resolver files; `base.` calls; the bus stops at handler interfaces; script-global reason; endpoint names; navigation conditions; one read per table; guards in blocks; `HttpClient` runtime URLs

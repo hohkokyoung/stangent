@@ -103,13 +103,15 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         foreach (var line in lines)
         {
             var at = new At(FileAt(point, line, file), line, g.Code(FileAt(point, line, file), line));
-            var sites = callSites.Where(f => f.Line == line).OrderBy(f => f["target"], StringComparer.Ordinal).ToList();
+            // D201: code in a function handed to code that keeps it runs later, when something else calls it: not this flow's.
+            static bool Now(Fact f) => !f["deferred"].StartsWith("kept:", StringComparison.Ordinal);
+            var sites = callSites.Where(f => f.Line == line && Now(f)).OrderBy(f => f["target"], StringComparer.Ordinal).ToList();
             var conds = conditions[line].OrderBy(f => f["target"], StringComparer.Ordinal).ToList();
             List<Condition> CondsFor(string? target) =>
                 FlowGraph.ConditionsOf(conds.FirstOrDefault(c => target is not null && c["target"] == target) ?? conds.FirstOrDefault() ?? Empty);
             var consumed = new HashSet<string>(StringComparer.Ordinal);
 
-            var https = Narrow(g.Facts(point, "http-match").Where(f => f.Line == line), branch).OrderBy(f => f["endpoint"], StringComparer.Ordinal).ToList();
+            var https = Narrow(g.Facts(point, "http-match").Where(f => f.Line == line && Now(f)), branch).OrderBy(f => f["endpoint"], StringComparer.Ordinal).ToList();
             if (https.Count > 0 && OnclickScript(point, line) is { } script)
             {
                 // D191: the button's onclick runs a script function with the route as an argument; the script is walked, and the
@@ -127,13 +129,17 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 consumed.UnionWith(sites.Select(x => x["target"]));
             }
             var opened = false;
-            foreach (var open in g.Facts(point, "call-open").Where(f => f.Line == line).OrderBy(f => f["open"], StringComparer.Ordinal))
+            foreach (var open in g.Facts(point, "call-open").Where(f => f.Line == line && Now(f)).OrderBy(f => f["open"], StringComparer.Ordinal))
             {
                 if (!pending.Remove(open["open"], out var routes)) continue;
                 opened = true;
                 foreach (var http in routes) Http(http, at, CondsFor(null), parent, depth, branch, $"the URL is the one the button's onclick passes ({open["verb"]} here)");
             }
-            foreach (var access in g.Facts(point, "access").Where(f => f.Line == line && g.TableOf.ContainsKey(f["entity"])).OrderBy(f => f["entity"], StringComparer.Ordinal))
+            // D201: one step per table and mode on a line (a repository method and the query inside it read the same table once),
+            // the proved one first.
+            foreach (var access in g.Facts(point, "access").Where(f => f.Line == line && g.TableOf.ContainsKey(f["entity"]))
+                         .GroupBy(f => (Table: g.TableOf[f["entity"]], Mode: f["mode"])).OrderBy(x => x.Key.Table, StringComparer.Ordinal).ThenBy(x => x.Key.Mode, StringComparer.Ordinal)
+                         .Select(x => x.OrderBy(f => f["via"] is "repository" or "navigation" ? 1 : 0).ThenBy(f => f["entity"], StringComparer.Ordinal).First()))
             {
                 var table = g.TableOf[access["entity"]];
                 Add(parent, new Step
@@ -168,10 +174,10 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 consumed.UnionWith(sites.Select(x => x["target"]));
             }
             // D192: a navigation that isn't an exit leaves for another screen: a step ending `screen`.
-            foreach (var nav in g.Facts(point, "navigate").Where(f => f.Line == line).OrderBy(f => f["to"], StringComparer.Ordinal))
-                Add(parent, new Step { What = $"goes to {nav["to"]} ({nav["via"]})", At = at, Kind = "navigate", Conditions = CondsFor(null), Depth = depth,
+            foreach (var nav in g.Facts(point, "navigate").Where(f => f.Line == line && Now(f)).OrderBy(f => f["to"], StringComparer.Ordinal))
+                Add(parent, new Step { What = $"goes to {nav["to"]} ({nav["via"]})", At = at, Kind = "navigate", Conditions = nav["conditions"] != "" ? FlowGraph.ConditionsOf(nav) : CondsFor(null), Depth = depth,
                     End = new End("screen", nav["to"]) });
-            foreach (var exit in g.Facts(point, "exit").Where(f => f.Line == line).OrderBy(f => f["text"], StringComparer.Ordinal))
+            foreach (var exit in g.Facts(point, "exit").Where(f => f.Line == line && Now(f)).OrderBy(f => f["text"], StringComparer.Ordinal))
                 parent.Exits.Add((new Exit(exit["kind"], ExitSentence(exit), at, FlowGraph.ConditionsOf(exit), null, point), parent));
             foreach (var load in g.Facts(point, "on-load").Where(f => f.Line == line && f["framework"] != "mvc").OrderBy(f => f["handler"], StringComparer.Ordinal))
             {
@@ -294,7 +300,10 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
     /// <summary>Facts and call sites carry their own file: a view's inline script belongs to the view (N5).</summary>
     string FileAt(string point, int line, string fallback) =>
         g.Facts(point, "call-site").FirstOrDefault(f => f.Line == line)?.File ?? g.Facts(point, "condition").FirstOrDefault(f => f.Line == line)?.File
-        ?? g.Facts(point, "exit").FirstOrDefault(f => f.Line == line)?.File ?? g.Facts(point, "http-match").FirstOrDefault(f => f.Line == line)?.File ?? fallback;
+        ?? g.Facts(point, "exit").FirstOrDefault(f => f.Line == line)?.File ?? g.Facts(point, "http-match").FirstOrDefault(f => f.Line == line)?.File
+        // D201: a route's resolvers sit in the file of the route that names them (a lazy child's parent), not the page's.
+        ?? g.Facts(point, "on-load").FirstOrDefault(f => f.Line == line)?.File ?? g.Facts(point, "guard").FirstOrDefault(f => f.Line == line)?.File
+        ?? g.Facts(point, "navigate").FirstOrDefault(f => f.Line == line)?.File ?? fallback;
 
     void Call(string point, Fact site, string target, At at, List<Condition> conds, Item parent, int depth, List<string> branch)
     {
@@ -316,6 +325,8 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         var kind = site["kind"] == "renders" ? "renders" : "call";
         var callback = site["callback"];
         var guessedSite = site["label"] == "1";
+        // D201: code inside a function registered as an event listener runs when the event comes.
+        var listener = site["deferred"].StartsWith("listener:", StringComparison.Ordinal) ? $"runs when the event comes: a function registered with {site["deferred"][9..]}(…)" : null;
         // G5: a value taken from a hook's result (`const { refetch } = useX()`) and called: the hook stands for it, a guess.
         var byValue = !guessedSite && IsHook(target) && !at.Code.Contains(FlowGraph.ShortName(tnode), StringComparison.Ordinal);
         if (g.Callers(target) >= s.HubCallers && kind == "call")
@@ -330,7 +341,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 {
                     What = $"{(tables.Any(x => x.Write) ? "saves" : "reads")} {names} through {tnode.Name}", At = at, Kind = "database", Point = target, Conditions = conds, Depth = depth,
                     End = new End("database", $"{names} ({tnode.Name}, shared code used by {g.Callers(target)} places)"), Guessed = guessedSite || tables.Any(x => x.Guess),
-                    GuessReason = guessedSite ? OverloadReason : tables.Any(x => x.Guess) ? "a save or read found by a detector's pattern (a repository method's name, a navigation collection)" : null,
+                    GuessReason = guessedSite ? SiteReason(target) : tables.Any(x => x.Guess) ? "a save or read found by a detector's pattern (a repository method's name, a navigation collection)" : null,
                 });
                 // D196: its own code still runs (the save itself, events it sends): the shared walk continues it, as for any hub.
                 reads.Links.Add(new Link("continues", tnode.Name, SharedPoint(target), at, $"Shared code used by {g.Callers(target)} places, reading or saving {names}; {tnode.Name}'s own walk continues it ({at})", null, false));
@@ -339,28 +350,50 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             var item = Add(parent, new Step
             {
                 What = $"calls {tnode.Name}", At = at, Kind = kind, Point = target, Conditions = conds, Depth = depth,
-                End = new End("hub", $"{tnode.Name}: shared code used by {g.Callers(target)} places"), Guessed = guessedSite || byValue,
-                GuessReason = guessedSite ? OverloadReason : byValue ? $"calls a value taken from {tnode.Name}'s result; what it runs isn't known, so the hook stands for it" : null,
+                End = new End("hub", $"{tnode.Name}: shared code used by {g.Callers(target)} places"), Guessed = guessedSite || byValue || listener is not null,
+                GuessReason = guessedSite ? SiteReason(target) : listener ?? (byValue ? $"calls a value taken from {tnode.Name}'s result; what it runs isn't known, so the hook stands for it" : null),
             });
             item.Links.Add(new Link("continues", tnode.Name, SharedPoint(target), at, $"Stops here: shared code used by {g.Callers(target)} places; {tnode.Name}'s own walk continues it ({at})", null, false));
             return;
         }
-        var runs = Runs(target);
+        // D201: `base.M()` runs that method itself, no override.
+        var runs = site["base"] == "1" && g.Nodes.TryGetValue(target, out var own) && own.File is not null ? [target] : Runs(target);
+        // D201: an event bus calling its handler interface (`handler.Handle(event)`) hands the event to its handlers, each a
+        // flow of its own (D173): the bus isn't walked into them.
+        if (runs.Count > 1 && (runs.All(g.HandlerPoints.Contains) || IsHandlerInterface(target)))
+        {
+            Add(parent, new Step { What = $"hands the event to its handlers ({runs.Count} handle events of this kind), each a flow of its own", At = at, Kind = "message", Point = target,
+                Conditions = conds, Depth = depth, End = new End("message", $"the event's handlers, through {tnode.Name}"), Guessed = true,
+                GuessReason = "an event bus calls each handler of the event's type; which ones run depends on the event sent" });
+            return;
+        }
         foreach (var run in runs)
         {
             var several = runs.Count > 1;
             var item = Add(parent, new Step
             {
                 What = kind == "renders" ? $"shows {g.Name(run)}" : callback != "" ? $"when the request answers ({callback}), runs {g.Name(run)}" : $"calls {g.Name(run)}", At = at, Kind = kind, Point = run, Conditions = conds, Depth = depth,
-                Guessed = several || guessedSite || byValue,
-                GuessReason = several ? $"one of {runs.Count}: {string.Join(", ", runs.Select(g.Name))}" : guessedSite ? OverloadReason
-                    : byValue ? $"calls a value taken from {tnode.Name}'s result; what it runs isn't known, so the hook stands for it" : null,
+                Guessed = several || guessedSite || byValue || listener is not null,
+                GuessReason = several ? $"one of {runs.Count}: {string.Join(", ", runs.Select(g.Name))}" : guessedSite ? SiteReason(target)
+                    : listener ?? (byValue ? $"calls a value taken from {tnode.Name}'s result; what it runs isn't known, so the hook stands for it" : null),
             });
             Into(item, run, depth, branch);
         }
     }
 
     const string OverloadReason = "the compiler couldn't pick one overload, so each in-repo candidate is a branch";
+
+    /// <summary>D201: a method of a handler interface (<c>IConsumer&lt;T&gt;.HandleEventAsync</c>): the bus calls each handler through it.</summary>
+    bool IsHandlerInterface(string target)
+    {
+        var type = DocIds(target);
+        var colon = type?.IndexOf("T:", StringComparison.Ordinal) ?? -1;
+        return type is not null && colon >= 0 && g.HandlerInterfaces.Contains(type[(colon + 2)..]);
+    }
+
+    /// <summary>D201: a script's global declared in several files is a choice of files, not of overloads.</summary>
+    static string SiteReason(string target) => target.StartsWith("ts|", StringComparison.Ordinal)
+        ? "scripts declare a global with this name in more than one file; which one the page loads isn't read" : OverloadReason;
 
     /// <summary>Walks into a point unless it's already on this branch (a loop), already walked, or past the depth limit.</summary>
     void Into(Item item, string point, int depth, List<string> branch)
@@ -400,7 +433,8 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         var reason = string.Join("; ", new[] { because, http["reason"] }.Where(r => !string.IsNullOrEmpty(r)));
         var item = Add(parent, new Step
         {
-            What = $"calls {http["verb"]} {http["url"]}".TrimEnd(), At = at, Kind = "http", Point = endpoint, Conditions = conds, Depth = depth,
+            // D201: a form's or onclick's match has no URL of its own: the endpoint names it.
+            What = http["url"] == "" && endpoint != "" ? $"calls {g.Name(endpoint)}" : $"calls {http["verb"]} {http["url"]}".TrimEnd(), At = at, Kind = "http", Point = endpoint, Conditions = conds, Depth = depth,
             Guessed = guessed, GuessReason = guessed ? (reason != "" ? reason : "no reason recorded") : null,
         });
         var actions = endpoint == "" ? [] : g.Out(endpoint, EdgeKind.RoutesTo).Select(e => e.Target).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();

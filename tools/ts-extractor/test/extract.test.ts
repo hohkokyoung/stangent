@@ -647,3 +647,28 @@ test("each branch of an earlier if / else if chain that leaves is an unless cond
   assert.ok(at10 && at10.t === "fact");
   assert.deepEqual(JSON.parse(at10.data.conditions).map((c: { kind: string; text: string; line: number }) => `${c.kind} ${c.text}@${c.line}`), ["unless manual@7", "unless never@5"]);
 });
+
+test("code in a function handed to code that keeps it runs later; a library's callback runs now; a listener's is marked (D201)", () => {
+  const root = project({
+    "src/a.ts": [
+      "declare function act(): void;",
+      "declare const hub: { on(e: string, f: () => void): void };",
+      "type Item = { cb?: () => void };",
+      "function keep(item: Item, cb: () => void) { item.cb = cb; }",
+      "function keepAll(items: Item[], cb: () => void) { items.forEach((i) => keep(i, cb)); return items; }",
+      "function run(cb: () => void) { cb(); }",
+      "export function screen(items: Item[]) {",
+      "  keepAll(items, () => act());",
+      "  run(() => act());",
+      "  [1].map(() => act());",
+      "  hub.on('x', () => act());",
+      "  keepDeep(items, () => act());",
+      "}",
+      "function keepDeep(items: Item[], cb: () => void) { items.forEach((i) => { i.cb = cb; keepDeep([], cb); }); }",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const sites = lines.filter((l) => l.t === "fact" && l.kind === "call-site" && l.data.target.endsWith("#act")).map((l) => l.t === "fact" ? `${l.line} ${l.data.deferred ?? ""}` : "").sort();
+  // A function passing the callback only back to itself (applying it down a tree) still never calls it.
+  assert.deepEqual(sites, ["10 ", "11 listener:on", "12 kept:keepDeep", "8 kept:keepAll", "9 "]);
+});

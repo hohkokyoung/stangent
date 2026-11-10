@@ -2,6 +2,11 @@ import ts from "typescript";
 import type { Context } from "./extract.ts";
 import { BASE, RUNTIME, isBaseName, stringValue } from "./values.ts";
 import { join, paramValues, returns, valuesOf } from "./params.ts";
+import { deferredOf } from "./deferred.ts";
+
+/** D201: whether the call being read runs later (inside a kept callback or a listener), for the facts it writes. */
+let deferredNow = "";
+const deferredData = () => (deferredNow ? { deferred: deferredNow } : {});
 
 const DETECTOR = "frontend-http";
 const ANGULAR_VERBS: Record<string, string> = { get: "GET", post: "POST", put: "PUT", delete: "DELETE", patch: "PATCH", head: "HEAD" };
@@ -111,6 +116,7 @@ function wrapperValue(n: ts.CallExpression, prop: string, checker: ts.TypeChecke
 
 function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
   const { checker } = ctx;
+  deferredNow = deferredOf(ctx, n);
   const callee = n.expression;
   const name = ts.isIdentifier(callee) ? callee.text : ts.isPropertyAccessExpression(callee) ? callee.name.text : "";
   const receiver = ts.isPropertyAccessExpression(callee) ? callee.expression : null;
@@ -261,7 +267,7 @@ function fromParameters(ctx: Context, owner: string, file: string, line: number,
   }
   for (const [key, verbFrom] of [...opens].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
     const [open, verb] = key.split("\u0000");
-    ctx.out.fact(DETECTOR, "call-open", owner, file, line, { verb, verbFrom, open, via });
+    ctx.out.fact(DETECTOR, "call-open", owner, file, line, { verb, verbFrom, open, via, ...deferredData() });
   }
   if (combos.length === 0) return false;
   const values = new Set(combos.map((c) => c.url.split("?")[0])).size;
@@ -273,7 +279,7 @@ function fromParameters(ctx: Context, owner: string, file: string, line: number,
     seen.add(key);
     ctx.out.fact(DETECTOR, "call", owner, file, line, {
       verb: c.verb, url: c.url.split("?")[0], via, responseType: responseType ?? "", bodyType: bodyType ?? "", verbFrom: c.verbFrom,
-      from: "parameter", origin: c.origin, path: c.path.join("|"), of: String(values),
+      from: "parameter", origin: c.origin, path: c.path.join("|"), of: String(values), ...deferredData(),
     });
   }
   return true;
@@ -291,7 +297,7 @@ function callbacks(ctx: Context, owner: string, file: string, settings: ts.Objec
     const target = ctx.symbolId(ctx.checker.getSymbolAtLocation(ts.isPropertyAccessExpression(v) ? v.name : v));
     if (!target || target === owner) continue;
     ctx.out.edge(owner, target, "calls");
-    ctx.out.fact("call-sites", "call-site", owner, file, ctx.line(p), { target, label: "0", kind: "calls", callback: p.name.text });
+    ctx.out.fact("call-sites", "call-site", owner, file, ctx.line(p), { target, label: "0", kind: "calls", callback: p.name.text, ...deferredData() });
   }
 }
 
@@ -310,6 +316,10 @@ function isAngularHttp(ctx: Context, callee: ts.Expression): boolean {
 function imageSource(ctx: Context, n: ts.BinaryExpression) {
   const left = n.left;
   if (!ts.isPropertyAccessExpression(left) || left.name.text !== "src" || !isImage(ctx, left.expression)) return;
+  deferredNow = deferredOf(ctx, n);
+  // D201: setting no address (`img.src = ''`) clears the image; it asks for nothing.
+  const literal = stringValue(n.right, ctx.checker);
+  if (literal !== null && !/[A-Za-z0-9]/.test(literal.replace(/\{\*\}|\{base\}/g, ""))) return;
   const owner = ctx.ownerId(n);
   const file = ctx.rel(n.getSourceFile().fileName);
   const line = ctx.line(n);
@@ -317,7 +327,7 @@ function imageSource(ctx: Context, n: ts.BinaryExpression) {
   if (vs.length === 0) { emit(ctx, owner, file, line, "GET", stringValue(n.right, ctx.checker), "img-src", null, null, "library"); return; }
   for (const url of [...new Set(vs.map((v) => v.value.split("?")[0]))].sort())
     ctx.out.fact(DETECTOR, "call", owner, file, line, { verb: "GET", url, via: "img-src", responseType: "", bodyType: "", verbFrom: "library",
-      ...(vs.length > 1 ? { from: "returns", of: String(vs.length) } : {}) });
+      ...(vs.length > 1 ? { from: "returns", of: String(vs.length) } : {}), ...deferredData() });
 }
 
 function isImage(ctx: Context, e: ts.Expression): boolean {
@@ -335,7 +345,7 @@ function emit(ctx: Context, owner: string, file: string, line: number, verb: str
     return;
   }
   ctx.out.fact(DETECTOR, "call", owner, file, line, {
-    verb, url: url.split("?")[0], via, responseType: responseType ?? "", bodyType: bodyType ?? "", verbFrom,
+    verb, url: url.split("?")[0], via, responseType: responseType ?? "", bodyType: bodyType ?? "", verbFrom, ...deferredData(),
   });
 }
 

@@ -23,6 +23,10 @@ internal sealed partial class FlowGraph
     public ILookup<string, BlindSpot> BlindByOwner { get; }
     /// <summary>Event type → the methods handling it (<c>handle</c> facts).</summary>
     public ILookup<string, string> HandlersByEvent { get; }
+    /// <summary>D201: every method that handles an event (<c>handle</c> facts).</summary>
+    public HashSet<string> HandlerPoints { get; }
+    /// <summary>D201: the interfaces handlers implement (<c>handle</c> facts' <c>interface</c>: <c>IConsumer`1</c>, <c>IHandleAsync`1</c>).</summary>
+    public HashSet<string> HandlerInterfaces { get; }
     /// <summary>Command type → the job methods running it (<c>is-job</c> facts of kind <c>command</c>).</summary>
     public ILookup<string, string> JobsByCommand { get; }
     /// <summary>D191: a script's own functions by their global name (<c>AjaxCart.send_ajax</c>), for a view's onclick to call.</summary>
@@ -47,6 +51,8 @@ internal sealed partial class FlowGraph
             .GroupBy(e => e.Target, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Select(e => e.Source).ToHashSet(StringComparer.Ordinal), StringComparer.Ordinal);
         BlindByOwner = graph.AllBlindSpots.ToLookup(b => b.Owner, StringComparer.Ordinal);
         HandlersByEvent = facts.Where(f => f.Kind == "handle").OrderBy(f => f.Owner, StringComparer.Ordinal).ToLookup(f => f["event"], f => f.Owner, StringComparer.Ordinal);
+        HandlerPoints = facts.Where(f => f.Kind == "handle").Select(f => f.Owner).ToHashSet(StringComparer.Ordinal);
+        HandlerInterfaces = facts.Where(f => f.Kind == "handle" && f["interface"] != "").Select(f => f["interface"]).ToHashSet(StringComparer.Ordinal);
         JobsByCommand = facts.Where(f => f.Kind == "is-job" && f["kind"] == "command" && f["command"] != "").ToLookup(f => f["command"], f => f.Owner, StringComparer.Ordinal);
         rulesByType = facts.Where(f => f.Kind == "rule" && DocIds.ContainingType(f.Owner) is not null)
             .OrderBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line).ThenBy(f => f.Owner, StringComparer.Ordinal)

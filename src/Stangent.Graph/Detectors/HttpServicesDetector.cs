@@ -162,7 +162,8 @@ public sealed class HttpServicesDetector : IDetector
         if (owner is null) return true;
         if (name == "SendAsync")
         {
-            ctx.AddBlindSpot(owner, call, "HTTP call through SendAsync: method and path not followed", Name);
+            // D201: worded as the other outside clients' (D198), so a flow ends it `outside-call`.
+            ctx.AddBlindSpot(owner, call, "outside HTTP call through HttpClient.SendAsync: method and path not followed", Name);
             return true;
         }
         var arg = call.ArgumentList.Arguments.FirstOrDefault()?.Expression;
@@ -170,7 +171,7 @@ public sealed class HttpServicesDetector : IDetector
         var url = ExtractContext.StringValue(arg, file.Model);
         if (url is null)
         {
-            ctx.AddBlindSpot(owner, call, $"HTTP {Calls[name]} to a URL built at runtime", Name);
+            ctx.AddBlindSpot(owner, call, $"outside HTTP {Calls[name]} through HttpClient: URL built at runtime", Name);
             return true;
         }
         ctx.AddFact(Name, "call", owner, call, ("method", Calls[name]), ("url", url), ("client", DocIds.ContainingType(owner) ?? ""));

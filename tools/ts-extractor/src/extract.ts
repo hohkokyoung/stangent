@@ -1,3 +1,4 @@
+import { deferredOf } from "./deferred.ts";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import ts from "typescript";
@@ -557,7 +558,8 @@ function callSite(ctx: Context, sf: ts.SourceFile, id: ts.Identifier, target: st
   if (ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) n = n.parent;
   const owner = ctx.ownerId(id);
   if (owner === target) return;
-  ctx.out.fact("call-sites", "call-site", owner, ctx.rel(sf.fileName), ctx.line(n.parent), { target, label: String(label), kind: edgeKind(id) });
+  const deferred = deferredOf(ctx, n);
+  ctx.out.fact("call-sites", "call-site", owner, ctx.rel(sf.fileName), ctx.line(n.parent), { target, label: String(label), kind: edgeKind(id), ...(deferred ? { deferred } : {}) });
 }
 
 function edgeKind(id: ts.Identifier): string {
