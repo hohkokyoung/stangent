@@ -232,3 +232,4 @@ Every decision still in force, one line each. Short entries are in `decisions/`:
 - D193 · Requests made another way: Angular's `httpResource` URLs and an image's `src` are GET calls; the URL reader takes every return of a function; a component's field initialisers are walked with it
 - D194 · Rulings R8 (a key item quoting no code, like `};`, leaves the count) and R9 (R1 credits `screen` ends too); the key isn't edited
 - D195 · Ruling R10: a key exit's condition counts when it's on the exit or on a step on the way to it; the key isn't edited
+- D196 · A hub whose own code reads or saves a table keeps its `database` end and continues into its shared flow too

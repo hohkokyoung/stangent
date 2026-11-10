@@ -73,6 +73,9 @@ public class FlowsTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.NotEmpty(continues);
         // Every continues link, the shared flows' own included, names the shared flow that walks on from it.
         Assert.All(continues, l => Assert.Contains(l.ToFlow ?? "(none)", ids));
+        // D196: a hub that reads or saves a table ends `database` there and still continues into its shared walk.
+        var reading = set.Flows.SelectMany(f => f.Steps.Where(st => st.Kind == "database" && st.Point is not null).Select(st => (Flow: f, Step: st))).ToList();
+        Assert.All(reading, x => Assert.Contains(x.Flow.Links, l => l.Kind == "continues" && l.Step == x.Step.N && l.ToFlow is not null));
         Assert.All(shared, f => Assert.Equal("the flow that continues here", f.Actor.Who));
         Assert.Equal(FlowFiles.Render(set), FlowFiles.Render(FlowBuilder.Build(shop.Graph, shop.Root, new FlowSettings(HubCallers: 2, Depth: 1))));
     }

@@ -283,12 +283,14 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             if (tables.Count > 0)
             {
                 var names = string.Join(", ", tables.Select(x => x.Table).Distinct(StringComparer.Ordinal));
-                Add(parent, new Step
+                var reads = Add(parent, new Step
                 {
                     What = $"{(tables.Any(x => x.Write) ? "saves" : "reads")} {names} through {tnode.Name}", At = at, Kind = "database", Point = target, Conditions = conds, Depth = depth,
                     End = new End("database", $"{names} ({tnode.Name}, shared code used by {g.Callers(target)} places)"), Guessed = guessedSite || tables.Any(x => x.Guess),
                     GuessReason = guessedSite ? OverloadReason : tables.Any(x => x.Guess) ? "a save or read found by a detector's pattern (a repository method's name, a navigation collection)" : null,
                 });
+                // D196: its own code still runs (the save itself, events it sends): the shared walk continues it, as for any hub.
+                reads.Links.Add(new Link("continues", tnode.Name, SharedPoint(target), at, $"Shared code used by {g.Callers(target)} places, reading or saving {names}; {tnode.Name}'s own walk continues it ({at})", null, false));
                 return;
             }
             var item = Add(parent, new Step

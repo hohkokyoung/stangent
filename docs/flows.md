@@ -60,7 +60,8 @@ the same lines are read in source-line order; each line gives, in this order:
 7. each call (a field or property read, such as an Angular signal `this.seriesId()`, is none, D189; one holding a function
    written in place, `getPageUrl = (n) => …`, is): a constructor of an event some handler handles ends `message`, one `message` link per handler (the bus is never
    walked); a callee with 10 or more callers, counted through the interface or base member it implements, is a `hub`, shown
-   and not walked, unless its own body reads or saves a table, which ends `database` (D172's order); otherwise each
+   and not walked, unless its own body reads or saves a table, which ends `database` (D172's order) and still continues
+   into the hub's shared flow (D196); otherwise each
    implementation it dispatches to (several → one 🟡 branch each) is a step, walked into.
 8. a ❓ the graph recorded there: ends `unknown`, with its reason.
 9. a navigation (`navigate` fact, D192): a step "goes to X" ending `screen`.
