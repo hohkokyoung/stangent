@@ -403,3 +403,8 @@ The walker no longer gives a call with no conditions of its own another call's f
 the code, all right. Bar before → after, both fixes: code check Sonarr 2 → 2 (the known `goToPage`), Kavita 0 → 0, nopCommerce
 0 → 0; item 2 95.3% → 95.3%, 96.0% → 96.0%, 95.6% → 95.6%; items 3–5 pass; ✅ counts unchanged (conditions don't change labels).
 Not re-checked by a fresh agent (D61: another check needs the owner; about 100–120K tokens on Sonnet).
+
+**Item 1 counted passed (2026-11-11, D217; owner: "ur call").** Two fresh checks (6 wrong of 36, three causes fixed; then 0 of
+36) and the code check (only the known `goToPage`). No third check: D215/D216 change no label. A sample can't prove zero (0 of
+36 still allows about 1 in 12); passed means every cause found is fixed. Small item left: RxJS `debounceTime`/`delay` read as
+later, 🟡 like D212's timers. Next: step 5, areas.
