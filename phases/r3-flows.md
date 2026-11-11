@@ -31,7 +31,7 @@ a job is, what queues a job, or the conditions around a call.
 | Determinism | source-line order then id; loops "go back to step N"; names from translation files; every React effect on open; a fixed early-exit list; a display-only rule; byte-for-byte rebuilds (D176) |
 | Contents | name, start, actor, inputs, checks, steps, ends, scenarios (main path plus one per early exit), links, guesses, settings (D179) |
 | Areas | start flows only (D218); the app's parts as its users name them, read from its menu, each top-level item an area, its children the split over 40 (D220, D221); screens no menu reaches join the menu area holding a screen in their home folder, else their folder (D219); clicks take their screen's area, walking up through dialogs, tables and services, the app's frame its own area (D219, D222); jobs to an area with more than half the flows leading to them, else their backend folder (D223); over 40 with nothing to split by flagged (D224); ties listed for a person, never merged by code (D178) |
-| Disk | `specs/flows/<id>.json` + `.md`, `specs/flows/index.json`, `specs/areas.yaml` (by menu items and folders, `large`, `ties`; D225), code-made `specs/areas.json`, all committed; contracts `flows` v1, `areas` v1 (D180) |
+| Disk | each flow's `<id>.json` + `.md` flat in `specs/flows/` until `specs/areas.yaml` exists, then under its area in `specs/areas/<area>/`, shared flows used by one area with it and the rest in `specs/areas/shared/`, tied or unplaced start flows in `specs/areas/unplaced/` (D230, D232); `specs/flows/index.json` maps every id to its `file`; `specs/areas.yaml` (by menu items and folders, `large`, `ties`; D225), code-made `specs/areas.json` and `specs/areas/<area>/page.md` (D233), all committed; contracts `flows` v1, `areas` v1 (D180) |
 
 Worked example (Sonarr, D172–D173): **Add {title}** (signed-in user clicks) → `useAddSeries` → `POST /api/v5/Series` →
 `SeriesController.AddSeries` → `AddSeriesService` → `SeriesService.AddSeries` → saves `Series`, sends SeriesAdded →
@@ -453,4 +453,26 @@ Settings is one screen with tabs, so no menu children split it; nopCommerce's pr
 because Products and Product tags share the Product folder; nopCommerce has handlers in `Nop.Tests` among its start flows
 (a flows matter, not areas). The menu facts' fresh check (D229, owner's OK; ~113K tokens): 29 of 30 right; three shapes added (`Add` call lists, `routeName`,
 key-named properties), resources looked up ignoring case, homes join a menu area only by majority. Graphs rebuilt, flows
-unchanged byte for byte, Sonarr's proposal unchanged. Sonarr's `areas.yaml` confirmed (D231, `benchmark/expected/areas/sonarr.yaml`): 63 areas, 392 of 392 start flows placed, `areas check` passes; D226–D229 accepted. Then decided: flows and pages under their area (D230, not built). Next: build D230, then step 6 (D166).
+unchanged byte for byte, Sonarr's proposal unchanged. Sonarr's `areas.yaml` confirmed (D231, `benchmark/expected/areas/sonarr.yaml`): 63 areas, 392 of 392 start flows placed, `areas check` passes; D226–D229 accepted. Then decided: flows and pages under their area (D230), built below. Next: step 6 (D166).
+
+### Flows and pages under their area: built (2026-11-11, D230, D232–D234)
+
+`flows build` reads `specs/areas.yaml` and writes each flow under its area (`docs/flows.md`, "Files"); `areas check` writes
+`areas.json` and one `page.md` per area (`docs/areas.md`, "Pages"); flows' links are relative Markdown links; `index.json`
+maps every id to its `file`. Settled while building: the slug rule, `unplaced/`, shared flows' users counted by folder (D232);
+the page's shape and layer 4's kept place (D233); `areas propose` builds on a confirmed file (D234, D231's small item).
+Kavita and nopCommerce have no confirmed file yet, so a copy of each proposal (ties unanswered) served as `areas.yaml` to
+exercise the layout, then was deleted and the flows rebuilt flat.
+
+| Repo | `areas.yaml` | Flows | Area folders (files: median, largest) | Shared flows: with their one area / in `shared/` | `unplaced/` |
+|---|---|---|---|---|---|
+| Sonarr | confirmed (D231) | 1,679 | 62 of 63 areas (2, Series 233); NzbDrone.Host holds no start flow, so only its page | 283 / 1,004 | 0 |
+| Kavita | proposal copy | 530 | 28 (5, Customize 135) | 89 / 157 (2 more used only by tied starts sit in `unplaced/`) | 32 tied starts + 2 shared |
+| nopCommerce | proposal copy | 1,378 | 142 (3, Admin › Sales 63) | 87 / 347 | 9 tied starts |
+
+On all three: every flow's `.json` is byte for byte what it was flat, every `.md` the same once its links are unwrapped, and
+`index.json` the same apart from `file`; no link in a flow or a page points at a missing file; `flows check` passes; a second
+`flows build` and `areas check` write nothing. `areas check` passes on Sonarr (392 of 392 placed, 63 pages) and fails on the
+two copies only for their unanswered ties. `areas propose` on Sonarr's confirmed file adds nothing and drops no answer. Fewer
+shared flows sit with one area than D230's 407 estimate for Sonarr (283), since jobs and handlers in backend-folder areas count
+as users of their own. `dotnet test` 2216 pass; extractor 75 pass.
