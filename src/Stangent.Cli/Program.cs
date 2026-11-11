@@ -288,6 +288,7 @@ AiCommands.Add(root);
 JiraCommands.Add(root);
 TicketCommands.Add(root);
 FlowCommands.Add(root);
+AreaCommands.Add(root);
 
 return Cli.Execute(root, args, prettyOption);
 

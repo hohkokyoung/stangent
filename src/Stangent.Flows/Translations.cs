@@ -12,9 +12,23 @@ internal sealed class Translations
     static readonly HashSet<string> Names = new(["en.json", "en-us.json", "en_us.json"], StringComparer.OrdinalIgnoreCase);
     static readonly HashSet<string> Skip = new(["node_modules", ".git", "bin", "obj", "dist", ".stangent", "specs", "artifacts"], StringComparer.OrdinalIgnoreCase);
     readonly string root;
+    readonly bool resources;
     List<Dictionary<string, string>>? files;
 
-    public Translations(string root) => this.root = root;
+    /// <param name="resources">Also .NET-style XML resources, after the JSON files (D228, areas only): a neutral or English <c>.resx</c>, or an
+    /// <c>.xml</c> file named for resources (nopCommerce's <c>defaultResources.nopres.xml</c>), each element with a name and a value child.</param>
+    public Translations(string root, bool resources = false) => (this.root, this.resources) = (root, resources);
+
+    static bool IsResource(string name)
+    {
+        var lower = name.ToLowerInvariant();
+        if (lower.EndsWith(".resx", StringComparison.Ordinal))
+        {
+            var parts = lower[..^5].Split('.');
+            return parts.Length == 1 || parts[^1] is "en" or "en-us" or "en_us";
+        }
+        return lower.EndsWith(".xml", StringComparison.Ordinal) && lower.Contains("resource", StringComparison.Ordinal);
+    }
 
     /// <summary>The words for the first of these <c>|</c>-separated keys any file holds; null when none does.</summary>
     public string? Text(string keys)
@@ -40,13 +54,29 @@ internal sealed class Translations
             {
                 var name = Path.GetFileName(e);
                 if (Directory.Exists(e)) { if (!Skip.Contains(name)) Walk(e); }
-                else if (Names.Contains(name)) found.Add(e);
+                else if (Names.Contains(name) || resources && IsResource(name)) found.Add(e);
             }
         }
         Walk(root);
         var result = new List<Dictionary<string, string>>();
-        foreach (var path in found.OrderBy(p => Path.GetRelativePath(root, p).Replace('\\', '/'), StringComparer.Ordinal))
+        foreach (var path in found.OrderBy(p => p.EndsWith(".json", StringComparison.OrdinalIgnoreCase) ? 0 : 1).ThenBy(p => Path.GetRelativePath(root, p).Replace('\\', '/'), StringComparer.Ordinal))
         {
+            if (!path.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            {
+                var xml = new Dictionary<string, string>(StringComparer.Ordinal);
+                try
+                {
+                    foreach (var el in System.Xml.Linq.XDocument.Load(path).Descendants())
+                    {
+                        var key = el.Attributes().FirstOrDefault(a => a.Name.LocalName.Equals("name", StringComparison.OrdinalIgnoreCase))?.Value;
+                        var value = el.Elements().FirstOrDefault(c => c.Name.LocalName.Equals("value", StringComparison.OrdinalIgnoreCase))?.Value;
+                        if (key is not null && value is not null) xml.TryAdd(key, value.Trim());
+                    }
+                }
+                catch (System.Xml.XmlException) { continue; }
+                result.Add(xml);
+                continue;
+            }
             var map = new Dictionary<string, string>(StringComparer.Ordinal);
             try
             {
