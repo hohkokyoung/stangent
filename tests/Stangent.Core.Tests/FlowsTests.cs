@@ -150,6 +150,15 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void An_interface_member_written_in_a_base_class_dispatches_to_it()
+    {
+        // ConsoleRecorder : RecorderBase, IRecorder, with Record written in RecorderBase: a call through IRecorder runs it.
+        Assert.Contains(shop.Graph.AllEdges, e => e.Kind == EdgeKind.DispatchesTo
+            && e.Source.EndsWith("Shop.Core.IRecorder.Record(System.String)", StringComparison.Ordinal)
+            && e.Target.EndsWith("Shop.Core.RecorderBase.Record(System.String)", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Each_guessed_link_carries_its_own_reason()
     {
         var set = FlowBuilder.Build(shop.Graph, shop.Root);

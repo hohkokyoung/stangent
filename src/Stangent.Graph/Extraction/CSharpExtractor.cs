@@ -117,7 +117,10 @@ public static class CSharpExtractor
             foreach (var member in iface.GetMembers().Where(m => m is IMethodSymbol or IPropertySymbol or IEventSymbol))
             {
                 if (type.FindImplementationForInterfaceMember(member) is not { } impl) continue;
-                if (!SymbolEqualityComparer.Default.Equals(impl.ContainingType?.OriginalDefinition, type.OriginalDefinition)) continue;
+                // Written in this type, or in a base class that doesn't implement the interface itself (`MsSqlDataProvider :
+                // BaseDataProvider, INopDataProvider` with the member in BaseDataProvider): no other type adds that line.
+                if (!SymbolEqualityComparer.Default.Equals(impl.ContainingType?.OriginalDefinition, type.OriginalDefinition)
+                    && (impl.ContainingType is null || impl.ContainingType.AllInterfaces.Contains(iface, SymbolEqualityComparer.Default))) continue;
                 var implId = ctx.NodeId(impl);
                 var ifaceId = ctx.NodeId(member);
                 ctx.AddEdge(implId, ifaceId, EdgeKind.Implements, Label.Certain);
