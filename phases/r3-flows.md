@@ -520,3 +520,6 @@ Settled: counted and sorted by code line into D166's four buckets by a fixed tab
 **Step 6's bar (D237), frozen 2026-11-11:** (1) every 🟡/❓ line on a flow in a bucket, by code; (2) every reason true to its
 cause (code, plus the fresh agent's sample); (3) no several-answer guess missing what the code really runs (the sample);
 (4) D177's items 1–5 still pass. No cut target; before and after counts per bucket reported.
+
+**Known gaps that join (D238):** only those touching a 🟡/❓ line on a flow: L3, X2, X4, W2, and test projects walked as app
+code. X3, X5, W3, V6–V10 and RxJS `debounceTime`/`delay` stay listed (nothing on a flow).
