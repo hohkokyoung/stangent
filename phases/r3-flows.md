@@ -202,7 +202,9 @@ facts (each call's line), a hook's own functions as points, `filterType` on acce
 | Bar item | Sonarr | Kavita | nopCommerce |
 |---|---|---|---|
 | Flows built (click / screen / job / handler / shared) | 1,654 (116 / 31 / 38 / 182 / 1,287) | 531 | 1,378 |
-| 1. No wrong ✅ (code check: a ✅ call's line names what it calls) | 69 flagged of 87,666 | 0 of 25,771 | 8 of 90,728 |
+| 1. No wrong ✅ (code check: a ✅ call's statement names what it calls, D211) | 2 flagged of 88,443 (both right, read: the checker's limit) | 0 of 25,169 | 0 of 90,731 |
+| — before D211 (11 lines read), after D210 | 39 | 0 | 8 |
+| — before D210 (a call through a function's result) | 69 of 87,666 | 0 of 25,771 | 8 of 90,728 |
 | 2. Key steps, ends and conditions found (≥95%), after R1 (tightened), R4–R6, R8–R11, D189–D193, D196, D198–D201 | **262 / 275 = 95.3% ✓** | **483 / 503 = 96.0% ✓** | **697 / 729 = 95.6% ✓** |
 | — before D201 (step 4's fixes) | 262 / 275 = 95.3% | 481 / 503 = 95.6% | 696 / 729 = 95.5% |
 | — before D200 (ASP.NET Identity's store) | 262 / 275 = 95.3% | 473 / 503 = 94.0% | 696 / 729 = 95.5% |
@@ -339,3 +341,12 @@ C4 built (D209): Angular signal-form rules as checks. Checks Kavita 0 → 2/2. M
 min/max, minLength, pattern, custom `validate`), a sample all on real forms the flow submits or saves. Sonarr, nopCommerce: none.
 Round total (D203–D209): links Sonarr 35 → 43/45, Kavita 8/12, nopCommerce 25 → 33/46; checks Sonarr 12 → 25/25, Kavita 0 → 2/2,
 nopCommerce 45 → 50/60; bar items 1–5 unchanged on all three after each fix. Not fresh-checked.
+
+**Item 1's code check settled (2026-11-11, D210, D211).** The check flagged Sonarr 69, nopCommerce 8. Read in the code, two causes:
+30 real wrong ✅ on Sonarr, a call through a value taken from another function's result stated as a call to that function
+(`predicate(…)` after `const predicate = getFilterTypePredicate(type)`, `store(…)` from `createPersist`, `useOption(…)` from
+`createOptionsStore`), fixed generally (D210: 🟡 for any function, layer 2's `call-site` says `fromResult`); and the checker's
+own limits (long chains past its 11 lines, a renamed default import), fixed in the scorer (D211). Code check now: **Sonarr 2,
+Kavita 0, nopCommerce 0**; the 2 are `goToPage(1)` (`History.tsx:95,102`), right ("calls useHistory.handleGoToPage": the hook
+returns `goToPage: handleGoToPage`). Item 2 unchanged: 95.3%, 96.0%, 95.6%; items 3–5 pass; links and checks unchanged. Item 1
+still needs a fresh agent's read of a sample of ✅ steps (D202 was never re-checked either): put to the owner, not started.

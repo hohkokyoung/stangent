@@ -347,14 +347,87 @@ public static partial class FlowScore
                 var line = int.Parse(at[(colon + 1)..], System.Globalization.CultureInfo.InvariantCulture);
                 if (!cache.TryGetValue(file, out var lines))
                     cache[file] = lines = File.Exists(Path.Combine(clone, file)) ? File.ReadAllText(Path.Combine(clone, file)).Replace("\r\n", "\n").Split('\n') : [];
-                var text = line >= 1 && line <= lines.Length ? string.Join(" ", lines.Skip(line - 1).Take(11)) : "";
+                var text = Statement(lines, line);
                 var kind = (string)s["kind"]!;
                 var what = (string)s["what"]!;
                 var name = kind is "call" or "renders" ? Last(what) : null;
-                var ok = text.Trim().Length > 0 && (name is null || text.Contains(name, StringComparison.Ordinal) || ByValue(name, text));
+                var ok = text.Trim().Length > 0 && (name is null || text.Contains(name, StringComparison.Ordinal) || ByValue(name, text) || Imported(name, lines, text));
                 if (!ok) wrong.Add($"{f.Id} step {s["n"]}: \"{what}\" at {at}: `{Short(lines.Length >= line && line >= 1 ? lines[line - 1] : "")}`");
             }
         return wrong;
+    }
+
+    /// <summary>
+    /// D211: the code of the statement a step's line starts, read to its end rather than a fixed number of lines, so a long call
+    /// chain (<c>table.WithColumn(…)…ForeignKey&lt;T&gt;()</c>, 25 lines) is read whole and the next statement isn't. It ends at a
+    /// <c>;</c> outside brackets, at a bracket closing one opened before the line (the step was an argument), at a block's
+    /// <c>{</c> after a header (<c>if (…) {</c>; the rest of the step's own line still read), or at a line end outside brackets when neither that line nor the next carries the
+    /// statement on (a dot, an operator, a comma; comment lines skipped). Strings and <c>//</c> comments are skipped. At most 400 lines.
+    /// </summary>
+    internal static string Statement(string[] lines, int line)
+    {
+        if (line < 1 || line > lines.Length) return "";
+        var read = new List<string>();
+        var (depth, quote, verbatim) = (0, '\0', false);
+        for (var i = line - 1; i < lines.Length && i < line - 1 + 400; i++)
+        {
+            var l = lines[i];
+            var (end, block) = (-1, false);
+            // A step on `} else if (f()) {` or `)} - ${format(` starts after the brackets closing what came before it.
+            var from = i == line - 1 ? l.Length - l.TrimStart().TrimStart('}', ')', ']', ' ', '\t').Length : 0;
+            for (var c = from; c < l.Length && end < 0; c++)
+            {
+                var ch = l[c];
+                if (quote != '\0')
+                {
+                    if (ch == '\\' && !verbatim) c++;
+                    else if (ch == quote) quote = '\0';
+                    continue;
+                }
+                if (ch is '"' or '\'' or '`') { (quote, verbatim) = (ch, ch == '"' && c > 0 && (l[c - 1] == '@' || (l[c - 1] == '$' && c > 1 && l[c - 2] == '@'))); continue; }
+                if (ch == '/' && c + 1 < l.Length && l[c + 1] == '/') break;
+                if (ch == '{' && depth == 0 && BlockHeader(l[from..c])) (end, block) = (c, true);
+                else if (ch is '(' or '[' or '{') depth++;
+                else if (ch is ')' or ']' or '}' && --depth < 0) end = c;
+                else if (ch == ';' && depth == 0) end = c;
+            }
+            // A block opened on the step's own line (`for (…) { download(…); }`, `new() { Text = Get(…) }`) is kept to the line's end.
+            read.Add(end >= 0 && !(block && i == line - 1) ? l[from..end] : l[from..]);
+            if (end >= 0) break;
+            // Only a verbatim string or a template literal runs on to the next line.
+            if (quote == '\'' || (quote == '"' && !verbatim)) quote = '\0';
+            if (depth == 0 && quote == '\0' && !Continues(l, NextCode(lines, i + 1))) break;
+        }
+        return string.Join(" ", read);
+    }
+
+    /// <summary>
+    /// A <c>{</c> that opens a block: after a header's <c>)</c> or after <c>else</c>, <c>try</c>, <c>finally</c>, <c>do</c>. One that
+    /// starts the line is a bracket: a JSX expression (<c>{translate('Details')}</c>) or an initializer entry.
+    /// </summary>
+    static bool BlockHeader(string before)
+    {
+        var t = before.TrimEnd();
+        return t.EndsWith(')') || t is "else" or "try" or "finally" or "do" || t.EndsWith(" else", StringComparison.Ordinal)
+            || t.EndsWith("}else", StringComparison.Ordinal) || t.EndsWith(" try", StringComparison.Ordinal) || t.EndsWith(" finally", StringComparison.Ordinal);
+    }
+
+    /// <summary>The next line holding code: blank lines and <c>//</c> comments between a chain's links are skipped.</summary>
+    static string NextCode(string[] lines, int from)
+    {
+        for (var i = from; i < lines.Length && i < from + 20; i++)
+            if (lines[i].Trim() is { Length: > 0 } t && !t.StartsWith("//", StringComparison.Ordinal)) return lines[i];
+        return "";
+    }
+
+    /// <summary>The statement goes on past this line: it ends on an operator or comma, or the next line starts with a dot or an operator.</summary>
+    static bool Continues(string line, string next)
+    {
+        var t = line.TrimEnd();
+        var n = next.TrimStart();
+        return t.Length > 0 && t[^1] is '.' or ',' or '=' or '+' or '-' or '*' or '/' or '&' or '|' or '?' or ':' or '<' or '>' or '('
+            || n.StartsWith('.') || n.StartsWith("?.", StringComparison.Ordinal) || n.StartsWith("??", StringComparison.Ordinal)
+            || n.StartsWith("&&", StringComparison.Ordinal) || n.StartsWith("||", StringComparison.Ordinal) || n.StartsWith('+') || n.StartsWith('?') || n.StartsWith(':');
     }
 
     /// <summary>The member a call step names: "calls SeriesService.AddSeries" → AddSeries; "runs X.Y" → Y; a constructor → its type.</summary>
@@ -365,6 +438,16 @@ public static partial class FlowScore
         var dot = name.LastIndexOf('.');
         return dot >= 0 ? name[(dot + 1)..] : name;
     }
+
+    /// <summary>
+    /// D211: a module's default export called under the name the file imports it as (<c>import fetchJson from 'Utilities/requestAction'</c>,
+    /// then <c>fetchJson(…)</c> for "calls requestAction"): the module file is named for the function.
+    /// </summary>
+    internal static bool Imported(string name, string[] lines, string text) =>
+        lines.Select(l => ImportDefault().Match(l)).Any(m => m.Success && m.Groups[2].Value == name && text.Contains(m.Groups[1].Value + "(", StringComparison.Ordinal));
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^\s*import\s+(\w+)\s+from\s+['""](?:[^'""]*/)?(\w+)(?:\.\w+)?['""]")]
+    private static partial System.Text.RegularExpressions.Regex ImportDefault();
 
     /// <summary>A hook's value called by its own name (G5: <c>addSeries(…)</c> from <c>useAddSeries()</c>).</summary>
     static bool ByValue(string name, string text) =>
