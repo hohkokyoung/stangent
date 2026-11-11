@@ -1,0 +1,16 @@
+@inject Shop.Web.Localizer T
+@* D221: the shop's menu: links side by side are a list; a list right after a link is its children. *@
+<nav>
+    <ul>
+        <li><a asp-controller="Account" asp-action="Register">Register</a></li>
+        <li><a href="/checkout/">@T("Nav.Checkout")</a></li>
+        <li>
+            <a href="@Url.Action("Settings", "Account")">Settings</a>
+            <ul>
+                <li><a asp-area="Admin" asp-controller="StockAdmin" asp-action="Clear">Clear stock</a></li>
+                <li><a href="@Url.RouteUrl("checkout")">Checkout again</a></li>
+            </ul>
+        </li>
+        <li><a href="#">Top</a></li>
+    </ul>
+</nav>

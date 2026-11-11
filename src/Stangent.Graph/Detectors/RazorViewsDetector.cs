@@ -235,7 +235,8 @@ public sealed class RazorViewsDetector : IDetector
 
         // The markup, rebuilt from the compiler's writes in order, with its forms as points.
         var execute = cls?.Members.OfType<MethodDeclarationSyntax>().FirstOrDefault(md => md.Identifier.ValueText == "ExecuteAsync");
-        var page = execute?.Body is null ? null : new Page(new Walker(file.Model, Statics(cls!, file.Model)).Block(execute.Body.Statements), lines, file.Model);
+        var page = execute?.Body is null ? null : new Page(new Walker(file.Model, Statics(cls!, file.Model)).Block(execute.Body.Statements), lines, file.Model,
+            viewId, rel, viewController, viewArea);
         var formIndex = 0;
         string FormPoint(Page.FormRecord f)
         {
@@ -287,6 +288,7 @@ public sealed class RazorViewsDetector : IDetector
         }
         foreach (var s in page.Scripts)
             Fact("script", viewId, s.Line, ("text", s.Text));
+        MenuTree.Emit(ctx.Fragment.Facts, Name, page.Menus);   // D221: lists of three or more links
     }
 
     /// <summary><c>Views/Customer/Register.cshtml</c> → (Customer, ""); <c>Areas/Admin/Views/Blog/List.cshtml</c> → (Blog, Admin).</summary>
@@ -901,12 +903,66 @@ public sealed class RazorViewsDetector : IDetector
         public List<Button> Buttons { get; } = [];
         public List<Script> Scripts { get; } = [];
 
-        public Page(List<Seg> segs, SourceLines lines, SemanticModel model)
+        readonly string owner, file, ambientController, ambientArea;
+
+        public Page(List<Seg> segs, SourceLines lines, SemanticModel model, string owner = "", string file = "", string ambientController = "", string ambientArea = "")
         {
             this.lines = lines;
             this.model = model;
+            (this.owner, this.file, this.ambientController, this.ambientArea) = (owner, file, ambientController, ambientArea);
             Render(segs);
             Scan();
+        }
+
+        // ---- D221: links as menu items, folded by the markup's nesting ----
+
+        sealed class MarkNode(string tag)
+        {
+            public string Tag { get; } = tag;
+            public List<MarkNode> Kids { get; } = [];
+            public MenuTree.Item? Item { get; set; }
+        }
+
+        static readonly HashSet<string> VoidTags = new(StringComparer.OrdinalIgnoreCase) { "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr" };
+        readonly MarkNode markRoot = new("");
+
+        /// <summary>The menus in the view: lists of three or more links side by side (see <see cref="MenuTree.Fold"/>).</summary>
+        public List<MenuTree.Unit> Menus => MenuTree.Fold(MarkUnits(markRoot));
+
+        static List<MenuTree.Unit> MarkUnits(MarkNode n)
+        {
+            var inside = MenuTree.Fold([.. n.Kids.SelectMany(MarkUnits)]);
+            if (n.Item is null) return inside;
+            n.Item.Children = [.. inside.SelectMany(u => u is MenuTree.ListUnit l ? l.Items : [((MenuTree.ItemUnit)u).Item])];
+            return [new MenuTree.ItemUnit(n.Item)];
+        }
+
+        /// <summary>A link's item: <c>asp-controller</c>/<c>asp-action</c>/<c>asp-area</c>/<c>asp-route</c> (the view's own controller and area when left out), or a constant <c>href</c> or <c>@Url.Action</c>/<c>@Url.RouteUrl</c>; named by its words, title or text keys.</summary>
+        MenuTree.Item? LinkItem(ElemSeg? el, Dictionary<string, string?> attrs, Dictionary<string, string> raw, string text, Match m, int line)
+        {
+            MenuTree.Address? address = null;
+            if (Targets(el))
+            {
+                string? Prop(string name) => el!.Props.TryGetValue(name, out var v) ? v : null;
+                var runtime = el!.Props.Where(p => p.Key is "Action" or "Controller" or "Area" or "Route").Any(p => p.Value is null);
+                var controller = el.Props.ContainsKey("Controller") ? Prop("Controller") : ambientController;
+                var area = el.Props.ContainsKey("Area") ? Prop("Area") : ambientArea;
+                if (!runtime && Prop("Route") is { } route && Prop("Action") is null) address = MenuTree.Address.Route(route);
+                else if (!runtime && Prop("Action") is { } action && !string.IsNullOrEmpty(controller)) address = MenuTree.Address.Mvc(area ?? "", controller, action);
+            }
+            else if (raw.TryGetValue("href", out var href))
+            {
+                var (url, route, action, controller, area, runtime) = Address(href, false);
+                if (runtime) address = null;
+                else if (url is not null) address = MenuTree.Address.Url(url);
+                else if (route is not null && action is null) address = MenuTree.Address.Route(route);
+                else if (action is not null && (controller ?? ambientController) is { Length: > 0 } c) address = MenuTree.Address.Mvc(area ?? ambientArea, c, action);
+            }
+            if (address is null) return null;
+            var (keys, words) = Words(Inner(text, m, "a"));
+            if (words.Length == 0) words = Get(attrs, "title") ?? "";
+            if (words.Length == 0 && keys.Count == 0) return null;
+            return new MenuTree.Item(words, keys.FirstOrDefault() ?? "", address, "markup", owner, file, line);
         }
 
         public int LineOf(ElemSeg el) => elemLines.GetValueOrDefault(el, 1);
@@ -973,6 +1029,7 @@ public sealed class RazorViewsDetector : IDetector
         {
             var text = html.ToString();
             var forms = new Stack<(FormRecord Form, int Start)>();
+            var marks = new List<MarkNode> { markRoot };
             var scriptEnd = -1;
             foreach (Match m in Tag.Matches(text))
             {
@@ -996,6 +1053,8 @@ public sealed class RazorViewsDetector : IDetector
                 }
                 if (m.Groups[1].Value == "/")
                 {
+                    var openMark = marks.FindLastIndex(x => x.Tag == name);
+                    if (openMark > 0) marks.RemoveRange(openMark, marks.Count - openMark);
                     if (name == "form" && forms.Count > 0)
                     {
                         var (open, start) = forms.Pop();
@@ -1006,6 +1065,10 @@ public sealed class RazorViewsDetector : IDetector
                 var el = ElemMark.Match(m.Groups[3].Value) is { Success: true } em ? Elements[int.Parse(em.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture)] : null;
                 var (attrs, raw) = Attributes(m.Groups[3].Value, el);
                 var line = el is not null ? LineOf(el) : Line(m.Index);
+                var mark = new MarkNode(name);
+                marks[^1].Kids.Add(mark);
+                if (!VoidTags.Contains(name) && !m.Groups[3].Value.TrimEnd().EndsWith('/') && el is not { SelfClosing: true }) marks.Add(mark);
+                if (name == "a") mark.Item = LinkItem(el, attrs, raw, text, m, line);
                 switch (name)
                 {
                     case "form":

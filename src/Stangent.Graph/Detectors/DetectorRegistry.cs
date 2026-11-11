@@ -19,6 +19,7 @@ public static class DetectorRegistry
         new BackgroundJobsDetector(), // work queued to run later (G11)
         new JobsDetector(), // system jobs and the code that queues them (D171, D173)
         new ConditionsDetector(), // the conditions around each call, and early exits (D174)
+        new MenuDetector(), // menus built in C# as data (D221)
         new OnLoadDetector(), // after routes and views: MVC GET actions that return a view (D171)
         new ConfigKeysDetector(),
         new HttpServicesDetector(), // after routes: it links calls to their endpoints

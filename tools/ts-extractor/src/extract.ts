@@ -10,6 +10,7 @@ import { pages } from "./routes.ts";
 import { rootScreens } from "./rootScreens.ts";
 import { conditionFacts, effectName, onLoadFacts } from "./flow.ts";
 import { signalFormRules } from "./forms.ts";
+import { menuFacts } from "./menu.ts";
 
 /**
  * The compiler's part of the frontend map (D31): points for declarations, ✅ lines for what the
@@ -104,6 +105,7 @@ export function extract(o: Options): Output {
   for (const sf of files) onLoadFacts(ctx, sf); // D171, D176
   for (const sf of [...files, ...inlineFiles]) conditionFacts(ctx, sf); // D174
   for (const sf of files) signalFormRules(ctx, sf); // D209
+  for (const sf of files) menuFacts(ctx, sf); // D221
   if (scripts) for (const sf of [...files, ...inlineFiles]) domEvents(ctx, sf);
   if (o.enums) for (const sf of files) enums(ctx, sf);
   return out;

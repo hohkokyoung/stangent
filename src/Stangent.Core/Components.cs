@@ -43,6 +43,7 @@ public static class StangentComponents
         Detector("background-jobs", "Work queued to run later (Hangfire)"),
         Detector("jobs", "System jobs (command handlers, scheduled tasks) and the code that queues them"),
         Detector("conditions", "The conditions around each call, and early exits"),
+        Detector("menu", "Menus built in C# as data: items with a name and an address, children nested (D221)"),
         Detector("on-load", "What runs as a server-rendered page opens (MVC GET actions returning a view)", "detector-aspnetcore-routes", "detector-razor-views"),
         Detector("config-keys", "Configuration keys"),
         Detector("http-services", "Backend HTTP calls to endpoints", "detector-aspnetcore-routes"),
