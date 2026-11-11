@@ -335,3 +335,7 @@ gave each Sonarr screen ~555 validator checks: a walked `SharedValidator.Validat
 subclass writes; now subclass rules come only through the action the subclass serves, and only for actions taking a body (GETs list
 none). Left: provider edit flows list every provider kind's settings rules (~257 checks each; `FreeboxDownloadSettings`,
 `QBittorrentSettings`, … reached through `IProviderConfig.Validate`), the type-argument gap. nopCommerce and Kavita: unchanged.
+C4 built (D209): Angular signal-form rules as checks. Checks Kavita 0 → 2/2. Made: 84 distinct rules on 34 Kavita flows (required,
+min/max, minLength, pattern, custom `validate`), a sample all on real forms the flow submits or saves. Sonarr, nopCommerce: none.
+Round total (D203–D209): links Sonarr 35 → 43/45, Kavita 8/12, nopCommerce 25 → 33/46; checks Sonarr 12 → 25/25, Kavita 0 → 2/2,
+nopCommerce 45 → 50/60; bar items 1–5 unchanged on all three after each fix. Not fresh-checked.

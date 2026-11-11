@@ -713,13 +713,18 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 if (v["member"] != "") ran.AddRange(g.RulesOn[v["member"]].Where(r => inChain.Contains(r["in"])));
                 else if (v["receiver"] != "") foreach (var type in g.Implementers(v["receiver"]).Order(StringComparer.Ordinal)) ran.AddRange(g.RulesIn[type]);
         }
+        // D209: an Angular signal form's rules, for a flow whose code reads the form or its model (`this.formModel()`).
+        foreach (var p in walked.Keys)
+            foreach (var site in g.Facts(p, "call-site"))
+                ran.AddRange(g.FormRules[site["target"]]);
         foreach (var rule in ran.Where(r => r.File is not null).DistinctBy(r => (r.File, r.Line, r["rule"], r.Owner))
                      .OrderBy(r => r.File, StringComparer.Ordinal).ThenBy(r => r.Line).ThenBy(r => r.Owner, StringComparer.Ordinal))
         {
             var at = new At(rule.File!, rule.Line, g.Code(rule.File, rule.Line));
             if (seen.Contains($"{at}|{rule["rule"]}")) continue;
             seen.Add($"{at}|{rule["rule"]}");
-            flow.Checks.Add(new Check($"{g.Name(rule.Owner)}: {rule["rule"]}{(rule["args"] != "" ? $"({rule["args"]})" : "")}{(rule["set"] != "" ? $" ({rule["set"]})" : "")}", rule["rule"], rule.Owner,
+            var subject = rule["via"] == "angular-signal-forms" ? $"{g.Name(rule.Owner)}.{rule["property"]}" : g.Name(rule.Owner);
+            flow.Checks.Add(new Check($"{subject}: {rule["rule"]}{(rule["args"] != "" ? $"({rule["args"]})" : "")}{(rule["set"] != "" ? $" ({rule["set"]})" : "")}", rule["rule"], rule.Owner,
                 at, rule["message"], rule["modifiers"].Split('|').Contains("AsWarning", StringComparer.Ordinal) || rule["severity"] == "Warning"));
         }
         // D207: request filters on an action the flow runs check the request before it does.

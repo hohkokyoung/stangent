@@ -38,6 +38,8 @@ internal sealed partial class FlowGraph
     /// <summary>D208: rules by the class they're written in, and by the field or property holding the validator they're added to.</summary>
     public ILookup<string, Fact> RulesIn { get; }
     public ILookup<string, Fact> RulesOn { get; }
+    /// <summary>D209: an Angular signal form's rules, by the field holding the form and by the field holding its model.</summary>
+    public ILookup<string, Fact> FormRules { get; }
 
     public FlowGraph(CodeGraph graph, string root)
     {
@@ -63,6 +65,9 @@ internal sealed partial class FlowGraph
         var rules = facts.Where(f => f.Kind == "rule").OrderBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line).ThenBy(f => f.Owner, StringComparer.Ordinal).ToList();
         RulesIn = rules.Where(f => f["in"] != "" && f["on"] == "").ToLookup(f => f["in"], StringComparer.Ordinal);
         RulesOn = rules.Where(f => f["on"] != "").ToLookup(f => f["on"], StringComparer.Ordinal);
+        var forms = rules.Where(f => f["via"] == "angular-signal-forms").ToList();
+        FormRules = forms.Select(f => (Key: f.Owner, Rule: f)).Concat(forms.Where(f => f["model"] != "").Select(f => (Key: f["model"], Rule: f)))
+            .ToLookup(x => x.Key, x => x.Rule, StringComparer.Ordinal);
         ScriptPoints = Nodes.Values.Where(n => n.Kind == NodeKind.Method && n.Id.StartsWith("ts|", StringComparison.Ordinal) && !n.IsTest && n.File is not null && n.File.EndsWith(".js", StringComparison.Ordinal))
             .OrderBy(n => n.Id, StringComparer.Ordinal).ToLookup(n => n.Name, n => n.Id, StringComparer.Ordinal);
         TableOf = edges.Where(e => e.Kind == EdgeKind.Maps && Nodes.TryGetValue(e.Source, out var t) && t.Kind == NodeKind.Table)
