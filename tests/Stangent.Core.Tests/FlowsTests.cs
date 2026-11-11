@@ -176,8 +176,24 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
     [InlineData("one of 3: A.Run, B.Run, C.Run", "one-of-n")]
     [InlineData("a queued command matched to its job by type", "queued-command")]
     [InlineData("no screen in the code matches /Admin/Order/List", "no-screen")]
-    [InlineData("sent when the mutation is started (its mutate(…) is called), not when useMutation sets it up; 2 endpoints fit (…)", "mutation")]
+    [InlineData("2 endpoints fit (DELETE /a and DELETE /b); the URL is a parameter: one of 3 values its callers pass, this one", "endpoints-fit")]
     public void A_reason_is_sorted_by_its_first_part(string reason, string cause) => Assert.Equal(cause, GuessReport.Classify(reason, GuessReport.Guessed)?.Id);
+
+    [Theory]
+    [InlineData("deferred", "stream:ref.closed", "only when the stream sends a value (`ref.closed`)")]
+    [InlineData("deferred", "timer:setTimeout", "after `setTimeout`'s delay")]
+    [InlineData("deferred", "listener:connection.on", "only when the event comes (`connection.on`)")]
+    [InlineData("deferred", "mutation:useMutation", "only when the mutation is started (`mutate(…)` is called)")]
+    [InlineData("closedBy", "Modal|!isOpen|isOpen=open", "only while `isOpen` (Modal draws nothing otherwise; here isOpen=open)")]
+    public void Code_that_runs_later_reads_as_a_condition_not_a_guess(string key, string value, string text)
+    {
+        // D240: certain code that runs later or only when something happens carries "only when …", not 🟡.
+        var fact = new Fact("d", "call-site", "o", "a.ts", 3, new Dictionary<string, string> { [key] = value });
+        var when = Walker.When(fact, new At("a.ts", 3, ""));
+        Assert.NotNull(when);
+        Assert.Equal(text, FlowFiles.WhenText(when));
+        Assert.Null(Walker.When(new Fact("d", "call-site", "o", "a.ts", 3, new Dictionary<string, string>()), new At("a.ts", 3, "")));
+    }
 
     [Fact]
     public void A_queued_command_reason_on_a_screen_link_fails_item_2()
@@ -230,30 +246,31 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
-    public void A_call_inside_a_timer_runs_later_a_guess_that_says_so()
+    public void A_call_inside_a_timer_runs_later_a_condition_that_says_so()
     {
-        // D212: `setInterval(() => refreshPrices(), 60000)` runs refreshPrices after its delay, not when the click runs.
+        // D212, D240: `setInterval(() => refreshPrices(), 60000)` runs refreshPrices after its delay, not when the click runs:
+        // certain, so a condition on the step, not 🟡.
         var set = FlowBuilder.Build(shop.Graph, shop.Root);
         var steps = set.Flows.SelectMany(f => f.Steps).Where(s => s.At.File.EndsWith("PriceTag.tsx", StringComparison.Ordinal) && s.At.Line == 12 && s.What.Contains("refreshPrices", StringComparison.Ordinal)).ToList();
         Assert.NotEmpty(steps);
         Assert.All(steps, s =>
         {
-            Assert.True(s.Guessed);
-            Assert.Equal("runs later: a function given to setInterval(…), after its delay, not when this code runs", s.GuessReason);
+            Assert.False(s.Guessed);
+            Assert.Equal("after `setInterval`'s delay", FlowFiles.WhenText(s.Conditions[0]));
         });
     }
 
     [Fact]
-    public void An_element_inside_a_component_that_draws_nothing_until_a_prop_is_set_is_a_guess_that_says_so()
+    public void An_element_inside_a_component_that_draws_nothing_until_a_prop_is_set_has_a_condition_that_says_so()
     {
-        // D213: Drawer returns null while `!isOpen`, so PriceTag inside it is shown only when it's open.
+        // D213, D240: Drawer returns null while `!isOpen`, so PriceTag inside it is shown only while it's open.
         var set = FlowBuilder.Build(shop.Graph, shop.Root);
         var steps = set.Flows.SelectMany(f => f.Steps).Where(s => s.At.File.EndsWith("PriceModal.tsx", StringComparison.Ordinal) && s.What == "shows PriceTag").ToList();
         Assert.NotEmpty(steps);
         Assert.All(steps, s =>
         {
-            Assert.True(s.Guessed);
-            Assert.Equal("shown only when Drawer draws it: Drawer draws nothing while `!isOpen` (here isOpen=open)", s.GuessReason);
+            Assert.False(s.Guessed);
+            Assert.Equal("only while `isOpen` (Drawer draws nothing otherwise; here isOpen=open)", FlowFiles.WhenText(s.Conditions[0]));
         });
     }
 

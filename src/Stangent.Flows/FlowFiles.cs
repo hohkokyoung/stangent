@@ -92,6 +92,25 @@ public static class FlowFiles
         _ => "",
     };
 
+    /// <summary>D240: when code that certainly runs, runs: a condition read as "only when …" rather than "only if …".</summary>
+    internal static string? WhenText(Condition c) => c.Kind switch
+    {
+        "mutation" => $"only when the mutation is started (`{c.Code}` is called)",
+        "timer" => $"after `{c.Code}`'s delay",
+        "stream" => $"only when the stream sends a value (`{c.Code}`)",
+        "listener" => $"only when the event comes (`{c.Code}`)",
+        "drawn" => $"only while `{c.Code}` ({c.Case})",
+        _ => null,
+    };
+
+    static string StepConditions(List<Condition> cs)
+    {
+        var sb = new StringBuilder();
+        foreach (var w in cs.Select(WhenText).OfType<string>()) sb.Append(", ").Append(w);
+        if (cs.FirstOrDefault(c => WhenText(c) is null) is { } first) sb.Append($", only if `{first.Code}`{Reading(first.Kind)}");
+        return sb.ToString();
+    }
+
     static JsonArray Conditions(IEnumerable<Condition> cs) => [.. cs.Select(c =>
     {
         var o = new JsonObject { ["kind"] = c.Kind, ["at"] = $"{c.File}:{c.Line}", ["code"] = c.Code };
@@ -216,7 +235,7 @@ public static class FlowFiles
             var d = st.From is { } p && depth.TryGetValue(p, out var pd) ? pd + 1 : 0;
             depth[st.N] = d;
             sb.Append(new string(' ', d * 2)).Append($"- {st.N}. {st.What}{(st.Guessed ? " 🟡" : "")}");
-            if (st.Conditions.Count > 0) sb.Append($", only if `{st.Conditions[0].Code}`{Reading(st.Conditions[0].Kind)}");
+            sb.Append(StepConditions(st.Conditions));
             if (st.End is { } e) sb.Append($" — ends: {e.Kind}, {e.Detail}");
             if (st.BackTo is { } b) sb.Append(b == 0 ? " — goes back to the start" : $" — goes back to step {b}");
             if (st.SameAs is { } sa) sb.Append($" — as in step {sa}");
@@ -228,7 +247,7 @@ public static class FlowFiles
             foreach (var e in f.Exits) sb.Append($"- {e.What}{(e.Conditions.Count > 0 ? $", only if `{e.Conditions[0].Code}`" : "")}{(e.Step is { } n ? $", in step {n}" : "")} (`{e.At}`)\n");
         }
         sb.Append("\n## Scenarios\n\n");
-        foreach (var sc in f.Scenarios) sb.Append($"- {sc.Name}{(sc.Conditions.Count > 0 ? $": {string.Join(" ← ", sc.Conditions.Select(c => $"`{c.Code}`"))}" : "")}\n");
+        foreach (var sc in f.Scenarios) sb.Append($"- {sc.Name}{(sc.Conditions.Count > 0 ? $": {string.Join(" ← ", sc.Conditions.Select(c => WhenText(c) ?? $"`{c.Code}`"))}" : "")}\n");
         if (f.Links.Count > 0)
         {
             sb.Append("\n## Links\n\n");

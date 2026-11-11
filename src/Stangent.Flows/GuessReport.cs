@@ -36,10 +36,9 @@ public static class GuessReport
         new("handlers", "handlers or jobs found by type", MissingRule, @"handlers found by the event's type|event bus calls each handler", ["message", "call"], "the bus's registration of handlers is a framework scan, not read"),
         new("queued-command", "handlers or jobs found by type", MissingRule, @"queued command matched to its job", ["queue"], "the command queue's job lookup is a framework scan, not read"),
         new("queue-table", "handlers or jobs found by type", AppSpecific, @"table named as a queue", ["call", "database"]),
-        new("mutation", "runs later or maybe", MissingRule, @"sent when the mutation is started|reaches no server work itself", ["http", "call"]),
-        new("stream", "runs later or maybe", MissingRule, @"runs when the stream sends a value", Later),
-        new("timer", "runs later or maybe", MissingRule, @"runs later: a function given to", Later),
-        new("listener", "runs later or maybe", MissingRule, @"runs when the event comes", Later),
+        // D240: a mutation's request, a stream's or timer's or listener's function and a component's element that draws only
+        // while a prop is set are conditions on their step, not 🟡; what stays is a function a library keeps whose running isn't known.
+        new("library-callback", "runs later or maybe", MissingRule, @"reaches no server work itself", ["call"], "whether the function starts what the library keeps isn't followed"),
         new("function-result", "runs later or maybe", MissingRule, @"calls a value taken from", Later, "what another function returns isn't followed (D210)"),
         new("drawn-when", "runs later or maybe", MissingRule, @"^shown only when", ["renders"]),
         new("endpoints-fit", "URL or target match", MissingRule, @"endpoints fit", Http),

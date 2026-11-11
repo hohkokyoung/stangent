@@ -180,8 +180,8 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             // D192: a navigation that isn't an exit leaves for another screen: a step ending `screen`.
             foreach (var nav in g.Facts(point, "navigate").Where(f => f.Line == line && Now(f)).OrderBy(f => f["to"], StringComparer.Ordinal))
             {
-                var step = Add(parent, new Step { What = $"goes to {nav["to"]} ({nav["via"]})", At = at, Kind = "navigate", Conditions = nav["conditions"] != "" ? FlowGraph.ConditionsOf(nav) : CondsFor(null), Depth = depth,
-                    Guessed = Later(nav) is not null, GuessReason = Later(nav),
+                var step = Add(parent, new Step { What = $"goes to {nav["to"]} ({nav["via"]})", At = at, Kind = "navigate",
+                    Conditions = WithWhen(When(nav, at), nav["conditions"] != "" ? FlowGraph.ConditionsOf(nav) : CondsFor(null)), Depth = depth,
                     End = new End("screen", nav["to"]) });
                 ScreenLinks(step, at, nav["to"], g.PagesAt(nav["to"], at.File, nav["root"] == "1"));
             }
@@ -343,7 +343,8 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         var callback = site["callback"];
         var guessedSite = site["label"] == "1";
         // D201: code inside a function registered as an event listener runs when the event comes.
-        var listener = Later(site);
+        var when = When(site, at);
+        conds = WithWhen(when, conds);
         // G5, D210: a value taken from a function's result (`const predicate = getPredicate(t)`, `const { refetch } = useX()`) and
         // called, when layer 2 couldn't tell which function was handed back: the function stands for it, a guess.
         var byValue = !guessedSite && site["fromResult"] == "1";
@@ -368,8 +369,8 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             var item = Add(parent, new Step
             {
                 What = $"calls {tnode.Name}", At = at, Kind = kind, Point = target, Conditions = conds, Depth = depth,
-                End = new End("hub", $"{tnode.Name}: shared code used by {g.Callers(target)} places"), Guessed = guessedSite || byValue || listener is not null,
-                GuessReason = guessedSite ? SiteReason(target) : listener ?? (byValue ? ValueReason(tnode.Name) : null),
+                End = new End("hub", $"{tnode.Name}: shared code used by {g.Callers(target)} places"), Guessed = guessedSite || byValue,
+                GuessReason = guessedSite ? SiteReason(target) : byValue ? ValueReason(tnode.Name) : null,
             });
             item.Links.Add(new Link("continues", tnode.Name, SharedPoint(target), at, $"Stops here: shared code used by {g.Callers(target)} places; {tnode.Name}'s own walk continues it ({at})", null, false));
             return;
@@ -391,9 +392,9 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             var item = Add(parent, new Step
             {
                 What = kind == "renders" ? $"shows {g.Name(run)}" : callback != "" ? $"when the request answers ({callback}), runs {g.Name(run)}" : $"calls {g.Name(run)}", At = at, Kind = kind, Point = run, Conditions = conds, Depth = depth,
-                Guessed = several || guessedSite || byValue || listener is not null,
+                Guessed = several || guessedSite || byValue,
                 GuessReason = several ? $"one of {runs.Count}: {string.Join(", ", runs.Select(g.Name))}" : guessedSite ? SiteReason(target)
-                    : listener ?? (byValue ? ValueReason(tnode.Name) : null),
+                    : byValue ? ValueReason(tnode.Name) : null,
             });
             Into(item, run, depth, branch);
         }
@@ -420,24 +421,32 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
 
     const string OverloadReason = "the compiler couldn't pick one overload, so each in-repo candidate is a branch";
 
-    /// <summary>D201, D202: why code runs later than its point: a listener's function, or a callback on a stream that isn't a request.</summary>
-    static string? Later(Fact f) => f["deferred"] switch
+    /// <summary>
+    /// D240 (was D201, D202, D212–D214's 🟡): code that certainly runs, only later or only when something happens, carries a
+    /// condition saying when: a listener's function when the event comes, a stream's callback when it sends a value, a timer's
+    /// function after its delay, a mutation's request when it's started, an element of a component that draws nothing while a
+    /// prop is unset. Null: it runs now.
+    /// </summary>
+    internal static Condition? When(Fact f, At at) => f["deferred"] switch
     {
-        var d when d.StartsWith("listener:", StringComparison.Ordinal) => $"runs when the event comes: a function registered with {d[9..]}(…)",
-        var d when d.StartsWith("stream:", StringComparison.Ordinal) => $"runs when the stream sends a value ({d[7..]}), not when this code runs",
-        // D212: a timer's function runs after its delay or on its repeat.
-        var d when d.StartsWith("timer:", StringComparison.Ordinal) => $"runs later: a function given to {d[6..]}(…), after its delay, not when this code runs",
-        // D214: a mutation hook keeps its function (and the request in it) until the mutation is started.
-        var d when d.StartsWith("mutation:", StringComparison.Ordinal) => $"sent when the mutation is started (its mutate(…) is called), not when {d[9..]} sets it up",
-        _ => Closed(f["closedBy"]),
+        var d when d.StartsWith("listener:", StringComparison.Ordinal) => new Condition("listener", d[9..], at.File, at.Line),
+        var d when d.StartsWith("stream:", StringComparison.Ordinal) => new Condition("stream", d[7..], at.File, at.Line),
+        var d when d.StartsWith("timer:", StringComparison.Ordinal) => new Condition("timer", d[6..], at.File, at.Line),
+        var d when d.StartsWith("mutation:", StringComparison.Ordinal) => new Condition("mutation", "mutate(…)", at.File, at.Line, d[9..]),
+        _ => Drawn(f["closedBy"], at),
     };
 
-    /// <summary>D213: an element inside a component that draws nothing while a prop is unset (<c>Modal|!isOpen|isOpen=open</c>).</summary>
-    static string? Closed(string closedBy)
+    /// <summary>D213, D240: an element inside a component that draws nothing while a prop is unset (<c>Modal|!isOpen|isOpen=open</c>).</summary>
+    static Condition? Drawn(string closedBy, At at)
     {
         var parts = closedBy.Split('|');
-        return parts.Length == 3 ? $"shown only when {parts[0]} draws it: {parts[0]} draws nothing while `{parts[1]}` (here {parts[2]})" : null;
+        if (parts.Length != 3) return null;
+        var shown = parts[1].StartsWith('!') ? parts[1][1..] : $"!({parts[1]})";
+        return new Condition("drawn", shown, at.File, at.Line, $"{parts[0]} draws nothing otherwise; here {parts[2]}");
     }
+
+    /// <summary>The step's conditions with D240's "when" first, so it is what the step reads with.</summary>
+    static List<Condition> WithWhen(Condition? when, List<Condition> conds) => when is null ? conds : [when, .. conds];
 
     /// <summary>D201: a method of a handler interface (<c>IConsumer&lt;T&gt;.HandleEventAsync</c>): the bus calls each handler through it.</summary>
     bool IsHandlerInterface(string target)
@@ -485,9 +494,9 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
     void Http(Fact http, At at, List<Condition> conds, Item parent, int depth, List<string> branch, string? because = null)
     {
         var endpoint = http["endpoint"];
-        var later = Later(http);
-        var guessed = http["label"] != "certain" || because is not null || later is not null;
-        var reason = string.Join("; ", new[] { because, later, http["reason"] }.Where(r => !string.IsNullOrEmpty(r)));
+        conds = WithWhen(When(http, at), conds);
+        var guessed = http["label"] != "certain" || because is not null;
+        var reason = string.Join("; ", new[] { because, http["reason"] }.Where(r => !string.IsNullOrEmpty(r)));
         var item = Add(parent, new Step
         {
             // D201: a form's or onclick's match has no URL of its own: the endpoint names it.
