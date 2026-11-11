@@ -391,3 +391,15 @@ Counted as a condition not shown, not a wrong ✅. Same kind among the minor: `t
 found (not fixed, owner's call): a cache's get-or-create function runs only on a miss, and an optional call (`a?.b()`) only when
 `a` is set, neither shown as a condition; an element's own modal wrapper with `isOpen` false is still ✅ "shows X" (it runs and
 draws nothing); RxJS `debounceTime`/`delay` operators aren't read as later. Report: notes folder `item1-check2.md`.
+
+**Condition gaps fixed (2026-11-11, owner: "Fix the gaps first"; D215, D216), all three graphs rebuilt after each.** Code in a
+function given to a cache's get-or-create call carries a `cache-miss` condition quoting the call (D215, read by the method's name:
+`GetOr…`, or `Get`/`GetAsync` on a type naming a cache): Sonarr 381 steps, nopCommerce 1,498, Kavita 1 (its other cache functions
+are handed to a package and no flow walks them); nopCommerce's `GetCurrentPasswordAsync` (`CustomerService.cs:1546`) now reads
+"only if `_shortTermCacheManager.GetAsync` finds nothing stored for the key". A call written after `?.`, with its arguments,
+carries a `set` condition quoting the chain up to it (D216): Sonarr 915 steps, Kavita 59, nopCommerce 356; Kavita's
+`renderPage` (`manga-reader.component.ts:1669`, step 272 of the swipe-end flow) is "only if `this.doubleRenderer()` is set".
+The walker no longer gives a call with no conditions of its own another call's from the same line. Three `set` steps read in
+the code, all right. Bar before → after, both fixes: code check Sonarr 2 → 2 (the known `goToPage`), Kavita 0 → 0, nopCommerce
+0 → 0; item 2 95.3% → 95.3%, 96.0% → 96.0%, 95.6% → 95.6%; items 3–5 pass; ✅ counts unchanged (conditions don't change labels).
+Not re-checked by a fresh agent (D61: another check needs the owner; about 100–120K tokens on Sonnet).
