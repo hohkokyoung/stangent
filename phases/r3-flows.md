@@ -514,3 +514,5 @@ flows; start flows touched).
   `Nop.Tests` handlers counted as start flows.
 
 Script and full tables: shared notes `step6-causes.py`, `step6-counts.txt`.
+
+Settled: counted and sorted by code line into D166's four buckets by a fixed table, printed by a `stangent` report (D235).
