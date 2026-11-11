@@ -319,10 +319,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
 
     void Call(string point, Fact site, string target, At at, List<Condition> conds, Item parent, int depth, List<string> branch)
     {
-        if (!g.Nodes.TryGetValue(target, out var tnode)) return;
-        // D189: reading a field or property (an Angular signal read, `this.seriesId()`) runs no code of its own: no step, no hub.
-        // One that holds a function (`getPageUrl = (n) => …`) is code, called like a method.
-        if (tnode.Kind is NodeKind.Field or NodeKind.Property && !g.HoldsFunction(tnode)) return;
+        // D206: a message is sent whether or not its class writes a constructor (an implicit one isn't on the map).
         if (FlowGraph.ConstructedType(target) is { } made)
         {
             // A message sent (D172 item 3): its handlers are linked flows; the walk never goes through the bus. A command a job
@@ -334,6 +331,10 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 item.Links.Add(new Link("message", g.Name(h), h, at, $"Sends {g.TypeName(made)}, handled by {g.Name(h)} ({at})", null, true));
             return;
         }
+        if (!g.Nodes.TryGetValue(target, out var tnode)) return;
+        // D189: reading a field or property (an Angular signal read, `this.seriesId()`) runs no code of its own: no step, no hub.
+        // One that holds a function (`getPageUrl = (n) => …`) is code, called like a method.
+        if (tnode.Kind is NodeKind.Field or NodeKind.Property && !g.HoldsFunction(tnode)) return;
         var kind = site["kind"] == "renders" ? "renders" : "call";
         var callback = site["callback"];
         var guessedSite = site["label"] == "1";

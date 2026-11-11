@@ -416,7 +416,8 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.Contains("ANY /checkout", endpoints);
         Assert.DoesNotContain(endpoints, e => e.Contains("stock", StringComparison.Ordinal));
         Assert.Equal(2, (int)groups["endpoints"]["certain"]!);  // the minimal API and the attribute route
-        Assert.Equal(["SendReceiptOnOrderPlaced.HandleAsync"], Names(groups["eventHandlers"]));
+        // D206: a check an attribute registers for OrderPlaced handles it too.
+        Assert.Equal(["SendReceiptOnOrderPlaced.HandleAsync", "StockLevelCheck.Check"], Names(groups["eventHandlers"]));
         // The C# test, and the Angular spec that reaches PlaceOrder through POST /api/orders.
         Assert.Equal(["OrderTests.Placing_an_order_keeps_the_customer", "OrderService › places an order"], Names(groups["tests"]));
 
@@ -451,7 +452,7 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         var analyzer = new ImpactAnalyzer(shop.Graph);
         var report = analyzer.Analyze(new ChangeSpec("symbol", PlaceOrder), shop.Root);
         // The handler is affected, but nothing that merely calls handlers in general is.
-        Assert.Equal(1, (int)report["groups"]!.AsArray().First(g => (string)g!["name"]! == "eventHandlers")!["total"]!);
+        Assert.Equal(2, (int)report["groups"]!.AsArray().First(g => (string)g!["name"]! == "eventHandlers")!["total"]!);
         Assert.DoesNotContain("PluginLoader.Load", Names(report["groups"]!.AsArray().First(g => (string)g!["name"]! == "code")!));
     }
 

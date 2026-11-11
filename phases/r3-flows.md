@@ -315,3 +315,10 @@ sites, all `QueuedEmail` inserts → QueuedMessagesSendTask (a sample of 14 read
 cancelled order's queued emails), read-and-written-back (Series, Order, Customer), the job's first read (missed RSS sync). Left:
 the Sonarr key's `RefreshSeriesCommand` link is in `SeriesAddedHandler`'s own flow (built there before D205); add-series links
 `message` to that handler, and the scorer doesn't take a handler's links into the flow that sends to it.
+L4 built (D206): a class an attribute registers for an event (`[CheckOn(typeof(E))]`) handles it when E is an event the message
+system carries (a handler takes E or a type E is), through the one method it overrides. Links Sonarr 35 → 43/45 (all 8). A send
+whose event class writes no constructor was dropped by the walk before (the implicit constructor isn't on the map); fixed with it,
+which brought the 8th (`SeriesRefreshCompleteEvent`). Made on Sonarr: 25 new handler flows (health checks), 573 message links at 81
+distinct sites; most are generic provider events in shared `ProviderFactory` (`new ProviderUpdatedEvent<TProvider>`) linking to the
+checks of every provider kind, the type-argument gap L3 waits on (existing interface handlers on those events already did the same).
+Kavita, nopCommerce: none. Impact answers now name these handlers too.

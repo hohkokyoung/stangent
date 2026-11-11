@@ -61,3 +61,29 @@ public class FlowLinksTests
     [InlineData("PendingOrderNote", true)]
     public void A_queue_table_is_named_as_one(string table, bool queue) => Assert.Equal(queue, FlowBuilder.IsQueueTable(table));
 }
+
+public class AttributeHandlerTests(ShopGraph shop) : IClassFixture<ShopGraph>
+{
+    [Fact]
+    public void A_class_an_attribute_registers_for_an_event_handles_it_through_the_method_it_overrides()
+    {
+        // D206: [RecheckOn(typeof(OrderPlaced))] on a check: OrderPlaced has a handler, so it's an event; Check() is what runs.
+        var handles = shop.Graph.AllFacts.Where(f => f.Kind == "handle" && f["attribute"] != "").OrderBy(f => f.Owner, StringComparer.Ordinal).ToList();
+        Assert.Equal(2, handles.Count);
+        // StockLow has no handler of its own; a catch-all handler takes IShopEvent, the kind it is.
+        Assert.Equal(("Shop.Core|M:Shop.Core.ReorderCheck.Check", "Shop.Core|T:Shop.Core.StockLow"), (handles[0].Owner, handles[0]["event"]));
+        var h = handles[1];
+        Assert.Equal(("Shop.Core|M:Shop.Core.StockLevelCheck.Check", "Shop.Core|T:Shop.Core.OrderPlaced", "RecheckOnAttribute"), (h.Owner, h["event"], h["attribute"]));
+        Assert.EndsWith("Checks.cs", h.File, StringComparison.Ordinal);
+        // Order isn't an event: a candidate only.
+        Assert.Contains(shop.Graph.AllFacts, f => f.Kind == "handle-attribute" && f.Owner.Contains("OrderTotalCheck", StringComparison.Ordinal));
+        Assert.DoesNotContain(shop.Graph.AllFacts, f => f.Kind == "handle" && f.Owner.Contains("OrderTotalCheck", StringComparison.Ordinal));
+        // A handler flow of its own, as for an interface handler; the flow sending OrderPlaced (a record: no written constructor)
+        // links to it with the interface handler.
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var sends = set.Flows.SelectMany(f => f.Links).Where(l => l.Kind == "message" && l.At.Code.Contains("new OrderPlaced", StringComparison.Ordinal)).Select(l => l.To).Distinct().Order(StringComparer.Ordinal).ToList();
+        Assert.Equal(["SendReceiptOnOrderPlaced.HandleAsync", "StockLevelCheck.Check"], sends);
+        Assert.Contains(set.Flows, f => f.Kind == "handler" && f.Start.Point == h.Owner);
+    }
+}
+
