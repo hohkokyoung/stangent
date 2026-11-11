@@ -286,6 +286,32 @@ public sealed class AreasTests : IDisposable
     }
 
     [Fact]
+    public void A_proposal_builds_on_a_confirmed_file_keeping_its_names_and_answers_and_adding_what_answering_left_uncovered()
+    {
+        var areas = Build();
+        var (proposed, _) = AreaFiles.Propose(areas);
+        Assert.DoesNotContain(proposed.Areas, a => a.Folders.Contains("src/Core/Sync"));   // job-y sits in Series by majority
+        var renamed = AreaFiles.Parse(AreaFiles.Render(proposed, "abc", areas.Place(proposed)).Replace("'Reader'", "'Reading'"));
+        // Answering the dialog Activity takes job-y's majority away (D231): the confirmed file leaves it in no area.
+        var confirmed = Answered(renamed, ("click-modal", "Activity"), ("handler-even", "Series"));
+        confirmed.Ties.Add(new Tie("click-gone", ["Series"], "Series"));
+        Assert.Contains("start flow 'job-y' is in no area", AreaFiles.Check(areas, confirmed).Report["problems"]!.AsArray().Select(p => (string)p!));
+
+        var (file, placement, added, dropped) = AreaFiles.Extend(areas, confirmed);
+        Assert.Equal([.. renamed.Areas.Select(a => a.Name), "Core › Sync"], file.Areas.Select(a => a.Name));   // names kept, the backend folder added
+        Assert.Equal(["area 'Core › Sync'", "folder 'src/Core/Sync' to 'Core › Sync'"], added);
+        Assert.Equal([("click-modal", "Activity"), ("handler-even", "Series")], file.Ties.Select(t => (t.Flow, t.Answer)));
+        Assert.Equal(["'click-gone': no longer a start flow"], dropped);
+        Assert.Equal("Core › Sync", placement.AreaOf["job-y"]);
+        var problems = AreaFiles.Check(areas, file).Report["problems"]!.AsArray().Select(p => (string)p!).Where(p => !p.EndsWith("flows build`", StringComparison.Ordinal));
+        Assert.Empty(problems);
+        // Built on itself, nothing more is added: the same file.
+        var again = AreaFiles.Extend(areas, file);
+        Assert.Empty(again.Added);
+        Assert.Equal(AreaFiles.Render(file, "abc", placement, true), AreaFiles.Render(again.File, "abc", again.Placement, true));
+    }
+
+    [Fact]
     public void Without_a_flow_index_areas_say_to_build_flows_first()
     {
         var e = Assert.Throws<StangentException>(() => Areas.Load(graph, root));

@@ -163,16 +163,88 @@ public static class AreaFiles
         IEnumerable<string> PlaceFolders(StartFlow s) => s.Places.Count > 0 ? s.Places.Select(p => p.Folder) : s.Backend is null ? [] : [s.Backend];
     }
 
+    /// <summary>
+    /// D234: a proposal built on a confirmed <c>areas.yaml</c>: its areas as the person left them (names, merges, splits, areas added by
+    /// hand) and its tie answers, carried while the flow still ties and the answer is still a choice; then what code finds new, by the
+    /// same rules as a fresh proposal and with the answers applied: a menu address no area lists goes to the area listing its nearest
+    /// listed parent item, else an area of its own top item's name; a home or frame folder no area covers is an area of its own; a job or
+    /// handler in no area adds its backend folder (D223). Nothing is split. Returns the file, its placement, what was added and the
+    /// answers dropped.
+    /// </summary>
+    public static (AreasFile File, Placement Placement, List<string> Added, List<string> Dropped) Extend(Areas a, AreasFile confirmed)
+    {
+        var specs = confirmed.Areas.Select(x => new AreaSpec { Name = x.Name, Menu = [.. x.Menu], Folders = [.. x.Folders] }).ToList();
+        var added = new List<string>();
+        AreaSpec Named(string name)
+        {
+            var spec = specs.FirstOrDefault(x => x.Name == name);
+            if (spec is null) { specs.Add(spec = new AreaSpec { Name = name }); added.Add($"area '{name}'"); }
+            return spec;
+        }
+        string Unique(string name, string path) => specs.Any(x => x.Name == name) ? $"{name} ({path})" : name;
+        bool Covered(string dir) => specs.Any(x => x.Folders.Any(f => dir == f || dir.StartsWith(f + "/", StringComparison.Ordinal)));
+        void AddFolder(AreaSpec spec, string folder) { spec.Folders.Add(folder); added.Add($"folder '{folder}' to '{spec.Name}'"); }
+        var tops = a.TopItems.SelectMany(t => t.Subtree().Select(i => (Item: i, Top: t))).ToList();
+        List<Tie> Ties() => [.. a.Place(new AreasFile { Areas = specs }).Open.Select(t =>
+            new Tie(t.Key, t.Value, confirmed.Ties.FirstOrDefault(c => c.Flow == t.Key && c.Answer != "" && t.Value.Contains(c.Answer, O))?.Answer ?? ""))];
+
+        for (var changed = true; changed;)
+        {
+            changed = false;
+            var placement = a.Place(new AreasFile { Areas = specs, Ties = Ties() });
+            foreach (var s in placement.Uncovered.Select(id => a.Starts[id]))
+            {
+                foreach (var p in s.Places)
+                {
+                    var listed = specs.SelectMany(x => x.Menu).ToHashSet(O);
+                    if (p.Address is not null && !listed.Contains(p.Address) && tops.FirstOrDefault(t => t.Item.Address == p.Address) is { Item: not null } hit)
+                    {
+                        AreaSpec? spec = null;
+                        for (var up = hit.Item.Parent; up is not null && spec is null; up = up.Parent)
+                            if (up.Address != "") spec = specs.FirstOrDefault(x => x.Menu.Contains(up.Address, O));
+                        spec ??= Named(Areas.AreaName(hit.Top));
+                        spec.Menu.Add(p.Address);
+                        added.Add($"menu '{p.Address}' to '{spec.Name}'");
+                        changed = true;
+                        continue;
+                    }
+                    var home = p.Frame ? p.Folder : a.HomeOf(p.Folder) ?? p.Folder;
+                    if (Covered(home)) continue;
+                    AddFolder(p.Frame ? Named(Areas.FrameName) : Named(Unique(a.Homes.GetValueOrDefault(home) ?? home[(home.LastIndexOf('/') + 1)..], home)), home);
+                    changed = true;
+                }
+                if (s.BackendFolder is not null && !Covered(s.BackendFolder))
+                {
+                    AddFolder(Named(Unique(s.BackendName!, s.BackendFolder)), s.BackendFolder);
+                    changed = true;
+                }
+                if (changed) break;   // place again: one addition can place others (a click placed leads its jobs)
+            }
+        }
+        var ties = Ties();
+        var final = a.Place(new AreasFile { Areas = specs, Ties = ties });
+        var counts = final.AreaOf.Values.GroupBy(x => x, O).ToDictionary(x => x.Key, x => x.Count(), O);
+        var large = specs.Where(x => counts.GetValueOrDefault(x.Name) > Areas.Big)
+            .Select(x => new Large(x.Name, counts[x.Name], confirmed.Large.FirstOrDefault(l => l.Area == x.Name)?.Why ?? "over 40, nothing to split by")).ToList();
+        var dropped = new List<string>();
+        foreach (var t in confirmed.Ties.Where(t => t.Answer != "" && !ties.Any(n => n.Flow == t.Flow && n.Answer == t.Answer)))
+            dropped.Add(!a.Starts.ContainsKey(t.Flow) ? $"'{t.Flow}': no longer a start flow"
+                : ties.FirstOrDefault(n => n.Flow == t.Flow) is { } now ? $"'{t.Flow}': '{t.Answer}' is no longer one of its choices ({string.Join(", ", now.Choose.Select(c => $"'{c}'"))})"
+                : $"'{t.Flow}': no longer a tie");
+        return (new AreasFile { Areas = specs, Large = large, Ties = ties }, final, added, dropped);
+    }
+
     // ---- areas.yaml ------------------------------------------------------------------------------------------------------------
 
     static string Q(string s) => $"'{s.Replace("'", "''")}'";
 
     /// <summary><c>areas.yaml</c>'s text: fixed order and quoting, so the same areas give the same bytes; each area's flow count as a comment.</summary>
-    public static string Render(AreasFile file, string commit, Placement placement)
+    public static string Render(AreasFile file, string commit, Placement placement, bool builtOnConfirmed = false)
     {
         var counts = placement.AreaOf.Values.GroupBy(x => x, O).ToDictionary(x => x.Key, x => x.Count(), O);
         var sb = new StringBuilder();
         sb.Append($"# Areas proposed by `stangent areas propose` (D218–D228) from commit {commit}.\n");
+        if (builtOnConfirmed) sb.Append($"# Built on {Confirmed} (D234): its areas and answers kept, only what code found new added; `--fresh` proposes from scratch.\n");
         sb.Append("# Copy to specs/areas.yaml and confirm it there: rename an area (`name`), merge two by listing both sources under one name,\n");
         sb.Append("# split one by giving a menu address or a deeper folder its own area, and answer each tie with one of its `choose`.\n");
         sb.Append("# The deepest match wins; new flows land by themselves. `stangent areas check` reads specs/areas.yaml.\n");

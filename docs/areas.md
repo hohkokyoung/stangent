@@ -3,14 +3,14 @@
 An **area** is a part of the app as its users would name it (Sonarr's Series, Activity, Settings › Indexers; nopCommerce's
 Admin › Catalog), holding the flows that start there. Code proposes areas from the app's menu, with folders as the fallback;
 a person confirms them once in `specs/areas.yaml`; code checks that file and writes `specs/areas.json`. No AI anywhere (D156).
-Decisions: D218–D233; plan and numbers: `phases/r3-flows.md`. Flows and pages live under their area (D230): `docs/flows.md`
+Decisions: D218–D234; plan and numbers: `phases/r3-flows.md`. Flows and pages live under their area (D230): `docs/flows.md`
 says where each flow's files sit.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `stangent areas propose` | Reads `.stangent/graph.sqlite` and `specs/flows/index.json`, and writes `specs/areas.proposed.yaml` (never `specs/areas.yaml`, D180). Prints the menus taken, each area with its count of start flows, the ties, any flow it couldn't place, and the areas flagged large. |
+| `stangent areas propose [--fresh]` | Reads `.stangent/graph.sqlite` and `specs/flows/index.json`, and writes `specs/areas.proposed.yaml` (never `specs/areas.yaml`, D180). Once `specs/areas.yaml` exists, the proposal builds on it (D234, below); `--fresh` proposes from scratch. Prints the menus taken, each area with its count of start flows, the ties (and how many are unanswered), any flow it couldn't place, the areas flagged large, and, built on a confirmed file, what it added and the answers it dropped. |
 | `stangent areas check` | Reads `specs/areas.yaml` and writes `specs/areas.json` and one page per area, `specs/areas/<area>/page.md` (D230). Exit 1 with `problems` when a start flow sits in no area, a tie is unanswered, an answer's flow is gone or names no area, a menu item or folder a flow sits on is in no area, two areas list the same address, folder or name, flow files aren't where `areas.yaml` puts them (run `stangent flows build`), or an old area's page holds layer 4's words. |
 
 After editing `areas.yaml`: `areas check` (pages and `areas.json` follow at once; it says when flows must move), then
@@ -111,3 +111,11 @@ Code writes no prose: the name, counts and links are rebuilt every time, sorted 
 layer 4 lines is kept as found, for layer 4's plain words. A page whose area is gone is removed, unless it holds such words:
 then it stays and `areas check` fails until a person moves them. `shared/` and `unplaced/` have no page.
 
+## Proposing again on a confirmed file (D234)
+
+Once `areas.yaml` exists, `areas propose` keeps it as the person left it (names, merges, splits, areas added by hand) and
+carries each tie answer while the flow still ties and the answer is still a choice; answers are applied before jobs are
+counted, so a job whose majority an answer took away shows up. Then it adds only what's new, by the rules above: a menu address
+no area lists goes to the area listing its nearest listed parent item, else an area of its top item's name; a home or frame
+folder no area covers becomes an area; a job or handler in no area adds its backend folder. It splits nothing. It prints what
+it `added` and the `droppedAnswers` (flow gone, no longer a tie, or the answer no longer a choice).

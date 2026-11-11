@@ -11,19 +11,28 @@ static class AreaCommands
         var areas = new Command("areas", "Areas: the app's parts as its users name them, read from its menu, folders the fallback; proposed by code, confirmed once in specs/areas.yaml (D218–D226).");
         root.Subcommands.Add(areas);
 
-        var propose = new Command("propose", "Propose areas from the graph and specs/flows/index.json; writes specs/areas.proposed.yaml, never specs/areas.yaml.");
+        var freshOption = new Option<bool>("--fresh") { Description = "Propose from scratch even when specs/areas.yaml exists (by default a proposal builds on it, D234)." };
+        var propose = new Command("propose", "Propose areas from the graph and specs/flows/index.json, built on specs/areas.yaml when it exists; writes specs/areas.proposed.yaml, never specs/areas.yaml.") { freshOption };
         propose.SetAction(pr => Cli.Run(pr, "areas propose", ctx =>
         {
             var a = Areas.Load(Cli.LoadGraph(ctx), ctx.Repo.Root);
-            var (file, placement) = AreaFiles.Propose(a);
-            AreaFiles.WriteText(ctx.Repo.Root, AreaFiles.Proposed, AreaFiles.Render(file, a.Commit, placement));
+            var confirmed = Path.Combine(ctx.Repo.Root, AreaFiles.Confirmed);
+            var onConfirmed = !pr.GetValue(freshOption) && File.Exists(confirmed);
+            List<string> added = [], dropped = [];
+            AreasFile file;
+            Placement placement;
+            if (onConfirmed) (file, placement, added, dropped) = AreaFiles.Extend(a, AreaFiles.Parse(File.ReadAllText(confirmed)));
+            else (file, placement) = AreaFiles.Propose(a);
+            AreaFiles.WriteText(ctx.Repo.Root, AreaFiles.Proposed, AreaFiles.Render(file, a.Commit, placement, onConfirmed));
             var counts = placement.AreaOf.Values.GroupBy(x => x, StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.Count(), StringComparer.Ordinal);
             ctx.Span.Attributes["stangent.artifact.count"] = file.Areas.Count;
             return new JsonObject
             {
                 ["commit"] = a.Commit, ["file"] = AreaFiles.Proposed, ["startFlows"] = a.Starts.Count, ["menus"] = new JsonArray([.. a.KeptMenus.Select(m => (JsonNode)m)]),
                 ["areas"] = new JsonArray([.. file.Areas.Select(x => (JsonNode)new JsonObject { ["name"] = x.Name, ["flows"] = counts.GetValueOrDefault(x.Name) })]),
-                ["ties"] = file.Ties.Count, ["unplaced"] = placement.Uncovered.Count,
+                ["ties"] = file.Ties.Count, ["unanswered"] = file.Ties.Count(t => t.Answer == ""), ["unplaced"] = placement.Uncovered.Count,
+                ["builtOn"] = onConfirmed ? AreaFiles.Confirmed : null,
+                ["added"] = new JsonArray([.. added.Select(x => (JsonNode)x)]), ["droppedAnswers"] = new JsonArray([.. dropped.Select(x => (JsonNode)x)]),
                 ["large"] = new JsonArray([.. file.Large.Select(l => (JsonNode)new JsonObject { ["area"] = l.Area, ["flows"] = l.Flows })]),
             };
         }));
