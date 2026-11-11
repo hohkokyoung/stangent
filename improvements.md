@@ -88,3 +88,36 @@ Sections keep their numbers in both files, so "§6" means the same section in ei
 
 - J.3 · The page verifier also reads the tests.  
   *Today it reads the bundle only, and tests aren't a separate source. Recommend: decide after J.1, which has to read those tests anyway.*
+
+## 11. From the critical review (2026-11-11)
+
+*An outside-view review of the whole project, asked for by the owner. Nothing here is decided. Each item says what was found, then what's recommended. In the order recommended.*
+
+**Bottom line of the review:** after 24 days (362 commits, 228 decisions, about 37K lines, 2,211 tests) one of the brief's twelve items passes its bars (the code graph). Nothing Stangent produces has yet been shown to help anyone fix a bug or write a spec.
+
+- R.1 · Run "does the bundle help a fix?" before layer 4 is built.  
+  *Open since 2026-11-02 (`questions.md`). `phases/3-tickets.md` records that a plain coding agent's own search passed the 70% right-place bar "by a wide margin", held-out set included, which is evidence against the graph's main job for tickets. Recommend: the same bugs fixed three ways (ticket alone; plus the failing test; plus the bundle), as `questions.md` already describes. Paid, on the owner's OK. If the bundle doesn't help, layers 4–6 change shape.*
+- R.2 · Run flows on one repo Stangent was never tuned on, with no fixes, and report that number.  
+  *Layer 3's item 2 went from 66% to 95.3 / 96.0 / 95.6% (bar 95%) through about 15 fix rounds and rulings R1–R11 on the same 15 flows; D185 and D211 changed the scoring after results were seen. Git history (D43) and bugs (D100) had a held-out repo; flows have none. Recommend: eShop or bitwarden/server (already cloned), a fresh key, one score, no fixing first. Also count how many new rules that repo would need: that is the real cost of adding a project.*
+- R.3 · Test linking with flows by hand, now, on a few planted-FSD sections.  
+  *The rebuild exists because links failed (24 of 30, 44% false alarms). `questions.md` traced that to a missing page, a judge that skips sentences and bundles missing backend code. The rebuild restarted at the graph, two layers below linking, so nothing shows flows fix it until layer 5. Recommend: hand-feed flows for 3–5 sections to the judge and compare with the saved runs. If the numbers don't move, layer 4 pages aren't worth building. About the cost of one small paid run.*
+- R.4 · Cut the off switches now, not at layer 7.  
+  *About 30 switches are built, off and "not shown to help" (`roadmap.md`). `Stangent.Spec` is the largest project (15.4K lines), mostly on the path that failed. D138's "one fix attempt, then removed" wasn't applied to the links (requirement level, disprove and `page-gap-strict` all missed). Recommend: delete what D156 P8 already names, keep what the pipeline can't run without.*
+- R.5 · Build one thin slice end to end before perfecting any layer further.  
+  *Agents, testing, PR, CI/CD, dashboard and demo aren't started, and they're where the brief's value is. Recommend: one ticket → fix → test → PR on one repo with what exists, to learn which lower parts matter.*
+- R.6 · Find one real project with a real document, or narrow what Stangent claims.  
+  *D1 says the owner's own use first, but the one real project is retired (D137) and the FSD is planted. Every score comes from three open-source apps the rules were shaped around.*
+- R.7 · Shrink the brief.  
+  *Demo, dashboard and CI/CD are things existing tools already do. The graph, flows and spec links are the parts that could be Stangent's own. Recommend: drop or defer the rest until R.1 and R.5 say the core works.*
+- R.8 · Say what a bar can and can't show.  
+  *"No wrong ✅" can't be proved by a sample: D217's 0 of 36 still allows about 1 in 12. The key was written by an AI and the owner approved 3 of its 15 files. Recommend: report item 1 as a rate with its range; treat a ruling or scorer change after scoring as a bar change, recorded as one.*
+- R.9 · Label name-based rules as guesses everywhere.  
+  *Several "deterministic" rules are guesses by name: a queue table is one named queue or pending (D205), a cache is a name containing "cach" (D215), a checking filter is named Validate, Verify, Check or Captcha (D207), any three links are a menu (D221, D226). Code making the same guess every time is repeatable, not right. Recommend: every such rule gives 🟡, and R.2's run counts how often each is wrong.*
+- R.10 · Slim the paperwork.  
+  *More docs commits (146) than feature commits (110). `decisions.md` was trimmed to one line each on 2026-11-07 (D157) and D202–D228 are paragraphs again. The r2 and r3 roadmap cells are long changelogs read every session. "What's next" on `roadmap.md` is the pre-rebuild order, never confirmed. `CLAUDE.md` rules 7 and 8 still say "build first, test later", which D158 ended. Recommend: changelogs live in phase files only; one line per decision in the index; fix the two rules; rewrite "What's next".*
+- R.11 · Put the owner back in the challenger's seat.  
+  *The assistant makes about ten decisions a day and the owner answers "Yes, that rule" or "ur call"; D217 and D226–D228 are the assistant's calls, the last three unconfirmed. Recommend: fewer, larger decisions put to the owner, each with what would prove it wrong; rule-level detail stays in the phase file without a D number.*
+- R.12 · Push after every working session.  
+  *Until 2026-11-11 the rebuild's 261 commits sat on one disk and CI had never run on them. Pushed that day (`origin/claude/phase2c-spec`). Recommend: push at the end of each session; check CI on the branch.*
+
+**What the review says to keep:** bars set before building, the cost recorded on every decision, failures reported plainly, fresh checks (they found real faults every round).
