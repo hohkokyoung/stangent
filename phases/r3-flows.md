@@ -367,4 +367,13 @@ again in the code and confirmed; three general causes, all frontend:
 Minor: a 🟡 "one of 2" candidate that can't be the runtime type (`CachedDictionary` for an `ICached<string>` field); a read that
 runs only on a cache miss. The fixed spots hold: D202's `card-config-factory.service.ts:233`/`:292` are no step and the reader's
 settings stream is 🟡; D210's `predicate(…)` steps are 🟡, line 70 ✅. Report: notes folder `item1-check.md`; sample
-`item1-sample.md`. Not fixed: waits for the owner.
+`item1-sample.md`.
+
+**Fixed 2026-11-11 (owner: "Fix all three"; D212–D214), all three graphs rebuilt.** Timer callbacks are 🟡 "runs later … after its
+delay" (D212: Kavita 86 steps, Sonarr 16); an element inside one of the repo's components that draws nothing while a prop is
+unset is 🟡 "shown only when Modal draws it" (D213: Sonarr 44); a mutation hook's request and code are 🟡 "sent when the mutation
+is started" (D214: Sonarr 311). Re-read by code on the six spots: Sonarr steps 505, 611, 947 (the modal contents) and 113
+(`POST /command`) are 🟡 with those reasons; Kavita's `refreshToken` in `setInterval` (`account.service.ts:507`, step 126) and
+`closeReader` in `setTimeout` (step 309) are 🟡. ✅ steps: Sonarr 88,443 → 88,178, Kavita 25,169 → 25,083, nopCommerce 90,731
+(unchanged). Code check of item 1: Sonarr 2 (the known `goToPage`), Kavita 0, nopCommerce 0. Item 2 unchanged: 95.3%, 96.0%,
+95.6%; items 3–5 pass. Not re-checked by a fresh agent (the one-check-one-fix cap, D61: a second check needs the owner).
