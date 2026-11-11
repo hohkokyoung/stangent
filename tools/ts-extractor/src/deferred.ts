@@ -5,6 +5,11 @@ import { boundTo } from "./values.ts";
 
 /** Library calls that register a function to run when an event comes, not now. */
 const LISTENERS = new Set(["on", "once", "addEventListener", "addListener", "onmessage"]);
+/**
+ * D214: libraries' mutation hooks keep the functions they're given (`useMutation({ mutationFn, onSuccess })`) and run them when
+ * the mutation is started (`mutate(…)`), not when the hook runs.
+ */
+const MUTATIONS = new Set(["useMutation", "createMutation", "injectMutation", "useSWRMutation"]);
 /** D212: the browser's and Node's timers run a function after a delay or on a repeat, not now. */
 const TIMERS = new Set(["setTimeout", "setInterval", "requestAnimationFrame", "requestIdleCallback", "setImmediate"]);
 
@@ -13,7 +18,8 @@ const TIMERS = new Set(["setTimeout", "setInterval", "requestAnimationFrame", "r
  * if that function calls it. One handed to the repo's own code that keeps it (stores it, never calls it, nor passes it on to
  * code that does) runs later, when something else calls it: `kept:<callee>`. One registered with a library's event listener
  * (`connection.on(…)`, `addEventListener`) runs when the event comes: `listener:<name>`; one given to a timer (`setTimeout`,
- * `setInterval`) runs after its delay: `timer:<name>` (D212). Library callbacks otherwise
+ * `setInterval`) runs after its delay: `timer:<name>` (D212); one given to a mutation hook runs when the mutation starts:
+ * `mutation:<name>` (D214). Library callbacks otherwise
  * (`map`, `forEach`, `subscribe`, `then`) run as part of this code: "". Stops at the point that owns the code.
  */
 export function deferredOf(ctx: Context, node: ts.Node): string {
@@ -30,6 +36,8 @@ export function deferredOf(ctx: Context, node: ts.Node): string {
       if (!holder) return `kept:${p.parent.name.getText()}`;
       const fnOf = declaredFunction(ctx.checker, holder.expression);
       if (fnOf && ctx.isOwn(fnOf.getSourceFile())) return `kept:${p.parent.name.getText()}`;
+      const holderName = calledName(holder);
+      if (MUTATIONS.has(holderName)) return `mutation:${holderName}`;
       const stream = streamOf(ctx, holder);
       if (stream) return stream;
       continue;
@@ -44,10 +52,32 @@ export function deferredOf(ctx: Context, node: ts.Node): string {
     }
     if (LISTENERS.has(name)) return `listener:${name}`;
     if (TIMERS.has(name)) return `timer:${name}`;
+    if (MUTATIONS.has(name)) return `mutation:${name}`;
     const stream = streamOf(ctx, call);
     if (stream) return stream;
   }
   return "";
+}
+
+function calledName(call: ts.CallExpression): string {
+  return ts.isIdentifier(call.expression) ? call.expression.text : ts.isPropertyAccessExpression(call.expression) ? call.expression.name.text : "";
+}
+
+/**
+ * D214: when a wrapper (the repo's own function named in the settings) sends its request from code that runs later (a mutation
+ * hook's `mutationFn`, a timer), a call of the wrapper only sets the request up: the deferral its sending calls (`fetch`, or
+ * another wrapper) share inside its body; "" when any of them sends now, or none is found.
+ */
+export function wrapperSendsLater(ctx: Context, callee: ts.Expression, senders: Set<string>): string {
+  const fn = declaredFunction(ctx.checker, callee);
+  if (!fn || !ctx.isOwn(fn.getSourceFile()) || !fn.body) return "";
+  const found: string[] = [];
+  const visit = (n: ts.Node) => {
+    if (ts.isCallExpression(n) && (senders.has(calledName(n)) || calledName(n) === "fetch")) found.push(deferredOf(ctx, n));
+    ts.forEachChild(n, visit);
+  };
+  visit(fn.body);
+  return found.length > 0 && found.every((d) => d !== "" && d === found[0]) ? found[0] : "";
 }
 
 /**

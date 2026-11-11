@@ -419,6 +419,8 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         var d when d.StartsWith("stream:", StringComparison.Ordinal) => $"runs when the stream sends a value ({d[7..]}), not when this code runs",
         // D212: a timer's function runs after its delay or on its repeat.
         var d when d.StartsWith("timer:", StringComparison.Ordinal) => $"runs later: a function given to {d[6..]}(…), after its delay, not when this code runs",
+        // D214: a mutation hook keeps its function (and the request in it) until the mutation is started.
+        var d when d.StartsWith("mutation:", StringComparison.Ordinal) => $"sent when the mutation is started (its mutate(…) is called), not when {d[9..]} sets it up",
         _ => Closed(f["closedBy"]),
     };
 

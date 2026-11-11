@@ -2,7 +2,7 @@ import ts from "typescript";
 import type { Context } from "./extract.ts";
 import { BASE, RUNTIME, isBaseName, stringValue } from "./values.ts";
 import { join, paramValues, returns, valuesOf } from "./params.ts";
-import { deferredOf } from "./deferred.ts";
+import { deferredOf, wrapperSendsLater } from "./deferred.ts";
 
 /** D201: whether the call being read runs later (inside a kept callback or a listener), for the facts it writes. */
 let deferredNow = "";
@@ -127,6 +127,8 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
   // In-house wrappers named in stangent.yaml.
   const w = wrappers.find((x) => x.fn === name || x.fn === callee.getText());
   if (w) {
+    // D214: a wrapper whose own body sends later (from a mutation's `mutationFn`) only sets the request up here.
+    deferredNow ||= wrapperSendsLater(ctx, callee, new Set(wrappers.map((x) => x.fn)));
     const url0 = w.urlProp ? wrapperValue(n, w.urlProp, checker) : stringValue(n.arguments[0], checker);
     let url: string | null = url0;
     const v = w.verbProp ? wrapperValue(n, w.verbProp, checker) : null;

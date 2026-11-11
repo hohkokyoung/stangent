@@ -814,3 +814,36 @@ test("an element inside a component that draws nothing while a prop is unset is 
     "8 Content -",
   ]);
 });
+
+test("a wrapper that sends from a mutation hook's function only sets the request up; the mutation runs it later (D214)", () => {
+  const root = project({
+    "node_modules/@tanstack/react-query/package.json": '{ "name": "@tanstack/react-query", "types": "index.d.ts" }',
+    "node_modules/@tanstack/react-query/index.d.ts": [
+      "export declare function useMutation(o: { mutationFn: (d?: unknown) => Promise<unknown>; onSuccess?: () => void }): { mutate: () => void };",
+      "export declare function useQuery(o: { queryFn: () => Promise<unknown> }): unknown;",
+    ].join("\n"),
+    "src/hooks.ts": [
+      "import { useMutation, useQuery } from '@tanstack/react-query';",
+      "declare function fetchJson(o: { path: string }): Promise<unknown>;",
+      "export function useApiMutation(options: { path: string; method: string }) {",
+      "  return useMutation({ mutationFn: async (d) => fetchJson({ path: options.path }) });",
+      "}",
+      "export function useApiQuery(options: { path: string }) {",
+      "  return useQuery({ queryFn: () => fetchJson({ path: options.path }) });",
+      "}",
+    ].join("\n"),
+    "src/use.ts": [
+      "import { useApiMutation, useApiQuery } from './hooks';",
+      "export function useCommands() {",
+      "  const { mutate } = useApiMutation({ path: '/command', method: 'POST' });",
+      "  useApiQuery({ path: '/command' });",
+      "  return mutate;",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p",
+    settings: { "frontend-http": { wrappers: ["useApiMutation:path:method", "useApiQuery:path", "fetchJson:path@GET"] } } }).lines;
+  const calls = lines.filter((l) => l.t === "fact" && l.kind === "call" && l.file === "src/use.ts")
+    .map((l) => l.t === "fact" ? `${l.line} ${l.data.verb} ${l.data.deferred ?? "-"}` : "").sort();
+  assert.deepEqual(calls, ["3 POST mutation:useMutation", "4 GET -"]);
+});
