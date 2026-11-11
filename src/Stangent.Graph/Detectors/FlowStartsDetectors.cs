@@ -156,7 +156,8 @@ public sealed class JobsDetector : IDetector
 /// <item><c>condition</c>: a call (to the repo's code, or to a framework's outside <c>System.*</c>) under at least one
 /// <c>if</c>, <c>else</c>, <c>?:</c>, <c>switch</c> case or arm, <c>catch</c> or loop of its own member, or after a guard
 /// (<c>unless</c>: an earlier <c>if</c> in the same block that always returns, throws, breaks or continues): those, innermost
-/// first, each with its code quoted exactly.</item>
+/// first, each with its code quoted exactly; inside a function given to a cache's get-or-create call, <c>cache-miss</c>
+/// (D215).</item>
 /// <item><c>exit</c>: a return of the framework's own <c>BadRequest</c>, <c>NotFound</c>, <c>Unauthorized</c>, <c>Forbid</c>,
 /// <c>Challenge</c>, <c>Redirect…</c>/<c>LocalRedirect…</c> or <c>StatusCode(4xx/5xx)</c> (a call or a <c>new …Result</c>), and
 /// every <c>throw</c>, with its conditions. Anything else returned isn't an exit (D176).</item>
@@ -394,9 +395,37 @@ public sealed class ConditionsDetector : IDetector
                 case BlockSyntax block when child is StatementSyntax stmt:
                     Guards(block.Statements, stmt, list, ctx);
                     break;
+                case ArgumentSyntax { Parent: ArgumentListSyntax { Parent: InvocationExpressionSyntax inv } } arg
+                    when child == arg.Expression && child is AnonymousFunctionExpressionSyntax && CacheMiss(inv, ctx):
+                    list.Add(new("cache-miss", inv.Expression.ToString(), ctx.Line(inv))); break;
             }
         }
         return list;
+    }
+
+    /// <summary>
+    /// D215: a get-or-create call runs the function it's given only when nothing is stored for the key. Read by the method's
+    /// name and the function argument, since the types differ in every repo and library: a <c>GetOr…</c> name
+    /// (<c>GetOrAdd</c>, <c>GetOrCreateAsync</c>, <c>GetOrFetchAsync</c>; <c>GetOrder</c> isn't one) or
+    /// <c>AddOrGetExisting</c> says it whatever the receiver; a plain <c>Get</c>/<c>GetAsync</c> says it only when the method's
+    /// type (or the receiver's) names a cache (<c>ICached</c>, <c>IStaticCacheManager</c>, <c>IEasyCachingProvider</c>).
+    /// </summary>
+    static bool CacheMiss(InvocationExpressionSyntax inv, ExtractContext ctx)
+    {
+        var name = inv.Expression switch
+        {
+            MemberAccessExpressionSyntax m => m.Name.Identifier.ValueText,
+            MemberBindingExpressionSyntax b => b.Name.Identifier.ValueText,
+            SimpleNameSyntax n => n.Identifier.ValueText,
+            _ => "",
+        };
+        if (name == "AddOrGetExisting" || name.Length > 5 && name.StartsWith("GetOr", StringComparison.Ordinal) && char.IsUpper(name[5])) return true;
+        if (name is not ("Get" or "GetAsync")) return false;
+        var model = ctx.Compilation.GetSemanticModel(inv.SyntaxTree);
+        static bool Cache(ITypeSymbol? t) => t is not null && t.Name.Contains("cach", StringComparison.OrdinalIgnoreCase);
+        var method = model.GetSymbolInfo(inv).Symbol as IMethodSymbol ?? model.GetSymbolInfo(inv).CandidateSymbols.OfType<IMethodSymbol>().FirstOrDefault();
+        var receiver = inv.Expression is MemberAccessExpressionSyntax ma ? model.GetTypeInfo(ma.Expression).Type : null;
+        return Cache(method?.ContainingType) || Cache(receiver);
     }
 
     /// <summary>X1: an earlier guard among the same statements (`if (x) return …;`, or a branch of an `if … else if` chain that leaves, D198) means this runs only unless x; nearest first.</summary>

@@ -214,4 +214,19 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
             Assert.Equal("shown only when Drawer draws it: Drawer draws nothing while `!isOpen` (here isOpen=open)", s.GuessReason);
         });
     }
+
+    [Fact]
+    public void A_call_in_a_function_given_to_a_cache_runs_only_when_nothing_is_stored_and_the_cache_call_itself_has_no_such_condition()
+    {
+        // D215: PriceCache.cs — Load inside `cache.Get(…, () => …)` and `seen.GetOrAdd(…, id => …)` runs only on a miss; the
+        // call to cache.Get on the same line doesn't borrow that condition, and Load on its own line has none.
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var job = set.Flows.Single(f => f.Kind == "job" && f.Start.Point.Contains("PriceCacheTask.ExecuteAsync", StringComparison.Ordinal));
+        string Conds(int line, string what) => string.Join(" ← ", job.Steps.Single(s => s.At.Line == line && s.What.Contains(what, StringComparison.Ordinal)).Conditions.Select(c => $"{c.Kind} {c.Code}"));
+        Assert.Equal("cache-miss cache.Get", Conds(13, "PriceLoader.Load"));
+        Assert.Equal("", Conds(13, "IPriceCache.Get"));
+        Assert.Equal("cache-miss seen.GetOrAdd", Conds(14, "PriceLoader.Load"));
+        Assert.Equal("", Conds(15, "PriceLoader.Load"));
+        Assert.Contains("only if `cache.Get` finds nothing stored for the key", FlowFiles.Markdown(job, set), StringComparison.Ordinal);
+    }
 }

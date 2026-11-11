@@ -143,6 +143,49 @@ public class FlowStartsTests(ShopGraph shop) : IClassFixture<ShopGraph>
         ], rejects);
     }
 
+    static List<Fact> ConditionFacts(string code)
+    {
+        var tree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(code, path: "/r/P/Svc.cs", cancellationToken: TestContext.Current.CancellationToken);
+        var refs = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator).Select(p => Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(p));
+        var compilation = Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create("P", [tree], refs);
+        var fragment = new ProjectFragment { ProjectId = "P", Fingerprint = "" };
+        var ctx = new Stangent.Graph.Extraction.ExtractContext("/r", "P", "/r/P", compilation, [new(tree, compilation.GetSemanticModel(tree), "P/Svc.cs")], fragment, new Dictionary<string, List<string>>());
+        new Stangent.Graph.Detectors.ConditionsDetector().Extract(ctx);
+        return [.. fragment.Facts.Where(f => f.Kind == "condition")];
+    }
+
+    [Fact]
+    public void Code_in_a_function_given_to_a_get_or_create_call_runs_only_when_nothing_is_stored()
+    {
+        // D215: by the method's name (GetOr…, AddOrGetExisting) whatever the type; a plain Get/GetAsync only on a type naming a cache.
+        const string code = """
+            using System.Collections.Concurrent;
+            public interface IStaticCacheManager { System.Threading.Tasks.Task<T> GetAsync<T>(string key, System.Func<System.Threading.Tasks.Task<T>> acquire); }
+            public interface IStore { T Get<T>(string key, System.Func<T> make); }
+            public class Svc
+            {
+                public static int Load(int id) => id;
+                public static System.Threading.Tasks.Task<int> LoadAsync() => System.Threading.Tasks.Task.FromResult(1);
+                int GetOrder(System.Func<int> f) => f();
+                async void Run(IStaticCacheManager cache, IStore store, ConcurrentDictionary<int, int> seen, bool on)
+                {
+                    await cache.GetAsync("k", async () => await LoadAsync());
+                    seen.GetOrAdd(1, id => { if (on) return Load(id); return 0; });
+                    store.Get("k", () => Load(2));
+                    GetOrder(() => Load(3));
+                }
+            }
+            """;
+        var facts = ConditionFacts(code).Where(f => f["call"] == "Svc.LoadAsync" || f["call"] == "Svc.Load").Select(f => $"{f.Line} {string.Join(" ← ", Conditions(f))}").ToList();
+        Assert.Equal(
+        [
+            "11 cache-miss cache.GetAsync",               // a plain GetAsync on a type naming a cache
+            "12 if on ← cache-miss seen.GetOrAdd",         // innermost first; GetOrAdd on any type
+            // 13: Get on a type that doesn't name a cache; 14: GetOrder isn't a get-or name
+        ], facts);
+        Assert.Equal(11, JsonDocument.Parse(ConditionFacts(code).First(f => f.Line == 11)["conditions"]).RootElement[0].GetProperty("line").GetInt32());
+    }
+
     [Fact]
     public void An_MVC_action_serving_GET_that_returns_a_view_runs_as_its_page_opens()
     {

@@ -147,6 +147,9 @@ export function conditionsAround(ctx: Context, node: ts.Node): Condition[] {
   for (let p: ts.Node | undefined = node.parent; p && !ts.isSourceFile(p); child = p, p = p.parent) {
     if (qualifiedName(p) || testName(p)) break;
     const at = (n: ts.Node) => ctx.line(n);
+    // D215: code in a function given to a cache's get-or-create call runs only when nothing is stored for the key.
+    if ((ts.isArrowFunction(child) || ts.isFunctionExpression(child)) && ts.isCallExpression(p) && p.arguments.some((a) => a === child) && cacheMiss(ctx, p))
+      out.push({ kind: "cache-miss", text: p.expression.getText(sf), line: at(p) });
     if (ts.isIfStatement(p)) {
       if (child === p.thenStatement) out.push({ kind: "if", text: p.expression.getText(sf), line: at(p) });
       else if (child === p.elseStatement) out.push({ kind: "else", text: p.expression.getText(sf), line: at(p) });
@@ -174,6 +177,21 @@ export function conditionsAround(ctx: Context, node: ts.Node): Condition[] {
     }
   }
   return out;
+}
+
+/**
+ * D215: a get-or-create call, by the method's name, since the types differ in every repo and library: a `getOr…` name
+ * (`getOrAdd`, `getOrCreate`, `getOrSet`; `getOrder` isn't one) whatever the receiver; a plain `get`/`getAsync` only when the
+ * receiver's type names a cache.
+ */
+function cacheMiss(ctx: Context, call: ts.CallExpression): boolean {
+  const callee = call.expression;
+  const name = ts.isPropertyAccessExpression(callee) ? callee.name.text : ts.isIdentifier(callee) ? callee.text : "";
+  if (/^(get|Get)Or[A-Z]/.test(name) || name === "AddOrGetExisting") return true;
+  if (!/^(get|Get)(Async)?$/.test(name) || !ts.isPropertyAccessExpression(callee)) return false;
+  const type = ctx.checker.getTypeAtLocation(callee.expression);
+  const named = type.aliasSymbol?.name ?? type.getSymbol()?.name ?? "";
+  return /cach/i.test(named);
 }
 
 /** X1: an earlier guard among the same statements (`if (!x) return;`): this runs only unless its condition holds; nearest first. */

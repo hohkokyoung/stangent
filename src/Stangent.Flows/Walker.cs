@@ -107,8 +107,12 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             static bool Now(Fact f) => !f["deferred"].StartsWith("kept:", StringComparison.Ordinal);
             var sites = callSites.Where(f => f.Line == line && Now(f)).OrderBy(f => f["target"], StringComparer.Ordinal).ToList();
             var conds = conditions[line].OrderBy(f => f["target"], StringComparer.Ordinal).ToList();
+            // D215: a call with no condition fact of its own has none; another call's on the line (one inside a function it's
+            // given, `_cache.Get(k, () => Load())`, or after its `?.`) isn't its. A step not tied to a call takes the line's.
+            var ownedBy = callSites.Where(f => f.Line == line).Select(f => f["target"]).Where(t => t != "").ToHashSet(StringComparer.Ordinal);
             List<Condition> CondsFor(string? target) =>
-                FlowGraph.ConditionsOf(conds.FirstOrDefault(c => target is not null && c["target"] == target) ?? conds.FirstOrDefault() ?? Empty);
+                FlowGraph.ConditionsOf(conds.FirstOrDefault(c => target is not null && c["target"] == target)
+                    ?? conds.FirstOrDefault(c => target is null or "" || !ownedBy.Contains(c["target"])) ?? Empty);
             var consumed = new HashSet<string>(StringComparer.Ordinal);
 
             var https = Narrow(g.Facts(point, "http-match").Where(f => f.Line == line && Now(f)), branch).OrderBy(f => f["endpoint"], StringComparer.Ordinal).ToList();

@@ -650,6 +650,27 @@ test("each branch of an earlier if / else if chain that leaves is an unless cond
   assert.deepEqual(JSON.parse(at10.data.conditions).map((c: { kind: string; text: string; line: number }) => `${c.kind} ${c.text}@${c.line}`), ["unless manual@7", "unless never@5"]);
 });
 
+test("code in a function given to a cache's get-or-create call runs only when nothing is stored (D215)", () => {
+  const root = project({
+    "src/a.ts": [
+      "declare function load(): number;",
+      "interface PriceCache { get(key: string, make: () => number): number }",
+      "interface Store { get(key: string, make: () => number): number }",
+      "export function run(cache: PriceCache, store: Store, m: { getOrSet(k: string, f: () => number): number; getOrder(f: () => number): number }) {",
+      "  cache.get('k', () => load());",
+      "  m.getOrSet('k', () => load());",
+      "  store.get('k', () => load());",
+      "  m.getOrder(() => load());",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const conds = lines.filter((l) => l.t === "fact" && l.kind === "condition" && l.data.call === "load")
+    .map((l) => l.t === "fact" ? `${l.line} ${JSON.parse(l.data.conditions).map((c: { kind: string; text: string; line: number }) => `${c.kind} ${c.text}@${c.line}`).join(",")}` : "");
+  // 7: get on a type that doesn't name a cache; 8: getOrder isn't a get-or name.
+  assert.deepEqual(conds, ["5 cache-miss cache.get@5", "6 cache-miss m.getOrSet@6"]);
+});
+
 test("code in a function handed to code that keeps it runs later; a library's callback runs now; a listener's is marked (D201)", () => {
   const root = project({
     "src/a.ts": [

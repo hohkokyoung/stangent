@@ -57,6 +57,15 @@ public static class FlowFiles
         o["code"] = at.Code;
     }
 
+    /// <summary>How a condition's quoted code reads after "only if": D215 `cache-miss`.</summary>
+    static string Reading(string kind) => kind switch
+    {
+        "else" => " is false",
+        "unless" => " is false (an earlier guard)",
+        "cache-miss" => " finds nothing stored for the key",
+        _ => "",
+    };
+
     static JsonArray Conditions(IEnumerable<Condition> cs) => [.. cs.Select(c =>
     {
         var o = new JsonObject { ["kind"] = c.Kind, ["at"] = $"{c.File}:{c.Line}", ["code"] = c.Code };
@@ -180,7 +189,7 @@ public static class FlowFiles
             var d = st.From is { } p && depth.TryGetValue(p, out var pd) ? pd + 1 : 0;
             depth[st.N] = d;
             sb.Append(new string(' ', d * 2)).Append($"- {st.N}. {st.What}{(st.Guessed ? " 🟡" : "")}");
-            if (st.Conditions.Count > 0) sb.Append($", only if `{st.Conditions[0].Code}`{(st.Conditions[0].Kind is "else" ? " is false" : st.Conditions[0].Kind is "unless" ? " is false (an earlier guard)" : "")}");
+            if (st.Conditions.Count > 0) sb.Append($", only if `{st.Conditions[0].Code}`{Reading(st.Conditions[0].Kind)}");
             if (st.End is { } e) sb.Append($" — ends: {e.Kind}, {e.Detail}");
             if (st.BackTo is { } b) sb.Append(b == 0 ? " — goes back to the start" : $" — goes back to step {b}");
             if (st.SameAs is { } sa) sb.Append($" — as in step {sa}");
