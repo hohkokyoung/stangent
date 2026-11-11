@@ -75,13 +75,13 @@ public sealed class AreasTests : IDisposable
         // A click in its screen's folder; one on a dialog both Series details and the queue open (a tie); one only the frame shows.
         Click("click-save", details, "save", "shared-load");
         Click("click-series", series, "refresh");
-        Click("click-queue", queue, "remove", "handler-even");
-        Click("click-read", reader, "turn");
+        Click("click-queue", queue, "remove", "handler-even", "shared-two");
+        Click("click-read", reader, "turn", "shared-two", "job-y");
         var modal = Ts("Components/Modal.tsx", "Modal");
         Node(modal, NodeKind.Component, "web/src/Components/Modal.tsx");
         Edge(details, modal, EdgeKind.Uses);
         Edge(queue, modal, EdgeKind.Uses);
-        Click("click-modal", modal, "ok");
+        Click("click-modal", modal, "ok", "job-y");
         var header = Ts("Components/Header.tsx", "Header");
         var app = Ts("App.tsx", "App");
         Node(header, NodeKind.Component, "web/src/Components/Header.tsx");
@@ -100,13 +100,16 @@ public sealed class AreasTests : IDisposable
 
         // Jobs: one led by Series flows through a shared flow; one by nobody (its backend folder); one led evenly by two areas.
         flows.Add(new JsonObject { ["id"] = "shared-load", ["kind"] = "shared", ["point"] = "x", ["start"] = "x:1", ["links"] = new JsonArray("job-refresh") });
-        foreach (var (id, file) in new[] { ("job-refresh", "src/Core/Tv/Refresh.cs"), ("job-lonely", "src/Core/Jobs/Lonely.cs"), ("handler-even", "src/Core/Events/Even.cs"), ("job-settings", "src/Core/Config/Save.cs") })
+        flows.Add(new JsonObject { ["id"] = "shared-two", ["kind"] = "shared", ["point"] = "y", ["start"] = "y:1", ["links"] = new JsonArray() });
+        // job-y: led by two Series clicks and the reader's, so Series by majority, until the dialog's tie is answered Activity (D231).
+        foreach (var (id, file) in new[] { ("job-refresh", "src/Core/Tv/Refresh.cs"), ("job-lonely", "src/Core/Jobs/Lonely.cs"), ("handler-even", "src/Core/Events/Even.cs"), ("job-settings", "src/Core/Config/Save.cs"), ("job-y", "src/Core/Sync/Y.cs") })
         {
             var point = $"Core|M:Core.{id}.Run";
             Node(point, NodeKind.Method, file, "project:src/Core/Core.csproj");
             Flow(id, id.StartsWith("job", StringComparison.Ordinal) ? "job" : "handler", point, $"{file}:3");
         }
-        flows.First(f => (string)f["id"]! == "click-series")!["links"] = new JsonArray("handler-even", "shared-load");
+        flows.First(f => (string)f["id"]! == "click-series")!["links"] = new JsonArray("handler-even", "shared-load", "job-y");
+        flows.First(f => (string)f["id"]! == "click-save")!["links"] = new JsonArray("shared-load", "job-y");
 
         Directory.CreateDirectory(Path.Combine(root, FlowFiles.Folder));
         File.WriteAllText(Path.Combine(root, FlowFiles.Folder, "index.json"),
@@ -154,6 +157,9 @@ public sealed class AreasTests : IDisposable
 
         // Answered, merged and renamed by a person: the check passes and areas.json holds every start flow and its shared flows.
         var answered = AreaFiles.Parse(text.Replace("answer: ''", "answer: 'Series'").Replace("'Reader'", "'Reading'"));
+        // D230: until flows build has put the files where the file says, the check says to run it.
+        Assert.Contains(AreaFiles.Check(areas, answered).Report["problems"]!.AsArray(), p => ((string)p!).EndsWith("run `stangent flows build`", StringComparison.Ordinal));
+        areas = Built(AreaLayout.ByAreas(areas, answered));
         var (ok, json) = AreaFiles.Check(areas, answered);
         Assert.True((bool)ok["ok"]!, ok.ToJsonString());
         Assert.Equal("Reading", (string)json["flows"]!["click-read"]!);
@@ -184,6 +190,99 @@ public sealed class AreasTests : IDisposable
         Assert.Contains("tie answered for 'click-gone', which is no longer a start flow", problems);
         Assert.Contains("menu item '/activity/queue' is in no area", problems);
         Assert.Contains("folder 'web/src/Reader' is in no area", problems);
+    }
+
+    /// <summary>The index as <c>flows build</c> would leave it for a layout: each flow's <c>file</c> where the layout puts it.</summary>
+    Areas Built(AreaLayout layout)
+    {
+        File.WriteAllText(Path.Combine(root, FlowFiles.IndexFile), new JsonObject
+        {
+            ["commit"] = "abc",
+            ["flows"] = new JsonArray([.. flows.Select(f => { var c = f.DeepClone().AsObject(); c["file"] = layout.File((string)f["id"]!); return (JsonNode)c; })]),
+        }.ToJsonString());
+        return Areas.Load(graph, root);
+    }
+
+    static AreasFile Answered(AreasFile file, params (string Flow, string Answer)[] answers) => new()
+    {
+        Areas = file.Areas, Large = file.Large,
+        Ties = [.. file.Ties.Select(t => answers.FirstOrDefault(a => a.Flow == t.Flow) is { Flow: not null } a ? t with { Answer = a.Answer } : t)],
+    };
+
+    [Fact]
+    public void Start_flows_sit_under_their_area_shared_flows_with_their_one_area_or_in_shared_and_ties_in_unplaced()
+    {
+        var areas = Build();
+        var (file, _) = AreaFiles.Propose(areas);
+        var layout = AreaLayout.ByAreas(areas, file);
+        Assert.Equal("specs/areas/series", layout.FolderOf["click-save"]);
+        Assert.Equal("specs/areas/settings-a", layout.FolderOf["click-a00"]);
+        Assert.Equal("specs/areas/app-frame", layout.FolderOf["click-restart"]);
+        Assert.Equal("specs/areas/core-jobs", layout.FolderOf["job-lonely"]);
+        Assert.Equal("specs/areas/series/click-save.json", layout.File("click-save"));
+        // A tie still open: in unplaced/, and said so.
+        Assert.Equal("specs/areas/unplaced", layout.FolderOf["click-modal"]);
+        Assert.Equal(["click-modal", "handler-even"], layout.NotPlaced);
+        // Only Series' starts reach shared-load: it sits with them. Activity's and Reader's both reach shared-two: shared/.
+        Assert.Equal("specs/areas/series", layout.FolderOf["shared-load"]);
+        Assert.Equal("specs/areas/shared", layout.FolderOf["shared-two"]);
+        // The same areas give the same layout.
+        Assert.Equal(layout.FolderOf, AreaLayout.ByAreas(Areas.Load(graph, root), AreaFiles.Parse(AreaFiles.Render(file, "abc", layout.Placement!))).FolderOf);
+    }
+
+    [Fact]
+    public void An_areas_folder_is_its_name_as_a_slug_and_two_names_never_share_one()
+    {
+        var slugs = AreaLayout.Slugs(["Settings › Indexers", "settings indexers", "Shared", "Unplaced", "日本", "Admin › Catalog › Products"]);
+        Assert.Equal("settings-indexers", slugs["Settings › Indexers"]);   // ordinal first keeps the bare slug
+        Assert.Equal("settings-indexers-2", slugs["settings indexers"]);
+        Assert.Equal("shared-2", slugs["Shared"]);                          // shared/ and unplaced/ are never an area's
+        Assert.Equal("unplaced-2", slugs["Unplaced"]);
+        Assert.Equal("area", slugs["日本"]);
+        Assert.Equal("admin-catalog-products", slugs["Admin › Catalog › Products"]);
+        Assert.Equal("../shared/x.md", AreaLayout.Relative("specs/areas/series", "specs/areas/shared/x.md"));
+        Assert.Equal("x.md", AreaLayout.Relative("specs/flows", "specs/flows/x.md"));
+    }
+
+    [Fact]
+    public void Each_area_has_a_page_of_links_grouped_by_kind_that_keeps_layer_4s_words_and_goes_when_its_area_does()
+    {
+        var areas = Build();
+        var (proposed, _) = AreaFiles.Propose(areas);
+        var file = Answered(proposed, ("click-modal", "Activity"), ("handler-even", "Series"));
+        var layout = AreaLayout.ByAreas(areas, file);
+        areas = Built(layout);
+        var (report, json) = AreaFiles.Check(areas, file, layout);
+        Assert.Equal("specs/areas/series", (string)json["areas"]!.AsArray().Single(a => (string)a!["name"]! == "Series")!["folder"]!);
+
+        AreaPages.Write(root, areas, layout);
+        var series = File.ReadAllText(Path.Combine(root, "specs/areas/series/page.md"));
+        Assert.StartsWith(AreaPages.Marker, series, StringComparison.Ordinal);
+        Assert.Contains("# Series\n", series, StringComparison.Ordinal);
+        Assert.Contains("- **Start flows:** 6 (2 screens, 2 clicks, 1 job, 1 handler)\n", series, StringComparison.Ordinal);
+        Assert.Contains("- **Shared flows they reach:** 1 (1 in this folder)\n", series, StringComparison.Ordinal);
+        Assert.Contains("\n## Screens (2)\n", series, StringComparison.Ordinal);
+        Assert.Contains("- [click-save](click-save.md) `click-save`\n", series, StringComparison.Ordinal);
+        Assert.Contains("- [shared-load](shared-load.md) `shared-load`\n", series, StringComparison.Ordinal);
+        var activity = File.ReadAllText(Path.Combine(root, "specs/areas/activity/page.md"));
+        Assert.Contains("- [shared-two](../shared/shared-two.md) `shared-two`\n", activity, StringComparison.Ordinal);
+        Assert.True(series.IndexOf(AreaPages.WordsEnd, StringComparison.Ordinal) < series.IndexOf("## Screens", StringComparison.Ordinal));
+
+        // Layer 4's words between the two lines are kept on a rewrite; the rest is rebuilt to the same bytes.
+        var withWords = series.Replace(AreaPages.WordsStart + "\n", AreaPages.WordsStart + "\nSeries is where people add shows.\n", StringComparison.Ordinal);
+        File.WriteAllText(Path.Combine(root, "specs/areas/series/page.md"), withWords);
+        var (_, _, unchanged, _) = AreaPages.Write(root, areas, layout);
+        Assert.Equal(layout.SlugOf.Count, unchanged);
+        Assert.Equal(withWords, File.ReadAllText(Path.Combine(root, "specs/areas/series/page.md")));
+
+        // A rename: the old page goes, unless it holds layer 4's words, which are kept and reported.
+        var renamed = AreaFiles.Parse(AreaFiles.Render(file, "abc", layout.Placement!).Replace("'Series'", "'Shows'").Replace("'Reader'", "'Reading'"));
+        var after = AreaLayout.ByAreas(areas, renamed);
+        var (_, removed, _, kept) = AreaPages.Write(root, areas, after);
+        Assert.Equal(1, removed);
+        Assert.False(Directory.Exists(Path.Combine(root, "specs/areas/reader")));
+        Assert.Equal(["specs/areas/series/page.md"], kept);
+        Assert.True(File.Exists(Path.Combine(root, "specs/areas/shows/page.md")));
     }
 
     [Fact]

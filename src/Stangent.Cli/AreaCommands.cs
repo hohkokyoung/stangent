@@ -29,15 +29,22 @@ static class AreaCommands
         }));
         areas.Subcommands.Add(propose);
 
-        var check = new Command("check", "Check specs/areas.yaml: every start flow in exactly one area, nothing uncovered, every tie answered; writes specs/areas.json.");
+        var check = new Command("check", "Check specs/areas.yaml: every start flow in exactly one area, nothing uncovered, every tie answered, flow files where it puts them; writes specs/areas.json and specs/areas/<area>/page.md.");
         check.SetAction(pr => Cli.Run(pr, "areas check", ctx =>
         {
             var path = Path.Combine(ctx.Repo.Root, AreaFiles.Confirmed);
             if (!File.Exists(path))
                 throw new StangentException("not_found", $"No {AreaFiles.Confirmed}: run `stangent areas propose`, then copy {AreaFiles.Proposed} there and confirm it.", ExitCodes.NotFound);
             var a = Areas.Load(Cli.LoadGraph(ctx), ctx.Repo.Root);
-            var (report, json) = AreaFiles.Check(a, AreaFiles.Parse(File.ReadAllText(path)));
+            var file = AreaFiles.Parse(File.ReadAllText(path));
+            var layout = AreaLayout.ByAreas(a, file);
+            var (report, json) = AreaFiles.Check(a, file, layout);
             AreaFiles.WriteText(ctx.Repo.Root, AreaFiles.Json, CanonicalJson.Serialize(json));
+            // D230: one page per area, specs/areas/<slug>/page.md; a stale page holding layer 4's words is kept and reported.
+            var (written, removed, unchanged, kept) = AreaPages.Write(ctx.Repo.Root, a, layout);
+            report["pages"] = new JsonObject { ["written"] = written, ["removed"] = removed, ["unchanged"] = unchanged };
+            foreach (var k in kept) report["problems"]!.AsArray().Add((JsonNode)$"{k} belongs to no area now but holds layer 4's words: move them, then delete it");
+            if (kept.Count > 0) report["ok"] = false;
             ctx.Span.Attributes["stangent.artifact.count"] = (int)report["placed"]!;
             if (!(bool)report["ok"]!) throw new CheckFailed("areas_check_failed", "Areas failed a check: see problems.", report);
             return report;

@@ -229,10 +229,12 @@ public static class AreaFiles
 
     /// <summary>
     /// D225: every start flow in exactly one area; menu items and folders no area covers; ties unanswered and answers whose flow is gone
-    /// or that name no area; an address or folder two areas list. Returns the report and <c>areas.json</c>.
+    /// or that name no area; an address or folder two areas list; flow files not where the file puts them (D230: run <c>flows build</c>).
+    /// Returns the report and <c>areas.json</c>.
     /// </summary>
-    public static (JsonObject Report, JsonObject AreasJson) Check(Areas a, AreasFile file)
+    public static (JsonObject Report, JsonObject AreasJson) Check(Areas a, AreasFile file, AreaLayout? layout = null)
     {
+        layout ??= AreaLayout.ByAreas(a, file);
         var problems = new List<string>();
         foreach (var dup in file.Areas.GroupBy(x => x.Name, O).Where(x => x.Count() > 1)) problems.Add($"area '{dup.Key}' is listed {dup.Count()} times");
         foreach (var x in file.Areas.Where(x => x.Name.Trim() == "")) problems.Add("an area has no name");
@@ -241,7 +243,7 @@ public static class AreaFiles
         foreach (var dup in file.Areas.SelectMany(x => x.Folders.Distinct(O).Select(f => (f, x.Name))).GroupBy(x => x.f, O).Where(x => x.Count() > 1))
             problems.Add($"folder '{dup.Key}' is in {string.Join(" and ", dup.Select(d => $"'{d.Name}'"))}");
 
-        var placement = a.Place(file);
+        var placement = layout.Placement!;
         foreach (var id in placement.Uncovered) problems.Add($"start flow '{id}' is in no area");
         foreach (var (id, choose) in placement.Open) problems.Add($"tie unanswered: '{id}' could be {string.Join(", ", choose.Select(c => $"'{c}'"))}");
         var names = file.Areas.Select(x => x.Name).ToHashSet(O);
@@ -261,7 +263,12 @@ public static class AreaFiles
             .Concat(a.Starts.Values.Where(s => s.BackendFolder is not null && placement.Uncovered.Contains(s.Id)).Select(s => s.BackendFolder!));
         foreach (var f in needed.Where(f => !Covered(f)).Distinct(O).Order(O)) problems.Add($"folder '{f}' is in no area");
 
-        var json = AreasJson(a, file, placement);
+        // D230: flows build writes each flow where this file puts it; the index says where they are now.
+        var misplaced = a.Flows.Values.Where(f => f.File != layout.File(f.Id)).Select(f => f.Id).ToList();
+        if (misplaced.Count > 0)
+            problems.Add($"{misplaced.Count} flow {(misplaced.Count == 1 ? "file isn't" : "files aren't")} where {Confirmed} puts them (e.g. '{misplaced[0]}' belongs in {layout.FolderOf[misplaced[0]]}/): run `stangent flows build`");
+
+        var json = AreasJson(a, file, placement, layout);
         var counts = placement.AreaOf.Values.GroupBy(x => x, O).ToDictionary(x => x.Key, x => x.Count(), O);
         var report = new JsonObject
         {
@@ -271,6 +278,8 @@ public static class AreaFiles
             ["startFlows"] = a.Starts.Count,
             ["placed"] = placement.AreaOf.Count,
             ["areas"] = new JsonArray([.. file.Areas.Select(x => (JsonNode)new JsonObject { ["name"] = x.Name, ["flows"] = counts.GetValueOrDefault(x.Name) })]),
+            ["inUnplacedFolder"] = new JsonArray([.. layout.NotPlaced.Select(f => (JsonNode)f)]),
+            ["misplaced"] = misplaced.Count,
             ["over40"] = new JsonArray([.. file.Areas.Where(x => counts.GetValueOrDefault(x.Name) > Areas.Big).Select(x => (JsonNode)x.Name)]),
             ["problems"] = new JsonArray([.. problems.Select(p => (JsonNode)p)]),
         };
@@ -278,7 +287,7 @@ public static class AreaFiles
     }
 
     /// <summary>The code-made <c>areas.json</c> (D225): every start flow's area, and per area the shared flows its starts reach (D218).</summary>
-    public static JsonObject AreasJson(Areas a, AreasFile file, Placement placement) => new()
+    public static JsonObject AreasJson(Areas a, AreasFile file, Placement placement, AreaLayout? layout = null) => new()
     {
         ["contract"] = Contract, ["version"] = Version, ["commit"] = a.Commit,
         ["areas"] = new JsonArray([.. file.Areas.Select(x =>
@@ -288,6 +297,7 @@ public static class AreaFiles
             return (JsonNode)new JsonObject
             {
                 ["name"] = x.Name,
+                ["folder"] = layout is not null && layout.SlugOf.ContainsKey(x.Name) ? layout.AreaFolder(x.Name) : null,
                 ["flows"] = new JsonArray([.. flows.Select(f => (JsonNode)f)]),
                 ["shared"] = new JsonArray([.. shared.Select(f => (JsonNode)f)]),
             };
