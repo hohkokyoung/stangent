@@ -30,8 +30,8 @@ a job is, what queues a job, or the conditions around a call.
 | Labels | a URL, form or generated-client match is ✅ when constant and unique; other guesses 🟡 per step with their reason, listed at the top (D175) |
 | Determinism | source-line order then id; loops "go back to step N"; names from translation files; every React effect on open; a fixed early-exit list; a display-only rule; byte-for-byte rebuilds (D176) |
 | Contents | name, start, actor, inputs, checks, steps, ends, scenarios (main path plus one per early exit), links, guesses, settings (D179) |
-| Areas | the screen's home folder; shared folders never a home; jobs to the area that links to them most; split over 40 flows; never merged by code; ties listed for a person (D178) |
-| Disk | `specs/flows/<id>.json` + `.md`, `specs/flows/index.json`, `specs/areas.yaml`, all committed; contracts `flows` v1, `areas` v1 (D180) |
+| Areas | start flows only (D218); the app's parts as its users name them, read from its menu, each top-level item an area, its children the split over 40 (D220, D221); screens no menu reaches join the menu area holding a screen in their home folder, else their folder (D219); clicks take their screen's area, walking up through dialogs, tables and services, the app's frame its own area (D219, D222); jobs to an area with more than half the flows leading to them, else their backend folder (D223); over 40 with nothing to split by flagged (D224); ties listed for a person, never merged by code (D178) |
+| Disk | `specs/flows/<id>.json` + `.md`, `specs/flows/index.json`, `specs/areas.yaml` (by menu items and folders, `large`, `ties`; D225), code-made `specs/areas.json`, all committed; contracts `flows` v1, `areas` v1 (D180) |
 
 Worked example (Sonarr, D172–D173): **Add {title}** (signed-in user clicks) → `useAddSeries` → `POST /api/v5/Series` →
 `SeriesController.AddSeries` → `AddSeriesService` → `SeriesService.AddSeries` → saves `Series`, sends SeriesAdded →
@@ -56,7 +56,7 @@ assistant stops and asks before a second round (D158).
 3. **Flows:** `stangent flows build|show|check`, contract `flows` v1, `docs/flows.md`; built on the three repos; scored against
    the key by code (a flows scorer in `Stangent.Benchmark`). The bar below decides.
 4. **A narrow fresh check (D158) of the flows**, estimate said first.
-5. **Areas:** `stangent areas propose|check`, contract `areas` v1; the owner confirms Sonarr's `areas.yaml` (the others proposed and listed).
+5. **Areas** (grilled 2026-11-11, D218–D225): first layer 2 `menu-item` facts (TypeScript extractor, C#/Razor detectors, fixtures on React, Angular and Razor; D221), graphs rebuilt, then a narrow fresh check of them (D158, 60–100K tokens, asked first); then `stangent areas propose|check`, contract `areas` v1, `docs/areas.md`; proposed on the three repos with counts (areas, flows per area, ties, large); the owner confirms Sonarr's `areas.yaml` (the others proposed and listed).
 6. **Then D166:** the guesses and blind spots that sit on a flow, and only those, are sorted by cause and checked. Then layer 4 (pages, P1).
 
 ## The bar (D177), frozen 2026-11-09
@@ -408,3 +408,20 @@ Not re-checked by a fresh agent (D61: another check needs the owner; about 100�
 36) and the code check (only the known `goToPage`). No third check: D215/D216 change no label. A sample can't prove zero (0 of
 36 still allows about 1 in 12); passed means every cause found is fixed. Small item left: RxJS `debounceTime`/`delay` read as
 later, 🟡 like D212's timers. Next: step 5, areas.
+
+## Step 5: areas — grilled 2026-11-11 (D218–D225), not built
+
+D178's folder rule was laid over the real flows first (probe: index.json plus the graph). Where it didn't hold, and what was decided:
+
+| Found | Decided |
+|---|---|
+| Shared flows are most flows (Sonarr 1,287 of 1,679) and most are reached from several areas | areas hold start flows only; each area lists the shared flows it uses, by code (D218) |
+| The index's `home` is the route file's or `Controllers` folder for a screen opening | a screen's home from the graph: the routed component or the action's view, display-only screens too; runtime view paths by MVC's controller-name convention (D219) |
+| "Shown on two or more other homes" made Sonarr's Series, Settings, Activity, AddSeries shared (4 homes left) | a folder holding a screen is a home; the catch-all route makes none; a dialog belongs to the screen opening it (D219, replaced clause) |
+| The owner: folders feel too simple; areas serve readers and requirement matching, both in users' words | areas are the app's parts as users name them, read from its menu; folders are the fallback (D220, D221) |
+| 24 clicks on no screen (a lookup table, the app's frame, dialogs opened by services) | walk up through non-component code; frame-only clicks to App frame; the rest a tie with every area (D222) |
+| "Most links" gave nopCommerce 97 even ties and Kavita's jobs to its login screens | more than half, else the backend folder; an interface's job by its one implementation (D223) |
+| nopCommerce's Products (64), Customer (49), Order (44) have nothing to split by | stay whole, flagged (D224) |
+| — | `areas.yaml` by menu items and folders with `large` and `ties`; code-made `areas.json` (D225) |
+
+Folder-only measurements (before the menu rule): homes Sonarr 8, Kavita 21, nopCommerce 117; clicks placed 89 / 210 / 320, ties 19 / 10 / 2, on no screen 8 / 13 / 3.
