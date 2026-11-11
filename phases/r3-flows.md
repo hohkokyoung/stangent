@@ -350,3 +350,21 @@ own limits (long chains past its 11 lines, a renamed default import), fixed in t
 Kavita 0, nopCommerce 0**; the 2 are `goToPage(1)` (`History.tsx:95,102`), right ("calls useHistory.handleGoToPage": the hook
 returns `goToPage: handleGoToPage`). Item 2 unchanged: 95.3%, 96.0%, 95.6%; items 3–5 pass; links and checks unchanged. Item 1
 still needs a fresh agent's read of a sample of ✅ steps (D202 was never re-checked either): put to the owner, not started.
+
+**Item 1's fresh check (2026-11-11, one Sonnet agent, ~116K tokens against a 40–60K estimate; owner: "Yes, run it"). Item 1
+fails.** 36 ✅ steps picked by code (seed 20261111, 12 per repo, mixed kinds, from the 15 scored flows and the shared flows they
+continue into), each with its caller chain: 24 right, **6 wrong**, 6 minor (right on their line, under a 🟡 parent). All 6 read
+again in the code and confirmed; three general causes, all frontend:
+1. **A component's children shown though it renders nothing until a prop is set** (3: Sonarr items 3, 6, 9). `Modal` returns
+   `null` when `!isOpen` (`Components/Modal/Modal.tsx:159`), so `<EpisodeDetailsModalContent>` inside `<Modal isOpen={isOpen}>`
+   isn't shown when the series page opens, yet its hooks and requests are ✅ steps of the screen opening.
+2. **A mutation hook's request taken as sent when the hook runs** (1: Sonarr item 10). `useApiMutation` (react-query's
+   `useMutation`) only sets up `mutationFn`; `POST /command` (`useCommands.ts:45`) goes out when `executeCommand` calls `mutate`,
+   not on open (step 113 and the backend steps under it).
+3. **Timer callbacks walked as running now** (2: Kavita items 13, 18). `setInterval(() => this.refreshToken()…, 600000)`
+   (`account.service.ts:504`) is ✅ at login; `setTimeout(() => this.closeReader(), 200)` in a subscribe's error callback
+   (`manga-reader.component.ts:1252`).
+Minor: a 🟡 "one of 2" candidate that can't be the runtime type (`CachedDictionary` for an `ICached<string>` field); a read that
+runs only on a cache miss. The fixed spots hold: D202's `card-config-factory.service.ts:233`/`:292` are no step and the reader's
+settings stream is 🟡; D210's `predicate(…)` steps are 🟡, line 70 ✅. Report: notes folder `item1-check.md`; sample
+`item1-sample.md`. Not fixed: waits for the owner.
