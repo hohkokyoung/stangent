@@ -516,3 +516,7 @@ flows; start flows touched).
 Script and full tables: shared notes `step6-causes.py`, `step6-counts.txt`.
 
 Settled: counted and sorted by code line into D166's four buckets by a fixed table, printed by a `stangent` report (D235). Checked by code first (every cause with a general rule fixed), then one narrow fresh agent on a sample of what's left, ~110–120K tokens, asked first (D236).
+
+**Step 6's bar (D237), frozen 2026-11-11:** (1) every 🟡/❓ line on a flow in a bucket, by code; (2) every reason true to its
+cause (code, plus the fresh agent's sample); (3) no several-answer guess missing what the code really runs (the sample);
+(4) D177's items 1–5 still pass. No cut target; before and after counts per bucket reported.
