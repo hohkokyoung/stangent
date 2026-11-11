@@ -377,3 +377,17 @@ is started" (D214: Sonarr 311). Re-read by code on the six spots: Sonarr steps 5
 `closeReader` in `setTimeout` (step 309) are 🟡. ✅ steps: Sonarr 88,443 → 88,178, Kavita 25,169 → 25,083, nopCommerce 90,731
 (unchanged). Code check of item 1: Sonarr 2 (the known `goToPage`), Kavita 0, nopCommerce 0. Item 2 unchanged: 95.3%, 96.0%,
 95.6%; items 3–5 pass. Not re-checked by a fresh agent (the one-check-one-fix cap, D61: a second check needs the owner).
+
+**Second fresh check (2026-11-11, one Sonnet agent, ~113K tokens against a 100–120K estimate; owner: "Yes, run it").** 36 new
+✅ steps picked by code (seed 20261112, none from the first sample) and the six fixed spots. The agent: 20 right, 2 wrong,
+14 minor; the six spots hold, each reason true of its code; no case found where D212–D214 turn a step that runs into 🟡. Both
+wrong read again in the code: **neither is a step the code doesn't do.** Item 31 (`InvoiceDocument.cs:212`,
+`CreateInvoiceHeader` inside `events.MainTableCreated(events => …)`) runs during `Generate`: the callback is registered in a
+builder chain that ends `.Generate(…)` in the same method (`:226`): rejected. Item 26 (`CustomerService.cs:1430`, reads
+`CustomerPassword` under `GetCurrentPasswordAsync` at `:1546`) runs, but only on a cache miss: the call is in the function given
+to `_shortTermCacheManager.GetAsync(…)`; the `PasswordLifetime == 0` guard the agent named is shown (`unless` on steps 71–72).
+Counted as a condition not shown, not a wrong ✅. Same kind among the minor: `this.doubleRenderer()?.renderPage(…)` (Kavita
+`manga-reader.component.ts:1669`) runs only when the renderer is set. **On this sample item 1 holds: 0 wrong ✅ of 36.** Gaps
+found (not fixed, owner's call): a cache's get-or-create function runs only on a miss, and an optional call (`a?.b()`) only when
+`a` is set, neither shown as a condition; an element's own modal wrapper with `isOpen` false is still ✅ "shows X" (it runs and
+draws nothing); RxJS `debounceTime`/`delay` operators aren't read as later. Report: notes folder `item1-check2.md`.
