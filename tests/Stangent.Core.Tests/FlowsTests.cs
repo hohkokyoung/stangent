@@ -330,3 +330,34 @@ public class RepositoryProofTests
         Assert.Null(EntityTablesDetector.RepositoryProof("IRepo.Touch", "write", sites, none, dispatch));
     }
 }
+
+/// <summary>Step 6 (D236): the views a plain project's build copies out for a web app to compile at runtime.</summary>
+public class ServedViewsTests
+{
+    [Fact]
+    public void Views_the_build_copies_out_are_served_and_others_are_not()
+    {
+        var dir = Directory.CreateTempSubdirectory("served-views").FullName;
+        try
+        {
+            foreach (var f in new[] { "Views/Configure.cshtml", "Views/_ViewImports.cshtml", "Views/Admin/List.cshtml", "Views/Draft.cshtml", "Areas/Public/Views/Info.cshtml", "obj/Views/Old.cshtml" })
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(dir, f))!);
+                File.WriteAllText(Path.Combine(dir, f), "<p></p>");
+            }
+            File.WriteAllText(Path.Combine(dir, "Plugin.csproj"), """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <ItemGroup>
+                    <Content Include="Views\Configure.cshtml"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
+                    <Content Include="Views\_ViewImports.cshtml"><CopyToOutputDirectory>Always</CopyToOutputDirectory></Content>
+                    <None Update="Views\Admin\**\*.cshtml;Areas\**\*.cshtml" CopyToOutputDirectory="PreserveNewest" />
+                    <Content Include="Views\Draft.cshtml"><CopyToOutputDirectory>Never</CopyToOutputDirectory></Content>
+                  </ItemGroup>
+                </Project>
+                """);
+            Assert.Equal(["Areas/Public/Views/Info.cshtml", "Views/Admin/List.cshtml", "Views/Configure.cshtml", "Views/_ViewImports.cshtml"],
+                Stangent.Graph.Loading.ServedViews.Copied(Path.Combine(dir, "Plugin.csproj")));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+}

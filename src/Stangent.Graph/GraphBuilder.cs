@@ -94,13 +94,18 @@ public static class GraphBuilder
             warnings.AddRange(workspace.Diagnostics.Select(d => ErrorFor(repo.Root, changed, d.Message)).Distinct().Order(StringComparer.Ordinal));
 
             extract.Start();
+            // Step 6 (D236): views a plain project ships for a web app to compile at runtime, compiled here by the Razor compiler.
+            var solution = ServedViews.Add(workspace.CurrentSolution,
+                changed.Select(p => (Project: workspace.CurrentSolution.Projects.Where(x => x.FilePath == p.FullPath).OrderBy(x => x.Name, StringComparer.Ordinal).FirstOrDefault(), p))
+                    .Where(x => x.Project is not null).Select(x => (x.Project!.Id, x.p.Directory, ServedViews.Copied(x.p.FullPath))).Where(x => x.Item3.Count > 0).ToList(),
+                warnings);
             var projectDirs = projects.Select(x => x.Directory).ToHashSet(StringComparer.Ordinal);
             var fragments = new ProjectFragment[changed.Count];
             await Parallel.ForEachAsync(Enumerable.Range(0, changed.Count), ct, async (i, token) =>
             {
                 var p = changed[i];
                 var fragment = new ProjectFragment { ProjectId = p.Id, Fingerprint = fingerprints[p.Id] };
-                var project = workspace.CurrentSolution.Projects
+                var project = solution.Projects
                     .Where(x => x.FilePath == p.FullPath).OrderBy(x => x.Name, StringComparer.Ordinal).FirstOrDefault();
                 if (project is not null && await project.GetCompilationAsync(token) is { } compilation)
                 {
