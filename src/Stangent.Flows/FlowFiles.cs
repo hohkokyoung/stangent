@@ -57,12 +57,13 @@ public static class FlowFiles
         o["code"] = at.Code;
     }
 
-    /// <summary>How a condition's quoted code reads after "only if": D215 `cache-miss`.</summary>
+    /// <summary>How a condition's quoted code reads after "only if": D215 `cache-miss`, D216 `set`.</summary>
     static string Reading(string kind) => kind switch
     {
         "else" => " is false",
         "unless" => " is false (an earlier guard)",
         "cache-miss" => " finds nothing stored for the key",
+        "set" => " is set",
         _ => "",
     };
 

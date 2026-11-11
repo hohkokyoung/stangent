@@ -671,6 +671,40 @@ test("code in a function given to a cache's get-or-create call runs only when no
   assert.deepEqual(conds, ["5 cache-miss cache.get@5", "6 cache-miss m.getOrSet@6"]);
 });
 
+test("a call after ?. runs only when what's before it is set, and so do its arguments (D216)", () => {
+  const root = project({
+    "src/a.ts": [
+      "declare function load(n: number): number;",
+      "interface R { next?: R; draw(p: number): void; me(): R }",
+      "export class C {",
+      "  renderer(): R | undefined { return undefined; }",
+      "  run(a: R | undefined, done?: () => void) {",
+      "    this.renderer()?.draw(load(1));",
+      "    a?.next?.draw(2);",
+      "    a?.me().draw(3);",
+      "    done?.();",
+      "    a?.draw([1].map(() => load(4))[0]);",
+      "    load(5);",
+      "  }",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const conds = lines.filter((l) => l.t === "fact" && l.kind === "condition")
+    .map((l) => l.t === "fact" ? `${l.line} ${l.data.call}: ${JSON.parse(l.data.conditions).map((c: { kind: string; text: string }) => `${c.kind} ${c.text}`).join(",")}` : "");
+  assert.deepEqual(conds, [
+    "6 this.renderer()?.draw: set this.renderer()",
+    "6 load: set this.renderer()",
+    "7 a?.next?.draw: set a?.next",
+    "8 a?.me().draw: set a",
+    "8 a?.me: set a",
+    "9 done: set done",
+    "10 a?.draw: set a",
+    "10 [1].map: set a",
+    "10 load: set a",
+  ]);
+});
+
 test("code in a function handed to code that keeps it runs later; a library's callback runs now; a listener's is marked (D201)", () => {
   const root = project({
     "src/a.ts": [

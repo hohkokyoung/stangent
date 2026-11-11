@@ -187,6 +187,38 @@ public class FlowStartsTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void A_call_after_a_question_dot_runs_only_when_what_is_before_it_is_set()
+    {
+        // D216: the nearest `?.` quotes the chain up to it; arguments and functions given to the call wait on it too.
+        const string code = """
+            public class R { public R? Next; public void Draw(int p) { } public R Me() => this; }
+            public class Svc
+            {
+                public static int Load(int id) => id;
+                R? Renderer() => null;
+                void Run(R? a, System.Action? done)
+                {
+                    Renderer()?.Draw(Load(1));
+                    a?.Next?.Draw(2);
+                    a?.Me().Draw(3);
+                    done?.Invoke();
+                    Load(4);
+                }
+            }
+            """;
+        var facts = ConditionFacts(code).Select(f => $"{f.Line} {f["call"]}: {string.Join(" ← ", Conditions(f))}").ToList();
+        Assert.Equal(
+        [
+            "8 R.Draw: set Renderer()",
+            "8 Svc.Load: set Renderer()",                // an argument: evaluated only when Renderer() is set
+            "9 R.Draw: set a?.Next",                     // the nearest `?.`, quoted from the chain's start
+            "10 R.Draw: set a",
+            "10 R.Me: set a",
+            // 8 Renderer() and 12 Load(4): none; 11 `done?.Invoke()` is a System call, never a step
+        ], facts);
+    }
+
+    [Fact]
     public void An_MVC_action_serving_GET_that_returns_a_view_runs_as_its_page_opens()
     {
         var loads = Facts("on-load", "on-load").Where(f => f["framework"] == "mvc").Select(f => $"{f.Owner[(f.Owner.IndexOf("AccountController.", StringComparison.Ordinal) + 18)..]} {f["view"]} {f["verbs"]}").ToList();

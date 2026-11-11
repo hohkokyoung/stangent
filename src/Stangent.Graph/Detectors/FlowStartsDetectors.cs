@@ -157,7 +157,7 @@ public sealed class JobsDetector : IDetector
 /// <c>if</c>, <c>else</c>, <c>?:</c>, <c>switch</c> case or arm, <c>catch</c> or loop of its own member, or after a guard
 /// (<c>unless</c>: an earlier <c>if</c> in the same block that always returns, throws, breaks or continues): those, innermost
 /// first, each with its code quoted exactly; inside a function given to a cache's get-or-create call, <c>cache-miss</c>
-/// (D215).</item>
+/// (D215); after a <c>?.</c>, <c>set</c> (D216).</item>
 /// <item><c>exit</c>: a return of the framework's own <c>BadRequest</c>, <c>NotFound</c>, <c>Unauthorized</c>, <c>Forbid</c>,
 /// <c>Challenge</c>, <c>Redirect…</c>/<c>LocalRedirect…</c> or <c>StatusCode(4xx/5xx)</c> (a call or a <c>new …Result</c>), and
 /// every <c>throw</c>, with its conditions. Anything else returned isn't an exit (D176).</item>
@@ -398,6 +398,11 @@ public sealed class ConditionsDetector : IDetector
                 case ArgumentSyntax { Parent: ArgumentListSyntax { Parent: InvocationExpressionSyntax inv } } arg
                     when child == arg.Expression && child is AnonymousFunctionExpressionSyntax && CacheMiss(inv, ctx):
                     list.Add(new("cache-miss", inv.Expression.ToString(), ctx.Line(inv))); break;
+                case ConditionalAccessExpressionSyntax ca when child == ca.WhenNotNull && child is not ConditionalAccessExpressionSyntax:
+                    // D216: what comes after `?.` runs only when what's before it is set; the nearest `?.` quotes the chain up to it.
+                    var top = ca;
+                    while (top.Parent is ConditionalAccessExpressionSyntax up && up.WhenNotNull == top) top = up;
+                    list.Add(new("set", ca.SyntaxTree.GetText().ToString(Microsoft.CodeAnalysis.Text.TextSpan.FromBounds(top.SpanStart, ca.Expression.Span.End)), ctx.Line(top))); break;
             }
         }
         return list;

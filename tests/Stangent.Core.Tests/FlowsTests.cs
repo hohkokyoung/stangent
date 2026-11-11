@@ -223,10 +223,14 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
         var set = FlowBuilder.Build(shop.Graph, shop.Root);
         var job = set.Flows.Single(f => f.Kind == "job" && f.Start.Point.Contains("PriceCacheTask.ExecuteAsync", StringComparison.Ordinal));
         string Conds(int line, string what) => string.Join(" ← ", job.Steps.Single(s => s.At.Line == line && s.What.Contains(what, StringComparison.Ordinal)).Conditions.Select(c => $"{c.Kind} {c.Code}"));
-        Assert.Equal("cache-miss cache.Get", Conds(13, "PriceLoader.Load"));
-        Assert.Equal("", Conds(13, "IPriceCache.Get"));
-        Assert.Equal("cache-miss seen.GetOrAdd", Conds(14, "PriceLoader.Load"));
-        Assert.Equal("", Conds(15, "PriceLoader.Load"));
+        Assert.Equal("cache-miss cache.Get", Conds(14, "PriceLoader.Load"));
+        Assert.Equal("", Conds(14, "IPriceCache.Get"));
+        Assert.Equal("cache-miss seen.GetOrAdd", Conds(15, "PriceLoader.Load"));
+        Assert.Equal("", Conds(16, "PriceLoader.Load"));
+        // D216: `loader?.Reload(PriceLoader.Load(price))` — both run only when loader is set.
+        Assert.Equal("set loader", Conds(17, "PriceLoader.Reload"));
+        Assert.Equal("set loader", Conds(17, "PriceLoader.Load"));
+        Assert.Contains("only if `loader` is set", FlowFiles.Markdown(job, set), StringComparison.Ordinal);
         Assert.Contains("only if `cache.Get` finds nothing stored for the key", FlowFiles.Markdown(job, set), StringComparison.Ordinal);
     }
 }

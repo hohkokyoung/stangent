@@ -144,9 +144,16 @@ export function conditionsAround(ctx: Context, node: ts.Node): Condition[] {
   const sf = node.getSourceFile();
   const out: Condition[] = [];
   let child: ts.Node = node;
+  // D216: a call after `?.` runs only when what's before it is set; so do its arguments.
+  const set = (n: ts.Node) => {
+    const q = optionalGuard(n);
+    if (q) out.push({ kind: "set", text: q.getText(sf), line: ctx.line(q) });
+  };
+  set(node);
   for (let p: ts.Node | undefined = node.parent; p && !ts.isSourceFile(p); child = p, p = p.parent) {
     if (qualifiedName(p) || testName(p)) break;
     const at = (n: ts.Node) => ctx.line(n);
+    if ((ts.isCallExpression(p) && p.arguments.some((a) => a === child)) || (ts.isElementAccessExpression(p) && p.argumentExpression === child)) set(p);
     // D215: code in a function given to a cache's get-or-create call runs only when nothing is stored for the key.
     if ((ts.isArrowFunction(child) || ts.isFunctionExpression(child)) && ts.isCallExpression(p) && p.arguments.some((a) => a === child) && cacheMiss(ctx, p))
       out.push({ kind: "cache-miss", text: p.expression.getText(sf), line: at(p) });
@@ -177,6 +184,21 @@ export function conditionsAround(ctx: Context, node: ts.Node): Condition[] {
     }
   }
   return out;
+}
+
+/**
+ * D216: what a call or access in an optional chain needs set: the expression before its nearest `?.` (`a?.b` in
+ * `a?.b?.c()`, `this.r()` in `this.r()?.draw(p)`, `f` in `f?.()`); null outside one.
+ */
+function optionalGuard(n: ts.Node): ts.Expression | null {
+  for (let e: ts.Node = n; ;) {
+    if (ts.isCallExpression(e) || ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e)) {
+      if (e.questionDotToken) return e.expression;
+      if (!(e.flags & ts.NodeFlags.OptionalChain)) return null;
+      e = e.expression;
+    } else if (ts.isNonNullExpression(e) && e.flags & ts.NodeFlags.OptionalChain) e = e.expression;
+    else return null;
+  }
 }
 
 /**
