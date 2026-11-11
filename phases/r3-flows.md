@@ -523,3 +523,5 @@ cause (code, plus the fresh agent's sample); (3) no several-answer guess missing
 
 **Known gaps that join (D238):** only those touching a 🟡/❓ line on a flow: L3, X2, X4, W2, and test projects walked as app
 code. X3, X5, W3, V6–V10 and RxJS `debounceTime`/`delay` stay listed (nothing on a flow).
+
+**Runtime evidence (D239):** stays opt-in, not built in step 6; run-time-only lines stay 🟡/❓ saying what they depend on.
