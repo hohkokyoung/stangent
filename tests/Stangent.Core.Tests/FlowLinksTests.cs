@@ -119,3 +119,38 @@ public class RequestCheckTests(ShopGraph shop) : IClassFixture<ShopGraph>
             && c.At.Code.Contains("ValidateAntiForgeryToken", StringComparison.Ordinal) && c.Property.EndsWith("Register(Shop.Web.Models.RegisterModel)", StringComparison.Ordinal));
     }
 }
+
+public class ValidatorRunTests(ShopGraph shop) : IClassFixture<ShopGraph>
+{
+    const string Core = "Shop.Core|";
+
+    [Fact]
+    public void A_rule_says_where_it_is_written_and_which_validator_member_holds_it()
+    {
+        // D208: `Shared.RuleFor(…)` in the subclass's constructor: written in ReturnEndpoint, on the base's Shared property.
+        var rules = shop.Graph.AllFacts.Where(f => f.Kind == "rule" && f["in"].Contains("Return", StringComparison.Ordinal))
+            .Select(f => $"{f.Owner[(f.Owner.IndexOf(':') + 1)..]} {f["rule"]} in {f["in"][(f["in"].IndexOf(':') + 1)..]} on {f["on"]}").Order(StringComparer.Ordinal).ToList();
+        Assert.Equal([
+            "Shop.Core.ReturnRequest NotEmpty in Shop.Core.ReturnValidator on ",   // RuleFor(r => r): the whole object
+            "Shop.Core.ReturnRequest.OrderId GreaterThan in Shop.Core.ReturnValidator on ",
+            $"Shop.Core.ReturnRequest.Reason NotEmpty in Shop.Core.ReturnEndpoint on {Core}P:Shop.Core.ReturnEndpointBase.Shared",
+        ], rules);
+    }
+
+    [Fact]
+    public void A_call_running_a_validator_says_which_one()
+    {
+        var runs = shop.Graph.AllFacts.Where(f => f.Kind == "validates" && f.Owner.Contains("Return", StringComparison.Ordinal))
+            .Select(f => $"{f.Owner[(f.Owner.IndexOf(':') + 1)..]} → {f["receiver"][(f["receiver"].IndexOf(':') + 1)..]} {f["member"]}").Order(StringComparer.Ordinal).ToList();
+        Assert.Equal([
+            $"Shop.Core.ReturnEndpointBase.Check(Shop.Core.ReturnRequest) → FluentValidation.InlineValidator`1 {Core}P:Shop.Core.ReturnEndpointBase.Shared",
+            "Shop.Core.ReturnService.Open(Shop.Core.ReturnRequest) → Shop.Core.IReturnValidator ",
+        ], runs);
+        // Layer 3 finds the rules a call through the interface runs: those written in the classes implementing it.
+        var g = new FlowGraph(shop.Graph, shop.Root);
+        var classes = g.Implementers($"{Core}T:Shop.Core.IReturnValidator");
+        Assert.Contains($"{Core}T:Shop.Core.ReturnValidator", classes);
+        Assert.Equal(2, classes.SelectMany(c => g.RulesIn[c]).Count());
+        Assert.Equal([$"{Core}T:Shop.Core.ReturnEndpoint", $"{Core}T:Shop.Core.ReturnEndpointBase"], g.BaseChain($"{Core}T:Shop.Core.ReturnEndpoint"));
+    }
+}

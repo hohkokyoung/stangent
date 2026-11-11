@@ -35,6 +35,9 @@ internal sealed partial class FlowGraph
     public Dictionary<string, string> TableOf { get; }
     readonly Dictionary<string, string[]> fileLines = new(StringComparer.Ordinal);
     readonly ILookup<string, Fact> rulesByType;
+    /// <summary>D208: rules by the class they're written in, and by the field or property holding the validator they're added to.</summary>
+    public ILookup<string, Fact> RulesIn { get; }
+    public ILookup<string, Fact> RulesOn { get; }
 
     public FlowGraph(CodeGraph graph, string root)
     {
@@ -57,6 +60,9 @@ internal sealed partial class FlowGraph
         rulesByType = facts.Where(f => f.Kind == "rule" && DocIds.ContainingType(f.Owner) is not null)
             .OrderBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line).ThenBy(f => f.Owner, StringComparer.Ordinal)
             .ToLookup(f => DocIds.ContainingType(f.Owner)!, StringComparer.Ordinal);
+        var rules = facts.Where(f => f.Kind == "rule").OrderBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line).ThenBy(f => f.Owner, StringComparer.Ordinal).ToList();
+        RulesIn = rules.Where(f => f["in"] != "" && f["on"] == "").ToLookup(f => f["in"], StringComparer.Ordinal);
+        RulesOn = rules.Where(f => f["on"] != "").ToLookup(f => f["on"], StringComparer.Ordinal);
         ScriptPoints = Nodes.Values.Where(n => n.Kind == NodeKind.Method && n.Id.StartsWith("ts|", StringComparison.Ordinal) && !n.IsTest && n.File is not null && n.File.EndsWith(".js", StringComparison.Ordinal))
             .OrderBy(n => n.Id, StringComparer.Ordinal).ToLookup(n => n.Name, n => n.Id, StringComparer.Ordinal);
         TableOf = edges.Where(e => e.Kind == EdgeKind.Maps && Nodes.TryGetValue(e.Source, out var t) && t.Kind == NodeKind.Table)
@@ -179,6 +185,26 @@ internal sealed partial class FlowGraph
         var own = gets.Where(id => Nodes[id].Project == project).ToList();
         return (to, own.Count > 0 ? own : gets);
     }
+    /// <summary>A type and the types it derives from, nearest first (D208).</summary>
+    public List<string> BaseChain(string type)
+    {
+        var chain = new List<string>();
+        for (var t = type; t is not null && !chain.Contains(t, StringComparer.Ordinal); t = Out(t, EdgeKind.Inherits).Select(e => e.Target).Order(StringComparer.Ordinal).FirstOrDefault())
+            chain.Add(t);
+        return chain;
+    }
+
+    /// <summary>A type and every type deriving from or implementing it, transitively (D208).</summary>
+    public HashSet<string> Implementers(string type)
+    {
+        var set = new HashSet<string>(StringComparer.Ordinal) { type };
+        var todo = new Stack<string>([type]);
+        while (todo.TryPop(out var t))
+            foreach (var e in In(t, EdgeKind.Inherits).Concat(In(t, EdgeKind.Implements)))
+                if (set.Add(e.Source)) todo.Push(e.Source);
+        return set;
+    }
+
     /// <summary>The validation rules on a type's own properties.</summary>
     public IEnumerable<Fact> AllRules(string type) => rulesByType[type];
     /// <summary>

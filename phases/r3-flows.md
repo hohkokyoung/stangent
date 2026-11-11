@@ -329,3 +329,9 @@ ForceMultiFactorAuthentication 135, ValidateCaptcha 13, ValidateHoneypot 1); the
 read as infrastructure more than input checks, kept as D207's cost. A first build listed `[ParameterBasedOnFormName]` (92), which
 writes the action's argument only to say which button was pressed; dropped by requiring a checking word in the filter's name.
 Sonarr, Kavita: none.
+C3 built (D208): validators run outside the request body's own validator. Checks Sonarr 12 → 25/25 (all 13: ProviderControllerBase's
+`SharedValidator`/`PostValidator` rules, RestController's `IdValidator`, NewznabSettings' validator, AddSeriesValidator). A first build
+gave each Sonarr screen ~555 validator checks: a walked `SharedValidator.Validate` in the generic RestController took rules every
+subclass writes; now subclass rules come only through the action the subclass serves, and only for actions taking a body (GETs list
+none). Left: provider edit flows list every provider kind's settings rules (~257 checks each; `FreeboxDownloadSettings`,
+`QBittorrentSettings`, … reached through `IProviderConfig.Validate`), the type-argument gap. nopCommerce and Kavita: unchanged.

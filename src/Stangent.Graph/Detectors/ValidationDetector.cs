@@ -39,7 +39,29 @@ public sealed class ValidationDetector : IDetector
             }
             foreach (var call in root.DescendantNodes().OfType<InvocationExpressionSyntax>())
                 if (ExtractContext.InvokedName(call) == "RuleFor") Chain(ctx, file, call);
+                else if (ExtractContext.InvokedName(call)?.StartsWith("Validate", StringComparison.Ordinal) == true) Validates(ctx, file, call);
         }
+    }
+
+    /// <summary>
+    /// D208: a call that runs a FluentValidation validator (it returns FluentValidation's <c>ValidationResult</c>, or is its
+    /// <c>ValidateAndThrow…</c>) as a <c>validates</c> fact on the code making it: the receiver's type (a validator class, or an
+    /// interface one implements) and the field or property holding it, so a flow can list the rules that run there.
+    /// </summary>
+    void Validates(ExtractContext ctx, SourceFile file, InvocationExpressionSyntax call)
+    {
+        if (file.Model.GetSymbolInfo(call).Symbol is not IMethodSymbol method) return;
+        var returns = method.ReturnType is INamedTypeSymbol { Name: "Task" or "ValueTask", TypeArguments: [var inner] } ? inner : method.ReturnType;
+        var fluent = method.ContainingNamespace?.ToDisplayString().StartsWith("FluentValidation", StringComparison.Ordinal) == true;
+        if (!(returns.Name == "ValidationResult" && returns.ContainingNamespace?.ToDisplayString() == "FluentValidation.Results") && !(fluent && method.Name.StartsWith("ValidateAndThrow", StringComparison.Ordinal))) return;
+        if (ctx.OwnerId(call, file.Model) is not { } owner) return;
+        ExpressionSyntax? on = call.Expression is MemberAccessExpressionSyntax m ? m.Expression : null;
+        // An extension method's receiver is its first argument when called as a static method.
+        if (method.ReducedFrom is null && method.IsExtensionMethod && call.ArgumentList.Arguments.Count > 0) on = call.ArgumentList.Arguments[0].Expression;
+        var type = on is null ? method.ContainingType : file.Model.GetTypeInfo(on).Type;
+        var member = on is null ? null : file.Model.GetSymbolInfo(on).Symbol is IPropertySymbol or IFieldSymbol ? ctx.NodeId(file.Model.GetSymbolInfo(on).Symbol) : null;
+        if (type is null) return;
+        ctx.AddFact(Name, "validates", owner, call, ("receiver", ctx.NodeId(type is INamedTypeSymbol n ? n.OriginalDefinition : type) ?? ""), ("member", member ?? ""));
     }
 
     void Chain(ExtractContext ctx, SourceFile file, InvocationExpressionSyntax ruleFor)
@@ -48,8 +70,22 @@ public sealed class ValidationDetector : IDetector
             || method.ContainingNamespace?.ToDisplayString().StartsWith("FluentValidation", StringComparison.Ordinal) != true) return;
         var selector = ruleFor.ArgumentList.Arguments.FirstOrDefault()?.Expression as LambdaExpressionSyntax;
         var body = selector?.ExpressionBody;
-        if (body is null || file.Model.GetSymbolInfo(body).Symbol is not IPropertySymbol target || ctx.NodeId(target) is not { } propId) return;
+        // D208: `RuleFor(c => c)` checks the whole object: the rule sits on its type.
+        var propId = body is null ? null : file.Model.GetSymbolInfo(body).Symbol switch
+        {
+            IPropertySymbol target => ctx.NodeId(target),
+            IParameterSymbol whole => ctx.NodeId(whole.Type is INamedTypeSymbol t ? t.OriginalDefinition : whole.Type),
+            _ => null,
+        };
+        if (propId is null) return;
         var set = ruleFor.Expression is MemberAccessExpressionSyntax m ? m.Expression.ToString() : "";
+        // D208: where the rule is written (the validator class, or a controller filling a validator it holds) and the field or
+        // property holding the validator it's added to.
+        var written = file.Model.GetEnclosingSymbol(ruleFor.SpanStart);
+        while (written is not null and not INamedTypeSymbol) written = written.ContainingSymbol;
+        var inType = written is null ? "" : ctx.NodeId(written) ?? "";
+        var onMember = ruleFor.Expression is MemberAccessExpressionSyntax held && file.Model.GetSymbolInfo(held.Expression).Symbol is IPropertySymbol or IFieldSymbol
+            ? ctx.NodeId(file.Model.GetSymbolInfo(held.Expression).Symbol) ?? "" : "";
         var rules = new List<(string Rule, string Args, SyntaxNode At, string Message, bool Conditional, string Modifiers, string Severity)>();
         // RuleFor(…).A().B(): each call's parent is a member access whose parent is the next invocation.
         for (SyntaxNode node = ruleFor; node.Parent is MemberAccessExpressionSyntax access && access.Parent is InvocationExpressionSyntax next; node = next)
@@ -78,7 +114,8 @@ public sealed class ValidationDetector : IDetector
         }
         foreach (var r in rules)
             ctx.AddFact(Name, "rule", propId, r.At, ("rule", r.Rule), ("args", r.Args), ("via", "fluentvalidation"), ("set", set),
-                ("message", r.Message), ("conditional", r.Conditional ? "yes" : ""), ("modifiers", r.Modifiers), ("severity", r.Severity));
+                ("message", r.Message), ("conditional", r.Conditional ? "yes" : ""), ("modifiers", r.Modifiers), ("severity", r.Severity),
+                ("in", inType), ("on", onMember));
     }
 
     /// <summary>A constant's value; otherwise the expression's own text with its type (<c>seriesExistsValidator: SeriesExistsValidator</c>).</summary>

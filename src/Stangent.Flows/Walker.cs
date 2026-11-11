@@ -650,6 +650,25 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         return new Actor("unknown", "the flow calls no endpoint and its screen has no guard", null, true);
     }
 
+    /// <summary>
+    /// D208: the validators a controller runs before each action: `validates` facts in its classes' OnActionExecuting (or
+    /// OnActionExecutionAsync) and in the methods of those classes they call, transitively.
+    /// </summary>
+    IEnumerable<Fact> BeforeAction(List<string> chain)
+    {
+        var types = chain.ToHashSet(StringComparer.Ordinal);
+        var todo = new Stack<string>(chain.SelectMany(t => g.Out(t, EdgeKind.Contains)).Select(e => e.Target)
+            .Where(m => g.Nodes.TryGetValue(m, out var n) && n.Name.EndsWith(".OnActionExecuting", StringComparison.Ordinal) || g.Nodes.TryGetValue(m, out var n2) && n2.Name.EndsWith(".OnActionExecutionAsync", StringComparison.Ordinal)));
+        var done = new HashSet<string>(StringComparer.Ordinal);
+        while (todo.TryPop(out var m))
+        {
+            if (!done.Add(m)) continue;
+            foreach (var v in g.Facts(m, "validates")) yield return v;
+            foreach (var site in g.Facts(m, "call-site"))
+                if (Stangent.Graph.Detectors.DocIds.ContainingType(site["target"]) is { } t && types.Contains(t)) todo.Push(site["target"]);
+        }
+    }
+
     /// <summary>The validation rules on the request body of every endpoint the flow calls (D174, D179), then every `if` in the code it
     /// walks that rejects the input (D203), by file and line.</summary>
     void Checks()
@@ -668,6 +687,41 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         foreach (var f in walked.Keys.SelectMany(p => g.Facts(p, "rejects")).Where(f => f.File is not null)
                      .OrderBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line).ThenBy(f => f.Owner, StringComparer.Ordinal))
             flow.Checks.Add(new Check($"rejects when `{f["condition"]}`", "guard", f.Owner, new At(f.File!, f.Line, g.Code(f.File, f.Line)), f["message"], false));
+        // D208: FluentValidation validators the flow runs: one run in code it walks lists the rules written in its class (or the
+        // classes implementing the interface it's called through); a controller action lists the rules its controller's classes
+        // write on a validator member that the controller's own OnActionExecuting runs, when the action takes a request body.
+        var seen = flow.Checks.Select(c => $"{c.At}|{c.Rule}").ToHashSet(StringComparer.Ordinal);
+        var ran = new List<Fact>();
+        foreach (var v in walked.Keys.SelectMany(p => g.Facts(p, "validates")))
+        {
+            foreach (var type in v["receiver"] == "" ? Enumerable.Empty<string>() : g.Implementers(v["receiver"]).Order(StringComparer.Ordinal))
+                ran.AddRange(g.RulesIn[type]);
+            if (v["member"] != "" && Stangent.Graph.Detectors.DocIds.ContainingType(v.Owner) is { } owner)
+            {
+                // The class running it and its bases: rules a subclass writes come in through the action that subclass serves (below).
+                var chain = g.BaseChain(owner).ToHashSet(StringComparer.Ordinal);
+                ran.AddRange(g.RulesOn[v["member"]].Where(r => chain.Contains(r["in"])));
+            }
+        }
+        // Only an action that takes a request body: the validators check the resource it's sent, not a GET.
+        foreach (var action in walked.Keys.Where(p => g.Facts(p, "endpoint-types").Any(f => f["body"] != "")).Order(StringComparer.Ordinal))
+        {
+            if (Stangent.Graph.Detectors.DocIds.ContainingType(action) is not { } controller) continue;
+            var chain = g.BaseChain(controller);
+            var inChain = chain.ToHashSet(StringComparer.Ordinal);
+            foreach (var v in BeforeAction(chain))
+                if (v["member"] != "") ran.AddRange(g.RulesOn[v["member"]].Where(r => inChain.Contains(r["in"])));
+                else if (v["receiver"] != "") foreach (var type in g.Implementers(v["receiver"]).Order(StringComparer.Ordinal)) ran.AddRange(g.RulesIn[type]);
+        }
+        foreach (var rule in ran.Where(r => r.File is not null).DistinctBy(r => (r.File, r.Line, r["rule"], r.Owner))
+                     .OrderBy(r => r.File, StringComparer.Ordinal).ThenBy(r => r.Line).ThenBy(r => r.Owner, StringComparer.Ordinal))
+        {
+            var at = new At(rule.File!, rule.Line, g.Code(rule.File, rule.Line));
+            if (seen.Contains($"{at}|{rule["rule"]}")) continue;
+            seen.Add($"{at}|{rule["rule"]}");
+            flow.Checks.Add(new Check($"{g.Name(rule.Owner)}: {rule["rule"]}{(rule["args"] != "" ? $"({rule["args"]})" : "")}{(rule["set"] != "" ? $" ({rule["set"]})" : "")}", rule["rule"], rule.Owner,
+                at, rule["message"], rule["modifiers"].Split('|').Contains("AsWarning", StringComparer.Ordinal) || rule["severity"] == "Warning"));
+        }
         // D207: request filters on an action the flow runs check the request before it does.
         foreach (var f in walked.Keys.SelectMany(p => g.Facts(p, "request-check")).Where(f => f.File is not null)
                      .OrderBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line).ThenBy(f => f.Owner, StringComparer.Ordinal))

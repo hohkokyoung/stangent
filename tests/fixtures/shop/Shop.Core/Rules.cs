@@ -9,7 +9,10 @@ namespace FluentValidation
     public abstract class AbstractValidator<T>
     {
         public IRuleBuilder<T, TProperty> RuleFor<TProperty>(System.Linq.Expressions.Expression<Func<T, TProperty>> selector) => null!;
+        public Results.ValidationResult Validate(T instance) => new();
     }
+
+    public class InlineValidator<T> : AbstractValidator<T>;
 
     public static class RuleBuilderExtensions
     {
@@ -22,6 +25,11 @@ namespace FluentValidation
     }
 
     public enum Severity { Error, Warning, Info }
+}
+
+namespace FluentValidation.Results
+{
+    public class ValidationResult;
 }
 
 namespace Shop.Core
