@@ -453,4 +453,4 @@ Settings is one screen with tabs, so no menu children split it; nopCommerce's pr
 because Products and Product tags share the Product folder; nopCommerce has handlers in `Nop.Tests` among its start flows
 (a flows matter, not areas). The menu facts' fresh check (D229, owner's OK; ~113K tokens): 29 of 30 right; three shapes added (`Add` call lists, `routeName`,
 key-named properties), resources looked up ignoring case, homes join a menu area only by majority. Graphs rebuilt, flows
-unchanged byte for byte, Sonarr's proposal unchanged. Next: the owner confirms Sonarr's `areas.yaml` and D226–D229.
+unchanged byte for byte, Sonarr's proposal unchanged. Sonarr's `areas.yaml` confirmed (D231, `benchmark/expected/areas/sonarr.yaml`): 63 areas, 392 of 392 start flows placed, `areas check` passes; D226–D229 accepted. Then decided: flows and pages under their area (D230, not built). Next: build D230, then step 6 (D166).
