@@ -166,8 +166,8 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             foreach (var q in g.Facts(point, "queue").Where(f => f.Line == line).OrderBy(f => f["type"], StringComparer.Ordinal))
             {
                 var jobs = g.Out(point, EdgeKind.Queues).Select(e => e.Target).Where(t => g.JobsByCommand[q["type"]].Contains(t, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
-                var item = Add(parent, new Step { What = $"queues {g.TypeName(q["type"])}, which runs later, in the background", At = at, Kind = "queue", Conditions = CondsFor(null), Depth = depth, Guessed = true, GuessReason = "a queued command matched to its job by type" });
-                foreach (var j in jobs) item.Links.Add(new Link("runs-later", g.TypeName(q["type"]), j, at, $"Queues the job {g.TypeName(q["type"])}, which runs later, in the background ({at})", null, true));
+                var item = Add(parent, new Step { What = $"queues {g.TypeName(q["type"])}, which runs later, in the background", At = at, Kind = "queue", Conditions = CondsFor(null), Depth = depth, Guessed = true, GuessReason = QueueReason });
+                foreach (var j in jobs) item.Links.Add(new Link("runs-later", g.TypeName(q["type"]), j, at, $"Queues the job {g.TypeName(q["type"])}, which runs later, in the background ({at})", null, true, QueueReason));
                 if (jobs.Count == 0) item.Unknowns.Add(new Unknown(null, point, at, $"no job runs {g.TypeName(q["type"])}"));
                 consumed.UnionWith(sites.Select(x => x["target"]));
             }
@@ -332,7 +332,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             if (handlers.Count == 0 || g.JobsByCommand[made].Any()) return;
             var item = Add(parent, new Step { What = $"sends {g.TypeName(made)}", At = at, Kind = "message", Conditions = conds, End = new End("message", g.TypeName(made)), Depth = depth, Point = made });
             foreach (var h in handlers)
-                item.Links.Add(new Link("message", g.Name(h), h, at, $"Sends {g.TypeName(made)}, handled by {g.Name(h)} ({at})", null, true));
+                item.Links.Add(new Link("message", g.Name(h), h, at, $"Sends {g.TypeName(made)}, handled by {g.Name(h)} ({at})", null, true, "handlers found by the event's type"));
             return;
         }
         if (!g.Nodes.TryGetValue(target, out var tnode)) return;
@@ -405,14 +405,18 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         if (screens.Count == 0)
         {
             item.Links.Add(new Link("screen", to == "" ? "a page chosen at runtime" : to, null, at,
-                $"Sends the user to {(to == "" ? "a page chosen at runtime" : to)}; no screen in the code matches it, so it links to no flow ({at})", null, true));
+                $"Sends the user to {(to == "" ? "a page chosen at runtime" : to)}; no screen in the code matches it, so it links to no flow ({at})", null, true,
+                to == "" ? "the page it sends the user to is chosen at runtime" : $"no screen in the code matches {to}"));
             return;
         }
         foreach (var screen in screens)
             item.Links.Add(new Link("screen", g.ScreenName(screen), screen, at,
                 screens.Count == 1 ? $"Sends the user to {g.ScreenName(screen)}, whose opening is its own flow ({at})"
-                    : $"Sends the user to {to}, which {screens.Count} screens fit; {g.ScreenName(screen)} is one ({at})", null, screens.Count > 1));
+                    : $"Sends the user to {to}, which {screens.Count} screens fit; {g.ScreenName(screen)} is one ({at})", null, screens.Count > 1,
+                    screens.Count > 1 ? $"{to} fits {screens.Count} screens; each is a link" : null));
     }
+
+    const string QueueReason = "a queued command matched to its job by type";
 
     const string OverloadReason = "the compiler couldn't pick one overload, so each in-repo candidate is a branch";
 
@@ -610,7 +614,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             foreach (var l in item.Links)
             {
                 flow.Links.Add(l with { Step = n });
-                if (l.Guessed) flow.Guesses.Add(new Guess(n, l.Sentence, l.Kind == "message" ? "handlers found by the event's type" : "a queued command matched to its job by type"));
+                if (l.Guessed) flow.Guesses.Add(new Guess(n, l.Sentence, l.Reason ?? "no reason recorded"));
             }
             foreach (var u in item.Unknowns) flow.Unknowns.Add(u with { Step = n });
             if (item.Step.Kind != "package" && (item.Step.Kind == "unknown" || item.Step.End?.Kind == "unknown")) flow.Unknowns.Add(new Unknown(n, item.Step.Point ?? "", item.Step.At, item.Step.End?.Detail ?? item.Step.What));

@@ -37,8 +37,9 @@ public sealed class Step
 
 public sealed record Exit(string Kind, string What, At At, List<Condition> Conditions, int? Step, string Point);
 
-/// <summary>A place the flow leaves its bounds (D173): message, runs-later, screen, continues.</summary>
-public sealed record Link(string Kind, string To, string? ToFlow, At At, string Sentence, int? Step, bool Guessed);
+/// <summary>A place the flow leaves its bounds (D173): message, runs-later, screen, continues. A guessed link carries its own
+/// reason (step 6, D237 item 2): a redirect to no known screen says so, not "a queued command matched to its job".</summary>
+public sealed record Link(string Kind, string To, string? ToFlow, At At, string Sentence, int? Step, bool Guessed, string? Reason = null);
 
 public sealed record Check(string What, string Rule, string Property, At At, string Message, bool OnlyWarns);
 

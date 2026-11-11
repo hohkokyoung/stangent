@@ -149,6 +149,18 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void Each_guessed_link_carries_its_own_reason()
+    {
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var guessed = set.Flows.SelectMany(f => f.Links).Where(l => l.Guessed).ToList();
+        Assert.NotEmpty(guessed);
+        Assert.All(guessed, l => Assert.False(string.IsNullOrWhiteSpace(l.Reason)));
+        // Step 6 (D237 item 2): only a queued command's link says it was matched to its job by type.
+        Assert.All(guessed.Where(l => l.Reason!.Contains("queued command", StringComparison.Ordinal)), l => Assert.Equal("runs-later", l.Kind));
+        Assert.DoesNotContain(set.Flows.SelectMany(f => f.Guesses), x => x.Reason == "no reason recorded");
+    }
+
+    [Fact]
     public void A_navigation_written_as_a_constant_path_fits_the_pages_whose_route_matches()
     {
         var g = new FlowGraph(shop.Graph, shop.Root);

@@ -266,8 +266,9 @@ public static partial class FlowBuilder
                     // The job's own saves (marking the work done) aren't work left for it.
                     if (job == flow || reached.Contains(flow.Id) || !made.Add((at.N, job.Id))) continue;
                     var sentence = $"Saves {table}, which the job {job.Name} reads and works through later, in the background ({at.At})";
-                    flow.Links.Add(new Link("runs-later", job.Name, job.Id, at.At, sentence, at.N, true));
-                    flow.Guesses.Add(new Guess(at.N, sentence, "a table named as a queue that a system job reads"));
+                    const string reason = "a table named as a queue that a system job reads";
+                    flow.Links.Add(new Link("runs-later", job.Name, job.Id, at.At, sentence, at.N, true, reason));
+                    flow.Guesses.Add(new Guess(at.N, sentence, reason));
                 }
         }
     }
