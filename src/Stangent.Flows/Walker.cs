@@ -146,11 +146,13 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                          .Select(x => x.OrderBy(f => f["via"] is "repository" or "navigation" ? 1 : 0).ThenBy(f => f["entity"], StringComparer.Ordinal).First()))
             {
                 var table = g.TableOf[access["entity"]];
+                // Step 6 (D236): a repository call followed into the database library's own call is proved, not read off its name.
+                var proved = access["via"] == "repository" && g.Facts(point, "access-proof").Any(p => p.Line == line && p["entity"] == access["entity"] && p["mode"] == access["mode"]);
                 Add(parent, new Step
                 {
                     What = $"{(access["mode"] == "write" ? "saves" : "reads")} {table}", At = at, Kind = "database", Conditions = CondsFor(null),
-                    End = new End("database", table), Depth = depth, Guessed = access["via"] is "repository" or "navigation",
-                    GuessReason = access["via"] == "repository" ? "a repository method read as a save or read by its name" : access["via"] == "navigation" ? "a navigation collection's Add or Remove read as a save" : null,
+                    End = new End("database", table), Depth = depth, Guessed = (access["via"] == "repository" && !proved) || access["via"] == "navigation",
+                    GuessReason = proved ? null : access["via"] == "repository" ? "a repository method read as a save or read by its name" : access["via"] == "navigation" ? "a navigation collection's Add or Remove read as a save" : null,
                 });
                 consumed.UnionWith(sites.Select(x => x["target"]));
             }

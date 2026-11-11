@@ -222,7 +222,52 @@ public sealed class EntityTablesDetector : IDetector
             // followed back through the query's local variable (`var query = _repository.Table; query = query.Where(…)`).
             (entity, mode, via) = (read, "read", "query");
         if (entity is null || mode is null || ctx.NodeId(entity) is not { } entityId || ctx.OwnerId(call, file.Model) is not { } ownerId) return;
-        ctx.AddFact(Name, "access", ownerId, call, ("entity", entityId), ("mode", mode), ("via", via!), ("holder", owner is null ? "" : ctx.NodeId(owner) ?? ""));
+        ctx.AddFact(Name, "access", ownerId, call, ("entity", entityId), ("mode", mode), ("via", via!), ("holder", owner is null ? "" : ctx.NodeId(owner) ?? ""),
+            // Step 6 (D236): the repository method called, so linking can follow it into the database library's own call.
+            ("method", via == "repository" ? ctx.NodeId(ExtractContext.Normalize(method)) ?? "" : ""));
+    }
+
+    /// <summary>Database libraries whose own calls prove a save or read happens (step 6, D236), by assembly name or its prefix.</summary>
+    static readonly string[] DbLibraries =
+        ["linq2db", "Dapper", "NHibernate", "MongoDB.Driver", "ServiceStack.OrmLite", "PetaPoco", "RepoDb", "Marten", "SqlSugar", "FreeSql",
+         "Npgsql", "Microsoft.Data.Sqlite", "Microsoft.Data.SqlClient", "MySqlConnector", "MySql.Data", "Oracle.ManagedDataAccess", "LiteDB", "RavenDB.Client", "Raven.Client"];
+
+    public static bool IsDbLibrary(string assembly) =>
+        DbLibraries.Any(l => assembly.Equals(l, StringComparison.OrdinalIgnoreCase) || assembly.StartsWith(l + ".", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Step 6 (D236): a generic repository's method followed into its implementation, through in-repo calls and overrides (at
+    /// most five calls deep), to a database library's own call (<c>EntityRepository.InsertAsync</c> → <c>_dataProvider.InsertEntityAsync</c>
+    /// → linq2db's <c>InsertWithInt32IdentityAsync</c>) or EF Core's DbSet: then the save or read is proved, not read off the
+    /// method's name. A library call whose own name says the other mode doesn't prove it. Returns what proves it, or null.
+    /// </summary>
+    public static string? RepositoryProof(string method, string mode, ILookup<string, Fact> sitesByOwner, ILookup<string, Fact> accessByOwner, ILookup<string, string> dispatch)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var queue = new Queue<(string Id, int Depth)>();
+        void Push(string id, int depth)
+        {
+            if (seen.Count > 400 || !seen.Add(id)) return;
+            queue.Enqueue((id, depth));
+            foreach (var impl in dispatch[id]) Push(impl, depth);
+        }
+        Push(method, 0);
+        while (queue.TryDequeue(out var at))
+        {
+            if (accessByOwner[at.Id].FirstOrDefault(a => a["via"] is "dbset" or "context" or "query" && a["mode"] == mode) is { } ef)
+                return $"EF Core ({ef.File}:{ef.Line})";
+            foreach (var site in sitesByOwner[at.Id].OrderBy(f => f.Line))
+            {
+                if (site["kind"] == "package")
+                {
+                    var name = site["method"][(site["method"].LastIndexOf('.') + 1)..];
+                    if (IsDbLibrary(site["package"]) && (Mode(name) is null || Mode(name) == mode))
+                        return $"{site["package"]}'s {site["method"]} ({site.File}:{site.Line})";
+                }
+                else if (site["target"] != "" && at.Depth < 5) Push(site["target"], at.Depth + 1);
+            }
+        }
+        return null;
     }
 
     static bool IsQueryable(ITypeSymbol? type) =>
@@ -337,7 +382,17 @@ public sealed class EntityTablesDetector : IDetector
             ctx.AddNode(new Node(id, NodeKind.Table, t["table"], t["project"], t.File, t.Line, t.Line));
             if (t["links"].Split(';') is [var a, var b]) joins.TryAdd($"{a};{b}", id);
         }
-        foreach (var access in facts.Where(f => f.Kind == "access").OrderBy(f => f.Owner, StringComparer.Ordinal))
+        // Step 6 (D236): a repository call proved by following it into the database library's own call.
+        var sitesByOwner = ctx.Facts("call-sites").ToLookup(f => f.Owner, StringComparer.Ordinal);
+        var accessByOwner = facts.Where(f => f.Kind == "access").ToLookup(f => f.Owner, StringComparer.Ordinal);
+        var dispatch = ctx.Graph.AllEdges.Where(e => e.Kind == EdgeKind.DispatchesTo).ToLookup(e => e.Source, e => e.Target, StringComparer.Ordinal);
+        var proofs = new Dictionary<(string, string), string?>();
+        string? Proof(Fact access) => access["via"] == "repository" && access["method"] != ""
+            ? proofs.TryGetValue((access["method"], access["mode"]), out var p) ? p : proofs[(access["method"], access["mode"])] = RepositoryProof(access["method"], access["mode"], sitesByOwner, accessByOwner, dispatch)
+            : null;
+        foreach (var access in facts.Where(f => f.Kind == "access" && Proof(f) is not null).OrderBy(f => f.Owner, StringComparer.Ordinal).ThenBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line))
+            ctx.AddFact(Name, "access-proof", access.Owner, access.File, access.Line, ("entity", access["entity"]), ("mode", access["mode"]), ("through", Proof(access)!));
+        foreach (var access in facts.Where(f => f.Kind == "access").OrderBy(f => Proof(f) is null ? 1 : 0).ThenBy(f => f.Owner, StringComparer.Ordinal))
         {
             // F3: an Add on a list counts only when the list's holder is a mapped entity; a many-to-many add writes a join table we don't name.
             if (access["via"] == "join")
@@ -350,7 +405,7 @@ public sealed class EntityTablesDetector : IDetector
             if (access["via"] == "navigation" && !tables.ContainsKey(access["holder"])) continue;
             if (tables.TryGetValue(access["entity"], out var table))
                 ctx.AddEdge(access.Owner, table.Id, access["mode"] == "write" ? EdgeKind.Writes : EdgeKind.Reads,
-                    access["via"] is "dbset" or "query" ? table.Label : Label.Guessed, Name); // D199: a query over a DbSet<T> or a repository's IQueryable<T>: the types prove it
+                    access["via"] is "dbset" or "query" || Proof(access) is not null ? table.Label : Label.Guessed, Name); // D199: a query over a DbSet<T> or a repository's IQueryable<T>: the types prove it
         }
     }
 }

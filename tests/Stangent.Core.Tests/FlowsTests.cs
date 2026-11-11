@@ -1,5 +1,6 @@
 using Stangent.Flows;
 using Stangent.Graph;
+using Stangent.Graph.Detectors;
 
 namespace Stangent.Core.Tests;
 
@@ -291,5 +292,32 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.Equal("set loader", Conds(17, "PriceLoader.Load"));
         Assert.Contains("only if `loader` is set", FlowFiles.Markdown(job, set), StringComparison.Ordinal);
         Assert.Contains("only if `cache.Get` finds nothing stored for the key", FlowFiles.Markdown(job, set), StringComparison.Ordinal);
+    }
+}
+
+/// <summary>Step 6 (D236): a repository's save followed into the database library's own call.</summary>
+public class RepositoryProofTests
+{
+    static Fact Site(string owner, int line, params (string, string)[] data) => new("call-sites", "call-site", owner, "r.cs", line, data.ToDictionary(d => d.Item1, d => d.Item2));
+
+    [Fact]
+    public void A_repository_method_reaching_the_database_library_through_its_implementation_is_proved()
+    {
+        // IRepository<T>.InsertAsync → EntityRepository<T>.InsertAsync → BaseDataProvider.InsertEntityAsync → linq2db.
+        var sites = new[]
+        {
+            Site("Repo.InsertAsync", 10, ("kind", "calls"), ("target", "Provider.InsertEntityAsync")),
+            Site("Provider.InsertEntityAsync", 20, ("kind", "package"), ("target", ""), ("package", "linq2db"), ("method", "DataExtensions.InsertWithInt32IdentityAsync")),
+            Site("Repo.GetByIdAsync", 30, ("kind", "package"), ("target", ""), ("package", "linq2db"), ("method", "DataExtensions.InsertAsync")),
+            Site("Repo.Touch", 40, ("kind", "package"), ("target", ""), ("package", "Newtonsoft.Json"), ("method", "JsonConvert.SerializeObject")),
+        }.ToLookup(f => f.Owner, StringComparer.Ordinal);
+        var dispatch = new[] { ("IRepo.InsertAsync", "Repo.InsertAsync"), ("IRepo.GetByIdAsync", "Repo.GetByIdAsync"), ("IRepo.Touch", "Repo.Touch") }.ToLookup(x => x.Item1, x => x.Item2, StringComparer.Ordinal);
+        var none = Array.Empty<Fact>().ToLookup(f => f.Owner, StringComparer.Ordinal);
+
+        var proof = EntityTablesDetector.RepositoryProof("IRepo.InsertAsync", "write", sites, none, dispatch);
+        Assert.Equal("linq2db's DataExtensions.InsertWithInt32IdentityAsync (r.cs:20)", proof);
+        // A library call whose own name says the other mode doesn't prove a read; a call into a library that isn't a database proves nothing.
+        Assert.Null(EntityTablesDetector.RepositoryProof("IRepo.GetByIdAsync", "read", sites, none, dispatch));
+        Assert.Null(EntityTablesDetector.RepositoryProof("IRepo.Touch", "write", sites, none, dispatch));
     }
 }
