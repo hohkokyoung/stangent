@@ -168,6 +168,58 @@ public sealed class RoutesDetector : IDetector
         foreach (var f in filters.Distinct())
             ctx.AddFact(Detector, "auth", methodId, null, ("rule", "filter"), ("policy", ""), ("roles", ""), ("from", f.From),
                 ("filter", f.Filter), ("args", f.Args), ("stage", f.Stage), ("basis", f.Basis), ("filterType", f.Type));
+        RequestChecks(ctx, controller, method, methodId);
+    }
+
+    /// <summary>
+    /// D207: request filter attributes that check the request before the action runs, as <c>request-check</c> facts at the
+    /// attribute's line: the framework's antiforgery validation (the nearest of <c>[ValidateAntiForgeryToken]</c>,
+    /// <c>[AutoValidateAntiforgeryToken]</c> or <c>[IgnoreAntiforgeryToken]</c> wins, the automatic one skipping GET, HEAD and
+    /// OPTIONS actions), and an app's own filter whose code, in the repo, sets <c>context.Result</c> (it can stop the request) or
+    /// fills <c>context.ActionArguments[…]</c> while its name says it checks (Validate, Verify, Check, Captcha: it hands the action its verdict, a captcha's). Access rules proven by code or
+    /// name (<c>denies</c>, <c>name</c>) are the actor's (D179), not checks.
+    /// </summary>
+    static void RequestChecks(ExtractContext ctx, INamedTypeSymbol controller, IMethodSymbol method, string methodId)
+    {
+        var scopes = new List<ISymbol>(Overrides(method));
+        for (var t = controller; t is not null && t.SpecialType != SpecialType.System_Object; t = t.BaseType) scopes.Add(t);
+        var safe = method.GetAttributes().Any(a => Is(a, "HttpGetAttribute") || Is(a, "HttpHeadAttribute") || Is(a, "HttpOptionsAttribute"));
+        static bool Antiforgery(AttributeData a) =>
+            Is(a, "ValidateAntiForgeryTokenAttribute") || Is(a, "AutoValidateAntiforgeryTokenAttribute") || Is(a, "IgnoreAntiforgeryTokenAttribute");
+        var seen = new HashSet<(string?, int)>();
+        void Add(AttributeData a, string filter, string does)
+        {
+            if (a.ApplicationSyntaxReference?.GetSyntax() is not { } at || !seen.Add((at.SyntaxTree.FilePath, at.SpanStart))) return;
+            ctx.AddFact(Detector, "request-check", methodId, at, ("filter", filter), ("does", does));
+        }
+        if (scopes.SelectMany(x => x.GetAttributes()).FirstOrDefault(Antiforgery) is { } nearest
+            && !Is(nearest, "IgnoreAntiforgeryTokenAttribute") && !(Is(nearest, "AutoValidateAntiforgeryTokenAttribute") && safe))
+            Add(nearest, Short(nearest.AttributeClass!.Name), "rejects a request without a valid antiforgery token");
+        foreach (var a in scopes.SelectMany(x => x.GetAttributes()))
+        {
+            if (Antiforgery(a) || a.AttributeClass is not { } cls) continue;
+            if (AccessFilter(a) is { Basis: "denies" or "name" }) continue;
+            INamedTypeSymbol? filter = Is(a, "TypeFilterAttribute") || Is(a, "ServiceFilterAttribute")
+                ? a.ConstructorArguments.FirstOrDefault(c => c.Kind == TypedConstantKind.Type).Value as INamedTypeSymbol ?? FilterOf(cls)
+                : Implements(cls, "IFilterMetadata") ? cls : null;
+            if (filter is null) continue;
+            var name = Short(cls.Name is "TypeFilterAttribute" or "ServiceFilterAttribute" ? filter.Name : cls.Name);
+            if (ResultsSeen.GetValue(filter, Results) != "") Add(a, name, "can stop the request before the action (sets its result)");
+            // An argument handed over is a verdict only when the filter's name says it checks (not "which button was pressed").
+            else if (CheckWords.Any(w => name.Contains(w, StringComparison.Ordinal)) && HandsVerdict(filter)) Add(a, name, "checks the request and hands the action its verdict");
+        }
+    }
+
+    static readonly string[] CheckWords = ["Validate", "Verify", "Check", "Captcha"];
+
+    /// <summary>A filter's code, its own or a base class's in the repo, writes <c>context.ActionArguments[…]</c>.</summary>
+    static bool HandsVerdict(INamedTypeSymbol filter)
+    {
+        for (var t = filter; t is not null && t.SpecialType != SpecialType.System_Object; t = t.BaseType)
+            foreach (var r in t.GetMembers().OfType<IMethodSymbol>().SelectMany(m => m.DeclaringSyntaxReferences))
+                if (r.GetSyntax().DescendantNodes().OfType<AssignmentExpressionSyntax>()
+                    .Any(set => set.Left is ElementAccessExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.ValueText: "ActionArguments" } })) return true;
+        return false;
     }
 
     static readonly string[] AccessWords = ["Authorize", "Authorization", "Permission", "Access", "Role"];

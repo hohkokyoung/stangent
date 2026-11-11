@@ -322,3 +322,10 @@ which brought the 8th (`SeriesRefreshCompleteEvent`). Made on Sonarr: 25 new han
 distinct sites; most are generic provider events in shared `ProviderFactory` (`new ProviderUpdatedEvent<TProvider>`) linking to the
 checks of every provider kind, the type-argument gap L3 waits on (existing interface handlers on those events already did the same).
 Kavita, nopCommerce: none. Impact answers now name these handlers too.
+C2 built (D207): request filters on an action or its controller that check the request before it runs are checks, at the
+attribute's line (layer 2 `request-check` facts). Checks nopCommerce 45 → 50/60 (all 5). Made on nopCommerce: 170 distinct
+(antiforgery 905 flow checks, CheckLanguageSeoCode 197, WwwRequirement 196, HttpsRequirement 136, ValidatePassword 135,
+ForceMultiFactorAuthentication 135, ValidateCaptcha 13, ValidateHoneypot 1); the redirect-only ones (Www, Https, language code)
+read as infrastructure more than input checks, kept as D207's cost. A first build listed `[ParameterBasedOnFormName]` (92), which
+writes the action's argument only to say which button was pressed; dropped by requiring a checking word in the filter's name.
+Sonarr, Kavita: none.

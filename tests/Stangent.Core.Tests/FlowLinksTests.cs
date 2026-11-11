@@ -87,3 +87,35 @@ public class AttributeHandlerTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 }
 
+public class RequestCheckTests(ShopGraph shop) : IClassFixture<ShopGraph>
+{
+    List<string> Checks(string action) => [.. shop.Graph.AllFacts.Where(f => f.Kind == "request-check" && f.Owner.EndsWith(action, StringComparison.Ordinal))
+        .Select(f => $"{f["filter"]}: {f["does"]} @{Path.GetFileName(f.File)}").Order(StringComparer.Ordinal)];
+
+    [Fact]
+    public void Filters_that_check_the_request_before_the_action_are_its_request_checks()
+    {
+        // D207: the captcha hands its verdict to the action; the controller's automatic antiforgery check, at its own line.
+        Assert.Equal(["AutoValidateAntiforgeryToken: rejects a request without a valid antiforgery token @ReviewController.cs",
+            "CheckCaptcha: checks the request and hands the action its verdict @ReviewController.cs"], Checks("ReviewController.Write(System.String,System.Boolean)"));
+        // Not on GET, nor where the action ignores it.
+        Assert.Empty(Checks("ReviewController.Write"));
+        Assert.Empty(Checks("ReviewController.Preview(System.String)"));
+        Assert.Equal(["ValidateAntiForgeryToken: rejects a request without a valid antiforgery token @AccountController.cs"], Checks("AccountController.Register(Shop.Web.Models.RegisterModel)"));
+        // Filters that may stop the request are checks; proven access rules (by code or name) are the actor's; one that only
+        // records something is neither.
+        Assert.Equal(["HttpsOnly: can stop the request before the action (sets its result) @AccountController.cs",
+            "Maintenance: can stop the request before the action (sets its result) @AccountController.cs"], Checks("AccountController.Settings"));
+        var line = shop.Graph.AllFacts.First(f => f.Kind == "request-check" && f["filter"] == "AutoValidateAntiforgeryToken");
+        Assert.Contains("[AutoValidateAntiforgeryToken]", File.ReadAllLines(Path.Combine(shop.Root, line.File!))[line.Line - 1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_flow_lists_the_request_checks_of_the_actions_it_runs()
+    {
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var checks = set.Flows.SelectMany(f => f.Checks).Where(c => c.Rule == "request-filter").ToList();
+        Assert.Contains(checks, c => c.What == "[ValidateAntiForgeryToken] rejects a request without a valid antiforgery token"
+            && c.At.Code.Contains("ValidateAntiForgeryToken", StringComparison.Ordinal) && c.Property.EndsWith("Register(Shop.Web.Models.RegisterModel)", StringComparison.Ordinal));
+    }
+}

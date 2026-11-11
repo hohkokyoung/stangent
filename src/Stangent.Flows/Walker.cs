@@ -668,5 +668,9 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         foreach (var f in walked.Keys.SelectMany(p => g.Facts(p, "rejects")).Where(f => f.File is not null)
                      .OrderBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line).ThenBy(f => f.Owner, StringComparer.Ordinal))
             flow.Checks.Add(new Check($"rejects when `{f["condition"]}`", "guard", f.Owner, new At(f.File!, f.Line, g.Code(f.File, f.Line)), f["message"], false));
+        // D207: request filters on an action the flow runs check the request before it does.
+        foreach (var f in walked.Keys.SelectMany(p => g.Facts(p, "request-check")).Where(f => f.File is not null)
+                     .OrderBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line).ThenBy(f => f.Owner, StringComparer.Ordinal))
+            flow.Checks.Add(new Check($"[{f["filter"]}] {f["does"]}", "request-filter", f.Owner, new At(f.File!, f.Line, g.Code(f.File, f.Line)), "", false));
     }
 }
