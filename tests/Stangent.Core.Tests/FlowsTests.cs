@@ -200,4 +200,18 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
             Assert.Equal("runs later: a function given to setInterval(…), after its delay, not when this code runs", s.GuessReason);
         });
     }
+
+    [Fact]
+    public void An_element_inside_a_component_that_draws_nothing_until_a_prop_is_set_is_a_guess_that_says_so()
+    {
+        // D213: Drawer returns null while `!isOpen`, so PriceTag inside it is shown only when it's open.
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var steps = set.Flows.SelectMany(f => f.Steps).Where(s => s.At.File.EndsWith("PriceModal.tsx", StringComparison.Ordinal) && s.What == "shows PriceTag").ToList();
+        Assert.NotEmpty(steps);
+        Assert.All(steps, s =>
+        {
+            Assert.True(s.Guessed);
+            Assert.Equal("shown only when Drawer draws it: Drawer draws nothing while `!isOpen` (here isOpen=open)", s.GuessReason);
+        });
+    }
 }

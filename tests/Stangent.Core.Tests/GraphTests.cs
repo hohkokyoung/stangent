@@ -525,7 +525,7 @@ public class GraphTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.Equal(NodeKind.Template, NodeById(Angular + "order-form.component.html#OrderFormComponent.template")?.Kind);
         Assert.Equal(NodeKind.Component, NodeById(React + "StockPage.tsx#StockPage")?.Kind);
         var pages = shop.Graph.AllNodes.Where(n => n.Kind == NodeKind.Page).Select(n => n.Name).Order().ToList();
-        Assert.Equal(["/orders", "/orders/:id", "/orders/new", "/stock/:id"], pages);
+        Assert.Equal(["/orders", "/orders/:id", "/orders/new", "/prices", "/stock/:id"], pages);
         // The lazy child route resolves through import(...).then(m => m.TotalComponent).
         Assert.Contains(Edges(EdgeKind.RoutesTo), e => e.Source == "page:Shop.Web/ClientApp/tsconfig.json|/orders/:id" && e.Target == Angular + "total.component.ts#TotalComponent");
         Assert.True(NodeById(Angular + "order.service.spec.ts#test:OrderService › places an order")?.IsTest);

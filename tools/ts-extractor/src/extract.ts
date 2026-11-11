@@ -567,7 +567,73 @@ function callSite(ctx: Context, sf: ts.SourceFile, id: ts.Identifier, target: st
   const owner = ctx.ownerId(id);
   if (owner === target) return;
   const deferred = deferredOf(ctx, n);
-  ctx.out.fact("call-sites", "call-site", owner, ctx.rel(sf.fileName), ctx.line(n.parent), { target, label: String(label), kind: edgeKind(id), ...(fromResult ? { fromResult: "1" } : {}), ...(deferred ? { deferred } : {}) });
+  const closed = edgeKind(id) === "renders" ? closedBy(ctx, n.parent) : null;
+  ctx.out.fact("call-sites", "call-site", owner, ctx.rel(sf.fileName), ctx.line(n.parent), { target, label: String(label), kind: edgeKind(id), ...(fromResult ? { fromResult: "1" } : {}), ...(deferred ? { deferred } : {}), ...(closed ? { closedBy: closed } : {}) });
+}
+
+/**
+ * D213: a JSX element written inside one of the repo's components that draws nothing while one of its props is unset
+ * (`<Modal isOpen={open}><Content /></Modal>`, where Modal begins `if (!isOpen) { return null; }` and draws its `children`)
+ * is shown only when that component draws it. Returns the component, its guard and what this element's parent passes for
+ * the props in it (`Modal|!isOpen|isOpen={open}`), from the nearest such parent; else null.
+ */
+function closedBy(ctx: Context, tag: ts.Node): string | null {
+  let el: ts.Node = ts.isJsxOpeningElement(tag) ? tag.parent : tag;
+  for (let p = el.parent; p && (ts.isJsxElement(p) || ts.isJsxExpression(p) || ts.isJsxFragment(p) || ts.isParenthesizedExpression(p)
+       || ts.isConditionalExpression(p) || ts.isBinaryExpression(p)); el = p, p = p.parent) {
+    if (!ts.isJsxElement(p) || !p.children.includes(el as ts.JsxChild)) continue;
+    const guard = drawGuard(ctx, p.openingElement.tagName);
+    if (!guard) continue;
+    const passed = guard.props.map((prop) => {
+      const attr = p.openingElement.attributes.properties.find((a) => ts.isJsxAttribute(a) && a.name.getText() === prop) as ts.JsxAttribute | undefined;
+      const value = !attr ? "not passed" : !attr.initializer ? "true"
+        : ts.isJsxExpression(attr.initializer) && attr.initializer.expression ? attr.initializer.expression.getText() : attr.initializer.getText();
+      return `${prop}=${value.replace(/\s+/g, " ").slice(0, 60)}`;
+    });
+    return `${p.openingElement.tagName.getText()}|${guard.cond}|${passed.join(", ")}`;
+  }
+  return null;
+}
+
+/** D213: a component of the repo's own that begins by returning nothing while a condition on its props holds, and draws its children. */
+function drawGuard(ctx: Context, tagName: ts.JsxTagNameExpression): { cond: string; props: string[] } | null {
+  let symbol = ctx.checker.getSymbolAtLocation(tagName);
+  if (symbol && symbol.flags & ts.SymbolFlags.Alias) {
+    try { symbol = ctx.checker.getAliasedSymbol(symbol); } catch { return null; }
+  }
+  const decl = symbol?.declarations?.find((d) => ctx.isOwn(d.getSourceFile()));
+  const fn = decl && ts.isVariableDeclaration(decl) ? decl.initializer : decl;
+  if (!fn || !(ts.isFunctionDeclaration(fn) || ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) || !fn.body || !ts.isBlock(fn.body)) return null;
+  const param = fn.parameters[0];
+  if (!param) return null;
+  // The props by the names the body reads them under: `{ isOpen, children }` or `props.isOpen`.
+  const locals = new Map<string, string>();
+  if (ts.isObjectBindingPattern(param.name))
+    for (const b of param.name.elements) {
+      const prop = b.propertyName && ts.isIdentifier(b.propertyName) ? b.propertyName.text : ts.isIdentifier(b.name) ? b.name.text : null;
+      if (prop && ts.isIdentifier(b.name)) locals.set(b.name.text, prop);
+    }
+  const propsName = ts.isIdentifier(param.name) ? param.name.text : null;
+  const propOf = (n: ts.Node): string | null =>
+    ts.isIdentifier(n) && locals.has(n.text) && !ts.isPropertyAccessExpression(n.parent) ? locals.get(n.text)!
+      : propsName && ts.isPropertyAccessExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === propsName ? n.name.text : null;
+  let drawsChildren = false;
+  const visit = (n: ts.Node) => { if (propOf(n) === "children") drawsChildren = true; else ts.forEachChild(n, visit); };
+  visit(fn.body);
+  if (!drawsChildren) return null;
+  const empty = (e: ts.Expression | undefined) => !e || e.kind === ts.SyntaxKind.NullKeyword || e.kind === ts.SyntaxKind.FalseKeyword
+    || (ts.isIdentifier(e) && e.text === "undefined");
+  for (const st of fn.body.statements) {
+    if (ts.isReturnStatement(st)) return null;   // the body's own return comes first: no guard before it
+    if (!ts.isIfStatement(st) || st.elseStatement) continue;
+    const then = ts.isBlock(st.thenStatement) && st.thenStatement.statements.length === 1 ? st.thenStatement.statements[0] : st.thenStatement;
+    if (!ts.isReturnStatement(then) || !empty(then.expression)) continue;
+    const props = new Set<string>();
+    const read = (n: ts.Node) => { const p = propOf(n); if (p) props.add(p); else ts.forEachChild(n, read); };
+    read(st.expression);
+    if (props.size > 0) return { cond: st.expression.getText().replace(/\s+/g, " "), props: [...props].sort() };
+  }
+  return null;
 }
 
 function edgeKind(id: ts.Identifier): string {

@@ -769,3 +769,48 @@ test("code in a function given to a timer runs later, after its delay (D212)", (
   const sites = lines.filter((l) => l.t === "fact" && l.kind === "call-site" && l.data.target.endsWith("#act")).map((l) => l.t === "fact" ? `${l.line} ${l.data.deferred ?? ""}` : "").sort();
   assert.deepEqual(sites, ["3 timer:setInterval", "4 timer:setTimeout", "5 "]);
 });
+
+test("an element inside a component that draws nothing while a prop is unset is shown only when it draws (D213)", () => {
+  const root = project({
+    "src/Modal.tsx": [
+      "export function Modal({ isOpen, children }: { isOpen: boolean; children?: unknown }) {",
+      "  const id = 1;",
+      "  if (!isOpen) {",
+      "    return null;",
+      "  }",
+      "  return <div id={String(id)}>{children}</div>;",
+      "}",
+      "export function Box(props: { hidden?: boolean; children?: unknown }) {",
+      "  if (props.hidden) return null;",
+      "  return <section>{props.children}</section>;",
+      "}",
+      "export function Plain({ isOpen }: { isOpen: boolean }) {",
+      "  if (!isOpen) return null;",
+      "  return <p />;",
+      "}",
+    ].join("\n"),
+    "src/Page.tsx": [
+      "import { Modal, Box, Plain } from './Modal';",
+      "export function Content() { return <p />; }",
+      "export function Page({ open }: { open: boolean }) {",
+      "  return <div>",
+      "    <Modal isOpen={open}><div>{open ? <Content /> : null}</div></Modal>",
+      "    <Box><Content /></Box>",
+      "    <Plain isOpen={open} />",
+      "    <Content />",
+      "  </div>;",
+      "}",
+    ].join("\n"),
+  }, { jsx: "preserve" });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const sites = lines.flatMap((l) => l.t === "fact" && l.kind === "call-site" && l.file === "src/Page.tsx" && l.data.kind === "renders"
+    ? [`${l.line} ${l.data.target.split("#")[1]} ${l.data.closedBy ?? "-"}`] : []).sort();
+  assert.deepEqual(sites, [
+    "5 Content Modal|!isOpen|isOpen=open",
+    "5 Modal -",
+    "6 Box -",
+    "6 Content Box|props.hidden|hidden=not passed",
+    "7 Plain -",
+    "8 Content -",
+  ]);
+});

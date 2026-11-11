@@ -419,8 +419,15 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         var d when d.StartsWith("stream:", StringComparison.Ordinal) => $"runs when the stream sends a value ({d[7..]}), not when this code runs",
         // D212: a timer's function runs after its delay or on its repeat.
         var d when d.StartsWith("timer:", StringComparison.Ordinal) => $"runs later: a function given to {d[6..]}(…), after its delay, not when this code runs",
-        _ => null,
+        _ => Closed(f["closedBy"]),
     };
+
+    /// <summary>D213: an element inside a component that draws nothing while a prop is unset (<c>Modal|!isOpen|isOpen=open</c>).</summary>
+    static string? Closed(string closedBy)
+    {
+        var parts = closedBy.Split('|');
+        return parts.Length == 3 ? $"shown only when {parts[0]} draws it: {parts[0]} draws nothing while `{parts[1]}` (here {parts[2]})" : null;
+    }
 
     /// <summary>D201: a method of a handler interface (<c>IConsumer&lt;T&gt;.HandleEventAsync</c>): the bus calls each handler through it.</summary>
     bool IsHandlerInterface(string target)

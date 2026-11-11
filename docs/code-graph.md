@@ -263,6 +263,8 @@ Also read by flows:
   function's returns hand that name back from a function of its own body (`return { saveProvider }`, through `return useOther()`,
   `...useOther()` and locals holding them, four calls deep), the line goes to that function instead (D184). When it doesn't, the
   call's `call-site` fact carries `fromResult: "1"`: the value is whatever that function returned, not the function (D210).
+  A JSX element inside one of the repo's components that begins `if (<props condition>) return null` and draws its `children`
+  carries `closedBy: "<Component>|<condition>|<prop>=<value passed>"` (D213); code given to a timer, `deferred: timer:<name>` (D212).
 - **Wrappers' API root (G2).** A configured wrapper whose body passes its URL to a function returning `urlBase + apiRoot + path`
   puts that root on its calls (`{base}/api/v5/series`), so only that API version matches.
 - **Verbs (G1).** Attributes derived from `HttpPostAttribute` etc., or implementing `IActionHttpMethodProvider` with literal

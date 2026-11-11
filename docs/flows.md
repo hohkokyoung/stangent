@@ -65,6 +65,8 @@ the same lines are read in source-line order; each line gives, in this order:
    implementation it dispatches to (several → one 🟡 branch each) is a step, walked into. A call through a value taken from
    another function's result (`const predicate = getFilterTypePredicate(type)`, then `predicate(…)`) whose function layer 2
    couldn't name (the call site's `fromResult`) is 🟡 "calls a value taken from X's result": X stands for it and is walked (D210).
+   An element inside one of the repo's components that draws nothing while a prop is unset (`if (!isOpen) return null`, then
+   `{children}`) is 🟡 "shown only when Modal draws it" (the call site's `closedBy`, D213).
 8. a ❓ the graph recorded there: ends `unknown`, with its reason; an outside HTTP call whose URL is built at runtime ends
    `outside-call`, still a ❓ (D198).
 9. a navigation (`navigate` fact, D192): a step "goes to X" ending `screen`.
