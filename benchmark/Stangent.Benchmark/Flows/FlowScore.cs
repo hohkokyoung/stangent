@@ -25,9 +25,11 @@ public static partial class FlowScore
 
     public static JsonObject Run(string clone, string keyDir)
     {
-        var dir = Path.Combine(clone, FlowFiles.Folder);
-        var built = Directory.EnumerateFiles(dir, "*.json").Where(p => Path.GetFileName(p) != "index.json").Order(StringComparer.Ordinal)
-            .Select(p => JsonNode.Parse(File.ReadAllText(p))!.AsObject())
+        // D230: the index maps every flow to its file, flat in specs/flows/ or under its area in specs/areas/.
+        var index = JsonNode.Parse(File.ReadAllText(Path.Combine(clone, FlowFiles.IndexFile)))!["flows"]!.AsArray();
+        // In the old order (by file name), so where an area puts a flow changes no score.
+        var built = index.OrderBy(f => $"{(string)f!["id"]!}.json", StringComparer.Ordinal).Select(f => (string?)f!["file"] ?? $"{FlowFiles.Folder}/{(string)f["id"]!}.json")
+            .Select(p => JsonNode.Parse(File.ReadAllText(Path.Combine(clone, p)))!.AsObject())
             .Select(j => new Built((string)j["id"]!, (string)j["kind"]!, j, Objects(j["steps"]), Objects(j["exits"]), Objects(j["links"]), Objects(j["checks"])))
             .ToList();
         var graph = GraphStore.Load(Path.Combine(clone, ".stangent", "graph.sqlite")) ?? throw new InvalidOperationException("no graph in the clone");

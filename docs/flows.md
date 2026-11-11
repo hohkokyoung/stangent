@@ -8,18 +8,36 @@ No AI anywhere (D155, D176). Decisions: D170–D180, D183, D184, D186–D189; pl
 
 | Command | What it does |
 |---|---|
-| `stangent flows build` | Builds every flow from `.stangent/graph.sqlite` and writes `specs/flows/` (below). Prints counts by kind, guesses, ❓ and files written, removed or unchanged. |
-| `stangent flows show <id> [--format md]` | One flow as written by the last build: its JSON, or its Markdown. |
+| `stangent flows build` | Builds every flow from `.stangent/graph.sqlite` and writes its files where the layout below puts them, removing files that moved or are gone. Prints counts by kind, guesses, ❓, files written, removed or unchanged, and with an `areas.yaml` the layout: areas, folders, flows per folder, the `shared/` count and the start flows in `unplaced/`. |
+| `stangent flows show <id> [--format md]` | One flow as written by the last build, found through `index.json`'s `file`: its JSON, or its Markdown. |
 | `stangent flows check` | D177's bar items 3–5 by code: every 🟡 has a reason and every ❓ says why; the files are byte for byte what the graph builds now; every start is a flow or a stated reason. Exit 1 with the problems when one fails. |
 
 Output follows `docs/cli-conventions.md`. A missing graph is `no_graph` (exit 3): run `stangent graph build` first.
 
-## Files (D180)
+## Files (D180, D230, D232)
 
-- `specs/flows/<id>.json`: one flow, contract `flows` v1. Committed; the same graph and settings write the same bytes (D176).
-- `specs/flows/<id>.md`: the same flow as fixed sentences filled in by code (D173), with a generated-file marker. Never read back.
-- `specs/flows/index.json`: every flow (`id`, `name`, `kind`, `home`, `start`, `point`, counts, the flows it links to) and
-  `skipped`: every start code found that isn't a flow, with its reason (D177 item 5).
+Contract `flows` v1's paths. Until `specs/areas.yaml` exists, every flow is flat in `specs/flows/`. Once it does, `flows build`
+reads it (`docs/areas.md`) and puts each flow under its area: one writer for flow files.
+
+| Flow | Folder |
+|---|---|
+| a start flow (click, screen opening, job, handler) in an area | `specs/areas/<area>/` |
+| a start flow tied and unanswered, or in no area | `specs/areas/unplaced/` (listed by `flows build` and `areas check`) |
+| a shared flow whose reaching start flows all sit in one folder | that folder (an `unplaced/` start counts as its folder) |
+| any other shared flow | `specs/areas/shared/` |
+
+`<area>` is the area's name as a flow id is made (D176): ASCII letters and digits lowercased, every other run one dash
+(`Settings › Indexers` → `settings-indexers`), `area` if nothing is left. Two names giving one slug: the first in ordinal
+order keeps it, the others take `-2`, `-3`; `shared` and `unplaced` are never an area's. A rename, a tie answer or a shared
+flow gaining a second user moves files; git shows them as renames. Each area's `page.md` beside its flows is written by
+`areas check`, never by `flows build`.
+
+- `<folder>/<id>.json`: one flow, contract `flows` v1. Committed; the same graph, settings and `areas.yaml` write the same bytes (D176).
+- `<folder>/<id>.md`: the same flow as fixed sentences filled in by code (D173), with a generated-file marker. Never read back.
+  Its "Links" are relative Markdown links to the linked flow's `.md`, wherever it sits (``→ [`shared-x`](../shared/shared-x.md)``).
+- `specs/flows/index.json`, always here: every flow (`id`, `name`, `kind`, `home`, `file` (its `.json` under the repo), `start`,
+  `point`, counts, the flows it links to) and `skipped`: every start code found that isn't a flow, with its reason (D177 item 5).
+  Tools find a flow by id through `file`.
 
 A flow file holds: `contract`, `version`, `commit`, `settings` (`hubCallers` 10, `depth` 8), `id`, `name`, `kind`, `home`
 (the folder of its start's code, for areas, D178), `start` (`what`, `at`, `code`, `point`, `triggers`: every button or key that
@@ -108,5 +126,6 @@ matched to its job by type), the actor. `unknowns` lists every ❓ with why. `fl
   `<Link>`/`routerLink` in markup isn't read.
 - (Exits now include an app's own helper that ends the request, D186, and a filter's `context.Result` refusal, D187.)
 - A shared flow runs once per point, not per caller: what a caller passes in isn't known there, so its conditions aren't narrowed.
+- Removing `areas.yaml` moves flows back to `specs/flows/`; the area pages stay until removed by hand.
 - Flow files are large on big repos (Sonarr ~160 MB, nopCommerce ~196 MB with the Markdown), shared flows about a third of Sonarr's.
 - Angular templates' child components have no call-site lines, so a screen's children are reached only through code.

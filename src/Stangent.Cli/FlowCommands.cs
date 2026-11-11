@@ -11,16 +11,19 @@ static class FlowCommands
         var flows = new Command("flows", "Flows: what a click, a screen opening or a system job does, laid out from the code graph by code, no AI (D170–D184).");
         root.Subcommands.Add(flows);
 
-        var build = new Command("build", "Build every flow from the graph and write specs/flows/ (D180): <id>.json, <id>.md and index.json.");
+        var build = new Command("build", "Build every flow from the graph and write <id>.json and <id>.md under its area in specs/areas/ once specs/areas.yaml exists, else in specs/flows/, plus specs/flows/index.json (D180, D230).");
         build.SetAction(pr => Cli.Run(pr, "flows build", ctx =>
         {
             var graph = Cli.LoadGraph(ctx);
             var set = FlowBuilder.Build(graph, ctx.Repo.Root);
-            var (written, removed, unchanged) = FlowFiles.Write(ctx.Repo.Root, set);
+            var layout = AreaLayout.For(graph, ctx.Repo.Root, set);
+            var (written, removed, unchanged) = FlowFiles.Write(ctx.Repo.Root, set, layout);
             ctx.Span.Attributes["stangent.artifact.count"] = set.Flows.Count;
             return new JsonObject
             {
-                ["commit"] = set.Commit, ["folder"] = FlowFiles.Folder, ["flows"] = set.Flows.Count, ["skipped"] = set.Skipped.Count,
+                ["commit"] = set.Commit, ["folder"] = layout.ByArea ? AreaLayout.Root : FlowFiles.Folder, ["index"] = FlowFiles.IndexFile,
+                ["layout"] = layout.ByArea ? Layout(layout) : "flat: no specs/areas.yaml yet",
+                ["flows"] = set.Flows.Count, ["skipped"] = set.Skipped.Count,
                 ["byKind"] = new JsonObject([.. set.Flows.GroupBy(f => f.Kind).OrderBy(x => x.Key, StringComparer.Ordinal).Select(x => KeyValuePair.Create(x.Key, (JsonNode?)x.Count()))]),
                 ["guesses"] = set.Flows.Sum(f => f.Guesses.Count), ["unknowns"] = set.Flows.Sum(f => f.Unknowns.Count),
                 ["files"] = new JsonObject { ["written"] = written, ["removed"] = removed, ["unchanged"] = unchanged },
@@ -30,16 +33,22 @@ static class FlowCommands
 
         var idArg = new Argument<string>("id") { Description = "A flow's id, as index.json lists it." };
         var formatOption = new Option<string>("--format") { Description = "json (default) or md (prints the flow's Markdown).", DefaultValueFactory = _ => "json" };
-        var show = new Command("show", "One flow from specs/flows/, as written by the last build.") { idArg, formatOption };
+        var show = new Command("show", "One flow by id, from the file specs/flows/index.json maps it to, as written by the last build.") { idArg, formatOption };
         show.SetAction(pr =>
         {
             var md = pr.GetValue(formatOption) == "md";
             return Cli.Run(pr, "flows show", ctx =>
             {
                 var id = pr.GetValue(idArg)!;
-                var path = Path.Combine(ctx.Repo.Root, FlowFiles.Folder, $"{id}.json");
-                if (id.Contains('/') || id.Contains('\\') || !File.Exists(path))
-                    throw new StangentException("not_found", $"No flow '{id}' in {FlowFiles.Folder}/ (run `stangent flows build`).", ExitCodes.NotFound);
+                // D230: the index maps every id to its file, wherever its area put it.
+                var index = Path.Combine(ctx.Repo.Root, FlowFiles.IndexFile);
+                var file = File.Exists(index)
+                    ? JsonNode.Parse(File.ReadAllText(index))!["flows"]!.AsArray().FirstOrDefault(f => (string?)f!["id"] == id)?["file"]?.GetValue<string>()
+                    : null;
+                if (file is null && !id.Contains('/') && !id.Contains('\\') && File.Exists(Path.Combine(ctx.Repo.Root, FlowFiles.Folder, $"{id}.json"))) file = $"{FlowFiles.Folder}/{id}.json";   // an index from before D230
+                var path = file is null ? "" : Path.Combine(ctx.Repo.Root, file);
+                if (file is null || file.Contains("..", StringComparison.Ordinal) || !File.Exists(path))
+                    throw new StangentException("not_found", $"No flow '{id}' in {FlowFiles.IndexFile} (run `stangent flows build`).", ExitCodes.NotFound);
                 var flow = JsonNode.Parse(File.ReadAllText(path))!;
                 return md ? new JsonObject { ["md"] = File.ReadAllText(Path.ChangeExtension(path, ".md")) } : flow;
             }, md ? r => (string)r!["md"]! : null);
@@ -55,5 +64,19 @@ static class FlowCommands
             return report;
         }));
         flows.Subcommands.Add(check);
+    }
+
+    /// <summary>What <c>flows build</c> says about a layout by area (D230): folders, files per area, the shared folder, flows in no area.</summary>
+    static JsonObject Layout(AreaLayout layout)
+    {
+        var byFolder = layout.FolderOf.Values.GroupBy(x => x, StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.Count(), StringComparer.Ordinal);
+        return new JsonObject
+        {
+            ["areas"] = layout.SlugOf.Count,
+            ["folders"] = byFolder.Count,
+            ["shared"] = byFolder.GetValueOrDefault($"{AreaLayout.Root}/{AreaLayout.SharedSlug}"),
+            ["unplaced"] = new JsonArray([.. layout.NotPlaced.Select(x => (JsonNode)x)]),
+            ["flowsByFolder"] = new JsonObject([.. byFolder.OrderBy(x => x.Key, StringComparer.Ordinal).Select(x => KeyValuePair.Create(x.Key, (JsonNode?)x.Value))]),
+        };
     }
 }

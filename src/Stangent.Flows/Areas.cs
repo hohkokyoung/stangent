@@ -5,8 +5,12 @@ using Stangent.Graph.Detectors;
 
 namespace Stangent.Flows;
 
-/// <summary>A start flow as <c>specs/flows/index.json</c> lists it: what areas read (D218).</summary>
-public sealed record IndexFlow(string Id, string Kind, string Point, string Start, IReadOnlyList<string> Links);
+/// <summary>A flow as <c>specs/flows/index.json</c> lists it: what areas read (D218); <see cref="File"/> where its JSON sits (D230), null when the index predates it.</summary>
+public sealed record IndexFlow(string Id, string Kind, string Point, string Start, IReadOnlyList<string> Links, string Name = "", string? File = null)
+{
+    public static IndexFlow Of(Flow f) =>
+        new(f.Id, f.Kind, f.Start.Point, f.Start.At.ToString(), [.. f.Links.Where(l => l.ToFlow is not null).Select(l => l.ToFlow!).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)], f.Name);
+}
 
 /// <summary>
 /// Where a start flow sits, for <c>areas.yaml</c> to place it (D225): the menu item address its screen matched (null when none) and a
@@ -114,10 +118,15 @@ public sealed class Areas
         {
             var id = f.GetProperty("id").GetString()!;
             flows[id] = new IndexFlow(id, f.GetProperty("kind").GetString()!, f.GetProperty("point").GetString()!, f.GetProperty("start").GetString()!,
-                [.. f.GetProperty("links").EnumerateArray().Select(l => l.GetString()!)]);
+                [.. f.GetProperty("links").EnumerateArray().Select(l => l.GetString()!)],
+                f.TryGetProperty("name", out var n) ? n.GetString() ?? id : id, f.TryGetProperty("file", out var p) ? p.GetString() : null);
         }
         return new Areas(graph, root, doc.RootElement.GetProperty("commit").GetString() ?? "", flows);
     }
+
+    /// <summary>Areas over flows just built, before they're written (<c>flows build</c> placing files by area, D230).</summary>
+    public static Areas Of(CodeGraph graph, string root, FlowSet set) =>
+        new(graph, root, set.Commit, new SortedDictionary<string, IndexFlow>(set.Flows.ToDictionary(f => f.Id, IndexFlow.Of, StringComparer.Ordinal), StringComparer.Ordinal));
 
     // ---- Screens and homes (D219) ----------------------------------------------------------------------------------------------
 
@@ -335,7 +344,7 @@ public sealed class Areas
 
     // ---- Start flows and their places (D219, D222) -----------------------------------------------------------------------------
 
-    static readonly HashSet<string> StartKinds = new(["click", "screen-opens", "job", "handler"], StringComparer.Ordinal);
+    public static readonly HashSet<string> StartKinds = new(["click", "screen-opens", "job", "handler"], StringComparer.Ordinal);
     static readonly string[] Up = [EdgeKind.Renders, EdgeKind.Uses, EdgeKind.Calls];
 
     void ReadStarts()
