@@ -410,9 +410,12 @@ function references(ctx: Context, sf: ts.SourceFile) {
       else if (target) out.edge(ctx.ownerId(n), target, edgeKind(n));
       else {
         // `const { addSeries } = useAddSeries()` then `addSeries(…)` in a handler: the handler calls the hook (G5).
-        const from = resultOf(ctx, symbol);
+        // D210: when the returns don't say which function is handed back, the value is whatever `from` returned, not `from`
+        // itself: the call site says so (`fromResult`), and a flow shows it as a guess.
+        const result = resultOf(ctx, symbol);
+        const from = result?.id;
         if (from && from !== ctx.ownerId(n)) out.edge(ctx.ownerId(n), from, "calls");
-        if (from && from !== ctx.ownerId(n) && edgeKind(n) === "calls") callSite(ctx, sf, n, from, 0);
+        if (from && from !== ctx.ownerId(n) && edgeKind(n) === "calls") callSite(ctx, sf, n, from, 0, result!.byValue);
       }
       if (edgeKind(n) === "calls" || (edgeKind(n) === "renders" && !ts.isJsxClosingElement(n.parent)))
         for (const id of several.length > 1 ? several : target ? [target] : []) callSite(ctx, sf, n, id, several.length > 1 ? 1 : 0);
@@ -474,8 +477,11 @@ function isDeclarationName(id: ts.Identifier): boolean {
     || ts.isBindingElement(p) || ts.isPropertyAssignment(p) || ts.isImportSpecifier(p) || ts.isExportSpecifier(p));
 }
 
-/** For a local bound from a call's result (`const x = f()`, `const { a } = f()`), the called function's id. */
-function resultOf(ctx: Context, symbol: ts.Symbol | undefined): string | null {
+/**
+ * For a local bound from a call's result (`const x = f()`, `const { a } = f()`): the function handed back under that name when f's
+ * returns say (`byValue` false), else f itself standing for the value it returned (`byValue` true, D210).
+ */
+function resultOf(ctx: Context, symbol: ts.Symbol | undefined): { id: string; byValue: boolean } | null {
   const d = symbol?.declarations?.length === 1 ? symbol.declarations[0] : null;
   if (!d) return null;
   let v: ts.Node = d;
@@ -489,9 +495,9 @@ function resultOf(ctx: Context, symbol: ts.Symbol | undefined): string | null {
   if (d && ts.isBindingElement(d) && ts.isObjectBindingPattern(d.parent) && !d.dotDotDotToken) {
     const prop = d.propertyName && ts.isIdentifier(d.propertyName) ? d.propertyName.text : ts.isIdentifier(d.name) ? d.name.text : null;
     const returned = prop ? returnedPoint(ctx, ctx.checker.getSymbolAtLocation(callee), prop, 0) : null;
-    if (returned) return returned;
+    if (returned) return { id: returned, byValue: false };
   }
-  return called;
+  return called ? { id: called, byValue: true } : null;
 }
 
 /**
@@ -555,13 +561,13 @@ function pointIn(ctx: Context, e: ts.Expression, prop: string, depth: number): s
  * call expression starts (a chain's first line, `this.a.b().c(`), or a JSX element's tag; `kind` says which. A fact, not a line:
  * impact never reads it.
  */
-function callSite(ctx: Context, sf: ts.SourceFile, id: ts.Identifier, target: string, label: 0 | 1) {
+function callSite(ctx: Context, sf: ts.SourceFile, id: ts.Identifier, target: string, label: 0 | 1, fromResult = false) {
   let n: ts.Node = id;
   if (ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) n = n.parent;
   const owner = ctx.ownerId(id);
   if (owner === target) return;
   const deferred = deferredOf(ctx, n);
-  ctx.out.fact("call-sites", "call-site", owner, ctx.rel(sf.fileName), ctx.line(n.parent), { target, label: String(label), kind: edgeKind(id), ...(deferred ? { deferred } : {}) });
+  ctx.out.fact("call-sites", "call-site", owner, ctx.rel(sf.fileName), ctx.line(n.parent), { target, label: String(label), kind: edgeKind(id), ...(fromResult ? { fromResult: "1" } : {}), ...(deferred ? { deferred } : {}) });
 }
 
 function edgeKind(id: ts.Identifier): string {

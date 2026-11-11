@@ -62,7 +62,9 @@ the same lines are read in source-line order; each line gives, in this order:
    walked); a callee with 10 or more callers, counted through the interface or base member it implements, is a `hub`, shown
    and not walked, unless its own body reads or saves a table, which ends `database` (D172's order) and still continues
    into the hub's shared flow (D196); otherwise each
-   implementation it dispatches to (several → one 🟡 branch each) is a step, walked into.
+   implementation it dispatches to (several → one 🟡 branch each) is a step, walked into. A call through a value taken from
+   another function's result (`const predicate = getFilterTypePredicate(type)`, then `predicate(…)`) whose function layer 2
+   couldn't name (the call site's `fromResult`) is 🟡 "calls a value taken from X's result": X stands for it and is walked (D210).
 8. a ❓ the graph recorded there: ends `unknown`, with its reason; an outside HTTP call whose URL is built at runtime ends
    `outside-call`, still a ❓ (D198).
 9. a navigation (`navigate` fact, D192): a step "goes to X" ending `screen`.

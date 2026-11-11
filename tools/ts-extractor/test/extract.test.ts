@@ -708,3 +708,48 @@ test("a function stored as an object's property runs later; a top-level object's
   const sites = lines.filter((l) => l.t === "fact" && l.kind === "call-site" && l.data.target.endsWith("#act")).map((l) => l.t === "fact" ? `${l.line} ${l.data.deferred ?? ""}` : "").sort();
   assert.deepEqual(sites, ["10 ", "11 ", "12 stream:this.changes", "13 stream:this.changes", "17 ", "7 kept:readFunc", "8 ", "9 kept:cb"]);
 });
+
+test("a call through a value another function returned says so; one whose returns name the function is that function (D210)", () => {
+  const root = project({
+    "src/lib.ts": [
+      "export function getPredicate(type: string) { return (a: number, b: number) => a === b; }",
+      "export const makeStore = (name: string) => (pick: (s: number) => number) => pick(1);",
+      "export const createOptions = (name: string) => {",
+      "  const store = makeStore(name);",
+      "  const useOption = (key: string) => store((s) => s);",
+      "  return { useOption };",
+      "};",
+      "export function useCallback<T>(f: T, deps: unknown[]): T { return f; }",
+      "export function usePage() {",
+      "  const handleGoToPage = useCallback((n: number) => n, []);",
+      "  return { goToPage: handleGoToPage };",
+      "}",
+    ].join("\n"),
+    "src/use.ts": [
+      "import { getPredicate, createOptions, usePage } from './lib';",
+      "const { useOption } = createOptions('x');",
+      "export function filter(type: string) {",
+      "  const predicate = getPredicate(type);",
+      "  return predicate(1, 2);",
+      "}",
+      "export const useDelete = () => useOption('delete');",
+      "export function Page() {",
+      "  const { goToPage } = usePage();",
+      "  return goToPage(1);",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const sites = lines.flatMap((l) => l.t === "fact" && l.kind === "call-site" && l.file === "src/use.ts"
+    ? [`${l.line} ${l.data.target.split("#")[1]} ${l.data.fromResult ?? "-"}`] : []).sort();
+  assert.deepEqual(sites, [
+    "10 usePage.handleGoToPage -",
+    "2 createOptions -",
+    "4 getPredicate -",
+    "5 getPredicate 1",
+    "7 createOptions 1",
+    "9 usePage -",
+  ]);
+  const store = lines.flatMap((l) => l.t === "fact" && l.kind === "call-site" && l.file === "src/lib.ts" && l.line === 5 ? [`${l.data.target.split("#")[1]} ${l.data.fromResult ?? "-"}`] : []);
+  assert.deepEqual(store, ["makeStore 1"]);
+});

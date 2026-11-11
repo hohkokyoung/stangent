@@ -340,8 +340,9 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         var guessedSite = site["label"] == "1";
         // D201: code inside a function registered as an event listener runs when the event comes.
         var listener = Later(site);
-        // G5: a value taken from a hook's result (`const { refetch } = useX()`) and called: the hook stands for it, a guess.
-        var byValue = !guessedSite && IsHook(target) && !at.Code.Contains(FlowGraph.ShortName(tnode), StringComparison.Ordinal);
+        // G5, D210: a value taken from a function's result (`const predicate = getPredicate(t)`, `const { refetch } = useX()`) and
+        // called, when layer 2 couldn't tell which function was handed back: the function stands for it, a guess.
+        var byValue = !guessedSite && site["fromResult"] == "1";
         if (g.Callers(target) >= s.HubCallers && kind == "call")
         {
             // D172's order puts a table before a hub: shared code whose own body reads or saves a table ends there, named.
@@ -364,7 +365,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             {
                 What = $"calls {tnode.Name}", At = at, Kind = kind, Point = target, Conditions = conds, Depth = depth,
                 End = new End("hub", $"{tnode.Name}: shared code used by {g.Callers(target)} places"), Guessed = guessedSite || byValue || listener is not null,
-                GuessReason = guessedSite ? SiteReason(target) : listener ?? (byValue ? $"calls a value taken from {tnode.Name}'s result; what it runs isn't known, so the hook stands for it" : null),
+                GuessReason = guessedSite ? SiteReason(target) : listener ?? (byValue ? ValueReason(tnode.Name) : null),
             });
             item.Links.Add(new Link("continues", tnode.Name, SharedPoint(target), at, $"Stops here: shared code used by {g.Callers(target)} places; {tnode.Name}'s own walk continues it ({at})", null, false));
             return;
@@ -388,7 +389,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 What = kind == "renders" ? $"shows {g.Name(run)}" : callback != "" ? $"when the request answers ({callback}), runs {g.Name(run)}" : $"calls {g.Name(run)}", At = at, Kind = kind, Point = run, Conditions = conds, Depth = depth,
                 Guessed = several || guessedSite || byValue || listener is not null,
                 GuessReason = several ? $"one of {runs.Count}: {string.Join(", ", runs.Select(g.Name))}" : guessedSite ? SiteReason(target)
-                    : listener ?? (byValue ? $"calls a value taken from {tnode.Name}'s result; what it runs isn't known, so the hook stands for it" : null),
+                    : listener ?? (byValue ? ValueReason(tnode.Name) : null),
             });
             Into(item, run, depth, branch);
         }
@@ -531,13 +532,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         return dot > 3 && name.StartsWith("use", StringComparison.Ordinal) && char.IsUpper(name[3]) ? point[..(hash + 1 + dot)] : null;
     }
 
-    static bool IsHook(string point)
-    {
-        var hash = point.IndexOf('#');
-        if (!point.StartsWith("ts|", StringComparison.Ordinal) || hash < 0) return false;
-        var name = point[(hash + 1)..];
-        return name.Length > 3 && name.StartsWith("use", StringComparison.Ordinal) && char.IsUpper(name[3]) && !name.Contains('.');
-    }
+    static string ValueReason(string name) => $"calls a value taken from {name}'s result; what it runs isn't known, so {name} stands for it";
 
     static string? DocIds(string member) => Stangent.Graph.Detectors.DocIds.ContainingType(member);
 

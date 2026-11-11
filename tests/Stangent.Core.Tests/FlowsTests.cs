@@ -171,4 +171,19 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.Single(g.PagesAt("'/orders/new'", "Shop.Web/react-app/src/App.tsx"));
         Assert.EndsWith("|/orders/:id", g.PagesAt("'/orders/new'", file).Single(), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void A_call_through_a_value_another_function_returned_is_a_guess_that_says_whose_result_it_is()
+    {
+        // D210: `const load = priceLoader('eur')` then `load(n)`: what runs is whatever priceLoader handed back, so priceLoader
+        // stands for it, 🟡 with its reason, never a certain call to priceLoader.
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var steps = set.Flows.SelectMany(f => f.Steps).Where(s => s.At.File.EndsWith("PriceTag.tsx", StringComparison.Ordinal) && s.At.Line == 7 && s.What.Contains("priceLoader", StringComparison.Ordinal)).ToList();
+        Assert.NotEmpty(steps);
+        Assert.All(steps, s =>
+        {
+            Assert.True(s.Guessed);
+            Assert.Equal("calls a value taken from priceLoader's result; what it runs isn't known, so priceLoader stands for it", s.GuessReason);
+        });
+    }
 }
