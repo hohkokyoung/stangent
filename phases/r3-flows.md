@@ -477,7 +477,7 @@ two copies only for their unanswered ties. `areas propose` on Sonarr's confirmed
 shared flows sit with one area than D230's 407 estimate for Sonarr (283), since jobs and handlers in backend-folder areas count
 as users of their own. `dotnet test` 2216 pass; extractor 75 pass.
 
-## Step 6: the guesses and blind spots on a flow (D166) — measured 2026-11-11, being grilled
+## Step 6: the guesses and blind spots on a flow (D166) — measured and grilled 2026-11-11 (D235–D240)
 
 Counted by a script (no AI) over every flow in `specs/flows/index.json` on the three clones (each flow's file through its
 `file`), every 🟡 `reason` and ❓ `why` put in a cause family by a fixed table of patterns. The unit D166 checks is a **code
@@ -525,3 +525,21 @@ cause (code, plus the fresh agent's sample); (3) no several-answer guess missing
 code. X3, X5, W3, V6–V10 and RxJS `debounceTime`/`delay` stay listed (nothing on a flow).
 
 **Runtime evidence (D239):** stays opt-in, not built in step 6; run-time-only lines stay 🟡/❓ saying what they depend on.
+
+**"Runs later" is a condition (D240):** mutation hooks, timers, streams, listeners and components that draw nothing until a
+prop is set show "only when …" on the step instead of 🟡; a call through another function's result stays 🟡.
+
+### Build order (grilled 2026-11-11, D235–D240), one commit each
+
+1. The `Walker.cs:613` reason bug: a guessed link carries its own reason (a redirect to no known screen says so).
+2. `stangent flows guesses`: every 🟡/❓ line on a flow by cause and bucket (D235), ranked by start flows touched; checks
+   bar items 1–2 by code (D237).
+3. "Runs later" as conditions (D240).
+4. A repository's save or read followed into the database library's own call, table from the entity type (D236).
+5. Plugin views found through the build's copy of a plugin's views (D236).
+6. L3: layer 2 records a generic base's type arguments; dispatch narrowed by them (D236, D238).
+7. X2, X4, W2 (D238).
+8. Test projects marked as tests in layer 2, not walked as app code (D238).
+9. Run-time-only and app-specific lines name what they depend on; app-specific questions written for a person (D237, D239).
+10. Graphs and flows rebuilt on the three clones; counts per bucket before and after; D177 items 1–5 rescored.
+11. One narrow fresh agent on ~30 sampled lines, ~110–120K tokens, asked first (D236); bar items 2–3 (D237).
