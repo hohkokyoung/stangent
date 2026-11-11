@@ -64,6 +64,19 @@ static class FlowCommands
             return report;
         }));
         flows.Subcommands.Add(check);
+
+        var topOption = new Option<int>("--top") { Description = "How many lines to list, most start flows touched first (default 20).", DefaultValueFactory = _ => 20 };
+        var causeOption = new Option<string?>("--cause") { Description = "List every line of one cause (an id from byCause) instead of the top lines." };
+        var guesses = new Command("guesses", "Step 6 (D235–D237): every 🟡 and ❓ line on a flow, by code line, in a cause and one of D166's four buckets by a fixed table, ranked by start flows touched; fails when a line fits no cause or a reason sits on the wrong kind of step.") { topOption, causeOption };
+        guesses.SetAction(pr => Cli.Run(pr, "flows guesses", ctx =>
+        {
+            var set = FlowBuilder.Build(Cli.LoadGraph(ctx), ctx.Repo.Root);
+            var report = GuessReport.Report(set, pr.GetValue(topOption), pr.GetValue(causeOption));
+            ctx.Span.Attributes["stangent.artifact.count"] = (int)report["guessed"]!["total"]!["lines"]! + (int)report["unknown"]!["total"]!["lines"]!;
+            if (!(bool)report["ok"]!) throw new CheckFailed("flows_guesses_failed", "A 🟡 or ❓ line fits no cause, or its reason sits on the wrong kind of step: see problems.", report);
+            return report;
+        }));
+        flows.Subcommands.Add(guesses);
     }
 
     /// <summary>What <c>flows build</c> says about a layout by area (D230): folders, files per area, the shared folder, flows in no area.</summary>

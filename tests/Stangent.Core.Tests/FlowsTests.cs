@@ -161,6 +161,36 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void The_guess_report_puts_every_line_in_a_cause_and_a_bucket()
+    {
+        var report = GuessReport.Report(FlowBuilder.Build(shop.Graph, shop.Root));
+        Assert.True((bool)report["ok"]!, report["problems"]!.ToJsonString());
+        Assert.True((int)report["guessed"]!["total"]!["lines"]! > 0);
+        // Counted by code line: a line's occurrences are at least its start flows.
+        Assert.All(report["top"]!.AsArray(), l => Assert.True((int)l!["occurrences"]! >= (int)l["startFlows"]!));
+        var buckets = report["guessed"]!["byBucket"]!.AsObject().Sum(b => (int)b.Value!["lines"]!);
+        Assert.Equal((int)report["guessed"]!["total"]!["lines"]!, buckets);
+    }
+
+    [Theory]
+    [InlineData("one of 3: A.Run, B.Run, C.Run", "one-of-n")]
+    [InlineData("a queued command matched to its job by type", "queued-command")]
+    [InlineData("no screen in the code matches /Admin/Order/List", "no-screen")]
+    [InlineData("sent when the mutation is started (its mutate(…) is called), not when useMutation sets it up; 2 endpoints fit (…)", "mutation")]
+    public void A_reason_is_sorted_by_its_first_part(string reason, string cause) => Assert.Equal(cause, GuessReport.Classify(reason, GuessReport.Guessed)?.Id);
+
+    [Fact]
+    public void A_queued_command_reason_on_a_screen_link_fails_item_2()
+    {
+        var f = new Flow { Id = "click-x", Name = "x", Kind = "click", Start = new StartInfo("x", new At("a.cs", 1, ""), "p", []), Actor = new Actor("user", "t", null, false) };
+        f.Steps.Add(new Step { N = 1, What = "goes to /x", At = new At("a.cs", 2, "Redirect(\"/x\")"), Kind = "navigate" });
+        f.Guesses.Add(new Guess(1, "Sends the user to /x", "a queued command matched to its job by type"));
+        var report = GuessReport.Report(new FlowSet("c", new FlowSettings(), [f], []));
+        Assert.False((bool)report["ok"]!);
+        Assert.Contains("item 2", report["problems"]![0]!.GetValue<string>(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_navigation_written_as_a_constant_path_fits_the_pages_whose_route_matches()
     {
         var g = new FlowGraph(shop.Graph, shop.Root);
