@@ -5,12 +5,15 @@ import { boundTo } from "./values.ts";
 
 /** Library calls that register a function to run when an event comes, not now. */
 const LISTENERS = new Set(["on", "once", "addEventListener", "addListener", "onmessage"]);
+/** D212: the browser's and Node's timers run a function after a delay or on a repeat, not now. */
+const TIMERS = new Set(["setTimeout", "setInterval", "requestAnimationFrame", "requestIdleCallback", "setImmediate"]);
 
 /**
  * D201: whether code at this node runs when its point runs. Code inside a function handed to another function runs then only
  * if that function calls it. One handed to the repo's own code that keeps it (stores it, never calls it, nor passes it on to
  * code that does) runs later, when something else calls it: `kept:<callee>`. One registered with a library's event listener
- * (`connection.on(…)`, `addEventListener`) runs when the event comes: `listener:<name>`. Library callbacks otherwise
+ * (`connection.on(…)`, `addEventListener`) runs when the event comes: `listener:<name>`; one given to a timer (`setTimeout`,
+ * `setInterval`) runs after its delay: `timer:<name>` (D212). Library callbacks otherwise
  * (`map`, `forEach`, `subscribe`, `then`) run as part of this code: "". Stops at the point that owns the code.
  */
 export function deferredOf(ctx: Context, node: ts.Node): string {
@@ -40,6 +43,7 @@ export function deferredOf(ctx: Context, node: ts.Node): string {
       continue;
     }
     if (LISTENERS.has(name)) return `listener:${name}`;
+    if (TIMERS.has(name)) return `timer:${name}`;
     const stream = streamOf(ctx, call);
     if (stream) return stream;
   }

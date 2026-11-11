@@ -178,12 +178,26 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
         // D210: `const load = priceLoader('eur')` then `load(n)`: what runs is whatever priceLoader handed back, so priceLoader
         // stands for it, 🟡 with its reason, never a certain call to priceLoader.
         var set = FlowBuilder.Build(shop.Graph, shop.Root);
-        var steps = set.Flows.SelectMany(f => f.Steps).Where(s => s.At.File.EndsWith("PriceTag.tsx", StringComparison.Ordinal) && s.At.Line == 7 && s.What.Contains("priceLoader", StringComparison.Ordinal)).ToList();
+        var steps = set.Flows.SelectMany(f => f.Steps).Where(s => s.At.File.EndsWith("PriceTag.tsx", StringComparison.Ordinal) && s.At.Line == 11 && s.What.Contains("priceLoader", StringComparison.Ordinal)).ToList();
         Assert.NotEmpty(steps);
         Assert.All(steps, s =>
         {
             Assert.True(s.Guessed);
             Assert.Equal("calls a value taken from priceLoader's result; what it runs isn't known, so priceLoader stands for it", s.GuessReason);
+        });
+    }
+
+    [Fact]
+    public void A_call_inside_a_timer_runs_later_a_guess_that_says_so()
+    {
+        // D212: `setInterval(() => refreshPrices(), 60000)` runs refreshPrices after its delay, not when the click runs.
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var steps = set.Flows.SelectMany(f => f.Steps).Where(s => s.At.File.EndsWith("PriceTag.tsx", StringComparison.Ordinal) && s.At.Line == 12 && s.What.Contains("refreshPrices", StringComparison.Ordinal)).ToList();
+        Assert.NotEmpty(steps);
+        Assert.All(steps, s =>
+        {
+            Assert.True(s.Guessed);
+            Assert.Equal("runs later: a function given to setInterval(…), after its delay, not when this code runs", s.GuessReason);
         });
     }
 }

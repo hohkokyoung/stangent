@@ -96,7 +96,7 @@ matched to its job by type), the actor. `unknowns` lists every ❓ with why. `fl
 ## Known gaps
 
 - Code inside a function handed to the repo's own code that keeps it isn't walked where it's handed over; a listener's
-  (`connection.on`) is 🟡; a call to a handler interface's method is one 🟡 `message` step, not a walk into every handler (D201).
+  (`connection.on`) or a timer's (`setTimeout`, `setInterval`, D212) is 🟡; a call to a handler interface's method is one 🟡 `message` step, not a walk into every handler (D201).
 - Dispatch isn't narrowed by a generic controller's type arguments (Sonarr save-indexer: 32 🟡 `Test` branches).
 - ASP.NET Identity's managers' async calls are steps ending `database` "the Identity user store", 🟡 (D200).
 - A package call is a step, not walked (D188), and never an `outside-call` (only HTTP clients are, G4); TypeScript's package calls

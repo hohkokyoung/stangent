@@ -753,3 +753,19 @@ test("a call through a value another function returned says so; one whose return
   const store = lines.flatMap((l) => l.t === "fact" && l.kind === "call-site" && l.file === "src/lib.ts" && l.line === 5 ? [`${l.data.target.split("#")[1]} ${l.data.fromResult ?? "-"}`] : []);
   assert.deepEqual(store, ["makeStore 1"]);
 });
+
+test("code in a function given to a timer runs later, after its delay (D212)", () => {
+  const root = project({
+    "src/a.ts": [
+      "declare function act(): void;",
+      "export function start() {",
+      "  setInterval(() => act(), 600000);",
+      "  setTimeout(() => { act(); }, 200);",
+      "  act();",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const sites = lines.filter((l) => l.t === "fact" && l.kind === "call-site" && l.data.target.endsWith("#act")).map((l) => l.t === "fact" ? `${l.line} ${l.data.deferred ?? ""}` : "").sort();
+  assert.deepEqual(sites, ["3 timer:setInterval", "4 timer:setTimeout", "5 "]);
+});

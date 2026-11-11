@@ -417,6 +417,8 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
     {
         var d when d.StartsWith("listener:", StringComparison.Ordinal) => $"runs when the event comes: a function registered with {d[9..]}(…)",
         var d when d.StartsWith("stream:", StringComparison.Ordinal) => $"runs when the stream sends a value ({d[7..]}), not when this code runs",
+        // D212: a timer's function runs after its delay or on its repeat.
+        var d when d.StartsWith("timer:", StringComparison.Ordinal) => $"runs later: a function given to {d[6..]}(…), after its delay, not when this code runs",
         _ => null,
     };
 
