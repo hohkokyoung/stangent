@@ -476,3 +476,41 @@ On all three: every flow's `.json` is byte for byte what it was flat, every `.md
 two copies only for their unanswered ties. `areas propose` on Sonarr's confirmed file adds nothing and drops no answer. Fewer
 shared flows sit with one area than D230's 407 estimate for Sonarr (283), since jobs and handlers in backend-folder areas count
 as users of their own. `dotnet test` 2216 pass; extractor 75 pass.
+
+## Step 6: the guesses and blind spots on a flow (D166) — measured 2026-11-11, being grilled
+
+Counted by a script (no AI) over every flow in `specs/flows/index.json` on the three clones (each flow's file through its
+`file`), every 🟡 `reason` and ❓ `why` put in a cause family by a fixed table of patterns. The unit D166 checks is a **code
+line** (a guess in the graph), not an occurrence: one line sits on many flows. Columns: distinct code lines (occurrences on
+flows; start flows touched).
+
+| 🟡 cause | Sonarr | Kavita | nopCommerce |
+|---|---|---|---|
+| Save or read read off a name (repository method, navigation collection, Identity store) | 326 (1,409; 205) | 171 (802; 89) | 2,278 (7,944; 823) |
+| One of several implementations ("one of N") | 316 (13,661; 158) | 16 (449; 60) | 247 (1,507; 98) |
+| Runs later or maybe (mutation, stream, timer, listener, a function's result, a component that draws nothing) | 269 (610; 143) | 139 (364; 64) | 0 |
+| Handlers or jobs found by type (events, queued commands, queue tables) | 101 (1,701; 122) | 22 (55; 47) | 157 (3,550; 726) |
+| URL or target match (several endpoints, URL a parameter, onclick, MVC view's folder) | 2 (61; 8) | 10 (158; 38) | 102 (112; 99) |
+| Actor: no guard found | 8 | 1 | 3 |
+| **All 🟡** | **1,022 lines** (17,450) | **359** (1,829) | **2,787** (13,116) |
+
+| ❓ cause | Sonarr | Kavita | nopCommerce |
+|---|---|---|---|
+| Outside call's address set at runtime (HTTP, SMTP, base address) | 100 (932; 87) | 36 (141; 52) | 82 (197; 81) |
+| View not found (89 are plugin views compiled at runtime) or chosen at runtime | 0 | 0 | 96 (96; 93) |
+| Frontend URL built at runtime | 13 (42; 17) | 2 (8; 4) | 0 |
+| Reflection | 5 (82; 29) | 1 | 8 (19; 8) |
+| Queued command's type known only at runtime | 1 (17; 16) | 0 | 0 |
+| **All ❓** | **119 lines** (1,073) | **39** (150) | **186** (312) |
+
+- "One of N" is concentrated: Sonarr's 13,661 come from 316 lines and its top 6 lines hold 32% (the generic provider
+  controller's `Settings.Validate()`, one of 76, and `ProviderFactory.Test()`, one of 32: the L3 gap); Kavita's 449 are 93%
+  one line (`EntityAccessAttribute.CheckAccess`, one of 6).
+- Against the whole graph: nopCommerce has 760 blind spots and ~7,246 guessed lines; 186 and 2,787 of them sit on a flow.
+- **Bug found:** a guessed link that isn't a message is given the reason "a queued command matched to its job by type"
+  (`Walker.cs:613`), so redirects that match no screen carry the wrong reason: nopCommerce 3,038 of its 3,038 such
+  occurrences (32 of 34 lines), Kavita all 55. Bar item 3 passes by code (a reason exists) though the reason is wrong.
+- Kavita's flows walk into test files (`Kavita.Services.Tests/…`, one of N on shared flows): the same cause as nopCommerce's
+  `Nop.Tests` handlers counted as start flows.
+
+Script and full tables: shared notes `step6-causes.py`, `step6-counts.txt`.
