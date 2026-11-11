@@ -5,6 +5,8 @@ public sealed class MenuItem
     public string SystemName { get; set; } = "";
     public string Title { get; set; } = "";
     public string? Url { get; set; }
+    public string RouteName { get; set; } = "";
+    public string TitleKey { get; set; } = "";
     public List<MenuItem> ChildNodes { get; set; } = [];
 }
 
@@ -35,5 +37,15 @@ public sealed class AdminMenu(LinkGenerator links, IHttpContextAccessor http)
     {
         if (http.HttpContext is not { } context) return null;
         return links.GetPathByAction(context, actionName, controllerName, new { area = "Admin" });
+    }
+
+    /// <summary>A list built by calls, the way nopCommerce's "My account" navigation is: route names and keys.</summary>
+    public List<MenuItem> Account()
+    {
+        var items = new List<MenuItem>();
+        items.Add(new MenuItem { RouteName = "checkout", TitleKey = "Account.Checkout" });
+        items.Add(new MenuItem { RouteName = Shop.Web.Controllers.RouteNames.Register, Title = Text("Account.Register") });
+        items.Add(new MenuItem { Url = "/orders", SystemName = "Orders" });
+        return items;
     }
 }

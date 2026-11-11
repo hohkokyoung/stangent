@@ -49,13 +49,14 @@ public static class AreaFiles
             items[spec].Add(top);
             foreach (var addr in top.Subtree().Select(i => i.Address).Where(x => x != "")) if (!spec.Menu.Contains(addr, O)) spec.Menu.Add(addr);
         }
-        // Homes: a home's screens on a menu item join it to that item's area (the one holding most of them); else it's an area itself.
+        // Homes: a home's screens on menu items join it to the area holding more than half of them; else it's an area itself.
         var topOf = a.TopItems.SelectMany(t => t.Subtree().Select(i => (Item: i, Top: t))).ToDictionary(x => x.Item, x => x.Top);
         foreach (var (home, name) in a.Homes)
         {
             var votes = a.Screens.Values.Where(s => s.Home == home && s.Item is not null).GroupBy(s => Areas.AreaName(topOf[s.Item!]))
                 .Select(x => (Area: x.Key, Count: x.Count())).OrderByDescending(x => x.Count).ThenBy(x => specs.FindIndex(sp => sp.Name == x.Area)).ToList();
-            var spec = votes.Count > 0 ? specs.First(sp => sp.Name == votes[0].Area) : Get(Unique(name, home), "folder");
+            // D229: only an area holding more than half of them; a home split between menu areas stays an area of its own.
+            var spec = votes.Count > 0 && votes[0].Count * 2 > votes.Sum(v => v.Count) ? specs.First(sp => sp.Name == votes[0].Area) : Get(Unique(name, home), "folder");
             if (!spec.Folders.Contains(home, O)) spec.Folders.Add(home);
         }
         var frame = a.Starts.Values.SelectMany(s => s.Places).Where(p => p.Frame).Select(p => p.Folder).Distinct(O).Order(O).ToList();

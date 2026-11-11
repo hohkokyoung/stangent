@@ -20,6 +20,10 @@ public class MenuTests(ShopGraph shop) : IClassFixture<ShopGraph>
             "1.2 Shelves| → /shelves (data)",
             "2 Orders| → mvc:Admin/Orders/List (data)",
             "3 Help| → https://example.com/help (data)",
+            // A list built by Add calls: route names, a key by its property's name (D229).
+            "1 |Account.Checkout → route:checkout (data)",
+            "2 |Account.Register → route:Register (data)",
+            "3 Orders| → /orders (data)",
         ], Menu("Shop.Web/Menu/AdminMenu.cs"));
         var clear = shop.Graph.AllFacts.Single(f => f.Kind == "menu-item" && f["path"] == "1.1" && f.File == "Shop.Web/Menu/AdminMenu.cs");
         Assert.Equal(("StockAdmin", "Clear", "Admin", "menu"), (clear["controller"], clear["action"], clear["area"], clear.Detector));

@@ -63,7 +63,7 @@ internal sealed class Translations
         {
             if (!path.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
             {
-                var xml = new Dictionary<string, string>(StringComparer.Ordinal);
+                var xml = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);   // resource keys are looked up ignoring case (nopCommerce lowers them)
                 try
                 {
                     foreach (var el in System.Xml.Linq.XDocument.Load(path).Descendants())

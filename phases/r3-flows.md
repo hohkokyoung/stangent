@@ -435,21 +435,22 @@ in `razor-views`. Fixtures on React, Angular and Razor plus C# data. Graphs rebu
 | Repo | Menus found (items) | Taken (D226) |
 |---|---|---|
 | Sonarr | sidebar (35; Media, Activity, Settings, System), the settings page's index (13), outside links (11) | the sidebar |
-| Kavita | side nav (8; libraries are runtime), outside links (7) | the side nav |
-| nopCommerce | AdminMenu.cs (106; 10 top-level), header links (7), four in-page lists (3–4); the footer's links are runtime | AdminMenu, header links |
+| Kavita | side nav (8; libraries are runtime), user menu (`nav.service.ts`, 5+, D229), outside links (7) | side nav, user menu |
+| nopCommerce | AdminMenu.cs (106; 10 top-level), the installer's seeded store menus (main 6, footer columns 5 and 7, D229), "My account" built by `Add` calls (5), header links (7), four in-page lists (3–4) | AdminMenu, main menu, footer My account, header links |
 
 `stangent areas propose|check`, contract `areas` v1, `docs/areas.md`. Proposed (`specs/areas.proposed.yaml` in each clone):
 
 | Repo | Start flows | Areas | Menu / folder (homes, backend) / App frame | Ties | Large (over 40, nothing to split by) |
 |---|---|---|---|---|---|
 | Sonarr | 392 | 60 | 21 / 38 / 1 | 25 (22 two-way: Episode, InteractiveImport, Series dialogs; 6 eight-way: shared form inputs) | Media › Series 71, Settings 77 |
-| Kavita | 282 | 25 | 8 / 16 / 1 | 31 (24 sixteen-way: modals opened through shared services) | Customize (its `/settings`) 114 |
-| nopCommerce | 944 | 137 | 43 / 94 / 0 | 8 | Admin › Catalog 61, My account 41, Nop.Web › Infrastructure 48 |
+| Kavita | 282 | 28 | 12 / 15 / 1 | 32 (24 sixteen-way: modals opened through shared services) | Customize (its `/settings`) 114 |
+| nopCommerce | 944 | 142 | 52 / 90 / 0 | 9 | Admin › Catalog 61, Nop.Web › Infrastructure 48 |
 
 Built-in decisions, not yet put to the owner: D226 (which lists are the menu; menu areas split by children only), D227 (parts
 of a split area count for it: jobs, clicks, homes; empty parts fold back), D228 (area names read `{{key}}` references and
 .NET XML resources). Found in passing: Sonarr's backend areas are many and small (38, most 1–2 jobs), as D223 says; Kavita's
 Settings is one screen with tabs, so no menu children split it; nopCommerce's product edit pages sit under Admin › Catalog
 because Products and Product tags share the Product folder; nopCommerce has handlers in `Nop.Tests` among its start flows
-(a flows matter, not areas). Next: the owner confirms Sonarr's `areas.yaml`; the fresh check of the menu facts waits for the
-owner's OK.
+(a flows matter, not areas). The menu facts' fresh check (D229, owner's OK; ~113K tokens): 29 of 30 right; three shapes added (`Add` call lists, `routeName`,
+key-named properties), resources looked up ignoring case, homes join a menu area only by majority. Graphs rebuilt, flows
+unchanged byte for byte, Sonarr's proposal unchanged. Next: the owner confirms Sonarr's `areas.yaml` and D226–D229.

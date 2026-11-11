@@ -115,3 +115,20 @@ test("an Angular menu in markup: link= and routerLink through @if and @for, keys
     "4 Reading lists| → /lists (markup)",
   ]);
 });
+
+test("a key named by its property (transLocoKey, titleKey) is a translation key (D229)", () => {
+  const root = project({
+    "src/nav.service.ts": [
+      "export const navItems = [",
+      "  { transLocoKey: 'all-filters', routerLink: '/all-filters/' },",
+      "  { titleKey: 'browse-genres', routerLink: '/browse/genres' },",
+      "  { transLocoKey: 'announcements', routerLink: '/announcements/' },",
+      "];",
+    ].join("\n"),
+  });
+  assert.deepEqual(menu(root), [
+    "1 |all-filters → /all-filters/ (data)",
+    "2 |browse-genres → /browse/genres (data)",
+    "3 |announcements → /announcements/ (data)",
+  ]);
+});

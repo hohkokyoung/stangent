@@ -35,6 +35,10 @@ export interface MenuItem {
 type Unit = { item: MenuItem } | { list: MenuItem[]; line: number; owner: string; file: string };
 
 const lower = (s: string) => s.toLowerCase();
+const KEY_STEMS = ["translation", "transloco", "translate", "i18n", "resource", "localization", "text"];
+/** A property holding a translation key by its name: `titleKey`, `labelKey`, `transLocoKey`, `i18nKey`. */
+export const isKeyName = (n: string) => n.length > 3 && lower(n).endsWith("key")
+  && (NAME_PROPS.some((p) => lower(p) === lower(n.slice(0, -3))) || KEY_STEMS.includes(lower(n.slice(0, -3))));
 const isName = (n: string) => NAME_PROPS.some((p) => lower(p) === lower(n));
 const isAddress = (n: string) => ADDRESS_PROPS.some((p) => lower(p) === lower(n));
 /** A constant address: known in full, and not a page anchor or a script (`#`, `javascript:`), which lead nowhere. */
@@ -116,6 +120,11 @@ function objectItem(ctx: Context, o: ts.ObjectLiteralExpression, seen: Set<ts.No
   const inner: MenuItem[] = [];
   const props = o.properties.map((p) => ({ p, n: propName(p) }));
   if (props.some(({ n }) => n !== null && ROUTE_KEYS.has(n))) return { item: null, inner };
+  for (const { p, n } of props) {
+    if (n === null || key || !isKeyName(n) || !ts.isPropertyAssignment(p)) continue;
+    const v = constant(stringValue(p.initializer, ctx.checker));
+    if (v) key = v;
+  }
   for (const nameProp of NAME_PROPS)
     for (const { p, n } of props) {
       if (n === null || lower(n) !== lower(nameProp) || !ts.isPropertyAssignment(p)) continue;
@@ -131,7 +140,7 @@ function objectItem(ctx: Context, o: ts.ObjectLiteralExpression, seen: Set<ts.No
       if (v && !address) address = v;
       continue;
     }
-    if (isName(n)) continue;
+    if (isName(n) || isKeyName(n)) continue;
     const arr = arrayOf(ctx, p.initializer);
     if (arr && !seen.has(arr)) inner.push(...arrayItems(ctx, arr, seen));
   }

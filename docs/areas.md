@@ -27,7 +27,7 @@ Output follows `docs/cli-conventions.md`. A missing graph is `no_graph`, a missi
   one reaching most screens is taken first, and one more than half of whose screens a taken menu already reaches is skipped.
   An item matches a screen by its address: a route's path (a `:param` matches any one segment; the fewest params win), or an
   MVC action (`mvc:<area>/<controller>/<action>`, `route:<name>` through a named conventional route). A screen takes the
-  deepest item matching it. Names come from the translation files: `en.json` and the like, then .NET XML resources (D228).
+  deepest item matching it. Names come from the translation files: `en.json` and the like, then .NET XML resources, looked up ignoring case (D228, D229).
 - **Menu areas**: each taken menu's top-level item is an area, two with one name merged; addresses leading into an MVC area
   prefix it (`Admin › Catalog`). A home whose screens sit on menu items joins the area holding most of them, so its other
   screens follow (Sonarr's series details join Series).

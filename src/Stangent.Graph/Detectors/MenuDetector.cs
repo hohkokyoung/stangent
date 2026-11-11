@@ -32,6 +32,28 @@ public sealed class MenuDetector : IDetector
                 seen.UnionWith(local);
                 MenuTree.Emit(ctx.Fragment.Facts, Name, [new MenuTree.ListUnit(items)]);
             }
+            // A list built by calls: `list.Add(new Item { … })` statements on one collection in one block, in order (nopCommerce's "My account").
+            foreach (var block in file.Tree.GetRoot().DescendantNodes().OfType<BlockSyntax>())
+                foreach (var group in block.Statements.OfType<ExpressionStatementSyntax>()
+                    .Select(st => st.Expression is AwaitExpressionSyntax aw ? aw.Expression : st.Expression)
+                    .OfType<InvocationExpressionSyntax>()
+                    .Where(c => c.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Add" } && c.ArgumentList.Arguments.Count == 1
+                        && c.ArgumentList.Arguments[0].Expression is BaseObjectCreationExpressionSyntax { Initializer.RawKind: (int)SyntaxKind.ObjectInitializerExpression })
+                    .GroupBy(c => ((MemberAccessExpressionSyntax)c.Expression).Expression.ToString(), StringComparer.Ordinal))
+                {
+                    var local = new HashSet<SyntaxNode>();
+                    var items = new List<MenuTree.Item>();
+                    foreach (var call in group)
+                    {
+                        var obj = (BaseObjectCreationExpressionSyntax)call.ArgumentList.Arguments[0].Expression;
+                        if (seen.Contains(obj.Initializer!)) continue;
+                        var (item, inner) = ObjectItem(ctx, file.Model, obj, obj.Initializer!, local);
+                        if (item is not null) items.Add(item); else items.AddRange(inner);
+                    }
+                    if (items.Count < 3) continue;
+                    seen.UnionWith(local);
+                    MenuTree.Emit(ctx.Fragment.Facts, Name, [new MenuTree.ListUnit(items)]);
+                }
         }
     }
 
@@ -77,6 +99,8 @@ public sealed class MenuDetector : IDetector
         var props = init.Expressions.OfType<AssignmentExpressionSyntax>()
             .Select(a => (Name: (a.Left as IdentifierNameSyntax)?.Identifier.ValueText, Value: a.Right)).Where(p => p.Name is not null).ToList();
         string name = "", key = "";
+        foreach (var (n, v) in props)
+            if (key == "" && MenuTree.IsKeyName(n!) && model.GetConstantValue(v) is { HasValue: true, Value: string k }) key = k;
         foreach (var wanted in MenuTree.NameProps)
             foreach (var (n, v) in props)
             {
@@ -93,10 +117,12 @@ public sealed class MenuDetector : IDetector
             if (MenuTree.IsAddress(n!))
             {
                 addressSeen = true;
-                address ??= AddressOf(model, v);
+                address ??= string.Equals(n, "routeName", StringComparison.OrdinalIgnoreCase)
+                    ? model.GetConstantValue(v) is { HasValue: true, Value: string rn } ? MenuTree.Address.Route(rn) : null
+                    : AddressOf(model, v);
                 continue;
             }
-            if (MenuTree.IsName(n!)) continue;
+            if (MenuTree.IsName(n!) || MenuTree.IsKeyName(n!)) continue;
             if (ListOf(v) is { } list && !seen.Contains(list)) inner.AddRange(ListItems(ctx, model, list, seen));
         }
         var named = name != "" || key != "";
@@ -179,7 +205,12 @@ public static class MenuTree
 {
     /// <summary>Property names that name an item, in the order they're preferred (as the TypeScript extractor's).</summary>
     public static readonly string[] NameProps = ["title", "label", "text", "name", "caption", "displayName", "header", "heading", "systemName"];
-    static readonly string[] AddressProps = ["to", "href", "link", "url", "path", "route", "routerLink"];
+    static readonly string[] AddressProps = ["to", "href", "link", "url", "path", "route", "routerLink", "routeName"];
+    static readonly string[] KeyStems = ["translation", "transloco", "translate", "i18n", "resource", "localization", "text"];
+    /// <summary>A property holding a translation key by its name: <c>titleKey</c>, <c>labelKey</c>, <c>transLocoKey</c>, <c>i18nKey</c>.</summary>
+    public static bool IsKeyName(string n) =>
+        n.Length > 3 && n.EndsWith("key", StringComparison.OrdinalIgnoreCase) && n[..^3] is var stem
+        && (NameProps.Any(p => string.Equals(p, stem, StringComparison.OrdinalIgnoreCase)) || KeyStems.Any(p => string.Equals(p, stem, StringComparison.OrdinalIgnoreCase)));
     public static bool IsName(string n) => NameProps.Any(p => string.Equals(p, n, StringComparison.OrdinalIgnoreCase));
     public static bool IsAddress(string n) => AddressProps.Any(p => string.Equals(p, n, StringComparison.OrdinalIgnoreCase));
 
