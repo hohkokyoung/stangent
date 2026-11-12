@@ -1,14 +1,14 @@
 ---
 phase: r4
 name: pages
-status: planned
+status: in progress
 consumes: { flows: 1, areas: 1 }
 provides: { pages: 1 }
 ---
 
 # Rebuild layer 4: pages in plain words (D156 P1, D251–D258)
 
-Grilled with the owner on 2026-11-12, one question at a time. Nothing built yet.
+Grilled with the owner on 2026-11-12, one question at a time. Steps 2–4 built 2026-11-12 (D259–D263, below); the pilot not run.
 
 ## Bottom line
 
@@ -101,6 +101,37 @@ owner); how a repo Stangent was never tuned on fares (R.2).
 7. **Pass:** the old page writer stops being run (D258), `pages` turns on, OVERVIEW and roadmap updated.
    **Fail:** one fix attempt (D138); for item 3 that can be Opus 5.5 in place of Sonnet; a second failure
    removes the step or leaves its pages marked unconfirmed until a person reads them.
+
+## Built (2026-11-12): steps 2–4
+
+Free, no AI call made. `stangent pages summary` (`src/Stangent.Flows/PageSummary.cs`), `pages sections`/`prepare`/`check`
+(`src/Stangent.Spec/Words/AreaWords.cs`), the `pages` switch (off), the writer agent `stangent-area-writer` with its
+instructions and schema, `spec-run.sh --pages <area>`, tests on hand-made flows in React, Angular and Razor shapes and the AI
+step with fake answers (`tests/Stangent.Core.Tests/PageSummaryTests.cs`), `docs/pages.md` (contract `pages` v1), a D258 note
+in `docs/spec.md`. Settled while building, not confirmed by the owner yet: D259 (summaries rebuilt, words in
+`specs/pages-runs.json`), D260 (how flows become items; the shared-save rule), D261 (sections), D262 (checks), D263
+(`--proposed`).
+
+**`pages summary` on the 7 pilot areas** (Kavita and nopCommerce by `--proposed`, their ties still open; byte for byte the same
+on two runs; "chars" = the item lines the writer would read, before the rules):
+
+| Area | Sections | Start flows | Items | Must cite | 🟡 | ❓ | Chars | Biggest section |
+|---|---|---|---|---|---|---|---|---|
+| Sonarr Series | 20 | 78 | 2,088 | 1,481 | 109 | 95 | 1,858K | 935K (jobs, 712 items) |
+| Sonarr Series › Add New | 3 | 5 | 114 | 55 | 4 | 7 | 42K | 37K (/add/new, 101 items) |
+| Sonarr Settings › Indexers | 2 | 8 | 510 | 435 | 5 | 31 | 174K | 174K (the screen, 509 items) |
+| Kavita Reading Lists | 3 | 12 | 854 | 436 | 14 | 3 | 893K | 584K (/lists, 503 items) |
+| Kavita registration | 5 | 8 | 246 | 158 | 62 | 4 | 169K | 57K (clicks, 103 items) |
+| nopCommerce Nop.Web › Checkout | 12 | 20 | 1,443 | 667 | 50 | 7 | 2,093K | 1,388K (clicks, 829 items) |
+| nopCommerce Admin › Catalog | 23 | 61 | 1,998 | 979 | 5 | 10 | 1,539K | 859K (clicks, 1,061 items) |
+
+**Against the worked example (Series › Add New):** the Add click's items are there as planned: the lookup's outside call ❓
+("URL built at runtime"), NamingConfig saved only if `config == null`, Series saved, SeriesAddedEvent sent to 3 handlers 🟡,
+"throws SeriesNotFoundException" when the lookup answers 404, and `SeriesResource.TvdbId: GreaterThan(0),
+SetValidator(seriesExistsValidator)`. It is not "about a dozen": the click plus the screen that shows it give 101 items in one
+section (17 check groups, 19 exits, 43 shown texts, 11 reads), and D255 has every exit and check cited with every condition
+marked. **This breaks D256's estimate** (~2–3K tokens in a call): the largest sections are 150–350K tokens. Early exits are
+most of it (Series: 918 of 2,088 items). Waiting on the owner before step 5 (`questions.md`).
 
 ## Known risks
 

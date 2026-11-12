@@ -21,6 +21,7 @@ software-engineering pipeline: requirements → code → tests → PR → deploy
 | `docs/code-graph.md` | The code graph: points, lines, labels, detectors, Python, impact answers. |
 | `docs/spec.md` | The spec: reference pages, the FSD import, links, findings and decisions (Phase 2). |
 | `docs/flows.md` | Flows (rebuild layer 3): starts, the walk, files under `specs/flows/`, `flows build`, `show`, `check`. |
+| `docs/pages.md` | Pages (rebuild layer 4): the summary code cuts from flows, `pages summary`, `prepare`, `check`, the writer and its checks. |
 | `docs/tickets.md` | Tickets: Jira through the MCP, pull, starting points, the bundle, bug proof, drafts (Phase 3). |
 | `benchmark/README.md` | Running the benchmark: full-history clones, per-repo configs, scoring commands. |
 

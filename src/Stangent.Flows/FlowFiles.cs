@@ -103,6 +103,9 @@ public static class FlowFiles
         _ => null,
     };
 
+    /// <summary>One condition as the flow's Markdown reads it (D173, D240): "only when …" for code that certainly runs, else "only if `…`".</summary>
+    public static string ConditionText(Condition c) => WhenText(c) ?? $"only if `{c.Code}`{Reading(c.Kind)}";
+
     static string StepConditions(List<Condition> cs)
     {
         var sb = new StringBuilder();

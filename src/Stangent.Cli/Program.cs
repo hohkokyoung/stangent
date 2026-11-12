@@ -289,6 +289,7 @@ JiraCommands.Add(root);
 TicketCommands.Add(root);
 FlowCommands.Add(root);
 AreaCommands.Add(root);
+PageCommands.Add(root);
 
 return Cli.Execute(root, args, prettyOption);
 

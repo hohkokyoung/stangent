@@ -396,6 +396,20 @@ public sealed class Areas
     }
 
     /// <summary>
+    /// The screens a click sits on (D219), for layer 4's sections (D253): the screens of its own home that show it, or, in a shared
+    /// folder, every screen the walk up reaches. Empty for a click on no screen, or a flow that isn't a click.
+    /// </summary>
+    public IReadOnlyList<string> ScreensOf(string flowId)
+    {
+        if (!Flows.TryGetValue(flowId, out var f) || f.Kind != "click") return [];
+        var file = f.Start.Contains(':') ? f.Start[..f.Start.LastIndexOf(':')] : f.Start;
+        var start = g.Nodes.ContainsKey(f.Point) ? f.Point : f.Point.Contains('#') && g.Nodes.ContainsKey(f.Point[..f.Point.IndexOf('#')]) ? f.Point[..f.Point.IndexOf('#')] : f.Point;
+        var home = HomeOf(Dir(file));
+        var (screens, _, _) = WalkUp(start, home);
+        return [.. screens.Where(s => home is null || s.Home == home).Select(s => s.Id).Distinct(O).Order(O)];
+    }
+
+    /// <summary>
     /// D219, D222: up from a click through what shows it (renders), opens it (uses) or calls it, and from a member to its component, until a
     /// screen, or code in another home folder. <c>Root</c>: the walk reached code nothing shows, the app's frame.
     /// </summary>

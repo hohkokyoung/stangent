@@ -6,6 +6,7 @@
     <PackageReference Include="PdfPig" />
     <ProjectReference Include="..\Stangent.Core\Stangent.Core.csproj" />
     <ProjectReference Include="..\Stangent.Graph\Stangent.Graph.csproj" />
+    <ProjectReference Include="..\Stangent.Flows\Stangent.Flows.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- What each AI step is told (D60): part of its input hash, so a change reopens every page. -->

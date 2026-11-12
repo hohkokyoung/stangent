@@ -1,5 +1,10 @@
 # The spec (Phase 2: contracts `reference-page`, `reference-lines`, `source-document` v3, `trace-links`)
 
+**Layer 4 note (D258):** the reference pages are being replaced by each area's page in plain words (`docs/pages.md`). They
+retire one reader at a time: when layer 4 passes its bar the writer below stops being run and people read
+`specs/areas/<area>/page.md`; the files stay, frozen, for old linking (until layer 5) and tickets (until layer 6), and go in
+layer 7's cuts on the owner's OK.
+
 "The spec" is three layers (D52), each with its own check:
 
 | Layer | Where | Written by | Checked by |
