@@ -48,8 +48,9 @@ public static partial class ServedViews
         return [.. result];
     }
 
+    /// <summary>The Razor SDK's source generator and the files it loads with it (its <c>source-generators</c> folder).</summary>
     static bool IsRazor(AnalyzerReference a) =>
-        (a.Display ?? "").Contains("Razor", StringComparison.Ordinal) && (a.FullPath ?? "").Contains("source-generators", StringComparison.Ordinal);
+        (a.FullPath ?? "").Replace('\\', '/').Contains("Microsoft.NET.Sdk.Razor/source-generators/", StringComparison.Ordinal);
 
     /// <summary>
     /// The solution with the Razor compiler run on each listed project's served views: the generator taken from a project that
@@ -58,23 +59,30 @@ public static partial class ServedViews
     public static Solution Add(Solution solution, IEnumerable<(ProjectId Id, string Dir, List<string> Views)> projects, List<string> warnings)
     {
         var host = solution.Projects.FirstOrDefault(p => p.AnalyzerReferences.Any(IsRazor));
-        var razor = host?.AnalyzerReferences.First(IsRazor) ?? SdkGenerator();
-        if (razor is null)
+        List<AnalyzerReference> razor = host is not null ? [.. host.AnalyzerReferences.Where(IsRazor)] : SdkGenerator();
+        if (razor.Count == 0)
         {
             warnings.Add("served views: no Razor compiler found (no web project loaded and none in the SDK); views compiled only at runtime stay ❓");
             return solution;
         }
         var options = host is null ? [] : HostOptions(host);
-        foreach (var (id, dir, views) in projects)
+        foreach (var (id, dir, listed) in projects)
         {
             var project = solution.GetProject(id);
-            if (project is null || views.Count == 0 || project.AnalyzerReferences.Any(IsRazor)) continue;
-            solution = solution.AddAnalyzerReference(id, razor);
+            if (project is null) continue;
+            // A view the project already hands the compiler (a Razor SDK project) is compiled already.
+            var known = project.AdditionalDocuments.Select(d => d.FilePath).OfType<string>().ToHashSet(StringComparer.Ordinal);
+            List<string> views = [.. listed.Where(v => !known.Contains(Path.Combine(dir, v)))];
+            if (views.Count == 0) continue;
+            if (!project.AnalyzerReferences.Any(IsRazor)) solution = solution.AddAnalyzerReferences(id, razor);
+            // Two global configs setting one key cancel it out: only keys the project's own build config doesn't set.
+            var own = GlobalKeys(project);
             var config = new StringBuilder("is_global = true\n");
-            foreach (var line in options) config.Append(line).Append('\n');
-            config.Append($"build_property.RootNamespace = {project.DefaultNamespace ?? project.AssemblyName}\n");
-            config.Append($"build_property.MSBuildProjectDirectory = {dir}\n");
-            if (!options.Any(o => o.StartsWith("build_property.RazorLangVersion", StringComparison.Ordinal))) config.Append("build_property.RazorLangVersion = latest\n");
+            void Set(string key, string value) { if (own.Add(key)) config.Append($"{key} = {value}\n"); }
+            foreach (var line in options) Set(line.Split('=')[0].Trim(), line[(line.IndexOf('=') + 1)..].Trim());
+            Set("build_property.RootNamespace", project.DefaultNamespace ?? project.AssemblyName);
+            Set("build_property.MSBuildProjectDirectory", dir);
+            Set("build_property.RazorLangVersion", "latest");
             foreach (var view in views)
             {
                 var full = Path.Combine(dir, view);
@@ -89,6 +97,17 @@ public static partial class ServedViews
         return solution;
     }
 
+    /// <summary>The keys a project's own global build configs set.</summary>
+    static HashSet<string> GlobalKeys(Project project)
+    {
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var doc in project.AnalyzerConfigDocuments)
+            if (doc.GetTextAsync().GetAwaiter().GetResult() is { } text && text.Lines.Any(l => l.ToString().Replace(" ", "", StringComparison.Ordinal) == "is_global=true"))
+                foreach (var l in text.Lines.Select(l => l.ToString().Trim()).TakeWhile(l => !l.StartsWith('[')).Where(l => l.Contains('=') && !l.StartsWith("is_global", StringComparison.Ordinal)))
+                    keys.Add(l.Split('=')[0].Trim());
+        return keys;
+    }
+
     /// <summary>The Razor settings a web project builds with (<c>build_property.Razor…</c> and the few others the compiler reads).</summary>
     static List<string> HostOptions(Project host)
     {
@@ -101,16 +120,18 @@ public static partial class ServedViews
         return [];
     }
 
-    /// <summary>The SDK's Razor source generator, when no loaded project carries it.</summary>
-    static AnalyzerReference? SdkGenerator()
+    /// <summary>The SDK's Razor source generator folder, when no loaded project carries it.</summary>
+    static List<AnalyzerReference> SdkGenerator()
     {
         var runtime = Path.GetDirectoryName(typeof(object).Assembly.Location)!;
         var sdkRoot = Path.GetFullPath(Path.Combine(runtime, "..", "..", "..", "sdk"));
-        if (!Directory.Exists(sdkRoot)) return null;
-        var dll = Directory.EnumerateDirectories(sdkRoot).OrderByDescending(d => d, StringComparer.Ordinal)
-            .Select(d => Path.Combine(d, "Sdks", "Microsoft.NET.Sdk.Razor", "source-generators", "Microsoft.CodeAnalysis.Razor.Compiler.dll"))
-            .FirstOrDefault(File.Exists);
-        return dll is null ? null : new AnalyzerFileReference(dll, new Loader());
+        if (!Directory.Exists(sdkRoot)) return [];
+        var dir = Directory.EnumerateDirectories(sdkRoot).OrderByDescending(d => d, StringComparer.Ordinal)
+            .Select(d => Path.Combine(d, "Sdks", "Microsoft.NET.Sdk.Razor", "source-generators"))
+            .FirstOrDefault(d => File.Exists(Path.Combine(d, "Microsoft.CodeAnalysis.Razor.Compiler.dll")));
+        if (dir is null) return [];
+        var loader = new Loader();
+        return [.. Directory.EnumerateFiles(dir, "*.dll").Order(StringComparer.Ordinal).Select(f => (AnalyzerReference)new AnalyzerFileReference(f, loader))];
     }
 
     sealed class Loader : IAnalyzerAssemblyLoader

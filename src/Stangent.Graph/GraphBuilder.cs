@@ -127,6 +127,10 @@ public static class GraphBuilder
                         if (RazorViewsDetector.ViewPath(tree) is not { } view) continue;
                         razor.Add(new SourceFile(tree, compilation.GetSemanticModel(tree), ProjectScanner.Rel(repo.Root, Path.Combine(p.Directory, view.TrimStart('/')))));
                     }
+                    if (project.AnalyzerConfigDocuments.Any(d => d.Name == "stangent-served-views.globalconfig"))
+                    {
+                        log.WriteLine($"stangent: {p.RelativePath}: {razor.Count} served views compiled");
+                    }
                     var ctx = new ExtractContext(repo.Root, p.Id, p.Directory, compilation, files, fragment, new Dictionary<string, List<string>>())
                     {
                         RazorFiles = [.. razor.OrderBy(f => f.RelativePath, StringComparer.Ordinal)],
@@ -378,3 +382,4 @@ public static class Git
         }
     }
 }
+
