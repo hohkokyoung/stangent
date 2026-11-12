@@ -393,7 +393,7 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
             }
             var item = Add(parent, new Step
             {
-                What = $"calls {tnode.Name}", At = at, Kind = kind, Point = target, Conditions = conds, Depth = depth,
+                What = $"calls {tnode.Name}{Mutate(site)}", At = at, Kind = kind, Point = target, Conditions = conds, Depth = depth,
                 End = new End("hub", $"{tnode.Name}: shared code used by {g.Callers(target)} places"), Guessed = guessedSite || byValue,
                 GuessReason = guessedSite ? SiteReason(target) : byValue ? ValueReason(tnode.Name) : null,
             });
@@ -416,7 +416,7 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
             var several = runs.Count > 1;
             var item = Add(parent, new Step
             {
-                What = kind == "renders" ? $"shows {g.Name(run)}" : callback != "" ? $"when the request answers ({callback}), runs {g.Name(run)}" : $"calls {g.Name(run)}", At = at, Kind = kind, Point = run, Conditions = conds, Depth = depth,
+                What = kind == "renders" ? $"shows {g.Name(run)}" : callback != "" ? $"when the request answers ({callback}), runs {g.Name(run)}" : $"calls {g.Name(run)}{Mutate(site)}", At = at, Kind = kind, Point = run, Conditions = conds, Depth = depth,
                 Guessed = several || guessedSite || byValue,
                 GuessReason = several ? OneOf(target, runs) : guessedSite ? SiteReason(target)
                     : byValue ? ValueReason(tnode.Name) : null,
@@ -466,6 +466,9 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
     internal bool StartsMutation(Fact site) =>
         site["fromResult"] == "1" && site["target"] != "" && MutateCall().IsMatch(g.Code(site.File, site.Line))
         && g.Facts(site["target"], "call-site").Any(f => f["deferred"].StartsWith("mutation:", StringComparison.Ordinal));
+
+    /// <summary>".mutate" when the call starts a hook's mutation (S4): the step names what its line calls.</summary>
+    string Mutate(Fact site) => StartsMutation(site) && MutateCall().Match(g.Code(site.File, site.Line)) is { Success: true } m ? $".{m.Value.TrimEnd('(', ' ')}" : "";
 
     [System.Text.RegularExpressions.GeneratedRegex(@"\bmutate(Async)?\s*\(")]
     private static partial System.Text.RegularExpressions.Regex MutateCall();
@@ -529,12 +532,20 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
         Visit(point, item, depth + 1, [.. branch, point]);
         // A hook's own function that reaches no server work may still run the hook's library callbacks (a mutation's function runs
         // when it calls `mutate`): the hook's own body is walked too, 🟡 (D184).
-        if (HookOf(point) is { } hook && !branch.Contains(hook, StringComparer.Ordinal) && !Subtree(item).Skip(1).Any(i => MeaningfulKinds.Contains(i.Step.Kind)) && g.Nodes.ContainsKey(hook)
-            // Fresh check S7: a function that starts the mutation itself does reach server work, through the mutation.
-            && !g.Facts(point, "call-site").Any(StartsMutation))
+        if (HookOf(point) is { } hook && !branch.Contains(hook, StringComparer.Ordinal) && !Subtree(item).Skip(1).Any(i => MeaningfulKinds.Contains(i.Step.Kind)) && g.Nodes.ContainsKey(hook))
         {
-            var h = Add(item, new Step { What = $"runs {g.Name(hook)}'s own work, through a library callback", At = item.Step.At, Kind = "call", Point = hook, Depth = depth + 1,
-                Guessed = true, GuessReason = $"{g.Name(point)} reaches no server work itself; what {g.Name(hook)} hands a library (a mutation's function) may run when it's called" });
+            // Fresh check S7: a function that calls `mutate` from its own hook starts the mutation that hook set up: the hook's own
+            // body (the request it sets up) is walked under this call, certain, with no step of its own.
+            if (g.Facts(point, "call-site").Any(StartsMutation))
+            {
+                if (walked.TryAdd(hook, item)) Visit(hook, item, depth + 1, [.. branch, point, hook]);
+                return;
+            }
+            var h = Add(item, new Step
+            {
+                What = $"runs {g.Name(hook)}'s own work, through a library callback", At = item.Step.At, Kind = "call", Point = hook, Depth = depth + 1,
+                Guessed = true, GuessReason = $"{g.Name(point)} reaches no server work itself; what {g.Name(hook)} hands a library (a mutation's function) may run when it's called",
+            });
             if (walked.TryGetValue(hook, out var seen)) h.SameAs = seen;
             else { walked[hook] = h; Visit(hook, h, depth + 1, [.. branch, point, hook]); }
         }
