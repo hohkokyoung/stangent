@@ -4,7 +4,7 @@ Each area's `specs/areas/<area>/page.md` (D230, D233) gets a few plain paragraph
 a BA, a developer new to the app. **Code decides what the page says; an AI only words it.** Code cuts every start flow of
 the area into numbered items; the writer turns them into sentences, each naming the items it rests on; code rejects any
 sentence that cites nothing, states a 🟡/❓ as certain, drops a condition, or leaves a must-cite item out. The linking judge
-(layer 5) will read the same items, never the AI's words. Decisions: D251–D265; plan, bar and numbers: `phases/r4-pages.md`.
+(layer 5) will read the same items, never the AI's words. Decisions: D251–D266; plan, bar and numbers: `phases/r4-pages.md`.
 
 ## Commands
 
@@ -97,7 +97,7 @@ layer 6), and go in layer 7's cuts on the owner's OK.
 ## Known limits
 
 - Big areas still give big pages after D264/D265: on the 7 pilot areas 125 sections, ~5.2M characters of items, the biggest
-  single-flow section 388K (Checkout's one-page form), roughly $7 a run (`questions.md`, 2026-11-12).
+  single-flow section 388K (Checkout's one-page form), roughly $7 a run; the pilot runs under `--max-cost 25` (D266).
 - A condition true on only some paths to a save in shared code, or to some reads of a table, isn't carried (D260, D265); an
   exit's path conditions are left to the flow's file (D264).
 - What a screen shows is only the texts its flows hold (D252): a value shown with no label isn't on the page.

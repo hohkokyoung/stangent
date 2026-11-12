@@ -31,7 +31,7 @@ that uses AI again.
 | Who | always shown; common kinds by code's template ("anyone signed in", "anyone, signed in or not", "Sonarr itself, on its own"); named access rules worded by the AI; once in "In short" when the whole area shares it; only what the server allows (D251) |
 | Left to the links | inputs, scenarios, build settings (D251) |
 | AI step | one call per section: `stangent pages prepare <area>` → headless Claude Code through the batch driver → `stangent pages check`, one retry, else the section keeps the code-made list; "In short" last, from the checked sections; a section rewritten only when its items' hash changes (D254) |
-| Model and cost | Claude Sonnet 5.5, medium effort, pinned in `stangent.yaml` (D161); ~$0.03 a section call; pilot `--max-cost 10` (D126, D256) |
+| Model and cost | Claude Sonnet 5.5, medium effort, pinned in `stangent.yaml` (D161); pilot `--max-cost 25` (D126, D256, D266: ~$7 a run after D264/D265) |
 | Pilot | Sonarr: Series, Series › Add New, Settings › Indexers; Kavita: Reading Lists, registration; nopCommerce: Nop.Web › Checkout, Admin › Catalog (D257) |
 | Old pages | `specs/reference/` retires one reader at a time: people at layer 4, old linking at layer 5, tickets at layer 6, the files and writer in the cuts at layer 7 (D258) |
 
@@ -93,8 +93,8 @@ owner); how a repo Stangent was never tuned on fares (R.2).
    (D254); `--max-cost` (D126); model and effort pinned (D161). Behind a switch, `pages`, off by default (D120).
    Tested with fakes only. Free.
 4. **Docs:** `docs/pages.md`; the `pages` v1 contract; a layer 4 note on the old `specs/reference/` (D258).
-5. **The pilot run, paid, asked first:** the 7 areas once, then twice more for bar item 2; about $6 under the
-   $10 cap. Before it, the first real Claude Code run also settles layer 1's owed check (D161 on real Claude
+5. **The pilot run, paid, asked first:** the 7 areas once, then twice more for bar item 2; about $20 under the
+   $25 cap (D266). Before it, the first real Claude Code run also settles layer 1's owed check (D161 on real Claude
    Code).
 6. **Score:** items 1, 2 and 5 by code; item 3 by one fresh agent (~80–120K tokens, asked first); item 4 by the
    owner.
@@ -151,7 +151,7 @@ assistant's call). Re-measured (same runs as above):
 
 Sections over 40K are single flows the split can't cut. Rough cost: ~1.5M tokens in, ~0.35M out, about $7 a run and ~$20
 for bar item 2's three runs, over D256's $10 cap. What's left: long path conditions on saves and shown texts inside one flow,
-and items repeated in each part of a split section. Waiting on the owner (`questions.md`).
+and items repeated in each part of a split section. The owner raised the pilot's cap to $25 (D266): all 7 areas, three runs.
 
 ## Known risks
 
