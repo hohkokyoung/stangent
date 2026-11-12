@@ -69,3 +69,5 @@ Item (b) is done, and item (f) was built as I.10 (D126). The rest of the list is
 
   (b) The fresh check on 2.5 and 2.6 is done, with its fix round (`phases/2b-fsd.md`, D119's note).
   (f) The drivers' refused steps still exit 0 (pinned by a test, Phase 0). Recommended: exit nonzero.
+
+- **R12: a key `hub` end on shared code that has fewer than 10 callers once test projects stop counting (found 2026-11-12, step 6, Sonarr `add-series`):** `AddSeriesService.cs:146` `_fileNameBuilder.GetSeriesFolder(newSeries)` had 10+ callers only with test helpers (`AddSeriesFixture.GivenValidPath`) counted; with D245 the flow walks into it instead of ending there, and Sonarr's item 2 goes 95.3% → 94.9% (261 of 275). Recommended: rule that a key `hub` end counts when Stangent walks into that call and its own steps continue below it (the same code, followed further), as R1 already does for `database`. **Answered 2026-11-12 (owner: "Yes, count it"): D247.**

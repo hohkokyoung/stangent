@@ -125,6 +125,10 @@ Each is brought to the owner one at a time, with a recommendation; none is appli
 - **R11, ruled 2026-11-10 (owner: "Yes, count it", on the recommendation; D197): a key `hub` end counts on a step that runs
   that hub and ends `database`.** The same shared code; Stangent names the table it reads first (D172). 11 items: Sonarr
   92.4% → 93.8%, Kavita 93.0% → 93.6%, nopCommerce 92.5% → 93.0%.
+- **R12, ruled 2026-11-12 (owner: "Yes, count it", on the recommendation; D247): a key `hub` end counts where Stangent walks
+  into that call instead, its own steps continuing below it.** The same shared code, followed further. Found in step 6:
+  Sonarr's `GetSeriesFolder` (`AddSeriesService.cs:146`) had 10+ callers only with test helpers counted (D245). Items: Sonarr
+  +1, Kavita +1, nopCommerce +2.
 - **R7, withdrawn 2026-11-09: a Stangent bug, fixed by D189.** The key walks into code the graph counts as a hub and lists steps
   inside it; Stangent stopped there with a `continues` link to a shared walk D173 promised but never built. Now each hub and
   depth stop a flow continues into is a `shared` flow, and the scorer follows the links into them (D189); a field or property
@@ -544,7 +548,7 @@ prop is set show "only when …" on the step instead of 🟡; a call through ano
 10. Graphs and flows rebuilt on the three clones; counts per bucket before and after; D177 items 1–5 rescored.
 11. One narrow fresh agent on ~30 sampled lines, ~110–120K tokens, asked first (D236); bar items 2–3 (D237).
 
-### Built (2026-11-12, D241–D246): pieces 1–5 and 7–10; 6 and 11 wait on the owner
+### Built (2026-11-12, D241–D247): pieces 1–5 and 7–10; 6 and 11 wait on the owner
 
 `stangent flows guesses` on the three clones rebuilt from scratch, by code line, before → after (the "before" is the build of
 `a8dfbe0`'s graph with the piece-1 reason fix; files in the shared notes `step6-build/`):
@@ -569,7 +573,8 @@ of step its cause can have, 0 problems (the piece-1 bug would fail it); every ru
 app-specific line a question. Item 4, D177's items 1–5 rescored: Kavita and nopCommerce pass all five (item 2 96.0%, 95.6%,
 unchanged); Sonarr passes 1, 3, 4, 5 (item 1's 2 flagged steps are the checker limit ruled right in step 4) and item 2 is
 94.9% (261 of 275, was 95.3%): the one item lost is a key `hub` end (`AddSeriesService.cs:146`) on code that had 10+ callers
-only with test helpers counted (D245); R12 asked. Items 2–3 by the fresh agent: piece 11, waits for the owner's OK.
+only with test helpers counted (D245). After ruling R12 (D247): item 2 Sonarr 95.3%, Kavita 96.2%, nopCommerce 95.9%; D177's
+items 1–5 pass on all three. Items 2–3 by the fresh agent: piece 11, waits for the owner's OK.
 
 **Waiting, listed (D237's "fixed or listed with why it waits"):** L3 (question open: its largest line can't be narrowed); X4
 (the value's type isn't carried by the TypeScript extractor's URL builders, 2–3 lines); handlers and queued commands found by
