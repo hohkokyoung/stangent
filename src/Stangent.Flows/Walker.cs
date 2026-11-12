@@ -6,7 +6,7 @@ namespace Stangent.Flows;
 /// Walks one flow forward from its start (D172): each point's call sites in source-line order (D176), into what each call runs,
 /// until a branch ends. Steps are numbered in walk order at the end, after display-only parts are left out.
 /// </summary>
-internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
+internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
 {
     sealed class Item
     {
@@ -355,7 +355,8 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         conds = WithWhen(when, conds);
         // G5, D210: a value taken from a function's result (`const predicate = getPredicate(t)`, `const { refetch } = useX()`) and
         // called, when layer 2 couldn't tell which function was handed back: the function stands for it, a guess.
-        var byValue = !guessedSite && site["fromResult"] == "1";
+        // Step 6 (fresh check S4): `mutate(…)` taken from a hook that keeps a mutation's function runs that function: certain.
+        var byValue = !guessedSite && site["fromResult"] == "1" && !StartsMutation(site);
         if (g.Callers(target) >= s.HubCallers && kind == "call")
         {
             // D172's order puts a table before a hub: shared code whose own body reads or saves a table ends there, named.
@@ -446,6 +447,15 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         return $"one of {runs.Count}: {string.Join(", ", runs.Select(g.Name))}; which one runs depends on the {type} the call is made on at run time";
     }
 
+    /// <summary>Fresh check S4, S7: a call of <c>mutate</c>/<c>mutateAsync</c> taken from the result of a function that keeps a
+    /// mutation's function (a call-site of its own deferred <c>mutation:</c>, D214).</summary>
+    internal bool StartsMutation(Fact site) =>
+        site["fromResult"] == "1" && site["target"] != "" && MutateCall().IsMatch(g.Code(site.File, site.Line))
+        && g.Facts(site["target"], "call-site").Any(f => f["deferred"].StartsWith("mutation:", StringComparison.Ordinal));
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\bmutate(Async)?\s*\(")]
+    private static partial System.Text.RegularExpressions.Regex MutateCall();
+
     const string QueueReason = "a queued command matched to its job by type";
 
     const string OverloadReason = "the compiler couldn't pick one overload, so each in-repo candidate is a branch";
@@ -504,7 +514,9 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         Visit(point, item, depth + 1, [.. branch, point]);
         // A hook's own function that reaches no server work may still run the hook's library callbacks (a mutation's function runs
         // when it calls `mutate`): the hook's own body is walked too, 🟡 (D184).
-        if (HookOf(point) is { } hook && !branch.Contains(hook, StringComparer.Ordinal) && !Subtree(item).Skip(1).Any(i => MeaningfulKinds.Contains(i.Step.Kind)) && g.Nodes.ContainsKey(hook))
+        if (HookOf(point) is { } hook && !branch.Contains(hook, StringComparer.Ordinal) && !Subtree(item).Skip(1).Any(i => MeaningfulKinds.Contains(i.Step.Kind)) && g.Nodes.ContainsKey(hook)
+            // Fresh check S7: a function that starts the mutation itself does reach server work, through the mutation.
+            && !g.Facts(point, "call-site").Any(StartsMutation))
         {
             var h = Add(item, new Step { What = $"runs {g.Name(hook)}'s own work, through a library callback", At = item.Step.At, Kind = "call", Point = hook, Depth = depth + 1,
                 Guessed = true, GuessReason = $"{g.Name(point)} reaches no server work itself; what {g.Name(hook)} hands a library (a mutation's function) may run when it's called" });

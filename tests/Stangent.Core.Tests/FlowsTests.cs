@@ -211,6 +211,18 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void Mutate_taken_from_the_app_own_mutation_hook_starts_it_with_certainty()
+    {
+        // Fresh check S4, S7: `const { mutate } = useApiMutation(…)`, then `mutate(id)`: useApiMutation keeps a mutation's function.
+        var g = new FlowGraph(shop.Graph, shop.Root);
+        var site = Assert.Single(shop.Graph.AllFacts, f => f.Kind == "call-site" && f.File!.EndsWith("useSaveShelf.ts", StringComparison.Ordinal) && f.Line == 13);
+        Assert.Equal("1", site["fromResult"]);
+        var flow = new Flow { Id = "x", Name = "x", Kind = "click", Start = new StartInfo("x", new At("a", 1, ""), "p", []), Actor = new Actor("u", "t", null, false) };
+        Assert.True(new Walker(g, new FlowSettings(), flow).StartsMutation(site),
+            string.Join(" ; ", shop.Graph.AllFacts.Where(f => f.File?.EndsWith("useSaveShelf.ts", StringComparison.Ordinal) == true && f.Kind == "call-site").Select(f => $"{f.Line} {string.Join(",", f.Data.Select(d => d.Key + "=" + d.Value))}")));
+    }
+
+    [Fact]
     public void Each_guessed_link_carries_its_own_reason()
     {
         var set = FlowBuilder.Build(shop.Graph, shop.Root);
