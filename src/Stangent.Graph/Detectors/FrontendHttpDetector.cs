@@ -44,6 +44,13 @@ public sealed class FrontendHttpDetector : IDetector
 
         // D175: a line is ✅ when any call behind it is proved; each call's own verdict and reason is an http-match fact.
         var calls = facts.Where(f => f.Kind == "call").Select(call => (Call: call, Matches: Match(call["verb"], call["url"], endpoints))).ToList();
+        // X2 (step 6, D238): a URL whose only fixed part is the API root (`/api/{*}/{*}`) fits every endpoint of that length;
+        // which one it calls is built at runtime: ❓, not a 🟡 list of every endpoint.
+        var root = ApiRoot([.. endpoints.Select(e => e.Segments)]);
+        var rootOnly = calls.Where(c => c.Matches.Count > 1 && OnlyRoot(c.Call["url"], root)).Select(c => c.Call).ToHashSet();
+        foreach (var call in rootOnly)
+            ctx.AddBlindSpot(call.Owner, call.File, call.Line, $"HTTP {call["verb"]} {call["url"]}: its only fixed part is the API root (/{string.Join('/', root)}), so which endpoint it calls is built at runtime", Name);
+        calls = [.. calls.Where(c => !rootOnly.Contains(c.Call))];
         var proved = new HashSet<(string, string)>();
         foreach (var (call, matches) in calls)
         {
@@ -139,6 +146,37 @@ public sealed class FrontendHttpDetector : IDetector
         }
         else if (fits.Count == 1 && !(matches.Count == 1 && fits[0] == matches[0])) failed.Add("the best match isn't the one endpoint that fits");
         return string.Join("; ", failed);
+    }
+
+    /// <summary>X2: the leading segments most endpoints share (<c>api</c>, <c>api/v3</c>): each kept while more than half of the
+    /// endpoints have it there.</summary>
+    public static string[] ApiRoot(IReadOnlyList<string[]> endpoints)
+    {
+        var root = new List<string>();
+        while (true)
+        {
+            var i = root.Count;
+            var next = endpoints.Where(e => e.Length > i && e.Take(i).SequenceEqual(root, StringComparer.OrdinalIgnoreCase) && !e[i].StartsWith('{'))
+                .GroupBy(e => e[i], StringComparer.OrdinalIgnoreCase).OrderByDescending(g => g.Count()).FirstOrDefault();
+            if (next is null || next.Count() * 2 <= endpoints.Count) return [.. root];
+            root.Add(next.Key);
+        }
+    }
+
+    /// <summary>X2: every fixed segment of the call's path is the API root's, and something past it is a runtime value.</summary>
+    public static bool OnlyRoot(string url, string[] root)
+    {
+        if (root.Length == 0) return false;
+        var (path, suffix) = PathOf(url);
+        if (suffix) return false;
+        var segments = Segments(path);
+        if (segments.Length <= root.Length) return false;
+        for (var i = 0; i < segments.Length; i++)
+        {
+            var runtime = segments[i].Contains("{*}", StringComparison.Ordinal);
+            if (i < root.Length ? runtime || !segments[i].Equals(root[i], StringComparison.OrdinalIgnoreCase) : !runtime) return false;
+        }
+        return true;
     }
 
     static string Short(string id) => id.Length == 0 ? "a caller" : id[(Math.Max(id.IndexOf('#'), id.IndexOf('|')) + 1)..];

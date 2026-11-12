@@ -361,3 +361,18 @@ public class ServedViewsTests
         finally { Directory.Delete(dir, true); }
     }
 }
+
+/// <summary>X2 (step 6, D238): a URL whose only fixed part is the API root.</summary>
+public class ApiRootTests
+{
+    [Fact]
+    public void A_url_fixed_only_at_the_api_root_is_built_at_runtime()
+    {
+        string[][] endpoints = [["api", "series", "{id}"], ["api", "filter", "{name}"], ["api", "account", "login"], ["login"]];
+        Assert.Equal(["api"], FrontendHttpDetector.ApiRoot(endpoints));
+        Assert.True(FrontendHttpDetector.OnlyRoot("/api/{*}/{*}", ["api"]));
+        Assert.False(FrontendHttpDetector.OnlyRoot("/api/filter/{*}", ["api"]));
+        Assert.False(FrontendHttpDetector.OnlyRoot("{base}/{*}", ["api"]));
+        Assert.False(FrontendHttpDetector.OnlyRoot("/api", ["api"]));
+    }
+}

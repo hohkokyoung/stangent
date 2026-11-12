@@ -58,7 +58,7 @@ public static class GuessReport
         new("outside-not-followed", "outside call", MissingRule, @"method and path not followed", null, "the client's own request building isn't followed"),
         new("outside-runtime", "outside call", RunTime, @"^outside .*(built at runtime|set at runtime)", null),
         new("outside-no-service", "outside call", AppSpecific, @"base address isn't known|no service with that name", null),
-        new("frontend-url", "frontend URL", RunTime, @"^HTTP \w+ to a URL built", null),
+        new("frontend-url", "frontend URL", RunTime, @"^HTTP \w+ to a URL built|only fixed part is the API root", null),
         new("frontend-no-endpoint", "frontend URL", MissingRule, @"matched no backend endpoint|^no endpoint fits|no action on the map serves", null, "the request's address fits no endpoint in the graph"),
         new("reflection", "reflection", Unknowable, @"^reflection:", null),
         new("command-at-runtime", "type known only at run time", RunTime, @"type is known only at runtime", null),
