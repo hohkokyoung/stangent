@@ -35,3 +35,12 @@ namespace Shop.Core
     {
     }
 }
+
+namespace Shop.Core
+{
+    // Step 6 (fresh check S27): an instance made by reflection, cast to an in-repo interface: one of its implementations.
+    public static class RecorderMaker
+    {
+        public static IRecorder Make(System.Type type) => (System.Activator.CreateInstance(type) as IRecorder)!;
+    }
+}

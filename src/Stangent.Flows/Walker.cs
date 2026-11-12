@@ -88,7 +88,7 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
             .Concat(g.Facts(point, "queue").Select(f => f.Line)).Concat(g.Facts(point, "job").Select(f => f.Line))
             .Concat(g.Facts(point, "http-match").Select(f => f.Line)).Concat(g.Facts(point, "exit").Select(f => f.Line))
             .Concat(g.Facts(point, "on-load").Select(f => f.Line)).Concat(g.BlindByOwner[point].Select(b => b.Line))
-            .Concat(g.Facts(point, "navigate").Select(f => f.Line))
+            .Concat(g.Facts(point, "navigate").Select(f => f.Line)).Concat(g.Facts(point, "creates-one-of").Select(f => f.Line))
             .Distinct().Order().ToList();
         // D193: a component's fields are made with it: an initialiser that calls something (`x = this.svc.makeResource(…)`) runs
         // when the component is created, before its own code. A field holding a function runs only when called: not here.
@@ -178,6 +178,20 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 var item = Add(parent, new Step { What = $"queues {g.Name(j["runs"])} through {j["via"]}, which runs later, in the background ({j["schedule"]})", At = at, Kind = "queue", Conditions = CondsFor(null), Depth = depth });
                 item.Links.Add(new Link("runs-later", g.Name(j["runs"]), j["runs"], at, $"Queues {g.Name(j["runs"])}, which runs later, in the background ({at})", null, false));
                 consumed.UnionWith(sites.Select(x => x["target"]));
+            }
+            // Step 6 (fresh check S27): an instance made by reflection and cast to a type: one of that type's implementations.
+            foreach (var made in g.Facts(point, "creates-one-of").Where(f => f.Line == line))
+            {
+                var impls = g.Implementers(made["type"]).Where(t => t != made["type"] && g.Nodes.TryGetValue(t, out var n) && n.Kind == NodeKind.Type && !n.IsTest)
+                    .Order(StringComparer.Ordinal).ToList();
+                var type = g.TypeName(made["type"]);
+                var step = Add(parent, new Step
+                {
+                    What = $"makes an instance of a type it is given, as {type}", At = at, Kind = "call", Conditions = CondsFor(null), Depth = depth,
+                    Guessed = impls.Count > 0, GuessReason = impls.Count > 0
+                        ? $"one of {impls.Count}: {string.Join(", ", impls.Select(g.TypeName))}; which one runs depends on the type it is given at run time" : null,
+                });
+                if (impls.Count == 0) step.Unknowns.Add(new Unknown(null, point, at, $"reflection: an instance cast to {type}, which nothing in the repo implements"));
             }
             // D192: a navigation that isn't an exit leaves for another screen: a step ending `screen`.
             foreach (var nav in g.Facts(point, "navigate").Where(f => f.Line == line && Now(f)).OrderBy(f => f["to"], StringComparer.Ordinal))

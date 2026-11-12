@@ -179,7 +179,14 @@ public static class CSharpExtractor
                 invocation.Expression is MemberAccessExpressionSyntax { Expression: BaseExpressionSyntax });
             if (ctx.NodeId(target) is null) PackageCall(ctx, owner, method, invocation);
             var name = $"{ExtractContext.FullName(target.ContainingType)}.{target.Name}";
-            if (Reflection.TryGetValue(name, out var reason)) ctx.AddBlindSpot(owner, invocation, reason);
+            if (Reflection.TryGetValue(name, out var reason))
+            {
+                // Step 6 (fresh check S27): an instance made by reflection and cast to an in-repo type (`… as IConverter`,
+                // `(IConverter)…`) is one of that type's implementations: a fact for the walk, not a blind spot.
+                if (name == "System.Activator.CreateInstance" && CastTo(invocation, file.Model) is { } cast && ctx.NodeId(cast) is { } castId && owner is not null)
+                    ctx.AddFact("call-sites", "creates-one-of", owner, invocation, ("type", castId));
+                else ctx.AddBlindSpot(owner, invocation, reason);
+            }
             return;
         }
         if (file.Model.GetTypeInfo(invocation.Expression).Type is IDynamicTypeSymbol
@@ -226,6 +233,20 @@ public static class CSharpExtractor
         var type = method.ContainingType is { } t ? t.Name : "";
         ctx.AddFact("call-sites", "call-site", owner, at, ("target", ""), ("label", "0"), ("kind", "package"),
             ("package", method.ContainingAssembly?.Name ?? ""), ("method", $"{type}.{method.Name}"));
+    }
+
+    /// <summary>The in-repo type a call's result is cast to right away: <c>x as T</c> or <c>(T)x</c>.</summary>
+    static INamedTypeSymbol? CastTo(InvocationExpressionSyntax call, SemanticModel model)
+    {
+        SyntaxNode at = call;
+        while (at.Parent is ParenthesizedExpressionSyntax) at = at.Parent;
+        var type = at.Parent switch
+        {
+            BinaryExpressionSyntax b when b.IsKind(SyntaxKind.AsExpression) && b.Left == at => model.GetTypeInfo(b.Right).Type,
+            CastExpressionSyntax c => model.GetTypeInfo(c.Type).Type,
+            _ => null,
+        };
+        return type as INamedTypeSymbol is { DeclaringSyntaxReferences.Length: > 0 } named ? named : null;
     }
 
     static string Short(SyntaxNode expr)

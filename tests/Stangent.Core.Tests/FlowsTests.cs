@@ -223,6 +223,16 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void An_instance_made_by_reflection_and_cast_to_an_interface_is_one_of_its_implementations()
+    {
+        // Fresh check S27: `Activator.CreateInstance(type) as IRecorder` is a fact naming IRecorder, not a reflection ❓.
+        var made = Assert.Single(shop.Graph.AllFacts, f => f.Kind == "creates-one-of");
+        Assert.EndsWith("Shop.Core.IRecorder", made["type"], StringComparison.Ordinal);
+        Assert.DoesNotContain(shop.Graph.AllBlindSpots, b => b.File.EndsWith("Recorders.cs", StringComparison.Ordinal));
+        Assert.Contains(new FlowGraph(shop.Graph, shop.Root).Implementers(made["type"]), t => t.EndsWith("Shop.Core.ConsoleRecorder", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Each_guessed_link_carries_its_own_reason()
     {
         var set = FlowBuilder.Build(shop.Graph, shop.Root);
