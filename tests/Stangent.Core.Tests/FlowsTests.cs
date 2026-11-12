@@ -197,12 +197,15 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
         Assert.True((int)report["guessed"]!["total"]!["lines"]! > 0);
         // Counted by code line: a line's occurrences are at least its start flows.
         Assert.All(report["top"]!.AsArray(), l => Assert.True((int)l!["occurrences"]! >= (int)l["startFlows"]!));
+        // D237, D239: a run-time-only line says what it depends on; an app-specific one asks a person.
+        Assert.All(report["top"]!.AsArray().Where(l => (string?)l!["bucket"] == GuessReport.RunTime), l => Assert.StartsWith("depends on", (string)l!["dependsOn"]!, StringComparison.Ordinal));
+        Assert.All(report["top"]!.AsArray().Where(l => (string?)l!["bucket"] == GuessReport.AppSpecific), l => Assert.Contains("?", (string)l!["question"]!, StringComparison.Ordinal));
         var buckets = report["guessed"]!["byBucket"]!.AsObject().Sum(b => (int)b.Value!["lines"]!);
         Assert.Equal((int)report["guessed"]!["total"]!["lines"]!, buckets);
     }
 
     [Theory]
-    [InlineData("one of 3: A.Run, B.Run, C.Run", "one-of-n")]
+    [InlineData("one of 3: A.Run, B.Run, C.Run; which one runs depends on the IRun the call is made on at run time", "one-of-n")]
     [InlineData("a queued command matched to its job by type", "queued-command")]
     [InlineData("no screen in the code matches /Admin/Order/List", "no-screen")]
     [InlineData("2 endpoints fit (DELETE /a and DELETE /b); the URL is a parameter: one of 3 values its callers pass, this one", "endpoints-fit")]

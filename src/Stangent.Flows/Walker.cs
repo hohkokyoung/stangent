@@ -64,7 +64,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             var item = Add(root, new Step
             {
                 What = $"runs {node.Name}", At = new At(node.File ?? "", line, g.Code(node.File, line)), Kind = "call", Point = run, Depth = 0,
-                Guessed = runs.Count > 1, GuessReason = runs.Count > 1 ? $"one of {runs.Count}: {string.Join(", ", runs.Select(g.Name))}" : null,
+                Guessed = runs.Count > 1, GuessReason = runs.Count > 1 ? OneOf(point, runs) : null,
             });
             Into(item, run, 0, [point]);
         }
@@ -397,7 +397,7 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
             {
                 What = kind == "renders" ? $"shows {g.Name(run)}" : callback != "" ? $"when the request answers ({callback}), runs {g.Name(run)}" : $"calls {g.Name(run)}", At = at, Kind = kind, Point = run, Conditions = conds, Depth = depth,
                 Guessed = several || guessedSite || byValue,
-                GuessReason = several ? $"one of {runs.Count}: {string.Join(", ", runs.Select(g.Name))}" : guessedSite ? SiteReason(target)
+                GuessReason = several ? OneOf(target, runs) : guessedSite ? SiteReason(target)
                     : byValue ? ValueReason(tnode.Name) : null,
             });
             Into(item, run, depth, branch);
@@ -429,6 +429,15 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         if (accesses.Count == 0) return true;
         return accesses.All(f => f["via"] == "navigation" || f["via"] == "join"
             || (f["via"] == "repository" && !g.Facts(point, "access-proof").Any(p => p.Line == f.Line && p["entity"] == f["entity"] && p["mode"] == mode)));
+    }
+
+    /// <summary>D239: "one of N", naming what it depends on: the object of that type the call is made on when it runs.</summary>
+    string OneOf(string target, List<string> runs)
+    {
+        var name = g.Name(target);
+        var dot = name.LastIndexOf('.');
+        var type = dot > 0 ? name[..dot] : name;
+        return $"one of {runs.Count}: {string.Join(", ", runs.Select(g.Name))}; which one runs depends on the {type} the call is made on at run time";
     }
 
     const string QueueReason = "a queued command matched to its job by type";
