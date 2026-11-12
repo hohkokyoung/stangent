@@ -178,6 +178,20 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void A_base_virtual_a_subclass_does_not_override_is_one_of_the_candidates()
+    {
+        // Fresh check S2: Stamper.Mark only sets a property (no call or save facts), and QuietStamper doesn't override it.
+        var g = new FlowGraph(shop.Graph, shop.Root);
+        var mark = shop.Graph.AllNodes.Single(n => n.Id.EndsWith("Shop.Core.Stamper.Mark(Shop.Core.Stamp)", StringComparison.Ordinal)).Id;
+        var runs = g.Dispatch(mark);
+        Assert.Contains(mark, runs);
+        Assert.Contains(runs, r => r.EndsWith("LoudStamper.Mark(Shop.Core.Stamp)", StringComparison.Ordinal));
+        // An interface member has no body of its own.
+        var record = shop.Graph.AllNodes.Single(n => n.Id.EndsWith("Shop.Core.IRecorder.Record(System.String)", StringComparison.Ordinal)).Id;
+        Assert.DoesNotContain(record, g.Dispatch(record));
+    }
+
+    [Fact]
     public void Each_guessed_link_carries_its_own_reason()
     {
         var set = FlowBuilder.Build(shop.Graph, shop.Root);

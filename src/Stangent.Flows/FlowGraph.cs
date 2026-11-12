@@ -323,7 +323,23 @@ internal sealed partial class FlowGraph
     /// <summary>Code of its own: anything it calls or does is written in it.</summary>
     public bool HasBody(string id) =>
         Facts(id, "call-site").Any() || Facts(id, "access").Any() || Facts(id, "exit").Any() || Facts(id, "call").Any() || Facts(id, "http-match").Any()
-        || Facts(id, "queue").Any() || Facts(id, "job").Any() || Facts(id, "on-load").Any();
+        || Facts(id, "queue").Any() || Facts(id, "job").Any() || Facts(id, "on-load").Any() || WrittenBody(id);
+
+    /// <summary>
+    /// Step 6 (fresh check S2): a member whose declaration has a body (<c>{</c> or <c>=&gt;</c>), even one that only sets
+    /// properties, runs its own code: a base class's virtual a subclass doesn't override is one of the candidates. An abstract
+    /// or interface member's declaration ends at its <c>;</c>.
+    /// </summary>
+    bool WrittenBody(string id)
+    {
+        // C# only: a TypeScript signature can hold `=>` in a parameter's type.
+        if (!Nodes.TryGetValue(id, out var n) || n.File is null || n.Kind != NodeKind.Method || !n.File.EndsWith(".cs", StringComparison.Ordinal)) return false;
+        var lines = Lines(n.File);
+        if (n.Line < 1 || n.Line > lines.Length) return false;
+        var end = Math.Min(lines.Length, Math.Max(n.EndLine, n.Line));
+        var text = string.Join(" ", lines[(n.Line - 1)..Math.Min(end, n.Line + 40)]);
+        return text.Contains('{', StringComparison.Ordinal) || text.Contains("=>", StringComparison.Ordinal);
+    }
 
     public static string? ConstructedType(string id) => DocIds.ConstructedType(id);
 

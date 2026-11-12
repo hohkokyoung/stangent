@@ -15,3 +15,23 @@ namespace Shop.Core
     {
     }
 }
+
+namespace Shop.Core
+{
+    // Step 6: a base class's virtual that only sets a property, which one subclass overrides and another doesn't.
+    public class Stamp { public string Name { get; set; } = ""; }
+
+    public class Stamper
+    {
+        public virtual void Mark(Stamp stamp) { stamp.Name = "plain"; }
+    }
+
+    public class LoudStamper : Stamper
+    {
+        public override void Mark(Stamp stamp) { stamp.Name = "LOUD"; }
+    }
+
+    public class QuietStamper : Stamper
+    {
+    }
+}
