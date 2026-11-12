@@ -548,7 +548,7 @@ prop is set show "only when …" on the step instead of 🟡; a call through ano
 10. Graphs and flows rebuilt on the three clones; counts per bucket before and after; D177 items 1–5 rescored.
 11. One narrow fresh agent on ~30 sampled lines, ~110–120K tokens, asked first (D236); bar items 2–3 (D237).
 
-### Built (2026-11-12, D241–D249): pieces 1–5 and 7–11; 6 not built (D248)
+### Built (2026-11-12, D241–D250): pieces 1–5 and 7–11; 6 not built (D248)
 
 `stangent flows guesses` on the three clones rebuilt from scratch, by code line, before → after (the "before" is the build of
 `a8dfbe0`'s graph with the piece-1 reason fix; files in the shared notes `step6-build/`):
@@ -617,3 +617,18 @@ Verdicts read against the code before acting (D18); the claims below were checke
 
 **Bar (D237) after the check:** item 1 passes (by code), item 3 passes (the one miss fixed), item 4 passes (D177 items 1–5 on
 all three); item 2 fails on the sample. D236: no second round without the owner's OK.
+
+**Fixed after the check (D250, owner: "Yes, fix the six"), each checked on the rebuilt clones:** S22, nopCommerce's
+`CheckPermissionAttribute` redirect now links certainly to Admin's `SecurityController.AccessDenied` (a redirect written outside
+a controller keeps the request's area); S21, `HttpsRequirementAttribute` "Sends the user back to the page they asked for"
+(a method returning a URL built from `Request.Path` gets a `request-url` fact); S4, S7, `mutate` from the app's own mutation
+hook is "calls useApiMutation.mutate", certain, and the hook's own request is walked under the call (a first try dropped the
+fallback and lost 15 Sonarr clicks; caught by the rebuild, fixed); S13, Sonarr's captcha flows reach `POST …/action/…` through
+`requestAction` → `createAjaxRequest` (`$.ajax({ ...options })` follows the spread to its callers' url and verb), so their actor
+comes from the endpoint's guard; S27, `Activator.CreateInstance(t) as ISelectOptionsConverter` is "one of 3: LanguageFieldConverter, …"; S30, Kavita's
+unlink step reads "only when the stream sends a value (`from(…)`) that passes `filter(confirmed => confirmed)`". Listed,
+waiting: S1/S2's receiver, S15's constant arguments, S25's one-of-literals.
+
+After the fixes, 🟡/❓ lines: Sonarr 629/115, Kavita 127/41, nopCommerce 481/96 (Sonarr's 🟡 rose by 17: requests it now reaches
+carry their own guesses, as S13's `{*}/action/{*}`). `flows guesses` passes on all three; D177 rescored: items 1–5 pass on all
+three (item 2 95.3%, 96.2%, 95.9%; Sonarr's item 1 flags only the 2 steps ruled right in step 4). No second agent (D250).

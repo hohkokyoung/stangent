@@ -146,7 +146,10 @@ member written in a base class that doesn't list the interface dispatches to it;
 (`Content`/`None` with `CopyToOutputDirectory`) are compiled by the Razor SDK's generator, borrowed from a loaded web project
 or the SDK; a URL whose only fixed part is the API root (the leading segments more than half the endpoints share) is ❓; an
 onclick's target is matched first by the verb its script function sends; every point in a test project (one referencing a test
-framework or declaring tests) is test code.
+framework or declaring tests) is test code. After the fresh check (D250): a redirect written outside a controller keeps the request's
+area; a redirect to a URL a method builds from `Request.Path` is the same page; `mutate` from the app's own mutation hook starts
+it, certainly; `$.ajax({ ...options })` follows the spread to its callers' url and verb; `Activator.CreateInstance(t)` cast to a
+type is one of its implementations; a stream condition names the gating operators before the step (`filter(…)`).
 
 ## Known gaps
 
