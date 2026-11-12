@@ -159,6 +159,15 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void An_onclick_handing_its_url_to_a_script_that_posts_is_matched_by_post()
+    {
+        // W2: `postSelected('@Url.Action("Archive")')`, and postSelected sends its URL by $.ajax({ type: 'POST' }).
+        var match = Assert.Single(shop.Graph.AllFacts, f => f.Kind == "http-match" && f.File!.EndsWith("_Popup.cshtml", StringComparison.Ordinal) && f.Line == 10);
+        Assert.Equal("POST", match["verb"]);
+        Assert.Contains("which sends it by POST", match["reason"], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Each_guessed_link_carries_its_own_reason()
     {
         var set = FlowBuilder.Build(shop.Graph, shop.Root);

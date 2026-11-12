@@ -557,6 +557,12 @@ public sealed class RazorViewsDetector : IDetector
         static bool Same(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
         bool Fits(string endpointId, string verb) => verb == "*" || endpoints[endpointId].Name.StartsWith(verb + " ", StringComparison.Ordinal) || endpoints[endpointId].Name.StartsWith("ANY ", StringComparison.Ordinal);
 
+        // W2 (step 6, D238): the verb a script function sends the URL it's given with (`AjaxCart.addproducttocart_details(url)` →
+        // `$.ajax({ type: "POST" })`), by its global name and the argument holding the URL, from the scripts' call-open facts.
+        var scriptVerbs = ctx.Facts("frontend-http").Where(c => c.Kind == "call-open" && c["verbFrom"] == "literal" && c["open"].Contains('#') && c["open"].Contains('@'))
+            .Select(c => (Open: c["open"], Verb: c["verb"], At: $"{c.File}:{c.Line}"))
+            .Select(c => (Name: c.Open[(c.Open.IndexOf('#') + 1)..c.Open.LastIndexOf('@')], Arg: c.Open[(c.Open.LastIndexOf('@') + 1)..].Split('.')[0], c.Verb, c.At))
+            .ToLookup(c => (c.Name, c.Arg));
         foreach (var f in forms)
         {
             if (f["runtime"] == "yes")
@@ -570,11 +576,16 @@ public sealed class RazorViewsDetector : IDetector
             if (verbs.Count == 0)
                 ctx.AddBlindSpot(f.Owner, f.File, f.Line, "button with its own target outside any form the graph can see: its method is unknown", Name);
             // V2: an onclick's page by GET first; its script may send it another way ("*": any verb the action serves).
-            if (f["via"] == "onclick") { if (Reach(f, "GET", false, report: false) == 0) Reach(f, "*", false); }
+            if (f["via"] == "onclick")
+            {
+                var sent = scriptVerbs[(f["script"], f["scriptArg"])].Select(c => c.Verb).Distinct(StringComparer.Ordinal).ToList();
+                if (sent.Count == 1 && Reach(f, sent[0], false, report: false, sentBy: scriptVerbs[(f["script"], f["scriptArg"])].First().At) > 0) continue;
+                if (Reach(f, "GET", false, report: false) == 0) Reach(f, "*", false);
+            }
             else foreach (var verb in verbs) Reach(f, verb, f["method"].Length == 0);
         }
 
-        int Reach(Fact f, string verb, bool inherited, bool report = true)
+        int Reach(Fact f, string verb, bool inherited, bool report = true, string? sentBy = null)
         {
             var hits = new List<string>();
             var label = inherited || f["via"] == "onclick" ? Label.Guessed : Label.Certain;
@@ -613,7 +624,8 @@ public sealed class RazorViewsDetector : IDetector
             // D175: why a form's match is a guess, in the words of the test it fails.
             var reasons = new List<string>();
             if (inherited) reasons.Add("method taken from the forms around its partial");
-            if (f["via"] == "onclick") reasons.Add("opened by a button's onclick script, so the verb is a guess");
+            if (f["via"] == "onclick") reasons.Add(sentBy is not null ? $"opened by a button's onclick script, which sends it by {verb} ({sentBy}); which script files the page loads isn't read"
+                : "opened by a button's onclick script, so the verb is a guess");
             if (f["route"].Length == 0 && f["url"].Length == 0 && (f["controller"].Length == 0 || f["action"].Length == 0))
                 reasons.Add("controller or action taken from the view's own folder and name");
             if (hits.Count > 1) reasons.Add($"{hits.Count} endpoints fit ({string.Join(" and ", hits.Take(3).Select(h => endpoints[h].Name))}{(hits.Count > 3 ? " …" : "")})");

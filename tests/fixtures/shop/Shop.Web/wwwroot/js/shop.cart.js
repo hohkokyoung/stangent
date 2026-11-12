@@ -6,3 +6,8 @@ function checkEmail() {
 $(function () {
     $('#check-email').click(checkEmail);
 });
+
+// W2: a helper an onclick hands a URL to, which posts it.
+function postSelected(url) {
+    $.ajax({ url: url, type: 'POST' });
+}
