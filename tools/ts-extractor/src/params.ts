@@ -25,6 +25,12 @@ export function valuesOf(ctx: Context, expr: ts.Expression | undefined): Valued[
   return r ? dedupe(r) : null;
 }
 
+/** Fresh check S13: that property of what each caller passes for a parameter (`{ ...options }` spread into a request). */
+export function propertyValues(ctx: Context, param: ts.ParameterDeclaration, prop: string): Valued[] | null {
+  const r = fromCallers(ctx, param, prop, 0);
+  return r ? dedupe(r) : null;
+}
+
 /** Two values joined, or null when they took opposite sides of one condition. */
 export function join(a: Valued, b: Valued): Valued | null {
   for (const [k, v] of Object.entries(b.when)) if (k in a.when && a.when[k] !== v) return null;
@@ -190,7 +196,9 @@ function fromCallers(ctx: Context, param: ts.ParameterDeclaration, prop: string 
   for (const c of calls) {
     let arg: ts.Expression | undefined = c.arguments[index] ?? param.initializer;
     if (arg && prop !== null) {
-      const a = skip(arg);
+      let a = skip(arg);
+      // Fresh check S13: a local holding an object literal (`const options = { url: … }; send(options)`).
+      if (ts.isIdentifier(a)) { const init = boundTo(a, ctx.checker); if (init && ts.isObjectLiteralExpression(skip(init))) a = skip(init); }
       arg = ts.isObjectLiteralExpression(a) ? property(a, prop) : undefined;
     }
     const owner = ctx.ownerId(c);

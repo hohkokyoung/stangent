@@ -538,6 +538,33 @@ test("a plain script's object methods are points; a URL only a view passes is op
   assert.deepEqual(callbacks, ["9 success Cart.done", "10 error Cart.failed"]);
 });
 
+test("an app's ajax wrapper spreading its options into $.ajax gives the url and verb its callers pass (step 6, S13)", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "stangent-js-"));
+  const file = path.join(root, "ajax.js");
+  fs.writeFileSync(file, [
+    "const apiRoot = window.App.apiRoot;",
+    "function addRootUrl(ajaxOptions) {",
+    "  ajaxOptions.url = apiRoot + ajaxOptions.url;",
+    "}",
+    "function createAjaxRequest(originalAjaxOptions) {",
+    "  const ajaxOptions = { ...originalAjaxOptions };",
+    "  addRootUrl(ajaxOptions);",
+    "  return $.ajax({ xhr: () => null, ...ajaxOptions });",
+    "}",
+    "function requestAction(payload) {",
+    "  const ajaxOptions = { url: `/${payload.provider}/action/${payload.action}`, method: 'POST' };",
+    "  return createAjaxRequest(ajaxOptions);",
+    "}",
+    "function getCaptchaCookie() {",
+    "  return requestAction({ provider: 'indexer', action: 'getCaptchaCookie' });",
+    "}",
+  ].join("\n"));
+  const lines = extract({ root, tsconfig: root, projectId: "p", settings: {}, files: [file] }).lines;
+  const calls = lines.filter((l) => l.t === "fact" && l.kind === "call").map((l) => l.t === "fact" ? `${l.data.verb} ${l.data.url} ${l.data.from}` : "");
+  assert.deepEqual(calls, [`POST ${BASE}/indexer/action/getCaptchaCookie parameter`]);
+  assert.equal(lines.filter((l) => l.t === "blind").length, 0);
+});
+
 test("a returned UrlTree and a navigation the function leaves after are exits; other navigation is a step (D192)", () => {
   const root = project({
     "src/router.ts": "export declare class Router { parseUrl(u: string): object; createUrlTree(c: string[]): object; navigateByUrl(u: string): void; navigate(c: unknown[], o?: object): void; }\nexport declare function of<T>(v: T): T;\nexport declare function map<T>(f: (x: T) => unknown): unknown;",

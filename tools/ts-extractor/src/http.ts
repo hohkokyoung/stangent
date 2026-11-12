@@ -1,7 +1,8 @@
 import ts from "typescript";
 import type { Context } from "./extract.ts";
 import { BASE, RUNTIME, isBaseName, stringValue } from "./values.ts";
-import { join, paramValues, returns, valuesOf } from "./params.ts";
+import { join, paramValues, propertyValues, returns, valuesOf } from "./params.ts";
+import type { Valued } from "./params.ts";
 import { deferredOf, wrapperSendsLater } from "./deferred.ts";
 
 /** D201: whether the call being read runs later (inside a kept callback or a listener), for the facts it writes. */
@@ -212,6 +213,16 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
       const verb = verbArg ? stringValue(verbArg, checker)?.toUpperCase() ?? "ANY" : "GET";
       if (settings && ts.isObjectLiteralExpression(settings)) callbacks(ctx, owner, file, settings);
       const url = stringValue(urlArg, checker);
+      // Fresh check S13: `$.ajax({ ...options })`, options a copy of the app's wrapper's parameter: the url and verb its callers pass.
+      if (!urlArg && settings && ts.isObjectLiteralExpression(settings)) {
+        const param = spreadParameter(checker, settings);
+        if (param) {
+          const urls = propertyValues(ctx, param, "url");
+          const verbs = propertyValues(ctx, param, "method") ?? propertyValues(ctx, param, "type");
+          const rooted = rewritesUrl(param) ? (u: string) => (u.startsWith("/") ? BASE + u : u) : (u: string) => u;
+          if (urls && fromParameters(ctx, owner, file, line, undefined, undefined, "GET", "library", rooted, "jquery", null, null, urls, verbs)) return;
+        }
+      }
       if (blind(url) && fromParameters(ctx, owner, file, line, urlArg, verbArg ?? undefined, verb === "ANY" ? "GET" : verb, verbArg ? "runtime" : "library", (u) => u, "jquery", null, null)) return;
       emit(ctx, owner, file, line, verb, url, "jquery", null, null, verb === "ANY" ? "runtime" : verbArg ? "literal" : "library");
       return;
@@ -247,10 +258,11 @@ function blind(url: string | null): boolean {
  * paired with the URLs written under the same side of a `?:`. False when no caller's value is known, so the call stays ❓.
  */
 function fromParameters(ctx: Context, owner: string, file: string, line: number, urlExpr: ts.Expression | undefined, verbExpr: ts.Expression | undefined,
-                        defaultVerb: string, defaultFrom: string, rooted: (u: string) => string, via: string, responseType: string | null, bodyType: string | null): boolean {
-  const urls = paramValues(ctx, urlExpr);
+                        defaultVerb: string, defaultFrom: string, rooted: (u: string) => string, via: string, responseType: string | null, bodyType: string | null,
+                        givenUrls: Valued[] | null = null, givenVerbs: Valued[] | null = null): boolean {
+  const urls = givenUrls ?? paramValues(ctx, urlExpr);
   if (!urls) return false;
-  const verbs = verbExpr ? valuesOf(ctx, verbExpr) : null;
+  const verbs = givenVerbs ?? (verbExpr ? valuesOf(ctx, verbExpr) : null);
   const combos: { verb: string; verbFrom: string; url: string; origin: string; path: string[] }[] = [];
   const opens = new Map<string, string>();
   for (const u of urls) {
@@ -427,6 +439,37 @@ function shape(ctx: Context, n: ts.InterfaceDeclaration | ts.ClassDeclaration | 
   }
   if (props.length > 0)
     ctx.out.fact(DETECTOR, "shape", id, ctx.rel(n.getSourceFile().fileName), ctx.line(n), { props: JSON.stringify(props) });
+}
+
+/** Fresh check S13: the parameter an object literal spreads, directly (`{ ...options }`) or through a local copied from it
+ * (`const copy = { ...options }; $.ajax({ ...copy })`). */
+function spreadParameter(checker: ts.TypeChecker, o: ts.ObjectLiteralExpression, depth = 0): ts.ParameterDeclaration | null {
+  if (depth > 3) return null;
+  for (const p of o.properties) {
+    if (!ts.isSpreadAssignment(p) || !ts.isIdentifier(p.expression)) continue;
+    const d = checker.getSymbolAtLocation(p.expression)?.valueDeclaration;
+    if (d && ts.isParameter(d)) return d;
+    if (d && ts.isVariableDeclaration(d) && d.initializer && ts.isObjectLiteralExpression(d.initializer)) {
+      const inner = spreadParameter(checker, d.initializer, depth + 1);
+      if (inner) return inner;
+    }
+  }
+  return null;
+}
+
+/** Whether the parameter's function file rewrites a request's url with a prefix (`options.url = apiRoot + options.url`): a
+ * relative value its callers pass is then read under the app's API root. */
+function rewritesUrl(param: ts.ParameterDeclaration): boolean {
+  let found = false;
+  const visit = (n: ts.Node) => {
+    if (found) return;
+    if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isPropertyAccessExpression(n.left) && n.left.name.text === "url"
+        && ts.isBinaryExpression(n.right) && n.right.operatorToken.kind === ts.SyntaxKind.PlusToken
+        && ts.isPropertyAccessExpression(n.right.right) && n.right.right.name.text === "url") found = true;
+    ts.forEachChild(n, visit);
+  };
+  visit(param.getSourceFile());
+  return found;
 }
 
 function objProp(o: ts.ObjectLiteralExpression, name: string): ts.Expression | null {
