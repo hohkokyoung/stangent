@@ -179,6 +179,14 @@ public sealed class ConditionsDetector : IDetector
                 if (node is AssignmentExpressionSyntax set) FilterResult(ctx, file, set);
                 if (node is IfStatementSyntax check && Rejects(check.Statement, file.Model) is { } message && ctx.OwnerId(check, file.Model) is { } owner)
                     ctx.AddFact(Name, "rejects", owner, check, ("condition", check.Condition.ToString()), ("message", message));
+                // Step 6 (fresh check S21): a method returning a URL built from the current request's own path.
+                if (node is MethodDeclarationSyntax m && m.Body is { } || node is MethodDeclarationSyntax { ExpressionBody: not null })
+                {
+                    var decl = (MethodDeclarationSyntax)node;
+                    var returns = decl.ExpressionBody is { } eb ? [eb.Expression] : decl.DescendantNodes().OfType<ReturnStatementSyntax>().Select(r => r.Expression).OfType<ExpressionSyntax>().ToList();
+                    if (returns.Any(r => ReadsLocal(r, decl, file.Model, 1)) && ctx.NodeId(file.Model.GetDeclaredSymbol(decl)) is { } id)
+                        ctx.AddFact(Name, "request-url", id, decl);
+                }
             }
     }
 
@@ -199,7 +207,7 @@ public sealed class ConditionsDetector : IDetector
         if (value is not (InvocationExpressionSyntax or BaseObjectCreationExpressionSyntax) || file.Model.GetSymbolInfo(value).Symbol is not IMethodSymbol method) return;
         if (Exit(method, value, file.Model) is not var (kind, status)) return;
         ctx.AddFact(Name, "exit", owner, set, [("kind", kind), ("result", value is InvocationExpressionSyntax ? method.Name : method.ContainingType.Name),
-            ("status", status), ("text", set.ToString()), ("exception", ""), ("conditions", Json(Around(set, ctx))), .. Target(kind, method, value, file.Model)]);
+            ("status", status), ("text", set.ToString()), ("exception", ""), ("conditions", Json(Around(set, ctx))), .. Target(kind, method, value, file.Model, ctx)]);
     }
 
     /// <summary>
@@ -207,7 +215,7 @@ public sealed class ConditionsDetector : IDetector
     /// route name), <c>controller</c> and <c>action</c> (<c>RedirectToAction</c>, the controller defaulting to the one it's in), or
     /// <c>url</c> (<c>Redirect</c>, <c>LocalRedirect</c>). A value made at runtime is left out; not a framework redirect: nothing.
     /// </summary>
-    static (string, string)[] Target(string kind, IMethodSymbol method, ExpressionSyntax call, SemanticModel model)
+    static (string, string)[] Target(string kind, IMethodSymbol method, ExpressionSyntax call, SemanticModel model, ExtractContext ctx)
     {
         if (kind != "Redirect" || method.ContainingType?.ContainingNamespace?.ToDisplayString().StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal) != true) return [];
         var args = call is InvocationExpressionSyntax i ? i.ArgumentList.Arguments : ((BaseObjectCreationExpressionSyntax)call).ArgumentList?.Arguments ?? default;
@@ -242,8 +250,56 @@ public sealed class ConditionsDetector : IDetector
             if (area is not null) target.Add(("area", area));
         }
         if (Arg("url") is { } url) target.Add(("url", url));
+        else if (args.Select((a, n) => (a, p: a.NameColon is { } nc ? method.Parameters.FirstOrDefault(x => x.Name == nc.Name.Identifier.Text) : n < method.Parameters.Length ? method.Parameters[n] : null))
+                     .FirstOrDefault(x => x.p?.Name == "url").a is { } urlArg)
+        {
+            // Step 6 (fresh check S21): a URL built from the request's own path is the same page (an http ↔ https switch); one
+            // a method returns is joined to that method's `request-url` fact at the walk.
+            if (ReadsRequestUrl(urlArg.Expression, model, 2)) target.Add(("samePage", "1"));
+            else if ((urlArg.Expression is AwaitExpressionSyntax aw ? aw.Expression : urlArg.Expression) is InvocationExpressionSyntax inv
+                     && model.GetSymbolInfo(inv).Symbol is IMethodSymbol from && ctx.NodeId(ExtractContext.Normalize(from)) is { } fromId)
+                target.Add(("urlFrom", fromId));
+        }
         return [.. target];
     }
+
+    static readonly HashSet<string> RequestUrlParts = ["Path", "PathBase", "QueryString"];
+    static readonly HashSet<string> RequestUrlCalls = ["GetDisplayUrl", "GetEncodedUrl", "GetEncodedPathAndQuery", "GetUri"];
+
+    /// <summary>Whether an expression is built from the current request's own URL: <c>Request.Path</c>, <c>GetDisplayUrl()</c>…,
+    /// directly or in the returned value of an in-repo method it calls (two levels).</summary>
+    static bool ReadsRequestUrl(ExpressionSyntax e, SemanticModel model, int depth)
+    {
+        foreach (var n in e.DescendantNodesAndSelf())
+        {
+            if (n is MemberAccessExpressionSyntax m && RequestUrlParts.Contains(m.Name.Identifier.ValueText)
+                && model.GetTypeInfo(m.Expression).Type?.Name == "HttpRequest") return true;
+            if (n is InvocationExpressionSyntax inv && model.GetSymbolInfo(inv).Symbol is IMethodSymbol called)
+            {
+                if (RequestUrlCalls.Contains(called.Name) && called.ContainingNamespace?.ToDisplayString().StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal) == true) return true;
+                if (depth >= 2) continue;
+                var target = called.IsAbstract || called.ContainingType?.TypeKind == TypeKind.Interface ? null : called;
+                foreach (var r in (target ?? called).DeclaringSyntaxReferences)
+                    if (r.GetSyntax() is BaseMethodDeclarationSyntax body && SameTree(model, body) is { } bodyModel
+                        && body.DescendantNodes().OfType<ReturnStatementSyntax>().Any(ret => ret.Expression is not null && ReadsLocal(ret.Expression, body, bodyModel, depth + 1)))
+                        return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>A returned value, and what its locals were assigned in the same method.</summary>
+    static bool ReadsLocal(ExpressionSyntax ret, BaseMethodDeclarationSyntax body, SemanticModel model, int depth)
+    {
+        if (ReadsRequestUrl(ret, model, depth)) return true;
+        if (model.GetSymbolInfo(ret).Symbol is ILocalSymbol local)
+            return body.DescendantNodes().OfType<AssignmentExpressionSyntax>().Where(a => model.GetSymbolInfo(a.Left).Symbol is ILocalSymbol l && SymbolEqualityComparer.Default.Equals(l, local)).Any(a => ReadsRequestUrl(a.Right, model, depth))
+                || body.DescendantNodes().OfType<VariableDeclaratorSyntax>().Any(v => v.Initializer is { } init && SymbolEqualityComparer.Default.Equals(model.GetDeclaredSymbol(v), local) && ReadsRequestUrl(init.Value, model, depth));
+        return false;
+    }
+
+    static SemanticModel? SameTree(SemanticModel model, SyntaxNode node) =>
+        model.Compilation.ContainsSyntaxTree(node.SyntaxTree) ? model.Compilation.GetSemanticModel(node.SyntaxTree) : null;
 
     /// <summary>A controller's MVC area: its (or a base class's) <c>[Area("…")]</c>, else "".</summary>
     static string AreaOf(INamedTypeSymbol? type)
@@ -276,7 +332,7 @@ public sealed class ConditionsDetector : IDetector
         var ns = method.ContainingNamespace?.ToDisplayString() ?? "";
         if (Returned(call) && Exit(method, call, file.Model) is var (kind, status))
             ctx.AddFact(Name, "exit", owner, call, [("kind", kind), ("result", call is InvocationExpressionSyntax ? method.Name : method.ContainingType.Name),
-                ("status", status), ("text", call.ToString()), ("exception", ""), ("conditions", Json(Around(call, ctx))), .. Target(kind, method, call, file.Model)]);
+                ("status", status), ("text", call.ToString()), ("exception", ""), ("conditions", Json(Around(call, ctx))), .. Target(kind, method, call, file.Model, ctx)]);
         if (target is null && (ns == "System" || ns.StartsWith("System.", StringComparison.Ordinal)) && !ns.StartsWith("System.Net.Http", StringComparison.Ordinal)) return;
         var conditions = Around(call, ctx);
         if (conditions.Count == 0) return;

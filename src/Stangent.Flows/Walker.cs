@@ -193,6 +193,12 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 // D204: a redirect leaves for another screen: a link to that screen's opening flow.
                 if (exit["kind"] == "Redirect")
                 {
+                    // Step 6 (fresh check S21): a redirect to the request's own URL (http ↔ https) is the same page: certain.
+                    if (exit["samePage"] == "1" || (exit["urlFrom"] != "" && g.Dispatch(exit["urlFrom"]).Any(t => g.Facts(t, "request-url").Any())))
+                    {
+                        parent.Links.Add(new Link("screen", "the same page", null, at, $"Sends the user back to the page they asked for, at its own address ({at})", null, false));
+                        continue;
+                    }
                     var (to, screens) = point.StartsWith("ts|", StringComparison.Ordinal) ? (exit["result"], g.PagesAt(exit["result"], at.File, exit["root"] == "1")) : g.RedirectTarget(exit, point);
                     ScreenLinks(parent, at, to, screens);
                 }

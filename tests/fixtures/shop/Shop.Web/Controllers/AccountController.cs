@@ -130,3 +130,23 @@ public class AccountController : Controller
     [HttpGet("account/themed")]
     public IActionResult Themed(string template) => View(template);
 }
+
+/// <summary>Step 6 (fresh check S21): a filter redirecting to the request's own URL, built by a helper behind an interface.</summary>
+public interface IPageUrls
+{
+    string ThisPage(bool secure);
+}
+
+public sealed class PageUrls(IHttpContextAccessor accessor) : IPageUrls
+{
+    public string ThisPage(bool secure)
+    {
+        var url = $"{(secure ? "https" : "http")}://shop.example{accessor.HttpContext!.Request.Path}";
+        return url;
+    }
+}
+
+public sealed class SecureSwitchAttribute(IPageUrls urls) : Attribute, IAuthorizationFilter
+{
+    public void OnAuthorization(AuthorizationFilterContext context) => context.Result = new RedirectResult(urls.ThisPage(true));
+}

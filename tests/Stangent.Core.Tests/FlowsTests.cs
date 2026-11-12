@@ -202,6 +202,15 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void A_redirect_to_the_request_own_url_is_the_same_page()
+    {
+        // Fresh check S21: RedirectResult(urls.ThisPage(true)), whose implementation returns Request.Path on another scheme.
+        var exit = Assert.Single(shop.Graph.AllFacts, f => f.Kind == "exit" && f["text"].Contains("urls.ThisPage(true)", StringComparison.Ordinal));
+        Assert.EndsWith("IPageUrls.ThisPage(System.Boolean)", exit["urlFrom"], StringComparison.Ordinal);
+        Assert.Contains(shop.Graph.AllFacts, f => f.Kind == "request-url" && f.Owner.EndsWith("PageUrls.ThisPage(System.Boolean)", StringComparison.Ordinal) && !f.Owner.Contains(".IPageUrls.", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Each_guessed_link_carries_its_own_reason()
     {
         var set = FlowBuilder.Build(shop.Graph, shop.Root);
