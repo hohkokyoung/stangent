@@ -22,8 +22,9 @@ public sealed class ExtractContext(
     public string ProjectDir { get; } = projectDir;
     public Compilation Compilation { get; } = compilation;
 
-    /// <summary>Test frameworks' own assemblies: a project referencing one is a test project (step 6, D238).</summary>
-    static readonly HashSet<string> TestFrameworks = new(["xunit.core", "xunit.v3.core", "xunit.assert", "nunit.framework", "Microsoft.VisualStudio.TestPlatform.TestFramework",
+    /// <summary>Test frameworks' own runners' assemblies: a project referencing one is a test project (step 6, D238). Not an
+    /// assertion library alone: app code may use one (Kavita.Common references xunit.assert), and it flows to every project above.</summary>
+    static readonly HashSet<string> TestFrameworks = new(["xunit.core", "xunit.v3.core", "nunit.framework", "Microsoft.VisualStudio.TestPlatform.TestFramework",
         "MSTest.TestFramework", "TUnit.Core"], StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
