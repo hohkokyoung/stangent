@@ -192,6 +192,16 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void A_redirect_written_outside_a_controller_keeps_the_request_area()
+    {
+        // Fresh check S22: a filter's RedirectToActionResult names no area, so the request's own applies: any area fits; a
+        // controller's own redirect keeps its controller's area ("" here).
+        var filter = Assert.Single(shop.Graph.AllFacts, f => f.Kind == "exit" && f["text"].Contains("RedirectToActionResult(\"AccessDenied\"", StringComparison.Ordinal));
+        Assert.False(filter.Data.ContainsKey("area"));
+        Assert.Contains(shop.Graph.AllFacts, f => f.Kind == "exit" && f["text"] == "RedirectToAction(nameof(Welcome))" && f["area"] == "");
+    }
+
+    [Fact]
     public void Each_guessed_link_carries_its_own_reason()
     {
         var set = FlowBuilder.Build(shop.Graph, shop.Root);

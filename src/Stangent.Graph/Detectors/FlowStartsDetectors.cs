@@ -235,7 +235,9 @@ public sealed class ConditionsDetector : IDetector
             var values = args.Select((a, n) => (a, p: a.NameColon is { } nc ? method.Parameters.FirstOrDefault(x => x.Name == nc.Name.Identifier.Text) : n < method.Parameters.Length ? method.Parameters[n] : null))
                 .FirstOrDefault(x => x.p?.Name == "routeValues").a?.Expression as AnonymousObjectCreationExpressionSyntax;
             var given = values?.Initializers.FirstOrDefault(m => (m.NameEquals?.Name.Identifier.Text ?? (m.Expression as IdentifierNameSyntax)?.Identifier.Text) == "area");
-            string? area = given is null ? AreaOf(model.GetEnclosingSymbol(call.SpanStart)?.ContainingType)
+            // Step 6 (fresh check S22): written outside a controller (a filter), no area is the request's own: any area fits.
+            var enclosing = model.GetEnclosingSymbol(call.SpanStart)?.ContainingType;
+            string? area = given is null ? (IsController(enclosing) ? AreaOf(enclosing) : null)
                 : model.GetConstantValue(given.Expression) is { HasValue: true, Value: string a } ? a : null;
             if (area is not null) target.Add(("area", area));
         }
@@ -250,6 +252,14 @@ public sealed class ConditionsDetector : IDetector
             if (t.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name is "AreaAttribute" or "Area") is { } attr
                 && attr.ConstructorArguments is [{ Value: string area }]) return area;
         return "";
+    }
+
+    /// <summary>An MVC controller: named …Controller, or deriving from ASP.NET Core's ControllerBase.</summary>
+    static bool IsController(INamedTypeSymbol? type)
+    {
+        for (var t = type; t is not null; t = t.BaseType)
+            if (t.Name.EndsWith("Controller", StringComparison.Ordinal) || t.Name == "ControllerBase") return true;
+        return false;
     }
 
     static bool Derives(INamedTypeSymbol? type, string ns)
