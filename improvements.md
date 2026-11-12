@@ -14,6 +14,8 @@ Sections keep their numbers in both files, so "§6" means the same section in ei
   *.NET, Angular and React are in. Playwright is used for bug proof (D86), and existing specs now link to screens in the graph as evidence of strength `read` (1.2, D115). Razor is a blind spot (D65). Svelte is out until a repo needs it (D31). No SQL seed data. Recommend: the rest when a repo needs them.*
 - Runs are reproducible, and that was measured. A fresh session with no access to the first run found 9 of 10 key findings again. Runs are compared by the code lines they cite and their wording, not by id.  
   *"Repeatable" measures cache reuse only (D57, D79). Recommend: do.*
+- Layer 4 pages say which data a screen shows, not only its labels: a layer 2 fact for a value bound into markup (React `{series.year}`, `<HeartRating rating={ratings.value}>`, Angular `{{ }}`, Razor `@Model.X`) as "shows the field `Year`", carried by flows as a shows item.  
+  *Parked by D252: pages use only the texts flows already hold. New layer 2 and 3 work on three stacks plus a fresh check. Recommend: decide after pilot readers say whether pages miss what a screen shows.*
 
 ## 2. Keeping that knowledge current
 
