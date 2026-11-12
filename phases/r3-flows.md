@@ -543,3 +543,36 @@ prop is set show "only when …" on the step instead of 🟡; a call through ano
 9. Run-time-only and app-specific lines name what they depend on; app-specific questions written for a person (D237, D239).
 10. Graphs and flows rebuilt on the three clones; counts per bucket before and after; D177 items 1–5 rescored.
 11. One narrow fresh agent on ~30 sampled lines, ~110–120K tokens, asked first (D236); bar items 2–3 (D237).
+
+### Built (2026-11-12, D241–D246): pieces 1–5 and 7–10; 6 and 11 wait on the owner
+
+`stangent flows guesses` on the three clones rebuilt from scratch, by code line, before → after (the "before" is the build of
+`a8dfbe0`'s graph with the piece-1 reason fix; files in the shared notes `step6-build/`):
+
+| Bucket | Sonarr 🟡 | Kavita 🟡 | nopCommerce 🟡 | Sonarr ❓ | Kavita ❓ | nopCommerce ❓ |
+|---|---|---|---|---|---|---|
+| missing general rule | 696 → 298 | 340 → 107 | 2,427 → 160 | 1 → 1 | 1 → 1 | 102 → 13 |
+| app-specific | 10 → 10 | 1 → 8 | 90 → 90 | 0 → 0 | 3 → 3 | 2 → 2 |
+| unknowable | 0 | 0 | 0 | 5 → 5 | 1 → 1 | 8 → 8 |
+| only known at run time | 316 → 304 | 18 → 12 | 269 → 230 | 113 → 113 | 34 → 36 | 74 → 74 |
+| **All** | **1,022 → 612** | **359 → 127** | **2,786 → 480** | **119 → 119** | **39 → 41** | **186 → 97** |
+
+What moved: repository saves proved through the database library's own call (nopCommerce 2,270 → 0, Sonarr 323 → 13, Kavita
+92 → 0, D242); runs-later code now a condition (Sonarr 131, Kavita 139 lines, D240); plugin views compiled (nopCommerce ❓ 89 →
+0, D243); X2 (Kavita 2 lines from 🟡 to ❓), W2 (nopCommerce's onclicks matched by the verb their script sends), test projects
+as tests (D245: Kavita's 7 shared flows into tests gone; nopCommerce's `Nop.Tests` handlers no longer starts); the dispatch fix
+under D242 added real candidates (nopCommerce one-of-N lines 247 → 207 after tests left). Kavita's app-specific 1 → 8 are actor
+guesses on flows whose calls X2 made ❓.
+
+**Bar (D237):** item 1 by code: every line on a flow sorted, 0 unsorted, on all three. Item 2 by code: every reason on a kind
+of step its cause can have, 0 problems (the piece-1 bug would fail it); every run-time line names a dependency, every
+app-specific line a question. Item 4, D177's items 1–5 rescored: Kavita and nopCommerce pass all five (item 2 96.0%, 95.6%,
+unchanged); Sonarr passes 1, 3, 4, 5 (item 1's 2 flagged steps are the checker limit ruled right in step 4) and item 2 is
+94.9% (261 of 275, was 95.3%): the one item lost is a key `hub` end (`AddSeriesService.cs:146`) on code that had 10+ callers
+only with test helpers counted (D245); R12 asked. Items 2–3 by the fresh agent: piece 11, waits for the owner's OK.
+
+**Waiting, listed (D237's "fixed or listed with why it waits"):** L3 (question open: its largest line can't be narrowed); X4
+(the value's type isn't carried by the TypeScript extractor's URL builders, 2–3 lines); handlers and queued commands found by
+type (the bus's registration is a framework scan); navigation Add and the Identity store (a later SaveChanges, a package's own
+store); a function returned by another (D210); a library-kept callback; the MVC view-folder rule; the 13 nopCommerce ❓ (11
+outside calls whose request a client builds, 2 views not found).
