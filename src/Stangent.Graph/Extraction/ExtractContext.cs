@@ -21,6 +21,26 @@ public sealed class ExtractContext(
     public string ProjectId { get; } = projectId;
     public string ProjectDir { get; } = projectDir;
     public Compilation Compilation { get; } = compilation;
+
+    /// <summary>Test frameworks' own assemblies: a project referencing one is a test project (step 6, D238).</summary>
+    static readonly HashSet<string> TestFrameworks = new(["xunit.core", "xunit.v3.core", "xunit.assert", "nunit.framework", "Microsoft.VisualStudio.TestPlatform.TestFramework",
+        "MSTest.TestFramework", "TUnit.Core"], StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Step 6 (D238): every point in a test project is test code (its fakes and helpers too, not only its [Fact] methods), so a
+    /// flow never walks into it as app code nor starts at its handlers.
+    /// </summary>
+    public bool IsTestProject { get; } = compilation.ReferencedAssemblyNames.Any(a => TestFrameworks.Contains(a.Name))
+        || files.Any(f => f.Tree.GetRoot().DescendantNodes().OfType<AttributeSyntax>().Any(a => TestAttributes.Contains(Simple(a.Name))));
+
+    /// <summary>The attributes that mark a test method (xUnit, NUnit, MSTest).</summary>
+    public static readonly HashSet<string> TestAttributes = ["Fact", "Theory", "Test", "TestCase", "TestCaseSource", "TestMethod", "DataTestMethod"];
+
+    static string Simple(NameSyntax name)
+    {
+        var text = name switch { QualifiedNameSyntax q => q.Right.Identifier.ValueText, SimpleNameSyntax n => n.Identifier.ValueText, _ => name.ToString() };
+        return text.EndsWith("Attribute", StringComparison.Ordinal) ? text[..^"Attribute".Length] : text;
+    }
     public string AssemblyName => Compilation.AssemblyName ?? "";
     public IReadOnlyList<SourceFile> Files { get; } = files;
     /// <summary>N1: the Razor compiler's C# for each view, with the view's repo path as <see cref="SourceFile.RelativePath"/>. Detectors other than <c>razor-views</c> never see it.</summary>

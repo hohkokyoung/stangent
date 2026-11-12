@@ -80,7 +80,7 @@ public static class CSharpExtractor
             IPropertySymbol or IEventSymbol => NodeKind.Property,
             _ => NodeKind.Field,
         };
-        var isTest = symbol is IMethodSymbol method && method.GetAttributes().Any(a =>
+        var isTest = ctx.IsTestProject || symbol is IMethodSymbol method && method.GetAttributes().Any(a =>
             a.AttributeClass is { } c && (TestAttributes.Contains(c.Name) || TestAttributes.Contains(c.Name.Replace("Attribute", ""))));
         declared[id] = new Node(id, kind, DisplayName(symbol), ctx.ProjectId, file.RelativePath,
             span.StartLinePosition.Line + 1, span.EndLinePosition.Line + 1, isTest);

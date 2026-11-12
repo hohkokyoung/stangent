@@ -14,3 +14,9 @@ public class OrderTests
         if (order.Customer != "ann") throw new InvalidOperationException();
     }
 }
+
+// Step 6 (D238): a fake in a test project is test code too, though it carries no test attribute.
+public sealed class FakeRecorder : IRecorder
+{
+    public void Record(string line) { }
+}

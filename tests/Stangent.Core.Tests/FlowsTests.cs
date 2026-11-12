@@ -168,6 +168,16 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
     }
 
     [Fact]
+    public void Every_point_in_a_test_project_is_test_code()
+    {
+        // D238: FakeRecorder carries no test attribute, but sits in a project that declares tests: a flow never walks into it.
+        var fake = Assert.Single(shop.Graph.AllNodes, n => n.Id.EndsWith("Shop.Tests.FakeRecorder.Record(System.String)", StringComparison.Ordinal));
+        Assert.True(fake.IsTest);
+        Assert.DoesNotContain(shop.Graph.AllNodes, n => n.Id.Contains("Shop.Core.", StringComparison.Ordinal) && n.IsTest);
+        Assert.DoesNotContain(new FlowGraph(shop.Graph, shop.Root).Dispatch(shop.Graph.AllNodes.Single(n => n.Id.EndsWith("Shop.Core.IRecorder.Record(System.String)", StringComparison.Ordinal)).Id), t => t.Contains("FakeRecorder", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Each_guessed_link_carries_its_own_reason()
     {
         var set = FlowBuilder.Build(shop.Graph, shop.Root);
