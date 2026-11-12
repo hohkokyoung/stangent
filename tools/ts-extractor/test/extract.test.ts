@@ -764,6 +764,7 @@ test("a function stored as an object's property runs later; a top-level object's
       "declare class HttpClient { get(u: string): Observable<string>; }",
       "declare function switchMap(f: (v: unknown) => unknown): unknown;",
       "declare function skip(n: number): unknown;",
+      "declare function filter(f: (v: number) => boolean): unknown;",
       "declare const lib: { ajax(o: { success: () => void }): void };",
     ].join("\n"),
     "src/a.ts": [
@@ -780,6 +781,7 @@ test("a function stored as an object's property runs later; a top-level object's
       "    this.load().pipe(switchMap(() => act())).subscribe();",
       "    this.changes.pipe(skip(1), switchMap(() => act())).subscribe();",
       "    this.changes.subscribe({ next: () => act() });",
+      "    this.changes.pipe(filter((n) => n > 0), switchMap(() => act())).subscribe();",
       "    return card;",
       "  }",
       "}",
@@ -788,7 +790,8 @@ test("a function stored as an object's property runs later; a top-level object's
   });
   const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
   const sites = lines.filter((l) => l.t === "fact" && l.kind === "call-site" && l.data.target.endsWith("#act")).map((l) => l.t === "fact" ? `${l.line} ${l.data.deferred ?? ""}` : "").sort();
-  assert.deepEqual(sites, ["10 ", "11 ", "12 stream:this.changes", "13 stream:this.changes", "17 ", "7 kept:readFunc", "8 ", "9 kept:cb"]);
+  // Fresh check S30: a gating operator before the callback is part of when it runs.
+  assert.deepEqual(sites, ["10 ", "11 ", "12 stream:this.changes", "13 stream:this.changes", "14 stream:this.changes when filter((n) => n > 0)", "18 ", "7 kept:readFunc", "8 ", "9 kept:cb"]);
 });
 
 test("a call through a value another function returned says so; one whose returns name the function is that function (D210)", () => {

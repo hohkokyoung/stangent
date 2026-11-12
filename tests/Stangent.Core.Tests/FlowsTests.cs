@@ -268,6 +268,7 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
 
     [Theory]
     [InlineData("deferred", "stream:ref.closed", "only when the stream sends a value (`ref.closed`)")]
+    [InlineData("deferred", "stream:from(…) when filter(confirmed => confirmed)", "only when the stream sends a value (`from(…)`) that passes `filter(confirmed => confirmed)`")]
     [InlineData("deferred", "timer:setTimeout", "after `setTimeout`'s delay")]
     [InlineData("deferred", "listener:connection.on", "only when the event comes (`connection.on`)")]
     [InlineData("deferred", "mutation:useMutation", "only when the mutation is started (`mutate(…)` is called)")]

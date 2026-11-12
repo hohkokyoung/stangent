@@ -483,7 +483,8 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
     internal static Condition? When(Fact f, At at) => f["deferred"] switch
     {
         var d when d.StartsWith("listener:", StringComparison.Ordinal) => new Condition("listener", d[9..], at.File, at.Line),
-        var d when d.StartsWith("stream:", StringComparison.Ordinal) => new Condition("stream", d[7..], at.File, at.Line),
+        var d when d.StartsWith("stream:", StringComparison.Ordinal) => d.LastIndexOf(" when ", StringComparison.Ordinal) is var w and > 7
+            ? new Condition("stream", d[7..w], at.File, at.Line, d[(w + 6)..]) : new Condition("stream", d[7..], at.File, at.Line),
         var d when d.StartsWith("timer:", StringComparison.Ordinal) => new Condition("timer", d[6..], at.File, at.Line),
         var d when d.StartsWith("mutation:", StringComparison.Ordinal) => new Condition("mutation", "mutate(…)", at.File, at.Line, d[9..]),
         _ => Drawn(f["closedBy"], at),

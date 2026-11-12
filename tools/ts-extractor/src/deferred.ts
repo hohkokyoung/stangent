@@ -96,7 +96,25 @@ function streamOf(ctx: Context, call: ts.CallExpression): string {
   if (isRequest(ctx, source, 0)) return "";
   // The source by its name: a call as `toObservable(…)`, anything else as written, on one line.
   const named = ts.isCallExpression(source) ? `${source.expression.getText()}(…)` : source.getText();
-  return `stream:${named.replace(/\s+/g, " ").slice(0, 80)}`;
+  // Fresh check S30: operators before the callback that let only some values through (`filter(confirmed => confirmed)`).
+  const gates = gatesBefore(streamCall, call).map((g) => g.getText().replace(/\s+/g, " ").slice(0, 60));
+  return `stream:${named.replace(/\s+/g, " ").slice(0, 80)}${gates.length > 0 ? ` when ${gates.join(", ")}` : ""}`;
+}
+
+const GATES = new Set(["filter", "takeWhile", "skipWhile", "first", "find", "single", "takeUntil"]);
+
+/** The gating operators a value passes before reaching the callback: earlier arguments of its own `.pipe(…)`, and every
+ * `.pipe(…)` on the chain the stream is built from. */
+function gatesBefore(streamCall: ts.CallExpression, call: ts.CallExpression): ts.CallExpression[] {
+  const out: ts.CallExpression[] = [];
+  const isGate = (a: ts.Expression): a is ts.CallExpression => ts.isCallExpression(a) && ts.isIdentifier(a.expression) && GATES.has(a.expression.text)
+    && (a.expression.text !== "first" || a.arguments.length > 0);
+  const chain: ts.CallExpression[] = [];
+  for (let e: ts.Expression = (streamCall.expression as ts.PropertyAccessExpression).expression;
+       ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === "pipe"; e = e.expression.expression) chain.unshift(e);
+  for (const pipe of chain) out.push(...pipe.arguments.filter(isGate));
+  if (streamCall !== call) out.push(...streamCall.arguments.slice(0, streamCall.arguments.indexOf(call)).filter(isGate));
+  return out;
 }
 
 /** The start of a stream's chain: past `.pipe(…)` calls. */

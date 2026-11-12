@@ -97,7 +97,7 @@ public static class FlowFiles
     {
         "mutation" => $"only when the mutation is started (`{c.Code}` is called)",
         "timer" => $"after `{c.Code}`'s delay",
-        "stream" => $"only when the stream sends a value (`{c.Code}`)",
+        "stream" => $"only when the stream sends a value (`{c.Code}`){(c.Case is { } gates ? $" that passes `{gates}`" : "")}",
         "listener" => $"only when the event comes (`{c.Code}`)",
         "drawn" => $"only while `{c.Code}` ({c.Case})",
         _ => null,
