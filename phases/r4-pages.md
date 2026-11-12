@@ -84,7 +84,8 @@ owner); how a repo Stangent was never tuned on fares (R.2).
 ## Build order
 
 1. **Before the pilot, the owner:** confirms Kavita's and nopCommerce's `areas.yaml` (32 and 9 open ties,
-   answered by group as D231 did for Sonarr). No building waits on this; only step 5 does.
+   answered by group as D231 did for Sonarr). **Done 2026-11-13 (D267)**; on the confirmed files the pilot areas
+   measure as above (Checkout 19 start flows, not 20).
 2. **The summary, by code, no AI:** `stangent pages summary <area>` cuts each start flow into D251's items, with
    D252's shown texts and D253's section layout; byte-for-byte rebuilds; tests on fixtures in the three stacks.
    Free.
