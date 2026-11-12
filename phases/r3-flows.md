@@ -548,7 +548,7 @@ prop is set show "only when …" on the step instead of 🟡; a call through ano
 10. Graphs and flows rebuilt on the three clones; counts per bucket before and after; D177 items 1–5 rescored.
 11. One narrow fresh agent on ~30 sampled lines, ~110–120K tokens, asked first (D236); bar items 2–3 (D237).
 
-### Built (2026-11-12, D241–D250): pieces 1–5 and 7–11; 6 not built (D248)
+### Built (2026-11-12, D241–D250): pieces 1–5 and 7–11; 6 not built (D248); closed 2026-11-12 (owner confirmed D241–D246)
 
 `stangent flows guesses` on the three clones rebuilt from scratch, by code line, before → after (the "before" is the build of
 `a8dfbe0`'s graph with the piece-1 reason fix; files in the shared notes `step6-build/`):
