@@ -353,8 +353,10 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
         if (g.Callers(target) >= s.HubCallers && kind == "call")
         {
             // D172's order puts a table before a hub: shared code whose own body reads or saves a table ends there, named.
-            var tables = g.Dispatch(target).SelectMany(t => g.Out(t, EdgeKind.Writes).Select(e => (Table: g.Name(e.Target), Write: true, Guess: e.Label != Label.Certain))
-                .Concat(g.Out(t, EdgeKind.Reads).Select(e => (Table: g.Name(e.Target), Write: false, Guess: e.Label != Label.Certain)))).Distinct().OrderBy(x => x.Table, StringComparer.Ordinal).ToList();
+            // Step 6 (D236, D237 item 2): guessed when the read or save itself is (a repository call not proved, a navigation
+            // Add), as on a direct step; a table whose name comes from a mapping isn't "a repository method's name".
+            var tables = g.Dispatch(target).SelectMany(t => g.Out(t, EdgeKind.Writes).Select(e => (Table: g.Name(e.Target), Write: true, Guess: AccessGuessed(t, g.Name(e.Target), "write")))
+                .Concat(g.Out(t, EdgeKind.Reads).Select(e => (Table: g.Name(e.Target), Write: false, Guess: AccessGuessed(t, g.Name(e.Target), "read"))))).Distinct().OrderBy(x => x.Table, StringComparer.Ordinal).ToList();
             if (tables.Count > 0)
             {
                 var names = string.Join(", ", tables.Select(x => x.Table).Distinct(StringComparer.Ordinal));
@@ -417,6 +419,16 @@ internal sealed class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 screens.Count == 1 ? $"Sends the user to {g.ScreenName(screen)}, whose opening is its own flow ({at})"
                     : $"Sends the user to {to}, which {screens.Count} screens fit; {g.ScreenName(screen)} is one ({at})", null, screens.Count > 1,
                     screens.Count > 1 ? $"{to} fits {screens.Count} screens; each is a link" : null));
+    }
+
+    /// <summary>Whether a point's read or save of a table is a guess: every access to it there is a repository call no proof
+    /// followed, or a navigation collection's Add; a table line with no access fact behind it (a join table) is a guess too.</summary>
+    bool AccessGuessed(string point, string table, string mode)
+    {
+        var accesses = g.Facts(point, "access").Where(f => f["mode"] == mode && g.TableOf.TryGetValue(f["entity"], out var t) && t == table).ToList();
+        if (accesses.Count == 0) return true;
+        return accesses.All(f => f["via"] == "navigation" || f["via"] == "join"
+            || (f["via"] == "repository" && !g.Facts(point, "access-proof").Any(p => p.Line == f.Line && p["entity"] == f["entity"] && p["mode"] == mode)));
     }
 
     const string QueueReason = "a queued command matched to its job by type";
