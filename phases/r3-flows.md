@@ -548,7 +548,7 @@ prop is set show "only when …" on the step instead of 🟡; a call through ano
 10. Graphs and flows rebuilt on the three clones; counts per bucket before and after; D177 items 1–5 rescored.
 11. One narrow fresh agent on ~30 sampled lines, ~110–120K tokens, asked first (D236); bar items 2–3 (D237).
 
-### Built (2026-11-12, D241–D247): pieces 1–5 and 7–10; 6 and 11 wait on the owner
+### Built (2026-11-12, D241–D248): pieces 1–5 and 7–10; 6 not built (D248); 11 waits on the owner
 
 `stangent flows guesses` on the three clones rebuilt from scratch, by code line, before → after (the "before" is the build of
 `a8dfbe0`'s graph with the piece-1 reason fix; files in the shared notes `step6-build/`):
@@ -576,7 +576,7 @@ unchanged); Sonarr passes 1, 3, 4, 5 (item 1's 2 flagged steps are the checker l
 only with test helpers counted (D245). After ruling R12 (D247): item 2 Sonarr 95.3%, Kavita 96.2%, nopCommerce 95.9%; D177's
 items 1–5 pass on all three. Items 2–3 by the fresh agent: piece 11, waits for the owner's OK.
 
-**Waiting, listed (D237's "fixed or listed with why it waits"):** L3 (question open: its largest line can't be narrowed); X4
+**Waiting, listed (D237's "fixed or listed with why it waits"):** L3 (D248: its largest line, `Settings.Validate()`, can't be narrowed by type arguments; it would narrow only `ProviderFactory.Test()` and generic repository events); X4
 (the value's type isn't carried by the TypeScript extractor's URL builders, 2–3 lines); handlers and queued commands found by
 type (the bus's registration is a framework scan); navigation Add and the Identity store (a later SaveChanges, a package's own
 store); a function returned by another (D210); a library-kept callback; the MVC view-folder rule; the 13 nopCommerce ❓ (11

@@ -153,7 +153,7 @@ framework or declaring tests) is test code.
 - Code inside a function handed to the repo's own code that keeps it isn't walked where it's handed over; a listener's
   (`connection.on`), a timer's (`setTimeout`, `setInterval`, D212) or a mutation hook's (`useMutation`, and a wrapper sending from one, D214) carries a condition (D240); a call to a handler interface's method is one 🟡 `message` step, not a walk into every handler (D201).
 - Dispatch isn't narrowed by a generic controller's type arguments (Sonarr save-indexer: 32 🟡 `Test` branches); step 6 found
-  the largest such line, `Settings.Validate()` (one of 76), can't be: `Settings` is typed by a plain interface.
+  the largest such line, `Settings.Validate()` (one of 76), can't be: `Settings` is typed by a plain interface (not built, D248).
 - X4: a runtime value beside a fixed route of the same shape (`/Queue/{*}` against `/Queue/bulk`) is still "2 endpoints fit":
   the value's type isn't recorded by the TypeScript extractor's URL builders.
 - ASP.NET Identity's managers' async calls are steps ending `database` "the Identity user store", 🟡 (D200).
