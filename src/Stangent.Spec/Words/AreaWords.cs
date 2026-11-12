@@ -225,7 +225,8 @@ public static class AreaWords
         if (cant.Count > 0)
         {
             sb.Append("## Can't tell from the code\n\n");
-            foreach (var (sec, i) in cant) sb.Append(PageSummary.ItemLine(i, false).TrimEnd('\n').Split('\n')[0]).Append($" (in {Esc(sec.Title)})\n");
+            // One line per place and section: the same ❓ reached along two paths is one line here.
+            foreach (var line in cant.Select(x => PageSummary.ItemLine(x.Item, false).TrimEnd('\n').Split('\n')[0] + $" (in {Esc(x.Sec.Title)})").Distinct(O)) sb.Append(line).Append('\n');
             sb.Append('\n');
         }
         return sb.ToString();

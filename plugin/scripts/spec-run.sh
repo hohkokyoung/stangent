@@ -161,7 +161,7 @@ run_steps() {
     prompt="$(jq -r '.result.next.prompt' <<<"$step")"
     # The step's model and effort (D161): none pinned is the run's stop, never a default. Every step is checked before
     # the first call, so a config pinning only some steps stops before anything is paid, not halfway through a page.
-    if { [ -z "$AI_ALL_CHECKED" ] && ! ai_settings_all; } || ! ai_settings "$agent"; then
+    if { [ -z "${AI_ALL_CHECKED:-}" ] && ! ai_settings_all; } || ! ai_settings "$agent"; then
       printf 'error\t%s\t%s\n' "$page" "$AI_SETTINGS_ERROR"
       rm -f "$usage"
       exit 255

@@ -158,6 +158,20 @@ Sections over 40K are single flows the split can't cut. Rough cost: ~1.5M tokens
 for bar item 2's three runs, over D256's $10 cap. What's left: long path conditions on saves and shown texts inside one flow,
 and items repeated in each part of a split section. The owner raised the pilot's cap to $25 (D266): all 7 areas, three runs.
 
+## Pilot run 1, smoke test (2026-11-13, paid)
+
+Sonarr's Series › Add New, 3 sections on Sonnet 5.5 medium: all 3 checked (one after its retry), none fell back, **$0.21**
+(screen section 25K characters of items: 15.7K input tokens, 3.3K out, $0.096; the handler section $0.058 with its retry;
+"In short" $0.060). The page reads as the worked example planned: who, searching, Add, "It refuses if", what happens on its
+own, every 🟡 hedged. Found and fixed (free): the driver's "In short" step stopped on an unset variable; every AI call's
+telemetry event was dropped because it carried two attributes telemetry-event v2 doesn't allow (layer 1's owed real-run
+check, D161), so `cost estimate` had learned nothing; "Can't tell from the code" listed one ❓ twice. Also: Claude Code's sign-in
+had expired (the owner signed in again), and the driver needs `--model`/`--effort` since the clones pin only the writer.
+
+**Cost, re-estimated from real calls:** about $0.03 a call plus $0.0026 per 1,000 characters of items, so a full run of the 7
+areas (124 sections, 5.2M characters) is about **$17–20**, and bar item 2's three runs about $55–60: well over D266's $25. Claude
+Code also warned the plan's seven-day window was 68% used. Waiting on the owner (`questions.md`).
+
 ## Known risks
 
 - **The vocabulary gap is still layer 5's.** The document says "the user picks a root folder", the items say
