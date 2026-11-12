@@ -313,7 +313,7 @@ public static class AreaWords
         var sb = new StringBuilder($"- **{id}** {i.Mark} {i.Text}");
         if (i.Reason is not null && i.Label != "certain") sb.Append($" ({(i.Label == "guessed" ? "guessed" : "not known")}: {i.Reason})");
         if (i.MustCite && !optional) sb.Append(" — **must cite**");
-        sb.Append($"\n  - at `{i.At}`{(i.Code != "" ? $": `{i.Code.Replace("`", "'")}`" : "")}\n");
+        sb.Append($"\n  - at `{i.At}`{(i.Code != "" ? $": `{i.Code.Replace("`", "'")}`" : "")}{(i.AlsoAt.Count > 0 ? $" (and {i.AlsoAt.Count} other place{(i.AlsoAt.Count == 1 ? "" : "s")} like it)" : "")}\n");
         for (var n = 0; n < i.Conditions.Count; n++) sb.Append($"  - condition {n + 1}: {i.Conditions[n].Text}\n");
         return sb.ToString();
     }

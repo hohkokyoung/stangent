@@ -8,7 +8,7 @@ provides: { pages: 1 }
 
 # Rebuild layer 4: pages in plain words (D156 P1, D251–D258)
 
-Grilled with the owner on 2026-11-12, one question at a time. Steps 2–4 built 2026-11-12 (D259–D263, below); the pilot not run.
+Grilled with the owner on 2026-11-12, one question at a time. Steps 2–4 built 2026-11-12 (D259–D263), sections shrunk (D264, D265), below; the pilot not run.
 
 ## Bottom line
 
@@ -132,6 +132,26 @@ SetValidator(seriesExistsValidator)`. It is not "about a dozen": the click plus 
 section (17 check groups, 19 exits, 43 shown texts, 11 reads), and D255 has every exit and check cited with every condition
 marked. **This breaks D256's estimate** (~2–3K tokens in a call): the largest sections are 150–350K tokens. Early exits are
 most of it (Series: 918 of 2,088 items). Waiting on the owner before step 5 (`questions.md`).
+
+## Shrunk (2026-11-12, D264, D265)
+
+Owner: "Yes, shrink first". Exits keep their own conditions only and merge by what they throw; a section over 40,000
+characters splits by flow (D264); reads and shown texts merge by table or wording, keeping shared conditions (D265, the
+assistant's call). Re-measured (same runs as above):
+
+| Area | Sections | Items | Must cite | Chars | Biggest section | Sections over 40K |
+|---|---|---|---|---|---|---|
+| Sonarr Series | 31 | 2,026 | 1,591 | 853K | 100K (235 items) | 9 |
+| Sonarr Series › Add New | 3 | 99 | 49 | 29K | 25K (87 items) | 0 |
+| Sonarr Settings › Indexers | 8 | 1,543 | 1,475 | 329K | 114K (427 items) | 5 |
+| Kavita Reading Lists | 8 | 539 | 404 | 308K | 104K (142 items) | 3 |
+| Kavita registration | 5 | 211 | 140 | 119K | 34K (45 items) | 0 |
+| nopCommerce Nop.Web › Checkout | 21 | 1,497 | 860 | 1,629K | 388K (286 items) | 15 |
+| nopCommerce Admin › Catalog | 49 | 2,658 | 1,552 | 1,949K | 169K (148 items) | 11 |
+
+Sections over 40K are single flows the split can't cut. Rough cost: ~1.5M tokens in, ~0.35M out, about $7 a run and ~$20
+for bar item 2's three runs, over D256's $10 cap. What's left: long path conditions on saves and shown texts inside one flow,
+and items repeated in each part of a split section. Waiting on the owner (`questions.md`).
 
 ## Known risks
 

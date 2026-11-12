@@ -101,7 +101,13 @@ public sealed class PageSummaryTests : IDisposable
         FlowFile("click-reading-list-remove", "click", "Remove", "ts|web/src/lists/list.component.ts#ListComponent.remove", "web/src/lists/list.component.ts:30",
             new JsonObject { ["who"] = "user who passes DisallowRole(roles = [\"Read Only\"])", ["why"] = "attribute", ["label"] = "certain", ["at"] = "src/Api/ListController.cs:12", ["code"] = "[DisallowRole]" },
             [Step(1, null, "call", "calls ListService.Remove", "src/Api/ListController.cs:14", "_lists.Remove(id)", Cond("if", "src/Api/ListController.cs:13", "id > 0")),
-             Step(2, null, "call", "calls ListService.Prune", "src/Api/ListController.cs:15", "_lists.Prune()", Cond("if", "src/Api/ListController.cs:13", "id > 0"), Cond("else", "src/Api/ListController.cs:14", "keep"))],
+             Step(2, null, "call", "calls ListService.Prune", "src/Api/ListController.cs:15", "_lists.Prune()", Cond("if", "src/Api/ListController.cs:13", "id > 0"), Cond("else", "src/Api/ListController.cs:14", "keep")),
+             Step(3, 1, "database", "reads ReadingList", "src/Api/ListService.cs:7", "_db.Get(id)"),
+             Step(4, 2, "database", "reads ReadingList", "src/Api/ListService.cs:20", "_db.Get(id)")],
+            exits: [
+                new JsonObject { ["kind"] = "throw", ["what"] = "throws KavitaException", ["point"] = "p", ["step"] = 1, ["at"] = "src/Api/Guard.cs:5", ["code"] = "throw new KavitaException();", ["conditions"] = new JsonArray(Cond("if", "src/Api/Guard.cs:4", "list == null")) },
+                new JsonObject { ["kind"] = "throw", ["what"] = "throws KavitaException", ["point"] = "p", ["step"] = 2, ["at"] = "src/Api/Guard.cs:9", ["code"] = "throw new KavitaException();", ["conditions"] = new JsonArray(Cond("if", "src/Api/Guard.cs:8", "list == null")) },
+            ],
             links: [
                 new JsonObject { ["kind"] = "continues", ["to"] = "Repo.Delete", ["flow"] = "shared-repo-delete", ["step"] = 1, ["label"] = "certain", ["sentence"] = "Stops here", ["at"] = "src/Api/ListController.cs:14", ["code"] = "_lists.Remove(id)" },
                 new JsonObject { ["kind"] = "continues", ["to"] = "Repo.Delete", ["flow"] = "shared-repo-delete", ["step"] = 2, ["label"] = "certain", ["sentence"] = "Stops here", ["at"] = "src/Api/ListController.cs:15", ["code"] = "_lists.Prune()" },
@@ -133,10 +139,36 @@ public sealed class PageSummaryTests : IDisposable
         return (a, placement);
     }
 
-    AreaSummary Summary()
+    AreaSummary Summary(int limit = PageSummary.SectionLimit)
     {
         var (a, placement) = Build();
-        return PageSummary.Build(root, a, placement, Area, "shop");
+        return PageSummary.Build(root, a, placement, Area, "shop", limit);
+    }
+
+    [Fact]
+    public void Exits_merge_by_what_they_throw_and_their_own_condition_and_reads_by_table()
+    {
+        var sec = Summary().Find("clicks")!;
+        // The Angular click: the same exit written twice, and the same table read twice under different paths.
+        var exit = sec.Items.Single(i => i.Kind == "exit");
+        Assert.Equal("src/Api/Guard.cs:5", exit.At);
+        Assert.Equal(["src/Api/Guard.cs:9"], exit.AlsoAt);
+        Assert.Contains("and 1 other place", PageSummary.ItemLine(exit, true));
+        var read = sec.Items.Single(i => i.Kind == "read");
+        Assert.Equal(["id > 0"], read.Conditions.Select(c => c.Code));   // D265: only what both places share
+        Assert.Single(read.AlsoAt);
+    }
+
+    [Fact]
+    public void A_section_over_the_limit_splits_by_flow_in_order()
+    {
+        var s = Summary(limit: 1_000);
+        var parts = s.Sections.Where(x => x.Id.StartsWith("screen-items-part-", StringComparison.Ordinal)).ToList();
+        Assert.Equal(["screen-items-part-1", "screen-items-part-2"], parts.Select(x => x.Id));
+        Assert.Equal("/items (1 of 2)", parts[0].Title);
+        Assert.Equal([["screen-items"], ["click-items-save"]], parts.Select(x => x.Flows));
+        Assert.Equal("W1", parts[1].Items[0].Id);   // each part numbers its own items
+        Assert.Null(s.Find("screen-items"));
     }
 
     static SummaryItem Item(SummarySection s, string kind, string text) => s.Items.First(i => i.Kind == kind && i.Text.Contains(text, StringComparison.Ordinal));
@@ -185,7 +217,7 @@ public sealed class PageSummaryTests : IDisposable
         Assert.Equal("unknown", outside.Label);
         Assert.DoesNotContain(sec.Items, i => i.Kind == "unknown");   // the ❓ sits on the call it's about
         var exit = Item(sec, "exit", "BadRequestException");
-        Assert.Equal(["mutation", "if"], exit.Conditions.Select(c => c.Kind));
+        Assert.Equal(["if"], exit.Conditions.Select(c => c.Kind));   // D264: its own condition, not the path
         Assert.DoesNotContain(sec.Items, i => i.Text.Contains("Ensure.That", StringComparison.Ordinal));   // package code: dropped
         Assert.False(Item(sec, "shows", "Save the item").MustCite);
     }
@@ -213,7 +245,7 @@ public sealed class PageSummaryTests : IDisposable
         var save = sec.Items.Single(i => i.Kind == "save");
         Assert.Equal("saves ReadingList (in shared code Repo.Delete)", save.Text);
         Assert.Equal(["id > 0"], save.Conditions.Select(c => c.Code));
-        Assert.DoesNotContain(sec.Items, i => i.Kind == "read");   // reads in shared code aren't followed
+        Assert.DoesNotContain(sec.Items, i => i.Kind == "read" && i.Text.Contains("shared", StringComparison.Ordinal));   // reads in shared code aren't followed
     }
 
     [Fact]

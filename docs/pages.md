@@ -4,7 +4,7 @@ Each area's `specs/areas/<area>/page.md` (D230, D233) gets a few plain paragraph
 a BA, a developer new to the app. **Code decides what the page says; an AI only words it.** Code cuts every start flow of
 the area into numbered items; the writer turns them into sentences, each naming the items it rests on; code rejects any
 sentence that cites nothing, states a 🟡/❓ as certain, drops a condition, or leaves a must-cite item out. The linking judge
-(layer 5) will read the same items, never the AI's words. Decisions: D251–D263; plan, bar and numbers: `phases/r4-pages.md`.
+(layer 5) will read the same items, never the AI's words. Decisions: D251–D265; plan, bar and numbers: `phases/r4-pages.md`.
 
 ## Commands
 
@@ -33,6 +33,9 @@ Output follows `docs/cli-conventions.md`. No `areas.yaml` is `not_found` (exit 3
 several screens sits with the first), headed by the screen's address; "Clicks on no screen of this area"; under "On its own",
 one per message the area's handlers answer ("When SeriesAddedEvent is sent") and one for its jobs; then "Can't tell from the
 code", code's list of every ❓ (no AI). Section ids are stable: the screen's flow id, `clicks`, `on-<message>`, `jobs`, `in-short`.
+A section whose item lines pass 40,000 characters (`PageSummary.SectionLimit`, about 10K tokens) splits by flow, in order,
+into parts as full as the limit allows (one flow over it stays alone): `<id>-part-<n>`, "<title> (n of k)" (D264). Each part
+has its own items, so items its flows share are repeated in each.
 
 **Items, per start flow** (D251, D260), each with an id, its kind, a fixed sentence, `file:line` and the code there, its label
 and **every condition on the way to it** (its parents' too, outermost first, read as the flow's Markdown reads them):
@@ -44,18 +47,19 @@ and **every condition on the way to it** (its parents' too, outermost first, rea
 | `A` | save, read, message, outside-call, queue, screen, later | database, message, outside-call and queue steps; screen and runs-later links; a message names its handlers. Saves inside shared code the flow continues into are kept, once per save, with only the conditions on every path to it; reads there aren't followed |
 | `S` | shows | a translation call with a quoted key (`translate`, `t`, `T`, `instant`, `GetResource`, `GetResourceAsync`, `Localize`), turned into English through the translation files D228 reads (D252); never a component's name |
 | `U` | unknown | a ❓ with no item of its own (one on a step marks that step's item instead) |
-| `X` | exit | each early exit: "stops: throws …" |
+| `X` | exit | early exits: "stops: throws …", with only the exit's own conditions; one item per what it throws and its own conditions' code, the other places counted (`alsoAt`, D264) |
 | `K` | check | checks grouped by the field they check: "checks SeriesResource.TvdbId: GreaterThan(0), SetValidator(…)" |
 
 Calls that end nowhere (package code, hubs, caches) give no item. An item's label is its own step's: 🟡 when that step is
 guessed (or a message's handlers were found by type), ❓ when a ❓ sits on it. **Must cite:** who, saves, messages, outside
 calls, exits, check groups, and any 🟡/❓. Identical items in a section are one item listing their flows; a screen's copy of a
-click's item that holds all the click's conditions is one item too (D260).
+click's item that holds all the click's conditions is one item too (D260). Reads and shown texts are one item per table or
+wording in a section, keeping only the conditions every place shares, with the other places counted (D265).
 
 **JSON** (`pages summary`, contract `pages` v1): `contract`, `version`, `commit` (the flow index's), `area`, `folder`,
 `sections` (each `id`, `title`, `kind` (in-short, screen, clicks, message, jobs), `group` ("" or "On its own"), `flows`, `items`
 (each `id`, `kind`, `text`, `flows`, `at`, `code`, `label` (certain, guessed, unknown), `reason` for 🟡/❓, `conditions` (each
-`at`, `code`, `kind`, `case`, `text`), `mustCite`)), `cantTell` (section and item of every ❓), `missing` (start flows with no
+`at`, `code`, `kind`, `case`, `text`), `mustCite`, `alsoAt` when merged)), `cantTell` (section and item of every ❓), `missing` (start flows with no
 file, listed, D111), `counts`. Not committed: code rebuilds it (D259).
 
 ## The writer and the checks (D254, D255, D262)
@@ -92,7 +96,8 @@ layer 6), and go in layer 7's cuts on the owner's OK.
 
 ## Known limits
 
-- Big areas give big sections: on the pilot, Sonarr's Series is 1,858K characters of items and nopCommerce's Checkout 2,093K,
-  mostly early exits with long path conditions (`questions.md`, 2026-11-12). Not yet fixed: it needs a change to D251/D255.
-- A condition true on only some paths to a save in shared code isn't carried (D260).
+- Big areas still give big pages after D264/D265: on the 7 pilot areas 125 sections, ~5.2M characters of items, the biggest
+  single-flow section 388K (Checkout's one-page form), roughly $7 a run (`questions.md`, 2026-11-12).
+- A condition true on only some paths to a save in shared code, or to some reads of a table, isn't carried (D260, D265); an
+  exit's path conditions are left to the flow's file (D264).
 - What a screen shows is only the texts its flows hold (D252): a value shown with no label isn't on the page.

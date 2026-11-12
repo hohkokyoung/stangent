@@ -25,12 +25,23 @@ public sealed class SummaryItem
     public required string Code { get; init; }
     public required string Label { get; init; }
     public string? Reason { get; init; }
-    public required IReadOnlyList<SummaryCondition> Conditions { get; init; }
+    public required IReadOnlyList<SummaryCondition> Conditions { get; set; }
+    /// <summary>The same item with no flows or other places yet, for one section to fill.</summary>
+    public SummaryItem Copy() => new() { Id = Id, Kind = Kind, Text = Text, At = At, Code = Code, Label = Label, Reason = Reason, Conditions = Conditions };
     public bool MustCite => Kind is "who" or "save" or "message" or "outside-call" or "exit" or "check" || Label != "certain";
     public string Mark => Label switch { "guessed" => "🟡", "unknown" => "❓", _ => "✅" };
 
     /// <summary>Two items with one key are one item (their flows joined). Who is one item per wording, wherever the rule is written.</summary>
-    internal string Key => Kind == "who" ? $"who\u0001{Text}\u0001{Label}" : $"{Place}\u0001{string.Join("\u0002", Conditions.Select(c => c.Key))}";
+    /// <summary>Exits (D264) are one item per what they throw and their own conditions' code, wherever they are; the other places go in <see cref="AlsoAt"/>.</summary>
+    internal string Key => Kind switch
+    {
+        "who" => $"who\u0001{Text}\u0001{Label}",
+        "exit" => $"exit\u0001{Text}\u0001{Label}\u0001{string.Join("\u0002", Conditions.Select(c => $"{c.Code}|{c.Kind}|{c.Case}"))}",
+        "read" or "shows" => $"{Kind}\u0001{Text}\u0001{Label}",
+        _ => $"{Place}\u0001{string.Join("\u0002", Conditions.Select(c => c.Key))}",
+    };
+    /// <summary>Other places the same exit is written (D264), in the order found.</summary>
+    public List<string> AlsoAt { get; } = [];
     /// <summary>What and where, without the conditions.</summary>
     internal string Place => $"{Kind}\u0001{Text}\u0001{At}\u0001{Label}";
 
@@ -48,6 +59,7 @@ public sealed class SummaryItem
             })]),
         };
         if (Reason is not null) o["reason"] = Reason;
+        if (AlsoAt.Count > 0) o["alsoAt"] = new JsonArray([.. AlsoAt.Select(a => (JsonNode)a)]);
         return o;
     }
 }
@@ -120,13 +132,18 @@ public static class PageSummary
     public const string InShort = "in-short";
     public const string OnItsOwn = "On its own";
     static readonly StringComparer O = StringComparer.Ordinal;
+    /// <summary>D264: a section whose item lines are longer than this is split by flow (about 10K tokens of items per writer call).</summary>
+    public const int SectionLimit = 40_000;
+
+    /// <summary>The item lines the writer reads of a section, before the rules.</summary>
+    public static int Chars(SummarySection s) => s.Items.Sum(i => ItemLine(i, true).Length);
 
     /// <summary>Calls that turn a key into the words shown (D252): a stack's translation function, by its own name, with a quoted key first.</summary>
     static readonly HashSet<string> TranslationCalls = new(["translate", "t", "T", "instant", "GetResource", "GetResourceAsync", "Localize"], O);
     static readonly Regex Key = new(@"\b(?<fn>[A-Za-z_]\w*)\s*\(\s*(?<q>['""])(?<key>[^'""\r\n]+)\k<q>", RegexOptions.CultureInvariant);
 
     /// <summary>The summary of one area, placed by <paramref name="placement"/> (from <c>areas.yaml</c>, or a proposal for a look before it's confirmed).</summary>
-    public static AreaSummary Build(string root, Areas a, Placement placement, string area, string folder)
+    public static AreaSummary Build(string root, Areas a, Placement placement, string area, string folder, int sectionLimit = SectionLimit)
     {
         var reader = new FlowReader(root, a);
         var summary = new AreaSummary { Area = area, Folder = folder, Commit = a.Commit };
@@ -179,28 +196,59 @@ public static class PageSummary
         var jobs = readable.Where(f => f.Kind == "job").ToList();
         if (jobs.Count > 0) sections.Add((new SummarySection { Id = "jobs", Title = "Jobs", Kind = "jobs", Group = OnItsOwn }, jobs));
 
-        foreach (var (sec, flows) in sections)
+        var cuts = new Dictionary<string, List<SummaryItem>>(O);
+        List<SummaryItem> CutOf(IndexFlow f) => cuts.TryGetValue(f.Id, out var c) ? c : cuts[f.Id] = Cut(reader, reader.Load(f.Id)!, translations);
+        SummarySection Make(SummarySection like, string id, string title, List<IndexFlow> flows)
         {
+            var sec = new SummarySection { Id = id, Title = title, Kind = like.Kind, Group = like.Group };
             var items = new List<SummaryItem>();
             var seen = new Dictionary<string, SummaryItem>(O);
             void Add(SummaryItem item, string flow)
             {
-                if (seen.TryGetValue(item.Key, out var had)) { if (!had.Flows.Contains(flow)) had.Flows.Add(flow); return; }
-                item.Flows.Add(flow);
-                seen[item.Key] = item;
-                items.Add(item);
+                if (seen.TryGetValue(item.Key, out var had))
+                {
+                    if (!had.Flows.Contains(flow)) had.Flows.Add(flow);
+                    if (item.At != had.At && !had.AlsoAt.Contains(item.At)) had.AlsoAt.Add(item.At);
+                    // D265: a read or shown text found again keeps only the conditions every place shares.
+                    if (had.Kind is "read" or "shows")
+                    {
+                        var keep = item.Conditions.Select(c => c.Key).ToHashSet(O);
+                        had.Conditions = [.. had.Conditions.Where(c => keep.Contains(c.Key))];
+                    }
+                    return;
+                }
+                var copy = item.Copy();
+                copy.Flows.Add(flow);
+                seen[copy.Key] = copy;
+                items.Add(copy);
             }
             if (!shared)
                 foreach (var f in flows) Add(whoOf[f.Id].Item(), f.Id);
             foreach (var f in flows)
             {
                 sec.Flows.Add(f.Id);
-                foreach (var item in Cut(reader, reader.Load(f.Id)!, translations)) Add(item, f.Id);
+                foreach (var item in CutOf(f)) Add(item, f.Id);
             }
             if (sec.Kind == "screen") FoldClicks(items, flows[0].Id);
             Number(items);
             sec.Items.AddRange(items);
-            summary.Sections.Add(sec);
+            return sec;
+        }
+        foreach (var (like, flows) in sections)
+        {
+            var whole = Make(like, like.Id, like.Title, flows);
+            if (Chars(whole) <= sectionLimit || flows.Count == 1) { summary.Sections.Add(whole); continue; }
+            // D264: too big for one call: split by flow, in order, each part as full as the limit allows (a flow over it alone).
+            var parts = new List<List<IndexFlow>>();
+            var current = new List<IndexFlow>();
+            foreach (var f in flows)
+            {
+                if (current.Count > 0 && Chars(Make(like, like.Id, like.Title, [.. current, f])) > sectionLimit) { parts.Add(current); current = []; }
+                current.Add(f);
+            }
+            parts.Add(current);
+            for (var n = 0; n < parts.Count; n++)
+                summary.Sections.Add(Make(like, $"{like.Id}-part-{n + 1}", $"{like.Title} ({n + 1} of {parts.Count})", parts[n]));
         }
         Number(inShort.Items);
         return summary;
@@ -379,7 +427,8 @@ public static class PageSummary
         foreach (var e in (flow["exits"] as JsonArray ?? []).OfType<JsonObject>())
         {
             var step = (int?)e["step"];
-            var conds = Merge(step is { } sn ? FlowReader.PathConditions(steps, sn) : [], FlowReader.Conditions(e["conditions"] as JsonArray));
+            // D264: an exit's own conditions only; the path to it stays in the flow's file.
+            var conds = FlowReader.Conditions(e["conditions"] as JsonArray);
             items.Add(new SummaryItem { Id = "", Kind = "exit", Text = $"stops: {(string)e["what"]!}", At = (string?)e["at"] ?? "", Code = (string?)e["code"] ?? "", Label = "certain", Conditions = conds });
         }
 
@@ -453,7 +502,7 @@ public static class PageSummary
         if (withId) sb.Append($"**{i.Id}** ");
         sb.Append($"{i.Mark} {i.Text}");
         if (i.Reason is not null && i.Label != "certain") sb.Append($" ({(i.Label == "guessed" ? "guessed" : "not known")}: {i.Reason})");
-        if (i.At != "") sb.Append($" (`{i.At}`)");
+        if (i.At != "") sb.Append($" (`{i.At}`{(i.AlsoAt.Count > 0 ? $" and {i.AlsoAt.Count} other place{(i.AlsoAt.Count == 1 ? "" : "s")}" : "")})");
         sb.Append('\n');
         for (var n = 0; n < i.Conditions.Count; n++) sb.Append($"  - condition {n + 1}: {i.Conditions[n].Text} (`{i.Conditions[n].At}`)\n");
         return sb.ToString();
