@@ -548,7 +548,7 @@ prop is set show "only when …" on the step instead of 🟡; a call through ano
 10. Graphs and flows rebuilt on the three clones; counts per bucket before and after; D177 items 1–5 rescored.
 11. One narrow fresh agent on ~30 sampled lines, ~110–120K tokens, asked first (D236); bar items 2–3 (D237).
 
-### Built (2026-11-12, D241–D248): pieces 1–5 and 7–10; 6 not built (D248); 11 waits on the owner
+### Built (2026-11-12, D241–D249): pieces 1–5 and 7–11; 6 not built (D248)
 
 `stangent flows guesses` on the three clones rebuilt from scratch, by code line, before → after (the "before" is the build of
 `a8dfbe0`'s graph with the piece-1 reason fix; files in the shared notes `step6-build/`):
@@ -581,3 +581,39 @@ items 1–5 pass on all three. Items 2–3 by the fresh agent: piece 11, waits f
 type (the bus's registration is a framework scan); navigation Add and the Identity store (a later SaveChanges, a package's own
 store); a function returned by another (D210); a library-kept callback; the MVC view-folder rule; the 13 nopCommerce ❓ (11
 outside calls whose request a client builds, 2 views not found).
+
+### Step 6's fresh check (piece 11), run 2026-11-12 (owner: "Yes, run it"; one fresh agent, ~125K tokens against a 110–120K estimate)
+
+A sample of 30 drawn by code (`flows guesses --cause`, the lines touching the most start flows per cause, round robin across
+repos): 28 🟡/❓ lines over 20 causes, plus 2 D240 conditions. Sample and verdicts in the shared notes `step6-build/`.
+Verdicts read against the code before acting (D18); the claims below were checked.
+
+- **Bar item 3 (no missing candidate): 8 of 9 complete; the one miss fixed.** Sonarr's `ProviderFactory.SetProviderCharacteristics`
+  (one of 4) left out the base method, which `MetadataFactory` doesn't override: the walk read "has a body" off call and save
+  facts, and a body that only sets properties has none. Now a C# declaration with `{` or `=>` counts (`78f1207`).
+- **Bar item 2 (every reason true): fails on the sample, reasons true 21 of 28, buckets right 21 of 28.** Each with the general
+  rule it suggests:
+  - S22, nopCommerce `CheckPermissionAttribute.cs:152`, "no screen matches Security/AccessDenied" (550 start flows): a
+    `RedirectToAction` with no area keeps the request's area (`[Area]` on the controller or its base), and Admin's
+    `SecurityController.AccessDenied` exists.
+  - S21, nopCommerce `HttpsRequirementAttribute.cs:124`, "the page is chosen at runtime" (730 start flows): the redirect goes to
+    the current page with its scheme switched; only whether it redirects is run-time. A redirect built from the request's own
+    URL is the same page, certain, under its condition.
+  - S7 (and S4), Sonarr: "reaches no server work itself" said of a function that calls `mutate(…)` from the same hook; a
+    mutation hook's `mutate` runs that hook's `mutationFn` (D214 applies it across hooks, not inside one).
+  - S13, Sonarr `CaptchaInput.tsx`: "calls no endpoint" is wrong: `requestAction` → `$.ajax` POSTs `/{provider}/action/{name}`;
+    follow the app's ajax wrappers before asking who may run it.
+  - S27, Sonarr `SchemaBuilder.cs:258`: `Activator.CreateInstance(t)` guarded by `IsAssignableFrom` and cast `as I` is one of
+    I's implementations, not unknowable.
+  - S25, Kavita `KavitaPlusApiService.cs:226`: the base URL is one of two literals by an environment check: one of N, not ❓.
+  - S1, S2: a virtual call on `this` whose class the flow entered through is known (the filter attribute on the endpoint, the
+    factory injected): narrowing by the receiver the walk came through (L3's kind, D248).
+  - S15 (and S12): a URL parameter whose value is a constant from the flow's own caller isn't run-time: carry it down the walk.
+- **Conditions (D240): 1 of 2 right.** Kavita's stream step also needs `filter(confirmed => confirmed)`: a stream's condition
+  must include every gating operator before the step (`filter`, `takeWhile`, `first(pred)`).
+- Smaller, not counted wrong: S11 lists 14 endpoints a numeric id can't match (X4); S16/S17's queue question could be settled
+  by code (the job reads rows by a done-flag it sets); S24's verb and path are readable; S5's handler list should include
+  global `IHandleAsync<IEvent>` handlers.
+
+**Bar (D237) after the check:** item 1 passes (by code), item 3 passes (the one miss fixed), item 4 passes (D177 items 1–5 on
+all three); item 2 fails on the sample. D236: no second round without the owner's OK.
