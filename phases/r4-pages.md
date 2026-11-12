@@ -170,7 +170,8 @@ had expired (the owner signed in again), and the driver needs `--model`/`--effor
 
 **Cost, re-estimated from real calls:** about $0.03 a call plus $0.0026 per 1,000 characters of items, so a full run of the 7
 areas (124 sections, 5.2M characters) is about **$17–20**, and bar item 2's three runs about $55–60: well over D266's $25. Claude
-Code also warned the plan's seven-day window was 68% used. Waiting on the owner (`questions.md`).
+Code also warned the plan's seven-day window was 68% used. The owner chose (D268): run 1 on all 7 areas (budget $22), the
+repeats for bar item 2 only on the four small areas, $30 in all.
 
 ## Known risks
 
