@@ -94,7 +94,11 @@ owner); how a repo Stangent was never tuned on fares (R.2).
    (D254); `--max-cost` (D126); model and effort pinned (D161). Behind a switch, `pages`, off by default (D120).
    Tested with fakes only. Free.
 4. **Docs:** `docs/pages.md`; the `pages` v1 contract; a layer 4 note on the old `specs/reference/` (D258).
-5. **The pilot run, paid, asked first:** the 7 areas once, then twice more for bar item 2; about $20 under the
+5. **Set up 2026-11-13 (free):** each clone's `stangent.yaml` has `ai.steps.stangent-area-writer: {model: claude-sonnet-5-5,
+   effort: medium}` and `components.pages: true`; `pages sections` lists 124 new sections on the 7 areas, all on Sonnet 5.5
+   medium; `spec-run.sh --estimate` stops before any call. Run per area: `plugin/scripts/spec-run.sh --jobs 4 --max-cost 25
+   --pages "<area>"` from its clone.
+   **The pilot run, paid, asked first:** the 7 areas once, then twice more for bar item 2; about $20 under the
    $25 cap (D266). Before it, the first real Claude Code run also settles layer 1's owed check (D161 on real Claude
    Code).
 6. **Score:** items 1, 2 and 5 by code; item 3 by one fresh agent (~80–120K tokens, asked first); item 4 by the
@@ -109,7 +113,7 @@ Free, no AI call made. `stangent pages summary` (`src/Stangent.Flows/PageSummary
 (`src/Stangent.Spec/Words/AreaWords.cs`), the `pages` switch (off), the writer agent `stangent-area-writer` with its
 instructions and schema, `spec-run.sh --pages <area>`, tests on hand-made flows in React, Angular and Razor shapes and the AI
 step with fake answers (`tests/Stangent.Core.Tests/PageSummaryTests.cs`), `docs/pages.md` (contract `pages` v1), a D258 note
-in `docs/spec.md`. Settled while building, not confirmed by the owner yet: D259 (summaries rebuilt, words in
+in `docs/spec.md`. Settled while building, confirmed by the owner 2026-11-13: D259 (summaries rebuilt, words in
 `specs/pages-runs.json`), D260 (how flows become items; the shared-save rule), D261 (sections), D262 (checks), D263
 (`--proposed`).
 
@@ -138,7 +142,7 @@ most of it (Series: 918 of 2,088 items). Waiting on the owner before step 5 (`qu
 
 Owner: "Yes, shrink first". Exits keep their own conditions only and merge by what they throw; a section over 40,000
 characters splits by flow (D264); reads and shown texts merge by table or wording, keeping shared conditions (D265, the
-assistant's call). Re-measured (same runs as above):
+assistant's call, confirmed 2026-11-13). Re-measured (same runs as above):
 
 | Area | Sections | Items | Must cite | Chars | Biggest section | Sections over 40K |
 |---|---|---|---|---|---|---|
