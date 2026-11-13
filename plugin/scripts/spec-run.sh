@@ -88,7 +88,7 @@ while [ $# -gt 0 ]; do
     --disprove) MODE=disprove; DOC="$2"; CHAPTERED=1; add_ids '.result[] | .doc + "\t" + .section' fsd sections --doc "$2" ${CHAPTER:+--chapter "$CHAPTER"}; shift 2 ;;
     --chapter) shift 2 ;;
     --req) MODE=req; add_ids '.result[] | .doc + "\t" + .section' req sections --doc "$2"; shift 2 ;;
-    --pages) MODE=pages; AREA="$2"; add_ids '.result.sections[] | select(.section != "in-short") | .area + "\t" + .section' pages sections "$2"; shift 2 ;;
+    --pages) MODE=pages; AREA="$2"; add_ids '.result.sections[] | select(.section != "in-short" and (.state == "new" or .state == "changed")) | .area + "\t" + .section' pages sections "$2"; NAMED=1; shift 2 ;;
     --stale) add_ids '.result.stale[].id' spec stale; shift ;;
     --new) add_ids '.result.new[].id' spec stale; shift ;;
     --for-fsd) CHAPTERED=1; add_ids '.result.pages[].id' spec needed --doc "$2" ${CHAPTER:+--chapter "$CHAPTER"}; shift 2 ;;
@@ -252,7 +252,8 @@ run_page() {
 export -f run_page run_steps disprove single_turn no_envelope
 export -f guard_before_call guard_after_call guard_stop guard_stopped_line guard_lock guard_unlock guard_mark_refused
 
-[ ${#PAGES[@]} -gt 0 ] || [ -n "$REPEAT" ] || exit 0
+# --pages: only sections not written for their current items; "In short" still runs when it's all that's left.
+[ ${#PAGES[@]} -gt 0 ] || [ -n "$REPEAT" ] || [ "$MODE" = pages ] || exit 0
 
 guard_init "$MAXCOST" "$STOPUSAGE" "$JOBS" "$TYPED"
 if [ -n "$REPEAT" ]; then
@@ -282,7 +283,7 @@ export READ_ONLY_SETTINGS
 READ_ONLY_SETTINGS="$(guard_read_only_settings)"
 guard_app_before
 rc=0
-printf '%s\0' "${PAGES[@]}" | xargs -0 -n 1 -P "$JOBS" bash -c 'run_page "$1"' _ || rc=$?
+[ ${#PAGES[@]} -eq 0 ] || { printf '%s\0' "${PAGES[@]}" | xargs -0 -n 1 -P "$JOBS" bash -c 'run_page "$1"' _ || rc=$?; }
 # "In short" is written last, from the checked sections (D254); `pages prepare` says "waiting" if one isn't done.
 if [ "$MODE" = pages ] && [ "$rc" -ne 255 ] && [ ! -f "$STANGENT_COST_DIR/stopped" ]; then
   run_page "$(jq -r '.result.area' <<<"$($STANGENT pages sections "$AREA")")"$'\t'in-short || rc=$?

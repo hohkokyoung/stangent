@@ -191,6 +191,27 @@ usage limit stopped Checkout. **116 of 124 sections checked, 0 fell back to the 
 Retries came from single slips (one guessed item stated without a hedge word, one must-cite item left out), each fixed by the
 retry. Left to finish run 1: Checkout's 7 sections (458K characters, ~$3.40) and Admin › Catalog's "In short" (~$0.15).
 
+**Finished the same day:** all 124 sections written and checked, none fell back; run 1 cost **$21.64** in all. Two driver
+fixes on the way: `--pages` now lists only sections not written for their current items (its estimate had counted all 49 of
+Admin › Catalog's and refused the cap for one call), and "In short" runs when it's all that's left. One "cap reached" on Admin
+› Catalog's "In short" with $3.06 free wasn't reproduced; the same call ran on the next try.
+
+## Bar items 1, 2 and 5 (2026-11-13, by code)
+
+1. **Code's checks: pass.** Every one of the 124 pilot sections passed D255 item 1's checks after at most one retry; 0 fell back
+   (the bar allows 5%). 17 sections used their retry.
+2. **Repeatable: pass, on D269's three areas.** Each of the 16 sections' first writer call was sent twice more on the identical
+   input (`spec-run.sh --repeat 2`, $3.18); **15 of 16** cite the same must-cite items in all three answers (94%, bar 90%). The
+   miss: Kavita registration's login screen, one answer leaving out A5. The three "In short" sections have no must-cite items
+   of their own, so they match trivially: without them 12 of 13 (92%). The full cited sets agree 91–100% outside "In short"
+   (76% on the miss); "In short" cites differently each time (33–50%), as expected for a summary. Wording differs, as allowed.
+5. **Nothing else changes: pass.** `flows check` passes on all three clones (every flow byte for byte); `areas check` passes
+   and rewrote no page on Kavita or nopCommerce. On Sonarr it rewrote 37 pages, stale since layer 3 step 6 rebuilt its flows
+   (2026-11-12 13:03) after its last `areas check` (2026-11-11); the three pilot pages kept their words.
+
+**Pilot spend: $24.82** of D269's $30 (run 1 $21.64, repeats $3.18). Left: item 3 (one fresh agent, ~80–120K tokens, asked
+first) and item 4 (the owner reads 3 pages chosen by code).
+
 ## Known risks
 
 - **The vocabulary gap is still layer 5's.** The document says "the user picks a root folder", the items say
