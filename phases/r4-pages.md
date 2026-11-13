@@ -173,6 +173,24 @@ areas (124 sections, 5.2M characters) is about **$17–20**, and bar item 2's th
 Code also warned the plan's seven-day window was 68% used. The owner chose (D268): run 1 on all 7 areas (budget $22), the
 repeats for bar item 2 only on the four small areas, $30 in all.
 
+## Pilot run 1 (2026-11-13, paid, D268)
+
+Stopped twice before finishing: the $22 run budget ran out at Admin › Catalog's "In short", then Claude Code's five-hour
+usage limit stopped Checkout. **116 of 124 sections checked, 0 fell back to the code's list; $19.96 spent.**
+
+| Area | Sections | Checked | Fell back | Not written | Retried | Cost |
+|---|---|---|---|---|---|---|
+| Sonarr Series | 31 | 31 | 0 | 0 | 7 | $5.51 |
+| Sonarr Series › Add New | 3 | 3 | 0 | 0 | 1 | $0.21 |
+| Sonarr Settings › Indexers | 8 | 8 | 0 | 0 | 2 | $2.61 |
+| Kavita Reading Lists | 8 | 8 | 0 | 0 | 1 | $1.41 |
+| Kavita registration | 5 | 5 | 0 | 0 | 4 | $0.95 |
+| nopCommerce Nop.Web › Checkout | 20 | 13 | 0 | 7 | 1 | $3.00 |
+| nopCommerce Admin › Catalog | 49 | 48 | 0 | 1 | 1 | $6.26 |
+
+Retries came from single slips (one guessed item stated without a hedge word, one must-cite item left out), each fixed by the
+retry. Left to finish run 1: Checkout's 7 sections (458K characters, ~$3.40) and Admin › Catalog's "In short" (~$0.15).
+
 ## Known risks
 
 - **The vocabulary gap is still layer 5's.** The document says "the user picks a root folder", the items say
