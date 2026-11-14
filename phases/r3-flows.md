@@ -3,7 +3,7 @@ phase: r3
 name: flows
 status: in progress
 consumes: { code-graph: 5 }
-provides: { flows: 1, areas: 1 }
+provides: { flows: 2, areas: 1 }
 ---
 
 # Rebuild layer 3: areas → flows (D154, D156, D170–D180)
@@ -632,3 +632,35 @@ waiting: S1/S2's receiver, S15's constant arguments, S25's one-of-literals.
 After the fixes, 🟡/❓ lines: Sonarr 629/115, Kavita 127/41, nopCommerce 481/96 (Sonarr's 🟡 rose by 17: requests it now reaches
 carry their own guesses, as S13's `{*}/action/{*}`). `flows guesses` passes on all three; D177 rescored: items 1–5 pass on all
 three (item 2 95.3%, 96.2%, 95.9%; Sonarr's item 1 flags only the 2 steps ruled right in step 4). No second agent (D250).
+
+## D310 built (2026-11-14, layer 3 part; `flows` v3 → v4)
+Layer 2's C# `call-site` facts carry `self: "1"` for a call on the object itself (`M()`, `this.M()`); graphs rebuilt with `--full`
+on all three. The walk carries the class each point runs on (its own class, or the caller's through a call on `this`) and
+narrows a virtual call on `this` to that class's nearest override plus those of classes built on it; nothing narrows it → every
+override, 🟡 "…; it is called on `this`, and which class the object is isn't known here". A shared flow whose own walk leaves such
+a call open is walked once per receiving class: id `<shared id>--<class>` (full name on a clash), name "X on Class"; the walk over
+every override is written only when a flow enters it with no receiving class. Sonarr: `RestController.TypedCreated` (582 steps,
+19 stops) is now 12 walks, `--seriescontroller` 84 steps and 1 stop, the largest 84; 35 split shared flows from 5 points (Kavita
+0, nopCommerce 7 from 2 points: `BaseDataProvider.CreateDataConnection`); start flows reaching `NamingConfigService.cs:30` 106 →
+35 of 392, the 35 all real (`FileNameBuilder` → `NamingConfigService.GetConfig` saves a default config when none exists).
+Tests: `ReceiverTests` (C# fixture added to a Shop copy). `pages verify` passes every area on all three.
+
+## D316 built (2026-11-14, layer 3 part; `flows` v4 → v5)
+A request a mutation hook declares (D214's `mutation:` deferral; React Query's `useMutation`, Sonarr's `useApiMutation`) is
+followed only where a mutation was started on the way: a step above it calls a value taken from a function's result (`mutate(…)`,
+`deleteEpisodeFile()`), a hook's handed-back function that calls `mutate` (S7), or D184's 🟡 "runs X's own work, through a library
+callback". Elsewhere (a screen's opening, a modal a click renders) it is one `waits` step "declares POST {base}/api/v5/command,
+sent only when a click (or other code) calls `mutate(…)`, so not followed here", nothing under it; a mutation's own function and
+a runtime-URL request on a line handing a hook its function are cut the same way. The rule is any walk that reaches the hook
+without such a start, not only on-load walks (the assistant's call: a click that opens a modal whose hooks declare saves doesn't
+send them either). A point walked declared is walked again where a start reaches it. A shared flow entered where no mutation
+was started, whose walk followed one only because its entry started it, gets its own walk `<id>--declared` (Sonarr: 4,
+`useApiMutation`, `useDeleteProvider`, `useManageProviderSettings`, `useSaveSettings`). Sonarr: `/series/:titleSlug` 1,231 →
+913 steps, 31 → 19 requests (all GETs left); 27 of 31 screen flows changed, 8,576 steps fewer (Settings › Import Lists 1,836 →
+203); click flows byte for byte unchanged in steps and endpoints (Delete series → `DELETE /api/v5/Series/{id:int}`, the
+Monitored toggle → `PUT /api/v5/Series/{id:int?}` and its saves); shared flows 1,336 → 1,212. Kavita and nopCommerce: no flow
+changed (no mutation hooks). Found, not fixed: 16 Sonarr endpoints (provider settings' POST/PUT/DELETE, `POST
+/api/v5/System/restart`) were reached only through those wrong screen walks; their clicks are no flows (e.g. the Save
+`SpinnerErrorButton` at `EditIndexerModalContent.tsx:313` has no `ui-event`), so they now read "no start flow calls it" on
+"Elsewhere". Tests: `FlowFixesTests` (declared vs started, `--declared` shared walk), `FlowsTests` (Shop `ShelfEditor.tsx`:
+opening only declares, the Save click sends PUT). `pages verify` passes every area on all three.

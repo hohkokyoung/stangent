@@ -46,6 +46,9 @@ public sealed class MenuItemInfo
 /// <see cref="BackendName"/>: D223's first folder below its project, and that folder's name.</summary>
 public sealed record StartFlow(string Id, string Kind, IReadOnlyList<Place> Places, bool Any, string? Backend, string? BackendFolder, string? BackendName, string OwnFolder);
 
+/// <summary>D316: a backend endpoint and the action that serves it: its controller (id and name) and the action's place.</summary>
+public sealed record BackendEndpoint(string Id, string Route, string Controller, string ControllerName, string Action, string File, int Line);
+
 /// <summary>An area as <c>areas.yaml</c> describes it (D225).</summary>
 public sealed class AreaSpec
 {
@@ -82,6 +85,9 @@ public sealed class Areas
 {
     public const int Big = 40;
     public const string FrameName = "App frame";
+    /// <summary>D312: the part of an area split by folder that holds the jobs and handlers its parts share.</summary>
+    public const string Background = "Background";
+    public static string BackgroundOf(string area) => $"{area} › {Background}";
     static readonly StringComparer O = StringComparer.Ordinal;
 
     readonly FlowGraph g;
@@ -107,7 +113,7 @@ public sealed class Areas
         ReadStarts();
     }
 
-    /// <summary>Reads <c>specs/flows/index.json</c> (contract <c>flows</c> v1) and lays areas' facts over the graph.</summary>
+    /// <summary>Reads <c>specs/flows/index.json</c> (contract <c>flows</c> v2) and lays areas' facts over the graph.</summary>
     public static Areas Load(CodeGraph graph, string root)
     {
         var path = Path.Combine(root, FlowFiles.Folder, "index.json");
@@ -520,6 +526,9 @@ public sealed class Areas
                 var held = new Dictionary<string, int>(O);
                 foreach (var (area, n) in counts) for (var x = area; x is not null; x = parentOf[x]) held[x] = held.GetValueOrDefault(x) + n;
                 var top = held.Where(h => h.Value * 2 > total).OrderByDescending(h => Depth(h.Key)).ThenBy(h => names.IndexOf(h.Key)).Select(h => h.Key).FirstOrDefault();
+                // D312: an area split by folder has a `› Background` part; a job its parts share (no part and not the area's own flows
+                // holding more than half of what leads to it there) goes to that part, never to whichever part sorts first.
+                if (top is not null && parentOf.ContainsKey(BackgroundOf(top)) && counts.GetValueOrDefault(top) * 2 <= held[top]) top = BackgroundOf(top);
                 if (top is not null) { placedByMajority[j] = top; result.AreaOf[j] = top; changed = true; }
             }
         }
@@ -544,6 +553,28 @@ public sealed class Areas
             }
             return c;
         }
+    }
+
+    List<BackendEndpoint>? endpoints;
+
+    /// <summary>
+    /// D316: every backend endpoint the graph routes to an action, with the action's controller: method and path (<c>POST
+    /// /api/ReadingList/create</c>), the action and its <c>file:line</c>, in file and line order. One per endpoint and action.
+    /// </summary>
+    public IReadOnlyList<BackendEndpoint> Endpoints()
+    {
+        if (endpoints is not null) return endpoints;
+        var list = new List<BackendEndpoint>();
+        foreach (var e in g.Nodes.Values.Where(n => n.Kind == NodeKind.Endpoint && !n.IsTest))
+        {
+            var route = e.Id.IndexOf('|') is var bar and > 0 ? e.Id[(bar + 1)..] : e.Name;
+            foreach (var action in g.Out(e.Id, EdgeKind.RoutesTo).Select(x => x.Target).Distinct(O))
+            {
+                if (!g.Nodes.TryGetValue(action, out var an) || an.File is null || an.IsTest || DocIds.ContainingType(action) is not { } controller) continue;
+                list.Add(new BackendEndpoint(e.Id, route, controller, g.TypeName(controller).Split('<')[0], action, an.File, g.NameLine(an)));
+            }
+        }
+        return endpoints = [.. list.OrderBy(x => x.File, O).ThenBy(x => x.Line).ThenBy(x => x.Route, O).ThenBy(x => x.Id, O)];
     }
 
     /// <summary>The start flows and shared flows a flow leads to, directly or through shared flows (D189, D218).</summary>

@@ -122,10 +122,13 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
     [Fact]
     public void A_filter_setting_its_contexts_result_to_a_refusal_is_an_exit()
     {
-        var exits = shop.Graph.AllFacts.Where(f => f.Kind == "exit" && f.Owner.Contains("OpenStoreFilter.OnAuthorization", StringComparison.Ordinal)).ToList();
-        var exit = Assert.Single(exits);
-        Assert.Equal("Challenge", exit["kind"]);
-        Assert.Contains("IsAuthenticated", exit["conditions"], StringComparison.Ordinal);
+        var exits = shop.Graph.AllFacts.Where(f => f.Kind == "exit" && f.Owner.Contains("OpenStoreFilter.OnAuthorization", StringComparison.Ordinal)).OrderBy(f => f.Line).ToList();
+        Assert.Equal(2, exits.Count);
+        Assert.Equal("Challenge", exits[0]["kind"]);
+        Assert.Contains("IsAuthenticated", exits[0]["conditions"], StringComparison.Ordinal);
+        // D301: any other result set on the context stops the request too, named by its type.
+        Assert.Equal(("Result", "EmptyResult"), (exits[1]["kind"], exits[1]["status"]));
+        Assert.Contains("else", exits[1]["conditions"], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -220,6 +223,33 @@ public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
         var flow = new Flow { Id = "x", Name = "x", Kind = "click", Start = new StartInfo("x", new At("a", 1, ""), "p", []), Actor = new Actor("u", "t", null, false) };
         Assert.True(new Walker(g, new FlowSettings(), flow).StartsMutation(site),
             string.Join(" ; ", shop.Graph.AllFacts.Where(f => f.File?.EndsWith("useSaveShelf.ts", StringComparison.Ordinal) == true && f.Kind == "call-site").Select(f => $"{f.Line} {string.Join(",", f.Data.Select(d => d.Key + "=" + d.Value))}")));
+    }
+
+    [Fact]
+    public void A_screen_opening_with_a_mutation_hook_only_declares_its_request_and_the_click_calling_mutate_sends_it()
+    {
+        // D316: ShelfEditor runs useSaveShelf on open, which sets a mutation up; only the Save click (saveShelf → mutate) sends the PUT.
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        static bool Editor(string file) => file.EndsWith("ShelfEditor.tsx", StringComparison.Ordinal);
+        var click = Assert.Single(set.Flows, f => f.Kind == "click" && Editor(f.Start.At.File));
+        Assert.Contains(click.Steps, s => s.Kind == "http" && s.Point is { } p && p.Contains("PUT", StringComparison.Ordinal));
+        var screen = set.Flows.SingleOrDefault(f => f.Kind == "screen-opens" && f.Name.Contains("/shelf/edit", StringComparison.Ordinal));
+        Assert.True(screen is null || screen.Steps.All(s => s.Kind != "http"), screen is null ? "" : string.Join("\n", screen.Steps.Select(s => $"{s.N} {s.Kind} {s.What}")));
+        // Opening it sends nothing: display only, said in the skipped list, not silently missing.
+        if (screen is null) Assert.Contains(set.Skipped, x => x.Kind == "screen-opens" && x.Reason.StartsWith("display only", StringComparison.Ordinal) && x.At.File.EndsWith("App.tsx", StringComparison.Ordinal) && x.At.Code.Contains("/shelf/edit", StringComparison.Ordinal));
+        // Walked by hand, the opening shows the cut: one step leaving useApiMutation's function to the mutation, nothing past it.
+        var g = new FlowGraph(shop.Graph, shop.Root);
+        var page = g.Nodes.Values.Single(n => n.Kind == NodeKind.Page && n.Name.Contains("/shelf/edit", StringComparison.Ordinal));
+        var shows = g.Out(page.Id, EdgeKind.RoutesTo).Concat(g.Out(page.Id, EdgeKind.Renders)).Select(e => e.Target).Distinct(StringComparer.Ordinal).ToList();
+        var opens = new Flow { Id = "s", Name = "s", Kind = "screen-opens", Start = new StartInfo("the screen opens", new At("a", 1, ""), page.Id, []), Actor = new Actor("u", "t", null, false) };
+        var walker = new Walker(g, new FlowSettings(), opens);
+        walker.Root(page.Id, shows);
+        Assert.False(walker.Meaningful);
+        walker.Finish();
+        var left = Assert.Single(opens.Steps, st => st.End?.Kind == "waits");
+        Assert.StartsWith("leaves send to the mutation it sets up", left.What, StringComparison.Ordinal);
+        Assert.DoesNotContain(opens.Steps, st => st.From == left.N);
+        Assert.Equal(5, FlowFiles.Version);
     }
 
     [Fact]

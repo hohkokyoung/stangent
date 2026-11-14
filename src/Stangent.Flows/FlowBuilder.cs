@@ -33,11 +33,10 @@ public static partial class FlowBuilder
             skipped.Add(new Skipped("screen-opens", f.Owner, new At(f.File ?? "", f.Line, g.Code(f.File, f.Line)),
                 "runs on load in code no route's screen reaches (a dialog, or a component shown only from another flow)"));
 
-        Shared(g, settings, flows);
+        var sharedFor = Shared(g, settings, flows);
 
         AssignIds(flows);
         var byPoint = flows.Where(f => f.Kind is "job" or "handler").GroupBy(f => f.Start.Point, StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.First().Id, StringComparer.Ordinal);
-        var shared = flows.Where(f => f.Kind == "shared").ToDictionary(f => f.Start.Point, f => f.Id, StringComparer.Ordinal);
         // D204: a screen link goes to the flow of that screen opening.
         var screens = flows.Where(f => f.Kind == "screen-opens").GroupBy(f => f.Start.Point, StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.Select(f => f.Id).Order(StringComparer.Ordinal).First(), StringComparer.Ordinal);
         var notBuilt = skipped.Where(x => x.Kind == "screen-opens").GroupBy(x => x.Point, StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.First().Reason, StringComparer.Ordinal);
@@ -45,7 +44,9 @@ public static partial class FlowBuilder
             for (var i = 0; i < flow.Links.Count; i++)
             {
                 var link = flow.Links[i];
-                if (link.ToFlow is { } point && (link.Kind switch { "continues" => shared, "screen" => screens, _ => (Dictionary<string, string>)byPoint }).TryGetValue(point, out var id)) flow.Links[i] = link with { ToFlow = id };
+                // D310: a continues link goes to the shared flow walked for its receiving class, when there is one.
+                if (link.Kind == "continues" && link.ToFlow is { } sp && sharedFor.TryGetValue((sp, link.Receiver ?? "", link.Declared), out var sf)) flow.Links[i] = link with { ToFlow = sf.Id };
+                else if (link.Kind != "continues" && link.ToFlow is { } point && (link.Kind == "screen" ? screens : byPoint).TryGetValue(point, out var id)) flow.Links[i] = link with { ToFlow = id };
                 // D204: a screen whose opening isn't a flow says why, from the skipped list.
                 else if (link.Kind == "screen" && link.ToFlow is { } screen)
                     flow.Links[i] = link with { ToFlow = null, Sentence = $"Sends the user to {link.To}; opening it is no flow: {(notBuilt.TryGetValue(screen, out var why) ? why : "no screen-opens flow starts there")} ({link.At})" };
@@ -88,8 +89,11 @@ public static partial class FlowBuilder
             walker.Root(handler);
             if (!walker.Meaningful)
             {
+                // D306: work it only leaves for a later action (a menu's callbacks set at selection) is said, not silently missing.
+                var waits = walker.Waits;
                 foreach (var f in group) skipped.Add(new Skipped("click", handler, new At(f.File ?? "", f.Line, g.Code(f.File, f.Line)),
-                    "screen behaviour only: its handler reaches no server call, save or message (D171)"));
+                    "screen behaviour only: its handler reaches no server call, save or message (D171)"
+                    + (waits.Count > 0 ? $"; code it leaves for a later action isn't walked ({string.Join("; ", waits)}, D306)" : "")));
                 continue;
             }
             walker.Finish();
@@ -174,28 +178,108 @@ public static partial class FlowBuilder
 
     /// <summary>
     /// D189 (D173's promise): each hub or depth stop a flow continues into is a flow of its own, kind <c>shared</c>, walked once
-    /// from that point; the shared flows' own stops get theirs too, until none is left.
+    /// from that point; the shared flows' own stops get theirs too, until none is left. D310: a shared flow whose code makes a
+    /// virtual call on <c>this</c> that its own class leaves open (one of several overrides) is walked once per receiving class a
+    /// flow enters it through (a link's <c>Receiver</c>), id <c>&lt;shared id&gt;--&lt;class&gt;</c>; entered with no receiving
+    /// class, it is the one walk it always was. Returns the flow each (point, receiving class) link goes to.
     /// </summary>
-    static void Shared(FlowGraph g, FlowSettings s, List<Flow> flows)
+    static Dictionary<(string Point, string Receiver, bool Declared), Flow> Shared(FlowGraph g, FlowSettings s, List<Flow> flows)
     {
-        var done = new HashSet<string>(StringComparer.Ordinal);
-        var todo = new SortedSet<string>(Continues(flows), StringComparer.Ordinal);
-        while (todo.Count > 0)
+        var map = new Dictionary<(string, string, bool), Flow>();
+        var generic = new Dictionary<string, (Flow Flow, Walker Walker)>(StringComparer.Ordinal);
+        var dependent = new Dictionary<string, bool>(StringComparer.Ordinal);
+        var mutationDependent = new Dictionary<string, bool>(StringComparer.Ordinal);
+        var emitted = new HashSet<Flow>(ReferenceEqualityComparer.Instance);
+        var specific = new List<Flow>();
+        var comparer = Comparer<(string, string, bool)>.Create((a, b) => string.CompareOrdinal(a.Item1, b.Item1) is var c and not 0 ? c
+            : string.CompareOrdinal(a.Item2, b.Item2) is var d and not 0 ? d : a.Item3.CompareTo(b.Item3));
+        var todo = new SortedSet<(string, string, bool)>(Continues(flows), comparer);
+
+        (Flow Flow, Walker Walker) Walk(string point, Node node, string? receiver, bool declared = false)
         {
-            var point = todo.Min!;
-            todo.Remove(point);
-            if (!done.Add(point) || !g.Nodes.TryGetValue(point, out var node)) continue;
             var line = g.NameLine(node);
             var at = new At(node.File ?? "", line, g.Code(node.File, line));
-            var flow = NewFlow(g, "shared", node.Name, new StartInfo("shared code, walked once for the flows that continue into it", at, point, []), point);
+            var on = receiver is null ? null : ClassName(g, receiver);
+            var name = on is null ? node.Name : $"{node.Name} on {on}";
+            var flow = NewFlow(g, "shared", declared ? $"{name}, where no mutation is started" : name,
+                new StartInfo((on is null ? "shared code, walked once for the flows that continue into it" : $"shared code, walked for the flows that run it on {on} (D310)")
+                    + (declared ? "; entered where no mutation is started, so the requests its mutation hooks declare aren't followed (D316)" : ""), at, point, []), point);
+            flow.Receiver = receiver;
+            flow.Declared = declared;
             flow.Actor = new Actor("the flow that continues here", "shared code: it runs as part of each flow that links to it", null, false);
-            var walker = new Walker(g, s, flow) { ActorFixed = true };
+            // D316: the shared walk a started call enters (a click's `mutate(…)`) follows its mutations' requests, as before.
+            var walker = new Walker(g, s, flow) { ActorFixed = true, RootReceiver = receiver, StartedRoot = !declared };
             walker.RootShared(point);
             walker.Finish();
-            flows.Add(flow);
-            foreach (var next in Continues([flow])) if (!done.Contains(next)) todo.Add(next);
+            return (flow, walker);
         }
+        (Flow Flow, Walker Walker) Generic(string point, Node node) =>
+            generic.TryGetValue(point, out var x) ? x : generic[point] = Walk(point, node, null);
+        // Whether a receiving class can change the walk: a virtual call on `this` left open, here or in shared code it continues
+        // into through `this`.
+        bool Dependent(string point, HashSet<string> on)
+        {
+            if (dependent.TryGetValue(point, out var known)) return known;
+            if (!g.Nodes.TryGetValue(point, out var node)) return false;
+            var w = Generic(point, node).Walker;
+            var result = w.ReceiverDependent || w.RootSelfLinks.Order(StringComparer.Ordinal).Any(q => on.Add(q) && Dependent(q, on));
+            // A "no" found inside a loop of shared flows may depend on the loop's start: kept only from the outermost question.
+            if (result) dependent[point] = true;
+            return result;
+        }
+        bool IsDependent(string point) => dependent[point] = Dependent(point, new HashSet<string>(StringComparer.Ordinal) { point });
+        // D316: whether entering where no mutation was started can change the walk: it followed a mutation's request or function only
+        // because its entry started one, here or in shared code it continues into.
+        bool MutationDependent(string point, HashSet<string> on)
+        {
+            if (mutationDependent.TryGetValue(point, out var known)) return known;
+            if (!g.Nodes.TryGetValue(point, out var node)) return false;
+            var (flow, w) = Generic(point, node);
+            var result = w.MutationDependent || flow.Links.Where(l => l.Kind == "continues" && l.ToFlow is not null).Select(l => l.ToFlow!).Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal).Any(q => on.Add(q) && MutationDependent(q, on));
+            if (result) mutationDependent[point] = true;
+            return result;
+        }
+        bool IsMutationDependent(string point) => mutationDependent[point] = MutationDependent(point, new HashSet<string>(StringComparer.Ordinal) { point });
+
+        while (todo.Count > 0)
+        {
+            var key = todo.Min;
+            todo.Remove(key);
+            var (point, receiver, declared) = key;
+            if (map.ContainsKey(key) || !g.Nodes.TryGetValue(point, out var node)) continue;
+            var byReceiver = receiver != "" && IsDependent(point);
+            var byMutation = declared && IsMutationDependent(point);
+            // The walk this link needs: by receiving class only when that can change it (D310), declared only when that can (D316).
+            var canonical = (point, byReceiver ? receiver : "", byMutation);
+            var flow = map.TryGetValue(canonical, out var made) ? made
+                : !byReceiver && !byMutation ? Generic(point, node).Flow : Walk(point, node, byReceiver ? receiver : null, byMutation).Flow;
+            map[key] = flow;
+            map[canonical] = flow;
+            if (!emitted.Add(flow)) continue;
+            flows.Add(flow);
+            if (flow.Receiver is not null || flow.Declared) specific.Add(flow);
+            foreach (var next in Continues([flow])) if (!map.ContainsKey(next)) todo.Add(next);
+        }
+        // Ids: the shared flow's id, then `--` and the receiving class's name, or its full name where two classes share a name.
+        foreach (var same in specific.GroupBy(f => f.Start.Point, StringComparer.Ordinal))
+        {
+            var clash = same.Where(f => f.Receiver is not null).GroupBy(f => (ClassName(g, f.Receiver!), f.Declared)).Where(x => x.Count() > 1).SelectMany(x => x).ToHashSet(ReferenceEqualityComparer.Instance);
+            foreach (var f in same)
+            {
+                if (f.Receiver is not null) f.Id = $"{f.Id}--{Slug(clash.Contains(f) ? FullTypeName(f.Receiver!) : ClassName(g, f.Receiver!))}";
+                // D316: the walk for flows entering where no mutation is started.
+                if (f.Declared) f.Id = $"{f.Id}--declared";
+            }
+        }
+        return map;
     }
+
+    /// <summary>D310: a class's own name without its type parameters: <c>ProviderControllerBase&lt;TResource, …&gt;</c> → <c>ProviderControllerBase</c>.</summary>
+    static string ClassName(FlowGraph g, string id) => g.TypeName(id).Split('<')[0];
+
+    /// <summary>A type's full name from its id: <c>Api|T:Api.Series.SeriesController</c> → <c>Api.Series.SeriesController</c>.</summary>
+    static string FullTypeName(string id) => (id.IndexOf("T:", StringComparison.Ordinal) is var i and >= 0 ? id[(i + 2)..] : id).Split('`')[0];
 
     /// <summary>
     /// D205: work saved for a job to pick up later. A table named as a queue (a word Queue, Queued, Pending or Outbox in its name)
@@ -296,8 +380,8 @@ public static partial class FlowBuilder
         return words.Any(x => x.ToLowerInvariant() is "queue" or "queues" or "queued" or "pending" or "outbox");
     }
 
-    static IEnumerable<string> Continues(IEnumerable<Flow> flows) =>
-        flows.SelectMany(f => f.Links).Where(l => l.Kind == "continues" && l.ToFlow is not null).Select(l => l.ToFlow!);
+    static IEnumerable<(string, string, bool)> Continues(IEnumerable<Flow> flows) =>
+        flows.SelectMany(f => f.Links).Where(l => l.Kind == "continues" && l.ToFlow is not null).Select(l => (l.ToFlow!, l.Receiver ?? "", l.Declared));
 
     static Flow NewFlow(FlowGraph g, string kind, string name, StartInfo start, string point)
     {

@@ -50,8 +50,10 @@ static class AreaCommands
             var (report, json) = AreaFiles.Check(a, file, layout);
             AreaFiles.WriteText(ctx.Repo.Root, AreaFiles.Json, CanonicalJson.Serialize(json));
             // D230: one page per area, specs/areas/<slug>/page.md; a stale page holding layer 4's words is kept and reported.
-            var (written, removed, unchanged, kept) = AreaPages.Write(ctx.Repo.Root, a, layout);
-            report["pages"] = new JsonObject { ["written"] = written, ["removed"] = removed, ["unchanged"] = unchanged };
+            // D285: with components.pages on, each page holds the developer page by code (D278–D284).
+            var developer = StangentComponents.IsOn(ctx.Repo.Config, "pages");
+            var (written, removed, unchanged, kept) = AreaPages.Write(ctx.Repo.Root, a, layout, developer ? PageCommands.Charts(ctx, a, layout) : null);
+            report["pages"] = new JsonObject { ["written"] = written, ["removed"] = removed, ["unchanged"] = unchanged, ["developerPages"] = developer };
             foreach (var k in kept) report["problems"]!.AsArray().Add((JsonNode)$"{k} belongs to no area now but holds layer 4's words: move them, then delete it");
             if (kept.Count > 0) report["ok"] = false;
             ctx.Span.Attributes["stangent.artifact.count"] = (int)report["placed"]!;

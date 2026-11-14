@@ -4,14 +4,12 @@
 #   sections: stangent fsd prepare → candidate finder / link judge / agree checker → stangent fsd check → …
 #             then, when fsd.disprove is on: stangent fsd disprove prepare → finding disprover → stangent fsd disprove check → …
 #   items:    stangent req prepare → requirement writer → stangent req check → requirement checker → …
-#   area page (layer 4, D254): stangent pages prepare → area writer → stangent pages check (one retry), each section, then "In short" alone
 # The logic lives in `stangent spec`, `stangent fsd` and `stangent req`; this only runs the subagent each step names,
 # then hands its result back.
 #
-# usage: spec-run.sh [--jobs N] [--max-cost USD|none] [--stop-at-usage PCT] [--estimate] [--model M] [--effort E] [--retry-failed] [--agents] [--chapter N] (<page id>... | --repeat N --call <id>... | --for-fsd <doc> | --for-ticket <key> | --all | --stale | --new | --fsd <doc> | --disprove <doc> | --req <doc> | --pages <area> | --ask <question>)
+# usage: spec-run.sh [--jobs N] [--max-cost USD|none] [--stop-at-usage PCT] [--estimate] [--model M] [--effort E] [--retry-failed] [--agents] [--chapter N] (<page id>... | --repeat N --call <id>... | --for-fsd <doc> | --for-ticket <key> | --all | --stale | --new | --fsd <doc> | --disprove <doc> | --req <doc> | --ask <question>)
 # --for-fsd <doc> (with --chapter N) and --for-ticket <key>: the normal way to make pages (I.1): only the ones that document's sections or that ticket's bundle need, and aren't written.
 # --stale: pages already written whose code changed; --new adds every page never written; --all is every page the graph calls for.
-# --pages <area>: one area's page in plain words (needs components.pages): its sections in parallel, then "In short" from the checked ones.
 # --ask <question>: one question from the reference pages (spec.ask, E.2); prints its status line, then the result as one JSON line.
 # --chapter N, with --fsd or --disprove: only that top-level heading, to try a chapter first (`stangent fsd disprove estimate <doc> --chapter N` shows its cost).
 # Default (D66): one turn per call. The step's input files go into the prompt, Claude Code runs with no tools and none of
@@ -69,9 +67,8 @@ MAXCOST=""
 STOPUSAGE=""
 ESTIMATE=""
 DOC=""
-AREA=""
 while [ $# -gt 0 ]; do
-  case "$1" in --jobs|--model|--effort|--repeat|--call|--fsd|--for-fsd|--for-ticket|--disprove|--req|--pages|--only|--chapter|--ask|--max-cost|--stop-at-usage) [ $# -ge 2 ] || usage ;; esac
+  case "$1" in --jobs|--model|--effort|--repeat|--call|--fsd|--for-fsd|--for-ticket|--disprove|--req|--only|--chapter|--ask|--max-cost|--stop-at-usage) [ $# -ge 2 ] || usage ;; esac
   case "$1" in
     --jobs) JOBS="$2"; shift 2 ;;
     --max-cost) MAXCOST="$2"; shift 2 ;;
@@ -88,7 +85,6 @@ while [ $# -gt 0 ]; do
     --disprove) MODE=disprove; DOC="$2"; CHAPTERED=1; add_ids '.result[] | .doc + "\t" + .section' fsd sections --doc "$2" ${CHAPTER:+--chapter "$CHAPTER"}; shift 2 ;;
     --chapter) shift 2 ;;
     --req) MODE=req; add_ids '.result[] | .doc + "\t" + .section' req sections --doc "$2"; shift 2 ;;
-    --pages) MODE=pages; AREA="$2"; add_ids '.result.sections[] | select(.section != "in-short" and (.state == "new" or .state == "changed")) | .area + "\t" + .section' pages sections "$2"; NAMED=1; shift 2 ;;
     --stale) add_ids '.result.stale[].id' spec stale; shift ;;
     --new) add_ids '.result.new[].id' spec stale; shift ;;
     --for-fsd) CHAPTERED=1; add_ids '.result.pages[].id' spec needed --doc "$2" ${CHAPTER:+--chapter "$CHAPTER"}; shift 2 ;;
@@ -240,7 +236,6 @@ run_page() {
   case "$MODE" in
     fsd) step="$($STANGENT fsd prepare "${args[@]}" || true)" ;;
     req) step="$($STANGENT req prepare "${args[@]}" $RETRY || true)" ;;
-    pages) step="$($STANGENT pages prepare "${args[@]}" $RETRY || true)" ;;
     *) step="$($STANGENT spec prepare "${args[@]}" $RETRY || true)" ;;
   esac
   run_steps "$page" "$usage" "$MODE" check "${args[@]}"
@@ -252,8 +247,7 @@ run_page() {
 export -f run_page run_steps disprove single_turn no_envelope
 export -f guard_before_call guard_after_call guard_stop guard_stopped_line guard_lock guard_unlock guard_mark_refused
 
-# --pages: only sections not written for their current items; "In short" still runs when it's all that's left.
-[ ${#PAGES[@]} -gt 0 ] || [ -n "$REPEAT" ] || [ "$MODE" = pages ] || exit 0
+[ ${#PAGES[@]} -gt 0 ] || [ -n "$REPEAT" ] || exit 0
 
 guard_init "$MAXCOST" "$STOPUSAGE" "$JOBS" "$TYPED"
 if [ -n "$REPEAT" ]; then
@@ -268,7 +262,6 @@ fi
 case "$MODE" in
   spec) guard_estimate "spec check" $((${#PAGES[@]} * 2)) ;;
   req) guard_estimate "req check" $((${#PAGES[@]} * 2)) ;;
-  pages) guard_estimate "pages check" $((${#PAGES[@]} + 1)) ;;
   fsd) guard_estimate "fsd check" "${#PAGES[@]}" ;;
   ask) guard_estimate "spec ask-check" 1 ;;
   disprove)
@@ -284,9 +277,5 @@ READ_ONLY_SETTINGS="$(guard_read_only_settings)"
 guard_app_before
 rc=0
 [ ${#PAGES[@]} -eq 0 ] || { printf '%s\0' "${PAGES[@]}" | xargs -0 -n 1 -P "$JOBS" bash -c 'run_page "$1"' _ || rc=$?; }
-# "In short" is written last, from the checked sections (D254); `pages prepare` says "waiting" if one isn't done.
-if [ "$MODE" = pages ] && [ "$rc" -ne 255 ] && [ ! -f "$STANGENT_COST_DIR/stopped" ]; then
-  run_page "$(jq -r '.result.area' <<<"$($STANGENT pages sections "$AREA")")"$'\t'in-short || rc=$?
-fi
 guard_app_after
 guard_finish "$rc"

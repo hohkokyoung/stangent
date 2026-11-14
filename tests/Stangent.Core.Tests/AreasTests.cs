@@ -244,6 +244,10 @@ public sealed class AreasTests : IDisposable
         Assert.Equal("x.md", AreaLayout.Relative("specs/flows", "specs/flows/x.md"));
     }
 
+    /// <summary>A person's words added under the counts, between layer 4's two lines (D313(3): a page without words has neither).</summary>
+    static string WithWords(string page) =>
+        page.Replace("\n\n## Screens", $"\n\n{AreaPages.WordsStart}\nSeries is where people add shows.\n{AreaPages.WordsEnd}\n\n## Screens", StringComparison.Ordinal);
+
     [Fact]
     public void Each_area_has_a_page_of_links_grouped_by_kind_that_keeps_layer_4s_words_and_goes_when_its_area_does()
     {
@@ -266,10 +270,14 @@ public sealed class AreasTests : IDisposable
         Assert.Contains("- [shared-load](shared-load.md) `shared-load`\n", series, StringComparison.Ordinal);
         var activity = File.ReadAllText(Path.Combine(root, "specs/areas/activity/page.md"));
         Assert.Contains("- [shared-two](../shared/shared-two.md) `shared-two`\n", activity, StringComparison.Ordinal);
-        Assert.True(series.IndexOf(AreaPages.WordsEnd, StringComparison.Ordinal) < series.IndexOf("## Screens", StringComparison.Ordinal));
+        // D313(3): with no words, neither of layer 4's lines is written, and a rerun gives the same bytes.
+        Assert.DoesNotContain(AreaPages.WordsStart, series, StringComparison.Ordinal);
+        Assert.DoesNotContain(AreaPages.WordsEnd, series, StringComparison.Ordinal);
+        Assert.Contains("(1 in this folder)\n\n## Screens (2)\n", series, StringComparison.Ordinal);
+        Assert.Equal(layout.SlugOf.Count, AreaPages.Write(root, areas, layout).Unchanged);
 
         // Layer 4's words between the two lines are kept on a rewrite; the rest is rebuilt to the same bytes.
-        var withWords = series.Replace(AreaPages.WordsStart + "\n", AreaPages.WordsStart + "\nSeries is where people add shows.\n", StringComparison.Ordinal);
+        var withWords = WithWords(series);
         File.WriteAllText(Path.Combine(root, "specs/areas/series/page.md"), withWords);
         var (_, _, unchanged, _) = AreaPages.Write(root, areas, layout);
         Assert.Equal(layout.SlugOf.Count, unchanged);
@@ -283,6 +291,52 @@ public sealed class AreasTests : IDisposable
         Assert.False(Directory.Exists(Path.Combine(root, "specs/areas/reader")));
         Assert.Equal(["specs/areas/series/page.md"], kept);
         Assert.True(File.Exists(Path.Combine(root, "specs/areas/shows/page.md")));
+    }
+
+    [Fact]
+    public void Areas_check_writes_the_developer_page_with_the_switch_on_and_drops_it_but_keeps_the_words_with_it_off()
+    {
+        var areas = Build();
+        var (proposed, _) = AreaFiles.Propose(areas);
+        var file = Answered(proposed, ("click-modal", "Activity"), ("handler-even", "Series"));
+        var layout = AreaLayout.ByAreas(areas, file);
+        areas = Built(layout);
+        var page = Path.Combine(root, "specs/areas/series/page.md");
+
+        // On: the charts function `areas check` uses (D285) writes the note and the developer page, ended by layer 4's end line;
+        // D313(3): the empty "words go below" line is left out, and a rerun gives the same bytes.
+        var charts = PageChart.Pages(root, areas, layout, new PageSettings());
+        AreaPages.Write(root, areas, layout, charts);
+        var on = File.ReadAllText(page);
+        Assert.StartsWith("---\narea: \"Series\"\nmadeBy: code, no AI\n", on, StringComparison.Ordinal);
+        Assert.DoesNotContain(AreaPages.WordsStart, on, StringComparison.Ordinal);
+        Assert.Contains("\n\n" + PageChart.BodyMarker + "\n", on, StringComparison.Ordinal);
+        Assert.True(on.IndexOf(AreaPages.WordsEnd, StringComparison.Ordinal) < on.IndexOf("## Screens", StringComparison.Ordinal));
+        Assert.Equal(layout.SlugOf.Count, AreaPages.Write(root, areas, layout, charts).Unchanged);
+        Assert.Contains("\n## Screens (2)\n", on, StringComparison.Ordinal);
+
+        // D314(1): a split area lists its parts, linked, with their start flows by readable name; each part links back, with its siblings.
+        var settings = File.ReadAllText(Path.Combine(root, "specs/areas/settings/page.md"));
+        var settingsA = File.ReadAllText(Path.Combine(root, "specs/areas/settings-a/page.md"));
+        Assert.Contains("\n## Parts of this area\n\n- [Settings › A](../settings-a/page.md): ", settings, StringComparison.Ordinal);
+        Assert.Contains("\n- [Settings › B](../settings-b/page.md): ", settings, StringComparison.Ordinal);
+        Assert.Contains("\n**Part of [Settings](../settings/page.md).** Its other parts: [Settings › B](../settings-b/page.md).\n", settingsA, StringComparison.Ordinal);
+        Assert.DoesNotContain("Part of", on, StringComparison.Ordinal);
+        Assert.DoesNotContain("## Parts of this area", on, StringComparison.Ordinal);
+
+        // Off: the developer page and its note go; the links stay.
+        AreaPages.Write(root, areas, layout);
+        var off = File.ReadAllText(page);
+        Assert.StartsWith(AreaPages.Marker, off, StringComparison.Ordinal);
+        Assert.Equal("", AreaPages.Words(off));
+        Assert.DoesNotContain("madeBy", off, StringComparison.Ordinal);
+        Assert.Contains("\n## Screens (2)\n", off, StringComparison.Ordinal);
+
+        // Words a person wrote are kept with the switch off.
+        var withWords = WithWords(off);
+        File.WriteAllText(page, withWords);
+        AreaPages.Write(root, areas, layout);
+        Assert.Equal(withWords, File.ReadAllText(page));
     }
 
     [Fact]
@@ -309,6 +363,119 @@ public sealed class AreasTests : IDisposable
         var again = AreaFiles.Extend(areas, file);
         Assert.Empty(again.Added);
         Assert.Equal(AreaFiles.Render(file, "abc", placement, true), AreaFiles.Render(again.File, "abc", again.Placement, true));
+    }
+
+    /// <summary>
+    /// D312's graph: Series over 40 with no menu children, its home holding Index/, Details/ and a one-click Edit/; two dialogs in a shared
+    /// folder (one on Details and the queue, one on Details, Index and the queue); jobs led by one part, by two parts, by the parent, and a
+    /// handler led only by a job.
+    /// </summary>
+    Areas BuildSplit()
+    {
+        Item("web/src/Nav.tsx:1", "1", "Series", "/series");
+        Item("web/src/Nav.tsx:1", "2", "Activity", "/activity");
+        Item("web/src/Nav.tsx:1", "3", "Other", "/other");
+        var index = Screen("/series", "Series/Index/SeriesIndex.tsx", "SeriesIndex");
+        var details = Screen("/series/:id", "Series/Details/Details.tsx", "Details");
+        var queue = Screen("/activity", "Activity/Queue.tsx", "Queue");
+        Screen("/other", "Other/Other.tsx", "Other");
+        void Component(string id, string file, params string[] usedBy)
+        {
+            Node(id, NodeKind.Component, $"web/src/{file}");
+            foreach (var u in usedBy) Edge(u, id, EdgeKind.Uses);
+        }
+        var edit = Ts("Series/Edit/EditModal.tsx", "EditModal");
+        var toolbar = Ts("Series/Toolbar.tsx", "Toolbar");
+        var modal1 = Ts("Components/Modal1.tsx", "Modal1");
+        var modal2 = Ts("Components/Modal2.tsx", "Modal2");
+        Component(edit, "Series/Edit/EditModal.tsx", details);
+        Component(toolbar, "Series/Toolbar.tsx", index);
+        Component(modal1, "Components/Modal1.tsx", details, queue);
+        Component(modal2, "Components/Modal2.tsx", details, index, queue);
+        for (var i = 0; i < 20; i++) Click($"click-i{i:00}", index, $"i{i:00}", i == 0 ? ["job-shared"] : []);
+        for (var i = 0; i < 20; i++) Click($"click-d{i:00}", details, $"d{i:00}", i == 0 ? ["job-refresh", "job-shared"] : []);
+        Click("click-e0", edit, "save", "job-parent");   // Edit/ holds one click: under 3, it stays with Series
+        Click("click-t0", toolbar, "a", "job-parent");
+        Click("click-t1", toolbar, "b", "job-parent");
+        Click("click-m1", modal1, "ok");
+        Click("click-m2", modal2, "ok");
+        foreach (var (id, file, links) in new[] { ("job-refresh", "src/Core/Tv/Refresh.cs", ""), ("job-shared", "src/Core/Tv/Shared.cs", "handler-chain"),
+                     ("job-parent", "src/Core/Tv/Parent.cs", ""), ("handler-chain", "src/Core/Events/Chain.cs", "") })
+        {
+            var point = $"Core|M:Core.{id}.Run";
+            Node(point, NodeKind.Method, file, "project:src/Core/Core.csproj");
+            Flow(id, id.StartsWith("job", StringComparison.Ordinal) ? "job" : "handler", point, $"{file}:3", links == "" ? [] : [links]);
+        }
+        Directory.CreateDirectory(Path.Combine(root, FlowFiles.Folder));
+        File.WriteAllText(Path.Combine(root, FlowFiles.Folder, "index.json"),
+            new JsonObject { ["commit"] = "abc", ["flows"] = new JsonArray([.. flows.Select(f => (JsonNode)f.DeepClone())]) }.ToJsonString());
+        return Areas.Load(graph, root);
+    }
+
+    [Fact]
+    public void An_area_over_40_with_no_menu_children_splits_by_its_subfolders_shared_jobs_going_to_background_and_answers_following_the_split()
+    {
+        var areas = BuildSplit();
+        var confirmed = new AreasFile
+        {
+            Areas =
+            [
+                new AreaSpec { Name = "Series", Menu = ["/series"], Folders = ["web/src/Series"] },
+                new AreaSpec { Name = "Activity", Menu = ["/activity"], Folders = ["web/src/Activity"] },
+                new AreaSpec { Name = "Other", Menu = ["/other"], Folders = ["web/src/Other"] },
+            ],
+            Ties = [new Tie("click-m1", ["Series", "Activity"], "Series"), new Tie("click-m2", ["Series", "Activity"], "Series")],
+        };
+        Assert.Equal(51, areas.Place(confirmed).AreaOf.Values.Count(v => v == "Series"));   // over 40, nothing in the menu to split by
+
+        var (file, placement, added, dropped) = AreaFiles.Extend(areas, confirmed);
+        // Index/ and Details/ become parts after the parent; Edit/ (one click) stays with it; Background last.
+        Assert.Equal(["Series", "Series › Details", "Series › Index", "Series › Background", "Activity", "Other"], file.Areas.Select(a => a.Name));
+        Assert.Equal(("/series", "web/src/Series"), (string.Join(",", file.Areas[0].Menu), string.Join(",", file.Areas[0].Folders)));   // the parent keeps its address and folder
+        Assert.Equal(["web/src/Series/Details"], file.Areas[1].Folders);
+        Assert.Equal("Series › Index", placement.AreaOf["click-i05"]);
+        Assert.Equal("Series › Details", placement.AreaOf["click-d05"]);
+        Assert.Equal("Series", placement.AreaOf["click-e0"]);             // its small subfolder stays with the parent
+        Assert.Equal("Series", placement.AreaOf["click-t0"]);             // directly in the parent folder
+        Assert.Equal("Series › Index", placement.AreaOf["screen-series"]); // its screen's folder is deeper than the parent's (D225)
+        // Condition 1: a job goes with the click that sets it off; one its parts share goes to Background, never the first part.
+        Assert.Equal("Series › Details", placement.AreaOf["job-refresh"]);
+        Assert.Equal("Series › Background", placement.AreaOf["job-shared"]);
+        Assert.Equal("Series › Background", placement.AreaOf["handler-chain"]);   // led only by a Background job
+        Assert.Equal("Series", placement.AreaOf["job-parent"]);                   // the parent's own clicks hold most of its leaders
+        // D234 + D312: an answer naming the split area moves to its one part among the choices; with two parts it is asked again.
+        Assert.Equal([("click-m1", "Series › Details"), ("click-m2", "")], file.Ties.Select(t => (t.Flow, t.Answer)));
+        Assert.Equal(["Series › Details", "Series › Index", "Activity"], file.Ties[1].Choose);
+        Assert.Contains("answer for 'click-m1' moved from 'Series' to its part 'Series › Details'", added);
+        Assert.Contains(added, x => x.StartsWith("split 'Series': 'Series › Background'", StringComparison.Ordinal));
+        Assert.Equal(["'click-m2': 'Series' is no longer one of its choices ('Series › Details', 'Series › Index', 'Activity')"], dropped);
+        Assert.Empty(file.Large);
+
+        // areas check reads the same from the written file, and proposing again on it splits nothing more.
+        var back = AreaFiles.Parse(AreaFiles.Render(file, "abc", placement, true));
+        Assert.Equal(placement.AreaOf, areas.Place(back).AreaOf);
+        var again = AreaFiles.Extend(areas, back);
+        Assert.DoesNotContain(again.Added, x => x.StartsWith("split", StringComparison.Ordinal));
+        Assert.Equal(AreaFiles.Render(file, "abc", placement, true), AreaFiles.Render(again.File, "abc", again.Placement, true));
+    }
+
+    [Fact]
+    public void Answers_still_a_choice_are_kept_through_a_split_and_folder_names_read_as_words()
+    {
+        var areas = BuildSplit();
+        var confirmed = new AreasFile
+        {
+            Areas = [new AreaSpec { Name = "Series", Menu = ["/series"], Folders = ["web/src/Series"] }, new AreaSpec { Name = "Activity", Menu = ["/activity"], Folders = ["web/src/Activity"] }, new AreaSpec { Name = "Other", Menu = ["/other"], Folders = ["web/src/Other"] }],
+            Ties = [new Tie("click-m1", ["Series", "Activity"], "Activity"), new Tie("click-m2", ["Series", "Activity"], "Activity")],
+        };
+        // Answered Activity, still one of the choices after the split: kept (D234).
+        var (file, placement, _, dropped) = AreaFiles.Extend(areas, confirmed);
+        Assert.Empty(dropped);
+        Assert.Equal([("click-m1", "Activity"), ("click-m2", "Activity")], file.Ties.Select(t => (t.Flow, t.Answer)));
+        Assert.Equal("Activity", placement.AreaOf["click-m2"]);
+        Assert.Equal("Monitoring Options", AreaFiles.Readable("MonitoringOptions"));
+        Assert.Equal("Manage Users", AreaFiles.Readable("manage-users"));
+        Assert.Equal("Modals", AreaFiles.Readable("_modals"));
     }
 
     [Fact]

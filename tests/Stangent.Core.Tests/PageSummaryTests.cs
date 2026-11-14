@@ -2,14 +2,12 @@ using System.Text.Json.Nodes;
 using Stangent.Core;
 using Stangent.Flows;
 using Stangent.Graph;
-using Stangent.Spec.Words;
 
 namespace Stangent.Core.Tests;
 
 /// <summary>
 /// Layer 4 (D251–D255): the summary code cuts from flows, on hand-made flow files in the three stacks (a React screen and its click,
-/// an Angular click with a named access rule and shared code, Razor screens with server resources, handlers and a job), and the
-/// AI step around it with fake answers only: no call is ever made.
+/// an Angular click with a named access rule and shared code, Razor screens with server resources, handlers and a job).
 /// </summary>
 public sealed class PageSummaryTests : IDisposable
 {
@@ -257,106 +255,5 @@ public sealed class PageSummaryTests : IDisposable
         Assert.Equal(["T1", "T2"], ids.Where(i => i.StartsWith('T')).ToList());
         Assert.Equal(ids.Count, ids.Distinct().Count());
         Assert.Equal(CanonicalJson.Serialize(s.ToJson()), CanonicalJson.Serialize(Summary().ToJson()));
-    }
-
-    // ---- the AI step, with fakes ----------------------------------------------------------------------------------------------
-
-    StangentRepo Repo(bool on)
-    {
-        File.WriteAllText(Path.Combine(root, StangentRepo.ConfigFile), $"version: 1\nai:\n  model: claude-sonnet-5-5\n  effort: medium\ncomponents:\n  pages: {(on ? "true" : "false")}\n");
-        return StangentRepo.Discover(root);
-    }
-
-    void Page()
-    {
-        Directory.CreateDirectory(Path.Combine(root, "specs/areas/shop"));
-        File.WriteAllText(Path.Combine(root, "specs/areas/shop/page.md"), $"top\n\n{AreaPages.WordsStart}\n{AreaPages.WordsEnd}\n\n## Screens (2)\n");
-    }
-
-    /// <summary>An answer citing every item of the section, each condition marked, 🟡/❓ hedged.</summary>
-    static JsonObject Answer(SummarySection sec, Func<SummaryItem, bool>? skip = null) => new()
-    {
-        ["paragraphs"] = new JsonArray(new JsonObject
-        {
-            ["lead"] = "What happens",
-            ["sentences"] = new JsonArray([.. sec.Items.Where(i => skip?.Invoke(i) != true).Select(i => (JsonNode)new JsonObject
-            {
-                ["text"] = i.Label == "certain" ? $"The app does {i.Id}." : $"The app probably does {i.Id}.",
-                ["items"] = new JsonArray(i.Id),
-                ["conditions"] = new JsonArray([.. i.Conditions.Select((_, n) => (JsonNode)new JsonObject { ["item"] = i.Id, ["condition"] = n + 1, ["is"] = "always" })]),
-            })]),
-        }),
-    };
-
-    [Fact]
-    public void The_checks_reject_what_D255_item_1_forbids()
-    {
-        var sec = Summary().Find("screen-items")!;
-        var items = sec.Items.ToDictionary(i => i.Id);
-        Assert.Empty(WordChecks.Check(Answer(sec), items));
-        var guessed = sec.Items.First(i => i.Label == "guessed");
-        var bad = Answer(sec);
-        var sentences = bad["paragraphs"]![0]!["sentences"]!.AsArray();
-        foreach (var x in sentences.OfType<JsonObject>().Where(x => (string)x["items"]![0]! == guessed.Id)) x["text"] = "The app does it.";
-        sentences.Add(new JsonObject { ["text"] = "It is nice.", ["items"] = new JsonArray(), ["conditions"] = new JsonArray() });
-        sentences.Add(new JsonObject { ["text"] = "See **this**.", ["items"] = new JsonArray("Z9"), ["conditions"] = new JsonArray() });
-        var errors = WordChecks.Check(bad, items);
-        Assert.Contains(errors, e => e.Contains("without a hedge word", StringComparison.Ordinal));
-        Assert.Contains(errors, e => e.Contains("cites no item", StringComparison.Ordinal));
-        Assert.Contains(errors, e => e.Contains("Z9, which isn't one", StringComparison.Ordinal));
-        Assert.Contains(errors, e => e.Contains("holds Markdown", StringComparison.Ordinal));
-        var save = sec.Items.Single(i => i.Kind == "save");
-        var dropped = WordChecks.Check(Answer(sec, i => i.Id == save.Id), items);
-        Assert.Contains($"{save.Id} must be cited and no sentence cites it ({save.Text})", dropped);
-        var unmarked = Answer(sec);
-        foreach (var x in unmarked["paragraphs"]![0]!["sentences"]!.AsArray().OfType<JsonObject>()) x["conditions"] = new JsonArray();
-        Assert.Contains(WordChecks.Check(unmarked, items), e => e.Contains($"cites {save.Id} but doesn't mark its condition 1", StringComparison.Ordinal));
-        Assert.True(WordChecks.Hedged("It isn’t known where it goes."));
-        Assert.False(WordChecks.Hedged("Mayday."));
-    }
-
-    [Fact]
-    public void Off_by_default_and_a_section_written_once_isnt_written_again()
-    {
-        var s = Summary();
-        Assert.Equal("off", AreaWords.Prepare(Repo(on: false), s, "screen-items").Status);
-        var repo = Repo(on: true);
-        Page();
-        var first = AreaWords.Prepare(repo, s, "screen-items");
-        Assert.Equal("write", first.Status);
-        Assert.Equal(AreaWords.Writer, first.Agent);
-        Assert.Equal(AreaWords.OutputSchema, first.Schema);
-        Assert.Contains("**must cite**", File.ReadAllText(Path.Combine(root, ".stangent/pages/shop/screen-items/writer.md")));
-        File.WriteAllText(Path.Combine(root, first.Output!), Answer(s.Find("screen-items")!).ToJsonString());
-        Assert.Equal("checked", AreaWords.Check(repo, s, "screen-items", null).Status);
-        Assert.Equal("current", AreaWords.Prepare(repo, s, "screen-items").Status);
-        var page = File.ReadAllText(Path.Combine(root, "specs/areas/shop/page.md"));
-        Assert.StartsWith($"top\n\n{AreaPages.WordsStart}\n{AreaWords.WordsMarker}", page);
-        Assert.EndsWith($"{AreaPages.WordsEnd}\n\n## Screens (2)\n", page);
-        Assert.Contains("**What happens.** The app does W1. <!-- W1 -->", page);
-        Assert.Contains("*Not written yet: here is the code's list.*", page);   // the other sections
-        Assert.Contains("## On its own", page);
-        // "In short" waits for the others.
-        Assert.Equal("waiting", AreaWords.Prepare(repo, s, PageSummary.InShort).Status);
-    }
-
-    [Fact]
-    public void A_failed_answer_gets_one_retry_then_the_section_keeps_the_codes_list()
-    {
-        var s = Summary();
-        var repo = Repo(on: true);
-        Page();
-        var step = AreaWords.Prepare(repo, s, "clicks");
-        File.WriteAllText(Path.Combine(root, step.Output!), """{"paragraphs":[{"sentences":[{"text":"Nothing.","items":[],"conditions":[]}]}]}""");
-        var retry = AreaWords.Check(repo, s, "clicks", null);
-        Assert.Equal("retry", retry.Status);
-        Assert.Contains("What to fix:", retry.Prompt);
-        Assert.Equal("fallback", AreaWords.Check(repo, s, "clicks", null).Status);   // wrote nothing the second time
-        var page = File.ReadAllText(Path.Combine(root, "specs/areas/shop/page.md"));
-        Assert.Contains("couldn't be checked against the code, so here is the code's list instead", page);
-        Assert.Equal("fallback", AreaWords.Prepare(repo, s, "clicks").Status);
-        Assert.Equal("write", AreaWords.Prepare(repo, s, "clicks", retryFailed: true).Status);
-        var runs = AreaWords.LoadRuns(root);
-        Assert.Equal("fallback", (string)runs[$"{Area}#clicks"]!["words"]!);
     }
 }

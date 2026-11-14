@@ -564,3 +564,29 @@ The first run on real findings from a real FSD, on the same copy: the step reads
 - **Not run:** any real FSD, two real versions of one, a real BA or PM's review, a PR with the section files or the review pasted, a fresh check (D120). No AI, no paid run.
 - **Known limits:** a rejection touching a section with attached files is refused; a changes-only file must number its headings right on its own; the merged version's `original.hash` is the candidate file's, so `fsd reread` can offer the rejected changes again.
 
+
+## A source-only agent on the same key (2026-11-15, D321)
+One fresh Sonnet 5.5 agent with the FSD text (section ids shown), the scope's route prefixes and the Sonarr clone at the
+pinned commit, nothing of `specs/`; its 54 findings turned into a `trace.yaml` and scored by the unchanged `--score-fsd`
+and the key's frozen rule; the scorer's sample of 20 unplanted findings (seed 42) judged by a fresh Opus 5.5 checker.
+Files: `benchmark/results/2026-11-15-source-only-fsd/` (method, input, findings, hand check, score).
+
+| | Old pipeline (2a pages + links + D119 + D151) | Source-only agent |
+|---|---|---|
+| Found (of 30) | 24 | 26 |
+| gap / conflict / undocumented | 10 / 10 / 4 | 10 / 10 / 6 |
+| As the planted kind | 20 | 25 |
+| False alarms | 31.4% | 7.8% (range 0–15.6%; 3 false of 20 sampled: two routes that only redirect, one screen read as out of scope) |
+| Spend | about $19 a run (extraction $0.80, links $1.41, disprove $16.51), not counting the 718 AI-written reference pages it reads | 105K tokens (53 calls, 2.7 minutes); checker 81K |
+
+Missed: U5 (Add New's cutoff-unmet search option), U6 (manual import from the queue), U7 (unmonitor selected missing),
+U10 (mark a grabbed release as failed): all behaviours on screens the FSD describes. Its 20 whole-screen findings it didn't
+open one by one; the checker found two of them are redirects.
+
+**Read by D321's frozen rule:** between the two marks (24–26 found, at or below 31.4%), so a tie or better for the source
+agent, not at 2c's 27. On every number it did better: two more found, five more as the right kind, a quarter of the
+false alarms, for a fraction of the spend. The scorer's own bars (80% found and 60% per kind; at most 30% false) both pass.
+**Limits:** one run; the FSD (about 60 sentences) and the key were written by an AI in this project; Sonarr is public, so the
+model may know it; it says nothing about a 200-page FSD or a much larger repo. And it compares against the old layers (2a's
+AI pages), not the rebuilt 2–4, which were never tried on this job. What it does show: an agent with the source is a strong
+baseline that any layer 5 must beat (D320).

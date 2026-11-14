@@ -25,7 +25,7 @@ public static class StangentComponents
     const string Graph = "graph build";
     static readonly string[] Links = ["fsd prepare", "fsd check"];
     static readonly string[] Pages = ["spec prepare", "spec check"];
-    static readonly string[] AiSteps = ["pages prepare", "spec prepare", "fsd prepare", "fsd disprove prepare", "req prepare", "ticket points", "ticket prepare", "ticket match", "ticket prove", "ticket draft", "spec ask"];
+    static readonly string[] AiSteps = ["spec prepare", "fsd prepare", "fsd disprove prepare", "req prepare", "ticket points", "ticket prepare", "ticket match", "ticket prove", "ticket draft", "spec ask"];
 
     static StangentComponent Detector(string name, string label, params string[] needs) =>
         new($"detector-{name}", label, "detectors", true, [Graph], needs);
@@ -87,7 +87,7 @@ public static class StangentComponents
         new("table-facts", "A document's tables compared with the code by code, a second route to code: labelled, pending the owner's answer on D68", "fsd.compareTables", false, ["fsd compare-tables", Graph], []),
         new("judge-finer-verdicts", "The link judge can also say partial and unclear", "fsd.judgeFinerVerdicts", false, Links, []),
         new("group-sections", "The link judge reads a run of small neighbouring sections as one unit", "fsd.groupSections", false, Links, []),
-        new("pages", "Layer 4: an area's page in plain words, one AI call per section, every sentence checked against the code's items (D251–D255). It writes pages people read and costs money, so it's off by default", "components.pages", false, ["pages prepare", "pages check"], ["ai"]),
+        new("pages", "Layer 4: each area's page.md as a developer page by code, no AI: per click that changes something a flowchart, a scenario table and its lists, with flow-file step numbers (D278–D285). Written by code and read by nothing yet, so it's off until a person has read them", "components.pages", false, ["areas check", "pages verify"], []),
         new("spec-ask", "Ask how the app works, answered from the reference pages with citations", "spec.ask", false, ["spec ask", "spec ask-check"], ["ai"]),
         new("ticket-excel-text", "A ticket's workbooks and files inside its attachments reach ticket.json, and so the AI steps. Off, they're only saved beside the attachment", "components.ticket-excel-text", false, ["ticket pull"], []),
     ];

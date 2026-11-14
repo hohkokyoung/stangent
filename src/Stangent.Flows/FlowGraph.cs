@@ -5,7 +5,21 @@ using Stangent.Graph.Detectors;
 namespace Stangent.Flows;
 
 /// <summary>The settings a flow is built with (D172, D176); written into every flow file, so a rebuild with others differs.</summary>
-public sealed record FlowSettings(int HubCallers = 10, int Depth = 8);
+public sealed record FlowSettings(int HubCallers = 10, int Depth = 8, IReadOnlyList<string>? OutsideLibraries = null)
+{
+    /// <summary>
+    /// D302: the client libraries of outside services, by namespace (a name and everything under it): a call into one is an outside
+    /// call, not a package call. A project adds its own in <c>stangent.yaml</c>'s <c>flows.outsideLibraries</c>.
+    /// </summary>
+    public static readonly IReadOnlyList<string> DefaultOutsideLibraries =
+        ["Azure", "Amazon", "Stripe", "Twilio", "SendGrid", "brevo_csharp", "sib_api_v3_sdk", "Avalara.AvaTax", "MailKit", "System.Net.Mail.SmtpClient"];
+
+    /// <summary>The defaults and the project's own, each once, in order.</summary>
+    public IReadOnlyList<string> Outside => [.. DefaultOutsideLibraries.Concat(OutsideLibraries ?? []).Distinct(StringComparer.Ordinal)];
+
+    /// <summary>Whether <paramref name="name"/> (a namespace, or a namespace and type) is one of the libraries or under one.</summary>
+    public bool IsOutside(string name) => Outside.Any(l => name == l || name.StartsWith(l + ".", StringComparison.Ordinal));
+}
 
 /// <summary>A condition around a call or exit, quoted exactly (D174): its kind, its code text and its line.</summary>
 public sealed record Condition(string Kind, string Code, string File, int Line, string? Case = null);
@@ -70,8 +84,20 @@ internal sealed partial class FlowGraph
             .ToLookup(x => x.Key, x => x.Rule, StringComparer.Ordinal);
         ScriptPoints = Nodes.Values.Where(n => n.Kind == NodeKind.Method && n.Id.StartsWith("ts|", StringComparison.Ordinal) && !n.IsTest && n.File is not null && n.File.EndsWith(".js", StringComparison.Ordinal))
             .OrderBy(n => n.Id, StringComparer.Ordinal).ToLookup(n => n.Name, n => n.Id, StringComparer.Ordinal);
+        pushWrappers = facts.Where(f => f.Kind == "wrapper" && f.Detector == "signalr").Select(f => (f.Owner, f["index"])).ToHashSet();
+        pushWrapperPoints = pushWrappers.Select(w => w.Item1).ToHashSet(StringComparer.Ordinal);
         TableOf = edges.Where(e => e.Kind == EdgeKind.Maps && Nodes.TryGetValue(e.Source, out var t) && t.Kind == NodeKind.Table)
             .GroupBy(e => e.Target, StringComparer.Ordinal).ToDictionary(g => g.Key, g => Nodes[g.Select(e => e.Source).Order(StringComparer.Ordinal).First()].Name, StringComparer.Ordinal);
+    }
+
+    readonly HashSet<(string, string)> pushWrappers;
+    readonly HashSet<string> pushWrapperPoints;
+
+    /// <summary>D292: a method whose parameter at <paramref name="index"/> names the SignalR message it sends (G10's <c>wrapper</c>), or an interface member dispatching to one; any parameter when null.</summary>
+    public bool IsPushWrapper(string target, string? index = null)
+    {
+        bool Is(string t) => index is null ? pushWrapperPoints.Contains(t) : pushWrappers.Contains((t, index));
+        return Is(target) || Out(target, EdgeKind.DispatchesTo).Any(e => Is(e.Target));
     }
 
     public bool IsTest(string id) => Nodes.TryGetValue(id, out var n) && n.IsTest;

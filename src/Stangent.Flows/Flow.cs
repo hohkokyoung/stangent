@@ -35,11 +35,27 @@ public sealed class Step
     internal Step? Parent { get; init; }
 }
 
-public sealed record Exit(string Kind, string What, At At, List<Condition> Conditions, int? Step, string Point);
+/// <summary>An early exit (a stop). D300: <see cref="CaughtBy"/> is the catch that takes a thrown error, which makes it handled, not a
+/// stop; <see cref="Unsure"/> says why it can't be told whether a catch on the way takes it (❓).</summary>
+public sealed record Exit(string Kind, string What, At At, List<Condition> Conditions, int? Step, string Point)
+{
+    public At? CaughtBy { get; init; }
+    public string? Unsure { get; init; }
+    /// <summary>D304(7): what the catch returns (its own <c>return</c> or the one right after its <c>try</c>); null when not known.</summary>
+    public string? CatchEnds { get; init; }
+}
 
 /// <summary>A place the flow leaves its bounds (D173): message, runs-later, screen, continues. A guessed link carries its own
 /// reason (step 6, D237 item 2): a redirect to no known screen says so, not "a queued command matched to its job".</summary>
-public sealed record Link(string Kind, string To, string? ToFlow, At At, string Sentence, int? Step, bool Guessed, string? Reason = null);
+public sealed record Link(string Kind, string To, string? ToFlow, At At, string Sentence, int? Step, bool Guessed, string? Reason = null)
+{
+    /// <summary>D310: while building, a <c>continues</c> link made through a call on <c>this</c>: the class of the object the shared code
+    /// runs on, so it is walked for that class. Not written.</summary>
+    internal string? Receiver { get; init; }
+    /// <summary>D316: while building, a <c>continues</c> link made where no mutation was started: the shared code is walked so, its
+    /// mutation hooks' requests only declared. Not written.</summary>
+    internal bool Declared { get; init; }
+}
 
 public sealed record Check(string What, string Rule, string Property, At At, string Message, bool OnlyWarns);
 
@@ -65,6 +81,8 @@ public sealed class Flow
     public List<Check> Checks { get; } = [];
     public List<Step> Steps { get; } = [];
     public List<Exit> Exits { get; } = [];
+    /// <summary>D300: thrown errors a catch on the way takes; the flow carries on.</summary>
+    public List<Exit> Handled { get; } = [];
     public List<Link> Links { get; } = [];
     public List<Guess> Guesses { get; } = [];
     public List<Unknown> Unknowns { get; } = [];
@@ -72,6 +90,10 @@ public sealed class Flow
     public List<string> DisplayOnly { get; } = [];
     public string? Runs { get; init; }
     public string Home { get; init; } = "";
+    /// <summary>D310: a shared flow walked for one receiving class: that class (not written; its id and name say it).</summary>
+    internal string? Receiver { get; set; }
+    /// <summary>D316: a shared flow walked for flows that enter it where no mutation was started (not written; its id and name say it).</summary>
+    internal bool Declared { get; set; }
     /// <summary>Every point the walk went into, for <c>flows check</c>'s "no silent skips" (not written).</summary>
     internal HashSet<string> Reached { get; } = new(StringComparer.Ordinal);
 }

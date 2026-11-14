@@ -757,6 +757,35 @@ test("code in a function handed to code that keeps it runs later; a library's ca
   assert.deepEqual(sites, ["10 ", "11 listener:on", "12 kept:keepDeep", "8 kept:keepAll", "9 "]);
 });
 
+test("a function only stored on a property, or handed to code that only stores a function calling it, runs later (D306)", () => {
+  const root = project({
+    "src/a.ts": [
+      "declare function act(): void;",
+      "declare function later(): { pipe(f: unknown): unknown };",
+      "declare function tap(f: () => void): unknown;",
+      "type Item = { callback?: (a: Item) => unknown };",
+      "function wire(items: Item[], handler: (a: Item) => unknown) {",
+      "  items.forEach((i) => { i.callback = (a) => handler(a); });",
+      "  return items;",
+      "}",
+      "export function select(items: Item[]) {",
+      "  wire(items, (a) => act());",
+      "  items[0].callback = () => act();",
+      "  items[0].callback = () => later().pipe(tap(() => act()));",
+      "  run(items, (a) => act());",
+      "  const reader = { onload: null as null | (() => void) };",
+      "  reader.onload = () => act();",
+      "}",
+      "function run(items: Item[], handler: (a: Item) => unknown) { items.forEach((i) => handler(i)); }",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const sites = lines.filter((l) => l.t === "fact" && l.kind === "call-site" && l.data.target.endsWith("#act")).map((l) => l.t === "fact" ? `${l.line} ${l.data.deferred ?? ""}` : "").sort();
+  // The stream inside a stored function is the stored function's: it doesn't run in this flow at all.
+  // An event property's function is a listener, run when the event comes (FileReader's onload), not a later action.
+  assert.deepEqual(sites, ["10 kept:wire", "11 kept:callback", "12 kept:callback", "13 ", "15 listener:onload"]);
+});
+
 test("a function stored as an object's property runs later; a top-level object's function runs where it's called (D191); a stream's callback runs now only when the stream starts with a request (D202)", () => {
   const root = project({
     "src/lib.d.ts": [

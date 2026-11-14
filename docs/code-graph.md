@@ -341,6 +341,17 @@ language file, views compiled only at runtime (nopCommerce's plugins: a ❓ per 
 links (`<a asp-action>`) and redirects as navigation, and a partial looked up through the requesting controller's folder rather
 than the view's own.
 
+## Facts for layer 3's fixes (D294, D300–D302)
+
+From the `conditions` detector: `try` (on the member: `from`/`to`, the lines its block covers, and `catches`, JSON: each
+catch's `type`, its full name, `*` for a bare catch, `?` when the compiler can't tell; its `line`; `filtered` for a `when`
+filter; `rethrows` when it throws the same error again); a throw's `exit` carries `exceptionTypes` (its type's full name and
+every base type's, nearest first); `file-change` (`change` `writes` or `deletes`, `method`) on a call that writes or deletes a
+file; a filter's `context.Result` set to anything off D176's list is an `exit` of kind `StatusCode` (a constant `StatusCode` in
+its initialiser) or `Result` (D301). A package `call-site` carries `ns`, its namespace (D302). The `code-graph` version doesn't
+move: these are new facts and fields, and nothing reading the graph's lines changes; graphs built before them are rebuilt
+with `--full` (detector code isn't part of a project's fingerprint).
+
 ## Building
 
 `stangent graph build [--no-restore] [--full]`

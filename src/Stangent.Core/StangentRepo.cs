@@ -26,6 +26,9 @@ public sealed class StangentConfig
     public FsdConfig Fsd { get; set; } = new();
     /// <summary>Jira tickets (Phase 3, D69–D82).</summary>
     public TicketsConfig Tickets { get; set; } = new();
+    /// <summary>Layer 4's developer page (D281, D282): what it shows. Written only while <c>components.pages</c> is on.</summary>
+    public PagesConfig Pages { get; set; } = new();
+    public FlowsConfig Flows { get; set; } = new();
     /// <summary>One place to switch any component on or off (D121): <c>components: { page-verifier: false }</c>. Unset keeps today's behaviour, and the
     /// older keys (<c>history.enabled</c>, <c>fsd.findings</c>, ...) keep working; this wins where both are set. <see cref="StangentComponents"/> lists them.</summary>
     public Dictionary<string, bool> Components { get; set; } = [];
@@ -90,6 +93,26 @@ public sealed class StangentConfig
         public bool Ask { get; set; }
         /// <summary><c>spec ask</c>: the most pages one answer's bundle holds. A stated setting, not a measured one.</summary>
         public int AskMaxPages { get; set; } = 5;
+    }
+
+    /// <summary>
+    /// Layer 4's developer page (D281, D282). Both are judgements fitted to three repos, not measured limits, hence settings.
+    /// </summary>
+    public sealed class PagesConfig
+    {
+        /// <summary>D281: a change more than this percent of the app's start flows pass through (and at least 10 flows) is a framework
+        /// change: listed under "Changes made in shared code", not drawn, and it doesn't make a click a changing one. 1–100.</summary>
+        public int FrameworkShare { get; set; } = 10;
+        /// <summary>D282, D286: a click's chart with more nodes than this isn't drawn; the page says how many it would have had. At least 1.</summary>
+        public int ChartCap { get; set; } = 60;
+    }
+
+    /// <summary>Layer 3's flows (D302).</summary>
+    public sealed class FlowsConfig
+    {
+        /// <summary>D302: namespaces of outside services' client libraries beyond the defaults (a name and everything under it, or a
+        /// namespace and type such as <c>Acme.Billing.Client</c>): a call into one is an outside call, not a package call.</summary>
+        public List<string> OutsideLibraries { get; set; } = [];
     }
 
     public sealed class FsdConfig
@@ -307,6 +330,13 @@ public sealed class StangentRepo
         {
             var config = Reader.Deserialize<StangentConfig?>(File.ReadAllText(path)) ?? new StangentConfig();
             StangentComponents.Apply(config);
+            if (config.Pages.FrameworkShare is < 1 or > 100)
+                throw new StangentException("invalid_config", $"{path}: pages.frameworkShare is {config.Pages.FrameworkShare}; it is a percent of the app's flows, 1 to 100.");
+            if (config.Pages.ChartCap < 1)
+                throw new StangentException("invalid_config", $"{path}: pages.chartCap is {config.Pages.ChartCap}; it is a number of chart nodes, at least 1.");
+            foreach (var lib in config.Flows.OutsideLibraries)
+                if (string.IsNullOrWhiteSpace(lib) || !System.Text.RegularExpressions.Regex.IsMatch(lib, @"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$"))
+                    throw new StangentException("invalid_config", $"{path}: flows.outsideLibraries has '{lib}'; each entry is a namespace (or namespace and type), such as Acme.Billing.");
             if (config.Version != 1)
                 throw new StangentException("unsupported_config", $"{path}: version {config.Version} is not supported (expected 1).");
             return config;

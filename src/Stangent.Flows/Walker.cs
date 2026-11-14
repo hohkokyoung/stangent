@@ -13,24 +13,62 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
         public required Step Step;
         public List<Item> Children { get; } = [];
         public List<(Exit Exit, Item? Of)> Exits { get; } = [];
+        /// <summary>D300: thrown errors a caller's <c>catch</c> takes: not stops.</summary>
+        public List<Exit> Handled { get; } = [];
+        /// <summary>The point whose code this item's step is written in (its <c>At</c>'s point); null for the start's own steps.</summary>
+        public string? In;
         public List<Link> Links { get; } = [];
         public List<Unknown> Unknowns { get; } = [];
         public Item? BackTo, SameAs;
         public Item? Parent;
+        /// <summary>D316: under this step a mutation is started (a value from a hook's result is called, <c>mutate(…)</c>), so a request a
+        /// mutation hook declares below it is sent.</summary>
+        public bool Starts;
     }
 
     readonly Item root = new() { Step = new Step { What = "start", At = flow.Start.At, Kind = "start" } };
     readonly Dictionary<string, Item> walked = new(StringComparer.Ordinal);
+    /// <summary>D316: points holding a mutation's request or function, walked where no mutation was started (their requests only
+    /// declared): kept apart, so a later started call into the same point walks it again and follows the request.</summary>
+    readonly Dictionary<string, Item> walkedDeclared = new(StringComparer.Ordinal);
+    /// <summary>Every point walked, either way.</summary>
+    IEnumerable<string> WalkedPoints => walked.Keys.Union(walkedDeclared.Keys, StringComparer.Ordinal);
+
+    /// <summary>D316: the walked map for a call into <paramref name="point"/> under <paramref name="at"/>.</summary>
+    Dictionary<string, Item> WalkedFor(string point, Item at) => !StartedAt(at) && HoldsMutation(point) ? walkedDeclared : walked;
+
+    /// <summary>D316: the point's own code hands a mutation hook a request or a function (a <c>mutation:</c> deferral, D214).</summary>
+    bool HoldsMutation(string point) =>
+        g.Facts(point, "http-match").Concat(g.Facts(point, "call-site")).Any(f => f["deferred"].StartsWith("mutation:", StringComparison.Ordinal));
     readonly HashSet<string> endpointsSeen = new(StringComparer.Ordinal);
     /// <summary>D191: an onclick's route, waiting for the line in its script that sends to the URL the onclick passed (<c>point@arg</c>).</summary>
     readonly Dictionary<string, List<Fact>> pending = new(StringComparer.Ordinal);
     string? firstAction;
+    readonly Stack<string> visiting = new();
+    /// <summary>D310: the class of the object each visited point runs on (null: not known), and whether it is the shared flow's own
+    /// receiver, carried down from its start through calls on <c>this</c>.</summary>
+    readonly Stack<Receiver> receivers = new();
+    /// <summary>D310: a shared flow walked for one receiving class (the class a flow entered it through); null: the class its code is in.</summary>
+    public string? RootReceiver { get; init; }
+    /// <summary>D310: a virtual call on <c>this</c> made on the shared flow's own receiver still runs one of several overrides, so a
+    /// receiving class would narrow it: the shared flow is walked once per receiving class.</summary>
+    public bool ReceiverDependent { get; private set; }
+    /// <summary>D310: shared flows this one continues into through calls on <c>this</c> made on its own receiver.</summary>
+    public HashSet<string> RootSelfLinks { get; } = new(StringComparer.Ordinal);
     public HashSet<Fact>? OnLoadSeen { get; init; }
+    /// <summary>D316: the walk starts inside a started mutation (a shared flow entered by a call that starts it): requests mutation hooks
+    /// declare are followed. False for a flow's own start and for a shared flow entered where nothing starts one.</summary>
+    public bool StartedRoot { get; init; }
+    /// <summary>D316: the walk followed a mutation's request or function only because <see cref="StartedRoot"/> said it was started, so a
+    /// flow entering this shared code where nothing starts one needs a walk of its own.</summary>
+    public bool MutationDependent { get; private set; }
     public bool ActorFixed { get; init; }
-    static readonly HashSet<string> MeaningfulKinds = ["http", "database", "outside-call", "message", "queue"];
+    static readonly HashSet<string> MeaningfulKinds = ["http", "database", "outside-call", "message", "queue", "push", "file"];
 
     /// <summary>The flow reaches a server call, a save, an outside call, a message or queued work (D171's test for a click).</summary>
     public bool Meaningful => Subtree(root).Any(i => MeaningfulKinds.Contains(i.Step.Kind));
+    /// <summary>D306: the keepers of code the walk left for a later call (a "waits" end), in name order.</summary>
+    public IReadOnlyList<string> Waits => [.. Subtree(root).Where(i => i.Step.End?.Kind == "waits").Select(i => i.Step.End!.Detail).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
 
     public void Root(string point, IReadOnlyList<string>? shown = null)
     {
@@ -55,8 +93,9 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
     public void RootShared(string point)
     {
         walked[point] = root;
-        var runs = Runs(point);
-        if (runs.Count == 1 && runs[0] == point) { Visit(point, root, 0, [point]); return; }
+        var self = new Receiver(RootReceiver ?? DocIds(point), true);
+        var runs = RootReceiver is null ? Runs(point) : Narrow(Runs(point), self.Type);
+        if (runs.Count == 1 && runs[0] == point) { Visit(point, root, 0, [point], self); return; }
         foreach (var run in runs)
         {
             var node = g.Nodes[run];
@@ -66,20 +105,65 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 What = $"runs {node.Name}", At = new At(node.File ?? "", line, g.Code(node.File, line)), Kind = "call", Point = run, Depth = 0,
                 Guessed = runs.Count > 1, GuessReason = runs.Count > 1 ? OneOf(point, runs) : null,
             });
-            Into(item, run, 0, [point]);
+            PluginCalls(point, item, run, item.Step.At, [], 0);
+            Into(item, run, 0, [point], self);
         }
     }
 
     /// <summary>What a shared flow for a call to <paramref name="target"/> starts at: the one point it runs, else the target itself.</summary>
     string SharedPoint(string target) => Runs(target) is [var only] ? only : target;
 
+    /// <summary>D310: a call on <c>this</c> narrowed to <paramref name="runs"/>: the one it runs, else the target itself.</summary>
+    static string SharedPoint(string target, List<string> runs) => runs is [var only] ? only : target;
+
+    /// <summary>
+    /// D310: a shared flow entered through a call on <c>this</c> runs on the caller's object: the link carries its class when that is
+    /// narrower than the class the shared code is written in, so the shared flow can be walked for that class.
+    /// </summary>
+    Link SharedLink(Link link, Receiver? receiver, bool started)
+    {
+        // D316: a shared flow entered where no mutation was started is walked so (its mutation hooks' requests only declared).
+        if (!started) link = link with { Declared = true };
+        if (receiver is not { Type: { } type } r || link.ToFlow is not { } to) return link;
+        if (r.FromRoot) RootSelfLinks.Add(to);
+        return type == DocIds(to) ? link : link with { Receiver = type };
+    }
+
     List<string> Runs(string target) => [.. g.Dispatch(target).Where(t => g.Nodes.TryGetValue(t, out var n) && n.File is not null && !n.IsTest)];
 
     // ---- the walk ------------------------------------------------------------------------------------------------------
 
-    void Visit(string point, Item parent, int depth, List<string> branch)
+    void Visit(string point, Item parent, int depth, List<string> branch, Receiver? receiver = null)
     {
         if (!g.Nodes.TryGetValue(point, out var node)) return;
+        visiting.Push(point);
+        // D310: a point entered other than through `this` runs on an object of its own class (or one built on it).
+        receivers.Push(receiver ?? new Receiver(DocIds(point), false));
+        try { VisitLines(point, node, parent, depth, branch); }
+        finally { visiting.Pop(); receivers.Pop(); }
+    }
+
+    /// <summary>D310: the class an object is known to be (it or a class built on it), and whether it is a shared flow's own receiver.</summary>
+    internal readonly record struct Receiver(string? Type, bool FromRoot);
+
+    /// <summary>
+    /// D310: the overrides a virtual call on <c>this</c> can run when the object is <paramref name="receiver"/> or a class built on it:
+    /// the one the receiver's nearest class provides (itself, else its nearest base), and those of classes built on it. Not known, or
+    /// nothing fits: every one, as before.
+    /// </summary>
+    List<string> Narrow(List<string> runs, string? receiver)
+    {
+        if (receiver is null || runs.Count <= 1) return runs;
+        var below = g.Implementers(receiver);
+        below.Remove(receiver);
+        var typeOf = runs.ToDictionary(r => r, r => DocIds(r), StringComparer.Ordinal);
+        var nearest = g.BaseChain(receiver).FirstOrDefault(t => runs.Any(r => typeOf[r] == t));
+        var kept = runs.Where(r => typeOf[r] is { } t && (t == nearest || below.Contains(t))).ToList();
+        return kept.Count == 0 ? runs : kept;
+    }
+
+    void VisitLines(string point, Node node, Item parent, int depth, List<string> branch)
+    {
         flow.Reached.Add(point);
         var file = node.File ?? "";
         var callSites = g.Facts(point, "call-site").ToList();
@@ -89,6 +173,7 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
             .Concat(g.Facts(point, "http-match").Select(f => f.Line)).Concat(g.Facts(point, "exit").Select(f => f.Line))
             .Concat(g.Facts(point, "on-load").Select(f => f.Line)).Concat(g.BlindByOwner[point].Select(b => b.Line))
             .Concat(g.Facts(point, "navigate").Select(f => f.Line)).Concat(g.Facts(point, "creates-one-of").Select(f => f.Line))
+            .Concat(g.Facts(point, "file-change").Select(f => f.Line)).Concat(g.Facts(point, "send").Select(f => f.Line)).Concat(g.Facts(point, "send-arg").Select(f => f.Line))
             .Distinct().Order().ToList();
         // D193: a component's fields are made with it: an initialiser that calls something (`x = this.svc.makeResource(…)`) runs
         // when the component is created, before its own code. A field holding a function runs only when called: not here.
@@ -99,6 +184,9 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 if (!branch.Contains(field, StringComparer.Ordinal) && walked.TryAdd(field, parent)) Visit(field, parent, depth, [.. branch, field]);
         var later = g.Facts(point, "job").Select(f => f["runs"]).ToHashSet(StringComparer.Ordinal);
         var conditions = g.Facts(point, "condition").ToLookup(f => f.Line);
+        // D306: code handed over to be kept for a later call (a menu action's callback set at selection time) is one boundary step
+        // per keeper, at the first line of it, so the cut shows instead of the code silently missing.
+        var keptLines = KeptWork(point).GroupBy(f => f["deferred"][5..], StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.Min(f => f.Line), StringComparer.Ordinal);
 
         foreach (var line in lines)
         {
@@ -201,9 +289,37 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
                     End = new End("screen", nav["to"]) });
                 ScreenLinks(step, at, nav["to"], g.PagesAt(nav["to"], at.File, nav["root"] == "1"));
             }
+            // D292: a SignalR message pushed to the browser, sent directly or through the app's wrapper (whose call isn't walked).
+            foreach (var push in Pushes(point, line, sites).OrderBy(x => x.Name, StringComparer.Ordinal))
+            {
+                var item = Add(parent, new Step
+                {
+                    What = push.Name is { } name ? $"pushes {name} to the browser" : "pushes a message named at runtime to the browser", At = at, Kind = "push",
+                    Conditions = CondsFor(push.Target), End = new End("push", push.Name ?? "a message named at runtime"), Depth = depth, Guessed = push.Name is not null && push.Target is not null,
+                    GuessReason = push.Name is not null && push.Target is not null ? "sent through the app's own wrapper, whose name parameter reaches SignalR's SendAsync" : null,
+                });
+                if (push.Name is null) item.Unknowns.Add(new Unknown(null, point, at, "SignalR message name built at runtime"));
+                if (push.Target is not null) consumed.Add(push.Target);
+            }
+            // D294: a file written or deleted (the walk already goes through an app's own wrappers, so the call at the bottom is enough).
+            var fileMethods = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var fc in g.Facts(point, "file-change").Where(f => f.Line == line && Now(f)).OrderBy(f => f["method"], StringComparer.Ordinal))
+            {
+                if (!fileMethods.Add(fc["method"])) continue;
+                Add(parent, new Step { What = $"{fc["change"]} a file through {fc["method"]}", At = at, Kind = "file", Conditions = CondsFor(""), End = new End("file", $"{fc["change"]} a file ({fc["method"]})"), Depth = depth });
+            }
             foreach (var exit in g.Facts(point, "exit").Where(f => f.Line == line && Now(f)).OrderBy(f => f["text"], StringComparer.Ordinal))
             {
-                parent.Exits.Add((new Exit(exit["kind"], ExitSentence(exit), at, FlowGraph.ConditionsOf(exit), null, point), parent));
+                var stop = new Exit(exit["kind"], ExitSentence(exit), at, FlowGraph.ConditionsOf(exit), null, point);
+                if (exit["kind"] == "throw")
+                {
+                    // D300: a thrown error a catch on the way takes is handled, not a stop.
+                    var (caught, unsure, turned, ends) = Caught(point, line, exit, parent);
+                    if (turned is not null) stop = stop with { What = $"{stop.What}, {turned}" };
+                    if (caught is not null) { parent.Handled.Add(stop with { CaughtBy = caught, CatchEnds = ends }); continue; }
+                    if (unsure is not null) stop = stop with { Unsure = unsure };
+                }
+                parent.Exits.Add((stop, parent));
                 // D204: a redirect leaves for another screen: a link to that screen's opening flow.
                 if (exit["kind"] == "Redirect")
                 {
@@ -231,12 +347,26 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 var target = site["target"];
                 if (site["kind"] == "package")
                 {
+                    // D294: a file write the package makes (NetVips, ImageSharp, CopyToAsync onto a file) is its file step already.
+                    if (fileMethods.Contains(site["method"])) continue;
                     // D188: a package's code is a step, not walked (it isn't on the map).
                     if (consumed.Count == 0 && !later.Contains(target) && IdentityStore(site) is { } store)
+                    {
                         // D200: ASP.NET Identity's managers read and save the user store; which tables, the package's own code picks.
-                        Add(parent, new Step { What = $"reads or saves the Identity user store through {site["method"]}", At = at, Kind = "database", Conditions = CondsFor(""), Depth = depth,
+                        // D291: sorted by the method's verb; a verb on neither list stays "reads or saves".
+                        var verb = IdentityVerb(site["method"]);
+                        Add(parent, new Step { What = $"{verb ?? "reads or saves"} the Identity user store through {site["method"]}", At = at, Kind = "database", Conditions = CondsFor(""), Depth = depth,
                             End = new End("database", store), Guessed = true,
-                            GuessReason = "an ASP.NET Identity manager's async call reads or saves its store (the user, role, claim and token tables); which ones, the package's code picks" });
+                            GuessReason = verb is null
+                                ? "an ASP.NET Identity manager's async call reads or saves its store (the user, role, claim and token tables); which ones, the package's code picks"
+                                : $"an ASP.NET Identity manager's call read as one that {verb} its store by its method's verb; which tables, the package's code picks" });
+                    }
+                    else if (consumed.Count == 0 && !later.Contains(target) && s.IsOutside(site["ns"] == "" ? site["package"] : $"{site["ns"]}.{TypeOf(site["method"])}") && OutsideDup(point, line))
+                        continue;   // D304(9): D199 already has this line's outside call
+                    else if (consumed.Count == 0 && !later.Contains(target) && !LocalBuilder(site["method"]) && s.IsOutside(site["ns"] == "" ? site["package"] : $"{site["ns"]}.{TypeOf(site["method"])}"))
+                        // D302: a known outside service's client library: an outside call, not a package call.
+                        Add(parent, new Step { What = $"calls {site["method"]} outside the app ({site["package"]})", At = at, Kind = "outside-call", Conditions = CondsFor(""), Depth = depth,
+                            End = new End("outside-call", $"{site["package"]}: {site["method"]}") });
                     else if (consumed.Count == 0 && !later.Contains(target))
                         Add(parent, new Step { What = $"calls {site["method"]} in the package {site["package"]}", At = at, Kind = "package", Conditions = CondsFor(""), Depth = depth,
                             // D199: an MVC action returning a view or a redirect leads to that screen.
@@ -246,8 +376,28 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 if (consumed.Contains(target) || later.Contains(target)) continue;
                 Call(point, site, target, at, CondsFor(target), parent, depth, branch);
             }
+            foreach (var keeper in keptLines.Where(k => k.Value == line).Select(k => k.Key).Order(StringComparer.Ordinal))
+                Add(parent, new Step
+                {
+                    What = $"leaves code for later ({keeper}): it runs only when something calls it afterwards, such as a later click, so it isn't walked here",
+                    At = at, Kind = "call", Conditions = CondsFor(null), End = new End("waits", $"kept by {keeper}, run by a later call"), Depth = depth,
+                });
             foreach (var blind in g.BlindByOwner[point].Where(b => b.Line == line && !(opened && b.Reason.EndsWith("URL built at runtime", StringComparison.Ordinal))).OrderBy(b => b.Reason, StringComparer.Ordinal))
             {
+                // D316: an HTTP call whose URL is built at runtime, made by a mutation's function (or by a hook that hands one its
+                // function, such as `useApiMutation`) where no mutation was started: declared, not sent.
+                if (blind.Reason.StartsWith("HTTP ", StringComparison.Ordinal)
+                    && callSites.Any(f => f.Line == line && (f["deferred"].StartsWith("mutation:", StringComparison.Ordinal) || f["target"] != "" && HoldsMutation(f["target"])))
+                    && !Sent(parent))
+                {
+                    var request = blind.Reason["HTTP ".Length..].Replace(" to a URL built at runtime", " (URL built at runtime)", StringComparison.Ordinal);
+                    Add(parent, new Step
+                    {
+                        What = $"declares {request}, sent only when a click (or other code) calls `mutate(…)`, so not followed here",
+                        At = new At(blind.File, blind.Line, g.Code(blind.File, blind.Line)), Kind = "call", Depth = depth, End = new End("waits", "declared by a mutation hook, sent when `mutate(…)` is called"),
+                    });
+                    continue;
+                }
                 var bat = new At(blind.File, blind.Line, g.Code(blind.File, blind.Line));
                 // D198: an outside HTTP call whose URL is built at runtime is still an outside call: it ends `outside-call`, ❓ where.
                 // D199: so is a mail client's (`outside SMTP …`).
@@ -266,6 +416,16 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 });
             }
         }
+    }
+
+    /// <summary>D306: the facts of a point whose code is kept for a later call (D201's <c>kept:</c>) and would do something: a call
+    /// into the repo, a request, a navigation, a file change or a stop.</summary>
+    IEnumerable<Fact> KeptWork(string point)
+    {
+        static bool Kept(Fact f) => f["deferred"].StartsWith("kept:", StringComparison.Ordinal) && f["deferred"].Length > 5;
+        return g.Facts(point, "call-site").Where(f => Kept(f) && g.Nodes.ContainsKey(f["target"]))
+            .Concat(g.Facts(point, "http-match").Where(Kept)).Concat(g.Facts(point, "navigate").Where(Kept))
+            .Concat(g.Facts(point, "file-change").Where(Kept)).Concat(g.Facts(point, "exit").Where(Kept));
     }
 
     /// <summary>
@@ -319,6 +479,111 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
             ? $"the Identity user store ({method})" : null;
     }
 
+    static readonly string[] SaveVerbs = ["Add", "Update", "Remove", "Set", "Create", "Delete", "Reset", "Confirm", "Change"];
+    static readonly string[] ReadVerbs = ["Get", "Find", "Verify", "Is", "Check", "Generate"];
+
+    /// <summary>D291: "saves" or "reads" by the Identity method's first word (<c>UserManager.RemoveAuthenticationTokenAsync</c> saves); null for any other.</summary>
+    internal static string? IdentityVerb(string method)
+    {
+        var name = method[(method.LastIndexOf('.') + 1)..];
+        static bool Starts(string name, string verb) => name.StartsWith(verb, StringComparison.Ordinal) && (name.Length == verb.Length || !char.IsLower(name[verb.Length]));
+        // D304(3): a sign-in check (SignInManager.CheckPasswordSignInAsync) may write the failed count and the lockout: "may save".
+        if (name.StartsWith("Check", StringComparison.Ordinal) && name.Contains("SignIn", StringComparison.Ordinal)) return null;
+        return SaveVerbs.Any(v => Starts(name, v)) ? "saves" : ReadVerbs.Any(v => Starts(name, v)) ? "reads" : null;
+    }
+
+    /// <summary>D304(9): a client library's local builder (<c>BlobServiceClient.GetBlobContainerClient</c>, <c>Create…Client</c>) makes an object; it calls nothing outside.</summary>
+    internal static bool LocalBuilder(string method)
+    {
+        var name = method[(method.LastIndexOf('.') + 1)..];
+        return (name.StartsWith("Get", StringComparison.Ordinal) || name.StartsWith("Create", StringComparison.Ordinal)) && name.EndsWith("Client", StringComparison.Ordinal);
+    }
+
+    /// <summary>D304(9): D199 or D198 already makes an outside step on this line (<c>outside SMTP …</c>, <c>outside HTTP …</c>).</summary>
+    bool OutsideDup(string point, int line) =>
+        g.BlindByOwner[point].Any(b => b.Line == line && (b.Reason.StartsWith("outside HTTP ", StringComparison.Ordinal) || b.Reason.StartsWith("outside SMTP ", StringComparison.Ordinal)));
+
+    static string TypeOf(string method) => method.LastIndexOf('.') is var dot and > 0 ? method[..dot] : method;
+
+    /// <summary>
+    /// D292: the SignalR messages a line pushes: G10's <c>send</c> facts (sent directly, no call walked), the <c>send-arg</c> of a call
+    /// to the app's wrapper (that call isn't walked), and a call to a wrapper with no name known: a push named at runtime (❓).
+    /// </summary>
+    List<(string? Name, string? Target)> Pushes(string point, int line, List<Fact> sites)
+    {
+        var list = new List<(string?, string?)>();
+        foreach (var f in g.Facts(point, "send").Where(f => f.Line == line && f.Detector == "signalr")) list.Add((f["name"], null));
+        var named = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var f in g.Facts(point, "send-arg").Where(f => f.Line == line && f.Detector == "signalr" && g.IsPushWrapper(f["target"], f["index"])))
+        {
+            var target = sites.FirstOrDefault(x => x["target"] == f["target"] || g.Out(x["target"], EdgeKind.DispatchesTo).Any(e => e.Target == f["target"]) || x["target"] != "" && f["target"] != "" && SameMember(x["target"], f["target"]))?["target"] ?? f["target"];
+            list.Add((f["value"], target));
+            named.Add(target);
+        }
+        foreach (var x in sites.Where(x => x["kind"] == "calls" && x["target"] != "" && !named.Contains(x["target"]) && g.IsPushWrapper(x["target"])))
+            if (named.Add(x["target"])) list.Add((null, x["target"]));
+        return [.. list.Distinct()];
+    }
+
+    /// <summary>The same member written for a generic type's own definition or a use of it (ids differ only in type arguments).</summary>
+    static bool SameMember(string a, string b) => a.Split('(')[0] == b.Split('(')[0];
+
+    /// <summary>
+    /// D300: whether a thrown error is caught on its way up: the point's own <c>try</c> blocks around the line, innermost first, then
+    /// each caller's around its call, up the walk (an HTTP hop, a filter or a flow's start ends it). A bare catch or one of
+    /// <c>Exception</c> takes everything; a typed one the type and the types built on it; a <c>when</c> filter isn't certain, so it
+    /// doesn't count; one that throws anything lets it go on up (D304: a new error it throws is what climbs on, "turned into X at
+    /// file:line"). Its catch's place and what the catch returns (D304 item 7), or why it can't be told (❓; D304 item 10: a typed
+    /// catch facing an error of unknown type).
+    /// </summary>
+    (At? Caught, string? Unsure, string? Turned, string? Ends) Caught(string point, int line, Fact exit, Item parent)
+    {
+        var types = exit["exceptionTypes"].Split('|', StringSplitOptions.RemoveEmptyEntries);
+        string? unsure = null;
+        var turned = new List<string>();
+        string? Turned() => turned.Count == 0 ? null : string.Join(", then ", turned);
+        string? p = point;
+        var l = line;
+        var cur = parent;
+        while (p is not null)
+        {
+            foreach (var t in g.Facts(p, "try").Where(f => int.Parse(f["from"], System.Globalization.CultureInfo.InvariantCulture) <= l && l <= int.Parse(f["to"], System.Globalization.CultureInfo.InvariantCulture))
+                         .OrderByDescending(f => int.Parse(f["from"], System.Globalization.CultureInfo.InvariantCulture)).ThenBy(f => f.Line))
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(t["catches"]);
+                foreach (var c in doc.RootElement.EnumerateArray())
+                {
+                    var type = c.GetProperty("type").GetString() ?? "?";
+                    var at = new At(t.File ?? "", c.GetProperty("line").GetInt32(), g.Code(t.File, c.GetProperty("line").GetInt32()));
+                    if (c.TryGetProperty("filtered", out var fl) && fl.ValueKind == System.Text.Json.JsonValueKind.True) continue;
+                    if (type == "?") { unsure ??= $"can't tell whether the catch at `{at}` takes it: its type can't be worked out"; continue; }
+                    var takes = type is "*" or "System.Exception" || types.Contains(type, StringComparer.Ordinal);
+                    if (!takes)
+                    {
+                        if (types.Length == 0) unsure ??= $"can't tell whether the catch at `{at}` takes it: the error's type isn't known";
+                        continue;
+                    }
+                    if (c.TryGetProperty("rethrows", out var rt) && rt.ValueKind == System.Text.Json.JsonValueKind.True)
+                    {
+                        if (c.TryGetProperty("becomes", out var bc) && bc.GetString() is { Length: > 0 } chain)
+                        {
+                            types = chain.Split('|', StringSplitOptions.RemoveEmptyEntries);
+                            var name = types[0][(types[0].LastIndexOf('.') + 1)..];
+                            turned.Add($"turned into {name} at {at}");
+                        }
+                        break;   // on up, past this try
+                    }
+                    return (at, null, Turned(), c.TryGetProperty("ends", out var en) ? en.GetString() : null);
+                }
+            }
+            if (cur == root || cur.Step.Kind != "call" || cur.Parent is null || cur.Parent.Step.Kind == "http") break;
+            p = cur.In;
+            l = cur.Step.At.Line;
+            cur = cur.Parent;
+        }
+        return (null, unsure, Turned(), null);
+    }
+
     static readonly HashSet<string> MvcResults = ["View", "PartialView", "ViewComponent", "Redirect", "RedirectPermanent", "RedirectToAction", "RedirectToActionPermanent",
         "RedirectToRoute", "RedirectToRoutePermanent", "RedirectToPage", "RedirectToPagePermanent", "LocalRedirect", "LocalRedirectPermanent"];
 
@@ -366,42 +631,65 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
         var guessedSite = site["label"] == "1";
         // D201: code inside a function registered as an event listener runs when the event comes.
         var when = When(site, at);
+        // D316: a mutation's own function (its `mutationFn`, `onSuccess`) runs only once the mutation is started: not walked where none was.
+        if (when is { Kind: "mutation" } && !Sent(parent))
+        {
+            Add(parent, new Step
+            {
+                What = $"leaves {tnode.Name} to the mutation it sets up: it runs only when a click (or other code) calls `mutate(…)`, so not followed here", At = at, Kind = "call",
+                Conditions = conds, Depth = depth, End = new End("waits", $"declared by {when.Case}, run when `mutate(…)` is called"),
+            });
+            return;
+        }
         conds = WithWhen(when, conds);
+        // D316: calling a value taken from a function's result (`mutate(…)`, `deleteEpisodeFile()`) starts what the function set up.
+        var starts = site["fromResult"] == "1";
         // G5, D210: a value taken from a function's result (`const predicate = getPredicate(t)`, `const { refetch } = useX()`) and
         // called, when layer 2 couldn't tell which function was handed back: the function stands for it, a guess.
         // Step 6 (fresh check S4): `mutate(…)` taken from a hook that keeps a mutation's function runs that function: certain.
         var byValue = !guessedSite && site["fromResult"] == "1" && !StartsMutation(site);
+        // D201: `base.M()` runs that method itself, no override.
+        var runs = site["base"] == "1" && g.Nodes.TryGetValue(target, out var own) && own.File is not null ? [target] : Runs(target);
+        // D310: a call on `this` runs on the same object: only the overrides its class can run, and the callee runs on it too.
+        var onThis = site["self"] == "1" && site["base"] != "1" && receivers.Count > 0;
+        var cur = onThis ? receivers.Peek() : default;
+        Receiver? into = onThis ? cur : null;
+        if (onThis)
+        {
+            runs = Narrow(runs, cur.Type);
+            if (cur.FromRoot && runs.Count > 1) ReceiverDependent = true;
+        }
         if (g.Callers(target) >= s.HubCallers && kind == "call")
         {
+            // D310: a call on `this` narrowed to one override names that override.
+            var hub = onThis && runs is [var one] && one != target && g.Nodes.TryGetValue(one, out var narrowed) ? narrowed : tnode;
             // D172's order puts a table before a hub: shared code whose own body reads or saves a table ends there, named.
             // Step 6 (D236, D237 item 2): guessed when the read or save itself is (a repository call not proved, a navigation
             // Add), as on a direct step; a table whose name comes from a mapping isn't "a repository method's name".
-            var tables = g.Dispatch(target).SelectMany(t => g.Out(t, EdgeKind.Writes).Select(e => (Table: g.Name(e.Target), Write: true, Guess: AccessGuessed(t, g.Name(e.Target), "write")))
+            var tables = (onThis ? runs : g.Dispatch(target)).SelectMany(t => g.Out(t, EdgeKind.Writes).Select(e => (Table: g.Name(e.Target), Write: true, Guess: AccessGuessed(t, g.Name(e.Target), "write")))
                 .Concat(g.Out(t, EdgeKind.Reads).Select(e => (Table: g.Name(e.Target), Write: false, Guess: AccessGuessed(t, g.Name(e.Target), "read"))))).Distinct().OrderBy(x => x.Table, StringComparer.Ordinal).ToList();
             if (tables.Count > 0)
             {
                 var names = string.Join(", ", tables.Select(x => x.Table).Distinct(StringComparer.Ordinal));
                 var reads = Add(parent, new Step
                 {
-                    What = $"{(tables.Any(x => x.Write) ? "saves" : "reads")} {names} through {tnode.Name}", At = at, Kind = "database", Point = target, Conditions = conds, Depth = depth,
-                    End = new End("database", $"{names} ({tnode.Name}, shared code used by {g.Callers(target)} places)"), Guessed = guessedSite || tables.Any(x => x.Guess),
+                    What = $"{(tables.Any(x => x.Write) ? "saves" : "reads")} {names} through {hub.Name}", At = at, Kind = "database", Point = hub.Id, Conditions = conds, Depth = depth,
+                    End = new End("database", $"{names} ({hub.Name}, shared code used by {g.Callers(target)} places)"), Guessed = guessedSite || tables.Any(x => x.Guess),
                     GuessReason = guessedSite ? SiteReason(target) : tables.Any(x => x.Guess) ? "a save or read found by a detector's pattern (a repository method's name, a navigation collection)" : null,
                 });
                 // D196: its own code still runs (the save itself, events it sends): the shared walk continues it, as for any hub.
-                reads.Links.Add(new Link("continues", tnode.Name, SharedPoint(target), at, $"Shared code used by {g.Callers(target)} places, reading or saving {names}; {tnode.Name}'s own walk continues it ({at})", null, false));
+                reads.Links.Add(SharedLink(new Link("continues", hub.Name, onThis ? SharedPoint(target, runs) : SharedPoint(target), at, $"Shared code used by {g.Callers(target)} places, reading or saving {names}; {hub.Name}'s own walk continues it ({at})", null, false), into, starts || StartedAt(parent)));
                 return;
             }
             var item = Add(parent, new Step
             {
-                What = $"calls {tnode.Name}{Mutate(site)}", At = at, Kind = kind, Point = target, Conditions = conds, Depth = depth,
-                End = new End("hub", $"{tnode.Name}: shared code used by {g.Callers(target)} places"), Guessed = guessedSite || byValue,
-                GuessReason = guessedSite ? SiteReason(target) : byValue ? ValueReason(tnode.Name) : null,
+                What = $"calls {hub.Name}{Mutate(site)}", At = at, Kind = kind, Point = hub.Id, Conditions = conds, Depth = depth,
+                End = new End("hub", $"{hub.Name}: shared code used by {g.Callers(target)} places"), Guessed = guessedSite || byValue,
+                GuessReason = guessedSite ? SiteReason(target) : byValue ? ValueReason(hub.Name) : null,
             });
-            item.Links.Add(new Link("continues", tnode.Name, SharedPoint(target), at, $"Stops here: shared code used by {g.Callers(target)} places; {tnode.Name}'s own walk continues it ({at})", null, false));
+            item.Links.Add(SharedLink(new Link("continues", hub.Name, onThis ? SharedPoint(target, runs) : SharedPoint(target), at, $"Stops here: shared code used by {g.Callers(target)} places; {hub.Name}'s own walk continues it ({at})", null, false), into, starts || StartedAt(parent)));
             return;
         }
-        // D201: `base.M()` runs that method itself, no override.
-        var runs = site["base"] == "1" && g.Nodes.TryGetValue(target, out var own) && own.File is not null ? [target] : Runs(target);
         // D201: an event bus calling its handler interface (`handler.Handle(event)`) hands the event to its handlers, each a
         // flow of its own (D173): the bus isn't walked into them.
         if (runs.Count > 1 && (runs.All(g.HandlerPoints.Contains) || IsHandlerInterface(target)))
@@ -418,12 +706,31 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
             {
                 What = kind == "renders" ? $"shows {g.Name(run)}" : callback != "" ? $"when the request answers ({callback}), runs {g.Name(run)}" : $"calls {g.Name(run)}{Mutate(site)}", At = at, Kind = kind, Point = run, Conditions = conds, Depth = depth,
                 Guessed = several || guessedSite || byValue,
-                GuessReason = several ? OneOf(target, runs) : guessedSite ? SiteReason(target)
+                GuessReason = several ? OneOf(target, runs) + (onThis ? "; it is called on `this`, and which class the object is isn't known here" : "") : guessedSite ? SiteReason(target)
                     : byValue ? ValueReason(tnode.Name) : null,
             });
-            Into(item, run, depth, branch);
+            item.Starts = starts;
+            PluginCalls(point, item, run, at, conds, depth);
+            Into(item, run, depth, branch, into);
+            TimerLink(item, when, at, g.Name(run));
         }
     }
+
+    /// <summary>
+    /// D295: code a browser timer runs (<c>setTimeout</c>, <c>setInterval</c>, rxjs <c>timer</c>/<c>interval</c>) that calls the server
+    /// or changes something: a "runs later, on a timer" link at its step. A timer that only tweaks the screen gets none.
+    /// </summary>
+    void TimerLink(Item item, Condition? when, At at, string name)
+    {
+        if (when is null || !(when.Kind == "timer" || when.Kind == "stream" && RxTimer().IsMatch(when.Code))) return;
+        if (!Subtree(item).Any(i => MeaningfulKinds.Contains(i.Step.Kind)) && item.SameAs is null) return;
+        if (item.SameAs is { } same && !Subtree(same).Any(i => MeaningfulKinds.Contains(i.Step.Kind))) return;
+        var timer = when.Kind == "timer" ? when.Code : when.Code.Split('(')[0];
+        item.Links.Add(new Link("runs-later", name, null, at, $"Runs {name} later, on a timer ({timer}) ({at})", null, false));
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^\s*(timer|interval)\s*\(")]
+    private static partial System.Text.RegularExpressions.Regex RxTimer();
 
     /// <summary>D204: a link to each screen a redirect or navigation can open; none known: one link saying where it goes, to no flow.</summary>
     void ScreenLinks(Item item, At at, string to, IReadOnlyList<string> screens)
@@ -518,18 +825,19 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
         ? "scripts declare a global with this name in more than one file; which one the page loads isn't read" : OverloadReason;
 
     /// <summary>Walks into a point unless it's already on this branch (a loop), already walked, or past the depth limit.</summary>
-    void Into(Item item, string point, int depth, List<string> branch)
+    void Into(Item item, string point, int depth, List<string> branch, Receiver? receiver = null)
     {
+        var walked = WalkedFor(point, item);
         if (branch.Contains(point, StringComparer.Ordinal)) { item.BackTo = walked.GetValueOrDefault(point) ?? root; return; }
         if (walked.TryGetValue(point, out var before)) { item.SameAs = before; return; }
         if (depth + 1 > s.Depth)
         {
             item.Step.End = new End("depth", $"{s.Depth} real calls; not walked: {g.Name(point)}");
-            item.Links.Add(new Link("continues", g.Name(point), point, item.Step.At, $"Stops here: {s.Depth} calls deep; {g.Name(point)}'s own walk continues it ({item.Step.At})", null, false));
+            item.Links.Add(SharedLink(new Link("continues", g.Name(point), point, item.Step.At, $"Stops here: {s.Depth} calls deep; {g.Name(point)}'s own walk continues it ({item.Step.At})", null, false), receiver, StartedAt(item)));
             return;
         }
         walked[point] = item;
-        Visit(point, item, depth + 1, [.. branch, point]);
+        Visit(point, item, depth + 1, [.. branch, point], receiver);
         // A hook's own function that reaches no server work may still run the hook's library callbacks (a mutation's function runs
         // when it calls `mutate`): the hook's own body is walked too, 🟡 (D184).
         if (HookOf(point) is { } hook && !branch.Contains(hook, StringComparer.Ordinal) && !Subtree(item).Skip(1).Any(i => MeaningfulKinds.Contains(i.Step.Kind)) && g.Nodes.ContainsKey(hook))
@@ -538,7 +846,8 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
             // body (the request it sets up) is walked under this call, certain, with no step of its own.
             if (g.Facts(point, "call-site").Any(StartsMutation))
             {
-                if (walked.TryAdd(hook, item)) Visit(hook, item, depth + 1, [.. branch, point, hook]);
+                item.Starts = true;
+                if (this.walked.TryAdd(hook, item)) Visit(hook, item, depth + 1, [.. branch, point, hook]);
                 return;
             }
             var h = Add(item, new Step
@@ -546,8 +855,10 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 What = $"runs {g.Name(hook)}'s own work, through a library callback", At = item.Step.At, Kind = "call", Point = hook, Depth = depth + 1,
                 Guessed = true, GuessReason = $"{g.Name(point)} reaches no server work itself; what {g.Name(hook)} hands a library (a mutation's function) may run when it's called",
             });
-            if (walked.TryGetValue(hook, out var seen)) h.SameAs = seen;
-            else { walked[hook] = h; Visit(hook, h, depth + 1, [.. branch, point, hook]); }
+            // D316: a function the hook handed back is running, so what it set up may be started.
+            h.Starts = true;
+            if (this.walked.TryGetValue(hook, out var seen)) h.SameAs = seen;
+            else { this.walked[hook] = h; Visit(hook, h, depth + 1, [.. branch, point, hook]); }
         }
         // A component that shows nothing reaching the server is display only: named, not walked into (D176 item 5).
         if (item.Step.Kind == "renders" && !Subtree(item).Skip(1).Any(i => MeaningfulKinds.Contains(i.Step.Kind)))
@@ -561,6 +872,11 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
     void Http(Fact http, At at, List<Condition> conds, Item parent, int depth, List<string> branch, string? because = null)
     {
         var endpoint = http["endpoint"];
+        if (When(http, at) is { Kind: "mutation" } && !Sent(parent))
+        {
+            Declares(http, at, conds, parent, depth);
+            return;
+        }
         conds = WithWhen(When(http, at), conds);
         var guessed = http["label"] != "certain" || because is not null;
         var reason = string.Join("; ", new[] { because, http["reason"] }.Where(r => !string.IsNullOrEmpty(r)));
@@ -570,6 +886,7 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
             What = http["url"] == "" && endpoint != "" ? $"calls {g.Name(endpoint)}" : $"calls {http["verb"]} {http["url"]}".TrimEnd(), At = at, Kind = "http", Point = endpoint, Conditions = conds, Depth = depth,
             Guessed = guessed, GuessReason = guessed ? (reason != "" ? reason : "no reason recorded") : null,
         });
+        TimerLink(item, When(http, at), at, item.Step.What["calls ".Length..]);
         var actions = endpoint == "" ? [] : g.Out(endpoint, EdgeKind.RoutesTo).Select(e => e.Target).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         if (actions.Count == 0)
         {
@@ -593,6 +910,41 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
         }
     }
 
+    /// <summary>
+    /// D316: whether a mutation started on the way here: a step above it starts one (it calls a value from a hook's result, such as
+    /// <c>mutate(…)</c>, or a function a hook hands back), or the shared flow this walk is for was entered by such a call.
+    /// </summary>
+    bool Sent(Item parent)
+    {
+        for (var x = parent; x is not null && x != root; x = x.Parent) if (x.Starts) return true;
+        if (StartedRoot) MutationDependent = true;
+        return StartedRoot;
+    }
+
+    /// <summary>Whether a step above <paramref name="parent"/> (or the shared flow's entry) starts a mutation, without marking anything.</summary>
+    bool StartedAt(Item parent)
+    {
+        for (var x = parent; x is not null && x != root; x = x.Parent) if (x.Starts) return true;
+        return StartedRoot;
+    }
+
+    /// <summary>
+    /// D316: a request a mutation hook declares (React Query's <c>useMutation</c>, a wrapper such as <c>useApiMutation</c>) where no
+    /// mutation was started: the hook only sets it up, and it is sent when something (a click) calls <c>mutate(…)</c>; the flows of those
+    /// clicks reach it through that call. One step per request, nothing walked beyond it (no endpoint, no backend, no changes).
+    /// </summary>
+    void Declares(Fact http, At at, List<Condition> conds, Item parent, int depth)
+    {
+        var request = http["url"] == "" && http["endpoint"] != "" ? g.Name(http["endpoint"]) : $"{http["verb"]} {http["url"]}".Trim();
+        if (parent.Children.Any(c => c.Step.End?.Kind == "waits" && c.Step.At == at && c.Step.What.StartsWith($"declares {request},", StringComparison.Ordinal))) return;
+        var hook = When(http, at)!.Case;
+        Add(parent, new Step
+        {
+            What = $"declares {request}, sent only when a click (or other code) calls `mutate(…)`, so not followed here", At = at, Kind = "call", Conditions = conds, Depth = depth,
+            End = new End("waits", $"declared by {hook}, sent when `mutate(…)` is called"),
+        });
+    }
+
     static readonly string[] FilterMethods = ["OnAuthorization", "OnAuthorizationAsync", "OnResourceExecuting", "OnResourceExecutionAsync", "OnActionExecuting", "OnActionExecutionAsync"];
 
     /// <summary>
@@ -603,19 +955,42 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
     void BeforeAction(string action, Item parent, int depth, List<string> branch)
     {
         var project = g.Nodes.TryGetValue(action, out var an) ? an.Project : null;
-        var filters = (project is null ? [] : g.AllFacts("auth").Where(f => f["from"] == "global" && f.Owner == project))
-            .Concat(g.Facts(action, "auth").Where(f => f["rule"] == "filter").OrderBy(f => f["from"] == "method" ? 1 : 0))
-            .Select(f => f["filterType"]).Where(t => t != "" && g.Nodes.ContainsKey(t)).Distinct(StringComparer.Ordinal).ToList();
-        var steps = filters.SelectMany(t => Members(t, FilterMethods)).ToList();
-        if (DocIds(action) is { } controller) steps.AddRange(Members(controller, ["OnActionExecuting", "OnActionExecutionAsync"]));
-        foreach (var m in steps.Distinct(StringComparer.Ordinal))
+        var facts = (project is null ? [] : g.AllFacts("auth").Where(f => f["from"] == "global" && f.Owner == project))
+            .Concat(g.Facts(action, "auth").Where(f => f["rule"] == "filter").OrderBy(f => f["from"] == "method" ? 1 : 0)).ToList();
+        var filters = facts.Select(f => f["filterType"]).Where(t => t != "" && g.Nodes.ContainsKey(t)).Distinct(StringComparer.Ordinal).ToList();
+        // D304(5): the endpoint's own attribute value, named on the filter's stops ("answers 400 for DisallowRole(roles = ["Read Only"])").
+        var argsOf = facts.Where(f => f["filterType"] != "" && f["args"] != "").GroupBy(f => f["filterType"], StringComparer.Ordinal)
+            .ToDictionary(x => x.Key, x => string.Join(", ", x.Select(f => $"{f["filter"]}({f["args"]})").Distinct(StringComparer.Ordinal)), StringComparer.Ordinal);
+        var steps = filters.SelectMany(t => Members(t, FilterMethods).Select(m => (m, (string?)t))).ToList();
+        if (DocIds(action) is { } controller) steps.AddRange(Members(controller, ["OnActionExecuting", "OnActionExecutionAsync"]).Select(m => (m, (string?)null)));
+        var done = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var (m, filterType) in steps)
         {
+            if (!done.Add(m)) continue;
             var node = g.Nodes[m];
             var line = g.NameLine(node);
             var item = Add(parent, new Step { What = $"runs first: {node.Name}", At = new At(node.File ?? "", line, g.Code(node.File, line)), Kind = "filter", Point = m, Depth = depth });
-            Into(item, m, depth, branch);
+            // D310: the controller's own OnActionExecuting runs on the controller the action is in.
+            Into(item, m, depth, branch, filterType is null && DocIds(action) is { } controllerType ? new Receiver(controllerType, false) : null);
+            var args = filterType is not null ? argsOf.GetValueOrDefault(filterType) : null;
+            foreach (var i in Subtree(item))
+                for (var k = 0; k < i.Exits.Count; k++)
+                    if (FilterStop(i.Exits[k].Exit, args) is { } what) i.Exits[k] = (i.Exits[k].Exit with { What = what }, i.Exits[k].Of);
         }
     }
+
+    /// <summary>
+    /// A filter's stop, worded for what it does (D304): a redirect only tidies the address or sends the user to sign in (item 8,
+    /// "sends the user to …"), and a refusal names the endpoint's attribute value (item 5). Null when nothing changes.
+    /// </summary>
+    internal static string? FilterStop(Exit e, string? args) => e.Kind switch
+    {
+        "throw" => null,
+        "Redirect" when e.What.StartsWith("sends the user elsewhere (", StringComparison.Ordinal) => $"sends the user to another address{e.What["sends the user elsewhere".Length..]}",
+        "Challenge" => $"sends the user to sign in (Challenge){(args is null ? "" : $" for {args}")}",
+        _ when args is not null && !e.What.Contains(" for ", StringComparison.Ordinal) => $"{e.What} for {args}",
+        _ => null,
+    };
 
     /// <summary>The hook a hook's own function belongs to: <c>ts|f.ts#useX.save</c> → <c>ts|f.ts#useX</c>.</summary>
     static string? HookOf(string point)
@@ -643,7 +1018,7 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
 
     Item Add(Item parent, Step step)
     {
-        var item = new Item { Step = step, Parent = parent };
+        var item = new Item { Step = step, Parent = parent, In = visiting.Count > 0 ? visiting.Peek() : null };
         parent.Children.Add(item);
         return item;
     }
@@ -651,8 +1026,10 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
     static string ExitSentence(Fact exit) => exit["kind"] switch
     {
         "throw" => $"throws {(exit["exception"] != "" ? exit["exception"] : "an exception")}",
-        "Redirect" => $"sends the user elsewhere ({exit["result"]})",
+        // D305(2): the action a redirect names, when it names one (`RedirectToAction("List")` → List).
+        "Redirect" => $"sends the user elsewhere ({(exit["action"] != "" ? exit["action"] : exit["result"])})",
         "StatusCode" => $"answers {exit["status"]}",
+        "Result" => $"answers with {exit["status"]}",   // D301: a filter's result that isn't on D176's list (an EmptyResult)
         _ => $"answers {exit["kind"]}{(exit["status"] != "" ? $" ({exit["status"]})" : "")}",
     };
 
@@ -694,6 +1071,7 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
             }
             foreach (var u in item.Unknowns) flow.Unknowns.Add(u with { Step = n });
             if (item.Step.Kind != "package" && (item.Step.Kind == "unknown" || item.Step.End?.Kind == "unknown")) flow.Unknowns.Add(new Unknown(n, item.Step.Point ?? "", item.Step.At, item.Step.End?.Detail ?? item.Step.What));
+            foreach (var h in item.Handled) flow.Handled.Add(h with { Step = n });
             foreach (var (exit, _) in item.Exits)
             {
                 flow.Exits.Add(exit with { Step = n });
@@ -774,7 +1152,7 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
                     new At(rule.File ?? "", rule.Line, g.Code(rule.File, rule.Line)), rule["message"],
                     rule["modifiers"].Split('|').Contains("AsWarning", StringComparer.Ordinal) || rule["severity"] == "Warning"));
         }
-        foreach (var f in walked.Keys.SelectMany(p => g.Facts(p, "rejects")).Where(f => f.File is not null)
+        foreach (var f in WalkedPoints.SelectMany(p => g.Facts(p, "rejects")).Where(f => f.File is not null)
                      .OrderBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line).ThenBy(f => f.Owner, StringComparer.Ordinal))
             flow.Checks.Add(new Check($"rejects when `{f["condition"]}`", "guard", f.Owner, new At(f.File!, f.Line, g.Code(f.File, f.Line)), f["message"], false));
         // D208: FluentValidation validators the flow runs: one run in code it walks lists the rules written in its class (or the
@@ -782,7 +1160,7 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
         // write on a validator member that the controller's own OnActionExecuting runs, when the action takes a request body.
         var seen = flow.Checks.Select(c => $"{c.At}|{c.Rule}").ToHashSet(StringComparer.Ordinal);
         var ran = new List<Fact>();
-        foreach (var v in walked.Keys.SelectMany(p => g.Facts(p, "validates")))
+        foreach (var v in WalkedPoints.SelectMany(p => g.Facts(p, "validates")))
         {
             foreach (var type in v["receiver"] == "" ? Enumerable.Empty<string>() : g.Implementers(v["receiver"]).Order(StringComparer.Ordinal))
                 ran.AddRange(g.RulesIn[type]);
@@ -794,7 +1172,7 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
             }
         }
         // Only an action that takes a request body: the validators check the resource it's sent, not a GET.
-        foreach (var action in walked.Keys.Where(p => g.Facts(p, "endpoint-types").Any(f => f["body"] != "")).Order(StringComparer.Ordinal))
+        foreach (var action in WalkedPoints.Where(p => g.Facts(p, "endpoint-types").Any(f => f["body"] != "")).Order(StringComparer.Ordinal))
         {
             if (Stangent.Graph.Detectors.DocIds.ContainingType(action) is not { } controller) continue;
             var chain = g.BaseChain(controller);
@@ -804,7 +1182,7 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 else if (v["receiver"] != "") foreach (var type in g.Implementers(v["receiver"]).Order(StringComparer.Ordinal)) ran.AddRange(g.RulesIn[type]);
         }
         // D209: an Angular signal form's rules, for a flow whose code reads the form or its model (`this.formModel()`).
-        foreach (var p in walked.Keys)
+        foreach (var p in WalkedPoints)
             foreach (var site in g.Facts(p, "call-site"))
                 ran.AddRange(g.FormRules[site["target"]]);
         foreach (var rule in ran.Where(r => r.File is not null).DistinctBy(r => (r.File, r.Line, r["rule"], r.Owner))
@@ -818,7 +1196,7 @@ internal sealed partial class Walker(FlowGraph g, FlowSettings s, Flow flow)
                 at, rule["message"], rule["modifiers"].Split('|').Contains("AsWarning", StringComparer.Ordinal) || rule["severity"] == "Warning"));
         }
         // D207: request filters on an action the flow runs check the request before it does.
-        foreach (var f in walked.Keys.SelectMany(p => g.Facts(p, "request-check")).Where(f => f.File is not null)
+        foreach (var f in WalkedPoints.SelectMany(p => g.Facts(p, "request-check")).Where(f => f.File is not null)
                      .OrderBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line).ThenBy(f => f.Owner, StringComparer.Ordinal))
             flow.Checks.Add(new Check($"[{f["filter"]}] {f["does"]}", "request-filter", f.Owner, new At(f.File!, f.Line, g.Code(f.File, f.Line)), "", false));
     }

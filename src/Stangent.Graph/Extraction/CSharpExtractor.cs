@@ -176,7 +176,7 @@ public static class CSharpExtractor
             ctx.AddEdge(owner, ctx.NodeId(target), EdgeKind.Calls, Label.Certain);
             CallSite(ctx, owner, ctx.NodeId(target), invocation, Label.Certain,
                 // D201: `base.M()` runs that very method, never an override: no dispatch.
-                invocation.Expression is MemberAccessExpressionSyntax { Expression: BaseExpressionSyntax });
+                invocation.Expression is MemberAccessExpressionSyntax { Expression: BaseExpressionSyntax }, OnThis(invocation, method));
             if (ctx.NodeId(target) is null) PackageCall(ctx, owner, method, invocation);
             var name = $"{ExtractContext.FullName(target.ContainingType)}.{target.Name}";
             if (Reflection.TryGetValue(name, out var reason))
@@ -210,13 +210,21 @@ public static class CSharpExtractor
     /// D184: where a call is written, so a flow can quote its line: a <c>call-site</c> fact on the caller, at the line the call
     /// expression starts (a chain's first line). A fact, not a line, so impact and the graph's lines are unchanged.
     /// </summary>
-    static void CallSite(ExtractContext ctx, string? owner, string? target, SyntaxNode at, Label label, bool onBase = false)
+    static void CallSite(ExtractContext ctx, string? owner, string? target, SyntaxNode at, Label label, bool onBase = false, bool onThis = false)
     {
         // D199: a method calling itself is a call site too; a flow shows it going back (D176), the graph draws no line for it.
         if (owner is null || target is null) return;
         ctx.AddFact("call-sites", "call-site", owner, at, [("target", target), ("label", ((int)label).ToString(System.Globalization.CultureInfo.InvariantCulture)), ("kind", "calls"),
-            .. (onBase ? [("base", "1")] : Array.Empty<(string, string)>())]);
+            .. (onBase ? [("base", "1")] : Array.Empty<(string, string)>()), .. (onThis ? [("self", "1")] : Array.Empty<(string, string)>())]);
     }
+
+    /// <summary>
+    /// D310: a call of the object's own instance method, written <c>M()</c> or <c>this.M()</c>: it runs on the same object, so a flow
+    /// that knows the object's class (a controller's action) narrows a virtual call to that class's override.
+    /// </summary>
+    static bool OnThis(InvocationExpressionSyntax invocation, IMethodSymbol method) =>
+        !method.IsStatic && method.MethodKind == MethodKind.Ordinary && method.ContainingType?.TypeKind == TypeKind.Class
+        && invocation.Expression is IdentifierNameSyntax or GenericNameSyntax or MemberAccessExpressionSyntax { Expression: ThisExpressionSyntax };
 
     /// <summary>
     /// D188 (ruling R6): a call into a package (ASP.NET Identity, MailKit…) is a <c>call-site</c> with no target and the package's
@@ -232,7 +240,7 @@ public static class CSharpExtractor
             || ns == "Serilog" || ns.StartsWith("Serilog.", StringComparison.Ordinal)) return;
         var type = method.ContainingType is { } t ? t.Name : "";
         ctx.AddFact("call-sites", "call-site", owner, at, ("target", ""), ("label", "0"), ("kind", "package"),
-            ("package", method.ContainingAssembly?.Name ?? ""), ("method", $"{type}.{method.Name}"));
+            ("package", method.ContainingAssembly?.Name ?? ""), ("method", $"{type}.{method.Name}"), ("ns", ns));
     }
 
     /// <summary>The in-repo type a call's result is cast to right away: <c>x as T</c> or <c>(T)x</c>.</summary>

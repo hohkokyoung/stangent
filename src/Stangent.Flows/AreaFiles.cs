@@ -140,6 +140,9 @@ public static class AreaFiles
                 }
             }
         }
+        // D312: what is still over 40 with no menu children splits by its frontend folders' subfolders.
+        SplitByFolder(a, specs, () => a.Place(new AreasFile { Areas = All() }), []);
+        placement = a.Place(new AreasFile { Areas = All() });
         // A part a split left with no flows folds back into its parent (Settings › Metadata Source into Settings).
         var flowCount = placement.AreaOf.Values.GroupBy(x => x, O).ToDictionary(x => x.Key, x => x.Count(), O);
         foreach (var part in specs.ToList().AsEnumerable().Reverse())
@@ -163,13 +166,131 @@ public static class AreaFiles
         IEnumerable<string> PlaceFolders(StartFlow s) => s.Places.Count > 0 ? s.Places.Select(p => p.Folder) : s.Backend is null ? [] : [s.Backend];
     }
 
+    // ---- D312: an area over 40 with no menu children to split by splits by its frontend folders' subfolders -----------------------
+
+    /// <summary>D312: a folder part holding fewer start flows than this stays with its parent.</summary>
+    public const int SmallPart = 3;
+
+    static Dictionary<string, int> Counts(Placement p) => p.AreaOf.Values.GroupBy(x => x, O).ToDictionary(x => x.Key, x => x.Count(), O);
+    static bool Under(string path, string folder) => path == folder || path.StartsWith(folder + "/", StringComparison.Ordinal);
+
+    /// <summary>A folder's name as a reader would say it: <c>MonitoringOptions</c> → Monitoring Options, <c>_modals</c> → Modals, <c>manage-users</c> → Manage Users.</summary>
+    public static string Readable(string folder)
+    {
+        var s = System.Text.RegularExpressions.Regex.Replace(folder.Trim('_', '-', '.', ' '), "([a-z0-9])([A-Z])", "$1 $2").Replace('-', ' ').Replace('_', ' ');
+        var words = s.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w => char.ToUpperInvariant(w[0]) + w[1..]);
+        return string.Join(' ', words) is { Length: > 0 } r ? r : folder;
+    }
+
+    /// <summary>
+    /// D312: every area over 40 start flows with no menu children to split by splits by the subfolders of its frontend folders (screens'
+    /// homes, or folders in or above one): each subfolder its start flows sit in becomes <c>&lt;Area&gt; › &lt;Subfolder&gt;</c> listing that
+    /// folder, unless it would hold fewer than <see cref="SmallPart"/> start flows (then it stays with the parent); the parent keeps its
+    /// menu addresses and the flows sitting directly in its folders. A split area gets a <c>› Background</c> part for the jobs and
+    /// handlers its parts share (<see cref="Areas.Place"/>), dropped when it holds none. A part made so splits once more by the same rule;
+    /// anything else stays over 40 for <c>large</c>. <paramref name="place"/> places by <paramref name="specs"/> as they stand.
+    /// </summary>
+    static void SplitByFolder(Areas a, List<AreaSpec> specs, Func<Placement> place, List<string> notes)
+    {
+        var addresses = a.TopItems.SelectMany(t => t.Subtree()).Where(i => i.Address != "").ToLookup(i => i.Address, O);
+        AreaSpec? ParentOf(AreaSpec s) => specs.Where(p => p != s && s.Name.StartsWith(p.Name + " › ", StringComparison.Ordinal)).OrderByDescending(p => p.Name.Length).FirstOrDefault();
+        // How many D312 splits an area is below: a part whose folders all sit under its parent's folders is one more than its parent.
+        int Level(AreaSpec s)
+        {
+            var p = ParentOf(s);
+            return p is not null && s.Folders.Count > 0 && s.Folders.All(f => p.Folders.Any(pf => f.StartsWith(pf + "/", StringComparison.Ordinal))) ? Level(p) + 1 : 0;
+        }
+        bool Frontend(string f) => a.HomeOf(f) is not null || a.Homes.Keys.Any(h => Under(h, f));
+        var tried = new HashSet<string>(O);
+        for (var again = true; again;)
+        {
+            again = false;
+            var placement = place();
+            var counts = Counts(placement);
+            foreach (var spec in specs.ToList())
+            {
+                if (counts.GetValueOrDefault(spec.Name) <= Areas.Big || spec.Name.EndsWith(" › " + Areas.Background, StringComparison.Ordinal) || !tried.Add(spec.Name)) continue;
+                if (Level(spec) >= 2) continue;   // split once, and a part once more
+                var mine = placement.AreaOf.Where(x => x.Value == spec.Name).Select(x => a.Starts[x.Key]).ToList();
+                // Menu children it lists that flows sit on: those split it (D226, a person's call on a confirmed file), not folders.
+                var children = spec.Menu.SelectMany(m => addresses[m]).SelectMany(i => i.Subtree().Skip(1)).Select(i => i.Address).Where(x => spec.Menu.Contains(x, O)).ToHashSet(O);
+                if (mine.Any(s => s.Places.Any(p => p.Address is not null && children.Contains(p.Address)))) continue;
+                var front = spec.Folders.Where(Frontend).ToList();
+                if (front.Count == 0) continue;
+                var listed = specs.SelectMany(s => s.Folders).ToHashSet(O);
+                var subDirs = new SortedSet<string>(O);
+                foreach (var p in mine.SelectMany(s => s.Places))
+                    foreach (var f in front.Where(f => p.Folder.StartsWith(f + "/", StringComparison.Ordinal)))
+                        if ($"{f}/{p.Folder[(f.Length + 1)..].Split('/')[0]}" is var d && !listed.Contains(d)) subDirs.Add(d);
+                if (subDirs.Count == 0) continue;
+                // The parts, after the area's own parts: same-named subfolders of two of its folders make one part.
+                var before = counts;
+                var at = specs.IndexOf(spec) + 1;
+                while (at < specs.Count && specs[at].Name.StartsWith(spec.Name + " › ", StringComparison.Ordinal)) at++;
+                var parts = new List<(AreaSpec Part, List<string> Dirs, bool New)>();
+                // A subfolder most of whose menu screens sit on one of the area's parts joins that part (D227's rule for homes):
+                // Sonarr's AddSeries/ImportSeries to Series › Library Import, not a second import part.
+                var ownParts = specs.Where(s => s.Name.StartsWith(spec.Name + " › ", StringComparison.Ordinal) && s.Menu.Count > 0).ToList();
+                string PartFor(string d)
+                {
+                    var onItems = a.Screens.Values.Where(sc => Under(sc.Folder, d) && sc.Item?.Address is { Length: > 0 }).ToList();
+                    var best = ownParts.Select(x => (Part: x, Count: onItems.Count(sc => x.Menu.Contains(sc.Item!.Address, O)))).OrderByDescending(x => x.Count).FirstOrDefault();
+                    return best.Part is not null && best.Count * 2 > onItems.Count ? best.Part.Name : $"{spec.Name} › {Readable(d[(d.LastIndexOf('/') + 1)..])}";
+                }
+                foreach (var grp in subDirs.GroupBy(PartFor))
+                {
+                    var existing = specs.FirstOrDefault(s => s.Name == grp.Key);
+                    var part = existing ?? new AreaSpec { Name = grp.Key };
+                    if (existing is null) specs.Insert(at++, part);
+                    part.Folders.AddRange(grp);
+                    parts.Add((part, [.. grp], existing is null));
+                }
+                // Small parts stay with the parent, until none is left small.
+                for (var pruned = true; pruned && parts.Count > 0;)
+                {
+                    pruned = false;
+                    var c = Counts(place());
+                    foreach (var x in parts.ToList())
+                        if (c.GetValueOrDefault(x.Part.Name) - (x.New ? 0 : before.GetValueOrDefault(x.Part.Name)) < SmallPart)
+                        {
+                            foreach (var d in x.Dirs) x.Part.Folders.Remove(d);
+                            if (x.New) specs.Remove(x.Part);
+                            parts.Remove(x);
+                            pruned = true;
+                        }
+                }
+                // One part holding all but a few of its flows is no split (Kavita's settings/_components, every Customize flow).
+                if (parts.Count == 1 && Counts(place()).GetValueOrDefault(spec.Name) < SmallPart)
+                {
+                    foreach (var d in parts[0].Dirs) parts[0].Part.Folders.Remove(d);
+                    if (parts[0].New) specs.Remove(parts[0].Part);
+                    parts.Clear();
+                }
+                if (parts.Count == 0) continue;
+                var background = specs.FirstOrDefault(s => s.Name == Areas.BackgroundOf(spec.Name));
+                if (background is null)
+                {
+                    background = new AreaSpec { Name = Areas.BackgroundOf(spec.Name) };
+                    specs.Insert(specs.IndexOf(parts[^1].Part) + 1, background);
+                }
+                var after = Counts(place());
+                foreach (var x in parts) notes.Add($"split '{spec.Name}': '{x.Part.Name}' ({string.Join(", ", x.Dirs.Select(d => $"'{d}'"))}), {after.GetValueOrDefault(x.Part.Name)} start flows");
+                if (after.GetValueOrDefault(background.Name) == 0) specs.Remove(background);
+                else notes.Add($"split '{spec.Name}': '{background.Name}', {after[background.Name]} jobs and handlers its parts share");
+                again = true;
+                break;
+            }
+        }
+    }
+
     /// <summary>
     /// D234: a proposal built on a confirmed <c>areas.yaml</c>: its areas as the person left them (names, merges, splits, areas added by
     /// hand) and its tie answers, carried while the flow still ties and the answer is still a choice; then what code finds new, by the
     /// same rules as a fresh proposal and with the answers applied: a menu address no area lists goes to the area listing its nearest
     /// listed parent item, else an area of its own top item's name; a home or frame folder no area covers is an area of its own; a job or
-    /// handler in no area adds its backend folder (D223). Nothing is split. Returns the file, its placement, what was added and the
-    /// answers dropped.
+    /// handler in no area adds its backend folder (D223). Nothing is split by menu or by D226's next folder. D312: an area over 40 with nothing left to split by in its menu splits by
+    /// folder (<see cref="SplitByFolder"/>), and an answer naming an area since split moves to its one part among the choices, else the
+    /// tie is asked again. Returns the file, its placement, what was added (splits and moved answers among it) and the answers dropped.
     /// </summary>
     public static (AreasFile File, Placement Placement, List<string> Added, List<string> Dropped) Extend(Areas a, AreasFile confirmed)
     {
@@ -185,8 +306,16 @@ public static class AreaFiles
         bool Covered(string dir) => specs.Any(x => x.Folders.Any(f => dir == f || dir.StartsWith(f + "/", StringComparison.Ordinal)));
         void AddFolder(AreaSpec spec, string folder) { spec.Folders.Add(folder); added.Add($"folder '{folder}' to '{spec.Name}'"); }
         var tops = a.TopItems.SelectMany(t => t.Subtree().Select(i => (Item: i, Top: t))).ToList();
-        List<Tie> Ties() => [.. a.Place(new AreasFile { Areas = specs }).Open.Select(t =>
-            new Tie(t.Key, t.Value, confirmed.Ties.FirstOrDefault(c => c.Flow == t.Key && c.Answer != "" && t.Value.Contains(c.Answer, O))?.Answer ?? ""))];
+        List<Tie> Ties() => [.. a.Place(new AreasFile { Areas = specs }).Open.Select(t => new Tie(t.Key, t.Value, Carried(t.Key, t.Value)))];
+        // D234: an answer still a choice is kept; D312: one naming an area since split, of whose parts exactly one is a choice, moves to it.
+        string Carried(string flow, IReadOnlyList<string> choose)
+        {
+            var answer = confirmed.Ties.FirstOrDefault(c => c.Flow == flow && c.Answer != "")?.Answer;
+            if (answer is null) return "";
+            if (choose.Contains(answer, O)) return answer;
+            var parts = choose.Where(c => c.StartsWith(answer + " › ", StringComparison.Ordinal)).ToList();
+            return parts.Count == 1 ? parts[0] : "";
+        }
 
         for (var changed = true; changed;)
         {
@@ -221,13 +350,18 @@ public static class AreaFiles
                 if (changed) break;   // place again: one addition can place others (a click placed leads its jobs)
             }
         }
+        // D312: an area over 40 with no menu children to split by splits by its frontend folders' subfolders.
+        SplitByFolder(a, specs, () => a.Place(new AreasFile { Areas = specs, Ties = Ties() }), added);
         var ties = Ties();
         var final = a.Place(new AreasFile { Areas = specs, Ties = ties });
         var counts = final.AreaOf.Values.GroupBy(x => x, O).ToDictionary(x => x.Key, x => x.Count(), O);
         var large = specs.Where(x => counts.GetValueOrDefault(x.Name) > Areas.Big)
             .Select(x => new Large(x.Name, counts[x.Name], confirmed.Large.FirstOrDefault(l => l.Area == x.Name)?.Why ?? "over 40, nothing to split by")).ToList();
         var dropped = new List<string>();
-        foreach (var t in confirmed.Ties.Where(t => t.Answer != "" && !ties.Any(n => n.Flow == t.Flow && n.Answer == t.Answer)))
+        foreach (var t in confirmed.Ties.Where(t => t.Answer != ""))
+            if (ties.FirstOrDefault(n => n.Flow == t.Flow && n.Answer.StartsWith(t.Answer + " › ", StringComparison.Ordinal)) is { } moved)
+                added.Add($"answer for '{t.Flow}' moved from '{t.Answer}' to its part '{moved.Answer}'");
+        foreach (var t in confirmed.Ties.Where(t => t.Answer != "" && !ties.Any(n => n.Flow == t.Flow && (n.Answer == t.Answer || n.Answer.StartsWith(t.Answer + " › ", StringComparison.Ordinal)))))
             dropped.Add(!a.Starts.ContainsKey(t.Flow) ? $"'{t.Flow}': no longer a start flow"
                 : ties.FirstOrDefault(n => n.Flow == t.Flow) is { } now ? $"'{t.Flow}': '{t.Answer}' is no longer one of its choices ({string.Join(", ", now.Choose.Select(c => $"'{c}'"))})"
                 : $"'{t.Flow}': no longer a tie");

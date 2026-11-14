@@ -4,8 +4,9 @@ namespace Stangent.Flows;
 
 /// <summary>
 /// One page per area (D230, D233): <c>specs/areas/&lt;slug&gt;/page.md</c>, written by <c>stangent areas check</c>: a generated-file marker,
-/// the area's name and counts, an empty place for layer 4's plain words (kept as found on every rewrite), its start flows as links grouped
-/// by kind, then every shared flow they reach as links, wherever it sits. No prose from code.
+/// the area's name and counts, the place for layer 4's words, its start flows as links grouped by kind, then every shared flow they reach
+/// as links, wherever it sits. With <c>components.pages</c> on, layer 4's place holds the developer page by code (D278–D285) and the
+/// page opens with its note (D283); off, what's there is kept as found, except a developer page, which is dropped.
 /// </summary>
 public static class AreaPages
 {
@@ -38,8 +39,8 @@ public static class AreaPages
 
     static string Count(int n, string one, string many) => $"{n} {(n == 1 ? one : many)}";
 
-    /// <summary>One area's page text; <paramref name="words"/> is layer 4's, kept as found.</summary>
-    public static string Render(Areas a, string area, AreaLayout layout, string words)
+    /// <summary>One area's page text; <paramref name="words"/> is layer 4's; <paramref name="note"/>, D283's, opens the page.</summary>
+    public static string Render(Areas a, string area, AreaLayout layout, string words, string note = "", IReadOnlySet<string>? quiet = null)
     {
         var placement = layout.Placement!;
         var here = layout.AreaFolder(area);
@@ -49,7 +50,7 @@ public static class AreaPages
             $"- [{Esc(f.Name == "" ? f.Id : f.Name)}]({AreaLayout.Relative(here, layout.Markdown(f.Id))}) `{f.Id}`\n";
         static IEnumerable<IndexFlow> Sorted(IEnumerable<IndexFlow> fs) => fs.OrderBy(f => f.Name.ToLowerInvariant(), O).ThenBy(f => f.Id, O);
 
-        var sb = new StringBuilder();
+        var sb = new StringBuilder(note);
         sb.Append(Marker).Append("\n\n");
         sb.Append($"# {area}\n\n");
         var kinds = Groups.Select(g => (g, n: starts.Count(f => f.Kind == g.Kind))).Where(x => x.n > 0).Select(x => Count(x.n, x.g.One, x.g.Many)).ToList();
@@ -57,7 +58,11 @@ public static class AreaPages
         var where = shared.GroupBy(f => layout.FolderOf[f.Id], O).OrderBy(x => x.Key == here ? "" : x.Key, O)
             .Select(x => $"{x.Count()} {(x.Key == here ? "in this folder" : $"in `{x.Key[(AreaLayout.Root.Length + 1)..]}/`")}").ToList();
         sb.Append($"- **Shared flows they reach:** {shared.Count}{(where.Count > 0 ? $" ({string.Join(", ", where)})" : "")}\n\n");
-        sb.Append(WordsStart).Append('\n').Append(words).Append(WordsEnd).Append('\n');
+        // D313(3): the developer page leaves out the "words go below" line (nothing of it is kept; readers took it for a missing
+        // section) but keeps the end line, which ends its last part for gate 1; a page off the switch has both lines only around words.
+        if (words.StartsWith(PageChart.BodyMarker, StringComparison.Ordinal)) sb.Append(words).Append(WordsEnd).Append('\n');
+        else if (words != "") sb.Append(WordsStart).Append('\n').Append(words).Append(WordsEnd).Append('\n');
+        else sb.Length--;   // the blank line after the counts is the next heading's
         foreach (var g in Groups)
         {
             var list = Sorted(starts.Where(f => f.Kind == g.Kind)).ToList();
@@ -65,19 +70,55 @@ public static class AreaPages
             sb.Append($"\n## {g.Title} ({list.Count})\n\n");
             foreach (var f in list) sb.Append(Link(f));
         }
-        if (shared.Count > 0)
-        {
-            sb.Append($"\n## Shared flows ({shared.Count})\n\n");
-            foreach (var f in Sorted(shared)) sb.Append(Link(f));
-        }
+        sb.Append(SharedList(shared, quiet, Link));
         return sb.ToString();
     }
 
     /// <summary>
-    /// Writes every area's page, keeping layer 4's words, and removes the pages of folders no area has now; one holding layer 4's words
-    /// is kept and returned, for the person to move. Returns what changed.
+    /// The "Shared flows" list: a link per shared flow, in name order; D311(2): on the developer page (<paramref name="quiet"/> given),
+    /// those that change nothing, stop nothing and call nothing outside are counted in one line, not listed.
     /// </summary>
-    public static (int Written, int Removed, int Unchanged, List<string> Kept) Write(string root, Areas a, AreaLayout layout)
+    internal static string SharedList(IReadOnlyList<IndexFlow> shared, IReadOnlySet<string>? quiet, Func<IndexFlow, string> link)
+    {
+        if (shared.Count == 0) return "";
+        static IEnumerable<IndexFlow> Sorted(IEnumerable<IndexFlow> fs) => fs.OrderBy(f => f.Name.ToLowerInvariant(), O).ThenBy(f => f.Id, O);
+        var left = quiet is null ? [] : Sorted(shared.Where(f => quiet.Contains(f.Id))).ToList();
+        var listed = Sorted(shared.Where(f => quiet?.Contains(f.Id) != true)).ToList();
+        var sb = new StringBuilder($"\n## Shared flows ({(left.Count == 0 ? $"{shared.Count}" : $"{listed.Count} of {shared.Count}")})\n\n");
+        if (left.Count > 0) sb.Append(LeftOut(left)).Append(listed.Count > 0 ? "\n" : "");
+        foreach (var f in listed) sb.Append(link(f));
+        return sb.ToString();
+    }
+
+    /// <summary>D311(2): the line counting the shared flows left out, with up to three names from different classes as examples.</summary>
+    public static string LeftOut(IReadOnlyList<IndexFlow> left)
+    {
+        static string Name(IndexFlow f) => f.Name == "" ? f.Id : f.Name;
+        static string Class(IndexFlow f) => Name(f).LastIndexOf('.') is var d and > 0 ? Name(f)[..d] : Name(f);
+        var examples = left.GroupBy(Class, O).OrderByDescending(g => g.Count()).ThenBy(g => g.Key, O).Take(3).Select(g => $"`{Name(g.First()).Replace('`', '\'')}`");
+        return $"{LeftOutStart}{left.Count} that change nothing, stop nothing and call nothing outside (for example {string.Join(", ", examples)}).\n";
+    }
+
+    /// <summary>D311(2): how the left-out line starts, for gate 1 to find it.</summary>
+    public const string LeftOutStart = "Left out: ";
+
+    /// <summary>
+    /// One area's page as <c>areas check</c> writes it: with <paramref name="charts"/> (the switch on) the developer page and its
+    /// note; without, the words found in <paramref name="old"/>, a developer page among them dropped.
+    /// </summary>
+    public static string Text(Areas a, string area, AreaLayout layout, string? old, AreaCharts? charts)
+    {
+        if (charts is not null) return Render(a, area, layout, PageChart.Body(charts), PageChart.Note(charts), charts.Quiet);
+        var words = Words(old);
+        return Render(a, area, layout, words.StartsWith(PageChart.BodyMarker, StringComparison.Ordinal) ? "" : words);
+    }
+
+    /// <summary>
+    /// Writes every area's page, keeping layer 4's words, or with <paramref name="charts"/> (area, folder → its page) writing the
+    /// developer page; removes the pages of folders no area has now; one holding layer 4's words is kept and returned, for the person
+    /// to move. Returns what changed.
+    /// </summary>
+    public static (int Written, int Removed, int Unchanged, List<string> Kept) Write(string root, Areas a, AreaLayout layout, Func<string, string, AreaCharts>? charts = null)
     {
         int written = 0, removed = 0, same = 0;
         var want = new HashSet<string>(O);
@@ -87,7 +128,7 @@ public static class AreaPages
             want.Add(rel);
             var path = Path.Combine(root, rel);
             var old = File.Exists(path) ? File.ReadAllText(path) : null;
-            var text = Render(a, area, layout, Words(old));
+            var text = Text(a, area, layout, old, charts?.Invoke(area, slug));
             if (old == text) { same++; continue; }
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path, text, new UTF8Encoding(false));
@@ -101,7 +142,8 @@ public static class AreaPages
                 var rel = $"{AreaLayout.Root}/{Path.GetFileName(sub)}/{AreaLayout.Page}";
                 var path = Path.Combine(root, rel);
                 if (want.Contains(rel) || !File.Exists(path)) continue;
-                if (Words(File.ReadAllText(path)).Trim() != "") { kept.Add(rel); continue; }
+                var words = Words(File.ReadAllText(path));
+                if (words.Trim() != "" && !words.StartsWith(PageChart.BodyMarker, StringComparison.Ordinal)) { kept.Add(rel); continue; }
                 File.Delete(path);
                 removed++;
                 if (!Directory.EnumerateFileSystemEntries(sub).Any()) Directory.Delete(sub);

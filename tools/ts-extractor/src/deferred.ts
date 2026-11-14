@@ -10,6 +10,8 @@ const LISTENERS = new Set(["on", "once", "addEventListener", "addListener", "onm
  * the mutation is started (`mutate(…)`), not when the hook runs.
  */
 const MUTATIONS = new Set(["useMutation", "createMutation", "injectMutation", "useSWRMutation"]);
+/** D306: a DOM-style event property (`onload`, `onsuccess`, `onmessage`): a function stored there runs when the event comes. */
+const EVENT_PROPERTY = /^on[a-z]/;
 /** D212: the browser's and Node's timers run a function after a delay or on a repeat, not now. */
 const TIMERS = new Set(["setTimeout", "setInterval", "requestAnimationFrame", "requestIdleCallback", "setImmediate"]);
 
@@ -23,23 +25,31 @@ const TIMERS = new Set(["setTimeout", "setInterval", "requestAnimationFrame", "r
  * (`map`, `forEach`, `subscribe`, `then`) run as part of this code: "". Stops at the point that owns the code.
  */
 export function deferredOf(ctx: Context, node: ts.Node): string {
+  // D306: a deferral found inside a function that is itself only kept (stored for a later call) is the kept one: the code
+  // doesn't run in this flow at all, so the outermost keeping wins over a stream, listener or timer inside it.
+  let inner = "";
   for (let p: ts.Node | undefined = node.parent; p && !ts.isSourceFile(p); p = p.parent) {
-    if (qualifiedName(p) || testName(p)) return "";
+    if (qualifiedName(p) || testName(p)) return inner;
     if (!(ts.isArrowFunction(p) || ts.isFunctionExpression(p))) continue;
+    // D306: a function assigned to a property (`action.callback = (a) => …`) is stored there, to run when something calls it later.
+    const stored = storedAs(p);
+    // An event property (`reader.onload = …`, `xhr.onerror = …`) is a listener: it runs when the event comes, as D201's `on(…)`.
+    if (stored !== null && EVENT_PROPERTY.test(stored)) { inner ||= `listener:${stored}`; continue; }
+    if (stored !== null) return `kept:${stored}`;
     // D202: a function written as an object's property (`{ readFunc: (v) => … }`) is stored there, to be called later, unless
     // the object goes straight to a library call that runs it (`subscribe({ next, error })`, `$.ajax({ success })`).
     if (ts.isPropertyAssignment(p.parent) && ts.isObjectLiteralExpression(p.parent.parent)) {
       // A top-level object's function (`var AjaxCart = { send_ajax: function () {…} }`) is a point of its own (D191).
-      if (qualifiedName(p.parent)) return "";
+      if (qualifiedName(p.parent)) return inner;
       const obj = p.parent.parent;
       const holder = ts.isCallExpression(obj.parent) && obj.parent.arguments.includes(obj) ? obj.parent : null;
       if (!holder) return `kept:${p.parent.name.getText()}`;
       const fnOf = declaredFunction(ctx.checker, holder.expression);
       if (fnOf && ctx.isOwn(fnOf.getSourceFile())) return `kept:${p.parent.name.getText()}`;
       const holderName = calledName(holder);
-      if (MUTATIONS.has(holderName)) return `mutation:${holderName}`;
+      if (MUTATIONS.has(holderName)) { inner ||= `mutation:${holderName}`; continue; }
       const stream = streamOf(ctx, holder);
-      if (stream) return stream;
+      if (stream) inner ||= stream;
       continue;
     }
     if (!ts.isCallExpression(p.parent) || !p.parent.arguments.includes(p)) continue;
@@ -50,13 +60,31 @@ export function deferredOf(ctx: Context, node: ts.Node): string {
       if (!callsParam(ctx, fn, call.arguments.indexOf(p), 0, new Set())) return `kept:${name}`;
       continue;
     }
-    if (LISTENERS.has(name)) return `listener:${name}`;
-    if (TIMERS.has(name)) return `timer:${name}`;
-    if (MUTATIONS.has(name)) return `mutation:${name}`;
+    if (LISTENERS.has(name)) { inner ||= `listener:${name}`; continue; }
+    if (TIMERS.has(name)) { inner ||= `timer:${name}`; continue; }
+    if (MUTATIONS.has(name)) { inner ||= `mutation:${name}`; continue; }
     const stream = streamOf(ctx, call);
-    if (stream) return stream;
+    if (stream) inner ||= stream;
   }
-  return "";
+  return inner;
+}
+
+/** D306: the property a function is assigned to (`x.callback = () => …`, `x["cb"] = …`), or null when it isn't. */
+function storedAs(fn: ts.Node): string | null {
+  let e: ts.Node = fn;
+  while (ts.isParenthesizedExpression(e.parent)) e = e.parent;
+  const b = e.parent;
+  if (!b || !ts.isBinaryExpression(b) || b.operatorToken.kind !== ts.SyntaxKind.EqualsToken || b.right !== e) return null;
+  if (ts.isPropertyAccessExpression(b.left)) return b.left.name.text;
+  if (ts.isElementAccessExpression(b.left)) return b.left.argumentExpression.getText().replace(/^["'`]|["'`]$/g, "");
+  return null;
+}
+
+/** D306: the node sits in a function stored for a later call (assigned to a property) between it and <paramref name="stop"/>. */
+function inStored(node: ts.Node, stop: ts.Node): boolean {
+  for (let p: ts.Node | undefined = node.parent; p && p !== stop; p = p.parent)
+    if ((ts.isArrowFunction(p) || ts.isFunctionExpression(p)) && storedAs(p) !== null && !EVENT_PROPERTY.test(storedAs(p)!)) return true;
+  return false;
 }
 
 function calledName(call: ts.CallExpression): string {
@@ -164,7 +192,10 @@ function callsParam(ctx: Context, fn: ts.SignatureDeclaration, index: number, de
     if (found) return;
     if (ts.isIdentifier(n) && ctx.checker.getSymbolAtLocation(n) === symbol && n !== param.name) {
       const p = n.parent;
-      if (ts.isCallExpression(p) && p.expression === n) found = true;
+      // D306: a call inside a function the body only stores (`action.callback = (a) => handler(a)`) runs later, when something
+      // calls the stored function, not when this function runs.
+      if (inStored(n, body)) { /* stored for later: not a call now */ }
+      else if (ts.isCallExpression(p) && p.expression === n) found = true;
       else if (ts.isPropertyAccessExpression(p) && p.expression === n && ["call", "apply"].includes(p.name.text)) found = true;
       else if (ts.isCallExpression(p) && p.arguments.includes(n as ts.Expression)) {
         const next = declaredFunction(ctx.checker, p.expression);

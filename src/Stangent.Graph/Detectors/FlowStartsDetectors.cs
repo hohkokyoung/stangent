@@ -177,6 +177,7 @@ public sealed class ConditionsDetector : IDetector
                 if (node is InvocationExpressionSyntax or BaseObjectCreationExpressionSyntax) Call(ctx, file, (ExpressionSyntax)node);
                 if (node is ThrowStatementSyntax or ThrowExpressionSyntax) Throw(ctx, file, node);
                 if (node is AssignmentExpressionSyntax set) FilterResult(ctx, file, set);
+                if (node is TryStatementSyntax tryStatement && tryStatement.Catches.Count > 0) Try(ctx, file, tryStatement);
                 if (node is IfStatementSyntax check && Rejects(check.Statement, file.Model) is { } message && ctx.OwnerId(check, file.Model) is { } owner)
                     ctx.AddFact(Name, "rejects", owner, check, ("condition", check.Condition.ToString()), ("message", message));
                 // Step 6 (fresh check S21): a method returning a URL built from the current request's own path.
@@ -205,10 +206,138 @@ public sealed class ConditionsDetector : IDetector
         while (value is ParenthesizedExpressionSyntax or CastExpressionSyntax or AwaitExpressionSyntax)
             value = value switch { ParenthesizedExpressionSyntax p => p.Expression, CastExpressionSyntax c => c.Expression, AwaitExpressionSyntax a => a.Expression, _ => value };
         if (value is not (InvocationExpressionSyntax or BaseObjectCreationExpressionSyntax) || file.Model.GetSymbolInfo(value).Symbol is not IMethodSymbol method) return;
-        if (Exit(method, value, file.Model) is not var (kind, status)) return;
-        ctx.AddFact(Name, "exit", owner, set, [("kind", kind), ("result", value is InvocationExpressionSyntax ? method.Name : method.ContainingType.Name),
-            ("status", status), ("text", set.ToString()), ("exception", ""), ("conditions", Json(Around(set, ctx))), .. Target(kind, method, value, file.Model, ctx)]);
+        if (Exit(method, value, file.Model) is var (kind, status))
+        {
+            ctx.AddFact(Name, "exit", owner, set, [("kind", kind), ("result", value is InvocationExpressionSyntax ? method.Name : method.ContainingType.Name),
+                ("status", status), ("text", set.ToString()), ("exception", ""), ("conditions", Json(Around(set, ctx))), .. Target(kind, method, value, file.Model, ctx)]);
+            return;
+        }
+        // D301: any other result set on a filter's context stops the request too (Kavita's `DisallowRoleAttribute` sets a
+        // `ContentResult` with a 400): a stop answering its constant status when its initialiser sets one, else the result's type.
+        var type = method.MethodKind == MethodKind.Constructor ? method.ContainingType.Name : method.ReturnType.Name;
+        var code = value is BaseObjectCreationExpressionSyntax { Initializer: { } init }
+            ? init.Expressions.OfType<AssignmentExpressionSyntax>().Where(a => a.Left is IdentifierNameSyntax { Identifier.ValueText: "StatusCode" })
+                .Select(a => file.Model.GetConstantValue(a.Right)).FirstOrDefault(c => c is { HasValue: true, Value: int })
+            : default;
+        var (k, st) = code is { HasValue: true, Value: int n } ? ("StatusCode", n.ToString(System.Globalization.CultureInfo.InvariantCulture)) : ("Result", type);
+        ctx.AddFact(Name, "exit", owner, set, ("kind", k), ("result", type), ("status", st), ("text", set.ToString()), ("exception", ""), ("conditions", Json(Around(set, ctx))));
     }
+
+    /// <summary>
+    /// D300: a <c>try</c> with catches, on the member it's in: the lines its block covers (<c>from</c>, <c>to</c>) and each catch in
+    /// order (<c>catches</c>, JSON): the type it takes (its full name and the names of the types it's built on are on the thrown
+    /// side; here the full name, <c>*</c> for a bare catch, <c>?</c> when the compiler can't tell), its line, whether it has a
+    /// <c>when</c> filter, and whether it throws anything (D304: the same error or a new one wrapping it; the error goes on).
+    /// </summary>
+    void Try(ExtractContext ctx, SourceFile file, TryStatementSyntax t)
+    {
+        if (ctx.OwnerId(t, file.Model) is not { } owner) return;
+        var catches = new List<CatchInfo>();
+        foreach (var c in t.Catches)
+        {
+            var type = c.Declaration is null ? "*"
+                : file.Model.GetTypeInfo(c.Declaration.Type).Type is INamedTypeSymbol { TypeKind: not TypeKind.Error } named ? FullName(named) : "?";
+            var variable = c.Declaration is { } d && d.Identifier.ValueText is { Length: > 0 } v ? v : null;
+            // D304(1): any throw in the catch, a new wrapped error included, lets the error go on; a new one names what it becomes.
+            var throws = c.Block.DescendantNodes(n => n is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax)).OfType<ThrowStatementSyntax>().ToList();
+            var rethrows = throws.Count > 0;
+            var becomes = throws.Select(x => x.Expression).OfType<ExpressionSyntax>()
+                .Where(x => !(variable is not null && x is IdentifierNameSyntax id && id.Identifier.ValueText == variable))
+                .Select(x => file.Model.GetTypeInfo(x).Type).FirstOrDefault(x => x is { TypeKind: not TypeKind.Error });
+            catches.Add(new CatchInfo(type, ctx.Line(c), c.Filter is not null ? true : null, rethrows ? true : null,
+                becomes is null ? null : TypeChain(becomes), rethrows ? null : Ends(c, t)));
+        }
+        var end = t.Block.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
+        ctx.AddFact(Name, "try", owner, t, ("from", ctx.Line(t.Block).ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            ("to", end.ToString(System.Globalization.CultureInfo.InvariantCulture)), ("catches", JsonSerializer.Serialize(catches, JsonOptions)));
+    }
+
+    public sealed record CatchInfo(string Type, int Line, bool? Filtered, bool? Rethrows, string? Becomes = null, string? Ends = null);
+
+    /// <summary>
+    /// D304(7): what a catch that doesn't throw returns: its own <c>return</c> (<c>new HealthCheck(…)</c>), or else the <c>return</c>
+    /// right after the <c>try</c> it falls out to (<c>View(…)</c>); "" when it returns nothing, null when neither is there.
+    /// </summary>
+    static string? Ends(CatchClauseSyntax c, TryStatementSyntax t)
+    {
+        var own = c.Block.Statements.LastOrDefault() as ReturnStatementSyntax;
+        if (own is not null) return Short(own.Expression);
+        if (c.Block.Statements.LastOrDefault() is ContinueStatementSyntax or BreakStatementSyntax) return null;
+        if (t.Finally is null && t.Parent is BlockSyntax block && block.Statements.IndexOf(t) is var i and >= 0 && i + 1 < block.Statements.Count
+            && block.Statements[i + 1] is ReturnStatementSyntax next) return Short(next.Expression);
+        return null;
+    }
+
+    static string Short(ExpressionSyntax? e)
+    {
+        while (e is AwaitExpressionSyntax or ParenthesizedExpressionSyntax or CastExpressionSyntax)
+            e = e switch { AwaitExpressionSyntax a => a.Expression, ParenthesizedExpressionSyntax p => p.Expression, CastExpressionSyntax c => c.Expression, _ => e };
+        return e switch
+        {
+            null => "",
+            InvocationExpressionSyntax i => $"{(i.Expression is MemberAccessExpressionSyntax m ? m.Name.Identifier.ValueText : i.Expression is IdentifierNameSyntax n ? n.Identifier.ValueText : i.Expression.ToString())}(…)",
+            ObjectCreationExpressionSyntax o => $"new {o.Type}(…)",
+            _ => e.ToString().Length <= 40 ? e.ToString() : e.ToString()[..40] + "…",
+        };
+    }
+
+    /// <summary>A type's full name without its assembly: <c>NzbDrone.Core.Indexers.Exceptions.IndexerException</c>.</summary>
+    static string FullName(ITypeSymbol t) => t.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted).WithGenericsOptions(SymbolDisplayGenericsOptions.None).RemoveMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.UseSpecialTypes));
+
+    /// <summary>D300: a thrown type's full name and every type it's built on, nearest first: <c>A|B|System.Exception|System.Object</c>.</summary>
+    static string TypeChain(ITypeSymbol? t)
+    {
+        var names = new List<string>();
+        for (var x = t; x is not null && x.TypeKind != TypeKind.Error; x = x.BaseType) names.Add(FullName(x));
+        return string.Join("|", names);
+    }
+
+    /// <summary>
+    /// D294: a call that writes or deletes a file: .NET's <c>File</c> and <c>Directory</c> methods that write, copy, move or delete,
+    /// the same names in <c>System.IO.Abstractions</c>, NetVips' <c>WriteToFile</c>, ImageSharp's <c>Save</c>/<c>SaveAs…</c> given a
+    /// path, and <c>CopyTo(Async)</c> onto a <c>FileStream</c>. Null for anything else.
+    /// </summary>
+    internal static string? FileChange(IMethodSymbol method, ExpressionSyntax call, SemanticModel model)
+    {
+        var type = method.ContainingType;
+        if (type is null) return null;
+        var ns = type.ContainingNamespace?.ToDisplayString() ?? "";
+        var name = method.Name;
+        var bare = type.Name;
+        if (ns == "System.IO.Abstractions")
+        {
+            if (bare.StartsWith('I') && bare.Length > 1 && char.IsUpper(bare[1])) bare = bare[1..];
+            foreach (var suffix in (string[])["Base", "Wrapper"]) if (bare.EndsWith(suffix, StringComparison.Ordinal)) bare = bare[..^suffix.Length];
+        }
+        if (ns is "System.IO" or "System.IO.Abstractions")
+        {
+            if (bare == "File")
+            {
+                if (name == "Delete") return "deletes";
+                if (FileWrites.Contains(name.EndsWith("Async", StringComparison.Ordinal) ? name[..^5] : name)) return "writes";
+            }
+            if (bare == "Directory")
+            {
+                if (name == "Delete") return "deletes";
+                if (name is "CreateDirectory" or "Move") return "writes";
+            }
+            if (ns == "System.IO" && type.Name is "Stream" or "FileStream" or "MemoryStream" && name is "CopyTo" or "CopyToAsync" && OntoFile(call, model)) return "writes";
+            return null;
+        }
+        if (ns.StartsWith("NetVips", StringComparison.Ordinal) && name == "WriteToFile") return "writes";
+        if (ns.StartsWith("SixLabors.ImageSharp", StringComparison.Ordinal) && name.StartsWith("Save", StringComparison.Ordinal)
+            && method.Parameters.FirstOrDefault()?.Type.SpecialType == SpecialType.System_String) return "writes";
+        if (name is "CopyTo" or "CopyToAsync" && OntoFile(call, model)) return "writes";   // IFormFile.CopyToAsync(fileStream)
+        return null;
+    }
+
+    static readonly HashSet<string> FileWrites = ["WriteAllText", "WriteAllBytes", "WriteAllLines", "AppendAllText", "AppendAllLines", "AppendAllBytes", "AppendText",
+        "Create", "CreateText", "Copy", "Move", "Replace", "OpenWrite"];
+
+    /// <summary>The call's first argument is a <c>FileStream</c> (a stream written to a file).</summary>
+    static bool OntoFile(ExpressionSyntax call, SemanticModel model) =>
+        call is InvocationExpressionSyntax { ArgumentList.Arguments: [var first, ..] } && model.GetTypeInfo(first.Expression).Type is { } t
+        && (t.Name == "FileStream" || t.Name == "FileSystemStream" || t.BaseType?.Name == "FileSystemStream");
 
     /// <summary>
     /// D204: where a framework redirect sends the user, from the compiler's constant values: <c>route</c> (<c>RedirectToRoute</c>'s
@@ -330,10 +459,17 @@ public sealed class ConditionsDetector : IDetector
         if (file.Model.GetSymbolInfo(call).Symbol is not IMethodSymbol method || ctx.OwnerId(call, file.Model) is not { } owner) return;
         var target = ctx.NodeId(method);
         var ns = method.ContainingNamespace?.ToDisplayString() ?? "";
+        var changesFile = false;
+        if (target is null && FileChange(method, call, file.Model) is { } change)
+        {
+            ctx.AddFact(Name, "file-change", owner, call, ("change", change), ("method", $"{method.ContainingType.Name}.{method.Name}"));
+            changesFile = true;
+        }
         if (Returned(call) && Exit(method, call, file.Model) is var (kind, status))
             ctx.AddFact(Name, "exit", owner, call, [("kind", kind), ("result", call is InvocationExpressionSyntax ? method.Name : method.ContainingType.Name),
                 ("status", status), ("text", call.ToString()), ("exception", ""), ("conditions", Json(Around(call, ctx))), .. Target(kind, method, call, file.Model, ctx)]);
-        if (target is null && (ns == "System" || ns.StartsWith("System.", StringComparison.Ordinal)) && !ns.StartsWith("System.Net.Http", StringComparison.Ordinal)) return;
+        // D304(2): a .NET file write or delete keeps its condition like any step, so it isn't skipped with the other System.* calls.
+        if (target is null && !changesFile && (ns == "System" || ns.StartsWith("System.", StringComparison.Ordinal)) && !ns.StartsWith("System.Net.Http", StringComparison.Ordinal)) return;
         var conditions = Around(call, ctx);
         if (conditions.Count == 0) return;
         ctx.AddFact(Name, "condition", owner, call, ("call", $"{method.ContainingType.Name}.{(method.MethodKind == MethodKind.Constructor ? "new" : method.Name)}"),
@@ -350,7 +486,7 @@ public sealed class ConditionsDetector : IDetector
         if (node.Parent is BinaryExpressionSyntax b && b.IsKind(SyntaxKind.CoalesceExpression) && b.Right == node)
             conditions.Insert(0, new Condition("null", b.Left.ToString(), ctx.Line(b)));
         ctx.AddFact(Name, "exit", owner, node, ("kind", "throw"), ("result", "throw"), ("status", ""), ("text", node.ToString()),
-            ("exception", exception), ("conditions", Json(conditions)));
+            ("exception", exception), ("exceptionTypes", thrown is null ? "" : TypeChain(file.Model.GetTypeInfo(thrown).Type)), ("conditions", Json(conditions)));
     }
 
     static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull };

@@ -15,7 +15,7 @@ static class FlowCommands
         build.SetAction(pr => Cli.Run(pr, "flows build", ctx =>
         {
             var graph = Cli.LoadGraph(ctx);
-            var set = FlowBuilder.Build(graph, ctx.Repo.Root);
+            var set = FlowBuilder.Build(graph, ctx.Repo.Root, Settings(ctx));
             var layout = AreaLayout.For(graph, ctx.Repo.Root, set);
             var (written, removed, unchanged) = FlowFiles.Write(ctx.Repo.Root, set, layout);
             ctx.Span.Attributes["stangent.artifact.count"] = set.Flows.Count;
@@ -58,7 +58,7 @@ static class FlowCommands
         var check = new Command("check", "D177's bar items 3–5 by code: every 🟡 has a reason and every ❓ says why; the files are byte for byte what the graph builds; no start is skipped silently.");
         check.SetAction(pr => Cli.Run(pr, "flows check", ctx =>
         {
-            var report = FlowFiles.Check(ctx.Repo.Root, Cli.LoadGraph(ctx), new FlowSettings());
+            var report = FlowFiles.Check(ctx.Repo.Root, Cli.LoadGraph(ctx), Settings(ctx));
             ctx.Span.Attributes["stangent.artifact.count"] = (int)report["flows"]!;
             if (!(bool)report["ok"]!) throw new CheckFailed("flows_check_failed", "Flows failed a check: see problems.", report);
             return report;
@@ -70,7 +70,7 @@ static class FlowCommands
         var guesses = new Command("guesses", "Step 6 (D235–D237): every 🟡 and ❓ line on a flow, by code line, in a cause and one of D166's four buckets by a fixed table, ranked by start flows touched; fails when a line fits no cause or a reason sits on the wrong kind of step.") { topOption, causeOption };
         guesses.SetAction(pr => Cli.Run(pr, "flows guesses", ctx =>
         {
-            var set = FlowBuilder.Build(Cli.LoadGraph(ctx), ctx.Repo.Root);
+            var set = FlowBuilder.Build(Cli.LoadGraph(ctx), ctx.Repo.Root, Settings(ctx));
             var report = GuessReport.Report(set, pr.GetValue(topOption), pr.GetValue(causeOption));
             ctx.Span.Attributes["stangent.artifact.count"] = (int)report["guessed"]!["total"]!["lines"]! + (int)report["unknown"]!["total"]!["lines"]!;
             if (!(bool)report["ok"]!) throw new CheckFailed("flows_guesses_failed", "A 🟡 or ❓ line fits no cause, or its reason sits on the wrong kind of step: see problems.", report);
@@ -80,6 +80,9 @@ static class FlowCommands
     }
 
     /// <summary>What <c>flows build</c> says about a layout by area (D230): folders, files per area, the shared folder, flows in no area.</summary>
+    /// <summary>The walk's settings from <c>stangent.yaml</c> (D302's outside libraries).</summary>
+    static FlowSettings Settings(CliContext ctx) => new() { OutsideLibraries = [.. ctx.Repo.Config.Flows.OutsideLibraries] };
+
     static JsonObject Layout(AreaLayout layout)
     {
         var byFolder = layout.FolderOf.Values.GroupBy(x => x, StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.Count(), StringComparer.Ordinal);
