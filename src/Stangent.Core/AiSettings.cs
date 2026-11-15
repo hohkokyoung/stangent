@@ -13,7 +13,7 @@ public sealed record AiSettings(string Agent, string Model, string Effort, strin
     public static readonly IReadOnlyList<string> Efforts = ["low", "medium", "high", "xhigh", "max"];
 
     /// <summary>Every AI step's agent, as <c>plugin/agents/</c> names them (a test holds the two equal).</summary>
-    public static readonly IReadOnlyList<string> Agents = ["stangent-agree-checker", "stangent-bug-reproducer", "stangent-candidate-finder", "stangent-file-finder", "stangent-finding-disprover", "stangent-link-judge", "stangent-match-checker", "stangent-page-asker", "stangent-page-verifier", "stangent-page-writer", "stangent-question-writer", "stangent-requirement-checker", "stangent-requirement-judge", "stangent-requirement-matcher", "stangent-requirement-writer", "stangent-summary-writer"];
+    public static readonly IReadOnlyList<string> Agents = ["stangent-agree-checker", "stangent-bug-reproducer", "stangent-candidate-finder", "stangent-file-finder", "stangent-finding-disprover", "stangent-fsd-reviewer", "stangent-link-judge", "stangent-match-checker", "stangent-page-asker", "stangent-page-verifier", "stangent-page-writer", "stangent-question-writer", "stangent-requirement-checker", "stangent-requirement-judge", "stangent-requirement-matcher", "stangent-requirement-writer", "stangent-summary-writer"];
 
     /// <summary>Every step's settings at once, so a run with one step unpinned stops before its first call, not halfway (D161).</summary>
     public static IReadOnlyList<AiSettings> ResolveAll(StangentConfig config, string? modelFlag = null, string? effortFlag = null) =>

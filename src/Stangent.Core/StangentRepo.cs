@@ -132,6 +132,10 @@ public sealed class StangentConfig
         public bool SkipApproval { get; set; }
         /// <summary><c>fsd export</c>: a chapter longer than this many lines is cut at its next heading level (D122). <c>--max-lines</c> overrides it.</summary>
         public int ExportMaxLines { get; set; } = 1500;
+        /// <summary><c>fsd review</c>'s cap per run (D341): turns and dollars, its one retry inside it. D321 used 105K tokens, Kavita 205–242K.</summary>
+        public ReviewBudgetConfig ReviewBudget { get; set; } = new();
+        /// <summary>How many review runs <c>fsd review-merge</c> unions (D341, D324: two merged found 28–29 of 30).</summary>
+        public int ReviewRuns { get; set; } = 2;
         /// <summary>A section's attachments in the link judge's and the disprove step's bundles, and a quote from one accepted (D123). Off by default: with it off no bundle or hash changes.</summary>
         public bool AttachmentsInChecks { get; set; }
         /// <summary>Files with no place in a document's text get a section of their own at its end (I.8, D126). Off by default: on, such a document has one more section, so its text and sections change.</summary>
@@ -240,6 +244,13 @@ public sealed class StangentConfig
         public double? WinnerRatio { get; set; }
         public double? SummaryWeight { get; set; }
         public double? LengthNorm { get; set; }
+    }
+
+    /// <summary><c>fsd.reviewBudget</c> (D341): its own defaults, so setting only one value keeps the other's.</summary>
+    public sealed class ReviewBudgetConfig
+    {
+        public double Usd { get; set; } = 3.0;
+        public int Turns { get; set; } = 60;
     }
 
     public sealed class ProveBudgetConfig

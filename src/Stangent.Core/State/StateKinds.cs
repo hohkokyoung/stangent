@@ -33,7 +33,7 @@ public static class StateKinds
     public const string Requirement = "requirement", Question = "question", TraceDecision = "trace-decision", FindingSeverity = "finding-severity",
         Proof = "proof", ProofConfirmation = "proof-confirmation", DraftPosted = "draft-posted",
         PageRun = "page-run", PageCorrection = "page-correction", LinkRun = "link-run", ReqRun = "req-run", TicketMatch = "ticket-match", TicketStep = "ticket-step",
-        FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FsdSectionAnswer = "fsd-section-answer", FindingVerdict = "finding-verdict", FindingReview = "finding-review", DisproveRun = "disprove-run",
+        FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FsdSectionAnswer = "fsd-section-answer", FindingVerdict = "finding-verdict", FindingReview = "finding-review", DisproveRun = "disprove-run", FsdReviewRun = "fsd-review-run",
         FindingStanding = "finding-standing", FindingSecurity = "finding-security", SectionCoverage = "section-coverage";
 
     // Committed state gets committed history; run state in .stangent/ gets history beside it, ignored the same way.
@@ -141,6 +141,10 @@ public static class StateKinds
 
         // D119: one finding at a time, each from nothing.
         new(DisproveRun, ".stangent/fsd/state-history.jsonl", ["disprove"], [By(Code, "disprove", "done")], Field: "stage"),
+
+        // D341: one review run, from its prepare; one retry at most; a failed run is prepared again from nothing.
+        new(FsdReviewRun, ".stangent/fsd/state-history.jsonl", ["prepared"],
+            [.. Each(Code, "prepared", "retry", "checked", "failed"), .. Each(Code, "retry", "checked", "failed")], Field: "stage"),
 
         new(ReqRun, ".stangent/req/state-history.jsonl", ["write"],
         [

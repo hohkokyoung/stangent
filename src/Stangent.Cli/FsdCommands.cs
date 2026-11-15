@@ -207,6 +207,47 @@ static class FsdCommands
         disproveEstimate.SetAction(pr => Cli.Run(pr, "fsd disprove estimate", ctx => DisproveRun.Estimate(SpecCommands.LoadSet(ctx), ctx.Repo, pr.GetValue(docArg)!, pr.GetValue(chapterOption))));
         disprove.Subcommands.Add(disproveEstimate);
 
+        // Layer 5's command (D341): the source-reading reviewer, checked by code, two runs merged.
+        var runOption = new Option<int>("--run") { Description = "Which run, 1 (the default) to fsd.reviewRuns (2 unless set).", DefaultValueFactory = _ => 1 };
+        var againOption = new Option<bool>("--again") { Description = "Prepare the run again although its input and the commit are unchanged." };
+        var review = new Command("review", "Prepare one review run (D341): the FSD's sections with their ids, the scope and the output schema for stangent-fsd-reviewer, which reads the repo itself, read-only, in a worktree of HEAD. Says what runs next, with the agent's limits.") { docArgument, runOption, againOption };
+        review.SetAction(pr => Cli.Run(pr, "fsd review", ctx =>
+        {
+            var (doc, run) = (pr.GetValue(docArgument)!, pr.GetValue(runOption));
+            var step = FsdReview.Prepare(ctx.Repo, doc, run, pr.GetValue(againOption));
+            var json = SpecCommands.Finish(step, $"{doc} review run {run}").AsObject();
+            if (step.Agent is not null) json["next"]!["limits"] = FsdReview.DriverLimits(ctx.Repo, doc, run);
+            json["runs"] = ctx.Repo.Config.Fsd.ReviewRuns;
+            return json;
+        }));
+        fsd.Subcommands.Add(review);
+        var reviewCheck = new Command("review-check", "Check one review run's findings (D341): a known state, a real section, every FSD quote word for word in its section, every file:line at the reviewed commit. One retry with the errors; after it, failing findings are dropped and listed.") { docArgument, runOption, usageOption };
+        reviewCheck.SetAction(pr => Cli.Run(pr, "fsd review-check", ctx =>
+        {
+            var (doc, run) = (pr.GetValue(docArgument)!, pr.GetValue(runOption));
+            var step = FsdReview.Check(ctx.Repo, doc, run, SpecCommands.ReadUsage(ctx, pr.GetValue(usageOption)));
+            // The retry runs under what's left of the run's cap.
+            if (step.Status == "retry")
+            {
+                var retry = step.ToJson($"{doc} review run {run}");
+                retry["next"]!["limits"] = FsdReview.DriverLimits(ctx.Repo, doc, run);
+                throw new CheckFailed("check_failed", $"{doc} review run {run}: the code check failed; the reviewer gets one retry with the errors.", retry);
+            }
+            return SpecCommands.Finish(step, $"{doc} review run {run}");
+        }));
+        fsd.Subcommands.Add(reviewCheck);
+        var reviewStatus = new Command("review-status", "Where each review run stands (D341): its stage and commit, how many runs merge takes, whether review.json exists. Reads only.") { docArgument };
+        reviewStatus.SetAction(pr => Cli.Run(pr, "fsd review-status", ctx => FsdReview.Status(ctx.Repo, pr.GetValue(docArgument)!)));
+        fsd.Subcommands.Add(reviewStatus);
+        var reviewMerge = new Command("review-merge", "Union the checked review runs (D341): exact duplicates joined, each finding saying which runs found it. Writes specs/fsd/<doc>/review.json (contract fsd-review v1) and review.md. Code only.") { docArgument };
+        reviewMerge.SetAction(pr => Cli.Run(pr, "fsd review-merge", ctx =>
+        {
+            var result = FsdReview.Merge(ctx.Repo, pr.GetValue(docArgument)!);
+            ctx.Span.Attributes["stangent.artifact.count"] = (int)result["findings"]!;
+            return result;
+        }));
+        fsd.Subcommands.Add(reviewMerge);
+
         var undocumented = new Command("undocumented", "List screens no FSD section links to as undocumented, in specs/trace.yaml (code, no AI). Needs fsd.findings: true.");
         undocumented.SetAction(pr => Cli.Run(pr, "fsd undocumented", ctx =>
         {

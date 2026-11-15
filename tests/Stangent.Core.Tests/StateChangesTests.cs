@@ -188,6 +188,7 @@ public partial class StateChangesTests
         [("src/Stangent.Spec/Fsd/FsdVersions.cs", "status")] = (3, "what this import did: a new or a waiting candidate, a first import waiting or approved"),
         [("src/Stangent.Spec/Fsd/ImportReport.cs", "verdict")] = (1, "an import's own result, ok or with warnings, not a finding's verdict"),
         [("src/Stangent.Spec/Fsd/FsdStatus.cs", "verdict")] = (1, "a copy of the current version's import verdict, for reading"),
+        [("src/Stangent.Spec/Fsd/FsdReview.cs", "stage")] = (1, "`fsd review-status`: a copy of each run's stage, for reading; the moves are on the module"),
         [("src/Stangent.Cli/FsdCommands.cs", "verdict")] = (1, "an import that stopped says failed, in its envelope, not a finding's verdict"),
         [("src/Stangent.Spec/Pages/PageRun.cs", "status")] = (1, "RunStep's JSON: what this command returned"),
         [("src/Stangent.Spec/Pages/PageRun.cs", "outcome")] = (1, "a copy into a page's record of what the step returned"),

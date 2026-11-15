@@ -1,4 +1,4 @@
-# The spec (Phase 2: contracts `reference-page`, `reference-lines`, `source-document` v3, `trace-links`)
+# The spec (Phase 2: contracts `reference-page`, `reference-lines`, `source-document` v3, `trace-links`; layer 5: `fsd-review` v1)
 
 **Layer 4 note (D258):** the reference pages are being replaced by each area's page in plain words (`docs/pages.md`). They
 retire one reader at a time: when layer 4 passes its bar the writer below stops being run and people read
@@ -385,6 +385,52 @@ A first import goes straight in, unless `first-import-approval` is on (above). T
 - The original goes to the archive set in `stangent.yaml` (`fsd: { archive: { name, path, git } }`, a folder outside
   the repo or a second git repo, which gets a commit) and is cited by archive name, path and content hash.
   A file with a known hash is imported once.
+
+## The FSD review (layer 5, D341; contract `fsd-review` v1)
+
+The route measured better than the linking below (D321–D324: 26–29 of 30 planted items against 24, 0–8% false alarms
+against 31%): an agent reads the FSD and the source, two runs side by side, and code checks what it says. The old route,
+`/stangent:fsd-link`, still runs until layer 7 retires it. `plugin/scripts/fsd-review-run.sh <doc>` (or
+`/stangent:fsd-review`) runs it all; by hand:
+
+```bash
+stangent fsd review <doc> --run 1        # writes .stangent/fsd/<doc>/review/run-1/input.md, names stangent-fsd-reviewer and its limits
+stangent fsd review-check <doc> --run 1 --usage <claude result>
+stangent fsd review <doc> --run 2 …      # fsd.reviewRuns, default 2
+stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and review.md
+```
+
+- **Input** (`fsd review`): the reviewer's instructions (D321's prompt, with no app named), `fsd.scope`'s route
+  prefixes, the current version's sections as Markdown with each id in its heading (`### 2.1 Library  [section id:
+  2.1]`), and the output schema `fsd-review-output.v1.json`: findings with `state` (gap, conflict, undocumented),
+  `section`, `fsdQuote`, `screen`, `note`, `evidence` (`path:line`). A checked run with the same input on the same commit
+  is `current`, no AI; `--again` runs it anyway. AI off (`ai.enabled: false`) refuses.
+- **Limits**, as the file finder's (D101): Read, Grep and Glob in a throwaway worktree of the commit the run was prepared on; never `.stangent/`,
+  `.git/`, `specs/` (earlier reviews, the FSD's record) or `stangent.yaml`; structured output; `fsd.reviewBudget`
+  (60 turns, $3 per run by default, the retry inside it). Kavita's runs used 205–242K tokens.
+- **Checks** (`fsd review-check`), every finding: a known state; the section exists in the reviewed version (null only for
+  an undocumented screen that names its route); a gap or conflict quotes its section word for word, 4 words or a whole
+  line, from a word's start to its end, with spaces and `*`/`` ` `` ignored, curly quotes and long dashes folded, and
+  table bars and list markers ignored where that makes it match, a section holding its subsections' text; every evidence path is a
+  file at the reviewed commit and its lines inside it (a path alone may be a folder). Any failure: one retry with every
+  error (`feedback.md`, `previous-output.json`; a schema error names its field). After it, failing findings are dropped
+  and listed with their reasons in `checked.json`, never shown as findings. No answer after the retry: the run failed,
+  nothing is recorded, and the next `fsd review` starts it again. A second check while the retry waits, with no new answer
+  and no `--usage`, is refused (`no_output`). The run's stage (prepared, retry, checked, failed) moves through the state
+  module (`fsd-review-run`); `stangent fsd review-status <doc>` shows each run's stage and commit and reads only.
+- **Merge** (`fsd review-merge`): every run checked, on one commit and FSD version, or it refuses. Joined, one finding
+  per run at most: a gap or conflict with the same section and quote; an undocumented screen with no section and the same
+  route; an undocumented finding in a section only when the pair is unambiguous (same section, routes equal or one blank,
+  an evidence file in common, and each the other's only such finding). Anything else stays apart; undocumented findings of
+  different runs in one section sharing a file are marked `maybeSameAs`, for the reader. A joined finding keeps the first
+  run's words and every run's evidence, and lists its `runs`. `review.json` holds the commit, FSD version, model, effort,
+  tokens, each run's counts and usage, the findings (`F-001` …, in section order, not permanent) and what was dropped;
+  `review.md` is the same by section (gaps, conflicts, left out), then screens no section covers. Both are generated:
+  answers don't go here, and no findings-to-decisions flow exists yet (the old route's `trace.yaml` decisions stay with it).
+- **What it doesn't show:** that a difference is real. The quote and line checks keep the AI honest about what it read;
+  D322's checker found 0 of 20 false after the quote rule, on one app.
+- **Checked free (2026-11-15):** the saved Kavita runs through the built command: 29 of 30, 0 dropped
+  (`benchmark/results/2026-11-15-fsd-review-free/`).
 
 ## Links, findings and decisions (2b, D53, D58, D62)
 
