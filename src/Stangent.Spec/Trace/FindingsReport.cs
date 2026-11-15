@@ -106,7 +106,7 @@ public static class FindingsReport
         else if ((string?)e["note"] is { } note) sb.Append($"- **The link judge's note:** {note}\n");
         if (TraceFindings.ReviewHolds(e) && (string?)e["review"] == "sent-back") sb.Append($"- **Sent back by {(string?)e["review_note"]?["by"]}:** {(string?)e["review_note"]?["why"]}\n");
         if ((string?)e["disproof"]?["suggestedSeverity"] is { } severity) sb.Append($"- **Suggested severity:** {severity} (the AI's suggestion; a person sets it)\n");
-        if (TraceFindings.SecurityOpen(e)) sb.Append("- **Security flag:** unanswered; a developer answers it with `stangent trace security`.\n");
+        if (TraceFindings.SecurityOpen(e)) sb.Append("- **Security flag:** unanswered, from the old disprover (cut by D342); nothing answers it now, so a person settles the finding by its `decision`.\n");
         sb.Append($"- **Your answer:** entry `{(string)e["id"]!}` in `specs/trace.yaml`, `decision:`\n");
     }
 }

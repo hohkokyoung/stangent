@@ -8,8 +8,6 @@ public sealed class SpecRunDriverTests : IDisposable
     const string Done = """{"ok":true,"result":{"status":"written"}}""";
     const string Off = """{"ok":true,"result":{"status":"off","next":{"action":"none"}}}""";
     const string Current = """{"ok":true,"result":{"status":"current","next":{"action":"none"}}}""";
-    const string Disprover = """{"ok":true,"result":{"status":"confirm","next":{"action":"confirm","agent":"stangent-finding-disprover","prompt":"Finding and code: .stangent/in.md\nWrite your JSON to: .stangent/out.json","output":".stangent/out.json","schema":"finding-disprover-output.v1.json"}}}""";
-    const string DisproveDone = """{"ok":true,"result":{"status":"recorded","next":{"action":"none"}}}""";
     const string Sections = """{"ok":true,"result":[{"doc":"d1","section":"s1"}]}""";
 
     readonly DriverRig rig = new();
@@ -168,167 +166,29 @@ public sealed class SpecRunDriverTests : IDisposable
     }
 
     [Fact]
-    public void For_a_document_or_a_ticket_only_what_it_needs_runs()
+    public void For_a_ticket_only_what_it_needs_runs()
     {
         if (OperatingSystem.IsWindows()) return;
         rig.Stangent($$$"""
-            "spec needed --doc d1 --chapter 2") echo '{"ok":true,"result":{"pages":[{"id":"p1"},{"id":"p2"}]}}' ;;
             "spec needed --ticket K-1") echo '{"ok":true,"result":{"pages":[{"id":"p3"}]}}' ;;
             "spec prepare "*) echo '{{{Done}}}' ;;
             """);
-        Assert.Equal(2, rig.Run(Script, "--chapter", "2", "--for-fsd", "d1").Out.Trim().Split('\n').Length);
         Assert.Contains("p3", rig.Run(Script, "--for-ticket", "K-1").Out);
     }
 
+    /// <summary>The link, disprove, requirement and ask modes went with the old link route (D342): each is usage, and nothing is called.</summary>
     [Theory]
-    [InlineData("--fsd", "--chapter", "2")]
-    [InlineData("--disprove", "--chapter", "2")]
-    public void A_chapter_limits_a_run_to_what_stangent_lists_for_it_whichever_way_round_it_comes(string flag, string chapter, string n)
-    {
-        if (OperatingSystem.IsWindows()) return;
-        rig.Stangent($$$"""
-            "fsd sections --doc d1 --chapter 2") echo '{"ok":true,"result":[{"doc":"d1","section":"2.1"}]}' ;;
-            "fsd prepare d1 2.1") echo '{{{Step}}}' ;;
-            "fsd check d1 2.1 --usage "*) echo '{{{Done}}}' ;;
-            "fsd disprove prepare d1 2.1") echo '{{{Disprover}}}' ;;
-            "fsd disprove check d1 2.1 --usage "*) echo '{{{DisproveDone}}}' ;;
-            """);
-        var first = rig.Run(Script, flag, "d1", chapter, n);
-        var calls = rig.ClaudeCalls().Count;
-        Assert.Equal(0, first.Exit);
-        Assert.Contains("2.1", first.Out);
-        Assert.DoesNotContain("1.1", first.Out);
-        Assert.True(calls >= 1);
-        var second = rig.Run(Script, chapter, n, flag, "d1");
-        Assert.Equal((0, first.Out), (second.Exit, second.Out));
-    }
-
-    [Fact]
-    public void A_chapter_stangent_doesnt_know_stops_the_run_and_calls_no_claude()
-    {
-        if (OperatingSystem.IsWindows()) return;
-        rig.Stangent("""
-            "fsd sections --doc d1 --chapter 9") echo '{"ok":false,"error":{"code":"not_found"}}'; exit 3 ;;
-            """);
-        var result = rig.Run(Script, "--fsd", "d1", "--chapter", "9");
-        Assert.Equal(1, result.Exit);
-        Assert.Contains("not_found", result.Err);
-        Assert.Empty(rig.ClaudeCalls());
-    }
-
-    [Theory]
+    [InlineData("--fsd", "d1")]
+    [InlineData("--disprove", "d1")]
+    [InlineData("--req", "d1")]
+    [InlineData("--ask", "how?")]
+    [InlineData("--for-fsd", "d1")]
     [InlineData("--chapter", "2", "p1")]
-    [InlineData("--req", "d1", "--chapter", "2")]
-    public void A_chapter_is_only_for_fsd_and_disprove(params string[] args)
+    public void The_cut_modes_are_usage(params string[] args)
     {
         if (OperatingSystem.IsWindows()) return;
-        rig.Stangent("""
-            "req sections --doc d1") echo '{"ok":true,"result":[]}' ;;
-            """);
         Assert.Equal(2, rig.Run(Script, args).Exit);
-    }
-
-    [Fact]
-    public void A_chapter_with_no_number_is_usage()
-    {
-        if (OperatingSystem.IsWindows()) return;
-        Assert.Equal(2, rig.Run(Script, "--fsd", "d1", "--chapter").Exit);
-    }
-
-    [Theory]
-    [InlineData("fsd", "--fsd", "fsd sections --doc d1")]
-    [InlineData("req", "--req", "req sections --doc d1")]
-    public void Fsd_and_req_run_only_the_sections_asked_for(string mode, string flag, string list)
-    {
-        if (OperatingSystem.IsWindows()) return;
-        rig.Stangent($$$"""
-            "{{{list}}}") echo '{"ok":true,"result":[{"doc":"d1","section":"s1"},{"doc":"d1","section":"s 2"}]}' ;;
-            "{{{mode}}} prepare d1 s 2") echo '{{{Step}}}' ;;
-            "{{{mode}}} check d1 s 2 --usage "*) echo '{{{Done}}}' ;;
-            "fsd disprove prepare d1 s 2") echo '{{{Off}}}' ;;
-            """);
-        var result = rig.Run(Script, flag, "d1", "--only", "s 2");
-        Assert.Equal(0, result.Exit);
-        Assert.Equal("written\td1\ts 2\n", result.Out);
-        Assert.Single(rig.ClaudeCalls());
-    }
-
-    [Fact]
-    public void The_disprove_stage_follows_the_links_when_it_is_on()
-    {
-        if (OperatingSystem.IsWindows()) return;
-        rig.Stangent($$$"""
-            "fsd sections --doc d1") echo '{{{Sections}}}' ;;
-            "fsd prepare d1 s1") echo '{{{Current}}}' ;;
-            "fsd disprove prepare d1 s1") echo '{{{Disprover}}}' ;;
-            "fsd disprove check d1 s1 --usage "*) echo '{{{DisproveDone}}}' ;;
-            """);
-        var result = rig.Run(Script, "--fsd", "d1");
-        Assert.Equal(0, result.Exit);
-        Assert.Equal("current\td1\ts1\ndisprove:recorded\td1\ts1\n", result.Out);
-        var claude = Assert.Single(rig.ClaudeCalls());
-        Assert.Contains("--tools ", claude);
-        Assert.Contains("INPUT-TEXT", rig.ClaudeStdin);
-        Assert.Contains("stangent spec schema finding-disprover-output.v1.json", rig.StangentCalls());
-    }
-
-    [Fact]
-    public void Off_the_stage_prints_nothing_and_calls_nothing()
-    {
-        if (OperatingSystem.IsWindows()) return;
-        rig.Stangent($$$"""
-            "fsd sections --doc d1") echo '{{{Sections}}}' ;;
-            "fsd prepare d1 s1") echo '{{{Current}}}' ;;
-            "fsd disprove prepare d1 s1") echo '{{{Off}}}' ;;
-            """);
-        var result = rig.Run(Script, "--fsd", "d1");
-        Assert.Equal("current\td1\ts1\n", result.Out);
         Assert.Empty(rig.ClaudeCalls());
-    }
-
-    [Fact]
-    public void Ask_runs_one_turn_and_prints_the_status_then_the_result()
-    {
-        if (OperatingSystem.IsWindows()) return;
-        const string asker = """{"ok":true,"result":{"status":"confirm","next":{"action":"confirm","agent":"stangent-page-asker","prompt":"Question and pages: .stangent/in.md\nWrite your JSON to: .stangent/out.json","output":".stangent/out.json","schema":"page-asker-output.v1.json"}}}""";
-        const string answered = """{"ok":true,"result":{"status":"answered","next":{"action":"none"},"answer":{"label":"as the pages describe it"}}}""";
-        rig.Stangent($$$"""
-            "spec ask how does it work") echo '{{{asker}}}' ;;
-            "spec ask-check how does it work --usage "*) echo '{{{answered}}}' ;;
-            "spec schema "*) echo '{"type":"object"}' ;;
-            """);
-        var result = rig.Run(Script, "--ask", "how does it work");
-        Assert.Equal(0, result.Exit);
-        Assert.StartsWith("answered\thow does it work\n", result.Out);
-        Assert.Contains("\"label\":\"as the pages describe it\"", result.Out);
-        Assert.Contains("--json-schema", Assert.Single(rig.ClaudeCalls()));
-        Assert.Contains("INPUT-TEXT", rig.ClaudeStdin);
-    }
-
-    [Fact]
-    public void Ask_with_it_off_or_nothing_to_ask_makes_no_AI_call()
-    {
-        if (OperatingSystem.IsWindows()) return;
-        rig.Stangent($$$"""
-            "spec ask how does it work") echo '{{{Off}}}' ;;
-            """);
-        var result = rig.Run(Script, "--ask", "how does it work");
-        Assert.StartsWith("off\thow does it work\n", result.Out);
-        Assert.Empty(rig.ClaudeCalls());
-    }
-
-    [Fact]
-    public void Disprove_alone_never_touches_the_links()
-    {
-        if (OperatingSystem.IsWindows()) return;
-        rig.Stangent($$$"""
-            "fsd sections --doc d1") echo '{{{Sections}}}' ;;
-            "fsd disprove prepare d1 s1") echo '{{{Disprover}}}' ;;
-            "fsd disprove check d1 s1 --usage "*) echo '{{{DisproveDone}}}' ;;
-            """);
-        var result = rig.Run(Script, "--disprove", "d1");
-        Assert.Equal("disprove:recorded\td1\ts1\n", result.Out);
-        Assert.DoesNotContain(rig.StangentCalls(), c => c.StartsWith("stangent fsd prepare", StringComparison.Ordinal));
     }
 
     [Fact]

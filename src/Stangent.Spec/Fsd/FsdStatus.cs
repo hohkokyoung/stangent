@@ -50,14 +50,16 @@ public static class FsdStatus
             ["ba"] = Ids(ba), ["unclear"] = findings.Count(e => (string?)e["state"] == "unclear" && !TraceFindings.IsGone(e)), ["agreeLinksToApprove"] = toApprove, ["developer"] = Ids(developer), ["developerConfirm"] = Ids(confirm), ["pageOwner"] = Ids(pageOwner),
             ["recheck"] = findings.Count(e => TraceFindings.Standing(e) == "recheck"), ["gone"] = Queue("gone").Count, ["closed"] = Queue("closed").Count, ["decided"] = Queue("decided").Count,
         };
-        result["next"] = Next(doc, waiting, doubtful, uncovered, ba, confirm, developer, pageOwner, toApprove);
+        var reviewed = document is not null && File.Exists(FsdReview.ReviewJson(root, doc));
+        result["reviewed"] = reviewed;
+        result["next"] = Next(doc, waiting, doubtful, document is not null && !reviewed, ba, confirm, developer, pageOwner, toApprove);
         return result;
     }
 
     /// <summary>A heading path has spaces in it, and the command should still run as written.</summary>
     static string Arg(string section) => section.Contains(' ', StringComparison.Ordinal) ? $"\"{section}\"" : section;
 
-    static JsonObject Next(string doc, JsonObject? waiting, List<string> doubtful, List<JsonObject> uncovered, List<string> ba, List<string> confirm, List<string> developer, List<string> pageOwner, int toApprove)
+    static JsonObject Next(string doc, JsonObject? waiting, List<string> doubtful, bool notReviewed, List<string> ba, List<string> confirm, List<string> developer, List<string> pageOwner, int toApprove)
     {
         static JsonObject Do(string who, string what, string command) => new() { ["who"] = who, ["what"] = what, ["command"] = command };
         // What changes the document comes first: nothing else is worth deciding on words about to change.
@@ -70,9 +72,11 @@ public static class FsdStatus
                 inCandidate is not null ? $"stangent fsd resolve {doc} {Arg(inCandidate)} --same-as <S-id>" : $"stangent fsd resolve {doc} {doubtful[0]} --removed");
         }
         if (waiting is not null) return Do("a person", "Make the waiting candidate the current version.", $"stangent fsd promote {doc}");
-        if (uncovered.Count > 0) return Do("a person or the AI", $"{uncovered.Count} section(s) have no link and no mark. Link them (this is a paid AI run), or mark one that isn't about the code: `stangent fsd not-in-code {doc} {Arg((string)uncovered[0]["section"]!)} --why <why>`.", $"plugin/scripts/spec-run.sh --fsd {doc}");
+        // The old link route is cut (D342): the review is how a document is checked against the code now.
+        if (notReviewed) return Do("a person or the AI", "Review the document against the source: two reviewer runs, checked and merged by code (D341). This is a paid AI run; `--estimate` shows the cost first.", $"plugin/scripts/fsd-review-run.sh --max-cost 8 {doc}");
         if (ba.Count > 0) return Do("the BA", $"Decide {ba.Count} finding(s), by editing `decision` in specs/trace.yaml in a PR. `stangent trace check` lists them.", "stangent trace check");
-        if (confirm.Count > 0) return Do("a developer", $"Read what the AI called refuted, unreachable or a strict page gap, starting with {confirm[0]}, and confirm or send it back.", $"stangent trace confirm {confirm[0]} --why <why>");
+        // `trace confirm` went with the disprover (D342): a person settles these by their decision, as any finding.
+        if (confirm.Count > 0) return Do("a developer", $"Read what the old disprover called refuted, unreachable or a strict page gap, starting with {confirm[0]}, and set its `decision` in specs/trace.yaml in a PR. `stangent trace findings {doc}` lists them.", $"stangent trace findings {doc}");
         if (developer.Count > 0) return Do("a developer", $"Look at {developer.Count} finding(s) the AI reads as gaps in a page. `stangent trace check` lists them.", "stangent trace check");
         if (pageOwner.Count > 0) return Do("the page's owner", $"Write again the pages behind {pageOwner.Count} finding(s) a person said the page has wrong (a paid AI run).", "plugin/scripts/spec-run.sh --stale");
         if (toApprove > 0) return Do("the BA", $"Approve {toApprove} agree link(s), a chapter at a time.", $"stangent trace approve {doc} <chapter>");

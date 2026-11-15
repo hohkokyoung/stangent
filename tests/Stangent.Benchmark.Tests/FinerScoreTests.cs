@@ -14,7 +14,7 @@ public sealed class FinerScoreTests : IDisposable
     static JsonObject Section(string id) => new() { ["id"] = id, ["title"] = "s", ["permanentId"] = "S-000" + id };
 
     static JsonObject Entry(string state, string section, string quote) =>
-        LinkRun.Entry(state, "d", Section(section), quote, state == "partial" ? "page:/a" : null, state == "partial" ? "R1" : null, state == "partial" ? "the page says part of this here" : null, "judge", null, "n");
+        TraceStore.Entry(state, "d", Section(section), quote, state == "partial" ? "page:/a" : null, state == "partial" ? "R1" : null, state == "partial" ? "the page says part of this here" : null, "judge", null, "n");
 
     string Key()
     {

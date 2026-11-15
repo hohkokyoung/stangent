@@ -17,34 +17,6 @@ public static class TraceCoverage
     static JsonObject Marks(string root, string doc) =>
         File.Exists(MarksFile(root, doc)) ? JsonNode.Parse(File.ReadAllText(MarksFile(root, doc)))!.AsObject() : new JsonObject { ["version"] = 1, ["sections"] = new JsonObject() };
 
-    /// <summary>A person says a section isn't about the code, or takes that back. By permanent id, so it follows the section across versions.</summary>
-    /// <param name="who">From git, never typed.</param>
-    public static JsonObject Mark(string root, string doc, string section, string? why, string who, bool clear)
-    {
-        var document = FsdOutline.Load(root, doc);
-        var s = FsdOutline.Find(document, section);
-        var id = (string)s["permanentId"]!;
-        var marks = Marks(root, doc);
-        var held = marks["sections"]!.AsObject();
-        var mark = held[id] as JsonObject ?? new JsonObject();
-        var key = $"{doc}#{id}";
-        if (clear)
-        {
-            StateChanges.Apply(root, mark, StateKinds.SectionCoverage, key, "unmarked", StateActor.Person(who), why ?? "the mark was taken off");
-            held.Remove(id);
-        }
-        else
-        {
-            StateChanges.Apply(root, mark, StateKinds.SectionCoverage, key, "not-in-code", StateActor.Person(who), why ?? "not about the code");
-            mark["by"] = who;
-            mark["why"] = why;
-            mark["on"] = (string)s["textHash"]!;
-            held[id] = mark;
-        }
-        Quotes.WriteAtomic(MarksFile(root, doc), CanonicalJson.Serialize(marks));
-        return new JsonObject { ["doc"] = doc, ["section"] = (string)s["id"]!, ["id"] = id, ["state"] = clear ? "unmarked" : "not-in-code", ["by"] = who, ["why"] = why, ["attachments"] = Attachments(document, s) };
-    }
-
     /// <summary>What a section holds besides its words: its pictures and attachments, by id, and any embedded file named with nothing to read (A.7).</summary>
     static JsonArray Attachments(JsonObject document, JsonObject section)
     {

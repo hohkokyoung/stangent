@@ -136,23 +136,15 @@ static class SpecCommands
         follow.SetAction(pr => Cli.Run(pr, "spec follow", ctx => PageMoves.Run(Load(ctx, null), ctx.Repo.Config, new SpecPaths(ctx.Repo.Root))));
         spec.Subcommands.Add(follow);
 
-        var neededDoc = new Option<string?>("--doc") { Description = "The pages this document's sections have as candidates." };
-        var neededChapter = new Option<string?>("--chapter") { Description = "With --doc: only this top-level heading." };
         var neededTicket = new Option<string?>("--ticket") { Description = "The pages this ticket's bundle says it's missing. `ticket bundle` first." };
-        var needed = new Command("needed", "The pages not written yet that a document or a ticket needs (I.1): what `spec-run.sh --for-fsd` and `--for-ticket` make. No AI.") { neededDoc, neededChapter, neededTicket };
+        var needed = new Command("needed", "The pages not written yet that a ticket needs (I.1): what `spec-run.sh --for-ticket` makes. No AI.") { neededTicket };
         needed.SetAction(pr => Cli.Run(pr, "spec needed", ctx =>
         {
-            var (doc, ticket) = (pr.GetValue(neededDoc), pr.GetValue(neededTicket));
-            if ((doc is null) == (ticket is null)) throw new Stangent.Core.StangentException("usage", "Give --doc or --ticket.", Stangent.Core.ExitCodes.Usage);
+            var ticket = pr.GetValue(neededTicket) ?? throw new Stangent.Core.StangentException("usage", "Give --ticket.", Stangent.Core.ExitCodes.Usage);
             var set = Load(ctx, null);
-            JsonObject result;
-            if (doc is not null) result = Stangent.Spec.Fsd.PagesNeeded.ForDocument(set, Stangent.Spec.Trace.SpecIndex.Load(ctx.Repo.Root), ctx.Repo.Root, doc, pr.GetValue(neededChapter));
-            else
-            {
-                var file = new Stangent.Tickets.TicketPaths(ctx.Repo.Root, ticket!).BundleJson;
-                if (PageRun.LoadJson(file) is not JsonObject saved) throw new Stangent.Core.StangentException("not_found", $"No bundle for {ticket}. Run `stangent ticket bundle {ticket}` first.", Stangent.Core.ExitCodes.NotFound);
-                result = Stangent.Spec.Fsd.PagesNeeded.Listed(set, (saved["missingPages"] as JsonArray ?? []).Select(p => (string)p!));
-            }
+            var file = new Stangent.Tickets.TicketPaths(ctx.Repo.Root, ticket).BundleJson;
+            if (PageRun.LoadJson(file) is not JsonObject saved) throw new Stangent.Core.StangentException("not_found", $"No bundle for {ticket}. Run `stangent ticket bundle {ticket}` first.", Stangent.Core.ExitCodes.NotFound);
+            var result = Stangent.Spec.Fsd.PagesNeeded.Listed(set, (saved["missingPages"] as JsonArray ?? []).Select(p => (string)p!));
             ctx.Span.Attributes["stangent.artifact.count"] = result["pages"]!.AsArray().Count;
             return result;
         }));
@@ -180,24 +172,6 @@ static class SpecCommands
             return Finish(step, page.Id);
         }));
         spec.Subcommands.Add(check);
-
-        var questionArg = new Argument<string>("question") { Description = "The question, as one argument." };
-        var ask = new Command("ask", "Ask how the app works today, from the reference pages (E.2, D124): code picks the pages and says what runs next, nothing when it's been answered. Off unless spec.ask is on.") { questionArg };
-        ask.SetAction(pr => Cli.Run(pr, "spec ask", ctx =>
-        {
-            var question = pr.GetValue(questionArg)!;
-            return Answered(PageAsk.Prepare(ctx.Repo, question), question);
-        }));
-        spec.Subcommands.Add(ask);
-        var askCheck = new Command("ask-check", "Check the answer just written: every statement id on a page in the bundle, every sentence citing one. Adds the code's lines. With nothing cited it says the pages don't cover this.") { questionArg, usageOption };
-        askCheck.SetAction(pr => Cli.Run(pr, "spec ask-check", ctx =>
-        {
-            var question = pr.GetValue(questionArg)!;
-            var done = PageAsk.Check(ctx.Repo, question, ReadUsage(ctx, pr.GetValue(usageOption)));
-            if (done.Answer is { } answer) NoteBehind(ctx, answer);
-            return Answered(done, question);
-        }));
-        spec.Subcommands.Add(askCheck);
 
         var readFormat = new Option<string>("--format") { Description = "json (default) or md (the page's Markdown, under the warning).", DefaultValueFactory = _ => "json" };
         var read = new Command("read", "Print a recorded page, with a warning at the top when it's behind the code (T.4). Code only, no AI.") { pageArg, readFormat };
@@ -272,33 +246,7 @@ static class SpecCommands
         return (set, page);
     }
 
-    /// <summary>T.4: an answer read from a page that's behind the code says so, beside the answer. Added here, so the asker's input and the saved answer don't change.</summary>
-    static void NoteBehind(CliContext ctx, JsonObject answer)
-    {
-        var ids = (answer["pages"] as JsonArray ?? []).Select(p => p is JsonObject o ? (string?)o["id"] : (string?)p).OfType<string>().ToList();
-        try
-        {
-            var set = Load(ctx, null);
-            var paths = new SpecPaths(ctx.Repo.Root);
-            var behind = ids.Select(set.Find).OfType<PageDef>().Where(d => Staleness.Behind(set, paths, d)).Select(d => d.Id).ToList();
-            answer["pagesBehind"] = new JsonArray([.. behind.Select(b => (JsonNode)b)]);
-            foreach (var id in behind) Console.Error.WriteLine("warning: " + Staleness.BehindWarning(id, null, set.Commit));
-        }
-        catch (Stangent.Core.StangentException e)
-        {
-            answer["pagesBehindNote"] = "couldn't check whether these pages are behind the code: " + e.Message;
-        }
-    }
-
     /// <summary>A step that ends the page as failed, or asks for a retry, is a check that found problems: exit 1, with the next step in result.</summary>
-    static JsonNode Answered((RunStep Step, JsonObject? Answer) done, string question)
-    {
-        var json = Finish(done.Step, PageAsk.Id(question)).AsObject();
-        json["question"] = question;
-        if (done.Answer is not null) json["answer"] = done.Answer;
-        return json;
-    }
-
     public static JsonNode Finish(RunStep step, string id)
     {
         var json = step.ToJson(id);

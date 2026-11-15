@@ -137,43 +137,6 @@ public static partial class TraceFindings
     /// <summary>Flagged and nobody has answered: on the security queue, however its verdict went and whatever was decided.</summary>
     public static bool SecurityOpen(JsonObject e) => Flagged(e) && SecurityAnswer(e) is null;
 
-    /// <summary>
-    /// Writes a flag whose citation passed. A flag already on the same line stays as it is, with any answer it has. A different line replaces it, and a person's answer was to the old one, so it lets go.
-    /// Nothing here removes a flag: a later run that doesn't flag the finding never gets this far.
-    /// </summary>
-    public static void Flag(string root, JsonObject e, JsonObject flag, StateActor who)
-    {
-        if (FlagHolds(e) && (string?)e["security"]!["path"] == (string?)flag["path"] && Quotes.Normalize((string?)e["security"]!["quote"] ?? "") == Quotes.Normalize((string?)flag["quote"] ?? "")) return;
-        StateChanges.Apply(root, e, StateKinds.FindingSecurity, (string)e["id"]!, "unanswered", who, "the disprover flagged it and code found its citation");
-        e.Remove("security_note");
-        e.Remove("security_answer_hash");
-        e["security"] = flag;
-        e["security_hash"] = TraceFile.SecurityHash(flag);
-    }
-
-    /// <summary>A person's answer to a flag (D148), from <c>trace security</c>, on the state module. Code can't answer it, and an agent can't. It sets no severity (D118).</summary>
-    /// <param name="to"><c>confirmed</c> or <c>not-security</c>.</param>
-    /// <param name="who">From git, never typed.</param>
-    public static JsonObject AnswerSecurity(string root, string id, string to, string who, string? why)
-    {
-        if (!SecurityAnswers.Contains(to)) throw new StangentException("usage", $"'{to}' isn't an answer. It's one of: {string.Join(", ", SecurityAnswers)}.", ExitCodes.Usage);
-        using var _ = LinkRun.Lock(root);
-        var trace = TraceFile.Load(root);
-        var e = trace["entries"]!.AsArray().OfType<JsonObject>().FirstOrDefault(x => IsFinding(x) && ((string?)x["finding"] == id || (string?)x["id"] == id))
-            ?? throw new StangentException("not_found", $"No finding {id} in specs/trace.yaml.", ExitCodes.NotFound);
-        if (!Flagged(e)) throw new StangentException("not_flagged", $"{id} has no security flag to answer.", ExitCodes.Usage);
-        if (!FlagHolds(e)) throw new StangentException("flag_typed", $"{id}'s security flag isn't what code wrote, so there's nothing true to answer. `stangent trace check` says so.", ExitCodes.Usage);
-        if (SecurityAnswer(e) == to) throw new StangentException("already_answered", $"{id}'s flag is already {to}, by {(string?)e["security_note"]?["by"]}.", ExitCodes.Usage);
-        var note = new JsonObject { ["by"] = who, ["why"] = why ?? (to == "confirmed" ? "it touches security" : "it doesn't touch security") };
-        if (DecidedOn(e, SpecIndex.Load(root)) is { } on) note["on"] = on;
-        // A typed answer isn't where this starts from: it never counted, so this is the flag's first answer.
-        StateChanges.Apply(root, e, StateKinds.FindingSecurity, (string)e["id"]!, to, StateActor.Person(who), why ?? $"answered {to} by a person", new JsonObject { ["security_state"] = SecurityAnswer(e) ?? "unanswered" });
-        e["security_note"] = note;
-        e["security_answer_hash"] = TraceFile.SecurityAnswerHash(to, note, (string?)e["security_hash"]);
-        TraceFile.Save(root, trace);
-        return new JsonObject { ["finding"] = (string?)e["finding"], ["entry"] = (string?)e["id"], ["answer"] = to, ["by"] = who, ["goesTo"] = GoesTo(e) };
-    }
-
     /// <summary>What a person's answer rested on changed, so the flag is open again, on the terms a decision drops (D118).</summary>
     public static void DropSecurityAnswer(string root, JsonObject e, StateActor who, string why)
     {
@@ -201,28 +164,6 @@ public static partial class TraceFindings
         : (string?)TraceFile.Load(root)["entries"]!.AsArray().OfType<JsonObject>().FirstOrDefault(e => (string?)e["finding"] == finding)?["id"];
 
     public static bool ReviewHolds(JsonObject e) => (string?)e["review_hash"] == TraceFile.ReviewHash((string?)e["review"], e["review_note"] as JsonObject, (string?)e["disproof_hash"]);
-
-    /// <summary>A person's word on a verdict, from <c>trace confirm</c> and <c>trace send-back</c>, on the state module. Returns where the finding went.</summary>
-    /// <param name="to"><c>confirmed</c> or <c>sent-back</c>.</param>
-    /// <param name="who">From git, never typed.</param>
-    public static JsonObject Review(string root, string id, string to, string who, string? why)
-    {
-        using var _ = LinkRun.Lock(root);
-        var trace = TraceFile.Load(root);
-        var e = trace["entries"]!.AsArray().OfType<JsonObject>().FirstOrDefault(x => IsFinding(x) && ((string?)x["finding"] == id || (string?)x["id"] == id))
-            ?? throw new StangentException("not_found", $"No finding {id} in specs/trace.yaml.", ExitCodes.NotFound);
-        var now = GoesTo(e);
-        var allowed = to == "confirmed"
-            ? NeedsConfirm(e) && now is "developer-confirm" or "ba"
-            : now is "developer-confirm" or "closed";
-        if (!allowed)
-            throw new StangentException("not_reviewable", $"{id} is with {now}{((string?)e["verdict"] is { } v ? $", verdict {v}" : "")}: only a refuted or unreachable verdict, or a page gap asked under page-gap-strict, nobody has decided can be {to}.", ExitCodes.Usage);
-        var note = new JsonObject { ["by"] = who, ["why"] = why ?? (to == "confirmed" ? "the quote supports the verdict" : $"{who} sent it back") };
-        if (to == "confirmed" && DecidedOn(e, SpecIndex.Load(root)) is { } on) note["on"] = on;
-        WriteReview(root, e, to, note, StateActor.Person(who), why ?? (to == "confirmed" ? "confirmed by a person" : "sent back by a person"));
-        TraceFile.Save(root, trace);
-        return new JsonObject { ["finding"] = (string?)e["finding"], ["entry"] = (string?)e["id"], ["review"] = to, ["by"] = who, ["goesTo"] = GoesTo(e) };
-    }
 
     static void WriteReview(string root, JsonObject e, string to, JsonObject note, StateActor who, string reason)
     {
@@ -290,7 +231,7 @@ public static partial class TraceFindings
         foreach (var gone in ledger.Active("X").Where(id => !live.Contains(id)).ToList()) ledger.Remove("X", gone);
 
         var documents = FsdImport.Documents(root).ToDictionary(d => (string)d["id"]!, StringComparer.Ordinal);
-        var runs = LinkRun.LoadRuns(root);
+        var runs = TraceStore.LoadRuns(root);
         var repo = new Lazy<string>(() => SymbolLines.RepoName(root));
         foreach (var e in findings)
         {
@@ -335,11 +276,11 @@ public static partial class TraceFindings
         var list = new List<JsonObject> { Checker("code", CheckerName) };
         if ((string?)e["by"] == "judge")
         {
-            var run = (string?)e["fsd"]?["doc"] is { } doc && (string?)e["fsd"]?["section"] is { } section ? runs[LinkRun.Key(doc, section)] : null;
+            var run = (string?)e["fsd"]?["doc"] is { } doc && (string?)e["fsd"]?["section"] is { } section ? runs[TraceStore.Key(doc, section)] : null;
             // A group's own usage, when a group's links are what's on file (C.6).
             var usage = run?["unit"]?["usage"] ?? run;
-            list.Add(Checker("agent", (string?)usage?["judge"]?["model"] ?? LinkRun.Judge));
-            if (e["check"] is not null) list.Add(Checker("agent", (string?)usage?["checker"]?["model"] ?? LinkRun.Checker));
+            list.Add(Checker("agent", (string?)usage?["judge"]?["model"] ?? "stangent-link-judge"));
+            if (e["check"] is not null) list.Add(Checker("agent", (string?)usage?["checker"]?["model"] ?? "stangent-agree-checker"));
         }
         return list;
     }
@@ -389,7 +330,7 @@ public static partial class TraceFindings
                 },
                 ["commit"] = quotedAt, ["strength"] = "read",
                 ["checkedBy"] = new JsonArray(
-                    new JsonObject { ["kind"] = "agent", ["name"] = (string?)disproof["agent"] ?? DisproveRun.Disprover, ["inputsHash"] = (string)disproof["inputs"]! },
+                    new JsonObject { ["kind"] = "agent", ["name"] = (string?)disproof["agent"] ?? "stangent-finding-disprover", ["inputsHash"] = (string)disproof["inputs"]! },
                     Checker("code", "stangent fsd disprove")),
             };
         if (e["table_fact"] is JsonObject fact && (string?)fact["path"] is { } factPath && (string?)fact["commit"] is { } factCommit)
@@ -439,15 +380,15 @@ public static partial class TraceFindings
         var id = (string?)e["finding"] ?? (string)e["id"]!;
         if ((e["verdict"] is not null || e["disproof"] is not null || e["disproof_hash"] is not null)
             && (string?)e["disproof_hash"] != TraceFile.DisproofHash((string?)e["verdict"], e["disproof"] as JsonObject))
-            yield return $"{id}: its verdict isn't what code wrote; only `stangent fsd disprove` writes one, because it takes a finding out of a queue";
+            yield return $"{id}: its verdict isn't what code wrote; only the old disprover (cut by D342) wrote one, so a typed verdict counts for nothing";
         if ((e["review"] is not null || e["review_note"] is not null || e["review_hash"] is not null) && !ReviewHolds(e))
-            yield return $"{id}: its review isn't what code wrote; only `stangent trace confirm` and `trace send-back` write one, because it closes a finding";
+            yield return $"{id}: its review isn't what code wrote; only the old `trace confirm` and `trace send-back` (cut by D342) and code's own send-back write one, because it closes a finding";
         if ((e["standing"] is not null || e["standing_note"] is not null || e["standing_hash"] is not null) && Standing(e) is null)
             yield return $"{id}: its standing isn't what code wrote; only code writes `recheck` and `gone`, because `gone` takes a finding out of every queue";
         if ((Flagged(e) || e["security_hash"] is not null) && !FlagHolds(e))
-            yield return $"{id}: its security flag isn't what code wrote; only `stangent fsd disprove` writes one, once its citation passes";
+            yield return $"{id}: its security flag isn't what code wrote; only the old disprover (cut by D342) wrote one";
         if (((string?)e["security_state"] is not (null or "unanswered") || e["security_note"] is not null || e["security_answer_hash"] is not null) && SecurityAnswer(e) is null)
-            yield return $"{id}: its security answer isn't what code wrote, so it counts for nothing; only `stangent trace security` writes one, with the name from git";
+            yield return $"{id}: its security answer isn't what code wrote, so it counts for nothing; only the old `trace security` (cut by D342) wrote one";
         if (IsGone(e)) yield break;
         if (e["evidence"] is not JsonArray { Count: > 0 } evidence) { yield return $"{id}: a finding needs evidence, and code found nothing to cite"; yield break; }
         foreach (var record in refused ?? [])

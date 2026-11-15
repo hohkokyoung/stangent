@@ -20,7 +20,6 @@ detectorSettings:
     handlerInterfaces: ["NzbDrone.Core.Messaging.Events.IHandle`1", "NzbDrone.Core.Messaging.Events.IHandleAsync`1", "NzbDrone.Core.Messaging.Commands.IExecute`1"]
 fsd:
   findings: true
-  skipApproval: true   # benchmarks only (D99): every match made with it says so
   scope: ["/", "/add", "/series", "/seasonpass", "/serieseditor", "/calendar", "/activity", "/wanted", "/settings", "/system"]
 tickets:
   site: peachpersonal.atlassian.net

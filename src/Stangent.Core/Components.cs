@@ -23,9 +23,8 @@ public sealed record NotConnected(string Name, string Label, string WaitingFor);
 public static class StangentComponents
 {
     const string Graph = "graph build";
-    static readonly string[] Links = ["fsd prepare", "fsd check"];
     static readonly string[] Pages = ["spec prepare", "spec check"];
-    static readonly string[] AiSteps = ["spec prepare", "fsd prepare", "fsd disprove prepare", "req prepare", "ticket points", "ticket prepare", "ticket match", "ticket prove", "ticket draft", "spec ask"];
+    static readonly string[] AiSteps = ["spec prepare", "fsd review", "ticket points", "ticket prepare", "ticket prove", "ticket draft"];
 
     static StangentComponent Detector(string name, string label, params string[] needs) =>
         new($"detector-{name}", label, "detectors", true, [Graph], needs);
@@ -58,38 +57,21 @@ public static class StangentComponents
         new("detector-playwright-specs", "Playwright lines: existing specs' goto to screens", "detectors", true, [Graph, "graph screen-tests"], [],
             "a step that reads opens-screen lines: only graph code does today"),
         new("schema-once", "Batch runs send a step's output schema once, through Claude Code's schema option, and not also in its input text. No hash moves, but it changes what the AI reads, so it's off by default", "components.schema-once", false, ["spec assemble"], ["ai"]),
-        new("page-corrections", "A person's approved correction to a page, put back every time the page is written. A corrected statement is what a link judge then reads, so it's off by default", "components.page-corrections", false, ["spec correct", "spec correct-approve", "spec correct-reject", "spec check", "spec cite"], []),
-        new("page-exclusions", "A page a person excluded with a reason isn't listed, written or a candidate. That can change what a link judge reads, so it's off by default; `spec coverage` itself always works", "components.page-exclusions", false, ["spec exclude", "spec include", "spec coverage", "spec pages", "spec stale"], []),
+        new("page-corrections", "A person's approved correction to a page, put back every time the page is written. A corrected statement is what a ticket bundle then shows, so it's off by default", "components.page-corrections", false, ["spec correct", "spec correct-approve", "spec correct-reject", "spec check", "spec cite"], []),
+        new("page-exclusions", "A page a person excluded with a reason isn't listed, written or a candidate. That can change what a ticket bundle shows, so it's off by default; `spec coverage` itself always works", "components.page-exclusions", false, ["spec exclude", "spec include", "spec coverage", "spec pages", "spec stale"], []),
         new("follow-moves", "When a page's code only moved, its citations and saved hash follow it with no AI. It rewrites a saved hash, so it's off by default", "components.follow-moves", false, ["spec prepare", "spec stale", "spec read", "spec follow"], []),
         new("statement-update", "When a page is stale, the writer and verifier handle only the statements citing code that changed, and code puts the others back. It changes what the writer gets, so it's off by default", "components.statement-update", false, Pages, ["ai"]),
-        new("disprove-small", "A disprove bundle holds what the page's statements cite, or for a gap the slice's code holding the claim's words, not the whole slice. It changes what the disprover reads and its saved hash, so it's off by default", "components.disprove-small", false, ["fsd disprove prepare", "fsd disprove check", "fsd disprove estimate"], ["disprove"]),
         new("page-verifier", "The fresh check of each reference page", "components.page-verifier", true, Pages, ["ai"]),
         new("line-citations", "path:lines beside each page, and code evidence from them", "components.line-citations", true, ["spec check", "spec cite", "trace check"], []),
-        new("disprove-callers", "A disprove bundle for a finding about an endpoint also holds the frontend code calling that endpoint, and tells the disprover that what the bundle can't show, such as a colour, is cant-tell. It changes what the disprover reads and its saved hash, so it's off by default", "components.disprove-callers", false, ["fsd disprove prepare", "fsd disprove check", "fsd disprove estimate"], ["disprove"]),
-        new("page-gap-strict", "The disprover answers page-gap only when a code line shows the application does what the FSD says, and cant-tell when nothing shown settles it; a page gap then waits for a developer to confirm it, as refuted does. It changes what the disprover reads and its saved hash, so it's off by default", "components.page-gap-strict", false, ["fsd disprove prepare", "fsd disprove check", "fsd disprove estimate", "trace check", "trace confirm"], ["disprove"]),
-        new("security-flag", "The disprover also says whether a finding touches security, citing a line from its bundle, and a flagged finding goes to a developer until a person answers it. Not a security review: it only looks at findings. It changes what the disprover reads and its saved hash, so it's off by default", "components.security-flag", false, ["fsd disprove prepare", "fsd disprove check", "fsd disprove estimate"], ["disprove"]),
-        new("shared-through", "The shared components a candidate screen reaches through its unshared ones are candidates too, as far as the bundle's size allows, stopping at the first on each path. Changes what a link judge reads, so it's off by default", "components.shared-through", false, [.. Links, "fsd candidates", "spec needed"], []),
-        new("fsd-claims", "A section's text cut into claims by code, printed by `fsd claims`. Only claim-links reads them, so it's off by default", "components.fsd-claims", false, ["fsd claims"], []),
-        new("claim-links", "Claims get permanent C- ids, the link judge names claim and statement ids and copies no words, code fills the quotes, and a link's id comes from those ids. Every section is judged again the first time, so it's off by default", "components.claim-links", false, ["fsd claims", "fsd prepare", "fsd check", "trace check"], ["fsd-claims"]),
-        new("workflow-files", "One readable file per flow under specs/workflows/, with a count per use case, written by code and read by nothing. Off until a person has read them", "components.workflow-files", false, ["workflows"], ["claim-links"]),
-        new("test-journeys", "What each Playwright test walks through, in order, under specs/workflows/tests/, read by code and read by nothing. It compares nothing. Off until a person has read them", "components.test-journeys", false, ["workflows tests"], []),
-        new("candidate-finder", "The AI that names pages when code finds none", "components.candidate-finder", true, Links, ["ai"]),
-        new("agree-checker", "The fresh check of each agree link", "components.agree-checker", true, Links, ["ai"]),
-        new("requirements-links", "Judging by requirement when a section's are built", "components.requirements-links", true, Links, []),
         new("section-approval", "A person approves or rejects each changed section of a new version, and promote applies only what was approved, with --partial imports and readable section files (D128, D142, D150)", "components.section-approval", false, ["fsd import", "fsd approve", "fsd reject", "fsd diff", "fsd promote"], []),
         new("first-import-approval", "A person approves a document's first import before anything reads it", "components.first-import-approval", false, ["fsd import", "fsd approve"], []),
         new("attachment-home", "A section of its own for files with no place in a document's text, such as those attached to a PDF", "fsd.attachmentHome", false, ["fsd import", "fsd reread"], []),
-        new("attachments-in-checks", "A section's attachments in the link judge's and disprove bundles, and quotes from them accepted", "fsd.attachmentsInChecks", false, [.. Links, "fsd disprove prepare", "fsd disprove check", "fsd disprove estimate", "fsd promote"], []),
-        new("findings", "Gap, conflict and undocumented findings", "fsd.findings", false, [.. Links, "fsd undocumented", "trace check", "ticket bundle", "ticket draft", "fsd promote"], []),
-        new("disprove", "A second agent tries to refute each finding", "fsd.disprove", false, ["fsd disprove prepare", "fsd disprove check", "fsd disprove estimate"], ["ai", "findings"]),
+        new("findings", "Gap, conflict and undocumented findings from the old link route, frozen in specs/trace.yaml (D342), shown in ticket bundles and drafts", "fsd.findings", false, ["trace check", "ticket bundle", "ticket draft", "fsd promote"], []),
         new("file-finder", "The AI that finds a ticket's files", "tickets.aiPoints", true, ["ticket points", "ticket prepare", "ticket check"], ["ai"]),
         new("bug-proof", "A failing test before a bug is fixed", "components.bug-proof", true, ["ticket prove", "ticket prepare", "ticket check", "ticket draft"], ["ai"]),
         new("drafts", "Draft comments for a ticket", "components.drafts", true, ["ticket draft", "ticket prepare", "ticket check", "ticket post"], ["ai"]),
         new("table-facts", "A document's tables compared with the code by code, a second route to code: labelled, pending the owner's answer on D68", "fsd.compareTables", false, ["fsd compare-tables", Graph], []),
-        new("judge-finer-verdicts", "The link judge can also say partial and unclear", "fsd.judgeFinerVerdicts", false, Links, []),
-        new("group-sections", "The link judge reads a run of small neighbouring sections as one unit", "fsd.groupSections", false, Links, []),
         new("pages", "Layer 4: each area's page.md as a developer page by code, no AI: per click that changes something a flowchart, a scenario table and its lists, with flow-file step numbers (D278–D285). Written by code and read by nothing yet, so it's off until a person has read them", "components.pages", false, ["areas check", "pages verify"], []),
-        new("spec-ask", "Ask how the app works, answered from the reference pages with citations", "spec.ask", false, ["spec ask", "spec ask-check"], ["ai"]),
         new("ticket-excel-text", "A ticket's workbooks and files inside its attachments reach ticket.json, and so the AI steps. Off, they're only saved beside the attachment", "components.ticket-excel-text", false, ["ticket pull"], []),
     ];
 
@@ -97,8 +79,7 @@ public static class StangentComponents
     public static IReadOnlyList<NoSwitch> NoSwitches { get; } =
     [
         new("document-import", "Everything about a document starts from its text; with no import there's no section to run anything on."),
-        new("page-writer", "Links, the disprove bundle and ticket bundles read pages. Without one there's nothing to compare, so a step would report a false gap."),
-        new("link-judge", "It is the step that makes a link. `ai.enabled: false` stops it, and with it every other AI step."),
+        new("page-writer", "Ticket bundles and starting points read pages (D342). Without one a ticket's bundle has no page to show."),
         new("code-checks", "Quote checks, schema checks and `trace check` are what make an AI's answer usable (D18). Taking one out would let a made-up quote through."),
         new("state-module", "Every lifecycle moves through it, and a test holds that to be true."),
         new("cost-stop", "`--max-cost none` already says no cap, per run. It changes no prompt and no result, only whether a run goes on."),
@@ -114,12 +95,22 @@ public static class StangentComponents
         new("ticket-evidence", "Tickets on the evidence shape", "Tickets are rebuilt onto `evidence` v2: a bundle and a draft still carry their own shape"),
     ];
 
+    /// <summary>Components cut with the old link route and D156 P8's switches (D342), named so a stangent.yaml that still has one is told why.</summary>
+    public static IReadOnlySet<string> Cut { get; } = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "disprove-small", "disprove-callers", "page-gap-strict", "security-flag", "shared-through", "fsd-claims", "claim-links", "workflow-files", "test-journeys",
+        "candidate-finder", "agree-checker", "requirements-links", "attachments-in-checks", "disprove", "judge-finer-verdicts", "group-sections", "spec-ask",
+    };
+
     public static StangentComponent Find(string name) => All.First(c => c.Name == name);
 
     /// <summary>Settles <c>components:</c> onto the keys that already exist, so code reading those keys sees it, and refuses a name nobody knows. Runs when the file is read.</summary>
     public static void Apply(StangentConfig config)
     {
         var unknown = config.Components.Keys.Where(k => All.All(c => c.Name != k)).Order(StringComparer.Ordinal).ToList();
+        var cut = unknown.Where(Cut.Contains).ToList();
+        if (cut.Count > 0)
+            throw new StangentException("unknown_component", $"stangent.yaml names component(s) cut with the old link route (D342): {string.Join(", ", cut)}. Take them out of stangent.yaml.", ExitCodes.Usage);
         if (unknown.Count > 0)
             throw new StangentException("unknown_component", $"stangent.yaml names unknown component(s): {string.Join(", ", unknown)}. `stangent components` lists them.", ExitCodes.Usage);
         foreach (var (name, on) in config.Components)
@@ -128,13 +119,8 @@ public static class StangentComponents
                 case "ai": config.Ai.Enabled = on; break;
                 case "git-history": config.History.Enabled = on; break;
                 case "findings": config.Fsd.Findings = on; break;
-                case "disprove": config.Fsd.Disprove = on; break;
-                case "attachments-in-checks": config.Fsd.AttachmentsInChecks = on; break;
                 case "attachment-home": config.Fsd.AttachmentHome = on; break;
                 case "table-facts": config.Fsd.CompareTables = on; break;
-                case "judge-finer-verdicts": config.Fsd.JudgeFinerVerdicts = on; break;
-                case "group-sections": config.Fsd.GroupSections = on; break;
-                case "spec-ask": config.Spec.Ask = on; break;
                 case "file-finder": config.Tickets.AiPoints = on; break;
             }
     }
@@ -145,13 +131,8 @@ public static class StangentComponents
         "ai" => config.Ai.Enabled,
         "git-history" => config.History.Enabled,
         "findings" => config.Fsd.Findings,
-        "disprove" => config.Fsd.Disprove,
-        "attachments-in-checks" => config.Fsd.AttachmentsInChecks,
         "attachment-home" => config.Fsd.AttachmentHome,
         "table-facts" => config.Fsd.CompareTables,
-        "judge-finer-verdicts" => config.Fsd.JudgeFinerVerdicts,
-        "group-sections" => config.Fsd.GroupSections,
-        "spec-ask" => config.Spec.Ask,
         "file-finder" => config.Tickets.AiPoints,
         _ when name.StartsWith("detector-", StringComparison.Ordinal) => DetectorOn(config, name["detector-".Length..]),
         _ => config.Components.TryGetValue(name, out var on) ? on : All.FirstOrDefault(c => c.Name == name)?.OnByDefault ?? true,

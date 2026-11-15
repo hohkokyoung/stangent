@@ -24,4 +24,4 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/fsd-review-run.sh --max-cost "$STANGENT_MAX_COST" 
 
 Then report from `specs/fsd/<doc>/review.md`: the counts by kind, how many every run found, and anything dropped by the
 code checks with its reason. Say plainly that each finding rests on an AI's reading of the code: code checked the quotes
-and lines, not that the difference is real. The old route, `/stangent:fsd-link`, still runs until layer 7 retires it.
+and lines, not that the difference is real. The old route, `/stangent:fsd-link`, was cut in layer 7 (D342).

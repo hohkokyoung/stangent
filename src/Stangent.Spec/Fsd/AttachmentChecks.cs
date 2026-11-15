@@ -125,47 +125,6 @@ public static class AttachmentChecks
 {
     public const string Key = "checkAttachments";
 
-    /// <summary>Every section in the index that has attachments, read for a check. Does nothing with the switch off.</summary>
-    public static void Load(SpecIndex index, StangentRepo repo)
-    {
-        if (!repo.Config.Fsd.AttachmentsInChecks) return;
-        foreach (var document in FsdImport.Documents(repo.Root).Where(d => d["attachments"] is not null))
-        {
-            var id = (string)document["id"]!;
-            foreach (var s in document["sections"]!.AsArray().OfType<JsonObject>())
-                if (index.Sections.TryGetValue((id, (string)s["id"]!), out var section))
-                    Fill(section, document, FsdImport.DocDir(repo.Root, id), false, repo.Config.Fsd.AttachmentChars);
-        }
-    }
-
-    /// <summary>One section's attachments, from a document's own folder or a candidate's. What's over the limit is named, with no text, so a bundle can say it wasn't checked.</summary>
-    internal static void Fill(JsonObject section, JsonObject document, string docDir, bool candidate, int limit)
-    {
-        var records = (document["attachments"]?.AsArray() ?? []).OfType<JsonObject>().ToList();
-        var items = new JsonArray();
-        for (var i = 0; i < records.Count; i++)
-        {
-            var a = records[i];
-            if ((string?)a["sectionNumber"] != (string)section["id"]!) continue;
-            var (id, name) = ((string?)a["id"] ?? "", (string)a["fileName"]!);
-            var chars = (int?)a["chars"] ?? 0;
-            if (chars > limit)
-            {
-                items.Add((JsonNode)new JsonObject { ["id"] = id, ["fileName"] = name, ["notChecked"] = $"its {chars} characters are over fsd.attachmentChars ({limit})" });
-                continue;
-            }
-            foreach (var f in a["files"]!.AsArray().OfType<JsonObject>().Where(f => (string)f["role"]! is "csv" or "text"))
-            {
-                var path = Path.Combine(FsdAttachments.Folder(docDir, FsdAttachments.FolderName(a, i, candidate)), (string)f["file"]!);
-                if (!File.Exists(path)) continue;
-                var item = new JsonObject { ["id"] = id, ["fileName"] = name, ["file"] = (string)f["file"]!, ["role"] = (string)f["role"]!, ["text"] = Readable((string)f["role"]!, File.ReadAllText(path)) };
-                if ((string?)f["sheet"] is { } sheet) item["sheet"] = sheet;
-                items.Add((JsonNode)item);
-            }
-        }
-        if (items.Count > 0) section[Key] = items;
-    }
-
     /// <summary>A CSV's rows in the shape quotes match, a row per line, so a line of this is a row of the sheet. Other text as it is.</summary>
     internal static string Readable(string role, string text) =>
         role != "csv" ? text : string.Join('\n', text.TrimEnd('\n').Split('\n').Select(l => l.Length == 0 ? "" : "| " + string.Join(" | ", Cells(l).Select(c => c.Replace("|", "\\|", StringComparison.Ordinal))) + " |"));
@@ -187,27 +146,6 @@ public static class AttachmentChecks
         cells.Add(sb.ToString());
         return cells;
     }
-
-    /// <summary>The block a bundle adds, after the section's text. Empty for a section carrying nothing, so a bundle stays byte for byte what it was.</summary>
-    public static string Block(JsonObject section)
-    {
-        if (section[Key] is not JsonArray items) return "";
-        var sb = new StringBuilder("\n# This section's attachments\n\nFiles attached to the section, read by code. They're part of what it says: a quote from one counts as a quote from the section, word for word.\n");
-        foreach (var i in items.OfType<JsonObject>())
-        {
-            if ((string?)i["notChecked"] is { } why)
-            {
-                sb.Append($"\n## {(string)i["id"]!} {(string)i["fileName"]!}: not checked\n\nIt isn't in this bundle: {why}.\n");
-                continue;
-            }
-            var sheet = (string?)i["sheet"] is { } s ? $", sheet {s}" : "";
-            sb.Append($"\n## {(string)i["id"]!} {(string)i["fileName"]!}, `{(string)i["file"]!}`{sheet}\n\n````text\n{(string)i["text"]!}\n````\n");
-        }
-        return sb.ToString();
-    }
-
-    /// <summary>Whether a quote can be taken from what the section carries.</summary>
-    public static bool Holds(JsonObject section, string quote) => Find(section, quote) is not null;
 
     /// <summary>Where a quote the section's own text doesn't hold came from: the attachment, file, sheet and row. Null when its own text holds it, or nothing does.</summary>
     public static JsonObject? SourceOf(JsonObject section, string quote) => section[Key] is null || Quotes.InText(quote, (string)section["text"]!) ? null : Find(section, quote);

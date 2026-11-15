@@ -117,9 +117,7 @@ are reported but have too few fixes to count).
 
 ## The disprove step on Sonarr (D119)
 
-`bench --score-disprove <clone> benchmark/fsd/sonarr/answer-key.json --hand-check benchmark/results/2026-11-03-phase2c-handcheck.json [--out file]`
-scores what still reaches the BA, by `--score-fsd`'s own rule, before and after, and names every planted item the step took out of the queue.
-The run itself is paid; its config is `configs/sonarr.spec-2c-disprove.yaml`, and the estimate and exact commands are in `phases/2c-spec.md`.
+Cut with the old link route (D342): `--score-disprove` and its config are gone; the committed results stay as history.
 
 ## Phase 3: tickets on Sonarr (D77–D81)
 

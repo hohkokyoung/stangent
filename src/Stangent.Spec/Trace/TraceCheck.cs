@@ -77,10 +77,6 @@ public static class TraceCheck
         var changedIds = new List<string>();
         var retired = new List<JsonNode>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        var retiredClaims = new List<JsonNode>();
-        var claimSets = new Dictionary<string, ClaimSet>(StringComparer.Ordinal);
-        var requirements = new Lazy<HashSet<string>>(() => [.. Stangent.Spec.Requirements.RequirementFile.Docs(root).SelectMany(d => Stangent.Spec.Requirements.RequirementFile.Features(root, d))
-            .SelectMany(f => f["requirements"]!.AsArray().Select(r => (string)r!["id"]!))]);
         foreach (var e in trace["entries"]!.AsArray().OfType<JsonObject>())
         {
             var id = (string)e["id"]!;
@@ -89,8 +85,6 @@ public static class TraceCheck
             var page = e["page"] as JsonObject;
             var expected = TraceFile.IdOf(e, (string?)fsd?["section"]);
             if (id != expected) problems.Add($"{id}: the state, an end or a quote was edited by hand (only `decision` is edited; the id would be {expected})");
-            if ((string?)fsd?["requirement"] is { } requirement && !requirements.Value.Contains(requirement))
-                problems.Add($"{id}: requirement {requirement} doesn't exist any more");
 
             if (TraceFindings.IsFinding(e))
             {
@@ -104,7 +98,7 @@ public static class TraceCheck
                     problems.Add($"{id}: severity_by was set in this change ({gradedBy}); it's filled from git after merge, never typed");
                 // A flag never closes by itself, and taking it out of the file by hand is the one way left to close one.
                 if (baseByFinding.GetValueOrDefault(finding)?["security"] is JsonObject && !TraceFindings.Flagged(e))
-                    problems.Add($"{id}: its security flag was removed in this change; only a person's `stangent trace security` answers one, and the answer leaves it on file");
+                    problems.Add($"{id}: its security flag was removed in this change; a flag stays on file, and a person settles the finding by its `decision`");
             }
             // A decided agree link nothing found again is kept as gone, with only its standing to say so (D145).
             else if (TraceFile.FindingFields.Any(f => e[f] is not null && !f.StartsWith("standing", StringComparison.Ordinal)))
@@ -123,10 +117,8 @@ public static class TraceCheck
                 if (index.Sections.TryGetValue(((string)fsd["doc"]!, sectionId), out var section))
                 {
                     // A quote from an attachment is checked against that file, with the switch on or off: it's what the link says it rests on (D123).
-                    if ((string?)fsd["claim"] is { } claim)
-                    {
-                        if (claim != TraceFile.NoClaim && !ClaimHolds(root, id, fsd, claim, section, claimSets, problems, retiredClaims)) quotesMatch = false;
-                    }
+                    // The claim ledger went with claim-links (D342): a frozen claim link holds while its words are still the section's, or its attachment's.
+                    if ((string?)fsd["claim"] == TraceFile.NoClaim) { }
                     else if (fsd["quote"] is { } q && !(fsd["attachment"] is not null ? AttachmentChecks.Check(root, fsd, (string)q!).Holds : Quotes.InText((string)q!, (string)section["text"]!))) quotesMatch = false;
                 }
                 // Its section went in a promotion, so the quote has nothing to be checked against: that isn't a stale quote (D117).
@@ -214,26 +206,7 @@ public static class TraceCheck
         foreach (var e in stillDecided)
             problems.Add($"{e["id"]}: statement {e["page"]!["id"]} {e["page"]!["statement"]} changed after this decision was made on it, so the decision must drop back to undecided (run `stangent trace check --fix`)");
         var report = Report(trace, problems, stale, undecided, retired, changed, TraceCoverage.All(root, trace));
-        if (retiredClaims.Count > 0) report["retiredClaims"] = new JsonArray([.. retiredClaims]);
         return report;
-    }
-
-    /// <summary>
-    /// A link by ids (D145): its claim exists, belongs to its section, its quote is that claim's words, and the section's text cut now still holds them. A claim the ledger retired, or words that changed, are stale, as a retired statement is:
-    /// the decision drops. A claim nobody ever gave out is a plain problem. Returns whether the link still holds.
-    /// </summary>
-    static bool ClaimHolds(string root, string id, JsonObject fsd, string claim, JsonObject section, Dictionary<string, ClaimSet> sets, List<string> problems, List<JsonNode> retired)
-    {
-        var doc = (string)fsd["doc"]!;
-        if (!sets.TryGetValue(doc, out var set)) sets[doc] = set = ClaimFile.Load(root, doc);
-        if (set.Find(claim) is not { } found)
-        {
-            if (ClaimFile.Retired(root, doc, claim)) retired.Add(new JsonObject { ["entry"] = id, ["doc"] = doc, ["claim"] = claim });
-            else problems.Add($"{id}: claim {claim} doesn't exist in specs/fsd/{doc}/claims.json");
-            return false;
-        }
-        if (found.Section != (string?)fsd["sectionId"]) problems.Add($"{id}: claim {claim} is in section {found.Section}, not {(string?)fsd["sectionId"]}");
-        return Quotes.Normalize((string?)fsd["quote"] ?? "") == found.Normalized && ClaimFile.StillIn(found.Words, section);
     }
 
     /// <summary>

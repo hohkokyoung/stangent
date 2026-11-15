@@ -5,12 +5,12 @@ using Stangent.Spec.Fsd;
 using Stangent.Spec.Pages;
 using Stangent.Spec.Trace;
 
-/// <summary><c>stangent fsd …</c>: the agreed FSD, imported by code and linked to the reference pages (Phase 2b, D52–D53).</summary>
+/// <summary><c>stangent fsd …</c>: the agreed FSD, imported by code (Phase 2b, D52) and reviewed against the source (D341). The old link route was cut (D342).</summary>
 static class FsdCommands
 {
     public static void Add(RootCommand root)
     {
-        var fsd = new Command("fsd", "The agreed FSD: import it (code only) and link it to the reference pages (D52, D53).");
+        var fsd = new Command("fsd", "The agreed FSD: import it (code only) and review it against the source (D52, D341).");
         root.Subcommands.Add(fsd);
 
         var fileArg = new Argument<string>("file") { Description = "The .docx, .pdf, .xlsx or .xlsm to import." };
@@ -67,74 +67,13 @@ static class FsdCommands
         var show = new Command("show", "One section's text. Code only.") { docArgument, showSection, viewFormat };
         show.SetAction(pr => Cli.Run(pr, "fsd show", ctx => FsdOutline.Show(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(showSection)!), pr.GetValue(viewFormat) == "text" ? FsdOutline.ShowText : null));
         fsd.Subcommands.Add(show);
-        var claimSection = new Option<string?>("--section") { Description = "Only this section: its number or permanent id (S-0001)." };
-        var claims = new Command("claims", "A document's sections cut into claims by code, with a check that their words are the section's. Prints only, unless components.claim-links is on, when it also writes each claim's permanent id (D145). Off unless components.fsd-claims is on (D143).") { docArgument, claimSection, viewFormat };
-        claims.SetAction(pr => Cli.Run(pr, "fsd claims", ctx =>
-        {
-            if (!Stangent.Core.StangentComponents.IsOn(ctx.Repo.Config, FsdClaims.Component)) return FsdClaims.Off();
-            var report = FsdClaims.Report(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(claimSection), ClaimFile.On(ctx.Repo.Config));
-            ctx.Span.Attributes["stangent.artifact.count"] = (int)report["claimCount"]!;
-            if ((int)report["mismatchCount"]! > 0) throw new CheckFailed("claim_words_differ", "The claims' words aren't the section's words; see result.mismatches.", report);
-            return report;
-        }, pr.GetValue(viewFormat) == "text" ? FsdClaims.Text : null));
-        fsd.Subcommands.Add(claims);
         var exportOut = new Option<string?>("--out") { Description = "Where to write (default: .stangent/fsd/<doc>/export/, which git ignores)." };
         var exportMax = new Option<int?>("--max-lines") { Description = "A chapter over this many lines is cut at its next heading level (default: fsd.exportMaxLines, 1500)." };
         var export = new Command("export", "One Markdown file per top-level heading, generated and never read back (D122). Code only.") { docArgument, exportOut, exportMax };
         export.SetAction(pr => Cli.Run(pr, "fsd export", ctx => FsdExport.Run(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(exportOut), pr.GetValue(exportMax) ?? ctx.Repo.Config.Fsd.ExportMaxLines)));
         fsd.Subcommands.Add(export);
-        var workflows = new Command("workflows", "One readable file per flow under specs/workflows/<doc>/, with a count per use case, written by code and never read back (D144, D147). Off unless components.workflow-files is on.") { docArgument };
-        workflows.SetAction(pr => Cli.Run(pr, "workflows", ctx => WorkflowFiles.Command(ctx.Repo.Config, ctx.Repo.Root, pr.GetValue(docArgument)!)));
-        var journeysOut = new Option<string?>("--out") { Description = "Where to write (default: specs/workflows/tests/). Old generated files are removed only inside it." };
-        var journeys = new Command("tests", "What each Playwright test walks through, in order: its pages, clicks, fields and checks, read by code with no AI, with what can't be followed marked. One file per test file and an index under specs/workflows/tests/. It compares nothing and nothing reads it (D149). Off unless components.test-journeys is on.") { journeysOut };
-        journeys.SetAction(pr => Cli.Run(pr, "workflows tests", ctx =>
-        {
-            // A document can be called `tests`: this command took that name, so its own stays reachable until the switch is on, and then it's refused rather than sharing a folder.
-            if (FsdImport.Documents(ctx.Repo.Root).Any(d => (string?)d["id"] == "tests"))
-            {
-                if (!TestJourneys.On(ctx.Repo.Config)) return WorkflowFiles.Command(ctx.Repo.Config, ctx.Repo.Root, "tests");
-                throw new Stangent.Core.StangentException("name_taken", "A document here is called `tests`, and its workflow files would share specs/workflows/tests/ with these. Import it under another name.");
-            }
-            return TestJourneys.Command(ctx.Repo.Config, ctx.Repo.Root, () => Cli.LoadGraph(ctx), pr.GetValue(journeysOut));
-        }));
-        workflows.Subcommands.Add(journeys);
-        root.Subcommands.Add(workflows);
-
-        var candidates = new Command("candidates", "Candidate pages for each section, found by code: names, field labels, endpoints (D53). No AI.") { docOption };
-        candidates.SetAction(pr => Cli.Run(pr, "fsd candidates", ctx =>
-        {
-            var set = SpecCommands.LoadSet(ctx);
-            var index = SpecIndex.Load(ctx.Repo.Root);
-            var result = new JsonArray();
-            foreach (var d in FsdImport.Documents(ctx.Repo.Root).Where(d => pr.GetValue(docOption) is not { } only || (string)d["id"]! == only))
-                foreach (var s in d["sections"]!.AsArray().OfType<JsonObject>().Where(s => ((string)s["text"]!).Trim().Length > 0))
-                {
-                    var list = Candidates.Find(s, set, index.Pages, (string?)s["parent"] is { } par ? index.Sections.GetValueOrDefault(((string)d["id"]!, par)) : null);
-                    var row = new JsonObject
-                    {
-                        ["doc"] = (string)d["id"]!, ["section"] = (string)s["id"]!, ["title"] = (string)s["title"]!,
-                        ["candidates"] = new JsonArray([.. list.Kept.Select(c => (JsonNode)new JsonObject { ["page"] = c.Page, ["why"] = c.Why, ["recorded"] = index.Pages.ContainsKey(c.Page) })]),
-                    };
-                    if (list.LeftOut.Count > 0) row["leftOut"] = LinkRun.LeftOutList(list.LeftOut);
-                    result.Add(row);
-                }
-            ctx.Span.Attributes["stangent.artifact.count"] = result.Count;
-            return new JsonObject
-            {
-                ["sections"] = result.Count,
-                ["withCandidates"] = result.Count(r => r!["candidates"]!.AsArray().Count > 0),
-                ["result"] = result,
-            };
-        }));
-        fsd.Subcommands.Add(candidates);
-
         var docArg = new Argument<string>("doc") { Description = "The document's id." };
         var sectionArg = new Argument<string>("section") { Description = "The section's id: its number (4.2.3) or heading path." };
-        var prepare = new Command("prepare", "Start judging one section: says what runs next (finder, judge, or nothing when its inputs are unchanged).") { docArg, sectionArg };
-        prepare.SetAction(pr => Cli.Run(pr, "fsd prepare", ctx =>
-            SpecCommands.Finish(LinkRun.Prepare(SpecCommands.LoadSet(ctx), ctx.Repo, pr.GetValue(docArg)!, pr.GetValue(sectionArg)!), LinkRun.Key(pr.GetValue(docArg)!, pr.GetValue(sectionArg)!))));
-        fsd.Subcommands.Add(prepare);
-
         var tables = new Command("tables", "A document's tables and attachments' sheets, with their T- or A- ids and columns, for writing table-map.yaml. Code only.") { docArg };
         tables.SetAction(pr => Cli.Run(pr, "fsd tables", ctx => FsdTables.Listing(ctx.Repo.Root, pr.GetValue(docArg)!)));
         fsd.Subcommands.Add(tables);
@@ -161,7 +100,7 @@ static class FsdCommands
             pr.GetValue(sameAsOption), pr.GetValue(newOption), pr.GetValue(removedOption), FsdVersions.GitPerson(ctx.Repo.Root))));
         fsd.Subcommands.Add(resolve);
 
-        var promote = new Command("promote", "Make the candidate the current version, carrying links and requirements across by code. Refused while a doubtful section remains (D117).") { docArg };
+        var promote = new Command("promote", "Make the candidate the current version, carrying trace entries across by code. Refused while a doubtful section remains (D117).") { docArg };
         promote.SetAction(pr => Cli.Run(pr, "fsd promote", ctx => FsdVersions.Promote(ctx.Repo, pr.GetValue(docArg)!, FsdVersions.GitPerson(ctx.Repo.Root))));
         fsd.Subcommands.Add(promote);
 
@@ -169,45 +108,12 @@ static class FsdCommands
         discard.SetAction(pr => Cli.Run(pr, "fsd discard", ctx => FsdVersions.Discard(ctx.Repo.Root, pr.GetValue(docArg)!, FsdVersions.GitPerson(ctx.Repo.Root))));
         fsd.Subcommands.Add(discard);
 
-        var notInCodeWhy = new Option<string?>("--why") { Description = "Why, in your words. It's kept beside your name." };
-        var notInCodeClear = new Option<bool>("--clear") { Description = "Take the mark off." };
-        var notInCodeSection = new Argument<string>("section") { Description = "The section's permanent id (S-0001), or its number or heading path." };
-        var notInCode = new Command("not-in-code", "A person marks a section as not about the code, so it counts as covered (D122). It holds for these words only. Who decided comes from git.") { docArgument, notInCodeSection, notInCodeWhy, notInCodeClear };
-        notInCode.SetAction(pr => Cli.Run(pr, "fsd not-in-code", ctx => TraceCoverage.Mark(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(notInCodeSection)!, pr.GetValue(notInCodeWhy), FsdVersions.GitPerson(ctx.Repo.Root), pr.GetValue(notInCodeClear))));
-        fsd.Subcommands.Add(notInCode);
-
         var status = new Command("status", "Where a document stands: its version, a candidate waiting, doubtful sections, uncovered sections, who has what, and the next command. No AI.") { docArgument };
         status.SetAction(pr => Cli.Run(pr, "fsd status", ctx => FsdStatus.Of(ctx.Repo.Root, pr.GetValue(docArgument)!)));
         fsd.Subcommands.Add(status);
 
-        var usageOption = new Option<string?>("--usage") { Description = "Claude Code's JSON result for the step just run." };
-        var check = new Command("check", "Check the step just run (quotes word for word, ids, cited symbols), record links in specs/trace.yaml, and say what runs next.") { docArg, sectionArg, usageOption };
-        check.SetAction(pr => Cli.Run(pr, "fsd check", ctx =>
-        {
-            var usage = SpecCommands.ReadUsage(ctx, pr.GetValue(usageOption));
-            var set = SpecCommands.LoadSet(ctx);
-            return SpecCommands.Finish(LinkRun.Check(set, ctx.Repo, Cli.LoadGraph(ctx), pr.GetValue(docArg)!, pr.GetValue(sectionArg)!, usage), LinkRun.Key(pr.GetValue(docArg)!, pr.GetValue(sectionArg)!));
-        }));
-        fsd.Subcommands.Add(check);
-
-        var disprove = new Command("disprove", "A fresh agent tries to refute each finding from the code (D119). Off unless fsd.disprove is on.");
-        fsd.Subcommands.Add(disprove);
-        var disprovePrepare = new Command("prepare", "Start on one section's findings: says what runs next, or nothing when none needs an answer.") { docArg, sectionArg };
-        disprovePrepare.SetAction(pr => Cli.Run(pr, "fsd disprove prepare", ctx =>
-            SpecCommands.Finish(DisproveRun.Prepare(SpecCommands.LoadSet(ctx), ctx.Repo, pr.GetValue(docArg)!, pr.GetValue(sectionArg)!), LinkRun.Key(pr.GetValue(docArg)!, pr.GetValue(sectionArg)!))));
-        disprove.Subcommands.Add(disprovePrepare);
-        var disproveCheck = new Command("check", "Check the answer (its quote word for word at its lines), write the verdict through the state module, and say what runs next.") { docArg, sectionArg, usageOption };
-        disproveCheck.SetAction(pr => Cli.Run(pr, "fsd disprove check", ctx =>
-        {
-            var usage = SpecCommands.ReadUsage(ctx, pr.GetValue(usageOption));
-            return SpecCommands.Finish(DisproveRun.Check(SpecCommands.LoadSet(ctx), ctx.Repo, pr.GetValue(docArg)!, pr.GetValue(sectionArg)!, usage), LinkRun.Key(pr.GetValue(docArg)!, pr.GetValue(sectionArg)!));
-        }));
-        disprove.Subcommands.Add(disproveCheck);
-        var disproveEstimate = new Command("estimate", "What a run would send, from the bundles alone: no AI, nothing written.") { docArg, chapterOption };
-        disproveEstimate.SetAction(pr => Cli.Run(pr, "fsd disprove estimate", ctx => DisproveRun.Estimate(SpecCommands.LoadSet(ctx), ctx.Repo, pr.GetValue(docArg)!, pr.GetValue(chapterOption))));
-        disprove.Subcommands.Add(disproveEstimate);
-
         // Layer 5's command (D341): the source-reading reviewer, checked by code, two runs merged.
+        var usageOption = new Option<string?>("--usage") { Description = "Claude Code's JSON result for the step just run." };
         var runOption = new Option<int>("--run") { Description = "Which run, 1 (the default) to fsd.reviewRuns (2 unless set).", DefaultValueFactory = _ => 1 };
         var againOption = new Option<bool>("--again") { Description = "Prepare the run again although its input and the commit are unchanged." };
         var review = new Command("review", "Prepare one review run (D341): the FSD's sections with their ids, the scope and the output schema for stangent-fsd-reviewer, which reads the repo itself, read-only, in a worktree of HEAD. Says what runs next, with the agent's limits.") { docArgument, runOption, againOption };
@@ -248,18 +154,7 @@ static class FsdCommands
         }));
         fsd.Subcommands.Add(reviewMerge);
 
-        var undocumented = new Command("undocumented", "List screens no FSD section links to as undocumented, in specs/trace.yaml (code, no AI). Needs fsd.findings: true.");
-        undocumented.SetAction(pr => Cli.Run(pr, "fsd undocumented", ctx =>
-        {
-            var scope = ctx.Repo.Config.Fsd.Scope;
-            var findings = ctx.Repo.Config.Fsd.Findings;
-            var n = Undocumented.Apply(ctx.Repo.Root, SpecCommands.LoadSet(ctx), scope.Count == 0 ? null : scope, findings);
-            ctx.Span.Attributes["stangent.artifact.count"] = n;
-            return new JsonObject { ["undocumented"] = n, ["findings"] = findings };
-        }));
-        fsd.Subcommands.Add(undocumented);
-
-        var trace = new Command("trace", "specs/trace.yaml: the links, findings and decisions (D58).");
+        var trace = new Command("trace", "specs/trace.yaml: the links, findings and decisions (D58), frozen since the link route was cut (D342); table facts still write to it.");
         root.Subcommands.Add(trace);
         var baseOption = new Option<string?>("--base") { Description = "The PR's base ref: decided_by must not change in the PR." };
         var fixOption = new Option<bool>("--fix") { Description = "Drop the decision of entries whose quotes no longer match, and save." };
@@ -289,19 +184,6 @@ static class FsdCommands
         var traceFindings = new Command("findings", "The BA's queue for a document as one readable Markdown file, strongest evidence first (D152). By code, no AI; nothing reads it back, and answers still go in specs/trace.yaml.") { docArg, findingsOut };
         traceFindings.SetAction(pr => Cli.Run(pr, "trace findings", ctx => FindingsReport.Run(ctx.Repo.Root, pr.GetValue(docArg)!, pr.GetValue(findingsOut))));
         trace.Subcommands.Add(traceFindings);
-
-        var findingArg = new Argument<string>("finding") { Description = "The finding's X- id, or its entry id." };
-        var whyOption = new Option<string?>("--why") { Description = "Why, in your words. It's kept beside your name." };
-        var confirm = new Command("confirm", "A person closes a finding the AI called refuted or unreachable, or a page gap under page-gap-strict, having read its quote at its lines (D119). Who comes from git.") { findingArg, whyOption };
-        confirm.SetAction(pr => Cli.Run(pr, "trace confirm", ctx => TraceFindings.Review(ctx.Repo.Root, pr.GetValue(findingArg)!, "confirmed", TicketCommands.Who(ctx), pr.GetValue(whyOption))));
-        trace.Subcommands.Add(confirm);
-        var sendBack = new Command("send-back", "A person sends a finding the AI called refuted or unreachable, or a page gap under page-gap-strict, back to the BA's queue (D119). Who comes from git.") { findingArg, whyOption };
-        sendBack.SetAction(pr => Cli.Run(pr, "trace send-back", ctx => TraceFindings.Review(ctx.Repo.Root, pr.GetValue(findingArg)!, "sent-back", TicketCommands.Who(ctx), pr.GetValue(whyOption))));
-        trace.Subcommands.Add(sendBack);
-        var securityAnswer = new Argument<string>("answer") { Description = "confirmed: it touches security. not-security: it doesn't." };
-        var security = new Command("security", "A person answers an AI's flag that a finding touches security (D141, D148). Nothing else closes it, and it sets no severity. Who comes from git.") { findingArg, securityAnswer, whyOption };
-        security.SetAction(pr => Cli.Run(pr, "trace security", ctx => TraceFindings.AnswerSecurity(ctx.Repo.Root, pr.GetValue(findingArg)!, pr.GetValue(securityAnswer)!, TicketCommands.Who(ctx), pr.GetValue(whyOption))));
-        trace.Subcommands.Add(security);
 
         var byOption = new Option<string>("--by") { Description = "Who approved or merged the PR, from the code host (D24): CI passes it.", Required = true };
         var attribute = new Command("attribute", "After a merge: fill decided_by on every decision, and severity_by on every severity, the merged PR changed (D58, D118).") { baseOption, byOption };

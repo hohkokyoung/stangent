@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # Runs Phase 3 for tickets through headless Claude Code (D60), for CI and batch runs such as the benchmark:
 #   pull → points (→ stangent-file-finder, D101: searches the repo read-only) → bundle
-#   [--match]      stangent ticket match → stangent-requirement-matcher → stangent-match-checker → ticket check --step match
 #   [--prove]      bugs: stangent ticket prove → stangent-bug-reproducer (multi-turn, under limits) → ticket check --step prove
 #   [--questions]  stangent ticket draft --kind questions → stangent-question-writer → ticket check --step questions
 #   [--resolution <base..head>]  stangent ticket draft --kind resolution → stangent-summary-writer → check
 # The logic lives in `stangent ticket`; this only runs the subagent each step names and hands its result back.
 #
-# usage: ticket-run.sh [--jobs N] [--max-cost USD|none] [--stop-at-usage PCT] [--estimate] [--model M] [--effort E] [--no-pull] [--refind] [--no-find] [--match] [--prove] [--hint TEXT] [--questions] [--resolution RANGE] [--tone T] (<KEY>... | --repeat N --call <id>...)
+# usage: ticket-run.sh [--jobs N] [--max-cost USD|none] [--stop-at-usage PCT] [--estimate] [--model M] [--effort E] [--no-pull] [--refind] [--no-find] [--prove] [--hint TEXT] [--questions] [--resolution RANGE] [--tone T] (<KEY>... | --repeat N --call <id>...)
 # --no-pull works from the ticket already pulled (a benchmark re-run, no Jira call). --refind searches for the ticket's
 # files again although the ticket is unchanged (its answer is otherwise kept, marked stale once the code moves on).
 # --no-find skips the file finder (a benchmark searches at each ticket's own commit later, in its `files` phase).
@@ -37,7 +36,6 @@ EFFORT=""
 REPEAT=""
 CALLS=()
 PROVE=""
-MATCH=""
 HINT=""
 QUESTIONS=""
 NOPULL=""
@@ -61,7 +59,6 @@ while [ $# -gt 0 ]; do
     --repeat) REPEAT="$2"; shift 2 ;;
     --call) CALLS+=("$2"); shift 2 ;;
     --prove) PROVE=1; shift ;;
-    --match) MATCH=1; shift ;;
     --no-pull) NOPULL=1; shift ;;
     --refind) REFIND=1; shift ;;
     --no-find) NOFIND=1; shift ;;
@@ -83,7 +80,7 @@ else
 fi
 case "$JOBS" in ''|0|*[!0-9]*) usage ;; esac
 
-export STANGENT="${STANGENT:-stangent}" CLAUDE="${CLAUDE:-claude}" MODEL EFFORT PROVE MATCH HINT QUESTIONS RESOLUTION TONE NOPULL REFIND NOFIND
+export STANGENT="${STANGENT:-stangent}" CLAUDE="${CLAUDE:-claude}" MODEL EFFORT PROVE HINT QUESTIONS RESOLUTION TONE NOPULL REFIND NOFIND
 export PLUGIN_DIR="${PLUGIN_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 # One call with no tools (D66): the step's input files go into the prompt, the output schema is enforced, and the
@@ -313,9 +310,6 @@ run_ticket() {
     printf 'error\t%s\tbundle\t%s\n' "$key" "$(jq -r '.error.message // "no result"' <<<"$out" 2>/dev/null | head -c 300)" >&2
     return 1
   fi
-  if [ -n "$MATCH" ]; then
-    run_step "$key" match "$($STANGENT ticket match "$key" || true)"
-  fi
   if [ -n "$PROVE" ] && [ "$(jq -r '.isBug' ".stangent/tickets/$key/ticket.json" 2>/dev/null)" = true ]; then
     run_step "$key" prove "$($STANGENT ticket prove "$key" ${HINT:+--hint "$HINT"} || true)"
   fi
@@ -346,7 +340,6 @@ fi
 # An estimate before anything runs (T.2). "At least": the steps asked for; the file finder only runs where it's needed,
 # and a retry adds more. A ticket's real count can only be known once its pull and points are done.
 per=0
-[ -z "$MATCH" ] || per=$((per + 2))
 [ -z "$PROVE" ] || per=$((per + 1))
 [ -z "$QUESTIONS" ] || per=$((per + 1))
 [ -z "$RESOLUTION" ] || per=$((per + 1))

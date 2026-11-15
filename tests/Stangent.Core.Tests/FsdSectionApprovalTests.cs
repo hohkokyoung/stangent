@@ -388,7 +388,7 @@ public sealed class FsdSectionApprovalTests : IDisposable
 
     JsonObject Link(string section, string title, string quote)
     {
-        var entry = LinkRun.Entry("gap", "shop", new JsonObject { ["id"] = section, ["title"] = title }, quote, null, null, null, "code", null, null);
+        var entry = TraceStore.Entry("gap", "shop", new JsonObject { ["id"] = section, ["title"] = title }, quote, null, null, null, "code", null, null);
         entry["decision"] = "agree";
         entry["decided_by"] = Pat;
         var trace = TraceFile.Load(Root);

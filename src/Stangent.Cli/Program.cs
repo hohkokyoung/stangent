@@ -283,7 +283,6 @@ graph.Subcommands.Add(import);
 
 SpecCommands.Add(root);
 FsdCommands.Add(root);
-ReqCommands.Add(root);
 AiCommands.Add(root);
 JiraCommands.Add(root);
 TicketCommands.Add(root);

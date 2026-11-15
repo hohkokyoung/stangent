@@ -190,13 +190,13 @@ public static class TicketScore
     }
 
     public static HashSet<string> TicketWords(JsonNode ticket) =>
-        Candidates.Words(string.Join("\n", [(string?)ticket["ticket"]?["summary"], (string?)ticket["description"],
+        NameWords.Words(string.Join("\n", [(string?)ticket["ticket"]?["summary"], (string?)ticket["description"],
             .. (ticket["comments"]?.AsArray() ?? []).Select(c => (string?)c?["text"])]));
 
     /// <summary>The keyword baseline (D79): each file scored by the ticket words in its path and its symbols' names; the
     /// top 5, ties by path. Files with no shared word aren't picked.</summary>
     public static HashSet<string> KeywordTop5(HashSet<string> words, IReadOnlyDictionary<string, List<string>> symbolsByFile) =>
-        [.. symbolsByFile.Select(f => (File: f.Key, Score: Candidates.Words(f.Key.Replace('/', ' ') + " " + string.Join(" ", f.Value)).Intersect(words).Count()))
+        [.. symbolsByFile.Select(f => (File: f.Key, Score: NameWords.Words(f.Key.Replace('/', ' ') + " " + string.Join(" ", f.Value)).Intersect(words).Count()))
             .Where(x => x.Score > 0).OrderByDescending(x => x.Score).ThenBy(x => x.File, StringComparer.Ordinal).Take(KeywordTop).Select(x => x.File)];
 
     /// <summary>95% range of a mean by resampling (1,000 resamples, seed 42), as in D47, D57 and D79.</summary>

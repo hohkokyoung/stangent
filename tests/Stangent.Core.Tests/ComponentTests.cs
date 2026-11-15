@@ -4,7 +4,6 @@ using Stangent.Graph.Detectors;
 using Stangent.Graph.History;
 using Stangent.Spec.Fsd;
 using Stangent.Spec.Pages;
-using Stangent.Spec.Requirements;
 using Stangent.Spec.Trace;
 using Stangent.Tickets;
 using Stangent.Tickets.Proof;
@@ -67,9 +66,9 @@ public class ComponentTests
     [Fact]
     public void Components_settle_onto_the_old_keys_and_win_over_them()
     {
-        using var repo = new TempRepo("version: 1\nhistory: { enabled: true }\nfsd: { findings: false, disprove: false }\ntickets: { aiPoints: true }\ncomponents: { git-history: false, findings: true, disprove: true, file-finder: false, ai: false }\n");
+        using var repo = new TempRepo("version: 1\nhistory: { enabled: true }\nfsd: { findings: false }\ntickets: { aiPoints: true }\ncomponents: { git-history: false, findings: true, file-finder: false, ai: false }\n");
         var c = repo.Repo.Config;
-        Assert.Equal((false, true, true, false, false), (c.History.Enabled, c.Fsd.Findings, c.Fsd.Disprove, c.Tickets.AiPoints, c.Ai.Enabled));
+        Assert.Equal((false, true, false, false), (c.History.Enabled, c.Fsd.Findings, c.Tickets.AiPoints, c.Ai.Enabled));
     }
 
     [Fact]
@@ -89,7 +88,7 @@ public class ComponentTests
     {
         var c = new StangentConfig();
         Assert.All(StangentComponents.All, x => Assert.Equal(x.OnByDefault, StangentComponents.IsOn(c, x.Name)));
-        Assert.Equal(["attachment-home", "attachments-in-checks", "claim-links", "disprove", "disprove-callers", "disprove-small", "findings", "first-import-approval", "follow-moves", "fsd-claims", "group-sections", "judge-finer-verdicts", "page-corrections", "page-exclusions", "page-gap-strict", "pages", "root-screens", "route-render", "schema-once", "section-approval", "security-flag", "shared-through", "spec-ask", "statement-update", "table-facts", "test-journeys", "ticket-excel-text", "workflow-files"], StangentComponents.All.Where(x => !x.OnByDefault).Select(x => x.Name).Order());
+        Assert.Equal(["attachment-home", "findings", "first-import-approval", "follow-moves", "page-corrections", "page-exclusions", "pages", "root-screens", "route-render", "schema-once", "section-approval", "statement-update", "table-facts", "ticket-excel-text"], StangentComponents.All.Where(x => !x.OnByDefault).Select(x => x.Name).Order());
     }
 
     [Fact]
@@ -110,10 +109,10 @@ public class ComponentTests
     [Fact]
     public void A_run_says_which_components_it_used()
     {
-        var c = new StangentConfig { Components = { ["agree-checker"] = false } };
-        var used = StangentComponents.ForCommand(c, "fsd check")!.Value;
-        Assert.Contains("agree-checker", used.Off);
-        Assert.Contains("candidate-finder", used.On);
+        var c = new StangentConfig { Components = { ["page-verifier"] = false } };
+        var used = StangentComponents.ForCommand(c, "spec check")!.Value;
+        Assert.Contains("page-verifier", used.Off);
+        Assert.Contains("line-citations", used.On);
         Assert.Null(StangentComponents.ForCommand(c, "store get"));
     }
 
@@ -208,86 +207,6 @@ public class ComponentTests
     }
 
     [Fact]
-    public void Candidate_finder_off_leaves_the_section_unjudged_and_never_calls_it_a_gap()
-    {
-        using var app = App();
-        Record(app, SpecApp.Post, PostPage);
-        Assert.Equal("find", LinkRun.Prepare(app.Pages(), app.Repo, "shop", "2").Action);    // on: code found nothing, so the finder runs
-
-        using var off = App();
-        Record(off, SpecApp.Post, PostPage);
-        off.Repo.Config.Components["candidate-finder"] = false;
-        var step = LinkRun.Prepare(off.Pages(), off.Repo, "shop", "2");
-        Assert.Equal(("off", "none"), (step.Status, step.Action));
-        Assert.Contains("isn't a gap", step.Errors![0]);
-        Assert.Empty(TraceFile.Load(off.Root)["entries"]!.AsArray());
-        Assert.Equal("off", (string)LinkRun.LoadRuns(off.Root)["shop#2"]!["candidatesBy"]!);
-    }
-
-    [Fact]
-    public void Agree_checker_off_records_the_agree_with_no_check_and_says_so()
-    {
-        using var app = App();
-        Record(app, SpecApp.Post, PostPage);
-        app.Repo.Config.Components["agree-checker"] = false;
-        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
-        Assert.Equal(LinkRun.Judge, step.Agent);
-        File.WriteAllText(Path.Combine(app.Root, step.Output!), new JsonObject
-        {
-            ["links"] = new JsonArray(new JsonObject { ["state"] = "agree", ["fsdQuote"] = "Orders over 50 need approval.", ["page"] = SpecApp.Post, ["statement"] = "R1", ["pageQuote"] = "Orders over 100 are refused", ["note"] = "n" }),
-        }.ToJsonString());
-        var graph = GraphStore.Load(GraphStore.PathFor(app.Repo))!;
-        var done = LinkRun.Check(app.Pages(), app.Repo, graph, "shop", "1", null);
-        Assert.Equal(("recorded", "none"), (done.Status, done.Action));
-        var entry = TraceFile.Load(app.Root)["entries"]!.AsArray().Single()!;
-        Assert.Null(entry["check"]);
-        Assert.Contains("agree-checker is off", (string)entry["note"]!);
-        Assert.Equal("off", (string)LinkRun.LoadRuns(app.Root)["shop#1"]!["agreeChecker"]!);
-    }
-
-    [Fact]
-    public void Requirements_links_off_judges_the_section_not_its_requirements()
-    {
-        using var app = App();
-        Record(app, SpecApp.Post, PostPage);
-        var index = SpecIndex.Load(app.Root);
-        var section = index.Sections[("shop", "1")];
-        var feature = RequirementFile.Ensure(app.Root, "shop", section, index);
-        feature["textHash"] = CanonicalJson.Hash((string)section["text"]!);
-        RequirementFile.Save(app.Root, feature);
-
-        Assert.Equal("skipped", LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1").Status);     // on: a section whose requirements are all background has nothing to judge
-        app.Repo.Config.Components["requirements-links"] = false;
-        Assert.Equal(LinkRun.Judge, LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1").Agent);
-    }
-
-    [Fact]
-    public void Findings_off_records_only_links()
-    {
-        using var app = App();
-        Record(app, SpecApp.Post, PostPage);
-        app.Repo.Config.Fsd.Findings = false;
-        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
-        File.WriteAllText(Path.Combine(app.Root, step.Output!), new JsonObject
-        {
-            ["links"] = new JsonArray(new JsonObject { ["state"] = "conflict", ["fsdQuote"] = "Orders over 50 need approval.", ["page"] = SpecApp.Post, ["statement"] = "R1", ["pageQuote"] = "Orders over 100 are refused", ["note"] = "n" }),
-        }.ToJsonString());
-        LinkRun.Check(app.Pages(), app.Repo, GraphStore.Load(GraphStore.PathFor(app.Repo))!, "shop", "1", null);
-        Assert.Empty(TraceFile.Load(app.Root)["entries"]!.AsArray());
-    }
-
-    [Fact]
-    public void Disprove_off_is_off_and_on_with_findings_off_says_what_it_needs()
-    {
-        using var app = App(findings: false);
-        Assert.Equal("off", DisproveRun.Prepare(app.Pages(), app.Repo, "shop", "1").Status);
-        app.Repo.Config.Fsd.Disprove = true;
-        var step = DisproveRun.Prepare(app.Pages(), app.Repo, "shop", "1");
-        Assert.Equal("off", step.Status);
-        Assert.Contains("disprove needs findings", step.Errors![0]);
-    }
-
-    [Fact]
     public void File_finder_off_makes_codes_signals_the_starting_points()
     {
         using var repo = TicketFixtures.Repo("components: { file-finder: false }\n");
@@ -320,7 +239,7 @@ public class ComponentTests
         using var app = App();
         Record(app, SpecApp.Post, PostPage);
         app.Repo.Config.Ai.Enabled = false;
-        Assert.Equal("ai_disabled", Assert.Throws<StangentException>(() => LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1")).Code);
+        Assert.Equal("ai_disabled", Assert.Throws<StangentException>(() => FsdReview.Prepare(app.Repo, "shop", 1, false)).Code);
         Assert.Contains("page-verifier needs ai", StangentComponents.MissingNeed(app.Repo.Config, "page-verifier"));
     }
 }
@@ -328,7 +247,7 @@ public class ComponentTests
 /// <summary>The whole flow with a few components off (D121): it still runs, and what's off says so. Built as the main flow is, with the steps that need what's off left out.</summary>
 public sealed class WholeFlowOff : IDisposable
 {
-    public WholeFlow Flow { get; } = WholeFlow.With("components: { git-history: false, findings: false, disprove: false }");
+    public WholeFlow Flow { get; } = WholeFlow.With("components: { git-history: false, findings: false }");
 
     public void Dispose() => Flow.Dispose();
 }
@@ -338,7 +257,7 @@ public class WholeFlowOffTests(WholeFlowOff off) : IClassFixture<WholeFlowOff>
     readonly WholeFlow flow = off.Flow;
 
     [Fact]
-    public void The_flow_gets_through_with_history_findings_and_disprove_off()
+    public void The_flow_gets_through_with_history_and_findings_off()
     {
         Assert.Equal(int.MaxValue, flow.BrokeAt);
         Assert.Empty(flow.SchemaErrors);
@@ -362,13 +281,6 @@ public class WholeFlowOffTests(WholeFlowOff off) : IClassFixture<WholeFlowOff>
     }
 
     [Fact]
-    public void Disprove_says_off()
-    {
-        flow.Reached(4);
-        Assert.Equal("off", (string?)flow.Cli("fsd", "disprove", "prepare", "shop", "1")["result"]!["status"]);
-    }
-
-    [Fact]
     public void A_ticket_bundle_is_still_built()
     {
         flow.Reached(5);
@@ -382,10 +294,6 @@ public class WholeFlowOffTests(WholeFlowOff off) : IClassFixture<WholeFlowOff>
         var list = flow.Cli("components")["result"]!;
         var history = list["components"]!.AsArray().Single(c => (string?)c!["name"] == "git-history")!;
         Assert.Equal((false, true, "history.enabled"), ((bool)history["on"]!, (bool)history["default"]!, (string)history["setting"]!));
-        var disprove = list["components"]!.AsArray().Single(c => (string?)c!["name"] == "disprove")!;
-        Assert.Contains("findings", disprove["needs"]!.AsArray().Select(n => (string?)n));
-        Assert.Contains("disprove needs findings", (string?)disprove["blocked"]);
-        Assert.Contains(list["components"]!.AsArray().Single(c => (string?)c!["name"] == "findings")!["neededBy"]!.AsArray(), n => (string?)n == "disprove");
         Assert.NotEmpty(list["noSwitch"]!.AsArray());
         var playwright = list["components"]!.AsArray().Single(c => (string?)c!["name"] == "detector-playwright-specs")!;
         Assert.Equal(false, (bool?)playwright["connected"]);

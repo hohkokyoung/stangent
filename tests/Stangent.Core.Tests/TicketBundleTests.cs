@@ -65,10 +65,10 @@ public class TicketBundleTests
             ["sections"] = new JsonArray(new JsonObject { ["id"] = "4.1", ["title"] = "Placing an order", ["text"] = "The user places an order with the Place order button. Orders over 50 need approval.", ["parent"] = null }),
         }.ToJsonString());
         var section = new JsonObject { ["id"] = "4.1", ["title"] = "Placing an order", ["text"] = "" };
-        LinkRun.ApplyEntries(app.Root, "shop", "4.1",
+        TraceStore.ApplyEntries(app.Root, "shop", "4.1",
         [
-            LinkRun.Entry("agree", "shop", section, "The user places an order with the Place order button.", Orders, "S1", "The orders screen shows a Place order button.", "judge", "confirmed", null),
-            LinkRun.Entry("conflict", "shop", section, "Orders over 50 need approval.", Orders, "A1", "Pressing Place order posts the order to the orders endpoint.", "judge", null, "50 vs 100"),
+            TraceStore.Entry("agree", "shop", section, "The user places an order with the Place order button.", Orders, "S1", "The orders screen shows a Place order button.", "judge", "confirmed", null),
+            TraceStore.Entry("conflict", "shop", section, "Orders over 50 need approval.", Orders, "A1", "Pressing Place order posts the order to the orders endpoint.", "judge", null, "50 vs 100"),
         ]);
     }
 
@@ -309,54 +309,6 @@ public class TicketBundleTests
         Assert.Equal("unanswered", (string?)flag["answer"]);
         Assert.Equal("The server trusts an id sent in the request.", (string?)flag["why"]);
         Assert.Contains("**SECURITY FLAG, UNANSWERED:** The server trusts an id sent in the request. (`web/src/Orders.tsx:3-3`", Md(app, "SHOP-30"));
-    }
-
-    [Fact]
-    public void An_answered_flag_says_who_and_no_flag_says_nothing()
-    {
-        using var app = App("fsd:\n  findings: true\n");
-        OrdersPage(app);
-        Fsd(app);
-        Ticket(app, "SHOP-31", "On /orders the total is wrong.");
-        var plain = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-31");
-        Assert.DoesNotContain("security", plain.ToJsonString());
-        Assert.DoesNotContain("SECURITY", Md(app, "SHOP-31"));
-
-        FlagTheConflict(app);
-        var id = (string)TraceFile.Load(app.Root)["entries"]!.AsArray().OfType<JsonObject>().Single(x => (string?)x["state"] == "conflict")["id"]!;
-        TraceFindings.AnswerSecurity(app.Root, id, "not-security", "pat", "wrong line");
-        var answered = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-31");
-        Assert.Equal("not-security", (string?)Conflict(answered)!["security"]!["answer"]);
-        Assert.Contains("security flag not-security by pat", Md(app, "SHOP-31"));
-        Assert.DoesNotContain("UNANSWERED", Md(app, "SHOP-31"));
-    }
-
-    [Fact]
-    public void A_closed_finding_leaves_the_bundle_unless_its_flag_is_unanswered()
-    {
-        static void Close(JsonObject e)
-        {
-            var disproof = new JsonObject { ["inputs"] = new string('b', 64), ["why"] = "w" };
-            e["verdict"] = "refuted";
-            e["disproof"] = disproof;
-            e["disproof_hash"] = TraceFile.DisproofHash("refuted", disproof);
-            var note = new JsonObject { ["by"] = "pat", ["why"] = "w" };
-            e["review"] = "confirmed";
-            e["review_note"] = note;
-            e["review_hash"] = TraceFile.ReviewHash("confirmed", note, (string?)e["disproof_hash"]);
-        }
-
-        using var app = App("fsd:\n  findings: true\n");
-        OrdersPage(app);
-        Fsd(app);
-        FlagTheConflict(app, Close);
-        Ticket(app, "SHOP-32", "On /orders the total is wrong.");
-        var open = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-32");
-        Assert.Equal("unanswered", (string?)Conflict(open)!["security"]!["answer"]);
-
-        var id = (string)TraceFile.Load(app.Root)["entries"]!.AsArray().OfType<JsonObject>().Single(x => (string?)x["state"] == "conflict")["id"]!;
-        TraceFindings.AnswerSecurity(app.Root, id, "not-security", "pat", null);
-        Assert.Null(Conflict(TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-32")));
     }
 
     [Fact]

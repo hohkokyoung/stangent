@@ -36,7 +36,7 @@ public sealed class SectionIdLinkTests : IDisposable
     /// <summary>A link as an older build wrote it: the number alone.</summary>
     void OldLink(string number, string quote)
     {
-        var entry = LinkRun.Entry("gap", "shop", Section(number), quote, null, null, null, "code", null, null);
+        var entry = TraceStore.Entry("gap", "shop", Section(number), quote, null, null, null, "code", null, null);
         entry["fsd"]!.AsObject().Remove("sectionId");
         var trace = TraceFile.Empty();
         trace["entries"]!.AsArray().Add(entry);
@@ -49,7 +49,7 @@ public sealed class SectionIdLinkTests : IDisposable
     public void A_new_link_has_it_and_an_old_one_gets_it_at_a_plain_check_with_its_entry_id_unchanged()
     {
         Import(Chapter("1 Apples", Apples) + Chapter("2 Pears", Pears));
-        Assert.Equal("S-0002", (string)LinkRun.Entry("gap", "shop", Section("2"), Pears, null, null, null, "code", null, null)["fsd"]!["sectionId"]!);
+        Assert.Equal("S-0002", (string)TraceStore.Entry("gap", "shop", Section("2"), Pears, null, null, null, "code", null, null)["fsd"]!["sectionId"]!);
 
         OldLink("2", Pears);
         var id = (string)TraceFile.Load(repo.Root)["entries"]![0]!["id"]!;

@@ -54,36 +54,12 @@ if (argList.Count >= 3 && argList[0] == "--score-fsd")
     Console.WriteLine(scoreText);
     return 0;
 }
-// The disprove step (D119): `--score-disprove <repo> <answer-key.json> [--hand-check <file>] [--out file]`: the same key and hand check, before and after.
-if (argList.Count >= 3 && argList[0] == "--score-disprove")
-{
-    var hand = argList.IndexOf("--hand-check") is var hc and >= 0 ? argList[hc + 1] : null;
-    var score = Stangent.Benchmark.Spec.DisproveScore.Run(Path.GetFullPath(argList[1]), argList[2], hand);
-    var scoreText = score.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
-    if (argList.IndexOf("--out") is var so and >= 0) File.WriteAllText(argList[so + 1], scoreText + "\n");
-    Console.WriteLine(scoreText);
-    return 0;
-}
-// Phase 2c's frozen key (D99): `--match-seed <clone> <match-key.json>` writes its tickets into the clone, printing keys only;
-// `--score-match <clone> <match-key.json> [--out file]` scores them by the key's own rule.
 // Rebuild layer 3's frozen key (D177, D183): `--score-flows <clone> <key-dir> [--out file]` scores the clone's specs/flows/.
 if (argList.Count >= 3 && argList[0] == "--score-flows")
 {
     var flowText = Stangent.Benchmark.Flows.FlowScore.Run(Path.GetFullPath(argList[1]), argList[2]).ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
     if (argList.IndexOf("--out") is var fo and >= 0) File.WriteAllText(argList[fo + 1], flowText + "\n");
     Console.WriteLine(flowText);
-    return 0;
-}
-if (argList.Count >= 3 && argList[0] == "--match-seed")
-{
-    foreach (var key in await Stangent.Benchmark.Tickets.MatchScore.SeedAsync(Path.GetFullPath(argList[1]), argList[2])) Console.WriteLine(key);
-    return 0;
-}
-if (argList.Count >= 3 && argList[0] == "--score-match")
-{
-    var matchText = Stangent.Benchmark.Tickets.MatchScore.Run(Path.GetFullPath(argList[1]), argList[2]).ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
-    if (argList.IndexOf("--out") is var mo and >= 0) File.WriteAllText(argList[mo + 1], matchText + "\n");
-    Console.WriteLine(matchText);
     return 0;
 }
 // Phase 3's frozen set (D78): `--select-tickets <clone> --out-dir benchmark/tickets/sonarr [--repo Sonarr/Sonarr] [--bugs 40] [--not-bugs 10]`.

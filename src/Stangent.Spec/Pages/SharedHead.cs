@@ -20,16 +20,6 @@ public static class SharedHead
     [
         (true, [WriterInstructions], Bundles.WriterSchema),
         (false, [VerifierInstructions], Bundles.VerifierSchema),
-        (false, ["link-judge.md"], "link-judge-output.v1.json"),
-        (false, ["link-judge-finer.md"], "link-judge-finer-output.v1.json"),
-        (false, ["requirement-judge.md"], "requirement-judge-output.v1.json"),
-        (false, ["requirement-judge-finer.md"], "requirement-judge-finer-output.v1.json"),
-        (false, ["link-judge.md", "link-judge-group.md"], "link-judge-group-output.v1.json"),
-        (false, ["link-judge-finer.md", "link-judge-group.md"], "link-judge-group-finer-output.v1.json"),
-        (false, ["link-judge-claims.md"], "link-judge-claims-output.v1.json"),
-        (false, ["link-judge-claims-finer.md"], "link-judge-claims-finer-output.v1.json"),
-        (false, ["agree-checker.md"], "agree-checker-output.v1.json"),
-        (false, ["requirement-agree-checker.md"], "agree-checker-output.v1.json"),
     ];
 
     /// <summary>The full head of a step's input. <paramref name="page"/> is the writer's form, one heading level down under its title.</summary>

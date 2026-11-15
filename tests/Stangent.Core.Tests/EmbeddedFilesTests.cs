@@ -567,197 +567,25 @@ public sealed class EmbeddedFilesTests : IDisposable
         Assert.StartsWith("A-", (string)Document()["attachments"]![0]!["id"]!);
     }
 
-    // ---- the switch ----
+    // ---- what a frozen link quotes from an attachment (D342 cut the switch) ----
 
-    const string Quote = "Silver tier fee is seven";
-
-    static SpecApp AppWith(bool on, int? chars = null)
+    SpecApp Attached()
     {
-        var app = FsdLinkTests.App($"components: {{ attachments-in-checks: {(on ? "true" : "false")} }}\n");
-        if (chars is { } limit) app.Repo.Config.Fsd.AttachmentChars = limit;
+        var app = new SpecApp($"version: 1\nfsd: {{ archive: {{ name: a, path: '{archive.Root}', git: false }} }}\n");
         var file = Path.Combine(app.Root, "shop.docx");
         File.WriteAllBytes(file, WordWith("rates.xlsx", XlsxFixture.Rates(), text: "Every order sends a receipt.", heading: "Orders"));
         FsdImport.Import(app.Repo, file, "attached");
         return app;
     }
 
-    static string JudgeText(SpecApp app, string doc)
-    {
-        var step = LinkRun.Prepare(app.Pages(), app.Repo, doc, "Orders");
-        return File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, Path.GetFileName(step.Output!).Replace(".json", ".md", StringComparison.Ordinal)));
-    }
-
-    [Fact]
-    public void With_the_switch_off_every_bundle_and_hash_is_what_it_is_with_no_attachment_at_all()
-    {
-        using var off = AppWith(false);
-        var index = SpecIndex.Load(off.Root);
-        AttachmentChecks.Load(index, off.Repo);
-        var section = index.Sections[("attached", "Orders")];
-        Assert.Null(section[AttachmentChecks.Key]);
-        Assert.NotNull(section["attachments"]);
-
-        // The same section with no attachment: the same link judge hash, and the same disprove inputs.
-        var bare = (JsonObject)section.DeepClone();
-        bare.Remove("attachments");
-        bare.Remove("attachmentLines");
-        bare.Remove("contentHash");
-        Assert.Equal(LinkRun.JudgeInputs(bare, "attached", [], index, null, true), LinkRun.JudgeInputs(section, "attached", [], index, null, true));
-        Assert.Equal(LinkRun.SectionBlock(bare, "attached") + AttachmentChecks.Block(bare), LinkRun.SectionBlock(section, "attached") + AttachmentChecks.Block(section));
-        Assert.Equal("", AttachmentChecks.Block(section));
-
-        // A quote from the file isn't accepted, and the bundle never shows it.
-        Assert.NotEmpty(LinkChecks.Check(new JsonObject { ["state"] = "gap", ["fsdQuote"] = Quote }, section, new HashSet<string>(), index, null));
-        Assert.DoesNotContain(Quote, JudgeText(off, "attached"));
-    }
-
-    [Fact]
-    public void With_the_switch_on_the_judge_sees_the_file_and_the_hash_moves_and_a_quote_from_it_is_accepted()
-    {
-        using var on = AppWith(true);
-        var bundle = JudgeText(on, "attached");
-        Assert.Contains("# This section's attachments", bundle);
-        Assert.Contains("A-0001", bundle);
-        Assert.Contains("rates.csv", bundle);
-        Assert.Contains(Quote, bundle);
-
-        var index = SpecIndex.Load(on.Root);
-        var bare = index.Sections[("attached", "Orders")];
-        var before = LinkRun.JudgeInputs(bare, "attached", [], index, null, true);
-        AttachmentChecks.Load(index, on.Repo);
-        var section = index.Sections[("attached", "Orders")];
-        Assert.NotEqual(before, LinkRun.JudgeInputs(section, "attached", [], index, null, true));
-        Assert.Empty(LinkChecks.Check(new JsonObject { ["state"] = "gap", ["fsdQuote"] = Quote }, section, new HashSet<string>(), index, null));
-        Assert.Empty(LinkChecks.Check(new JsonObject { ["state"] = "gap", ["fsdQuote"] = "Gold" }, section, new HashSet<string>(), index, null));
-        Assert.NotEmpty(LinkChecks.Check(new JsonObject { ["state"] = "gap", ["fsdQuote"] = "A made up quote of many words" }, section, new HashSet<string>(), index, null));
-    }
-
-    [Fact]
-    public void The_disprove_bundle_and_what_its_verdict_rests_on_change_only_with_the_switch_on()
-    {
-        using var off = AppWith(false);
-        var set = off.Pages();
-        var index = SpecIndex.Load(off.Root);
-        var analyzer = new Lazy<Stangent.Graph.Impact.ImpactAnalyzer>(() => new Stangent.Graph.Impact.ImpactAnalyzer(set.Graph));
-        var section = index.Sections[("attached", "Orders")];
-        var finding = LinkRun.Entry("gap", "attached", section, "Every order sends a receipt.", null, null, null, "judge", null, "why");
-        var bare = (JsonObject)section.DeepClone();
-        bare.Remove("attachments");
-        bare.Remove("attachmentLines");
-        bare.Remove("contentHash");
-        var without = DisproveRun.Build(set, index, analyzer, "attached", bare, finding);
-        AttachmentChecks.Load(index, off.Repo);
-        var switchedOff = DisproveRun.Build(set, index, analyzer, "attached", section, finding);
-        Assert.Equal((without.Text, without.Inputs), (switchedOff.Text, switchedOff.Inputs));
-
-        using var on = AppWith(true);
-        var onIndex = SpecIndex.Load(on.Root);
-        AttachmentChecks.Load(onIndex, on.Repo);
-        var onSet = on.Pages();
-        var seen = DisproveRun.Build(onSet, onIndex, new Lazy<Stangent.Graph.Impact.ImpactAnalyzer>(() => new Stangent.Graph.Impact.ImpactAnalyzer(onSet.Graph)), "attached", onIndex.Sections[("attached", "Orders")], finding);
-        Assert.Contains(Quote, seen.Text);
-        Assert.NotEqual(without.Inputs, seen.Inputs);
-    }
-
-    [Fact]
-    public void The_switch_shows_in_components_and_reads_from_either_setting()
-    {
-        Assert.False(StangentComponents.Find("attachments-in-checks").OnByDefault);
-        Assert.Equal("fsd.attachmentsInChecks", StangentComponents.Find("attachments-in-checks").Setting);
-        using var byKey = new TempRepo("version: 1\nfsd: { attachmentsInChecks: true }\n");
-        Assert.True(StangentComponents.IsOn(byKey.Repo.Config, "attachments-in-checks"));
-        using var byName = new TempRepo("version: 1\ncomponents: { attachments-in-checks: true }\n");
-        Assert.True(byName.Repo.Config.Fsd.AttachmentsInChecks);
-        using var neither = new TempRepo("version: 1\n");
-        Assert.False(StangentComponents.IsOn(neither.Repo.Config, "attachments-in-checks"));
-    }
-
-    [Fact]
-    public void A_link_records_which_attachment_file_sheet_and_row_and_the_evidence_names_them_and_trace_check_holds_it()
-    {
-        using var on = AppWith(true);
-        var index = SpecIndex.Load(on.Root);
-        AttachmentChecks.Load(index, on.Repo);
-        var section = index.Sections[("attached", "Orders")];
-        var entry = LinkRun.Entry("gap", "attached", section, Quote, SpecApp.Post, null, null, "judge", null, "why");
-        var fsd = entry["fsd"]!;
-        Assert.Equal(("A-0001", "rates.csv", "Rates", "3"), ((string)fsd["attachment"]!, (string)fsd["attachmentFile"]!, (string)fsd["attachmentSheet"]!, (string)fsd["attachmentRow"]!));
-        // A quote from the section's own words names no attachment.
-        Assert.Null(LinkRun.Entry("gap", "attached", section, "Every order sends a receipt.", SpecApp.Post, null, null, "judge", null, "why")["fsd"]!["attachment"]);
-
-        var trace = TraceFile.Empty();
-        trace["entries"]!.AsArray().Add((JsonNode)entry);
-        TraceFile.Save(on.Root, trace);
-        var check = TraceCheck.Run(on.Root, null, null, fix: false);
-        Assert.Empty(check["staleQuotes"]!.AsArray());
-        var saved = TraceFile.Load(on.Root)["entries"]![0]!;
-        Assert.Equal("A-0001", (string)saved["fsd"]!["attachment"]!);
-        var citation = saved["evidence"]![0]!["citation"]!;
-        Assert.Equal(("document", "A-0001", "rates.csv", "Rates", 3), ((string)citation["kind"]!, (string)citation["attachment"]!, (string)citation["file"]!, (string)citation["sheet"]!, (int)citation["row"]!));
-
-        // A row number typed wrong comes back to where the quote is, by code.
-        saved["fsd"]!["attachmentRow"] = "9";
-        var edited = TraceFile.Load(on.Root);
-        edited["entries"]![0]!["fsd"]!["attachmentRow"] = "9";
-        TraceFile.Save(on.Root, edited);
-        TraceCheck.Run(on.Root, null, null, fix: false);
-        Assert.Equal("3", (string)TraceFile.Load(on.Root)["entries"]![0]!["fsd"]!["attachmentRow"]!);
-
-        // The quote gone from the file is a stale quote, whatever the switch says.
-        File.WriteAllText(Path.Combine(FsdAttachments.Folder(FsdImport.DocDir(on.Root, "attached"), "A-0001"), "rates.csv"), "Tier,Fee\n");
-        Assert.NotEmpty(TraceCheck.Run(on.Root, null, null, fix: false)["staleQuotes"]!.AsArray());
-    }
+    const string Quote = "Silver tier fee is seven";
 
     [Fact]
     public void A_link_cant_name_a_path_outside_the_documents_own_files()
     {
-        using var on = AppWith(true);
+        using var on = Attached();
         var fsd = new JsonObject { ["doc"] = "attached", ["attachment"] = "A-0001", ["attachmentFile"] = "../../../stangent.yaml" };
         Assert.False(AttachmentChecks.Check(on.Root, fsd, "version: 1").Holds);
-    }
-
-    [Fact]
-    public void A_workbook_too_big_for_the_bundle_is_flagged_not_checked_in_the_report_and_the_bundle()
-    {
-        using var on = AppWith(true, chars: 5);
-        var index = SpecIndex.Load(on.Root);
-        AttachmentChecks.Load(index, on.Repo);
-        var block = AttachmentChecks.Block(index.Sections[("attached", "Orders")]);
-        Assert.Contains("A-0001", block);
-        Assert.Contains("not checked", block);
-        Assert.DoesNotContain(Quote, block);
-
-        // The report reads the setting as it was at import.
-        Import(WordWith("rates.xlsx", XlsxFixture.Rates()));
-        using var small = new TempRepo($"version: 1\nfsd: {{ attachmentChars: 5, archive: {{ name: a, path: '{archive.Root}', git: false }} }}\n");
-        var file = Path.Combine(small.Root, "fsd.docx");
-        File.WriteAllBytes(file, WordWith("rates.xlsx", XlsxFixture.Rates()));
-        FsdImport.Import(small.Repo, file, "fsd");
-        var report = File.ReadAllText(Path.Combine(FsdImport.DocDir(small.Root, "fsd"), ImportReport.FileName));
-        Assert.Contains("Not checked", report);
-        Assert.Contains("not checked: its", report);
-    }
-
-    [Fact]
-    public void A_changed_file_with_the_switch_on_means_a_new_run_on_promotion_and_off_it_doesnt()
-    {
-        static (bool Rerun, string Kind) Run(bool on)
-        {
-            using var app = AppWith(on);
-            var file = Path.Combine(app.Root, "shop.docx");
-            var runs = LinkRun.LoadRuns(app.Root);
-            var index = SpecIndex.Load(app.Root);
-            AttachmentChecks.Load(index, app.Repo);
-            runs[LinkRun.Key("attached", "Orders")] = new JsonObject { ["inputs"] = LinkRun.JudgeInputs(index.Sections[("attached", "Orders")], "attached", [], index, null, true), ["candidates"] = new JsonArray() };
-            File.WriteAllText(LinkRun.RunsFile(app.Root), CanonicalJson.Serialize(runs));
-            File.WriteAllBytes(file, WordWith("rates.xlsx", XlsxFixture.Rates("99"), text: "Every order sends a receipt.", heading: "Orders"));
-            FsdImport.Import(app.Repo, file, "attached");
-            var kind = (string)FsdVersions.Diff(app.Root, "attached")["sections"]!.AsArray().Single(e => (string?)e!["to"] == "Orders")!["kind"]!;
-            var promoted = FsdVersions.Promote(app.Repo, "attached", "Pat");
-            return (promoted["carried"]!["runAgain"]!.AsArray().Any(s => (string?)s == "Orders"), kind);
-        }
-        Assert.Equal((true, "modified"), Run(true));
-        Assert.Equal((false, "modified"), Run(false));
     }
 
     // ---- tickets ----

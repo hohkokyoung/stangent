@@ -1175,7 +1175,7 @@ public class FsdPdfTests
         var file = Path.Combine(repo.Root, "shop.pdf");
         File.WriteAllBytes(file, Outlined(("1 Orders", 0), ("2 Refunds", 0)));
         FsdImport.Import(repo.Repo, file);
-        var entry = LinkRun.Entry("gap", "shop", new JsonObject { ["id"] = "1", ["title"] = "Orders" }, "Text of page 1.", null, null, null, "code", null, null);
+        var entry = TraceStore.Entry("gap", "shop", new JsonObject { ["id"] = "1", ["title"] = "Orders" }, "Text of page 1.", null, null, null, "code", null, null);
         var trace = TraceFile.Empty();
         trace["entries"]!.AsArray().Add(entry);
         TraceFile.Save(repo.Root, trace);
@@ -1488,7 +1488,7 @@ public class FsdPdfTests
         File.WriteAllBytes(file, Outlined(("1 Orders", 0), ("2 Refunds", 0)));
         FsdImport.Import(repo.Repo, file);
         var trace = TraceFile.Empty();
-        trace["entries"]!.AsArray().Add(LinkRun.Entry("gap", "another-doc", new JsonObject { ["id"] = "1", ["title"] = "Orders" }, "Text.", null, null, null, "code", null, null));
+        trace["entries"]!.AsArray().Add(TraceStore.Entry("gap", "another-doc", new JsonObject { ["id"] = "1", ["title"] = "Orders" }, "Text.", null, null, null, "code", null, null));
         TraceFile.Save(repo.Root, trace);
         FsdImport.Import(repo.Repo, file, flat: true);
         foreach (var open in FsdVersions.Diff(repo.Root, "shop")["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful" && (string?)e["side"] == "candidate"))

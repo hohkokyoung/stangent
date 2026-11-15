@@ -30,19 +30,10 @@ public class SharedHeadTests
     }
 
     [Fact]
-    public void The_verifiers_and_judges_files_assemble_to_what_the_saved_hashes_cover()
+    public void The_verifiers_files_assemble_to_what_the_saved_hash_covers()
     {
         using var app = SavedWorkTests.App(out var verifierInput);
         Assert.Equal(Saved("verifier"), SavedWorkTests.Sha(verifierInput));
-
-        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
-        var stored = File.ReadAllText(Work(app, step, "judge.md"));
-        Assert.DoesNotContain(Bundles.Instructions("link-judge.md"), stored);
-        var judge = SharedHead.Assemble(stored);
-        Assert.Contains(Bundles.Instructions("link-judge.md"), judge);
-        // What JudgeInputs hashes: the judge's whole input, then the checker's instructions and schema.
-        var inputs = CanonicalJson.Hash(judge + Bundles.Instructions("agree-checker.md") + SchemaRegistry.EmbeddedText("agree-checker-output.v1.json"));
-        Assert.Equal(Saved("judge"), inputs);
     }
 
     [Fact]
@@ -62,12 +53,12 @@ public class SharedHeadTests
     [Fact]
     public void Only_the_first_line_is_a_pointer_and_an_unknown_one_is_refused()
     {
-        const string plain = "some source\n⟦stangent shared step instructions=link-judge.md schema=link-judge-output.v1.json⟧\n";
+        const string plain = "some source\n⟦stangent shared step instructions=page-writer.md schema=page-writer-output.v1.json⟧\n";
         Assert.Same(plain, SharedHead.Assemble(plain));
         Assert.Same(plain, SharedHead.Store(plain));
         Assert.Throws<StangentException>(() => SharedHead.Assemble("⟦stangent shared step instructions=other.md schema=x.json⟧\nrest"));
         // A pointer-shaped line in the unique part stays in the unique part.
-        var full = SharedHead.Step("agree-checker.md", "agree-checker-output.v1.json") + "⟦stangent shared step instructions=link-judge.md schema=link-judge-output.v1.json⟧\n";
+        var full = SharedHead.Step("page-verifier.md", "page-verifier-output.v1.json") + "⟦stangent shared step instructions=page-writer.md schema=page-writer-output.v1.json⟧\n";
         Assert.Equal(full, SharedHead.Assemble(SharedHead.Store(full)));
     }
 }

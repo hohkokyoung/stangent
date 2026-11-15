@@ -254,13 +254,13 @@ public static partial class PointFinder
 
     static IEnumerable<StartingPoint> Titles(TicketText text, TicketContext ctx)
     {
-        var names = ctx.Set.Pages.Select(p => (Page: p, Names: Candidates.PageNames(p, ctx.Index.Pages.GetValueOrDefault(p.Id)))).ToList();
-        var sections = ctx.Index.Sections.Values.Select(s => (Section: s, Words: Candidates.Words((string)s["title"]!))).Where(s => s.Words.Count > 0).ToList();
+        var names = ctx.Set.Pages.Select(p => (Page: p, Names: NameWords.PageNames(p, ctx.Index.Pages.GetValueOrDefault(p.Id)))).ToList();
+        var sections = ctx.Index.Sections.Values.Select(s => (Section: s, Words: NameWords.Words((string)s["title"]!))).Where(s => s.Words.Count > 0).ToList();
         foreach (var (where, body) in text.Prose)
             foreach (Match m in Quoted().Matches(body))
             {
                 var quote = m.Groups["q"].Value.Trim();
-                var words = Candidates.Words(quote);
+                var words = NameWords.Words(quote);
                 if (words.Count == 0) continue;
                 var pages = names.Where(n => n.Names.Any(w => w.SetEquals(words))).Select(n => n.Page)
                     .OrderBy(p => p.Kind == PageKind.Screen ? 0 : p.Kind == PageKind.Component ? 1 : 2).ThenBy(p => p.Id, StringComparer.Ordinal).ToList();

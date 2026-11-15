@@ -5,7 +5,6 @@ using Stangent.Core.State;
 using Stangent.Graph;
 using Stangent.Spec.Fsd;
 using Stangent.Spec.Pages;
-using Stangent.Spec.Requirements;
 using Stangent.Spec.Trace;
 
 namespace Stangent.Core.Tests;
@@ -393,26 +392,9 @@ public sealed class FsdVersionTests : IDisposable
 
     // ---- Carrying work across ----
 
-    static JsonObject Quote(string section, string text) => new() { ["doc"] = "shop", ["section"] = section, ["text"] = text, ["hash"] = TraceFile.QuoteHash(text) };
-
-    /// <summary>A feature as the real writer leaves it, holding one approved requirement quoting the section.</summary>
-    void Feature(string id, string section, string title, string text, string? parent = null)
-    {
-        var requirement = new JsonObject
-        {
-            ["id"] = "R-" + id[2..], ["title"] = "A rule", ["kind"] = "rule", ["statement"] = text, ["quotes"] = new JsonArray(Quote(section, text)), ["acceptance"] = new JsonArray(),
-            ["refers"] = new JsonArray(), ["status"] = "approved", ["check"] = "confirmed", ["note"] = null, ["hash"] = "h", ["decided_by"] = Pat,
-        };
-        RequirementFile.Save(Root, new JsonObject
-        {
-            ["version"] = 1, ["id"] = id, ["doc"] = "shop", ["section"] = section, ["title"] = title, ["parent"] = parent, ["children"] = new JsonArray(),
-            ["textHash"] = CanonicalJson.Hash(text), ["requirements"] = new JsonArray(requirement), ["definitions"] = new JsonArray(), ["journeys"] = new JsonArray(), ["background"] = new JsonArray(), ["retired"] = new JsonArray(),
-        });
-    }
-
     JsonObject Link(string section, string title, string quote, string decision = "agree")
     {
-        var entry = LinkRun.Entry("gap", "shop", new JsonObject { ["id"] = section, ["title"] = title }, quote, null, null, null, "code", null, null);
+        var entry = TraceStore.Entry("gap", "shop", new JsonObject { ["id"] = section, ["title"] = title }, quote, null, null, null, "code", null, null);
         entry["decision"] = decision;
         entry["decided_by"] = Pat;
         var trace = TraceFile.Load(Root);
@@ -424,12 +406,10 @@ public sealed class FsdVersionTests : IDisposable
     JsonObject Trace(int at = 0) => TraceFile.Load(Root)["entries"]![at]!.AsObject();
 
     [Fact]
-    public void A_moved_section_takes_its_links_decisions_requirements_and_questions_to_its_new_number()
+    public void A_moved_section_takes_its_links_and_decisions_to_its_new_number()
     {
         Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
         Link("2", "Veg", Pears);
-        Feature("F-0001", "2", "Veg", Pears);
-        RequirementFile.SaveQuestions(Root, "shop", [new JsonObject { ["id"] = "Q-0001", ["section"] = "2", ["text"] = "Which?", ["quotes"] = new JsonArray(Quote("2", Pears)), ["status"] = "open", ["answer"] = null }]);
         var oldId = (string)Trace()["id"]!;
 
         Import($"#! New\n{Dates}\n#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
@@ -440,17 +420,9 @@ public sealed class FsdVersionTests : IDisposable
         Assert.NotEqual(oldId, (string)entry["id"]!);
         Assert.Equal(TraceFile.EntryId("gap", "shop", "3", null, Pears, null), (string)entry["id"]!);
         Assert.Equal(oldId, (string)result["carried"]!["traceIds"]![0]!["from"]!);
-        var feature = RequirementFile.Features(Root, "shop").Single();
-        Assert.Equal("3", (string)feature["section"]!);
-        Assert.Equal("3", (string)feature["requirements"]![0]!["quotes"]![0]!["section"]!);
-        Assert.Equal(("approved", Pat), ((string)feature["requirements"]![0]!["status"]!, (string)feature["requirements"]![0]!["decided_by"]!));
-        var question = RequirementFile.Questions(Root, "shop").Single();
-        Assert.Equal("3", (string)question["section"]!);
-        Assert.Equal("3", (string)question["quotes"]![0]!["section"]!);
         // The trace check agrees: the id is the hash of the new link, and the section's there.
         var check = TraceCheck.Run(Root, null, null, fix: false);
         Assert.True((bool)check["ok"]!);
-        Assert.Contains("\"3\"", File.ReadAllText(Path.Combine(RequirementFile.DocDir(Root, "shop"), "index.yaml")), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -499,42 +471,6 @@ public sealed class FsdVersionTests : IDisposable
     }
 
     [Fact]
-    public void A_renumbered_section_keeps_its_paid_run_valid_and_a_renamed_one_says_it_runs_again()
-    {
-        Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
-        var sections = Current()["sections"]!.AsArray();
-        var runs = new JsonObject
-        {
-            ["shop#1"] = new JsonObject { ["inputs"] = RequirementRun.InputsOf(sections[0]!.AsObject(), "shop") },
-            ["shop#2"] = new JsonObject { ["inputs"] = RequirementRun.InputsOf(sections[1]!.AsObject(), "shop") },
-        };
-        Directory.CreateDirectory(RequirementFile.Dir(Root));
-        File.WriteAllText(RequirementFile.RunsFile(Root), CanonicalJson.Serialize(runs));
-
-        Import($"#! New\n{Dates}\n#! Fruit\n{Apples}\n#! Greens\n{Pears}\n");
-        var carried = FsdVersions.Promote(repo.Repo, "shop", Pat)["carried"]!;
-
-        // Fruit: only its number changed, so the saved items need no paid run.
-        Assert.Equal("current", RequirementRun.Prepare(repo.Repo, "shop", "2").Status);
-        // Greens: its title changed, which the AI reads.
-        Assert.NotEqual("current", RequirementRun.Prepare(repo.Repo, "shop", "3").Status);
-        Assert.Equal(["3"], carried["runAgain"]!.AsArray().Select(s => (string)s!));
-    }
-
-    [Fact]
-    public void A_stale_run_isnt_made_valid_by_a_move()
-    {
-        Import($"#! Fruit\n{Apples}\n");
-        Directory.CreateDirectory(RequirementFile.Dir(Root));
-        File.WriteAllText(RequirementFile.RunsFile(Root), CanonicalJson.Serialize(new JsonObject { ["shop#1"] = new JsonObject { ["inputs"] = "not the hash of this section" } }));
-
-        Import($"#! New\n{Dates}\n#! Fruit\n{Apples}\n");
-        FsdVersions.Promote(repo.Repo, "shop", Pat);
-
-        Assert.Equal("not the hash of this section", (string)RequirementRun.LoadRuns(Root)["shop#2"]!["inputs"]!);
-    }
-
-    [Fact]
     public void A_modified_section_goes_through_the_existing_drop_back_when_a_quote_changes()
     {
         Import($"#! Fruit\n{Apples} {Pears}\n");
@@ -552,12 +488,11 @@ public sealed class FsdVersionTests : IDisposable
     }
 
     [Fact]
-    public void A_removed_sections_items_are_reported_and_stay_out_of_reach_of_a_new_section_with_its_number()
+    public void A_removed_sections_entries_are_reported_and_stay_out_of_reach_of_a_new_section_with_its_number()
     {
         Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
         var veg = Id("2");
         var link = Link("2", "Veg", Pears);
-        Feature("F-0001", "2", "Veg", Pears);
 
         // Veg goes, and a different chapter takes its number.
         Import($"#! Fruit\n{Apples}\n#! Nuts\n{Plums}\n");
@@ -567,13 +502,7 @@ public sealed class FsdVersionTests : IDisposable
         Assert.Equal((veg, "2", true), ((string)removed["permanentId"]!, (string)removed["section"]!, (bool)removed["numberUsedAgain"]!));
         Assert.Equal([TraceFile.EntryId("gap", "shop", $"(removed {veg}) 2", null, Pears, null)], removed["traceEntries"]!.AsArray().Select(s => (string)s!));
         Assert.Equal((string)link["id"]!, (string)result["carried"]!["traceIds"]![0]!["from"]!);
-        Assert.Equal(["F-0001"], removed["features"]!.AsArray().Select(s => (string)s!));
-        Assert.Equal(["R-0001"], removed["requirements"]!.AsArray().Select(s => (string)s!));
-        // Never dropped: the items are still on file, under a mark no heading can be, and the new section 2 doesn't pick them up.
-        var feature = RequirementFile.Features(Root, "shop").Single();
-        Assert.Equal($"(removed {veg}) 2", (string)feature["section"]!);
-        Assert.Equal("approved", (string)feature["requirements"]![0]!["status"]!);
-        Assert.Null(LinkRun.Requirements(Root, "shop", Current()["sections"]![1]!.AsObject()));
+        // Never dropped: the entry is still on file, under a mark no heading can be, and the new section 2 doesn't pick it up.
         Assert.Equal($"(removed {veg}) 2", (string)Assert.Single(TraceFile.Load(Root)["entries"]!.AsArray())!["fsd"]!["section"]!);
     }
 
@@ -620,7 +549,7 @@ public sealed class FsdVersionTests : IDisposable
         Kept();
 
         // A judge's new build of the new section 2 doesn't reach it, and approving that chapter doesn't either.
-        LinkRun.ApplyEntries(Root, "shop", "2", []);
+        TraceStore.ApplyEntries(Root, "shop", "2", []);
         Assert.Equal(0, TraceCheck.ApproveChapter(Root, "shop", "2"));
         Kept();
     }
@@ -701,26 +630,6 @@ public sealed class FsdVersionTests : IDisposable
         Assert.Equal([("1", Apples), ("2", null)], entries[0]["candidates"]!.AsArray().Select(c => ((string)c!["from"]!, (string?)c["sentence"])));
     }
 
-    [Fact]
-    public void A_moved_feature_goes_under_its_new_parents_feature()
-    {
-        Import($"#! A\n{Apples}\n##! Kept\n{Pears}\n#! B\n{Plums}\n");
-        Feature("F-0001", "1", "A", Apples);
-        Feature("F-0002", "1.1", "Kept", Pears, parent: "F-0001");
-        Feature("F-0003", "2", "B", Plums);
-        var parent = RequirementFile.Features(Root, "shop")[0];
-        parent["children"]!.AsArray().Add((JsonNode)"F-0002");
-        RequirementFile.Save(Root, parent);
-
-        Import($"#! A\n{Apples}\n#! B\n{Plums}\n##! Kept\n{Pears}\n");
-        FsdVersions.Promote(repo.Repo, "shop", Pat);
-
-        var features = RequirementFile.Features(Root, "shop").ToDictionary(f => (string)f["id"]!);
-        Assert.Equal(("2.1", "F-0003"), ((string)features["F-0002"]["section"]!, (string)features["F-0002"]["parent"]!));
-        Assert.Empty(features["F-0001"]["children"]!.AsArray());
-        Assert.Equal(["F-0002"], features["F-0003"]["children"]!.AsArray().Select(c => (string)c!));
-    }
-
     // ---- The hard bar: saved paid work stays valid ----
 
     static string SonarrDir()
@@ -757,20 +666,15 @@ public sealed class FsdVersionTests : IDisposable
         var written = CanonicalJson.Serialize(AsItWasWritten(imported));
         Assert.Equal("c18cbded20fc31bbdcac45e8e71671f29efcac855516862246905a43b9f6a621", Sha(System.Text.Encoding.UTF8.GetBytes(written)));
 
-        // A document imported earlier, with saved runs and links: the state an owner's repo is in today.
+        // A document imported earlier, with links: the state an owner's repo is in today.
         File.WriteAllText(jsonPath, written);
         var v1 = JsonNode.Parse(written)!.AsObject();
         var withText = v1["sections"]!.AsArray().OfType<JsonObject>().Where(s => Sentences.Of((string)s["text"]!).Count > 0).ToList();
-        var index = SpecIndex.Load(Root);
-        var inputs = withText.ToDictionary(s => (string)s["id"]!, s => RequirementRun.InputsOf(s, "sonarr"));
-        var judged = withText.ToDictionary(s => (string)s["id"]!, s => LinkRun.JudgeInputs(s, "sonarr", [], index, null, findings: true));
         var linked = withText.ToDictionary(s => (string)s["id"]!, s => TraceFile.EntryId("gap", "sonarr", (string)s["id"]!, null, (string)s["text"]!, null));
-        Directory.CreateDirectory(RequirementFile.Dir(Root));
-        File.WriteAllText(RequirementFile.RunsFile(Root), CanonicalJson.Serialize(new JsonObject(inputs.Select(i => KeyValuePair.Create($"sonarr#{i.Key}", (JsonNode?)new JsonObject { ["inputs"] = i.Value })))));
         var trace = TraceFile.Empty();
-        trace["entries"]!.AsArray().Add(LinkRun.Entry("gap", "sonarr", withText[0], Sentences.Of((string)withText[0]["text"]!)[0].Text, null, null, null, "code", null, null));
+        trace["entries"]!.AsArray().Add(TraceStore.Entry("gap", "sonarr", withText[0], Sentences.Of((string)withText[0]["text"]!)[0].Text, null, null, null, "code", null, null));
         TraceFile.Save(Root, trace);
-        var saved = new[] { RequirementFile.RunsFile(Root), TraceFile.PathIn(Root), Path.Combine(dir, "document.md") }.ToDictionary(p => p, File.ReadAllBytes);
+        var saved = new[] { TraceFile.PathIn(Root), Path.Combine(dir, "document.md") }.ToDictionary(p => p, File.ReadAllBytes);
 
         // Its next import: the same file. It stays unchanged, and gets its ids.
         var again = FsdImport.Import(repo.Repo, file, "sonarr");
@@ -786,18 +690,10 @@ public sealed class FsdVersionTests : IDisposable
         Assert.Equal(written, CanonicalJson.Serialize(AsItWasWritten(upgraded)));
         foreach (var (path, bytes) in saved) Assert.Equal(bytes, File.ReadAllBytes(path));
 
-        // Every hash worked out again from the upgraded file is the one saved, so no paid step runs.
-        index = SpecIndex.Load(Root);
-        foreach (var s in upgraded["sections"]!.AsArray().OfType<JsonObject>().Where(s => inputs.ContainsKey((string)s["id"]!)))
-        {
-            var id = (string)s["id"]!;
-            Assert.Equal(inputs[id], RequirementRun.InputsOf(s, "sonarr"));
-            Assert.Equal(judged[id], LinkRun.JudgeInputs(s, "sonarr", [], index, null, findings: true));
-            Assert.Equal(linked[id], TraceFile.EntryId("gap", "sonarr", id, null, (string)s["text"]!, null));
-            Assert.Equal("current", RequirementRun.Prepare(repo.Repo, "sonarr", id).Status);
-        }
+        // Every link id worked out again from the upgraded file is the one saved.
+        foreach (var s in upgraded["sections"]!.AsArray().OfType<JsonObject>().Where(s => linked.ContainsKey((string)s["id"]!)))
+            Assert.Equal(linked[(string)s["id"]!], TraceFile.EntryId("gap", "sonarr", (string)s["id"]!, null, (string)s["text"]!, null));
         Assert.True((bool)TraceCheck.Run(Root, null, null, fix: false)["ok"]!);
-        Assert.False(Directory.Exists(Path.Combine(Root, ".stangent", "req", "sonarr")));
     }
 
     // ---- The pinned pair, and the planted measure ----

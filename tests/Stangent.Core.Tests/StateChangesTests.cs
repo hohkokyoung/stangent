@@ -3,7 +3,6 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Stangent.Core.Evidence;
 using Stangent.Core.State;
-using Stangent.Spec.Requirements;
 
 namespace Stangent.Core.Tests;
 
@@ -68,31 +67,31 @@ public partial class StateChangesTests
     public void Who_may_move_is_held_by_the_table()
     {
         using var temp = new TempRepo();
-        // Only a person approves (D99) or decides (D58); only a person confirms a bug (D96) or posts (D74).
-        foreach (var (kind, from, to) in new[] { (StateKinds.Requirement, "proposed", "approved"), (StateKinds.TraceDecision, "undecided", "agree"),
+        // Only a person promotes a document (D117) or decides (D58); only a person confirms a bug (D96) or posts (D74).
+        foreach (var (kind, from, to) in new[] { (StateKinds.FsdCandidate, "candidate", "promoted"), (StateKinds.TraceDecision, "undecided", "agree"),
             (StateKinds.TraceDecision, "agree", "defer"), (StateKinds.ProofConfirmation, "unconfirmed", "confirmed"), (StateKinds.DraftPosted, "unposted", "posted") })
         {
             Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, kind, "X-1", from, to, StateActor.Code("t"), "r"));
             Assert.True(StateChanges.Move(temp.Root, kind, "X-1", from, to, StateActor.Person("Pat"), "r"));
         }
         // Code alone starts an item, and a person doesn't run a step.
-        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.Requirement, "R-1", null, "proposed", StateActor.Person("Pat"), "r"));
+        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.FsdCandidate, "C-1", null, "candidate", StateActor.Person("Pat"), "r"));
         Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.PageRun, "p", "write", "verify", StateActor.Person("Pat"), "r"));
-        // A retired id never comes back.
-        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.Requirement, "R-1", "retired", "proposed", StateActor.Code("t"), "r"));
+        // A promoted candidate never comes back.
+        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.FsdCandidate, "C-1", "promoted", "candidate", StateActor.Code("t"), "r"));
     }
 
     [Fact]
     public void A_first_state_and_a_stay_are_judged_too()
     {
         using var temp = new TempRepo();
-        Assert.True(StateChanges.Move(temp.Root, StateKinds.Requirement, "R-1", null, "proposed", StateActor.Code("t"), "r"));
-        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.Requirement, "R-1", null, "approved", StateActor.Code("t"), "r"));
+        Assert.True(StateChanges.Move(temp.Root, StateKinds.FsdCandidate, "C-1", null, "candidate", StateActor.Code("t"), "r"));
+        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.FsdCandidate, "C-1", null, "promoted", StateActor.Code("t"), "r"));
         // Staying put changes nothing and adds no line, unless the table lists it (a second confirmation names a new person).
-        Assert.False(StateChanges.Move(temp.Root, StateKinds.Requirement, "R-1", "approved", "approved", StateActor.Code("t"), "r"));
-        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.Requirement, "R-1", "bad", "bad", StateActor.Code("t"), "r"));
+        Assert.False(StateChanges.Move(temp.Root, StateKinds.FsdCandidate, "C-1", "promoted", "promoted", StateActor.Code("t"), "r"));
+        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.FsdCandidate, "C-1", "bad", "bad", StateActor.Code("t"), "r"));
         Assert.True(StateChanges.Move(temp.Root, StateKinds.ProofConfirmation, "K-1", "confirmed", "confirmed", StateActor.Person("Lee"), "r"));
-        Assert.Single(StateChanges.History(temp.Root, StateKinds.Requirement, "R-1"));
+        Assert.Single(StateChanges.History(temp.Root, StateKinds.FsdCandidate, "C-1"));
     }
 
     [Fact]
@@ -108,9 +107,9 @@ public partial class StateChangesTests
 
         // A new object replacing an old one moves from the old one's state.
         var item = new JsonObject();
-        StateChanges.Apply(temp.Root, item, StateKinds.Requirement, "R-1", "proposed", StateActor.Code("t"), "changed", previous: new JsonObject { ["status"] = "approved" });
-        Assert.Equal("proposed", (string)item["status"]!);
-        Assert.Equal("approved", StateChanges.History(temp.Root, StateKinds.Requirement, "R-1")[0].From);
+        StateChanges.Apply(temp.Root, item, StateKinds.FsdCandidate, "C-1", "replaced", StateActor.Code("t"), "changed", previous: new JsonObject { ["state"] = "candidate" });
+        Assert.Equal("replaced", (string)item["state"]!);
+        Assert.Equal("candidate", StateChanges.History(temp.Root, StateKinds.FsdCandidate, "C-1")[0].From);
 
         // A lifecycle held elsewhere can't be written as a field.
         Assert.Equal("state_has_no_field", Assert.Throws<StangentException>(() =>
@@ -123,12 +122,12 @@ public partial class StateChangesTests
         using var temp = new TempRepo();
         var e = Assert.Throws<StangentException>(() => StateChanges.History(temp.Root, "nope", "x"));
         Assert.Equal(("unknown_state_kind", ExitCodes.Usage), (e.Code, e.ExitCode));
-        Assert.Empty(StateChanges.History(temp.Root, StateKinds.Question, "Q-1"));
+        Assert.Empty(StateChanges.History(temp.Root, StateKinds.FsdCandidate, "C-1"));
 
-        var path = Path.Combine(temp.Root, StateKinds.Get(StateKinds.Question).HistoryFile);
+        var path = Path.Combine(temp.Root, StateKinds.Get(StateKinds.FsdCandidate).HistoryFile);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, "{not json\n");
-        Assert.Equal("bad_state_history", Assert.Throws<StangentException>(() => StateChanges.History(temp.Root, StateKinds.Question, "Q-1")).Code);
+        Assert.Equal("bad_state_history", Assert.Throws<StangentException>(() => StateChanges.History(temp.Root, StateKinds.FsdCandidate, "C-1")).Code);
     }
 
     [Fact]
@@ -160,7 +159,7 @@ public partial class StateChangesTests
         git.WaitForExit();
         var check = Process.Start(new ProcessStartInfo("git", ["check-ignore", "-q", StateKinds.Get(name).HistoryFile]) { WorkingDirectory = temp.Root })!;
         check.WaitForExit();
-        var committed = name is StateKinds.Requirement or StateKinds.Question or StateKinds.TraceDecision or StateKinds.FindingSeverity or StateKinds.FindingVerdict or StateKinds.FindingReview or StateKinds.FsdCandidate or StateKinds.FsdSectionMatch or StateKinds.FsdSectionAnswer or StateKinds.FindingStanding or StateKinds.FindingSecurity or StateKinds.SectionCoverage;
+        var committed = name is StateKinds.TraceDecision or StateKinds.FindingSeverity or StateKinds.FindingReview or StateKinds.FsdCandidate or StateKinds.FsdSectionMatch or StateKinds.FsdSectionAnswer or StateKinds.FindingStanding or StateKinds.FindingSecurity;
         Assert.Equal(committed ? 1 : 0, check.ExitCode);   // check-ignore: 0 ignored, 1 not
     }
 
@@ -175,13 +174,12 @@ public partial class StateChangesTests
     {
         // Result fields: what one command returned, or a copy of someone else's value. Not lifecycles.
         [("src/Stangent.Spec/Trace/TraceFindings.cs", "verdict")] = (1, "the listing's field: a finding's verdict, or \"unverified\", for reading"),
-        [("src/Stangent.Spec/Trace/TraceFindings.cs", "review")] = (2, "the listing's field, and what `trace confirm` returned: copies of the entry's review"),
+        [("src/Stangent.Spec/Trace/TraceFindings.cs", "review")] = (1, "the listing's field: a copy of the entry's review"),
         [("src/Stangent.Core/Phases/PhaseCheck.cs", "status")] = (1, "the report copies what roadmap.md and a phase file say; people edit those"),
         [("src/Stangent.Core/Telemetry/TelemetryWriter.cs", "status")] = (1, "the event's result"),
         [("src/Stangent.Graph/GraphStore.cs", "status")] = (1, "how much git history the build could read, set once per build"),
         [("src/Stangent.Graph/Impact/ImpactAnalyzer.cs", "status")] = (2, "a report's field"),
         [("src/Stangent.Spec/Trace/FsdImpact.cs", "status")] = (1, "a report's field"),
-        [("src/Stangent.Spec/Trace/TraceFindings.cs", "security_state")] = (1, "the `previous` an answer moves from, so a typed answer isn't where it starts; the write itself is on the module"),
         [("src/Stangent.Spec/Trace/TraceFindings.cs", "severity")] = (1, "trace check's listing: a copy of the entry's severity"),
         [("src/Stangent.Spec/Trace/TraceFindings.cs", "decision")] = (1, "trace check's listing: a copy of the entry's decision"),
         [("src/Stangent.Spec/Fsd/FsdImport.cs", "status")] = (2, "what this import did: imported or unchanged"),
@@ -192,19 +190,15 @@ public partial class StateChangesTests
         [("src/Stangent.Cli/FsdCommands.cs", "verdict")] = (1, "an import that stopped says failed, in its envelope, not a finding's verdict"),
         [("src/Stangent.Spec/Pages/PageRun.cs", "status")] = (1, "RunStep's JSON: what this command returned"),
         [("src/Stangent.Spec/Pages/PageRun.cs", "outcome")] = (1, "a copy into a page's record of what the step returned"),
-        [("src/Stangent.Spec/Requirements/RequirementFile.cs", "status")] = (3, "views: copies of the feature file's status"),
         [("src/Stangent.Tickets/Ticket.cs", "status")] = (2, "Jira's status, copied at pull; Jira owns it"),
         [("src/Stangent.Tickets/Bundle.cs", "status")] = (1, "a copy of Jira's status"),
         [("src/Stangent.Tickets/Bundle.cs", "decision")] = (1, "a copy of the trace decision into a bundle"),
         [("src/Stangent.Tickets/Points.cs", "status")] = (5, "the file finder's last answer, worked out again from its inputs on every pull; its run's stage is the lifecycle"),
-        [("src/Stangent.Tickets/Match.cs", "status")] = (2, "copies of the finder's answer and a requirement's status"),
-        [("src/Stangent.Tickets/Match.cs", "outcome")] = (1, "what this match found; a new match writes a new record"),
         [("src/Stangent.Tickets/Proof/BugProof.cs", "outcome")] = (3, "one attempt's result, appended and never changed; the proof's own outcome is on the module"),
 
         // Lifecycle fields written beside the module, because the value isn't the state or it isn't a move.
-        [("src/Stangent.Spec/Fsd/LinkRun.cs", "decision")] = (2, "a new entry starts undecided, and a rebuilt entry carries its decision: neither is a move"),
-        [("src/Stangent.Spec/Fsd/LinkRun.cs", "decided_by")] = (2, "the same two, for who decided"),
-        [("src/Stangent.Spec/Requirements/RequirementRun.cs", "decided_by")] = (1, "a rebuilt item that kept its approval keeps who gave it: not a move"),
+        [("src/Stangent.Spec/Trace/TraceStore.cs", "decision")] = (2, "a new entry starts undecided, and a rebuilt entry carries its decision: neither is a move"),
+        [("src/Stangent.Spec/Trace/TraceStore.cs", "decided_by")] = (2, "the same two, for who decided"),
         [("src/Stangent.Spec/Fsd/FsdVersions.cs", "decided_by")] = (2, "holds a name from git, not a state (D58): one follows each move on the module"),
         [("src/Stangent.Spec/Trace/TraceCheck.cs", "decided_by")] = (1, "holds a name from git, not a state (D58); Attribute moves the decision on the module first"),
         [("src/Stangent.Spec/Trace/TraceCheck.cs", "severity_by")] = (1, "holds a name from git, not a state (D118); Attribute moves the severity on the module first"),
@@ -252,92 +246,6 @@ public partial class StateChangesTests
     [InlineData("""string[] keys = ["status", "stage"];""")]
     public void The_scan_leaves_reads_and_lists_alone(string line) => Assert.DoesNotMatch(LifecycleWrite(), line);
 
-    // ---- Requirement ids on the ledger ----
-
-    [Fact]
-    public void Requirement_ids_are_numbered_as_before_and_never_twice_in_parallel()
-    {
-        using var temp = new TempRepo();
-        Assert.Equal("R-0001", RequirementFile.NextId(temp.Root, "R"));
-        Assert.Equal("F-0001", RequirementFile.NextId(temp.Root, "F"));
-        Assert.Equal("R-0002", RequirementFile.NextId(temp.Root, "R"));
-
-        var ids = Enumerable.Range(0, 200).AsParallel().Select(_ => RequirementFile.NextId(temp.Root, "Q")).ToList();
-        Assert.Equal(200, ids.Distinct().Count());
-        Assert.Contains("Q-0200", ids);
-        // The ledger is committed; its lock stays out of specs/.
-        Assert.Equal(["ids.json"], Directory.EnumerateFiles(RequirementFile.Dir(temp.Root)).Select(Path.GetFileName));
-    }
-
-    [Fact]
-    public void A_repo_with_the_old_counter_goes_on_from_its_numbers()
-    {
-        using var temp = new TempRepo();
-        var old = Path.Combine(RequirementFile.Dir(temp.Root), "ids.yaml");
-        Directory.CreateDirectory(RequirementFile.Dir(temp.Root));
-        File.WriteAllText(old, "# The last id given out per kind (D99): assigned once, never reused.\nF: \"3\"\nR: \"41\"\n");
-
-        Assert.Equal("R-0042", RequirementFile.NextId(temp.Root, "R"));
-        Assert.False(File.Exists(old));
-        Assert.Equal("F-0004", RequirementFile.NextId(temp.Root, "F"));
-
-        // The old file back from a merge can raise the numbers, never lower them.
-        File.WriteAllText(old, "R: \"2\"\nF: \"9\"\n");
-        Assert.Equal("R-0043", RequirementFile.NextId(temp.Root, "R"));
-        Assert.Equal("F-0010", RequirementFile.NextId(temp.Root, "F"));
-    }
-
-    /// <summary>Writes a feature and a questions file as the real writers do, holding the ids named.</summary>
-    static void WriteLiveIds(string root)
-    {
-        var doc = RequirementFile.DocDir(root, "fsd");
-        Directory.CreateDirectory(doc);
-        File.WriteAllText(Path.Combine(doc, "F-0002.yaml"), YamlForm.Write(new JsonObject
-        {
-            ["version"] = 1, ["id"] = "F-0002", ["doc"] = "fsd", ["title"] = "id: R-0099",
-            ["requirements"] = new JsonArray(new JsonObject { ["id"] = "R-0007", ["title"] = "Pay" }),
-            ["definitions"] = new JsonArray(new JsonObject { ["id"] = "D-0003", ["name"] = "Fee" }),
-            ["journeys"] = new JsonArray(new JsonObject { ["id"] = "J-0004", ["scenarios"] = new JsonArray(new JsonObject { ["id"] = "S-0005", ["title"] = "Happy" }) }),
-            ["retired"] = new JsonArray(new JsonObject { ["id"] = "R-0009", ["title"] = "Gone" }),
-        }, "A feature."));
-        RequirementFile.SaveQuestions(root, "fsd", [new JsonObject { ["id"] = "Q-0006", ["text"] = "Which?" }]);
-    }
-
-    [Fact]
-    public void A_deleted_ledger_never_gives_out_a_live_id_again()
-    {
-        using var temp = new TempRepo();
-        Assert.Equal("R-0001", RequirementFile.NextId(temp.Root, "R"));
-        WriteLiveIds(temp.Root);
-        var path = Path.Combine(RequirementFile.Dir(temp.Root), "ids.json");
-        File.Delete(path);
-
-        Assert.Equal("R-0010", RequirementFile.NextId(temp.Root, "R"));
-
-        // The recreated ledger holds every kind's live ids, not only the kind asked for.
-        var ledger = new PermanentIds(path);
-        Assert.Contains("F-0002", ledger.Active("F"));
-        Assert.Contains("D-0003", ledger.Active("D"));
-        Assert.Contains("J-0004", ledger.Active("J"));
-        Assert.Contains("S-0005", ledger.Active("S"));
-        Assert.Contains("Q-0006", ledger.Active("Q"));
-        Assert.Contains("R-0009", ledger.Active("R"));
-        Assert.Equal("F-0003", RequirementFile.NextId(temp.Root, "F"));
-        Assert.Equal("Q-0007", RequirementFile.NextId(temp.Root, "Q"));
-    }
-
-    [Fact]
-    public void A_ledger_behind_the_feature_files_catches_up_and_one_ahead_stays()
-    {
-        using var temp = new TempRepo();
-        Assert.Equal("R-0001", RequirementFile.NextId(temp.Root, "R"));
-        WriteLiveIds(temp.Root);
-        Assert.Equal("R-0010", RequirementFile.NextId(temp.Root, "R"));
-
-        var path = Path.Combine(RequirementFile.Dir(temp.Root), "ids.json");
-        new PermanentIds(path).Raise("S", "S-{0:D4}", 40);
-        Assert.Equal("S-0041", RequirementFile.NextId(temp.Root, "S"));
-    }
 
     static readonly StateActor Promote = StateActor.Code("promote");
 

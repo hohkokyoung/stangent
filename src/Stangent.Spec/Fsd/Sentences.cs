@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Stangent.Spec.Pages;
 
-namespace Stangent.Spec.Requirements;
+namespace Stangent.Spec.Fsd;
 
 /// <summary>One thing an FSD section says: a sentence, or a table row with its cells.</summary>
 public sealed record Sentence(string Text, IReadOnlyList<string>? Cells = null);

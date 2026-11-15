@@ -24,7 +24,7 @@ public class TraceLinksTests
     }
 
     static JsonObject Agree(string statement = "R1", JsonObject? section = null) =>
-        LinkRun.Entry("agree", "shop", section ?? First, Sentence, SpecApp.Post, statement, "Orders over 100 are refused", "judge", "confirmed", null);
+        TraceStore.Entry("agree", "shop", section ?? First, Sentence, SpecApp.Post, statement, "Orders over 100 are refused", "judge", "confirmed", null);
 
     static void Save(SpecApp app, params JsonObject[] entries)
     {
@@ -69,7 +69,7 @@ public class TraceLinksTests
     public void A_finding_shows_its_id_and_the_same_lines_its_evidence_cites()
     {
         using var app = App();
-        Save(app, LinkRun.Entry("conflict", "shop", First, Sentence, SpecApp.Post, "R1", "Orders over 100 are refused", "judge", null, "FSD 50, code 100"));
+        Save(app, TraceStore.Entry("conflict", "shop", First, Sentence, SpecApp.Post, "R1", "Orders over 100 are refused", "judge", null, "FSD 50, code 100"));
         var graph = GraphStore.Load(GraphStore.PathFor(app.Repo))!;
         Assert.True((bool)TraceCheck.Run(app.Root, graph, null, false)["ok"]!);
         var link = Only(app);
@@ -84,7 +84,7 @@ public class TraceLinksTests
     public void A_link_with_no_page_statement_has_no_code_and_says_so()
     {
         using var app = App();
-        Save(app, LinkRun.Entry("gap", "shop", First, Sentence, null, null, null, "judge", null, "not on any page"));
+        Save(app, TraceStore.Entry("gap", "shop", First, Sentence, null, null, null, "judge", null, "not on any page"));
         var link = Only(app);
         Assert.Null(link["page"]);
         Assert.Empty(link["code"]!.AsArray());
@@ -136,7 +136,7 @@ public class TraceLinksTests
     {
         using var app = App();
         var second = new JsonObject { ["id"] = "2", ["title"] = "Other", ["permanentId"] = "S-0002" };
-        var gap = LinkRun.Entry("gap", "shop", First, "Another sentence.", null, null, null, "judge", null, "none");
+        var gap = TraceStore.Entry("gap", "shop", First, "Another sentence.", null, null, null, "judge", null, "none");
         Save(app, Agree(section: second), gap, Agree());
 
         var all = TraceLinks.Run(app.Root, "shop", null);

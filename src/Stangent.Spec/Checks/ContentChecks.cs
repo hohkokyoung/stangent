@@ -2,7 +2,6 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Stangent.Spec.Fsd;
 using Stangent.Spec.Pages;
-using Stangent.Spec.Requirements;
 using Stangent.Spec.Trace;
 
 namespace Stangent.Spec.Checks;
@@ -75,33 +74,11 @@ public static partial class ContentChecks
                 Problem("broken-link", TraceFileName, $"link `{id}` points at {statement} of `{pageId}`, which that page doesn't have");
         }
 
-        var requirementIds = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var docId in index.Sections.Keys.Select(k => k.Doc).Distinct(StringComparer.Ordinal))
-            foreach (var feature in RequirementFile.Features(root, docId))
-                foreach (var id in Ids(feature))
-                {
-                    var here = (string)feature["id"]!;
-                    if (requirementIds.TryGetValue(id, out var first)) Problem("duplicate-requirement-id", here, $"id `{id}` is also in {first}");
-                    else requirementIds[id] = here;
-                }
-
         return new JsonObject
         {
             ["ok"] = problems.Count == 0,
-            ["counts"] = new JsonObject { ["pages"] = seenPages.Count, ["links"] = entries.Count, ["requirementIds"] = requirementIds.Count, ["problems"] = problems.Count, ["linksToPagesNotWritten"] = notWritten.Count },
+            ["counts"] = new JsonObject { ["pages"] = seenPages.Count, ["links"] = entries.Count, ["problems"] = problems.Count, ["linksToPagesNotWritten"] = notWritten.Count },
             ["problems"] = new JsonArray([.. problems.Select(p => (JsonNode)p)]),
         };
-    }
-
-    /// <summary>Every <c>id</c> nested in a feature, not its own. A reference to an id elsewhere is stored under another key.</summary>
-    static IEnumerable<string> Ids(JsonObject feature)
-    {
-        IEnumerable<string> Walk(JsonNode? node) => node switch
-        {
-            JsonObject o => (o["id"] is JsonValue v && v.TryGetValue<string>(out var id) ? [id] : Array.Empty<string>()).Concat(o.Where(p => p.Key != "id").SelectMany(p => Walk(p.Value))),
-            JsonArray a => a.SelectMany(Walk),
-            _ => [],
-        };
-        return feature.Where(p => p.Key != "id").SelectMany(p => Walk(p.Value));
     }
 }

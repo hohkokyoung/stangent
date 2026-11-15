@@ -46,7 +46,7 @@ public sealed class StangentConfig
         public string? Model { get; set; }
         /// <summary>Claude Code's effort level for every AI step: low, medium, high, xhigh or max (D161).</summary>
         public string? Effort { get; set; }
-        /// <summary>Per-step settings by agent name (<c>stangent-link-judge</c>); either field may be left to the global one.</summary>
+        /// <summary>Per-step settings by agent name (<c>stangent-fsd-reviewer</c>); either field may be left to the global one.</summary>
         public Dictionary<string, AiStepConfig> Steps { get; set; } = [];
     }
 
@@ -89,10 +89,6 @@ public sealed class StangentConfig
         /// <summary>A point with this many distinct callers or more is included but not walked into (0: off).</summary>
         public int HubCallers { get; set; } = 10;
         public int MaxBundleChars { get; set; } = 260_000;
-        /// <summary><c>spec ask</c> (E.2). Off by default: nothing has shown it helps.</summary>
-        public bool Ask { get; set; }
-        /// <summary><c>spec ask</c>: the most pages one answer's bundle holds. A stated setting, not a measured one.</summary>
-        public int AskMaxPages { get; set; } = 5;
     }
 
     /// <summary>
@@ -124,33 +120,19 @@ public sealed class StangentConfig
         /// <summary>Discrepancy findings (gap, conflict, undocumented) in <c>specs/trace.yaml</c>. Off by default: Phase
         /// 2b's "not too noisy" bar failed on Sonarr (D57, D68), so only links are recorded until a project turns them on.</summary>
         public bool Findings { get; set; }
-        /// <summary>The disprove step (D119): a second, fresh agent tries to refute each finding from the code. Off by default, as
-        /// <see cref="Findings"/> is, so a saved run stays as it is until a project asks. It reaches no link's input hash.</summary>
-        public bool Disprove { get; set; }
-        /// <summary>Benchmarks only, until a project with a proper FSD is found (D99): treats proposed requirements as approved,
-        /// and every result made with it says so. Off by default, and never for a real project.</summary>
-        public bool SkipApproval { get; set; }
         /// <summary><c>fsd export</c>: a chapter longer than this many lines is cut at its next heading level (D122). <c>--max-lines</c> overrides it.</summary>
         public int ExportMaxLines { get; set; } = 1500;
         /// <summary><c>fsd review</c>'s cap per run (D341): turns and dollars, its one retry inside it. D321 used 105K tokens, Kavita 205–242K.</summary>
         public ReviewBudgetConfig ReviewBudget { get; set; } = new();
         /// <summary>How many review runs <c>fsd review-merge</c> unions (D341, D324: two merged found 28–29 of 30).</summary>
         public int ReviewRuns { get; set; } = 2;
-        /// <summary>A section's attachments in the link judge's and the disprove step's bundles, and a quote from one accepted (D123). Off by default: with it off no bundle or hash changes.</summary>
-        public bool AttachmentsInChecks { get; set; }
         /// <summary>Files with no place in a document's text get a section of their own at its end (I.8, D126). Off by default: on, such a document has one more section, so its text and sections change.</summary>
         public bool AttachmentHome { get; set; }
-        /// <summary>With <see cref="AttachmentsInChecks"/> on, an attachment holding more text than this stays out of the bundle and reads "not checked" (D123). A stated setting, not a measured one.</summary>
+        /// <summary>An attachment holding more text than this is marked "not checked" in the import report and its record (D123). A stated setting, not a measured one.</summary>
         public int AttachmentChars { get; set; } = 40000;
         public ExcelConfig Excel { get; set; } = new();
         /// <summary>Table facts compared with the code (C.2, D124): a second route to code, off by default until the owner answers D68's question. Off, <c>graph build</c> reads no enums and <c>fsd compare-tables</c> writes nothing.</summary>
         public bool CompareTables { get; set; }
-        /// <summary>The link judge can also say <c>partial</c> and <c>unclear</c> (C.4, D124). Off by default: with it off no bundle or hash changes.</summary>
-        public bool JudgeFinerVerdicts { get; set; }
-        /// <summary>The link judge's unit is a run of small neighbouring sections under one parent (C.6, D124). Off by default: with it off no bundle or hash changes.</summary>
-        public bool GroupSections { get; set; }
-        /// <summary>With <see cref="GroupSections"/> on, the most characters of section text one unit holds. A stated setting, not a measured one.</summary>
-        public int GroupMaxChars { get; set; } = 4000;
     }
 
     /// <summary>When a workbook is flagged as very large in the import report (D123). It's still imported; these only say when to look. Stated settings, not measured ones.</summary>
@@ -354,9 +336,14 @@ public sealed class StangentRepo
         }
         catch (YamlException e)
         {
-            throw new StangentException("invalid_config", $"{path}: {e.Message}");
+            // A setting cut with the old link route (D342) says so, rather than only that YAML didn't know it.
+            var cut = CutKeys.FirstOrDefault(k => e.Message.Contains($"Property '{k}' not found", StringComparison.Ordinal));
+            throw new StangentException("invalid_config", cut is null ? $"{path}: {e.Message}" : $"{path}: {e.Message} `{cut}` was cut with the old link route (D342); take it out of stangent.yaml.");
         }
     }
+
+    /// <summary>The <c>fsd:</c> and <c>spec:</c> settings D342 cut, named in the error a stangent.yaml still holding one gets.</summary>
+    static readonly string[] CutKeys = ["disprove", "skipApproval", "attachmentsInChecks", "judgeFinerVerdicts", "groupSections", "groupMaxChars", "ask", "askMaxPages"];
 
     static void AddGitIgnoreLines(string path)
     {

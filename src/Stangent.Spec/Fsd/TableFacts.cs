@@ -75,7 +75,7 @@ public static class TableFacts
         {
             bool Replaced(JsonObject e) => (string?)e["state"] == TraceFile.TableFact && (string?)e["fsd"]?["doc"] == doc
                 && !failed.Contains($"{(string?)e["table_fact"]?["table"]}\u0001{(string?)e["table_fact"]?["sheet"]}\u0001{(string?)e["table_fact"]?["column"]}\u0001{(string?)e["table_fact"]?["kind"]}");
-            LinkRun.ApplyEntries(root, doc, null, entries, Replaced);
+            TraceStore.ApplyEntries(root, doc, null, entries, Replaced);
         }
         var mapped = (map?.Tables ?? []).Select(m => (m.Table, m.Sheet)).ToHashSet();
         result["counts"] = new JsonObject
@@ -176,7 +176,7 @@ public static class TableFacts
         CodeFact? atFact, CodeTarget target, CodeLines lines, string note)
     {
         var quote = row is null ? table.Columns[cell] : row.Cells[Math.Min(cell, row.Cells.Count - 1)];
-        var e = LinkRun.Entry(TraceFile.TableFact, doc, table.Section, quote, null, null, null, "code", null, note);
+        var e = TraceStore.Entry(TraceFile.TableFact, doc, table.Section, quote, null, null, null, "code", null, note);
         var fsd = (JsonObject)e["fsd"]!;
         if (table.AttachmentFile is not null)
         {

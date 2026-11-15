@@ -64,7 +64,7 @@ public sealed class WholeFlow : IDisposable
     /// <summary>The flow with these settings added, as far as what's left on can take it (D121): the rest of the stages need findings to act on.</summary>
     public static WholeFlow With(string extraConfig) => new(extraConfig);
 
-    public const string SwitchedOn = "components: { table-facts: true, judge-finer-verdicts: true, group-sections: true, spec-ask: true, disprove: true }";
+    public const string SwitchedOn = "components: { table-facts: true }";
 
     /// <summary>The flow with what's built switched off turned on (D124): the fake AI answers each variant, and nothing real runs.</summary>
     public static WholeFlow AllSwitchedOn() => new(SwitchedOn, allOn: true);
@@ -76,8 +76,8 @@ public sealed class WholeFlow : IDisposable
     {
         this.extraConfig = extraConfig;
         this.allOn = allOn;
-        Action[] stages = allOn ? [SetUp, ReferencePages, Import, ComparedTables, LinksOn, Asked] : extraConfig is null
-            ? [SetUp, ReferencePages, Import, LinksAndFindings, Disprove, PersonDecides, Impact, NewVersion, Regenerate, WholeResult, ExcelAndEmbeddedFiles]
+        Action[] stages = allOn ? [SetUp, ReferencePages, Import, ComparedTables] : extraConfig is null
+            ? [SetUp, ReferencePages, Import, LinksAndFindings, PersonDecides, Impact, NewVersion, Regenerate, WholeResult, ExcelAndEmbeddedFiles]
             : [SetUp, ReferencePages, Import, LinksAndFindings, Impact];
         for (var i = 0; i < stages.Length; i++)
         {
@@ -123,7 +123,7 @@ public sealed class WholeFlow : IDisposable
     void SetUp()
     {
         Append(".gitignore", "bin/\nobj/\n");   // as a real repo has; the fixture's graph build restores packages
-        var yaml = File.ReadAllText(Path.Combine(Root, "stangent.yaml")).TrimEnd() + $"\n{FsdConfig(disprove: false)}\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n  aiPoints: false\n";
+        var yaml = File.ReadAllText(Path.Combine(Root, "stangent.yaml")).TrimEnd() + $"\n{FsdConfig()}\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n  aiPoints: false\n";
         if (extraConfig is not null) yaml = yaml.TrimEnd() + $"\n{extraConfig}\n";
         File.WriteAllText(Path.Combine(Root, "stangent.yaml"), yaml);
         if (allOn)
@@ -138,7 +138,7 @@ public sealed class WholeFlow : IDisposable
         Saw["graph"] = Ok("graph", "build");
     }
 
-    string FsdConfig(bool disprove) => $"fsd: {{ archive: {{ name: docs, path: '{archive}' }}, findings: true, disprove: {(disprove ? "true" : "false")} }}";
+    string FsdConfig() => $"fsd: {{ archive: {{ name: docs, path: '{archive}' }}, findings: true }}";
 
     void ReferencePages()
     {
@@ -182,90 +182,32 @@ public sealed class WholeFlow : IDisposable
         File.Delete(pdfFile);
     }
 
+    /// <summary>The links and findings as the old link route left them in specs/trace.yaml (cut by D342): written by code here, then checked as CI checks them.</summary>
     void LinksAndFindings()
     {
-        Saw["candidates"] = Ok("fsd", "candidates");
-
-        var step = Ok("fsd", "prepare", "shop", "1");
-        Saw["judge.prepare"] = step;
-        Saw["judge.bundle"] = SharedHead.Assemble(File.ReadAllText(Path.Combine(Root, Path.GetDirectoryName((string)step["next"]!["output"]!)!, "judge.md")));
-        // First a made-up quote: code refuses it and gives one retry.
-        Answer(step, Links(
-            Link("conflict", "Orders over 75 need approval.", Post, "R1", "Every order is placed", "FSD 75, code 1")));
-        var retry = Run("fsd", "check", "shop", "1");
-        Saw["judge.retry"] = retry.Envelope;
-        Answer(retry.Envelope["result"]!, Links(
-            Link("agree", FsdAgree, Orders, "A1", "The Place button submits the order."),
-            Link("agree", FsdReceipt, Post, "E1", "which sends a receipt"),
-            Link("agree", FsdBack, Post, "S1", "returns the placed order"),
-            Link("conflict", FsdConflict, Post, "R1", "Every order is placed with a total of 1.", "FSD says over 50 need approval; the code has no such rule."),
-            Link("gap", FsdGap, Post, null, null, "No statement says how a receipt is delivered.")));
-        step = Ok("fsd", "check", "shop", "1");
-        Saw["judge.confirm"] = step;
-        Answer(step, new JsonObject { ["checks"] = new JsonArray([.. new[] { "K1", "K2", "K3" }.Select(k => (JsonNode)new JsonObject { ["link"] = k, ["verdict"] = "confirm", ["note"] = "same" })]) });
-        Saw["judge.recorded"] = Ok("fsd", "check", "shop", "1");
-
-        Judge("2", Links(Link("conflict", FsdStock, Stock, "S1", "The screen shows a Stock button.", "A button, not a count.")));
-        Judge("3", Links(Link("conflict", FsdCheckout, Checkout, "A1", "The checkout route places an order", "No screen, a route.")));
-        step = Judge("4", Links(Link("agree", FsdLegacy, Legacy, "A1", "A caller places an order through the legacy route.")));
-        Answer(step, new JsonObject { ["checks"] = new JsonArray(new JsonObject { ["link"] = "K1", ["verdict"] = "confirm", ["note"] = "same" }) });
-        Ok("fsd", "check", "shop", "4");
+        var findings = StangentRepo.Discover(Root).Config.Fsd.Findings;
+        Section("1", [
+            Entry("agree", "1", FsdAgree, Orders, "A1", "The Place button submits the order.", "confirmed"),
+            Entry("agree", "1", FsdReceipt, Post, "E1", "which sends a receipt", "confirmed"),
+            Entry("agree", "1", FsdBack, Post, "S1", "returns the placed order", "confirmed"),
+            .. findings ? new[] {
+                Entry("conflict", "1", FsdConflict, Post, "R1", "Every order is placed with a total of 1.", note: "FSD says over 50 need approval; the code has no such rule."),
+                Entry("gap", "1", FsdGap, Post, null, null, note: "No statement says how a receipt is delivered.") } : []]);
+        if (findings)
+        {
+            Section("2", [Entry("conflict", "2", FsdStock, Stock, "S1", "The screen shows a Stock button.", note: "A button, not a count.")]);
+            Section("3", [Entry("conflict", "3", FsdCheckout, Checkout, "A1", "The checkout route places an order", note: "No screen, a route.")]);
+        }
+        Section("4", [Entry("agree", "4", FsdLegacy, Legacy, "A1", "A caller places an order through the legacy route.", "confirmed")]);
 
         Saw["check.links"] = Check();
         Saw["trace.links"] = Trace();
     }
 
-    /// <summary>The judge's first answer for a section; returns the check's next step.</summary>
-    JsonNode Judge(string section, JsonObject answer)
-    {
-        Answer(Ok("fsd", "prepare", "shop", section), answer);
-        return Ok("fsd", "check", "shop", section);
-    }
+    JsonObject Entry(string state, string section, string fsd, string page, string? statement, string? pageQuote, string? check = null, string note = "n") =>
+        TraceStore.Entry(state, "shop", SpecIndex.Load(Root).Sections[("shop", section)], fsd, page, statement, pageQuote, "judge", check, state == "agree" ? null : note);
 
-    void Disprove()
-    {
-        Saw["runs.before-disprove"] = Runs();
-        File.WriteAllText(Path.Combine(Root, "stangent.yaml"), File.ReadAllText(Path.Combine(Root, "stangent.yaml")).Replace(FsdConfig(false), FsdConfig(true)));
-        Commit("turn the disprove step on");
-
-        Saw["rejudge"] = Ok("fsd", "prepare", "shop", "3");     // in no link's input hash: nothing is judged again
-
-        const string created = "public Order PlaceOrder(string customer, decimal total)";
-        var conflict = Quoted("stands", "Shop.Core/Orders.cs", 28, created);
-        var gap = Quoted("page-gap", "Shop.Core/Orders.cs", 31, "Publish(new OrderPlaced(order.Id));");
-        Saw["disprove.bundle"] = AnswerFindings("1", gap, conflict);
-        AnswerFindings("2", Quoted("refuted", "Shop.Web/react-app/src/StockPage.tsx", 3, "return <button onClick={load}>Stock</button>;"));
-        AnswerFindings("3", Quoted("refuted", "Shop.Web/Controllers/CheckoutController.cs", 8, "public IActionResult Index() => Content(orders.PlaceOrder(\"web\", 2m).Customer);"));
-        Saw["disprove.none"] = Ok("fsd", "disprove", "prepare", "shop", "1");
-
-        Saw["check.disprove"] = Check();
-        Saw["trace.disprove"] = Trace();
-
-        var refuted = Find(Trace(), FsdStock)!;
-        var sentBack = Find(Trace(), FsdCheckout)!;
-        Saw["confirm"] = Ok("trace", "confirm", (string)refuted["finding"]!, "--why", "The button line is what the FSD asks for.");
-        Saw["send-back"] = Ok("trace", "send-back", (string)sentBack["finding"]!, "--why", "The route isn't a screen; the BA should read this.");
-        Saw["check.reviewed"] = Check();
-        Saw["trace.reviewed"] = Trace();
-        Saw["history.confirm"] = Ok("state", "history", "finding-review", (string)refuted["id"]!);
-        Saw["history.send-back"] = Ok("state", "history", "finding-review", (string)sentBack["id"]!);
-        Saw["history.verdict"] = Ok("state", "history", "finding-verdict", (string)refuted["id"]!);
-    }
-
-    /// <summary>Answers a section's findings, in the order disprove asks, by which FSD sentence each bundle holds; returns the first bundle.</summary>
-    string AnswerFindings(string section, params JsonObject[] answers)
-    {
-        string? first = null;
-        for (var i = 0; i < answers.Length; i++)
-        {
-            var step = Ok("fsd", "disprove", "prepare", "shop", section);
-            if (step["next"] is null) throw new InvalidOperationException($"section {section}, answer {i}: {step.ToJsonString()}");
-            first ??= SharedHead.Assemble(File.ReadAllText(Path.Combine(Root, Path.GetDirectoryName((string)step["next"]!["output"]!)!, "bundle.md")));
-            Answer(step, answers[i]);
-            Ok("fsd", "disprove", "check", "shop", section);
-        }
-        return first!;
-    }
+    void Section(string section, JsonObject[] entries) => TraceStore.ApplyEntries(Root, "shop", section, entries);
 
     void PersonDecides()
     {
@@ -309,7 +251,6 @@ public sealed class WholeFlow : IDisposable
     {
         Commit("before the new version");
         var beforeImport = Git("rev-parse", "HEAD");
-        Saw["runs.before-promote"] = Runs();
         Saw["ids.before"] = Trace();
         var file = Path.Combine(Root, "shop.docx");
         File.WriteAllBytes(file, Version2());
@@ -326,19 +267,12 @@ public sealed class WholeFlow : IDisposable
         Saw["promote"] = Ok("fsd", "promote", "shop");
         Saw["document.v2"] = Document("shop");
         Saw["trace.promoted"] = Trace();
-        Saw["runs.promoted"] = Runs();
         Saw["history.dropped"] = Ok("state", "history", "trace-decision", (string)Find(Trace(), FsdConflict)!["id"]!);
         Saw["check.promoted"] = Check();
-        Saw["rejudge.moved"] = Ok("fsd", "prepare", "shop", "2.1");
-        Saw["rejudge.unchanged"] = Ok("fsd", "prepare", "shop", "3");
-        var stock = Find(Trace(), FsdStock)!;
-        Saw["history.moved"] = Ok("state", "history", "finding-review", (string)stock["id"]!);
-        Saw["history.moved.finding"] = Ok("state", "history", "finding-review", (string)stock["finding"]!);
         Commit("the new version");
         // CI on that PR: a promotion mustn't read as typed decisions.
         Saw["check.promoted.base"] = Check("--base", beforeImport);
         Saw["attribute.promoted"] = Ok("trace", "attribute", "--base", beforeImport, "--by", Person);
-        Saw["prepare.number-used-again"] = Ok("fsd", "prepare", "shop", "4");
         Commit("after the merge");
     }
 
@@ -351,7 +285,6 @@ public sealed class WholeFlow : IDisposable
         Commit("code moves");
         Saw["graph.2"] = Ok("graph", "build");
         Saw["stale.moved"] = Ok("spec", "stale");
-        Saw["runs.before-regenerate"] = Runs();
 
         var step = Ok("spec", "prepare", Post);
         Saw["regenerate.prepare"] = step;
@@ -368,7 +301,6 @@ public sealed class WholeFlow : IDisposable
         Saw["content.check"] = Ok("spec", "content-check");
         Saw["check.fixed"] = Check("--fix");
         Saw["trace.fixed"] = Trace();
-        Saw["runs.regenerated"] = Runs();
         Saw["cite"] = Ok("spec", "cite");
         Saw["checkout.lines"] = PageFile(Checkout, ".lines.json");
     }
@@ -377,40 +309,17 @@ public sealed class WholeFlow : IDisposable
     {
         Commit("the new page");
         var before = Git("rev-parse", "HEAD");
-        // A person deals with what the new version and the new page left: the link on the removed section goes, section 1 is judged again.
+        // A person deals with what the new version and the new page left: the link on the removed section goes.
         Edit(trace =>
         {
             var removed = trace["entries"]!.AsArray().First(e => ((string?)e!["fsd"]?["section"])?.StartsWith("(removed", StringComparison.Ordinal) == true);
             trace["entries"]!.AsArray().Remove(removed);
         });
-        var step = Ok("fsd", "prepare", "shop", "1");
-        Saw["rejudge.1"] = step;
-        Answer(step, Links(
-            Link("agree", FsdAgree, Orders, "A1", "The Place button submits the order."),
-            Link("agree", FsdReceipt, Post, "E1", "which sends a receipt"),
-            Link("conflict", FsdConflict.Replace("50", "75"), Post, "R1", "Every order is placed with a total of 1.", "FSD says over 75 need approval; the code has no such rule."),
-            Link("gap", FsdGap, Post, null, null, "No statement says how a receipt is delivered."),
-            Link("gap", FsdBack, Post, null, null, "The page no longer says what comes back.")));
-        step = Ok("fsd", "check", "shop", "1");
-        Answer(step, new JsonObject { ["checks"] = new JsonArray([.. new[] { "K1", "K2" }.Select(k => (JsonNode)new JsonObject { ["link"] = k, ["verdict"] = "confirm", ["note"] = "same" })]) });
-        Saw["rejudge.recorded"] = Ok("fsd", "check", "shop", "1");
         Saw["check.final"] = Check();
-        Commit("section 1 judged again");
+        Commit("the removed link dealt with");
         Saw["check.final.base"] = Check("--base", before);
         Saw["trace.final"] = Trace();
-        Saw["runs.final"] = Runs();
         Saw["phases"] = RunIn(RepoRoot.Find(), "phases", "check").Envelope;
-
-        // Last, because each changes what's on file: what the disprove step does next, on a real run. It runs after every section.
-        Saw["disprove.moved"] = Ok("fsd", "disprove", "prepare", "shop", "2.1");
-        Saw["trace.disprove-moved"] = Trace();
-        // Regenerate pushed this code two lines down, words unchanged: section 3's verdict rests on the words.
-        Saw["disprove.pushed-down"] = Ok("fsd", "disprove", "prepare", "shop", "3");
-        Append("README.md", "A line about nothing.\n");
-        Commit("no code changes");
-        Ok("graph", "build");
-        Saw["disprove.new-commit"] = Ok("fsd", "disprove", "prepare", "shop", "3");
-        Saw["trace.disprove-new-commit"] = Trace();
     }
 
     // ---- the fake agents' answers ----
@@ -430,23 +339,6 @@ public sealed class WholeFlow : IDisposable
         shows: [.. returned is null ? [] : new[] { S(returned, PlaceOrder) }, .. added is null ? [] : new[] { added }],
         rules: [S(Rule, CreateOrder, PlaceOrder)],
         effects: [S(effect, PlaceOrder, Handler)]);
-
-    static JsonObject Link(string state, string? fsd, string? page, string? statement, string? pageQuote, string note = "n")
-    {
-        var link = new JsonObject { ["state"] = state, ["note"] = note };
-        if (fsd is not null) link["fsdQuote"] = fsd;
-        if (page is not null) link["page"] = page;
-        if (statement is not null) link["statement"] = statement;
-        if (pageQuote is not null) link["pageQuote"] = pageQuote;
-        return link;
-    }
-
-    static JsonObject Links(params JsonObject[] links) => new() { ["links"] = new JsonArray(links) };
-
-    static JsonObject Quoted(string verdict, string path, int line, string quote) => new()
-    {
-        ["verdict"] = verdict, ["why"] = "From the code.", ["path"] = path, ["start"] = line, ["end"] = line, ["quote"] = quote,
-    };
 
     // ---- the FSD, by hand ----
 
@@ -533,48 +425,6 @@ public sealed class WholeFlow : IDisposable
     }
 
     /// <summary>The link judge's variants, answered by the fake AI, with the code checks running on each.</summary>
-    void LinksOn()
-    {
-        var step = Ok("fsd", "prepare", "shop", "1");
-        Saw["on.judge"] = step;
-        var partial = Link("partial", FsdConflict, Post, "R1", "Every order is placed with a total of 1.", "Part of it.");
-        partial["covered"] = "a total";
-        partial["missing"] = "who approves";
-        var unclear = Link("unclear", FsdGap, null, null, null, "It doesn't say which post.");
-        foreach (var k in unclear.Where(p => p.Value is null).Select(p => p.Key).ToList()) unclear.Remove(k);
-        partial["section"] = "1";
-        unclear["section"] = "1";
-        var second = Link("conflict", FsdStock, Stock, "S1", "The screen shows a Stock button.", "A button, not a count.");
-        second["section"] = "2";
-        Answer(step, Links(partial, unclear, second));
-        Saw["on.grouped"] = Ok("fsd", "prepare", "shop", "2");
-        Saw["on.recorded"] = Ok("fsd", "check", "shop", "1");
-        Saw["on.current"] = Ok("fsd", "prepare", "shop", "1");
-        Saw["on.runs"] = JsonNode.Parse(File.ReadAllText(Path.Combine(Root, "specs", "trace-runs.json")));
-        Saw["on.trace"] = Trace();
-        Saw["on.check"] = Check();
-        Saw["on.status"] = Ok("fsd", "status", "shop");
-        Saw["on.estimate"] = Ok("fsd", "disprove", "estimate", "shop");
-        var disprove = Ok("fsd", "disprove", "prepare", "shop", "1");
-        Saw["on.disprove"] = File.ReadAllText(Path.Combine(Root, Path.GetDirectoryName((string)disprove["next"]!["output"]!)!, "bundle.md"));
-        Saw["on.estimate.facts"] = Ok("fsd", "disprove", "estimate", "facts");
-    }
-
-    /// <summary>A question, answered by the fake AI with statement ids; one the pages can't answer; and one the AI answers with nothing cited.</summary>
-    void Asked()
-    {
-        const string question = "How does placing an order send a receipt?";
-        var step = Ok("spec", "ask", question);
-        Saw["ask.prepare"] = step;
-        Saw["ask.bundle"] = File.ReadAllText(Path.Combine(Root, Path.GetDirectoryName((string)step["next"]!["output"]!)!, "bundle.md"));
-        Answer(step, new JsonObject { ["answer"] = new JsonArray(new JsonObject { ["text"] = "It publishes OrderPlaced, which sends a receipt.", ["cites"] = new JsonArray(new JsonObject { ["page"] = Post, ["statement"] = "E1" }) }) });
-        Saw["ask.answer"] = Ok("spec", "ask-check", question);
-        Saw["ask.again"] = Ok("spec", "ask", question);
-        Saw["ask.unknown"] = Ok("spec", "ask", "xylophones zeppelins");
-        const string nothing = "Does the order page show receipts?";
-        Answer(Ok("spec", "ask", nothing), new JsonObject { ["answer"] = new JsonArray() });
-        Saw["ask.nothing"] = Ok("spec", "ask-check", nothing);
-    }
 
     static byte[] Version1() => FsdDocxTests.Docx(
         Section1(Commented(FsdConflict)) + Sheet
@@ -682,7 +532,6 @@ public sealed class WholeFlow : IDisposable
         TraceFile.Save(Root, trace);
     }
 
-    JsonNode Runs() => JsonNode.Parse(File.ReadAllText(Path.Combine(Root, "specs", "trace-runs.json")))!;
     JsonNode Document(string doc) => JsonNode.Parse(File.ReadAllText(Path.Combine(Root, "specs", "fsd", doc, "document.json")))!;
     JsonNode PageJson(string page) => PageFile(page, ".json");
 
@@ -786,20 +635,9 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
     }
 
     [Fact]
-    public void Stage_4_code_finds_candidates_checks_quotes_issues_ids_and_fills_evidence()
+    public void Stage_4_the_frozen_links_pass_trace_check_with_ids_and_evidence()
     {
         flow.Reached(4);
-        var orders = flow.Seen("candidates")["result"]!.AsArray().Single(r => (string?)r!["doc"] == "shop" && (string?)r["section"] == "1")!;
-        Assert.Contains(orders["candidates"]!.AsArray(), c => (string?)c!["page"] == WholeFlow.Orders && (string?)c["why"] == "name");
-        Assert.Contains(orders["candidates"]!.AsArray(), c => (string?)c!["page"] == WholeFlow.Post && (string?)c["why"] == "endpoint");
-        Assert.Contains(flow.Seen("judge.bundle").GetValue<string>().Split('\n'), l => l.Contains("**R1**") && l.Contains(WholeFlow.Rule));
-
-        // The made-up quote was refused by code, with one retry.
-        var retry = flow.Seen("judge.retry");
-        Assert.Equal("check_failed", (string?)retry["error"]!["code"]);
-        Assert.Contains("Orders over 75 need approval.", (string?)retry["result"]!["errors"]![0]);
-        Assert.Equal("recorded", (string?)flow.Seen("judge.recorded")["status"]);
-
         var report = flow.Seen("check.links");
         Assert.True((bool?)report["ok"], string.Join("\n", WholeFlow.ProblemLines(report)));
         Assert.Equal((4, 3, 1), ((int?)report["counts"]!["byState"]!["agree"], (int?)report["counts"]!["byState"]!["conflict"], (int?)report["counts"]!["byState"]!["gap"]));
@@ -817,41 +655,6 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         var code = evidence.First(r => (string?)r!["id"] == $"{id}.code.2")!;
         Assert.Equal((28, 33, "read"), ((int?)code["citation"]!["lines"]!["start"], (int?)code["citation"]!["lines"]!["end"], (string?)code["strength"]));
         Assert.EndsWith("Shop.Core/Orders.cs", (string?)code["citation"]!["ref"]);
-    }
-
-    [Fact]
-    public void Stage_5_disprove_answers_go_to_the_right_queues_and_a_person_closes_or_sends_back()
-    {
-        flow.Reached(5);
-        Assert.Equal(("current", "none"), ((string?)flow.Seen("rejudge")["status"], (string?)flow.Seen("rejudge")["next"]!["action"]));     // turning it on re-judges nothing
-        var bundle = flow.Seen("disprove.bundle").GetValue<string>();
-        Assert.Contains("# The code", bundle);
-        Assert.DoesNotContain("No statement says how a receipt is delivered.", bundle);     // never who found it, or why (D61)
-
-        var report = flow.Seen("check.disprove");
-        Assert.True((bool?)report["ok"], string.Join("\n", WholeFlow.ProblemLines(report)));
-        string Id(string quote) => (string)flow.EntryIn("trace.disprove", quote)["finding"]!;
-        JsonNode Goes(string quote) => flow.Listing("check.disprove", Id(quote))!;
-        Assert.Equal(("stands", "ba"), ((string?)Goes(WholeFlow.FsdConflict)["verdict"], (string?)Goes(WholeFlow.FsdConflict)["goesTo"]));
-        Assert.Equal(("page-gap", "developer"), ((string?)Goes(WholeFlow.FsdGap)["verdict"], (string?)Goes(WholeFlow.FsdGap)["goesTo"]));
-        Assert.Equal(("refuted", "developer-confirm"), ((string?)Goes(WholeFlow.FsdStock)["verdict"], (string?)Goes(WholeFlow.FsdStock)["goesTo"]));
-        Assert.Contains(report["queues"]!["developer-confirm"]!.AsArray(), f => (string?)f == Id(WholeFlow.FsdCheckout));
-        Assert.Equal("Shop.Web/react-app/src/StockPage.tsx:3-3", (string?)Goes(WholeFlow.FsdStock)["at"]);
-        Assert.Contains(flow.EntryIn("trace.disprove", WholeFlow.FsdStock)["evidence"]!.AsArray(),
-            r => (string?)r!["id"] == $"{Id(WholeFlow.FsdStock)}.disprove" && (string?)r["strength"] == "read");
-        Assert.Equal(("current", "none"), ((string?)flow.Seen("disprove.none")["status"], (string?)flow.Seen("disprove.none")["next"]!["action"]));
-
-        Assert.Equal(("confirmed", "closed", WholeFlow.Person), ((string?)flow.Seen("confirm")["review"], (string?)flow.Seen("confirm")["goesTo"], (string?)flow.Seen("confirm")["by"]));
-        Assert.Equal(("sent-back", "ba"), ((string?)flow.Seen("send-back")["review"], (string?)flow.Seen("send-back")["goesTo"]));
-        var reviewed = flow.Seen("check.reviewed");
-        Assert.True((bool?)reviewed["ok"], string.Join("\n", WholeFlow.ProblemLines(reviewed)));
-        Assert.Contains(reviewed["queues"]!["closed"]!.AsArray(), f => (string?)f == Id(WholeFlow.FsdStock));
-        Assert.Contains(reviewed["queues"]!["ba"]!.AsArray(), f => (string?)f == Id(WholeFlow.FsdCheckout));
-
-        var confirm = Assert.Single(flow.Seen("history.confirm")["moves"]!.AsArray())!;
-        Assert.Equal(("confirmed", WholeFlow.Person), ((string?)confirm["to"], (string?)confirm["who"]!["name"]));
-        Assert.Equal("sent-back", (string?)Assert.Single(flow.Seen("history.send-back")["moves"]!.AsArray())!["to"]);
-        Assert.Equal("refuted", (string?)Assert.Single(flow.Seen("history.verdict")["moves"]!.AsArray())!["to"]);
     }
 
     [Fact]
@@ -896,8 +699,8 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         Assert.Contains(section["pages"]!.AsArray(), p => (string?)p == WholeFlow.Post);
         Assert.Equal(["agree", "conflict", "gap"], section["states"]!.AsArray().Select(s => (string?)s));
         Assert.Contains(items, i => (string?)i!["section"] == "4" && (bool?)i["verified"] == true);
-        // Only a closed finding leaves the answer.
-        Assert.Empty(flow.Seen("impact.closed")["fsdSections"]!["items"]!.AsArray());
+        // With no disprover any more (D342), the stock page's finding stays open, so its section stays in the answer.
+        Assert.Contains(flow.Seen("impact.closed")["fsdSections"]!["items"]!.AsArray(), i => (string?)i!["section"] == "2");
     }
 
     [Fact]
@@ -935,19 +738,18 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         Assert.Equal("S-0002", (string?)moved["fsd"]!["sectionId"]);     // the number moved; the permanent id didn't
         Assert.Equal((string?)was["finding"], (string?)moved["finding"]);
         Assert.Contains(flow.Seen("promote")["carried"]!["traceIds"]!.AsArray(), m => (string?)m!["from"] == (string?)was["id"] && (string?)m["to"] == (string?)moved["id"]);
-        Assert.Equal("closed", (string?)flow.Listing("check.promoted", (string)moved["finding"]!)!["goesTo"]);
-        Assert.Equal(("current", "none"), ((string?)flow.Seen("rejudge.moved")["status"], (string?)flow.Seen("rejudge.moved")["next"]!["action"]));     // only its number changed: no paid run
+        Assert.Equal("ba", (string?)flow.Listing("check.promoted", (string)moved["finding"]!)!["goesTo"]);
 
         var modified = flow.EntryIn("trace.promoted", WholeFlow.FsdConflict);
         Assert.Contains(flow.Seen("promote")["staleQuotes"]!.AsArray(), id => (string?)id == (string?)modified["id"]);
         Assert.Empty(flow.Seen("promote")["carried"]!["sectionIdsDisagree"]!.AsArray());
-        Assert.Equal(["1"], flow.Seen("promote")["carried"]!["runAgain"]!.AsArray().Select(s => (string?)s));
+        Assert.Null(flow.Seen("promote")["carried"]!["runAgain"]);     // no run is saved to carry (D342)
         Assert.Null(modified["decision"]);
         Assert.Null(modified["decided_by"]);
         Assert.Equal(("major", WholeFlow.Person), ((string?)modified["severity"], (string?)modified["severity_by"]));     // a grade stays
         var listed = flow.Listing("check.promoted", (string)modified["finding"]!)!;
         Assert.Equal("ba", (string?)listed["goesTo"]);
-        Assert.Contains("a quote no longer matches", (string?)listed["label"]);
+        Assert.Equal("unverified", (string?)listed["label"]);     // no disprover's verdict to send back any more (D342)
         var drop = flow.Seen("history.dropped")["moves"]!.AsArray().Last()!;
         Assert.Equal(("code-wrong", "undecided"), ((string?)drop["from"], (string?)drop["to"]));
     }
@@ -963,8 +765,6 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         Assert.Equal(("S-0004", true), ((string?)carried["permanentId"], (bool?)carried["numberUsedAgain"]));
         Assert.Equal((string?)removed["id"], (string?)carried["decisions"]![0]!["id"]);
         Assert.Contains(WholeFlow.ProblemLines(flow.Seen("check.promoted")), p => p.Contains("was removed"));
-        // The new section 4 isn't taken for the old one: it starts over.
-        Assert.NotEqual("current", (string?)flow.Seen("prepare.number-used-again")["status"]);
     }
 
     [Fact]
@@ -1002,7 +802,7 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         Assert.Null(flow.EntryIn("trace.fixed", WholeFlow.FsdBack)["decision"]);        // the retired statement's
         var gap = flow.EntryIn("trace.regenerated", WholeFlow.FsdGap);
         Assert.Null(gap["decision"]);                                                // writing the page again clears page-wrong
-        Assert.Contains("page was regenerated", (string?)flow.Listing("check.regenerated", (string)gap["finding"]!)!["label"]);
+        Assert.Equal("ba", (string?)flow.Listing("check.regenerated", (string)gap["finding"]!)!["goesTo"]);
         Assert.NotNull(flow.Seen("stale.moved")["stale"]!.AsArray().Single(p => (string?)p!["id"] == WholeFlow.Post)!["reportedWrong"]);
     }
 
@@ -1031,65 +831,14 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         var ci = flow.Seen("check.final.base");
         Assert.True((bool?)ci["ok"], string.Join("\n", WholeFlow.ProblemLines(ci)));
         Assert.True((bool?)flow.Seen("phases")["ok"], flow.Seen("phases").ToJsonString());
-        Assert.Equal("recorded", (string?)flow.Seen("rejudge.recorded")["status"]);
 
-        // A re-run that gives the same link keeps its X- id; a new link gets a new one; a retired one isn't used again.
-        var gone = (string)flow.EntryIn("trace.promoted", WholeFlow.FsdConflict)["finding"]!;
+        // Findings keep their X- ids through a new version and a new page: nothing re-links them now (D342).
         var now = flow.Seen("check.final")["findings"]!.AsArray().Select(f => (string)f!["id"]!).ToList();
-        Assert.DoesNotContain(gone, now);
         Assert.Contains((string)flow.EntryIn("trace.promoted", WholeFlow.FsdGap)["finding"]!, now);
-        Assert.Contains((string)flow.EntryIn("trace.final", WholeFlow.FsdConflict.Replace("50", "75"))["finding"]!, now);
-        Assert.NotEqual(gone, (string)flow.EntryIn("trace.final", WholeFlow.FsdConflict.Replace("50", "75"))["finding"]!);
-    }
-
-    [Fact]
-    public void Stage_10_input_hashes_of_unchanged_sections_stay_the_same_through_the_new_version_and_the_new_page()
-    {
-        flow.Reached(9);
-        static string? Inputs(JsonNode runs, string key) => (string?)runs[key]!["inputs"];
-        var before = flow.Seen("runs.before-disprove");
-        foreach (var later in new[] { "runs.before-promote", "runs.promoted", "runs.before-regenerate", "runs.regenerated" })
-            Assert.Equal(Inputs(before, "shop#3"), Inputs(flow.Seen(later), "shop#3"));
-        Assert.Null(flow.Seen("runs.promoted")["shop#2"]);
-        Assert.Equal(Inputs(flow.Seen("runs.promoted"), "shop#2.1"), Inputs(flow.Seen("runs.regenerated"), "shop#2.1"));
-        Assert.Equal(("current", "none"), ((string?)flow.Seen("rejudge.unchanged")["status"], (string?)flow.Seen("rejudge.unchanged")["next"]!["action"]));
+        Assert.Contains((string)flow.EntryIn("trace.promoted", WholeFlow.FsdConflict)["finding"]!, now);
     }
 
     // ---- what the run found, fixed (phases/0-foundation.md) ----
-
-    [Fact]
-    public void Disprove_a_section_that_only_moved_keeps_its_verdict_and_a_persons_confirmation()
-    {
-        flow.Reached(11);
-        Assert.Equal(("current", "none"), ((string?)flow.Seen("disprove.moved")["status"], (string?)flow.Seen("disprove.moved")["next"]!["action"]));
-        var stock = flow.EntryIn("trace.disprove-moved", WholeFlow.FsdStock);
-        Assert.Equal(("refuted", "confirmed"), ((string?)stock["verdict"], (string?)stock["review"]));
-    }
-
-    [Fact]
-    public void Disprove_a_new_commit_that_touches_no_code_asks_for_no_new_verdict()
-    {
-        flow.Reached(11);
-        Assert.Equal(("current", "none"), ((string?)flow.Seen("disprove.new-commit")["status"], (string?)flow.Seen("disprove.new-commit")["next"]!["action"]));
-        Assert.Equal("refuted", (string?)flow.EntryIn("trace.disprove-new-commit", WholeFlow.FsdCheckout)["verdict"]);
-    }
-
-    [Fact]
-    public void Disprove_code_pushed_down_with_the_same_words_asks_for_no_new_verdict()
-    {
-        flow.Reached(11);
-        Assert.Equal(("current", "none"), ((string?)flow.Seen("disprove.pushed-down")["status"], (string?)flow.Seen("disprove.pushed-down")["next"]!["action"]));
-    }
-
-    [Fact]
-    public void A_moved_findings_history_can_be_read_under_its_current_id()
-    {
-        flow.Reached(8);
-        Assert.NotEmpty(flow.Seen("history.moved")["moves"]!.AsArray());
-        Assert.Contains(flow.Seen("history.moved")["moves"]!.AsArray(), m => (string?)m!["kind"] == "finding-review" && (string?)m["to"] == "confirmed");
-        Assert.Contains(flow.Seen("history.moved")["moves"]!.AsArray(), m => (string?)m!["kind"] == "id-moved");
-        Assert.Equal(flow.Seen("history.moved")["moves"]!.ToJsonString(), flow.Seen("history.moved.finding")["moves"]!.ToJsonString());
-    }
 
     [Fact]
     public void A_workbook_imports_as_a_document_with_its_hidden_sheet_left_out_and_listed()
@@ -1113,8 +862,6 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         Assert.Contains("A-0001", flow.Seen("embedded.show")["attachments"]!.ToJsonString());
         Assert.Contains("Gold,12", flow.Seen("embedded.csv").GetValue<string>());
         Assert.Equal(flow.Seen("embedded.check.before")["staleQuotes"]!.ToJsonString(), flow.Seen("embedded.check.after")["staleQuotes"]!.ToJsonString());
-        var attachments = flow.Seen("components")["components"]!.AsArray().Single(c => (string?)c!["name"] == "attachments-in-checks")!;
-        Assert.False((bool)attachments["on"]!);
     }
 
     [Fact]

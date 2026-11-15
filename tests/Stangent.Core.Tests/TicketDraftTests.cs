@@ -46,7 +46,7 @@ public class TicketDraftTests
                 ["schemaVersion"] = 1, ["id"] = "shop", ["title"] = "Shop FSD",
                 ["sections"] = new JsonArray(new JsonObject { ["id"] = "4.1", ["title"] = "Placing an order", ["text"] = "Orders over 100 need approval from a manager.", ["parent"] = null }),
             }.ToJsonString());
-            LinkRun.ApplyEntries(Root, "shop", "4.1", [LinkRun.Entry("agree", "shop", new JsonObject { ["id"] = "4.1", ["title"] = "Placing an order", ["text"] = "" },
+            TraceStore.ApplyEntries(Root, "shop", "4.1", [TraceStore.Entry("agree", "shop", new JsonObject { ["id"] = "4.1", ["title"] = "Placing an order", ["text"] = "" },
                 "Orders over 100 need approval from a manager.", Orders, "S1", "The orders screen shows a Place order button.", "judge", "confirmed", null)]);
             TicketFixtures.Make(Path.Combine(Root, "replay"), Key, "Bug", "Big orders skip approval", Description);
             var tracker = Trackers.Open(App.Repo, new MemorySecretStore(), TextWriter.Null, null);
@@ -175,7 +175,7 @@ public class TicketDraftTests
         using var d = new Draft();
         var trace = TraceFile.Load(d.Root);
         foreach (var page in new[] { Orders, SpecApp.Post })
-            trace["entries"]!.AsArray().Add(LinkRun.Entry("agree", "shop", new JsonObject { ["id"] = "(removed S-0009) 9", ["title"] = "Gone", ["text"] = "" },
+            trace["entries"]!.AsArray().Add(TraceStore.Entry("agree", "shop", new JsonObject { ["id"] = "(removed S-0009) 9", ["title"] = "Gone", ["text"] = "" },
                 "A rule from a removed section.", page, null, null, "judge", "confirmed", null));
         TraceFile.Save(d.Root, trace);
         Git(d.Root, "init -q -b main");

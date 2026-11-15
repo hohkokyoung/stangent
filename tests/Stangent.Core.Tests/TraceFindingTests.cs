@@ -16,7 +16,7 @@ public class TraceFindingTests
 
     static (SpecApp App, string Verifier) App() { var app = SavedWorkTests.App(out var v); return (app, v); }
 
-    static JsonObject Conflict() => LinkRun.Entry("conflict", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "R1", Page100, "judge", null, "FSD 50, code 100");
+    static JsonObject Conflict() => TraceStore.Entry("conflict", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "R1", Page100, "judge", null, "FSD 50, code 100");
 
     static JsonObject SpecIndexSection() => new() { ["id"] = "1", ["title"] = "Orders", ["permanentId"] = "S-0001" };
 
@@ -45,7 +45,7 @@ public class TraceFindingTests
     {
         var (app, _) = App();
         using var _d = app;
-        Save(app, Conflict(), LinkRun.Entry("agree", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "E1", "which sends a receipt", "judge", "confirmed", null));
+        Save(app, Conflict(), TraceStore.Entry("agree", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "E1", "which sends a receipt", "judge", "confirmed", null));
         var report = Check(app);
         Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report)));
 
@@ -96,7 +96,7 @@ public class TraceFindingTests
         Check(app);
         Assert.Equal(once, File.ReadAllText(TraceFile.PathIn(app.Root)));
         // A section re-judged with the same link: the same entry id, so the same finding.
-        LinkRun.ApplyEntries(app.Root, "shop", "1", [Conflict()]);
+        TraceStore.ApplyEntries(app.Root, "shop", "1", [Conflict()]);
         Assert.Equal("X-0001", (string)Entry(app)["finding"]!);
         Assert.NotEmpty(Entry(app)["evidence"]!.AsArray());
     }
@@ -108,7 +108,7 @@ public class TraceFindingTests
         using var _d = app;
         Save(app, Conflict());
         Check(app);
-        LinkRun.ApplyEntries(app.Root, "shop", "1", [LinkRun.Entry("gap", "shop", SpecIndexSection(), Fsd50, null, null, null, "judge", null, "n")]);
+        TraceStore.ApplyEntries(app.Root, "shop", "1", [TraceStore.Entry("gap", "shop", SpecIndexSection(), Fsd50, null, null, null, "judge", null, "n")]);
         Check(app);
         Assert.Equal("X-0002", (string)Entry(app)["finding"]!);
         Assert.Equal(["X-0001"], new PermanentIds(TraceFindings.LedgerFile(app.Root), Path.Combine(app.Root, ".stangent", "fsd", "trace-ids.lock")).Removed("X"));
@@ -122,7 +122,7 @@ public class TraceFindingTests
         Save(app, Conflict());
         Check(app);
         File.Delete(TraceFindings.LedgerFile(app.Root));
-        LinkRun.ApplyEntries(app.Root, "shop", "1", [Conflict(), LinkRun.Entry("gap", "shop", SpecIndexSection(), "Every order sends a receipt.", null, null, null, "judge", null, "n")]);
+        TraceStore.ApplyEntries(app.Root, "shop", "1", [Conflict(), TraceStore.Entry("gap", "shop", SpecIndexSection(), "Every order sends a receipt.", null, null, null, "judge", null, "n")]);
         Check(app);
         var ids = TraceFile.Load(app.Root)["entries"]!.AsArray().Select(e => (string)e!["finding"]!).Order().ToList();
         Assert.Equal(["X-0001", "X-0002"], ids);
@@ -228,15 +228,6 @@ public class TraceFindingTests
         Change(app, e => e["severity"] = Severity.Blocker);
 
         Assert.Equal(string.Join("\n", SavedWorkTests.Saved), string.Join("\n", SavedWorkTests.Hashes(app, verifier)));
-        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
-        var folder = Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!);
-        foreach (var file in Directory.EnumerateFiles(folder, "*.md"))
-        {
-            var bundle = File.ReadAllText(file);
-            Assert.DoesNotContain("X-0001", bundle);
-            Assert.DoesNotContain(Severity.Blocker, bundle);
-            Assert.DoesNotContain("FSD 50, code 100", bundle);
-        }
         Assert.Equal((string)entry["id"]!, (string)Entry(app)["id"]!);
     }
 
@@ -374,7 +365,7 @@ public class TraceFindingTests
 
     static JsonObject Decided()
     {
-        var link = LinkRun.Entry("agree", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "R1", Page100, "judge", "confirmed", null);
+        var link = TraceStore.Entry("agree", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "R1", Page100, "judge", "confirmed", null);
         link["decision"] = "agree";
         link["decided_by"] = "bob";
         return link;
@@ -487,7 +478,7 @@ public class TraceFindingTests
                 Check(app);
                 link["decision"] = null;
                 link["decided_by"] = null;
-                LinkRun.ApplyEntries(app.Root, "shop", "1", [link]);
+                TraceStore.ApplyEntries(app.Root, "shop", "1", [link]);
                 break;
         }
         Assert.Equal(TraceFile.QuoteHash(Rule), (string)Entry(app)["decided_on"]!);
@@ -522,13 +513,6 @@ public class TraceFindingTests
         var decidedOn = (string)entries.Single(e => e["decided_on"] is not null)["decided_on"]!;
         var evidenceHash = (string)entries.Single(e => e["evidence_hash"] is not null)["evidence_hash"]!;
         Assert.Equal(string.Join("\n", SavedWorkTests.Saved), string.Join("\n", SavedWorkTests.Hashes(app, verifier)));
-        var step = LinkRun.Prepare(app.Pages(), app.Repo, "shop", "1");
-        foreach (var file in Directory.EnumerateFiles(Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!), "*.md"))
-        {
-            var bundle = File.ReadAllText(file);
-            Assert.DoesNotContain(decidedOn, bundle);
-            Assert.DoesNotContain(evidenceHash, bundle);
-        }
     }
 
     // ---- Severity ----
@@ -598,7 +582,7 @@ public class TraceFindingTests
     {
         var (app, _) = App();
         using var _d = app;
-        var agree = LinkRun.Entry("agree", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "E1", "which sends a receipt", "judge", "confirmed", null);
+        var agree = TraceStore.Entry("agree", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "E1", "which sends a receipt", "judge", "confirmed", null);
         agree["severity"] = "major";
         Save(app, agree);
         Assert.Contains(Problems(Check(app)), p => p.Contains("an agree link isn't a finding"));
@@ -650,7 +634,7 @@ public class TraceFindingTests
     {
         var (app, _) = App();
         using var _d = app;
-        Save(app, LinkRun.Entry("agree", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "E1", "which sends a receipt", "judge", "confirmed", null));
+        Save(app, TraceStore.Entry("agree", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "E1", "which sends a receipt", "judge", "confirmed", null));
         var before = File.ReadAllText(TraceFile.PathIn(app.Root));
         Check(app);
         Assert.Equal(before, File.ReadAllText(TraceFile.PathIn(app.Root)));
@@ -750,7 +734,7 @@ public class TraceFindingTests
         Assert.True((bool)Check(app)["ok"]!);
     }
 
-    static JsonObject Other() => LinkRun.Entry("gap", "shop", SpecIndexSection(), "Every order sends a receipt.", null, null, null, "judge", null, "another finding");
+    static JsonObject Other() => TraceStore.Entry("gap", "shop", SpecIndexSection(), "Every order sends a receipt.", null, null, null, "judge", null, "another finding");
 
     [Fact]
     public void A_decided_finding_a_new_build_doesnt_find_is_gone_kept_and_listed_and_a_new_one_gets_its_own_id()
@@ -758,7 +742,7 @@ public class TraceFindingTests
         var (app, _) = App();
         using var _d = app;
         Decided(app);
-        LinkRun.ApplyEntries(app.Root, "shop", "1", [Other()]);
+        TraceStore.ApplyEntries(app.Root, "shop", "1", [Other()]);
 
         var report = Check(app);
         Assert.True((bool)report["ok"]!, string.Join("\n", Problems(report)));
@@ -780,14 +764,14 @@ public class TraceFindingTests
         var (app, _) = App();
         using var _d = app;
         var id = (string)Decided(app)["id"]!;
-        LinkRun.ApplyEntries(app.Root, "shop", "1", []);
+        TraceStore.ApplyEntries(app.Root, "shop", "1", []);
         Check(app);
         Assert.Equal("gone", (string)Entry(app)["standing"]!);
         // Going again changes nothing, and it isn't lost.
-        LinkRun.ApplyEntries(app.Root, "shop", "1", []);
+        TraceStore.ApplyEntries(app.Root, "shop", "1", []);
         Assert.Equal("gone", (string)Entry(app)["standing"]!);
 
-        LinkRun.ApplyEntries(app.Root, "shop", "1", [Conflict()]);
+        TraceStore.ApplyEntries(app.Root, "shop", "1", [Conflict()]);
         var back = Entry(app);
         Assert.Equal((id, "X-0001", "recheck", "code-wrong", (string?)null), ((string)back["id"]!, (string)back["finding"]!, (string)back["standing"]!, (string)back["standing_note"]!["was"]!, (string?)back["decision"]));
         var report = Check(app);
@@ -803,7 +787,7 @@ public class TraceFindingTests
         using var _d = app;
         Save(app, Conflict());
         Check(app);
-        LinkRun.ApplyEntries(app.Root, "shop", "1", []);
+        TraceStore.ApplyEntries(app.Root, "shop", "1", []);
         Assert.Empty(TraceFile.Load(app.Root)["entries"]!.AsArray());
         Check(app);
         Assert.Contains("X-0001", new PermanentIds(TraceFindings.LedgerFile(app.Root)).Removed("X"));
@@ -829,7 +813,7 @@ public class TraceFindingTests
         var (app, _) = App();
         using var _d = app;
         Decided(app);
-        LinkRun.ApplyEntries(app.Root, "shop", "1", []);
+        TraceStore.ApplyEntries(app.Root, "shop", "1", []);
         Check(app);
         var once = File.ReadAllText(TraceFile.PathIn(app.Root));
         Rephrase(app, Flipped);
@@ -854,50 +838,10 @@ public class TraceFindingTests
         Assert.Equal(all, Coverage(report)["uncovered"]!.AsArray().Count);
         Assert.Equal(all, (int)report["counts"]!["uncoveredSections"]!);
 
-        Save(app, LinkRun.Entry("agree", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "E1", "which sends a receipt", "judge", "confirmed", null));
+        Save(app, TraceStore.Entry("agree", "shop", SpecIndexSection(), Fsd50, SpecApp.Post, "E1", "which sends a receipt", "judge", "confirmed", null));
         var linked = Coverage(Check(app));
         Assert.Equal("1", (string)Assert.Single(linked["linked"]!.AsArray())!["section"]!);
         Assert.DoesNotContain(linked["uncovered"]!.AsArray(), s => (string)s!["section"]! == "1");
-    }
-
-    [Fact]
-    public void A_person_marks_a_section_not_in_code_with_a_name_from_git_and_it_holds_for_those_words_only()
-    {
-        var (app, _) = App();
-        using var _d = app;
-        var marked = TraceCoverage.Mark(app.Root, "shop", "1", "it's about the warehouse", "Pat", clear: false);
-        Assert.Equal(("not-in-code", "S-0001"), ((string)marked["state"]!, (string)marked["id"]!));
-        var coverage = Coverage(Check(app));
-        var item = Assert.Single(coverage["notInCode"]!.AsArray())!;
-        Assert.Equal(("1", "Pat", "it's about the warehouse"), ((string)item["section"]!, (string)item["by"]!, (string)item["why"]!));
-        Assert.DoesNotContain(coverage["uncovered"]!.AsArray(), s => (string)s!["section"]! == "1");
-        Assert.Equal(["not-in-code"], StateChanges.History(app.Root, StateKinds.SectionCoverage, "shop#S-0001").Select(m => m.To));
-        Assert.Equal("person", StateChanges.History(app.Root, StateKinds.SectionCoverage, "shop#S-0001")[0].Who.Kind);
-
-        // The same mark on other words isn't one.
-        var marks = Path.Combine(FsdImport.DocDir(app.Root, "shop"), "not-in-code.json");
-        File.WriteAllText(marks, File.ReadAllText(marks).Replace((string)FsdOutline.Find(FsdOutline.Load(app.Root, "shop"), "1")["textHash"]!, new string('0', 64)));
-        var stale = Coverage(Check(app));
-        Assert.Empty(stale["notInCode"]!.AsArray());
-        Assert.Contains(stale["uncovered"]!.AsArray(), s => (string)s!["section"]! == "1" && (string?)s["markWas"] == "Pat");
-
-        Assert.Equal("unmarked", (string)TraceCoverage.Mark(app.Root, "shop", "S-0001", null, "Pat", clear: true)["state"]!);
-        Assert.Equal("not_found", Assert.Throws<StangentException>(() => TraceCoverage.Mark(app.Root, "shop", "S-9999", null, "Pat", clear: false)).Code);
-    }
-
-    [Fact]
-    public void A_section_not_in_code_lists_its_pictures_and_embedded_files()
-    {
-        var (app, _) = App();
-        using var _d = app;
-        var path = Path.Combine(FsdImport.DocDir(app.Root, "shop"), "document.json");
-        var doc = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
-        doc["images"] = new JsonArray(new JsonObject { ["file"] = "images/a.png", ["id"] = "F-0001", ["section"] = "S-0001", ["sectionNumber"] = "1" });
-        doc["problems"] = new JsonArray(new JsonObject { ["kind"] = "element", ["detail"] = "section 1: an embedded file not read (Excel.Sheet.12)", ["sectionNumber"] = "1" });
-        File.WriteAllText(path, CanonicalJson.Serialize(doc));
-        var attachments = TraceCoverage.Mark(app.Root, "shop", "1", null, "Pat", clear: false)["attachments"]!.AsArray();
-        Assert.Equal(("F-0001", "section 1: an embedded file not read (Excel.Sheet.12)"), ((string)attachments[0]!["id"]!, (string)attachments[1]!["detail"]!));
-        Assert.Equal(2, Assert.Single(Coverage(Check(app))["notInCode"]!.AsArray())!["attachments"]!.AsArray().Count);
     }
 
     // ---- E.1: where a document stands ----
@@ -911,11 +855,13 @@ public class TraceFindingTests
         using var _d = app;
         var empty = FsdStatus.Of(app.Root, "shop");
         Assert.Equal(64, ((string)empty["current"]!["hash"]!).Length);
-        Assert.Equal("plugin/scripts/spec-run.sh --fsd shop", (string)Next(app)["command"]!);
+        // Not reviewed yet: the review is next (D341, D342), whatever the old links cover.
+        Assert.Equal("plugin/scripts/fsd-review-run.sh --max-cost 8 shop", (string)Next(app)["command"]!);
+        Assert.False((bool)empty["reviewed"]!);
         Assert.Contains("1", empty["coverage"]!["uncovered"]!.AsArray().Select(s => (string)s!));
 
-        foreach (var s in FsdOutline.Load(app.Root, "shop")["sections"]!.AsArray().OfType<JsonObject>().Where(s => ((string)s["text"]!).Length > 0))
-            TraceCoverage.Mark(app.Root, "shop", (string)s["id"]!, null, "Pat", clear: false);
+        File.WriteAllText(FsdReview.ReviewJson(app.Root, "shop"), "{}");
+        Assert.True((bool)FsdStatus.Of(app.Root, "shop")["reviewed"]!);
         Assert.Equal("nobody", (string)Next(app)["who"]!);
         Assert.Equal("", (string)Next(app)["command"]!);
 

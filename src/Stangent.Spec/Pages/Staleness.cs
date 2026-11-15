@@ -129,7 +129,7 @@ public static class Staleness
     public static string? ClearReportedWrong(string root, string pageId, string? statement = null, string reason = "the page was regenerated")
     {
         if (!File.Exists(Trace.TraceFile.PathIn(root))) return null;
-        using var _ = Fsd.LinkRun.Lock(root);
+        using var _ = Trace.TraceStore.Lock(root);
         Entries(root, out var problem);
         if (problem is not null) return problem;
         var trace = Trace.TraceFile.Load(root);

@@ -2,7 +2,6 @@ using System.Text.Json.Nodes;
 using Stangent.Core.Evidence;
 using Stangent.Graph;
 using Stangent.Spec.Pages;
-using Stangent.Spec.Requirements;
 using Stangent.Spec.Trace;
 
 namespace Stangent.Core.Tests;
@@ -158,7 +157,7 @@ public class StatementIdTests
     {
         using var app = new SpecApp();
         Regenerate(app, Writer(rules: [S(Rule, SpecApp.Place)], effects: [S(Effect, SpecApp.Place, SpecApp.Receipt)]));
-        var link = Stangent.Spec.Fsd.LinkRun.Entry("agree", "shop", null, null, SpecApp.Post, "E1", Effect, "judge", "confirmed", null);
+        var link = TraceStore.Entry("agree", "shop", null, null, SpecApp.Post, "E1", Effect, "judge", "confirmed", null);
         link["decision"] = "agree";
         var trace = TraceFile.Empty();
         trace["entries"]!.AsArray().Add((JsonNode)link);
@@ -182,7 +181,7 @@ public class StatementIdTests
     {
         using var app = new SpecApp();
         Regenerate(app, Writer(rules: [S(Rule, SpecApp.Place), S("Totals are in dollars only.", SpecApp.Create)]));
-        var link = Stangent.Spec.Fsd.LinkRun.Entry("agree", "shop", null, null, SpecApp.Post, "R2", "Totals are in dollars only.", "judge", "confirmed", null);
+        var link = TraceStore.Entry("agree", "shop", null, null, SpecApp.Post, "R2", "Totals are in dollars only.", "judge", "confirmed", null);
         link["decision"] = "agree";
         var trace = TraceFile.Empty();
         trace["entries"]!.AsArray().Add((JsonNode)link);

@@ -1,9 +1,8 @@
 # The spec (Phase 2: contracts `reference-page`, `reference-lines`, `source-document` v3, `trace-links`; layer 5: `fsd-review` v1)
 
-**Layer 4 note (D258):** the reference pages are being replaced by each area's page in plain words (`docs/pages.md`). They
-retire one reader at a time: when layer 4 passes its bar the writer below stops being run and people read
-`specs/areas/<area>/page.md`; the files stay, frozen, for old linking (until layer 5) and tickets (until layer 6), and go in
-layer 7's cuts on the owner's OK.
+**Layer 4 note (D258, D342):** the reference pages are being replaced by each area's page (`docs/pages.md`). They retire one
+reader at a time: old linking no longer reads them (cut in layer 7, D342); tickets still do (starting points and the bundle), so the
+writer, the verifier and the `spec` commands below stay until a ticket run without them shows the points hold.
 
 "The spec" is three layers (D52), each with its own check:
 
@@ -11,7 +10,7 @@ layer 7's cuts on the owner's OK.
 |---|---|---|---|
 | **Reference pages**: what the code does, per screen, shared component and backend entry point | `specs/reference/` | AI (Claude Code subagents, D60) | code: schema, every citation in the graph and in the page's slice; a fresh verifier (D62) |
 | **The FSD**: the documents the client agreed, converted to text | `specs/fsd/<doc>/` | the client / BA; converted by code | same file → same bytes |
-| **Links, findings, decisions** | `specs/trace.yaml` | AI proposes, people decide | code: quotes word for word, ids, cited symbols, `decided_by` from git |
+| **Links, findings, decisions** | `specs/trace.yaml` | the old link route (cut, D342: frozen); table facts by code; people decide | code: quotes word for word, ids, cited symbols, `decided_by` from git |
 
 Everything above is committed: AI output is stored, not regenerated (D18). The graph (D25) and the AI steps' working
 files (`.stangent/spec/`, `.stangent/fsd/`) are not.
@@ -26,7 +25,7 @@ Every AI step is the same small loop. The CLI holds all the logic; a driver only
 3. `stangent … check [--usage <claude json>]` checks the output by code and prints the next step. A failed check
    gives the subagent **one retry** with the specific errors; a second failure is recorded as failed.
 
-Drivers: `/stangent:spec-generate` and `/stangent:fsd-link` in a Claude Code session, and
+Drivers: `/stangent:spec-generate` and `/stangent:fsd-review` in a Claude Code session, and
 `plugin/scripts/spec-run.sh` for batches and CI (headless `claude -p --output-format json`, so tokens, cost, model and
 time are recorded per step, with the model and effort it ran under (D161, `docs/foundation.md`); `--jobs N` runs pages side by side). The batch driver makes **one turn per call** (D66):
 the step's input files go into the prompt, Claude Code runs with no tools and none of the user's settings, skills or
@@ -37,11 +36,11 @@ runs the plugin's subagents instead, each allowed to read and write only under `
 (`--permission-mode dontAsk --allowedTools "Read(.stangent/**)" "Edit(.stangent/**)"`). Files
 drivers share are written whole (temp file, then rename) under a lock. A section whose candidate pages have no recorded
 version is reported as failed, never turned into a gap. `ai.enabled: false` stops every `prepare` with exit
-code 4 (D24); `spec stale`, `spec cite`, `fsd import`, `fsd diff`, `fsd resolve`, `fsd promote`, `fsd discard`, `fsd candidates`, `fsd undocumented` and `trace check` are code only.
+code 4 (D24); `spec stale`, `spec cite`, `fsd import`, `fsd diff`, `fsd resolve`, `fsd promote`, `fsd discard`, `fsd review-merge` and `trace check` are code only.
 
 ## What a bundle stores (D130)
 
-A page writer's, page verifier's, link judge's or agree checker's file under `.stangent/` holds a pointer on its first line and what's unique to it. The one copy of the instructions and schema is in the program. `stangent spec assemble <file>` puts them back, byte for byte; the driver does this just before each call, and `--in-place` does it for a subagent that reads the file itself. Input hashes are taken on the full text, so saved pages and links stay valid, with `SavedWorkTests` and `SharedHeadTests` pinning it. Only the first line is ever read as a pointer. `spec bundle <page>` prints the full text, for people.
+A page writer's or page verifier's file under `.stangent/` holds a pointer on its first line and what's unique to it. The one copy of the instructions and schema is in the program. `stangent spec assemble <file>` puts them back, byte for byte; the driver does this just before each call, and `--in-place` does it for a subagent that reads the file itself. Input hashes are taken on the full text, so saved pages and links stay valid, with `SavedWorkTests` and `SharedHeadTests` pinning it. Only the first line is ever read as a pointer. `spec bundle <page>` prints the full text, for people.
 
 `schema-once` (off): batch runs send the schema through Claude Code's schema option only, not also in the text (J.4), about 2.5K characters a page. No hash moves, but what the AI reads changes, so it's off until a test (D120).
 
@@ -96,7 +95,7 @@ A page writer's, page verifier's, link judge's or agree checker's file under `.s
 
 ## Pages when they're needed (I.1, D131)
 
-The normal way to make pages is for what needs them. On Sonarr 113 pages of 718 ever ran. `stangent spec needed --doc <doc> [--chapter N]` lists the unwritten pages that a document's sections have as candidates, with the sections each is for; `--ticket <key>` lists what that ticket's saved bundle says it's missing. `spec-run.sh --for-fsd <doc>` and `--for-ticket <key>` make just those. `--stale` now means written pages whose code changed: `--new` makes every page never written, and `--all` is every page, as before. A section with no candidate by code isn't counted: the candidate finder reads written pages' titles, so it can only name those. No prompt or hash moves.
+The normal way to make pages is for what needs them. On Sonarr 113 pages of 718 ever ran. `stangent spec needed --ticket <key>` lists what that ticket's saved bundle says it's missing, and `spec-run.sh --for-ticket <key>` makes just those (the `--doc` side went with the link route, D342). `--stale` now means written pages whose code changed: `--new` makes every page never written, and `--all` is every page, as before. No prompt or hash moves.
 
 ## Only the statements a change touches (I.2, D131)
 
@@ -134,20 +133,10 @@ A page's Markdown links to `specs/reference/index.md` at its top and bottom, and
 
 All code, no AI, and none changes a prompt or a saved hash.
 
-- **`stangent spec read <page>`** (`--format md` for the page itself) prints a recorded page. When its inputs have moved on from the code, there's a warning on stderr, in the result, and on top of the Markdown. `spec ask`'s answer lists the same under `answer.pagesBehind`, and a ticket bundle has always had `stalePages`. A Markdown file opened directly can't warn: writing the warning into it would change it with every commit. `spec stale` in the PR comment covers that case.
+- **`stangent spec read <page>`** (`--format md` for the page itself) prints a recorded page. When its inputs have moved on from the code, there's a warning on stderr, in the result, and on top of the Markdown. A ticket bundle has always had `stalePages`. A Markdown file opened directly can't warn: writing the warning into it would change it with every commit. `spec stale` in the PR comment covers that case.
 - **`stangent spec content-check`,** run in CI. Broken: a Markdown link in a page to a file that isn't there, a link in `trace.yaml` to a page, statement or section that isn't there. Repeated: a page id, a statement id on a page, a section id in a document, a link id, an id in the requirements. A link to a page the graph calls for but no one has written is counted apart (`linksToPagesNotWritten`), since pages are made as needed. A retired statement and a removed section keep their links on purpose; `trace check` lists those. With no graph, a page not written yet counts as broken, and it warns.
 - **`stangent run-check before|after --snapshot <file>`:** `spec-run.sh` and `ticket-run.sh` wrap each run in it. By git: the commit, and each changed or untracked file with a hash of its content, leaving out `.stangent/`, `specs/` and `stangent.yaml`. A change is `APP FILES CHANGED` on stderr and exit 1. It can't see git-ignored files such as build output, or say which job did it, and outside git it says it didn't check. A `--prove` run isn't checked: bug proof builds and runs the app (D75).
 - **`plugin/scripts/read-only-hook.sh`** stops an analysis step writing outside `.stangent/` or running a command, through a `PreToolUse` hook. One-turn calls have no tools, so it matters for `--agents`, the file finder, and agents started through the plugin's commands, which `plugin/hooks/hooks.json` catches by their `agent_type`. The bug reproducer is the exception (D75). Only tested by feeding the script hook input: no real Claude Code has run it, and the `agent_type` field is as the assistant remembers it, not checked here.
-
-## Asking how the app works (E.2, D124)
-
-`stangent spec ask "<question>"`, or `/stangent:ask`, with `spec: { ask: true }`. Off by default. **It hasn't been shown to help, and no real AI has answered one.** It answers from pages, which are generated, so every answer is labelled `as the pages describe it`.
-
-- **Code picks the pages,** by the question's words: most in a page's title or route, then most in its statements, then most statements holding one, then by id. The order of those is the rule, with no weights. A page holding none isn't picked. `spec.askMaxPages` (5, a stated setting) is the cap. No graph expansion.
-- **The bundle** holds the question, those pages' statements with their ids, `page-asker.md` and `page-asker-output` v1.
-- **`stangent-page-asker`,** one turn, no tools, as other AI steps are (D66). `spec-run.sh --ask "<question>"` runs it, printing a status line and the result as one JSON line. By hand: `spec ask`, then `spec ask-check "<question>"` with the same words.
-- **The check, by code.** Every statement id has to exist on a page in the bundle, and every sentence has to cite one. One retry. The cited lines come from `reference-lines`, `path:lines` for each symbol the statement cites, and one with no lines says why, and `notCited` lists such statements. Nothing checks a sentence says what its statement says.
-- **`answered` or `not-covered`.** An answer with no citations, or one that fails twice, is refused and says `The pages don't cover this.`, with `why`. A question no page holds a word of says it with no call. The same question on the same pages reuses the saved answer, with no call. Saved under `.stangent/spec-ask/`.
 
 ## The FSD (2b, D13, D16)
 
@@ -217,7 +206,7 @@ All code, no AI, and none changes a prompt or a saved hash.
   - **Hostile input, by stated limits (`ImportLimits`), refused and listed:** a zip name that climbs out, is absolute, has a drive letter or a control character, or runs over 200 characters; a symbolic link; more than 10,000 entries; one file over 256 MB; 1 GB in all for one attachment, across everything nested in it; over 500 times its packed size past 10 MB; more than 3 files deep. Bytes are counted as they unpack, not read from a header. Writing checks once more that each path stays inside its folder. Each `.docx`, `.xlsx` and main workbook is put through the same unpacking check before it's opened.
   - **Ids** keep the same bytes in the same section, then the same bytes anywhere if unique, then the same name in the same section, since an edited file is still that file. Anything else is new; an id nothing claims is marked removed and never comes back. A candidate's files wait under `candidate/attachments/pending-0001/` and take their ids at promotion, when the old ones go.
   - **The client-data check.** `stangent data check` flags a tracked `.xlsx`, `.docx` or `.pdf` anywhere, on purpose. An import no longer leaves any `original/` in the repo (I.7). What it can still flag: one from before this, and a file nested in an archive that was kept and not read, under another path.
-  - **Attachments in the checks (`fsd.attachmentsInChecks`, `attachments-in-checks`, off by default).** Off, nothing in a bundle or hash changes, with a test holding it. On, the link judge's, requirement judge's, agree checker's and disprove step's bundles add each attachment's text after the section's, a CSV as rows with bars, under `# This section's attachments`. The candidate finder's doesn't. Code's quote check accepts a quote from the section or an attachment, and the link records where in `fsd`: `attachment`, `attachmentFile`, and for a workbook `attachmentSheet` and `attachmentRow`. The section's own text wins. `trace check` checks the quote against that file, with the switch on or off, looked up in the document's record so a hand edit can't name a path, and keeps the row current. An attachment over `fsd.attachmentChars` (40000, a stated setting) stays out whole: the bundle says "not checked", and so does the report, from the setting at import. A finding's `document` citation names `attachment`, `file`, `sheet` and `row` (`evidence` v2). On promotion with the switch on, a changed file means the section runs again.
+  - **Attachments in the checks** went with the link route (D342). A frozen link quoting an attachment is still checked against that file by `trace check`.
   - **Known gaps:** only hand-built files, never one saved by Word or Excel. A hostile PDF can still end the process as it opens (the page tree above), and now one inside a document can too: it can't be guarded before opening. Macros are named from stream names only. An old `oleObject*.bin` with no package in it is kept, not read. A plain `.csv` or `.txt` inside a document is kept and not read, as the owner listed the formats to convert.
 - **Fingerprint (D123, A.8).** Each section keeps `textHash` and gains `contentHash`, over its text and its attachments' hashes; with none it's equal to `textHash`. An older document has none: it still loads, and matching falls back on the text.
 - **Section ids:** the FSD's own number (`4.2.3`), or the heading path (`Calendar / Views`) where a section has none.
@@ -244,108 +233,6 @@ Each doubtful section in `fsd diff` also has `suggestions`: the unmatched sectio
 - `stangent fsd claims <doc> [--section <number or permanent id>] [--format text]`: see [Claims in a section](#claims-in-a-section-d143).
 - `stangent fsd show <doc> <section> [--format text]`: that section's text, by permanent id, number or heading path, with its `tables` and `figures` ids, and its `attachments` and generated `attachmentLines`.
 - `stangent fsd export <doc> [--out <dir>] [--max-lines N]` writes one Markdown file per top-level heading, into `.stangent/fsd/<doc>/export/` by default. Git ignores that folder only where the repo's `.gitignore` lists it. `stangent init` adds the line, so a clone set up any other way shows `.stangent/` as untracked, and nothing adds it later. `ignoredByGit` in the result says whether the folder is ignored, for any folder. The limit is `fsd.exportMaxLines` in `stangent.yaml`, 1500 by default, a stated setting and not a measured one. A chapter over it is cut at its next heading level and so on down: `01-00-s0001-rules.md` holds the text before its first sub-heading, `01-01-s0002-pay.md` the first sub-heading. One section over it with no sub-heading stays whole, and is in `overLimit`. Text before the first heading is `00-front-matter.md`. Each file's first line says it's generated, is never read back and names the source's hash. Empty sections keep their heading. The same document gives the same bytes. An export removes only what an earlier export wrote, by that first line. A test holds that nothing in `src/` reads these files.
-
-### Claims in a section (D143)
-
-`stangent fsd claims <doc> [--section <number or permanent id>] [--format text]` cuts a section's text into claims by code, with no AI. It reads and prints, and writes only the telemetry event, unless `claim-links` is on ([below](#claim-ids-and-links-by-ids-d145)). Off by default (`fsd-claims`): off, it says `split: false` and that it isn't a pass. Nothing else reads claims yet, so no link, hash or bundle moves; ids and the judge come in a later slice.
-
-- **A claim** is a `sentence`, a `list-item`, a `table-row`, a `step` (a numbered step inside a cell), a `flow-label`, a `figure` or a `block`. It has `section` (the permanent id), `position` from 1, `kind`, `words` and `flow`. A row's cells keep ` | ` between them. Steps stay in the order written, even where their numbers alternate between columns.
-- **`flow`** is the nearest earlier text that introduces a set of steps, found from where cells sit and never from what they say. In `| Other paths: | Bad input. |`, then `|  | Person | Server |`, then `|  | 1. Press save. | 2. Refuse it. |`, each step's flow is `Other paths: Bad input.`. A first column labels steps that leave it empty, on its own row or above them. A row with one value labels them when it sits in the column they start in. Outside a table, it's a paragraph ending in a colon or all bold, directly before a list or a table of steps.
-- **`notClean` lists what isn't clean,** with `notCleanCount` and `notCleanByReason`. Nothing is dropped, and code doesn't guess:
-
-| Reason | What it means |
-|---|---|
-| `ends-open` | The last step in a cell ends with no stop, so it may go on in the next row. |
-| `starts-mid-step` | A cell's text before its first number, so it may be the end of a step above. |
-| `continues-above` | A paragraph or a one-value row starting in lower case, or one value between column headings and their steps. It keeps the flow and is never a label. |
-| `numbers-out-of-order` | A cell's numbers don't rise, so it stays whole. |
-| `maybe-sentence-end` | A stop before a digit, or after one letter or an abbreviation before a capital, wasn't cut. |
-| `code-block`, `no-table-rule`, `row-not-closed` | Stays whole. |
-
-- **The words check (D18).** The section's words are read straight from its text, with table rules, cell bars and list bullets aside, and compared in order with the claims' words. A difference is in `mismatches`, with `mismatchCount`, and the command exits 1 with the report in `result`.
-- **`--format text`** prints `flow | words`, one a line, with `-` for no flow and `[reason]` after a claim that isn't clean. A whole document also has a `#` line for each section.
-
-**A step a page break cut in two is one claim (D146).** A step with no end stop at the end of its cell joins the next row's text in the same column, when that text has no number before it and starts in lower case. It goes by position and punctuation, with no words and no tuned number, and the import doesn't change. It's strict: every such start in that row has to sit under an open step, a row of plain values joins only if all its cells do, and a row that labels a flow never does. Anything else stays apart and keeps its tags. A joined claim that still has no end stop stays `ends-open`. Text pushed out of the table into a paragraph isn't reached, and stays `continues-above`.
-
-**The words check still reads the section's words in order.** A joined claim's second part may not sit next to its first: other columns can come between. The claim records where that part starts in its words and which claim it follows in the section, and the check reads it back there, so a moved, lost or changed word still fails. `claims.json` holds the joined words only. A joined claim's `C-` id is new, and the two old ones are retired, as with any change in words (none is in real use, since the switch is off). `fsd claims` adds `joinedCount`, `joined` on a claim, and `[joined]` in text.
-
-### Claim ids and links by ids (D145)
-
-Off unless `components.claim-links` and `components.fsd-claims` are both on. With either off, `ids.json` and every other file stay byte-identical, no input hash moves, and `TraceFile.EntryId` gives what it always did. Nothing here has run on a real AI.
-
-- **Written by** `fsd prepare`, and by `fsd claims`, which then also prints each claim's `id` and `judgeKind` and an `ids` block of counts. From `document.json` alone, so no new import is needed. Twice in a row changes no byte.
-- **`specs/fsd/<doc>/claims.json`** (`fsd-claims` v1): `id`, `section` (permanent), `position`, `flow`, `kind`, `shape`, `words`, and `problem` when there is one. Ids are in the `claims` scope of `ids.json`. The same section, normalised words and flow, and among exact repeats their order, keep an id. Anything else is new, and an old one is retired for good.
-- **`kind`:** `claim` is judged. Set aside by where they sit: `column-heading`, `label-row`, `flow-label`, `figure`. What position can't settle stays a claim. `shape` is D143's kind: sentence, list item, table row and so on.
-- **The judge's input** (`link-judge-claims.md`, or `-finer` with finer verdicts): the section's permanent id and title, its flows named once, then one line per set of repeated words with its ids and flows. Then the headings and labels for context, and the pages as ever. The section's text isn't there, and neither is an attachment's. A number isn't there either, so a section that only moved keeps its paid links.
-- **The judge's output:** `links[]`, each with `state`, `note`, and `claims`, `page`, `statement` as the state needs (`covered` and `missing` for `partial`). Naming any id of a line answers the whole line. A flow that differs gets its own link, and ids of the line nobody named take the line's first answer. An unlisted id, or two states for one claim and one statement, take the one retry.
-- **Entries:** one per claim a link answers, with `fsd.claim`, `fsd.quote` (the claim's words) and `page.quote` (the statement's whole text), both filled by code. The id comes from state, doc, section's permanent id, page, claim and statement. A judge's `undocumented` link has `fsd.claim: none`. The second check reads one line per link, and whatever words it copies when it raises a finding are ignored. The disprove step reads the entries as they are.
-- **`trace check`** checks an entry with `fsd.claim`, switch on or off: the claim exists in its section, the quote is its words, the section's text cut now holds them, and `page.quote` is the statement's text. Never given out is a problem. Retired, or changed, is stale and the decision drops; retired ones are listed in `retiredClaims`.
-- **Rulings from before** move when a section is next judged, not when the switch goes on. An old entry with a person's word on it carries to the new entries with the same state, page and statement, whose claim's words hold its FSD quote at word edges and whose statement holds its page quote. It goes to every flow with those words, marked `carried_from`, with an `id-moved` history line, and the `X-` id, grade and evidence go to the first. Ambiguous or unmatched goes `gone`, and with this switch on so does a decided `agree` link.
-- **`fsd check`** adds `unanswered` (`id`, `flow`, `words`) and `unansweredCount`, and the run keeps `unansweredClaims`. It never fails a section in this slice.
-- **Repeats:** a judge's line holds claims with the same normalised words, a leading step number aside (D146), so "3. It confirms" and "4. It confirms" are one line. A line whose numbers differ shows the words without one. Each claim keeps its own words, id and quote.
-- **Stays as it was:** a section whose requirements are built keeps its requirement judge. `group-sections` doesn't group while this is on.
-
-### Workflow files (D144, D147)
-
-`stangent workflows <doc>` writes one readable file per flow, by code with no AI. Off unless `components.workflow-files` is on, which needs `claim-links` (and so `fsd-claims`); off, it says `written: false` and writes nothing. A `claims.json` that isn't the document's now is refused, `claims_out_of_step`: run `fsd claims <doc>`.
-
-```
-specs/workflows/<doc>/index.md                     one line per section with flows: "Login: 6 of 8 flows match"
-specs/workflows/<doc>/s-0120-login/c-2474-main-sequence-of-events.md
-```
-
-- **Holds no fact of its own.** Words are filled in from `claims.json` and the page's JSON when it's written. Nothing reads these files, with a test holding that, and they're in no input hash. Each file's first line says it's generated and not to edit it. The same inputs give the same bytes.
-- **What goes in:** sections whose claims of kind `claim` carry a flow. Everything else is counted in `index.md`: sections with none, claims in those sections with no flow, flow labels with no steps, and links on no step. "Use case" here means a section with flows.
-- **A step shows** its words, claim id and state, a `cut:` tag if it has a problem, and for each link its state, page, statement id and words. A finding adds its `X-` id, the disprove verdict, the person's decision and who it's with, and a security flag if it has one. A flag on a link no step holds is named in each flow file of the section and the index, and opens no flow.
-- **Order:** by the steps' own numbers when every step has one and none repeats; otherwise as in `claims.json`. A joined or repeated step appears as it is there, and a step in several flows is a claim in each.
-- **Names:** the section's `S-` id and the flow's label claim id (its first step's if it has no label), each with a slug, so a new section number renames nothing and two flows with the same words can't collide.
-- **A rebuild** removes only files that start with the generated line, only in this folder, then folders left empty.
-
-**A step's state**, the first that applies across its links. A `gone` finding is shown and counts for nothing.
-
-| State | When |
-|---|---|
-| `differs` | Ruled `code-wrong`, `fsd-wrong` or `accepted`, or an undecided conflict with the verdict `stands` |
-| `open` | A finding waiting on a person, including a refuted or unreachable one nobody confirmed (D119), `page-wrong`, `defer`, or a disputed agree link. Also any link with an unanswered security flag, even on a closed or gone finding (D148) |
-| `agree` | An agree link. An `unclear` finding beside it leaves it `agree` and is counted as an open question |
-| `closed` | A finding closed as not real: `not-a-difference`, `agree`, or a confirmed `refuted` or `unreachable` |
-| `open` | Only an `unclear` finding |
-| `not answered` / `not judged` | No link, in a section with or without links by claim |
-
-**A flow's status**, the first that applies:
-
-| Status | When |
-|---|---|
-| `not judged` | No link on the section names a claim, including a section with only older links by quote |
-| `differs` | A step differs |
-| `open` | A step is open |
-| `not answered` | A step has no link |
-| `matches` | Every step is `agree` or `closed` |
-
-The heading also counts open questions: every link waiting on a person, whatever the status.
-
-### What the tests walk through (D129, D149)
-
-`stangent workflows tests [--out <dir>]`, off unless `components.test-journeys` is on, needs a built graph and Node, and no AI. It compares nothing: no FSD, no claims, no verdict, no pass count. It only shows what the Playwright tests walk through, so only tested flows appear, and there are no actors.
-
-```
-specs/workflows/tests/index.md                      counts of tests, steps and ❓, ❓ by reason, one line per test file
-specs/workflows/tests/e2e/CartTest.spec.ts.md       each test and hook, its steps in order
-```
-
-```
-1. ❓ `emptyCart(page)` (line 5): a helper function, which isn't followed
-3. ❓ **Go to**: `page.goto('/cart')` (line 8): no page resolved. playwright goto: no screen on the map has the route /cart
-6. **Check**: `expect(quantity).toHaveValue('1')` = `page.locator('[data-cart-quantity-input]')` (line 13)
-```
-
-- **Which files:** those `graph screen-tests` reads (`docs/code-graph.md`). One with no Playwright import counts only with a step on `page`, or a test or hook asking for `page`, `browser` or `context`. The result counts the others as `otherRunnersTests`.
-- **Steps:** `goto`, click, fill, select, `expect`-style checks, other actions, waits and reads, in the order written, in the test's own words. Hooks are blocks of their own, counted once. `test.step` and `Promise.all` are read through in place. A local `const` naming a place on the page is followed. Opening and closing a browser isn't a step.
-- **Pages:** only a goto says which page it's on, through the graph's route resolution. It links to a recorded reference page if there is one, or says `no reference page yet`. The steps after a click aren't placed on a page.
-- **❓ is counted by reason,** with no step invented: a helper, a page object, a computed selector, a check on a value, an unknown page call, a goto with no screen, and a loop, condition or try block, whose insides aren't read. Tests that may be made outside any test (a loop, a call) are listed as not read.
-- **Nothing reads these files.** The same inputs give the same bytes, and a rebuild removes only files with its first line, only in that folder. A file is named by its spec's path, so a moved line renames nothing. The files hold no commit; the result's `graphCommit` says which graph resolved the gotos.
-- **A document called `tests`:** off, this command still writes that document's files. On, it's refused (`name_taken`).
-- **The reader:** `tools/ts-extractor/src/testSteps.ts`, by parsing only, in its own bundle `stangent-test-steps.mjs`, so the graph's extractor and hash don't move.
 
 ### A new version (D117)
 
@@ -375,9 +262,9 @@ A first import goes straight in, unless `first-import-approval` is on (above). T
   - `candidate_out_of_date` lists, with the switch on, the entries a fresh comparison classifies differently. There's no three-way merge: import the file again.
   - Readable section files under `specs/fsd/<doc>/sections/`, at a first import, a first-import approval and promote: `S-0003-<slug>.md`, generated and never read back, the same bytes for the same section, stale ones removed in that folder only. A section with no text and no files of its own has none.
   - `fsd diff <doc> --format md` adds a review table with each change's answer and its exact approve and reject commands, to paste into a PR description. No GitHub API calls.
-- **What follows a section, by code, with no file changing shape.** Trace entries get the new number and title, and a new `id` because it's the hash of the link, with the decision and `decided_by` kept. Feature files, every quote, and questions follow; a feature goes under its new parent's. Run keys move. A run's `inputs` is worked out again only when it was valid for the old section and only the number changed, so a renumbering costs no paid run; `carried.runAgain` lists the sections whose words changed. `carried.traceIds` holds old and new entry ids.
-- **A modified section** then goes through the existing drop-back (D58): promotion runs `trace check --fix`, and `staleQuotes` lists what dropped. Its requirements rebuild at the next `req prepare`, as they do whenever a section's text changes.
-- **A removed section** is listed in `carried.removed`: its trace entries, features, requirements and questions. Nothing is dropped. Its features and questions move to the section `(removed S-0007) 3.2`, so a new section given that number can't pick them up. Its trace entries take the same mark, and a new `id` because it's the hash of the link, in `carried.traceIds`. Their title, decision and `decided_by` stay, with no move in the history; `carried.removed[].decisions` lists what they hold. `trace check` flags them until a person deals with them, and its fix leaves them alone, since there's no section to compare a quote with. A screen whose only link is on a removed section counts as undocumented, a draft leaves that section out, and impact answers and stale-page lists show the mark.
+- **What follows a section, by code, with no file changing shape.** Trace entries get the new number and title, and a new `id` because it's the hash of the link, with the decision and `decided_by` kept. `carried.traceIds` holds old and new entry ids. Nothing else is carried since the link route was cut (D342).
+- **A modified section** then goes through the existing drop-back (D58): promotion runs `trace check --fix`, and `staleQuotes` lists what dropped.
+- **A removed section** is listed in `carried.removed` with its trace entries. Nothing is dropped. Its trace entries move to the section `(removed S-0007) 3.2`, so a new section given that number can't pick them up, and a new `id` because it's the hash of the link, in `carried.traceIds`. Their title, decision and `decided_by` stay, with no move in the history; `carried.removed[].decisions` lists what they hold. `trace check` flags them until a person deals with them, and its fix leaves them alone, since there's no section to compare a quote with. A screen whose only link is on a removed section counts as undocumented, a draft leaves that section out, and impact answers and stale-page lists show the mark.
 - History: a moved entry's new id gets an `id-moved` line in `specs/trace-history.jsonl`, so `state history` shows what happened under the old id. Its `X-` id never changes.
 - CI: `TraceCheck` and `trace attribute` look up a moved entry in the base file by its link without the section, so promoting doesn't read as a typed `decided_by` or a new decision.
 - **Known gaps:** see `phases/2b-fsd.md`. No real document with two versions has been through this yet (D56).
@@ -388,9 +275,9 @@ A first import goes straight in, unless `first-import-approval` is on (above). T
 
 ## The FSD review (layer 5, D341; contract `fsd-review` v1)
 
-The route measured better than the linking below (D321–D324: 26–29 of 30 planted items against 24, 0–8% false alarms
+The route measured better than the old linking (D321–D324: 26–29 of 30 planted items against 24, 0–8% false alarms
 against 31%): an agent reads the FSD and the source, two runs side by side, and code checks what it says. The old route,
-`/stangent:fsd-link`, still runs until layer 7 retires it. `plugin/scripts/fsd-review-run.sh <doc>` (or
+`/stangent:fsd-link`, was cut in layer 7 (D342). `plugin/scripts/fsd-review-run.sh <doc>` (or
 `/stangent:fsd-review`) runs it all; by hand:
 
 ```bash
@@ -432,119 +319,31 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
 - **Checked free (2026-11-15):** the saved Kavita runs through the built command: 29 of 30, 0 dropped
   (`benchmark/results/2026-11-15-fsd-review-free/`).
 
-## Links, findings and decisions (2b, D53, D58, D62)
+## Links, findings and decisions (2b, D53, D58, D62): frozen (D342)
 
-Each step here has a switch (D121, `docs/foundation.md`): `candidate-finder`, `agree-checker`, `requirements-links`, `findings`, `disprove`, `line-citations`.
+**The link route is cut (D342).** The candidate finder, link judge, agree checker, disprover, requirement steps, claims and
+claim links, workflow files, test journeys, `spec ask` and the security flag went in layer 7, with their commands
+(`fsd candidates`, `fsd prepare`/`check`, `fsd disprove …`, `fsd claims`, `fsd undocumented`, `fsd not-in-code`, `workflows`,
+`req …`, `ticket match`, `spec ask`, `trace confirm`, `send-back`, `security`), agents, schemas and script modes. The FSD
+review (above) is how an FSD is checked against the code now; git history keeps the old code. A `stangent.yaml` that still names
+one of the cut components is refused with that list (`StangentComponents.Cut`), and one with a cut `fsd:` or `spec:` key fails to load.
 
+**What stays.** `specs/trace.yaml` stays as the old runs left it, because ticket starting points and the ticket bundle still read
+its links and findings, as they read the reference pages (D342: cut those too once a ticket run without them shows the points
+hold). Table facts (below) still write their findings into it. So:
 
-- `stangent fsd candidates`: candidate pages per section, by code: section titles ↔ routes, component names and page
-  titles (case, word order and plurals normalised), field labels in tables ↔ properties in a page's slice, and the
-  endpoints a candidate screen calls. A section with none goes to `stangent-candidate-finder`, which sees the page
-  titles only.
-  With `shared-through` on (off by default, because it changes what a judge reads, D140), a candidate screen also brings the
-  shared components it reaches through its unshared ones, `why` saying `shared component reached from <screen>`. It stops at the
-  first shared component on each path, which is what the screen's page links to, so one's own subtree isn't walked. It works for any screen with a
-  slice, so a no-route screen (`root-screens`) and a `render=` route (`route-render`) too. A shared component's name still finds
-  its own page as before. No new limit: what's already found stays first, the nearest come next, and the rest fits within
-  `MaxPerSection` pages and `spec.maxBundleChars` for the section's text and recorded pages. What doesn't fit is listed as `leftOut`
-  on `fsd candidates`.
-  A reached page not written yet is a candidate with `recorded: false`, so `spec needed` lists it and `spec-run.sh --for-fsd` writes it.
-  If `fsd prepare` comes first, the judge is told it exists and isn't shown, so its absence isn't evidence of a gap, and the step
-  warns. Everything left out, with its `reason` (`it didn't fit`, `no page written yet`), is told to the judge and kept as
-  `candidatesLeftOut` on the section's run, or on its `unit`. A section that gains a page has new judge inputs, so its saved links are
-  judged again; with it off, every bundle and hash stays the same. Untested with a real AI.
-- `stangent fsd prepare|check <doc> <section>`: `stangent-link-judge` (fresh context) returns links — `agree`,
-  `conflict`, `gap`, `undocumented`, and `partial` and `unclear` with a switch on (below) — each quoting the FSD sentence and the page statement exactly. Code checks both
-  quotes word for word, both ends exist, and every symbol the quoted statement cites is in the graph. Every `agree`
-  then goes to `stangent-agree-checker`, a second fresh check: `confirmed`, or `disputed` and turned into the finding it
-  raises. `specs/trace-runs.json` records each section's inputs, candidates (by code or AI), tokens and retries.
-- `stangent fsd undocumented`: screens no section links to are undocumented, by code, within `fsd.scope`: the areas
-  the FSD says it covers, as routes or route prefixes (`/settings` covers `/settings/tags`). It only sees screens with
-  a recorded page, so generate every in-scope screen first.
-- **Findings are off by default (D68):** with `fsd: { findings: false }` (the default) sections record only links;
-  gaps, conflicts and undocumented items aren't written and `fsd undocumented` lists none. `findings: true` turns them
-  on (the Sonarr benchmark does); changing it makes each section run again.
-- **`specs/trace.yaml`**: one entry per link or finding; people edit only `decision` (`agree`, `code-wrong`,
-  `fsd-wrong`, `page-wrong`, `defer`, `accepted` for a difference known and left as it is, `not-a-difference` for one that isn't really one) and, on a finding, `severity`, in a PR. `stangent trace approve <doc> <chapter>` sets `agree` on every confirmed agree link
-  under a chapter in one edit. `stangent trace check [--base <ref>] [--fix]` is the CI check: schema, ids, both quotes
-  still in the FSD and the page, the statement's text still what the decision was made on (otherwise the decision drops back to undecided), cited symbols, and `decided_by` never
-  typed. After a merge, `stangent trace attribute --base <ref> --by <who>` fills `decided_by` and `severity_by` from the code host. Every decision's and severity's move goes in `specs/trace-history.jsonl`.
-- **`stangent trace links <doc> [--section <number>]`** shows every link of a document in file order: its state, finding, section and FSD sentence, its page statement, and the code lines that statement cites, with the line map's commit and counts. The lines come from the page's citations, looked up when you ask (D133), so they show where to look and don't prove the code matches: the AI compared the sentence with the page, not the code, which is what `codeFrom: "page-citations"` says. Where there are none, `codeNote` says why: `no page statement`, `statement not on the page`, `page has no line map` or `no code cited`. A citation of another page isn't a code line and is left out. It only reads: no AI and no project file changed, only the telemetry event every command writes.
-- **`stangent trace findings <doc> [--out <file>]`** writes the BA's queue as one Markdown file, default `specs/fsd/<doc>/findings.md`, by code with no AI (D152). Groups, strongest evidence first: the code shows the difference (`stands`), sent back to you, not checked against the code (no verdict), the AI couldn't tell, other. Each finding shows the FSD sentence, the page statement (or that no statement on the page says it), the disprover's quoted line or the page's citations as where to look, the AI's reason and suggested severity, and the entry id whose `decision:` to set. What's with a developer is counted, not listed. Nothing reads the file; an unchanged queue writes nothing (`written: false`).
-- **What a decision rests on (D118):** `decided_on`, beside the decision, is the hash of the page statement's text, whitespace normalised. `trace approve` and `trace attribute` write it, and otherwise the first check does, so an old file gets one and drops nothing. If the text changes, even with the same id and a quote that still fits, a plain check lists a problem, and `--fix` drops the decision on the state module. Either way `changedStatements` and `counts.changedStatements` report it, apart from `staleQuotes`. The drop-back clears it, and a re-judged link carries it. Changing it by hand, against the base, is a problem. No input hash reads it.
-- **`recheck` and `gone` (D122, C.3).** `standing`, by code on the state module (`finding-standing`), hashed like a verdict so a typed one counts for nothing and is a problem. Decisions drop exactly as before: this only adds what happened, for findings a person decided. It's `recheck` when a decision drops because a quote or statement changed (D58, D118) or a `page-wrong` page was written again (D119): `decision` is null, so no reader counts it and it goes back to the BA (D119's send-back still applies), and `standing_note` keeps what it was and who said so. A person deciding again clears it, at `trace attribute`. It's `gone` when a new build doesn't find a decided finding: the entry stays, with its `X-` id, kept and listed apart, in `gone` and the queue of that name rather than in `findings`, out of every reader's lists as a closed one is, and with its evidence as it was and nothing checked against it. If the same link comes back, the same id returns as `recheck`, never decided again by itself. A finding nobody decided that goes away is removed and its id retired, as before. `trace check` lists `standing`, `was`, `wasBy` and `standingWhy`, with `counts.recheck` and `counts.gone`. No hash reads any of it.
-- **Section coverage (D122, C.1).** `trace check`'s `coverage`, per document: `linked` (an entry with a page), `notInCode`, `empty` (no text to check) and `uncovered`, with `counts.uncoveredSections`. It reports and never fails a check. A gap with no page doesn't count as a link. `stangent fsd not-in-code <doc> <section> [--why] [--clear]`, by permanent id or number, is a person's word, with the name from git, on the state module (`section-coverage`), in `specs/fsd/<doc>/not-in-code.json`. It follows the section across versions, and holds for the words it was made on: if the text changes, the section is `uncovered` again with `markWas`. A `notInCode` section lists its `attachments` (pictures by id, embedded files by name) so what sits in it is seen, and `alsoLinked` if it has links too.
-- Impact answers reach FSD sections through the links (`impact-report` v5, `docs/code-graph.md`).
-- **What a finding carries (2.4, D118, `trace-links` v3).** Code gives each `gap`, `conflict` and `undocumented` entry these on `trace check`, with or without `--fix`, and saves the file when it adds any. The AI never sees or writes them, and no input hash reads them, so an entry's id doesn't change. A file with no findings isn't touched. Files written by v1 and v2 still read.
-  - **`finding`:** `X-0001`, permanent, per project, from `specs/trace-ids.json`. A re-run giving the same link keeps it, and so does a promotion that moves its section. One nothing holds any more is marked removed and never comes back. Used twice, or changed by hand against the base, it's a problem.
-  - **`evidence`:** records of contract `evidence` v1, one line each, filled by code from what's known. `X-0001.fsd` holds the FSD quote and the document's `contentHash`, `stated`. `X-0001.page` holds the page, statement and quote, with the page's commit where it's a full one, `read`. `X-0001.code.N` holds each symbol the quoted statement cites, with `path:lines`, the commit and any `citation.note`, `read`, where the page has line citations; a dirty file gets none. All of it is derived again on every check, so it follows a page recorded again, and it's byte-stable when nothing changed. `evidence_hash` holds its hash as code wrote it. `checkedBy` is `trace check`, the judge's and second checker's models from `specs/trace-runs.json`, and the person who decided, only ever from `decided_by`. `ran` is never filled in here, because nothing here ran, and there's no way to add evidence by hand.
-  - **Checks, in `problems`, as any other failure:** `EvidenceValidator`'s rules; a citation that doesn't match the finding's own quotes, document, page and statement; a code symbol not in the graph; the wrong strength for its kind; and evidence citing a finding (`X-…` or `trace.yaml`), since an opinion can't back up a claim about today's behaviour (D53). A record that's neither what code derives now nor what it wrote before (the base's copy with `--base`, otherwise `evidence_hash`) is refused by name, and `--fix` leaves it refused. Delete it, and code writes what's true.
-  - **`severity`:** one scale, `Severity` in Core: `blocker` (users on the normal path lose data or can't finish), `major` (a wrong result on the normal path, or blocked on a rare one), `minor` (wrong on a rare path, or confusing), `cosmetic` (wording only), and `ungraded`, where code starts it. Code can't judge the effect on users, so a person sets it the way they set `decision`, by editing the file in a PR. `trace attribute` sees the change, moves `finding-severity` on the state module and fills `severity_by` from git. It's a field of its own, not `decided_by`, because a decision's drop-back clears `decided_by` and a grade stays. A typed `severity_by` is a problem, as a typed `decided_by` is. The disprove step can suggest a grade; it's shown beside it, and a person still sets it.
-  - **Kept apart:** a page's statements come from the page's JSON only, and `specs/trace.yaml` isn't one of the things the page's writer, the verifier, the judge or a ticket bundle reads for a statement. A writer's citation must be in the graph, so it can't cite `X-0001`.
-  - **Shown:** `trace check` lists each finding's `id`, `entry`, `state`, `severity`, `doc`, `section`, `page`, `statement` and `decision` in `findings`, with `counts.findings` and `counts.bySeverity`.
-  - **Questions** already had permanent `Q-` ids from the requirements ledger, so nothing changed there.
-- **The disprove step (2.5, D119).** A second, fresh agent tries to refute each finding from the code. **Off by default:** `fsd: { disprove: true }` turns it on, set like `findings` (D68). It's in no link's input hash, so turning it on re-judges nothing. **Whether it helps isn't known until the paid re-score runs** (`phases/2c-spec.md`).
-  - **The loop:** `stangent fsd disprove prepare|check <doc> <section>`, one call per finding, one turn, no tools (D66), `finding-disprover-output` v1, in `.stangent/fsd-disprove/`. `spec-run.sh --fsd <doc>` runs it after each section's links when the setting is on, and prints `disprove:<status>` then. `spec-run.sh --disprove <doc>` runs only this stage. `stangent fsd disprove estimate <doc> [--chapter <n>]` says what a run would send: no AI, nothing written.
-  - **A trial chapter (D122, E.3):** `spec-run.sh --fsd <doc> --chapter <n>` and `--disprove <doc> --chapter <n>` run one top-level heading and everything under it, from `stangent fsd sections --doc <doc> --chapter <n>`. `<n>` is the chapter's number or permanent id. Where no chapter has a number it's its place in `fsd outline`; a numbered document never falls back on place, or `--chapter 2` with chapters 1 and 3 would run 3.
-  - **What it reads,** built by code, since it has no tools: the section's text; the claim in a fixed sentence; the page's statements; the code; what couldn't be shown; and the entry points the impact walk reaches, or that it reaches none. **It never sees** who found the finding, its `note` or its `check` (D61). A symbol whose file differs from the commit isn't shown, and the bundle names it and says why.
-  - **The size rule:** at most 60,000 characters of code, whole symbols with numbered lines, from the graph's commit. First the symbols the claim's statement cites. Then what the page's other statements cite. Then the rest of the page's slice and the slices of the endpoints it reaches, because a screen's slice stops at the API (D63). Each group goes by how many of the claim's words a symbol holds, then smallest first. What doesn't fit is named.
-  - **What it can't test:** a finding a person decided (their decision stands), and an `undocumented` screen found by code, which has no FSD quote and whose claim is about the FSD, not the code. That one stays `unverified`. A finding with no code to read gets `cant-tell` from code, with no call. A graph that can't say its tree was clean stops the run: `graph build` first.
-  - **The check (D18):** every verdict but `cant-tell` needs `path`, `start`, `end` and `quote`, and the quote must be word for word at those lines of the code in the bundle, with `Quotes.InSource`'s rule on what's long enough. A failure gets one retry, then code writes `cant-tell`, with the reason in `why`, and keeps what was claimed in `disproof.claimed` if it's a verdict at all. So does an answer that never parses or isn't an object.
-  - **Where each verdict goes**, in `goesTo` on the `trace check` listing and `queues` beside it: `refuted` and `unreachable` to `developer-confirm`, out of the BA's queue and listed with the verdict, the quote and its `path:lines`; `page-gap` to `developer`, or to `developer-confirm` when it was asked with `page-gap-strict` on (D151: then a page gap means a quoted line does what the FSD says, nothing settling it is `cant-tell`, and the disproof says `pageGap: strict`); `stands` to `ba`; `cant-tell` to `ba`, labelled; no verdict to `ba`, labelled `unverified`. Every verdict with a quote is labelled `the AI's reading: <verdict>` and its evidence is `read`, never `ran`: code proved the quote exists, not that it supports the verdict, and nothing checks relevance. `counts.undecided` holds only what the BA has. A person's `decision` outranks all of it: `decided`, or `page-owner` on `page-wrong`. `suggestedSeverity` is listed beside `severity` and writes nothing.
-  - **A person closes it (D18):** `stangent trace confirm <finding> [--why]` moves a `refuted` or `unreachable` finding to `closed`, kept and listed, never deleted. `stangent trace send-back <finding> [--why]` returns it to `ba`, before or after confirming, labelled with the reason. The name comes from git, the move goes on the state module (`finding-review`), and `review_hash` ties it to the verdict, so a typed `review` closes nothing and is a problem. A new verdict starts with nobody's word on it. A confirmation drops, like a decision, when the statement or quote it was made on changes.
-  - **A dropped decision (D119):** when `trace check --fix`, a regenerated `page-wrong` page or a person's PR takes a decision off a finding that has a verdict, the finding goes to `ba`, labelled with why. The old verdict doesn't take over, with `fsd.disprove` on or off. A later changed bundle still means a new verdict, which waits for a person the same way.
-  - **On file:** `verdict`, moved only by code on the state module (`finding-verdict`); `disproof`, with the quote, the agent and the bundle's hash; `disproof_hash`, so a verdict typed by hand to clear a finding is a problem, on the same terms as `evidence_hash`. The quote becomes evidence record `X-0001.disprove`, `checkedBy` the agent and then the code check, derived again on every check like the rest.
-  - **What the hash holds:** what the verdict rests on: the instructions, the document, the section's title and text, the claim, the page's statements, each symbol's path, name and code, what couldn't be shown, and the entry points. The bundle shows three more things it leaves out: the commit, the section's number and each symbol's line numbers. So a new commit, a moved section or code pushed down a few lines with the same words keeps the verdict and a person's confirmation, and costs no call. A verdict's `path:lines` are as of the commit it was given at, `disproof.commit`, which is on its evidence and listed as `atCommit`.
-  - **Staying current:** an unchanged bundle means no call. When the bundle changed, the old verdict drops to `unverified` before the new call, so a closed finding reopens, for a person to look at again, even if the call never comes. Until the next `disprove prepare`, a verdict can be older than the code; `trace check` doesn't see that.
-  - **Readers:** only a closed finding, one a person confirmed, leaves the ticket bundle, a draft's sections and impact's `fsdSections`. One with an unanswered security flag stays in the ticket bundle (D148). A `developer-confirm` or `page-gap` one stays in them, marked unconfirmed as before.
-- **`page-wrong` (D119).** The BA says the reference is wrong, in a PR like any decision, with `decided_by` from git and `decided_on` as usual. The entry needs a page, or `trace check` says so. `spec stale` lists the page, with `reportedWrong` on the item, even though its inputs didn't change, so `spec-run.sh --stale` picks it up. `spec prepare` runs it, and the writer's bundle says what was reported, after the hashed part: the statement and the FSD's quote, or for a gap, that the page has no statement on it, with the quote. Writing the page again drops the decision back on the state module, so it returns to the BA. Impact's `verified` is false while it holds. Page steps don't depend on the links: `spec prepare`, `spec check` and `spec stale` read a broken `trace.yaml` as no marks, say so in `warning` or `traceProblem`, and carry on.
-
-## Smaller disprove bundles (I.3, D131)
-
-44 of 62 disprove bundles hit the 60K code cap. With `disprove-small` on (off by default, because it changes what the disprover reads, so its saved verdicts run again), a claim that cites code gets only what the page's statements cite. A gap, which cites nothing, gets those plus the slice's code that holds at least one of the claim's words, since that's where an omission shows. What's left out is named under "Couldn't be shown", so the agent knows. No new number: the 60K cap stays.
-
-With `disprove-callers` on (D146, off by default, for the same reason), a finding whose page is an endpoint also gets the frontend code calling that endpoint, from the graph's `frontend-http` lines, straight after the claim's own cited symbols and under the same 60K. What doesn't fit is named under "Couldn't be shown" and counted in `withSomethingNotShown`, as ever. A line from another service isn't a frontend caller. It also adds instruction text (`finding-disprover-callers.md`): a claim about something the bundle doesn't hold, such as a colour, is `cant-tell`, not `refuted`. There's no CSS in the graph, so that's the whole answer for a stylesheet. Off, no text or hash moves. No AI has read this.
-
-The risk is the agent not seeing what it needs and answering `cant-tell`, so it's watched: each verdict made this way carries `disproof.bundle: small`. `fsd disprove estimate` shows `small`, what the pending bundles would be this way, and `watch`, `cant-tell` among recorded verdicts, small and full apart. No AI to read either.
-
-## The security flag (D141, D148)
-
-**This isn't a security review.** It only looks at findings, so a hole that matches the FSD is never flagged, and a finding with no flag says nothing about holes. Phase 6's review stays (D132). `security-flag` is off by default, needs `disprove`, and hasn't been shown to help: no AI has read its instructions.
-
-The severity scale grades the effect on users on the normal path, so a security hole can score low. This is a separate flag, sent to a developer. It sets no severity, and no rule grades anything from it (D118).
-
-- **Set by the disprove step.** With the switch on, its input adds `finding-disprover-security.md`, and its answer is held to `finding-disprover-security-output` v1. `security` says whether the finding touches security, such as logins, permissions, or trusting data a browser sent, and why, in a sentence. A `stands` verdict also has to give `suggestedSeverity`.
-- **Any verdict can carry it,** `refuted` and `cant-tell` included. A flag is in its own fields, so a verdict moving, a person confirming a refutation or a decision on the finding doesn't touch it.
-- **Code checks it (D18).** A flag cites `path`, `start`, `end` and `quote`, and the quote has to be word for word at those lines in the bundle, with the check the verdict's quote gets. A failure gets the one retry. A second failure makes the whole answer `cant-tell`, with no flag, and what it said is listed as `securityClaimed`.
-- **Where it goes:** `trace check`'s `queues` gains `security`, apart from the BA's, once a flag is on file. A flagged finding is listed there as well as wherever its verdict sends it: `goesTo` stays the verdict's route, and `alsoGoesTo: ["security"]` sits beside it. Each listing has `security`, with `answer`, `why`, `quote`, `at` and `atCommit`, and `counts.security` has `flagged` and `unanswered`. A file with no flag reads as it always has.
-- **A person answers:** `stangent trace security <finding> confirmed|not-security [--why]`, with the name from git, on the state module (`finding-security`). Code can't answer it, and an agent can't. The flag stays on file, and a person can change their mind.
-- **It never closes by itself.** A later run that doesn't flag the finding, a verdict dropping, the switch going off or the finding going `gone` all leave it open. An undecided finding a new build doesn't find is kept as `gone` if it's flagged.
-- **A typed answer counts for nothing and is a problem,** through `security_answer_hash`. So is a typed flag, which stays in sight and can't be answered. With `--base`, a flag taken out of the file is a problem too.
-- **An answer drops as a decision does:** when the statement's text or a quote changes, `trace check` reports it and `--fix` opens the flag again. A later flag on another line lets go of the answer; one on the same path and quote keeps it.
-- **Where it shows:** `trace check`, `trace links`, the ticket bundle (`SECURITY FLAG, UNANSWERED` in `bundle.md`) and workflow files, where an unanswered flag makes a step `open`. A step that `differs` stays so, with the flag shown and counted. Drafts and impact answers don't read it.
-- **A verdict from before the switch stays valid:** turning it on changes no file. The switch's instructions and schema are in the bundle's hash, so the next `fsd disprove prepare` sees a changed bundle: the old verdict and any person's confirmation drop, and a paid call goes out, one per undecided finding that can be tested. `fsd disprove estimate` shows the count for free. Turning it off moves the hash back, so the step asks again, and any flag stays.
-- **What it can't flag:** a finding a person already decided, which the step doesn't test again; `unclear` findings, table facts and code-found `undocumented` screens; and a bundle with no code.
-
-## The link judge's finer verdicts (C.4, D124)
-
-`fsd: { judgeFinerVerdicts: true }`, off by default. **It hasn't been shown to help: no real AI has seen these prompts,** and whether they cut false alarms is what the paid re-score would say.
-
-- **On,** the judge reads new instruction text (`link-judge-finer.md`, `requirement-judge-finer.md`) and answers with a new schema (`link-judge-finer-output` v1, `requirement-judge-finer-output` v1). The bundle differs, so the input hash does, and a section runs again. Off, nothing it reads has changed, and `SavedWorkTests` holds that.
-- **`partial`** is a kind of finding: the statement covers part of the claim and leaves the rest unshown, with nothing that contradicts it. It needs both quotes, like a conflict, and `covered` and `missing`, kept as `partial` on the entry. It takes an `X-` id and goes to the disprove step when that's on, and through the queues as any finding.
-- **`unclear`** needs the FSD's quote and a reason, in `note`, and names no page. It goes to the BA labelled `unclear, not counted as a difference: <reason>`, and takes an `X-` id so it can be decided. It isn't in `counts.findings` or `counts.bySeverity`, which is `counts.unclear`, and `difference` on the listing says false. It doesn't count a section as linked, or reach a ticket bundle, a draft or an impact answer, as it has no page, and it isn't sent to the disprove step. With `findings` off it isn't recorded, and the run says `unclearLeftOut`.
-- **Readers.** A ticket bundle lists a `partial` link (`ticket-bundle` v2 grew in place, not being on `main`). A ticket match counts it as a link that shows the code. `impact-report` v5 is on `main` and has no such state, so an impact answer's `states` reads it as `conflict`.
-- **The scorer.** A `partial` on a planted item counts as `found`, and not as `foundAsKind`. An `unclear` one counts as neither found nor noise. `finerVerdicts` reports both: the counts, which planted items a partial found, and the unclear entries.
-
-## Judging small neighbouring sections together (C.6, D124)
-
-`fsd: { groupSections: true }`, off by default, so a rule split across two sections is read as one. **Whether that helps is unknown: no real AI has read one of these bundles,** and turning it on on a real document re-runs every unit, which is paid.
-
-- **The unit:** walking the sections in order, a run with the same parent and up to `fsd.groupMaxChars` (4000, a stated setting, not a measured one) of text between them. A section with no text ends a run. So does one over the limit, which is judged alone, and one judged by requirement (`requirements-links`), which already has its own unit. If code finds no page for the whole unit, each section takes the usual road alone, through the candidate finder.
-- **The steps:** `fsd prepare <doc> <first section>` writes the bundle: all the sections, then the pages for all of them, with `link-judge.md` (or its finer variant) plus `link-judge-group.md`, and a schema of its own (`link-judge-group-output` v1, `link-judge-group-finer-output` v1). The others answer `grouped`, naming the first, with no call, so `spec-run.sh --fsd` needs no change. The candidate finder doesn't run. The agree checker reads the same sections.
-- **Each link cites its own section.** `section` is required, code checks the FSD quote against that section alone, and one that names another unit's section is rejected. A link's entry is on its own section, with an id as usual.
-- **`specs/trace-runs.json` records the unit,** as `unit` on each section: `kind`, `leader`, `sections`, `inputs`, `links` and the unit's usage.
-- **Its own hash.** A unit's `inputs` are over its own bundle, and a section's own `inputs` aren't touched. `saved` beside them keeps what each side last gave: `own` and `group`, each with its inputs and its links, with no decision or finding fields. So turning it on re-runs; turning it off puts each section's saved links back with no call, once that section is prepared, as long as its own inputs are unchanged; and turning it on again does the same for the unit. A person's decision follows the rule it always has (D58, D122): the same link comes back with it, and one that didn't come back drops or goes `gone`.
-- **Off,** nothing in `trace-runs.json`, any bundle or any hash changes.
+- **`stangent trace check [--base <ref>] [--fix]`**, the CI check: schema, ids, both quotes still in the FSD and the page (a frozen
+  claim link is checked word for word against its section's text, the claim ledger having gone), the statement's text still what the
+  decision was made on (otherwise the decision drops back to undecided), cited symbols, `decided_by` never typed. Findings get their
+  permanent `X-` ids, evidence (`evidence` v1) and severities as before (D118); old verdicts and security flags on file are read and
+  shown, never written.
+- **`stangent trace approve <doc> <chapter>`** sets `agree` on every confirmed agree link under a chapter;
+  **`stangent trace attribute --base <ref> --by <who>`** fills `decided_by` and `severity_by` after a merge. People still edit only
+  `decision` and `severity`, in a PR; every move goes in `specs/trace-history.jsonl`.
+- **`stangent trace links <doc>`** and **`stangent trace findings <doc>`** read the file: each link with its page statement and the code
+  lines it cites, and the BA's queue as Markdown. Reads only.
+- **`fsd promote`** carries the entries to a new version's sections by permanent id, and lists what cites a removed section.
+- **`fsd status`** still reports each section's coverage by links, from the frozen file.
 
 ## Comparing tables with the code (C.2, D124)
 
@@ -568,30 +367,3 @@ The severity scale grades the effect on users on the normal path, so a security 
 - **Each difference is a finding of its own kind, `table-fact`,** in `specs/trace.yaml`, with `by: code` and what was compared in `table_fact`: `route: table-facts`, `result` (`differs`, `fsd-only`, `code-only`), the table, column, row, target and both values, and the code's `path`, `start`, `end` and `commit`. Its quote is the table's cell, or the column's header for a name only the code has. Its evidence is that cell, `stated` as every document citation is, and the code's lines, `read`; `table_fact.strength` is `read`. A file that may not match the commit gets `linesNot` and no lines.
 - **Where it goes.** The BA's queue, with state and history like other findings, labelled by its route. Its own switch writes it, whether or not `fsd.findings` is on. It has no page, so it doesn't enter a link bundle, a ticket bundle, a draft or an impact answer, and doesn't count a section as linked. It isn't sent to the disprove step, because code already compared it. A judge's run doesn't touch it. Running `compare-tables` again replaces its own, and a decided one that went away is kept as `gone`.
 
-## Requirements (2c, D99; contract `requirements` v1, being built)
-
-The FSD stays the record. On top of it, one AI pass per section builds items, each quoting the FSD word for word. Status starts
-`proposed`; only a person approves.
-
-- `stangent req prepare|check <doc> <section>`, the usual loop. `spec-run.sh --req <doc> [--only <section>]` runs it in batches.
-  `stangent req sections` lists sections with text; `stangent req show <id>` prints one item, never a whole file.
-- **`stangent-requirement-writer`** returns requirements (kind, title, statement, quotes, acceptance criteria), definitions (glossary,
-  data, roles, states, messages, outside systems, scope, success criteria, only when the FSD says something about them), journeys and
-  scenarios made of requirement keys, questions for the BA, and background.
-- **Code checks, one retry:** the schema; keys unique and pointing at something; no statement twice; every quote from the section word
-  for word; every sentence cited or background. **Cited** means the quotes of requirements, criteria and definitions cover every word of it,
-  whole words only (a piece under 4 words counts only as a whole sentence), and a table row must be quoted whole. **Background** is one sentence
-  exactly as listed. A second failure fails the section; `--retry-failed` tries again.
-- **`stangent-requirement-checker`** (fresh context, sees the section, the items, the background and the questions) says whether each item goes further than
-  its quotes, naming the words (code checks they're in the item), whether each item cites a quote it has nothing to do with, and whether each background sentence holds
-  a rule. Disputed ones go back to the writer once, then to the checker again; what's still disputed is recorded `disputed`. A dispute it couldn't back up and then dropped
-  leaves the item `unchecked`.
-- **Files,** committed, under `specs/requirements/`: `ids.json` (the permanent-id ledger: an id is given once), `history.jsonl` (every status move, `docs/foundation.md`), `runs.json` (cost, retries, counts), and per document
-  `F-<id>.yaml` (one per section, following the FSD's section tree, parents listing children), `questions.yaml`, and two views written by code: `index.yaml` (one line per
-  item, read first) and `glossary.yaml`. Working files are in `.stangent/req/`.
-- **Ids** are plain numbers, assigned once: `F-`, `R-`, `D-` (definitions), `J-`, `S-`, `Q-`. On a re-run an item with the same quotes and words keeps its id, as does one reworded
-  item alone on its quotes; ids whose quotes are gone are retired. A change to the title, statement, kind, quotes, criteria or the definitions it uses, or any answer from the checker but `ok`, drops an approved item to
-  `proposed`. Reconcile (not built) replaces this with carrying items forward by code.
-- **Links:** judged one requirement at a time when a section's requirements are built, unless `requirements-links` is off.
-- **Not built yet:** approval, reconcile across documents and renumbering, a pass for clashes between sections, Jira and as-built sources, diagrams. Journeys are within one
-  section, since extraction sees one section at a time.

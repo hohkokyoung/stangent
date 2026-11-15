@@ -304,29 +304,28 @@ public sealed class TicketRunDriverTests : IDisposable
     {
         if (OperatingSystem.IsWindows()) return;
         Steps("""
-            "ticket match K-1") echo '{"ok":false,"error":{"code":"no_requirements","message":"none"}}'; exit 1 ;;
+            "ticket draft K-1 --kind questions") echo '{"ok":false,"error":{"code":"no_bundle","message":"none"}}'; exit 1 ;;
             """);
-        var result = rig.Run(Script, "--match", "K-1");
+        var result = rig.Run(Script, "--questions", "K-1");
         Assert.Equal(1, result.Exit);
-        Assert.Contains("no_requirements\tK-1\tmatch", result.Out);
-        Assert.Contains("refused or failed: K-1 match", result.Err);
+        Assert.Contains("no_bundle\tK-1\tquestions", result.Out);
+        Assert.Contains("refused or failed: K-1 questions", result.Err);
     }
 
     [Fact]
-    public void Match_questions_and_resolution_each_run_their_step_with_their_arguments()
+    public void Questions_and_resolution_each_run_their_step_with_their_arguments()
     {
         if (OperatingSystem.IsWindows()) return;
         Steps($"""
-            "ticket match K-1") echo '{Writer}' ;;
             "ticket draft K-1 --kind questions --tone plain") echo '{Writer}' ;;
             "ticket draft K-1 --kind resolution --pr a..b --tone plain") echo '{Writer}' ;;
             "ticket check K-1 --step "*) echo '{Written}' ;;
             """);
-        var result = rig.Run(Script, "--match", "--questions", "--resolution", "a..b", "--tone", "plain", "--model", "haiku", "K-1");
+        var result = rig.Run(Script, "--questions", "--resolution", "a..b", "--tone", "plain", "--model", "haiku", "K-1");
         Assert.Equal(0, result.Exit);
-        foreach (var step in new[] { "match", "questions", "resolution" })
+        foreach (var step in new[] { "questions", "resolution" })
             Assert.Contains($"written\tK-1\t{step}", result.Out);
-        Assert.Equal(3, rig.ClaudeCalls().Count);
+        Assert.Equal(2, rig.ClaudeCalls().Count);
         Assert.All(rig.ClaudeCalls(), c => Assert.Contains("--model haiku", c));
         Assert.All(rig.ClaudeCalls(), c => Assert.Contains("autoMemoryEnabled", c));
     }

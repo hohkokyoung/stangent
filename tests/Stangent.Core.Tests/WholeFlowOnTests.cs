@@ -51,72 +51,11 @@ public class WholeFlowOnTests(WholeFlowOn on) : IClassFixture<WholeFlowOn>
     }
 
     [Fact]
-    public void The_finer_judge_is_answered_and_its_verdicts_reach_trace_check_and_status()
-    {
-        flow.Reached(5);
-        Assert.Equal("link-judge-group-finer-output.v1.json", (string)flow.Seen("on.judge")["next"]!["schema"]!);
-        Assert.Equal("recorded", (string)flow.Seen("on.recorded")["status"]!);
-        var check = flow.Seen("on.check");
-        Assert.True((bool)check["ok"]!, string.Join("; ", check["problems"]!.AsArray().Select(p => (string)p!)));
-        Assert.Equal(1, (int)check["counts"]!["byState"]!["partial"]!);
-        Assert.Equal(1, (int)check["counts"]!["unclear"]!);
-        Assert.Equal(1, (int)flow.Seen("on.status")["queues"]!["unclear"]!);
-    }
-
-    [Fact]
-    public void A_group_of_sections_is_judged_once_each_link_on_its_own_section()
-    {
-        flow.Reached(5);
-        Assert.Equal("grouped", (string)flow.Seen("on.grouped")["status"]!);
-        Assert.Equal("current", (string)flow.Seen("on.current")["status"]!);
-        var runs = flow.Seen("on.runs");
-        Assert.Equal("1", (string)runs["shop#2"]!["unit"]!["leader"]!);
-        Assert.Contains("2", runs["shop#1"]!["unit"]!["sections"]!.AsArray().Select(s => (string)s!));
-        Assert.Contains(flow.Seen("on.trace")["entries"]!.AsArray(), e => (string?)e!["fsd"]?["section"] == "2" && (string)e!["state"]! == "conflict");
-    }
-
-    [Fact]
-    public void A_question_is_answered_from_the_pages_with_code_lines_and_labelled()
-    {
-        flow.Reached(6);
-        Assert.Equal(("stangent-page-asker", "page-asker-output.v1.json"), ((string)flow.Seen("ask.prepare")["next"]!["agent"]!, (string)flow.Seen("ask.prepare")["next"]!["schema"]!));
-        Assert.Contains(WholeFlow.Effect, flow.Seen("ask.bundle").GetValue<string>());
-        var answer = flow.Seen("ask.answer");
-        Assert.Equal("answered", (string)answer["status"]!);
-        Assert.Equal("as the pages describe it", (string)answer["answer"]!["label"]!);
-        var cite = answer["answer"]!["sentences"]![0]!["cites"]![0]!;
-        Assert.Equal(WholeFlow.Effect, (string)cite["says"]!);
-        Assert.Contains(cite["lines"]!.AsArray(), l => ((string?)l!["at"] ?? "").Contains("Shop.Core/Orders.cs:", StringComparison.Ordinal));
-        // The same pages and the same question: the same answer, with no call.
-        Assert.Equal("none", (string)flow.Seen("ask.again")["next"]!["action"]!);
-        Assert.Equal("answered", (string)flow.Seen("ask.again")["status"]!);
-    }
-
-    [Fact]
-    public void A_question_nothing_answers_says_the_pages_dont_cover_it()
-    {
-        flow.Reached(6);
-        Assert.Equal(("not-covered", "none"), ((string)flow.Seen("ask.unknown")["status"]!, (string)flow.Seen("ask.unknown")["next"]!["action"]!));
-        Assert.Equal("not-covered", (string)flow.Seen("ask.nothing")["status"]!);
-        Assert.Equal("The pages don't cover this.", (string)flow.Seen("ask.nothing")["answer"]!["text"]!);
-    }
-
-    [Fact]
-    public void A_partial_goes_to_the_disprove_step_and_an_unclear_one_or_a_table_fact_doesnt()
-    {
-        flow.Reached(5);
-        Assert.Contains("only partly does", flow.Seen("on.disprove").GetValue<string>());
-        // The partial and the conflict; not the unclear one.
-        Assert.Equal(2, (int)flow.Seen("on.estimate")["calls"]!);
-        Assert.Equal(0, (int)flow.Seen("on.estimate.facts")["calls"]!);
-    }
-
-    [Fact]
     public void Each_switch_shows_on_in_components()
     {
-        flow.Reached(6);
+        flow.Reached(4);
         var list = flow.Cli("components")["result"]!["components"]!.AsArray();
-        Assert.All(new[] { "table-facts", "judge-finer-verdicts", "group-sections", "spec-ask" }, name => Assert.True((bool)list.Single(c => (string?)c!["name"] == name)!["on"]!));
+        Assert.True((bool)list.Single(c => (string?)c!["name"] == "table-facts")!["on"]!);
     }
 
     [Fact]

@@ -52,39 +52,24 @@ components: { page-verifier: false, git-history: false, detector-config-keys: fa
 | `page-exclusions` | `components.page-exclusions` | off | `spec exclude` refuses and exclusions on file are ignored. `spec coverage` still works. On, an excluded page isn't listed, written or a candidate (T.3). |
 | `follow-moves` | `components.follow-moves` | off | Any change to a page's inputs asks for a run, lines moving included. On, code that only moved takes the page's citations and saved hash with it, with no AI (I.4). |
 | `statement-update` | `components.statement-update` | off | A stale page goes back whole to the writer and verifier. On, only statements citing code that changed do, and code puts the others back word for word (I.2). |
-| `disprove-callers` | `components.disprove-callers` | off | A disprove bundle for a finding about an endpoint also holds the frontend code calling it, and tells the disprover that what the bundle can't show, such as a colour, is `cant-tell`. It changes what the disprover reads and its saved hash, so it's off (D146). |
-| `security-flag` | `components.security-flag` | off | The disprover isn't asked about security, and its input and hash don't change. On, with `disprove`, it says whether a finding touches security, citing a line code checks, and a flagged finding goes to a developer until a person answers it (`docs/spec.md`, D148). A flag already on file stays, with the switch on or off. Not a security review. |
-| `disprove-small` | `components.disprove-small` | off | A disprove bundle holds up to 60K characters of code from the page's slice. On, only what the page's statements cite, or for a gap what holds the claim's words (I.3). |
 | `page-verifier` | `components.` | on | Recorded as written, with `verification.off: true` on the page and a warning. |
 | `line-citations` | `components.` | on | No `<path>.lines.json`, an old one removed, so no `code` evidence; `spec cite` says `lineCitations: off`. |
-| `candidate-finder` | `components.` | on | A section code finds no page for gets status `off`, `candidatesBy: off`, and no gap. |
-| `agree-checker` | `components.` | on | Each agree link is recorded unchecked with a note, and the run has `agreeChecker: off`. |
-| `requirements-links` | `components.` | on | The section's sentences are judged, as with no requirements built. |
 | `first-import-approval` | `components.` | off | A first import goes straight in. When it's on, it waits until `fsd approve` (D122). |
 | `attachment-home` | `fsd.attachmentHome` | off | A file with no place in a document's text, such as one attached to a PDF, has no section, and no link or check reaches it. On, those files get a section at the end, which changes that document's text and sections (I.8). |
-| `attachments-in-checks` | `fsd.attachmentsInChecks` | off | A section's attachments stay out of every bundle and hash, and a quote from one is refused (D123). |
 | `ticket-excel-text` | `components.` | off | A ticket's workbook, zip or a file inside its attachment is only saved under `converted/`; `ticket.json`, and so every ticket hash, is what it was (D123). |
 | `root-screens` | `components.root-screens` | off | Off, a screen needs a route. On, `graph build` also adds a page for each screen a React app's root shows with no route (`docs/code-graph.md`), so `spec pages` lists more |
 | `route-render` | `components.route-render` | off | Off, a route written `<Route path render=…>` or `children` gets no page. On, `graph build` adds one, read from the JSX it shows (`docs/code-graph.md`), so `spec pages` lists more |
-| `shared-through` | `components.shared-through` | off | Off, a screen's shared components are candidates only by their own name. On, those it reaches through its unshared ones are candidates too, stopping at the first on each path, as far as the bundle's size allows (`docs/spec.md`, D140). Changes what a link judge reads, so saved links read stale until judged again |
-| `fsd-claims` | `components.fsd-claims` | off | `fsd claims` says `split: false` and that it isn't a pass, and reads no section. On, it prints a section's claims. Nothing else reads them yet (`docs/spec.md`, D143) |
 | `section-approval` | `components.section-approval` | off | A new version is promoted whole once doubtful sections are settled, `fsd reject` and `fsd approve <doc> <section>` refuse (`section_approval_off`), `--partial` refuses, and no section files are written. On, each changed section needs a person's answer and promote applies only what was approved (D150) |
 | `pages` | `components.pages` | off | `stangent areas check` writes each area's `page.md` without a developer page (and drops one left there); `pages verify` refuses. On, each page holds the developer page by code, no AI (`docs/pages.md`, D278–D285), read by nobody yet. |
-| `test-journeys` | `components.test-journeys` | off | `stangent workflows tests` says `written: false`, writes nothing and needs no graph. On, it writes what each Playwright test walks through under `specs/workflows/tests/`, read by nothing, comparing nothing (`docs/spec.md`, D149) |
-| `workflow-files` | `components.workflow-files` | off | `stangent workflows` says `written: false` and writes nothing. On, with `claim-links` and `fsd-claims`, it writes one file per flow under `specs/workflows/<doc>/`, read by nothing (`docs/spec.md`, D147) |
 | `table-facts` | `fsd.compareTables` | off | `graph build` reads no enums and removes any on file; `fsd compare-tables` writes nothing and says `compared: false` (D124). |
-| `judge-finer-verdicts` | `fsd.judgeFinerVerdicts` | off | The link judge's and requirement judge's prompts and schemas are the old ones, so no hash moves (D124). |
-| `group-sections` | `fsd.groupSections` | off | Each section is judged alone. Turned off after a group ran, each section's own saved links go back with no call (D124). |
-| `spec-ask` | `spec.ask` | off | `spec ask` says `off`, writes nothing and asks nothing (D124). |
 | `findings` | `fsd.findings` | off | Only links are recorded (D68). |
-| `disprove` | `fsd.disprove` | off | Status `off`. Needs `findings`: on without it, it's `off` and says so. |
 | `file-finder` | `tickets.aiPoints` | on | Code's signals are the starting points (`ai.status: off`). |
 | `bug-proof` | `components.` | on | Status `off`, "neither proven nor disproven", and a questions draft on a bug warns. |
 | `drafts` | `components.` | on | Status `off`. |
 
 **A run says which were on:** in the envelope beside `result`, and on its telemetry event, for the components that command uses. **Never in a hash:** a switch's state goes into no input hash. Turning one on or off asks for no new paid call by itself; only what really reaches an AI can move a hash, as `requirements-links` does by changing what's judged. Turning `page-verifier` back on leaves pages it didn't check as they are, marked, until their inputs change.
 
-**No clean switch,** and why: the document import and the page writer (everything after them reads what they make, and a step without them would report a false gap); the link judge (it is the step that makes a link, and `ai.enabled` stops it); the code checks (they make an AI's answer usable, D18); the state module.
+**No clean switch,** and why: the document import and the page writer (everything after them reads what they make, and a step without them would report a false gap); the code checks (they make an AI's answer usable, D18); the state module.
 
 ## Built, not connected yet (S.4)
 
@@ -181,12 +166,9 @@ returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds ev
 
 | Kind | States | Who | History |
 |---|---|---|---|
-| `requirement` | `proposed`, `approved`, `retired` | a person approves; code drops back and retires | `specs/requirements/history.jsonl` |
-| `question` | `open`, `dropped` | code | same |
 | `trace-decision` | `undecided`, `agree`, `code-wrong`, `fsd-wrong`, `page-wrong`, `defer`, `accepted`, `not-a-difference` | a person decides; code only drops back | `specs/trace-history.jsonl` |
 | `finding-standing` | `current`, `recheck`, `gone` | code marks what happened to a decided finding; a person deciding again clears `recheck` (D122) | `specs/trace-history.jsonl` |
 | `finding-severity` | `ungraded`, `blocker`, `major`, `minor`, `cosmetic` | code starts it `ungraded`; a person grades it and can change their mind | `specs/trace-history.jsonl` |
-| `finding-verdict` | `unverified`, `stands`, `refuted`, `page-gap`, `unreachable`, `cant-tell` | code only, once the agent's quote passes (D119) | `specs/trace-history.jsonl` |
 | `finding-review` | `waiting`, `confirmed`, `sent-back` | a person confirms or sends back; code sends back when a decision drops, and clears when the verdict moves (D119) | `specs/trace-history.jsonl` |
 | `finding-security` | `unflagged`, `unanswered`, `confirmed`, `not-security` | code writes a flag once its citation passes; a person answers and can change their mind; code reopens one when what it was answered on changes. Nothing goes back to `unflagged` (D148) | `specs/trace-history.jsonl` |
 | `proof` | the proof's outcome values | code | `.stangent/tickets/state-history.jsonl` |
@@ -194,13 +176,9 @@ returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds ev
 | `draft-posted` | `unposted`, `posted` | a person posts; code starts over when a draft is remade | same |
 | `ticket-step`, `ticket-match` | a ticket AI step's run | code | same |
 | `page-run` | `write`, `verify`, `fix`, `done`, `failed` | code | `.stangent/spec/state-history.jsonl` |
-| `link-run` | `find`, `judge`, `confirm`, `done`, `failed` | code | `.stangent/fsd/state-history.jsonl` |
-| `disprove-run` | `disprove`, `done` | code | `.stangent/fsd/state-history.jsonl` |
-| `req-run` | `write`, `confirm`, `fix`, `reconfirm`, `done`, `failed` | code | `.stangent/req/state-history.jsonl` |
 | `fsd-candidate` | `candidate`, `pending-approval`, `promoted`, `approved`, `discarded`, `replaced` | a person promotes, approves a first import, or discards; code replaces it when a newer file comes in | `specs/fsd/history.jsonl` |
 | `fsd-section-match` | `doubtful`, `same`, `new`, `removed` | a person settles and can change their mind; code only lets go of a claimed id | same |
 | `fsd-section-answer` | `unanswered`, `approved`, `rejected` | a person answers a changed section and can change their mind; the id holds the exact text, so a changed text is a new id and code never moves one (D150) | same |
-| `section-coverage` | `unmarked`, `not-in-code` | a person marks a section, and takes it back (D122) | same |
 
 **History.** Append-only JSONL, one move per line: `at`, `kind`, `id`, `from`, `to`, `who`, `reason`. It sits beside the state:
 committed state has committed history, and CI adds `specs/trace-history.jsonl` to the bot's PR. No input hash and no artifact
@@ -246,21 +224,21 @@ exits 0. Tests pin this. A crash, a failed Claude call, a failed pull and a fail
 
 Each phase has its own tests, so a seam between phases could pass all of them and still break. `tests/Stangent.Core.Tests/WholeFlowTests.cs` (S.0) runs the flow once, end to end: the built `stangent` as a process, on a real git repo holding the shop fixture, with the real graph builder. Every AI step's answer is a hand-written file playing that step's agent, written where the step says and checked against its schema, and the code checks still run on it. No test here reaches an AI.
 
-**The order:** `init` and `graph build`; reference pages; a `.docx` and a `.pdf` imported; links and findings; the disprove step, `trace confirm` and `trace send-back`; a person's decisions, with `trace attribute`; impact and a ticket bundle; a new version through `fsd promote`; a page written again after the code moved; then `trace check` and `phases check`, with section 1 judged again.
+**The order:** `init` and `graph build`; reference pages; a `.docx` and a `.pdf` imported; links and findings as the old link route left them in `specs/trace.yaml` (written by code: the route was cut, D342); a person's decisions, with `trace approve` and `trace attribute`; impact and a ticket bundle; a new version through `fsd promote`; a page written again after the code moved; then `trace check` and `phases check`.
 
 **How it's built:** a class fixture does the run once and saves what each stage saw. The facts read those, so one stage's fact can fail without hiding the others. A stage that can't finish fails its own facts and every later stage's, with the reason. After each stage, a sweep checks pages, line files, documents and the trace file against their contracts. The test project builds the CLI first, without referencing it.
 
 **What it found stays in it.** The facts at the end of the file state the right behaviour for what the first run found, skipped until each was fixed (`phases/0-foundation.md`). None is skipped now.
 
-**With what's built switched off turned on (D124):** `WholeFlow.AllSwitchedOn` runs set-up, pages and import, then table facts on a real graph with enums from both extractors, a grouped and finer judge, the disprove step's bundle, and asking, each answered by a fake AI (`WholeFlowOnTests.cs`). The same run proves `graph export` is the same bytes with `table-facts` off. `SavedWorkTests`' pinned hashes and `SwitchedOffStaysTheSameTests` hold prompts, bundles and hashes with every switch off.
+**With what's built switched off turned on (D124):** `WholeFlow.AllSwitchedOn` runs set-up, pages and import, then table facts on a real graph with enums from both extractors (`WholeFlowOnTests.cs`; the grouped and finer judge, the disprove step and asking were cut by D342). The same run proves `graph export` is the same bytes with `table-facts` off. `SavedWorkTests`' pinned hashes hold the page steps' prompts, bundles and hashes.
 
-**Not in it:** requirements (Phase 2c's `req` steps), bug proof, drafts and posting, and the bash drivers, which `DriverRig` covers.
+**Not in it:** the FSD review (its tests are its own), bug proof, drafts and posting, and the bash drivers, which `DriverRig` covers.
 
 ## The hard stop (T.2, D126)
 
 Every paid step goes through `plugin/scripts/cost-guard.sh`, from `spec-run.sh`, `ticket-run.sh` and `benchmark/tickets/run.sh`. `benchmark/tickets/agent_baseline.py` follows the same rules on its own. `benchmark/run.sh` runs only `stangent` commands, and no `stangent` command starts Claude Code (a test pins that), so it has nothing to stop.
 
-- **You choose a cap, or say none.** `--max-cost <dollars>`, `STANGENT_MAX_COST`, or `--max-cost none`. With no choice, the first paid step stops the run: exit 2, nothing spent. A run with nothing paid to do never asks. `/stangent:ask` is the one exception: one question, one call, no cap unless one is set.
+- **You choose a cap, or say none.** `--max-cost <dollars>`, `STANGENT_MAX_COST`, or `--max-cost none`. With no choice, the first paid step stops the run: exit 2, nothing spent. A run with nothing paid to do never asks.
 - **An estimate first.** `--estimate` prints it and stops. It's at least the calls a run must make, times what that step has cost per call in this repo (`stangent cost estimate`, from telemetry). A repo with no history says "cost unknown"; no price list, so no number to go stale. An estimate over the cap stops the run before any call. Only calls made since this was built count, as older telemetry has no cost.
 - **Before each call,** what's left is shared among the parallel jobs, money promised to a running call stays promised, and that share goes to Claude Code as `--max-budget-usd`. The run stops if the share is below the run's average call so far. A file finder or reproducer has its own cap, and starts only if all of that is left: a capped attempt counts as "not reproduced", which would be a false result.
 - **A limit stops it cleanly.** A failed call whose message reads like a usage limit, or a `rate_limit_event` saying `rejected`, gives `stopped\t<id>\t<why>`, a line saying what was spent, why it stopped and the command to resume, and exit 5. Finished work is kept; a step cut short records nothing. A different failure, such as no login, stops the batch as before.
@@ -281,7 +259,7 @@ Nothing here has met real Claude Code: fakes only (D120).
 
 Every AI call runs on a model and effort someone chose, and says so.
 
-- **Pinned in `stangent.yaml`:** `ai: { model: claude-sonnet-5-5, effort: medium, steps: { stangent-link-judge: { model: claude-opus-5-5, effort: high } } }`. A driver's `--model` and `--effort` override them for one run. `stangent ai settings <agent> [--model] [--effort]` says what a step runs with and where each value came from (`--model`, `ai.steps.<agent>.model`, `ai.model`). Effort is one of Claude Code's levels: `low`, `medium`, `high`, `xhigh`, `max`.
+- **Pinned in `stangent.yaml`:** `ai: { model: claude-sonnet-5-5, effort: medium, steps: { stangent-fsd-reviewer: { model: claude-opus-5-5, effort: high } } }`. A driver's `--model` and `--effort` override them for one run. `stangent ai settings <agent> [--model] [--effort]` says what a step runs with and where each value came from (`--model`, `ai.steps.<agent>.model`, `ai.model`). Effort is one of Claude Code's levels: `low`, `medium`, `high`, `xhigh`, `max`.
 - **Nothing pinned, nothing runs.** With no model or no effort for a step, `ai settings` refuses (`ai_settings_missing`, exit 2). Before a job's first AI call the drivers check every step at once (`ai settings --all`, the 16 agents in `plugin/agents/`, a test holding the list equal), so a config pinning only some steps stops before anything is paid, not halfway through a page; the line is `error\t<id>\t<why>`. A run with nothing paid to do never asks. There's no default: a default is how the earlier runs ended up at an effort nobody chose or recorded.
 - **Every call is told both:** the one-turn calls, `--agents` subagents, the file finder and the reproducer all get `--model` and `--effort`.
 - **Recorded:** the driver adds a `stangent_run` block to Claude Code's result before `check --usage` reads it: the agent, the model asked for, effort, mode (`batch`, `agents`, `agentic`) and `claude --version`. Each usage record then carries `settings` beside the model Claude reports. A call no driver described (by hand with `--usage`, or from before D161) reads `unknown`; a record summing calls that differ reads `mixed`. `reference-page` v1 grew an optional `settings` on its usage records in place: old pages still validate and nothing reads it but `ai runs`, so nothing needs review.

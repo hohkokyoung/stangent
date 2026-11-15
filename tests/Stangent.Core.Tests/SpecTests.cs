@@ -237,7 +237,7 @@ public class SpecTests
         var verify = PageRun.Check(app.Pages(), page, app.Repo, null);
         Assert.Equal("page-verifier-output.v1.json", (string)verify.ToJson(page.Id)["next"]!["schema"]!);
         // The names resolve to real schemas, so `stangent spec schema <name>` can print them.
-        foreach (var agent in new[] { PageRun.Writer, PageRun.Verifier, Stangent.Spec.Fsd.LinkRun.Finder, Stangent.Spec.Fsd.LinkRun.Judge, Stangent.Spec.Fsd.LinkRun.Checker })
+        foreach (var agent in new[] { PageRun.Writer, PageRun.Verifier, Stangent.Spec.Fsd.FsdReview.Reviewer })
             Assert.Contains("\"$schema\"", SchemaRegistry.EmbeddedText(RunStep.SchemaOf(agent)!));
     }
 

@@ -1,13 +1,13 @@
 ---
 description: Generate stangent reference pages (Phase 2a) for a page, the stale pages, or all of them.
-argument-hint: "<page id> | --for-fsd <doc> | --for-ticket <key> | --stale | --new | --all"
+argument-hint: "<page id> | --for-ticket <key> | --stale | --new | --all"
 allowed-tools: Bash(stangent spec:*), Bash(*spec-run.sh:*)
 ---
 
 Generate reference pages with stangent (D54, D60). Code decides every step; the batch driver runs the AI each step names.
 Never write or edit a page yourself, and never judge a page yourself: the writer and a separate verifier do that (D61).
 
-Pages are made when something needs them (I.1): `--for-fsd <doc>` for what a document's sections need, `--for-ticket <key>` for what a ticket's bundle says it's missing. `--stale` is written pages whose code changed. `--new` and `--all` make every page, which costs far more: only when the person asks for that.
+Pages are made when something needs them (I.1): `--for-ticket <key>` for what a ticket's bundle says it's missing. `--stale` is written pages whose code changed. `--new` and `--all` make every page, which costs far more: only when the person asks for that.
 
 **Every AI step runs through the batch driver (D161, D162),** never as a subagent in this session: the driver gives each step the model and effort pinned in `stangent.yaml` and records them. If it stops with `ai_settings_missing`, tell the person to set `ai: { model: …, effort: … }` in `stangent.yaml` (or pass `--model` and `--effort` for one run) and stop: don't choose either yourself.
 

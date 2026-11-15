@@ -342,16 +342,7 @@ public static class FsdVersions
         var pairs = sections.Where(s => Old(s) || kept.ContainsKey((string)s["id"]!))
             .Select(s => Old(s) ? new FsdCarry.Pair(oldById[(string)s["permanentId"]!], s, "unchanged")
                 : new FsdCarry.Pair(oldById[kept[(string)s["id"]!].Id], s, kept[(string)s["id"]!].Kind)).ToList();
-        // With attachments in the checks, what a judge saw includes them, so a run's hash is worked out with them on both sides, and a changed file means a new run.
-        if (repo.Config.Fsd.AttachmentsInChecks)
-        {
-            foreach (var s in oldById.Values) AttachmentChecks.Fill(s, current, FsdImport.DocDir(root, doc), false, repo.Config.Fsd.AttachmentChars);
-            foreach (var s in sections)
-                if (Old(s)) AttachmentChecks.Fill(s, current, FsdImport.DocDir(root, doc), false, repo.Config.Fsd.AttachmentChars);
-                else AttachmentChecks.Fill(s, pending, CandidateDir(root, doc), true, repo.Config.Fsd.AttachmentChars);
-        }
-        var carried = FsdCarry.Apply(root, doc, pairs, gone, sections.Select(s => (string)s["id"]!).ToHashSet(StringComparer.Ordinal), repo.Config.Fsd.Findings, repo.Config.Fsd.JudgeFinerVerdicts);
-        foreach (var s in sections) s.Remove(AttachmentChecks.Key);
+        var carried = FsdCarry.Apply(root, doc, pairs, gone, sections.Select(s => (string)s["id"]!).ToHashSet(StringComparer.Ordinal));
 
         var ledger = Ledger(root, doc);
         foreach (var s in gone) ledger.Remove(Scope, (string)s["permanentId"]!);

@@ -261,7 +261,7 @@ public sealed class TableFactsTests : IDisposable
 
         var section = FsdOutline.Load(Root, "shop")["sections"]!.AsArray().OfType<JsonObject>().First(s => (string)s["title"]! == "Item API");
         var before = Findings().Count;
-        LinkRun.ApplyEntries(Root, "shop", (string)section["id"]!, []);
+        TraceStore.ApplyEntries(Root, "shop", (string)section["id"]!, []);
         Assert.Equal(before, Findings().Count);
     }
 

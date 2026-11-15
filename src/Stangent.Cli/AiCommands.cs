@@ -11,7 +11,7 @@ static class AiCommands
         var ai = new Command("ai", "The model and effort every AI step runs with, and whether a step gives the same answer twice (D161).");
         root.Subcommands.Add(ai);
 
-        var agentArg = new Argument<string?>("agent") { Description = "The step's agent, as a step's next.agent names it: stangent-link-judge.", Arity = ArgumentArity.ZeroOrOne };
+        var agentArg = new Argument<string?>("agent") { Description = "The step's agent, as a step's next.agent names it: stangent-fsd-reviewer.", Arity = ArgumentArity.ZeroOrOne };
         var allOption = new Option<bool>("--all") { Description = "Every step at once: refuses if any one has no model or effort (a driver asks this before its first call)." };
         var modelOption = new Option<string?>("--model") { Description = "This run's model, over stangent.yaml's." };
         var effortOption = new Option<string?>("--effort") { Description = "This run's effort (low, medium, high, xhigh, max), over stangent.yaml's." };
