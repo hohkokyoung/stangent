@@ -1,0 +1,11 @@
+{
+ "what": "agent baseline: headless Claude Code, ticket text + code at the fix's parent (no history), Read/Grep/Glob only, up to 10 files; D339 side B: plus `stangent graph impact` on a graph at the same parent",
+ "model": "sonnet",
+ "turns": 30,
+ "budgetUsd": 1.0,
+ "tickets": 0,
+ "hits": 0,
+ "costUsd": 0,
+ "isolationBreaches": 0,
+ "cases": []
+}

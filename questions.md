@@ -36,7 +36,7 @@ Only what's still open, sorted by when it needs answering (D136). When one is an
 - **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that
   assert the current behaviour. Not decided. (The review's other new idea, right place reported per stage, is built:
   `reported.rightPlaceStages`, D98's re-score.)
-- **Does the bundle help a fix, or skew it? (owner's questions, 2026-11-02, for Phase 4):** every Phase 3 bar checks a piece (a
+- **Does the bundle help a fix, or skew it? (owner's questions, 2026-11-02, for Phase 4):** *(2026-11-15: D339 first measures one piece, whether `graph impact` helps name the whole fix; this full test waits on that.)* every Phase 3 bar checks a piece (a
   right file, a real quote, a failing test); none shows the bundle helps anyone fix a bug. On the finder's 4 Sonarr misses it
   covers none of the fix's files. The owner's worry: a wrong lead skews every later step, and a scoped input invites a less clean
   fix (SONB-18: a null check on the screen turns a test green and leaves the bad data). Recommended: the fix agent on the same bugs three ways

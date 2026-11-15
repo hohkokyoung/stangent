@@ -13,6 +13,7 @@ software-engineering pipeline: requirements → code → tests → PR → deploy
 | `questions.md` | Questions still open, sorted by when they need answering. |
 | `decisions.md` | One line per decision (D1, D2, …). Full entries, with reason and cost, are in `decisions/`: `grep -n "^## D120 " decisions/*.md`. |
 | `improvements.md` | Ideas not decided yet. Built or rejected ones are in `improvements-done.md`. |
+| `OVERVIEW.md` | The project in plain words, part by part, for the owner. Update it when a layer changes status. |
 | `spec.md` | The owner's original brief. Don't edit it except to add items the owner asks for. |
 | `phases/` | One file per started phase: its plan and end-of-phase report. |
 | `docs/phases.md` | How a phase is recorded, reported and changed. |

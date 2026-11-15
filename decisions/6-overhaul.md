@@ -144,7 +144,7 @@ Approved, built in the order below:
 - **P3** the judge answers every code-cut sentence by id and writes no words; code fills quotes and lists unanswered sentences (`claim-links` on; changes D145, folds D143).
 - **P4** code-cut FSD sentences are the unit, not AI-written requirements; the requirement writer, checker and judge become glossary-only or are cut (changes D99).
 - **P5** the ticket requirement matcher is parked (changes D99).
-- **P6** starting points by code's signals first; the file finder only when code finds no confident point, after checking Phase 3's numbers on code alone (changes D101, D87; towards D70).
+- **P6** (→ changed by D338, 2026-11-15: starting points stay with the agent finder, the code-only route measured 19/40 against 36/40) starting points by code's signals first; the file finder only when code finds no confident point, after checking Phase 3's numbers on code alone (changes D101, D87; towards D70).
 - **P7** Jira comments are code templates; an AI only rewords, and code checks no fact moved (changes D74, D98).
 - **P8** `spec-ask`, `judge-finer-verdicts`, `group-sections` and `security-flag` go; the agree checker and disprover stay only if the flows trial shows they help (D138).
 

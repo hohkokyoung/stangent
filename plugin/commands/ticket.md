@@ -1,7 +1,7 @@
 ---
 description: Turn a Jira ticket into a checked context bundle (Phase 3), then offer the bug proof and draft comments.
 argument-hint: "<KEY> [prove [hint] | questions [client] | resolution <base..head> [client] | post <draft>]"
-allowed-tools: Bash(stangent ticket:*), Bash(stangent jira login:*), Bash(*ticket-run.sh:*), Read
+allowed-tools: Bash(stangent ticket:*), Bash(stangent graph impact:*), Bash(stangent jira login:*), Bash(*ticket-run.sh:*), Read
 ---
 
 Work on a Jira ticket with stangent (D69–D82). Code decides every step; the batch driver runs the AI each step names.
@@ -26,6 +26,10 @@ Never judge a quote, a page or a test yourself, never write a comment to Jira yo
    attachments. Ask whether to add or remove starting points (`stangent ticket points <KEY> --add <file|page|symbol>
    --remove <file|page|symbol>`, then build the bundle again). Missing pages: suggest `/stangent:spec-generate <page>`.
 5. The bundle is now this session's starting context: open the files its pointers name when the work needs them.
+   Before settling which files a fix changes, run `stangent graph impact --file <path> --format md` (or `--symbol
+   <Type.Member>`) on each file you mean to change: it lists who else runs that code (callers, endpoints, event
+   handlers, tests) and the files that usually change with it, which is where the rest of a multi-file fix tends to be
+   (D339: an agent with it named the whole fix for 8 of 20 multi-file Sonarr bugs, 3 without).
 6. Offer next steps: for a bug, **prove it** before any fix; for any ticket, a **questions** draft.
 
 **Prove a bug** (`<KEY> prove [hint]`): this runs an AI step that writes a test and runs commands; say it costs up to
