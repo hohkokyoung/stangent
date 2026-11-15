@@ -288,6 +288,7 @@ AiCommands.Add(root);
 JiraCommands.Add(root);
 TicketCommands.Add(root);
 FlowCommands.Add(root);
+InventoryCommands.Add(root);
 AreaCommands.Add(root);
 PageCommands.Add(root);
 

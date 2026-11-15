@@ -206,13 +206,77 @@ public sealed partial class Labels
                 if (!LooksLikeKey(f["title"]) && Words(f["title"]) is { } w) return new(w, null, route, "route");
                 continue;
             }
-            // A heading written in branches gives several keys: the words without a placeholder (`{0}`) are its plain form.
-            var alternatives = f["label"].Split('|', StringSplitOptions.RemoveEmptyEntries).Select(Text).OfType<string>().ToList();
-            if ((alternatives.FirstOrDefault(a => !Placeholder().IsMatch(a)) ?? alternatives.FirstOrDefault()) is { } k) return new(k, null, route, f["via"] == "heading" ? "heading" : "title");
-            if (Words(f["labelText"]) is { } words) return new(words, null, route, f["via"] == "heading" ? "heading" : "title");
+            if (TitleText(f) is { } k) return new(k, null, route, f["via"] == "heading" ? "heading" : "title");
         }
         return new(null, null, route, "");
     }
+
+    /// <summary>A heading's or titled element's words: its keys (the form without a placeholder first), else its words as written.</summary>
+    string? TitleText(Fact f)
+    {
+        // A heading written in branches gives several keys: the words without a placeholder (`{0}`) are its plain form.
+        var alternatives = f["label"].Split('|', StringSplitOptions.RemoveEmptyEntries).Select(Text).OfType<string>().ToList();
+        return (alternatives.FirstOrDefault(a => !Placeholder().IsMatch(a)) ?? alternatives.FirstOrDefault()) ?? Words(f["labelText"]);
+    }
+
+    /// <summary>
+    /// A part's own title (D327, D334): from its own markup's <c>screen-title</c> facts (a titled element or title slot first, then
+    /// the highest heading), through the same lookup as screens; else <see cref="Named.Words"/> null and the caller says its code name.
+    /// </summary>
+    public Named PartTitle(string part, string code)
+    {
+        var facts = Own(part).SelectMany(o => g.Facts(o, "screen-title")).Where(f => f["via"] != "route")
+            .OrderBy(Rank).ThenBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line);
+        foreach (var f in facts)
+            if (TitleText(f) is { } t) return new(t, null, code, f["via"] == "heading" ? "heading" : "title");
+        return new(null, null, code, "", "no title in its own markup");
+    }
+
+    /// <summary>
+    /// A menu entry's name (<c>menu-item</c>, D221, D332): its key through the lookup, else its name (a key, or words as written);
+    /// help from its <c>help</c> key or words. <see cref="Named.Code"/> is its name as written, else its key, else its handler's short name.
+    /// </summary>
+    public Named MenuEntry(Fact item)
+    {
+        var name = item["name"];
+        var code = name != "" ? name : item["key"] != "" ? item["key"] : HandlerName(item["handler"]) ?? "menu entry";
+        var h = item["help"];
+        var help = h == "" ? null : Text(h) ?? (LooksLikeKey(h) ? null : Words(h));
+        if (item["key"] != "" && KeyWords(item["key"], out var written) is { } k) return new(k, help, code, written ? "written" : "key");
+        if (name != "")
+        {
+            if (Text(name) is { } t) return new(t, help, code, "key");
+            if (!LooksLikeKey(name) && Words(name) is { } w) return new(w, help, code, "text");
+        }
+        var key = item["key"] != "" ? item["key"] : name;
+        return new(null, help, code, "", key != "" ? $"no visible text found (key {key} is in no translation file)" : "no visible text found");
+    }
+
+    /// <summary>
+    /// A handler's short name, for the skip list (D334 item 5): a point id's member (<c>ts|a.ts#A.close</c> → <c>close</c>), a prop
+    /// (<c>prop:onClose</c> → <c>onClose</c>), a data entry's first property (<c>callback=this.dismiss|action=…</c> → <c>dismiss</c>);
+    /// null for none, or a function written in place.
+    /// </summary>
+    public static string? HandlerName(string handler)
+    {
+        if (handler is "" or "inline") return null;
+        var first = handler;
+        if (!first.Contains('#', StringComparison.Ordinal))
+        {
+            first = first.Split('|')[0];
+            var eq = first.IndexOf('=', StringComparison.Ordinal);
+            if (eq >= 0) first = first[(eq + 1)..];
+            if (first is "" or "inline") return null;
+            var paren = first.IndexOf('(', StringComparison.Ordinal);
+            if (paren >= 0) first = first[..paren];
+            first = first.Replace("prop:", "", StringComparison.Ordinal);
+            return first[(first.LastIndexOf('.') + 1)..] is { Length: > 0 } last ? last : null;
+        }
+        return CodeName(handler);
+    }
+
+    /// <summary>Visible words as the skip list reads them: the name's words, else what the markup writes even with no letter (<c>×</c>).</summary>
+    public static string? Shown(Named name, string writtenText) => name.Words ?? Clean(writtenText);
 
     /// <summary>A component and its Angular template, where its own markup's facts sit.</summary>
     IEnumerable<string> Own(string component) =>
@@ -252,7 +316,11 @@ public sealed partial class Labels
     /// (<c>title.all-series</c>, <c>Admin.Common.Save</c>), or several capitalised humps run together (<c>IndexerSettingsApiPath</c>).
     /// Used only where a value may be either: a route's title, a list's item.
     /// </summary>
-    public static bool LooksLikeKey(string value) => !value.Contains(' ', StringComparison.Ordinal) && KeyLike().IsMatch(value);
+    /// D336: capitalised words joined by dashes (<c>Multi-Episode</c>, <c>Read-Only</c>) read as words: keys are lowercase-dashed, dotted, or run together.
+    public static bool LooksLikeKey(string value) => !value.Contains(' ', StringComparison.Ordinal) && KeyLike().IsMatch(value) && !DashedWords().IsMatch(value);
+
+    [GeneratedRegex(@"^[A-Z][a-z]+(?:-[A-Z][a-z]+)+$")]
+    private static partial Regex DashedWords();
 
     /// <summary>A point id's short name, also from a list of several (<c>ts|a.ts#A.f|ts|b.ts#B.g</c> → <c>f</c>) or a prop handler.</summary>
     static string CodeName(string handler)
