@@ -17,6 +17,13 @@ import { RUNTIME, BASE, stringValue } from "./values.ts";
 export const NAME_PROPS = ["title", "label", "text", "name", "caption", "displayName", "header", "heading", "systemName"];
 /** Property and attribute names that hold where an item leads. */
 export const ADDRESS_PROPS = ["to", "href", "link", "url", "path", "route", "routerLink"];
+/**
+ * D329: property names that hold what an item does when it has no address (`callback: this.markAsRead`, `action: Action.Scan`,
+ * `command: () => …`): an object with a name and one of these is an action entry, written as data.
+ */
+export const HANDLER_PROPS = ["callback", "onClick", "command", "handler", "onSelect", "action"];
+/** Property names holding an item's help text. */
+const HELP_PROPS = ["description", "tooltip", "hint", "subtitle", "helpText"];
 /** An object holding one of these is a route's definition, not a menu item. */
 const ROUTE_KEYS = new Set(["component", "loadComponent", "loadChildren", "element", "Component", "lazy", "redirectTo", "pathMatch"]);
 
@@ -25,6 +32,10 @@ export interface MenuItem {
   key: string;
   address: string;
   via: string;
+  /** D329: an action entry's handler-like properties, `callback=this.markAsRead|action=Action.MarkAsRead`, and the first one's line; "" for a link. */
+  handler?: string;
+  handlerLine?: number;
+  help?: string;
   owner: string;
   file: string;
   line: number;
@@ -62,14 +73,20 @@ function fold(units: Unit[]): Unit[] {
   return [sealed, ...out.filter((u) => "list" in u)];
 }
 
-/** Every list left at the top: a menu when it holds three or more items. */
+/** A list is a menu with three or more items, or two when both are action entries (a name and a handler, D332). */
+const isMenu = (list: MenuItem[]) => list.length >= 3 || (list.length === 2 && list.every((i) => i.handler));
+
+/** Every list left at the top that is a menu. */
 function emit(ctx: Context, units: Unit[]) {
   for (const u of units) {
-    if (!("list" in u) || u.list.length < 3) continue;
+    if (!("list" in u) || !isMenu(u.list)) continue;
     const menu = `${u.file}:${u.line}`;
     const write = (items: MenuItem[], prefix: string) => items.forEach((it, i) => {
       const at = prefix === "" ? `${i + 1}` : `${prefix}.${i + 1}`;
-      ctx.out.fact("menu", "menu-item", it.owner, it.file, it.line, { menu, path: at, name: it.name, key: it.key, address: it.address, via: it.via });
+      ctx.out.fact("menu", "menu-item", it.owner, it.file, it.line, {
+        menu, path: at, name: it.name, key: it.key, address: it.address, via: it.via,
+        ...(it.handler ? { handler: it.handler, handlerLine: String(it.handlerLine ?? it.line), help: it.help ?? "" } : {}),
+      });
       write(it.children, at);
     });
     write(u.list, "");
@@ -116,7 +133,8 @@ function arrayOf(ctx: Context, e: ts.Expression): ts.ArrayLiteralExpression | nu
 }
 
 function objectItem(ctx: Context, o: ts.ObjectLiteralExpression, seen: Set<ts.Node>): { item: MenuItem | null; inner: MenuItem[] } {
-  let name = "", key = "", address = "", addressSeen = false;
+  let name = "", key = "", address = "", addressSeen = false, help = "";
+  let handler: { text: string; line: number } | null = null;
   const inner: MenuItem[] = [];
   const props = o.properties.map((p) => ({ p, n: propName(p) }));
   if (props.some(({ n }) => n !== null && ROUTE_KEYS.has(n))) return { item: null, inner };
@@ -141,13 +159,36 @@ function objectItem(ctx: Context, o: ts.ObjectLiteralExpression, seen: Set<ts.No
       continue;
     }
     if (isName(n) || isKeyName(n)) continue;
+    if (HANDLER_PROPS.some((h) => lower(h) === lower(n))) {
+      // Every handler-like property, in HANDLER_PROPS's order: a placeholder callback says little, its `action` says more.
+      const rank = (x: string) => HANDLER_PROPS.findIndex((h) => lower(h) === lower(x.slice(0, x.indexOf("="))));
+      const parts = [...(handler ? handler.text.split("|") : []), `${n}=${handlerText(p.initializer)}`].sort((x, y) => rank(x) - rank(y));
+      const first = !handler || rank(`${n}=`) < rank(handler.text);
+      handler = { text: parts.join("|"), line: first ? ctx.line(p) : handler!.line };
+      continue;
+    }
+    if (HELP_PROPS.some((h) => lower(h) === lower(n))) {
+      const l = label(ctx, p.initializer);
+      if (l && !help) help = l.key || l.name;
+      continue;
+    }
     const arr = arrayOf(ctx, p.initializer);
     if (arr && !seen.has(arr)) inner.push(...arrayItems(ctx, arr, seen));
   }
   const named = name !== "" || key !== "";
-  if (named && (address !== "" || (!addressSeen && inner.length > 0)))
-    return { item: { name, key, address, via: "data", owner: ctx.ownerId(o), file: ctx.rel(o.getSourceFile().fileName), line: ctx.line(o), children: inner }, inner: [] };
+  const at = { owner: ctx.ownerId(o), file: ctx.rel(o.getSourceFile().fileName), line: ctx.line(o) };
+  if (named && (address !== "" || (!addressSeen && inner.length > 0 && !handler)))
+    return { item: { name, key, address, via: "data", ...at, children: inner }, inner: [] };
+  // D329: a name and a handler with no address is an action entry; its children (a submenu) hang under it.
+  if (named && !addressSeen && handler)
+    return { item: { name, key, address: "", via: "data", handler: handler.text, handlerLine: handler.line, help, ...at, children: inner }, inner: [] };
   return { item: null, inner };
+}
+
+/** A handler as written, on one line: `this.markAsRead`, `Action.Scan`, `() => …` (an arrow's body left out). */
+function handlerText(e: ts.Expression): string {
+  if (ts.isArrowFunction(e) || ts.isFunctionExpression(e)) return "inline";
+  return e.getText().replace(/\s+/g, " ").slice(0, 120);
 }
 
 /** An array's items: its item objects, and the items of any plain object in it (a group with no name passes its items up). */
@@ -171,7 +212,7 @@ function dataMenus(ctx: Context, sf: ts.SourceFile) {
     if (ts.isArrayLiteralExpression(n) && !seen.has(n)) {
       const local = new Set<ts.Node>();
       const items = arrayItems(ctx, n, local);
-      if (items.length >= 3) {
+      if (isMenu(items)) {
         for (const x of local) seen.add(x);
         emit(ctx, [{ list: items, line: items[0].line, owner: items[0].owner, file: items[0].file }]);
         return;
@@ -298,17 +339,16 @@ function ngLabel(o: Obj, prefix: string): { name: string; key: string } {
     const recv = n.receiver as Obj | undefined;
     const args = n.args as Obj[] | undefined;
     if (/^Call|SafeCall/.test(ctor) && recv && typeof recv.name === "string" && TEXT_CALLS.has(recv.name)
-        && args?.[0] && ctorName(args[0]) === "LiteralPrimitive" && typeof args[0].value === "string") add(keys, args[0].value);
+        && args?.[0] && ctorName(args[0]) === "LiteralPrimitive" && typeof args[0].value === "string") add(keys, recv.name === "t" && prefix ? `${prefix}.${args[0].value}` : args[0].value);
     if (ctor === "BindingPipe" && (n.name === "translate" || n.name === "transloco") && ctorName(n.exp) === "LiteralPrimitive" && typeof (n.exp as Obj).value === "string")
       add(keys, (n.exp as { value: string }).value);
     return true;
   });
-  const key = keys[0] ?? "";
-  return { name: texts.join(" "), key: key && prefix ? `${prefix}.${key}` : key };
+  return { name: texts.join(" "), key: keys[0] ?? "" };
 }
 
 /** transloco's `*transloco="let t; prefix: 'side-nav'"` (or `read:`): the scope its keys are read under. */
-function translocoPrefix(o: Obj): string | null {
+export function translocoPrefix(o: Obj): string | null {
   for (const a of (Array.isArray(o.templateAttrs) ? o.templateAttrs : []) as Obj[]) {
     if (typeof a.name !== "string" || !/^transloco(Prefix|Read)$/.test(a.name)) continue;
     const ast = astOf(a.value);
@@ -316,6 +356,26 @@ function translocoPrefix(o: Obj): string | null {
     if (typeof a.value === "string") return a.value;
   }
   return null;
+}
+
+/**
+ * D329: the transloco scope each node of a parsed template sits under (`prefix:`/`read:` of the nearest `*transloco`
+ * around it); nodes under none are left out.
+ */
+export function translocoScopes(nodes: unknown): Map<object, string> {
+  const scopes = new Map<object, string>();
+  const seen = new Set<object>();
+  const visit = (node: unknown, prefix: string) => {
+    if (!node || typeof node !== "object" || seen.has(node as object)) return;
+    seen.add(node as object);
+    if (Array.isArray(node)) { for (const x of node) visit(x, prefix); return; }
+    const o = node as Obj;
+    const scope = translocoPrefix(o) ?? prefix;
+    if (scope) scopes.set(o, scope);
+    for (const [k, v] of Object.entries(o)) if (!SPANS.has(k) && v && typeof v === "object") visit(v, scope);
+  };
+  visit(nodes, "");
+  return scopes;
 }
 
 function ngUnits(ctx: Context, owner: string, file: string, line0: number, node: unknown, prefix: string): Unit[] {

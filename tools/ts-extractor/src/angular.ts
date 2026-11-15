@@ -5,6 +5,7 @@ import { parseTemplate } from "@angular/compiler";
 import type { Context } from "./extract.ts";
 import { isAngularComponent } from "./extract.ts";
 import { LABEL_ATTRS, TEXT_CALLS } from "./ui.ts";
+import { translocoScopes } from "./menu.ts";
 
 export interface AngularComponent {
   id: string;
@@ -109,6 +110,7 @@ export function angularTemplates(ctx: Context, sf: ts.SourceFile) {
       ctx.out.blind(id, t.file, t.line + (err.span?.start?.line ?? 0), `template error: ${err.msg.split("\n")[0].slice(0, 120)}`, "angular");
       break; // one is enough to say the template wasn't fully read
     }
+    const scopes = translocoScopes(parsed.nodes);
     const seen = new Set<object>();
     const walk = (node: unknown) => {
       if (!node || typeof node !== "object" || seen.has(node as object)) return;
@@ -116,7 +118,7 @@ export function angularTemplates(ctx: Context, sf: ts.SourceFile) {
       if (Array.isArray(node)) { node.forEach(walk); return; }
       const o = node as Record<string, unknown>;
       element(ctx, id, o);
-      angularEvents(ctx, c, id, t, o);
+      angularEvents(ctx, c, id, t, o, scopes.get(o) ?? "");
       expression(ctx, c, id, o);
       for (const [k, v] of Object.entries(o)) if (k !== "sourceSpan" && k !== "startSourceSpan" && k !== "endSourceSpan" && k !== "keySpan" && k !== "valueSpan" && k !== "nameSpan") walk(v);
     };
@@ -168,7 +170,7 @@ const SKIP = new Set(["sourceSpan", "startSourceSpan", "endSourceSpan", "keySpan
  * G5 + G6: each `(click)="toggleWantToRead()"` is a `ui-event` fact on the template: the element, the event, the
  * component method it calls, and what the element shows (text, label attributes, and keys passed to t()/translate).
  */
-function angularEvents(ctx: Context, c: AngularComponent, templateId: string, t: NonNullable<AngularComponent["template"]>, o: Record<string, unknown>) {
+function angularEvents(ctx: Context, c: AngularComponent, templateId: string, t: NonNullable<AngularComponent["template"]>, o: Record<string, unknown>, prefix: string) {
   const tag = typeof o.name === "string" && Array.isArray(o.attributes) && Array.isArray(o.children) && Array.isArray(o.outputs) ? o.name : null;
   if (!tag) return;
   for (const out of o.outputs as Record<string, unknown>[]) {
@@ -195,7 +197,8 @@ function angularEvents(ctx: Context, c: AngularComponent, templateId: string, t:
       const recv = n.receiver as Record<string, unknown> | undefined;
       const args = n.args as Record<string, unknown>[] | undefined;
       if (/^Call|SafeCall/.test(ctor) && recv && typeof recv.name === "string" && TEXT_CALLS.has(recv.name)
-          && args?.[0] && ctorName(args[0]) === "LiteralPrimitive" && typeof args[0].value === "string") add(keys, args[0].value);
+          && args?.[0] && ctorName(args[0]) === "LiteralPrimitive" && typeof args[0].value === "string")
+        add(keys, scoped(recv.name, args[0].value as string, prefix));
       if (ctor === "BindingPipe" && (n.name === "translate" || n.name === "transloco") && ctorName(n.exp) === "LiteralPrimitive" && typeof (n.exp as { value?: unknown }).value === "string")
         add(keys, (n.exp as { value: string }).value);
     });
@@ -205,6 +208,11 @@ function angularEvents(ctx: Context, c: AngularComponent, templateId: string, t:
       keys: keys.join("|"), text: texts.join(" "),
     });
   }
+}
+
+/** D329: a key passed to transloco's `t()` is read under the template's `prefix:`/`read:`; other calls and the pipe aren't. */
+export function scoped(callee: string, key: string, prefix: string): string {
+  return callee === "t" && prefix ? `${prefix}.${key}` : key;
 }
 
 function collect(node: unknown, visit: (n: Record<string, unknown>) => void, seen = new Set<object>()) {

@@ -1,0 +1,17 @@
+@model SettingsModel
+@inject Shop.Web.Localizer T
+<form asp-action="Edit" method="post">
+    <label asp-for="Name"></label>
+    <input asp-for="Name" />
+    <select asp-for="Theme" asp-items="Html.GetEnumSelectList<Theme>()"></select>
+    <label for="notes">@T("Shop.Settings.Notes")</label>
+    <textarea id="notes" name="notes"></textarea>
+    <input type="hidden" asp-for="Notes" />
+    <shop-editor asp-for="Notes" />
+    <select name="size"><option value="s">@T("Shop.Size.Small")</option><option value="l">Large</option></select>
+    <select asp-for="Name" asp-items="Model.AvailableSizes"></select>
+    @Html.Localized(@<div>
+        <input asp-for="@Model.Name" id="localized-name" />
+    </div>)
+    <input type="submit" value="Save" />
+</form>

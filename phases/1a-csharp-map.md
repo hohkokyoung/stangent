@@ -3,7 +3,7 @@ phase: 1a
 name: csharp-map
 status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1 }
-provides: { code-graph: 5, impact-report: 5 }
+provides: { code-graph: 6, impact-report: 5 }
 ---
 
 # Phase 1a · C# map

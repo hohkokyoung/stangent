@@ -15,6 +15,7 @@ public static class DetectorRegistry
         new PublishHandleDetector(),
         new EntityTablesDetector(),
         new ValidationDetector(), // rules as facts on the properties they check (G7)
+        new FormFieldsDetector(), // fields the server defines and their choices (D329)
         new ConstantsDetector(), // constants' values (G9)
         new BackgroundJobsDetector(), // work queued to run later (G11)
         new JobsDetector(), // system jobs and the code that queues them (D171, D173)

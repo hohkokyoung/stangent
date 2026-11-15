@@ -2,7 +2,7 @@
 phase: r2
 name: graph-for-flows
 status: in progress
-consumes: { code-graph: 5 }
+consumes: { code-graph: 6 }
 provides: {}
 ---
 

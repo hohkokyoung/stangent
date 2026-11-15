@@ -1,0 +1,579 @@
+{
+"clone": "/Users/hohkokyoung/stangent-bench/nopcommerce",
+"rows": {
+"field": [
+3015,
+3033,
+2881,
+2899
+],
+"action": [
+708,
+760,
+685,
+735
+]
+},
+"unmatched": [
+{
+"file": "src/Plugins/Nop.Plugin.Pickup.PickupInStore/Views/Configure.cshtml",
+"line": 62,
+"kind": "action",
+"tag": "button",
+"snippet": "<button onclick=\\\"javascript:OpenWindow(\\'@Url.Content(\"~/Admin/PickupInStore/Edit/\")' + data + '?btnId=btnRefresh&formId=pickup-instore-form\\', 800, 800, true)",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.RFQ/Views/Admin/SelectCustomerPopup.cshtml",
+"line": 296,
+"kind": "action",
+"tag": "button",
+"snippet": "<button type=\"button\" onclick=\"selectCustomer(' + row.Id + ' )\" class=\"btn btn-default\">",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.RFQ/Views/Admin/_SelectProductToAdd.cshtml",
+"line": 108,
+"kind": "action",
+"tag": "button",
+"snippet": "<button type=\"button\" ' + ((row.CustomerEntersPrice || row.IsRental) ? 'disabled' : '') + ' onclick=\"addProductToRequest(' + row.Id + ' )\" class=\"btn btn-defaul",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.RFQ/Views/Admin/_ProductAddAttributes.cshtml",
+"line": 180,
+"kind": "field",
+"tag": "input",
+"snippet": "<input class=\"qq-edit-filename-selector qq-edit-filename\" tabindex=\"0\" type=\"text\">",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Payments.PayPalCommerce/Views/Admin/_PaymentMethod.cshtml",
+"line": 14,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"https://www.paypal.com/webapps/mpp/paypal-popup\" title=\"How PayPal Works\" onclick=\"javascript:window.open('https://www.paypal.com/webapps/mpp/paypal-po",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Payments.PayPalCommerce/Views/Admin/_PaymentMethod.cshtml",
+"line": 31,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"https://www.paypal.com/webapps/mpp/paypal-popup\" title=\"How PayPal Works\" onclick=\"javascript:window.open('https://www.paypal.com/webapps/mpp/paypal-po",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Payments.PayPalCommerce/Views/Admin/_PaymentMethod.cshtml",
+"line": 43,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"https://www.paypal.com/webapps/mpp/paypal-popup\" title=\"How PayPal Works\" onclick=\"javascript:window.open('https://www.paypal.com/webapps/mpp/paypal-po",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Payments.PayPalCommerce/Views/Admin/_PaymentMethod.cshtml",
+"line": 58,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"https://www.paypal.com/webapps/mpp/paypal-popup\" title=\"How PayPal Works\" onclick=\"javascript:window.open('https://www.paypal.com/webapps/mpp/paypal-po",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Payments.PayPalCommerce/Views/Admin/Configure.cshtml",
+"line": 157,
+"kind": "action",
+"tag": "a",
+"snippet": "<a id=\"onboardingButton\" href=\"@(Model.UseSandbox ? Model.SandboxSignUpUrl : Model.LiveSignUpUrl)\" target=\"_blank\" class=\"btn btn-info\" data-paypal-onboard-comp",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Payments.PayPalCommerce/Views/Public/_Buttons.cshtml",
+"line": 273,
+"kind": "action",
+"tag": "apple-pay-button",
+"snippet": "<apple-pay-button id=\"btn-appl\" onclick=\"applePayClicked()\" buttonstyle=\"black\" type=\"check-out\">",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Shipping.FixedByWeightByTotal/Views/_ByWeightByTotal.cshtml",
+"line": 230,
+"kind": "action",
+"tag": "button",
+"snippet": "<button onclick=\\\"javascript:OpenWindow(\\'@Url.Action(\"EditRateByWeightByTotalPopup\", \"FixedByWeightByTotal\")?id=' + data + '&btnId=btnRefresh&formId=shipping-b",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Omnisend/Views/Configure.cshtml",
+"line": 39,
+"kind": "field",
+"tag": "nop-editor",
+"snippet": "<nop-editor asp-for=\"UseTracking\"/>",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.PunchOut/Views/Session/List.cshtml",
+"line": 60,
+"kind": "action",
+"tag": "button",
+"snippet": "<button class=\"btn btn-default\" onclick=\"closeSession('${row.CustomerId}', '${row.StoreId}')\" type=\"button\">",
+"likely_skip": true
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/purify.js",
+"line": 730,
+"kind": "field",
+"tag": "select",
+"snippet": "<select>",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/purify.js",
+"line": 1496,
+"kind": "field",
+"tag": "input",
+"snippet": "<input name=\"ownerDocument\">",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/purify.js",
+"line": 1498,
+"kind": "field",
+"tag": "input",
+"snippet": "<input>",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/purify.js",
+"line": 1498,
+"kind": "field",
+"tag": "input",
+"snippet": "<input>",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/purify.js",
+"line": 1593,
+"kind": "field",
+"tag": "input",
+"snippet": "<input name=\"attributes\">",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/purify.js",
+"line": 1600,
+"kind": "field",
+"tag": "input",
+"snippet": "<input name=\"nodeType\">",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/marked.umd.js",
+"line": 68,
+"kind": "field",
+"tag": "input",
+"snippet": "<input \"+(e?'checked=\"\" ':\"\")+'disabled=\"\" type=\"checkbox\"> '}paragraph({tokens:e}){return`<p>${this.parser.parseInline(e)}</p> `}table(e){let t=\"\",n=\"\";for(let",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/bbeditor/ed.js",
+"line": 15,
+"kind": "action",
+"tag": "img",
+"snippet": "<img class=\\\"button\\\" src=\\\"\" + webRoot + \"bbeditor/images/bold.gif\\\" title=\\\"Bold\\\" name=\\\"btnBold\\\" onClick=\\\"doAddTags('[b]','[/b]','\" + obj + \"')\\\">",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/bbeditor/ed.js",
+"line": 16,
+"kind": "action",
+"tag": "img",
+"snippet": "<img class=\\\"button\\\" src=\\\"\" + webRoot + \"bbeditor/images/italic.gif\\\" title=\\\"Italic\\\" name=\\\"btnItalic\\\" onClick=\\\"doAddTags('[i]','[/i]','\" + obj + \"')\\\">",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/bbeditor/ed.js",
+"line": 17,
+"kind": "action",
+"tag": "img",
+"snippet": "<img class=\\\"button\\\" src=\\\"\" + webRoot + \"bbeditor/images/underline.gif\\\" title=\\\"Underline\\\" name=\\\"btnUnderline\\\" onClick=\\\"doAddTags('[u]','[/u]','\" + obj +",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/bbeditor/ed.js",
+"line": 18,
+"kind": "action",
+"tag": "img",
+"snippet": "<img class=\\\"button\\\" src=\\\"\" + webRoot + \"bbeditor/images/link.gif\\\" title=\\\"Link\\\" name=\\\"btnLink\\\" onClick=\\\"doURL('\" + obj + \"')\\\">",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/bbeditor/ed.js",
+"line": 19,
+"kind": "action",
+"tag": "img",
+"snippet": "<img class=\\\"button\\\" src=\\\"\" + webRoot + \"bbeditor/images/picture.gif\\\" title=\\\"Picture\\\" name=\\\"btnLink\\\" onClick=\\\"doImg('\" + obj + \"')\\\">",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/bbeditor/ed.js",
+"line": 20,
+"kind": "action",
+"tag": "img",
+"snippet": "<img class=\\\"button\\\" src=\\\"\" + webRoot + \"bbeditor/images/code.gif\\\" title=\\\"Code\\\" name=\\\"btnCode\\\" onClick=\\\"doAddTags('[code]','[/code]','\" + obj + \"')\\\">",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/mdeditor/script.js",
+"line": 3,
+"kind": "field",
+"tag": "textarea",
+"snippet": "<textarea>",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Content/js/mdeditor/script.js",
+"line": 203,
+"kind": "field",
+"tag": "textarea",
+"snippet": "<textarea>",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Public/Views/Topic.cshtml",
+"line": 40,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"#\" class=\"delete-topic-button\" onclick=\"return deletetopic(@(Model.Id))\">",
+"likely_skip": false
+},
+{
+"file": "src/Plugins/Nop.Plugin.Misc.Forums/Public/Views/_ForumPost.cshtml",
+"line": 85,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"#\" class=\"delete-post-button\" onclick=\"return deletepost(@(Model.Id))\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Order/AddProductToOrder.cshtml",
+"line": 127,
+"kind": "action",
+"tag": "button",
+"snippet": "<button type=\"button\" onclick=\"addProductToOrder(' + row.Id + ' )\" class=\"btn btn-default\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/ContactFormAttribute/_CreateOrUpdate.Values.cshtml",
+"line": 50,
+"kind": "action",
+"tag": "button",
+"snippet": "<button onclick=\\\"javascript:OpenWindow(\\'@Url.Content(\"~/Admin/ContactFormAttribute/ValueEditPopup/\")' + data + '?btnId=btnRefresh&formId=contact-form-attribut",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/VendorAttribute/_CreateOrUpdate.Values.cshtml",
+"line": 48,
+"kind": "action",
+"tag": "button",
+"snippet": "<button onclick=\\\"javascript:OpenWindow(\\'@Url.Content(\"~/Admin/VendorAttribute/ValueEditPopup/\")' + data + '?btnId=btnRefresh&formId=vendorattribute-form\\', 80",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/AddressAttribute/_CreateOrUpdate.Values.cshtml",
+"line": 54,
+"kind": "action",
+"tag": "button",
+"snippet": "<button onclick=\\\"javascript:OpenWindow(\\'@Url.Content(\"~/Admin/AddressAttribute/ValueEditPopup/\")' + data + '?btnId=btnRefresh&formId=addressattribute-form\\', ",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/SpecificationAttribute/_CreateOrUpdateSpecificationAttribute.Options.cshtml",
+"line": 48,
+"kind": "action",
+"tag": "button",
+"snippet": "<button onclick=\\\"javascript:OpenWindow(\\'@Url.Content(\"~/Admin/SpecificationAttribute/OptionEditPopup/\")' + data + '?btnId=btnRefresh&formId=specificationattri",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Security/Permissions.cshtml",
+"line": 108,
+"kind": "action",
+"tag": "button",
+"snippet": "<button onclick=\\\"javascript:OpenWindow(\\'@Url.Content(\"~/Admin/Security/PermissionEditPopup/\")' + data + '\\', 800, 300, true); return false;\\\" class=\"btn btn-d",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/CustomerAttribute/_CreateOrUpdate.Values.cshtml",
+"line": 50,
+"kind": "action",
+"tag": "button",
+"snippet": "<button onclick=\\\"javascript:OpenWindow(\\'@Url.Content(\"~/Admin/CustomerAttribute/ValueEditPopup/\")' + data + '?btnId=btnRefresh&formId=customerattribute-form\\'",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/CheckoutAttribute/_CreateOrUpdate.Values.cshtml",
+"line": 87,
+"kind": "action",
+"tag": "button",
+"snippet": "<button onclick=\\\"javascript:OpenWindow(\\'@Url.Content(\"~/Admin/CheckoutAttribute/ValueEditPopup/\")' + data + '?btnId=btnRefresh&formId=checkoutattribute-form\\'",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Shared/_Table.Definition.cshtml",
+"line": 397,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"#\" class=\"@button.ClassName\" onclick=\"table_deletedata_@(model_name)(\\'' + data + '\\');return false;\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Shared/_Table.Definition.cshtml",
+"line": 409,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"#\" class=\"@button.ClassName\" id=\"buttonEdit_@(model_name)'+ modData + '\" onclick=\"editData_@(model_name)($(this).parent().parent(), \\'' + origData + '\\",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Shared/_Table.Definition.cshtml",
+"line": 410,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"#\" class=\"@button.ClassName\" id=\"buttonConfirm_@(model_name)'+ modData + '\" style=\"display:none\" onclick=\"confirmEditData_@(model_name)($(this).parent(",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Shared/_Table.Definition.cshtml",
+"line": 411,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"#\" class=\"@button.ClassName\" id=\"buttonCancel_@(model_name)'+ modData + '\" style=\"display:none\" onclick=\"cancelEditData_@(model_name)(\\'' + row + '\\', ",
+"likely_skip": true
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Shared/_Table.Definition.cshtml",
+"line": 442,
+"kind": "action",
+"tag": "a",
+"snippet": "<a class=\"@buttonCustom.ClassName\" onclick=\"@buttonCustom.OnClickFunctionName' + '(\\'' + data + '\\');\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Shared/Table.cshtml",
+"line": 222,
+"kind": "field",
+"tag": "input",
+"snippet": "<input value=\"' + editRowData_@(tableName)[cellName] + '\" class=\"userinput form-control\" type=\"number\" step=\"any\" min=\"@int.MinValue\" max=\"@int.MaxValue\"/>",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Shared/Table.cshtml",
+"line": 227,
+"kind": "field",
+"tag": "input",
+"snippet": "<input value=\"true\" checked class=\"userinput\" type=\"checkbox\" onclick=\"checkBoxClick_@(tableName)(this)\"/>",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Shared/Table.cshtml",
+"line": 230,
+"kind": "field",
+"tag": "input",
+"snippet": "<input value=\"false\" class=\"userinput\" type=\"checkbox\" onclick=\"checkBoxClick_@(tableName)(this)\"/>",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Shared/Table.cshtml",
+"line": 235,
+"kind": "field",
+"tag": "input",
+"snippet": "<input value=\"' + escapeQuotHtml(strValue) + '\" class=\"userinput form-control\" style=\"width: 99% \" />",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Product/_CreateOrUpdate.Info.cshtml",
+"line": 234,
+"kind": "action",
+"tag": "input",
+"snippet": "<input type=\"hidden\" id=\"ai-generated-description\" onclick=\"update_description()\" />",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Product/_CreateOrUpdateProductAttributeMapping.Values.cshtml",
+"line": 72,
+"kind": "action",
+"tag": "button",
+"snippet": "<button onclick=\\\"javascript:OpenWindow(\\'@Url.Content(\"~/Admin/Product/ProductAttributeValueEditPopup/\")' + data + '?btnId=btnRefresh&formId=productattribute-f",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Product/BulkEdit.cshtml",
+"line": 179,
+"kind": "action",
+"tag": "a",
+"snippet": "<a class=\"btn btn-success\" onclick=\"addNewRow()\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Product/_CreateOrUpdate.ProductAttributes.Combinations.cshtml",
+"line": 90,
+"kind": "action",
+"tag": "button",
+"snippet": "<button onclick=\\\"javascript:OpenWindow(\\'@Url.Content(\"~/Admin/Product/ProductAttributeCombinationEditPopup/\")' + data + '?btnId=btnRefreshCombinations&formId=",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Product/RequiredProductAddPopup.cshtml",
+"line": 132,
+"kind": "action",
+"tag": "button",
+"snippet": "<button type=\"button\" onclick=\"selectRequiredProduct(' + row.Id + ' )\" class=\"btn btn-default\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Product/_CreateOrUpdate.Prices.cshtml",
+"line": 307,
+"kind": "action",
+"tag": "button",
+"snippet": "<button onclick=\\\"javascript:OpenWindow(\\'@Url.Content(\"~/Admin/Product/TierPriceEditPopup/\")' + data + '?btnId=btnRefreshTierPrices&formId=product-form\\', 800,",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Discount/_CreateOrUpdate.Requirements.cshtml",
+"line": 196,
+"kind": "field",
+"tag": "select",
+"snippet": "<select class=\"form-control input-sm float-left\" id=\"interactiontype{{>DiscountRequirementId}}\" name=\"interactiontype{{>DiscountRequirementId}}\" onchange=\"chang",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Discount/_CreateOrUpdate.Requirements.cshtml",
+"line": 215,
+"kind": "action",
+"tag": "button",
+"snippet": "<button type=\"button\" class=\"btn btn-link\" id=\"deleterequirement{{>DiscountRequirementId}}\" onclick=\"deleteRequirement({{>DiscountRequirementId}})\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/ProductAttribute/_CreateOrUpdate.PredefinedValues.cshtml",
+"line": 61,
+"kind": "action",
+"tag": "button",
+"snippet": "<button onclick=\\\"javascript:OpenWindow(\\'@Url.Content(\"~/Admin/ProductAttribute/PredefinedProductAttributeValueEditPopup/\")' + data + '?btnId=btnRefresh&formId",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Setting/_GeneralCommon.Common.cshtml",
+"line": 16,
+"kind": "field",
+"tag": "input",
+"snippet": "<input type=\"radio\" name=\"@Html.NameFor(x => x.StoreInformationSettings.DefaultStoreTheme)\" value=\"@theme.SystemName\" @if (theme.SystemName.Equals(Model.StoreIn",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Currency/List.cshtml",
+"line": 208,
+"kind": "action",
+"tag": "a",
+"snippet": "<a onclick=\"applyCurrencyRate()\" class=\"btn bg-olive\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Currency/List.cshtml",
+"line": 238,
+"kind": "action",
+"tag": "a",
+"snippet": "<a onclick=\"applyCurrencyRate(\\'' + row.Rate + '\\',\\'' + row.CurrencyCode + '\\')\" class=\"btn bg-olive\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Country/_CreateOrUpdate.States.cshtml",
+"line": 83,
+"kind": "action",
+"tag": "button",
+"snippet": "<button onclick=\\\"javascript:OpenWindow(\\'@Url.Content(\"~/Admin/Country/StateEditPopup/\")' + data + '?btnId=btnRefresh&formId=country-form\\', 800, 400, true); r",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/Vendor/AddCustomerToVendorPopup.cshtml",
+"line": 134,
+"kind": "action",
+"tag": "button",
+"snippet": "<button type=\"button\" onclick=\"selectCustomer(' + row.Id + ' )\" class=\"btn btn-default\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Areas/Admin/Views/CustomerRole/AssociateProductToCustomerRolePopup.cshtml",
+"line": 151,
+"kind": "action",
+"tag": "button",
+"snippet": "<button type=\"button\" onclick=\"selectAssociatedProduct(' + row.Id + ' )\" class=\"btn btn-default\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Views/Shared/Components/OrderSummary/Default.cshtml",
+"line": 40,
+"kind": "field",
+"tag": "input",
+"snippet": "<input>",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Views/Product/CompareProducts.cshtml",
+"line": 34,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"#\" onclick=\"setLocation('@Url.RouteUrl(NopRouteNames.Standard.CLEAR_COMPARE_LIST)')\" class=\"clear-list\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Views/Checkout/OnePageCheckout.cshtml",
+"line": 105,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"#\" onclick=\"Checkout.back(); return false; \">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Views/Checkout/OnePageCheckout.cshtml",
+"line": 137,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"#\" onclick=\"Checkout.back(); return false;\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Views/Checkout/OnePageCheckout.cshtml",
+"line": 166,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"#\" onclick=\"Checkout.back(); return false;\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Views/Checkout/OnePageCheckout.cshtml",
+"line": 189,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"#\" onclick=\"Checkout.back(); return false;\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Views/Checkout/OnePageCheckout.cshtml",
+"line": 210,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"#\" onclick=\"Checkout.back(); return false;\">",
+"likely_skip": false
+},
+{
+"file": "src/Presentation/Nop.Web/Views/Customer/Info.cshtml",
+"line": 430,
+"kind": "action",
+"tag": "a",
+"snippet": "<a href=\"#\" onclick=\"return removeexternalassociation(@item.Id)\">",
+"likely_skip": false
+}
+]
+}

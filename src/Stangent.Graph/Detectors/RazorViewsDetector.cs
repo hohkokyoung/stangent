@@ -288,6 +288,10 @@ public sealed class RazorViewsDetector : IDetector
         }
         foreach (var s in page.Scripts)
             Fact("script", viewId, s.Line, ("text", s.Text));
+        foreach (var f in page.Fields)
+            Fact("form-field", viewId, f.Line, ("element", f.Element), ("bind", f.Bind), ("to", f.To), ("type", f.Type), ("via", f.Bind == "asp-for" ? "binding" : "native"),
+                ("id", f.Id), ("label", string.Join("|", f.LabelKeys)), ("labelText", f.LabelText), ("help", ""), ("helpText", ""), ("choices", f.Choices), ("inside", ""),
+                ("model", model?.ToDisplayString() ?? ""));
         MenuTree.Emit(ctx.Fragment.Facts, Name, page.Menus);   // D221: lists of three or more links
     }
 
@@ -658,6 +662,9 @@ public sealed class RazorViewsDetector : IDetector
         /// <summary>The tag helpers the compiler ran on the element (<c>FormTagHelper</c>…).</summary>
         public HashSet<string> Helpers { get; } = new(StringComparer.Ordinal);
         public bool BeginForm { get; init; }
+        /// <summary>D329: each tag helper property's C# as written, and each tag helper attribute's (<c>asp-for</c> → <c>__model => __model.Name</c>).</summary>
+        public Dictionary<string, ExpressionSyntax> PropExprs { get; } = new(StringComparer.Ordinal);
+        public Dictionary<string, ExpressionSyntax> AttrExprs { get; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
     sealed class Walker(SemanticModel model, Dictionary<string, (string Name, string? Value)> statics)
@@ -746,7 +753,10 @@ public sealed class RazorViewsDetector : IDetector
                 }
                 if (current is not null && a.Left is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax id } ma
                     && id.Identifier.ValueText.StartsWith("__", StringComparison.Ordinal) && !left.StartsWith("__tagHelperExecutionContext", StringComparison.Ordinal))
+                {
                     current.Props[ma.Name.Identifier.ValueText] = Value(a.Right);
+                    current.PropExprs[ma.Name.Identifier.ValueText] = a.Right;
+                }
                 return;
             }
             if (e is not InvocationExpressionSyntax call || ExtractContext.InvokedName(call) is not { } name) return;
@@ -760,6 +770,15 @@ public sealed class RazorViewsDetector : IDetector
                     return;
                 case "Write" when args.Count == 1:
                     target.Add(new ExprSeg(args[0].Expression));
+                    // D329: markup passed to a helper as a Razor template (`@<div>…</div>`, compiled to `item => new HelperResult(async w => { … })`)
+                    // is the view's own markup too, where the helper writes it: nopCommerce's localized editors hold their fields there.
+                    if (buffer is null)
+                        foreach (var template in args[0].Expression.DescendantNodes().OfType<ObjectCreationExpressionSyntax>()
+                                     .Where(c => c.Type.ToString().EndsWith("HelperResult", StringComparison.Ordinal)
+                                         && !c.Ancestors().TakeWhile(x => x != args[0].Expression).OfType<ObjectCreationExpressionSyntax>()
+                                             .Any(x => x.Type.ToString().EndsWith("HelperResult", StringComparison.Ordinal))))
+                            if (template.ArgumentList?.Arguments.FirstOrDefault()?.Expression is ParenthesizedLambdaExpressionSyntax { Block: { } body })
+                                o.AddRange(Block(body.Statements));
                     return;
                 case "BeginWriteTagHelperAttribute":
                     buffer = [];
@@ -779,7 +798,12 @@ public sealed class RazorViewsDetector : IDetector
                 case "AddHtmlAttribute" or "AddTagHelperAttribute" when current is not null:
                     if (args.Count == 1 && args[0].Expression is IdentifierNameSyntax field && statics.TryGetValue(field.Identifier.ValueText, out var st))
                         current.Attrs[st.Name] = st.Value;
-                    else if (args.Count >= 2 && Str(args[0].Expression) is { } attr) current.Attrs[attr] = Value(args[1].Expression);
+                    else if (args.Count >= 2 && Str(args[0].Expression) is { } attr)
+                    {
+                        current.Attrs[attr] = Value(args[1].Expression);
+                        if (args[1].Expression is MemberAccessExpressionSyntax given && current.PropExprs.TryGetValue(given.Name.Identifier.ValueText, out var written))
+                            current.AttrExprs[attr] = written;
+                    }
                     return;
                 case "BeginAddHtmlAttributeValues" when args.Count >= 2:
                     attrName = Str(args[1].Expression);
@@ -901,6 +925,8 @@ public sealed class RazorViewsDetector : IDetector
             public string Built { get; init; } = "";
         }
         public sealed record Script(int Line, string Text);
+        /// <summary>D329: a control the user fills in: what it is bound to, its label's keys and words, and its choices.</summary>
+        public sealed record Field(int Line, string Element, string Bind, string To, string Type, string Id, IReadOnlyList<string> LabelKeys, string LabelText, string Choices);
 
         readonly StringBuilder html = new();
         readonly List<(int Html, int Source)> map = [];
@@ -914,6 +940,9 @@ public sealed class RazorViewsDetector : IDetector
         public List<FormRecord> Forms { get; } = [];
         public List<Button> Buttons { get; } = [];
         public List<Script> Scripts { get; } = [];
+        public List<Field> Fields { get; } = [];
+        readonly Dictionary<string, (IReadOnlyList<string> Keys, string Words)> labelsFor = new(StringComparer.Ordinal);
+        readonly Dictionary<string, (IReadOnlyList<string> Keys, string Words)> labelsById = new(StringComparer.Ordinal);
 
         readonly string owner, file, ambientController, ambientArea;
 
@@ -1081,6 +1110,7 @@ public sealed class RazorViewsDetector : IDetector
                 marks[^1].Kids.Add(mark);
                 if (!VoidTags.Contains(name) && !m.Groups[3].Value.TrimEnd().EndsWith('/') && el is not { SelfClosing: true }) marks.Add(mark);
                 if (name == "a") mark.Item = LinkItem(el, attrs, raw, text, m, line);
+                FieldOrLabel(name, el, attrs, text, m, line);
                 switch (name)
                 {
                     case "form":
@@ -1122,6 +1152,81 @@ public sealed class RazorViewsDetector : IDetector
         }
 
         public Dictionary<ElemSeg, FormRecord?> PartialForms { get; } = [];
+
+        /// <summary>
+        /// D329: a field is an element bound with <c>asp-for</c> (any tag helper: <c>&lt;input&gt;</c>, <c>&lt;nop-editor&gt;</c>) or a native
+        /// <c>&lt;input&gt;</c>/<c>&lt;select&gt;</c>/<c>&lt;textarea&gt;</c>, not hidden and not a button; an element whose tag ends in
+        /// <c>label</c> is a label, for the field with the same <c>asp-for</c> or the <c>id</c> its <c>for</c> names.
+        /// </summary>
+        void FieldOrLabel(string name, ElemSeg? el, Dictionary<string, string?> attrs, string text, Match m, int line)
+        {
+            var aspFor = el is not null && el.Attrs.ContainsKey("asp-for");
+            var path = aspFor ? ModelPath(el!.AttrExprs.GetValueOrDefault("asp-for")) : null;
+            if (name.EndsWith("label", StringComparison.Ordinal))
+            {
+                var words = Words(Inner(text, m, name));
+                if (path is not null) labelsFor[path] = words;
+                if (Get(attrs, "for") is { Length: > 0 } f) labelsById[f] = words;
+                return;
+            }
+            var type = (Get(attrs, "type") ?? "").ToLowerInvariant();
+            if (type is "hidden" or "submit" or "button" or "reset" or "image" || !(aspFor || name is "input" or "select" or "textarea")) return;
+            var id = Get(attrs, "id") ?? "";
+            var label = path is not null && labelsFor.TryGetValue(path, out var byFor) ? byFor : labelsById.GetValueOrDefault(id);
+            var choices = "";
+            if (el?.AttrExprs.GetValueOrDefault("asp-items") is { } items) choices = ItemsChoices(items);
+            else if (name == "select")
+            {
+                var options = new List<string>();
+                foreach (Match o in Option.Matches(Inner(text, m, "select")))
+                {
+                    var (k, w) = Words(o.Groups[2].Value);
+                    var v = k.FirstOrDefault() ?? (w.Length > 0 ? w : Attributes(o.Groups[1].Value, null).Plain.GetValueOrDefault("value") ?? "");
+                    if (v.Length > 0 && !options.Contains(v)) options.Add(v);
+                }
+                if (options.Count > 0) choices = "list:" + string.Join("|", options);
+            }
+            Fields.Add(new Field(line, name, aspFor ? "asp-for" : Get(attrs, "name") is not null ? "name" : "", path ?? Get(attrs, "name") ?? "",
+                type.Length > 0 ? type : name == "input" ? "text" : name, id, label.Keys ?? [], label.Words ?? "", choices));
+        }
+
+        static readonly Regex Option = new(@"<option\b([^>]*)>(.*?)</option>", RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+        /// <summary><c>__model => __model.Locales[item].Name</c> (or <c>=> Model.Locales[item].Name</c>) → <c>Locales[item].Name</c>.</summary>
+        static string? ModelPath(ExpressionSyntax? e)
+        {
+            if (e?.DescendantNodesAndSelf().OfType<SimpleLambdaExpressionSyntax>().FirstOrDefault() is not { ExpressionBody: { } body } lambda) return null;
+            var text = Tokens(body);
+            // `asp-for="@Model.Name"` is the same field as `asp-for="Name"`.
+            foreach (var p in new[] { lambda.Parameter.Identifier.ValueText + ".", "Model." })
+                if (text.StartsWith(p, StringComparison.Ordinal)) return text[p.Length..];
+            return text;
+        }
+
+        /// <summary>A select's items: an enum's (<c>GetEnumSelectList&lt;E&gt;()</c>, or a call on a value of an enum type), else made at runtime.</summary>
+        string ItemsChoices(ExpressionSyntax e)
+        {
+            foreach (var n in e.DescendantNodesAndSelf())
+            {
+                if (n is GenericNameSyntax { Identifier.ValueText: "GetEnumSelectList", TypeArgumentList.Arguments: [var t] }) return $"enum:{t.ToString().Split('.')[^1]}";
+                if (n is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } && model.GetTypeInfo(ma.Expression).Type is { TypeKind: TypeKind.Enum } en)
+                    return $"enum:{en.Name}";
+            }
+            var x = e is CastExpressionSyntax cast ? cast.Expression : e;
+            return "runtime:" + Tokens(x).Replace("__model.", "", StringComparison.Ordinal);
+        }
+
+        /// <summary>C# as written, without the compiler's <c>#line</c> lines and spacing: its tokens, a space only between words.</summary>
+        static string Tokens(SyntaxNode n)
+        {
+            var sb = new StringBuilder();
+            foreach (var t in n.DescendantTokens())
+            {
+                if (sb.Length > 0 && char.IsLetterOrDigit(sb[^1]) && t.Text.Length > 0 && char.IsLetterOrDigit(t.Text[0])) sb.Append(' ');
+                sb.Append(t.Text);
+            }
+            return sb.ToString();
+        }
 
         /// <summary>The form around a C# value the view writes (<c>@await Html.PartialAsync("_Row")</c>), innermost first.</summary>
         public FormRecord? FormAround(SyntaxNode node)

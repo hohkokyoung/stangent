@@ -39,6 +39,7 @@ public static class StangentComponents
         Detector("publish-handle", "Publish and handle links"),
         Detector("entity-tables", "Entity to table links"),
         Detector("validation", "Validation rules on the properties they check"),
+        Detector("form-fields", "Fields the server defines (a property named by a Label argument or a display-name attribute) and their choices (D329)"),
         Detector("constants", "Constants' values"),
         Detector("background-jobs", "Work queued to run later (Hangfire)"),
         Detector("jobs", "System jobs (command handlers, scheduled tasks) and the code that queues them"),
