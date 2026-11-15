@@ -52,4 +52,22 @@ public class FormFieldTests(ShopGraph shop) : IClassFixture<ShopGraph>
         var name = shop.Graph.AllFacts.First(f => f.Kind == "form-field" && f.File == "Shop.Web/Views/Settings/Edit.cshtml");
         Assert.Equal(("view:Shop.Web/Views/Settings/Edit.cshtml", "razor-views", "Shop.Web.Models.SettingsModel"), (name.Owner, name.Detector, name["model"]));
     }
+
+    [Fact]
+    public void A_views_title_comes_from_a_title_slot_in_ViewBag_and_its_top_heading()
+    {
+        Assert.Equal(
+        [
+            "19 heading h2 Shop.Settings.Heading",
+            "20 view-data PageTitle Shop.Settings.Title",
+        ], shop.Graph.AllFacts.Where(f => f.Kind == "screen-title" && f.File == "Shop.Web/Views/Settings/Edit.cshtml").OrderBy(f => f.Line)
+            .Select(f => $"{f.Line} {f["via"]} {(f["via"] == "heading" ? "h" + f["level"] : f["slot"])} {f["label"]}"));
+    }
+
+    [Fact]
+    public void A_razor_button_with_no_words_of_its_own_is_named_by_its_aria_label()
+    {
+        var close = shop.Graph.AllFacts.Single(f => f.Kind == "ui-event" && f.File == "Shop.Web/Views/Settings/Edit.cshtml" && f.Line == 21);
+        Assert.Equal(("", "Close dialog"), (close["keys"], close["text"]));
+    }
 }

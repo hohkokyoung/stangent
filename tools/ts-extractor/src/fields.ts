@@ -544,6 +544,10 @@ function angularFields(ctx: Context, sf: ts.SourceFile, wrappers: Wrappers) {
         const read = ast && /PropertyRead|Call/.test(ctorName(ast)) ? ((ast.name as string | undefined) ?? ((ast.receiver as Obj | undefined)?.name as string | undefined)) : undefined;
         const init = read ? memberInit(read) : undefined;
         choices = init ? choicesOf(ctx, init).replace(/^runtime:.*/, `runtime:${sourceOf(choiceAttr.value)}`) : `runtime:${sourceOf(choiceAttr.value)}`;
+        // D333 (fresh check): options drawn through the field's own <ng-template> (`{{ rd | writingStyle }}`) show what the template
+        // makes of each value at runtime, not the values themselves.
+        if (choices.startsWith("list:") && (o.children as Obj[]).some((x) => /^Template$/.test(ctorName(x)) || (isNgElement(x) && x.name === "ng-template")))
+          choices = `runtime:${sourceOf(choiceAttr.value)}`;
       } else if (n.tag === "select") {
         const items: string[] = [];
         let loop = "";
@@ -592,3 +596,96 @@ function angularFields(ctx: Context, sf: ts.SourceFile, wrappers: Wrappers) {
     }
   }
 }
+
+// ---------------------------------------------------------------- screen titles (D333)
+
+/** Elements whose `title` is a tooltip on the control, never a title over what it holds. */
+const NOT_TITLED = new Set(["button", "a", "input", "select", "textarea", "img", "option", "label", "span", "i"]);
+const HEADING = /^h([1-6])$/i;
+
+/**
+ * D333: what a screen's own markup says its title is, `screen-title` facts on the template (Angular) or component (React):
+ * `via` `title-attribute`, the outermost element that wraps other elements and carries a `title` with words (Sonarr's
+ * `<PageContent title={translate('Series')}>`); `via` `heading`, the first of the highest-level headings (`h1`, else `h2`, …)
+ * with words, `level` its number. `label` keys (under transloco's prefix), `labelText` words. Layer 3 picks one per screen.
+ */
+export function titleFacts(ctx: Context, sf: ts.SourceFile) {
+  if (/\.(tsx|jsx|js)$/.test(sf.fileName))
+    for (const c of reactComponents(ctx, sf)) {
+      const roots: JsxEl[] = [];
+      const top = (x: ts.Node) => {
+        if (ts.isJsxElement(x) || ts.isJsxSelfClosingElement(x)) { roots.push(x); return; }
+        if (ts.isFunctionLike(x) && x !== c.body.parent) return;
+        ts.forEachChild(x, top);
+      };
+      top(c.body);
+      if (roots.length === 0) continue;
+      const file = ctx.rel(sf.fileName);
+      // Breadth first from the outermost elements: the first wrapping element with a title.
+      let level: JsxEl[] = roots;
+      let titled: { el: JsxEl; words: Words } | null = null;
+      for (let depth = 0; depth < 4 && level.length > 0 && !titled; depth++) {
+        for (const el of level) {
+          if (!ts.isJsxElement(el) || NOT_TITLED.has(tagOf(el).toLowerCase())) continue;
+          const a = jsxAttrs(el).get("title");
+          const w = a ? tsWords(ctx, attrExpr(a) ?? a) : noWords();
+          if (!empty(w)) { titled = { el, words: w }; break; }
+        }
+        level = level.flatMap((el) => (ts.isJsxElement(el) ? el.children.flatMap(jsxChildren) : []));
+      }
+      if (titled) ctx.out.fact("ui", "screen-title", c.id, file, ctx.line(opening(titled.el)), titleData("title-attribute", titled.words));
+      let best: { el: JsxEl; n: number; words: Words } | null = null;
+      for (const r of roots) jsxElements(r, (el) => {
+        const m = HEADING.exec(tagOf(el));
+        if (!m || (best && best.n <= Number(m[1]))) return;
+        const w = childWords(ctx, el);
+        if (!empty(w)) best = { el, n: Number(m[1]), words: w };
+      });
+      const b = best as { el: JsxEl; n: number; words: Words } | null;
+      if (b) ctx.out.fact("ui", "screen-title", c.id, file, ctx.line(opening(b.el)), { ...titleData("heading", b.words), level: String(b.n) });
+    }
+  for (const c of ctx.angular.components.values()) {
+    if (c.cls.getSourceFile() !== sf || !c.template) continue;
+    const t = c.template;
+    const templateId = `ts|${t.file}#${c.id.slice(c.id.indexOf("#") + 1)}.template`;
+    let parsed;
+    try { parsed = parseTemplate(t.text, t.file, { preserveWhitespaces: false }); } catch { continue; }
+    const scopes = translocoScopes(parsed.nodes);
+    const prefixOf = (n: NgNode) => scopes.get(n.o) ?? "";
+    const tree = ngTree(parsed.nodes);
+    const lineOf = (n: NgNode) => {
+      const span = n.o.sourceSpan as { start?: { line?: number } } | undefined;
+      return t.line + (span?.start?.line ?? 0);
+    };
+    let level = tree.kids;
+    let titled: { n: NgNode; words: Words } | null = null;
+    for (let depth = 0; depth < 4 && level.length > 0 && !titled; depth++) {
+      for (const n of level) {
+        if (n.kids.length === 0 || NOT_TITLED.has(n.tag.toLowerCase())) continue;
+        const a = ngAttr(n.o, ["title"], prefixOf(n));
+        if (a && !empty(a.words)) { titled = { n, words: a.words }; break; }
+      }
+      level = level.flatMap((n) => n.kids);
+    }
+    if (titled) ctx.out.fact("ui", "screen-title", templateId, t.file, lineOf(titled.n), titleData("title-attribute", titled.words));
+    let best: { n: NgNode; level: number; words: Words } | null = null;
+    for (const n of ngAll(tree)) {
+      const m = HEADING.exec(n.tag);
+      if (!m || (best && best.level <= Number(m[1]))) continue;
+      const w = ngWords(n.o.children, prefixOf(n));
+      if (!empty(w)) best = { n, level: Number(m[1]), words: w };
+    }
+    if (best) ctx.out.fact("ui", "screen-title", templateId, t.file, lineOf(best.n), { ...titleData("heading", best.words), level: String(best.level) });
+  }
+}
+
+const jsxChildren = (c: ts.JsxChild): JsxEl[] => {
+  if (ts.isJsxElement(c) || ts.isJsxSelfClosingElement(c)) return [c];
+  if (ts.isJsxFragment(c)) return c.children.flatMap(jsxChildren);
+  const found: JsxEl[] = [];
+  const walk = (x: ts.Node) => { if (ts.isJsxElement(x) || ts.isJsxSelfClosingElement(x)) { found.push(x); return; } ts.forEachChild(x, walk); };
+  if (ts.isJsxExpression(c)) walk(c);
+  return found;
+};
+
+const titleData = (via: string, w: Words) => ({ via, label: w.keys.join("|"), labelText: w.texts.join(" ") });

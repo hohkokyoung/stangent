@@ -1,9 +1,9 @@
 ---
 phase: r3
 name: flows
-status: needs review
-consumes: { code-graph: 5 }
-provides: { flows: 2, areas: 1 }
+status: in progress
+consumes: { code-graph: 6 }
+provides: { flows: 6, areas: 1 }
 ---
 
 # Rebuild layer 3: areas → flows (D154, D156, D170–D180)

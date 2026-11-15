@@ -77,6 +77,19 @@ static class FlowCommands
             return report;
         }));
         flows.Subcommands.Add(guesses);
+
+        var missingOption = new Option<int>("--top") { Description = "How many ❓ lines to list per kind (default 20).", DefaultValueFactory = _ => 20 };
+        var flowsOption = new Option<bool>("--flows") { Description = "Also build the flows in memory (nothing written) and count click and screen flows named by words." };
+        var sampleOption = new Option<int>("--sample") { Description = "Also list this many named lines per kind, a fixed pick, with their words and where they came from (for a person's check)." };
+        var labels = new Command("labels", "D327's floor check (D333): the share of buttons, fields, server-defined fields, choices and screens named by the words a user sees, through the app's own translation files; where the words came from; the first ❓ lines.") { missingOption, flowsOption, sampleOption };
+        labels.SetAction(pr => Cli.Run(pr, "flows labels", ctx =>
+        {
+            var graph = Cli.LoadGraph(ctx);
+            var report = LabelReport.Report(graph, ctx.Repo.Root, pr.GetValue(missingOption), pr.GetValue(flowsOption) ? FlowBuilder.Build(graph, ctx.Repo.Root, Settings(ctx)) : null, pr.GetValue(sampleOption));
+            ctx.Span.Attributes["stangent.artifact.count"] = report["kinds"]!.AsObject().Sum(k => (int)k.Value!["total"]!);
+            return report;
+        }));
+        flows.Subcommands.Add(labels);
     }
 
     /// <summary>What <c>flows build</c> says about a layout by area (D230): folders, files per area, the shared folder, flows in no area.</summary>

@@ -1,6 +1,6 @@
 import ts from "typescript";
 import type { Context } from "./extract.ts";
-import { stringValue } from "./values.ts";
+import { RUNTIME, BASE, stringValue } from "./values.ts";
 
 /**
  * Pages: the frontend's entry points (D31). Angular Router and object-style React Router routes
@@ -88,6 +88,7 @@ function routeArray(ctx: Context, arr: ts.ArrayLiteralExpression, prefix: string
     const loaders = [...loads, ...loadersOf(ctx, el)];
     if (own !== null && (target.ids.length > 0 || target.unresolved)) {
       addPage(ctx, el, full, target);
+      routeTitle(ctx, el, pageId(ctx, full));
       for (const g of guards) ctx.out.fact("routes", "guard", pageId(ctx, full), g.file, g.line, { guard: g.id, name: g.name, via: g.via });
       for (const l of loaders) {
         if (l.id) ctx.out.fact("on-load", "on-load", pageId(ctx, full), l.file, l.line, { framework: "router", hook: l.via, handler: l.id, deps: "", runs: "before the screen opens", key: l.name });
@@ -102,6 +103,23 @@ function routeArray(ctx: Context, arr: ts.ArrayLiteralExpression, prefix: string
         if (ts.isVariableDeclaration(d) && d.initializer && ts.isArrayLiteralExpression(d.initializer)) routeArray(ctx, d.initializer, full, visiting, guards, loaders);
     }
   }
+}
+
+/**
+ * D333: a screen's title written on its route, a `screen-title` fact on the page (`via` `route`): the route's own `title` (Angular),
+ * else `title` under `data` or `handle` (the usual place in other routers), when it is a constant. `title` holds it as written:
+ * a text key or words; layer 3 looks it up. A title resolver or one made at runtime gives none.
+ */
+function routeTitle(ctx: Context, route: ts.ObjectLiteralExpression, page: string) {
+  let e = prop(route, "title");
+  for (const holder of ["data", "handle"]) {
+    if (e) break;
+    const h = prop(route, holder);
+    if (h && ts.isObjectLiteralExpression(h)) e = prop(h, "title");
+  }
+  const v = e ? stringValue(e, ctx.checker) : null;
+  if (!e || v === null || v.includes(RUNTIME) || v.includes(BASE) || !v.trim()) return;
+  ctx.out.fact("routes", "screen-title", page, ctx.rel(e.getSourceFile().fileName), ctx.line(e), { via: "route", title: v.trim() });
 }
 
 interface Guard { id: string; name: string; via: string; file: string; line: number }

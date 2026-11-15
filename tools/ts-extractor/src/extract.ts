@@ -11,7 +11,7 @@ import { rootScreens } from "./rootScreens.ts";
 import { conditionFacts, effectName, onLoadFacts } from "./flow.ts";
 import { signalFormRules } from "./forms.ts";
 import { menuFacts } from "./menu.ts";
-import { collectWrappers, fieldFacts } from "./fields.ts";
+import { collectWrappers, fieldFacts, titleFacts } from "./fields.ts";
 
 /**
  * The compiler's part of the frontend map (D31): points for declarations, ✅ lines for what the
@@ -109,6 +109,7 @@ export function extract(o: Options): Output {
   for (const sf of files) menuFacts(ctx, sf); // D221
   collectWrappers(ctx, files); // D329
   for (const sf of files) fieldFacts(ctx, sf); // D329
+  for (const sf of files) titleFacts(ctx, sf); // D333
   if (scripts) for (const sf of [...files, ...inlineFiles]) domEvents(ctx, sf);
   if (o.enums) for (const sf of files) enums(ctx, sf);
   return out;

@@ -33,7 +33,7 @@ order keeps it, the others take `-2`, `-3`; `shared` and `unplaced` are never an
 flow gaining a second user moves files; git shows them as renames. Each area's `page.md` beside its flows is written by
 `areas check`, never by `flows build`.
 
-- `<folder>/<id>.json`: one flow, contract `flows` v5. Committed; the same graph, settings and `areas.yaml` write the same bytes (D176).
+- `<folder>/<id>.json`: one flow, contract `flows` v6. Committed; the same graph, settings and `areas.yaml` write the same bytes (D176).
 - `<folder>/<id>.md`: the same flow as fixed sentences filled in by code (D173), with a generated-file marker. Never read back.
   Its "Links" are relative Markdown links to the linked flow's `.md`, wherever it sits (``→ [`shared-x`](../shared/shared-x.md)``).
 - `specs/flows/index.json`, always here: every flow (`id`, `name`, `kind`, `home`, `file` (its `.json` under the repo), `start`,
@@ -94,8 +94,8 @@ steps → 913, requests 31 → 19 (the 12 gone are PUT and DELETE series, DELETE
 
 | Kind | Starts at | Name (D176 item 2) |
 |---|---|---|
-| `click` | each `ui-event` handler, one flow per handler, every button that runs it in `triggers` | the button's text key through the app's `en.json` (or `en-US.json`, `en_US.json`; first file in path order holding it), else its literal text, else the handler's name |
-| `screen-opens` | each route (`page`): its guards, its resolvers and loaders, then the screen it shows; each MVC GET action returning a view (`on-load` `mvc`) | the route; the action's route |
+| `click` | each `ui-event` handler, one flow per handler, every button that runs it in `triggers` | the label lookup's words ("Names: the label lookup" below, D327, D333): the button's text key through the app's translation files, else its literal text; else the handler's name |
+| `screen-opens` | each route (`page`): its guards, its resolvers and loaders, then the screen it shows; each MVC GET action returning a view (`on-load` `mvc`) | "Title (route)" by the label lookup's screen title (D333), else the route; the action's likewise. The id stays the route's |
 | `job` | each `is-job` method (commands, scheduled tasks, recurring registrations) | the command's type, the recurring job's id, else the method |
 | `handler` | each event handler (`handle` facts) that isn't a job: the flows a sent message links to (D173) | `Handler on Event` |
 | `shared` | each hub and depth stop a flow continues into (D189): the point a `continues` link names, walked once; a call written to an interface walks its implementations at the root, one branch each (🟡 when several); built transitively, so a shared flow's own stops get theirs; one per receiving class when its code makes a virtual call on `this` (D310) | the point; `<point> on <class>` |
@@ -103,6 +103,37 @@ steps → 913, requests 31 → 19 (the 12 gone are PUT and DELETE series, DELETE
 Not a flow, and said so in `index.json`'s `skipped`: a button with no handler, an inline or prop handler, a handler not on the
 map, a click that reaches no server call, save, message or queued work ("screen behaviour only", D171), a screen whose opening
 reaches none ("display only", D176 item 5), and on-load code no route's screen reaches.
+
+## Names: the label lookup (D327, D333)
+
+Layer 3 names what a user sees with one lookup (`Labels`), which the PM inventory (layer 5) uses too, so the two never disagree.
+
+- **Translation files**, found anywhere in the repo outside build output and packages: English JSON named `en.json`, `en-US.json`
+  or `en_US.json`, flat or nested (nested keys joined with dots, so Angular transloco keys carrying the template's prefix,
+  `device-card.save`, are found as written), then .NET resource XML (a neutral or English `.resx`, an `.xml` named for resources such
+  as `defaultResources.nopres.xml`), keys looked up ignoring case. JSON first, then path order; the first file holding a key wins;
+  `|`-joined keys are alternatives, the first found wins. A value that only refers to another key (`"{{common.cancel}}"`) is that
+  key's words.
+- **Buttons:** text key, else the words written in the markup, else ❓ with the handler's short name.
+- **Fields** (`form-field`): label keys, else label words; a Razor field bound with `asp-for` takes the label of the property it
+  reaches (its `property`, the compiler's answer, joined to that property's server `form-field`: `[NopResourceDisplayName]`,
+  `[Display(Name)]`); a server-defined field its `label` key. Help: help keys, help words, the property's help, else a key beside the
+  label key with a usual suffix (`.Hint`, `Hint`, `HelpText`, `.HelpText`) when a file holds one.
+- **Choices:** an enum's members through their `field-choice` labels (in value order); a constant list's items through the lookup
+  (a placeholder such as `---` is no choice; options drawn through the field's own template are made at runtime),
+  an item that reads as a key (one token joined by dots, dashes or underscores, or run-together capitalised words) and is in no file
+  is ❓; choices made at runtime or from the server are said so, not listed.
+- **Screens:** "Title (route)": the route's own `title` (a key, or words when it doesn't read as a key); else the screen component's
+  outermost element carrying a `title` (also in a body it wraps, two levels down), then its top heading (of a heading written in
+  branches, the words without a placeholder); an MVC action's view: a `ViewBag`/`ViewData` slot named for a title,
+  then its top heading (`screen-title` facts, code-graph v6).
+- **Nothing found:** "❓ <code name>: no visible text found" (with the key when one was given but no file holds it). A flow still takes
+  the code name as its name.
+
+`stangent flows labels [--top N]` prints the share named by visible text per kind (buttons: click and submit events; fields not inside a
+wrapper's own template; server-defined fields; fields with listed choices, named when every choice is; screens), where the words came
+from (`key`, `text`, `model`, `route`, `title`, `heading`), and the first ❓ lines: a floor check of extraction, never measured against a
+planted key (D327 item 3).
 
 ## The walk (D172, D176, D184)
 

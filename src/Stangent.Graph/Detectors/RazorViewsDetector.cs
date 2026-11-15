@@ -291,8 +291,28 @@ public sealed class RazorViewsDetector : IDetector
         foreach (var f in page.Fields)
             Fact("form-field", viewId, f.Line, ("element", f.Element), ("bind", f.Bind), ("to", f.To), ("type", f.Type), ("via", f.Bind == "asp-for" ? "binding" : "native"),
                 ("id", f.Id), ("label", string.Join("|", f.LabelKeys)), ("labelText", f.LabelText), ("help", ""), ("helpText", ""), ("choices", f.Choices), ("inside", ""),
-                ("model", model?.ToDisplayString() ?? ""));
+                ("model", model?.ToDisplayString() ?? ""), ("property", f.Property));
         MenuTree.Emit(ctx.Fragment.Facts, Name, page.Menus);   // D221: lists of three or more links
+        // D333: the view's title: a localizer key put in ViewBag or ViewData under a name holding "Title" (ASP.NET's own
+        // ViewData["Title"]), and the top heading; layer 3 picks one per screen.
+        foreach (var a in file.Tree.GetRoot().DescendantNodes().OfType<AssignmentExpressionSyntax>())
+        {
+            var slot = a.Left switch
+            {
+                MemberAccessExpressionSyntax ma when ma.Expression.ToString() == "ViewBag" => ma.Name.Identifier.ValueText,
+                ElementAccessExpressionSyntax ea when ea.Expression.ToString() == "ViewData" && ea.ArgumentList.Arguments.Count == 1
+                    && file.Model.GetConstantValue(ea.ArgumentList.Arguments[0].Expression) is { HasValue: true, Value: string k } => k,
+                _ => null,
+            };
+            if (slot is null || !slot.Contains("Title", StringComparison.OrdinalIgnoreCase)) continue;
+            var keys = TextKeys(file.Model, a.Right).Distinct().ToList();
+            var words = keys.Count == 0 && file.Model.GetConstantValue(a.Right) is { HasValue: true, Value: string w } ? w : "";
+            if (keys.Count > 0 || words.Length > 0)
+                Fact("screen-title", viewId, lines.Mapped(a), ("via", "view-data"), ("slot", slot), ("label", string.Join("|", keys)), ("labelText", words));
+        }
+        if (page.Heading is { } h)
+            Fact("screen-title", viewId, h.Line, ("via", "heading"), ("level", h.Level.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                ("label", string.Join("|", h.Keys)), ("labelText", h.Words));
     }
 
     /// <summary><c>Views/Customer/Register.cshtml</c> → (Customer, ""); <c>Areas/Admin/Views/Blog/List.cshtml</c> → (Blog, Admin).</summary>
@@ -925,8 +945,15 @@ public sealed class RazorViewsDetector : IDetector
             public string Built { get; init; } = "";
         }
         public sealed record Script(int Line, string Text);
+        /// <summary>D333: the view's top heading: its level, keys and words.</summary>
+        public sealed record HeadingRecord(int Line, int Level, IReadOnlyList<string> Keys, string Words);
+        public HeadingRecord? Heading { get; private set; }
         /// <summary>D329: a control the user fills in: what it is bound to, its label's keys and words, and its choices.</summary>
-        public sealed record Field(int Line, string Element, string Bind, string To, string Type, string Id, IReadOnlyList<string> LabelKeys, string LabelText, string Choices);
+        public sealed record Field(int Line, string Element, string Bind, string To, string Type, string Id, IReadOnlyList<string> LabelKeys, string LabelText, string Choices)
+        {
+            /// <summary>D333: the property <c>asp-for</c> reaches, as its documentation id (<c>P:Shop.Models.ItemModel.Name</c>), where its label sits.</summary>
+            public string Property { get; init; } = "";
+        }
 
         readonly StringBuilder html = new();
         readonly List<(int Html, int Source)> map = [];
@@ -1111,6 +1138,12 @@ public sealed class RazorViewsDetector : IDetector
                 if (!VoidTags.Contains(name) && !m.Groups[3].Value.TrimEnd().EndsWith('/') && el is not { SelfClosing: true }) marks.Add(mark);
                 if (name == "a") mark.Item = LinkItem(el, attrs, raw, text, m, line);
                 FieldOrLabel(name, el, attrs, text, m, line);
+                // D333: the first of the highest-level headings with words or keys is the view's heading.
+                if (name.Length == 2 && name[0] == 'h' && name[1] is >= '1' and <= '6' && (Heading is null || Heading.Level > name[1] - '0'))
+                {
+                    var (hk, hw) = Words(Inner(text, m, name));
+                    if (hk.Count > 0 || hw.Length > 0) Heading = new HeadingRecord(line, name[1] - '0', hk, hw);
+                }
                 switch (name)
                 {
                     case "form":
@@ -1128,6 +1161,10 @@ public sealed class RazorViewsDetector : IDetector
                         if (type == "reset") break;
                         var inner = name == "button" ? Inner(text, m, "button") : Get(attrs, "value") ?? "";
                         var (keys, words) = Words(inner);
+                        // D333: a button with no words of its own is named by its aria-label or title, as the TypeScript side does.
+                        if (keys.Count == 0 && !words.Any(char.IsLetter))
+                            foreach (var labelAttr in new[] { "aria-label", "title" })
+                                if (Get(attrs, labelAttr) is { Length: > 0 } a) { (keys, words) = Words(a); if (keys.Count > 0 || words.Any(char.IsLetter)) break; }
                         var formNow = forms.Count > 0 ? forms.Peek().Form : null;
                         // V2: an inline handler that ends `return false` stops the submit.
                         var onclick = raw.GetValueOrDefault("onclick") ?? "";
@@ -1187,7 +1224,22 @@ public sealed class RazorViewsDetector : IDetector
                 if (options.Count > 0) choices = "list:" + string.Join("|", options);
             }
             Fields.Add(new Field(line, name, aspFor ? "asp-for" : Get(attrs, "name") is not null ? "name" : "", path ?? Get(attrs, "name") ?? "",
-                type.Length > 0 ? type : name == "input" ? "text" : name, id, label.Keys ?? [], label.Words ?? "", choices));
+                type.Length > 0 ? type : name == "input" ? "text" : name, id, label.Keys ?? [], label.Words ?? "", choices)
+            { Property = aspFor ? PropertyOf(el!.AttrExprs.GetValueOrDefault("asp-for")) : "" });
+        }
+
+        /// <summary>D333: the property an <c>asp-for</c> lambda ends at (<c>__model => __model.Locales[item].Name</c> → the locale model's <c>Name</c>), by the compiler.</summary>
+        string PropertyOf(ExpressionSyntax? e)
+        {
+            if (e?.DescendantNodesAndSelf().OfType<SimpleLambdaExpressionSyntax>().FirstOrDefault() is not { ExpressionBody: { } body }) return "";
+            var last = body switch
+            {
+                MemberAccessExpressionSyntax ma => ma.Name,
+                ConditionalAccessExpressionSyntax ca => ca.WhenNotNull,
+                _ => body,
+            };
+            try { return model.GetSymbolInfo(last).Symbol is IPropertySymbol p ? (p.OriginalDefinition.GetDocumentationCommentId() ?? "") : ""; }
+            catch (ArgumentException) { return ""; }   // a node outside the model's tree
         }
 
         static readonly Regex Option = new(@"<option\b([^>]*)>(.*?)</option>", RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.IgnoreCase);

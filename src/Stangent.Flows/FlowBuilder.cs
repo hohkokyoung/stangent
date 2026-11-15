@@ -18,13 +18,13 @@ public static partial class FlowBuilder
     {
         settings ??= new FlowSettings();
         var g = new FlowGraph(graph, root);
-        var names = new Translations(root);
+        var names = new Labels(g, root);
         var flows = new List<Flow>();
         var skipped = new List<Skipped>();
         var onLoadSeen = new HashSet<Fact>(ReferenceEqualityComparer.Instance);
 
         Clicks(g, settings, names, flows, skipped);
-        Screens(g, settings, flows, skipped, onLoadSeen);
+        Screens(g, settings, names, flows, skipped, onLoadSeen);
         Jobs(g, settings, flows);
         Handlers(g, settings, flows);
         // On-load code no screen flow reached: said, never dropped (D177 item 5).
@@ -59,7 +59,7 @@ public static partial class FlowBuilder
 
     // ---- starts (D171) ------------------------------------------------------------------------------------------------
 
-    static void Clicks(FlowGraph g, FlowSettings s, Translations names, List<Flow> flows, List<Skipped> skipped)
+    static void Clicks(FlowGraph g, FlowSettings s, Labels names, List<Flow> flows, List<Skipped> skipped)
     {
         var events = g.AllFacts("ui-event").Where(f => !g.IsTest(f.Owner))
             .OrderBy(f => f.File, StringComparer.Ordinal).ThenBy(f => f.Line).ThenBy(f => f.Owner, StringComparer.Ordinal).ToList();
@@ -82,8 +82,8 @@ public static partial class FlowBuilder
                 continue;
             }
             var triggers = group.Select(f => $"{f["element"]} {f["event"]}{(f["text"] != "" ? $" \"{f["text"]}\"" : "")} ({f.File}:{f.Line})").Distinct(StringComparer.Ordinal).ToList();
-            var name = group.Select(f => names.Text(f["keys"])).FirstOrDefault(t => t is not null)
-                ?? group.Select(f => f["text"]).FirstOrDefault(t => t != "") ?? FlowGraph.ShortName(g.Nodes[handler]);
+            // D327 item 4: the label lookup's words, the same the inventory shows; the handler's short name when none has any.
+            var name = group.Select(names.Button).FirstOrDefault(n => n.Visible)?.Words ?? FlowGraph.ShortName(g.Nodes[handler]);
             var flow = NewFlow(g, "click", name, new StartInfo($"{first["element"]} {first["event"]}", at, handler, triggers), handler);
             var walker = new Walker(g, s, flow);
             walker.Root(handler);
@@ -101,13 +101,14 @@ public static partial class FlowBuilder
         }
     }
 
-    static void Screens(FlowGraph g, FlowSettings s, List<Flow> flows, List<Skipped> skipped, HashSet<Fact> onLoadSeen)
+    static void Screens(FlowGraph g, FlowSettings s, Labels names, List<Flow> flows, List<Skipped> skipped, HashSet<Fact> onLoadSeen)
     {
         foreach (var page in g.Nodes.Values.Where(n => n.Kind == NodeKind.Page && !n.IsTest).OrderBy(n => n.Id, StringComparer.Ordinal))
         {
             var at = new At(page.File ?? "", page.Line, g.Code(page.File, page.Line));
             var shows = g.Out(page.Id, EdgeKind.RoutesTo).Concat(g.Out(page.Id, EdgeKind.Renders)).Select(e => e.Target).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
-            var flow = NewFlow(g, "screen-opens", page.Name, new StartInfo("the screen opens", at, page.Id, [page.Name]), page.Id);
+            // D333: a screen by its title with the route beside; its id stays the route's.
+            var flow = NewFlow(g, "screen-opens", Labels.ScreenLine(names.Screen(page.Id)) is var line && line.StartsWith('❓') ? page.Name : line, new StartInfo("the screen opens", at, page.Id, [page.Name]), page.Id);
             var walker = new Walker(g, s, flow) { OnLoadSeen = onLoadSeen };
             walker.Root(page.Id, shows);
             if (!walker.Meaningful)
@@ -129,7 +130,8 @@ public static partial class FlowBuilder
             var line = g.NameLine(action);
             var at = new At(action.File ?? "", line, g.Code(action.File, line));
             var route = g.In(action.Id, EdgeKind.RoutesTo).Select(e => g.Name(e.Source)).Order(StringComparer.Ordinal).FirstOrDefault();
-            var flow = NewFlow(g, "screen-opens", route ?? action.Name, new StartInfo("the page is requested", at, action.Id, [action.Name]), action.Id);
+            var title = names.Screen(action.Id);
+            var flow = NewFlow(g, "screen-opens", title.Visible ? $"{title.Words} ({route ?? action.Name})" : route ?? action.Name, new StartInfo("the page is requested", at, action.Id, [action.Name]), action.Id);
             var walker = new Walker(g, s, flow) { OnLoadSeen = onLoadSeen };
             walker.Root(action.Id);
             walker.Finish();
@@ -395,7 +397,7 @@ public static partial class FlowBuilder
 
     static string IdName(FlowGraph g, string kind, string point, string name) => kind switch
     {
-        "screen-opens" when point.StartsWith("page:", StringComparison.Ordinal) => name,
+        "screen-opens" when point.StartsWith("page:", StringComparison.Ordinal) => g.Nodes.TryGetValue(point, out var page) ? page.Name : name,
         _ when g.Nodes.TryGetValue(point, out var n) && n.Kind != NodeKind.Form => n.Name,
         _ => name,
     };

@@ -166,3 +166,66 @@ test("data menus: entries with a name and a handler but no address are actions, 
     "12 2 B command=noop @12 ",
   ]);
 });
+
+test("screen titles: a route's title, else under data; a constant only (D333)", () => {
+  const root = project({
+    "src/List.ts": ngComponent("List", "app-list", ""),
+    "src/List.html": "<div></div>",
+    "src/routes.ts": [
+      "import { List } from './List';",
+      "const name = 'title.archive';",
+      "export const routes = [",
+      "  { path: 'list', component: List, title: 'title.list' },",
+      "  { path: 'archive', component: List, data: { title: name } },",
+      "  { path: 'other', component: List, title: someResolver },",
+      "  { path: 'plain', component: List },",
+      "];",
+      "declare const someResolver: any;",
+    ].join("\n"),
+  });
+  assert.deepEqual(facts(root, "screen-title").map((f) => `${f.line} ${f.data.via} ${f.data.title}`), ["4 route title.list", "5 route title.archive"]);
+});
+
+test("screen titles: the outermost wrapping element's title, and the highest heading; tooltips and empty headings aren't (D333)", () => {
+  const root = project({
+    "src/Page.tsx": [
+      "declare function translate(k: string): string;",
+      "declare function PageContent(p: any): any;",
+      "export function Stats() {",
+      "  return (",
+      "    <PageContent title={translate('Statistics')}>",
+      "      <button title={translate('Refresh')}>x</button>",
+      "      <h3>{translate('ByYear')}</h3>",
+      "      <h2>{translate('Totals')}</h2>",
+      "      <h1>{}</h1>",
+      "    </PageContent>",
+      "  );",
+      "}",
+      "export function Tip() { return <div><button title=\"Hint\">x</button></div>; }",
+    ].join("\n"),
+    "src/Shelf.ts": ngComponent("Shelf", "app-shelf", ""),
+    "src/Shelf.html": [
+      "<ng-container *transloco=\"let t; prefix: 'shelf'\">",
+      "  <div class=\"bar\"><h4 title>{{name}}</h4><h5>{{t('count')}}</h5></div>",
+      "</ng-container>",
+    ].join("\n"),
+  });
+  assert.deepEqual(facts(root, "screen-title").map((f) => `${f.file}:${f.line} ${f.data.via}${f.data.level ? " h" + f.data.level : ""} ${f.data.label || f.data.labelText}`), [
+    "src/Page.tsx:5 title-attribute Statistics",
+    "src/Page.tsx:8 heading h2 Totals",
+    "src/Shelf.html:2 heading h5 shelf.count",
+  ]);
+});
+
+test("choices drawn through the field's own template are made at runtime, not the raw values (D333)", () => {
+  const root = project({
+    "src/Pick.ts": ngComponent("Pick", "app-pick", "", "value = model<string>(''); options = input<string[]>([]);"),
+    "src/Pick.html": "<select [value]=\"value()\"></select>",
+    "src/Page.ts": ngComponent("Page", "app-page", "", "styles = ['horizontal', 'vertical']; plain = ['left', 'right']; form: any;"),
+    "src/Page.html": [
+      "<app-pick [value]=\"form.style\" [options]=\"styles\"><ng-template #template let-x>{{ x | stylePipe }}</ng-template></app-pick>",
+      "<app-pick [value]=\"form.side\" [options]=\"plain\"></app-pick>",
+    ].join("\n"),
+  });
+  assert.deepEqual(facts(root, "form-field").filter((f) => f.file === "src/Page.html").map((f) => f.data.choices), ["runtime:styles", "list:left|right"]);
+});
