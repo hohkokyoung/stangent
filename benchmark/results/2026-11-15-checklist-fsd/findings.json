@@ -1,0 +1,1306 @@
+{
+ "findings": [
+  {
+   "state": "gap",
+   "section": "1.1",
+   "fsdQuote": "Up to 10 series can be selected from the search results and added together in one step.",
+   "screen": null,
+   "note": "Add New adds one series at a time through a modal per search result; there is no multi-select or 10-series limit.",
+   "evidence": [
+    "frontend/src/AddSeries/AddNewSeries/AddNewSeriesSearchResult.tsx:204",
+    "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:367"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "1.2",
+   "fsdQuote": "The episode list of a series can be exported as a CSV file.",
+   "screen": null,
+   "note": "No CSV export exists on the series details screen.",
+   "evidence": [
+    "frontend/src/Series/Details/SeriesDetails.tsx:106"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "1.2",
+   "fsdQuote": "Deleting a series always deletes its folder and all its files from disk.",
+   "screen": null,
+   "note": "Delete has a 'Delete Files' switch that is off by default; files are deleted only if the user turns it on.",
+   "evidence": [
+    "frontend/src/Series/Delete/DeleteSeriesModalContent.tsx:42",
+    "frontend/src/Series/Delete/DeleteSeriesModalContent.tsx:112"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "2",
+   "fsdQuote": "Sonarr can share the calendar as an iCal feed, which covers the previous 14 days and the next 60 days.",
+   "screen": null,
+   "note": "The iCal feed defaults to 7 past days and 28 future days (pastDays/futureDays parameters).",
+   "evidence": [
+    "src/Sonarr.Api.V3/Calendar/CalendarFeedController.cs:31"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "2",
+   "fsdQuote": "Episodes can be dragged to another day to change their air date.",
+   "screen": null,
+   "note": "The calendar has no drag-and-drop of episodes and no way to change an air date.",
+   "evidence": [
+    "frontend/src/Calendar/Calendar.tsx:1"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "3.1",
+   "fsdQuote": "Removing an item from the queue always adds the release to the blocklist.",
+   "screen": null,
+   "note": "The remove dialog lets the user choose: do not blocklist, blocklist and search, or blocklist only.",
+   "evidence": [
+    "frontend/src/Activity/Queue/RemoveQueueItemModal.tsx:106",
+    "frontend/src/Activity/Queue/RemoveQueueItemModal.tsx:109"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "3.1",
+   "fsdQuote": "Each queue item has a priority (High, Normal or Low) that the user can change to reorder the downloads.",
+   "screen": null,
+   "note": "The queue screen has no priority column or control.",
+   "evidence": [
+    "frontend/src/Activity/Queue/Queue.tsx:277"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "3.2",
+   "fsdQuote": "Any history entry can be undone, which restores the episode file that an upgrade replaced.",
+   "screen": null,
+   "note": "No undo exists; the only history action is Mark as Failed in the details of a grabbed release.",
+   "evidence": [
+    "frontend/src/Activity/History/Details/HistoryDetailsModal.tsx:79",
+    "frontend/src/Activity/History/Details/HistoryDetailsModal.tsx:84"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "Wanted / Missing episodes",
+   "fsdQuote": "The user can search for the selected episodes, or for all missing episodes. Search All starts straight away, without asking the user to confirm.",
+   "screen": null,
+   "note": "Search All opens a confirmation modal showing the record count and starts only after the user confirms.",
+   "evidence": [
+    "frontend/src/Wanted/Missing/Missing.tsx:363",
+    "frontend/src/Wanted/Missing/Missing.tsx:356"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "Wanted / Missing episodes",
+   "fsdQuote": "A weekly email digest lists every missing episode.",
+   "screen": null,
+   "note": "No email digest of missing episodes exists in the code.",
+   "evidence": [
+    "frontend/src/Wanted/Missing/Missing.tsx:259"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / Tags",
+   "fsdQuote": "Tag labels may contain letters, numbers, spaces and underscores.",
+   "screen": null,
+   "note": "The tag validator allows only letters, numbers and hyphens; spaces and underscores are rejected.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Tags/TagController.cs:31"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / Tags",
+   "fsdQuote": "Deleting a tag removes it from every series, profile and indexer that uses it.",
+   "screen": null,
+   "note": "A tag that is in use cannot be deleted; the Delete button is disabled with a message.",
+   "evidence": [
+    "frontend/src/Settings/Tags/Details/TagDetailsModalContent.tsx:232",
+    "frontend/src/Settings/Tags/Details/TagDetailsModalContent.tsx:234"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "Settings / Tags",
+   "fsdQuote": "Each tag has a colour, chosen from a palette of 12 colours, which is shown wherever the tag appears.",
+   "screen": null,
+   "note": "Tags have only a label; there is no colour field.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Tags/TagController.cs:31",
+    "frontend/src/Settings/Tags/Tag.tsx:20"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / Profiles / Delay profiles",
+   "fsdQuote": "The default delay profile can be given tags like any other.",
+   "screen": null,
+   "note": "The default delay profile (Id 1) must have an empty tag collection; other profiles must have tags.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Profiles/Delay/DelayProfileController.cs:21",
+    "src/Sonarr.Api.V3/Profiles/Delay/DelayProfileController.cs:22"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "Settings / Quality definitions",
+   "fsdQuote": "Each quality can be limited to a maximum episode runtime.",
+   "screen": null,
+   "note": "Quality definitions have min, preferred and max size only; no runtime limit.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Qualities/QualityDefinitionResource.cs:15",
+    "frontend/src/Settings/Quality/Definition/QualityDefinition.tsx:31"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / General / Logging",
+   "fsdQuote": "Each log file can grow up to 50 megabytes before a new one is started.",
+   "screen": null,
+   "note": "Log size limit is 1 to 10 MB (default 1 MB).",
+   "evidence": [
+    "src/Sonarr.Api.V3/Config/HostConfigController.cs:125",
+    "src/NzbDrone.Core/Configuration/ConfigFileProvider.cs:291",
+    "frontend/src/Settings/General/LoggingSettings.tsx:78"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / General / Backups",
+   "fsdQuote": "Interval: how often an automatic backup is taken, from 1 to 30 days.",
+   "screen": null,
+   "note": "Backup interval is validated between 1 and 7 days (default 7).",
+   "evidence": [
+    "src/Sonarr.Api.V3/Config/HostConfigController.cs:132"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / General / Backups",
+   "fsdQuote": "Retention: how long backups are kept, up to 365 days.",
+   "screen": null,
+   "note": "Backup retention is validated between 1 and 90 days (default 28).",
+   "evidence": [
+    "src/Sonarr.Api.V3/Config/HostConfigController.cs:133"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "Settings / Interface",
+   "fsdQuote": "The font size can be set to small, medium or large.",
+   "screen": null,
+   "note": "The UI settings screen has no font size option.",
+   "evidence": [
+    "frontend/src/Settings/UI/UISettings.tsx:322"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "System / Backups",
+   "fsdQuote": "Backups can be copied automatically to an S3 bucket.",
+   "screen": null,
+   "note": "Backup settings only have folder, interval and retention; no S3 copy exists.",
+   "evidence": [
+    "frontend/src/Settings/General/BackupSettings.tsx:15",
+    "src/NzbDrone.Core/Backup/BackupService.cs:1"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "undocumented",
+   "section": "1.1",
+   "fsdQuote": null,
+   "screen": "/add/new",
+   "note": "Add New has more options than listed: Season Folder, Language, Season Type, and a 'Start search for cutoff unmet episodes' tick; monitor also has separate monitor/unmonitor specials choices.",
+   "evidence": [
+    "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:266",
+    "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:312",
+    "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:325",
+    "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:348",
+    "frontend/src/Utilities/Series/monitorOptions.ts:59"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "undocumented",
+   "section": "1.2",
+   "fsdQuote": null,
+   "screen": "/series/:titleSlug",
+   "note": "Edit series also has Monitor New Items, Season Folder, Language and Season Type, and the user can delete an episode file from episode details.",
+   "evidence": [
+    "frontend/src/Series/Edit/EditSeriesModalContent.tsx:211",
+    "frontend/src/Series/Edit/EditSeriesModalContent.tsx:270",
+    "frontend/src/Episode/Summary/EpisodeSummary.tsx:157"
+   ],
+   "checklist": [
+    "K042"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "2",
+   "fsdQuote": null,
+   "screen": "/calendar",
+   "note": "Calendar has an agenda view the FSD does not list; iCal also has unmonitored and all-day options.",
+   "evidence": [
+    "frontend/src/Calendar/calendarViews.ts:5",
+    "src/Sonarr.Api.V3/Calendar/CalendarFeedController.cs:31"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "undocumented",
+   "section": "Settings / Interface",
+   "fsdQuote": null,
+   "screen": "/settings/ui",
+   "note": "UI settings also has time zone, header colour and colour-impaired mode.",
+   "evidence": [
+    "frontend/src/Settings/UI/UISettings.tsx:246",
+    "frontend/src/Settings/UI/UISettings.tsx:288",
+    "frontend/src/Settings/UI/UISettings.tsx:302"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "undocumented",
+   "section": "Settings / General",
+   "fsdQuote": null,
+   "screen": "/settings/general",
+   "note": "General settings has a Restart button and many other sections (host, security, proxy, updates).",
+   "evidence": [
+    "frontend/src/Settings/General/GeneralSettings.tsx:227"
+   ],
+   "checklist": [
+    "K080"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/activity/blocklist",
+   "note": "Blocklist screen: list, remove one, remove selected, clear all.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:88"
+   ],
+   "checklist": [
+    "K001",
+    "K005",
+    "K011",
+    "K012",
+    "K024"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "3.1",
+   "fsdQuote": null,
+   "screen": "/activity/queue",
+   "note": "Interactive import (manual import) modal with series, season, episode, quality, language, release group, flags, reprocess, delete files and apply; plus Grab of a queue item.",
+   "evidence": [
+    "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx:974",
+    "frontend/src/Activity/Queue/QueueRow.tsx:408",
+    "frontend/src/Activity/Queue/Queue.tsx:335"
+   ],
+   "checklist": [
+    "K004",
+    "K006",
+    "K007",
+    "K008",
+    "K013",
+    "K014",
+    "K015",
+    "K016",
+    "K017",
+    "K018",
+    "K021",
+    "K022",
+    "K023"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/series",
+   "note": "Library index with bulk edit footer (monitoring, tags, delete), status toggle and season pass.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:52"
+   ],
+   "checklist": [
+    "K046",
+    "K047",
+    "K048",
+    "K049",
+    "K050",
+    "K051",
+    "K052"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/add/import",
+   "note": "Library import (bulk import of series from a root folder).",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:56"
+   ],
+   "checklist": [
+    "K053",
+    "K054",
+    "K055",
+    "K056"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/connect",
+   "note": "Connections (notifications) settings.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:124"
+   ],
+   "checklist": [
+    "K063",
+    "K064",
+    "K065",
+    "K066"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/customformats",
+   "note": "Custom formats settings with bulk manage.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:110"
+   ],
+   "checklist": [
+    "K067",
+    "K068",
+    "K069"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/downloadclients",
+   "note": "Download clients and remote path mappings settings.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:117"
+   ],
+   "checklist": [
+    "K070",
+    "K071",
+    "K072",
+    "K073",
+    "K074",
+    "K075",
+    "K076",
+    "K077",
+    "K078"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/importlists",
+   "note": "Import lists and exclusions settings.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:122"
+   ],
+   "checklist": [
+    "K081",
+    "K082",
+    "K083",
+    "K084",
+    "K085",
+    "K086",
+    "K087",
+    "K088",
+    "K089",
+    "K090",
+    "K091",
+    "K092",
+    "K093",
+    "K094"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/indexers",
+   "note": "Indexers settings.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:115"
+   ],
+   "checklist": [
+    "K095",
+    "K096",
+    "K097",
+    "K098",
+    "K099",
+    "K100",
+    "K101",
+    "K102"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/mediamanagement",
+   "note": "Media management settings and root folders.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:104"
+   ],
+   "checklist": [
+    "K103",
+    "K104",
+    "K105"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/metadata",
+   "note": "Metadata settings.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:126"
+   ],
+   "checklist": [
+    "K106",
+    "K107",
+    "K108"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "Settings / Profiles",
+   "fsdQuote": null,
+   "screen": "/settings/profiles",
+   "note": "Release profiles are not described.",
+   "evidence": [
+    "frontend/src/Settings/Profiles/Release/EditReleaseProfileModalContent.tsx:259"
+   ],
+   "checklist": [
+    "K112"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "Settings / Profiles / Delay profiles",
+   "fsdQuote": null,
+   "screen": "/settings/profiles",
+   "note": "Delay profiles can be reordered by drag and drop.",
+   "evidence": [
+    "frontend/src/Settings/Profiles/Delay/DelayProfiles.tsx:99"
+   ],
+   "checklist": [
+    "K113"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/statistics",
+   "note": "Statistics screen.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:72"
+   ],
+   "checklist": [
+    "K118"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/events",
+   "note": "Events log screen with refresh, clear, table options.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:151"
+   ],
+   "checklist": [
+    "K120",
+    "K127",
+    "K129",
+    "K139"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/logs/files",
+   "note": "Log files screen with refresh and delete.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:153"
+   ],
+   "checklist": [
+    "K121",
+    "K135",
+    "K137"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/logs/files/update",
+   "note": "Update log files screen.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:155"
+   ],
+   "checklist": [
+    "K122",
+    "K136",
+    "K138"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/status",
+   "note": "Status screen with health checks and Test All.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:143"
+   ],
+   "checklist": [
+    "K123",
+    "K133",
+    "K134"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/tasks",
+   "note": "Tasks screen with queued task cancel.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:145"
+   ],
+   "checklist": [
+    "K124",
+    "K126"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/updates",
+   "note": "Updates screen.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:149"
+   ],
+   "checklist": [
+    "K125"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/",
+   "note": "Page header menu: Restart and Shutdown Sonarr.",
+   "evidence": [
+    "frontend/src/Components/Page/Header/PageHeaderActionsMenu.tsx:54",
+    "frontend/src/Components/Page/Header/PageHeaderActionsMenu.tsx:60"
+   ],
+   "checklist": [
+    "K130",
+    "K132"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/wanted/cutoffunmet",
+   "note": "Cutoff unmet screen with search all and unmonitor selected.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:96"
+   ],
+   "checklist": [
+    "K140",
+    "K142",
+    "K144",
+    "K146"
+   ]
+  }
+ ],
+ "checklist": [
+  {
+   "id": "K001",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K002",
+   "verdict": "covered",
+   "section": "3.2"
+  },
+  {
+   "id": "K003",
+   "verdict": "covered",
+   "section": "3.1"
+  },
+  {
+   "id": "K004",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K005",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K006",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K007",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K008",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K009",
+   "verdict": "covered",
+   "section": "3.2"
+  },
+  {
+   "id": "K010",
+   "verdict": "not-for-fsd",
+   "reason": "history refresh button"
+  },
+  {
+   "id": "K011",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K012",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K013",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K014",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K015",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K016",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K017",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K018",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K019",
+   "verdict": "covered",
+   "section": "3.1"
+  },
+  {
+   "id": "K020",
+   "verdict": "covered",
+   "section": "3.1"
+  },
+  {
+   "id": "K021",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K022",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K023",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K024",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K025",
+   "verdict": "covered",
+   "section": "3.2"
+  },
+  {
+   "id": "K026",
+   "verdict": "not-for-fsd",
+   "reason": "queue table column option"
+  },
+  {
+   "id": "K027",
+   "verdict": "covered",
+   "section": "2"
+  },
+  {
+   "id": "K028",
+   "verdict": "covered",
+   "section": "1.2"
+  },
+  {
+   "id": "K029",
+   "verdict": "covered",
+   "section": "1.2"
+  },
+  {
+   "id": "K030",
+   "verdict": "covered",
+   "section": "3.2"
+  },
+  {
+   "id": "K031",
+   "verdict": "not-for-fsd",
+   "reason": "filter chip control"
+  },
+  {
+   "id": "K032",
+   "verdict": "covered",
+   "section": "1.2"
+  },
+  {
+   "id": "K033",
+   "verdict": "not-for-fsd",
+   "reason": "filter builder"
+  },
+  {
+   "id": "K034",
+   "verdict": "covered",
+   "section": "1.2"
+  },
+  {
+   "id": "K035",
+   "verdict": "covered",
+   "section": "1.2"
+  },
+  {
+   "id": "K036",
+   "verdict": "covered",
+   "section": "1.2"
+  },
+  {
+   "id": "K037",
+   "verdict": "covered",
+   "section": "1.1"
+  },
+  {
+   "id": "K038",
+   "verdict": "covered",
+   "section": "1.1"
+  },
+  {
+   "id": "K039",
+   "verdict": "covered",
+   "section": "1.2"
+  },
+  {
+   "id": "K040",
+   "verdict": "covered",
+   "section": "3.2"
+  },
+  {
+   "id": "K041",
+   "verdict": "covered",
+   "section": "1.2"
+  },
+  {
+   "id": "K042",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K043",
+   "verdict": "covered",
+   "section": "1.2"
+  },
+  {
+   "id": "K044",
+   "verdict": "covered",
+   "section": "1.2"
+  },
+  {
+   "id": "K045",
+   "verdict": "covered",
+   "section": "1.2"
+  },
+  {
+   "id": "K046",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K047",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K048",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K049",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K050",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K051",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K052",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K053",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K054",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K055",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K056",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K057",
+   "verdict": "not-for-fsd",
+   "reason": "generic form-field helper"
+  },
+  {
+   "id": "K058",
+   "verdict": "not-for-fsd",
+   "reason": "generic form-field helper"
+  },
+  {
+   "id": "K059",
+   "verdict": "not-for-fsd",
+   "reason": "generic form-field helper"
+  },
+  {
+   "id": "K060",
+   "verdict": "not-for-fsd",
+   "reason": "generic form-field helper"
+  },
+  {
+   "id": "K061",
+   "verdict": "not-for-fsd",
+   "reason": "generic form-field helper"
+  },
+  {
+   "id": "K062",
+   "verdict": "not-for-fsd",
+   "reason": "generic form-field helper"
+  },
+  {
+   "id": "K063",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K064",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K065",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K066",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K067",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K068",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K069",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K070",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K071",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K072",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K073",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K074",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K075",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K076",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K077",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K078",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K079",
+   "verdict": "covered",
+   "section": "Settings / General"
+  },
+  {
+   "id": "K080",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K081",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K082",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K083",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K084",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K085",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K086",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K087",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K088",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K089",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K090",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K091",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K092",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K093",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K094",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K095",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K096",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K097",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K098",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K099",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K100",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K101",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K102",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K103",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K104",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K105",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K106",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K107",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K108",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K109",
+   "verdict": "covered",
+   "section": "Settings / Profiles"
+  },
+  {
+   "id": "K110",
+   "verdict": "covered",
+   "section": "Settings / Profiles / Delay profiles"
+  },
+  {
+   "id": "K111",
+   "verdict": "covered",
+   "section": "Settings / Profiles / Quality profiles"
+  },
+  {
+   "id": "K112",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K113",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K114",
+   "verdict": "covered",
+   "section": "Settings / Quality definitions"
+  },
+  {
+   "id": "K115",
+   "verdict": "covered",
+   "section": "Settings / Tags"
+  },
+  {
+   "id": "K116",
+   "verdict": "covered",
+   "section": "Settings / Tags"
+  },
+  {
+   "id": "K117",
+   "verdict": "covered",
+   "section": "Settings / Interface"
+  },
+  {
+   "id": "K118",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K119",
+   "verdict": "covered",
+   "section": "System / Backups"
+  },
+  {
+   "id": "K120",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K121",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K122",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K123",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K124",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K125",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K126",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K127",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K128",
+   "verdict": "covered",
+   "section": "System / Backups"
+  },
+  {
+   "id": "K129",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K130",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K131",
+   "verdict": "covered",
+   "section": "System / Backups"
+  },
+  {
+   "id": "K132",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K133",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K134",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K135",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K136",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K137",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K138",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K139",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K140",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K141",
+   "verdict": "covered",
+   "section": "Wanted / Missing episodes"
+  },
+  {
+   "id": "K142",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K143",
+   "verdict": "covered",
+   "section": "Wanted / Missing episodes"
+  },
+  {
+   "id": "K144",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K145",
+   "verdict": "covered",
+   "section": "Wanted / Missing episodes"
+  },
+  {
+   "id": "K146",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K147",
+   "verdict": "not-for-fsd",
+   "reason": "table column option"
+  }
+ ]
+}

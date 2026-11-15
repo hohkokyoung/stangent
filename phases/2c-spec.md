@@ -590,3 +590,90 @@ false alarms, for a fraction of the spend. The scorer's own bars (80% found and 
 model may know it; it says nothing about a 200-page FSD or a much larger repo. And it compares against the old layers (2a's
 AI pages), not the rebuilt 2–4, which were never tried on this job. What it does show: an agent with the source is a strong
 baseline that any layer 5 must beat (D320).
+
+## The source agent with a checklist and code checks (2026-11-15, D322's first step)
+D321's agent and prompt (Sonnet 5.5), plus a checklist made by code from layer 3's index (`benchmark/fsd-agent/checklist.py`:
+every screen, 31, and click that reaches the server, 116, grouped by area) to answer item by item, and code checks it ran
+until they passed (`benchmark/fsd-agent/check_output.py`: every item answered, every "left out" backed by a finding, every
+quote word for word, every path real). Files `benchmark/results/2026-11-15-checklist-fsd/`; method frozen before the run.
+
+| | Agent alone (D321) | With checklist and checks |
+|---|---|---|
+| Found (of 30) | 26 | 26 |
+| As the planted kind | 25 | 26 |
+| Missed | U5, U6, U7, U10 | U5, U7, U8, U10 |
+| Findings / unplanted | 54 / 28 | 47 / 21 |
+| Tokens | 105K | 97K |
+
+**Read by the frozen rule:** not more found, so the checklist does not stay as it is. The false-alarm check was not run:
+it could not change that reading (about 80K tokens saved; worst case 44.7% against 51.9% before).
+**Why, from its answers:** the checklist put all three of its click misses in front of the agent, and it marked them
+"covered" without the FSD saying so: "Delete Backup" as covered by System / Backups (which names taking and restoring only),
+"Mark as Failed" on history as covered by 3.2 (which names opening a grabbed release's details), "Unmonitor Selected" on
+missing as covered by "toggle between monitored and unmonitored". It caught U6 (manual import from the queue) and lost U8
+the same way. The code checks checked everything the agent claimed except "covered", which needed only a section name: the
+one AI claim left unchecked (D18) is where the misses went. U5 is a form option, which the checklist does not list.
+
+## The one fix attempt: "covered" must quote the FSD (2026-11-15, D322)
+Run 2's misses went where code checked nothing: a "covered" answer needed only a section name. Now it must quote, word for
+word, the FSD sentence inside that section that describes the action (`check_output.py`); the prompt adds that a sentence
+about the same screen but another action doesn't count. Same checklist, same model, fresh agent; method frozen before the
+run (`benchmark/results/2026-11-15-checklist-quote-fsd/`).
+
+| | Old pipeline | Agent alone (D321) | + checklist (run 2) | + checklist, quoted "covered" |
+|---|---|---|---|---|
+| Found (of 30) | 24 | 26 | 26 | **29** |
+| As the planted kind | 20 | 25 | 26 | **29** |
+| Undocumented (of 10) | 4 | 6 | 6 | **9** |
+| False alarms | 31.4% | 7.8% | not checked | **0%** (20 of 20 real) |
+| Tokens | about $19 a run + 718 AI pages | 105K | 97K | 101K (checker 80K) |
+
+Missed only U5, a form option the checklist doesn't list. The three clicks run 2 called "covered" (Delete Backup, Mark as
+Failed, Unmonitor Selected) are now "left out" with a finding each. **Read by the frozen rule:** above 26, false alarms
+within 15.6%, tokens within 10% of 105K: **the checklist stays**, with quoted "covered". The scorer's bars pass, and 29 of
+30 meets 2c's old bar of 27.
+**Limits:** one run; the cause and the prompt's extra sentence were drawn from run 2's answers on this key's items, so this
+run is partly tuned to it; the FSD and key are small and AI-written; Sonarr is public. It needs a key nobody has looked at
+before it counts as shown.
+
+## Confirming on an unseen key: Kavita (2026-11-15, D322): not confirmed
+A fresh Opus 5.5 agent, told only that it writes a benchmark, wrote a planted Kavita FSD (30 sections, about 89 sentences)
+and its key (10 gaps, 10 conflicts, 10 undocumented), checked by code and frozen (`benchmark/fsd/kavita/`, sha256 in
+`benchmark/results/2026-11-15-kavita-fsd/`; 242K tokens). Both reviewer prompts were saved before the key existed. Two fresh
+Sonnet 5.5 reviewers in parallel: alone (D321's prompt) and with the checklist (249 items: 26 screens, 223 clicks) and
+quoted "covered" (run 3's prompt).
+
+| | Alone | With checklist, quoted "covered" |
+|---|---|---|
+| Found (of 30) | **28** | 26 |
+| Undocumented (of 10) | 8 | 6 |
+| Missed | U5, U9 | U5, U8, U9, U10 |
+| Findings / unplanted | 37 / 9 | 47 / 21 |
+| False alarms | **2.7%** (1 false of 9, Opus checker, 83K) | not checked (can't change the reading) |
+| Tokens | 205K | 201K (cut by the usage limit once and resumed) |
+
+**Read by the frozen rule** (`method.md`): "with" did not find more, so the checklist is not confirmed: Sonarr's 29 was
+tuning to that key. It goes back to the owner. Worth weighing: the checklist run reached a full context (about 200K) and was
+resumed after a usage cut; it sorted 128 of 249 items "not for the FSD" (settings pages the FSD leaves out), and a list that
+long may crowd out reading rather than add to it.
+**Across both keys, the source-only agent:** Sonarr 26 of 30 with 7.8% false alarms, Kavita 28 of 30 with 2.7%; the old
+page-based pipeline managed 24 and 31.4% on Sonarr. Layer 3's one tried use as a tool did not hold up on a fresh key.
+
+## Is the source-only agent stable? Three runs on the Kavita key (2026-11-15, D324): unstable on "left out"
+The Kavita "alone" prompt word for word, two more fresh Sonnet 5.5 runs, scored by code on the frozen key (sha256 checked);
+reading frozen before the runs (`benchmark/results/2026-11-15-kavita-fsd/stability-method.md`).
+
+| Run | Found (of 30) | gap / conflict / undocumented | Missed | Findings / unplanted | Tokens |
+|---|---|---|---|---|---|
+| 1 | 28 | 10 / 10 / 8 | U5, U9 | 37 / 9 | 205K |
+| 2 | 28 | 10 / 10 / 8 | U9, U10 | 43 / 15 | 242K |
+| 3 | 26 | 10 / 10 / 6 | U3, U5, U9, U10 | 32 / 6 | 205K |
+
+Found by all three: 26; by any: 29; flicker: U3, U5, U10 (3); never found: U9. **Read by the frozen rule: unstable** (run 3
+found 26, and flicker is 3), so a single run can't be trusted to be complete, and a stable, code-made base has a job.
+**Where, exactly:** gaps and conflicts were 10 of 10 in every run; all the instability is in "left out". What flickered:
+U3, a whole screen (the PDF reader), which layer 3 lists by code (`/library/:libraryId/series/:seriesId/pdf/:chapterId`);
+U5 and U10, settings options on a form (Exclude Patterns, Blur Unread Summaries), which layer 3 does not list; U9 (Remove
+from On Deck, an action-menu entry) found by none and not in layer 3's clicks either. Merging two runs gives 28 or 29.
+So a code-made inventory as layer 3 has it today would have held 1 of the 4 unstable or missed items; options on forms and
+menu actions with no server call of their own are outside it.

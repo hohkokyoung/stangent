@@ -1,0 +1,475 @@
+{
+  "doc": "kavita-fsd",
+  "note": "Phase 2b (D56, D57): findings in specs/trace.yaml scored against the frozen answer key. 'found' lets a gap be reported as a conflict and back; 'foundAsKind' needs the planted kind.",
+  "found": {
+    "overall": {
+      "found": 26,
+      "of": 30,
+      "share": 0.867,
+      "range95": [
+        0.733,
+        0.967
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 6,
+      "of": 10,
+      "share": 0.6,
+      "range95": [
+        0.3,
+        0.9
+      ]
+    }
+  },
+  "foundAsKind": {
+    "overall": {
+      "found": 26,
+      "of": 30,
+      "share": 0.867,
+      "range95": [
+        0.733,
+        0.967
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 6,
+      "of": 10,
+      "share": 0.6,
+      "range95": [
+        0.3,
+        0.9
+      ]
+    }
+  },
+  "noise": {
+    "findings": 32,
+    "unplanted": 6,
+    "worstCaseShare": 0.188,
+    "sample": 6,
+    "handChecked": 0,
+    "realInSample": null
+  },
+  "bars": {
+    "finds": true,
+    "notTooNoisy": true
+  },
+  "finerVerdicts": null,
+  "candidates": {
+    "sections": 0,
+    "byCode": 0,
+    "byAi": 0,
+    "aiFoundNone": 0
+  },
+  "cost": {
+    "finder": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "judge": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "checker": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "disprover": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    }
+  },
+  "requirements": {
+    "features": 0,
+    "requirements": 0,
+    "withAcceptance": 0,
+    "byCheck": {
+      "confirmed": 0,
+      "disputed": 0,
+      "unchecked": 0
+    },
+    "background": 0,
+    "backgroundDisputed": 0,
+    "questions": 0,
+    "plantedCited": {
+      "cited": 0,
+      "of": 20,
+      "missed": [
+        "Each row on the Home screen can be collapsed, and Kavita remembers the choice on the next visit.",
+        "A Random button on the library screen opens a randomly chosen series from that library.",
+        "Users can keep a private note on a series that only they can see.",
+        "A slideshow mode turns the page automatically after a set number of seconds.",
+        "Selected text can be read aloud using the device's text-to-speech voice.",
+        "The series in a collection can be exported to a CSV file.",
+        "The owner can share a reading list through a public link that opens without signing in.",
+        "Users can turn on two-factor sign-in with an authenticator app.",
+        "An invite can be given an expiry date, after which its link stops working.",
+        "A maintenance mode switch blocks all non-admin users from signing in until it is turned off.",
+        "The On Deck row shows up to 50 series.",
+        "Manga series open on the Volumes tab by default.",
+        "Brightness can be set anywhere from 0% to 100%.",
+        "Font size can be set from 50% to 200%.",
+        "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it.",
+        "A filter box for finding items appears once a list has more than 25 items.",
+        "A new password must be at least 8 characters long.",
+        "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB.",
+        "Changes on this page are stored only when the administrator presses Save.",
+        "Manage Collections is turned on by default for a new library."
+      ]
+    },
+    "findingsWithRequirement": 0,
+    "failedSections": 0,
+    "retries": 0,
+    "fixes": 0,
+    "spentUsd": 0
+  },
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S002",
+      "state": "gap"
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S003",
+      "state": "gap"
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S006",
+      "state": "gap"
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S010",
+      "state": "gap"
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S013",
+      "state": "gap"
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S014",
+      "state": "gap"
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S016",
+      "state": "gap"
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S021",
+      "state": "gap"
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S029",
+      "state": "gap"
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S027",
+      "state": "gap"
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S001",
+      "state": "conflict"
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S005",
+      "state": "conflict"
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S009",
+      "state": "conflict"
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S012",
+      "state": "conflict"
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S004",
+      "state": "conflict"
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S015",
+      "state": "conflict"
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S022",
+      "state": "conflict"
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S024",
+      "state": "conflict"
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S026",
+      "state": "conflict"
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S031",
+      "state": "conflict"
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S018",
+      "state": "undocumented"
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S019",
+      "state": "undocumented"
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S025",
+      "state": "undocumented"
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S028",
+      "state": "undocumented"
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S017",
+      "state": "undocumented"
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S011",
+      "state": "undocumented"
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    }
+  ],
+  "handCheckSample": [
+    {
+      "id": "S020",
+      "state": "undocumented",
+      "section": "8.2",
+      "fsdQuote": "",
+      "page": "page:/person/:name",
+      "pageQuote": "Person page has an actions menu (such as merge and edit) and shows web links beside the name.",
+      "note": "Person page has an actions menu (such as merge and edit) and shows web links beside the name."
+    },
+    {
+      "id": "S008",
+      "state": "conflict",
+      "section": "3.3",
+      "fsdQuote": "A chapter's screen shows its release date, writers, cover artists, genres and tags",
+      "page": null,
+      "pageQuote": null,
+      "note": "Release date is shown only in Comic and Comic (Flexible) libraries, where it replaces the cover artists slot; other library types show cover artists and no release date."
+    },
+    {
+      "id": "S030",
+      "state": "undocumented",
+      "section": "10.2",
+      "fsdQuote": "",
+      "page": "page:/settings",
+      "pageQuote": "Non-pending user rows also have a change-password button.",
+      "note": "Non-pending user rows also have a change-password button."
+    },
+    {
+      "id": "S032",
+      "state": "undocumented",
+      "section": "10.3",
+      "fsdQuote": "",
+      "page": "page:/settings",
+      "pageQuote": "Libraries page has row checkboxes and a bulk action menu (scan, refresh metadata, generate colorscape, delete, copy settings).",
+      "note": "Libraries page has row checkboxes and a bulk action menu (scan, refresh metadata, generate colorscape, delete, copy settings)."
+    },
+    {
+      "id": "S023",
+      "state": "undocumented",
+      "section": "9.1",
+      "fsdQuote": "",
+      "page": "page:/settings",
+      "pageQuote": "Account page lets an OpenID Connect-linked user unlink the OIDC account.",
+      "note": "Account page lets an OpenID Connect-linked user unlink the OIDC account."
+    },
+    {
+      "id": "S007",
+      "state": "undocumented",
+      "section": "3.1",
+      "fsdQuote": "",
+      "page": "page:/library/:libraryId/series/:seriesId",
+      "pageQuote": "Series screen also has an Annotations tab, an Activity (reading history) tab, and a Kavita+ scrobbling toggle, none mentioned.",
+      "note": "Series screen also has an Annotations tab, an Activity (reading history) tab, and a Kavita+ scrobbling toggle, none mentioned."
+    }
+  ]
+}

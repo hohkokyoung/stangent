@@ -1,0 +1,344 @@
+{
+ "findings": [
+  {
+   "state": "conflict",
+   "section": "1",
+   "fsdQuote": "The On Deck row shows up to 50 series.",
+   "screen": null,
+   "note": "The Home On Deck row loads 20 series at a time and keeps paging for more; there is no 50-series cap.",
+   "evidence": [
+    "UI/Web/src/app/dashboard/_components/dashboard.component.ts:194",
+    "UI/Web/src/app/carousel/_components/carousel-reel/carousel-reel.component.ts:91"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "1",
+   "fsdQuote": "Each row on the Home screen can be collapsed, and Kavita remembers the choice on the next visit.",
+   "screen": null,
+   "note": "Home rows are carousels with no collapse control and nothing stores a collapsed state.",
+   "evidence": [
+    "UI/Web/src/app/carousel/_components/carousel-reel/carousel-reel.component.html:1",
+    "UI/Web/src/app/dashboard/_components/dashboard.component.html:30"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "2.1",
+   "fsdQuote": "A Random button on the library screen opens a randomly chosen series from that library.",
+   "screen": null,
+   "note": "The library screen has no Random button; the header only has the name, actions menu and series count.",
+   "evidence": [
+    "UI/Web/src/app/library-detail/library-detail.component.html:1"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "5",
+   "fsdQuote": "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it.",
+   "screen": null,
+   "note": "Removal is a daily scheduled cleanup job, and only for series that are Completed or Cancelled and 100% read; finishing a series does not remove it immediately.",
+   "evidence": [
+    "Kavita.Services/TaskScheduler.cs:229",
+    "Kavita.Services/CleanupService.cs:332",
+    "Kavita.Services/CleanupService.cs:341"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "3.1",
+   "fsdQuote": "Manga series open on the Volumes tab by default.",
+   "screen": null,
+   "note": "For manga (and other non-comic, non-book libraries) the default tab is Storyline, not Volumes.",
+   "evidence": [
+    "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:857"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "3.1",
+   "fsdQuote": "Users can keep a private note on a series that only they can see.",
+   "screen": null,
+   "note": "No series note feature exists in the series screen or its models.",
+   "evidence": [
+    "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:1"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "3.1",
+   "fsdQuote": null,
+   "screen": "/library/:libraryId/series/:seriesId",
+   "note": "Series screen also has an Annotations tab, an Activity (reading history) tab, and a Kavita+ scrobbling toggle, none mentioned.",
+   "evidence": [
+    "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:325",
+    "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:413"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "3.3",
+   "fsdQuote": "A chapter's screen shows its release date, writers, cover artists, genres and tags",
+   "screen": null,
+   "note": "Release date is shown only in Comic and Comic (Flexible) libraries, where it replaces the cover artists slot; other library types show cover artists and no release date.",
+   "evidence": [
+    "UI/Web/src/app/chapter-detail/chapter-detail.component.html:117"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "4.1",
+   "fsdQuote": "Brightness can be set anywhere from 0% to 100%.",
+   "screen": null,
+   "note": "The image reader brightness slider has a minimum of 10%, not 0%.",
+   "evidence": [
+    "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:328"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "4.1",
+   "fsdQuote": "A slideshow mode turns the page automatically after a set number of seconds.",
+   "screen": null,
+   "note": "The image reader has no slideshow or auto-advance mode.",
+   "evidence": [
+    "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:190"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "4.1",
+   "fsdQuote": null,
+   "screen": "/library/:libraryId/series/:seriesId/manga/:chapterId",
+   "note": "Layout list has a fourth option, Double (No Cover), and the settings also hold auto-close menu, swipe to paginate, emulate comic book, page offset and width override.",
+   "evidence": [
+    "UI/Web/src/app/manga-reader/_models/layout-mode.ts:20",
+    "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:253",
+    "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:289"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "4.2",
+   "fsdQuote": "Font size can be set from 50% to 200%.",
+   "screen": null,
+   "note": "Book reader font size range is 50% to 300%.",
+   "evidence": [
+    "UI/Web/src/app/_services/epub-reader-settings.service.ts:79",
+    "UI/Web/src/app/_services/epub-reader-settings.service.ts:80"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "4.2",
+   "fsdQuote": "Selected text can be read aloud using the device's text-to-speech voice.",
+   "screen": null,
+   "note": "No text-to-speech or read-aloud feature exists in the book reader.",
+   "evidence": [
+    "UI/Web/src/app/book-reader/_components/reader-settings/reader-settings.component.html:1"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "6.2",
+   "fsdQuote": "The series in a collection can be exported to a CSV file.",
+   "screen": null,
+   "note": "Collection actions are edit, download, delete, promote/unpromote and mark read/unread; there is no CSV export.",
+   "evidence": [
+    "UI/Web/src/app/_services/action-factory.service.ts:401",
+    "UI/Web/src/app/collections/_components/collection-detail/collection-detail.component.html:7"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "7.2",
+   "fsdQuote": "A filter box for finding items appears once a list has more than 25 items.",
+   "screen": null,
+   "note": "The filter box appears when the list has more than 10 items.",
+   "evidence": [
+    "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:204"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "7.2",
+   "fsdQuote": "The owner can share a reading list through a public link that opens without signing in.",
+   "screen": null,
+   "note": "No public sharing link exists for reading lists; the detail route requires the auth guard.",
+   "evidence": [
+    "UI/Web/src/app/app-routing.module.ts:80",
+    "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:56"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "7.2",
+   "fsdQuote": null,
+   "screen": "/lists/:readingListId",
+   "note": "In reorder mode there is a Remove Read button that clears already-read items from a non-promoted list.",
+   "evidence": [
+    "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:178"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/browse/genres",
+   "note": "A Genres browse screen lists every genre with series and issue counts and opens All Series filtered to the genre; the FSD covers People and Tags only.",
+   "evidence": [
+    "UI/Web/src/app/_routes/browse-routing.module.ts:23",
+    "UI/Web/src/app/browse/browse-genres/browse-genres.component.html:1"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/browse/annotations",
+   "note": "An Annotations browse screen lists annotations with a filter panel, bulk actions and an Export button; not described.",
+   "evidence": [
+    "UI/Web/src/app/_routes/browse-routing.module.ts:25",
+    "UI/Web/src/app/all-annotations/all-annotations.component.html:1"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "8.2",
+   "fsdQuote": null,
+   "screen": "/person/:name",
+   "note": "Person page has an actions menu (such as merge and edit) and shows web links beside the name.",
+   "evidence": [
+    "UI/Web/src/app/person-detail/person-detail.component.html:6",
+    "UI/Web/src/app/_services/action-factory.service.ts:1149"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "9.1",
+   "fsdQuote": "Users can turn on two-factor sign-in with an authenticator app.",
+   "screen": null,
+   "note": "The Account page has no two-factor option and no authenticator support exists in the code.",
+   "evidence": [
+    "UI/Web/src/app/user-settings/account-settings/account-settings.component.html:1"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "9.1",
+   "fsdQuote": "A new password must be at least 8 characters long.",
+   "screen": null,
+   "note": "The server requires a minimum of 6 characters.",
+   "evidence": [
+    "Kavita.Server/Extensions/IdentityServiceExtensions.cs:59",
+    "UI/Web/src/app/registration/_components/confirm-reset-password/confirm-reset-password.component.ts:38"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "9.1",
+   "fsdQuote": null,
+   "screen": "/settings",
+   "note": "Account page lets an OpenID Connect-linked user unlink the OIDC account.",
+   "evidence": [
+    "UI/Web/src/app/user-settings/account-settings/account-settings.component.html:22"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "9.2",
+   "fsdQuote": "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB.",
+   "screen": null,
+   "note": "The threshold is 100 MB (the tooltip also says 100).",
+   "evidence": [
+    "UI/Web/src/app/shared/_services/download.service.ts:76",
+    "UI/Web/src/app/user-settings/manga-user-preferences/manage-user-preferences.component.html:40"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "9.2",
+   "fsdQuote": null,
+   "screen": "/settings",
+   "note": "Preferences also hold Blur Unread Summaries, Collapse Series Relationships, On Deck last-progress days, On Deck last-chapter-add days, a book highlight colour bar, Share Profile, Include Unknowns, and OPDS options (progress indicator, continue-from).",
+   "evidence": [
+    "UI/Web/src/app/user-settings/manga-user-preferences/manage-user-preferences.component.html:27",
+    "UI/Web/src/app/user-settings/manga-user-preferences/manage-user-preferences.component.html:64",
+    "UI/Web/src/app/user-settings/manga-user-preferences/manage-user-preferences.component.html:113",
+    "UI/Web/src/app/user-settings/manga-user-preferences/manage-user-preferences.component.html:256"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "10.1",
+   "fsdQuote": "Changes on this page are stored only when the administrator presses Save.",
+   "screen": null,
+   "note": "There is no Save button; changes are saved automatically about 300 ms after each valid edit.",
+   "evidence": [
+    "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:116"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "10.1",
+   "fsdQuote": "A maintenance mode switch blocks all non-admin users from signing in until it is turned off.",
+   "screen": null,
+   "note": "No maintenance mode switch exists on the General page or in the server settings.",
+   "evidence": [
+    "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:1"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "10.1",
+   "fsdQuote": null,
+   "screen": "/settings",
+   "note": "General page also has a Logging Level selector.",
+   "evidence": [
+    "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:128"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "10.2",
+   "fsdQuote": "An invite can be given an expiry date, after which its link stops working.",
+   "screen": null,
+   "note": "The invite form has only email, libraries, roles and age restriction; no expiry date field.",
+   "evidence": [
+    "UI/Web/src/app/admin/invite-user/invite-user.component.html:13",
+    "UI/Web/src/app/admin/invite-user/invite-user.component.ts:48"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "10.2",
+   "fsdQuote": null,
+   "screen": "/settings",
+   "note": "Non-pending user rows also have a change-password button.",
+   "evidence": [
+    "UI/Web/src/app/admin/manage-users/manage-users.component.html:201"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "10.3",
+   "fsdQuote": "Manage Collections is turned on by default for a new library.",
+   "screen": null,
+   "note": "The add-library form starts with Manage Collections off.",
+   "evidence": [
+    "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:157"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "10.3",
+   "fsdQuote": null,
+   "screen": "/settings",
+   "note": "Libraries page has row checkboxes and a bulk action menu (scan, refresh metadata, generate colorscape, delete, copy settings).",
+   "evidence": [
+    "UI/Web/src/app/admin/manage-library/manage-library.component.html:4",
+    "UI/Web/src/app/admin/manage-library/manage-library.component.ts:215"
+   ]
+  }
+ ]
+}

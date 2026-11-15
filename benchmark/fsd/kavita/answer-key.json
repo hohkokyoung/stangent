@@ -1,0 +1,289 @@
+{
+  "doc": "kavita-fsd",
+  "frozen": "2026-11-15",
+  "note": "Planted Kavita FSD key; frozen when written; never read by a reviewer.",
+  "scope": [
+    "/home",
+    "/library",
+    "/all-series",
+    "/want-to-read",
+    "/collections",
+    "/lists",
+    "/browse",
+    "/person",
+    "/settings"
+  ],
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "section": "1",
+      "text": "Each row on the Home screen can be collapsed, and Kavita remembers the choice on the next visit."
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "section": "2.1",
+      "text": "A Random button on the library screen opens a randomly chosen series from that library."
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "section": "3.1",
+      "text": "Users can keep a private note on a series that only they can see."
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "section": "4.1",
+      "text": "A slideshow mode turns the page automatically after a set number of seconds."
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "section": "4.2",
+      "text": "Selected text can be read aloud using the device's text-to-speech voice."
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "section": "6.2",
+      "text": "The series in a collection can be exported to a CSV file."
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "section": "7.2",
+      "text": "The owner can share a reading list through a public link that opens without signing in."
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "section": "9.1",
+      "text": "Users can turn on two-factor sign-in with an authenticator app."
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "section": "10.2",
+      "text": "An invite can be given an expiry date, after which its link stops working."
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "section": "10.1",
+      "text": "A maintenance mode switch blocks all non-admin users from signing in until it is turned off."
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "section": "1",
+      "text": "The On Deck row shows up to 50 series.",
+      "code": "The Home On Deck row requests page 1 with 20 items, so it shows up to 20 series: UI/Web/src/app/dashboard/_components/dashboard.component.ts:194 (getOnDeck(1, 20))."
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "section": "3.1",
+      "text": "Manga series open on the Volumes tab by default.",
+      "code": "For libraries other than Book, Light Novel and Comic, the default tab is Storyline (Specials only when there are no volumes or chapters): UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:842-858 (this.activeTabId = Tabs.Storyline at :857)."
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "section": "4.1",
+      "text": "Brightness can be set anywhere from 0% to 100%.",
+      "code": "Brightness (darkness) is limited to 10%-100%: UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:328-329 (min(p.darkness, 10); max(p.darkness, 100))."
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "section": "4.2",
+      "text": "Font size can be set from 50% to 200%.",
+      "code": "Book reader font size is limited to 50%-300%: UI/Web/src/app/_services/epub-reader-settings.service.ts:79-80 (max(path.bookReaderFontSize, 300))."
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "section": "5",
+      "text": "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it.",
+      "code": "Removal is a daily background task and only applies to series whose publication status is Completed or Cancelled and whose read progress is 100%: Kavita.Services/CleanupService.cs:331-370 (status filter at :345); scheduled with Cron.Daily at Kavita.Services/TaskScheduler.cs:229-231."
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "section": "7.2",
+      "text": "A filter box for finding items appears once a list has more than 25 items.",
+      "code": "The reading list filter box appears when the list has more than 10 items: UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:204 (items().length > 10)."
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "section": "9.1",
+      "text": "A new password must be at least 8 characters long.",
+      "code": "The minimum password length is 6 characters: Kavita.Server/Extensions/IdentityServiceExtensions.cs:59 (opt.Password.RequiredLength = 6), enforced by Kavita.Services/AccountService.cs:58-60."
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "section": "9.2",
+      "text": "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB.",
+      "code": "The confirmation threshold is 100 MB (104,857,600 bytes): UI/Web/src/app/shared/_services/download.service.ts:76 (SIZE_WARNING) and :1144-1149 (confirmSize)."
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "section": "10.1",
+      "text": "Changes on this page are stored only when the administrator presses Save.",
+      "code": "The General page has no Save button; valid changes are saved automatically 300 ms after editing: UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:112-133 (debounceTime(300), filter valid, updateServerSettings)."
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "section": "10.3",
+      "text": "Manage Collections is turned on by default for a new library.",
+      "code": "Manage Collections defaults to off for a new library: UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:157 (manageCollections: false)."
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "pages": [
+        "page:/browse/genres"
+      ],
+      "what": "The Browse Genres screen (lists every genre with series and issue counts; clicking a genre opens All Series filtered to it) is left out entirely."
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "pages": [
+        "page:/browse/annotations"
+      ],
+      "what": "The All Annotations screen (browse and filter the user's and shared annotations across all books) is left out entirely."
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "pages": [
+        "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      ],
+      "what": "The PDF reader screen, where PDF files open, is left out entirely (the Readers section only names the image and book readers)."
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "pages": [
+        "page:/settings"
+      ],
+      "what": "On the General settings page, the Port and IP Addresses fields are fixed and cannot be edited when Kavita runs in Docker (UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:86-88).",
+      "section": "10.1",
+      "keywords": [
+        "docker",
+        "port",
+        "ip",
+        "fixed",
+        "disabl",
+        "lock"
+      ]
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "pages": [
+        "page:/settings"
+      ],
+      "what": "The library dialog's Exclude Patterns setting: glob patterns that the scanner matches and skips (library-settings-modal.component.html:266-269).",
+      "section": "10.3",
+      "keywords": [
+        "exclude",
+        "pattern",
+        "glob",
+        "ignore",
+        "skip"
+      ]
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "pages": [
+        "page:/settings"
+      ],
+      "what": "Bulk actions on the Libraries page: select several libraries and scan, refresh covers, generate ColorScape, delete, or copy one library's settings to the others (admin/manage-library/manage-library.component.ts:200-245).",
+      "section": "10.3",
+      "keywords": [
+        "bulk",
+        "copy",
+        "multiple",
+        "select",
+        "apply"
+      ]
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "pages": [
+        "page:/lists/:readingListId"
+      ],
+      "what": "The Remove Read button in reorder mode, which removes every already-read item from the list; shown only to the owner of a list that is not promoted (reading-list-detail.component.html:174-180).",
+      "section": "7.2",
+      "keywords": [
+        "remove read",
+        "already read",
+        "read items",
+        "finished",
+        "clean"
+      ]
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "pages": [
+        "page:/library/:libraryId/series/:seriesId/manga/:chapterId"
+      ],
+      "what": "The Page Offset switch in the image reader settings, which shifts how pages pair up in a double-page layout; it is disabled in single-page layout and webtoon mode (manga-reader.component.html:273-276, manga-reader.component.ts:338).",
+      "section": "4.1",
+      "keywords": [
+        "offset",
+        "shift",
+        "pair",
+        "double",
+        "cover"
+      ]
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "pages": [
+        "page:/library/:libraryId/series/:seriesId"
+      ],
+      "what": "The Remove from On Deck action in the series actions menu, available to all users (action-factory.service.ts:640).",
+      "section": "3.1",
+      "keywords": [
+        "on deck",
+        "remove",
+        "hide",
+        "deck"
+      ]
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "pages": [
+        "page:/settings"
+      ],
+      "what": "The Blur Unread Summaries preference, which blurs summaries of volumes or chapters with no read progress to avoid spoilers (manage-user-preferences.component.html).",
+      "section": "9.2",
+      "keywords": [
+        "blur",
+        "spoiler",
+        "summar",
+        "unread"
+      ]
+    }
+  ],
+  "matching": {
+    "gap_or_conflict": "found when a finding (state gap or conflict; the strict score also needs the planted kind) is on the item's section and its FSD quote overlaps the planted sentence: one contains the other, or at least 60% of the quote's words are in it.",
+    "undocumented": "found when a finding with state undocumented is on one of the item's pages, or on the item's section, and (for a behaviour) one of its keywords is in the finding's page quote or note, case-insensitive.",
+    "falseAlarm": "a finding (gap, conflict or undocumented) that matches no planted item is unplanted; the hand check of a sample of 20 (fixed seed) says which are real drift.",
+    "ranges": "95% ranges by resampling planted items, 1,000 resamples, seed 42."
+  }
+}

@@ -1,0 +1,1387 @@
+{
+ "findings": [
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/activity/blocklist",
+   "note": "Blocklist screen with Clear blocklist, Remove Selected and Remove from Blocklist is not described.",
+   "evidence": [
+    "frontend/src/Activity/Blocklist/Blocklist.tsx:280",
+    "frontend/src/App/AppRoutes.tsx:88"
+   ],
+   "checklist": [
+    "K001",
+    "K005",
+    "K011",
+    "K012"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/activity/queue",
+   "note": "Manual import of a queue/wanted item (select series, season, episodes, language, quality, release group, release type, flags, delete episode files) is not described.",
+   "evidence": [
+    "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx:974",
+    "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx:1055"
+   ],
+   "checklist": [
+    "K004",
+    "K006",
+    "K013",
+    "K014",
+    "K015",
+    "K016",
+    "K017",
+    "K018",
+    "K021",
+    "K022",
+    "K023"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/activity/queue",
+   "note": "Grab (force import of a pending queue item) per row and Grab Selected are not described.",
+   "evidence": [
+    "frontend/src/Activity/Queue/QueueRow.tsx:408",
+    "frontend/src/Activity/Queue/Queue.tsx:335"
+   ],
+   "checklist": [
+    "K007",
+    "K008"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/activity/history",
+   "note": "Mark as Failed on a history entry's details is not described.",
+   "evidence": [
+    "frontend/src/Activity/History/Details/HistoryDetailsModal.tsx:84"
+   ],
+   "checklist": [
+    "K009"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/series/:titleSlug",
+   "note": "Mark as Failed in series/episode history and deleting an episode file from episode summary are not described.",
+   "evidence": [
+    "frontend/src/Series/History/SeriesHistoryRow.tsx:176",
+    "frontend/src/Episode/History/EpisodeHistoryRow.tsx:145",
+    "frontend/src/Episode/Summary/EpisodeSummary.tsx:157"
+   ],
+   "checklist": [
+    "K030",
+    "K040",
+    "K042"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/series",
+   "note": "Series index (poster/table/overview views) with bulk edit footer (monitoring, tags, root folder/save, delete, season pass) and inline monitored toggle is not described.",
+   "evidence": [
+    "frontend/src/Series/Index/Select/SeriesIndexSelectFooter.tsx:230",
+    "frontend/src/App/AppRoutes.tsx:52"
+   ],
+   "checklist": [
+    "K046",
+    "K047",
+    "K048",
+    "K049",
+    "K050",
+    "K051",
+    "K052"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/add/import",
+   "note": "Library Import (choose root folder, import found series) is not described.",
+   "evidence": [
+    "frontend/src/AddSeries/ImportSeries/Import/ImportSeriesFooter.tsx:296",
+    "frontend/src/App/AppRoutes.tsx:56",
+    "frontend/src/App/AppRoutes.tsx:58"
+   ],
+   "checklist": [
+    "K053",
+    "K054",
+    "K055",
+    "K056"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/connect",
+   "note": "Connect (notifications) settings screen is not described.",
+   "evidence": [
+    "frontend/src/Settings/Notifications/Notifications/EditNotificationModalContent.tsx:178",
+    "frontend/src/App/AppRoutes.tsx:124"
+   ],
+   "checklist": [
+    "K063",
+    "K064",
+    "K065",
+    "K066"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/customformats",
+   "note": "Custom Formats settings screen is not described.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:110",
+    "frontend/src/Settings/CustomFormats/CustomFormats/Manage/ManageCustomFormatsModalContent.tsx:239"
+   ],
+   "checklist": [
+    "K067",
+    "K068",
+    "K069"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/downloadclients",
+   "note": "Download Clients screen with remote path mappings, test all, bulk manage is not described.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:117",
+    "frontend/src/Settings/DownloadClients/DownloadClientSettings.tsx:96"
+   ],
+   "checklist": [
+    "K070",
+    "K071",
+    "K072",
+    "K073",
+    "K074",
+    "K075",
+    "K076",
+    "K077",
+    "K078"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/importlists",
+   "note": "Import Lists screen with exclusions and bulk manage is not described.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:122",
+    "frontend/src/Settings/ImportLists/ImportListSettings.tsx:93"
+   ],
+   "checklist": [
+    "K081",
+    "K082",
+    "K083",
+    "K084",
+    "K085",
+    "K086",
+    "K087",
+    "K088",
+    "K089",
+    "K090",
+    "K091",
+    "K092",
+    "K093",
+    "K094"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/indexers",
+   "note": "Indexers screen is not described.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:115",
+    "frontend/src/Settings/Indexers/IndexerSettings.tsx:93"
+   ],
+   "checklist": [
+    "K095",
+    "K096",
+    "K097",
+    "K098",
+    "K099",
+    "K100",
+    "K101",
+    "K102"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/mediamanagement",
+   "note": "Media Management (naming, root folders) screen is not described.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:104",
+    "frontend/src/RootFolder/RootFolderRow.tsx:157"
+   ],
+   "checklist": [
+    "K103",
+    "K104"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/metadata",
+   "note": "Metadata settings screen is not described.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:126",
+    "frontend/src/Settings/Metadata/Metadata/EditMetadataModalContent.tsx:118"
+   ],
+   "checklist": [
+    "K106",
+    "K107",
+    "K108"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "Settings / Profiles",
+   "fsdQuote": null,
+   "screen": "/settings/profiles",
+   "note": "Release profiles (save) are not described; the FSD only covers quality and delay profiles.",
+   "evidence": [
+    "frontend/src/Settings/Profiles/Release/EditReleaseProfileModalContent.tsx:259"
+   ],
+   "checklist": [
+    "K112"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "Settings / Profiles / Delay profiles",
+   "fsdQuote": null,
+   "screen": "/settings/profiles",
+   "note": "Delay profiles can be reordered by dragging; not described.",
+   "evidence": [
+    "frontend/src/Settings/Profiles/Delay/DelayProfiles.tsx:99"
+   ],
+   "checklist": [
+    "K113"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "Settings / General",
+   "fsdQuote": null,
+   "screen": "/settings/general",
+   "note": "Restart prompt button on General settings is not described.",
+   "evidence": [
+    "frontend/src/Settings/General/GeneralSettings.tsx:227"
+   ],
+   "checklist": [
+    "K080"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/status",
+   "note": "System Status (health checks, Test All) is not described.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:143",
+    "frontend/src/System/Status/Health/Health.tsx:129"
+   ],
+   "checklist": [
+    "K123",
+    "K133",
+    "K134"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": null,
+   "note": "Restart and Shutdown actions in the header menu are not described.",
+   "evidence": [
+    "frontend/src/Components/Page/Header/PageHeaderActionsMenu.tsx:54",
+    "frontend/src/Components/Page/Header/PageHeaderActionsMenu.tsx:60"
+   ],
+   "checklist": [
+    "K130",
+    "K132"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/tasks",
+   "note": "Tasks screen with cancel queued task is not described.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:145",
+    "frontend/src/System/Tasks/Queued/QueuedTaskRow.tsx:236"
+   ],
+   "checklist": [
+    "K124",
+    "K126"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/updates",
+   "note": "Updates screen is not described.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:149"
+   ],
+   "checklist": [
+    "K125"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/events",
+   "note": "Log events screen with refresh/clear is not described.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:151",
+    "frontend/src/System/Events/LogsTable.tsx:123"
+   ],
+   "checklist": [
+    "K120",
+    "K127",
+    "K129"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/logs/files",
+   "note": "Log files screens (app and update) with refresh and delete files are not described.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:153",
+    "frontend/src/App/AppRoutes.tsx:155",
+    "frontend/src/System/Logs/App/AppLogFiles.tsx:37"
+   ],
+   "checklist": [
+    "K121",
+    "K122",
+    "K135",
+    "K136",
+    "K137",
+    "K138"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "System / Backups",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "Delete Backup in the backups list is not described.",
+   "evidence": [
+    "frontend/src/System/Backup/BackupRow.tsx:127"
+   ],
+   "checklist": [
+    "K128"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/wanted/cutoffunmet",
+   "note": "Cutoff Unmet screen (search all, unmonitor selected) is not described; the FSD says cutoff-unmet episodes are not on the missing screen but gives them no screen.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:96",
+    "frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx:355"
+   ],
+   "checklist": [
+    "K140",
+    "K142",
+    "K144"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "Wanted / Missing episodes",
+   "fsdQuote": null,
+   "screen": "/wanted/missing",
+   "note": "Monitor/Unmonitor Selected button on the missing screen is not described.",
+   "evidence": [
+    "frontend/src/Wanted/Missing/Missing.tsx:259"
+   ],
+   "checklist": [
+    "K145"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "Settings / Tags",
+   "fsdQuote": null,
+   "screen": "/settings/tags",
+   "note": "Auto Tagging rules section on the Tags screen is not described.",
+   "evidence": [
+    "frontend/src/Settings/Tags/TagSettings.tsx:32"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "undocumented",
+   "section": "Settings / Interface",
+   "fsdQuote": null,
+   "screen": "/settings/ui",
+   "note": "Time Zone, Header Color and Color Impaired Mode options are not described.",
+   "evidence": [
+    "frontend/src/Settings/UI/UISettings.tsx:246",
+    "frontend/src/Settings/UI/UISettings.tsx:288",
+    "frontend/src/Settings/UI/UISettings.tsx:302"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "undocumented",
+   "section": "2",
+   "fsdQuote": null,
+   "screen": "/calendar",
+   "note": "Agenda view and calendar options (collapse episodes, cover art, icons, full colour) are not described.",
+   "evidence": [
+    "frontend/src/Calendar/calendarViews.ts:5",
+    "frontend/src/Calendar/Options/CalendarOptionsModalContent.tsx:100"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "undocumented",
+   "section": "1.1",
+   "fsdQuote": null,
+   "screen": "/add/new",
+   "note": "Season Folder, Language, Season Type options and the Cutoff Unmet search option are not described.",
+   "evidence": [
+    "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:262",
+    "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:350"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "1.1",
+   "fsdQuote": "Up to 10 series can be selected from the search results and added together in one step.",
+   "screen": null,
+   "note": "Each search result is added one at a time through its own modal; there is no multi-select add.",
+   "evidence": [
+    "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:367"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "1.2",
+   "fsdQuote": "The episode list of a series can be exported as a CSV file.",
+   "screen": null,
+   "note": "The series details toolbar has no CSV export.",
+   "evidence": [
+    "frontend/src/Series/Details/SeriesDetails.tsx:481"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "1.2",
+   "fsdQuote": "Deleting a series always deletes its folder and all its files from disk.",
+   "screen": null,
+   "note": "Delete modal has an optional Delete Files checkbox, off by default.",
+   "evidence": [
+    "frontend/src/Series/Delete/DeleteSeriesModalContent.tsx:42",
+    "frontend/src/Series/Delete/DeleteSeriesModalContent.tsx:112"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "2",
+   "fsdQuote": "Episodes can be dragged to another day to change their air date.",
+   "screen": null,
+   "note": "Calendar has no drag and drop of episodes.",
+   "evidence": [
+    "frontend/src/Calendar/Calendar.tsx:115"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "2",
+   "fsdQuote": "Sonarr can share the calendar as an iCal feed, which covers the previous 14 days and the next 60 days.",
+   "screen": null,
+   "note": "iCal feed defaults to 7 past days and 28 future days.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Calendar/CalendarFeedController.cs:31"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "3.1",
+   "fsdQuote": "The queue is not stored by Sonarr: it is read from the download clients.",
+   "screen": null,
+   "note": "Queue also includes pending releases that Sonarr stores itself.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Queue/QueueController.cs:33"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "3.1",
+   "fsdQuote": "The user can remove a release from the queue. Removing an item from the queue always adds the release to the blocklist.",
+   "screen": null,
+   "note": "Removal modal offers Do Not Blocklist, Blocklist and Search, or Blocklist Only.",
+   "evidence": [
+    "frontend/src/Activity/Queue/RemoveQueueItemModal.tsx:109"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "3.1",
+   "fsdQuote": "Each queue item has a priority (High, Normal or Low) that the user can change to reorder the downloads.",
+   "screen": null,
+   "note": "The queue screen has no priority control.",
+   "evidence": [
+    "frontend/src/Activity/Queue/Queue.tsx:335"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "3.2",
+   "fsdQuote": "Any history entry can be undone, which restores the episode file that an upgrade replaced.",
+   "screen": null,
+   "note": "History only offers Mark as Failed on details; no undo.",
+   "evidence": [
+    "frontend/src/Activity/History/Details/HistoryDetailsModal.tsx:84"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "Wanted / Missing episodes",
+   "fsdQuote": "The user can search for the selected episodes, or for all missing episodes. Search All starts straight away, without asking the user to confirm.",
+   "screen": null,
+   "note": "Search for all missing episodes opens a confirmation modal first.",
+   "evidence": [
+    "frontend/src/Wanted/Missing/Missing.tsx:348",
+    "frontend/src/Wanted/Missing/Missing.tsx:362"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "Wanted / Missing episodes",
+   "fsdQuote": "A weekly email digest lists every missing episode.",
+   "screen": null,
+   "note": "No digest exists; email is only a notification connection.",
+   "evidence": [
+    "frontend/src/Wanted/Missing/Missing.tsx:233"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / Tags",
+   "fsdQuote": "Tag labels may contain letters, numbers, spaces and underscores.",
+   "screen": null,
+   "note": "Validator allows only letters, numbers and hyphen; no spaces or underscores.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Tags/TagController.cs:31"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / Tags",
+   "fsdQuote": "Deleting a tag removes it from every series, profile and indexer that uses it.",
+   "screen": null,
+   "note": "A tag that is in use cannot be deleted.",
+   "evidence": [
+    "src/NzbDrone.Core/Tags/TagService.cs:188"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "Settings / Tags",
+   "fsdQuote": "Each tag has a colour, chosen from a palette of 12 colours, which is shown wherever the tag appears.",
+   "screen": null,
+   "note": "Tags have only a label; no colour.",
+   "evidence": [
+    "frontend/src/Settings/Tags/Tag.tsx:78"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / Profiles / Delay profiles",
+   "fsdQuote": "The default delay profile can be given tags like any other.",
+   "screen": null,
+   "note": "Default profile (id 1) must have no tags.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Profiles/Delay/DelayProfileController.cs:22"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "Settings / Quality definitions",
+   "fsdQuote": "Each quality can be limited to a maximum episode runtime.",
+   "screen": null,
+   "note": "Only size limits are offered; no runtime limit.",
+   "evidence": [
+    "frontend/src/Settings/Quality/Definition/QualityDefinitionLimits.tsx:23"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / General / Logging",
+   "fsdQuote": "Each log file can grow up to 50 megabytes before a new one is started.",
+   "screen": null,
+   "note": "Log size limit is validated between 1 and 10 MB.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Config/HostConfigController.cs:125"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / General / Backups",
+   "fsdQuote": "Interval: how often an automatic backup is taken, from 1 to 30 days.",
+   "screen": null,
+   "note": "Interval is limited to 1 to 7 days.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Config/HostConfigController.cs:132"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / General / Backups",
+   "fsdQuote": "Retention: how long backups are kept, up to 365 days.",
+   "screen": null,
+   "note": "Retention is limited to 1 to 90 days.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Config/HostConfigController.cs:133"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "Settings / Interface",
+   "fsdQuote": "The font size can be set to small, medium or large.",
+   "screen": null,
+   "note": "No font size option on the UI settings screen.",
+   "evidence": [
+    "frontend/src/Settings/UI/UISettings.tsx:314"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "System / Backups",
+   "fsdQuote": "Backups can be copied automatically to an S3 bucket.",
+   "screen": null,
+   "note": "No S3 backup option exists.",
+   "evidence": [
+    "frontend/src/System/Backup/Backups.tsx:88"
+   ],
+   "checklist": []
+  }
+ ],
+ "checklist": [
+  {
+   "id": "K001",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K002",
+   "verdict": "covered",
+   "section": "3.2",
+   "quote": "History lists everything that has happened to episodes: grabbed, imported, upgraded, deleted, renamed and failed."
+  },
+  {
+   "id": "K003",
+   "verdict": "covered",
+   "section": "3.1",
+   "quote": "The queue lists the releases the download clients are downloading for Sonarr, with each release's series, episode, quality, progress and time left."
+  },
+  {
+   "id": "K004",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K005",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K006",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K007",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K008",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K009",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K010",
+   "verdict": "not-for-fsd",
+   "reason": "Plain Refresh of the list, not a user feature to specify"
+  },
+  {
+   "id": "K011",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K012",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K013",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K014",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K015",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K016",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K017",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K018",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K019",
+   "verdict": "covered",
+   "section": "3.1",
+   "quote": "The user can remove a release from the queue."
+  },
+  {
+   "id": "K020",
+   "verdict": "covered",
+   "section": "3.1",
+   "quote": "The user can remove a release from the queue."
+  },
+  {
+   "id": "K021",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K022",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K023",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K024",
+   "verdict": "not-for-fsd",
+   "reason": "Table column/options change, not described per screen"
+  },
+  {
+   "id": "K025",
+   "verdict": "covered",
+   "section": "3.2",
+   "quote": "The list can be filtered by event type, and more columns can be shown from the options."
+  },
+  {
+   "id": "K026",
+   "verdict": "not-for-fsd",
+   "reason": "Table column/options change, not described per screen"
+  },
+  {
+   "id": "K027",
+   "verdict": "covered",
+   "section": "2",
+   "quote": "The calendar shows episodes that aired recently and those coming up, by month, week, forecast or day."
+  },
+  {
+   "id": "K028",
+   "verdict": "covered",
+   "section": "1.2",
+   "quote": "Deleting a series always deletes its folder and all its files from disk."
+  },
+  {
+   "id": "K029",
+   "verdict": "covered",
+   "section": "1.2",
+   "quote": "The user can search for all monitored episodes of the series, or for one season, or for one episode, either automatically or interactively."
+  },
+  {
+   "id": "K030",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K031",
+   "verdict": "not-for-fsd",
+   "reason": "Custom filter editing is generic list UI"
+  },
+  {
+   "id": "K032",
+   "verdict": "covered",
+   "section": "1.2",
+   "quote": "The user can edit the series: its monitoring, quality profile, series type, path and tags."
+  },
+  {
+   "id": "K033",
+   "verdict": "not-for-fsd",
+   "reason": "Custom filter editing is generic list UI"
+  },
+  {
+   "id": "K034",
+   "verdict": "covered",
+   "section": "1.2",
+   "quote": "The user can edit the series: its monitoring, quality profile, series type, path and tags."
+  },
+  {
+   "id": "K035",
+   "verdict": "covered",
+   "section": "1.2",
+   "quote": "The user can search for all monitored episodes of the series, or for one season, or for one episode, either automatically or interactively."
+  },
+  {
+   "id": "K036",
+   "verdict": "covered",
+   "section": "1.2",
+   "quote": "The user can edit the series: its monitoring, quality profile, series type, path and tags."
+  },
+  {
+   "id": "K037",
+   "verdict": "covered",
+   "section": "1.1",
+   "quote": "The Add New screen lets the user search for a series by name and add it to the library."
+  },
+  {
+   "id": "K038",
+   "verdict": "covered",
+   "section": "1.1",
+   "quote": "The Add New screen lets the user search for a series by name and add it to the library."
+  },
+  {
+   "id": "K039",
+   "verdict": "covered",
+   "section": "1.2",
+   "quote": "The series details screen shows one series: its poster, overview, network, status, path, size on disk and its seasons, with each season's episodes listed underneath."
+  },
+  {
+   "id": "K040",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K041",
+   "verdict": "covered",
+   "section": "1.2",
+   "quote": "The user can monitor or unmonitor the whole series, a season, or a single episode."
+  },
+  {
+   "id": "K042",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K043",
+   "verdict": "covered",
+   "section": "1.2",
+   "quote": "The user can monitor or unmonitor the whole series, a season, or a single episode."
+  },
+  {
+   "id": "K044",
+   "verdict": "covered",
+   "section": "1.2",
+   "quote": "The user can monitor or unmonitor the whole series, a season, or a single episode."
+  },
+  {
+   "id": "K045",
+   "verdict": "covered",
+   "section": "1.2",
+   "quote": "The user can monitor or unmonitor the whole series, a season, or a single episode."
+  },
+  {
+   "id": "K046",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K047",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K048",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K049",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K050",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K051",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K052",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K053",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K054",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K055",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K056",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K057",
+   "verdict": "not-for-fsd",
+   "reason": "Form input widgets inside edit forms; they fetch helper data"
+  },
+  {
+   "id": "K058",
+   "verdict": "not-for-fsd",
+   "reason": "Form input widgets inside edit forms; they fetch helper data"
+  },
+  {
+   "id": "K059",
+   "verdict": "not-for-fsd",
+   "reason": "Form input widgets inside edit forms; they fetch helper data"
+  },
+  {
+   "id": "K060",
+   "verdict": "not-for-fsd",
+   "reason": "Form input widgets inside edit forms; they fetch helper data"
+  },
+  {
+   "id": "K061",
+   "verdict": "not-for-fsd",
+   "reason": "Form input widgets inside edit forms; they fetch helper data"
+  },
+  {
+   "id": "K062",
+   "verdict": "not-for-fsd",
+   "reason": "Form input widgets inside edit forms; they fetch helper data"
+  },
+  {
+   "id": "K063",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K064",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K065",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K066",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K067",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K068",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K069",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K070",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K071",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K072",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K073",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K074",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K075",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K076",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K077",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K078",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K079",
+   "verdict": "covered",
+   "section": "Settings / General / Logging",
+   "quote": "The log level can be set to info, debug or trace."
+  },
+  {
+   "id": "K080",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K081",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K082",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K083",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K084",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K085",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K086",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K087",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K088",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K089",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K090",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K091",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K092",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K093",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K094",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K095",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K096",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K097",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K098",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K099",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K100",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K101",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K102",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K103",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K104",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K105",
+   "verdict": "not-for-fsd",
+   "reason": "Add root folder widget inside forms"
+  },
+  {
+   "id": "K106",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K107",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K108",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K109",
+   "verdict": "covered",
+   "section": "Settings / Profiles / Quality profiles",
+   "quote": "A quality profile lists the qualities the user wants, in order of preference, and the quality at which upgrades stop (the cutoff)."
+  },
+  {
+   "id": "K110",
+   "verdict": "covered",
+   "section": "Settings / Profiles / Delay profiles",
+   "quote": "A delay profile makes Sonarr wait before grabbing a release, so that a better one can appear."
+  },
+  {
+   "id": "K111",
+   "verdict": "covered",
+   "section": "Settings / Profiles / Quality profiles",
+   "quote": "A quality profile lists the qualities the user wants, in order of preference, and the quality at which upgrades stop (the cutoff)."
+  },
+  {
+   "id": "K112",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K113",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K114",
+   "verdict": "covered",
+   "section": "Settings / Quality definitions",
+   "quote": "The quality definitions screen lists every quality with its title and its minimum, preferred and maximum size in megabytes per minute."
+  },
+  {
+   "id": "K115",
+   "verdict": "covered",
+   "section": "Settings / Tags",
+   "quote": "The tags screen lists every tag with the number of things that use it."
+  },
+  {
+   "id": "K116",
+   "verdict": "covered",
+   "section": "Settings / Tags",
+   "quote": "Deleting a tag removes it from every series, profile and indexer that uses it."
+  },
+  {
+   "id": "K117",
+   "verdict": "covered",
+   "section": "Settings / Interface",
+   "quote": "The interface settings set the first day of the week and the column headers of the calendar."
+  },
+  {
+   "id": "K118",
+   "verdict": "not-for-fsd",
+   "reason": "/statistics is outside the FSD's route scope"
+  },
+  {
+   "id": "K119",
+   "verdict": "covered",
+   "section": "System / Backups",
+   "quote": "The backups screen lists the backups Sonarr has made, newest first, with their type, size and date."
+  },
+  {
+   "id": "K120",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K121",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K122",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K123",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K124",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K125",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K126",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K127",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K128",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K129",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K130",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K131",
+   "verdict": "covered",
+   "section": "System / Backups",
+   "quote": "The user can take a backup now, restore from a backup in the list, or restore from a backup file they upload."
+  },
+  {
+   "id": "K132",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K133",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K134",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K135",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K136",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K137",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K138",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K139",
+   "verdict": "not-for-fsd",
+   "reason": "Table column/options change, not described per screen"
+  },
+  {
+   "id": "K140",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K141",
+   "verdict": "covered",
+   "section": "Wanted / Missing episodes",
+   "quote": "The missing screen lists monitored episodes that have aired but have no file on disk."
+  },
+  {
+   "id": "K142",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K143",
+   "verdict": "covered",
+   "section": "Wanted / Missing episodes",
+   "quote": "The user can search for the selected episodes, or for all missing episodes."
+  },
+  {
+   "id": "K144",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K145",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K146",
+   "verdict": "not-for-fsd",
+   "reason": "Table column/options change, not described per screen"
+  },
+  {
+   "id": "K147",
+   "verdict": "not-for-fsd",
+   "reason": "Table column/options change, not described per screen"
+  }
+ ]
+}

@@ -1,0 +1,1996 @@
+{
+ "items": [
+  {
+   "id": "K001",
+   "kind": "screen",
+   "name": "/all-series",
+   "area": "All Series",
+   "start": "UI/Web/src/app/_routes/all-series-routing.module.ts:7",
+   "flow": "screen-opens-all-series"
+  },
+  {
+   "id": "K002",
+   "kind": "click",
+   "name": "loadPage",
+   "area": "All Series",
+   "start": "UI/Web/src/app/all-series/_components/all-series/all-series.component.html:27",
+   "flow": "click-allseriescomponent-loadpage"
+  },
+  {
+   "id": "K003",
+   "kind": "click",
+   "name": "save",
+   "area": "All Series",
+   "start": "UI/Web/src/app/metadata-filter/metadata-filter.component.html:85",
+   "flow": "click-metadatafiltercomponent-save"
+  },
+  {
+   "id": "K004",
+   "kind": "click",
+   "name": "updateFilter",
+   "area": "All Series",
+   "start": "UI/Web/src/app/all-series/_components/all-series/all-series.component.html:19",
+   "flow": "click-allseriescomponent-updatefilter"
+  },
+  {
+   "id": "K005",
+   "kind": "click",
+   "name": "clickChapterSearchResult",
+   "area": "App frame",
+   "start": "UI/Web/src/app/nav/_components/search-typeahead/search-typeahead.component.html:377",
+   "flow": "click-searchtypeaheadcomponent-clickchaptersearchresult"
+  },
+  {
+   "id": "K006",
+   "kind": "click",
+   "name": "clickFileSearchResult",
+   "area": "App frame",
+   "start": "UI/Web/src/app/nav/_components/search-typeahead/search-typeahead.component.html:391",
+   "flow": "click-searchtypeaheadcomponent-clickfilesearchresult"
+  },
+  {
+   "id": "K007",
+   "kind": "click",
+   "name": "goToOther",
+   "area": "App frame",
+   "start": "UI/Web/src/app/nav/_components/search-typeahead/search-typeahead.component.html:339",
+   "flow": "click-searchtypeaheadcomponent-gotoother"
+  },
+  {
+   "id": "K008",
+   "kind": "click",
+   "name": "reorderDrop",
+   "area": "App frame",
+   "start": "UI/Web/src/app/sidenav/_components/side-nav/side-nav.component.html:11",
+   "flow": "click-sidenavcomponent-reorderdrop"
+  },
+  {
+   "id": "K009",
+   "kind": "click",
+   "name": "rescan",
+   "area": "App frame",
+   "start": "UI/Web/src/app/nav/_components/activity-job-row/activity-job-row.component.html:29",
+   "flow": "click-activityjobrowcomponent-rescan"
+  },
+  {
+   "id": "K010",
+   "kind": "click",
+   "name": "run",
+   "area": "App frame",
+   "start": "UI/Web/src/app/nav/_components/activity-entry-row/activity-entry-row.component.html:15",
+   "flow": "click-activityentryrowcomponent-run"
+  },
+  {
+   "id": "K011",
+   "kind": "click",
+   "name": "searchAll",
+   "area": "App frame",
+   "start": "UI/Web/src/app/nav/_components/search-typeahead/search-typeahead.component.html:62",
+   "flow": "click-searchtypeaheadcomponent-searchall"
+  },
+  {
+   "id": "K012",
+   "kind": "screen",
+   "name": "/bookmarks",
+   "area": "Bookmarks",
+   "start": "UI/Web/src/app/_routes/bookmark-routing.module.ts:6",
+   "flow": "screen-opens-bookmarks"
+  },
+  {
+   "id": "K013",
+   "kind": "click",
+   "name": "updateFilter",
+   "area": "Bookmarks",
+   "start": "UI/Web/src/app/bookmark/_components/bookmarks/bookmarks.component.html:17",
+   "flow": "click-bookmarkscomponent-updatefilter"
+  },
+  {
+   "id": "K014",
+   "kind": "screen",
+   "name": "/browse/people",
+   "area": "Browse People",
+   "start": "UI/Web/src/app/_routes/browse-routing.module.ts:17",
+   "flow": "screen-opens-browse-people"
+  },
+  {
+   "id": "K015",
+   "kind": "click",
+   "name": "updateFilter",
+   "area": "Browse People",
+   "start": "UI/Web/src/app/browse/browse-people/browse-people.component.html:21",
+   "flow": "click-browsepeoplecomponent-updatefilter"
+  },
+  {
+   "id": "K016",
+   "kind": "screen",
+   "name": "/collections",
+   "area": "Collections",
+   "start": "UI/Web/src/app/_routes/collections-routing.module.ts:8",
+   "flow": "screen-opens-collections"
+  },
+  {
+   "id": "K017",
+   "kind": "screen",
+   "name": "/collections/:collectionId",
+   "area": "Collections",
+   "start": "UI/Web/src/app/_routes/collections-routing.module.ts:9",
+   "flow": "screen-opens-collections-collectionid"
+  },
+  {
+   "id": "K018",
+   "kind": "click",
+   "name": "handleActionCallback",
+   "area": "Collections",
+   "start": "UI/Web/src/app/collections/_components/collection-detail/collection-detail.component.html:12",
+   "flow": "click-collectiondetailcomponent-handleactioncallback"
+  },
+  {
+   "id": "K019",
+   "kind": "click",
+   "name": "importStack",
+   "area": "Collections",
+   "start": "UI/Web/src/app/collections/_components/import-mal-collection/import-mal-collection.component.html:13",
+   "flow": "click-importmalcollectioncomponent-importstack"
+  },
+  {
+   "id": "K020",
+   "kind": "click",
+   "name": "loadPage",
+   "area": "Collections",
+   "start": "UI/Web/src/app/collections/_components/all-collections/all-collections.component.html:23",
+   "flow": "click-allcollectionscomponent-loadpage"
+  },
+  {
+   "id": "K021",
+   "kind": "click",
+   "name": "loadPage",
+   "area": "Collections",
+   "start": "UI/Web/src/app/collections/_components/collection-detail/collection-detail.component.html:73",
+   "flow": "click-collectiondetailcomponent-loadpage"
+  },
+  {
+   "id": "K022",
+   "kind": "click",
+   "name": "onPageChange",
+   "area": "Collections",
+   "start": "UI/Web/src/app/cards/_modals/edit-collection-tags/edit-collection-tags-modal.component.html:66",
+   "flow": "click-editcollectiontagsmodalcomponent-onpagechange"
+  },
+  {
+   "id": "K023",
+   "kind": "click",
+   "name": "save",
+   "area": "Collections",
+   "start": "UI/Web/src/app/cards/_modals/edit-collection-tags/edit-collection-tags-modal.component.html:9",
+   "flow": "click-editcollectiontagsmodalcomponent-save"
+  },
+  {
+   "id": "K024",
+   "kind": "click",
+   "name": "updateFilter",
+   "area": "Collections",
+   "start": "UI/Web/src/app/collections/_components/collection-detail/collection-detail.component.html:66",
+   "flow": "click-collectiondetailcomponent-updatefilter"
+  },
+  {
+   "id": "K025",
+   "kind": "click",
+   "name": "...",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/browse-cbl-repo-modal/browse-cbl-repo-modal.component.html:69",
+   "flow": "click-browsecblrepomodalcomponent-goback"
+  },
+  {
+   "id": "K026",
+   "kind": "click",
+   "name": "...",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/_modals/directory-picker/directory-picker-modal.component.html:50",
+   "flow": "click-directorypickermodalcomponent-goback"
+  },
+  {
+   "id": "K027",
+   "kind": "click",
+   "name": "Not Implemented!",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_components/manage-smart-filters/manage-smart-filters.component.html:27",
+   "flow": "click-managesmartfilterscomponent-handleactioncallback"
+  },
+  {
+   "id": "K028",
+   "kind": "click",
+   "name": "addDevice",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/manage-devices/manage-devices.component.html:6",
+   "flow": "click-managedevicescomponent-adddevice"
+  },
+  {
+   "id": "K029",
+   "kind": "click",
+   "name": "addExternalSourceToStream",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_components/customize-sidenav-streams/customize-sidenav-streams.component.html:76",
+   "flow": "click-customizesidenavstreamscomponent-addexternalsourcetostream"
+  },
+  {
+   "id": "K030",
+   "kind": "click",
+   "name": "addFilterToStream",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_components/customize-dashboard-streams/customize-dashboard-streams.component.html:22",
+   "flow": "click-customizedashboardstreamscomponent-addfiltertostream"
+  },
+  {
+   "id": "K031",
+   "kind": "click",
+   "name": "addFilterToStream",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_components/customize-sidenav-streams/customize-sidenav-streams.component.html:53",
+   "flow": "click-customizesidenavstreamscomponent-addfiltertostream"
+  },
+  {
+   "id": "K032",
+   "kind": "click",
+   "name": "applyBulkAction",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-library/manage-library.component.html:25",
+   "flow": "click-managelibrarycomponent-applybulkaction"
+  },
+  {
+   "id": "K033",
+   "kind": "click",
+   "name": "applyTheme",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/theme-manager/theme-manager.component.html:79",
+   "flow": "click-thememanagercomponent-applytheme"
+  },
+  {
+   "id": "K034",
+   "kind": "click",
+   "name": "backfillAndRedirect",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/kavita-plus-connect-providers/kavita-plus-connect-providers.component.html:41",
+   "flow": "click-kavitaplusconnectproviderscomponent-backfillandredirect"
+  },
+  {
+   "id": "K035",
+   "kind": "click",
+   "name": "backfillEvents",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/manage-scrobble-providers/manage-scrobble-providers.component.html:37",
+   "flow": "click-managescrobbleproviderscomponent-backfillevents"
+  },
+  {
+   "id": "K036",
+   "kind": "click",
+   "name": "cancelLicense",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/cancel-license/cancel-license.component.html:70",
+   "flow": "click-cancellicensecomponent-cancellicense"
+  },
+  {
+   "id": "K037",
+   "kind": "click",
+   "name": "clear",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/manage-scrobble-errors/manage-scrobble-errors.component.html:10",
+   "flow": "click-managescrobbleerrorscomponent-clear"
+  },
+  {
+   "id": "K038",
+   "kind": "click",
+   "name": "clearAll",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-media-issues/manage-media-issues.component.html:10",
+   "flow": "click-managemediaissuescomponent-clearall"
+  },
+  {
+   "id": "K039",
+   "kind": "click",
+   "name": "clearOidcLink",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/account-settings/account-settings.component.html:21",
+   "flow": "click-accountsettingscomponent-clearoidclink"
+  },
+  {
+   "id": "K040",
+   "kind": "click",
+   "name": "delete",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_components/customize-dashboard-streams/customize-dashboard-streams.component.html:7",
+   "flow": "click-customizedashboardstreamscomponent-delete"
+  },
+  {
+   "id": "K041",
+   "kind": "click",
+   "name": "delete",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_components/customize-sidenav-streams/customize-sidenav-streams.component.html:36",
+   "flow": "click-customizesidenavstreamscomponent-delete"
+  },
+  {
+   "id": "K042",
+   "kind": "click",
+   "name": "delete",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_components/edit-external-source-item/edit-external-source-item.component.html:18",
+   "flow": "click-editexternalsourceitemcomponent-delete"
+  },
+  {
+   "id": "K043",
+   "kind": "click",
+   "name": "delete",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/manage-auth-keys/manage-auth-keys.component.html:117",
+   "flow": "click-manageauthkeyscomponent-delete"
+  },
+  {
+   "id": "K044",
+   "kind": "click",
+   "name": "deleteDevice",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/manage-devices/manage-devices.component.html:71",
+   "flow": "click-managedevicescomponent-deletedevice"
+  },
+  {
+   "id": "K045",
+   "kind": "click",
+   "name": "deleteFamily",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/font-manager/font-manager/font-manager.component.html:93",
+   "flow": "click-fontmanagercomponent-deletefamily"
+  },
+  {
+   "id": "K046",
+   "kind": "click",
+   "name": "deleteLibrary",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-library/manage-library.component.html:160",
+   "flow": "click-managelibrarycomponent-deletelibrary"
+  },
+  {
+   "id": "K047",
+   "kind": "click",
+   "name": "deleteLicense",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/_modals/manage-license-key-modal/manage-license-key-modal.component.html:13",
+   "flow": "click-managelicensekeymodalcomponent-deletelicense"
+  },
+  {
+   "id": "K048",
+   "kind": "click",
+   "name": "deleteList",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/cbl-manager/cbl-manager.component.html:104",
+   "flow": "click-cblmanagercomponent-deletelist"
+  },
+  {
+   "id": "K049",
+   "kind": "click",
+   "name": "deleteRule",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/manage-remap-rules/manage-remap-rules.component.html:97",
+   "flow": "click-manageremaprulescomponent-deleterule"
+  },
+  {
+   "id": "K050",
+   "kind": "click",
+   "name": "deleteRule",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/manage-remap-rules-modal/manage-remap-rules-modal.component.html:50",
+   "flow": "click-manageremaprulesmodalcomponent-deleterule"
+  },
+  {
+   "id": "K051",
+   "kind": "click",
+   "name": "deleteScrobbleErrors",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/kavitaplus-audit-entry/kavita-plus-audit-entry.component.html:81",
+   "flow": "click-kavitaplusauditentrycomponent-deletescrobbleerrors"
+  },
+  {
+   "id": "K052",
+   "kind": "click",
+   "name": "deleteTheme",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/theme-manager/theme-manager.component.html:74",
+   "flow": "click-thememanagercomponent-deletetheme"
+  },
+  {
+   "id": "K053",
+   "kind": "click",
+   "name": "deleteUser",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-users/manage-users.component.html:181",
+   "flow": "click-manageuserscomponent-deleteuser"
+  },
+  {
+   "id": "K054",
+   "kind": "click",
+   "name": "demoteRule",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/manage-remap-rules/manage-remap-rules.component.html:251",
+   "flow": "click-manageremaprulescomponent-demoterule"
+  },
+  {
+   "id": "K055",
+   "kind": "click",
+   "name": "disconnectScrobbleProvider",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/manage-scrobble-providers/manage-scrobble-providers.component.html:43",
+   "flow": "click-managescrobbleproviderscomponent-disconnectscrobbleprovider"
+  },
+  {
+   "id": "K056",
+   "kind": "click",
+   "name": "dismiss",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-media-issues/manage-media-issues.component.html:56",
+   "flow": "click-managemediaissuescomponent-dismiss"
+  },
+  {
+   "id": "K057",
+   "kind": "click",
+   "name": "downloadTheme",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/theme-manager/theme-manager.component.html:81",
+   "flow": "click-thememanagercomponent-downloadtheme"
+  },
+  {
+   "id": "K058",
+   "kind": "click",
+   "name": "dropped",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/cbl-manager/cbl-manager.component.html:82",
+   "flow": "click-cblmanagercomponent-dropped"
+  },
+  {
+   "id": "K059",
+   "kind": "click",
+   "name": "dropped",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/font-manager/font-manager/font-manager.component.html:29",
+   "flow": "click-fontmanagercomponent-dropped"
+  },
+  {
+   "id": "K060",
+   "kind": "click",
+   "name": "dropped",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/theme-manager/theme-manager.component.html:62",
+   "flow": "click-thememanagercomponent-dropped"
+  },
+  {
+   "id": "K061",
+   "kind": "click",
+   "name": "export",
+   "area": "Customize",
+   "start": "UI/Web/src/app/statistics/_components/file-breakdown-stats/file-breakdown-stats.component.html:58",
+   "flow": "click-filebreakdownstatscomponent-export"
+  },
+  {
+   "id": "K062",
+   "kind": "click",
+   "name": "finalizeAll",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/import-cbl-modal/import-cbl-modal.component.html:296",
+   "flow": "click-importcblmodalcomponent-finalizeall"
+  },
+  {
+   "id": "K063",
+   "kind": "click",
+   "name": "fixMatch",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/manage-matched-metadata/manage-matched-metadata.component.html:147",
+   "flow": "click-managematchedmetadatacomponent-fixmatch"
+  },
+  {
+   "id": "K064",
+   "kind": "click",
+   "name": "fixMatch",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/manage-scrobble-errors/manage-scrobble-errors.component.html:58",
+   "flow": "click-managescrobbleerrorscomponent-fixmatch"
+  },
+  {
+   "id": "K065",
+   "kind": "click",
+   "name": "forceCheckLicense",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/license-dashboard/license-dashboard.component.html:23",
+   "flow": "click-licensedashboardcomponent-forcechecklicense"
+  },
+  {
+   "id": "K066",
+   "kind": "click",
+   "name": "forceScan",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.html:299",
+   "flow": "click-librarysettingsmodalcomponent-forcescan"
+  },
+  {
+   "id": "K067",
+   "kind": "click",
+   "name": "generateEvents",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/manage-user-scrobble-provider-modal/manage-user-scrobble-provider-modal.component.html:104",
+   "flow": "click-manageuserscrobbleprovidermodalcomponent-generateevents"
+  },
+  {
+   "id": "K068",
+   "kind": "click",
+   "name": "handleBulkAction",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-library/manage-library.component.html:5",
+   "flow": "click-managelibrarycomponent-handlebulkaction"
+  },
+  {
+   "id": "K069",
+   "kind": "click",
+   "name": "handleCoverChanged",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.html:106",
+   "flow": "click-librarysettingsmodalcomponent-handlecoverchanged"
+  },
+  {
+   "id": "K070",
+   "kind": "click",
+   "name": "invite",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/invite-user/invite-user.component.html:70",
+   "flow": "click-inviteusercomponent-invite"
+  },
+  {
+   "id": "K071",
+   "kind": "click",
+   "name": "inviteUser",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-users/manage-users.component.html:3",
+   "flow": "click-manageuserscomponent-inviteuser"
+  },
+  {
+   "id": "K072",
+   "kind": "click",
+   "name": "load",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/scrobble-health/scrobble-health.component.html:16",
+   "flow": "click-scrobblehealthcomponent-load"
+  },
+  {
+   "id": "K073",
+   "kind": "click",
+   "name": "loadClientDevices",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/manage-devices/manage-devices.component.html:131",
+   "flow": "click-managedevicescomponent-loadclientdevices"
+  },
+  {
+   "id": "K074",
+   "kind": "click",
+   "name": "loadDevices",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/server-devices/server-devices.component.html:30",
+   "flow": "click-serverdevicescomponent-loaddevices"
+  },
+  {
+   "id": "K075",
+   "kind": "click",
+   "name": "loadMore",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/kavitaplus-activity/kavitaplus-activity.component.html:80",
+   "flow": "click-kavitaplusactivitycomponent-loadmore"
+  },
+  {
+   "id": "K076",
+   "kind": "click",
+   "name": "loadMore",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/manage-kavitaplus-activity/manage-kavitaplus-activity.component.html:146",
+   "flow": "click-managekavitaplusactivitycomponent-loadmore"
+  },
+  {
+   "id": "K077",
+   "kind": "click",
+   "name": "manualSyncReadingList",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/cbl-manager/cbl-manager.component.html:118",
+   "flow": "click-cblmanagercomponent-manualsyncreadinglist"
+  },
+  {
+   "id": "K078",
+   "kind": "click",
+   "name": "matchSeries",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/kavitaplus-audit-entry/kavita-plus-audit-entry.component.html:93",
+   "flow": "click-kavitaplusauditentrycomponent-matchseries"
+  },
+  {
+   "id": "K079",
+   "kind": "click",
+   "name": "navigateTo",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/browse-cbl-repo-modal/browse-cbl-repo-modal.component.html:26",
+   "flow": "click-browsecblrepomodalcomponent-navigateto"
+  },
+  {
+   "id": "K080",
+   "kind": "click",
+   "name": "navigateTo",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/_modals/directory-picker/directory-picker-modal.component.html:31",
+   "flow": "click-directorypickermodalcomponent-navigateto"
+  },
+  {
+   "id": "K081",
+   "kind": "click",
+   "name": "nextFile",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/import-cbl-modal/import-cbl-modal.component.html:276",
+   "flow": "click-importcblmodalcomponent-nextfile"
+  },
+  {
+   "id": "K082",
+   "kind": "click",
+   "name": "nextStep",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/import-mappings/import-mappings.component.html:139",
+   "flow": "click-importmappingscomponent-nextstep"
+  },
+  {
+   "id": "K083",
+   "kind": "click",
+   "name": "onCandidateSelected",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/import-cbl-modal/import-cbl-modal.component.html:173",
+   "flow": "click-importcblmodalcomponent-oncandidateselected"
+  },
+  {
+   "id": "K084",
+   "kind": "click",
+   "name": "onChapterTypeaheadSelected",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/import-cbl-modal/import-cbl-modal.component.html:194",
+   "flow": "click-importcblmodalcomponent-onchaptertypeaheadselected"
+  },
+  {
+   "id": "K085",
+   "kind": "click",
+   "name": "onPageChange",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/manage-matched-metadata/manage-matched-metadata.component.html:71",
+   "flow": "click-managematchedmetadatacomponent-onpagechange"
+  },
+  {
+   "id": "K086",
+   "kind": "click",
+   "name": "onProviderFilterChange",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/manage-kavitaplus-activity/manage-kavitaplus-activity.component.html:88",
+   "flow": "click-managekavitaplusactivitycomponent-onproviderfilterchange"
+  },
+  {
+   "id": "K087",
+   "kind": "click",
+   "name": "onSearchChange",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/manage-kavitaplus-activity/manage-kavitaplus-activity.component.html:133",
+   "flow": "click-managekavitaplusactivitycomponent-onsearchchange"
+  },
+  {
+   "id": "K088",
+   "kind": "click",
+   "name": "onSeriesTypeaheadSelected",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/import-cbl-modal/import-cbl-modal.component.html:126",
+   "flow": "click-importcblmodalcomponent-onseriestypeaheadselected"
+  },
+  {
+   "id": "K089",
+   "kind": "click",
+   "name": "onStatusFilterChange",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/manage-kavitaplus-activity/manage-kavitaplus-activity.component.html:98",
+   "flow": "click-managekavitaplusactivitycomponent-onstatusfilterchange"
+  },
+  {
+   "id": "K090",
+   "kind": "click",
+   "name": "onSubjectFilterChange",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/manage-kavitaplus-activity/manage-kavitaplus-activity.component.html:107",
+   "flow": "click-managekavitaplusactivitycomponent-onsubjectfilterchange"
+  },
+  {
+   "id": "K091",
+   "kind": "click",
+   "name": "onTimeFilterChange",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/manage-kavitaplus-activity/manage-kavitaplus-activity.component.html:125",
+   "flow": "click-managekavitaplusactivitycomponent-ontimefilterchange"
+  },
+  {
+   "id": "K092",
+   "kind": "click",
+   "name": "onUserFilterChange",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/manage-kavitaplus-activity/manage-kavitaplus-activity.component.html:116",
+   "flow": "click-managekavitaplusactivitycomponent-onuserfilterchange"
+  },
+  {
+   "id": "K093",
+   "kind": "click",
+   "name": "openBrowseModal",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/cbl-manager/cbl-manager.component.html:9",
+   "flow": "click-cblmanagercomponent-openbrowsemodal"
+  },
+  {
+   "id": "K094",
+   "kind": "click",
+   "name": "openDirectoryPicker",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.html:84",
+   "flow": "click-librarysettingsmodalcomponent-opendirectorypicker"
+  },
+  {
+   "id": "K095",
+   "kind": "click",
+   "name": "openEditUser",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-users/manage-users.component.html:185",
+   "flow": "click-manageuserscomponent-openedituser"
+  },
+  {
+   "id": "K096",
+   "kind": "click",
+   "name": "openFolder",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/browse-cbl-repo-modal/browse-cbl-repo-modal.component.html:85",
+   "flow": "click-browsecblrepomodalcomponent-openfolder"
+  },
+  {
+   "id": "K097",
+   "kind": "click",
+   "name": "openRemapRulesModal",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/import-cbl-modal/import-cbl-modal.component.html:264",
+   "flow": "click-importcblmodalcomponent-openremaprulesmodal"
+  },
+  {
+   "id": "K098",
+   "kind": "click",
+   "name": "orderUpdated",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_components/customize-dashboard-streams/customize-dashboard-streams.component.html:2",
+   "flow": "click-customizedashboardstreamscomponent-orderupdated"
+  },
+  {
+   "id": "K099",
+   "kind": "click",
+   "name": "orderUpdated",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_components/customize-sidenav-streams/customize-sidenav-streams.component.html:27",
+   "flow": "click-customizesidenavstreamscomponent-orderupdated"
+  },
+  {
+   "id": "K100",
+   "kind": "click",
+   "name": "previousFile",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/import-cbl-modal/import-cbl-modal.component.html:272",
+   "flow": "click-importcblmodalcomponent-previousfile"
+  },
+  {
+   "id": "K101",
+   "kind": "click",
+   "name": "promoteRule",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/manage-remap-rules/manage-remap-rules.component.html:102",
+   "flow": "click-manageremaprulescomponent-promoterule"
+  },
+  {
+   "id": "K102",
+   "kind": "click",
+   "name": "removeFolder",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.html:77",
+   "flow": "click-librarysettingsmodalcomponent-removefolder"
+  },
+  {
+   "id": "K103",
+   "kind": "click",
+   "name": "removeHold",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/user-holds/scrobbling-holds.component.html:45",
+   "flow": "click-scrobblingholdscomponent-removehold"
+  },
+  {
+   "id": "K104",
+   "kind": "click",
+   "name": "resendEmail",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-users/manage-users.component.html:190",
+   "flow": "click-manageuserscomponent-resendemail"
+  },
+  {
+   "id": "K105",
+   "kind": "click",
+   "name": "reset",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.html:301",
+   "flow": "click-librarysettingsmodalcomponent-reset"
+  },
+  {
+   "id": "K106",
+   "kind": "click",
+   "name": "resetBaseUrl",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:41",
+   "flow": "click-managesettingscomponent-resetbaseurl"
+  },
+  {
+   "id": "K107",
+   "kind": "click",
+   "name": "resetIPAddresses",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:61",
+   "flow": "click-managesettingscomponent-resetipaddresses"
+  },
+  {
+   "id": "K108",
+   "kind": "click",
+   "name": "resetIds",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-open-idconnect/manage-open-idconnect.component.html:68",
+   "flow": "click-manageopenidconnectcomponent-resetids"
+  },
+  {
+   "id": "K109",
+   "kind": "click",
+   "name": "resetLicense",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/_modals/manage-license-key-modal/manage-license-key-modal.component.html:19",
+   "flow": "click-managelicensekeymodalcomponent-resetlicense"
+  },
+  {
+   "id": "K110",
+   "kind": "click",
+   "name": "resetToDefaults",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:4",
+   "flow": "click-managesettingscomponent-resettodefaults"
+  },
+  {
+   "id": "K111",
+   "kind": "click",
+   "name": "restore",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-media-issues/manage-media-issues.component.html:71",
+   "flow": "click-managemediaissuescomponent-restore"
+  },
+  {
+   "id": "K112",
+   "kind": "click",
+   "name": "retryScrobbleEvent",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/kavitaplus-activity/kavitaplus-activity.component.html:71",
+   "flow": "click-kavitaplusactivitycomponent-retryscrobbleevent"
+  },
+  {
+   "id": "K113",
+   "kind": "click",
+   "name": "save",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/create-auth-key/create-auth-key.component.html:53",
+   "flow": "click-createauthkeycomponent-save"
+  },
+  {
+   "id": "K114",
+   "kind": "click",
+   "name": "save",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/edit-device-modal/edit-device-modal.component.html:45",
+   "flow": "click-editdevicemodalcomponent-save"
+  },
+  {
+   "id": "K115",
+   "kind": "click",
+   "name": "save",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/manage-remap-rules/edit-remap-rule/edit-remap-rule.component.html:70",
+   "flow": "click-editremaprulecomponent-save"
+  },
+  {
+   "id": "K116",
+   "kind": "click",
+   "name": "save",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/edit-user/edit-user.component.html:87",
+   "flow": "click-editusercomponent-save"
+  },
+  {
+   "id": "K117",
+   "kind": "click",
+   "name": "save",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.html:307",
+   "flow": "click-librarysettingsmodalcomponent-save"
+  },
+  {
+   "id": "K118",
+   "kind": "click",
+   "name": "save",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/_modals/manage-license-key-modal/manage-license-key-modal.component.html:21",
+   "flow": "click-managelicensekeymodalcomponent-save"
+  },
+  {
+   "id": "K119",
+   "kind": "click",
+   "name": "save",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-open-idconnect/manage-open-idconnect.component.html:71",
+   "flow": "click-manageopenidconnectcomponent-save"
+  },
+  {
+   "id": "K120",
+   "kind": "click",
+   "name": "save",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/manage-user-scrobble-provider-modal/manage-user-scrobble-provider-modal.component.html:106",
+   "flow": "click-manageuserscrobbleprovidermodalcomponent-save"
+  },
+  {
+   "id": "K121",
+   "kind": "click",
+   "name": "save",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/register-license-key/register-license-key.component.html:14",
+   "flow": "click-registerlicensekeycomponent-save"
+  },
+  {
+   "id": "K122",
+   "kind": "click",
+   "name": "save",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/_modals/reset-password-modal/reset-password-modal.component.html:16",
+   "flow": "click-resetpasswordmodalcomponent-save"
+  },
+  {
+   "id": "K123",
+   "kind": "click",
+   "name": "saveForm",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/change-age-restriction/change-age-restriction.component.html:16",
+   "flow": "click-changeagerestrictioncomponent-saveform"
+  },
+  {
+   "id": "K124",
+   "kind": "click",
+   "name": "saveForm",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/change-email/change-email.component.html:44",
+   "flow": "click-changeemailcomponent-saveform"
+  },
+  {
+   "id": "K125",
+   "kind": "click",
+   "name": "saveForm",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/change-username/change-username.component.html:20",
+   "flow": "click-changeusernamecomponent-saveform"
+  },
+  {
+   "id": "K126",
+   "kind": "click",
+   "name": "saveForm",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_components/edit-external-source-item/edit-external-source-item.component.html:61",
+   "flow": "click-editexternalsourceitemcomponent-saveform"
+  },
+  {
+   "id": "K127",
+   "kind": "click",
+   "name": "saveName",
+   "area": "Customize",
+   "start": "UI/Web/src/app/_single-module/client-device-card/client-device-card.component.html:11",
+   "flow": "click-clientdevicecardcomponent-savename"
+  },
+  {
+   "id": "K128",
+   "kind": "click",
+   "name": "savePasswordForm",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/change-password/change-password.component.html:49",
+   "flow": "click-changepasswordcomponent-savepasswordform"
+  },
+  {
+   "id": "K129",
+   "kind": "click",
+   "name": "scanLibrary",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-library/manage-library.component.html:156",
+   "flow": "click-managelibrarycomponent-scanlibrary"
+  },
+  {
+   "id": "K130",
+   "kind": "click",
+   "name": "selectNode",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/_modals/directory-picker/directory-picker-modal.component.html:55",
+   "flow": "click-directorypickermodalcomponent-selectnode"
+  },
+  {
+   "id": "K131",
+   "kind": "click",
+   "name": "sendCode",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/change-license-email/change-license-email.component.html:47",
+   "flow": "click-changelicenseemailcomponent-sendcode"
+  },
+  {
+   "id": "K132",
+   "kind": "click",
+   "name": "sendLink",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/renew-license/renew-license.component.html:107",
+   "flow": "click-renewlicensecomponent-sendlink"
+  },
+  {
+   "id": "K133",
+   "kind": "click",
+   "name": "setCategoryFilter",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/kavita-plus/manage-kavitaplus-activity/manage-kavitaplus-activity.component.html:70",
+   "flow": "click-managekavitaplusactivitycomponent-setcategoryfilter"
+  },
+  {
+   "id": "K134",
+   "kind": "click",
+   "name": "setDevices",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/manage-reading-profiles/manage-reading-profiles.component.html:59",
+   "flow": "click-managereadingprofilescomponent-setdevices"
+  },
+  {
+   "id": "K135",
+   "kind": "click",
+   "name": "setup",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-users/manage-users.component.html:194",
+   "flow": "click-manageuserscomponent-setup"
+  },
+  {
+   "id": "K136",
+   "kind": "click",
+   "name": "submit",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-metadata-mappings/run-metadata-mappings-modal/run-metadata-mappings-modal.component.html:84",
+   "flow": "click-runmetadatamappingsmodalcomponent-submit"
+  },
+  {
+   "id": "K137",
+   "kind": "click",
+   "name": "syncReadingList",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/cbl-manager/cbl-manager.component.html:111",
+   "flow": "click-cblmanagercomponent-syncreadinglist"
+  },
+  {
+   "id": "K138",
+   "kind": "click",
+   "name": "test",
+   "area": "Customize",
+   "start": "UI/Web/src/app/admin/manage-email-settings/manage-email-settings.component.html:4",
+   "flow": "click-manageemailsettingscomponent-test"
+  },
+  {
+   "id": "K139",
+   "kind": "click",
+   "name": "updateDefault",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/theme-manager/theme-manager.component.html:77",
+   "flow": "click-thememanagercomponent-updatedefault"
+  },
+  {
+   "id": "K140",
+   "kind": "click",
+   "name": "updateVisibility",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_components/customize-dashboard-streams/customize-dashboard-streams.component.html:6",
+   "flow": "click-customizedashboardstreamscomponent-updatevisibility"
+  },
+  {
+   "id": "K141",
+   "kind": "click",
+   "name": "updateVisibility",
+   "area": "Customize",
+   "start": "UI/Web/src/app/sidenav/_components/customize-sidenav-streams/customize-sidenav-streams.component.html:35",
+   "flow": "click-customizesidenavstreamscomponent-updatevisibility"
+  },
+  {
+   "id": "K142",
+   "kind": "click",
+   "name": "uploadFromUrl",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/cbl-manager/cbl-manager.component.html:83",
+   "flow": "click-cblmanagercomponent-uploadfromurl"
+  },
+  {
+   "id": "K143",
+   "kind": "click",
+   "name": "uploadFromUrl",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/font-manager/font-manager/font-manager.component.html:30",
+   "flow": "click-fontmanagercomponent-uploadfromurl"
+  },
+  {
+   "id": "K144",
+   "kind": "click",
+   "name": "validateCurrentFile",
+   "area": "Customize",
+   "start": "UI/Web/src/app/user-settings/_modals/import-cbl-modal/import-cbl-modal.component.html:46",
+   "flow": "click-importcblmodalcomponent-validatecurrentfile"
+  },
+  {
+   "id": "K145",
+   "kind": "click",
+   "name": "handleSectionClick",
+   "area": "Home",
+   "start": "UI/Web/src/app/dashboard/_components/dashboard.component.html:80",
+   "flow": "click-dashboardcomponent-handlesectionclick"
+  },
+  {
+   "id": "K146",
+   "kind": "screen",
+   "name": "/lists",
+   "area": "Reading Lists",
+   "start": "UI/Web/src/app/app-routing.module.ts:70",
+   "flow": "screen-opens-lists"
+  },
+  {
+   "id": "K147",
+   "kind": "screen",
+   "name": "/lists/:readingListId",
+   "area": "Reading Lists",
+   "start": "UI/Web/src/app/app-routing.module.ts:79",
+   "flow": "screen-opens-lists-readinglistid"
+  },
+  {
+   "id": "K148",
+   "kind": "click",
+   "name": "editReadingList",
+   "area": "Reading Lists",
+   "start": "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:73",
+   "flow": "click-readinglistdetailcomponent-editreadinglist"
+  },
+  {
+   "id": "K149",
+   "kind": "click",
+   "name": "loadPage",
+   "area": "Reading Lists",
+   "start": "UI/Web/src/app/reading-list/_components/reading-lists/reading-lists.component.html:35",
+   "flow": "click-readinglistscomponent-loadpage"
+  },
+  {
+   "id": "K150",
+   "kind": "click",
+   "name": "orderUpdated",
+   "area": "Reading Lists",
+   "start": "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:226",
+   "flow": "click-readinglistdetailcomponent-orderupdated"
+  },
+  {
+   "id": "K151",
+   "kind": "click",
+   "name": "removeItem",
+   "area": "Reading Lists",
+   "start": "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:227",
+   "flow": "click-readinglistdetailcomponent-removeitem"
+  },
+  {
+   "id": "K152",
+   "kind": "click",
+   "name": "removeRead",
+   "area": "Reading Lists",
+   "start": "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:176",
+   "flow": "click-readinglistdetailcomponent-removeread"
+  },
+  {
+   "id": "K153",
+   "kind": "click",
+   "name": "save",
+   "area": "Reading Lists",
+   "start": "UI/Web/src/app/reading-list/_modals/edit-reading-list-modal/edit-reading-list-modal.component.html:145",
+   "flow": "click-editreadinglistmodalcomponent-save"
+  },
+  {
+   "id": "K154",
+   "kind": "click",
+   "name": "updateFilter",
+   "area": "Reading Lists",
+   "start": "UI/Web/src/app/reading-list/_components/reading-lists/reading-lists.component.html:25",
+   "flow": "click-readinglistscomponent-updatefilter"
+  },
+  {
+   "id": "K155",
+   "kind": "screen",
+   "name": "/want-to-read",
+   "area": "Want To Read",
+   "start": "UI/Web/src/app/_routes/want-to-read-routing.module.ts:6",
+   "flow": "screen-opens-want-to-read"
+  },
+  {
+   "id": "K156",
+   "kind": "click",
+   "name": "updateFilter",
+   "area": "Want To Read",
+   "start": "UI/Web/src/app/want-to-read/_components/want-to-read/want-to-read.component.html:24",
+   "flow": "click-wanttoreadcomponent-updatefilter"
+  },
+  {
+   "id": "K157",
+   "kind": "click",
+   "name": "{{actionable.remove-from-want-to-read}}",
+   "area": "Want To Read",
+   "start": "UI/Web/src/app/_single-module/series-preview-drawer/series-preview-drawer.component.html:102",
+   "flow": "click-seriespreviewdrawercomponent-togglewanttoread"
+  },
+  {
+   "id": "K158",
+   "kind": "screen",
+   "name": "/browse/annotations",
+   "area": "all-annotations",
+   "start": "UI/Web/src/app/_routes/browse-routing.module.ts:25",
+   "flow": "screen-opens-browse-annotations"
+  },
+  {
+   "id": "K159",
+   "kind": "click",
+   "name": "exportFilter",
+   "area": "all-annotations",
+   "start": "UI/Web/src/app/all-annotations/all-annotations.component.html:30",
+   "flow": "click-allannotationscomponent-exportfilter"
+  },
+  {
+   "id": "K160",
+   "kind": "click",
+   "name": "updateFilter",
+   "area": "all-annotations",
+   "start": "UI/Web/src/app/all-annotations/all-annotations.component.html:22",
+   "flow": "click-allannotationscomponent-updatefilter"
+  },
+  {
+   "id": "K161",
+   "kind": "screen",
+   "name": "/all-filters",
+   "area": "all-filters",
+   "start": "UI/Web/src/app/_routes/all-filters-routing.module.ts:6",
+   "flow": "screen-opens-all-filters"
+  },
+  {
+   "id": "K162",
+   "kind": "click",
+   "name": "save",
+   "area": "all-filters",
+   "start": "UI/Web/src/app/sidenav/_components/edit-smart-filter-modal/edit-smart-filter-modal.component.html:22",
+   "flow": "click-editsmartfiltermodalcomponent-save"
+  },
+  {
+   "id": "K163",
+   "kind": "screen",
+   "name": "/library/:libraryId/series/:seriesId/book/:chapterId",
+   "area": "book-reader",
+   "start": "UI/Web/src/app/_routes/book-reader.router.module.ts:6",
+   "flow": "screen-opens-library-libraryid-series-seriesid-book-chapterid"
+  },
+  {
+   "id": "K164",
+   "kind": "click",
+   "name": "createAnnotation",
+   "area": "book-reader",
+   "start": "UI/Web/src/app/book-reader/_components/_drawers/view-edit-annotation-drawer/view-edit-annotation-drawer.component.html:51",
+   "flow": "click-vieweditannotationdrawercomponent-createannotation"
+  },
+  {
+   "id": "K165",
+   "kind": "click",
+   "name": "createNewProfileFromImplicit",
+   "area": "book-reader",
+   "start": "UI/Web/src/app/book-reader/_components/reader-settings/reader-settings.component.html:215",
+   "flow": "click-readersettingscomponent-createnewprofilefromimplicit"
+  },
+  {
+   "id": "K166",
+   "kind": "click",
+   "name": "createPTOC",
+   "area": "book-reader",
+   "start": "UI/Web/src/app/book-reader/_components/book-line-overlay/book-line-overlay.component.html:48",
+   "flow": "click-booklineoverlaycomponent-createptoc"
+  },
+  {
+   "id": "K167",
+   "kind": "click",
+   "name": "delete",
+   "area": "book-reader",
+   "start": "UI/Web/src/app/book-reader/_components/_drawers/view-edit-annotation-drawer/view-edit-annotation-drawer.component.html:75",
+   "flow": "click-vieweditannotationdrawercomponent-delete"
+  },
+  {
+   "id": "K168",
+   "kind": "click",
+   "name": "deleteAnnotation",
+   "area": "book-reader",
+   "start": "UI/Web/src/app/book-reader/_components/_annotations/annotation-card/annotation-card.component.html:54",
+   "flow": "click-annotationcardcomponent-deleteannotation"
+  },
+  {
+   "id": "K169",
+   "kind": "click",
+   "name": "deleteBookmark",
+   "area": "book-reader",
+   "start": "UI/Web/src/app/book-reader/_components/_drawers/view-bookmarks-drawer/view-bookmark-drawer.component.html:40",
+   "flow": "click-viewbookmarkdrawercomponent-deletebookmark"
+  },
+  {
+   "id": "K170",
+   "kind": "click",
+   "name": "handleDelete",
+   "area": "book-reader",
+   "start": "UI/Web/src/app/book-reader/_components/_drawers/view-annotations-drawer/view-annotations-drawer.component.html:40",
+   "flow": "click-viewannotationsdrawercomponent-handledelete"
+  },
+  {
+   "id": "K171",
+   "kind": "click",
+   "name": "handleLikeChange",
+   "area": "book-reader",
+   "start": "UI/Web/src/app/book-reader/_components/_annotations/annotation-likes/annotation-likes.component.html:3",
+   "flow": "click-annotationlikescomponent-handlelikechange"
+  },
+  {
+   "id": "K172",
+   "kind": "click",
+   "name": "handleSlotColourChange",
+   "area": "book-reader",
+   "start": "UI/Web/src/app/book-reader/_components/_annotations/highlight-bar/highlight-bar.component.html:30",
+   "flow": "click-highlightbarcomponent-handleslotcolourchange"
+  },
+  {
+   "id": "K173",
+   "kind": "click",
+   "name": "movePage",
+   "area": "book-reader",
+   "start": "UI/Web/src/app/book-reader/_components/book-reader/book-reader.component.html:24",
+   "flow": "click-bookreadercomponent-movepage"
+  },
+  {
+   "id": "K174",
+   "kind": "click",
+   "name": "removeBookmark",
+   "area": "book-reader",
+   "start": "UI/Web/src/app/book-reader/_components/personal-table-of-contents/personal-table-of-contents.component.html:15",
+   "flow": "click-personaltableofcontentscomponent-removebookmark"
+  },
+  {
+   "id": "K175",
+   "kind": "click",
+   "name": "updateParentPref",
+   "area": "book-reader",
+   "start": "UI/Web/src/app/book-reader/_components/reader-settings/reader-settings.component.html:209",
+   "flow": "click-readersettingscomponent-updateparentpref"
+  },
+  {
+   "id": "K176",
+   "kind": "click",
+   "name": "viewBookmarkImages",
+   "area": "book-reader",
+   "start": "UI/Web/src/app/book-reader/_components/book-reader/book-reader.component.html:108",
+   "flow": "click-bookreadercomponent-viewbookmarkimages"
+  },
+  {
+   "id": "K177",
+   "kind": "screen",
+   "name": "/browse/authors",
+   "area": "browse",
+   "start": "UI/Web/src/app/_routes/browse-routing.module.ts:11",
+   "flow": "screen-opens-browse-authors"
+  },
+  {
+   "id": "K178",
+   "kind": "screen",
+   "name": "/browse/genres",
+   "area": "browse-genres",
+   "start": "UI/Web/src/app/_routes/browse-routing.module.ts:23",
+   "flow": "screen-opens-browse-genres"
+  },
+  {
+   "id": "K179",
+   "kind": "screen",
+   "name": "/browse/tags",
+   "area": "browse-tags",
+   "start": "UI/Web/src/app/_routes/browse-routing.module.ts:24",
+   "flow": "screen-opens-browse-tags"
+  },
+  {
+   "id": "K180",
+   "kind": "screen",
+   "name": "/library/:libraryId/series/:seriesId/chapter/:chapterId",
+   "area": "chapter-detail",
+   "start": "UI/Web/src/app/app-routing.module.ts:111",
+   "flow": "screen-opens-library-libraryid-series-seriesid-chapter-chapterid"
+  },
+  {
+   "id": "K181",
+   "kind": "click",
+   "name": "handleChapterActions",
+   "area": "chapter-detail",
+   "start": "UI/Web/src/app/chapter-detail/chapter-detail.component.html:87",
+   "flow": "click-chapterdetailcomponent-handlechapteractions"
+  },
+  {
+   "id": "K182",
+   "kind": "click",
+   "name": "handleRelatedReload",
+   "area": "chapter-detail",
+   "start": "UI/Web/src/app/chapter-detail/chapter-detail.component.html:226",
+   "flow": "click-chapterdetailcomponent-handlerelatedreload"
+  },
+  {
+   "id": "K183",
+   "kind": "click",
+   "name": "openEditModal",
+   "area": "chapter-detail",
+   "start": "UI/Web/src/app/chapter-detail/chapter-detail.component.html:76",
+   "flow": "click-chapterdetailcomponent-openeditmodal"
+  },
+  {
+   "id": "K184",
+   "kind": "click",
+   "name": "read",
+   "area": "chapter-detail",
+   "start": "UI/Web/src/app/chapter-detail/chapter-detail.component.html:12",
+   "flow": "click-chapterdetailcomponent-read"
+  },
+  {
+   "id": "K185",
+   "kind": "click",
+   "name": "runTask",
+   "area": "chapter-detail",
+   "start": "UI/Web/src/app/_single-module/edit-chapter-modal/edit-chapter-modal.component.html:577",
+   "flow": "click-editchaptermodalcomponent-runtask"
+  },
+  {
+   "id": "K186",
+   "kind": "click",
+   "name": "save",
+   "area": "chapter-detail",
+   "start": "UI/Web/src/app/_single-module/edit-chapter-modal/edit-chapter-modal.component.html:10",
+   "flow": "click-editchaptermodalcomponent-save"
+  },
+  {
+   "id": "K187",
+   "kind": "screen",
+   "name": "/library/:libraryId",
+   "area": "library-detail",
+   "start": "UI/Web/src/app/_routes/library-detail-routing.module.ts:8",
+   "flow": "screen-opens-library-libraryid"
+  },
+  {
+   "id": "K188",
+   "kind": "click",
+   "name": "loadPage",
+   "area": "library-detail",
+   "start": "UI/Web/src/app/library-detail/library-detail.component.html:32",
+   "flow": "click-librarydetailcomponent-loadpage"
+  },
+  {
+   "id": "K189",
+   "kind": "click",
+   "name": "updateFilter",
+   "area": "library-detail",
+   "start": "UI/Web/src/app/library-detail/library-detail.component.html:24",
+   "flow": "click-librarydetailcomponent-updatefilter"
+  },
+  {
+   "id": "K190",
+   "kind": "screen",
+   "name": "/library/:libraryId/series/:seriesId/manga/:chapterId",
+   "area": "manga-reader",
+   "start": "UI/Web/src/app/_routes/manga-reader.router.module.ts:6",
+   "flow": "screen-opens-library-libraryid-series-seriesid-manga-chapterid"
+  },
+  {
+   "id": "K191",
+   "kind": "screen",
+   "name": "/library/:libraryId/series/:seriesId/manga/:chapterId/list/:listId",
+   "area": "manga-reader",
+   "start": "UI/Web/src/app/_routes/manga-reader.router.module.ts:13",
+   "flow": "screen-opens-library-libraryid-series-seriesid-manga-chapterid-list-listid"
+  },
+  {
+   "id": "K192",
+   "kind": "click",
+   "name": "bookmarkPage",
+   "area": "manga-reader",
+   "start": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:41",
+   "flow": "click-mangareadercomponent-bookmarkpage"
+  },
+  {
+   "id": "K193",
+   "kind": "click",
+   "name": "createNewProfileFromImplicit",
+   "area": "manga-reader",
+   "start": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:310",
+   "flow": "click-mangareadercomponent-createnewprofilefromimplicit"
+  },
+  {
+   "id": "K194",
+   "kind": "click",
+   "name": "handlePageChange",
+   "area": "manga-reader",
+   "start": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:66",
+   "flow": "click-mangareadercomponent-handlepagechange"
+  },
+  {
+   "id": "K195",
+   "kind": "click",
+   "name": "handleWebtoonPageChange",
+   "area": "manga-reader",
+   "start": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:121",
+   "flow": "click-mangareadercomponent-handlewebtoonpagechange"
+  },
+  {
+   "id": "K196",
+   "kind": "click",
+   "name": "loadNextChapter",
+   "area": "manga-reader",
+   "start": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:124",
+   "flow": "click-mangareadercomponent-loadnextchapter"
+  },
+  {
+   "id": "K197",
+   "kind": "click",
+   "name": "loadPrevChapter",
+   "area": "manga-reader",
+   "start": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:125",
+   "flow": "click-mangareadercomponent-loadprevchapter"
+  },
+  {
+   "id": "K198",
+   "kind": "click",
+   "name": "onImageLoadError",
+   "area": "manga-reader",
+   "start": "UI/Web/src/app/manga-reader/_components/infinite-scroller/infinite-scroller.component.html:33",
+   "flow": "click-infinitescrollercomponent-onimageloaderror"
+  },
+  {
+   "id": "K199",
+   "kind": "click",
+   "name": "onSwipeEnd",
+   "area": "manga-reader",
+   "start": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:54",
+   "flow": "click-mangareadercomponent-onswipeend"
+  },
+  {
+   "id": "K200",
+   "kind": "click",
+   "name": "save",
+   "area": "manga-reader",
+   "start": "UI/Web/src/app/manga-reader/_components/rate-and-review-series-modal/rate-and-review-series-modal.component.html:24",
+   "flow": "click-rateandreviewseriesmodalcomponent-save"
+  },
+  {
+   "id": "K201",
+   "kind": "click",
+   "name": "sliderDragUpdate",
+   "area": "manga-reader",
+   "start": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:147",
+   "flow": "click-mangareadercomponent-sliderdragupdate"
+  },
+  {
+   "id": "K202",
+   "kind": "click",
+   "name": "updateParentPref",
+   "area": "manga-reader",
+   "start": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:304",
+   "flow": "click-mangareadercomponent-updateparentpref"
+  },
+  {
+   "id": "K203",
+   "kind": "click",
+   "name": "updateRating",
+   "area": "manga-reader",
+   "start": "UI/Web/src/app/manga-reader/_components/rate-and-review-series-modal/rate-and-review-series-modal.component.html:11",
+   "flow": "click-rateandreviewseriesmodalcomponent-updaterating"
+  },
+  {
+   "id": "K204",
+   "kind": "screen",
+   "name": "/library/:libraryId/series/:seriesId/pdf/:chapterId",
+   "area": "pdf-reader",
+   "start": "UI/Web/src/app/_routes/pdf-reader.router.module.ts:6",
+   "flow": "screen-opens-library-libraryid-series-seriesid-pdf-chapterid"
+  },
+  {
+   "id": "K205",
+   "kind": "screen",
+   "name": "/person/:name",
+   "area": "person-detail",
+   "start": "UI/Web/src/app/app-routing.module.ts:55",
+   "flow": "screen-opens-person-name"
+  },
+  {
+   "id": "K206",
+   "kind": "click",
+   "name": "handleActionCallback",
+   "area": "person-detail",
+   "start": "UI/Web/src/app/person-detail/person-detail.component.html:9",
+   "flow": "click-persondetailcomponent-handleactioncallback"
+  },
+  {
+   "id": "K207",
+   "kind": "click",
+   "name": "loadFilterByPerson",
+   "area": "person-detail",
+   "start": "UI/Web/src/app/person-detail/person-detail.component.html:81",
+   "flow": "click-persondetailcomponent-loadfilterbyperson"
+  },
+  {
+   "id": "K208",
+   "kind": "click",
+   "name": "loadFilterByRole",
+   "area": "person-detail",
+   "start": "UI/Web/src/app/person-detail/person-detail.component.html:68",
+   "flow": "click-persondetailcomponent-loadfilterbyrole"
+  },
+  {
+   "id": "K209",
+   "kind": "click",
+   "name": "save",
+   "area": "person-detail",
+   "start": "UI/Web/src/app/person-detail/_modal/edit-person-modal/edit-person-modal.component.html:9",
+   "flow": "click-editpersonmodalcomponent-save"
+  },
+  {
+   "id": "K210",
+   "kind": "click",
+   "name": "save",
+   "area": "person-detail",
+   "start": "UI/Web/src/app/person-detail/_modal/merge-person-modal/merge-person-modal.component.html:65",
+   "flow": "click-mergepersonmodalcomponent-save"
+  },
+  {
+   "id": "K211",
+   "kind": "click",
+   "name": "updatePerson",
+   "area": "person-detail",
+   "start": "UI/Web/src/app/person-detail/_modal/merge-person-modal/merge-person-modal.component.html:19",
+   "flow": "click-mergepersonmodalcomponent-updateperson"
+  },
+  {
+   "id": "K212",
+   "kind": "screen",
+   "name": "/profile/:userId",
+   "area": "profile",
+   "start": "UI/Web/src/app/_routes/profile-routing.module.ts:8",
+   "flow": "screen-opens-profile-userid"
+  },
+  {
+   "id": "K213",
+   "kind": "click",
+   "name": "handleFileInput",
+   "area": "profile",
+   "start": "UI/Web/src/app/profile/_components/profile-image/profile-image.component.html:54",
+   "flow": "click-profileimagecomponent-handlefileinput"
+  },
+  {
+   "id": "K214",
+   "kind": "click",
+   "name": "onPageChange",
+   "area": "profile",
+   "start": "UI/Web/src/app/profile/_components/profile-activity/profile-activity.component.html:14",
+   "flow": "click-profileactivitycomponent-onpagechange"
+  },
+  {
+   "id": "K215",
+   "kind": "click",
+   "name": "openPageByYearList",
+   "area": "profile",
+   "start": "UI/Web/src/app/profile/_components/profile-stat-bar/profile-stat-bar.component.html:29",
+   "flow": "click-profilestatbarcomponent-openpagebyyearlist"
+  },
+  {
+   "id": "K216",
+   "kind": "click",
+   "name": "openWordByYearList",
+   "area": "profile",
+   "start": "UI/Web/src/app/profile/_components/profile-stat-bar/profile-stat-bar.component.html:39",
+   "flow": "click-profilestatbarcomponent-openwordbyyearlist"
+  },
+  {
+   "id": "K217",
+   "kind": "click",
+   "name": "restProfileImage",
+   "area": "profile",
+   "start": "UI/Web/src/app/profile/_components/profile-image/profile-image.component.html:25",
+   "flow": "click-profileimagecomponent-restprofileimage"
+  },
+  {
+   "id": "K218",
+   "kind": "screen",
+   "name": "/registration",
+   "area": "registration",
+   "start": "UI/Web/src/app/_routes/registration.router.module.ts:11",
+   "flow": "screen-opens-registration"
+  },
+  {
+   "id": "K219",
+   "kind": "screen",
+   "name": "/registration/confirm-email-update",
+   "area": "registration",
+   "start": "UI/Web/src/app/_routes/registration.router.module.ts:27",
+   "flow": "screen-opens-registration-confirm-email-update"
+  },
+  {
+   "id": "K220",
+   "kind": "screen",
+   "name": "/registration/login",
+   "area": "registration",
+   "start": "UI/Web/src/app/_routes/registration.router.module.ts:15",
+   "flow": "screen-opens-registration-login"
+  },
+  {
+   "id": "K221",
+   "kind": "click",
+   "name": "login",
+   "area": "registration",
+   "start": "UI/Web/src/app/registration/user-login/user-login.component.html:8",
+   "flow": "click-userlogincomponent-login"
+  },
+  {
+   "id": "K222",
+   "kind": "click",
+   "name": "submit",
+   "area": "registration",
+   "start": "UI/Web/src/app/registration/_components/confirm-email/confirm-email.component.html:48",
+   "flow": "click-confirmemailcomponent-submit"
+  },
+  {
+   "id": "K223",
+   "kind": "click",
+   "name": "submit",
+   "area": "registration",
+   "start": "UI/Web/src/app/registration/_components/confirm-reset-password/confirm-reset-password.component.html:22",
+   "flow": "click-confirmresetpasswordcomponent-submit"
+  },
+  {
+   "id": "K224",
+   "kind": "click",
+   "name": "submit",
+   "area": "registration",
+   "start": "UI/Web/src/app/registration/_components/register/register.component.html:43",
+   "flow": "click-registercomponent-submit"
+  },
+  {
+   "id": "K225",
+   "kind": "click",
+   "name": "submit",
+   "area": "registration",
+   "start": "UI/Web/src/app/registration/_components/reset-password/reset-password.component.html:15",
+   "flow": "click-resetpasswordcomponent-submit"
+  },
+  {
+   "id": "K226",
+   "kind": "screen",
+   "name": "/library/:libraryId/series/:seriesId",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/app-routing.module.ts:98",
+   "flow": "screen-opens-library-libraryid-series-seriesid"
+  },
+  {
+   "id": "K227",
+   "kind": "click",
+   "name": "Search",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/_single-module/match-series-modal/match-series-modal.component.html:124",
+   "flow": "click-matchseriesmodalcomponent-search"
+  },
+  {
+   "id": "K228",
+   "kind": "click",
+   "name": "Want to Read Cleanup",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:99",
+   "flow": "click-seriesdetailcomponent-togglewanttoread"
+  },
+  {
+   "id": "K229",
+   "kind": "click",
+   "name": "applyMatch",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/_single-module/match-series-modal/match-series-modal.component.html:248",
+   "flow": "click-matchseriesmodalcomponent-applymatch"
+  },
+  {
+   "id": "K230",
+   "kind": "click",
+   "name": "delete",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/_single-module/review-modal/review-modal.component.html:20",
+   "flow": "click-reviewmodalcomponent-delete"
+  },
+  {
+   "id": "K231",
+   "kind": "click",
+   "name": "dropped",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/cards/cover-image-chooser/cover-image-chooser.component.html:7",
+   "flow": "click-coverimagechoosercomponent-dropped"
+  },
+  {
+   "id": "K232",
+   "kind": "click",
+   "name": "handleRelatedReload",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:350",
+   "flow": "click-seriesdetailcomponent-handlerelatedreload"
+  },
+  {
+   "id": "K233",
+   "kind": "click",
+   "name": "loadImage",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/cards/cover-image-chooser/cover-image-chooser.component.html:8",
+   "flow": "click-coverimagechoosercomponent-loadimage"
+  },
+  {
+   "id": "K234",
+   "kind": "click",
+   "name": "loadReadingHistory",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:424",
+   "flow": "click-seriesdetailcomponent-loadreadinghistory"
+  },
+  {
+   "id": "K235",
+   "kind": "click",
+   "name": "read",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:23",
+   "flow": "click-seriesdetailcomponent-read"
+  },
+  {
+   "id": "K236",
+   "kind": "click",
+   "name": "save",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/cards/_modals/edit-series-modal/edit-series-modal.component.html:6",
+   "flow": "click-editseriesmodalcomponent-save"
+  },
+  {
+   "id": "K237",
+   "kind": "click",
+   "name": "save",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/_single-module/review-modal/review-modal.component.html:22",
+   "flow": "click-reviewmodalcomponent-save"
+  },
+  {
+   "id": "K238",
+   "kind": "click",
+   "name": "saveDontMatch",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/_single-module/match-series-modal/match-series-modal.component.html:244",
+   "flow": "click-matchseriesmodalcomponent-savedontmatch"
+  },
+  {
+   "id": "K239",
+   "kind": "click",
+   "name": "selectOption",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/cards/cover-image-chooser/cover-image-chooser.component.html:109",
+   "flow": "click-coverimagechoosercomponent-selectoption"
+  },
+  {
+   "id": "K240",
+   "kind": "click",
+   "name": "toggleScrobbling",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:116",
+   "flow": "click-seriesdetailcomponent-togglescrobbling"
+  },
+  {
+   "id": "K241",
+   "kind": "click",
+   "name": "updateRating",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/series-detail/_components/external-rating/external-rating.component.html:59",
+   "flow": "click-externalratingcomponent-updaterating"
+  },
+  {
+   "id": "K242",
+   "kind": "click",
+   "name": "updateRating",
+   "area": "series-detail",
+   "start": "UI/Web/src/app/series-detail/_components/rating-modal/rating-modal.component.html:8",
+   "flow": "click-ratingmodalcomponent-updaterating"
+  },
+  {
+   "id": "K243",
+   "kind": "screen",
+   "name": "/library/:libraryId/series/:seriesId/volume/:volumeId",
+   "area": "volume-detail",
+   "start": "UI/Web/src/app/app-routing.module.ts:105",
+   "flow": "screen-opens-library-libraryid-series-seriesid-volume-volumeid"
+  },
+  {
+   "id": "K244",
+   "kind": "click",
+   "name": "handleRelatedReload",
+   "area": "volume-detail",
+   "start": "UI/Web/src/app/volume-detail/volume-detail.component.html:197",
+   "flow": "click-volumedetailcomponent-handlerelatedreload"
+  },
+  {
+   "id": "K245",
+   "kind": "click",
+   "name": "handleVolumeAction",
+   "area": "volume-detail",
+   "start": "UI/Web/src/app/volume-detail/volume-detail.component.html:86",
+   "flow": "click-volumedetailcomponent-handlevolumeaction"
+  },
+  {
+   "id": "K246",
+   "kind": "click",
+   "name": "openEditModal",
+   "area": "volume-detail",
+   "start": "UI/Web/src/app/volume-detail/volume-detail.component.html:75",
+   "flow": "click-volumedetailcomponent-openeditmodal"
+  },
+  {
+   "id": "K247",
+   "kind": "click",
+   "name": "readVolume",
+   "area": "volume-detail",
+   "start": "UI/Web/src/app/volume-detail/volume-detail.component.html:9",
+   "flow": "click-volumedetailcomponent-readvolume"
+  },
+  {
+   "id": "K248",
+   "kind": "click",
+   "name": "runTask",
+   "area": "volume-detail",
+   "start": "UI/Web/src/app/_single-module/edit-volume-modal/edit-volume-modal.component.html:121",
+   "flow": "click-editvolumemodalcomponent-runtask"
+  },
+  {
+   "id": "K249",
+   "kind": "click",
+   "name": "save",
+   "area": "volume-detail",
+   "start": "UI/Web/src/app/_single-module/edit-volume-modal/edit-volume-modal.component.html:11",
+   "flow": "click-editvolumemodalcomponent-save"
+  }
+ ]
+}
