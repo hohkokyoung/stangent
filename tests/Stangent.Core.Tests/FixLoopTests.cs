@@ -293,6 +293,22 @@ public class FixLoopTests
         Assert.Equal([Service], rig.WtGit("diff", "--name-only", "HEAD~1", "HEAD").Split('\n', StringSplitOptions.RemoveEmptyEntries));
     }
 
+    [Fact]
+    public void A_local_folder_such_as_the_apps_build_scripts_is_copied_and_kept_out_of_every_check()
+    {
+        using var rig = new Rig("fix:\n  localFiles: [.app/]\n");
+        Directory.CreateDirectory(Path.Combine(rig.Root, ".app", "bin"));
+        File.WriteAllText(Path.Combine(rig.Root, ".app", "bin", "build.sh"), "echo build\n");   // untracked, as Sonarr's .stangent-app/ (D356)
+        var started = rig.Start();
+        Assert.Equal("echo build\n", File.ReadAllText(Path.Combine(rig.Wt, ".app", "bin", "build.sh")));
+        Assert.DoesNotContain(started["warnings"]!.AsArray().Select(w => (string)w!), w => w.Contains(".app"));
+        var limits = rig.Prepare()["next"]!["limits"]!;
+        Assert.Contains($"Edit({ClaudeRules.Absolute(rig.Wt)}/.app/**)", limits["disallowedTools"]!.AsArray().Select(t => (string)t!));
+        rig.Fix();
+        Assert.Equal("fixed", (string?)rig.Check(Rig.Plan())["status"]);
+        Assert.Equal([Service], rig.WtGit("diff", "--name-only", "HEAD~1", "HEAD").Split('\n', StringSplitOptions.RemoveEmptyEntries));
+    }
+
     // ---- prepare ----
 
     [Fact]
@@ -351,6 +367,19 @@ public class FixLoopTests
     }
 
     // ---- check ----
+
+    [Fact]
+    public void A_fix_is_committed_when_the_repo_git_ignores_stangent_yaml()
+    {
+        using var rig = new Rig(trackConfig: false);
+        File.AppendAllText(Path.Combine(rig.Root, ".git", "info", "exclude"), "/stangent.yaml\n");   // D355
+        rig.Start();
+        rig.Prepare();
+        rig.Fix();
+        Assert.Equal("fixed", (string?)rig.Check(Rig.Plan())["status"]);
+        Assert.Equal("fix: SHOP-1", rig.WtGit("log", "-1", "--format=%s").Trim());
+        Assert.Equal([Service], rig.WtGit("diff", "--name-only", "HEAD~1", "HEAD").Split('\n', StringSplitOptions.RemoveEmptyEntries));
+    }
 
     [Fact]
     public void A_good_fix_passes_every_check_and_is_committed_on_the_branch()

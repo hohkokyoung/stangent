@@ -90,10 +90,10 @@ public static class FixLoop
         // A dirty base: a tracked file changed, but the proof's test (the reproducer wrote it here), stangent's own folder
         // and the local files. Untracked files never reach the worktree, so they aren't dirt (an untracked stangent.yaml,
         // page output): they're named in a warning instead (D353).
-        var local = repo.Config.Fix.LocalFiles.Select(TestTarget.Normalize).ToHashSet(StringComparer.Ordinal);
+        var local = repo.Config.Fix.LocalFiles.Select(p => TestTarget.Normalize(p).TrimEnd('/')).Where(p => p.Length > 0).ToHashSet(StringComparer.Ordinal);
         var untracked = Git.Must(repo.Root, "ls-files", "--others", "--exclude-standard", "--full-name", "-z")
             .Split('\0', StringSplitOptions.RemoveEmptyEntries).Select(p => Strip(prefix, p)).ToHashSet(StringComparer.Ordinal);
-        bool Ours(string p) => p == testFile || IsStangent(p) || local.Contains(p);
+        bool Ours(string p) => p == testFile || IsStangent(p) || Under(p, local);
         var dirty = Git.Changed(repo.Root).Select(p => Strip(prefix, p)).Where(p => !Ours(p) && !untracked.Contains(p)).Order(StringComparer.Ordinal).ToList();
         var leftOut = untracked.Where(p => !Ours(p) && p != StangentRepo.ConfigFile).Order(StringComparer.Ordinal).ToList();
         if (dirty.Count > 0)
@@ -142,12 +142,19 @@ public static class FixLoop
         var copied = new JsonArray();
         var yaml = Path.Combine(wtRoot, StangentRepo.ConfigFile);
         if (!File.Exists(yaml)) { File.Copy(Path.Combine(repo.Root, StangentRepo.ConfigFile), yaml); copied.Add(StangentRepo.ConfigFile); }
-        // A local file as the checkout has it (D351): an SDK pin over the committed global.json, say.
+        // A local file or folder as the checkout has it (D351, D356): an SDK pin over the committed global.json, the app's
+        // build scripts.
         foreach (var f in local.Order(StringComparer.Ordinal))
         {
-            if (f == testFile || IsStangent(f) || f.Split('/').Contains("..") || !File.Exists(Path.Combine(repo.Root, f))) continue;
-            Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(wtRoot, f))!);
-            File.Copy(Path.Combine(repo.Root, f), Path.Combine(wtRoot, f), overwrite: true);
+            if (f == testFile || IsStangent(f) || f.Split('/').Contains("..")) continue;
+            var from = Path.Combine(repo.Root, f);
+            if (Directory.Exists(from)) CopyFolder(from, Path.Combine(wtRoot, f));
+            else if (File.Exists(from))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(wtRoot, f))!);
+                File.Copy(from, Path.Combine(wtRoot, f), overwrite: true);
+            }
+            else continue;
             if (!copied.Any(c => (string?)c == f)) copied.Add(f);
         }
         var wtTickets = new TicketPaths(wtRoot, key);
@@ -213,6 +220,19 @@ public static class FixLoop
     static string WorktreeRoot(FixPaths paths, JsonObject state) => WorktreeRoot(paths, (string?)state["prefix"] ?? "");
 
     static string Strip(string prefix, string gitPath) => prefix.Length == 0 ? gitPath : gitPath.StartsWith(prefix, StringComparison.Ordinal) ? gitPath[prefix.Length..] : "../" + gitPath;
+
+    /// <summary>The path is one of these, or inside one of these folders.</summary>
+    static bool Under(string path, IEnumerable<string> roots) => roots.Any(r => path == r || path.StartsWith(r + "/", StringComparison.Ordinal));
+
+    static void CopyFolder(string from, string to)
+    {
+        foreach (var file in Directory.EnumerateFiles(from, "*", SearchOption.AllDirectories))
+        {
+            var target = Path.Combine(to, Path.GetRelativePath(from, file));
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target, overwrite: true);
+        }
+    }
 
     static bool IsStangent(string path) => path == ".stangent" || path.StartsWith(".stangent/", StringComparison.Ordinal);
 
@@ -328,7 +348,11 @@ public static class FixLoop
             $"Edit({wt}/{(string)state["testFile"]!})",
         };
         denied.Add($"Edit({wt}/{StangentRepo.ConfigFile})");
-        foreach (var c in state["copied"]!.AsArray().Select(c => (string)c!).Where(c => c != StangentRepo.ConfigFile)) denied.Add($"Edit({wt}/{c})");
+        foreach (var c in state["copied"]!.AsArray().Select(c => (string)c!).Where(c => c != StangentRepo.ConfigFile))
+        {
+            denied.Add($"Edit({wt}/{c})");
+            if (Directory.Exists(Path.Combine(WorktreeRoot(paths, state), c))) denied.Add($"Edit({wt}/{c}/**)");
+        }
         return new JsonObject
         {
             ["cwd"] = WorktreeRoot(paths, state),
@@ -372,8 +396,12 @@ public static class FixLoop
     static void CommitEdits(FixPaths paths, JsonObject state, string subject, string detail)
     {
         var prefix = (string?)state["prefix"] ?? "";
-        var specs = new List<string> { "add", "-A", "--", prefix.Length == 0 ? "." : prefix, $":(exclude){prefix}.stangent" };
-        specs.AddRange(state["copied"]!.AsArray().Select(c => $":(exclude){prefix}{(string)c!}"));
+        // An excluded path that git already ignores is left out: git refuses an ignored path named in a pathspec, and
+        // `add -A` skips it anyway (a repo that git-ignores stangent.yaml, D355).
+        var specs = new List<string> { "add", "-A", "--", prefix.Length == 0 ? "." : prefix };
+        specs.AddRange(new[] { ".stangent" }.Concat(state["copied"]!.AsArray().Select(c => (string)c!))
+            .Where(p => !Git.Run(paths.Worktree, "check-ignore", "-q", "--no-index", prefix + p).Ok)
+            .Select(p => $":(exclude){prefix}{p}"));
         Git.Must(paths.Worktree, [.. specs]);
         if (Git.Run(paths.Worktree, "diff", "--cached", "--quiet").Ok) return;
         var sha = Git.Commit(paths.Worktree, $"{subject}\n\n{detail}\n\nEdited by stangent-fixer and checked by stangent fix check (D343). Not pushed (D347).");
@@ -388,7 +416,7 @@ public static class FixLoop
         var copied = state["copied"]!.AsArray().Select(c => (string)c!).ToHashSet(StringComparer.Ordinal);
         var committed = Git.Must(paths.Worktree, "diff", "--name-only", (string)state["testCommit"]!, "HEAD").Split('\n', StringSplitOptions.RemoveEmptyEntries);
         return [.. Git.Changed(paths.Worktree).Concat(committed).Select(p => Strip(prefix, p))
-            .Where(p => !IsStangent(p) && !copied.Contains(p)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+            .Where(p => !IsStangent(p) && !Under(p, copied)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
     }
 
     // ---- check ----

@@ -2,7 +2,7 @@
 
 One fix agent per bug, inside a loop run by code (D343). The agent plans and edits; code runs every check; a failed
 check gives one retry, then the ticket goes back to a person. Every fix is on its own branch in its own git worktree,
-and nothing is ever pushed (D347). Plan: `phases/4-agents.md`. Decisions: D343–D354.
+and nothing is ever pushed (D347). Plan: `phases/4-agents.md`. Decisions: D343–D356.
 
 ```
 plugin/scripts/fix-run.sh --max-cost 3 --context bundle SONB-14
@@ -78,6 +78,7 @@ counted. A call that stops at its cap stops the ticket (`cap-hit`). The run's ha
 fix:
   callBudget: { usd: 1.0, turns: 30 }
   ticketUsd: 3.0
+  localFiles: [global.json, .stangent-app/]   # untracked files or folders a build needs (D351, D356)
 components:
   fix: true        # off: every `stangent fix` command refuses
 ```
