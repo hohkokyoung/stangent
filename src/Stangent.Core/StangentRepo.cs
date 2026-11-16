@@ -26,12 +26,26 @@ public sealed class StangentConfig
     public FsdConfig Fsd { get; set; } = new();
     /// <summary>Jira tickets (Phase 3, D69–D82).</summary>
     public TicketsConfig Tickets { get; set; } = new();
+    /// <summary>The fix loop (Phase 4, D343, D348): each fixer call's cap and the ticket's whole cap.</summary>
+    public FixConfig Fix { get; set; } = new();
     /// <summary>Layer 4's developer page (D281, D282): what it shows. Written only while <c>components.pages</c> is on.</summary>
     public PagesConfig Pages { get; set; } = new();
     public FlowsConfig Flows { get; set; } = new();
     /// <summary>One place to switch any component on or off (D121): <c>components: { page-verifier: false }</c>. Unset keeps today's behaviour, and the
     /// older keys (<c>history.enabled</c>, <c>fsd.findings</c>, ...) keep working; this wins where both are set. <see cref="StangentComponents"/> lists them.</summary>
     public Dictionary<string, bool> Components { get; set; } = [];
+
+    public sealed class FixConfig
+    {
+        /// <summary>Each fixer call's cap (D348): 30 turns and $1, and never more than what's left of <see cref="TicketUsd"/>.</summary>
+        public ProveBudgetConfig CallBudget { get; set; } = new();
+        /// <summary>The ticket's whole cap (D348), the bug proof's cost included.</summary>
+        public double TicketUsd { get; set; } = 3.0;
+        /// <summary>Files a build needs that the repo doesn't commit, such as an SDK pin a benchmark writes over
+        /// <c>global.json</c> (D351): changed in the checkout without making it dirty, copied into the worktree as they
+        /// are, left out of every check, and never the fixer's to edit. Relative to the repo.</summary>
+        public List<string> LocalFiles { get; set; } = [];
+    }
 
     public sealed class StoreConfig
     {
@@ -257,7 +271,7 @@ public sealed class StangentRepo
     public const string ConfigFile = "stangent.yaml";
 
     /// <summary>Lines <c>stangent init</c> adds to the repo's .gitignore: derived and run data, never committed (D7, D21; AI run files, D52).</summary>
-    public static readonly string[] GitIgnoreLines = [".stangent/index.sqlite*", ".stangent/graph.sqlite*", ".stangent/graph-crosscheck.json", ".stangent/telemetry/", ".stangent/spec/", ".stangent/fsd/", ".stangent/fsd-disprove/", ".stangent/req/", ".stangent/tickets/"];
+    public static readonly string[] GitIgnoreLines = [".stangent/index.sqlite*", ".stangent/graph.sqlite*", ".stangent/graph-crosscheck.json", ".stangent/telemetry/", ".stangent/spec/", ".stangent/fsd/", ".stangent/fsd-disprove/", ".stangent/req/", ".stangent/tickets/", ".stangent/fix/"];
 
     static readonly IDeserializer Reader = new DeserializerBuilder()
         .WithNamingConvention(CamelCaseNamingConvention.Instance)

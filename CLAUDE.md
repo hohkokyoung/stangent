@@ -24,6 +24,7 @@ software-engineering pipeline: requirements → code → tests → PR → deploy
 | `docs/flows.md` | Flows (rebuild layer 3): starts, the walk, files under `specs/flows/`, `flows build`, `show`, `check`. |
 | `docs/pages.md` | Pages (rebuild layer 4): the summary code cuts from flows, `pages summary`, `prepare`, `check`, the writer and its checks. |
 | `docs/tickets.md` | Tickets: Jira through the MCP, pull, starting points, the bundle, bug proof, drafts (Phase 3). |
+| `docs/fix.md` | The fix loop: one fix agent per bug on its own branch, the five checks, caps, the report (Phase 4). |
 | `benchmark/README.md` | Running the benchmark: full-history clones, per-repo configs, scoring commands. |
 
 ## How to work here
@@ -72,6 +73,7 @@ plugin/scripts/ticket-run.sh --max-cost 5 --prove --questions <KEY>... # Phase 3
 plugin/scripts/fsd-review-run.sh --max-cost 8 <doc>       # layer 5 (D341): two reviewer runs → review-check → review-merge, headless
 stangent flows build && stangent flows check              # rebuild layer 3: flows from the graph (D170–D184)
 stangent jira login                                       # browser sign-in to Atlassian's MCP v2; token in the OS keychain
+plugin/scripts/fix-run.sh --max-cost 3 --context bundle <KEY>...  # Phase 4: fix start → stangent-fixer → fix check → report; never pushes
 ```
 
 Python analysis needs `python3` (3.9 or newer), as frontends need Node: without it, `python_missing` in `loadErrors` and the rest still builds. The extractor is `tools/py-extractor/stangent_py_extract.py`, one standard-library file, copied beside the stangent assemblies (`py-extractor/`); `STANGENT_PY_EXTRACTOR` points elsewhere. It only parses: an app's code is never imported or run.

@@ -1,6 +1,6 @@
 # Stangent in plain words
 
-*What the project does, part by part, with an example of each. Written 2026-11-11 from `spec.md`, `roadmap.md` and `decisions.md` on branch `claude/phase2c-spec` (worktree `.claude/worktrees/phase2c-spec`); updated 2026-11-15 from `roadmap.md`, `decisions.md` (to D342), `phases/r4-pages.md` and the handoff note. If this page and those files disagree, they win; fix this page.*
+*What the project does, part by part, with an example of each. Written 2026-11-11 from `spec.md`, `roadmap.md` and `decisions.md` on branch `claude/phase2c-spec` (worktree `.claude/worktrees/phase2c-spec`); updated 2026-11-16 from `roadmap.md`, `decisions.md` (to D352), `phases/r4-pages.md` and the handoff note. If this page and those files disagree, they win; fix this page.*
 
 ## The one-paragraph version
 
@@ -15,7 +15,7 @@ It's a .NET command-line tool (`stangent`) plus a Claude Code plugin that calls 
 | 2 | Code graph | A map of the code: what calls what, front to back | **Rebuilt and checked** (layer 2) |
 | 1 | Requirements / spec | What the app should do, written as checked facts | Flows done (layer 3); developer pages parked (layer 4); an FSD is checked by `stangent fsd review`: an agent reads the code, code checks its quotes (layer 5, built, live run owed); the old route and the requirement steps cut (layer 7) |
 | 7 | Tickets | Pull a Jira ticket, hand the developer everything relevant, draft the reply | **Closed (layer 6, D340):** Phase 3's version kept, plus impact told to the developer's session after a test showed it helps name whole fixes |
-| 9 | Agents | Split a ticket into small tasks and run AI helpers on them | **Grilled 2026-11-16 (D343–D349), not built:** first one fix agent per ticket (`stangent fix <KEY>`), test first, every check run by code, on its own branch; splitting waits for a measured need |
+| 9 | Agents | Split a ticket into small tasks and run AI helpers on them | **Minimal fix loop built 2026-11-16 (D343–D352), tested with fakes only, fresh-checked:** one fix agent per bug (`fix-run.sh <KEY>`, `/stangent:fix`), from the bug proof's failing test, every check run by code, on its own branch, never pushed; first real run (D345) is paid, after 2026-11-18; splitting waits for a measured need |
 | 4 | Testing | Tests picked from the map and tagged with the requirement they prove | Not started |
 | 5 | PR | A review package that's quick for a senior to read and comment on | Not started |
 | 6 | CI/CD | Deploy on GitHub Actions, easy to watch and retry | Not started |
@@ -64,6 +64,11 @@ On 2026-11-07 the spec-to-code links failed their targets: they found 24 of 30 k
 **Example:** `stangent fsd prepare` is gone; `stangent fsd status` now says the next step is `fsd-review-run.sh`.
 **Caveat:** half the cut. The old reference pages and `specs/trace.yaml` stay, frozen, because ticket starting points and bundles still read them. They go once a ticket run without them shows the starting points hold.
 
+### Phase 4 — Fixing a bug ✅ built with fakes (D343–D351), 🔶 first real run owed
+**What it does:** takes a bug whose failing test the bug proof already wrote, and has one AI agent fix it in a copy of the repo on its own branch (`stangent/fix-<KEY>`). The agent says what it changed, where and why (a quote from the ticket, say). Code then checks five things in order: the plan's places and quotes are real, it only edited what the plan reaches, it builds, the failing test now passes with nothing else broken, and the test really runs the changed code. One retry; then a person. Nothing is ever pushed.
+**Example (made up: nothing real has run yet):** `fix-run.sh --max-cost 3 SONB-14` → branch `stangent/fix-SONB-14` and `report.md`: "fixed · plan: `CommandResource.cs` · why: ticket 'the server crashes on a nested body' · 5 checks ✅ · $0.62 of $3".
+**Caveat:** tested only with a fake AI and canned test runs (plus a small real repo whose test really fails and passes). The first real use is D345's measurement: on 17 Sonarr bugs, does the ticket bundle help the fix, against the ticket alone? Paid, about $8–34, after 2026-11-18, asked first.
+
 ## How work gets checked (why things take the time they do)
 
 - **The bar, set before building:** each layer gets a target agreed in advance, and it can't move afterwards. Layer 3's was: no wrong ✅, at least 95% of steps found, every guess explained, rebuilds byte-for-byte identical, nothing skipped silently (D177).
@@ -71,11 +76,11 @@ On 2026-11-07 the spec-to-code links failed their targets: they found 24 of 30 k
 - **Fresh checks:** after building, a separate agent with a clean context looks for mistakes. That way the agent that built something never grades its own work (D61, D158).
 - **General fixes only:** a fix that helps only one of the three test apps counts as a fault, because the rules have to work on any project.
 
-## Where things stand today (2026-11-15)
+## Where things stand today (2026-11-16)
 
 - Work is on the `claude/phase2c-spec` worktree, ahead of `main` (`main` stops around D88); 59 commits aren't pushed, and layer 7 isn't committed yet.
 - The rebuild's seven layers are all built or settled. What paid off: code checking the AI's answers, and `graph impact`. Side-by-side tests kept showing an agent reading the code does as well as Stangent's prepared material.
-- Next, free: grill Phase 4 (Agents); its plan read requirement ids, which were cut. From 2026-11-18, paid, each asked first: the live FSD review, a ticket run without the old pages, the owed bug-proof re-run.
+- Phase 4 is grilled (D343–D350) and its minimal fix loop built with fakes (D351), not committed yet. From 2026-11-18, paid, each asked first: D345's fix test, the live FSD review, a ticket run without the old pages, the owed bug-proof re-run.
 - Recent calls left to me: D341 (how the review merges two runs), D342's details (`trace approve`/`attribute` kept; old findings read "unverified").
 
 ## Words you'll see

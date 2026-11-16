@@ -34,7 +34,7 @@ public static class StateKinds
         Proof = "proof", ProofConfirmation = "proof-confirmation", DraftPosted = "draft-posted",
         PageRun = "page-run", PageCorrection = "page-correction", TicketStep = "ticket-step",
         FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FsdSectionAnswer = "fsd-section-answer", FindingReview = "finding-review", FsdReviewRun = "fsd-review-run",
-        FindingStanding = "finding-standing", FindingSecurity = "finding-security";
+        FixRun = "fix-run", FindingStanding = "finding-standing", FindingSecurity = "finding-security";
 
     // Committed state gets committed history; run state in .stangent/ gets history beside it, ignored the same way.
     const string TraceHistory = "specs/trace-history.jsonl",
@@ -118,6 +118,14 @@ public static class StateKinds
         // D341: one review run, from its prepare; one retry at most; a failed run is prepared again from nothing.
         new(FsdReviewRun, ".stangent/fsd/state-history.jsonl", ["prepared"],
             [.. Each(Code, "prepared", "retry", "checked", "failed"), .. Each(Code, "retry", "checked", "failed")], Field: "stage"),
+
+        // D343, D350: one ticket's fix loop. Code ends it; `fix start --replace` (a person's command) starts it again from any end.
+        new(FixRun, ".stangent/fix/state-history.jsonl", ["in-progress", "no-failing-test"],
+        [
+            .. Each(Code, "in-progress", "fixed", "gave-up", "cap-hit", "check-failed"),
+            .. new[] { "fixed", "gave-up", "cap-hit", "check-failed", "no-failing-test" }.Select(end => By(Code, end, "in-progress")),
+            By(Code, "in-progress", "no-failing-test"), By(Code, "in-progress", "in-progress"),
+        ]),
 
         // Points, prove and drafts: a run with no stage yet is running. `check` has no guard on these, so a second check
         // can move a finished run either way (listed as questionable in phases/0-foundation.md).

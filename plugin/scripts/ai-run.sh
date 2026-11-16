@@ -49,6 +49,14 @@ stamp_usage() {
   fi
 }
 
+# A multi-turn call's result line, from its stream-json transcript, with the rounds `--max-turns` limits (D104): one per
+# model message. The result's `num_turns` also counts parallel tool calls. Shared by ticket-run.sh and fix-run.sh.
+result_with_rounds() {   # <transcript> <where the result line goes>
+  local rounds
+  rounds="$(jq -r 'select(.type == "assistant") | .message.id' "$1" 2>/dev/null | sort -u | wc -l | tr -d ' ')" || true
+  jq -c --argjson rounds "${rounds:-0}" 'select(.type == "result") | . + {rounds: $rounds}' "$1" 2>/dev/null | tail -n 1 >"$2" || true
+}
+
 call_hash() {
   if command -v shasum >/dev/null 2>&1; then shasum -a 256; else sha256sum; fi | cut -c1-16
 }
@@ -137,5 +145,5 @@ repeat_call() {
     "$(jq -r '.result.agreed' <<<"$line")" "$(jq -r '.result.decisions' <<<"$line")"
 }
 
-export -f ai_settings_all ai_settings claude_version stamp_usage call_hash record_call one_turn_call recorded_one_turn repeat_call
+export -f ai_settings_all ai_settings claude_version stamp_usage result_with_rounds call_hash record_call one_turn_call recorded_one_turn repeat_call
 export ONE_TURN_SYSTEM

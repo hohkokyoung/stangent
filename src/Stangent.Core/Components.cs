@@ -24,7 +24,7 @@ public static class StangentComponents
 {
     const string Graph = "graph build";
     static readonly string[] Pages = ["spec prepare", "spec check"];
-    static readonly string[] AiSteps = ["spec prepare", "fsd review", "ticket points", "ticket prepare", "ticket prove", "ticket draft"];
+    static readonly string[] AiSteps = ["spec prepare", "fsd review", "ticket points", "ticket prepare", "ticket prove", "ticket draft", "fix prepare"];
 
     static StangentComponent Detector(string name, string label, params string[] needs) =>
         new($"detector-{name}", label, "detectors", true, [Graph], needs);
@@ -69,6 +69,7 @@ public static class StangentComponents
         new("findings", "Gap, conflict and undocumented findings from the old link route, frozen in specs/trace.yaml (D342), shown in ticket bundles and drafts", "fsd.findings", false, ["trace check", "ticket bundle", "ticket draft", "fsd promote"], []),
         new("file-finder", "The AI that finds a ticket's files", "tickets.aiPoints", true, ["ticket points", "ticket prepare", "ticket check"], ["ai"]),
         new("bug-proof", "A failing test before a bug is fixed", "components.bug-proof", true, ["ticket prove", "ticket prepare", "ticket check", "ticket draft"], ["ai"]),
+        new("fix", "Phase 4's fix loop: one fix agent per bug on its own branch and worktree, from the bug proof's failing test, every check run by code (D343, D350); never pushes", "components.fix", true, ["fix start", "fix prepare", "fix check", "fix report"], ["ai", "bug-proof"]),
         new("drafts", "Draft comments for a ticket", "components.drafts", true, ["ticket draft", "ticket prepare", "ticket check", "ticket post"], ["ai"]),
         new("table-facts", "A document's tables compared with the code by code, a second route to code: labelled, pending the owner's answer on D68", "fsd.compareTables", false, ["fsd compare-tables", Graph], []),
         new("pages", "Layer 4: each area's page.md as a developer page by code, no AI: per click that changes something a flowchart, a scenario table and its lists, with flow-file step numbers (D278–D285). Written by code and read by nothing yet, so it's off until a person has read them", "components.pages", false, ["areas check", "pages verify"], []),

@@ -8,7 +8,7 @@ provides: { task-plan: 1, agent-run: 1 }
 
 # Phase 4 · Agents
 
-**Grilled 2026-11-16 (D343–D349); build shape D350. Nothing built yet.**
+**Grilled 2026-11-16 (D343–D349); build shape D350. Minimal loop built with fakes and fresh-checked 2026-11-16 (D351, D352), not committed; D345's run owed (paid).**
 
 One fix agent per ticket, inside a loop run by code (D343). The agent plans and edits; code runs every check;
 a failed check gives one retry, then the ticket goes back to a person. No task splitter and no parallel subagents
@@ -78,3 +78,4 @@ the 17 saved tests still fail at each parent and pass at each fix (free). About 
 ## Progress
 
 - 2026-11-16: grilled (D343–D349), plan written (D350). Next: step 1.
+- 2026-11-16: **steps 1–8 built, free, fakes only** (D351, D352; `docs/fix.md`). Schemas `fixer-output` v1 (the agent's answer), `task-plan` v1, `agent-run` v1; `fix` component and `fix:` settings (`callBudget`, `ticketUsd`, `localFiles`); `stangent fix start | prepare | check | report` (`src/Stangent.Tickets/Fix/`); the `stangent-fixer` agent and its instructions; `plugin/scripts/fix-run.sh` (shares `ai-run.sh`'s new `result_with_rounds` with `ticket-run.sh`) and `/stangent:fix`; the run's stop on the state module (`fix-run`). Tests: `FixLoopTests` (23, a real git repo and worktree on `tests/fixtures/fix-shop`, a fake runner, canned graphs) and `FixRunDriverTests` (6, fake Claude Code and stangent). The fixture really compiles: its proof test fails on the bug and passes once fixed (checked by hand with `dotnet test`, not in the suite). The D345 harness `benchmark/tickets/fix_test.sh` (`recheck` free, `run` paid, `score`) and `fix_score.py` written; the scorer smoke-tested on made-up records, the harness not run. Then **step 7, the narrow fresh check** (D158; a fresh Sonnet agent, ~144K tokens): 8 faults (3 medium, 5 low), all fixed (D352): other tests must really be checked, tests are never reach, the scorer compares only bugs both sides ran and counts green only with test reach passed, exact test-name matching, the recheck's rule, the harness's stdin and stops. Build 0 warnings, 1904 of 1904 tests, `phases check` clean. **Committed 2026-11-16 (feat(fix): Phase 4's minimal fix loop).** **Next:** D345's run after 2026-11-18 (paid, asked first).

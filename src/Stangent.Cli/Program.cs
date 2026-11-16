@@ -286,6 +286,7 @@ FsdCommands.Add(root);
 AiCommands.Add(root);
 JiraCommands.Add(root);
 TicketCommands.Add(root);
+FixCommands.Add(root);
 FlowCommands.Add(root);
 InventoryCommands.Add(root);
 AreaCommands.Add(root);

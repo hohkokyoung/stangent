@@ -51,6 +51,8 @@ public sealed record RunStep(string Status, string Action, string? Agent = null,
         "stangent-file-finder" => "file-finder-output.v1.json",
         "stangent-bug-reproducer" => "bug-reproducer-output.v1.json",
         "stangent-question-writer" or "stangent-summary-writer" => "draft-output.v2.json",
+        // Phase 4's fix agent (Stangent.Tickets.Fix.FixLoop).
+        "stangent-fixer" => "fixer-output.v1.json",
         _ => null,
     };
 }

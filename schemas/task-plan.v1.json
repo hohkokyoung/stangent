@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:task-plan:v1",
+  "title": "A fix loop's plan (contract task-plan v1, Phase 4, D344, D349)",
+  "description": "What the fixer planned for one ticket, as code checked it: each change's where, why and reach, and the test written first (D346). Reach is filled by code from the graph at the base commit (`graph impact --file`), never by the agent. Written by `stangent fix check` to .stangent/fix/<KEY>/task-plan.json.",
+  "type": "object",
+  "required": ["schemaVersion", "key", "baseCommit", "test", "changes"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "key": { "type": "string" },
+    "baseCommit": { "description": "The commit the plan's points and reach are read at.", "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+    "test": {
+      "description": "The test that fails before the fix (D346): the bug proof's, committed first on the branch (D350).",
+      "type": "object",
+      "required": ["file", "name", "failedBefore"],
+      "additionalProperties": false,
+      "properties": {
+        "file": { "type": "string" },
+        "name": { "type": "string" },
+        "failedBefore": { "description": "The proof's failure message on the unchanged code.", "type": "string" }
+      }
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "point", "why", "reach"],
+        "additionalProperties": false,
+        "properties": {
+          "file": { "type": "string" },
+          "point": { "description": "The graph id at the base commit; null for a new file.", "type": ["string", "null"] },
+          "why": {
+            "type": "object",
+            "required": ["kind"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "enum": ["ticket", "fsd", "test"] },
+              "quote": { "type": "string" },
+              "section": { "type": "string" },
+              "test": { "type": "string" }
+            }
+          },
+          "reach": { "description": "The files `graph impact --file` reaches from this change's file at the base commit, the file itself left out.", "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "gaveUp": { "type": ["string", "null"] }
+  }
+}

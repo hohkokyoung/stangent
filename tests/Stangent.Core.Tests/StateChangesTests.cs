@@ -189,6 +189,7 @@ public partial class StateChangesTests
         [("src/Stangent.Spec/Fsd/FsdReview.cs", "stage")] = (1, "`fsd review-status`: a copy of each run's stage, for reading; the moves are on the module"),
         [("src/Stangent.Cli/FsdCommands.cs", "verdict")] = (1, "an import that stopped says failed, in its envelope, not a finding's verdict"),
         [("src/Stangent.Spec/Pages/PageRun.cs", "status")] = (1, "RunStep's JSON: what this command returned"),
+        [("src/Stangent.Tickets/Fix/FixLoop.cs", "status")] = (1, "a fix step's JSON: what this command returned; the run's own lifecycle is fix-run"),
         [("src/Stangent.Spec/Pages/PageRun.cs", "outcome")] = (1, "a copy into a page's record of what the step returned"),
         [("src/Stangent.Tickets/Ticket.cs", "status")] = (2, "Jira's status, copied at pull; Jira owns it"),
         [("src/Stangent.Tickets/Bundle.cs", "status")] = (1, "a copy of Jira's status"),
