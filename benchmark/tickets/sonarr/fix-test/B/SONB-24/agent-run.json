@@ -1,0 +1,95 @@
+{
+  "base": "b04b9f900fc72c68df8dafd8980e0db5fcba0e1b",
+  "baseCommit": "b04b9f900fc72c68df8dafd8980e0db5fcba0e1b",
+  "branch": "stangent/fix-SONB-24",
+  "capUsd": 3,
+  "checks": [
+    {
+      "name": "plan",
+      "output": ".stangent/fix/SONB-24/checks/round-1-1-plan.txt",
+      "result": "failed",
+      "round": 1,
+      "summary": "1 problem(s): changes[0]: no point `NotificationService.Handle(ManualInteractionRequiredEvent)` in the code graph at the base"
+    },
+    {
+      "name": "plan",
+      "output": ".stangent/fix/SONB-24/checks/round-2-1-plan.txt",
+      "result": "passed",
+      "round": 2,
+      "summary": "1 change(s): every point and quote checks out"
+    },
+    {
+      "name": "files",
+      "output": ".stangent/fix/SONB-24/checks/round-2-2-files.txt",
+      "result": "passed",
+      "round": 2,
+      "summary": "1 file(s) edited, each planned or in a planned file's reach"
+    },
+    {
+      "name": "build",
+      "output": ".stangent/fix/SONB-24/checks/round-2-3-build.txt",
+      "result": "passed",
+      "round": 2,
+      "summary": "`dotnet build 'src/NzbDrone.Core.Test/Sonarr.Core.Test.csproj' -p:SolutionDir=/Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-24/worktree/src/ -p:NuGetAudit=false` built"
+    },
+    {
+      "name": "tests",
+      "output": ".stangent/fix/SONB-24/checks/round-2-4-tests.txt",
+      "result": "passed",
+      "round": 2,
+      "summary": "the test passes here and nothing new fails"
+    },
+    {
+      "name": "test-reach",
+      "output": ".stangent/fix/SONB-24/checks/round-2-5-test-reach.txt",
+      "result": "passed",
+      "round": 2,
+      "summary": "the proof's test reaches the planned point NotificationService.Handle"
+    }
+  ],
+  "commits": [
+    "8ea9dea74cf828a7c2f416c9d7961c03d5b32761",
+    "7692512a0a8f8bf1c4a6d5705ca8ab86e1f69fc3"
+  ],
+  "context": "bundle",
+  "costUsd": 0.311911,
+  "edited": [
+    "src/NzbDrone.Core/Notifications/NotificationService.cs"
+  ],
+  "effort": "medium",
+  "key": "SONB-24",
+  "model": "claude-sonnet-5-5",
+  "outsideReach": [],
+  "plan": ".stangent/fix/SONB-24/task-plan.json",
+  "schemaVersion": 1,
+  "steps": [
+    {
+      "costUsd": 0.164571,
+      "name": "proof",
+      "turns": null
+    },
+    {
+      "call": 1,
+      "costUsd": 0.0873374,
+      "ended": "success",
+      "inputTokens": 80323,
+      "name": "fixer",
+      "outputTokens": 1248,
+      "turns": 4
+    },
+    {
+      "call": 2,
+      "costUsd": 0.060003,
+      "ended": "success",
+      "inputTokens": 38023,
+      "name": "fixer",
+      "outputTokens": 442,
+      "turns": 2
+    }
+  ],
+  "stop": {
+    "detail": "every check passed",
+    "reason": "fixed"
+  },
+  "worktree": ".stangent/fix/SONB-24/worktree"
+}

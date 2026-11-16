@@ -22,7 +22,7 @@ public static class FixLoop
     public const string OutputSchema = "fixer-output.v1.json";
     public const string PlanSchema = "task-plan.v1.json";
     public const string RunSchema = "agent-run.v1.json";
-    public static readonly string[] Contexts = ["ticket", "bundle"];
+    public static readonly string[] Contexts = ["files", "ticket", "bundle"];
     public static readonly string[] CheckNames = ["plan", "files", "build", "tests", "test-reach"];
     /// <summary>How much of a check's output goes back to the fixer on its retry.</summary>
     const int RetryChars = 4000;
@@ -243,13 +243,13 @@ public static class FixLoop
     {
         EnsureOn(repo);
         if (!Contexts.Contains(context))
-            throw new StangentException("usage", $"--context is ticket or bundle, not '{context}'.", ExitCodes.Usage);
+            throw new StangentException("usage", $"--context is files, ticket or bundle, not '{context}'.", ExitCodes.Usage);
         var paths = new FixPaths(repo.Root, key);
         var state = LoadOrFail(paths);
         if ((string?)state["stop"]?["reason"] != "in-progress") return Step(repo, paths, state, (string)state["stop"]!["reason"]!);
         if (state["calls"]!.AsArray().Count > 0)
             throw new StangentException("already_run", $"{key}'s fixer has run already. Start again with `stangent fix start {key} --replace`.", ExitCodes.Usage);
-        if (context == "bundle") TicketBundle.LoadOrFail(repo.Root, key);
+        if (context != "ticket") TicketBundle.LoadOrFail(repo.Root, key);
         AiPolicy.EnsureAllowed(repo.Config, "fix prepare");
         state["context"] = context;
         state["round"] = 1;
@@ -279,6 +279,20 @@ public static class FixLoop
         foreach (var (where, text) in TicketText.From(pulled).Prose) sb.Append($"## {where}\n\n````text\n{text}\n````\n\n");
         if ((string?)state["context"] == "bundle")
             sb.Append("# The ticket bundle\n\n").Append(TicketBundle.Markdown(TicketBundle.LoadOrFail(repo.Root, key))).Append('\n');
+        else if ((string?)state["context"] == "files")
+        {
+            // D345 failed for the whole bundle (B fixed the same 12 for 27% more tokens): the finder's files only, D357.
+            var files = TicketBundle.LoadOrFail(repo.Root, key)["points"]!.AsArray().OfType<JsonObject>()
+                .Where(p => (string?)p["kind"] == StartingPoint.File).Select(p => (string)p["id"]!).Distinct(StringComparer.Ordinal).ToList();
+            sb.Append("# Where the work likely starts\n\n");
+            if (files.Count == 0) sb.Append("_The file finder named no file for this ticket._\n\n");
+            else
+            {
+                sb.Append("The file finder's guess from the ticket, not checked; the cause may be elsewhere.\n\n");
+                foreach (var file in files) sb.Append($"- `{file}`\n");
+                sb.Append('\n');
+            }
+        }
 
         var testFile = (string)state["testFile"]!;
         var testPath = Path.Combine(wtRoot, testFile);
@@ -752,7 +766,7 @@ public static class FixLoop
         if ((string)run["baseCommit"]! is { Length: > 0 } baseCommit)
             sb.Append($"- **Branch:** `{run["branch"]}` from `{baseCommit[..7]}`{(edited > 0 || run["commits"]!.AsArray().Count > 0 ? "" : " (no edits)")}; never pushed, no pull request (D347).\n");
         if ((string?)run["worktree"] is { } wt) sb.Append($"- **Worktree:** `{wt}`\n");
-        if ((string?)run["context"] is { } ctx) sb.Append($"- **Given:** {(ctx == "bundle" ? "the ticket, the code, the failing test and the ticket bundle" : "the ticket, the code and the failing test")} (`--context {ctx}`)\n");
+        if ((string?)run["context"] is { } ctx) sb.Append($"- **Given:** {ctx switch { "bundle" => "the ticket, the code, the failing test and the ticket bundle", "files" => "the ticket, the code, the failing test and the finder's files", _ => "the ticket, the code and the failing test" }} (`--context {ctx}`)\n");
         if ((string?)run["model"] is { } model) sb.Append($"- **Model:** {model}{((string?)run["effort"] is { } e ? $", {e} effort" : "")}\n");
         var proof = run["steps"]!.AsArray().OfType<JsonObject>().Where(s => (string)s["name"]! == "proof").Sum(s => (double)s["costUsd"]!);
         sb.Append($"- **Cost:** ${(double)run["costUsd"]!:0.00} of the ticket's ${(double)run["capUsd"]!:0.##} (the proof ${proof:0.00}); {run["steps"]!.AsArray().Count(s => (string)s!["name"]! == "fixer")} fixer call(s)\n\n");

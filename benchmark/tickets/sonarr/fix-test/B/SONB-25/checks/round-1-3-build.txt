@@ -1,0 +1,28 @@
+  Determining projects to restore...
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-25/worktree/src/NzbDrone.Common/Sonarr.Common.csproj (in 377 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-25/worktree/src/NzbDrone.Core/Sonarr.Core.csproj (in 473 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-25/worktree/src/NzbDrone.Test.Common/Sonarr.Test.Common.csproj (in 473 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-25/worktree/src/Sonarr.Http/Sonarr.Http.csproj (in 475 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-25/worktree/src/NzbDrone.SignalR/Sonarr.SignalR.csproj (in 476 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-25/worktree/src/Sonarr.Api.V3/Sonarr.Api.V3.csproj (in 491 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-25/worktree/src/NzbDrone.Api.Test/Sonarr.Api.Test.csproj (in 609 ms).
+  Sonarr.Common -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-25/worktree/_output/net8.0/Sonarr.Common.dll
+  The Sentry CLI is not fully configured with authentication, organization, and project.
+  Sonarr.Core -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-25/worktree/_output/net8.0/Sonarr.Core.dll
+  The Sentry CLI is not fully configured with authentication, organization, and project.
+  Sonarr.Test.Common -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-25/worktree/_tests/net8.0/Sonarr.Test.Common.dll
+  Sonarr.SignalR -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-25/worktree/_output/net8.0/Sonarr.SignalR.dll
+  The Sentry CLI is not fully configured with authentication, organization, and project.
+  The Sentry CLI is not fully configured with authentication, organization, and project.
+  Sonarr.Http -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-25/worktree/_output/net8.0/Sonarr.Http.dll
+  The Sentry CLI is not fully configured with authentication, organization, and project.
+  Sonarr.Api.V3 -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-25/worktree/_output/net8.0/Sonarr.Api.V3.dll
+  The Sentry CLI is not fully configured with authentication, organization, and project.
+  Sonarr.Api.Test -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-25/worktree/_tests/net8.0/Sonarr.Api.Test.dll
+  The Sentry CLI is not fully configured with authentication, organization, and project.
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:07.99

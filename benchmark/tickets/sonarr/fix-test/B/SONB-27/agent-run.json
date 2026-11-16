@@ -1,0 +1,79 @@
+{
+  "base": "4bdb0408f1bafa38b777a41babb1a775f99a94c1",
+  "baseCommit": "4bdb0408f1bafa38b777a41babb1a775f99a94c1",
+  "branch": "stangent/fix-SONB-27",
+  "capUsd": 3,
+  "checks": [
+    {
+      "name": "plan",
+      "output": ".stangent/fix/SONB-27/checks/round-1-1-plan.txt",
+      "result": "passed",
+      "round": 1,
+      "summary": "1 change(s): every point and quote checks out"
+    },
+    {
+      "name": "files",
+      "output": ".stangent/fix/SONB-27/checks/round-1-2-files.txt",
+      "result": "passed",
+      "round": 1,
+      "summary": "1 file(s) edited, each planned or in a planned file's reach"
+    },
+    {
+      "name": "build",
+      "output": ".stangent/fix/SONB-27/checks/round-1-3-build.txt",
+      "result": "passed",
+      "round": 1,
+      "summary": "`dotnet build 'src/NzbDrone.Core.Test/Sonarr.Core.Test.csproj' -p:SolutionDir=/Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-27/worktree/src/ -p:NuGetAudit=false` built"
+    },
+    {
+      "name": "tests",
+      "output": ".stangent/fix/SONB-27/checks/round-1-4-tests.txt",
+      "result": "passed",
+      "round": 1,
+      "summary": "the test passes here and nothing new fails"
+    },
+    {
+      "name": "test-reach",
+      "output": ".stangent/fix/SONB-27/checks/round-1-5-test-reach.txt",
+      "result": "passed",
+      "round": 1,
+      "summary": "the proof's test reaches the planned point ManualImportService.Execute"
+    }
+  ],
+  "commits": [
+    "7e5053b02828f4e3028f104f8aa1b4e183912943",
+    "6deedf173544d8c9c0fb54b7db04fcc10beedd51"
+  ],
+  "context": "bundle",
+  "costUsd": 0.350498,
+  "edited": [
+    "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs"
+  ],
+  "effort": "medium",
+  "key": "SONB-27",
+  "model": "claude-sonnet-5-5",
+  "outsideReach": [],
+  "plan": ".stangent/fix/SONB-27/task-plan.json",
+  "schemaVersion": 1,
+  "steps": [
+    {
+      "costUsd": 0.286024,
+      "name": "proof",
+      "turns": null
+    },
+    {
+      "call": 1,
+      "costUsd": 0.0644736,
+      "ended": "success",
+      "inputTokens": 52092,
+      "name": "fixer",
+      "outputTokens": 963,
+      "turns": 3
+    }
+  ],
+  "stop": {
+    "detail": "every check passed",
+    "reason": "fixed"
+  },
+  "worktree": ".stangent/fix/SONB-27/worktree"
+}

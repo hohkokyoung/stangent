@@ -1,0 +1,13 @@
+diff --git a/src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs b/src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs
+index aee6b97f4b..c06c2b6b21 100644
+--- a/src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs
++++ b/src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs
+@@ -566,7 +566,7 @@ public void Execute(ManualImportCommand message)
+                 _logger.ProgressTrace("Manually imported {0} files", imported.Count);
+             }
+ 
+-            var untrackedImports = imported.Where(i => i.Result == ImportResultType.Imported && importedTrackedDownload.FirstOrDefault(t => t.ImportResult != i) == null).ToList();
++            var untrackedImports = imported.Where(i => i.Result == ImportResultType.Imported && importedTrackedDownload.All(t => t.ImportResult != i)).ToList();
+ 
+             if (untrackedImports.Any())
+             {

@@ -1,0 +1,1 @@
+Sonarr.Common|M:NzbDrone.Common.Disk.DiskTransferService.ResolveRealParentPath(System.String): 1725 test(s), the proof's test among them (Sonarr.Core.Test|M:NzbDrone.Core.Test.Backup.BackupConfigPathFixture.should_copy_config_file_from_data_dir_with_repeated_slashes)

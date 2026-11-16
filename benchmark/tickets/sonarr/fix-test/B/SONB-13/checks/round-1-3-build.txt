@@ -1,0 +1,15 @@
+  Determining projects to restore...
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-13/worktree/src/NzbDrone.Common/Sonarr.Common.csproj (in 904 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-13/worktree/src/NzbDrone.Test.Common/Sonarr.Test.Common.csproj (in 1.01 sec).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-13/worktree/src/NzbDrone.Core/Sonarr.Core.csproj (in 1.06 sec).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-13/worktree/src/NzbDrone.Core.Test/Sonarr.Core.Test.csproj (in 1.13 sec).
+  Sonarr.Common -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-13/worktree/_output/net10.0/Sonarr.Common.dll
+  Sonarr.Core -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-13/worktree/_output/net10.0/Sonarr.Core.dll
+  Sonarr.Test.Common -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-13/worktree/_tests/net10.0/Sonarr.Test.Common.dll
+  Sonarr.Core.Test -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-13/worktree/_tests/net10.0/Sonarr.Core.Test.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:16.21

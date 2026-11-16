@@ -1,0 +1,19 @@
+  Determining projects to restore...
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-24/worktree/src/NzbDrone.Common/Sonarr.Common.csproj (in 293 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-24/worktree/src/NzbDrone.Core/Sonarr.Core.csproj (in 346 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-24/worktree/src/NzbDrone.Test.Common/Sonarr.Test.Common.csproj (in 352 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-24/worktree/src/NzbDrone.Core.Test/Sonarr.Core.Test.csproj (in 393 ms).
+  Sonarr.Common -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-24/worktree/_output/net8.0/Sonarr.Common.dll
+  The Sentry CLI is not fully configured with authentication, organization, and project.
+  Sonarr.Core -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-24/worktree/_output/net8.0/Sonarr.Core.dll
+  The Sentry CLI is not fully configured with authentication, organization, and project.
+  Sonarr.Test.Common -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-24/worktree/_tests/net8.0/Sonarr.Test.Common.dll
+  The Sentry CLI is not fully configured with authentication, organization, and project.
+  Sonarr.Core.Test -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-24/worktree/_tests/net8.0/Sonarr.Core.Test.dll
+  The Sentry CLI is not fully configured with authentication, organization, and project.
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:07.63

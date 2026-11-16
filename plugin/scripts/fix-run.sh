@@ -7,9 +7,9 @@
 # "no failing test" (D346). Every fix is on its own branch, stangent/fix-<KEY>, in .stangent/fix/<KEY>/worktree:
 # nothing is ever pushed and no pull request is opened (D347).
 #
-# usage: fix-run.sh [--jobs N] [--max-cost USD|none] [--stop-at-usage PCT] [--estimate] [--model M] [--effort E] [--context ticket|bundle] [--base REF] [--replace] <KEY>...
-# --context (D345): what the fixer gets: ticket (the ticket, the code, the failing test) or bundle (the same plus the
-# ticket bundle, the default). --base: the commit the branch starts from (default HEAD). --replace: start again,
+# usage: fix-run.sh [--jobs N] [--max-cost USD|none] [--stop-at-usage PCT] [--estimate] [--model M] [--effort E] [--context files|ticket|bundle] [--base REF] [--replace] <KEY>...
+# --context (D345, D357): what the fixer gets: files (the ticket, the code, the failing test and the finder's files, the
+# default), ticket (without the files) or bundle (the whole ticket bundle). --base: the commit the branch starts from (default HEAD). --replace: start again,
 # removing the ticket's earlier fix worktree and branch.
 # --model, --effort (D348, D351): Sonnet 5.5 at medium effort unless given; they win over stangent.yaml, as on every driver.
 # Caps (D348): each fixer call 30 turns and $1 and never more than what's left of the ticket's $3, the proof's cost
@@ -28,7 +28,7 @@ usage() { sed -n 's/^# usage: //p' "$0" >&2; exit 2; }
 JOBS=1
 MODEL=""
 EFFORT=""
-CONTEXT=bundle
+CONTEXT=files
 BASE=""
 REPLACE=""
 MAXCOST=""
@@ -53,7 +53,7 @@ while [ $# -gt 0 ]; do
 done
 [ ${#KEYS[@]} -gt 0 ] || usage
 case "$JOBS" in ''|0|*[!0-9]*) usage ;; esac
-case "$CONTEXT" in ticket|bundle) ;; *) usage ;; esac
+case "$CONTEXT" in files|ticket|bundle) ;; *) usage ;; esac
 # D348: the fixer runs on Sonnet 5.5 at medium effort; a flag changes it for one run (D351).
 MODEL="${MODEL:-claude-sonnet-5-5}"
 EFFORT="${EFFORT:-medium}"

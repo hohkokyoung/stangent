@@ -1,0 +1,13 @@
+diff --git a/src/NzbDrone.Core/Notifications/Plex/Server/PlexServerService.cs b/src/NzbDrone.Core/Notifications/Plex/Server/PlexServerService.cs
+index ceff608658..537eba0fc3 100644
+--- a/src/NzbDrone.Core/Notifications/Plex/Server/PlexServerService.cs
++++ b/src/NzbDrone.Core/Notifications/Plex/Server/PlexServerService.cs
+@@ -142,7 +142,7 @@ private void UpdateSectionPath(string seriesRelativePath, PlexSection section, P
+             var locationRelativePath = seriesRelativePath.Replace("\\", separator).Replace("/", separator);
+ 
+             // Plex location paths trim trailing extraneous separator characters, so it doesn't need to be trimmed
+-            var pathToUpdate = $"{location.Path}{separator}{locationRelativePath}";
++            var pathToUpdate = $"{location.Path.TrimEnd('\\', '/')}{separator}{locationRelativePath}";
+ 
+             _logger.Debug("Updating section location, {0}", location.Path);
+             _plexServerProxy.Update(section.Id, pathToUpdate, settings);

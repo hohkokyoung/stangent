@@ -8,7 +8,7 @@ Fix one Jira bug with stangent's fix loop (D343–D350). Code runs every check; 
 with the model, effort and caps stangent sets. Never edit the code for the fix yourself, never judge a check yourself,
 and never push, open a pull request or merge the branch: those stay with the person (D18, D347).
 
-`$ARGUMENTS` is a ticket key, optionally followed by `ticket` or `bundle` (what the fixer gets, D345; default `bundle`).
+`$ARGUMENTS` is a ticket key, optionally followed by `files`, `ticket` or `bundle` (what the fixer gets, D345, D357; default `files`).
 
 1. The ticket needs a **reproduced bug proof** first. If `.stangent/tickets/<KEY>/bug-proof.json` is missing or its
    outcome isn't `reproduced`, say so and offer `/stangent:ticket <KEY> prove`; stop.
@@ -16,7 +16,7 @@ and never push, open a pull request or merge the branch: those stay with the per
    $3 in all, the proof's cost included (D348). Ask for the run's cap if `STANGENT_MAX_COST` isn't set. Then run:
 
    ```bash
-   ${CLAUDE_PLUGIN_ROOT}/scripts/fix-run.sh --max-cost "$STANGENT_MAX_COST" --context <ticket|bundle> <KEY>
+   ${CLAUDE_PLUGIN_ROOT}/scripts/fix-run.sh --max-cost "$STANGENT_MAX_COST" --context <files|ticket|bundle> <KEY>
    ```
 
    If it stops with `fix_exists`, ask before re-running with `--replace` (it removes the earlier fix worktree and branch).

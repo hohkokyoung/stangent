@@ -42,7 +42,7 @@ public sealed class FixRunDriverTests : IDisposable
 
     void Steps(string checks, string reason = "fixed") => rig.Stangent($"""
         "fix start K-1") echo '{Started}' ;;
-        "fix prepare K-1 --context bundle") echo '{Step("prepared", "run")}' ;;
+        "fix prepare K-1 --context files") echo '{Step("prepared", "run")}' ;;
         "fix prepare K-1 --context ticket") echo '{Step("prepared", "run", 0.6)}' ;;
         {checks}
         "fix report K-1") echo '{Report(reason)}' ;;

@@ -1,0 +1,14 @@
+diff --git a/src/NzbDrone.Core/MediaFiles/UpdateEpisodeFileService.cs b/src/NzbDrone.Core/MediaFiles/UpdateEpisodeFileService.cs
+index 539cc1f64e..db891f09e4 100644
+--- a/src/NzbDrone.Core/MediaFiles/UpdateEpisodeFileService.cs
++++ b/src/NzbDrone.Core/MediaFiles/UpdateEpisodeFileService.cs
+@@ -84,7 +84,8 @@ private bool ChangeFileDateToLocalAirDate(string filePath, string fileDate, stri
+             if (DateTime.TryParse(fileDate + ' ' + fileTime, out var airDate))
+             {
+                 // avoiding false +ve checks and set date skewing by not using UTC (Windows)
+-                var oldLastWrite = _diskProvider.FileGetLastWrite(filePath);
++                // FileGetLastWrite returns UTC, the air date is local
++                var oldLastWrite = _diskProvider.FileGetLastWrite(filePath).ToLocalTime();
+ 
+                 if (OsInfo.IsNotWindows && airDate < EpochTime)
+                 {

@@ -1,0 +1,23 @@
+  Determining projects to restore...
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/src/NzbDrone.Common/Sonarr.Common.csproj (in 290 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/src/NzbDrone.SignalR/Sonarr.SignalR.csproj (in 294 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/src/Sonarr.Http/Sonarr.Http.csproj (in 327 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/src/NzbDrone.Test.Common/Sonarr.Test.Common.csproj (in 342 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/src/NzbDrone.Core/Sonarr.Core.csproj (in 348 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/src/Sonarr.Api.V5/Sonarr.Api.V5.csproj (in 348 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/src/Sonarr.Api.V3/Sonarr.Api.V3.csproj (in 362 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/src/NzbDrone.Api.Test/Sonarr.Api.Test.csproj (in 392 ms).
+  Sonarr.Common -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/_output/net10.0/Sonarr.Common.dll
+  Sonarr.Core -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/_output/net10.0/Sonarr.Core.dll
+  Sonarr.SignalR -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/_output/net10.0/Sonarr.SignalR.dll
+  Sonarr.Test.Common -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/_tests/net10.0/Sonarr.Test.Common.dll
+  Sonarr.Http -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/_output/net10.0/Sonarr.Http.dll
+  Sonarr.Api.V3 -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/_output/net10.0/Sonarr.Api.V3.dll
+  Sonarr.Api.V5 -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/_output/net10.0/Sonarr.Api.V5.dll
+  Sonarr.Api.Test -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-12/worktree/_tests/net10.0/Sonarr.Api.Test.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:06.90

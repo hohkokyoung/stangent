@@ -1,0 +1,26 @@
+diff --git a/src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV1.cs b/src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV1.cs
+index 0bd5981e8a..754a075d0f 100644
+--- a/src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV1.cs
++++ b/src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV1.cs
+@@ -339,7 +339,7 @@ private void AuthenticateClient(HttpRequestBuilder requestBuilder, QBittorrentSe
+                 return;
+             }
+ 
+-            var authKey = string.Format("{0}:{1}", requestBuilder.BaseUrl, settings.Password);
++            var authKey = string.Format("{0}:{1}:{2}", requestBuilder.BaseUrl, settings.Username, settings.Password);
+ 
+             var cookies = _authCookieCache.Find(authKey);
+ 
+diff --git a/src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV2.cs b/src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV2.cs
+index 89bdc40e04..179ac66052 100644
+--- a/src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV2.cs
++++ b/src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV2.cs
+@@ -413,7 +413,7 @@ private void AuthenticateClient(HttpRequestBuilder requestBuilder, QBittorrentSe
+                 return;
+             }
+ 
+-            var authKey = string.Format("{0}:{1}", requestBuilder.BaseUrl, settings.Password);
++            var authKey = string.Format("{0}:{1}:{2}", requestBuilder.BaseUrl, settings.Username, settings.Password);
+ 
+             var cookies = _authCookieCache.Find(authKey);
+ 

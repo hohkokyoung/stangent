@@ -20,7 +20,7 @@ static class FixCommands
         start.SetAction(pr => Cli.Run(pr, "fix start", ctx => FixLoop.Start(ctx.Repo, pr.GetValue(key)!, pr.GetValue(baseOption), pr.GetValue(replaceOption))));
         fix.Subcommands.Add(start);
 
-        var contextOption = new Option<string>("--context") { Description = "What the fixer gets (D345): ticket (the ticket, the code, the failing test) or bundle (the same plus the ticket bundle).", DefaultValueFactory = _ => "bundle" };
+        var contextOption = new Option<string>("--context") { Description = "What the fixer gets (D345, D357): files (the ticket, the code, the failing test and the finder's files, the default), ticket (without the files) or bundle (the whole ticket bundle).", DefaultValueFactory = _ => "files" };
         var prepare = new Command("prepare", "Write the fixer's input and the limits the driver runs it under.") { key, contextOption };
         prepare.SetAction(pr => Cli.Run(pr, "fix prepare", ctx => FixLoop.Prepare(ctx.Repo, pr.GetValue(key)!, pr.GetValue(contextOption)!)));
         fix.Subcommands.Add(prepare);

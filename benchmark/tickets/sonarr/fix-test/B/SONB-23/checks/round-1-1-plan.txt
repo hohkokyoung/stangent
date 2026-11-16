@@ -1,0 +1,2 @@
+src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV2.cs · Sonarr.Core|T:NzbDrone.Core.Download.Clients.QBittorrent.QBittorrentProxyV2
+src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV1.cs · Sonarr.Core|T:NzbDrone.Core.Download.Clients.QBittorrent.QBittorrentProxyV1

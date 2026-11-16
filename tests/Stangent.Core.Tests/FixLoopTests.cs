@@ -353,6 +353,23 @@ public class FixLoopTests
     }
 
     [Fact]
+    public void By_default_the_input_has_the_finders_files_and_not_the_rest_of_the_bundle()
+    {
+        using var rig = new Rig();
+        var file = Path.Combine(rig.Root, ".stangent", "tickets", Key, "bundle.json");
+        var bundle = JsonNode.Parse(File.ReadAllText(file))!.AsObject();
+        bundle["points"] = new JsonArray(new JsonObject { ["kind"] = StartingPoint.File, ["id"] = Service, ["why"] = "the finder thinks Place skips approval" });
+        File.WriteAllText(file, bundle.ToJsonString());
+        rig.Start();
+        rig.Prepare("files");   // fix-run.sh's and the CLI's default (D357)
+        var input = File.ReadAllText(rig.Paths.Input);
+        Assert.Contains("# Where the work likely starts", input);
+        Assert.Contains($"- `{Service}`", input);
+        Assert.DoesNotContain("# The ticket bundle", input);
+        Assert.DoesNotContain("the finder thinks Place", input);   // no reasons, only the list
+    }
+
+    [Fact]
     public void A_call_never_gets_more_than_whats_left_of_the_tickets_cap()
     {
         using var rig = new Rig("fix:\n  ticketUsd: 1.2\n");

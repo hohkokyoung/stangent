@@ -1,0 +1,13 @@
+diff --git a/src/NzbDrone.Core/Notifications/NotificationService.cs b/src/NzbDrone.Core/Notifications/NotificationService.cs
+index 94741adc8d..f7de7a2943 100644
+--- a/src/NzbDrone.Core/Notifications/NotificationService.cs
++++ b/src/NzbDrone.Core/Notifications/NotificationService.cs
+@@ -342,7 +342,7 @@ public void Handle(ManualInteractionRequiredEvent message)
+             var series = message.Episode?.Series;
+             var mess = "";
+ 
+-            if (series != null)
++            if (series != null && message.Episode.Episodes.Any())
+             {
+                 mess = GetMessage(series, message.Episode.Episodes, message.Episode.ParsedEpisodeInfo.Quality);
+             }

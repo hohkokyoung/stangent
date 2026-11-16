@@ -16,7 +16,7 @@
 # <parent graphs dir> holds <issue>.sqlite from parent_graphs.sh (D339): the graph at each fix's parent.
 # env:   STANGENT (default: the benchmark's stangent build), PLUGIN_DIR, BENCH_DOTNET, as run.sh
 # out:   <tickets dir>/fix-test/<A|B>/<KEY>/ agent-run.json, report.md, task-plan.json, checks/, fix.patch; run.log
-# Written, not yet run (2026-11-16): the run phase is paid, after 2026-11-18, with the owner's OK first.
+# Run 2026-11-16 on the 12 unit-test bugs (D356, D357); --only picks bugs, the run phase is paid.
 set -euo pipefail
 
 usage() { sed -n 's/^# usage: //p' "$0" >&2; exit 2; }
@@ -97,6 +97,15 @@ phase_recheck() {
   log "recheck: $(jq -s 'map(select(.qualifies)) | length' "$OUT/recheck.jsonl") bugs qualify"
 }
 
+# However the run ends: side B's pinned bundles and the clone's graph put back, and the clone back on its pin with the SDK
+# pin and no leftover test (`at` cleans src/ and frontend/ and copies global.json).
+restore() {
+  local p
+  for p in "$CLONE"/.stangent/tickets/*/bundle.json.pinned; do [ -f "$p" ] && mv "$p" "${p%.pinned}"; done
+  [ -z "${SAVED_GRAPH:-}" ] || mv "$SAVED_GRAPH" "$CLONE/.stangent/graph.sqlite"
+  (cd "$CLONE" && at "$PINNED") 2>/dev/null || true
+}
+
 phase_run() {
   [ -s "$OUT/recheck.jsonl" ] || { log "run: no recheck.jsonl; run the recheck phase first (free)"; exit 2; }
   local graph=".stangent/graph.sqlite"
@@ -105,7 +114,7 @@ phase_run() {
   if [ -f "$graph" ]; then SAVED_GRAPH="$(mktemp)"; cp "$graph" "$SAVED_GRAPH"; fi
   # The loop below runs in a pipeline's subshell, so its variables don't reach this trap: a side B bundle cut short is
   # found by its .pinned copy.
-  trap 'for p in "'"$CLONE"'"/.stangent/tickets/*/bundle.json.pinned; do [ -f "$p" ] && mv "$p" "${p%.pinned}"; done; [ -z "$SAVED_GRAPH" ] || mv "$SAVED_GRAPH" "'"$CLONE"'/.stangent/graph.sqlite"; git -C "'"$CLONE"'" checkout -q -f "'"$PINNED"'" 2>/dev/null || true' EXIT
+  trap restore EXIT
   candidates | while read -r n key parent fix file; do
     jq -e --arg key "$key" 'select(.key == $key and .qualifies)' "$OUT/recheck.jsonl" >/dev/null 2>&1 || continue
     for side in ${SIDES//,/ }; do

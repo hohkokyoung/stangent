@@ -1,0 +1,46 @@
+{
+  "baseCommit": "4bdb0408f1bafa38b777a41babb1a775f99a94c1",
+  "changes": [
+    {
+      "file": "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs",
+      "point": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand)",
+      "reach": [
+        "frontend/src/Store/Actions/interactiveImportActions.js",
+        "src/NzbDrone.Core/Authentication/UserService.cs",
+        "src/NzbDrone.Core/Configuration/ConfigFileProvider.cs",
+        "src/NzbDrone.Core/Download/DownloadEventHub.cs",
+        "src/NzbDrone.Core/Download/History/DownloadHistoryService.cs",
+        "src/NzbDrone.Core/HealthCheck/Checks/ApiKeyValidationCheck.cs",
+        "src/NzbDrone.Core/HealthCheck/HealthCheckService.cs",
+        "src/NzbDrone.Core/Instrumentation/ReconfigureSentry.cs",
+        "src/NzbDrone.Core/Jobs/Scheduler.cs",
+        "src/NzbDrone.Core/Jobs/TaskManager.cs",
+        "src/NzbDrone.Core/Messaging/Commands/CommandExecutor.cs",
+        "src/NzbDrone.Core/Messaging/Commands/CommandQueueManager.cs",
+        "src/NzbDrone.Core/Messaging/Commands/IExecute.cs",
+        "src/NzbDrone.Core/Notifications/NotificationService.cs",
+        "src/NzbDrone.Core/Profiles/Qualities/QualityProfileService.cs",
+        "src/NzbDrone.Core/ProgressMessaging/ProgressMessageTarget.cs",
+        "src/NzbDrone.Core/Qualities/QualityDefinitionService.cs",
+        "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs",
+        "src/NzbDrone.Core/Update/ConfigureUpdateMechanism.cs",
+        "src/NzbDrone.Core/Update/History/UpdateHistoryService.cs",
+        "src/Sonarr.Api.V3/ManualImport/ManualImportController.cs",
+        "src/Sonarr.Api.V3/Qualities/QualityDefinitionController.cs",
+        "src/Sonarr.Api.V3/System/Tasks/TaskController.cs"
+      ],
+      "why": {
+        "kind": "test",
+        "test": "NzbDrone.Core.Test.MediaFiles.EpisodeImport.Manual.ManualImportServiceFixture.should_not_publish_untracked_completed_event_when_manually_importing_tracked_download"
+      }
+    }
+  ],
+  "gaveUp": null,
+  "key": "SONB-27",
+  "schemaVersion": 1,
+  "test": {
+    "failedBefore": "Moq.MockException : \nExpected invocation on the mock should never have been performed, but was 1 times: v => v.PublishEvent<UntrackedDownloadCompletedEvent>(It.IsAny<UntrackedDownloadCompletedEvent>())\n\nPerformed invocations:\n\n   Mock<IEventAggregator:1> (v):\n\n      IEventAggregator.PublishEvent<UntrackedDownloadCompletedEvent>(UntrackedDownloadCompletedEvent)\n      IEventAggregator.PublishEvent<DownloadCompletedEvent>(DownloadCompletedEvent)\n",
+    "file": "src/NzbDrone.Core.Test/MediaFiles/EpisodeImport/Manual/ManualImportServiceFixture.cs",
+    "name": "NzbDrone.Core.Test.MediaFiles.EpisodeImport.Manual.ManualImportServiceFixture.should_not_publish_untracked_completed_event_when_manually_importing_tracked_download"
+  }
+}

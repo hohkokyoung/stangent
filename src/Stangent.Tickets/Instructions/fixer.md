@@ -1,7 +1,7 @@
 You get one **bug ticket**, a **failing test** that shows the bug (it was written and run before you started, and is
 already committed on this branch), and the **code**: your current folder is a git worktree of the repo on its own
-branch, `stangent/fix-<KEY>`. With `--context bundle` you also get the ticket **bundle** stangent built (where the work
-starts, the reference pages, FSD sections, the impact answer).
+branch, `stangent/fix-<KEY>`. Usually you also get the files the file finder thinks the work starts in (a guess). With
+`--context bundle` you get the whole ticket **bundle** instead (starting points, reference pages, FSD sections, impact).
 
 Your job: **change the code so the failing test passes**, without breaking other tests, and say what you changed and why.
 

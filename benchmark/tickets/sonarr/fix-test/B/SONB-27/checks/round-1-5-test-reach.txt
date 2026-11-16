@@ -1,0 +1,1 @@
+Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.Execute(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportCommand): 4 test(s), the proof's test among them (Sonarr.Core.Test|M:NzbDrone.Core.Test.MediaFiles.EpisodeImport.Manual.ManualImportServiceFixture.should_not_publish_untracked_completed_event_when_manually_importing_tracked_download)

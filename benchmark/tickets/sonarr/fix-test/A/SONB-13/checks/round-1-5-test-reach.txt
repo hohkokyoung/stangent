@@ -1,0 +1,1 @@
+Sonarr.Core|M:NzbDrone.Core.Notifications.Emby.MediaBrowserProxy.ProcessGetRequest``1(NzbDrone.Common.Http.HttpRequest,NzbDrone.Core.Notifications.Emby.MediaBrowserSettings): 1804 test(s), the proof's test among them (Sonarr.Core.Test|M:NzbDrone.Core.Test.NotificationTests.MediaBrowserProxyFixture.get_paths_should_send_authorization_header)

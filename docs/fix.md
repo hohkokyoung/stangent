@@ -2,10 +2,10 @@
 
 One fix agent per bug, inside a loop run by code (D343). The agent plans and edits; code runs every check; a failed
 check gives one retry, then the ticket goes back to a person. Every fix is on its own branch in its own git worktree,
-and nothing is ever pushed (D347). Plan: `phases/4-agents.md`. Decisions: D343–D356.
+and nothing is ever pushed (D347). Plan: `phases/4-agents.md`. Decisions: D343–D357.
 
 ```
-plugin/scripts/fix-run.sh --max-cost 3 --context bundle SONB-14
+plugin/scripts/fix-run.sh --max-cost 3 SONB-14
 started   SONB-14  start
 retry     SONB-14  check        ← a check failed; the fixer's one retry
 fixed     SONB-14  check
@@ -32,9 +32,11 @@ It also copies into the worktree, git-ignored: `stangent.yaml` if the repo doesn
 repo's path in its build arguments moved to the worktree, so `--verify` builds the worktree's code) and the graph (so
 the rebuild in check 5 is incremental).
 
-**`--context` (D345).** `ticket`: the ticket (summary, description, comments, the bug's fields), the code (the
-worktree) and the failing test with its failure. `bundle`: the same plus the ticket bundle as `docs/tickets.md`
-describes it (starting points, pages, FSD sections, impact, attachments). Only `bundle` allows an FSD reason.
+**`--context` (D345, D357).** `files`, the default: the ticket (summary, description, comments, the bug's fields), the
+code (the worktree), the failing test with its failure, and the file finder's starting files as a list. `ticket`: the
+same without the files. `bundle`: the whole ticket bundle as `docs/tickets.md` describes it (starting points, pages,
+FSD sections, impact, attachments). Only `bundle` allows an FSD reason. D345 measured `ticket` against `bundle`: both
+fixed all 12 unit-test bugs, the bundle for 27% more tokens, so it failed its bar and `files` became the default.
 
 ## The plan (D344)
 
@@ -104,5 +106,6 @@ not the cost again.
 
 ## The first measurement (D345)
 
-`benchmark/tickets/fix_test.sh` runs both sides on Sonarr's 17 bugs and `benchmark/tickets/fix_score.py` scores them;
-see `phases/4-agents.md`. Written, not yet run (paid; after 2026-11-18, the owner's OK first).
+`benchmark/tickets/fix_test.sh` runs both sides and `benchmark/tickets/fix_score.py` scores them. Run 2026-11-16 on
+Sonarr's 12 unit-test bugs (the 5 Playwright ones can't pass check 4 yet, D356): both sides 12 of 12, the bundle for
+27% more tokens; the bar failed (D357). Results in `benchmark/tickets/sonarr/fix-test/`.
