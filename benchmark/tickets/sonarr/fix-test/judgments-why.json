@@ -1,0 +1,29 @@
+{
+  "judge": "fresh Sonnet agent, blind to side (shuffled, labels removed), 2026-11-16",
+  "why": {
+    "A SONB-12": "clean: Identical to developer: assigns the lookup result to series.",
+    "A SONB-13": "clean: Adds the Authorization header to all GET and POST requests so every call authenticates.",
+    "A SONB-15": "symptom: Fixes only Resolution validator; the identical flaw in SourceSpecification remains.",
+    "A SONB-19": "clean: Trims trailing separators before appending the relative path.",
+    "A SONB-20": "clean: Identical to developer.",
+    "A SONB-21": "clean: Computes the child part from the last separator of the original path instead of a normalized parent length.",
+    "A SONB-22": "clean: Omits the XML declaration after the first episode so output has a single declaration.",
+    "A SONB-23": "symptom: Only changes V2 cache key; leaves cookie storage/credential reuse that the developer fixed.",
+    "A SONB-24": "symptom: Only skips message in NotificationService.Handle; Discord/Slack GetTitle and GetMessage still crash on empty episode lists.",
+    "A SONB-25": "clean: Stops the French match from consuming the trailing delimiter via lookahead, fixing the overlap for adjacent language tokens.",
+    "A SONB-26": "clean: Converts last write to local time before comparing to the local air date, removing the repeat-update cause.",
+    "A SONB-27": "clean: Replaces the broken FirstOrDefault(!=) predicate with a correct not-in-tracked check.",
+    "B SONB-12": "clean: Identical to developer: assigns the lookup result to series.",
+    "B SONB-13": "clean: Adds the Authorization header to all GET and POST requests so every call authenticates.",
+    "B SONB-15": "symptom: Fixes only Resolution validator; the identical NotEmpty flaw in SourceSpecification remains.",
+    "B SONB-19": "clean: Avoids doubling the separator when the location already ends with one (drive/root).",
+    "B SONB-20": "clean: Identical to developer.",
+    "B SONB-21": "clean: Computes the child part from the last separator of the original path instead of a normalized parent length.",
+    "B SONB-22": "clean: Omits the XML declaration after the first episode so output has a single declaration.",
+    "B SONB-23": "symptom: Only adds username to the auth cache key; misses the developer's fix of the HTTP cookie jar reusing the stored cookie and basic-auth credentials on every request.",
+    "B SONB-24": "symptom: Only skips message in NotificationService.Handle; Discord/Slack GetTitle and GetMessage still crash on empty episode lists.",
+    "B SONB-25": "clean: Stops the French match from consuming the trailing delimiter via lookahead, fixing the overlap for adjacent language tokens.",
+    "B SONB-26": "clean: Converts last write to local time before comparing to the local air date, removing the repeat-update cause.",
+    "B SONB-27": "clean: Replaces the broken FirstOrDefault(!=) predicate with a correct not-in-tracked check."
+  }
+}

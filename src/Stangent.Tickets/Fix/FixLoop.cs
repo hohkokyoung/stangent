@@ -745,6 +745,7 @@ public static class FixLoop
             ["stop"] = state["stop"]!.DeepClone(),
             ["plan"] = (string?)state["plan"],
             ["outsideReach"] = (state["outsideReach"] as JsonArray)?.DeepClone() ?? new JsonArray(),
+            ["sameCodeElsewhere"] = (string?)state["stop"]?["reason"] == "fixed" ? SameCodeElsewhere(paths, state) : new JsonArray(),
             ["edited"] = (state["edited"] as JsonArray)?.DeepClone() ?? new JsonArray(),
             ["commits"] = state["commits"]!.DeepClone(),
             ["costUsd"] = Math.Round(Spent(state), 6), ["capUsd"] = (double)state["capUsd"]!,
@@ -754,6 +755,37 @@ public static class FixLoop
         File.WriteAllText(paths.AgentRun, CanonicalJson.Serialize(run));
         File.WriteAllText(paths.Report, Markdown(repo, paths, run));
         return run;
+    }
+
+    /// <summary>
+    /// D359, D360: a green fix can leave the same flaw in a second place the test doesn't reach (SONB-15: one validator
+    /// fixed, its twin not). Each line the fixer replaced that still appears, word for word, somewhere in the repo's tracked
+    /// files (the proof's test left out). Code, no AI; a note for the developer, never a failed check.
+    /// </summary>
+    static JsonArray SameCodeElsewhere(FixPaths paths, JsonObject state)
+    {
+        var found = new JsonArray();
+        if (!Directory.Exists(paths.Worktree) || (string?)state["testCommit"] is not { Length: > 0 } from) return found;
+        var prefix = (string?)state["prefix"] ?? "";
+        var diff = Git.Run(paths.Worktree, "diff", "-U0", "--no-color", from, "HEAD", "--", prefix.Length == 0 ? "." : prefix, $":(exclude){prefix}.stangent");
+        if (!diff.Ok) return found;
+        var lines = diff.Out.Split('\n');
+        var added = lines.Where(l => l.StartsWith('+') && !l.StartsWith("+++")).Select(l => l[1..].Trim()).ToHashSet(StringComparer.Ordinal);
+        var removed = lines.Where(l => l.StartsWith('-') && !l.StartsWith("---")).Select(l => l[1..].Trim())
+            .Where(l => l.Length >= 15 && l.Any(char.IsLetter) && !added.Contains(l) && !l.StartsWith("//") && !l.StartsWith('*') && !l.StartsWith("using "))
+            .Distinct(StringComparer.Ordinal).Take(20);
+        var testFile = (string)state["testFile"]!;
+        foreach (var line in removed)
+        {
+            var grep = Git.Run(paths.Worktree, "grep", "-n", "-F", "--full-name", "-I", "-e", line);
+            if (!grep.Ok) continue;   // exit 1: nowhere
+            var places = grep.Out.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(g => g.Split(':', 3)).Where(g => g.Length == 3).Select(g => (File: Strip(prefix, g[0]), Line: g[1]))
+                .Where(g => g.File != testFile && !IsStangent(g.File)).Select(g => $"{g.File}:{g.Line}").Take(10).ToList();
+            if (places.Count > 0) found.Add(new JsonObject { ["line"] = line, ["places"] = new JsonArray([.. places.Select(p => (JsonNode)p)]) });
+            if (found.Count >= 10) break;
+        }
+        return found;
     }
 
     static string Markdown(StangentRepo repo, FixPaths paths, JsonObject run)
@@ -807,6 +839,14 @@ public static class FixLoop
             sb.Append("## Edited files\n\n");
             foreach (var f in run["edited"]!.AsArray().Select(x => (string)x!))
                 sb.Append($"- `{f}`{(outside.Contains(f) ? " · **outside the plan's reach**" : "")}\n");
+            sb.Append('\n');
+        }
+        var same = (run["sameCodeElsewhere"] as JsonArray ?? []).OfType<JsonObject>().ToList();
+        if (same.Count > 0)
+        {
+            sb.Append("## Same code elsewhere, not changed\n\nThe fix replaced these lines, and they still appear here. The test passes either way; check whether the bug lives here too (D360).\n\n");
+            foreach (var s in same)
+                sb.Append($"- `{((string)s["line"]!).Replace("`", "'")}` · {string.Join(", ", s["places"]!.AsArray().Select(p => $"`{p}`"))}\n");
             sb.Append('\n');
         }
         sb.Append(stop switch

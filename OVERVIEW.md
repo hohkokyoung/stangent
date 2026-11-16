@@ -1,6 +1,6 @@
 # Stangent in plain words
 
-*What the project does, part by part, with an example of each. Written 2026-11-11 from `spec.md`, `roadmap.md` and `decisions.md` on branch `claude/phase2c-spec` (worktree `.claude/worktrees/phase2c-spec`); updated 2026-11-16 from `roadmap.md`, `decisions.md` (to D357), `phases/r4-pages.md` and the handoff note. If this page and those files disagree, they win; fix this page.*
+*What the project does, part by part, with an example of each. Written 2026-11-11 from `spec.md`, `roadmap.md` and `decisions.md` on branch `claude/phase2c-spec` (worktree `.claude/worktrees/phase2c-spec`); updated 2026-11-16 from `roadmap.md`, `decisions.md` (to D359), `phases/r4-pages.md` and the handoff note. If this page and those files disagree, they win; fix this page.*
 
 ## The one-paragraph version
 
@@ -67,7 +67,7 @@ On 2026-11-07 the spec-to-code links failed their targets: they found 24 of 30 k
 ### Phase 4 — Fixing a bug ✅ built and first run (D343–D357)
 **What it does:** takes a bug whose failing test the bug proof already wrote, and has one AI agent fix it in a copy of the repo on its own branch (`stangent/fix-<KEY>`). The agent says what it changed, where and why (a quote from the ticket, say). Code then checks five things in order: the plan's places and quotes are real, it only edited what the plan reaches, it builds, the failing test now passes with nothing else broken, and the test really runs the changed code. One retry; then a person. Nothing is ever pushed.
 **Example (made up: nothing real has run yet):** `fix-run.sh --max-cost 3 SONB-14` → branch `stangent/fix-SONB-14` and `report.md`: "fixed · plan: `CommandResource.cs` · why: ticket 'the server crashes on a nested body' · 5 checks ✅ · $0.62 of $3".
-**First real run (D345, 2026-11-16, $2.20):** on 12 Sonarr bugs, the agent fixed every one with only the ticket and the failing test, and the same 12 with the whole bundle for 27% more tokens. So the bundle doesn't earn its cost on bugs like these; the fixer now gets the ticket, the test and the file finder's list of files. Caveats: these bugs were easy enough that nothing extra was needed; on 6 of them the developer changed 2–3 files and the agent changed one, which a fresh judge still has to call a real fix or a patch; the 5 browser-test bugs can't be checked yet.
+**First real run (D345, 2026-11-16, $2.20):** on 12 Sonarr bugs, the agent fixed every one with only the ticket and the failing test, and the same 12 with the whole bundle for 27% more tokens. So the bundle doesn't earn its cost on bugs like these; the fixer now gets the ticket, the test and the file finder's list of files. Caveats: these bugs were easy enough that nothing extra was needed; on 6 of them the developer changed 2–3 files and the agent changed one, and a fresh judge found 3 of those green fixes left part of the bug (the same flaw in a second place), on both sides (D359); the 5 browser-test bugs can't be checked yet.
 
 ## How work gets checked (why things take the time they do)
 
@@ -80,7 +80,7 @@ On 2026-11-07 the spec-to-code links failed their targets: they found 24 of 30 k
 
 - Work is on the `claude/phase2c-spec` worktree, ahead of `main` (`main` stops around D88); 59 commits aren't pushed, and layer 7 isn't committed yet.
 - The rebuild's seven layers are all built or settled. What paid off: code checking the AI's answers, and `graph impact`. Side-by-side tests kept showing an agent reading the code does as well as Stangent's prepared material.
-- Phase 4's minimal fix loop is built, committed and run once (D345, D357). Paid, each asked first: the clean-or-symptom judging of D345's fixes, the live FSD review, a ticket run without the old pages, the owed bug-proof re-run.
+- Phase 4's minimal fix loop is built, committed and run once (D345, D357). Paid, each asked first: the live FSD review, a ticket run without the old pages, the owed bug-proof re-run.
 - Recent calls left to me: D341 (how the review merges two runs), D342's details (`trace approve`/`attribute` kept; old findings read "unverified").
 
 ## Words you'll see

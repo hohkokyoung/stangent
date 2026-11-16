@@ -123,7 +123,7 @@ public class FixLoopTests
 
         public JsonObject Start(string? baseRef = null, bool replace = false) => FixLoop.Start(Repo, Key, baseRef, replace);
 
-        public JsonObject Prepare(string context = "bundle") => FixLoop.Prepare(Repo, Key, context);
+        public JsonObject Prepare(string context = "files") => FixLoop.Prepare(Repo, Key, context);
 
         /// <summary>The fixer's edit: the comparison uses the limit itself.</summary>
         public void Fix() => Edit(Service, s => s.Replace("total > ApprovalLimit * 10", "total > ApprovalLimit"));
@@ -396,6 +396,40 @@ public class FixLoopTests
         Assert.Equal("fixed", (string?)rig.Check(Rig.Plan())["status"]);
         Assert.Equal("fix: SHOP-1", rig.WtGit("log", "-1", "--format=%s").Trim());
         Assert.Equal([Service], rig.WtGit("diff", "--name-only", "HEAD~1", "HEAD").Split('\n', StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    [Fact]
+    public void A_fixed_report_names_the_same_code_left_unchanged_elsewhere()
+    {
+        using var rig = new Rig();
+        File.WriteAllText(Path.Combine(rig.Root, "Shop.Core", "BulkOrders.cs"),
+            "namespace Shop.Core;\n\npublic class BulkOrders\n{\n    const decimal ApprovalLimit = 100;\n    public Order Place(decimal total)\n    {\n        return new Order(total, total > ApprovalLimit * 10);\n    }\n}\n");
+        rig.Git("add", "Shop.Core/BulkOrders.cs");
+        rig.Git("commit", "-q", "-m", "a twin with the same flaw");
+        rig.Start();
+        rig.Prepare();
+        rig.Fix();
+        Assert.Equal("fixed", (string?)rig.Check(Rig.Plan())["status"]);
+        var run = FixLoop.Report(rig.Repo, Key);
+        var same = Assert.Single(run["sameCodeElsewhere"]!.AsArray());   // D360: the twin, not the fixed line or the test
+        Assert.Equal("return new Order(total, total > ApprovalLimit * 10);", (string?)same!["line"]);
+        Assert.Equal(["Shop.Core/BulkOrders.cs:8"], same["places"]!.AsArray().Select(p => (string)p!));
+        Assert.Equal("files", (string?)run["context"]);
+        var report = File.ReadAllText(rig.Paths.Report);
+        Assert.Contains("## Same code elsewhere, not changed", report);
+        Assert.Contains("`Shop.Core/BulkOrders.cs:8`", report);
+    }
+
+    [Fact]
+    public void A_fix_with_no_twin_reports_no_same_code()
+    {
+        using var rig = new Rig();
+        rig.Start();
+        rig.Prepare();
+        rig.Fix();
+        rig.Check(Rig.Plan());
+        Assert.Empty(FixLoop.Report(rig.Repo, Key)["sameCodeElsewhere"]!.AsArray());
+        Assert.DoesNotContain("Same code elsewhere", File.ReadAllText(rig.Paths.Report));
     }
 
     [Fact]

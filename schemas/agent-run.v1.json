@@ -13,7 +13,7 @@
     "base": { "description": "The ref the branch started from, as given.", "type": "string" },
     "baseCommit": { "type": "string" },
     "worktree": { "description": "Relative to the repo; null when none was made.", "type": ["string", "null"] },
-    "context": { "description": "What the fixer was given (D345): ticket = the ticket, the code and the failing test; bundle = the same plus the ticket bundle; null before prepare.", "enum": ["ticket", "bundle", null] },
+    "context": { "description": "What the fixer was given (D345, D357): files = the ticket, the code, the failing test and the finder's files (the default); ticket = without the files; bundle = the whole ticket bundle; null before prepare.", "enum": ["files", "ticket", "bundle", null] },
     "model": { "type": ["string", "null"] },
     "effort": { "type": ["string", "null"] },
     "steps": {
@@ -59,6 +59,14 @@
       }
     },
     "plan": { "description": "task-plan.json, relative to the repo; null when no plan was checked.", "type": ["string", "null"] },
+    "sameCodeElsewhere": {
+      "description": "After a fixed run: lines the fixer replaced that still appear elsewhere in the repo, unchanged (D360). For the developer to look at; never a failed check.",
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["line", "places"],
+        "properties": { "line": { "type": "string" }, "places": { "type": "array", "items": { "type": "string" } } }
+      }
+    },
     "outsideReach": { "description": "Edited files in neither the plan's changes nor their reach (D344).", "type": "array", "items": { "type": "string" } },
     "edited": { "description": "Files the fixer edited on the branch (the proof test left out).", "type": "array", "items": { "type": "string" } },
     "commits": { "type": "array", "items": { "type": "string" } },

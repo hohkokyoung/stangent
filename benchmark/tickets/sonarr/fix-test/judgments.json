@@ -1,0 +1,30 @@
+{
+  "A": {
+    "SONB-12": "clean",
+    "SONB-13": "clean",
+    "SONB-15": "symptom",
+    "SONB-19": "clean",
+    "SONB-20": "clean",
+    "SONB-21": "clean",
+    "SONB-22": "clean",
+    "SONB-23": "symptom",
+    "SONB-24": "symptom",
+    "SONB-25": "clean",
+    "SONB-26": "clean",
+    "SONB-27": "clean"
+  },
+  "B": {
+    "SONB-12": "clean",
+    "SONB-13": "clean",
+    "SONB-15": "symptom",
+    "SONB-19": "clean",
+    "SONB-20": "clean",
+    "SONB-21": "clean",
+    "SONB-22": "clean",
+    "SONB-23": "symptom",
+    "SONB-24": "symptom",
+    "SONB-25": "clean",
+    "SONB-26": "clean",
+    "SONB-27": "clean"
+  }
+}

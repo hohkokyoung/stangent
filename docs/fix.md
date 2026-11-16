@@ -2,7 +2,7 @@
 
 One fix agent per bug, inside a loop run by code (D343). The agent plans and edits; code runs every check; a failed
 check gives one retry, then the ticket goes back to a person. Every fix is on its own branch in its own git worktree,
-and nothing is ever pushed (D347). Plan: `phases/4-agents.md`. Decisions: D343–D357.
+and nothing is ever pushed (D347). Plan: `phases/4-agents.md`. Decisions: D343–D360.
 
 ```
 plugin/scripts/fix-run.sh --max-cost 3 SONB-14
@@ -97,7 +97,9 @@ Whatever it edited is committed on the branch when the ticket stops (`fix: <KEY>
 
 `.stangent/fix/<KEY>/report.md`: why it stopped, the branch and base, what the fixer was given, the model, the cost
 against the ticket's cap, the plan (where · why · reaches), each check, the last failed check's output, and the
-edited files (any outside the plan's reach marked). `agent-run.json` holds the same as data. Stop reasons: `fixed`,
+edited files (any outside the plan's reach marked), and after a fix, each line the fixer replaced that still appears
+elsewhere in the repo ("Same code elsewhere, not changed", D360: a twin with the same flaw the test may not reach; a
+note, never a failed check). `agent-run.json` holds the same as data. Stop reasons: `fixed`,
 `no-failing-test`, `gave-up`, `cap-hit`, `check-failed`, `in-progress`.
 
 **Telemetry (D21).** Each `fix check` event carries its call's model, tokens and cost (so `guard_estimate "fix check"`
