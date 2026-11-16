@@ -87,9 +87,15 @@ public static class FixLoop
         var baseCommit = Git.Run(repo.Root, "rev-parse", "--verify", "--quiet", (baseRef ?? "HEAD") + "^{commit}") is { Ok: true } b ? b.Out.Trim()
             : throw new StangentException("bad_base", $"'{baseRef ?? "HEAD"}' isn't a commit here.", ExitCodes.Usage);
 
-        // A dirty base: anything changed but the proof's test (the reproducer wrote it here) and stangent's own folder.
+        // A dirty base: a tracked file changed, but the proof's test (the reproducer wrote it here), stangent's own folder
+        // and the local files. Untracked files never reach the worktree, so they aren't dirt (an untracked stangent.yaml,
+        // page output): they're named in a warning instead (D353).
         var local = repo.Config.Fix.LocalFiles.Select(TestTarget.Normalize).ToHashSet(StringComparer.Ordinal);
-        var dirty = Git.Changed(repo.Root).Select(p => Strip(prefix, p)).Where(p => p != testFile && !IsStangent(p) && !local.Contains(p)).Order(StringComparer.Ordinal).ToList();
+        var untracked = Git.Must(repo.Root, "ls-files", "--others", "--exclude-standard", "--full-name", "-z")
+            .Split('\0', StringSplitOptions.RemoveEmptyEntries).Select(p => Strip(prefix, p)).ToHashSet(StringComparer.Ordinal);
+        bool Ours(string p) => p == testFile || IsStangent(p) || local.Contains(p);
+        var dirty = Git.Changed(repo.Root).Select(p => Strip(prefix, p)).Where(p => !Ours(p) && !untracked.Contains(p)).Order(StringComparer.Ordinal).ToList();
+        var leftOut = untracked.Where(p => !Ours(p) && p != StangentRepo.ConfigFile).Order(StringComparer.Ordinal).ToList();
         if (dirty.Count > 0)
             throw new StangentException("dirty_base", $"The checkout has changes beyond the proof's test ({string.Join(", ", dirty.Take(5))}{(dirty.Count > 5 ? ", …" : "")}): commit or put them aside first, so the fix starts from a known commit.", ExitCodes.Usage, dirty);
 
@@ -119,7 +125,7 @@ public static class FixLoop
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(target)!);
                 File.WriteAllBytes(target, text);
-                Git.Must(paths.Worktree, "add", "--", prefix + testFile);
+                Git.Must(paths.Worktree, "add", "-f", "--", prefix + testFile);   // -f: under an ignored folder too (e2e/, D354)
                 testCommit = Git.Commit(paths.Worktree, $"test: reproduce {paths.Key}\n\nThe bug proof's failing test (stangent ticket prove), committed before any fix (D346).");
             }
         }
@@ -161,6 +167,8 @@ public static class FixLoop
             warnings.Add($"the proof was made at {proofCommit[..Math.Min(7, proofCommit.Length)]}, the base is {baseCommit[..7]}: the test may fail differently here");
         if (!Git.Run(repo.Root, "check-ignore", "-q", ".stangent/fix/x").Ok)
             warnings.Add("`.stangent/fix/` isn't git-ignored here: add it to .gitignore, or the worktree shows as untracked");
+        if (leftOut.Count > 0)
+            warnings.Add($"{leftOut.Count} untracked file(s) left out of the worktree ({string.Join(", ", leftOut.Take(5))}{(leftOut.Count > 5 ? ", …" : "")}): commit one the fix needs, or list it in fix.localFiles");
 
         var state = new JsonObject
         {

@@ -3,14 +3,14 @@
 # own .stangent/ folder, and running commands. Exit 2 refuses the tool call and shows the reason to the agent.
 #
 # Enforced when STANGENT_READ_ONLY is set (a driver's analysis step), or when the agent is one of stangent's, from the
-# hook's `agent_type`. The bug reproducer is the exception: it builds and runs the app and writes its test (D75), under
-# rules of its own. Any other session, and a person's own main session, is left alone.
+# hook's `agent_type`. The bug reproducer and the fixer are the exceptions: they build, run and write code (D75, D343),
+# under rules of their own. Any other session, and a person's own main session, is left alone.
 set -uo pipefail
 input="$(cat)"
 agent="$(jq -r '.agent_type // ""' <<<"$input" 2>/dev/null || echo "")"
 if [ -z "${STANGENT_READ_ONLY:-}" ]; then
   case "$agent" in
-    *stangent-bug-reproducer) exit 0 ;;
+    *stangent-bug-reproducer|*stangent-fixer) exit 0 ;;
     stangent-*|stangent:*) ;;
     *) exit 0 ;;
   esac

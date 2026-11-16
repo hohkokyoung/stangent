@@ -228,6 +228,7 @@ public sealed class ReadOnlyHookTests : IDisposable
     [InlineData("stangent:stangent-page-writer", 2)]
     [InlineData("stangent-link-judge", 2)]
     [InlineData("stangent:stangent-bug-reproducer", 0)]   // D75: bug proof still builds and runs the app
+    [InlineData("stangent:stangent-fixer", 0)]            // D354: the fixer edits code
     [InlineData("some-other-agent", 0)]
     [InlineData(null, 0)]                                  // a person's own session
     public void From_the_plugin_only_stangents_analysis_agents_are_held(string? agent, int exit)

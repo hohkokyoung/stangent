@@ -63,7 +63,8 @@ public sealed class FixRunDriverTests : IDisposable
         Assert.EndsWith("fixed\tK-1\tfix\n", result.Out);
         Assert.Contains("note: K-1: the base moved", result.Err);
         var claude = Assert.Single(rig.ClaudeCalls());
-        Assert.Contains("--agent stangent:stangent-fixer", claude);
+        Assert.DoesNotContain("--agent", claude);   // D354: an agent's tools list drops StructuredOutput
+        Assert.DoesNotContain("--plugin-dir", claude);
         Assert.Contains("--model claude-sonnet-5-5 --effort medium", claude);   // D348, unless a flag says otherwise
         Assert.Contains("--max-turns 30 --max-budget-usd 1", claude);
         Assert.Contains($"--disallowedTools Edit(/{wt}/T/Test.cs)", claude);

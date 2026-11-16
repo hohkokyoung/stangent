@@ -64,8 +64,9 @@ public class FixLoopTests
             }
             TicketFixtures.Make(Path.Combine(Root, "replay"), Key, "Bug", "Big orders skip approval", Description);
             Git("init", "-q");
-            if (!trackConfig) File.AppendAllText(Path.Combine(Root, ".git", "info", "exclude"), "stangent.yaml\n");
-            Git("add", "-A");
+            // Untracked and not ignored, as a repo that doesn't commit stangent.yaml has it (D353).
+            if (trackConfig) Git("add", "-A");
+            else Git("add", "-A", "--", ".", ":!stangent.yaml");
             Git("commit", "-q", "-m", "the shop");
             Base = Git("rev-parse", "HEAD").Trim();
             GraphStore.Save(Graph(Base, withProofTest: false), GraphStore.PathFor(Repo));
@@ -251,14 +252,28 @@ public class FixLoopTests
     }
 
     [Fact]
+    public void Start_commits_a_proof_test_under_an_ignored_folder()
+    {
+        using var rig = new Rig();
+        File.AppendAllText(Path.Combine(rig.Root, ".git", "info", "exclude"), "OrderLimitTests.cs\n");   // as Sonarr ignores e2e/ (D354)
+        rig.Start();
+        Assert.Equal("test: reproduce SHOP-1", rig.WtGit("log", "-1", "--format=%s").Trim());
+        Assert.Contains(TestFile, rig.WtGit("show", "--name-only", "--format=", "HEAD"));
+    }
+
+    [Fact]
     public void Start_takes_a_base_and_copies_an_untracked_stangent_yaml_that_the_fixer_may_not_edit()
     {
         using var rig = new Rig(trackConfig: false);
         File.WriteAllText(Path.Combine(rig.Root, "NOTES.md"), "later\n");
         rig.Git("add", "NOTES.md");
         rig.Git("commit", "-q", "-m", "notes");
-        rig.Start(baseRef: rig.Base);
+        File.WriteAllText(Path.Combine(rig.Root, "scratch.txt"), "untracked\n");
+        var started = rig.Start(baseRef: rig.Base);
         Assert.False(File.Exists(Path.Combine(rig.Wt, "NOTES.md")));
+        Assert.False(File.Exists(Path.Combine(rig.Wt, "scratch.txt")));
+        var warnings = started["warnings"]!.AsArray().Select(w => (string)w!).ToList();
+        Assert.Contains(warnings, w => w.Contains("scratch.txt") && !w.Contains("stangent.yaml"));
         Assert.True(File.Exists(Path.Combine(rig.Wt, "stangent.yaml")));
         Assert.Equal(["stangent.yaml"], rig.State["copied"]!.AsArray().Select(c => (string)c!));
         var limits = rig.Prepare()["next"]!["limits"]!;

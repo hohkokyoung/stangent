@@ -77,8 +77,10 @@ fixer_call() {
   transcript="$PWD/.stangent/fix/$key/transcripts/fixer-$(date +%Y%m%d-%H%M%S).jsonl"
   rm -f "$out"
   # No user or project settings (their allow rules would widen the fixer's), no MCP, no auto memory. Each command starts
-  # back in the worktree (D89).
-  printf '%s' "$input" | (cd "$cwd" && CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1 $CLAUDE -p --plugin-dir "$PLUGIN_DIR" --agent "stangent:stangent-fixer" \
+  # back in the worktree (D89). Not `--agent stangent:stangent-fixer`: an agent's `tools:` list drops the StructuredOutput
+  # tool `--json-schema` needs, and the plugin's read-only hook fires on its name (D354). Called as the file finder is;
+  # the instructions are in the input.
+  printf '%s' "$input" | (cd "$cwd" && CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1 $CLAUDE -p \
     --model "$AI_MODEL" --effort "$AI_EFFORT" --tools "$(jq -r '.tools' <<<"$limits")" --allowedTools "${allowed[@]}" \
     ${denied[@]+--disallowedTools "${denied[@]}"} --permission-mode "$(jq -r '.permissionMode' <<<"$limits")" \
     --setting-sources "" --settings '{"autoMemoryEnabled":false}' --strict-mcp-config --disable-slash-commands --no-session-persistence \

@@ -2,7 +2,7 @@
 
 One fix agent per bug, inside a loop run by code (D343). The agent plans and edits; code runs every check; a failed
 check gives one retry, then the ticket goes back to a person. Every fix is on its own branch in its own git worktree,
-and nothing is ever pushed (D347). Plan: `phases/4-agents.md`. Decisions: D343–D352.
+and nothing is ever pushed (D347). Plan: `phases/4-agents.md`. Decisions: D343–D354.
 
 ```
 plugin/scripts/fix-run.sh --max-cost 3 --context bundle SONB-14
@@ -21,13 +21,13 @@ fixed     SONB-14  fix
 |---|---|---|
 | `stangent fix start <KEY> [--base REF] [--replace]` | worktree `.stangent/fix/<KEY>/worktree`, branch `stangent/fix-<KEY>` from HEAD (or `--base`); the proof's test copied from the checkout and committed first, `test: reproduce <KEY>` | code |
 | `stangent fix prepare <KEY> --context ticket\|bundle` | the fixer's input (`work/input.md`) and its limits | code |
-| `stangent-fixer` | edits in the worktree, returns its plan (`fixer-output` v1) as structured output | AI, multi-turn |
+| fixer (`stangent-fixer`'s instructions; started without `--agent`, D354) | edits in the worktree, returns its plan (`fixer-output` v1) as structured output | AI, multi-turn |
 | `stangent fix check <KEY> --usage <result>` | the five checks in order; one retry with the failures | code |
 | `stangent fix report <KEY>` | `report.md` and `agent-run.json` (`agent-run` v1); the run's telemetry event | code |
 
 `fix start` refuses a ticket with no reproduced proof (`no_failing_test`: recorded, so `fix report` says "no failing
-test" and the ticket goes to the developer), a checkout with changes beyond the proof's test and stangent's own folder
-(`dirty_base`), and a ticket that already has a fix run unless `--replace` (which removes that worktree and branch).
+test" and the ticket goes to the developer), a checkout whose tracked files changed beyond the proof's test and
+stangent's own folder (`dirty_base`; untracked files never reach the worktree, so they're only named in a warning, D353), and a ticket that already has a fix run unless `--replace` (which removes that worktree and branch).
 It also copies into the worktree, git-ignored: `stangent.yaml` if the repo doesn't track it, the proof (with the
 repo's path in its build arguments moved to the worktree, so `--verify` builds the worktree's code) and the graph (so
 the rebuild in check 5 is incremental).
