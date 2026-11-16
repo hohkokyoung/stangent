@@ -316,13 +316,13 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
   gap or conflict, both stay and each lists the other in `disagreesWith` (the difference is what gets ruled). `review.json` holds the commit, FSD version, model, effort,
   tokens, each run's counts and usage, the findings (`F-001` …, in section order, not permanent) and what was dropped;
   `review.md` is the same by section (gaps, conflicts, left out, matches), then screens no section covers. Both are generated:
-  answers don't go here: the PM rules on the findings in `rulings.yaml` (the truth map, below; the old route's `trace.yaml` decisions stay with it).
+  answers don't go here: the PM rules on the findings through the truth map (below: `truth-map.md`'s numbered questions, `fsd rule`; the old route's `trace.yaml` decisions stay with it).
 - **What it doesn't show:** that a difference is real. The quote and line checks keep the AI honest about what it read;
   D322's checker found 0 of 20 false after the quote rule, on one app.
 - **Checked free (2026-11-15):** the saved Kavita runs through the built command: 29 of 30, 0 dropped
   (`benchmark/results/2026-11-15-fsd-review-free/`).
 
-## The truth map (D361–D370; `phases/tm-truth-map.md`), being built
+## The truth map (D361–D371; `phases/tm-truth-map.md`), being built
 
 The PM's rulings on the review's findings judge tickets. Built so far:
 
@@ -376,6 +376,28 @@ The PM's rulings on the review's findings judge tickets. Built so far:
   and each linked flow's actor, steps with their conditions, scenarios, endings and its 🟡/❓ counts. `truth-map.md`
   shows the matches to verify first, then each section's text as a quote with its entries, then the flows (30 steps and
   20 scenarios each, then "and N more, in <file>"). A ruling made before the commit reads `not committed`.
+- **The PM answers in plain words** (layer 2b, D371; code only): nobody edits `rulings.yaml`. `truth-map.md` opens with
+  how to answer and the numbered questions still open (medium and low matches first, then items to look at again, then
+  the unanswered, then sections whose matches aren't confirmed); each section's entries are numbered, with what the
+  review found in plain words ("The FSD and the code disagree") and, while open, the question and its answers ("**Which is
+  right?** `code` · `fsd` · or the rule in your own words"). A section's matches question comes before its entries; the
+  code no section covers is numbered last. `truth-map.json` holds each entry's `n` and each section's `matches.n` (null
+  with no matches). The PM tells Claude "12 yes, 13 the FSD is right" (`/stangent:rule <doc>`, `plugin/commands/rule.md`),
+  and Claude runs **`stangent fsd rule <doc> <n> [answer] [--words "…"] [--note "…"]`**: `yes`/`no` for a match or a
+  section's matches, `code`/`fsd` for a difference, `keep`/`remove` for undocumented code, `--words` for the rule in the
+  PM's words (restated, or with any answer), `clear` to undo, `drop` for an item the review didn't find again. The number
+  goes back to its key through `truth-map.json` (the map the PM read), and the key is looked up in today's
+  `rulings.yaml`: an item a refresh removed or changed in kind is refused, never put on another. An answer that doesn't
+  fit its item, or would leave the file one `rulings-check` refuses (a match `restated`), is refused, and nothing is
+  written; so is a file with problems, and a `--map <id>` other than the one at the top of `truth-map.md` ("Questions
+  numbered for map `…`": a map rebuilt since numbers differently). The file is written as `fsd rulings` writes it: on a
+  file stangent wrote only the answered lines change; on a hand-edited one the PM's `ruling` and `matches` lines are kept
+  as typed, but `statement` and `pmNote` come back quoted and comments go, which blame doesn't read. Answering with the
+  answer already there changes no line, so blame keeps naming who gave it first. `--note` replaces an earlier note (the
+  read-back says so); answering clears the item's `flagged` and `new` marks
+  (looked at). The map isn't rebuilt, so a number keeps its meaning until `fsd rulings-check` runs; nothing is committed,
+  and the commit's author is who answered. Kavita: numbers 1–42, the answers wrote only their lines (and, once, the
+  header's new wording).
 - **Email templates in the graph** (layer 3, D362 (5), D370; `code-graph` v7, `docs/code-graph.md` "Template files"): a finding on
   a template file links by its `template-file` point (a node link, so still a fallback), and the graph's 🟡
   `sends-template` line from the constant naming it (`EmailConfirmTemplate`) lets a ticket starting in the sending code reach

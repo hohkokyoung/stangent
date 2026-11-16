@@ -156,7 +156,7 @@ static class FsdCommands
         var links = new Command("links", "The truth map's links (D362): each finding of review.json linked to a flow, else a screen (with the App frame), else a graph node, else its file; prints the share linked by fallback. Reads only.") { docArgument };
         links.SetAction(pr => Cli.Run(pr, "fsd links", ctx => Stangent.Spec.Fsd.TruthLinks.Run(ctx.Repo, pr.GetValue(docArgument)!)));
         fsd.Subcommands.Add(links);
-        var rulings = new Command("rulings", "Draft or refresh specs/fsd/<doc>/rulings.yaml (contract rulings v1, D363) from review.json, by FSD section: an entry per difference and match, undocumented code by its link; rulings carried over by key, an old ruling no run finds again kept as notFound, a changed section's rulings blanked, a ruled entry whose link changed flagged. The PM edits ruling, statement, pmNote and matches. Code only.") { docArgument };
+        var rulings = new Command("rulings", "Draft or refresh specs/fsd/<doc>/rulings.yaml (contract rulings v1, D363) from review.json, by FSD section: an entry per difference and match, undocumented code by its link; rulings carried over by key, an old ruling no run finds again kept as notFound, a changed section's rulings blanked, a ruled entry whose link changed flagged. Nobody needs to edit it: the PM answers through `fsd rule` (D371). Code only.") { docArgument };
         rulings.SetAction(pr => Cli.Run(pr, "fsd rulings", ctx =>
         {
             var result = Rulings.Refresh(ctx.Repo, pr.GetValue(docArgument)!);
@@ -173,6 +173,14 @@ static class FsdCommands
             throw new CheckFailed("rulings_need_attention", $"{report["file"]} needs attention; see result.problems.", report);
         }));
         fsd.Subcommands.Add(rulingsCheck);
+        var ruleNumber = new Argument<int>("number") { Description = "The question's number in truth-map.md." };
+        var ruleAnswer = new Argument<string?>("answer") { Description = "yes or no (a match, or a section's matches); code or fsd (which is right); keep or remove (code the FSD doesn't mention); clear (undo); drop (an item the review didn't find again).", Arity = ArgumentArity.ZeroOrOne };
+        var ruleWords = new Option<string?>("--words") { Description = "The rule in your own words (restated, or with any answer)." };
+        var ruleNote = new Option<string?>("--note") { Description = "A note to keep with the answer (replaces an earlier one)." };
+        var ruleMap = new Option<string?>("--map") { Description = "The map id at the top of the truth-map.md the PM read: refused if the map was rebuilt since." };
+        var rule = new Command("rule", "Record the PM's answer to a numbered question of truth-map.md in rulings.yaml (D371), so nobody edits the file: the number is read back through truth-map.json, the answer checked against the item, the file rewritten keeping every other line. The truth map isn't rebuilt and nothing is committed. Code only.") { docArgument, ruleNumber, ruleAnswer, ruleWords, ruleNote, ruleMap };
+        rule.SetAction(pr => Cli.Run(pr, "fsd rule", ctx => PmAnswers.Apply(ctx.Repo, pr.GetValue(docArgument)!, pr.GetValue(ruleNumber), pr.GetValue(ruleAnswer), pr.GetValue(ruleWords), pr.GetValue(ruleNote), pr.GetValue(ruleMap))));
+        fsd.Subcommands.Add(rule);
 
         var trace = new Command("trace", "specs/trace.yaml: the links, findings and decisions (D58), frozen since the link route was cut (D342); table facts still write to it.");
         root.Subcommands.Add(trace);

@@ -16,9 +16,10 @@
     "conditions": { "type": "array", "items": { "type": "string" } },
     "entry": {
       "type": "object",
-      "required": ["key", "state", "standing", "link", "fallback", "evidence", "runs", "confidence", "disagrees", "notes", "ruling", "statement", "pmNote", "by", "on", "committed", "flagged", "notFound", "inFsd", "new", "jira"],
+      "required": ["n", "key", "state", "standing", "link", "fallback", "evidence", "runs", "confidence", "disagrees", "notes", "ruling", "statement", "pmNote", "by", "on", "committed", "flagged", "notFound", "inFsd", "new", "jira"],
       "additionalProperties": false,
       "properties": {
+        "n": { "description": "The entry's number in truth-map.md, which the PM answers by (`stangent fsd rule <doc> <n> <answer>`, D371).", "type": "integer", "minimum": 1 },
         "key": { "$ref": "#/definitions/key" },
         "state": { "enum": ["gap", "conflict", "undocumented", "match"] },
         "standing": {
@@ -90,9 +91,10 @@
           "text": { "type": ["string", "null"] },
           "matches": {
             "type": "object",
-            "required": ["count", "confirmed", "by", "on", "committed"],
+            "required": ["n", "count", "confirmed", "by", "on", "committed"],
             "additionalProperties": false,
             "properties": {
+              "n": { "description": "The number of the question \"are this section's matches right?\" in truth-map.md; null with no matches (D371).", "type": ["integer", "null"] },
               "count": { "type": "integer" }, "confirmed": { "type": "boolean" },
               "by": { "type": ["string", "null"] }, "on": { "type": ["string", "null"] }, "committed": { "type": ["boolean", "null"] }
             }

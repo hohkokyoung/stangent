@@ -123,12 +123,15 @@ finds again are dropped and listed.
 
 ### Layer 2b · The PM rules by telling Claude (D371)
 
+**Built and fresh-checked (D371).** `--map <id>` refuses numbers from a rebuilt map; every answer is checked against `rulings-check`'s checks before it is written. `PmAnswers.cs`, `plugin/commands/rule.md`; Kavita: 42 numbered items, answers write
+only their lines.
+
 - `truth-map.md`: every open item numbered, a plain question with plain answers, low and medium matches first; no YAML.
-  `truth-map.json` records each item's `n` with `rulingsHash`.
+  `truth-map.json` records each item's `n` (and a section's `matches.n`); `fsd rule` reads a number back to its key there.
 - `stangent fsd rule <doc> <n> <answer> [--words "…"] [--note "…"]`: `yes`/`no` (a match, a section's matches),
   `code`/`fsd` (a difference), `keep`/`remove` (undocumented code), `--words` for restated. Writes `rulings.yaml`
-  keeping every other line, rebuilds the truth map, prints the item back in plain words, never commits; refuses an
-  answer that doesn't fit the item and a number from a map older than `rulings.yaml`.
+  keeping every other line, prints the item back in plain words, never commits, doesn't rebuild the map (numbers hold
+  until `rulings-check`); refuses an answer that doesn't fit the item and an item a refresh removed or changed in kind.
 - `plugin/commands/rule.md` (`/stangent:rule`): Claude turns the PM's words into `fsd rule` calls, asks back on
   anything that could mean two things, reads each back, offers to commit.
 - `rulings.yaml`'s header: ask Claude or run `fsd rule`; hand edits still read.

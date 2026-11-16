@@ -259,16 +259,17 @@ public static partial class Rulings
     {
         var sb = new StringBuilder();
         sb.Append($"# The PM's rulings on the FSD review of {file.Doc} (contract rulings v1; D361, D363, D366). Written by `stangent fsd rulings`.\n");
-        sb.Append("# Edit only these:\n");
+        sb.Append("# Nobody needs to edit this file (D371): read truth-map.md and tell Claude the answers (`/stangent:rule " + file.Doc + "`),\n");
+        sb.Append("# or run `stangent fsd rule " + file.Doc + " <number> <answer>`. A hand edit is still read; then change only these:\n");
         sb.Append("#   ruling:    a gap or conflict: code-right, fsd-right or restated; undocumented code: keep, remove or restated;\n");
         sb.Append("#              a match: confirmed or not-a-match\n");
         sb.Append("#   statement: the rule in your words; required for restated\n");
         sb.Append("#   pmNote:    anything else\n");
         sb.Append("#   matches:   confirmed, once a section's matches look right (a match added later shows `new: true`)\n");
         sb.Append("# and delete a `flagged:` or `new:` line once you have looked. Put text holding a colon or a # in quotes. An entry marked\n");
-        sb.Append("# `notFound:` stays until you delete it. Comments outside the ruling and matches lines aren't kept by a refresh.\n");
-        sb.Append("# Who ruled and when come from git, never from this file:\n");
-        sb.Append("# commit your change, then run `stangent fsd rulings-check " + file.Doc + "`.\n");
+        sb.Append("# `notFound:` stays until it is dropped. Comments outside the ruling and matches lines aren't kept.\n");
+        sb.Append("# Who answered and when come from git, never from this file:\n");
+        sb.Append("# commit, then run `stangent fsd rulings-check " + file.Doc + "`.\n");
         sb.Append($"contract: {Rulings.Contract}\nversion: {Version}\n");
         sb.Append($"doc: {S(file.Doc)}\n");
         sb.Append($"review: {{ commit: {S(file.ReviewCommit)}, fsdVersion: {S(file.FsdVersion)}, runs: {file.Runs}, hash: {S(file.ReviewHash)} }}\n");
