@@ -101,7 +101,7 @@ public sealed class FsdReviewTests : IDisposable
         Assert.Contains("### 1.1 Order list  [section id: 1.1]", input);
         Assert.Contains("Orders ship within two days of payment.", input);
         Assert.Contains("`/orders`, `/settings`", input);
-        Assert.Contains("urn:stangent:schema:fsd-review-output:v1", input);
+        Assert.Contains("urn:stangent:schema:fsd-review-output:v2", input);
         Assert.DoesNotContain("Kavita", input);
 
         var limits = FsdReview.DriverLimits(Repo, "shop", 1);
@@ -220,8 +220,8 @@ public sealed class FsdReviewTests : IDisposable
         Assert.Equal(3, (int)result["maybeSame"]!);
 
         var review = JsonNode.Parse(File.ReadAllText(FsdReview.ReviewJson(Root, "shop")))!.AsObject();
-        Assert.Empty(SchemaRegistry.Embedded.Validate("fsd-review.v1.json", review.ToJsonString()));
-        Assert.Equal(("fsd-review", 1), ((string)review["contract"]!, (int)review["version"]!));
+        Assert.Empty(SchemaRegistry.Embedded.Validate("fsd-review.v2.json", review.ToJsonString()));
+        Assert.Equal(("fsd-review", 2), ((string)review["contract"]!, (int)review["version"]!));
         var findings = review["findings"]!.AsArray().OfType<JsonObject>().ToList();
         // Section order, then gap, conflict, undocumented; a screen with no section last.
         Assert.Equal(["gap", "undocumented", "undocumented", "undocumented", "conflict", "undocumented", "undocumented"],
@@ -248,6 +248,61 @@ public sealed class FsdReviewTests : IDisposable
         Assert.Contains("_(found by every run)_", md);
         Assert.Contains("_(found by run 2)_", md);
         Assert.Contains("it did not check that the difference is real", md);
+    }
+
+    [Fact]
+    public void A_match_quotes_its_statement_and_gives_the_line_that_does_it()
+    {
+        var bad = new[]
+        {
+            F("match", "1.1", "The order list shows 20 orders per page.", null, "Pages by 20.", "src/orders.ts:12"),
+            F("match", "1", "Orders ship within two days of payment.", null, "A path alone.", "src/orders.ts"),
+            F("match", "1", "Orders are shipped the same day.", null, "Not the FSD's words.", "src/orders.ts:2"),
+            F("match", "1", null, null, "No quote.", "src/orders.ts:2"),
+            // One run calling the same statement a match and a conflict: both go back (D366).
+            F("match", "2", "Currency US dollars", null, "Dollars.", "src/settings/currency.ts:1"),
+            F("conflict", "2", "Currency  US dollars", null, "Euros.", "src/settings/currency.ts:1"),
+        };
+        var first = Run(1, bad);
+        Assert.Equal("retry", first.Status);
+        var errors = first.Errors!;
+        Assert.DoesNotContain(errors, e => e.StartsWith("findings[0]", StringComparison.Ordinal));
+        Assert.Contains(errors, e => e == "findings[1]: a match gives the line(s) that do it (path:line), not a path alone");
+        Assert.Contains(errors, e => e.StartsWith("findings[2]: the fsdQuote", StringComparison.Ordinal));
+        Assert.Contains(errors, e => e == "findings[3]: a match quotes the FSD sentence(s) concerned");
+        Assert.Contains(errors, e => e.StartsWith("findings[4]: the same statement is also reported as a conflict (findings[5])", StringComparison.Ordinal));
+        Assert.DoesNotContain(errors, e => e.StartsWith("findings[5]", StringComparison.Ordinal));    // the difference stands (D367)
+        Answer(1, [.. bad.Select(b => (JsonObject)b.DeepClone())]);
+        FsdReview.Check(Repo, "shop", 1, null);
+        Assert.Equal(["match", "conflict"], Checked(1)["findings"]!.AsArray().Select(f => (string)f!["state"]!));
+    }
+
+    [Fact]
+    public void Merge_joins_matches_by_section_and_quote_and_marks_runs_that_disagree()
+    {
+        // Run 1 calls 1.1's sentence a match, run 2 a conflict: the runs disagree, and both stay, marked.
+        Run(1,
+            F("match", "1.1", "The order list shows 20 orders per page.", null, "Pages by 20.", "src/orders.ts:12"),
+            F("match", "1", "Orders ship within two days of payment.", null, "Ships in two days.", "src/orders.ts:1"));
+        Run(2,
+            F("match", "1", "Orders  ship within two days of payment.", null, "Two days.", "src/orders.ts:2"),
+            F("conflict", "1.1", "The order list shows 20 orders per page.", null, "It shows 50.", "src/orders.ts:13"));
+        var result = FsdReview.Merge(Repo, "shop");
+        Assert.Equal(3, (int)result["findings"]!);
+        var review = JsonNode.Parse(File.ReadAllText(FsdReview.ReviewJson(Root, "shop")))!.AsObject();
+        Assert.Empty(SchemaRegistry.Embedded.Validate("fsd-review.v2.json", review.ToJsonString()));
+        Assert.Equal(2, (int)review["counts"]!["match"]!);
+        var findings = review["findings"]!.AsArray().OfType<JsonObject>().ToList();
+        Assert.Equal([("1", "match"), ("1.1", "conflict"), ("1.1", "match")], findings.Select(f => ((string)f["section"]!, (string)f["state"]!)));
+        Assert.Equal([1, 2], findings[0]["runs"]!.AsArray().Select(r => (int)r!));
+        Assert.Equal(["src/orders.ts:1", "src/orders.ts:2"], findings[0]["evidence"]!.AsArray().Select(e => (string)e!));
+        Assert.Equal(["F-003"], findings[1]["disagreesWith"]!.AsArray().Select(m => (string)m!));
+        Assert.Equal(["F-002"], findings[2]["disagreesWith"]!.AsArray().Select(m => (string)m!));
+        Assert.Null(findings[0]["disagreesWith"]);
+        var md = File.ReadAllText(FsdReview.ReviewMarkdown(Root, "shop"));
+        Assert.Contains("### Matches (the code does what the FSD says)", md);
+        Assert.Contains("2 matches", md);
+        Assert.Contains("The runs disagree: see **F-003**.", md);
     }
 
     [Fact]

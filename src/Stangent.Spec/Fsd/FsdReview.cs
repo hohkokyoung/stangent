@@ -17,10 +17,12 @@ namespace Stangent.Spec.Fsd;
 public static partial class FsdReview
 {
     public const string Reviewer = "stangent-fsd-reviewer";
-    public const string OutputSchema = "fsd-review-output.v1.json";
+    public const string OutputSchema = "fsd-review-output.v2.json";
     public const string Contract = "fsd-review";
-    public const int Version = 1;
-    public static readonly string[] States = ["gap", "conflict", "undocumented"];
+    public const int Version = 2;
+    public static readonly string[] States = ["gap", "conflict", "undocumented", "match"];
+    /// <summary>The states that quote an FSD statement (D366: a match quotes the sentence the code does as written).</summary>
+    public static bool QuotesFsd(string state) => state is "gap" or "conflict" or "match";
 
     const string InputFile = "input.md";
     const string OutputFile = "output.json";
@@ -194,6 +196,13 @@ public static partial class FsdReview
         var findings = errors.Count == 0 ? output!["findings"]!.AsArray().OfType<JsonObject>().ToList() : [];
         var checker = new FindingChecker(repo.Root, document, (string)state["commit"]!);
         var perFinding = findings.Select(checker.Problems).ToList();
+        // D366, D367: a statement is one kind only. The same section and quote as a match and as a gap or conflict in one
+        // run: the difference stands (a sentence holding two rules, one followed and one not, is that difference), and the
+        // match goes back for the retry, then is dropped. Dropping both would lose a real conflict.
+        for (var i = 0; i < findings.Count; i++)
+            for (var j = 0; j < findings.Count; j++)
+                if (i != j && (string)findings[i]["state"]! == "match" && TwoKinds(findings[i], findings[j]))
+                    perFinding[i].Add($"the same statement is also reported as a {(string)findings[j]["state"]!} (findings[{j}]); a sentence with a difference is reported as that difference only, with no match");
         var all = errors.Concat(perFinding.SelectMany((p, i) => p.Select(e => $"findings[{i}]: {e}"))).ToList();
 
         if (all.Count > 0 && (bool?)state["retryUsed"] != true)
@@ -319,7 +328,10 @@ public static partial class FsdReview
                 problems.Add($"there's no section \"{Short(section)}\" in the FSD; give the id exactly as in its heading's brackets");
             if (section is null && !(state == "undocumented" && screen is not null))
                 problems.Add(state == "undocumented" ? "an undocumented finding names a screen or a section, and this names neither" : $"a {state} names its FSD section");
-            if (state is "gap" or "conflict" && quote is null) problems.Add($"a {state} quotes the FSD sentence(s) concerned");
+            if (QuotesFsd(state) && quote is null) problems.Add($"a {state} quotes the FSD sentence(s) concerned");
+            // D366: a match says where the code does it, so a line, not a folder or a whole file.
+            if (state == "match" && !f["evidence"]!.AsArray().Any(e => PathLine().IsMatch(((string)e!).Trim())))
+                problems.Add("a match gives the line(s) that do it (path:line), not a path alone");
             if (quote is not null && section is not null && sectionText.TryGetValue(section, out var text) && !Quoted(quote, text))
                 problems.Add($"the fsdQuote \"{Short(quote)}\" isn't word for word in section {section} (copy whole sentences, at least 4 words, or a whole line)");
             foreach (var e in f["evidence"]!.AsArray().Select(e => ((string)e!).Trim()))
@@ -455,6 +467,9 @@ public static partial class FsdReview
             o["runs"] = new JsonArray([.. sorted[i].Runs.Select(r => (JsonNode)r)]);
             var maybe = sorted.Select((m, j) => (m, j)).Where(x => x.j != i && MaybeSame(f, sorted[i].Runs, x.m.Finding, x.m.Runs)).Select(x => (JsonNode)$"F-{x.j + 1:D3}").ToList();
             if (maybe.Count > 0) o["maybeSameAs"] = new JsonArray([.. maybe]);
+            // D366: another run called the same statement a match where this one found a difference (or the other way).
+            var disagrees = sorted.Select((m, j) => (m, j)).Where(x => x.j != i && TwoKinds(f, x.m.Finding)).Select(x => (JsonNode)$"F-{x.j + 1:D3}").ToList();
+            if (disagrees.Count > 0) o["disagreesWith"] = new JsonArray([.. disagrees]);
             findings.Add(o);
         }
         var usages = runs.Select(r => Usage.FromJson(r["usage"])).ToList();
@@ -480,7 +495,7 @@ public static partial class FsdReview
                 return (JsonNode)o;
             }))]),
         };
-        var errors = SchemaRegistry.Embedded.Validate("fsd-review.v1.json", review.ToJsonString());
+        var errors = SchemaRegistry.Embedded.Validate($"fsd-review.v{Version}.json", review.ToJsonString());
         if (errors.Count > 0) throw new StangentException("bad_review", $"review.json doesn't match its contract: {errors[0]}");
         Quotes.WriteAtomic(ReviewJson(repo.Root, doc), CanonicalJson.Serialize(review));
         Quotes.WriteAtomic(ReviewMarkdown(repo.Root, doc), MarkdownReport(document, review));
@@ -527,6 +542,14 @@ public static partial class FsdReview
         && (string?)a["section"] is { } section && section == (string?)b["section"]
         && !aRuns.Overlaps(bRuns) && Files(a).Overlaps(Files(b));
 
+    /// <summary>One section and quote reported as a match and as a gap or conflict (D366).</summary>
+    static bool TwoKinds(JsonObject a, JsonObject b)
+    {
+        var (x, y) = ((string)a["state"]!, (string)b["state"]!);
+        return x != y && (x == "match" || y == "match") && QuotesFsd(x) && QuotesFsd(y)
+            && (string?)a["section"] is { } section && section == (string?)b["section"] && Norm((string?)a["fsdQuote"]) == Norm((string?)b["fsdQuote"]);
+    }
+
     static string Norm(string? s) => Quotes.Normalize(Prep(s ?? "", cells: false, marks: false));
 
     static HashSet<string> Files(JsonObject f) => [.. f["evidence"]!.AsArray().Select(e => (string)e!).Select(e => PathLine().Match(e) is { Success: true } m ? m.Groups["path"].Value : e)];
@@ -541,11 +564,11 @@ public static partial class FsdReview
         sb.Append($"- Commit `{(string)review["commit"]!}`, FSD version `{(string)review["fsdVersion"]!}`\n");
         sb.Append($"- Model {(string)review["model"]!}, effort {(string)review["effort"]!}; {runs.Count} runs, {(long)review["tokens"]!:N0} tokens\n");
         var counts = review["counts"]!;
-        sb.Append($"- {review["findings"]!.AsArray().Count} findings: {(int)counts["gap"]!} gaps, {(int)counts["conflict"]!} conflicts, {(int)counts["undocumented"]!} left out; ");
+        sb.Append($"- {review["findings"]!.AsArray().Count} findings: {(int)counts["gap"]!} gaps, {(int)counts["conflict"]!} conflicts, {(int)counts["undocumented"]!} left out, {(int)counts["match"]!} matches; ");
         sb.Append($"{review["dropped"]!.AsArray().Count} dropped by the code checks\n\n");
-        sb.Append("Each finding rests on an AI's reading of the code. Code checked that every FSD quote is word for word in its section and every `file:line` exists; it did not check that the difference is real.\n\n");
+        sb.Append("Each finding rests on an AI's reading of the code. Code checked that every FSD quote is word for word in its section and every `file:line` exists; it did not check that the difference is real, or that a matched line does what its sentence says.\n\n");
         var findings = review["findings"]!.AsArray().OfType<JsonObject>().ToList();
-        var heads = new (string State, string Title)[] { ("gap", "Gaps (the FSD says it, the code doesn't do it)"), ("conflict", "Conflicts (the code does it differently)"), ("undocumented", "Left out (the code has it, the FSD doesn't say)") };
+        var heads = new (string State, string Title)[] { ("gap", "Gaps (the FSD says it, the code doesn't do it)"), ("conflict", "Conflicts (the code does it differently)"), ("undocumented", "Left out (the code has it, the FSD doesn't say)"), ("match", "Matches (the code does what the FSD says)") };
         void Write(IEnumerable<JsonObject> list)
         {
             foreach (var (state, title) in heads)
@@ -560,6 +583,7 @@ public static partial class FsdReview
                     if ((string?)f["screen"] is { } screen) sb.Append($" Screen `{screen}`.");
                     sb.Append($" _(found by {found})_");
                     if (f["maybeSameAs"] is JsonArray maybe) sb.Append($" Maybe the same as {string.Join(", ", maybe.Select(m => $"**{(string)m!}**"))}.");
+                    if (f["disagreesWith"] is JsonArray other) sb.Append($" The runs disagree: see {string.Join(", ", other.Select(m => $"**{(string)m!}**"))}.");
                     sb.Append('\n');
                     if ((string?)f["fsdQuote"] is { } quote) sb.Append($"  - FSD: “{Quotes.Normalize(quote)}”\n");
                     sb.Append($"  - Code: {string.Join(", ", f["evidence"]!.AsArray().Select(e => $"`{(string)e!}`"))}\n");

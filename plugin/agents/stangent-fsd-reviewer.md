@@ -1,6 +1,6 @@
 ---
 name: stangent-fsd-reviewer
-description: Reads the FSD and the repo's source (read-only) and lists every gap, conflict and undocumented screen or option, each with the FSD's words and the code lines behind it (layer 5, D341).
+description: Reads the FSD and the repo's source (read-only) and lists every gap, conflict and undocumented screen or option, and every FSD statement the code does as written (a match), each with the FSD's words and the code lines behind it (layer 5, D341, D366).
 tools: Read, Glob, Grep
 ---
 
