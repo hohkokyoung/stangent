@@ -1,0 +1,399 @@
+{
+ "rows": [
+  {
+   "id": "F-001",
+   "state": "gap",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-002",
+   "state": "conflict",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-003",
+   "state": "gap",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-004",
+   "state": "gap",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-005",
+   "state": "conflict",
+   "level": "method",
+   "flows": 2,
+   "areas": [
+    "series-detail"
+   ]
+  },
+  {
+   "id": "F-006",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-007",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-008",
+   "state": "conflict",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-009",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-010",
+   "state": "undocumented",
+   "level": "step",
+   "flows": 12,
+   "areas": [
+    "book-reader",
+    "chapter-detail",
+    "manga-reader",
+    "pdf-reader",
+    "series-detail",
+    "volume-detail"
+   ]
+  },
+  {
+   "id": "F-011",
+   "state": "gap",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-012",
+   "state": "conflict",
+   "level": "step",
+   "flows": 3,
+   "areas": [
+    "manga-reader"
+   ]
+  },
+  {
+   "id": "F-013",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-014",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-015",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-016",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-017",
+   "state": "gap",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-018",
+   "state": "conflict",
+   "level": "step",
+   "flows": 1,
+   "areas": [
+    "book-reader"
+   ]
+  },
+  {
+   "id": "F-019",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-020",
+   "state": "conflict",
+   "level": "step",
+   "flows": 1,
+   "areas": [
+    "kavita-services"
+   ]
+  },
+  {
+   "id": "F-021",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-022",
+   "state": "gap",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-023",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-024",
+   "state": "gap",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-025",
+   "state": "conflict",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-026",
+   "state": "undocumented",
+   "level": "step",
+   "flows": 1,
+   "areas": [
+    "reading-lists"
+   ]
+  },
+  {
+   "id": "F-027",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-028",
+   "state": "undocumented",
+   "level": "step",
+   "flows": 1,
+   "areas": [
+    "reading-lists"
+   ]
+  },
+  {
+   "id": "F-029",
+   "state": "undocumented",
+   "level": "step",
+   "flows": 1,
+   "areas": [
+    "browse-genres"
+   ]
+  },
+  {
+   "id": "F-030",
+   "state": "undocumented",
+   "level": "step",
+   "flows": 2,
+   "areas": [
+    "all-annotations",
+    "browse-tags"
+   ]
+  },
+  {
+   "id": "F-031",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-032",
+   "state": "gap",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-033",
+   "state": "conflict",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-034",
+   "state": "undocumented",
+   "level": "step",
+   "flows": 1,
+   "areas": [
+    "customize"
+   ]
+  },
+  {
+   "id": "F-035",
+   "state": "conflict",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-036",
+   "state": "conflict",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-037",
+   "state": "undocumented",
+   "level": "none",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-038",
+   "state": "undocumented",
+   "level": "none",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-039",
+   "state": "undocumented",
+   "level": "none",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-040",
+   "state": "undocumented",
+   "level": "none",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-041",
+   "state": "undocumented",
+   "level": "none",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-042",
+   "state": "undocumented",
+   "level": "none",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-043",
+   "state": "gap",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-044",
+   "state": "conflict",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-045",
+   "state": "undocumented",
+   "level": "step",
+   "flows": 1,
+   "areas": [
+    "customize"
+   ]
+  },
+  {
+   "id": "F-046",
+   "state": "gap",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-047",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-048",
+   "state": "conflict",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-049",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-050",
+   "state": "undocumented",
+   "level": "file",
+   "flows": 0,
+   "areas": []
+  },
+  {
+   "id": "F-051",
+   "state": "undocumented",
+   "level": "step",
+   "flows": 1,
+   "areas": [
+    "all-filters"
+   ]
+  }
+ ],
+ "noneFiles": {
+  "UI/Web/src/app/carousel/_components/carousel-reel/carousel-reel.component.html": 1,
+  "UI/Web/src/app/manga-reader/_models/layout-mode.ts": 1,
+  "UI/Web/src/app/browse/browse-genres/browse-genres.component.html": 1,
+  "Kavita.Server/Extensions/IdentityServiceExtensions.cs": 1,
+  "UI/Web/src/app/user-settings/manga-user-preferences/manage-user-preferences.component.html": 13,
+  "Kavita.Models/Entities/Library.cs": 1
+ }
+}

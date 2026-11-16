@@ -1,0 +1,29 @@
+51 findings; level = best evidence line (step / method / file / none)
+  conflict      step 3  method 1  file 8  none 0
+  gap           step 0  method 0  file 10  none 0
+  undocumented  step 8  method 0  file 15  none 6
+  all           step 11  method 1  file 33  none 6
+flows per anchored finding: [1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 12]
+areas per anchored finding: Counter({1: 10, 6: 1, 2: 1})
+files of lines no flow touches:
+  13  UI/Web/src/app/user-settings/manga-user-preferences/manage-user-preferences.component.html
+  1  UI/Web/src/app/carousel/_components/carousel-reel/carousel-reel.component.html
+  1  UI/Web/src/app/manga-reader/_models/layout-mode.ts
+  1  UI/Web/src/app/browse/browse-genres/browse-genres.component.html
+  1  Kavita.Server/Extensions/IdentityServiceExtensions.cs
+  1  Kavita.Models/Entities/Library.cs
+  conflict      area     11
+  conflict      no area  1
+  gap           area     10
+  undocumented  area     29
+findings in more than one area: 21
+folders of lines with no area:
+  1  Kavita.Server/Controllers
+  1  Kavita.Server/Extensions
+  1  Kavita.Models/DTOs/Account
+  1  Kavita.Models/Entities
+per evidence line: {'inventory-part': 64, 'graph': 23, 'flow': 16, 'inventory-line': 3, 'none': 1}
+  conflict      flow 4  inventory-line 0  inventory-part 5  graph 3  none 0
+  gap           flow 0  inventory-line 0  inventory-part 9  graph 1  none 0
+  undocumented  flow 8  inventory-line 3  inventory-part 17  graph 1  none 0
+  all           flow 12  inventory-line 3  inventory-part 31  graph 5  none 0
