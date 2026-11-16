@@ -1,3 +1,22 @@
+- **Does the bundle help a fix, or skew it? (owner's questions, 2026-11-02, for Phase 4):** **Answered 2026-11-16 by D345** (two sides, ticket + code + failing test vs the same plus the bundle, on 17 Sonarr bugs; ticket-alone side dropped, (c) waits for B to pass). Original text: *(2026-11-15: D339 first measures one piece, whether `graph impact` helps name the whole fix; this full test waits on that.)* every Phase 3 bar checks a piece (a
+  right file, a real quote, a failing test); none shows the bundle helps anyone fix a bug. On the finder's 4 Sonarr misses it
+  covers none of the fix's files. The owner's worry: a wrong lead skews every later step, and a scoped input invites a less clean
+  fix (SONB-18: a null check on the screen turns a test green and leaves the bad data). Recommended: the fix agent on the same bugs three ways
+  (the ticket alone; plus the failing test; plus the whole bundle), scored on the tests passing and on a read of each diff against the developer's fix, wrong leads
+  counted apart; if there's no difference, cut it to the finder's files and the failing test. Recommended rules: named files are
+  leads, never a limit on what an agent reads or edits; it traces from the failing test before it edits. A green test can't show
+  a fix is clean, so that stays a person's review (Phase 6). To grill with Phase 4.
+  **Proposed on top (recorded on the owner's "ok yes", 2026-11-02; not decided):**
+  (a) **Start without the bundle:** the fix agent gets the ticket and the code until a test shows the bundle helps. Reference pages
+  are generated from code, so they can describe a bug as how the feature works; the ticket and the agent can skew a fix too (SONB-18's
+  title invites the null check), so this is measured against them, not assumed.
+  (b) **Label context by source:** something that ran; something a person or the FSD said; something read in the code; a guess. No fix
+  rests on a guess until a run or a person backs it up.
+  (c) **Plant wrong leads:** the fix agent on the 17 Sonarr bugs whose saved test passes on the developer's fix, with and without a deliberately
+  wrong file or cause. Code runs the tests; a person reads only the fixes that go green, since a green test can still be a wrong fix. About $8–34
+  for 34 runs, estimated from the proof's cost (no fix agent has run), on the owner's OK. The saved tests predate the finder and may need rechecking.
+  Sonarr is public, so the result may look better than on a private repo.
+
 - **Layer 5's PM inventory, what it lists and how it's checked (design talk 2026-11-15, after D325):** answered by D326 (every control a user can touch, minus one fixed cross-repo skip list), D327 (named by visible text through each app's translation files), D328 (grouped per screen, shared parts once, unplaced kept), D329 (facts in layer 2, assembled in layer 3, contract `inventory` v1), D330 (crude independent scanner, 95% per clone; pre-build scan run), D331 (the gate's fresh key: a new planted nopCommerce catalog-admin FSD). Build plan: `roadmap.md`, "Layer 5, the PM inventory".
 
 - **Q-L8 · What layer 5 keeps, after the checklist failed on an unseen key (2026-11-15, D322):** a source-only Sonnet agent found 26 of 30 (7.8% false alarms) on Sonarr and 28 of 30 (2.7%) on a fresh Kavita key; layer 3's click checklist with quoted "covered" reached 29 on Sonarr (tuned there) and 26 on Kavita, two fewer than the agent alone. Recommended: drop the checklist; layer 5 = the source-reading agent plus the code checks that cost nothing and keep it honest (every quote word for word, every `file:line` real) and a person's review of what it reports (D18); no layer 2–4 output is fed to it until a test on a fresh key shows one helps. **Cost:** layer 3 has no proven consumer left (layer 4 parked, the checklist dropped); `graph impact` keeps its small sign from layer 4's task test only; the bigger question, what the deterministic layers are for if an agent reading source does this well, is open. Answered (owner: "yeah i agree", after D324 showed the agent unstable on "left out"): D325, the checklist dropped as an agent tool; a code-made inventory for the PM instead.

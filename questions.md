@@ -18,7 +18,7 @@ Only what's still open, sorted by when it needs answering (D136). When one is an
   (a) **The next milestone is a first real pilot** on the owner's own project, even with no FSD: pages, impact, one real ticket. Nothing added lately has met a real FSD or a real project, and the core result is still 24 of 30 found with 44% false alarms. Free steps first; AI steps on the owner's OK.
   (b) **Cut rule:** decided, D138.
   (c) **Cap on new items:** rejected, D139.
-  (d) **"Does the bundle help a fix?" runs earlier:** in the test phase, before Phase 4 is grilled, not with it. Every Phase 3 bar checks a piece; none shows the bundle helps. Paid, on the owner's OK.
+  (d) **"Does the bundle help a fix?" runs earlier:** *(designed by D345, 2026-11-16: Phase 4's first measurement.)* in the test phase, before Phase 4 is grilled, not with it. Every Phase 3 bar checks a piece; none shows the bundle helps. Paid, on the owner's OK.
   **Order changed by the owner (2026-11-05: "wy not just build more first and we measure each stage later"):** I and T are built before the pilot, as D120 already says. Assistant's call, reversible: T.9, T.10 and I.12 wait for a repo or document that needs them; X items stay off. **Cost:** none of I or T can move 24 of 30 or 44%, so the core result stays unmeasured on a real spec for another 500-700K tokens, and defects stay in longer (D120's cost).
 - **A bigger spec for the test material (owner, 2026-11-05):** recommended, not confirmed: `umbraco/UmbracoDocs` beside Umbraco itself. Details under "Which project the pilot runs on" in [`decisions/answered-questions.md`](decisions/answered-questions.md).
 - **May a "nearby" FSD link count toward "working as agreed"? (asked 2026-11-02, not answered):** recommended: no, context only, a person decides. Details under "Ticket retrieval redesign" in [`decisions/answered-questions.md`](decisions/answered-questions.md).
@@ -36,24 +36,6 @@ Only what's still open, sorted by when it needs answering (D136). When one is an
 - **Evidence beyond the FSD for "looks intended" (owner's outside review, 2026-11-01):** API docs, existing tests that
   assert the current behaviour. Not decided. (The review's other new idea, right place reported per stage, is built:
   `reported.rightPlaceStages`, D98's re-score.)
-- **Does the bundle help a fix, or skew it? (owner's questions, 2026-11-02, for Phase 4):** *(2026-11-15: D339 first measures one piece, whether `graph impact` helps name the whole fix; this full test waits on that.)* every Phase 3 bar checks a piece (a
-  right file, a real quote, a failing test); none shows the bundle helps anyone fix a bug. On the finder's 4 Sonarr misses it
-  covers none of the fix's files. The owner's worry: a wrong lead skews every later step, and a scoped input invites a less clean
-  fix (SONB-18: a null check on the screen turns a test green and leaves the bad data). Recommended: the fix agent on the same bugs three ways
-  (the ticket alone; plus the failing test; plus the whole bundle), scored on the tests passing and on a read of each diff against the developer's fix, wrong leads
-  counted apart; if there's no difference, cut it to the finder's files and the failing test. Recommended rules: named files are
-  leads, never a limit on what an agent reads or edits; it traces from the failing test before it edits. A green test can't show
-  a fix is clean, so that stays a person's review (Phase 6). To grill with Phase 4.
-  **Proposed on top (recorded on the owner's "ok yes", 2026-11-02; not decided):**
-  (a) **Start without the bundle:** the fix agent gets the ticket and the code until a test shows the bundle helps. Reference pages
-  are generated from code, so they can describe a bug as how the feature works; the ticket and the agent can skew a fix too (SONB-18's
-  title invites the null check), so this is measured against them, not assumed.
-  (b) **Label context by source:** something that ran; something a person or the FSD said; something read in the code; a guess. No fix
-  rests on a guess until a run or a person backs it up.
-  (c) **Plant wrong leads:** the fix agent on the 17 Sonarr bugs whose saved test passes on the developer's fix, with and without a deliberately
-  wrong file or cause. Code runs the tests; a person reads only the fixes that go green, since a green test can still be a wrong fix. About $8–34
-  for 34 runs, estimated from the proof's cost (no fix agent has run), on the owner's OK. The saved tests predate the finder and may need rechecking.
-  Sonarr is public, so the result may look better than on a private repo.
 - **Flakiness of the proof (2026-11-02):** only one full run, and a unit test runs once. Running a test more than once per proof
   needs no AI. Not decided. The Sonarr re-run gives a second result to compare.
 - **The not-bug bar on Sonarr (proposed 2026-11-02, not decided):** report D79's "catches wrong reports" as "can't be
@@ -68,7 +50,7 @@ Only what's still open, sorted by when it needs answering (D136). When one is an
 - Parallel subagents: should the orchestrator fix the contract first (API shapes, shared types), then run
   the sides in parallel against it? And if a subagent finds mid-task that the contract must change, does it
   stop and hand back, or change it and tell the others? Leading answer: contract first; stop and hand back.
-  Grilled with Phase 4, after the 1d verdict. (Phase 4)
+  Grilled with Phase 4, after the 1d verdict. (Phase 4) *(2026-11-16: waits for the splitter, which D343 holds back until a measured ticket needs it.)*
 - "ministack" vs LocalStack vs Testcontainers for integration tests: was it a deliberate choice? (Phase 5)
 - Dashboard sign-in for BA/PM: company SSO or GitHub accounts? (Phase 8)
 

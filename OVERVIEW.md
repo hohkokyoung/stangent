@@ -15,7 +15,7 @@ It's a .NET command-line tool (`stangent`) plus a Claude Code plugin that calls 
 | 2 | Code graph | A map of the code: what calls what, front to back | **Rebuilt and checked** (layer 2) |
 | 1 | Requirements / spec | What the app should do, written as checked facts | Flows done (layer 3); developer pages parked (layer 4); an FSD is checked by `stangent fsd review`: an agent reads the code, code checks its quotes (layer 5, built, live run owed); the old route and the requirement steps cut (layer 7) |
 | 7 | Tickets | Pull a Jira ticket, hand the developer everything relevant, draft the reply | **Closed (layer 6, D340):** Phase 3's version kept, plus impact told to the developer's session after a test showed it helps name whole fixes |
-| 9 | Agents | Split a ticket into small tasks and run AI helpers on them | Not started |
+| 9 | Agents | Split a ticket into small tasks and run AI helpers on them | **Grilled 2026-11-16 (D343–D349), not built:** first one fix agent per ticket (`stangent fix <KEY>`), test first, every check run by code, on its own branch; splitting waits for a measured need |
 | 4 | Testing | Tests picked from the map and tagged with the requirement they prove | Not started |
 | 5 | PR | A review package that's quick for a senior to read and comment on | Not started |
 | 6 | CI/CD | Deploy on GitHub Actions, easy to watch and retry | Not started |
