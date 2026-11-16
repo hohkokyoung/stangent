@@ -8,7 +8,7 @@ provides: { rulings: 1, truth-map: 1 }
 
 # The truth map
 
-**Designed 2026-11-16 (D361–D364); plan and my calls D365; every sentence the code follows covered too (D366).** **Layers 0 and 1 built and fresh-checked 2026-11-16 (D367, D368).** Also reads `fsd-review` v1 and
+**Designed 2026-11-16 (D361–D364); plan and my calls D365; every sentence the code follows covered too (D366).** **Layers 0 and 1 built and fresh-checked 2026-11-16 (D367, D368); layer 2 2026-11-17 (D369).** Also reads `fsd-review` v1 and
 `inventory` v1, which layer 5 provides with no phase file of its own, so they aren't in `consumes` above.
 
 The judge of a ticket is the truth map, not the FSD alone (D361). The FSD review (D341) finds where the FSD and
@@ -77,6 +77,10 @@ stangent ticket pull <KEY>        reads Ruling: replies, writes the drafted entr
   group should hold the 6 groups and 86 lines D362 counts.
 
 ### Layer 2 · `rulings.yaml` (D363)
+
+**Built (D369):** as below, with D369's calls: a section counts as changed by its own text, and an entry whose quote is gone
+from its section's text drops too; a match may be confirmed one by one as well as per section; blank entries no run
+finds again are dropped and listed.
 
 - `specs/fsd/<doc>/rulings.yaml`, contract `rulings` v1 (schema `rulings.v1.json`), grouped by FSD section. Each
   section has `matches: confirmed` (blank until the PM sets it; a match added later shows as new until it is

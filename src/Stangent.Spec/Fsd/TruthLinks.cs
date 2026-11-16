@@ -261,11 +261,11 @@ public sealed partial class TruthLinks
     }
 
     /// <summary>"51 findings: flow 12, screen 34, node 5, file 0 (fallback 9.8%)".</summary>
-    public static string Summary(int total, IReadOnlyDictionary<string, int> counts)
+    public static string Summary(int total, IReadOnlyDictionary<string, int> counts, string one = "finding", string many = "findings")
     {
         var fallback = counts.GetValueOrDefault("node") + counts.GetValueOrDefault("file");
         var share = total == 0 ? 0 : Math.Round(100.0 * fallback / total, 1);
-        var sb = new StringBuilder($"{total} finding{(total == 1 ? "" : "s")}: ");
+        var sb = new StringBuilder($"{total} {(total == 1 ? one : many)}: ");
         sb.Append(string.Join(", ", TruthLink.Kinds.Select(k => $"{k} {counts.GetValueOrDefault(k)}")));
         sb.Append(System.FormattableString.Invariant($" (fallback {share:0.0}%)"));
         return sb.ToString();

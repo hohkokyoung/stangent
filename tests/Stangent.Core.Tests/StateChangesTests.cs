@@ -175,6 +175,7 @@ public partial class StateChangesTests
         // Result fields: what one command returned, or a copy of someone else's value. Not lifecycles.
         [("src/Stangent.Spec/Trace/TraceFindings.cs", "verdict")] = (1, "the listing's field: a finding's verdict, or \"unverified\", for reading"),
         [("src/Stangent.Spec/Trace/TraceFindings.cs", "review")] = (1, "the listing's field: a copy of the entry's review"),
+        [("src/Stangent.Spec/Fsd/TruthMap.cs", "review")] = (1, "truth-map.json's field: which review.json the rulings came from, not a lifecycle"),
         [("src/Stangent.Core/Phases/PhaseCheck.cs", "status")] = (1, "the report copies what roadmap.md and a phase file say; people edit those"),
         [("src/Stangent.Core/Telemetry/TelemetryWriter.cs", "status")] = (1, "the event's result"),
         [("src/Stangent.Graph/GraphStore.cs", "status")] = (1, "how much git history the build could read, set once per build"),

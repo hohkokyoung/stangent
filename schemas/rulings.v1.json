@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:rulings:v1",
+  "title": "specs/fsd/<doc>/rulings.yaml: the PM's rulings on the FSD review (contract rulings v1, D361, D363, D365, D366)",
+  "description": "Written by `stangent fsd rulings` from review.json, grouped by FSD section; the PM edits only `ruling`, `statement`, `pmNote` and a section's `matches`, and deletes `flagged` or `new` lines once they have looked. Who ruled and when come from git blame on the `ruling` (or `matches`) line, never from the file. Values per state are checked by `stangent fsd rulings-check`.",
+  "type": "object",
+  "required": ["contract", "version", "doc", "review", "sections", "undocumented"],
+  "additionalProperties": false,
+  "definitions": {
+    "entry": {
+      "type": "object",
+      "required": ["key", "state", "link", "evidence", "runs", "notes", "ruling", "statement", "pmNote"],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "description": "A gap, conflict or match by its section's permanent id and its quote (normalized as the review's merge joins quotes); undocumented code by its D362 link, with its section when it has one.",
+          "type": "object",
+          "required": ["section"],
+          "additionalProperties": false,
+          "properties": {
+            "section": { "type": ["string", "null"] },
+            "quote": { "type": "string" },
+            "link": { "type": "string" }
+          },
+          "oneOf": [{ "required": ["quote"] }, { "required": ["link"] }]
+        },
+        "state": { "enum": ["gap", "conflict", "undocumented", "match"] },
+        "link": {
+          "type": "object",
+          "required": ["kind", "id", "title", "hash", "exact"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "enum": ["flow", "screen", "node", "file"] },
+            "id": { "type": "string" },
+            "title": { "type": "string" },
+            "hash": { "description": "The fingerprint of what it links to when last refreshed (D362 (2)).", "type": "string" },
+            "exact": { "type": "boolean" }
+          }
+        },
+        "evidence": { "type": "array", "items": { "type": "string" } },
+        "runs": { "description": "The review runs that found it.", "type": "array", "items": { "type": "integer", "minimum": 1 } },
+        "confidence": { "description": "A match only (D366 (4)): high when every run found it and it links to a flow or a screen, medium for one of those, low for neither.", "enum": ["high", "medium", "low"] },
+        "disagrees": { "description": "One run called this statement a match, another a gap or conflict; the difference is what is ruled.", "type": "boolean" },
+        "notes": { "description": "The review's words, for the PM.", "type": "array", "items": { "type": "string" } },
+        "notFound": { "description": "The review commit whose runs no longer found it; kept because it holds a ruling (D363).", "type": ["string", "null"] },
+        "flagged": { "description": "Why the PM should look again (its link changed, its section changed, its state changed). The PM deletes the line.", "type": ["string", "null"] },
+        "new": { "description": "A match added after its section's matches were confirmed. The PM deletes the line, or rules it.", "type": "boolean" },
+        "inFsd": { "description": "A restated ruling whose statement the FSD's section now holds (D363).", "type": "boolean" },
+        "jira": {
+          "description": "Where the ruling came from when drafted from a Jira `Ruling:` reply (D364, layer 5).",
+          "type": "object",
+          "required": ["key", "comment", "author", "created"],
+          "additionalProperties": false,
+          "properties": { "key": { "type": "string" }, "comment": { "type": "string" }, "author": { "type": "string" }, "created": { "type": "string" } }
+        },
+        "ruling": { "description": "The PM's: code-right, fsd-right or restated (gap, conflict); keep, remove or restated (undocumented); confirmed or not-a-match (match). Null until ruled.", "type": ["string", "null"] },
+        "statement": { "description": "The rule in the PM's words; required for restated.", "type": ["string", "null"] },
+        "pmNote": { "type": ["string", "null"] }
+      }
+    }
+  },
+  "properties": {
+    "contract": { "const": "rulings" },
+    "version": { "const": 1 },
+    "doc": { "type": "string" },
+    "review": {
+      "description": "The review.json the last refresh read.",
+      "type": "object",
+      "required": ["commit", "fsdVersion", "runs", "hash"],
+      "additionalProperties": false,
+      "properties": {
+        "commit": { "type": "string" },
+        "fsdVersion": { "type": "string" },
+        "runs": { "type": "integer", "minimum": 0 },
+        "hash": { "type": "string" }
+      }
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["section", "sectionId", "title", "textHash", "entries"],
+        "additionalProperties": false,
+        "properties": {
+          "section": { "type": "string" },
+          "sectionId": { "type": "string" },
+          "title": { "type": "string" },
+          "textHash": { "description": "The section's own text when last refreshed: a change drops its rulings to blank (an entry whose quote, perhaps from a subsection, is no longer in the section's text is dropped too).", "type": "string" },
+          "matches": { "description": "The PM's one confirmation of the section's matches: confirmed, or null.", "type": ["string", "null"] },
+          "entries": { "type": "array", "items": { "$ref": "#/definitions/entry" } }
+        }
+      }
+    },
+    "undocumented": { "description": "Code no section covers, by link.", "type": "array", "items": { "$ref": "#/definitions/entry" } }
+  }
+}

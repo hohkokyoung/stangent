@@ -304,15 +304,7 @@ public static partial class FsdReview
         {
             this.root = root;
             this.commit = commit;
-            // A section's text is its own and its subsections' (check_output.py's rule): a quote may sit under a sub-heading.
-            var sections = Sections(document);
-            for (var i = 0; i < sections.Count; i++)
-            {
-                var level = (int)sections[i]["level"]!;
-                var parts = new List<string> { (string)sections[i]["text"]! };
-                for (var j = i + 1; j < sections.Count && (int)sections[j]["level"]! > level; j++) parts.Add((string)sections[j]["text"]!);
-                sectionText[(string)sections[i]["id"]!] = string.Join("\n\n", parts);
-            }
+            foreach (var (id, text) in SectionTexts(document)) sectionText[id] = text;
             files = commit.Length > 0 ? Stangent.Graph.Git.FilesAt(root, commit) : null;
         }
 
@@ -339,32 +331,7 @@ public static partial class FsdReview
             return problems;
         }
 
-        /// <summary>Word for word (D53's rule: 4 words or a whole line), from a word's start to a word's end; spaces, emphasis,
-        /// curly quotes and long dashes ignored, and table bars and list markers too where that is what makes it match.</summary>
-        static bool Quoted(string quote, string text)
-        {
-            foreach (var cells in new[] { false, true })
-                foreach (var marks in new[] { false, true })
-                {
-                    var (q, t) = (Prep(quote, cells, marks), Prep(text, cells, marks));
-                    if (Quotes.InText(q, t) && WholeWords(Quotes.Normalize(q), Quotes.Normalize(t))) return true;
-                }
-            return false;
-        }
-
-        /// <summary>The quote sits in the text with no letter or digit run on at either end: "he reader shows" isn't from "The reader shows".</summary>
-        static bool WholeWords(string q, string t)
-        {
-            if (q.Length == 0) return false;
-            for (var at = t.IndexOf(q, StringComparison.Ordinal); at >= 0; at = t.IndexOf(q, at + 1, StringComparison.Ordinal))
-            {
-                var end = at + q.Length;
-                var startOk = at == 0 || !char.IsLetterOrDigit(t[at - 1]) || !char.IsLetterOrDigit(q[0]);
-                var endOk = end == t.Length || !char.IsLetterOrDigit(t[end]) || !char.IsLetterOrDigit(q[^1]);
-                if (startOk && endOk) return true;
-            }
-            return false;
-        }
+        static bool Quoted(string quote, string text) => FsdReview.Quoted(quote, text);
 
         string? EvidenceProblem(string e)
         {
@@ -402,6 +369,52 @@ public static partial class FsdReview
             lineCounts[path] = count;
             return count;
         }
+    }
+
+    /// <summary>Each section's text as quotes are checked against it: its own and its subsections' (check_output.py's rule),
+    /// since a quote may sit under a sub-heading. By the section's id (number or heading path).</summary>
+    public static Dictionary<string, string> SectionTexts(JsonObject document)
+    {
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        var sections = Sections(document);
+        for (var i = 0; i < sections.Count; i++)
+        {
+            var level = (int)sections[i]["level"]!;
+            var parts = new List<string> { (string)sections[i]["text"]! };
+            for (var j = i + 1; j < sections.Count && (int)sections[j]["level"]! > level; j++) parts.Add((string)sections[j]["text"]!);
+            result[(string)sections[i]["id"]!] = string.Join("\n\n", parts);
+        }
+        return result;
+    }
+
+    /// <summary>A quote as findings are joined by it (the merge's rule): folded, emphasis gone, spaces collapsed.</summary>
+    public static string NormalizeQuote(string? quote) => Norm(quote);
+
+    /// <summary>Word for word (D53's rule: 4 words or a whole line), from a word's start to a word's end; spaces, emphasis,
+    /// curly quotes and long dashes ignored, and table bars and list markers too where that is what makes it match.</summary>
+    public static bool Quoted(string quote, string text)
+    {
+        foreach (var cells in new[] { false, true })
+            foreach (var marks in new[] { false, true })
+            {
+                var (q, t) = (Prep(quote, cells, marks), Prep(text, cells, marks));
+                if (Quotes.InText(q, t) && WholeWords(Quotes.Normalize(q), Quotes.Normalize(t))) return true;
+            }
+        return false;
+    }
+
+    /// <summary>The quote sits in the text with no letter or digit run on at either end: "he reader shows" isn't from "The reader shows".</summary>
+    static bool WholeWords(string q, string t)
+    {
+        if (q.Length == 0) return false;
+        for (var at = t.IndexOf(q, StringComparison.Ordinal); at >= 0; at = t.IndexOf(q, at + 1, StringComparison.Ordinal))
+        {
+            var end = at + q.Length;
+            var startOk = at == 0 || !char.IsLetterOrDigit(t[at - 1]) || !char.IsLetterOrDigit(q[0]);
+            var endOk = end == t.Length || !char.IsLetterOrDigit(t[end]) || !char.IsLetterOrDigit(q[^1]);
+            if (startOk && endOk) return true;
+        }
+        return false;
     }
 
     static string Short(string s) => s.Length > 80 ? s[..80] + "…" : s;

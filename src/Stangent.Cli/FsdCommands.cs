@@ -156,6 +156,23 @@ static class FsdCommands
         var links = new Command("links", "The truth map's links (D362): each finding of review.json linked to a flow, else a screen (with the App frame), else a graph node, else its file; prints the share linked by fallback. Reads only.") { docArgument };
         links.SetAction(pr => Cli.Run(pr, "fsd links", ctx => Stangent.Spec.Fsd.TruthLinks.Run(ctx.Repo, pr.GetValue(docArgument)!)));
         fsd.Subcommands.Add(links);
+        var rulings = new Command("rulings", "Draft or refresh specs/fsd/<doc>/rulings.yaml (contract rulings v1, D363) from review.json, by FSD section: an entry per difference and match, undocumented code by its link; rulings carried over by key, an old ruling no run finds again kept as notFound, a changed section's rulings blanked, a ruled entry whose link changed flagged. The PM edits ruling, statement, pmNote and matches. Code only.") { docArgument };
+        rulings.SetAction(pr => Cli.Run(pr, "fsd rulings", ctx =>
+        {
+            var result = Rulings.Refresh(ctx.Repo, pr.GetValue(docArgument)!);
+            ctx.Span.Attributes["stangent.artifact.count"] = (int)result["entries"]!;
+            return result;
+        }));
+        fsd.Subcommands.Add(rulings);
+        var rulingsCheck = new Command("rulings-check", "Check rulings.yaml (each value one of its state's, restated with a statement, every entry keyed), take who ruled and when from git blame, list medium and low matches first, count, and write specs/fsd/<doc>/truth-map.json (contract truth-map v1) and truth-map.md (D366). Problems write nothing. Code only.") { docArgument };
+        rulingsCheck.SetAction(pr => Cli.Run(pr, "fsd rulings-check", ctx =>
+        {
+            var report = TruthMap.Check(ctx.Repo, pr.GetValue(docArgument)!, out var ok);
+            ctx.Span.Attributes["stangent.artifact.count"] = (int)report["counts"]!["entries"]!;
+            if (ok) return report;
+            throw new CheckFailed("rulings_need_attention", $"{report["file"]} needs attention; see result.problems.", report);
+        }));
+        fsd.Subcommands.Add(rulingsCheck);
 
         var trace = new Command("trace", "specs/trace.yaml: the links, findings and decisions (D58), frozen since the link route was cut (D342); table facts still write to it.");
         root.Subcommands.Add(trace);

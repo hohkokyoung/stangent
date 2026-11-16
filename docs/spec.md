@@ -316,13 +316,13 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
   gap or conflict, both stay and each lists the other in `disagreesWith` (the difference is what gets ruled). `review.json` holds the commit, FSD version, model, effort,
   tokens, each run's counts and usage, the findings (`F-001` …, in section order, not permanent) and what was dropped;
   `review.md` is the same by section (gaps, conflicts, left out, matches), then screens no section covers. Both are generated:
-  answers don't go here, and no findings-to-decisions flow exists yet (the old route's `trace.yaml` decisions stay with it).
+  answers don't go here: the PM rules on the findings in `rulings.yaml` (the truth map, below; the old route's `trace.yaml` decisions stay with it).
 - **What it doesn't show:** that a difference is real. The quote and line checks keep the AI honest about what it read;
   D322's checker found 0 of 20 false after the quote rule, on one app.
 - **Checked free (2026-11-15):** the saved Kavita runs through the built command: 29 of 30, 0 dropped
   (`benchmark/results/2026-11-15-fsd-review-free/`).
 
-## The truth map (D361–D366; `phases/tm-truth-map.md`), being built
+## The truth map (D361–D369; `phases/tm-truth-map.md`), being built
 
 The PM's rulings on the review's findings judge tickets. Built so far:
 
@@ -335,6 +335,51 @@ The PM's rulings on the review's findings judge tickets. Built so far:
   flagged when that changes. Printed: counts per kind and the share linked by fallback (node or file), e.g. "51 findings:
   flow 12, screen 35, node 4, file 0 (fallback 7.8%)" on Kavita's saved review (2026-11-16, D368). Within a kind, an exact step or control beats a walked method or a nearby one; a file holding several groups goes to the nearest inventory line. Needs `specs/flows/`,
   `specs/inventory.json` (v2, with the App frame) and the graph; a missing one is a warning, and nothing links to it.
+- **Rulings** (`stangent fsd rulings <doc>`, D363, D365, D366, layer 2; code only): drafts or refreshes
+  `specs/fsd/<doc>/rulings.yaml` (contract `rulings` v1) from `review.json`. Needs the FSD imported (rulings are kept by
+  section). One block per FSD section with findings, then `undocumented:` for code no section covers. Each entry has a
+  **key**: a gap, conflict or match by its section's permanent id and its quote (normalized as the merge joins quotes, so
+  spacing, emphasis and curly quotes don't matter); undocumented code by its link (D362), so the findings in one section
+  sharing a link are one entry with all their notes and lines (D365 (2)). A statement one run called a match and another a
+  difference is one entry, the difference, marked `disagrees`. Within a section: differences in the order their quotes
+  appear, undocumented code by link, then matches; the order is stable, so a refresh moves no line. Each match has a
+  **confidence** set by code (D366 (4)): high when every run found it and it links to a flow or a screen, medium for one of
+  those, low for neither. The PM edits only `ruling` (gap or conflict: `code-right`, `fsd-right`, `restated`; undocumented:
+  `keep`, `remove`, `restated`; match: `confirmed`, `not-a-match`), `statement` (required for `restated`), `pmNote` and a
+  section's `matches: confirmed` (all its matches at once), and deletes a `flagged:` or `new:` line once they've looked.
+  On a refresh: the same key keeps its ruling; a new finding gets a blank entry, and a new match in a section whose
+  matches are confirmed gets `new: true`; an old entry no run finds again stays, marked `notFound: <review commit>`, when
+  it holds a person's work (a ruling, statement, note, or a confirmed match), and is dropped and listed when blank (a
+  `notFound` entry stays until a person deletes it); a section whose own text changed drops its rulings to blank with
+  `flagged: "FSD section changed since ruled (was …)"` and clears its `matches`, and so does an entry whose quote (which
+  may come from a subsection) is no longer word for word in the section's text ("its FSD quote is no longer in the
+  section"); an edit in a subsection alone leaves the parent's other rulings as they are. Either way a `restated`
+  statement the new text holds word for word keeps its ruling with `inFsd: true` (cleared if the text changes again); a ruled entry whose link's fingerprint changed gets
+  `flagged: "link changed since ruled"`; a ruling of the wrong kind after the review changed its state (a conflict now a
+  match) is blanked and flagged. A file that needs fixing (not YAML, schema errors, an entry with no key, two entries with one
+  key) is refused, and nothing is written. The PM's `ruling` and `matches` lines are written back as typed (quotes, a
+  comment), and the file's line endings are kept, so `git blame` keeps naming them; other comments aren't kept. Text
+  holding a colon or a `#` goes in quotes; a file that isn't YAML is refused with its line. Of two equally good links for
+  one entry, the first by kind and id wins, so a re-review that reorders findings flags nothing.
+- **The check and the truth map** (`stangent fsd rulings-check <doc>`, D363, D366 (3); code only): every value is one of
+  its state's, `restated` has a statement, `matches` is `confirmed` or blank, every entry has a key and sits under its own
+  section. Problems are listed and nothing is written. Otherwise it writes `specs/fsd/<doc>/truth-map.json` (contract
+  `truth-map` v1, for agents) and `truth-map.md` (the same, for the PM), the same bytes from the same inputs. **Who ruled
+  and when** come from `git blame` of the working file on the entry's `ruling` line, or for a match its section confirmed,
+  on the `matches` line: the commit's author and date; a line not yet committed shows `committed: false` and a warning
+  (commit, then run it again). Each entry gets a **standing**: `not-found` and `flagged` first, then `blank` or `ruled`
+  (differences, undocumented), `confirmed`, `unconfirmed` or `not-a-match` (matches). Printed: counts by standing and state,
+  unconfirmed matches by confidence, per section, the links per kind and the fallback share ("42 entries: flow 11, screen
+  27, node 4, file 0 (fallback 9.5%)"), `verifyFirst` (unconfirmed low, then medium matches, for the PM at setup), and
+  `done` when every entry is ruled, confirmed or not a match. `truth-map.json` holds every FSD section in order with its
+  text and its entries (ruling, statement, who, standing, link, evidence, runs, confidence), the code no section covers,
+  and each linked flow's actor, steps with their conditions, scenarios, endings and its 🟡/❓ counts. `truth-map.md`
+  shows the matches to verify first, then each section's text as a quote with its entries, then the flows (30 steps and
+  20 scenarios each, then "and N more, in <file>"). A ruling made before the commit reads `not committed`.
+- **Checked free on Kavita (2026-11-17):** the saved review (51 findings) gives 42 entries in 19 sections and 1
+  undocumented (20 undocumented after grouping by link), all blank; flow 11, screen 27, node 4, file 0; a second
+  refresh carries all 42, and rebuilds are byte for byte the same. The saved runs have no matches, so confidence, `new`
+  and section confirmation are tested with fakes only. Fresh-checked (D369).
 
 ## Links, findings and decisions (2b, D53, D58, D62): frozen (D342)
 
