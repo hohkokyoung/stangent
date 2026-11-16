@@ -322,7 +322,7 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
 - **Checked free (2026-11-15):** the saved Kavita runs through the built command: 29 of 30, 0 dropped
   (`benchmark/results/2026-11-15-fsd-review-free/`).
 
-## The truth map (D361–D369; `phases/tm-truth-map.md`), being built
+## The truth map (D361–D370; `phases/tm-truth-map.md`), being built
 
 The PM's rulings on the review's findings judge tickets. Built so far:
 
@@ -376,6 +376,11 @@ The PM's rulings on the review's findings judge tickets. Built so far:
   and each linked flow's actor, steps with their conditions, scenarios, endings and its 🟡/❓ counts. `truth-map.md`
   shows the matches to verify first, then each section's text as a quote with its entries, then the flows (30 steps and
   20 scenarios each, then "and N more, in <file>"). A ruling made before the commit reads `not committed`.
+- **Email templates in the graph** (layer 3, D362 (5), D370; `code-graph` v7, `docs/code-graph.md` "Template files"): a finding on
+  a template file links by its `template-file` point (a node link, so still a fallback), and the graph's 🟡
+  `sends-template` line from the constant naming it (`EmailConfirmTemplate`) lets a ticket starting in the sending code reach
+  the template's rulings (layer 4). Kavita: 22 templates linked; none of the saved review's findings cites one, so its
+  links are unchanged.
 - **Checked free on Kavita (2026-11-17):** the saved review (51 findings) gives 42 entries in 19 sections and 1
   undocumented (20 undocumented after grouping by link), all blank; flow 11, screen 27, node 4, file 0; a second
   refresh carries all 42, and rebuilds are byte for byte the same. The saved runs have no matches, so confidence, `new`

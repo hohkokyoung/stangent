@@ -40,6 +40,7 @@ public static class StangentComponents
         Detector("validation", "Validation rules on the properties they check"),
         Detector("form-fields", "Fields the server defines (a property named by a Label argument or a display-name attribute) and their choices (D329)"),
         Detector("constants", "Constants' values"),
+        Detector("template-files", "Which code sends which template file: a class's string constants that fill its file-name pattern (\"{0}.html\"), linked to the files they name (D362 (5))"),
         Detector("background-jobs", "Work queued to run later (Hangfire)"),
         Detector("jobs", "System jobs (command handlers, scheduled tasks) and the code that queues them"),
         Detector("conditions", "The conditions around each call, and early exits"),

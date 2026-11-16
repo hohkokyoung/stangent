@@ -1,4 +1,4 @@
-# Code graph (contract `code-graph` v6)
+# Code graph (contract `code-graph` v7)
 
 The map of the code that impact analysis walks (decisions D25–D28, frontends D30–D32, history D34–D42).
 It's built by code from the code and its git history; it's never committed and has no AI in it. v2
@@ -12,6 +12,8 @@ Rebuild layer 3's step 1 (`phases/r3-flows.md`, D171–D176) grew v5 in place: w
 conditions and early exits, and ✅ for a URL match code proves.
 v6 (layer 5's PM inventory, step 1, D329) adds what a user can touch beyond buttons: `form-field` and `field-choice` facts, Angular
 `ui-event` keys under transloco's `prefix`/`read`, and `menu-item` action entries written as data ("The PM inventory's facts" below).
+v7 (the truth map's layer 3, D362 (5), D370) adds which code sends which template file: `template-file` points and 🟡
+`sends-template` lines ("Template files" below).
 
 ## Where it lives
 
@@ -42,6 +44,7 @@ Every point has an id, a kind, a display name, its project, and a file and line 
 | `type`, `method`, `property`, `field` (Python) | `py\|<file>#<Name>`, e.g. `py\|shop/service.py#OrderService.place`; a nested function is `outer.inner`; module and class variables are fields | the Python extractor |
 | `endpoint` (Flask) | `endpoint:python\|<VERB> <route>`, or `endpoint:python:<dir>\|…` for a project in a folder | `flask-routes` |
 | `view` | `view:<path/to/X.cshtml>`: a server-rendered Razor view, spanning its lines (N1) | `razor-views` |
+| `template-file` | `template-file:<repo path>`: a file a class names through a file-name pattern, spanning its lines (v7, D362 (5)) | `template-files` |
 | `form` | `view:<path>#form<n>`: a form in a view, in the order written; the handler its submit buttons run (N1) | `razor-views` |
 | `project` (plain scripts) | `project:<C# project folder>/scripts`: that project's own `.js` and its views' inline scripts (N5) | the TypeScript extractor |
 
@@ -72,6 +75,7 @@ everything that can reach X by following lines backwards.
 | `imports` | a Python file → the file or symbol it imports | no (structure) |
 | `opens-screen` | a Playwright spec's `goto` → the screen it opens; stored apart (below) | no, and no other reader sees it |
 | `queues` | code that queues work → the job that runs it later (D173): a queued command's type → its handler (🟡, `jobs`), a background-job lambda → its method (✅, `background-jobs`); the one line kind that may point at itself, for a job that queues itself again | yes, like `triggered-by` |
+| `sends-template` | 🟡 a string constant, or the member holding a string literal, → the `template-file` its value names through its class's file-name pattern (v7, D362 (5)) | yes: a template's change reaches the code that sends it |
 
 ### Labels
 
@@ -198,6 +202,35 @@ impact answer doesn't list them yet. A repo with no specs exports no `screenTest
 - Screens are matched without the app's base path, and the runner's `baseURL` isn't read.
 - Ports are ignored: `http://localhost:4200/x` and `http://localhost:3000/x` are the same `/x`, so a port can't choose between frontends.
 
+## Template files (v7, D362 (5), D370)
+
+Which code sends which template file, so a ticket that starts in the sending code reaches the template, and a ruling on
+the template's text (the truth map) reaches the ticket. A matching rule, not an app's names:
+
+- **A pattern:** a string constant of a class (`const`, or `static readonly` with a constant value) whose value is a file
+  name with one `{0}` as its whole base name and an extension, perhaps after a folder: `"{0}.html"`, `"Templates/{0}.liquid"`.
+- **A name:** another string constant of the same class (a partial class counts as one) whose value is one word-like token
+  (`EmailConfirmTemplate = "EmailConfirm"`), or a whole string literal in one of its members (`GetEmailBody("base")`).
+- **A file:** each file of the repo's working tree (git's tracked and untracked-but-not-ignored files, so an untracked
+  template counts; `bin`, `obj`, `node_modules`, `dist` skipped) whose path is the filled pattern or ends with `/` and it,
+  compared case for case (`welcome` doesn't find `Welcome.html`), **in a template folder**: one where two or more of the
+  class's names find a file, or the folder the pattern itself names (`"Pages/{0}.md"`), never the repo's root otherwise.
+  A lone name matching a file elsewhere (`"{0}.json"` with `"package"` → every `package.json`) is no template. Every such
+  file gets a `template-file` point and a 🟡 `sends-template` line from the constant, or from the member holding the
+  literal. A literal in an attribute (`[Obsolete("index")]`) names nothing. A name made at runtime (`"Email" + kind`, an
+  interpolated string, `Path.Combine(dir, name + ".html")`), a pattern held in a property, and names held in another or a
+  nested class link nothing.
+- **A blind spot:** a file with the pattern's extension in a template folder that no name of the class names is listed
+  once, on the pattern constant: "it may be sent with a name built at runtime".
+- The line is walked by impact and by page slices: the constant depends on the template, and the code using the constant
+  depends on the constant (`uses`). A change to code never walks to a template; a forward slice reaching a constant adds
+  its templates as leaves. Counts of points by kind grow by the templates found (Kavita +22), so stats against a v6 graph
+  shift.
+
+Kavita (2026-11-17): `EmailService`'s `TemplatePath = "{0}.html"` and its 14 name constants plus `GetEmailBody("base")`:
+22 lines to 22 template files in `Kavita.Server/EmailTemplates/` and `Kavita.Server/config/templates/`; one blind spot,
+`config/templates/EmailMigration.html`, which no code names.
+
 ## Detectors (D17)
 
 Detectors are switched on per repo in `stangent.yaml`. `detectors: []` (the default) runs all of
@@ -211,6 +244,7 @@ them; list names to run only those; `[none]` runs none. Per-detector settings go
 | `entity-tables` | `entityBaseTypes: [Ns.BaseEntity]`, for ORMs mapped by convention |
 | `config-keys` | — |
 | `validation` | — (v5: rules as `rule` facts, below) |
+| `template-files` | — (v7: which code sends which template file, below) |
 | `form-fields` | — (v6: fields the server defines, "The PM inventory's facts" below) |
 | `jobs` | `jobInterfaces: [Ns.IExecute`1, Ns.IScheduleTask]`: an app's own job interfaces, added to the built-ins (Quartz's `IJob`, Coravel's `IInvocable`; a .NET `BackgroundService`'s `ExecuteAsync`) |
 | `conditions` | — (conditions and early exits, below) |

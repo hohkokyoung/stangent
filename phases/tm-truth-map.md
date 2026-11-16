@@ -2,13 +2,13 @@
 phase: tm
 name: truth map
 status: in progress
-consumes: { store: 1, cli-conventions: 3, code-graph: 6, flows: 6, source-document: 3, ticket-bundle: 2, bug-proof: 1 }
+consumes: { store: 1, cli-conventions: 3, code-graph: 7, flows: 6, source-document: 3, ticket-bundle: 2, bug-proof: 1 }
 provides: { rulings: 1, truth-map: 1 }
 ---
 
 # The truth map
 
-**Designed 2026-11-16 (D361–D364); plan and my calls D365; every sentence the code follows covered too (D366).** **Layers 0 and 1 built and fresh-checked 2026-11-16 (D367, D368); layer 2 2026-11-17 (D369).** Also reads `fsd-review` v1 and
+**Designed 2026-11-16 (D361–D364); plan and my calls D365; every sentence the code follows covered too (D366).** **Layers 0 and 1 built and fresh-checked 2026-11-16 (D367, D368); layer 2 2026-11-17 (D369); layer 3 built 2026-11-17 (D370).** Also reads `fsd-review` v1 and
 `inventory` v1, which layer 5 provides with no phase file of its own, so they aren't in `consumes` above.
 
 The judge of a ticket is the truth map, not the FSD alone (D361). The FSD review (D341) finds where the FSD and
@@ -121,7 +121,24 @@ finds again are dropped and listed.
   run or one; linked by flow or by fallback). Then the undocumented batch. The JSON is what agents read; the md is
   the same, for the PM.
 
+### Layer 2b · The PM rules by telling Claude (D371)
+
+- `truth-map.md`: every open item numbered, a plain question with plain answers, low and medium matches first; no YAML.
+  `truth-map.json` records each item's `n` with `rulingsHash`.
+- `stangent fsd rule <doc> <n> <answer> [--words "…"] [--note "…"]`: `yes`/`no` (a match, a section's matches),
+  `code`/`fsd` (a difference), `keep`/`remove` (undocumented code), `--words` for restated. Writes `rulings.yaml`
+  keeping every other line, rebuilds the truth map, prints the item back in plain words, never commits; refuses an
+  answer that doesn't fit the item and a number from a map older than `rulings.yaml`.
+- `plugin/commands/rule.md` (`/stangent:rule`): Claude turns the PM's words into `fsd rule` calls, asks back on
+  anything that could mean two things, reads each back, offers to commit.
+- `rulings.yaml`'s header: ask Claude or run `fsd rule`; hand edits still read.
+- No contract bump: `truth-map` v1 gains `n` (additive, nothing reads it yet); `rulings` v1 unchanged.
+
 ### Layer 3 · Email templates in the graph (D362 (5); `code-graph` v6 → v7)
+
+**Built and fresh-checked (D370):** the `template-files` detector; a whole string literal in the class's members counts as a
+name too (Kavita's `GetEmailBody("base")`); only in a template folder (two or more names match there, or the pattern names
+it); Kavita 22 lines, 1 blind spot; Sonarr and nopCommerce 0.
 
 - A string constant whose value names a template file in the project (Kavita: `EmailConfirmTemplate =
   "EmailConfirm"` with `TemplatePath = "{0}.html"` → `EmailTemplates/EmailConfirm.html`) gets a link

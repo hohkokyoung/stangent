@@ -17,6 +17,7 @@ public static class DetectorRegistry
         new ValidationDetector(), // rules as facts on the properties they check (G7)
         new FormFieldsDetector(), // fields the server defines and their choices (D329)
         new ConstantsDetector(), // constants' values (G9)
+        new TemplateFilesDetector(), // constants that name a template file through their class's file-name pattern (D362 (5))
         new BackgroundJobsDetector(), // work queued to run later (G11)
         new JobsDetector(), // system jobs and the code that queues them (D171, D173)
         new ConditionsDetector(), // the conditions around each call, and early exits (D174)

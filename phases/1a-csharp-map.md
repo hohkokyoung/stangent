@@ -3,7 +3,7 @@ phase: 1a
 name: csharp-map
 status: done
 consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1 }
-provides: { code-graph: 6, impact-report: 5 }
+provides: { code-graph: 7, impact-report: 5 }
 ---
 
 # Phase 1a · C# map
@@ -330,3 +330,6 @@ Every consumer of `code-graph` is `needs review` in `roadmap.md` (D20); none was
 Same day, after its fresh check (D164): F1–F10 fixed, tables from EF's snapshot first, and every build cross-checks endpoints with
 OpenAPI files and tables with the snapshot (`.stangent/graph-crosscheck.json`); still v5.
 
+## code-graph v7 (2026-11-17, the truth map's layer 3, D370)
+
+`template-file` points and walked 🟡 `sends-template` lines from the `template-files` detector (`docs/code-graph.md`, "Template files"). Consumers still on v6 (r2, r3, 4) are marked `needs review` in `roadmap.md` (D20); the truth map, which made the change, consumes v7.

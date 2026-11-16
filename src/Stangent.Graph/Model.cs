@@ -36,6 +36,8 @@ public static class NodeKind
     public const string View = "view";
     /// <summary>A form in a view, the handler its submit buttons run: <c>view:&lt;repo path&gt;#form&lt;n&gt;</c> (code-graph v5, N1).</summary>
     public const string Form = "form";
+    /// <summary>A file a class's constants name through a file-name pattern: <c>template-file:&lt;repo path&gt;</c> (code-graph v7, D362 (5)).</summary>
+    public const string TemplateFile = "template-file";
 }
 
 /// <summary>
@@ -97,9 +99,16 @@ public static class EdgeKind
     /// </summary>
     public const string Queues = "queues";
 
+    /// <summary>
+    /// 🟡 A string constant → the template file its value names through its class's file-name pattern (code-graph v7, D362 (5)):
+    /// Kavita's <c>EmailConfirmTemplate = "EmailConfirm"</c> with <c>TemplatePath = "{0}.html"</c> → <c>EmailTemplates/EmailConfirm.html</c>.
+    /// Walked by impact: the constant, and the code that uses it, depend on the template.
+    /// </summary>
+    public const string SendsTemplate = "sends-template";
+
     /// <summary>Lines a change travels back along: behaviour flows through these.</summary>
     public static readonly HashSet<string> Propagating =
-        [Calls, Uses, DispatchesTo, RoutesTo, TriggeredBy, Maps, ReadsConfig, Binds, CallsHttp, Tests, WiredTo, Renders, MapsField, Queues];
+        [Calls, Uses, DispatchesTo, RoutesTo, TriggeredBy, Maps, ReadsConfig, Binds, CallsHttp, Tests, WiredTo, Renders, MapsField, Queues, SendsTemplate];
 
     /// <summary>Lines followed only from the changed points themselves (a base change affects what derives from it).</summary>
     public static readonly HashSet<string> FirstStepOnly = [Inherits, Implements, Overrides];

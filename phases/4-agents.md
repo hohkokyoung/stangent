@@ -1,7 +1,7 @@
 ---
 phase: 4
 name: agents
-status: in progress
+status: needs review
 consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, code-graph: 6, impact-report: 5, ticket-bundle: 2, bug-proof: 1 }
 provides: { task-plan: 1, agent-run: 1 }
 ---
