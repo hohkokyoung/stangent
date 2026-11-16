@@ -64,6 +64,9 @@ public sealed class InventorySet
     public List<InventoryScreen> Screens { get; } = [];
     public List<InventoryGroup> Shared { get; } = [];
     public List<InventoryGroup> NotPlaced { get; } = [];
+    /// <summary>D362 (3): what the app's root component draws or opens, on every screen; the roots found, by id.</summary>
+    public List<InventoryGroup> AppFrame { get; } = [];
+    public List<string> Roots { get; } = [];
     public List<SkippedLine> Skipped { get; } = [];
     public List<SetAsideLine> SetAside { get; } = [];
     /// <summary>Data menus found, and how many are placed under a screen or shared.</summary>
@@ -74,7 +77,7 @@ public sealed class InventorySet
 
     public IEnumerable<InventoryLine> AllLines =>
         Screens.SelectMany(s => s.Lines.Concat(s.Dialogs.SelectMany(d => d.Lines)).Concat(s.Menus.SelectMany(m => m.Lines)))
-            .Concat(Shared.SelectMany(g => g.Lines)).Concat(NotPlaced.SelectMany(g => g.Lines));
+            .Concat(Shared.SelectMany(g => g.Lines)).Concat(AppFrame.SelectMany(g => g.Lines)).Concat(NotPlaced.SelectMany(g => g.Lines));
 }
 
 /// <summary>
@@ -190,7 +193,7 @@ public static partial class Inventory
 
     // ---- the builder ------------------------------------------------------------------------------------------------------
 
-    sealed class Builder(FlowGraph g, string root)
+    sealed partial class Builder(FlowGraph g, string root)
     {
         readonly Labels labels = new(g, root);
         readonly Dictionary<string, string> partOf = new(StringComparer.Ordinal);
@@ -419,6 +422,50 @@ public static partial class Inventory
             foreach (var s in screens) s.Lines.Sort(ByAt);
             set.Screens.AddRange(screens);
 
+            // ---- App frame (D362 (3)) ------------------------------------------------------------------------------------------
+            // The root: a part no other part renders and no screen starts at, that code outside any class mounts (a file's
+            // top level: Angular's bootstrapApplication, React's createRoot(...).render), or the server's layout view
+            // (`_Layout`, the framework's own name). What it draws or opens, unplaced so far, is on every screen.
+            var rendered = partIds.SelectMany(RenderChildren).ToHashSet(StringComparer.Ordinal);
+            // A file mounts what it uses only when it calls the framework's mount function (React files use components at
+            // their top level all the time: Sonarr had 50 "roots" without this), or, for an NgModule, names it in `bootstrap: [..]`.
+            var mountFiles = new Dictionary<string, string?>(StringComparer.Ordinal);
+            string? MountText(string file)
+            {
+                if (mountFiles.TryGetValue(file, out var t)) return t;
+                var path = Path.Combine(root, file);
+                var text = File.Exists(path) ? File.ReadAllText(path) : "";
+                return mountFiles[file] = MountCall().IsMatch(text) || BootstrapList().IsMatch(text) ? text : null;
+            }
+            bool Mounted(Node n)
+            {
+                if (n.Kind == NodeKind.View) return Path.GetFileName(n.File ?? "") == "_Layout.cshtml";
+                var name = FlowGraph.ShortName(n);
+                foreach (var e in g.In(n.Id, EdgeKind.Uses).Concat(g.In(n.Id, EdgeKind.Renders)))
+                {
+                    if (!g.Nodes.TryGetValue(e.Source, out var src) || src.File is not { } file || MountText(file) is not { } text) continue;
+                    if (src.Kind == NodeKind.File && MountCall().IsMatch(text)) return true;
+                    if (BootstrapList().Matches(text).Any(m => Regex.IsMatch(m.Groups["list"].Value, $@"\b{Regex.Escape(name)}\b"))) return true;
+                }
+                return false;
+            }
+            set.Roots.AddRange(partIds.Where(p => !rendered.Contains(p) && !startParts.Contains(p) && !dialogs.Contains(p)
+                && g.Nodes.TryGetValue(p, out var n) && !n.IsTest && n.Kind is NodeKind.Component or NodeKind.View && Mounted(n)));
+            if (set.Roots.Count > 0)
+            {
+                // A part in the root's own file that nothing renders is the frame too: a router's layout element
+                // (Sonarr's `<Route element={<PageLayout />}>` in App.tsx) is reached through the router, not a render line.
+                var rootFiles = set.Roots.Select(r => g.Nodes[r].File).OfType<string>().ToHashSet(StringComparer.Ordinal);
+                var layouts = partIds.Where(p => !rendered.Contains(p) && !startParts.Contains(p) && !dialogs.Contains(p) && !set.Roots.Contains(p)
+                    && g.Nodes.TryGetValue(p, out var n) && !n.IsTest && n.Kind == NodeKind.Component && n.File is { } f && rootFiles.Contains(f)).ToList();
+                var frame = Reach(set.Roots.Concat(layouts), Children);
+                foreach (var group in set.NotPlaced.Where(x => frame.Contains(x.Id)).ToList())
+                {
+                    set.NotPlaced.Remove(group);
+                    set.AppFrame.Add(group);
+                }
+            }
+
             // Server-defined fields drawn by a generic form from the server's list (D334 item 4): one group per class, Not placed.
             foreach (var (cls, lines) in serverClasses)
             {
@@ -432,6 +479,11 @@ public static partial class Inventory
             set.SetAside.Sort((a, b) => { var c = string.CompareOrdinal(a.Fact.File, b.Fact.File); return c != 0 ? c : a.Fact.Line.CompareTo(b.Fact.Line); });
             return set;
         }
+
+        [GeneratedRegex(@"\b(?:bootstrapApplication|bootstrapModule|createRoot|hydrateRoot|ReactDOM\.render)\s*\(")]
+        private static partial Regex MountCall();
+        [GeneratedRegex(@"\bbootstrap\s*:\s*\[(?<list>[^\]]*)\]")]
+        private static partial Regex BootstrapList();
 
         static bool IsDisplayName(string attribute)
         {

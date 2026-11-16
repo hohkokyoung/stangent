@@ -145,7 +145,7 @@ static class FsdCommands
         var reviewStatus = new Command("review-status", "Where each review run stands (D341): its stage and commit, how many runs merge takes, whether review.json exists. Reads only.") { docArgument };
         reviewStatus.SetAction(pr => Cli.Run(pr, "fsd review-status", ctx => FsdReview.Status(ctx.Repo, pr.GetValue(docArgument)!)));
         fsd.Subcommands.Add(reviewStatus);
-        var reviewMerge = new Command("review-merge", "Union the checked review runs (D341): exact duplicates joined, each finding saying which runs found it. Writes specs/fsd/<doc>/review.json (contract fsd-review v1) and review.md. Code only.") { docArgument };
+        var reviewMerge = new Command("review-merge", "Union the checked review runs (D341): exact duplicates joined, each finding saying which runs found it. Writes specs/fsd/<doc>/review.json (contract fsd-review v2) and review.md. Code only.") { docArgument };
         reviewMerge.SetAction(pr => Cli.Run(pr, "fsd review-merge", ctx =>
         {
             var result = FsdReview.Merge(ctx.Repo, pr.GetValue(docArgument)!);
@@ -153,6 +153,9 @@ static class FsdCommands
             return result;
         }));
         fsd.Subcommands.Add(reviewMerge);
+        var links = new Command("links", "The truth map's links (D362): each finding of review.json linked to a flow, else a screen (with the App frame), else a graph node, else its file; prints the share linked by fallback. Reads only.") { docArgument };
+        links.SetAction(pr => Cli.Run(pr, "fsd links", ctx => Stangent.Spec.Fsd.TruthLinks.Run(ctx.Repo, pr.GetValue(docArgument)!)));
+        fsd.Subcommands.Add(links);
 
         var trace = new Command("trace", "specs/trace.yaml: the links, findings and decisions (D58), frozen since the link route was cut (D342); table facts still write to it.");
         root.Subcommands.Add(trace);

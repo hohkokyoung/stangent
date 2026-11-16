@@ -1,4 +1,4 @@
-# The spec (Phase 2: contracts `reference-page`, `reference-lines`, `source-document` v3, `trace-links`; layer 5: `fsd-review` v1)
+# The spec (Phase 2: contracts `reference-page`, `reference-lines`, `source-document` v3, `trace-links`; layer 5: `fsd-review` v2)
 
 **Layer 4 note (D258, D342):** the reference pages are being replaced by each area's page (`docs/pages.md`). They retire one
 reader at a time: old linking no longer reads them (cut in layer 7, D342); tickets still do (starting points and the bundle), so the
@@ -273,7 +273,7 @@ A first import goes straight in, unless `first-import-approval` is on (above). T
   the repo or a second git repo, which gets a commit) and is cited by archive name, path and content hash.
   A file with a known hash is imported once.
 
-## The FSD review (layer 5, D341; contract `fsd-review` v1)
+## The FSD review (layer 5, D341; contract `fsd-review` v2, matches D366)
 
 The route measured better than the old linking (D321–D324: 26–29 of 30 planted items against 24, 0–8% false alarms
 against 31%): an agent reads the FSD and the source, two runs side by side, and code checks what it says. The old route,
@@ -289,13 +289,15 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
 
 - **Input** (`fsd review`): the reviewer's instructions (D321's prompt, with no app named), `fsd.scope`'s route
   prefixes, the current version's sections as Markdown with each id in its heading (`### 2.1 Library  [section id:
-  2.1]`), and the output schema `fsd-review-output.v1.json`: findings with `state` (gap, conflict, undocumented),
+  2.1]`), and the output schema `fsd-review-output.v2.json`: findings with `state` (gap, conflict, undocumented, and
+  since D366 match: a statement the code does as written, with the line that does it),
   `section`, `fsdQuote`, `screen`, `note`, `evidence` (`path:line`). A checked run with the same input on the same commit
   is `current`, no AI; `--again` runs it anyway. AI off (`ai.enabled: false`) refuses.
 - **Limits**, as the file finder's (D101): Read, Grep and Glob in a throwaway worktree of the commit the run was prepared on; never `.stangent/`,
   `.git/`, `specs/` (earlier reviews, the FSD's record) or `stangent.yaml`; structured output; `fsd.reviewBudget`
   (60 turns, $3 per run by default, the retry inside it). Kavita's runs used 205–242K tokens.
-- **Checks** (`fsd review-check`), every finding: a known state; the section exists in the reviewed version (null only for
+- **Checks** (`fsd review-check`), every finding: a known state; a match gives at least one `path:line`, and one run
+  can't report the same section and quote as a match and as a gap or conflict (the match goes back for the retry, the difference stands, D366, D367); the section exists in the reviewed version (null only for
   an undocumented screen that names its route); a gap or conflict quotes its section word for word, 4 words or a whole
   line, from a word's start to its end, with spaces and `*`/`` ` `` ignored, curly quotes and long dashes folded, and
   table bars and list markers ignored where that makes it match, a section holding its subsections' text; every evidence path is a
@@ -310,14 +312,29 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
   route; an undocumented finding in a section only when the pair is unambiguous (same section, routes equal or one blank,
   an evidence file in common, and each the other's only such finding). Anything else stays apart; undocumented findings of
   different runs in one section sharing a file are marked `maybeSameAs`, for the reader. A joined finding keeps the first
-  run's words and every run's evidence, and lists its `runs`. `review.json` holds the commit, FSD version, model, effort,
+  run's words and every run's evidence, and lists its `runs`. A match joins another run's match by section and quote; where another run calls that statement a
+  gap or conflict, both stay and each lists the other in `disagreesWith` (the difference is what gets ruled). `review.json` holds the commit, FSD version, model, effort,
   tokens, each run's counts and usage, the findings (`F-001` …, in section order, not permanent) and what was dropped;
-  `review.md` is the same by section (gaps, conflicts, left out), then screens no section covers. Both are generated:
+  `review.md` is the same by section (gaps, conflicts, left out, matches), then screens no section covers. Both are generated:
   answers don't go here, and no findings-to-decisions flow exists yet (the old route's `trace.yaml` decisions stay with it).
 - **What it doesn't show:** that a difference is real. The quote and line checks keep the AI honest about what it read;
   D322's checker found 0 of 20 false after the quote rule, on one app.
 - **Checked free (2026-11-15):** the saved Kavita runs through the built command: 29 of 30, 0 dropped
   (`benchmark/results/2026-11-15-fsd-review-free/`).
+
+## The truth map (D361–D366; `phases/tm-truth-map.md`), being built
+
+The PM's rulings on the review's findings judge tickets. Built so far:
+
+- **Links** (`stangent fsd links <doc>`, D362, layer 1; reads only): each finding of `review.json` links to the most specific
+  thing that fits, per evidence line: a **flow** (the line is a step's, or inside a method a flow walks; a start flow before
+  a shared one), else a **screen** (an inventory line, or a file holding inventory lines: the screen, shared part or App frame
+  group with the most lines there; an undocumented screen naming its route links to that screen), else the smallest graph
+  **node** holding the line, else the **file** (or folder). The finding takes its best line's link. Each link carries a
+  fingerprint of what it points at (the flow's file, the screen's lines, the node's own lines, the file), so a ruling is
+  flagged when that changes. Printed: counts per kind and the share linked by fallback (node or file), e.g. "51 findings:
+  flow 12, screen 35, node 4, file 0 (fallback 7.8%)" on Kavita's saved review (2026-11-16, D368). Within a kind, an exact step or control beats a walked method or a nearby one; a file holding several groups goes to the nearest inventory line. Needs `specs/flows/`,
+  `specs/inventory.json` (v2, with the App frame) and the graph; a missing one is a warning, and nothing links to it.
 
 ## Links, findings and decisions (2b, D53, D58, D62): frozen (D342)
 

@@ -1,4 +1,4 @@
-# The PM inventory (layer 5, contract `inventory` v1)
+# The PM inventory (layer 5, contract `inventory` v2: the App frame, D362)
 
 Every control a user can touch, named by the words they see, grouped per screen: built from the code graph by code, no AI
 (D325–D329, D334). It is the list layer 5's link step reads against an FSD (D325); it is also useful alone, e.g. diffed
@@ -22,7 +22,7 @@ Both need the code graph (code-graph v6, D329, D333); without one they fail `no_
 - `specs/inventory.md`: generated, never read back. The counts at the top (screens, lines by kind, share named by visible
   text, ❓, skipped by reason, set aside, shared parts, Not placed, dialogs and data menus found), then one `##` per screen
   with its own lines, a pointer line per shared part it uses ("uses Series Actions (23 actions)"), and a `###` per dialog
-  and menu it opens; then "Shared parts" (each with "Appears on N screens: …"), then "Not placed". Skipped lines are never in
+  and menu it opens; then "Shared parts" (each with "Appears on N screens: …"), then "App frame (on every screen)", then "Not placed". Skipped lines are never in
   the `.md`. A title made from a code name is marked "_(code name)_".
 
 A line holds: `kind` (`button`, `menu-entry`, `field`, `server-field`), `name` (the words, or "❓ code: why"), `named`, `source`
@@ -79,12 +79,25 @@ to no server model property (one that saves to a model is a setting, D335), labe
 the fixed list; every set-aside reason known; every control fact outside tests (`ui-event` button, `form-field` other than a
 wrapper's insides, `menu-item`) exactly one line, skipped line, set-aside entry or merged label.
 
+**App frame (on every screen)** (D362 (3), v2): what the app's root draws or opens, on every screen, so it isn't "Not
+placed". The root is a part no other part renders, no screen starts at and no code opens as a dialog, that is mounted:
+used from the top level of a file that calls the framework's mount function (`bootstrapApplication`, `bootstrapModule`,
+`createRoot`, `hydrateRoot`, `ReactDOM.render`), named in an NgModule's `bootstrap: [..]`, or a view `_Layout.cshtml`. A
+part in the root's own file that nothing renders is the frame too (a router's layout element: Sonarr's
+`<Route element={<PageLayout />}>`). Everything those reach (renders, dialogs, data menus), not placed so far, moves from
+"Not placed" into the frame; JSON `appFrame` (`title`, `roots`, `groups`), counts `appFrame`. On the clones (2026-11-16):
+Kavita 4 groups, 59 lines (`AppComponent`); Sonarr 2 groups, 53 lines (`App`, its `PageLayout` and the sidebar menu);
+nopCommerce no root.
+
 ## Known gaps
+- A server app with several layouts (nopCommerce: public `_Root`, `_AdminLayout`, `_AdminPopupLayout`, set by
+  `Layout = "…"`) has no single frame "on every screen": no root, so its shells stay "Not placed". A frame per layout is
+  a later step.
+- A data menu read only from a template's property (Kavita's `navService.navItems` in the nav header) has no reader the
+  walk sees: "Not placed" even when its readers are in the App frame.
 
 - The 4-hop walk misses a dialog opened through an event bus, a router outlet or a callback held in data (it lands in "Not
   placed"); a service called from many places places its dialogs on many screens (Shared parts).
-- App shells (the root component, a layout view) are rendered by no screen, so their lines (main navigation, header buttons)
-  are "Not placed".
 - Razor `EditorFor` templates and partials rendered through code paths the graph doesn't follow are "Not placed".
 - Data menus built in C# (an admin menu, install code) have no walk: always "Not placed".
 - A menu entry whose name is a key the app prefixes at runtime is shown as written when it reads as words (`edit`), or ❓.

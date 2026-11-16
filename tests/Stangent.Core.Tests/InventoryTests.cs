@@ -94,6 +94,59 @@ public sealed class InventoryTests : IDisposable
         Assert.Contains("Appears on 2 screens: ❓ /a: no visible text found; ❓ /b: no visible text found.", md);
     }
 
+    void NodeIn(string id, string kind, string name, string file) => f.Nodes.Add(new Node(id, kind, name, "project:app", file, 1, 1, false));
+
+    [Fact]
+    public void What_the_mounted_root_draws_or_opens_is_the_app_frame_and_a_top_level_use_without_a_mount_call_is_not()
+    {
+        App();
+        Write("web/main.ts", "import { Shell } from './shell';\nbootstrapApplication(Shell, {});\n");
+        Write("web/other.ts", "export default wrap(Stray);\n");
+        NodeIn("file:web/main.ts", NodeKind.File, "main.ts", "web/main.ts");
+        NodeIn("file:web/other.ts", NodeKind.File, "other.ts", "web/other.ts");
+        NodeIn("ts|web/shell.ts#Shell", NodeKind.Component, "Shell", "web/shell.ts");
+        NodeIn("ts|web/nav.ts#Nav", NodeKind.Component, "Nav", "web/nav.ts");
+        NodeIn("ts|web/stray.ts#Stray", NodeKind.Component, "Stray", "web/stray.ts");
+        Edge("file:web/main.ts", "ts|web/shell.ts#Shell", EdgeKind.Uses);
+        Edge("file:web/other.ts", "ts|web/stray.ts#Stray", EdgeKind.Uses);
+        Edge("ts|web/shell.ts#Shell", "ts|web/nav.ts#Nav", EdgeKind.Renders);
+        Button("ts|web/nav.ts#Nav", 6, "Home");
+        Button("ts|web/shell.ts#Shell", 7, "Sign out");
+        Button("ts|web/stray.ts#Stray", 8, "Stray button");
+
+        var set = Inventory.Build(Graph(), root);
+        Assert.Equal(["ts|web/shell.ts#Shell"], set.Roots);
+        // Nav folds into Shell (its only parent); the frame holds both lines. Orphan and Stray stay Not placed.
+        var frame = Assert.Single(set.AppFrame);
+        Assert.Equal(["Home", "Sign out"], frame.Lines.Select(l => l.Name.Words).Order(StringComparer.Ordinal));
+        Assert.Equal(["Orphan", "Stray"], set.NotPlaced.Select(g => g.Title));
+        var json = InventoryFiles.Json(set);
+        Assert.Equal(2, (int)json["version"]!);
+        Assert.Equal(InventoryFiles.AppFrameTitle, (string)json["appFrame"]!["title"]!);
+        Assert.Equal(2, (int)json["counts"]!["appFrame"]!["lines"]!);
+        var md = InventoryFiles.Markdown(set);
+        Assert.Contains("## App frame (on every screen)", md);
+        Assert.Contains("- App frame (on every screen): 1 groups, 2 lines (1 root)", md);
+    }
+
+    [Fact]
+    public void A_router_layout_in_the_root_file_is_the_app_frame_too()
+    {
+        Write("web/index.tsx", "createRoot(document.getElementById('root')!).render(<App />);\n");
+        NodeIn("file:web/index.tsx", NodeKind.File, "index.tsx", "web/index.tsx");
+        NodeIn("ts|web/App.tsx#App", NodeKind.Component, "App", "web/App.tsx");
+        NodeIn("ts|web/App.tsx#PageLayout", NodeKind.Component, "PageLayout", "web/App.tsx");
+        NodeIn("ts|web/Sidebar.tsx#Sidebar", NodeKind.Component, "Sidebar", "web/Sidebar.tsx");
+        Edge("file:web/index.tsx", "ts|web/App.tsx#App", EdgeKind.Renders);
+        Edge("ts|web/App.tsx#PageLayout", "ts|web/Sidebar.tsx#Sidebar", EdgeKind.Renders);
+        Button("ts|web/Sidebar.tsx#Sidebar", 1, "Calendar");
+
+        var set = Inventory.Build(Graph(), root);
+        Assert.Equal(["ts|web/App.tsx#App"], set.Roots);
+        Assert.Equal("Calendar", Assert.Single(Assert.Single(set.AppFrame).Lines).Name.Words);
+        Assert.Empty(set.NotPlaced);
+    }
+
     [Fact]
     public void A_dialog_opened_through_a_service_method_sits_under_the_screen_with_its_own_title()
     {
