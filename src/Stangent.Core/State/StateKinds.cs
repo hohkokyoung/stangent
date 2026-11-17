@@ -33,7 +33,7 @@ public static class StateKinds
     public const string TraceDecision = "trace-decision", FindingSeverity = "finding-severity",
         Proof = "proof", ProofConfirmation = "proof-confirmation", DraftPosted = "draft-posted",
         PageRun = "page-run", PageCorrection = "page-correction", TicketStep = "ticket-step",
-        FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FsdSectionAnswer = "fsd-section-answer", FindingReview = "finding-review", FsdReviewRun = "fsd-review-run",
+        FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FsdSectionAnswer = "fsd-section-answer", FindingReview = "finding-review", FsdReviewRun = "fsd-review-run", FsdWriteRun = "fsd-write-run",
         FixRun = "fix-run", FindingStanding = "finding-standing", FindingSecurity = "finding-security";
 
     // Committed state gets committed history; run state in .stangent/ gets history beside it, ignored the same way.
@@ -117,6 +117,11 @@ public static class StateKinds
 
         // D341: one review run, from its prepare; one retry at most; a failed run is prepared again from nothing.
         new(FsdReviewRun, ".stangent/fsd/state-history.jsonl", ["prepared"],
+            [.. Each(Code, "prepared", "retry", "checked", "failed"), .. Each(Code, "retry", "checked", "failed")], Field: "stage"),
+
+        // Phase fs layer 4 (D387): one `fsd write` AI run for a document's code-right rulings; one retry at most for the drafts
+        // that failed; a new `fsd write` prepares it again from nothing.
+        new(FsdWriteRun, ".stangent/fsd/state-history.jsonl", ["prepared"],
             [.. Each(Code, "prepared", "retry", "checked", "failed"), .. Each(Code, "retry", "checked", "failed")], Field: "stage"),
 
         // D343, D350: one ticket's fix loop. Code ends it; `fix start --replace` (a person's command) starts it again from any end.

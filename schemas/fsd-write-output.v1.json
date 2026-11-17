@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:fsd-write-output:v1",
+  "title": "What stangent-fsd-writer returns (phase fs layer 4, D379, D387)",
+  "description": "For each ruling that the code is right, the FSD's new sentence: the ruled sentence it replaces, word for word, the new words describing what the code does, and the code lines they describe. Code checks `replaces` is the ruled sentence, the words go in as one sentence, and every cite is a real path:line inside the entry's linked code; the new words replace only that sentence.",
+  "type": "object",
+  "required": ["drafts"],
+  "additionalProperties": false,
+  "properties": {
+    "drafts": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "required": ["entry", "replaces", "sentence", "cites"],
+        "additionalProperties": false,
+        "properties": {
+          "entry": { "description": "The entry's id as the input names it: W1, W2, …", "type": "string", "pattern": "^W[0-9]+$" },
+          "replaces": { "description": "The sentence to replace, copied exactly as the input gives it.", "type": "string", "minLength": 1, "maxLength": 2000 },
+          "sentence": { "description": "The FSD's new words: what the code does, in the FSD's own style, one sentence or a short paragraph on one line, no Markdown heading or id marker.", "type": "string", "minLength": 3, "maxLength": 1000 },
+          "cites": {
+            "description": "The code line(s) the new words describe, path:line or path:from-to, relative to the repo root, inside the code the entry is linked to.",
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": { "type": "string", "minLength": 3, "maxLength": 400 }
+          }
+        }
+      }
+    }
+  }
+}

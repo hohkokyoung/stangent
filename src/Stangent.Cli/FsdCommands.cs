@@ -171,7 +171,7 @@ static class FsdCommands
         var links = new Command("links", "The truth map's links (D362): each finding of review.json linked to a flow, else a screen (with the App frame), else a graph node, else its file; prints the share linked by fallback. Reads only.") { docArgument };
         links.SetAction(pr => Cli.Run(pr, "fsd links", ctx => Stangent.Spec.Fsd.TruthLinks.Run(ctx.Repo, pr.GetValue(docArgument)!)));
         fsd.Subcommands.Add(links);
-        var rulings = new Command("rulings", "Draft or refresh specs/fsd/<doc>/rulings.yaml (contract rulings v1, D363) from review.json, by FSD section: an entry per difference and match, undocumented code by its link; rulings carried over by key, an old ruling no run finds again kept as notFound, a changed section's rulings blanked, a ruled entry whose link changed flagged. Nobody needs to edit it: the PM answers through `fsd rule` (D371). Code only.") { docArgument };
+        var rulings = new Command("rulings", "Draft or refresh specs/fsd/<doc>/rulings.yaml (contract rulings v2, D363, D386) from review.json, by FSD section: an entry per difference and match, undocumented code by its link; rulings carried over by key, an old ruling no run finds again kept as notFound, a changed section's rulings blanked, a ruled entry whose link changed flagged. Nobody needs to edit it: the PM answers through `fsd rule` (D371). Code only.") { docArgument };
         rulings.SetAction(pr => Cli.Run(pr, "fsd rulings", ctx =>
         {
             var result = Rulings.Refresh(ctx.Repo, pr.GetValue(docArgument)!);
@@ -179,7 +179,7 @@ static class FsdCommands
             return result;
         }));
         fsd.Subcommands.Add(rulings);
-        var rulingsCheck = new Command("rulings-check", "Check rulings.yaml (each value one of its state's, restated with a statement, every entry keyed), take who ruled and when from git blame, list medium and low matches first, count, and write specs/fsd/<doc>/truth-map.json (contract truth-map v1) and truth-map.md (D366). Problems write nothing. Code only.") { docArgument };
+        var rulingsCheck = new Command("rulings-check", "Check rulings.yaml (each value one of its state's, restated with a statement, every entry keyed), take who ruled and when from git blame, list medium and low matches first, count, and write specs/fsd/<doc>/truth-map.json (contract truth-map v2) and truth-map.md (D366). Problems write nothing. Code only.") { docArgument };
         rulingsCheck.SetAction(pr => Cli.Run(pr, "fsd rulings-check", ctx =>
         {
             var report = TruthMap.Check(ctx.Repo, pr.GetValue(docArgument)!, out var ok);
@@ -196,6 +196,42 @@ static class FsdCommands
         var rule = new Command("rule", "Record the PM's answer to a numbered question of truth-map.md in rulings.yaml (D371), so nobody edits the file: the number is read back through truth-map.json, the answer checked against the item, the file rewritten keeping every other line. The truth map isn't rebuilt and nothing is committed. Code only.") { docArgument, ruleNumber, ruleAnswer, ruleWords, ruleNote, ruleMap };
         rule.SetAction(pr => Cli.Run(pr, "fsd rule", ctx => PmAnswers.Apply(ctx.Repo, pr.GetValue(docArgument)!, pr.GetValue(ruleNumber), pr.GetValue(ruleAnswer), pr.GetValue(ruleWords), pr.GetValue(ruleNote), pr.GetValue(ruleMap))));
         fsd.Subcommands.Add(rule);
+        var writeCost = new Option<string?>("--max-cost") { Description = "The cost cap in dollars for the AI that drafts the FSD's words for rulings that the code is right (rule 9), or `none` for the drafter's own cap. Without it those rulings are listed; the PM's own words are written either way." };
+        var writeSection = new Option<string?>("--section") { Description = "Where the PM's words about code no section covers go, by permanent id (S-0012) or number: added at the end of that section. Without it they are listed, never guessed." };
+        var writeItem = new Option<int?>("--item") { Description = "With --section, when more than one is waiting: the code's number in truth-map.md." };
+        var write = new Command("write", "Turn rulings into the FSD's words (D379, D386, D387), uncommitted: the PM's own words replace the quoted sentence, or go at the end of the --section named; a ruling that the code is right goes to an AI step under --max-cost (D60), checked by `fsd write-check`. Each written entry becomes a confirmed match with writtenFrom, and its section's recorded hash moves to the new text. A ruling drafted from Jira waits until committed. Then `fsd check`, read the diff, commit.") { docArgument, writeCost, writeSection, writeItem, ruleMap };
+        write.SetAction(pr => Cli.Run(pr, "fsd write", ctx =>
+        {
+            var doc = pr.GetValue(docArgument)!;
+            var (result, step) = FsdWrite.Run(ctx.Repo, doc, pr.GetValue(writeCost), pr.GetValue(writeSection), pr.GetValue(writeItem), pr.GetValue(ruleMap));
+            ctx.Span.Attributes["stangent.artifact.count"] = result["written"]!.AsArray().Count;
+            if (step is null) return result;
+            var json = SpecCommands.Finish(step, $"{doc} write").AsObject();
+            json["next"]!["limits"] = FsdWrite.DriverLimits(ctx.Repo, doc);
+            foreach (var (k, v) in result.ToList()) if (k != "next") json[k] = v?.DeepClone();
+            json["after"] = result["next"]?.DeepClone();
+            return json;
+        }));
+        fsd.Subcommands.Add(write);
+        var writeCheck = new Command("write-check", "Check the AI's drafts of `fsd write` (D379): each replaces the ruled sentence word for word and only it, its words go in as one sentence, every cited path:line is real at the run's commit and inside the entry's linked code. Passing drafts are written; one retry for the rest, then they are listed.") { docArgument, usageOption };
+        writeCheck.SetAction(pr => Cli.Run(pr, "fsd write-check", ctx =>
+        {
+            var doc = pr.GetValue(docArgument)!;
+            var (result, step) = FsdWrite.Check(ctx.Repo, doc, SpecCommands.ReadUsage(ctx, pr.GetValue(usageOption)));
+            ctx.Span.Attributes["stangent.artifact.count"] = result["written"]?.AsArray().Count ?? 0;
+            if (step.Status == "retry")
+            {
+                var retry = step.ToJson($"{doc} write");
+                retry["next"]!["limits"] = FsdWrite.DriverLimits(ctx.Repo, doc);
+                foreach (var (k, v) in result.ToList()) if (k != "next") retry[k] = v?.DeepClone();
+                throw new CheckFailed("check_failed", $"{doc} write: some drafts failed the code check; the drafter gets one retry with the errors.", retry);
+            }
+            var json = SpecCommands.Finish(step, $"{doc} write").AsObject();
+            foreach (var (k, v) in result.ToList()) if (k != "next") json[k] = v?.DeepClone();
+            json["after"] = result["next"]?.DeepClone();
+            return json;
+        }));
+        fsd.Subcommands.Add(writeCheck);
 
         var trace = new Command("trace", "specs/trace.yaml: the links, findings and decisions (D58), frozen since the link route was cut (D342); table facts still write to it.");
         root.Subcommands.Add(trace);

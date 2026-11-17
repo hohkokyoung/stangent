@@ -138,7 +138,18 @@ and words both changed needs `--same`. A level skip the committed FSD or a first
 - **Fresh check:** "can an edit that passes the check make a ruling point at the wrong section, or lose one?" Sonnet,
   about 80K.
 
-### Layer 4 · Rulings become FSD words (D379, D386, D387; `rulings` 1 → 2, `truth-map` 1 → 2)
+### Layer 4 · Rulings become FSD words (D379, D386, D387; `rulings` 1 → 2, `truth-map` 1 → 2) — built and fresh-checked (D394)
+
+Built as `FsdWrite` (`stangent fsd write <doc> [--max-cost N|none] [--section <id> [--item <n> --map <id>]]` and
+`stangent fsd write-check <doc>`), the agent `stangent-fsd-writer` (`fsd-write-output.v1.json`), the driver
+`plugin/scripts/fsd-write-run.sh` and the state kind `fsd-write-run`; schemas `rulings.v2.json`, `truth-map.v2.json`
+(a v1 `rulings.yaml` is still read); tests in `FsdWriteTests` (20). Added while building (D394): only a section that
+reads as the text its rulings were recorded on takes an edit (else listed); a quote found twice, marks or lines running
+past it, words that would change the layout (a heading, a marker, a line break, a list or quote start, a fence, a mark left open), a quote inside words the same run wrote, and a chapter with mixed line endings are listed; `--item` picks which undocumented code
+goes in `--section` when more than one waits; a refresh drops the review finding a written entry replaced, never marks a
+written entry not found, and turns a restated statement found in the new text into a written match (D386's "simply a
+match"); a Jira-drafted ruling is written only once committed; `writtenFrom` records who ruled (blame, when committed
+before the write) and the cites. Details in `docs/spec.md` ("Rulings become the FSD's words"). Fresh-checked (Sonnet, about 131K tokens): no unasked sentence changed, no uncited one through; 2 defects and a schema gap fixed (D394). A live AI run comes with D375's paid run, asked first.
 
 - `stangent fsd write <doc> [--max-cost N|none] [--section <id>]`: a `restated` ruling's words replace its quoted
   sentence (gap, conflict), or are added at the end of the named section (code no section covers, a ticket's own

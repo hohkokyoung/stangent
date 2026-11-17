@@ -27,8 +27,10 @@ public sealed class RulingEntry
     public string? NotFound;
     public string? Flagged;
     public bool New;
-    public bool InFsd;
     public JsonObject? Jira;
+    /// <summary>What a ruling written into the FSD replaced (D386, <c>fsd write</c>): the old key, the ruling, the PM's words,
+    /// who ruled. Set, the entry is a confirmed match on the new sentence, and no review finding of the old key comes back.</summary>
+    public JsonObject? WrittenFrom;
     public string? Ruling;
     public string? Statement;
     public string? PmNote;
@@ -104,8 +106,10 @@ public sealed class RulingsFile
 public static partial class Rulings
 {
     public const string Contract = "rulings";
-    public const int Version = 1;
-    public const string Schema = "rulings.v1.json";
+    public const int Version = 2;
+    public const string Schema = "rulings.v2.json";
+    /// <summary>A v1 file (before D386: <c>inFsd</c>, no <c>writtenFrom</c>) is still read; the next write makes it v2.</summary>
+    const string SchemaV1 = "rulings.v1.json";
     public static readonly string[] DifferenceRulings = ["code-right", "fsd-right", "restated"];
     public static readonly string[] UndocumentedRulings = ["keep", "remove", "restated"];
     public static readonly string[] MatchRulings = ["confirmed", "not-a-match"];
@@ -144,7 +148,8 @@ public static partial class Rulings
         if (stream.Documents.Count == 0 || stream.Documents[0].RootNode is not YamlMappingNode rootNode)
             throw new StangentException("invalid_rulings", "rulings.yaml must be a mapping.", ExitCodes.Failed);
         var json = ToJson(rootNode, "") as JsonObject ?? [];
-        foreach (var e in SchemaRegistry.Embedded.Validate(Schema, json.ToJsonString())) problems.Add($"schema: {e}");
+        var schema = json["version"] is JsonValue ver && ver.TryGetValue<int>(out var v) && v == 1 ? SchemaV1 : Schema;
+        foreach (var e in SchemaRegistry.Embedded.Validate(schema, json.ToJsonString())) problems.Add($"schema: {e}");
         var lines = yaml.Replace("\r\n", "\n").Split('\n');
 
         var file = new RulingsFile
@@ -192,8 +197,8 @@ public static partial class Rulings
             NotFound = Str(e["notFound"]),
             Flagged = Str(e["flagged"]),
             New = e["new"] is JsonValue n && n.TryGetValue<bool>(out var nv) && nv,
-            InFsd = e["inFsd"] is JsonValue f && f.TryGetValue<bool>(out var fv) && fv,
             Jira = e["jira"] as JsonObject is { } j ? (JsonObject)j.DeepClone() : null,
+            WrittenFrom = e["writtenFrom"] as JsonObject is { } w ? (JsonObject)w.DeepClone() : null,
             Ruling = Str(e["ruling"]),
             Statement = Str(e["statement"]),
             PmNote = Str(e["pmNote"]),
@@ -241,7 +246,7 @@ public static partial class Rulings
     static readonly HashSet<string> BoolKeys = ["exact", "disagrees", "new", "inFsd"];
 
     /// <summary>YAML → the JSON the schema checks: plain scalars typed by their key (numbers in <c>version</c> and <c>runs</c>,
-    /// booleans in <c>exact</c>, <c>disagrees</c>, <c>new</c>, <c>inFsd</c>), blanks as null, everything else a string.</summary>
+    /// booleans in <c>exact</c>, <c>disagrees</c>, <c>new</c> and a v1 file's <c>inFsd</c>), blanks as null, everything else a string.</summary>
     static JsonNode? ToJson(YamlNode node, string key) => node switch
     {
         YamlMappingNode m => new JsonObject(m.Children.Select(c => KeyValuePair.Create(((YamlScalarNode)c.Key).Value ?? "", ToJson(c.Value, ((YamlScalarNode)c.Key).Value ?? "")))),
@@ -263,7 +268,7 @@ public static partial class Rulings
     public static string Write(RulingsFile file)
     {
         var sb = new StringBuilder();
-        sb.Append($"# The PM's rulings on the FSD review of {file.Doc} (contract rulings v1; D361, D363, D366). Written by `stangent fsd rulings`.\n");
+        sb.Append($"# The PM's rulings on the FSD review of {file.Doc} (contract rulings v2; D361, D363, D366, D386). Written by `stangent fsd rulings`.\n");
         sb.Append("# Nobody needs to edit this file (D371): read truth-map.md and tell Claude the answers (`/stangent:rule " + file.Doc + "`),\n");
         sb.Append("# or run `stangent fsd rule " + file.Doc + " <number> <answer>`. A hand edit is still read; then change only these:\n");
         sb.Append("#   ruling:    a gap or conflict: code-right, fsd-right or restated; undocumented code: keep, remove or restated;\n");
@@ -318,8 +323,8 @@ public static partial class Rulings
         if (e.NotFound is not null) sb.Append($"{p}notFound: {S(e.NotFound)}\n");
         if (e.Flagged is not null) sb.Append($"{p}flagged: {S(e.Flagged)}\n");
         if (e.New) sb.Append($"{p}new: true\n");
-        if (e.InFsd) sb.Append($"{p}inFsd: true\n");
         if (e.Jira is not null) sb.Append($"{p}jira: {e.Jira.ToJsonString(Json)}\n");
+        if (e.WrittenFrom is not null) sb.Append($"{p}writtenFrom: {e.WrittenFrom.ToJsonString(Json)}\n");
         sb.Append(Pm(p, "ruling", e.Ruling, e.RulingRaw));
         sb.Append($"{p}statement:{(e.Statement is null ? "" : " " + S(e.Statement))}\n");
         sb.Append($"{p}pmNote:{(e.PmNote is null ? "" : " " + S(e.PmNote))}\n");
@@ -371,13 +376,23 @@ public static partial class Rulings
 
         var built = Build(repo, doc, review, reviewText!, document);
         var file = built.File;
-        var counts = new Dictionary<string, int>(StringComparer.Ordinal) { ["new"] = 0, ["carried"] = 0, ["foundAgain"] = 0, ["notFoundNow"] = 0, ["stillNotFound"] = 0, ["flaggedNow"] = 0 };
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal) { ["new"] = 0, ["carried"] = 0, ["foundAgain"] = 0, ["notFoundNow"] = 0, ["stillNotFound"] = 0, ["flaggedNow"] = 0, ["writtenByHand"] = 0 };
         var dropped = new JsonArray();
         var changedSections = new JsonArray();
         var oldByKey = (old?.WithSections ?? []).ToDictionary(x => x.Entry.Key, x => x);
         var oldSections = (old?.Sections ?? []).ToDictionary(s => s.SectionId, StringComparer.Ordinal);
         var blocks = file.Sections.ToDictionary(s => s.SectionId, StringComparer.Ordinal);
         var oldHash = new Dictionary<RulingEntry, (string Hash, bool Ruled)>();
+        // A ruling written into the FSD (D386) replaced its finding: the review that found it, read again, mustn't bring the
+        // old sentence back as a blank entry. Its key is the written entry's writtenFrom.
+        var written = (old?.All ?? []).Where(e => e.WrittenFrom is not null).Select(e => FsdWrite.FromKey(e)).ToHashSet(StringComparer.Ordinal);
+        var superseded = new JsonArray();
+        foreach (var block in file.Sections)
+            // Only while its old sentence is gone: one the FSD says again (a newer file) is a finding again.
+            foreach (var e in block.Entries.Where(e => written.Contains(e.Key) && !(e.KeyQuote is { } q && FsdReview.Quoted(q, built.Texts.GetValueOrDefault(block.SectionId) ?? ""))).ToList())
+            { block.Entries.Remove(e); superseded.Add((JsonNode)e.Describe()); }
+        foreach (var e in file.Undocumented.Where(e => written.Contains(e.Key)).ToList()) { file.Undocumented.Remove(e); superseded.Add((JsonNode)e.Describe()); }
+        file.Sections.RemoveAll(b => b.Entries.Count == 0 && !oldSections.ContainsKey(b.SectionId));
 
         foreach (var (section, e) in file.WithSections.ToList())
         {
@@ -403,8 +418,9 @@ public static partial class Rulings
                 dropped.Add((JsonNode)e.Describe());
                 continue;
             }
-            // An entry a ticket's Jira reply added (D374) was never a review finding, so no run "not finding it again" says anything.
-            if (JiraRulings.FromTicket(e)) { }
+            // An entry a ticket's Jira reply added (D374), or one written into the FSD (D386), was never a review finding, so
+            // no run "not finding it again" says anything.
+            if (JiraRulings.FromTicket(e) || e.WrittenFrom is not null) { }
             else if (e.NotFound is null) { e.NotFound = file.ReviewCommit; counts["notFoundNow"]++; }
             else counts["stillNotFound"]++;
             if (e.KeySection is null || oldSection is null) { file.Undocumented.Add(e); continue; }
@@ -438,8 +454,13 @@ public static partial class Rulings
             {
                 var quoteGone = e.KeyQuote is { } q && !FsdReview.Quoted(q, full);
                 if (!changed && !quoteGone) continue;
-                if (e.Ruling == "restated" && e.Statement is { } st && FsdReview.Quoted(st, full)) { e.InFsd = true; continue; }
-                e.InFsd = false;
+                // A restated statement the new text holds is simply a match (D386): written, as `fsd write` would have.
+                if (e.Ruling == "restated" && e.Statement is { } st && FsdReview.Quoted(st, full) && !e.IsMatch && e.Jira is null)
+                {
+                    FsdWrite.MakeWritten(e, block.SectionId, st, null);
+                    counts["writtenByHand"]++;
+                    continue;
+                }
                 var why = changed ? "FSD section changed" : "its FSD quote is no longer in the section";
                 if (e.Ruling is { } r)
                 {
@@ -487,6 +508,7 @@ public static partial class Rulings
             ["flagged"] = all.Count(e => e.Flagged is not null),
             ["sectionsChanged"] = changedSections,
             ["droppedBlank"] = dropped,
+            ["supersededByWritten"] = superseded,
             ["summary"] = $"{all.Count} entries in {file.Sections.Count} sections and {file.Undocumented.Count} undocumented; {counts["new"]} new, {counts["carried"]} carried over, "
                 + $"{counts["notFoundNow"] + counts["stillNotFound"]} not found again, {all.Count(e => e.Flagged is not null)} flagged",
             ["warnings"] = warnings,
@@ -501,8 +523,8 @@ public static partial class Rulings
         to.PmNote = from.PmNote;
         to.Flagged = from.Flagged;
         to.New = from.New;
-        to.InFsd = from.InFsd;
         to.Jira = from.Jira;
+        to.WrittenFrom = from.WrittenFrom?.DeepClone().AsObject();
         // A gap that became a match (or the other way) can't keep a ruling of the other kind: blank, and say why.
         if (from.Ruling is { } r && !RulingsFor(to.State).Contains(r) && RulingsFor(from.State).Contains(r))
         {

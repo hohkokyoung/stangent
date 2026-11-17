@@ -134,7 +134,6 @@ public static partial class JiraRulings
         if (target.Ruling is { } old && !created) replaced = old == "restated" ? $"restated “{target.Statement}”" : old;
         (target.Ruling, target.RulingRaw) = (ruling, null);
         target.Statement = ruling == "restated" ? said.Words : null;
-        target.InFsd = false;
         target.Flagged = null;
         target.New = false;
         target.Jira = new JsonObject { ["key"] = reply.Ticket, ["comment"] = reply.Comment, ["author"] = reply.Author, ["created"] = reply.Created };

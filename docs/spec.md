@@ -370,7 +370,7 @@ The PM's rulings on the review's findings judge tickets. Built so far:
   flow 12, screen 35, node 4, file 0 (fallback 7.8%)" on Kavita's saved review (2026-11-16, D368). Within a kind, an exact step or control beats a walked method or a nearby one; a file holding several groups goes to the nearest inventory line. Needs `specs/flows/`,
   `specs/inventory.json` (v2, with the App frame) and the graph; a missing one is a warning, and nothing links to it.
 - **Rulings** (`stangent fsd rulings <doc>`, D363, D365, D366, layer 2; code only): drafts or refreshes
-  `specs/fsd/<doc>/rulings.yaml` (contract `rulings` v1) from `review.json`. Needs the FSD imported (rulings are kept by
+  `specs/fsd/<doc>/rulings.yaml` (contract `rulings` v2 since phase fs layer 4, D386; a v1 file is still read) from `review.json`. Needs the FSD imported (rulings are kept by
   section). One block per FSD section with findings, then `undocumented:` for code no section covers. Each entry has a
   **key**: a gap, conflict or match by its section's permanent id and its quote (normalized as the merge joins quotes, so
   spacing, emphasis and curly quotes don't matter); undocumented code by its link (D362), so the findings in one section
@@ -388,7 +388,8 @@ The PM's rulings on the review's findings judge tickets. Built so far:
   `flagged: "FSD section changed since ruled (was …)"` and clears its `matches`, and so does an entry whose quote (which
   may come from a subsection) is no longer word for word in the section's text ("its FSD quote is no longer in the
   section"); an edit in a subsection alone leaves the parent's other rulings as they are. Either way a `restated`
-  statement the new text holds word for word keeps its ruling with `inFsd: true` (cleared if the text changes again); a ruled entry whose link's fingerprint changed gets
+  statement the new text holds word for word is simply a match (D386): the entry becomes a confirmed match on it, with
+  `writtenFrom`, as `fsd write` would have made it (counted `writtenByHand`); a ruled entry whose link's fingerprint changed gets
   `flagged: "link changed since ruled"`; a ruling of the wrong kind after the review changed its state (a conflict now a
   match) is blanked and flagged. A file that needs fixing (not YAML, schema errors, an entry with no key, two entries with one
   key) is refused, and nothing is written. The PM's `ruling` and `matches` lines are written back as typed (quotes, a
@@ -398,7 +399,7 @@ The PM's rulings on the review's findings judge tickets. Built so far:
 - **The check and the truth map** (`stangent fsd rulings-check <doc>`, D363, D366 (3); code only): every value is one of
   its state's, `restated` has a statement, `matches` is `confirmed` or blank, every entry has a key and sits under its own
   section. Problems are listed and nothing is written. Otherwise it writes `specs/fsd/<doc>/truth-map.json` (contract
-  `truth-map` v1, for agents) and `truth-map.md` (the same, for the PM), the same bytes from the same inputs. **Who ruled
+  `truth-map` v2 since phase fs layer 4, for agents) and `truth-map.md` (the same, for the PM), the same bytes from the same inputs. **Who ruled
   and when** come from `git blame` of the working file on the entry's `ruling` line, or for a match its section confirmed,
   on the `matches` line: the commit's author and date; a line not yet committed shows `committed: false` and a warning
   (commit, then run it again). Each entry gets a **standing**: `not-found` and `flagged` first, then `blank` or `ruled`
@@ -432,6 +433,42 @@ The PM's rulings on the review's findings judge tickets. Built so far:
   (looked at). The map isn't rebuilt, so a number keeps its meaning until `fsd rulings-check` runs; nothing is committed,
   and the commit's author is who answered. Kavita: numbers 1–42, the answers wrote only their lines (and, once, the
   header's new wording).
+- **Rulings become the FSD's words** (phase fs layer 4, D379, D386, D387; `stangent fsd write <doc> [--max-cost N|none]
+  [--section <id> [--item <n> --map <id>]]`): every ruling that becomes words, not written yet, is turned into a chapter
+  edit in the working tree, uncommitted; a person runs `fsd check`, reads the chapter diff and commits (D380). The PM's
+  own words (`restated`) are placed by code: for a gap or conflict they replace the quoted sentence, found word for word
+  (spacing, curly quotes and `*`/`` ` `` marks aside) in the entry's section or one under it; for code no section covers
+  they are added as a paragraph at the end of the section `--section` names (by id or number; `--item`, the truth-map
+  number, when more than one waits), and without `--section` they are listed, never guessed. A ruling that the code is
+  right goes to an AI step (D60): with `--max-cost` (dollars, or `none` for the drafter's own $2) `fsd write` writes the
+  input of `stangent-fsd-writer` (each entry W1, W2, … with the sentence to replace, its section's text, the review's
+  words and the linked code), the driver `plugin/scripts/fsd-write-run.sh --max-cost N <doc>` runs it read-only in a
+  worktree of HEAD under the cap, and **`stangent fsd write-check <doc>`** checks each draft by code: `replaces` is the
+  ruled sentence word for word; the new words are one line, not empty, not the old sentence, hold no heading, no
+  `<!--`/`-->` and no line break; at least one cite, each a real `path:line` or `path:from-to` at the run's commit and
+  inside the entry's linked code (within one of its evidence ranges, or every line of it linking to the entry's own flow,
+  screen, node or file). Passing drafts are written; one retry for the failed and missing ones, then they are listed.
+  Without `--max-cost` those rulings are listed with the command to run (rule 9). **Only the ruled words change:** the
+  edit replaces the located span and nothing else, and is refused (listed) when the quote is found more than once, or
+  not at all; when bold or code marks run past it (marks right around it go with it); when it runs across paragraphs,
+  list items or table rows; when the words would change the layout (a line break, a heading, `<!--`/`-->`, a list,
+  quote, table or rule start, a code fence, a bold or code mark left open, an HTML tag, a `|` in a table row); when the
+  quote sits inside words the same run wrote; when the chapter file mixes CRLF and LF; and when the section it lands in doesn't read as the
+  text its rulings were recorded on (its block's `textHash`, else HEAD's text): an uncommitted hand edit, or a newer FSD
+  that `fsd rulings` hasn't seen. After the edit, every other section must read byte for byte as before, with no heading
+  gained or lost, and the rulings as they would be written must pass every reader's check, the schema included. A ruling
+  drafted from a Jira reply is written only once committed (D374), checked again at `write-check`; a flagged ruling, or one the
+  last review didn't find again, is listed. **Each written entry becomes a confirmed match** (D386): keyed by its section
+  and the new sentence, same link, evidence and notes, `ruling: confirmed`, and `writtenFrom: { state, section, quote |
+  link, ruling, statement, cites, by, on }` (who ruled, from blame when the ruling was committed before it was written).
+  Undocumented code moves into the section it was written into. The section's `textHash` moves to the new text, so a
+  refresh doesn't flag the edit; a refresh never marks a written entry not found, and drops the review's finding it
+  replaced (`supersededByWritten`) while the old sentence is gone, so it doesn't come back blank. `rulings-check` lists written entries
+  under `written` (ruled by, committed by, the Jira author), and `truth-map.md` says "Written into the FSD from the PM's
+  own words by Pat PM on …, written in a commit by Dana Lead on …; it replaced: “…”". A committed ruling not yet written
+  is a decision on file and judges tickets meanwhile. `/stangent:rule` runs `fsd write` after the answers, asks the PM
+  for a section or a cost cap when one is needed, then `fsd check`, and reads the chapter diff back before offering the
+  commit.
 - **The verdict** (layer 4, D372; always on since D381): a ticket bundle's `truth` lists the entries on the
   ticket's files; `ticket prove` stops with no test when no agreed rule can back the ticket (unclear) or one says the
   code is right (contradicted), checked by code, and the questions draft ends with the PM's question. Details in

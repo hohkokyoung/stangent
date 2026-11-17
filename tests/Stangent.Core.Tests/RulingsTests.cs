@@ -247,7 +247,7 @@ public sealed class RulingsTests : IDisposable
     }
 
     [Fact]
-    public void A_changed_section_drops_its_rulings_unless_the_new_text_holds_the_restated_statement()
+    public void A_changed_section_drops_its_rulings_unless_the_new_text_holds_the_restated_statement_which_is_then_a_written_match()
     {
         FirstReview();
         Rulings.Refresh(Repo, "shop");
@@ -266,8 +266,11 @@ public sealed class RulingsTests : IDisposable
         Assert.Contains("S-0001", result["sectionsChanged"]!.AsArray().Select(s => (string)s!));
         Assert.DoesNotContain("S-0002", result["sectionsChanged"]!.AsArray().Select(s => (string)s!));
         var file = Read();
-        var restated = Entry(file, "conflict");
-        Assert.Equal(("restated", true, (string?)null), (restated.Ruling, restated.InFsd, restated.Flagged));
+        // D386: a restated statement the new text holds is simply a match, written from the ruling.
+        var restated = file.All.Single(e => e.WrittenFrom is not null);
+        Assert.Equal(("match", "A refund sends no email.", "confirmed", (string?)null), (restated.State, restated.KeyQuote, restated.Ruling, restated.Flagged));
+        Assert.Equal(("conflict", "restated", "A refund sends the customer an email."), ((string?)restated.WrittenFrom!["state"], (string?)restated.WrittenFrom["ruling"], (string?)restated.WrittenFrom["quote"]));
+        Assert.Equal(1, (int)result["counts"]!["writtenByHand"]!);
         var gap = Entry(file, "gap");
         Assert.Null(gap.Ruling);
         Assert.Equal("FSD section changed since ruled (was fsd-right)", gap.Flagged);
@@ -284,7 +287,7 @@ public sealed class RulingsTests : IDisposable
     }
 
     [Fact]
-    public void A_subsection_edit_keeps_the_parents_rulings_unless_their_quote_went_and_a_second_change_clears_inFsd()
+    public void A_subsection_edit_keeps_the_parents_rulings_unless_their_quote_went_and_a_written_match_is_flagged_when_its_section_changes_again()
     {
         Review(
             F("F-001", "conflict", "1", "S-0001", "A refund sends the customer an email.", null, "No email is sent.", Both, "src/orders.ts:5"),
@@ -298,17 +301,20 @@ public sealed class RulingsTests : IDisposable
         var result = Rulings.Refresh(Repo, "shop");
         Assert.Empty(result["sectionsChanged"]!.AsArray());
         var file = Read();
-        Assert.Equal(("restated", false, (string?)null), (Entry(file, "conflict").Ruling, Entry(file, "conflict").InFsd, Entry(file, "conflict").Flagged));
+        Assert.Equal(("restated", (string?)null), (Entry(file, "conflict").Ruling, Entry(file, "conflict").Flagged));
         Assert.Equal("its FSD quote is no longer in the section since ruled (was fsd-right)", Entry(file, "gap").Flagged);
         Assert.Null(Entry(file, "gap").Ruling);
-        // 1 now says what the PM restated: closed as in the FSD. Then it changes again: blank, flagged, no longer in the FSD.
+        // 1 now says what the PM restated: a written match (D386). Then it changes again: the match is blank and flagged,
+        // and the review's old conflict, still in review.json, doesn't come back.
         NewVersion(Outline.Replace("A refund sends the customer an email.", "A refund sends no email."));
         Rulings.Refresh(Repo, "shop");
-        Assert.True(Entry(Read(), "conflict").InFsd);
+        Assert.Equal("confirmed", Read().All.Single(e => e.WrittenFrom is not null).Ruling);
         NewVersion(Outline.Replace("A refund sends the customer an email.", "Refunds are manual."));
-        Rulings.Refresh(Repo, "shop");
-        var again = Entry(Read(), "conflict");
-        Assert.Equal(((string?)null, false, "FSD section changed since ruled (was restated)"), (again.Ruling, again.InFsd, again.Flagged));
+        var last = Rulings.Refresh(Repo, "shop");
+        var again = Read().All.Single(e => e.WrittenFrom is not null);
+        Assert.Equal(((string?)null, "FSD section changed since ruled (was confirmed)", (string?)null), (again.Ruling, again.Flagged, again.NotFound));
+        Assert.DoesNotContain(Read().All, e => e.State == "conflict");
+        Assert.Single(last["supersededByWritten"]!.AsArray());
     }
 
     [Fact]
@@ -423,7 +429,7 @@ public sealed class RulingsTests : IDisposable
         Assert.Equal(md, File.ReadAllText(TruthMap.MarkdownPath(Root, "shop")));
 
         var map = JsonNode.Parse(json)!.AsObject();
-        Assert.Equal(("truth-map", 1), ((string)map["contract"]!, (int)map["version"]!));
+        Assert.Equal(("truth-map", 2), ((string)map["contract"]!, (int)map["version"]!));
         Assert.Equal(3, map["sections"]!.AsArray().Count);   // every section, with its text
         Assert.Equal("Settings hold the shop's currency.", ((string)map["sections"]![2]!["text"]!).Trim());
         var flow = map["flows"]!["click-refund"]!;

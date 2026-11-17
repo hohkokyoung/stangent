@@ -106,12 +106,11 @@ public static class PmAnswers
         if (ruling is not null)
         {
             var oldStatement = target.Statement;
-            if (ruling.Length == 0) { (target.Ruling, target.RulingRaw, target.Statement) = (null, null, null); target.InFsd = false; }
+            if (ruling.Length == 0) (target.Ruling, target.RulingRaw, target.Statement) = (null, null, null);
             else
             {
                 (target.Ruling, target.RulingRaw) = (ruling, null);
                 target.Statement = words ?? (ruling == "restated" ? oldStatement : null);
-                target.InFsd = target.InFsd && ruling == "restated" && target.Statement == oldStatement;
             }
             // Answered means looked at: a flag or "new" mark is done with (D369's "delete the line once you have looked").
             target.Flagged = null;
@@ -160,7 +159,7 @@ public static class PmAnswers
         }
     }
 
-    static (JsonObject? Section, JsonObject? Entry) Find(JsonObject map, int n)
+    internal static (JsonObject? Section, JsonObject? Entry) Find(JsonObject map, int n)
     {
         foreach (var s in map["sections"]!.AsArray().OfType<JsonObject>())
         {

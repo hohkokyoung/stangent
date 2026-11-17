@@ -47,6 +47,7 @@ public sealed record RunStep(string Status, string Action, string? Agent = null,
         PageRun.Writer => Bundles.WriterSchema,
         PageRun.Verifier => Bundles.VerifierSchema,
         Stangent.Spec.Fsd.FsdReview.Reviewer => Stangent.Spec.Fsd.FsdReview.OutputSchema,
+        Stangent.Spec.Fsd.FsdWrite.Writer => Stangent.Spec.Fsd.FsdWrite.OutputSchema,
         // Phase 3's ticket steps (Stangent.Tickets.StepSpec).
         "stangent-file-finder" => "file-finder-output.v1.json",
         "stangent-bug-reproducer" => "bug-reproducer-output.v1.json",   // with truth-verdict on, the step names v2 itself (StepSpec.ProveTruth)
