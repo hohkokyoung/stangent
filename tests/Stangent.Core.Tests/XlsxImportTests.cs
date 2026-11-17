@@ -508,15 +508,17 @@ public sealed class XlsxImportTests
         var file = Path.Combine(repo.Root, "rates.xlsx");
         File.WriteAllBytes(file, XlsxFixture.Build([new("Rates", Row(1, Str("A1", "Tier"))), new("Back", Row(1, Str("A1", "x")), State: "hidden")]));
         var result = FsdImport.Import(repo.Repo, file);
+        Committed.All(repo.Repo);
         Assert.Equal(("imported", "ok-with-warnings"), ((string)result["status"]!, (string)result["verdict"]!));
         var dir = FsdImport.DocDir(repo.Root, "rates");
-        var doc = JsonNode.Parse(File.ReadAllText(Path.Combine(dir, "document.json")))!;
+        var doc = FsdDocument.Load(repo.Root, "rates");
         Assert.Equal(("Rates", "S-0001"), ((string)doc["sections"]![0]!["id"]!, (string)doc["sections"]![0]!["permanentId"]!));
         Assert.Equal("T-0001", (string)doc["tables"]![0]!["id"]!);
         Assert.Contains("hidden sheet \"Back\"", File.ReadAllText(Path.Combine(dir, ImportReport.FileName)));
         var md = Chapters.Bytes(dir);
         Assert.Equal("unchanged", (string)FsdImport.Import(repo.Repo, file)["status"]!);
         var again = FsdImport.Reread(repo.Repo, "rates");
+        Committed.All(repo.Repo);
         Assert.Equal("unchanged", (string)again["status"]!);
         Assert.Equal(md, Chapters.Bytes(dir));
     }

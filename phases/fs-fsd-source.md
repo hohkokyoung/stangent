@@ -2,13 +2,13 @@
 phase: fs
 name: fsd source
 status: in progress
-consumes: { store: 1, cli-conventions: 4, telemetry-event: 3, source-document: 3, rulings: 1, truth-map: 1, ticket-bundle: 3 }
+consumes: { store: 1, cli-conventions: 4, telemetry-event: 3, source-document: 4, rulings: 1, truth-map: 1, ticket-bundle: 3 }
 provides: {}
 ---
 
 # The FSD in the repo is the source of truth
 
-**Decided 2026-11-17 (D376–D388); planned the same day (D389). Layer 0 built and fresh-checked (D390); layer 1 built and fresh-checked (D391).** After import the client's file never comes back (D376).
+**Decided 2026-11-17 (D376–D388); planned the same day (D389). Layer 0 built and fresh-checked (D390); layer 1 built and fresh-checked (D391); layer 2 built and fresh-checked (D392).** After import the client's file never comes back (D376).
 The FSD is one Markdown file per chapter, edited in git (D377), and a commit is the approval (D380). A PM's ruling
 becomes the FSD's own words (D379), and component switches go (D381). This phase builds that.
 
@@ -99,7 +99,13 @@ round-trip check, run before import, approve or promote changes anything.
 - **Fresh check:** "does any section, table, picture or attachment get lost or change text between the old import
   and chapters?" Sonnet, about 100K.
 
-### Layer 2 · Sections read from the committed chapters (D380, D383; `source-document` 3 → 4)
+### Layer 2 · Sections read from the committed chapters (D380, D383; `source-document` 3 → 4) — built and fresh-checked (D392)
+
+Built as `FsdDocument` (`Load`, `All`, `CommittedFacts`, `Blob`, `Save`, `Note`); tests in `FsdSourceTests`. The facts, the
+ledger and attachment files are read from HEAD too (the fresh check's defects). Added while building (D392): `importCommit`
+is HEAD when written; promote leaves the trace check's drop-back to after the commit; a removed id is refused like an
+unknown one; `fsd tables` lists a table edited away.
+
 
 - One reader, `FsdSections.Read(root, doc)`, parses the chapters as of `HEAD` (through git, cached in `.stangent/` by
   `HEAD`'s tree hash for `specs/fsd/<doc>/chapters`). The 11 files that read `document.json`'s sections go through it.

@@ -26,7 +26,9 @@ public sealed class SectionIdLinkTests : IDisposable
     {
         var file = Path.Combine(archive.Root, "shop.docx");
         File.WriteAllBytes(file, FsdDocxTests.Docx(body));
-        return FsdImport.Import(repo.Repo, file, "shop");
+        var imported = FsdImport.Import(repo.Repo, file, "shop");
+        Committed.All(repo.Repo);
+        return imported;
     }
 
     static string Chapter(string title, string text) => FsdDocxTests.H(title) + FsdDocxTests.P(text);
@@ -80,6 +82,7 @@ public sealed class SectionIdLinkTests : IDisposable
 
         Assert.Equal("candidate", (string)Import(Chapter("1 Figs", Figs) + Chapter("2 Apples", Apples) + Chapter("3 Pears", Pears))["status"]!);
         var promoted = FsdVersions.Promote(repo.Repo, "shop", "Pat Example");
+        Committed.All(repo.Repo);
         Assert.Empty(promoted["carried"]!["sectionIdsDisagree"]!.AsArray());
         Assert.Equal(("3", "S-0002"), ((string)Link()["section"]!, (string)Link()["sectionId"]!));
         Assert.Equal("S-0002", (string)Section("3")["permanentId"]!);
@@ -92,6 +95,7 @@ public sealed class SectionIdLinkTests : IDisposable
         OldLink("2", Pears);
         Import(Chapter("1 Apples", Apples));
         FsdVersions.Promote(repo.Repo, "shop", "Pat Example");
+        Committed.All(repo.Repo);
         Assert.Equal(("(removed S-0002) 2", "S-0002"), ((string)Link()["section"]!, (string)Link()["sectionId"]!));
     }
 

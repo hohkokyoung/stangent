@@ -46,6 +46,7 @@ public sealed class RulingsTests : IDisposable
         var file = Path.Combine(Root, "shop.docx");
         File.WriteAllBytes(file, Stangent.Spec.Fsd.DocxWriter.Write(Outline));
         FsdImport.Import(repo.Repo, file);
+        Committed.All(repo.Repo);
         Commit("setup");
     }
 
@@ -259,6 +260,7 @@ public sealed class RulingsTests : IDisposable
         var changed = Path.Combine(Root, "shop.docx");
         File.WriteAllBytes(changed, Stangent.Spec.Fsd.DocxWriter.Write(Outline.Replace("A refund sends the customer an email.", "A refund sends no email.\nOrders ship within two days of payment.")));
         FsdNewVersion.Take(Repo, changed);
+        Committed.All(Repo);
         FirstReview();
         var result = Rulings.Refresh(Repo, "shop");
         Assert.Contains("S-0001", result["sectionsChanged"]!.AsArray().Select(s => (string)s!));
@@ -278,6 +280,7 @@ public sealed class RulingsTests : IDisposable
     {
         File.WriteAllBytes(Path.Combine(Root, "shop.docx"), Stangent.Spec.Fsd.DocxWriter.Write(outline));
         FsdNewVersion.Take(Repo, Path.Combine(Root, "shop.docx"));
+        Committed.All(Repo);
     }
 
     [Fact]

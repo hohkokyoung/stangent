@@ -166,6 +166,7 @@ public sealed class WholeFlow : IDisposable
         var file = Path.Combine(Root, "shop.docx");
         File.WriteAllBytes(file, Version1());
         Saw["import"] = Ok("fsd", "import", file, "--id", "shop");
+        Commit("import shop");
         Saw["document"] = Document("shop");
 
         using var pdf = new PdfFixture();
@@ -174,6 +175,7 @@ public sealed class WholeFlow : IDisposable
         var pdfFile = Path.Combine(Root, "terms.pdf");
         File.WriteAllBytes(pdfFile, pdf.Build(PdfFixture.Mark("1 Refunds", 0, 1), PdfFixture.Mark("2 Returns", 0, 2)));
         Saw["import.pdf"] = Ok("fsd", "import", pdfFile, "--id", "terms");
+        Commit("import terms");
         Saw["document.pdf"] = Document("terms");
         // Originals go to the archive, as they do for real: they don't stay in the repo.
         File.Delete(file);
@@ -263,11 +265,14 @@ public sealed class WholeFlow : IDisposable
         var old = ((JsonArray)Document("shop")["sections"]!).Single(s => (string?)s!["id"] == "5")!;
         Saw["resolve"] = Ok("fsd", "resolve", "shop", (string)delivery["to"]!, "--same-as", (string)old["permanentId"]!);
         Saw["promote"] = Ok("fsd", "promote", "shop");
+        // The commit approves it (D380); then the trace check drops back what lost its quote (D58).
+        Commit("the new version");
         Saw["document.v2"] = Document("shop");
+        Saw["fixed"] = Check("--fix");
         Saw["trace.promoted"] = Trace();
         Saw["history.dropped"] = Ok("state", "history", "trace-decision", (string)Find(Trace(), FsdConflict)!["id"]!);
         Saw["check.promoted"] = Check();
-        Commit("the new version");
+        Commit("the trace check's drop-back");
         // CI on that PR: a promotion mustn't read as typed decisions.
         Saw["check.promoted.base"] = Check("--base", beforeImport);
         Saw["attribute.promoted"] = Ok("trace", "attribute", "--base", beforeImport, "--by", Person);
@@ -365,6 +370,7 @@ public sealed class WholeFlow : IDisposable
             new("Back", XlsxFixture.Row(1, XlsxFixture.Str("A1", "secret")), State: "veryHidden"),
         ]));
         Saw["excel.import"] = Ok("fsd", "import", book, "--id", "rates");
+        Commit("import rates");
         Saw["excel.document"] = Document("rates");
         Saw["excel.show"] = Ok("fsd", "show", "rates", "Rates");
         File.Delete(book);
@@ -372,6 +378,7 @@ public sealed class WholeFlow : IDisposable
         var word = Path.Combine(Root, "attached.docx");
         File.WriteAllBytes(word, EmbeddedFilesTests.WordWith("rates.xlsx", XlsxFixture.Rates()));
         Saw["embedded.import"] = Ok("fsd", "import", word, "--id", "attached");
+        Commit("import attached");
         Saw["embedded.document"] = Document("attached");
         Saw["embedded.show"] = Ok("fsd", "show", "attached", "Rules");
         Saw["embedded.csv"] = JsonValue.Create(File.ReadAllText(Path.Combine(Root, "specs", "fsd", "attached", "attachments", "A-0001", "rates.csv")));
@@ -387,6 +394,9 @@ public sealed class WholeFlow : IDisposable
         File.WriteAllBytes(file, DocxWriter.Write("# Order fields\n\n| Field |\n| total |\n| customer |\n| weight |\n\n# Statuses\n\n| Status | Code |\n| Open | 0 |\n| Closed | 1 |\n\n# Screens\n\n| Status |\n| Shown |\n| Hidden |\n\n# Other\n\n| Thing |\n| One |\n"));
         Ok("fsd", "import", file, "--id", "facts");
         File.Delete(file);
+        // Only the FSD is committed, as a person approving it would (D380): the rest of the tree stays as the build left it.
+        Git("add", "--", "specs/fsd/facts");
+        Git("commit", "-q", "-m", "import facts");
         var tables = Ok("fsd", "tables", "facts");
         Saw["tables"] = tables;
         string Id(int i) => (string)tables["tables"]![i]!["id"]!;
@@ -401,7 +411,8 @@ public sealed class WholeFlow : IDisposable
         var enumsOn = File.ReadAllText(CodeEnums.PathFor(Root));
         // A build that reuses every project keeps what's on file for them.
         Ok("graph", "build");
-        Saw["enums.kept"] = JsonValue.Create(File.ReadAllText(CodeEnums.PathFor(Root)) == enumsOn);
+        // The enums, not the commit they were read at: the FSD's import was committed in between (phase fs layer 2).
+        Saw["enums.kept"] = JsonValue.Create(JsonNode.DeepEquals(JsonNode.Parse(File.ReadAllText(CodeEnums.PathFor(Root)))!["enums"], JsonNode.Parse(enumsOn)!["enums"]));
     }
 
     /// <summary>The link judge's variants, answered by the fake AI, with the code checks running on each.</summary>
@@ -501,7 +512,7 @@ public sealed class WholeFlow : IDisposable
         var fsd = Path.Combine(Root, "specs", "fsd");
         if (Directory.Exists(fsd))
             foreach (var dir in Directory.EnumerateDirectories(fsd))
-                Validate("source-document.v3.json", JsonNode.Parse(File.ReadAllText(Path.Combine(dir, "document.json"))), $"stage {stage} {Path.GetFileName(dir)}");
+                Validate("source-document.v4.json", JsonNode.Parse(File.ReadAllText(Path.Combine(dir, "document.json"))), $"stage {stage} {Path.GetFileName(dir)}");
         if (File.Exists(TraceFile.PathIn(Root))) Validate("trace-links.v4.json", Trace(), $"stage {stage} trace.yaml");
     }
 
@@ -515,7 +526,7 @@ public sealed class WholeFlow : IDisposable
         TraceFile.Save(Root, trace);
     }
 
-    JsonNode Document(string doc) => JsonNode.Parse(File.ReadAllText(Path.Combine(Root, "specs", "fsd", doc, "document.json")))!;
+    JsonNode Document(string doc) => FsdDocument.Load(Root, doc);
     JsonNode PageJson(string page) => PageFile(page, ".json");
 
     JsonNode PageFile(string page, string extension)
@@ -726,7 +737,7 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         Assert.Equal("ba", (string?)flow.Listing("check.promoted", (string)moved["finding"]!)!["goesTo"]);
 
         var modified = flow.EntryIn("trace.promoted", WholeFlow.FsdConflict);
-        Assert.Contains(flow.Seen("promote")["staleQuotes"]!.AsArray(), id => (string?)id == (string?)modified["id"]);
+        Assert.Contains(flow.Seen("fixed")["staleQuotes"]!.AsArray(), id => (string?)id == (string?)modified["id"]);
         Assert.Empty(flow.Seen("promote")["carried"]!["sectionIdsDisagree"]!.AsArray());
         Assert.Null(flow.Seen("promote")["carried"]!["runAgain"]);     // no run is saved to carry (D342)
         Assert.Null(modified["decision"]);

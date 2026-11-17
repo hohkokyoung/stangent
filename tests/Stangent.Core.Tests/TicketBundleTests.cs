@@ -57,13 +57,7 @@ public class TicketBundleTests
     /// <summary>An FSD section linked to the orders page: one agree link, and one conflict (a finding).</summary>
     static void Fsd(SpecApp app)
     {
-        var dir = Path.Combine(app.Root, "specs", "fsd", "shop");
-        Directory.CreateDirectory(dir);
-        File.WriteAllText(Path.Combine(dir, "document.json"), new JsonObject
-        {
-            ["schemaVersion"] = 1, ["id"] = "shop", ["title"] = "Shop FSD",
-            ["sections"] = new JsonArray(new JsonObject { ["id"] = "4.1", ["title"] = "Placing an order", ["text"] = "The user places an order with the Place order button. Orders over 50 need approval.", ["parent"] = null }),
-        }.ToJsonString());
+        FsdFixture.Write(app.Root, "shop", "Shop FSD", ("4.1", "Placing an order", "The user places an order with the Place order button. Orders over 50 need approval."));
         var section = new JsonObject { ["id"] = "4.1", ["title"] = "Placing an order", ["text"] = "" };
         TraceStore.ApplyEntries(app.Root, "shop", "4.1",
         [

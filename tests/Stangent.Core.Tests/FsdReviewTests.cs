@@ -39,6 +39,7 @@ public sealed class FsdReviewTests : IDisposable
         var file = Path.Combine(Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write(Outline));
         FsdImport.Import(repo.Repo, file);
+        Committed.All(repo.Repo);
     }
 
     public void Dispose()

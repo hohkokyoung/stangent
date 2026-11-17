@@ -77,6 +77,7 @@ public class FsdHandEditTests
         var file = Path.Combine(app.Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write(Text));
         FsdImport.Import(app.Repo, file);
+        Committed.All(app.Repo);
         return FsdImport.DocDir(app.Root, "shop");
     }
 
@@ -87,9 +88,10 @@ public class FsdHandEditTests
     {
         using var app = App();
         Imported(app);
-        Assert.Null(FsdStatus.Of(app.Root, "shop")["documentEdited"]);
+        Assert.Null(FsdStatus.Of(app.Root, "shop")["uncommitted"]);
     }
 
+    /// <summary>Since phase fs layer 2 (D392) steps read the committed chapters: an edit not committed is named, and read by nothing.</summary>
     [Theory]
     [InlineData("Orders over 50 need approval.", "Orders over 75 need approval.")]
     [InlineData("Orders over 50 need approval.", "Orders over 50 need approval.\n\nA new sentence.")]
@@ -100,10 +102,10 @@ public class FsdHandEditTests
         var md = Imported(app);
         var before = FsdOutline.Load(app.Root, "shop").ToJsonString();
         Chapters.Edit(md, from, to);
-        var edited = FsdStatus.Of(app.Root, "shop")["documentEdited"]!.AsObject();
-        Assert.Contains("chapters don't match", (string)edited["warning"]!);
-        Assert.NotEmpty(edited["sections"]!.AsArray());
-        Assert.NotNull(FsdOutline.Outline(app.Root, "shop")["documentEdited"]);
+        var status = FsdStatus.Of(app.Root, "shop");
+        Assert.True((bool)status["uncommitted"]!);
+        Assert.Single(status["uncommittedFiles"]!.AsArray());
+        Assert.True((bool)FsdOutline.Outline(app.Root, "shop")["uncommitted"]!);
         Assert.Equal(before, FsdOutline.Load(app.Root, "shop").ToJsonString());
     }
 }

@@ -1,0 +1,378 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:source-document:v4",
+  "title": "An imported FSD's facts (contract source-document v4, sections read from the committed chapters, D383)",
+  "description": "What only an import knows about a document converted by code (D13, D52): the original, archived and cited by archive name, path and content hash (D16), the import problems, tables, pictures and attachments with their ids, and the commit the import was made on. Stored in specs/fsd/<id>/document.json. v4 drops `sections` and `markdown`: the FSD is the chapter files in specs/fsd/<id>/chapters/, and every step reads its sections from them as of HEAD (D380, D383), each heading carrying its permanent id (D382). A section's attachments are the records here whose `section` is its id.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "title",
+    "original",
+    "images",
+    "problems"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 4
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "original": {
+      "type": "object",
+      "required": [
+        "archive",
+        "path",
+        "hash",
+        "fileName"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "archive": {
+          "description": "The archive's name from stangent.yaml, not its location.",
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "fileName": {
+          "type": "string"
+        }
+      }
+    },
+    "importCommit": {
+      "description": "HEAD when the import (or `fsd migrate`) wrote this record: the commit its chapters were written on. The commit that approves them comes after it (D380). Missing when the repo had no commit yet.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{40,64}$"
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "caption": {
+            "type": "string"
+          },
+          "id": {
+            "description": "The picture's permanent id, from the document's ledger (D122). A picture is its file, which is named by content. An older document gets one on its next import.",
+            "type": "string",
+            "pattern": "^F-[0-9]{4,}$"
+          },
+          "section": {
+            "description": "The permanent id of the first section that shows it. Missing when it sits before the first heading.",
+            "type": "string",
+            "pattern": "^S-[0-9]{4,}$"
+          },
+          "sectionNumber": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "tables": {
+      "description": "The document's tables, each with a permanent id from its ledger and its section (D122). Worked out from the sections' text; the chapters don't change. No hash reads it. An older document gets it on its next import.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "section",
+          "sectionNumber",
+          "position",
+          "rows",
+          "columns",
+          "hash"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^T-[0-9]{4,}$"
+          },
+          "section": {
+            "type": "string",
+            "pattern": "^S-[0-9]{4,}$"
+          },
+          "sectionNumber": {
+            "type": "string"
+          },
+          "position": {
+            "description": "Which table of its section this is, from 1.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "rows": {
+            "description": "Rows, the header included.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "columns": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "labels": {
+      "description": "Sensitivity labels on the file that a person allowed with --allow-label (D122). allowedBy is from git, never typed.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "allowedBy"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "allowedBy": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "problems": {
+      "description": "What couldn't be brought in exactly (D121). `detail` is the line a person reads, word for word what v1 and v2 held; the other fields are the same line taken apart by code.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "kind",
+          "detail"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "comment",
+              "completeness",
+              "tracked-changes",
+              "flat",
+              "numbering",
+              "element",
+              "page-text",
+              "running-line",
+              "table",
+              "heading",
+              "contents",
+              "bookmark",
+              "image",
+              "other-direction",
+              "white-text",
+              "symbols",
+              "before-first-section",
+              "page-join",
+              "outside-body",
+              "attachment",
+              "hidden",
+              "shared-workbook",
+              "merged",
+              "formula",
+              "number-format",
+              "large-workbook",
+              "protected",
+              "not-read",
+              "sheet",
+              "other"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "section": {
+            "description": "The section's permanent id, once it's known: a candidate's sections get theirs when it's promoted.",
+            "type": "string",
+            "pattern": "^S-[0-9]{4,}$"
+          },
+          "sectionNumber": {
+            "description": "The section's id as the line named it (a number or heading path).",
+            "type": "string"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "line": {
+            "description": "The line in the whole document: the chapter files joined, markers off.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "author": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "open",
+              "resolved"
+            ]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "if": {
+          "properties": {
+            "kind": {
+              "const": "comment"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "author",
+            "state",
+            "text"
+          ]
+        }
+      }
+    },
+    "attachments": {
+      "description": "Files held inside the document, each with a permanent id from its ledger (D123). Saved under attachments/<id>/ beside document.json; a section holds those whose `section` is its permanent id. No hash reads them unless fsd.attachmentsInChecks is on.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "fileName",
+          "from",
+          "hash",
+          "bytes",
+          "kind",
+          "reading",
+          "files",
+          "problems"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^A-[0-9]{4,}$"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "from": {
+            "description": "Where it was in the document.",
+            "type": "string"
+          },
+          "hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kind": {
+            "enum": [
+              "excel",
+              "word",
+              "pdf",
+              "zip",
+              "ole",
+              "powerpoint",
+              "other"
+            ]
+          },
+          "reading": {
+            "enum": [
+              "converted",
+              "kept",
+              "withheld"
+            ],
+            "description": "converted: its text was read. kept: saved and listed, not read. withheld: a sensitivity label nobody allowed, so nothing is saved here; the archived original holds it."
+          },
+          "why": {
+            "type": "string"
+          },
+          "section": {
+            "description": "The permanent id of its section. Missing for a file that belongs to the whole document, such as one attached to a PDF.",
+            "type": "string",
+            "pattern": "^S-[0-9]{4,}$"
+          },
+          "sectionNumber": {
+            "type": "string"
+          },
+          "chars": {
+            "description": "Characters of readable text.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "notChecked": {
+            "description": "Over fsd.attachmentChars when imported: it stays out of the bundles even with attachments in checks on.",
+            "type": "boolean"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "file",
+                "role",
+                "hash"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "file": {
+                  "type": "string"
+                },
+                "role": {
+                  "enum": [
+                    "original",
+                    "csv",
+                    "text",
+                    "kept"
+                  ]
+                },
+                "archived": {
+                  "description": "Where the file as it came sits in the document's archive (I.7, D16). An older document kept it in the repo at `file`.",
+                  "type": "string"
+                },
+                "sheet": {
+                  "type": "string"
+                },
+                "hash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

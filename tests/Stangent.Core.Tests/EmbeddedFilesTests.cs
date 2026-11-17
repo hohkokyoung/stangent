@@ -46,10 +46,12 @@ public sealed class EmbeddedFilesTests : IDisposable
     {
         var file = Path.Combine(repo.Root, fileName);
         File.WriteAllBytes(file, bytes);
-        return FsdImport.Import(repo.Repo, file, "fsd");
+        var imported = FsdImport.Import(repo.Repo, file, "fsd");
+        Committed.All(repo.Repo);
+        return imported;
     }
 
-    JsonObject Document() => JsonNode.Parse(File.ReadAllText(Path.Combine(DocDir, "document.json")))!.AsObject();
+    JsonObject Document() => FsdDocument.Load(repo.Root, "fsd");
 
     static byte[] Zip(params (string Name, byte[] Bytes)[] entries)
     {
@@ -398,7 +400,8 @@ public sealed class EmbeddedFilesTests : IDisposable
         var file = Path.Combine(on.Root, "a.pdf");
         File.WriteAllBytes(file, PdfWithFile("rates.bin", [1, 2, 3]));
         FsdImport.Import(on.Repo, file, "fsd", flat: true);
-        var doc = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(on.Root, "specs/fsd/fsd/document.json")))!;
+        Committed.All(on.Repo);
+        var doc = FsdDocument.Load(on.Root, "fsd");
         Assert.NotNull(doc["attachments"]![0]!["section"]);
         Assert.NotNull(doc["sections"]![0]!["attachments"]);
     }
@@ -450,6 +453,7 @@ public sealed class EmbeddedFilesTests : IDisposable
         Assert.Contains("Gold,12", File.ReadAllText(Path.Combine(FsdAttachments.Folder(DocDir, "A-0001"), "rates.csv")));
 
         FsdVersions.Promote(repo.Repo, "fsd", "Pat");
+        Committed.All(repo.Repo);
         var after = Document();
         Assert.Equal("A-0001", (string)after["attachments"]![0]!["id"]!);
         Assert.Equal("A-0001", (string)after["sections"]![0]!["attachments"]![0]!["id"]!);
@@ -491,6 +495,7 @@ public sealed class EmbeddedFilesTests : IDisposable
         var added = FsdVersions.Diff(repo.Root, "fsd")["sections"]!.AsArray().Single(e => (string?)e!["to"] == "Rules")!;
         Assert.Equal(("modified", "added"), ((string)added["kind"]!, (string)added["attachmentsChanged"]![0]!["change"]!));
         FsdVersions.Promote(repo.Repo, "fsd", "Pat");
+        Committed.All(repo.Repo);
         var folder = FsdAttachments.Folder(DocDir, "A-0001");
         Assert.True(Directory.Exists(folder));
 
@@ -498,26 +503,30 @@ public sealed class EmbeddedFilesTests : IDisposable
         var removed = FsdVersions.Diff(repo.Root, "fsd")["sections"]!.AsArray().Single(e => (string?)e!["to"] == "Rules")!;
         Assert.Equal(("modified", "removed"), ((string)removed["kind"]!, (string)removed["attachmentsChanged"]![0]!["change"]!));
         FsdVersions.Promote(repo.Repo, "fsd", "Pat");
+        Committed.All(repo.Repo);
         Assert.False(Directory.Exists(folder));
         Assert.Null(Document()["attachments"]);
         // The id is gone for good: a file coming back is a new one.
         Assert.Contains("A-0001", FsdVersions.Ledger(repo.Root, "fsd").Removed("attachments"));
         Import(WordWith("rates.xlsx", XlsxFixture.Rates("55")));
         FsdVersions.Promote(repo.Repo, "fsd", "Pat");
+        Committed.All(repo.Repo);
         Assert.Equal("A-0002", (string)Document()["attachments"]![0]!["id"]!);
     }
 
     [Fact]
-    public void An_old_document_with_no_content_hash_still_loads_and_matching_falls_back_on_the_text()
+    public void A_sections_attachments_and_content_hash_are_worked_out_on_read_from_the_documents_attachments()
     {
+        // Since phase fs layer 2 (D392) document.json keeps no sections, so no section can be read without its content hash.
         Import(WordWith("rates.xlsx", XlsxFixture.Rates("12")));
-        var doc = Document();
-        foreach (var s in doc["sections"]!.AsArray().OfType<JsonObject>()) s.Remove("contentHash");
-        File.WriteAllText(Path.Combine(DocDir, "document.json"), CanonicalJson.Serialize(doc));
+        Assert.Null(FsdDocument.Facts(repo.Root, "fsd")!["sections"]);
+        var record = Assert.Single(Document()["attachments"]!.AsArray())!;
+        var rules = Document()["sections"]!.AsArray().OfType<JsonObject>().Single(s => (string)s["id"]! == "Rules");
+        Assert.Equal((string)record["section"]!, (string)rules["permanentId"]!);
+        Assert.Equal((string)record["id"]!, (string)Assert.Single(rules["attachments"]!.AsArray())!["id"]!);
+        Assert.Equal(FsdAttachments.ContentHash((string)rules["text"]!, [(string)record["hash"]!]), (string)rules["contentHash"]!);
+        Assert.Contains((string)record["id"]!, (string)Assert.Single(rules["attachmentLines"]!.AsArray())!, StringComparison.Ordinal);
         Assert.Equal("unchanged", (string)FsdImport.Reread(repo.Repo, "fsd")["status"]!);
-        Import(WordWith("rates.xlsx", XlsxFixture.Rates("99")));
-        var rules = FsdVersions.Diff(repo.Root, "fsd")["sections"]!.AsArray().Single(e => (string?)e!["to"] == "Rules")!;
-        Assert.Equal("unchanged", (string)rules["kind"]!);
     }
 
     [Fact]
@@ -546,11 +555,13 @@ public sealed class EmbeddedFilesTests : IDisposable
         Import(WordWith("rates.xlsx", XlsxFixture.Rates()));
         var doc = Document();
         doc.Remove("attachments");
-        foreach (var s in doc["sections"]!.AsArray().OfType<JsonObject>()) { s.Remove("attachments"); s.Remove("attachmentLines"); s.Remove("contentHash"); }
-        File.WriteAllText(Path.Combine(DocDir, "document.json"), CanonicalJson.Serialize(doc));
+        File.WriteAllText(Path.Combine(DocDir, "document.json"), CanonicalJson.Serialize(FsdDocument.Stripped(doc)));
+        Committed.All(repo.Repo);
         var again = FsdImport.Reread(repo.Repo, "fsd");
+        Committed.All(repo.Repo);
         Assert.Equal(("candidate", true), ((string)again["status"]!, (bool)again["reread"]!));
         FsdVersions.Promote(repo.Repo, "fsd", "Pat");
+        Committed.All(repo.Repo);
         Assert.StartsWith("A-", (string)Document()["attachments"]![0]!["id"]!);
     }
 
@@ -562,6 +573,7 @@ public sealed class EmbeddedFilesTests : IDisposable
         var file = Path.Combine(app.Root, "shop.docx");
         File.WriteAllBytes(file, WordWith("rates.xlsx", XlsxFixture.Rates(), text: "Every order sends a receipt.", heading: "Orders"));
         FsdImport.Import(app.Repo, file, "attached");
+        Committed.All(app.Repo);
         return app;
     }
 

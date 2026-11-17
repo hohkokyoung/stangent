@@ -49,9 +49,14 @@ public sealed class ImportExtrasTests : IDisposable
         return bytes;
     }
 
-    JsonObject Import(string outline = Outline, IReadOnlyList<string>? allow = null) => FsdImport.Import(repo.Repo, File_(Bytes(outline)), allowLabels: allow);
+    JsonObject Import(string outline = Outline, IReadOnlyList<string>? allow = null)
+    {
+        var imported = FsdImport.Import(repo.Repo, File_(Bytes(outline)), allowLabels: allow);
+        Committed.All(repo.Repo);
+        return imported;
+    }
 
-    JsonObject Doc() => JsonNode.Parse(File.ReadAllText(Path.Combine(Dir, "document.json")))!.AsObject();
+    JsonObject Doc() => FsdDocument.Load(repo.Root, "shop");
 
     static string Code(Action a) => Assert.Throws<StangentException>(a).Code;
 
@@ -76,6 +81,7 @@ public sealed class ImportExtrasTests : IDisposable
         Import();
         var before = File.ReadAllBytes(Path.Combine(Dir, "document.json"));
         var again = FsdImport.Reread(repo.Repo, "shop");
+        Committed.All(repo.Repo);
         Assert.Equal(("unchanged", true, false), ((string)again["status"]!, (bool)again["reread"]!, (bool)again["problemsChanged"]!));
         Assert.Equal(before, File.ReadAllBytes(Path.Combine(Dir, "document.json")));
         Assert.False(Directory.Exists(FsdVersions.CandidateDir(Root, "shop")));
@@ -87,16 +93,19 @@ public sealed class ImportExtrasTests : IDisposable
         Import();
         // What an older converter wrote: the words differ, and the file doesn't.
         Chapters.Edit(Dir, "Leeks wait a day", "Leeks wait aday");
+        Committed.All(repo.Repo);
         var older = Chapters.Text(Dir);
         var hash = (string)Doc()["original"]!["hash"]!;
 
         var again = FsdImport.Reread(repo.Repo, "shop");
+        Committed.All(repo.Repo);
         Assert.Equal(("candidate", true, hash, hash), ((string)again["status"]!, (bool)again["reread"]!, (string)again["hash"]!, (string)again["from"]!));
         Assert.Equal(older, Chapters.Text(Dir));
         Assert.Contains("Leeks wait a day", File.ReadAllText(Path.Combine(FsdVersions.CandidateDir(Root, "shop"), "document.md")));
         Assert.Equal("waiting", (string)FsdImport.Reread(repo.Repo, "shop")["status"]!);
 
         FsdVersions.Promote(repo.Repo, "shop", "Pat");
+        Committed.All(repo.Repo);
         Assert.Contains("Leeks wait a day", Chapters.Text(Dir));
         Assert.Equal("unchanged", (string)FsdImport.Reread(repo.Repo, "shop")["status"]!);
     }
@@ -105,10 +114,12 @@ public sealed class ImportExtrasTests : IDisposable
     public void The_same_text_with_more_problems_found_updates_them_without_a_candidate()
     {
         Import();
-        var doc = Doc();
+        var doc = FsdDocument.Facts(Root, "shop")!;
         doc["problems"] = new JsonArray(new JsonObject { ["kind"] = "other", ["detail"] = "an older build said this" });
         File.WriteAllText(Path.Combine(Dir, "document.json"), CanonicalJson.Serialize(doc));
+        Committed.All(repo.Repo);
         var again = FsdImport.Reread(repo.Repo, "shop");
+        Committed.All(repo.Repo);
         Assert.Equal(("unchanged", true), ((string)again["status"]!, (bool)again["problemsChanged"]!));
         Assert.Empty(Doc()["problems"]!.AsArray());
     }
@@ -160,6 +171,7 @@ public sealed class ImportExtrasTests : IDisposable
         Assert.True(File.Exists(Path.Combine(FsdVersions.CandidateDir(Root, "shop"), "import-report.md")));
         Assert.DoesNotContain("Sections: 3", File.ReadAllText(Path.Combine(Dir, "import-report.md")));
         var promoted = FsdVersions.Promote(repo.Repo, "shop", "Pat");
+        Committed.All(repo.Repo);
         Assert.Equal("ok", (string)promoted["verdict"]!);
         Assert.Contains("Sections: 3", File.ReadAllText(Path.Combine(Dir, "import-report.md")));
     }
@@ -202,6 +214,7 @@ public sealed class ImportExtrasTests : IDisposable
         Assert.Equal("document_labelled", Code(() => FsdImport.Import(repo.Repo, File_(labelled), allowLabels: ["Public"])));
 
         var allowed = FsdImport.Import(repo.Repo, File_(labelled), allowLabels: ["confidential"]);
+        Committed.All(repo.Repo);
         Assert.Equal("imported", (string)allowed["status"]!);
         var record = Doc()["labels"]![0]!;
         Assert.Equal(("Confidential", Label, "Pat Example"), ((string)record["name"]!, (string)record["id"]!, (string)record["allowedBy"]!));
@@ -284,6 +297,7 @@ public sealed class ImportExtrasTests : IDisposable
         var withPicture = Outline + "\n![The sketch](sketch.png)\n";
         var bytes = DocxWriter.Write(withPicture, Sketch(Root));
         FsdImport.Import(repo.Repo, File_(bytes));
+        Committed.All(repo.Repo);
         var doc = Doc();
         var table = Assert.Single(doc["tables"]!.AsArray())!;
         var veg = doc["sections"]!.AsArray().First(s => (string)s!["title"]! == "Veg")!;
@@ -304,6 +318,7 @@ public sealed class ImportExtrasTests : IDisposable
         const string moved = "# Fruit\n\nApples are sorted by size before they are packed.\n\n| A | B |\n| 1 | 9 |\n\n# Veg\n\nLeeks wait a day in the cold room.\n\n| C | D |\n| 3 | 4 |\n";
         Import(moved);
         FsdVersions.Promote(repo.Repo, "shop", "Pat");
+        Committed.All(repo.Repo);
         var tables = Doc()["tables"]!.AsArray();
         Assert.Equal(["T-0001", "T-0002"], tables.Select(t => (string)t!["id"]!));
         Assert.Equal((string)Doc()["sections"]![1]!["permanentId"]!, (string)tables[1]!["section"]!);
@@ -311,22 +326,29 @@ public sealed class ImportExtrasTests : IDisposable
         const string gone = "# Fruit\n\nApples are sorted by size before they are packed.\n\n| A | B |\n| 1 | 9 |\n\n# Veg\n\nLeeks wait a day in the cold room.\n";
         Import(gone);
         FsdVersions.Promote(repo.Repo, "shop", "Pat");
+        Committed.All(repo.Repo);
         Assert.Contains("T-0002", FsdVersions.Ledger(Root, "shop").Removed("tables"));
 
         Import(moved);
         FsdVersions.Promote(repo.Repo, "shop", "Pat");
+        Committed.All(repo.Repo);
         Assert.Equal(["T-0001", "T-0003"], Doc()["tables"]!.AsArray().Select(t => (string)t!["id"]!));
     }
 
     [Fact]
     public void A_document_from_before_gets_its_ids_on_its_next_import_and_only_the_record_changes()
     {
+        // Since phase fs layer 2 a document from before is moved by `fsd migrate`, not by its next import (D392).
         Import();
         var doc = Doc();
         doc.Remove("tables");
+        doc["schemaVersion"] = 3;
         File.WriteAllText(Path.Combine(Dir, "document.json"), CanonicalJson.Serialize(doc));
+        Committed.All(repo.Repo);
         var md = Chapters.Bytes(Dir);
-        Assert.Equal("unchanged", (string)Import()["status"]!);
+        Assert.Equal("fsd_not_migrated", Code(() => Import()));
+        Assert.Equal("migrated", (string)FsdMigrate.Run(repo.Repo, "shop")["status"]!);
+        Committed.All(repo.Repo);
         Assert.StartsWith("T-", (string)Assert.Single(Doc()["tables"]!.AsArray())!["id"]!);
         Assert.Equal(md, Chapters.Bytes(Dir));
     }

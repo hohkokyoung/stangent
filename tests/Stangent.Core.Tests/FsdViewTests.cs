@@ -28,6 +28,7 @@ public sealed class FsdViewTests : IDisposable
         var file = Path.Combine(Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write(outline));
         FsdImport.Import(repo.Repo, file);
+        Committed.All(repo.Repo);
     }
 
     static string Code(Action a) => Assert.Throws<StangentException>(a).Code;

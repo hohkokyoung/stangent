@@ -7,12 +7,8 @@ namespace Stangent.Spec.Fsd;
 /// <summary>Reading a document by its sections, by code: its outline, one section, and one chapter's sections (A.10, E.3, D122).</summary>
 public static class FsdOutline
 {
-    public static JsonObject Load(string root, string doc)
-    {
-        var path = Path.Combine(FsdImport.DocDir(root, doc), "document.json");
-        return File.Exists(path) ? JsonNode.Parse(File.ReadAllText(path))!.AsObject()
-            : throw new StangentException("not_found", $"No imported document {doc}.", ExitCodes.NotFound);
-    }
+    /// <summary>The document as every step reads it: its sections from the committed chapters (<see cref="FsdDocument.Load"/>).</summary>
+    public static JsonObject Load(string root, string doc) => FsdDocument.Load(root, doc);
 
     static List<JsonObject> Sections(JsonObject document) => [.. document["sections"]!.AsArray().OfType<JsonObject>()];
 
@@ -44,7 +40,7 @@ public static class FsdOutline
                 return (JsonNode)o;
             })]),
         };
-        FsdHandEdit.Note(root, doc, document, result);
+        FsdDocument.Note(root, doc, result);
         return result;
     }
 
@@ -61,7 +57,7 @@ public static class FsdOutline
         var document = Load(root, doc);
         var s = Find(document, section);
         var (tables, figures) = FsdObjects.In(document, (string?)s["permanentId"] ?? "");
-        FsdHandEdit.Note(root, doc, document, null);
+        FsdDocument.Note(root, doc, null);
         return new JsonObject
         {
             ["doc"] = doc, ["id"] = (string?)s["permanentId"], ["number"] = (string)s["id"]!, ["title"] = (string)s["title"]!, ["level"] = (int)s["level"]!,

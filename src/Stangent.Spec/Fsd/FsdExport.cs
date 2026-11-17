@@ -36,17 +36,9 @@ public static partial class FsdExport
         if (maxLines < 1) throw new StangentException("usage", "--max-lines must be at least 1.", ExitCodes.Usage);
         var document = FsdOutline.Load(root, doc);
         var hash = (string)document["original"]!["hash"]!;
-        FsdHandEdit.Note(root, doc, document, null);
-        var docDir = FsdImport.DocDir(root, doc);
-        // The chapters as they are on disk (phase fs layer 1), markers off; a document not migrated yet still has document.md.
-        string markdown, from;
-        List<JsonObject> sections;
-        if (FsdChapters.Has(docDir))
-        {
-            var read = FsdChapters.Read(FsdChapters.Files(docDir));
-            (markdown, sections, from) = (read.Markdown, [.. read.Sections.Select(FsdChapters.Json)], $"specs/fsd/{doc}/chapters");
-        }
-        else (markdown, sections, from) = (File.ReadAllText(Path.Combine(docDir, "document.md")), [.. document["sections"]!.AsArray().OfType<JsonObject>()], $"specs/fsd/{doc}/document.md");
+        FsdDocument.Note(root, doc, null);
+        // The committed chapters (phase fs layer 2, D380), markers off: an edit not committed yet isn't exported.
+        var (markdown, sections, from) = (FsdDocument.Markdown(root, doc), document["sections"]!.AsArray().OfType<JsonObject>().ToList(), $"specs/fsd/{doc}/chapters at HEAD");
         var lines = markdown.Split('\n');
         var dir = outDir is null ? DefaultDir(root, doc) : Path.GetFullPath(outDir, root);
 

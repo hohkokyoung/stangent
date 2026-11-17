@@ -10,18 +10,26 @@ public static class FsdStatus
     public static JsonObject Of(string root, string doc)
     {
         var waiting = FsdVersions.PendingHash(root, doc) is null ? null : FsdVersions.Diff(root, doc);
-        var path = Path.Combine(FsdImport.DocDir(root, doc), "document.json");
-        var document = File.Exists(path) ? JsonNode.Parse(File.ReadAllText(path))!.AsObject() : null;
-        if (document is null && waiting is null) throw new StangentException("not_found", $"No imported document {doc}.", ExitCodes.NotFound);
+        var facts = FsdDocument.Facts(root, doc);
+        if (facts is null && waiting is null) throw new StangentException("not_found", $"No imported document {doc}.", ExitCodes.NotFound);
+        // The sections are the committed chapters' (phase fs layer 2): an import not committed yet, or chapters refused, read none.
+        JsonObject? document = null;
+        StangentException? unread = null;
+        if (facts is not null)
+            try { document = FsdDocument.Load(root, doc); }
+            catch (StangentException e) when (e.Code is "fsd_not_committed" or "fsd_not_migrated" or "not_git" or "invalid_fsd") { unread = e; }
 
         var doubtful = waiting is null ? [] : waiting["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful").Select(e => (string?)e["to"] ?? (string)e["permanentId"]!).ToList();
         var result = new JsonObject { ["doc"] = doc };
-        if (document is not null) FsdHandEdit.Note(root, doc, document, result);
-        if (document is not null)
+        if (facts is not null)
+        {
+            FsdDocument.Note(root, doc, result);
             result["current"] = new JsonObject
             {
-                ["hash"] = (string)document["original"]!["hash"]!, ["title"] = (string)document["title"]!, ["sections"] = document["sections"]!.AsArray().Count, ["verdict"] = ImportReport.Verdict(document),
+                ["hash"] = (string)facts["original"]!["hash"]!, ["title"] = (string)facts["title"]!, ["sections"] = document?["sections"]!.AsArray().Count, ["verdict"] = ImportReport.Verdict(facts),
             };
+            if (unread is not null) result["unread"] = new JsonObject { ["code"] = unread.Code, ["message"] = unread.Message };
+        }
         if (waiting is not null)
             result["candidate"] = new JsonObject { ["hash"] = (string)waiting["to"]!, ["state"] = (string?)waiting["state"], ["first"] = (bool?)waiting["first"] == true };
         result["doubtful"] = new JsonArray([.. doubtful.Select(d => (JsonNode)d)]);
@@ -52,9 +60,17 @@ public static class FsdStatus
         };
         var reviewed = document is not null && File.Exists(FsdReview.ReviewJson(root, doc));
         result["reviewed"] = reviewed;
-        result["next"] = Next(doc, waiting, doubtful, document is not null && !reviewed, ba, confirm, developer, pageOwner, toApprove);
+        result["next"] = unread is not null && waiting is null ? Unread(doc, unread) : Next(doc, waiting, doubtful, document is not null && !reviewed, ba, confirm, developer, pageOwner, toApprove);
         return result;
     }
+
+    /// <summary>What to do when no step can read the document yet: commit it, migrate it, or put its ids right.</summary>
+    static JsonObject Unread(string doc, StangentException e) => e.Code switch
+    {
+        "fsd_not_committed" => new() { ["who"] = "a person", ["what"] = $"Read specs/fsd/{doc}/chapters/ and commit specs/fsd/{doc}/: the commit approves the import, and until then no step reads it (D380).", ["command"] = $"git add specs/fsd/{doc} && git commit" },
+        "fsd_not_migrated" => new() { ["who"] = "a person", ["what"] = "Turn the document into chapter files, then commit them (D383).", ["command"] = $"stangent fsd migrate {doc}" },
+        _ => new() { ["who"] = "a person", ["what"] = e.Message, ["command"] = "" },
+    };
 
     /// <summary>A heading path has spaces in it, and the command should still run as written.</summary>
     static string Arg(string section) => section.Contains(' ', StringComparison.Ordinal) ? $"\"{section}\"" : section;

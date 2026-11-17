@@ -63,6 +63,7 @@ public class SavedWorkTests
         var file = Path.Combine(app.Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write(Fsd));
         FsdImport.Import(app.Repo, file);
+        Committed.All(app.Repo);
         return app;
     }
 

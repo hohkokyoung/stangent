@@ -17,7 +17,6 @@ public static class FsdVersions
     const string Scope = "sections", Format = "S-{0:D4}";
     static readonly StateActor Code = StateActor.Code("stangent fsd import");
 
-    static string JsonPath(string root, string doc) => Path.Combine(FsdImport.DocDir(root, doc), "document.json");
     public static string CandidateDir(string root, string doc) => Path.Combine(FsdImport.DocDir(root, doc), "candidate");
     static string DiffJson(string root, string doc) => Path.Combine(CandidateDir(root, doc), "section-diff.json");
     static string DiffMd(string root, string doc) => Path.Combine(CandidateDir(root, doc), "SECTION_DIFF.md");
@@ -37,19 +36,16 @@ public static class FsdVersions
         foreach (var s in sections) s["permanentId"] = ledger.Issue(Scope, Format);
     }
 
-    /// <summary>A document from before gets what later versions added on its next import: permanent ids (v2), in document order, and structured
-    /// problems (v3). Only <c>document.json</c> changes: <c>document.md</c>, numbers, text and hashes stay, so saved AI work stays valid.</summary>
+    /// <summary>A document from before gets what later versions added, as <c>fsd migrate</c> moves it (phase fs layer 2): permanent ids (v2),
+    /// in document order, tables and structured problems (v3). Changes only the record in hand, which the caller saves; numbers, text and
+    /// hashes stay, so saved AI work stays valid. A v4 document's ids are on its headings, and <c>fsd check</c> gives a new heading one.</summary>
     public static int EnsureIds(string root, string doc, JsonObject current)
     {
         var missing = current["sections"]!.AsArray().OfType<JsonObject>().Where(s => s["permanentId"] is null).ToList();
-        if (missing.Count == 0 && (int?)current["schemaVersion"] >= 3 && current["tables"] is not null) return 0;
         if (missing.Count > 0) IssueIds(root, doc, current, missing);
-        current["schemaVersion"] = 3;
         if (current["tables"] is null) FsdObjects.Assign(root, doc, null, current);
         ImportProblems.Upgrade(current);
         ImportProblems.Attach(current);
-        Validate(current);
-        File.WriteAllText(JsonPath(root, doc), CanonicalJson.Serialize(current));
         return missing.Count;
     }
 
@@ -61,11 +57,7 @@ public static class FsdVersions
         File.Delete(Path.Combine(dir, "document.md"));
     }
 
-    internal static void Validate(JsonObject doc)
-    {
-        var errors = SchemaRegistry.Embedded.Validate(FsdImport.Schema, doc.ToJsonString());
-        if (errors.Count > 0) throw new StangentException("invalid_document", "The document broke source-document v3 (a stangent bug).", ExitCodes.Failed, errors);
-    }
+    internal static void Validate(JsonObject doc) => FsdDocument.Validate(doc);
 
     public static string? PendingHash(string root, string doc) => File.Exists(DiffJson(root, doc)) ? (string?)Load(root, doc)["to"] : null;
 
@@ -86,7 +78,6 @@ public static class FsdVersions
     /// <summary>A changed file for a document already here: it waits beside the current version. The same file again keeps what people settled; a different one starts over.</summary>
     internal static JsonObject Offer(string root, string doc, JsonObject current, JsonObject document, ConvertedDocument converted, string hash, bool flat, JsonObject archive, string why = "a changed file came in", bool partial = false)
     {
-        EnsureIds(root, doc, current);
         var dir = CandidateDir(root, doc);
         if (File.Exists(DiffJson(root, doc)))
         {
@@ -197,7 +188,7 @@ public static class FsdVersions
         if (Directory.Exists(Path.Combine(candidate, "images"))) Directory.Move(Path.Combine(candidate, "images"), Path.Combine(dir, "images"));
         FsdAttachments.Move(candidate, dir, pending);
         WriteChapters(dir, markdown, pending, maxLines);
-        Quotes.WriteAtomic(JsonPath(root, doc), CanonicalJson.Serialize(pending));
+        FsdDocument.Save(root, doc, pending, newImport: true);
         ImportReport.Write(dir, pending);
         StateChanges.Apply(root, diff, StateKinds.FsdCandidate, CandidateKey(doc, (string)diff["to"]!), "approved", StateActor.Person(who), "first import approved");
         Directory.Delete(candidate, recursive: true);
@@ -278,7 +269,7 @@ public static class FsdVersions
     {
         if (Ledger(root, doc).Removed(Scope).Contains(id))
             throw new StangentException("section_id_removed", $"{id} was removed in an earlier version. A removed id never comes back: say --new.", ExitCodes.Failed);
-        var current = JsonNode.Parse(File.ReadAllText(JsonPath(root, doc)))!["sections"]!.AsArray().OfType<JsonObject>();
+        var current = FsdDocument.Load(root, doc)["sections"]!.AsArray().OfType<JsonObject>();
         if (current.All(s => (string?)s["permanentId"] != id))
             throw new StangentException("not_found", $"The current version of {doc} has no section {id}.", ExitCodes.NotFound);
         var holder = entries.FirstOrDefault(e => !ReferenceEquals(e, entry) && (string?)e["to"] is not null && (((string)e["kind"]! != "doubtful" && (string?)e["permanentId"] == id) || (string?)e["same_as"] == id));
@@ -306,7 +297,8 @@ public static class FsdVersions
         var left = Open(diff);
         if (left.Count > 0)
             throw new StangentException("doubtful_sections_remain", $"{left.Count} section(s) of {doc}'s candidate are doubtful. Settle each with `stangent fsd resolve`.", ExitCodes.Failed, [.. left.Select(o => (string)o!)]);
-        var current = JsonNode.Parse(File.ReadAllText(JsonPath(root, doc)))!.AsObject();
+        // The current version is the committed one (D380): a promote not yet committed is no base for the next.
+        var current = FsdDocument.Load(root, doc);
         var pending = JsonNode.Parse(File.ReadAllText(Pending(root, doc)))!.AsObject();
         var approval = FsdSectionApproval.On(repo.Config);
         if ((string)current["original"]!["hash"]! != (string)diff["from"]!)
@@ -342,7 +334,7 @@ public static class FsdVersions
         FsdObjects.Assign(root, doc, current, pending);
         ImportProblems.Upgrade(pending);
         ImportProblems.Attach(pending);
-        pending["schemaVersion"] = 3;
+        pending["schemaVersion"] = FsdDocument.SchemaVersion;
         Validate(pending);
         // Before anything moves: chapters that wouldn't read back stop the promote here, with the current version as it was.
         var markdown = merged?.Markdown ?? File.ReadAllText(Path.Combine(CandidateDir(root, doc), "document.md"));
@@ -364,7 +356,7 @@ public static class FsdVersions
         if (Directory.Exists(Path.Combine(candidate, "images"))) Directory.Move(Path.Combine(candidate, "images"), Path.Combine(dir, "images"));
         FsdAttachments.Move(candidate, dir, pending);
         WriteChapters(dir, markdown, pending, repo.Config.Fsd.ExportMaxLines);
-        Quotes.WriteAtomic(JsonPath(root, doc), CanonicalJson.Serialize(pending));
+        FsdDocument.Save(root, doc, pending, newImport: true);
         ImportReport.Write(dir, pending);
         var sectionFiles = approval ? FsdSectionFiles.Write(root, doc, pending) : null;
 
@@ -379,12 +371,13 @@ public static class FsdVersions
         File.AppendAllText(Path.Combine(dir, "promotions.jsonl"), CanonicalJson.SerializeCompact(log) + "\n");
         Directory.Delete(candidate, recursive: true);
 
-        // The existing drop-back (D58): a decision whose quote is gone goes back to undecided, here rather than at the next CI run.
-        var check = Trace.TraceCheck.Run(root, null, null, fix: true);
+        // The drop-back (D58), a decision whose quote is gone going back to undecided, waits for the commit: steps read only the
+        // committed FSD (D380, phase fs layer 2), so a trace check run here would read the version this replaces.
         var result = ImportReport.AddTo(new JsonObject
         {
             ["id"] = doc, ["hash"] = (string)diff["to"]!, ["from"] = (string)diff["from"]!, ["sections"] = sections.Count, ["counts"] = diff["counts"]!.DeepClone(),
-            ["carried"] = carried, ["staleQuotes"] = check["staleQuotes"]!.DeepClone(), ["traceProblems"] = check["problems"]!.DeepClone(),
+            ["carried"] = carried,
+            ["next"] = $"Read and commit specs/fsd/{doc}/: the commit approves the new version (D380). Then `stangent trace check --fix` drops back each decision whose quote is gone (D58), as CI's trace check would.",
         }, pending, $"specs/fsd/{doc}");
         if (answers is not null)
         {

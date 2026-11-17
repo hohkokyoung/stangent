@@ -32,6 +32,7 @@ public sealed class ImportProblemsTests : IDisposable
         var file = Path.Combine(archive.Root, name);
         File.WriteAllBytes(file, bytes);
         result = FsdImport.Import(repo.Repo, file, "shop", flat);
+        Committed.All(repo.Repo);
         return Path.Combine(FsdImport.DocDir(repo.Root, "shop"), "document.json");
     }
 
@@ -92,40 +93,48 @@ public sealed class ImportProblemsTests : IDisposable
     }
 
     [Fact]
-    public void An_import_writes_v3_with_permanent_ids_on_its_problems()
+    public void An_import_writes_v4_with_permanent_ids_on_its_problems()
     {
         var json = ImportFile("a.docx", FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P("Text.") + $"<w:p>{FsdDocxTests.R("gone", "<w:vanish/>")}</w:p>"), out var result);
         var p = Assert.Single(result["problems"]!.AsArray())!;
         Assert.Equal(("element", "S-0001", "Rules"), ((string)p["kind"]!, (string)p["section"]!, (string)p["sectionNumber"]!));
         var doc = JsonNode.Parse(File.ReadAllText(json))!.AsObject();
-        Assert.Equal(3, (int)doc["schemaVersion"]!);
-        Assert.Empty(SchemaRegistry.Embedded.Validate("source-document.v3.json", doc.ToJsonString()));
+        Assert.Equal(4, (int)doc["schemaVersion"]!);
+        Assert.Empty(SchemaRegistry.Embedded.Validate("source-document.v4.json", doc.ToJsonString()));
     }
 
     [Theory]
     [InlineData(1)]
     [InlineData(2)]
-    public void A_document_from_before_still_loads_and_its_lines_are_read_on_its_next_import(int version)
+    public void A_document_from_before_is_left_out_until_migrate_reads_its_lines(int version)
     {
         var bytes = FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P("Text.") + $"<w:p>{FsdDocxTests.R("gone", "<w:vanish/>")}</w:p>");
         var json = ImportFile("a.docx", bytes, out _);
         var md = Chapters.Bytes(Path.GetDirectoryName(json)!);
 
-        // As an older build left it: its problems as plain lines.
-        var old = JsonNode.Parse(File.ReadAllText(json))!.AsObject();
+        // As an older build left it: document.md, the sections in document.json, its problems as plain lines.
+        var dir = Path.GetDirectoryName(json)!;
+        var old = FsdDocument.Load(repo.Root, "shop");
+        old.Remove("importCommit");
+        old["markdown"] = "document.md";
+        File.WriteAllText(Path.Combine(dir, "document.md"), Chapters.Text(dir));
+        Directory.Delete(FsdChapters.Dir(dir), recursive: true);
         old["schemaVersion"] = version;
         old["problems"] = new JsonArray([.. old["problems"]!.AsArray().Select(p => (JsonNode)(string)p!["detail"]!)]);
         old.Remove("tables");
-        foreach (var s in old["sections"]!.AsArray().OfType<JsonObject>()) s.Remove("contentHash");
+        foreach (var s in old["sections"]!.AsArray().OfType<JsonObject>()) { s.Remove("contentHash"); s.Remove("attachments"); s.Remove("attachmentLines"); }
         foreach (var i in old["images"]!.AsArray().OfType<JsonObject>()) { i.Remove("id"); i.Remove("section"); i.Remove("sectionNumber"); }
         if (version == 1) foreach (var s in old["sections"]!.AsArray().OfType<JsonObject>()) s.Remove("permanentId");
         Assert.Empty(SchemaRegistry.Embedded.Validate($"source-document.v{version}.json", old.ToJsonString()));
         File.WriteAllText(json, CanonicalJson.Serialize(old));
-        Assert.Equal("shop", (string)Assert.Single(FsdImport.Documents(repo.Root))["id"]!);
-
-        Assert.Equal("unchanged", (string)FsdImport.Import(repo.Repo, Path.Combine(archive.Root, "a.docx"), "shop")["status"]!);
+        Committed.All(repo.Repo);
+        // Since phase fs layer 2 (D392) it isn't read until `fsd migrate` moves it, and migrating reads its lines.
+        Assert.Empty(FsdImport.Documents(repo.Root));
+        Assert.Equal("fsd_not_migrated", Assert.Throws<StangentException>(() => FsdImport.Import(repo.Repo, Path.Combine(archive.Root, "a.docx"), "shop")).Code);
+        Assert.Equal("migrated", (string)FsdMigrate.Run(repo.Repo, "shop")["status"]!);
+        Committed.All(repo.Repo);
         var now = JsonNode.Parse(File.ReadAllText(json))!.AsObject();
-        Assert.Equal(3, (int)now["schemaVersion"]!);
+        Assert.Equal(4, (int)now["schemaVersion"]!);
         Assert.Equal("element", (string)Assert.Single(now["problems"]!.AsArray())!["kind"]!);
         Assert.Equal(md, Chapters.Bytes(Path.GetDirectoryName(json)!));
     }
@@ -137,11 +146,13 @@ public sealed class ImportProblemsTests : IDisposable
         var file = Path.Combine(archive.Root, "a.docx");
         File.WriteAllBytes(file, FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P("Apples are sorted by size before packing.") + $"<w:p>{FsdDocxTests.R("gone", "<w:vanish/>")}</w:p>"));
         var offered = FsdImport.Import(repo.Repo, file, "shop");
+        Committed.All(repo.Repo);
         Assert.Equal("candidate", (string)offered["status"]!);
         Assert.Null(offered["problems"]![0]!["section"]);
         Assert.Equal(5, offered["steps"]!.AsArray().Count);
 
         FsdVersions.Promote(repo.Repo, "shop", "Pat Example");
+        Committed.All(repo.Repo);
         var p = Assert.Single(JsonNode.Parse(File.ReadAllText(json))!["problems"]!.AsArray())!;
         Assert.Equal("S-0001", (string)p["section"]!);
     }

@@ -145,19 +145,22 @@ public class FsdTests
         File.WriteAllBytes(file, DocxWriter.Write(Outline, archive.Root));
 
         var first = FsdImport.Import(a.Repo, file);
+        Committed.All(a.Repo);
         Assert.Equal(("shop-fsd", "imported", 7), ((string)first["id"]!, (string)first["status"]!, (int)first["sections"]!));
         FsdImport.Import(b.Repo, file);
+        Committed.All(b.Repo);
         Assert.Equal(File.ReadAllBytes(Path.Combine(FsdImport.DocDir(a.Root, "shop-fsd"), "document.json")), File.ReadAllBytes(Path.Combine(FsdImport.DocDir(b.Root, "shop-fsd"), "document.json")));
         Assert.Equal(Chapters.Files(FsdImport.DocDir(a.Root, "shop-fsd")), Chapters.Files(FsdImport.DocDir(b.Root, "shop-fsd")));
         Assert.False(File.Exists(Path.Combine(FsdImport.DocDir(a.Root, "shop-fsd"), "document.md")));
 
-        var doc = JsonNode.Parse(File.ReadAllText(Path.Combine(FsdImport.DocDir(a.Root, "shop-fsd"), "document.json")))!;
-        Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, doc.ToJsonString()));
+        var doc = FsdDocument.Load(a.Root, "shop-fsd");
+        Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, FsdDocument.Facts(a.Root, (string)doc["id"]!)!.ToJsonString()));
         Assert.Equal("client-docs", (string)doc["original"]!["archive"]!);
         Assert.True(File.Exists(Path.Combine(archive.Root, (string)doc["original"]!["path"]!)));
         Assert.True(File.Exists(Path.Combine(FsdImport.DocDir(a.Root, "shop-fsd"), (string)doc["images"]![0]!["file"]!)));
 
         var again = FsdImport.Import(a.Repo, file);
+        Committed.All(a.Repo);
         Assert.Equal("unchanged", (string)again["status"]!);
     }
 
@@ -172,6 +175,7 @@ public class FsdTests
         var file = Path.Combine(repo.Root, "fsd.docx");
         File.WriteAllBytes(file, DocxWriter.Write("# 1 Series\nText."));
         FsdImport.Import(repo.Repo, file);
+        Committed.All(repo.Repo);
         Assert.Contains("stangent: archive fsd/", Graph.Git.Run(archive.Root, "log --oneline"));
     }
 

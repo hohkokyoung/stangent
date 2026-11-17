@@ -30,6 +30,7 @@ public sealed class RulingRepliesTests : IDisposable
         var file = Path.Combine(Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write(Outline));
         FsdImport.Import(Repo, file);
+        Committed.All(Repo);
         var document = FsdOutline.Load(Root, "shop");
         Write("specs/fsd/shop/review.json", new JsonObject
         {

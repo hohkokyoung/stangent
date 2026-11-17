@@ -40,10 +40,13 @@ public sealed class FsdVersionTests : IDisposable
         var file = Path.Combine(Root, "shop.docx");
         if (!files.TryGetValue(outline, out var bytes)) files[outline] = bytes = DocxWriter.Write(outline);
         File.WriteAllBytes(file, bytes);
-        return FsdImport.Import(repo.Repo, file);
+        var imported = FsdImport.Import(repo.Repo, file);
+        Committed.All(repo.Repo);
+        return imported;
     }
 
-    JsonObject Current() => JsonNode.Parse(File.ReadAllText(Path.Combine(FsdImport.DocDir(Root, "shop"), "document.json")))!.AsObject();
+    /// <summary>The current version as steps read it: the committed chapters' sections.</summary>
+    JsonObject Current() => FsdDocument.Load(Root, "shop");
 
     string Id(string section) => (string)Current()["sections"]!.AsArray().First(s => (string)s!["id"]! == section)!["permanentId"]!;
 
@@ -73,7 +76,7 @@ public sealed class FsdVersionTests : IDisposable
         var result = Import($"#! Fruit\n{Apples}\n##! Pears\n{Pears}\n");
 
         Assert.Equal("imported", (string)result["status"]!);
-        Assert.Equal(3, (int)Current()["schemaVersion"]!);
+        Assert.Equal(4, (int)Current()["schemaVersion"]!);
         Assert.Equal([("1", "S-0001"), ("1.1", "S-0002")], Current()["sections"]!.AsArray().Select(s => ((string)s!["id"]!, (string)s["permanentId"]!)));
         Assert.Equal(["S-0001", "S-0002"], FsdVersions.Ledger(Root, "shop").Active("sections"));
         Assert.False(Directory.Exists(FsdVersions.CandidateDir(Root, "shop")));
@@ -125,17 +128,15 @@ public sealed class FsdVersionTests : IDisposable
     }
 
     [Fact]
-    public void A_document_from_before_permanent_ids_gets_them_when_a_changed_file_comes_in()
+    public void A_document_from_before_permanent_ids_is_refused_until_it_is_migrated()
     {
         Import($"#! Fruit\n{Apples}\n");
         var path = Path.Combine(FsdImport.DocDir(Root, "shop"), "document.json");
         File.WriteAllText(path, CanonicalJson.Serialize(AsItWasWritten(Current())));
         File.Delete(Path.Combine(FsdImport.DocDir(Root, "shop"), "ids.json"));
 
-        Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
-
-        Assert.Equal(3, (int)Current()["schemaVersion"]!);
-        Assert.Equal("S-0001", (string)Entries()[0]["permanentId"]!);
+        // Since phase fs layer 2 a document from before is moved by `fsd migrate`, not by the next import (D392).
+        Assert.Equal("fsd_not_migrated", Assert.Throws<StangentException>(() => Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n")).Code);
     }
 
     [Fact]
@@ -278,12 +279,13 @@ public sealed class FsdVersionTests : IDisposable
         Assert.Equal(Pat, history[^1].Who.Name);
 
         var result = FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
 
         Assert.Equal([("1", "Red", id), ("2", "Green", "S-0002")], Current()["sections"]!.AsArray().Select(s => ((string)s!["id"]!, (string)s["title"]!, (string)s["permanentId"]!)));
         Assert.Equal(2, (int)result["sections"]!);
         Assert.False(Directory.Exists(FsdVersions.CandidateDir(Root, "shop")));
         Assert.Contains(Apples, Chapters.Text(FsdImport.DocDir(Root, "shop")), StringComparison.Ordinal);
-        Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, Current().ToJsonString()));
+        Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, FsdDocument.Facts(Root, "shop")!.ToJsonString()));
         Assert.Equal("promoted", StateChanges.History(Root, StateKinds.FsdCandidate, $"shop@{((string)result["hash"]!)[..12]}")[^1].To);
     }
 
@@ -333,6 +335,7 @@ public sealed class FsdVersionTests : IDisposable
         Assert.Equal([green], FsdVersions.Diff(Root, "shop")["sections"]!.AsArray().Where(e => (string?)e!["state"] == "doubtful").Select(e => (string)e!["permanentId"]!));
         FsdVersions.Resolve(Root, "shop", green, null, false, true, Pat);
         var result = FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
 
         Assert.Equal(red, Id("1"));
         Assert.Equal([green], FsdVersions.Ledger(Root, "shop").Removed("sections"));
@@ -346,6 +349,7 @@ public sealed class FsdVersionTests : IDisposable
         var (fruit, veg) = (Id("1"), Id("2"));
         Import($"#! Fruit\n{Apples}\n");
         FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
         Assert.Equal([veg], FsdVersions.Ledger(Root, "shop").Removed("sections"));
 
         // The removed section's words come back, under another name that shares a sentence with one still here.
@@ -355,6 +359,7 @@ public sealed class FsdVersionTests : IDisposable
 
         FsdVersions.Resolve(Root, "shop", "2", null, true, false, Pat);
         FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
 
         Assert.Equal([fruit, "S-0003"], Current()["sections"]!.AsArray().Select(s => (string)s!["permanentId"]!));
         Assert.Equal([veg], FsdVersions.Ledger(Root, "shop").Removed("sections"));
@@ -364,10 +369,19 @@ public sealed class FsdVersionTests : IDisposable
     public void A_deleted_ledger_cant_give_a_live_id_again()
     {
         Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
-        File.Delete(Path.Combine(FsdImport.DocDir(Root, "shop"), "ids.json"));
-
+        var ledger = Path.Combine(FsdImport.DocDir(Root, "shop"), "ids.json");
+        var kept = File.ReadAllBytes(ledger);
+        File.Delete(ledger);
+        // The import commits the deletion; then the committed chapters name ids the committed ledger lacks (D392), and nothing reads them.
         Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n#! Nuts\n{Plums}\n");
+        var refused = Assert.Throws<StangentException>(() => FsdVersions.Promote(repo.Repo, "shop", Pat));
+        Assert.Equal("invalid_fsd", refused.Code);
+        Assert.Contains("Restore it from git", refused.Message, StringComparison.Ordinal);
+
+        File.WriteAllBytes(ledger, kept);
+        Committed.All(repo.Repo);
         FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
 
         Assert.Equal(["S-0001", "S-0002", "S-0003"], Current()["sections"]!.AsArray().Select(s => (string)s!["permanentId"]!));
     }
@@ -380,11 +394,13 @@ public sealed class FsdVersionTests : IDisposable
 
         Import($"#! New\n{Dates}\n#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
         FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
         Assert.Equal([("1", "S-0003"), ("2", fruit), ("3", veg)], Current()["sections"]!.AsArray().Select(s => ((string)s!["id"]!, (string)s["permanentId"]!)));
 
         Import($"#! New\n{Dates}\n#! Veg\n{Pears}\n#! Produce\n{Apples}\n");
         Assert.Equal(["unchanged 1>1", "unchanged 3>2", "renamed 2>3"], Entries().Select(Show));
         FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
 
         Assert.Equal([("1", "S-0003"), ("2", veg), ("3", fruit)], Current()["sections"]!.AsArray().Select(s => ((string)s!["id"]!, (string)s["permanentId"]!)));
         Assert.Equal(2, File.ReadAllLines(Path.Combine(FsdImport.DocDir(Root, "shop"), "promotions.jsonl")).Length);
@@ -414,6 +430,7 @@ public sealed class FsdVersionTests : IDisposable
 
         Import($"#! New\n{Dates}\n#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
         var result = FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
 
         var entry = Trace();
         Assert.Equal(("3", "agree", Pat), ((string)entry["fsd"]!["section"]!, (string)entry["decision"]!, (string)entry["decided_by"]!));
@@ -434,6 +451,7 @@ public sealed class FsdVersionTests : IDisposable
 
         Import($"#! Veg\n{Pears}\n#! Fruit\n{Apples}\n");
         FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
 
         var bySection = TraceFile.Load(Root)["entries"]!.AsArray().ToDictionary(e => (string)e!["fsd"]!["section"]!, e => (string)e!["fsd"]!["quote"]!);
         Assert.Equal(Pears, bySection["1"]);
@@ -449,6 +467,7 @@ public sealed class FsdVersionTests : IDisposable
 
         Import($"#! New\n{Dates}\n#! Fruit\n{Apples}\n");
         FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
 
         Assert.True((bool)TraceCheck.Run(Root, null, before, fix: false)["ok"]!);
         Assert.Equal(0, TraceCheck.Attribute(Root, before, "The Merger"));
@@ -463,6 +482,7 @@ public sealed class FsdVersionTests : IDisposable
         var before = TraceFile.Load(Root);
         Import($"#! New\n{Dates}\n#! Fruit\n{Apples}\n");
         FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
         var trace = TraceFile.Load(Root);
         trace["entries"]![0]!["decided_by"] = "Typed Name";
         TraceFile.Save(Root, trace);
@@ -478,13 +498,16 @@ public sealed class FsdVersionTests : IDisposable
         Link("1", "Fruit", Pears);
 
         Import($"#! Fruit\n{Apples} {Plums}\n");
-        var result = FsdVersions.Promote(repo.Repo, "shop", Pat);
+        FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
+        // Once the promote is committed, the trace check drops back what lost its quote (D58, D380).
+        var stale = TraceCheck.Run(Root, null, null, fix: true)["staleQuotes"]!;
 
         var entries = TraceFile.Load(Root)["entries"]!.AsArray().OfType<JsonObject>().ToDictionary(e => (string)e["fsd"]!["quote"]!);
         Assert.Equal("agree", (string)entries[Apples]["decision"]!);
         Assert.Null(entries[Pears]["decision"]);
         Assert.Null(entries[Pears]["decided_by"]);
-        Assert.Equal([(string)entries[Pears]["id"]!], result["staleQuotes"]!.AsArray().Select(s => (string)s!));
+        Assert.Equal([(string)entries[Pears]["id"]!], stale.AsArray().Select(s => (string)s!));
     }
 
     [Fact]
@@ -497,6 +520,7 @@ public sealed class FsdVersionTests : IDisposable
         // Veg goes, and a different chapter takes its number.
         Import($"#! Fruit\n{Apples}\n#! Nuts\n{Plums}\n");
         var result = FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
 
         var removed = result["carried"]!["removed"]![0]!;
         Assert.Equal((veg, "2", true), ((string)removed["permanentId"]!, (string)removed["section"]!, (bool)removed["numberUsedAgain"]!));
@@ -517,6 +541,7 @@ public sealed class FsdVersionTests : IDisposable
         // Orders goes, and Billing takes its number.
         Import($"#! Intro\n{Apples}\n#! Billing\n{Plums}\n");
         var result = FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
 
         var mark = $"(removed {orders}) 2";
         var newId = TraceFile.EntryId("gap", "shop", mark, null, Pears, null);
@@ -534,14 +559,12 @@ public sealed class FsdVersionTests : IDisposable
         var decision = Assert.Single(removed["decisions"]!.AsArray())!;
         Assert.Equal((newId, "fsd-wrong", Pat), ((string)decision["id"]!, (string)decision["value"]!, (string)decision["by"]!));
         Assert.Equal((oldId, newId), ((string)result["carried"]!["traceIds"]![0]!["from"]!, (string)result["carried"]!["traceIds"]![0]!["to"]!));
-        Assert.Empty(result["staleQuotes"]!.AsArray());
         Assert.Empty(StateChanges.History(Root, StateKinds.TraceDecision, oldId));
         Assert.Empty(StateChanges.History(Root, StateKinds.TraceDecision, newId));
 
         // `trace check` keeps flagging it for a person, and its fix leaves it alone. CI doesn't read the new id as a typed name or a new decision.
         var check = TraceCheck.Run(Root, null, null, fix: true);
         Assert.Contains(check["problems"]!.AsArray(), p => (string)p! == $"{newId}: FSD section shop §{mark} was removed; its decision stays until a person deals with the entry");
-        Assert.Contains(result["traceProblems"]!.AsArray(), p => ((string)p!).Contains("was removed", StringComparison.Ordinal));
         Assert.Empty(check["staleQuotes"]!.AsArray());
         Kept();
         Assert.DoesNotContain(TraceCheck.Run(Root, null, before, fix: false)["problems"]!.AsArray(), p => ((string)p!).Contains("decided_by", StringComparison.Ordinal));
@@ -601,6 +624,7 @@ public sealed class FsdVersionTests : IDisposable
         var (apples, pears) = (Id("1"), Id("2"));
         Import($"#! Notes\n{Pears}\n#! Notes\n{Apples}\n");
         FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
         Assert.Equal((pears, apples), (Id("1"), Id("2")));
 
         // The first note is rewritten: not a word shared, and the heading is the same as the other note's.
@@ -616,6 +640,7 @@ public sealed class FsdVersionTests : IDisposable
 
         FsdVersions.Resolve(Root, "shop", "1", pears, isNew: false, removed: false, Pat);
         FsdVersions.Promote(repo.Repo, "shop", Pat);
+        Committed.All(repo.Repo);
         Assert.Equal((pears, apples), (Id("1"), Id("2")));
     }
 
@@ -646,6 +671,9 @@ public sealed class FsdVersionTests : IDisposable
     {
         var copy = (JsonObject)doc.DeepClone();
         copy["schemaVersion"] = 1;
+        // v4 keeps no Markdown's name and adds the import commit (phase fs layer 2); that build wrote the one and not the other.
+        copy["markdown"] = "document.md";
+        copy.Remove("importCommit");
         foreach (var s in copy["sections"]!.AsArray().OfType<JsonObject>()) { s.Remove("permanentId"); s.Remove("contentHash"); }
         copy.Remove("tables");
         foreach (var i in copy["images"]!.AsArray().OfType<JsonObject>()) { i.Remove("id"); i.Remove("section"); i.Remove("sectionNumber"); }
@@ -659,34 +687,42 @@ public sealed class FsdVersionTests : IDisposable
         Assert.Equal("imported", (string)FsdImport.Import(repo.Repo, file, "sonarr")["status"]!);
         var dir = FsdImport.DocDir(Root, "sonarr");
         var jsonPath = Path.Combine(dir, "document.json");
-        var imported = JsonNode.Parse(File.ReadAllText(jsonPath))!.AsObject();
+        Committed.All(repo.Repo);
+        var imported = FsdDocument.Load(Root, "sonarr");
 
         // The same bytes as before this work: document.md whole, and document.json but for the added ids.
         Assert.Equal("b546bb24c70f6901327bdc6298db22e136aec9ca7ff2c3ae76cb39e7d5254f50", Sha(Chapters.Bytes(dir)));
         var written = CanonicalJson.Serialize(AsItWasWritten(imported));
         Assert.Equal("c18cbded20fc31bbdcac45e8e71671f29efcac855516862246905a43b9f6a621", Sha(System.Text.Encoding.UTF8.GetBytes(written)));
 
-        // A document imported earlier, with links: the state an owner's repo is in today.
+        // A document imported earlier, with links: document.md and the sections in document.json.
         File.WriteAllText(jsonPath, written);
+        File.WriteAllText(Path.Combine(dir, "document.md"), Chapters.Text(dir));
+        Directory.Delete(FsdChapters.Dir(dir), recursive: true);
         var v1 = JsonNode.Parse(written)!.AsObject();
         var withText = v1["sections"]!.AsArray().OfType<JsonObject>().Where(s => Sentences.Of((string)s["text"]!).Count > 0).ToList();
         var linked = withText.ToDictionary(s => (string)s["id"]!, s => TraceFile.EntryId("gap", "sonarr", (string)s["id"]!, null, (string)s["text"]!, null));
         var trace = TraceFile.Empty();
         trace["entries"]!.AsArray().Add(TraceStore.Entry("gap", "sonarr", withText[0], Sentences.Of((string)withText[0]["text"]!)[0].Text, null, null, null, "code", null, null));
         TraceFile.Save(Root, trace);
-        var saved = new[] { TraceFile.PathIn(Root) }.Concat(Directory.EnumerateFiles(FsdChapters.Dir(dir))).ToDictionary(p => p, File.ReadAllBytes);
+        var md = Chapters.Bytes(dir);
+        Committed.All(repo.Repo);
+        var saved = new[] { TraceFile.PathIn(Root) }.ToDictionary(p => p, File.ReadAllBytes);
 
-        // Its next import: the same file. It stays unchanged, and gets its ids.
-        var again = FsdImport.Import(repo.Repo, file, "sonarr");
-        Assert.Equal("unchanged", (string)again["status"]!);
+        // Since phase fs layer 2 (D392) its next import is refused, and `fsd migrate` moves it: the same text, and its ids.
+        Assert.Equal("fsd_not_migrated", Assert.Throws<StangentException>(() => FsdImport.Import(repo.Repo, file, "sonarr")).Code);
+        var again = FsdMigrate.Run(repo.Repo, "sonarr");
         Assert.Equal(v1["sections"]!.AsArray().Count, (int)again["permanentIdsAdded"]!);
-        Assert.Null(FsdImport.Import(repo.Repo, file, "sonarr")["permanentIdsAdded"]);
+        Committed.All(repo.Repo);
+        Assert.Equal("unchanged", (string)FsdImport.Import(repo.Repo, file, "sonarr")["status"]!);
+        Assert.Equal(md, Chapters.Bytes(dir));
 
-        var upgraded = JsonNode.Parse(File.ReadAllText(jsonPath))!.AsObject();
-        Assert.Equal(3, (int)upgraded["schemaVersion"]!);
+        var upgraded = FsdDocument.Load(Root, "sonarr");
+        Assert.Equal(4, (int)upgraded["schemaVersion"]!);
         Assert.All(upgraded["sections"]!.AsArray(), s => Assert.Matches("^S-[0-9]{4}$", (string)s!["permanentId"]!));
-        Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, upgraded.ToJsonString()));
-        // Taking the ids off gives back the exact bytes: the ids are the only change.
+        Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, FsdDocument.Facts(Root, "sonarr")!.ToJsonString()));
+        // Taking the ids and the import commit off gives back the exact bytes: the ids are the only change to what was saved.
+        upgraded.Remove("importCommit");
         Assert.Equal(written, CanonicalJson.Serialize(AsItWasWritten(upgraded)));
         foreach (var (path, bytes) in saved) Assert.Equal(bytes, File.ReadAllBytes(path));
 
@@ -762,7 +798,8 @@ public sealed class FsdVersionTests : IDisposable
         var dir = SonarrDir();
         var outline = File.ReadAllText(Path.Combine(dir, "sonarr-fsd.outline.md"));
         FsdImport.Import(repo.Repo, Path.Combine(dir, "sonarr-fsd.docx"), "sonarr");
-        var before = JsonNode.Parse(File.ReadAllText(Path.Combine(FsdImport.DocDir(Root, "sonarr"), "document.json")))!["sections"]!.AsArray().Count;
+        Committed.All(repo.Repo);
+        var before = FsdDocument.Load(Root, "sonarr")["sections"]!.AsArray().Count;
 
         string Sub(string text, string from, string to)
         {
@@ -797,6 +834,7 @@ public sealed class FsdVersionTests : IDisposable
         var file = Path.Combine(Root, "sonarr-next.docx");
         File.WriteAllBytes(file, DocxWriter.Write(edited, dir));
         var result = FsdImport.Import(repo.Repo, file, "sonarr");
+        Committed.All(repo.Repo);
 
         var counts = result["counts"]!;
         // Planted: one added, one moved, one modified, one split (its old section and two new ones are doubtful), the rest unchanged.

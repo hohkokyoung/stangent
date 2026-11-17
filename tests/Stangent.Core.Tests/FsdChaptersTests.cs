@@ -195,11 +195,12 @@ public sealed class FsdChaptersTests : IDisposable
     {
         var dir = FsdImport.DocDir(Root, doc);
         Assert.False(File.Exists(Path.Combine(dir, "document.md")));
+        Assert.Null(Document(doc)["sections"]);
         var read = FsdChapters.Read(FsdChapters.Files(dir));
-        SameSections(Document(doc)["sections"]!.AsArray().OfType<JsonObject>(), read.Sections);
+        Committed.All(Root);
+        SameSections(FsdDocument.Load(Root, doc)["sections"]!.AsArray().OfType<JsonObject>(), read.Sections);
         Assert.Empty(read.Unmarked);
         Assert.Empty(read.Repeated);
-        Assert.Empty(FsdHandEdit.Sections(dir, Document(doc)));
     }
 
     [Fact]
@@ -208,6 +209,7 @@ public sealed class FsdChaptersTests : IDisposable
         var file = Path.Combine(Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write(Outline));
         var result = FsdImport.Import(repo.Repo, file);
+        Committed.All(repo.Repo);
         Assert.Equal("chapters", (string)result["chapters"]!["dir"]!);
         Assert.Contains(FsdChapters.FrontMatter, result["chapters"]!["files"]!.AsArray().Select(f => (string)f!));
         ReadsAsRecorded("shop");
@@ -221,6 +223,7 @@ public sealed class FsdChaptersTests : IDisposable
         var file = Path.Combine(Root, "sonarr.docx");
         File.Copy(Path.Combine(root, "benchmark", "fsd", "sonarr", "sonarr-fsd.docx"), file);
         FsdImport.Import(repo.Repo, file, "sonarr");
+        Committed.All(repo.Repo);
         ReadsAsRecorded("sonarr");
     }
 
@@ -233,6 +236,7 @@ public sealed class FsdChaptersTests : IDisposable
         var file = Path.Combine(Root, "shop.pdf");
         File.WriteAllBytes(file, pdf.Build(PdfFixture.Mark("1 Fields", 0, 1, PdfFixture.Mark("1.1 More", 1, 2))));
         FsdImport.Import(repo.Repo, file);
+        Committed.All(repo.Repo);
         ReadsAsRecorded("shop");
     }
 
@@ -245,6 +249,7 @@ public sealed class FsdChaptersTests : IDisposable
             new("Notes", XlsxFixture.Row(1, XlsxFixture.Str("A1", "Only"))),
         ]));
         FsdImport.Import(repo.Repo, file);
+        Committed.All(repo.Repo);
         ReadsAsRecorded("rates");
     }
 
@@ -255,6 +260,7 @@ public sealed class FsdChaptersTests : IDisposable
         var file = Path.Combine(small.Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write(Outline));
         var names = FsdImport.Import(small.repo.Repo, file)["chapters"]!["files"]!.AsArray().Select(f => (string)f!).ToList();
+        Committed.All(small.repo.Repo);
         Assert.Contains(names, n => n.StartsWith("02-00-", StringComparison.Ordinal));
         Assert.Contains(names, n => n.StartsWith("02-01-", StringComparison.Ordinal));
         Assert.Contains(names, n => n.StartsWith("02-02-", StringComparison.Ordinal));
@@ -269,6 +275,7 @@ public sealed class FsdChaptersTests : IDisposable
         var file = Path.Combine(Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write(Outline));
         FsdImport.Import(repo.Repo, file);
+        Committed.All(repo.Repo);
         var result = FsdExport.Run(Root, "shop", null, 1500, whole: true);
         Assert.True((bool)result["whole"]!);
         var only = Assert.Single(Directory.GetFiles(FsdExport.DefaultDir(Root, "shop")));
@@ -285,7 +292,7 @@ public sealed class FsdChaptersTests : IDisposable
     void Commit()
     {
         Git.Run(Root, "add -A");
-        Assert.NotNull(Git.Run(Root, "-c user.name=test -c user.email=test@example.invalid commit -q -m fixture"));
+        Assert.NotNull(Git.Run(Root, "-c user.name=test -c user.email=test@example.invalid commit -q --allow-empty -m fixture"));
     }
 
     /// <summary>A document as an import before phase fs left it: document.md and no chapters, committed.</summary>
@@ -294,9 +301,21 @@ public sealed class FsdChaptersTests : IDisposable
         var file = Path.Combine(Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write(Outline));
         FsdImport.Import(repo.Repo, file);
+        Committed.All(repo.Repo);
         var dir = FsdImport.DocDir(Root, "shop");
         var chapters = Chapters.Files(dir);
         File.WriteAllText(Path.Combine(dir, "document.md"), Chapters.Text(dir));
+        // And document.json as v3 held it: the sections, and the Markdown's name.
+        var v3 = Document("shop");
+        v3["schemaVersion"] = 3;
+        v3["markdown"] = "document.md";
+        v3["sections"] = new JsonArray([.. FsdChapters.Read(FsdChapters.Files(dir)).Sections.Select(s =>
+        {
+            var o = FsdChapters.Json(s);
+            o["contentHash"] = FsdAttachments.ContentHash(s.Text, []);
+            return (JsonNode)o;
+        })]);
+        File.WriteAllText(Path.Combine(dir, "document.json"), CanonicalJson.Serialize(v3));
         Directory.Delete(FsdChapters.Dir(dir), recursive: true);
         Assert.NotNull(Git.Run(Root, "init -q"));
         Commit();
@@ -308,12 +327,11 @@ public sealed class FsdChaptersTests : IDisposable
     {
         var expected = OldStyle();
         var dir = FsdImport.DocDir(Root, "shop");
-        var json = File.ReadAllBytes(Path.Combine(dir, "document.json"));
         var result = FsdMigrate.Run(repo.Repo, "shop");
         Assert.Equal("migrated", (string)result["status"]!);
         Assert.Equal(expected, Chapters.Files(dir));
         Assert.False(File.Exists(Path.Combine(dir, "document.md")));
-        Assert.Equal(json, File.ReadAllBytes(Path.Combine(dir, "document.json")));
+        Assert.Null(Document("shop")["sections"]);
         ReadsAsRecorded("shop");
         Commit();
         Assert.Equal("unchanged", (string)FsdMigrate.Run(repo.Repo, "shop")["status"]!);

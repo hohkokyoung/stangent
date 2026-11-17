@@ -53,6 +53,7 @@ public sealed class TableFactsTests : IDisposable
         var file = Path.Combine(Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write(Doc));
         FsdImport.Import(repo.Repo, file);
+        Committed.All(repo.Repo);
     }
 
     public void Dispose()
@@ -314,6 +315,7 @@ public sealed class TableFactsTests : IDisposable
         var word = Path.Combine(other.Root, "attached.docx");
         File.WriteAllBytes(word, EmbeddedFilesTests.WordWith("rates.xlsx", XlsxFixture.Rates()));
         FsdImport.Import(other.Repo, word, "attached");
+        Committed.All(other.Repo);
         var sheet = FsdTables.All(other.Root, "attached").First(t => t.Id.StartsWith("A-", StringComparison.Ordinal));
         Assert.NotNull(sheet.Sheet);
         Assert.NotEmpty(sheet.Columns);

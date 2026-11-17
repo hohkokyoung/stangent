@@ -56,24 +56,42 @@ public static class FsdTables
         var tables = new List<FsdTable>();
         foreach (var t in (document["tables"]?.AsArray() ?? []).OfType<JsonObject>())
         {
-            var section = sections.First(s => (string)s["permanentId"]! == (string)t["section"]!);
-            var (columns, rows) = Read((string)section["text"]!).ElementAt((int)t["position"]! - 1);
-            tables.Add(new FsdTable((string)t["id"]!, null, section, null, columns, rows));
+            // A committed edit can take the section, or the table in it, away: that table is listed by NotFound, not read.
+            if (Found(sections, t) is not { } found) continue;
+            tables.Add(new FsdTable((string)t["id"]!, null, found.Section, null, found.Columns, found.Rows));
         }
         foreach (var a in Sheets(document))
         {
-            var path = Path.Combine(FsdAttachments.Folder(FsdImport.DocDir(root, doc), a.Id), a.File);
-            if (!File.Exists(path)) continue;
-            var lines = File.ReadAllText(path).TrimEnd('\n').Split('\n').Select((l, i) => new FsdTableRow(i + 1, AttachmentChecks.Cells(l))).Where(r => r.Cells.Any(c => c.Trim().Length > 0)).ToList();
+            // The sheet as committed (phase fs layer 2, D380), in the section that holds it by permanent id.
+            if (FsdDocument.Blob(root, $"specs/fsd/{doc}/attachments/{a.Id}/{a.File}") is not { } text) continue;
+            var lines = text.Replace("\r\n", "\n").TrimEnd('\n').Split('\n').Select((l, i) => new FsdTableRow(i + 1, AttachmentChecks.Cells(l))).Where(r => r.Cells.Any(c => c.Trim().Length > 0)).ToList();
             if (lines.Count == 0) continue;
-            tables.Add(new FsdTable(a.Id, a.Sheet, sections.FirstOrDefault(s => (string)s["id"]! == a.Section), a.File, lines[0].Cells, lines.Skip(1).ToList()) { HeaderRow = lines[0].Row });
+            tables.Add(new FsdTable(a.Id, a.Sheet, sections.FirstOrDefault(s => (string?)s["permanentId"] == a.Section), a.File, lines[0].Cells, lines.Skip(1).ToList()) { HeaderRow = lines[0].Row });
         }
         return tables;
     }
 
+    static (JsonObject Section, IReadOnlyList<string> Columns, List<FsdTableRow> Rows)? Found(List<JsonObject> sections, JsonObject t)
+    {
+        var section = sections.FirstOrDefault(s => (string?)s["permanentId"] == (string)t["section"]!);
+        var position = (int)t["position"]!;
+        if (section is null || position < 1) return null;
+        var read = Read((string)section["text"]!).ToList();
+        return position > read.Count ? null : (section, read[position - 1].Columns, read[position - 1].Rows);
+    }
+
+    /// <summary>Tables the import recorded that the committed chapters no longer hold: their section, or the table in it, was edited away.</summary>
+    public static JsonArray NotFound(string root, string doc)
+    {
+        var document = FsdOutline.Load(root, doc);
+        var sections = document["sections"]!.AsArray().OfType<JsonObject>().ToList();
+        return new JsonArray([.. (document["tables"]?.AsArray() ?? []).OfType<JsonObject>().Where(t => Found(sections, t) is null)
+            .Select(t => (JsonNode)new JsonObject { ["id"] = (string)t["id"]!, ["section"] = (string)t["section"]!, ["sectionNumber"] = (string?)t["sectionNumber"] })]);
+    }
+
     static IEnumerable<(string Id, string? Sheet, string File, string? Section)> Sheets(JsonObject document) =>
         (document["attachments"]?.AsArray() ?? []).OfType<JsonObject>().Where(a => a["id"] is not null).SelectMany(a => (a["files"]?.AsArray() ?? []).OfType<JsonObject>()
-            .Where(f => (string?)f["role"] == "csv").Select(f => ((string)a["id"]!, (string?)f["sheet"], (string)f["file"]!, (string?)a["sectionNumber"])));
+            .Where(f => (string?)f["role"] == "csv").Select(f => ((string)a["id"]!, (string?)f["sheet"], (string)f["file"]!, (string?)a["section"])));
 
     /// <summary>Attachments with no sheet to read: their tables, if any, can't be listed, so they're named instead of passed over.</summary>
     public static JsonArray NotRead(string root, string doc)
@@ -89,6 +107,7 @@ public static class FsdTables
         ["doc"] = doc,
         ["tables"] = new JsonArray([.. All(root, doc).Select(t => (JsonNode)Describe(t))]),
         ["attachmentsNotRead"] = NotRead(root, doc),
+        ["tablesNotFound"] = NotFound(root, doc),
     };
 
     internal static JsonObject Describe(FsdTable t)

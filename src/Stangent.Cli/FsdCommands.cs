@@ -52,8 +52,8 @@ static class FsdCommands
         sections.SetAction(pr => Cli.Run(pr, "fsd sections", ctx =>
         {
             if (pr.GetValue(chapterOption) is not null && pr.GetValue(docOption) is null) throw new Stangent.Core.StangentException("usage", "--chapter needs --doc.", Stangent.Core.ExitCodes.Usage);
-            return new JsonArray([.. FsdImport.Documents(ctx.Repo.Root)
-                .Where(d => pr.GetValue(docOption) is not { } only || (string)d["id"]! == only)
+            // One document named is read or refused as itself; all of them leave out, with a warning, any that can't be read.
+            return new JsonArray([.. (pr.GetValue(docOption) is { } only ? [FsdDocument.Load(ctx.Repo.Root, only)] : FsdImport.Documents(ctx.Repo.Root))
                 .SelectMany(d => (pr.GetValue(chapterOption) is { } chapter ? FsdOutline.Chapter(d, chapter) : d["sections"]!.AsArray().OfType<JsonObject>()).Where(s => ((string)s["text"]!).Trim().Length > 0)
                     .Select(s => (JsonNode)new JsonObject { ["doc"] = (string)d["id"]!, ["section"] = (string)s["id"]!, ["title"] = (string)s["title"]! }))]);
         }));

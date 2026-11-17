@@ -39,13 +39,7 @@ public class TicketDraftTests
             App = new SpecApp($"version: 1\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n  aiPoints: false\n{extra}");
             Page(App, Orders, ("shows", "The orders screen shows a Place order button.", [SpecApp.OrdersPage]));
             Page(App, SpecApp.Post, ("rules", "An order over 100 is refused until it is approved.", [SpecApp.Create]));
-            var dir = Path.Combine(Root, "specs", "fsd", "shop");
-            Directory.CreateDirectory(dir);
-            File.WriteAllText(Path.Combine(dir, "document.json"), new JsonObject
-            {
-                ["schemaVersion"] = 1, ["id"] = "shop", ["title"] = "Shop FSD",
-                ["sections"] = new JsonArray(new JsonObject { ["id"] = "4.1", ["title"] = "Placing an order", ["text"] = "Orders over 100 need approval from a manager.", ["parent"] = null }),
-            }.ToJsonString());
+            FsdFixture.Write(Root, "shop", "Shop FSD", ("4.1", "Placing an order", "Orders over 100 need approval from a manager."));
             TraceStore.ApplyEntries(Root, "shop", "4.1", [TraceStore.Entry("agree", "shop", new JsonObject { ["id"] = "4.1", ["title"] = "Placing an order", ["text"] = "" },
                 "Orders over 100 need approval from a manager.", Orders, "S1", "The orders screen shows a Place order button.", "judge", "confirmed", null)]);
             TicketFixtures.Make(Path.Combine(Root, "replay"), Key, "Bug", "Big orders skip approval", Description);

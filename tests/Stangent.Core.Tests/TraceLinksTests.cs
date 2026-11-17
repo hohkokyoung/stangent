@@ -184,9 +184,11 @@ public class TraceLinksTests
         Assert.Equal(before, Snapshot(app.Root));
     }
 
-    /// <summary>Every file and folder under the repo, hidden ones too, with a hash of each file's bytes; only telemetry, which every command writes, is left out.</summary>
+    /// <summary>Every file and folder under the repo, hidden ones too, with a hash of each file's bytes; only telemetry, which every command writes,
+    /// and the cache of the committed chapters (phase fs layer 2, ignored by git), which every read of the FSD may write, are left out.</summary>
     static List<string> Snapshot(string root) =>
         [.. Directory.EnumerateFileSystemEntries(root, "*", SearchOption.AllDirectories)
-            .Where(p => !Path.GetRelativePath(root, p).StartsWith(Path.Combine(".stangent", "telemetry"), StringComparison.Ordinal)).Order(StringComparer.Ordinal)
+            .Where(p => !Path.GetRelativePath(root, p).StartsWith(Path.Combine(".stangent", "telemetry"), StringComparison.Ordinal) && !p.EndsWith("chapters-cache.json", StringComparison.Ordinal)
+                && !Path.GetRelativePath(root, p).StartsWith(".git", StringComparison.Ordinal)).Order(StringComparer.Ordinal)
             .Select(p => File.Exists(p) ? $"{p} {Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(p)))}" : p)];
 }

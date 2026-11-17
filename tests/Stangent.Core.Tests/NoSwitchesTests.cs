@@ -72,6 +72,7 @@ public class NoSwitchesTests
         var file = Path.Combine(app.Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write("# 1 Orders\n\nOrders over 50 need approval.\n"));
         FsdImport.Import(app.Repo, file);
+        Committed.All(app.Repo);
         Assert.Equal("ai_disabled", Assert.Throws<StangentException>(() => FsdReview.Prepare(app.Repo, "shop", 1, false)).Code);
     }
 

@@ -9,13 +9,13 @@ namespace Stangent.Spec.Fsd;
 
 /// <summary>
 /// <c>stangent fsd import</c> (Phase 2b step 1, D111): converts a <c>.docx</c>, <c>.pdf</c>, <c>.xlsx</c> or <c>.xlsm</c> to Markdown by code, archives the original
-/// (D16) and records the document's sections as a <c>source-document</c> (v3) in <c>specs/fsd/&lt;doc-id&gt;/</c>.
+/// (D16) and records the import's facts as a <c>source-document</c> (v4, D383) and the text as chapter files (D377) in <c>specs/fsd/&lt;doc-id&gt;/</c>.
 /// The same file always gives the same bytes; a file already imported (same content hash) is left alone. A different file
 /// for a document already here comes in as a candidate beside it (<see cref="FsdVersions"/>, D117).
 /// </summary>
 public static class FsdImport
 {
-    public const string Schema = "source-document.v3.json";
+    public const string Schema = "source-document.v4.json";
 
     public static string DocDir(string root, string id) => Path.Combine(root, "specs", "fsd", id);
 
@@ -39,19 +39,16 @@ public static class FsdImport
         var bytes = File.ReadAllBytes(file);
         var hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
         var dir = DocDir(repo.Root, id);
-        var jsonPath = Path.Combine(dir, "document.json");
-        var current = File.Exists(jsonPath) ? JsonNode.Parse(File.ReadAllText(jsonPath)) as JsonObject : null;
+        var current = FsdDocument.Facts(repo.Root, id);
+        if (current is not null && !FsdDocument.Migrated(current))
+            throw new StangentException("fsd_not_migrated", $"{id} was imported before the FSD became chapter files. Run `stangent fsd migrate {id}` and commit specs/fsd/{id}/ first (D383).", ExitCodes.Usage);
         if (partial && !FsdSectionApproval.On(repo.Config))
             throw new StangentException("section_approval_off", "--partial went with section approval (D388): only section approval could keep what a changes-only file doesn't hold. Import the whole file.", ExitCodes.Usage);
         if (partial && current is null)
             throw new StangentException("usage", $"--partial says the file holds only changes, and {id} has no current version to change. Import the whole document first.", ExitCodes.Usage);
         // The same file is imported once, unless --flat asks for a different shape than what's recorded.
-        if (current is not null && (string?)current["original"]?["hash"] == hash
-            && flat == (current["sections"]?.AsArray() is { Count: 1 } only && (string?)only[0]?["id"] == FsdSections.FlatId))
-        {
-            var added = FsdVersions.EnsureIds(repo.Root, id, current);
-            return Unchanged(repo.Root, id, dir, current, hash, added);
-        }
+        if (current is not null && (string?)current["original"]?["hash"] == hash && flat == IsFlat(current))
+            return Unchanged(repo.Root, id, dir, current, hash);
 
         var import = ImportPipeline.Run(format, bytes, options);
         var converted = AttachmentHome.Apply(import.Document, true);
@@ -63,7 +60,8 @@ public static class FsdImport
         var archived = new JsonObject { ["name"] = archive.Name, ["path"] = archivedPath };
         if (current is not null)
         {
-            var offered = FsdVersions.Offer(repo.Root, id, current, doc, converted, hash, flat, archived, partial: partial);
+            // Compared with the committed FSD (D380): an import not committed yet has no current version to compare with.
+            var offered = FsdVersions.Offer(repo.Root, id, FsdDocument.Load(repo.Root, id), doc, converted, hash, flat, archived, partial: partial);
             offered["steps"] = import.StepsJson();
             return offered;
         }
@@ -74,14 +72,13 @@ public static class FsdImport
         FsdVersions.IssueIds(repo.Root, id, doc, doc["sections"]!.AsArray().OfType<JsonObject>());
         FsdObjects.Assign(repo.Root, id, null, doc);
         ImportProblems.Attach(doc);
-        var errors = SchemaRegistry.Embedded.Validate(Schema, doc.ToJsonString());
-        if (errors.Count > 0) throw new StangentException("invalid_document", "The imported document broke source-document v3 (a stangent bug).", ExitCodes.Failed, errors);
+        FsdDocument.Validate(doc);
         FsdChapters.Verify(converted.Markdown, [.. doc["sections"]!.AsArray().OfType<JsonObject>()], repo.Config.Fsd.ExportMaxLines);
         Directory.CreateDirectory(dir);
         WriteText(dir, converted, doc, markdown: false);
         // The FSD as the PM edits it (phase fs layer 1, D377, D378): chapter files with each heading's id, and no document.md.
         var chapters = FsdChapters.Write(dir, converted.Markdown, [.. doc["sections"]!.AsArray().OfType<JsonObject>()], repo.Config.Fsd.ExportMaxLines);
-        File.WriteAllText(jsonPath, CanonicalJson.Serialize(doc));
+        FsdDocument.Save(repo.Root, id, doc, newImport: true);
         ImportReport.Write(dir, doc);
         if (FsdSectionApproval.On(repo.Config)) FsdSectionFiles.Write(repo.Root, id, doc);
         return ImportReport.AddTo(new JsonObject
@@ -89,6 +86,7 @@ public static class FsdImport
             ["id"] = id, ["status"] = "imported", ["hash"] = hash, ["sections"] = converted.Sections.Count,
             ["images"] = converted.Images.Count, ["problems"] = doc["problems"]!.DeepClone(), ["archive"] = archived, ["steps"] = import.StepsJson(),
             ["chapters"] = Chapters(chapters),
+            ["next"] = $"Read specs/fsd/{id}/chapters/ and commit specs/fsd/{id}/: the commit approves the import, and steps read only the committed FSD (D380).",
         }, doc, $"specs/fsd/{id}");
     }
 
@@ -99,11 +97,18 @@ public static class FsdImport
         ["overLimit"] = new JsonArray([.. written.OverLimit.Select(f => (JsonNode)f)]),
     };
 
-    static JsonObject Unchanged(string root, string id, string dir, JsonObject current, string hash, int added)
+    /// <summary>Imported with <c>--flat</c>: the import says so in its problems (v4 keeps no sections to look at).</summary>
+    internal static bool IsFlat(JsonObject document) =>
+        (document["problems"]?.AsArray() ?? []).OfType<JsonObject>().Any(p => (string?)p["kind"] == "flat");
+
+    static JsonObject Unchanged(string root, string id, string dir, JsonObject current, string hash)
     {
-        ImportReport.Write(dir, current);
-        var same = ImportReport.AddTo(new JsonObject { ["id"] = id, ["status"] = "unchanged", ["hash"] = hash }, current, $"specs/fsd/{id}");
-        if (added > 0) same["permanentIdsAdded"] = added;
+        // The report counts sections: the committed ones once there are, the facts alone before the first commit.
+        JsonObject shown;
+        try { shown = FsdDocument.Load(root, id); }
+        catch (StangentException e) when (e.Code is "fsd_not_committed" or "not_git") { shown = current.DeepClone().AsObject(); shown["sections"] = new JsonArray(); }
+        ImportReport.Write(dir, shown);
+        var same = ImportReport.AddTo(new JsonObject { ["id"] = id, ["status"] = "unchanged", ["hash"] = hash }, shown, $"specs/fsd/{id}");
         if (FsdVersions.PendingHash(root, id) is { } pending)
         {
             same["candidate"] = pending;
@@ -135,7 +140,7 @@ public static class FsdImport
         var dir = DocDir(repo.Root, id);
         var jsonPath = Path.Combine(dir, "document.json");
         if (!File.Exists(jsonPath)) throw new StangentException("not_found", $"No imported document {id}. A first import still waiting for approval has no current version to read again.", ExitCodes.NotFound);
-        var current = JsonNode.Parse(File.ReadAllText(jsonPath))!.AsObject();
+        var current = FsdDocument.Load(repo.Root, id);
         var original = current["original"]!;
         var hash = (string)original["hash"]!;
         var archive = repo.Config.Fsd.Archive is { Name.Length: > 0, Path.Length: > 0 } a ? a
@@ -152,7 +157,7 @@ public static class FsdImport
 
         var fileName = (string)original["fileName"]!;
         var format = ImportPipeline.ForFile(fileName) ?? throw new StangentException("unsupported_format", $"No format reads {fileName} any more.", ExitCodes.Usage);
-        var flat = current["sections"]?.AsArray() is { Count: 1 } only && (string?)only[0]?["id"] == FsdSections.FlatId;
+        var flat = IsFlat(current);
         ImportProblems.Upgrade(current);
         var accepted = current["problems"]!.AsArray().OfType<JsonObject>().Any(p => (string?)p["kind"] == "tracked-changes");
         var allowed = (current["labels"]?.AsArray() ?? []).OfType<JsonObject>().Select(l => (string)l["id"]!).Concat(allowLabels ?? []).ToList();
@@ -166,7 +171,7 @@ public static class FsdImport
         if (LabelRecord(repo.Root, import.Labels, current) is { } labels) doc["labels"] = labels;
         var archived = new JsonObject { ["name"] = archive.Name, ["path"] = (string)original["path"]! };
 
-        if (converted.Markdown != FsdChapters.Markdown(dir) || !SameSections(current, doc) || !FsdAttachments.Same(current, doc))
+        if (converted.Markdown != FsdDocument.Markdown(repo.Root, id) || !SameSections(current, doc) || !FsdAttachments.Same(current, doc))
         {
             var offered = FsdVersions.Offer(repo.Root, id, current, doc, converted, hash, flat, archived, "the same file, read again by a newer build, gives other text");
             offered["reread"] = true;
@@ -175,17 +180,15 @@ public static class FsdImport
         }
 
         // The same text. A newer build can still have more to say about it, and problems are in no hash.
-        var added = FsdVersions.EnsureIds(repo.Root, id, current);
         ImportProblems.Attach(doc);
         ImportProblems.Attach(current);
         var problemsChanged = !JsonNode.DeepEquals(doc["problems"], current["problems"]);
         if (problemsChanged)
         {
             current["problems"] = doc["problems"]!.DeepClone();
-            FsdVersions.Validate(current);
-            File.WriteAllText(jsonPath, CanonicalJson.Serialize(current));
+            FsdDocument.Save(repo.Root, id, current);
         }
-        var same = Unchanged(repo.Root, id, dir, current, hash, added);
+        var same = Unchanged(repo.Root, id, dir, current, hash);
         same["reread"] = true;
         same["problemsChanged"] = problemsChanged;
         same["steps"] = import.StepsJson();
@@ -209,11 +212,10 @@ public static class FsdImport
 
     static JsonObject Record(string id, string file, ConvertedDocument converted, string archive, string archivedPath, string hash) => new()
     {
-        ["schemaVersion"] = 3,
+        ["schemaVersion"] = FsdDocument.SchemaVersion,
         ["id"] = id,
         ["title"] = converted.Title ?? Path.GetFileNameWithoutExtension(file),
         ["original"] = new JsonObject { ["archive"] = archive, ["path"] = archivedPath, ["hash"] = hash, ["fileName"] = Path.GetFileName(file) },
-        ["markdown"] = "document.md",
         ["sections"] = new JsonArray([.. converted.Sections.Select(s => (JsonNode)SectionJson(s))]),
         ["images"] = new JsonArray([.. converted.Images.Select(i =>
         {
@@ -287,12 +289,6 @@ public static class FsdImport
         return rel;
     }
 
-    public static IEnumerable<JsonObject> Documents(string root)
-    {
-        var dir = Path.Combine(root, "specs", "fsd");
-        if (!Directory.Exists(dir)) yield break;
-        foreach (var d in Directory.EnumerateDirectories(dir).Order(StringComparer.Ordinal))
-            if (File.Exists(Path.Combine(d, "document.json")) && JsonNode.Parse(File.ReadAllText(Path.Combine(d, "document.json"))) is JsonObject o)
-                yield return o;
-    }
+    /// <summary>Every document a step can read, its sections from the committed chapters (<see cref="FsdDocument.All"/>).</summary>
+    public static IEnumerable<JsonObject> Documents(string root) => FsdDocument.All(root);
 }
