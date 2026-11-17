@@ -36,6 +36,9 @@ public sealed class RulingEntry
     public string? RulingRaw;
     /// <summary>The <c>ruling:</c> key's line in the file read (1-based), 0 when not read from a file.</summary>
     public int RulingLine;
+    /// <summary>The <c>statement:</c> and <c>jira:</c> lines (1-based, 0 when absent): a ruling from Jira counts as committed only with them (D374).</summary>
+    public int StatementLine;
+    public int JiraLine;
     /// <summary>A problem found reading the entry (no key, an unknown state).</summary>
     public string? Problem;
 
@@ -207,6 +210,8 @@ public static partial class Rulings
         if (e["link"] is JsonObject link && Str(link["kind"]) is { } kind)
             entry.Link = new TruthLink(kind, Str(link["id"]) ?? "", Str(link["title"]) ?? "", Str(link["hash"]) ?? "", link["exact"] is JsonValue x && x.TryGetValue<bool>(out var xv) && xv);
         (entry.RulingLine, entry.RulingRaw) = Raw(node, "ruling", lines, entry.Ruling);
+        entry.StatementLine = Raw(node, "statement", lines, null).Line;
+        entry.JiraLine = Raw(node, "jira", lines, null).Line;
         return entry;
     }
 
@@ -398,7 +403,9 @@ public static partial class Rulings
                 dropped.Add((JsonNode)e.Describe());
                 continue;
             }
-            if (e.NotFound is null) { e.NotFound = file.ReviewCommit; counts["notFoundNow"]++; }
+            // An entry a ticket's Jira reply added (D374) was never a review finding, so no run "not finding it again" says anything.
+            if (JiraRulings.FromTicket(e)) { }
+            else if (e.NotFound is null) { e.NotFound = file.ReviewCommit; counts["notFoundNow"]++; }
             else counts["stillNotFound"]++;
             if (e.KeySection is null || oldSection is null) { file.Undocumented.Add(e); continue; }
             if (!blocks.TryGetValue(oldSection.SectionId, out var block))

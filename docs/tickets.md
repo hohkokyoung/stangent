@@ -53,6 +53,33 @@ and code marks kept, D102), and every attachment saved with its hash. Text files
 the field `tickets.fields` names, Jira's own environment and affects-version fields, or a labelled part of the
 description (`### Expected Behavior`, `**Actual:**`); the missing ones are listed.
 
+**`Ruling:` replies** (truth map layer 5, D364, D374; `truth-verdict` on; code only): pull's output gains `rulings` once
+a questions draft holding the PM's question ("Reply with a line starting `Ruling:`") has been posted. It reads the
+comments after that post (by their place after it; by time when Jira no longer lists it), leaving out stangent's own
+posts, for lines starting `Ruling:` (bold, italic or backtick marks and a `-` or `1.` bullet allowed; a quoted `>` line
+isn't one). Both tones' posted questions count, from the first. `Ruling: the code is right` (`code right`, `code`), `the FSD is
+right` (`fsd right`, `fsd`), `keep`, `remove`, and for a match `yes` or `no`, give that ruling; a fixed word with more after
+it ("yes, it does that", "keep it, thanks") is listed and asked back; any other text is the rule in the PM's words
+(`restated`). On a contradicted ticket ("Should the rule change?") `yes` or `no` is listed: the reply must give the rule.
+The entry the question was about is the latest proof attempt's `verdict.entry`, used only while a posted question is still
+the one that verdict writes (otherwise: "the bug proof has changed since the question was posted"). The ruling goes into `specs/fsd/<doc>/rulings.yaml` the way `fsd rule`
+writes it (only that entry's lines change), with `jira: { key, comment, author, created }`, **uncommitted**: the output
+says so, and that a person confirms it by committing; until then the entry backs no ticket (the bundle lists it with
+`usable: false`, "drafted from a Jira reply … isn't committed yet"). When nothing covered the ticket (`entry` null), or the
+reply gives the rule in words about a match, the ruling becomes an entry of the ticket's own, undocumented, keyed
+`ticket:<KEY>` (in the match's section, else with the code no section covers), on the ticket's file and symbol points; a
+review refresh keeps it as it is, never "not found again". Listed with why, nothing written: a `Ruling:` with nothing
+after it, two different `Ruling:` lines in one comment, a reply that doesn't fit the question (`keep` on a conflict,
+`the FSD is right` when nothing in the FSD covers it), people whose latest replies disagree (each person's latest reply
+replaces their earlier ones), a proof that no longer stops on the truth map, a "not covered" ticket in a repo with
+several FSDs, an entry a refresh removed, and a reply drafted before that a person has since taken out of `rulings.yaml`
+(recorded in `.stangent/tickets/<KEY>/rulings-drafted.json`; delete it to draft again). A reply already in `rulings.yaml`
+reads `already`. A ruling from Jira counts as committed only when its `ruling`, `statement` and `jira` lines all are. When
+someone answers the entry again with `fsd rule`, its `jira` line goes (the answer is theirs now); a ticket's own entry can
+be removed with `fsd rule <doc> <n> drop`. Anything that stops the reading is reported as `failed`, never a failed pull.
+States: `not-asked`, `waiting`, `listed`, `drafted`, `already`, `failed`. Then: read the diff, commit, `stangent fsd rulings-check <doc>`, and prove the
+ticket again (`ticket bundle`, `ticket prove`, or `ticket-run.sh --prove`).
+
 ## Starting points (D101; D70 as the fallback)
 
 - **The file finder** (`tickets.aiPoints`, default on): `stangent-file-finder`, a headless coding agent, gets the
@@ -170,8 +197,8 @@ nothing the PM agreed covers the ticket's files). `bundle.md` prints them under 
 unclear, the questions draft's writer is told why and that code adds the question; code appends it to the checked text,
 quoting the rule ("**For the PM:** the FSD's §1 Orders says “…”, and nobody has ruled whether the code or the FSD is
 right (the code: `Core/OrderService.cs:5`). Which is right?"; no code names in the client tone), then "Reply with a
-line starting `Ruling:` …". Which entry it asks about stays in `bug-proof.json`'s verdict, for layer 5 to read the
-reply back.
+line starting `Ruling:` …". Which entry it asks about stays in `bug-proof.json`'s verdict; `ticket pull` reads the
+reply back (layer 5, "`Ruling:` replies" under Pull).
 
 `stangent ticket draft <KEY> --kind questions|resolution [--tone internal|client] [--pr base..head --pr-url …]`: code
 gathers the facts (missing fields, clashes' candidates, the proof; or the PR's files, the pages and FSD sections it

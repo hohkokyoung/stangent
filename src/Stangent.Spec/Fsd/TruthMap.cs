@@ -113,6 +113,20 @@ public static partial class TruthMap
         })]);
         var uncommitted = entries.Count(x => Who(x.Entry, x.Section, blame) is { Committed: false });
         if (uncommitted > 0) warnings.Add((JsonNode)$"{uncommitted} ruling{(uncommitted == 1 ? " isn't" : "s aren't")} committed yet: who ruled and when stay empty until {(uncommitted == 1 ? "it is" : "they are")}; commit, then run this again.");
+        // D364: a ruling drafted from a Jira reply shows who wrote it there and who confirmed it in git, both when they differ.
+        report["fromJira"] = new JsonArray([.. entries.Where(x => x.Entry.Jira is not null).Select(x =>
+        {
+            var who = Who(x.Entry, x.Section, blame);
+            var author = (string?)x.Entry.Jira!["author"];
+            return (JsonNode)new JsonObject
+            {
+                ["entry"] = x.Entry.Describe(), ["ruling"] = x.Entry.Ruling, ["ticket"] = (string?)x.Entry.Jira["key"], ["comment"] = (string?)x.Entry.Jira["comment"],
+                ["jiraAuthor"] = author, ["committed"] = who?.Committed ?? false, ["committer"] = who?.By,
+                ["differ"] = who is { Committed: true } && !SamePerson(who.By, author),
+            };
+        })]);
+        var drafted = report["fromJira"]!.AsArray().Count(x => (bool)x!["committed"]! == false);
+        if (drafted > 0) warnings.Add((JsonNode)$"{drafted} ruling{(drafted == 1 ? " was" : "s were")} drafted from a Jira reply and {(drafted == 1 ? "isn't" : "aren't")} committed: {(drafted == 1 ? "it backs" : "they back")} no ticket until a person confirms by committing.");
         report["warnings"] = warnings;
         report["done"] = problems.Count == 0 && standings.All(s => s is "ruled" or "confirmed" or "not-a-match");
         report["summary"] = Summary(counts, entries.Count) + "; links: " + TruthLinks.Summary(entries.Count, linkCounts, "entry", "entries");
@@ -212,6 +226,9 @@ public static partial class TruthMap
     {
         var line = e.Ruling is not null ? e.RulingLine : e.IsMatch && MatchConfirmed(e, section) ? section!.MatchesLine : 0;
         if (line == 0) return null;
+        // A ruling drafted from Jira is committed only when its words and its jira line are too: a new statement under a committed
+        // `ruling: restated` line mustn't count unconfirmed (D374).
+        if (e.Jira is not null && new[] { e.StatementLine, e.JiraLine }.Any(l => l > 0 && !blame.ContainsKey(l))) return new Person(false, null, null, null);
         return blame.TryGetValue(line, out var b) ? new Person(true, b.Author, b.Date, b.Commit) : new Person(false, null, null, null);
     }
 
@@ -579,9 +596,23 @@ public static partial class TruthMap
     static string Found(JsonObject e, int runs)
     {
         var mine = e["runs"]!.AsArray().Select(r => (int)r!).ToList();
+        if (mine.Count == 0 && e["jira"] is JsonObject j) return $"added from Jira {(string?)j["key"]}, not a review finding";
         var found = runs > 0 && mine.Count >= runs ? "found by every run" : $"found by run {string.Join(", ", mine)} of {runs}";
         return found + ((bool)e["fallback"]! ? ", linked by fallback" : "");
     }
 
-    static string By(JsonNode n) => (bool?)n["committed"] == false ? "(_not committed_)" : (string?)n["by"] is { } by ? $"by {by} on {(string?)n["on"]}" : "";
+    /// <summary>Who ruled: git's committer, and for a ruling drafted from a Jira reply (D364, D374) who wrote it there, both
+    /// when they differ.</summary>
+    static string By(JsonNode n)
+    {
+        var git = (bool?)n["committed"] == false ? "(_not committed_)" : (string?)n["by"] is { } by ? $"by {by} on {(string?)n["on"]}" : "";
+        if (n["jira"] is not JsonObject j) return git;
+        var jira = $"in Jira by {(string?)j["author"]} ({(string?)j["key"]}, comment {(string?)j["comment"]})";
+        if ((bool?)n["committed"] == false) return $"{jira}, drafted, (_not committed_)";
+        return SamePerson((string?)n["by"], (string?)j["author"]) ? $"{jira}, committed on {(string?)n["on"]}" : $"{jira}, confirmed {git}";
+    }
+
+    /// <summary>The Jira author and the git committer are the same person when their names read the same, case aside.</summary>
+    public static bool SamePerson(string? git, string? jira) =>
+        git is not null && jira is not null && string.Equals(git.Trim(), jira.Trim(), StringComparison.OrdinalIgnoreCase);
 }

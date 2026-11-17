@@ -322,7 +322,7 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
 - **Checked free (2026-11-15):** the saved Kavita runs through the built command: 29 of 30, 0 dropped
   (`benchmark/results/2026-11-15-fsd-review-free/`).
 
-## The truth map (D361–D372; `phases/tm-truth-map.md`), being built
+## The truth map (D361–D374; `phases/tm-truth-map.md`), being built
 
 The PM's rulings on the review's findings judge tickets. Built so far:
 
@@ -402,6 +402,14 @@ The PM's rulings on the review's findings judge tickets. Built so far:
   ticket's files; `ticket prove` stops with no test when no agreed rule can back the ticket (unclear) or one says the
   code is right (contradicted), checked by code, and the questions draft ends with the PM's question. Details in
   `docs/tickets.md`.
+- **`Ruling:` replies from Jira** (layer 5, D364, D374; `truth-verdict`): `ticket pull` drafts a reply to the PM's question
+  into `rulings.yaml`, uncommitted, with `jira: { key, comment, author, created }`; details under Pull in `docs/tickets.md`.
+  A drafted ruling backs no ticket until it is committed. A ticket nothing covered gets an undocumented entry of its own,
+  keyed `ticket:<KEY>` on the ticket's code, which a refresh keeps and never marks not found. `rulings-check` lists every
+  ruling from Jira under `fromJira` (the Jira author, the git committer, `differ` when they aren't the same name, case
+  aside) and warns while one isn't committed; `truth-map.md` shows "in Jira by Pat PM (SHOP-1, comment 101), confirmed by
+  Dana Lead on …", or "committed on …" when they are one person, and a ticket's own entry as "added from Jira SHOP-1, not a
+  review finding".
 - **Email templates in the graph** (layer 3, D362 (5), D370; `code-graph` v7, `docs/code-graph.md` "Template files"): a finding on
   a template file links by its `template-file` point (a node link, so still a fallback), and the graph's 🟡
   `sends-template` line from the constant naming it (`EmailConfirmTemplate`) lets a ticket starting in the sending code reach

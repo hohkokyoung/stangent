@@ -83,7 +83,7 @@ public static class PmAnswers
 
         if (answer is "drop")
         {
-            if (target.NotFound is null) throw Refuse($"Only an item the last review didn't find again can be dropped; {n} was found. Answer it instead.");
+            if (target.NotFound is null && !JiraRulings.FromTicket(target)) throw Refuse($"Only an item the last review didn't find again, or one a ticket's Jira reply added, can be dropped; {n} was found. Answer it instead.");
             if (words is not null || note is not null) throw Refuse("`drop` removes the item, so it takes no words or note.");
             if (found.Section is { } sb)
             {
@@ -115,6 +115,8 @@ public static class PmAnswers
             }
             // Answered means looked at: a flag or "new" mark is done with (D369's "delete the line once you have looked").
             target.Flagged = null;
+            // The answer is now this person's, not the Jira reply's: its jira line goes, so nobody reads it as the PM's (D374).
+            target.Jira = null;
             target.New = false;
         }
         var replacedNote = note is not null && target.PmNote is not null && target.PmNote != note;
@@ -187,7 +189,7 @@ public static class PmAnswers
 
     /// <summary>Written as <c>fsd rulings</c> writes it, so every other line stays byte for byte and git blame keeps naming
     /// whoever answered it; the file's line endings are kept.</summary>
-    static void Save(string path, string before, RulingsFile file)
+    internal static void Save(string path, string before, RulingsFile file)
     {
         var text = Rulings.Write(file);
         if (before.Contains("\r\n", StringComparison.Ordinal)) text = text.Replace("\n", "\r\n");

@@ -63,6 +63,9 @@ public static class TruthList
                 if (!evidence.Any(v => fileSet.Contains(FileOf(v)))) continue;
                 var standing = (string)e["standing"]!;
                 var (usable, why) = Usable(standing, (string?)e["confidence"]);
+                // D364, D374: a ruling drafted from a Jira reply counts once a person confirms it by committing.
+                if (usable && e["jira"] is JsonObject jira && (bool?)e["committed"] != true)
+                    (usable, why) = (false, $"its ruling was drafted from a Jira reply ({(string?)jira["key"]}, comment {(string?)jira["comment"]}) and isn't committed yet: commit {Path.GetRelativePath(repo.Root, Path.Combine(Path.GetDirectoryName(path)!, "rulings.yaml")).Replace('\\', '/')}, then run `stangent fsd rulings-check {doc}`");
                 entries.Add(new JsonObject
                 {
                     ["id"] = $"T{++n}", ["doc"] = doc, ["n"] = (int)e["n"]!,

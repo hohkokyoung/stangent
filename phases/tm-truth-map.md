@@ -8,7 +8,7 @@ provides: { rulings: 1, truth-map: 1 }
 
 # The truth map
 
-**Designed 2026-11-16 (D361–D364); plan and my calls D365; every sentence the code follows covered too (D366).** **Layers 0 and 1 built and fresh-checked 2026-11-16 (D367, D368); layer 2 2026-11-17 (D369); layer 3 built 2026-11-17 (D370).** Also reads `fsd-review` v1 and
+**Designed 2026-11-16 (D361–D364); plan and my calls D365; every sentence the code follows covered too (D366).** **Layers 0 and 1 built and fresh-checked 2026-11-16 (D367, D368); layer 2 2026-11-17 (D369); layer 3 (D370), 2b (D371), 4 (D372) and 5 (D374) built 2026-11-17.** Also reads `fsd-review` v1 and
 `inventory` v1, which layer 5 provides with no phase file of its own, so they aren't in `consumes` above.
 
 The judge of a ticket is the truth map, not the FSD alone (D361). The FSD review (D341) finds where the FSD and
@@ -179,6 +179,14 @@ appended by code, so `ticket-update` stays v1; `fsd.pm` isn't built (the questio
   It records which entry key the question is about (or "new", with the ticket's link).
 
 ### Layer 5 · `Ruling:` replies (D364)
+
+**Built and fresh-checked (D374; 5 defects and 7 risks, fixed or listed there).** `RulingReplies.cs` (tickets), `JiraRulings.cs` (spec); behind `truth-verdict`; no contract bump
+(`rulings` v1 already had `jira`). My calls: the entry is the latest attempt's `verdict.entry`, trusted only while the
+posted question is still the one that verdict writes; a drafted ruling backs no ticket until committed; "not covered" (or
+words on a match) drafts an undocumented entry keyed `ticket:<KEY>` on the ticket's file and symbol points, which a
+refresh keeps and never marks not found; one person's later reply replaces their earlier one, two people who disagree are
+listed; `the code is right` on undocumented code means keep; `ticket pull` doesn't run `ticket prove` (paid): its output
+says to commit, `rulings-check`, then prove again.
 
 - `ticket pull` reads comments that come after the questions draft was posted and have a line starting `Ruling:`.
   `Ruling: code right`, `fsd right`, `keep` or `remove` gives that ruling; any other text after `Ruling:` becomes
